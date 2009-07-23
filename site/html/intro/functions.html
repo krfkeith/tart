@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Function Type Expressions &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Collections" href="collections.html" />
+    <link rel="prev" title="Declaring variables and functions" href="declarations.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="collections.html" title="Collections"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declaring variables and functions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="function-type-expressions">
+<span id="index-14"></span><h1>Function Type Expressions<a class="headerlink" href="#function-type-expressions" title="Permalink to this headline">¶</a></h1>
+<p>The keyword <tt class="xref docutils literal"><span class="pre">fn</span></tt> declares an expression having function type. It
+can be used to declare a named function or an anonymous function (also known
+as a &#8216;function literal&#8217;.)</p>
+<p>Normally, its easier to use <tt class="xref docutils literal"><span class="pre">def</span></tt> to define a function and bind it to
+a name in one step. Def requires that the function have a <em>name</em>, however, and
+when working with with function <em>types</em> (where we don&#8217;t know the name of the
+specific function) then we have have to use <tt class="xref docutils literal"><span class="pre">fn</span></tt>.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">fn</span></tt> keyword is optionally followed by an argument list. Usually
+the argument list will be in parentheses, however if there is only a single
+argument, or no arguments at all, then the parentheses can be omitted:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>          <span class="c">// No-argument function</span>
+<span class="k">fn</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>       <span class="c">// No-argument function (alternate form)</span>
+<span class="k">fn</span> <span class="nv">x</span><span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>    <span class="c">// Single argument function</span>
+<span class="k">fn</span> <span class="p">(</span><span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span> <span class="c">// Two argument function</span>
+</pre></div>
+</div>
+<p>If you&#8217;re just declaring the type of a function, you can omit the argument
+name - but you still have to include the colon before the type name:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>   <span class="c">// Single argument function type</span>
+</pre></div>
+</div>
+<div class="section" id="function-return-type">
+<span id="index-15"></span><h2>Function return type<a class="headerlink" href="#function-return-type" title="Permalink to this headline">¶</a></h2>
+<p>The &#8216;-&gt;&#8217; operator means &#8216;returns value of type&#8217;, and is right-associative.
+This allows you to define functions that return functions:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="nv">x</span><span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="k">fn</span> <span class="nv">y</span><span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>
+<span class="k">fn</span> <span class="nv">x</span><span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="k">fn</span> <span class="p">(</span><span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">z</span><span class="p">:</span><span class="nc">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note for Haskell fans - the use of the <tt class="docutils literal"><span class="pre">-&gt;</span></tt> operator looks similar
+to the way functions are defined in Haskell, but it&#8217;s actually quite
+different. In Haskell, functions can only have a single argument, and
+support for multiple arguments is done via currying. There are various
+reasons why Tart doesn&#8217;t do this &#8211; for one thing, it makes it difficult to
+support calls to the native ABI.</p>
+</div>
+<p id="index-16">A function returning no value (i.e. a pure procedure) can be specified in several ways:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="k">void</span><span class="p">;</span>    <span class="c">// A function with no return value.</span>
+<span class="k">fn</span> <span class="p">:</span><span class="kt">int</span><span class="p">;</span>            <span class="c">// Defaults to void</span>
+<span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="p">();</span>      <span class="c">// A function returning no values.</span>
+<span class="k">fn</span><span class="p">;</span>                 <span class="c">// A function with no arguments and no return.</span>
+</pre></div>
+</div>
+<p>If you don&#8217;t declare a return type, it is assumed to be <tt class="xref docutils literal"><span class="pre">void</span></tt> -
+unless the function has a body containing a <tt class="xref docutils literal"><span class="pre">return</span></tt> statement.
+If there is a <tt class="xref docutils literal"><span class="pre">return</span></tt> statement, then the type of the value being
+returned determines the function&#8217;s return type. If there&#8217;s more than one
+<tt class="xref docutils literal"><span class="pre">return</span></tt> statement, then it attempts to choose a return type that
+encompasses all of them, or signals an error if it can&#8217;t.</p>
+</div>
+<div class="section" id="multiple-return-values">
+<span id="index-17"></span><h2>Multiple return values<a class="headerlink" href="#multiple-return-values" title="Permalink to this headline">¶</a></h2>
+<p>Functions can also return more than one value. Because the comma operator has a low precedence,
+you&#8217;ll have to put parentheses around the list of return types if there is more than one:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>          <span class="c">// A function returning two values</span>
+<span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="kt">bool</span><span class="p">);</span> <span class="c">// A function returning three values</span>
+<span class="k">fn</span> <span class="p">:</span><span class="kt">int</span> <span class="o">-&gt;</span> <span class="p">();</span>                  <span class="c">// A function returning no values (returns void)</span>
+</pre></div>
+</div>
+<p>What&#8217;s nice about using the multiple-return-value syntax (as opposed to passing
+arguments by reference, a technique often used in C++) is that the compiler can
+know for certain that the variable has changed. This allows the compiler to do
+additional optimizations:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">a</span><span class="p">:</span><span class="nc">String</span><span class="p">,</span> <span class="nv">b</span><span class="p">:</span><span class="nc">int</span>
+<span class="nc">a</span> <span class="o">=</span> <span class="mf">10</span><span class="p">;</span> <span class="c">// Dead code</span>
+<span class="nv">a</span><span class="p">,</span> <span class="nv">b</span> <span class="o">=</span> <span class="nv">returnStringAndInt</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>If <tt class="docutils literal"><span class="pre">a</span></tt> had been passed as a reference and filled in by the function, the
+compiler wouldn&#8217;t be able to know that the second line was dead code - because
+the compiler can&#8217;t determine whether <tt class="docutils literal"><span class="pre">a</span></tt> was actually filled in or not.</p>
+</div>
+<div class="section" id="function-arguments">
+<span id="index-18"></span><h2>Function arguments<a class="headerlink" href="#function-arguments" title="Permalink to this headline">¶</a></h2>
+<p>In addition to regular positional arguments, functions support both
+keyword and variadic arguments. Variadic arguments are indicated via an
+ellipsis (<tt class="docutils literal"><span class="pre">...</span></tt>):</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">(</span><span class="nv">format</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">args</span><span class="p">:</span><span class="nc">int</span><span class="gr">...</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Variadic arguments must be the last positional argument. The actual type of a
+variadic argument is a variable-length array of the given type. So in the
+example above, the actual type of <tt class="docutils literal"><span class="pre">args</span></tt> would be <tt class="docutils literal"><span class="pre">int[]</span></tt>.</p>
+<p>Default argument values are specified using <tt class="docutils literal"><span class="pre">=</span></tt>:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">(</span><span class="nv">format</span><span class="p">:</span><span class="nc">String</span><span class="p">,</span> <span class="nv">npos</span><span class="p">:</span><span class="nc">int</span><span class="p">=0,</span> <span class="nv">sep</span><span class="p">=false);</span>
+</pre></div>
+</div>
+<p>Function arguments use the same kind type deduction as <tt class="xref docutils literal"><span class="pre">var</span></tt> and
+<tt class="xref docutils literal"><span class="pre">let</span></tt> statements: if the type of an argument is unspecified, the type will
+be derived from the type of the default value.</p>
+<p>Like Python, parameters can be referred to by name as well as position:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="nv">print</span><span class="p">(</span><span class="s">&quot;Hello, World!\n&quot;</span><span class="p">,</span> <span class="nv">padding</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Any parameter can be referred to by its keyword name. The normal mapping of
+arguments to formal parameters is that positional arguments are assigned
+first, in order, and then any keyword arguments are assigned to any remaining
+unfilled parameters.</p>
+<p>Sometimes it is useful to specify a parameter that is &#8220;keyword only&#8221; meaning
+that it can only be specified via keyword instead of positionally. A semicolon
+can be used to segregate regular positional parameters from keyword-only
+parameters:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">print</span> <span class="p">(</span><span class="nv">format</span><span class="p">:</span><span class="nc">String</span><span class="p">;</span> <span class="nv">npos</span><span class="p">:</span><span class="nc">int</span><span class="p">=0,</span> <span class="nv">sep</span><span class="p">=false);</span>
+
+<span class="nv">print</span><span class="p">(</span><span class="s">&quot;Hello world!&quot;</span><span class="p">,</span> <span class="nv">npos</span><span class="o">=</span><span class="mf">1</span><span class="p">);</span> <span class="c">// OK</span>
+<span class="gr">print(&quot;Hello world!&quot;, 1); // ERROR - too many positional arguments</span>
+</pre></div>
+</div>
+<p>In the above example, only the <tt class="docutils literal"><span class="pre">format</span></tt> argument will be filled in by
+positional argument - to have additional positional arguments in this case
+would be an error.</p>
+</div>
+<div class="section" id="functions-as-arguments">
+<h2>Functions as Arguments<a class="headerlink" href="#functions-as-arguments" title="Permalink to this headline">¶</a></h2>
+<p>How would you declare the type of a function that takes another function as an
+argument? Like this:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">fn</span> <span class="p">(:</span><span class="nc">fn</span> <span class="nc">i</span><span class="p">:</span><span class="nc">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The parentheses are needed because the precedence of the <tt class="docutils literal"><span class="pre">-&gt;</span></tt>
+operator is higher than that of the <tt class="xref docutils literal"><span class="pre">fn</span></tt> keyword.</p>
+</div>
+</div>
+<div class="section" id="anonymous-functions">
+<span id="index-19"></span><h2>Anonymous Functions<a class="headerlink" href="#anonymous-functions" title="Permalink to this headline">¶</a></h2>
+<p>If a function type declaration is followed by a function body, the result
+is an <em>anonymous function</em>:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">let</span> <span class="nv">square</span> <span class="o">=</span> <span class="k">fn</span> <span class="p">(</span><span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span> <span class="k">{</span> <span class="k">return</span> <span class="nv">x</span> <span class="o">*</span> <span class="nv">x</span> <span class="k">}</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Here&#8217;s an example of a function with no arguments and void return type being
+used as a callback to a timer. As you can see, the syntax is minimal:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="nv">timer</span><span class="o">.</span><span class="nv">start</span><span class="p">(</span><span class="mf">1000</span><span class="p">,</span> <span class="k">fn</span> <span class="k">{</span> <span class="nv">alarm</span><span class="o">.</span><span class="nv">trigger</span><span class="p">();</span> <span class="k">}</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Function Type Expressions</a><ul>
+<li><a class="reference" href="#function-return-type">Function return type</a></li>
+<li><a class="reference" href="#multiple-return-values">Multiple return values</a></li>
+<li><a class="reference" href="#function-arguments">Function arguments</a></li>
+<li><a class="reference" href="#functions-as-arguments">Functions as Arguments</a></li>
+<li><a class="reference" href="#anonymous-functions">Anonymous Functions</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="declarations.html"
+                                  title="previous chapter">Declaring variables and functions</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="collections.html"
+                                  title="next chapter">Collections</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/functions.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="collections.html" title="Collections"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declaring variables and functions"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

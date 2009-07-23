@@ -1,0 +1,915 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Expressions &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Tart Language Reference" href="index.html" />
+    <link rel="next" title="Statements and Control Structures" href="statements.html" />
+    <link rel="prev" title="Declarations" href="declarations.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="statements.html" title="Statements and Control Structures"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declarations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Tart Language Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="expressions">
+<h1>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="primary-expressions">
+<span id="index-26"></span><h2>Primary Expressions<a class="headerlink" href="#primary-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-primary">primary</strong> ::=  &quot;(&quot; <tt class="xref docutils literal"><span class="pre">expression</span></tt> &quot;)&quot; | <tt class="xref docutils literal"><span class="pre">ident</span></tt> | <a class="reference" href="lex.html#grammar-token-literal"><tt class="xref docutils literal"><span class="pre">literal</span></tt></a>
+</pre>
+</div>
+<div class="section" id="object-creation-expressions">
+<h2>Object Creation Expressions<a class="headerlink" href="#object-creation-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-object_create">object_create</strong> ::=  <tt class="xref docutils literal"><span class="pre">typename</span></tt> <tt class="xref docutils literal"><span class="pre">argument_list</span></tt>
+</pre>
+</div>
+<div class="section" id="member-access-expressions">
+<h2>Member Access Expressions<a class="headerlink" href="#member-access-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-get_member">get_member</strong> ::=  <tt class="xref docutils literal"><span class="pre">expression</span></tt> &quot;.&quot; <tt class="xref docutils literal"><span class="pre">ident</span></tt>
+</pre>
+</div>
+<div class="section" id="function-invocation-expressions">
+<h2>Function Invocation Expressions<a class="headerlink" href="#function-invocation-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-function_call">function_call</strong> ::=  <tt class="xref docutils literal"><span class="pre">expression</span></tt> <tt class="xref docutils literal"><span class="pre">argument_list</span></tt>
+</pre>
+</div>
+<div class="section" id="index-dereference-expressions">
+<h2>Index Dereference Expressions<a class="headerlink" href="#index-dereference-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-index_deref">index_deref</strong> ::=  <tt class="xref docutils literal"><span class="pre">expression</span></tt> &quot;[&quot; <tt class="xref docutils literal"><span class="pre">expression</span></tt> (&quot;,&quot; <tt class="xref docutils literal"><span class="pre">expression</span></tt>)* &quot;]&quot;
+</pre>
+</div>
+<div class="section" id="anonymous-function-expressions">
+<h2>Anonymous Function Expressions<a class="headerlink" href="#anonymous-function-expressions" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-function_expr">function_expr</strong> ::=  &quot;fn&quot; (<tt class="xref docutils literal"><span class="pre">argument_list</span></tt> | <tt class="xref docutils literal"><span class="pre">argument</span></tt>) [&quot;-&gt;&quot; (<tt class="xref docutils literal"><span class="pre">type_list</span></tt> | <tt class="xref docutils literal"><span class="pre">type</span></tt>)] <tt class="xref docutils literal"><span class="pre">statement</span></tt>
+</pre>
+</div>
+<div class="section" id="operators">
+<h2>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="operator-overloading">
+<h3>Operator Overloading<a class="headerlink" href="#operator-overloading" title="Permalink to this headline">¶</a></h3>
+<p>Most operators can be overloaded by the application. Some operators have no
+built-in semantics at all; Their meaning is determined entirely by the
+application.</p>
+<p>One of the risks of allowing operators to be overloaded is that the
+readability of a program may be obscured if the overloaded semantics
+of an operator don&#8217;t fit in with its standard meaning, or if the
+metaphor of an operator is stretched too far. An example of the latter
+is using the &#8220;+&#8221; operator to &#8220;add&#8221; a record to a database. Although
+the English word &#8220;add&#8221; describes both the process of arithmetic summation
+and the act of inserting an item into a collection, it is commonly
+understood that the plus (&#8220;+&#8221;) symbol refers only to the former.</p>
+<p>For this reason, the documentation for each overloadable operator will attempt
+to describe the standard meaning of each operator. It is suggested that programs that
+redefine operators stay mostly within the bounds of these standard meanings.</p>
+</div>
+<div class="section" id="operator-precedence">
+<h3>Operator Precedence<a class="headerlink" href="#operator-precedence" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<caption>Table of Operator Precedence</caption>
+<colgroup>
+<col width="18%" />
+<col width="45%" />
+<col width="36%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Precedence</th>
+<th class="head">Operator</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>0</td>
+<td><tt class="docutils literal"><span class="pre">::</span></tt></td>
+<td>(application defined)</td>
+</tr>
+<tr><td>1</td>
+<td><tt class="docutils literal"><span class="pre">or</span></tt></td>
+<td>logical or</td>
+</tr>
+<tr><td>2</td>
+<td><tt class="docutils literal"><span class="pre">and</span></tt></td>
+<td>logical &#8216;and&#8217;</td>
+</tr>
+<tr><td>3</td>
+<td><tt class="docutils literal"><span class="pre">in</span></tt>, <tt class="docutils literal"><span class="pre">not</span> <span class="pre">in</span></tt></td>
+<td>membership test</td>
+</tr>
+<tr><td>4</td>
+<td><tt class="docutils literal"><span class="pre">as</span></tt>, <tt class="docutils literal"><span class="pre">is</span></tt>, <tt class="docutils literal"><span class="pre">is</span> <span class="pre">not</span></tt></td>
+<td>type testing and conversion</td>
+</tr>
+<tr><td>5</td>
+<td><tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">!=</span></tt>, <tt class="docutils literal"><span class="pre">&gt;</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt>, <tt class="docutils literal"><span class="pre">&gt;=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>, <tt class="docutils literal"><span class="pre">&gt;?</span></tt>, <tt class="docutils literal"><span class="pre">&lt;?</span></tt>, <tt class="docutils literal"><span class="pre">&gt;=?</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=?</span></tt></td>
+<td>relational operators</td>
+</tr>
+<tr><td>6</td>
+<td><tt class="docutils literal"><span class="pre">|</span></tt></td>
+<td>bitwise &#8216;or&#8217;</td>
+</tr>
+<tr><td>7</td>
+<td><tt class="docutils literal"><span class="pre">^</span></tt></td>
+<td>bitwise &#8216;xor&#8217;</td>
+</tr>
+<tr><td>8</td>
+<td><tt class="docutils literal"><span class="pre">&amp;</span></tt></td>
+<td>bitwise &#8216;and&#8217;</td>
+</tr>
+<tr><td>8</td>
+<td><tt class="docutils literal"><span class="pre">&gt;&gt;</span></tt>, <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt></td>
+<td>shift operators</td>
+</tr>
+<tr><td>9</td>
+<td><tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt></td>
+<td>additive operators</td>
+</tr>
+<tr><td>10</td>
+<td><tt class="docutils literal"><span class="pre">*</span></tt>, <tt class="docutils literal"><span class="pre">/</span></tt>, <tt class="docutils literal"><span class="pre">%</span></tt></td>
+<td>multiplicative operators</td>
+</tr>
+<tr><td>11</td>
+<td><tt class="docutils literal"><span class="pre">**</span></tt></td>
+<td>exponentiation</td>
+</tr>
+<tr><td>12</td>
+<td><tt class="docutils literal"><span class="pre">..</span></tt></td>
+<td>range operator</td>
+</tr>
+<tr><td>13</td>
+<td><tt class="docutils literal"><span class="pre">-</span></tt>, <tt class="docutils literal"><span class="pre">not</span></tt>, <tt class="docutils literal"><span class="pre">++</span></tt>, <tt class="docutils literal"><span class="pre">--</span></tt>, <tt class="docutils literal"><span class="pre">typeof</span></tt></td>
+<td>unary prefix operators</td>
+</tr>
+<tr><td>14</td>
+<td><tt class="docutils literal"><span class="pre">++</span></tt>, <tt class="docutils literal"><span class="pre">--</span></tt></td>
+<td>unary postfix operators</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="binary-operators">
+<h3>Binary Operators<a class="headerlink" href="#binary-operators" title="Permalink to this headline">¶</a></h3>
+<dl class="operator">
+<dt id="oper-::">
+<tt class="descname">::</tt><a class="headerlink" href="#oper-::" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.defines()</span></tt></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Introduce a new definition.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>defines</cite> or <cite>double-colon</cite> operator is the lowest-precedence binary operator.
+It has no built-in semantics, and is available for application use.</p>
+<p>The standard meaning of the double-colon operator is to introduce a new name or
+item into an environment. The canonical example is a grammar file for
+a parser generator, where the <tt class="docutils literal"><span class="pre">::</span></tt> operator defines a new production.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-or">
+<tt class="descname">or</tt><a class="headerlink" href="#oper-or" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><em>not overridable</em></td>
+</tr>
+</tbody>
+</table>
+<p>The logical &#8216;or&#8217; operator. Attempts to convert the left-hand side to a
+boolean value; if the result is <tt class="docutils literal"><span class="pre">true</span></tt> then the result of the operation
+is <tt class="docutils literal"><span class="pre">true</span></tt> and the right-hand side is not evaluated. Otherwise, if the
+left-hand side is <tt class="docutils literal"><span class="pre">false</span></tt>, then the result of the operation will be
+the right hand side expression, after evaluating it and converting it
+to a boolean type.</p>
+<p>It is an error if either side cannot be converted to a boolean type.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-and">
+<tt class="descname">and</tt><a class="headerlink" href="#oper-and" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><em>not overridable</em></td>
+</tr>
+</tbody>
+</table>
+<p>The logical &#8216;and&#8217; operator. Attempts to convert the left-hand side to a
+boolean value; if the result is <tt class="docutils literal"><span class="pre">false</span></tt> then the result of the operation
+is <tt class="docutils literal"><span class="pre">false</span></tt> and the right-hand side is not evaluated. Otherwise, if the
+left-hand side is <tt class="docutils literal"><span class="pre">true</span></tt>, then the result of the operation will be
+the right hand side expression, after evaluating it and converting it
+to a boolean type.</p>
+<p>It is an error if either side cannot be converted to a boolean type.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-in">
+<tt class="descname">in</tt><a class="headerlink" href="#oper-in" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="xref docutils literal"><span class="pre">Collection.contains()</span></tt> method.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test whether an item is contained within a collection.</td>
+</tr>
+</tbody>
+</table>
+<p>The membership test operator. The expression <tt class="docutils literal"><span class="pre">a</span> <span class="pre">in</span> <span class="pre">b</span></tt> is simply syntactic sugar for:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="nv">b</span><span class="o">.</span><span class="nv">contains</span><span class="p">(</span><span class="nv">a</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-notin">
+<tt class="descname">not in</tt><a class="headerlink" href="#oper-notin" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="xref docutils literal"><span class="pre">Collection.contains()</span></tt> method.</td>
+</tr>
+</tbody>
+</table>
+<p>This operator is simply the complement of the membership test operator. The expression
+<tt class="docutils literal"><span class="pre">a</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">b</span></tt> is syntactic sugar for:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="nv">not</span> <span class="nv">b</span><span class="o">.</span><span class="nv">contains</span><span class="p">(</span><span class="nv">a</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-as">
+<tt class="descname">as</tt><a class="headerlink" href="#oper-as" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.asType&lt;Type&gt;</span></tt></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Treat an object reference as though it were a reference to another,
+compatible type, without modifying or transforming the original object.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Transform a value type into a different value type.</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="docutils literal"><span class="pre">as</span></tt> operator is used to do dynamic casting. The expression <tt class="docutils literal"><span class="pre">value</span> <span class="pre">as</span> <span class="pre">type</span></tt> attempts
+to convert <tt class="docutils literal"><span class="pre">value</span></tt> to <tt class="docutils literal"><span class="pre">type</span></tt>. The <tt class="docutils literal"><span class="pre">type</span></tt> is parsed as a type expression.</p>
+<p>The behavior of the <tt class="docutils literal"><span class="pre">as</span></tt> operator depends on whether the type on the right-hand side
+is a nullable type:</p>
+<ul class="simple">
+<li>If it is nullable, then <tt class="docutils literal"><span class="pre">as</span></tt> functions as a dynamic cast: It either
+succeeds in casting the value to the specified type, or it returns a <tt class="docutils literal"><span class="pre">null</span></tt> pointer if
+the cast failed.</li>
+<li>If the type on the right-hand side is not nullable, then the <tt class="docutils literal"><span class="pre">as</span></tt> operator will
+instead raise an exception if the cast fails.</li>
+</ul>
+<p>For example:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">visit</span><span class="p">(</span><span class="nv">node</span><span class="p">:</span><span class="nc">Node</span><span class="p">)</span> <span class="k">{</span>
+  <span class="c">// Cast the node to a container, if it succeeds then visit its children.</span>
+  <span class="k">if</span> <span class="k">let</span> <span class="nv">container</span> <span class="o">=</span> <span class="nv">node</span> <span class="k">as</span> <span class="nv">ContainerNode</span><span class="o">?</span> <span class="k">{</span>
+    <span class="c">// Since we tested the type for non-null, it&#39;s no longer nullable within</span>
+    <span class="c">// the if body.</span>
+    <span class="k">for</span> <span class="nv">child</span> <span class="k">in</span> <span class="nv">container</span><span class="o">.</span><span class="nv">children</span><span class="p">:</span>
+      <span class="nv">visit</span><span class="p">(</span><span class="nv">child</span><span class="p">);</span>
+  <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>We could also have written:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">visit</span><span class="p">(</span><span class="nv">node</span><span class="p">:</span><span class="nc">Node</span><span class="p">)</span> <span class="k">{</span>
+  <span class="c">// Test to see if the node is a container</span>
+  <span class="k">if</span> <span class="nv">node</span> <span class="k">is</span> <span class="nv">ContainerNode</span> <span class="k">{</span>
+    <span class="c">// Convert to ContainerNode type. Since we did the test</span>
+    <span class="c">// above, it won&#39;t throw an exception.</span>
+    <span class="k">for</span> <span class="nv">child</span> <span class="k">in</span> <span class="p">(</span><span class="nv">node</span> <span class="k">as</span> <span class="nv">ContainerNode</span><span class="p">)</span><span class="o">.</span><span class="nv">children</span><span class="p">:</span>
+      <span class="nv">visit</span><span class="p">(</span><span class="nv">child</span><span class="p">);</span>
+  <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-is">
+<tt class="descname">is</tt><a class="headerlink" href="#oper-is" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.asType&lt;Type&gt;</span></tt></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Returns true whether the specified object can be cast to another type.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>is</cite> operator tests whether an object can be cast to a given type. To put it another way,
+<tt class="docutils literal"><span class="pre">is</span></tt> returns <tt class="docutils literal"><span class="pre">true</span></tt> if the <tt class="docutils literal"><span class="pre">as</span></tt> operator would be able to succeed.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-isnot">
+<tt class="descname">is not</tt><a class="headerlink" href="#oper-isnot" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.asType&lt;Type&gt;</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>This is simply the complement of the <cite>is</cite> operator. It&#8217;s included because &#8220;not is&#8221; sounds
+wrong in English.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-==">
+<tt class="descname">==</tt><a class="headerlink" href="#oper-==" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.equal()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test for equivalence of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>double-equals</cite> operator tests whether two objects are <em>equivalent</em>, meaning
+that they have the same value, although they may in fact be distinct objects.
+For example, two strings which have the same text will be equal even though they
+are different strings.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-===">
+<tt class="descname">===</tt><a class="headerlink" href="#oper-===" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><em>not overridable</em></td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>triple-equals</cite> operator tests two values for reference equality, in other words
+whether two objects of reference type are in fact the same object. (For value types,
+the reference equals operator functions exactly like the regular equals operator.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-!=">
+<tt class="descname">!=</tt><a class="headerlink" href="#oper-!=" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.unequal()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test for non-equivalence of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="xref docutils literal"><span class="pre">=</span></tt> or <cite>not-equals</cite> operator is simply the complement of the
+<a class="reference" href="#oper-=="><tt class="xref docutils literal"><span class="pre">==</span></tt></a> operator. It returns <tt class="docutils literal"><span class="pre">true</span></tt> if two objects are not equivalent.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&gt;">
+<tt class="descname">&gt;</tt><a class="headerlink" href="#oper->" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.greater()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test which of two values has the greater value.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test the natural ordering of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>greater than</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left hand side&#8217;s value is
+greater than the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&lt;">
+<tt class="descname">&lt;</tt><a class="headerlink" href="#oper-<" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.less()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test which of two values has the lesser value.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test the natural ordering of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>less than</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left hand side&#8217;s value is
+less than the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&gt;=">
+<tt class="descname">&gt;=</tt><a class="headerlink" href="#oper->=" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.greaterOrEqual()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test which of two values has the greater or equal value.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test the natural ordering of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>greater than or equal to</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left hand side&#8217;s value is
+greater than or equal to that of the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&lt;=">
+<tt class="descname">&lt;=</tt><a class="headerlink" href="#oper-<=" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.lessOrEqual()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test which of two values has the less or equal value.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test the natural ordering of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>less than or equal to</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left hand side&#8217;s value is
+less than or equal to that of the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&gt;?">
+<tt class="descname">&gt;?</tt><a class="headerlink" href="#oper->?" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.possiblyGreater()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test whether one uncertain value may be greater than another.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>possibly greater than</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left
+hand side&#8217;s value might be greater than that of the right
+hand side. This operator is intended for use with value types that
+represent uncertain quantities (for example, interval arithmetic.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&lt;?">
+<tt class="descname">&lt;?</tt><a class="headerlink" href="#oper-<?" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.possiblyLess()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test whether one uncertain value may be less than another.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>possibly less than</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left
+hand side&#8217;s value might be less than that of the right
+hand side. This operator is intended for use with value types that
+represent uncertain quantities (for example, interval arithmetic.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&gt;=?">
+<tt class="descname">&gt;=?</tt><a class="headerlink" href="#oper->=?" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.possiblyGreaterOrEqual()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test whether one uncertain value may be greater or equal to another.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>possibly greater than or equal to</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left
+hand side&#8217;s value might be greater than or equal to that of the right
+hand side. This operator is intended for use with value types that
+represent uncertain quantities (for example, interval arithmetic.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&lt;=?">
+<tt class="descname">&lt;=?</tt><a class="headerlink" href="#oper-<=?" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.possiblyLessOrEqual()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Test whether one uncertain value may be less than or equal to another.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>possibly less than or equal to</cite> operator returns <tt class="docutils literal"><span class="pre">true</span></tt> if the left
+hand side&#8217;s value might be less than or equal to that of the right
+hand side. This operator is intended for use with value types that
+represent uncertain quantities (for example, interval arithmetic.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-|">
+<tt class="descname">|</tt><a class="headerlink" href="#oper-|" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.bitOr()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The union of two values or logical sets.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>union</cite> or <a class="reference" href="#oper-|"><tt class="xref docutils literal"><span class="pre">|</span></tt></a> operator returns the bitwise-or of two integer values.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-^">
+<tt class="descname">^</tt><a class="headerlink" href="#oper-^" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.bitXor()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The exclusive-or of two bit sets.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The difference of two logical sets.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>xor</cite> or <a class="reference" href="#oper-^"><tt class="xref docutils literal"><span class="pre">^</span></tt></a> operator returns the bitwise exclusive-or of two integer values.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&amp;">
+<tt class="descname">&amp;</tt><a class="headerlink" href="#oper-&" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.bitAnd()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The intersection of two values or logical sets.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>intersection</cite> or <a class="reference" href="#oper-&amp;"><tt class="xref docutils literal"><span class="pre">&amp;</span></tt></a> operator returns the bitwise-and of two integer values.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&gt;&gt;">
+<tt class="descname">&gt;&gt;</tt><a class="headerlink" href="#oper->>" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.rshift()</span></tt> function.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>right-shift logical</cite> operator takes two arguments, both of which must be of integer type.
+The bits of the first argument are shifted in the direction of the least significant bit
+by an offset in bits equal to the second argument. The bits formally in the most
+significant position are replaced with zero bits if the left hand side is unsigned,
+or sign bits it is signed. The second argument is always treated as unsigned,
+regardless of its type.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-&lt;&lt;">
+<tt class="descname">&lt;&lt;</tt><a class="headerlink" href="#oper-<<" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.lshift()</span></tt> function.</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>left-shift</cite> operator takes two arguments, both of which must be of integer type.
+The bits of the first argument are shifted in the direction of the most significant bit
+by an offset in bits equal to the second argument. The second argument is
+always treated as unsigned, regardless of its type.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-+">
+<tt class="descname">+</tt><a class="headerlink" href="#oper-+" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.add()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The sum of two mathematical objects.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Alternate meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The concatenation of two values.</td>
+</tr>
+</tbody>
+</table>
+<p>For numeric values, the <cite>plus</cite> operator returns their arithmetic sum.
+For string values, it returns the concatenation of the two strings (specifically, it calls
+<tt class="xref docutils literal"><span class="pre">String.concat()</span></tt>.)</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper--">
+<tt class="descname">-</tt><a class="headerlink" href="#oper--" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.subtract()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The difference of two mathematical objects.</td>
+</tr>
+</tbody>
+</table>
+<p>For numeric values, the <cite>minus</cite> operator returns their arithmetic difference.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-*">
+<tt class="descname">*</tt><a class="headerlink" href="#oper-*" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.multiply()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The product of two mathematical objects.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The cross product of two sets.</td>
+</tr>
+</tbody>
+</table>
+<p>For numeric values, the <cite>multiply</cite> operator returns their arithmetic product.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-/">
+<tt class="descname">/</tt><a class="headerlink" href="#oper-/" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.divide()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The division of one mathematical object by another.</td>
+</tr>
+</tbody>
+</table>
+<p>For numeric values, the <cite>divide</cite> operator returns the quotient of the left hand side
+when divided by the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-%">
+<tt class="descname">%</tt><a class="headerlink" href="#oper-%" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><tt class="docutils literal"><span class="pre">Operator.modulus()</span></tt> function.</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Standard meaning:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">The mathematical modulus of one object by another.</td>
+</tr>
+</tbody>
+</table>
+<p>For integer values, the <cite>modulus</cite> operator returns the integer remainder of the left hand side
+when divided by the right hand side.</p>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-**">
+<tt class="descname">**</tt><a class="headerlink" href="#oper-**" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><em>not overridable</em></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="operator">
+<dt id="oper-..">
+<tt class="descname">..</tt><a class="headerlink" href="#oper-.." title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Override:</th><td class="field-body"><em>not overridable</em></td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>range</cite> operator defines an interval between two values by constructing a new
+<tt class="xref docutils literal"><span class="pre">tart.core.Range</span></tt> object out of its two arguments, both of which must
+be of the same type.</p>
+<p>Because <tt class="xref docutils literal"><span class="pre">Range</span></tt> is a template, you can construct a range of almost any object
+type. However, it will generally only be meaningful to create a range from objects
+whose type defines some kind of ordering.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="unary-operators">
+<h3>Unary Operators<a class="headerlink" href="#unary-operators" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="postfix-operators">
+<h3>Postfix Operators<a class="headerlink" href="#postfix-operators" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="constant-expressions">
+<h2>Constant Expressions<a class="headerlink" href="#constant-expressions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="evaluation-order">
+<h2>Evaluation Order<a class="headerlink" href="#evaluation-order" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Expressions</a><ul>
+<li><a class="reference" href="#primary-expressions">Primary Expressions</a></li>
+<li><a class="reference" href="#object-creation-expressions">Object Creation Expressions</a></li>
+<li><a class="reference" href="#member-access-expressions">Member Access Expressions</a></li>
+<li><a class="reference" href="#function-invocation-expressions">Function Invocation Expressions</a></li>
+<li><a class="reference" href="#index-dereference-expressions">Index Dereference Expressions</a></li>
+<li><a class="reference" href="#anonymous-function-expressions">Anonymous Function Expressions</a></li>
+<li><a class="reference" href="#operators">Operators</a><ul>
+<li><a class="reference" href="#operator-overloading">Operator Overloading</a></li>
+<li><a class="reference" href="#operator-precedence">Operator Precedence</a></li>
+<li><a class="reference" href="#binary-operators">Binary Operators</a></li>
+<li><a class="reference" href="#unary-operators">Unary Operators</a></li>
+<li><a class="reference" href="#postfix-operators">Postfix Operators</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#constant-expressions">Constant Expressions</a></li>
+<li><a class="reference" href="#evaluation-order">Evaluation Order</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="declarations.html"
+                                  title="previous chapter">Declarations</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="statements.html"
+                                  title="next chapter">Statements and Control Structures</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/lang/expressions.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="statements.html" title="Statements and Control Structures"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declarations"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Tart Language Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

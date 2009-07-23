@@ -1,0 +1,488 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Classes &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Type conversions" href="conversions.html" />
+    <link rel="prev" title="Collections" href="collections.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="conversions.html" title="Type conversions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="collections.html" title="Collections"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="classes">
+<span id="index-1"></span><h1>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h1>
+<p>The <tt class="xref docutils literal"><span class="pre">class</span></tt> keyword is one of the four keywords that are used to define a new
+aggregate type. The others are <tt class="xref docutils literal"><span class="pre">struct</span></tt>, <tt class="xref docutils literal"><span class="pre">interface</span></tt> and <tt class="xref docutils literal"><span class="pre">protocol</span></tt>.</p>
+<ul>
+<li><p class="first">A <tt class="xref docutils literal"><span class="pre">class</span></tt> is <em>reference</em> type - it is always passed around by reference. When you assign
+one class instance variable to another, all that gets copied is a pointer to the object.</p>
+</li>
+<li><p class="first">A <tt class="xref docutils literal"><span class="pre">struct</span></tt> is a <em>value</em> type. That means that normally when you assign one struct
+instance to another, it does a member-wise copy of the entire thing.</p>
+</li>
+<li><p class="first">An <tt class="xref docutils literal"><span class="pre">interface</span></tt> defines an pure abstract type which can only contain methods, types
+and constants. Like Java and C#, Tart does not support multiple inheritance, but does allow
+classes to derive from multiple interfaces.</p>
+</li>
+<li><p class="first">A <tt class="xref docutils literal"><span class="pre">protocol</span></tt> represents a contract which a type may conform to. A class or struct
+is said to <em>support</em> the protocol if that class or struct defines all of the method signatures
+that are defined by the protocol. Template arguments can be constrained to only match types
+which support a specified protocol. Classes may declare explicitly that they support a protocol,
+or the support can be determined implicitly.</p>
+<p>Protocols will be discussed further in the section on <em>protocols</em>.</p>
+</li>
+</ul>
+<div class="section" id="declaring-a-new-class">
+<span id="index-2"></span><h2>Declaring a new class<a class="headerlink" href="#declaring-a-new-class" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="xref docutils literal"><span class="pre">class</span></tt> keyword defines a new class. Here is a sample of a class definition:</p>
+<div class="highlight-tart"><table class="highlighttable"><tr><td class="linenos"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37</pre></td><td class="code"><div class="highlight"><pre><span class="c">// Declare a class. The base class is &#39;ListNode&#39;.</span>
+<span class="k">class</span> <span class="nc">Shape</span> <span class="p">:</span> <span class="nv">ListNode</span> <span class="k">{</span>
+  <span class="c">// Declare an enumeration</span>
+  <span class="k">enum</span> <span class="nc">Style</span> <span class="k">{</span>
+    <span class="nv">Filled</span><span class="p">,</span>
+    <span class="nv">Hollow</span><span class="p">,</span>
+  <span class="k">}</span>
+
+  <span class="c">// Private member variables.</span>
+  <span class="k">private</span> <span class="k">{</span>
+    <span class="c">// Allow the unit test access to these vars.</span>
+    <span class="k">friend</span> <span class="nc">ShapeTest</span><span class="p">;</span>
+
+    <span class="c">// Some variables.</span>
+    <span class="k">var</span> <span class="nv">fillStyle</span><span class="p">:</span><span class="nc">Style</span><span class="p">;</span>
+    <span class="k">var</span> <span class="nv">fillColor</span><span class="p">:</span><span class="nc">Color</span><span class="p">;</span>
+
+    <span class="c">// A variable with parameterized type.</span>
+    <span class="k">var</span> <span class="nv">children</span><span class="p">:</span><span class="nc">List</span><span class="o">&lt;</span><span class="p">[</span><span class="nv">Shape</span><span class="p">]</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">}</span>
+
+  <span class="c">// A member function.</span>
+  <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="nv">dc</span><span class="p">:</span><span class="nc">DrawContext</span><span class="p">)</span> <span class="k">{</span>
+    <span class="nv">dc</span><span class="o">.</span><span class="nv">setFillStyle</span><span class="p">(</span><span class="nv">fillStyle</span><span class="p">);</span>
+    <span class="k">for</span> <span class="nv">child</span> <span class="k">in</span> <span class="nv">children</span> <span class="k">{</span>
+      <span class="nv">child</span><span class="o">.</span><span class="nv">draw</span><span class="p">(</span><span class="nv">dc</span><span class="p">);</span>
+    <span class="k">}</span>
+  <span class="k">}</span>
+
+  <span class="c">// A method with variable number of arguments</span>
+  <span class="c">// The &#39;children&#39; argument&#39;s actual type is Shape[]</span>
+  <span class="nv">final</span> <span class="k">def</span> <span class="nf">addChildren</span><span class="p">(</span><span class="nv">children</span><span class="p">:</span><span class="nc">Shape</span><span class="gr">...</span><span class="p">)</span> <span class="k">{</span>
+    <span class="c">// Explicitly qualified self.children to disambiguate</span>
+    <span class="c">// from same-named parameter.</span>
+    <span class="bp">self</span><span class="o">.</span><span class="nv">children</span><span class="o">.</span><span class="nv">extend</span><span class="p">(</span><span class="nv">children</span><span class="p">);</span>
+  <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>A couple of things are worth noticing in this example:</p>
+<p><strong>Private members:</strong> You can declare a block of variables as <tt class="xref docutils literal"><span class="pre">private</span></tt>, rather than having
+to put the word <tt class="xref docutils literal"><span class="pre">private</span></tt> in front of every variable name. Within a <tt class="xref docutils literal"><span class="pre">private</span></tt> or
+<tt class="xref docutils literal"><span class="pre">protected</span></tt> block, you can declare <tt class="xref docutils literal"><span class="pre">friend</span></tt> classes that have direct access to
+just these class members.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The last point deserves some additional explanation: With C++, you can
+only declare a <tt class="xref docutils literal"><span class="pre">friend</span></tt> of an entire class. In Java, you can&#8217;t declare a
+<tt class="xref docutils literal"><span class="pre">friend</span></tt> at all. Both of these feature choices cause programmers to expose
+too much encapsulated data. In the case of C++, you can&#8217;t expose a private
+member without exposing everything. In Java, not having the ability to
+expose private data to certain classes causes Java programmers to declare
+class members <tt class="docutils literal"><span class="pre">public</span></tt> far more than the would otherwise.</p>
+</div>
+<p><strong>Dynamic dispatch is the default</strong>: Like most object-oriented languages (other than C++), all
+functions are dynamically overridable (<tt class="docutils literal"><span class="pre">virtual</span></tt> in C++ parlance) unless declared <tt class="docutils literal"><span class="pre">final</span></tt>.</p>
+</div>
+<div class="section" id="creating-a-new-class-instance">
+<span id="index-3"></span><h2>Creating a new class instance<a class="headerlink" href="#creating-a-new-class-instance" title="Permalink to this headline">¶</a></h2>
+<p>The syntax for creating a new class instance is the same as in Python, which is
+to call the class as if it were a function:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">s</span> <span class="o">=</span> <span class="nv">Rectangle</span><span class="p">(</span><span class="mf">10</span><span class="p">,</span> <span class="mf">10</span><span class="p">,</span> <span class="mf">20</span><span class="p">,</span> <span class="mf">20</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The creation syntax is the same regardless of whether an object is a value or reference type. If
+it&#8217;s a value type, the new object will be constructed in place; If it&#8217;s a reference type, then space
+for the object will be allocated on the global heap, and a pointer to the object returned.</p>
+</div>
+<div class="section" id="constructors">
+<span id="index-4"></span><h2>Constructors<a class="headerlink" href="#constructors" title="Permalink to this headline">¶</a></h2>
+<p>A <em>constructor method</em> is responsible for initializing the members of a class instance
+when it is created. The constructor method is named <tt class="xref docutils literal"><span class="pre">construct()</span></tt>, and must not declare a
+return value.</p>
+<p>Here&#8217;s an example of a class with several constructors:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">struct</span> <span class="nc">Rectangle</span> <span class="k">{</span>
+  <span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">var</span> <span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">var</span> <span class="nv">width</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">var</span> <span class="nv">height</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+
+  <span class="c">// Default constructor</span>
+  <span class="k">def</span> <span class="nf">construct</span> <span class="k">{</span>
+    <span class="nv">x</span> <span class="o">=</span> <span class="nv">y</span> <span class="o">=</span> <span class="nv">width</span> <span class="o">=</span> <span class="nv">height</span> <span class="o">=</span> <span class="mf">0</span><span class="p">;</span>
+  <span class="k">}</span>
+
+  <span class="c">// Constructor that takes some arguments</span>
+  <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">width</span><span class="p">:</span><span class="nc">int</span><span class="p">,</span> <span class="nv">height</span><span class="p">:</span><span class="nc">int</span><span class="p">)</span> <span class="k">{</span>
+    <span class="bp">self</span><span class="o">.</span><span class="nv">x</span> <span class="o">=</span> <span class="nv">x</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="nv">y</span> <span class="o">=</span> <span class="nv">y</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="nv">width</span> <span class="o">=</span> <span class="nv">width</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="nv">height</span> <span class="o">=</span> <span class="nv">height</span><span class="p">;</span>
+  <span class="k">}</span>
+
+  <span class="c">// Constructor that takes another Rectangle.</span>
+  <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span><span class="nc">Rectangle</span><span class="p">)</span> <span class="k">{</span>
+    <span class="nv">x</span> <span class="o">=</span> <span class="nv">from</span><span class="o">.</span><span class="nv">x</span><span class="p">;</span>
+    <span class="nv">y</span> <span class="o">=</span> <span class="nv">from</span><span class="o">.</span><span class="nv">y</span><span class="p">;</span>
+    <span class="nv">width</span> <span class="o">=</span> <span class="nv">from</span><span class="o">.</span><span class="nv">width</span><span class="p">;</span>
+    <span class="nv">height</span> <span class="o">=</span> <span class="nv">from</span><span class="o">.</span><span class="nv">height</span><span class="p">;</span>
+  <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>When you create a new instance of a type by calling the type as a function, the compiler attempts to
+locate a constructor method having the same signature as the calling arguments. This search
+happens in several steps:</p>
+<ul>
+<li><p class="first">First, the compiler looks for a constructor method named <tt class="xref docutils literal"><span class="pre">construct()</span></tt> having the
+appropriate signature.</p>
+<p>If the class has one or more constructor methods, but none of them match the input arguments,
+then the result is an error. Similarly, if there are constructors but none of them are accessible
+to the caller, then this is also an error.</p>
+</li>
+<li><p class="first">If the class has no constructor methods at all, then the compiler will look for a static
+member function called <tt class="xref docutils literal"><span class="pre">create()</span></tt> and call it instead.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">create()</span></tt> function is not required to return a newly created object every time - it
+can return the same object as a previous call. It is also not required to return an object whose
+type is the same as the class, but it should at least be a subtype.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">create()</span></tt> function is responsible for both allocating the memory for the object and
+initializing it completely.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">create()</span></tt> function is often used to implement a custom allocation strategy for a type.
+For example, the <tt class="xref docutils literal"><span class="pre">String</span></tt> class uses the <tt class="xref docutils literal"><span class="pre">create()</span></tt> function to allow string objects
+to be variably sized - so that both the fixed-length header part and the variable-length
+character array can be combined into a single memory allocation.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is nothing special about this function other than the fact that the compiler
+calls it automatically.</p>
+</div>
+</li>
+<li><p class="first">If the class has no constructors, and no <tt class="xref docutils literal"><span class="pre">create()</span></tt> function, then the compiler will attempt
+to synthesize a default constructor.</p>
+</li>
+</ul>
+<p id="index-6">Any member variable which is not initialized by the constructor will be set to
+its default value. If the default value for the member variable has not been
+specified, then it uses the default value for that type.</p>
+</div>
+<div class="section" id="default-constructors">
+<span id="index-7"></span><h2>Default constructors<a class="headerlink" href="#default-constructors" title="Permalink to this headline">¶</a></h2>
+<p>If the object has no constructor and no <tt class="xref docutils literal"><span class="pre">create()</span></tt> method, and every field within the object is
+either public or has a default value, then a default constructor will be generated by the compiler.
+The default constructor takes an argument for each public field, where the argument name is the same
+as the field name. If the field has a default value, then the parameter is optional and has a
+default value the same as the default value of the field. If the field does not have a default
+value, then the corresponding parameter is required and does not have a default value.</p>
+<p>If the object has a private field that does not have a default value, then the object cannot
+be default-constructed.</p>
+<p>Thus, if you call the default constructor with no arguments, then all member variables, both public
+and private, will get their default values. If you supply <em>some</em> arguments, then the member
+variables corresponding to those will be initialized to the supplied values, and the rest of the
+members will get their default values.</p>
+<p>Returning to our earlier example:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// A basic structure declaration</span>
+<span class="k">struct</span> <span class="nc">Point</span> <span class="k">{</span>
+  <span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">var</span> <span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+<span class="k">}</span>
+
+<span class="nv">p</span> <span class="o">=</span> <span class="nv">Point</span><span class="p">(</span><span class="nv">x</span><span class="o">=</span><span class="mf">10</span><span class="p">,</span> <span class="nv">y</span><span class="o">=</span><span class="mf">10</span><span class="p">);</span> <span class="c">// Initialize using keyword arguments.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Because required arguments must come before optional arguments, the order of function
+parameters cannot always be the same as the order in which the member fields which were declared.
+Fields which don&#8217;t have a default value (and are therefore required) will be placed before
+fields which do have a default value (and are therefore optional). Other than that, the parameters
+will be in the same order as the fields were declared.</p>
+<p class="last">You can insure that the default constructor parameters are always in the same order as the members
+by making sure that member fields with no default are always declared first.</p>
+</div>
+</div>
+<div class="section" id="constructor-execution">
+<h2>Constructor Execution<a class="headerlink" href="#constructor-execution" title="Permalink to this headline">¶</a></h2>
+<p>The compiler will attempt to ensure that all member fields are initialized during the execution of
+the constructor. Fields which have no defaults must be assigned in the constructor, whereas fields
+which do have defaults (either explicitly specified or implicit based on the type) may not be.
+If the compiler detects that any field is not fully initialized, then it will report an error.</p>
+<p>Member variables that are declared with <tt class="xref docutils literal"><span class="pre">let</span></tt> cannot be assigned a value after the
+constructor has finished execution. In most cases, these kinds of variables will be constants
+anyway, meaning that their values are fixed at compile time. However, Tart also allows
+<tt class="xref docutils literal"><span class="pre">let</span></tt> variables to be assigned in the constructor, in which case they are constant for
+the life of that instance (similar to the way &#8220;final&#8221; is used in Java). Note that such variables
+may only be assigned once in the constructor body.</p>
+<p>Constructors can call the superclass constructor by using the syntax:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="nv">super</span><span class="o">.</span><span class="nv">construct</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Constructors can also invoke other constructors of the same class, by explicitly calling
+<tt class="xref docutils literal"><span class="pre">construct()</span></tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The compiler assumes that all constructors are complete, meaning that they initialize
+every variable that must be initialized. That means if a constructor calls another constructor,
+then when that call returns the compiler presumes that all fields have been initialized, and
+any assignments which occur after that point are re-assignments, overwriting values that
+were assigned during the call.</p>
+<p class="last">This means that once you delegate to another constructor, you cannot assign to any
+<tt class="xref docutils literal"><span class="pre">let</span></tt>-defined members afterwards.</p>
+</div>
+</div>
+<div class="section" id="array-constructors">
+<h2>Array constructors<a class="headerlink" href="#array-constructors" title="Permalink to this headline">¶</a></h2>
+<p>The syntax for constructing a new array instance is the type name, followed
+by the dimension of the array in square brackets:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// Allocate an array of 10 rectangles.</span>
+<span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="nv">Rectangle</span><span class="p">[</span><span class="mf">10</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>If the element type of the array is a reference type, then what is actually
+allocated is an array of pointers to that type. If it&#8217;s a value type, then
+the array actually contains embedded instances of that type.</p>
+<p>The array constructor call is actually implemented as a call to the Array
+template class. So the example above is transformed by the compiler into this:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// Allocate an array of 10 rectangles.</span>
+<span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="nv">Array</span><span class="o">&lt;</span><span class="p">[</span><span class="nv">Rectangle</span><span class="p">]</span><span class="o">&gt;</span><span class="p">(</span><span class="mf">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The &#8216;&lt;[&#8216; token is used to indicate the start of a template argument list.</p>
+</div>
+</div>
+<div class="section" id="extending-types">
+<h2>Extending types<a class="headerlink" href="#extending-types" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="xref docutils literal"><span class="pre">extend</span></tt> keyword allows you to add additional methods to a user-defined type:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">/* Add an additional method to the String class. */</span>
+<span class="k">extend</span> <span class="nc">String</span> <span class="k">{</span>
+  <span class="k">static</span> <span class="k">def</span> <span class="nf">toUpperCase</span><span class="p">()</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>Note however, that you can&#8217;t actually change the runtime representation of a type this way. The
+reason is simple: The <tt class="xref docutils literal"><span class="pre">extend</span></tt> declaration may not be visible everywhere in the program. If
+you extend class <tt class="xref docutils literal"><span class="pre">String</span></tt>, some modules may only see the original, unextended class, while
+other modules will see the extended version of the class. In order for all of the code to
+interoperate, the runtime implementation of the class must be the same, regardless of the extension.</p>
+<p>This means that the extension can only add certain kinds of things to a type, namely:</p>
+<ul class="simple">
+<li>Static methods or properties.</li>
+<li>Final methods or properties.</li>
+<li>Inner types and type aliases.</li>
+<li>Protocol inheritance declarations.</li>
+</ul>
+<p>The last is worthy of some note: Since by definition adding a protocol to a class does not affect
+the runtime implementation of the class in any way, it is permissible to add a protocol in an
+extension. This allows protocols to be added to a class after the fact:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">protocol</span> <span class="nc">Serializable</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+
+<span class="c">// Make the string class serializable.</span>
+<span class="k">extend</span> <span class="nc">String</span> <span class="p">:</span> <span class="nv">Serializable</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>Extensions follow the same scoping rules as other declarations, meaning that they are only in effect
+if the scope in which they are declared is active. For example, we can define an extension inside a
+namespace:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Foo</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+
+<span class="k">namespace</span> <span class="nc">JSONUtils</span> <span class="k">{</span>
+  <span class="k">extend</span> <span class="nc">Foo</span> <span class="k">{</span>
+    <span class="nv">final</span> <span class="k">def</span> <span class="nf">convertToJSon</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+  <span class="k">}</span>
+
+  <span class="c">// Foo.convertToJSon is visible here</span>
+  <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="nv">Foo</span><span class="p">();</span>
+  <span class="k">let</span> <span class="nv">s</span> <span class="o">=</span> <span class="nv">f</span><span class="o">.</span><span class="nv">convertToJSon</span><span class="p">();</span>
+<span class="k">}</span>
+
+<span class="c">// Foo.convertToJSon is no longer visible</span>
+
+<span class="k">import</span> <span class="k">namespace</span> <span class="nc">JSONUtils</span><span class="p">;</span>
+
+<span class="c">// And now it&#39;s visible again.</span>
+</pre></div>
+</div>
+<p>It does not matter whether the extension is visible via the same &#8220;path&#8221; as the original class, so
+long as it is in a currently active scope. However, the extension does not apply if the extended
+class is hidden by another declaration with the same name:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Foo</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+<span class="k">extend</span> <span class="nc">Foo</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+
+<span class="k">namespace</span> <span class="nc">JSONUtils</span> <span class="k">{</span>
+  <span class="c">/** A different class Foo, unrelated to the extended one. */</span>
+  <span class="k">class</span> <span class="nc">Foo</span> <span class="k">{}</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>Extensions can be templates if the class that they are extending is also a template. If the original
+class is a template and the extension is a specialization of that template, then the extension only
+applies when using the specialization:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Foo</span><span class="p">&lt;[</span><span class="nc">%S</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+
+<span class="c">// Only extended for strings</span>
+<span class="k">extend</span> <span class="nc">Foo</span><span class="p">&lt;[</span><span class="nc">String</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ...*/</span> <span class="k">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Classes</a><ul>
+<li><a class="reference" href="#declaring-a-new-class">Declaring a new class</a></li>
+<li><a class="reference" href="#creating-a-new-class-instance">Creating a new class instance</a></li>
+<li><a class="reference" href="#constructors">Constructors</a></li>
+<li><a class="reference" href="#default-constructors">Default constructors</a></li>
+<li><a class="reference" href="#constructor-execution">Constructor Execution</a></li>
+<li><a class="reference" href="#array-constructors">Array constructors</a></li>
+<li><a class="reference" href="#extending-types">Extending types</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="collections.html"
+                                  title="previous chapter">Collections</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="conversions.html"
+                                  title="next chapter">Type conversions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/classes.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="conversions.html" title="Type conversions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="collections.html" title="Collections"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

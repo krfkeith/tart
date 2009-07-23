@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Type conversions &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Statements" href="statements.html" />
+    <link rel="prev" title="Classes" href="classes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="statements.html" title="Statements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="type-conversions">
+<h1>Type conversions<a class="headerlink" href="#type-conversions" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This section is out of date.</p>
+</div>
+<p>Tart does not have a C-style casting operator. However, it does have syntax
+for converting one type into another.</p>
+<p>For downcasting of reference types, the keyword <tt class="xref docutils literal"><span class="pre">as</span></tt> is used to do a
+dynamic cast:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">obj</span><span class="p">:</span><span class="nc">Object</span><span class="p">;</span>
+<span class="k">var</span> <span class="nv">s</span> <span class="o">=</span> <span class="nv">obj</span> <span class="k">as</span> <span class="kt">String</span><span class="p">;</span> <span class="c">// s is null if obj is not a String</span>
+</pre></div>
+</div>
+<p>The template function <tt class="xref docutils literal"><span class="pre">typecast()</span></tt> works similarly, except that it throws an exception if the
+object is not the correct type:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">obj</span><span class="p">:</span><span class="nc">Object</span><span class="p">;</span>
+<span class="k">var</span> <span class="nv">s</span> <span class="o">=</span> <span class="nv">typecast</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">obj</span><span class="p">);</span> <span class="c">// throw exception if obj is not a String.</span>
+<span class="k">var</span> <span class="nv">s</span><span class="p">:</span><span class="nc">String</span> <span class="o">=</span> <span class="nv">typecast</span><span class="p">(</span><span class="nv">obj</span><span class="p">);</span>   <span class="c">// Same as above, except return type is inferred.</span>
+</pre></div>
+</div>
+<p>The <tt class="xref docutils literal"><span class="pre">typecast()</span></tt> function can of course be overridden for specific types.</p>
+<p>For converting value types, there are various conversion constructors and
+conversion functions:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">i</span><span class="p">:</span><span class="nc">int</span> <span class="o">=</span> <span class="mf">1</span><span class="p">;</span>
+<span class="k">var</span> <span class="nv">f</span> <span class="o">=</span> <span class="kt">float</span><span class="p">(</span><span class="nv">i</span><span class="p">);</span> <span class="c">// Convert int to float</span>
+</pre></div>
+</div>
+<div class="section" id="conditional-casts">
+<h2>Conditional casts<a class="headerlink" href="#conditional-casts" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="xref docutils literal"><span class="pre">as</span></tt> operator represents one type of <em>conditional cast</em>,
+meaning that the conversion may silently fail if the destination variable
+is the wrong type to contain the value.</p>
+<p>There is another type of conditional cast called an <em>implied conditional
+cast</em> which is used in conjunction with the <tt class="xref docutils literal"><span class="pre">if</span></tt> statement:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">obj</span><span class="p">:</span><span class="nc">Object</span><span class="p">;</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">s</span><span class="p">:</span><span class="nc">String</span> <span class="o">=</span> <span class="nv">obj</span> <span class="k">{</span>
+  <span class="c">// Do something with s</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>Basically what this says is that we&#8217;re going to attempt to assign the
+value <tt class="docutils literal"><span class="pre">obj</span></tt> to the variable <tt class="docutils literal"><span class="pre">s</span></tt>, which is of type <tt class="xref docutils literal"><span class="pre">String</span></tt>.
+If <tt class="docutils literal"><span class="pre">obj</span></tt> is in fact a String, the cast succeeds, and the body of the
+:stmt:if statement is executed. Otherwise, if the cast fails, then
+the if-statement body is skipped. The <tt class="docutils literal"><span class="pre">s</span></tt> variable is only visible
+within the block of code that is guarded by the condition. (If the
+statement had an <tt class="xref docutils literal"><span class="pre">else</span></tt> clause, the <tt class="docutils literal"><span class="pre">s</span></tt> variable would not
+be defined within that scope.)</p>
+<p>Conditional casts also work with <tt class="xref docutils literal"><span class="pre">while</span></tt>, or any other type of
+statement that takes a test expression.</p>
+<p>It should be noted that the <tt class="xref docutils literal"><span class="pre">if</span></tt> statement condition is testing
+whether or not the cast succeeded. It is <em>not</em> testing the value of
+the expression, whether it be null, or 0, or whatever.</p>
+<p>See also the <tt class="xref docutils literal"><span class="pre">typeswitch</span></tt> statement, described in a later section.</p>
+</div>
+<div class="section" id="casts-and-union-types">
+<h2>Casts and union types<a class="headerlink" href="#casts-and-union-types" title="Permalink to this headline">¶</a></h2>
+<p><em>Union types</em> are types that can contain two or more types as alternatives.
+For example, the type <tt class="docutils literal"><span class="pre">int</span> <span class="pre">or</span> <span class="pre">float</span></tt> could contain either an int or
+a float. A variable of that type would include an extra bit that says
+what type of data it currently contains.</p>
+<p>To store a value into a union type, you can just use a regular assignment:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">a</span><span class="p">:</span><span class="nc">int</span> <span class="nc">or</span> <span class="nc">float</span><span class="p">;</span>
+<span class="nv">a</span> <span class="o">=</span> <span class="mf">1</span><span class="p">;</span> <span class="c">// works</span>
+<span class="nv">a</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">;</span> <span class="c">// also works.</span>
+</pre></div>
+</div>
+<p>In order to retrieve the data stored in a union type, you have to know
+the type of the data that it currently contains - there&#8217;s no way to read
+the data otherwise. One way to achieve this is to use the implied
+conditional cast mentioned above:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">if</span> <span class="k">let</span> <span class="nv">i</span><span class="p">:</span><span class="nc">int</span> <span class="o">=</span> <span class="nv">a</span> <span class="k">{</span>
+  <span class="c">// a is an int</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>In general, any type conversion syntax that works on reference types
+also works on union types. So just as you can call the <tt class="docutils literal"><span class="pre">cast</span></tt> function
+to convert from a superclass to one of its children, you can also use
+the same function to convert from a union type to one of its contained
+types.</p>
+<p>One common usage pattern for union types is used to indicate that a variable
+may optionally contain a value:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// Either holds an int, or it doesn&#39;t.</span>
+<span class="k">var</span> <span class="nv">a</span><span class="p">:</span><span class="nc">int</span> <span class="nc">or</span> <span class="nc">Nothing</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In this case, the special <tt class="xref docutils literal"><span class="pre">Nothing</span></tt> type (which means the same as
+C++ <tt class="docutils literal"><span class="pre">void</span></tt>) means that the variable might not contain a value at all.
+Note that <tt class="xref docutils literal"><span class="pre">Nothing</span></tt> is not the same as <tt class="docutils literal"><span class="pre">null</span></tt>, which is a pointer
+that points to address zero. (Null pointers are possible in Tart, but
+highly restricted compared to C++.)</p>
+</div>
+<div class="section" id="type-testing">
+<h2>Type testing<a class="headerlink" href="#type-testing" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes you need to test the type of a variable, the <tt class="xref docutils literal"><span class="pre">isa</span></tt> keyword
+can be used for this. It works for both reference types and union types:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">if</span> <span class="nv">a</span> <span class="nv">isa</span> <span class="kt">float</span> <span class="k">{</span>
+  <span class="c">// ...</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Type conversions</a><ul>
+<li><a class="reference" href="#conditional-casts">Conditional casts</a></li>
+<li><a class="reference" href="#casts-and-union-types">Casts and union types</a></li>
+<li><a class="reference" href="#type-testing">Type testing</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="classes.html"
+                                  title="previous chapter">Classes</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="statements.html"
+                                  title="next chapter">Statements</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/conversions.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="statements.html" title="Statements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Classes"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

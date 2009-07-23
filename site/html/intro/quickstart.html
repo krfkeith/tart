@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Some Examples of Tart Code &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Type Expressions" href="types.html" />
+    <link rel="prev" title="Overview" href="overview.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Type Expressions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Overview"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="some-examples-of-tart-code">
+<h1>Some Examples of Tart Code<a class="headerlink" href="#some-examples-of-tart-code" title="Permalink to this headline">¶</a></h1>
+<p>Here&#8217;s some examples of Tart code to get you started.</p>
+<p>Let&#8217;s start by declaring a new type. We&#8217;ll create a new structure, named
+<tt class="docutils literal"><span class="pre">Point</span></tt>, which contains two integers <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt>:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// A basic structure declaration</span>
+<span class="k">struct</span> <span class="nc">Point</span> <span class="k">{</span>
+  <span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">var</span> <span class="nv">y</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+<span class="k">}</span>
+
+<span class="k">var</span> <span class="nv">p</span> <span class="o">=</span> <span class="nv">Point</span><span class="p">(</span><span class="mf">10</span><span class="p">,</span> <span class="mf">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The colon character is used in Tart to mean &#8220;of type&#8221;. So <tt class="docutils literal"><span class="pre">x:int</span></tt> means
+a variable named &#8216;x&#8217; of type <tt class="docutils literal"><span class="pre">int</span></tt>.</p>
+<p>Once a type is declared, you can call that type by name to create a new
+instance of the type. So the expression <tt class="docutils literal"><span class="pre">Point(10,</span> <span class="pre">10)</span></tt> creates a new
+<tt class="docutils literal"><span class="pre">Point</span></tt> instance.</p>
+<p>In the example, we assign the new <tt class="docutils literal"><span class="pre">Point</span></tt> object to a variable named <tt class="docutils literal"><span class="pre">p</span></tt> which is defined using
+the <tt class="xref docutils literal"><span class="pre">var</span></tt> keyword. Since the compiler knows what type is being assigned to <tt class="docutils literal"><span class="pre">p</span></tt>, there is
+not need to specify the variable type. We could just as easily have declared <tt class="docutils literal"><span class="pre">p</span></tt> like this:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">var</span> <span class="nv">p</span><span class="p">:</span><span class="nc">Point</span> <span class="o">=</span> <span class="nv">Point</span><span class="p">(</span><span class="mf">10</span><span class="p">,</span> <span class="mf">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are familiar with C++, you may notice that the <tt class="docutils literal"><span class="pre">Point</span></tt> type does not have a
+constructor definitions. This causes the compiler to generate a default constructor that has one
+argument for each non-private member of the type. So in the above example, the default
+constructor has the type signature <tt class="docutils literal"><span class="pre">Point(x:int</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">y:int</span> <span class="pre">=</span> <span class="pre">0)</span></tt>.</p>
+</div>
+<p>Here&#8217;s a somewhat more interesting example:</p>
+<div class="highlight-tart"><table class="highlighttable"><tr><td class="linenos"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30</pre></td><td class="code"><div class="highlight"><pre><span class="c">// An interface that defines a mapping between a key type and a value type.</span>
+<span class="k">class</span> <span class="nc">Scrollbar</span> <span class="p">:</span> <span class="nv">Widget</span> <span class="k">{</span>
+  <span class="c">// Member variables</span>
+  <span class="k">private</span> <span class="k">{</span>
+    <span class="k">var</span> <span class="nv">val</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+    <span class="k">var</span> <span class="nv">minVal</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+    <span class="k">var</span> <span class="nv">maxVal</span><span class="p">:</span><span class="nc">int</span><span class="p">;</span>
+  <span class="k">}</span>
+
+  <span class="c">// Constructor</span>
+  <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="nv">var</span><span class="p">:</span><span class="nc">minValue</span><span class="p">,</span> <span class="nv">var</span><span class="p">:</span><span class="nc">maxValue</span><span class="p">)</span> <span class="k">{</span>
+    <span class="c">// Initialize member variables from constructor args.</span>
+    <span class="nv">minVal</span> <span class="o">=</span> <span class="nv">val</span> <span class="o">=</span> <span class="nv">minValue</span><span class="p">;</span>
+    <span class="nv">maxVal</span> <span class="o">=</span> <span class="nv">maxValue</span><span class="p">;</span>
+  <span class="k">}</span>
+
+  <span class="c">// Attach widget to parent</span>
+  <span class="k">def</span> <span class="nf">attach</span><span class="p">(</span><span class="nv">parent</span><span class="p">:</span><span class="nc">Widget</span><span class="p">)</span> <span class="k">{</span>
+    <span class="nv">parent</span><span class="o">.</span><span class="nv">addChild</span><span class="p">(</span><span class="bp">self</span><span class="p">);</span>
+  <span class="k">}</span>
+
+  <span class="c">// Getter and setter for &#39;value&#39; field.</span>
+  <span class="k">def</span> <span class="nf">value</span><span class="p">:</span><span class="kt">int</span> <span class="k">{</span>
+    <span class="k">get</span> <span class="k">{</span> <span class="k">return</span> <span class="nv">val</span><span class="p">;</span> <span class="k">}</span>
+    <span class="k">set</span> <span class="p">(</span><span class="nv">n</span><span class="p">:</span><span class="kt">int</span><span class="p">)</span> <span class="k">{</span>
+      <span class="nv">val</span> <span class="o">=</span> <span class="nv">n</span><span class="p">;</span>
+      <span class="nv">repaint</span><span class="p">();</span>
+    <span class="k">}</span>
+  <span class="k">}</span>
+<span class="k">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>The example is somewhat contrived, but it does illustrate a number of important points:</p>
+<ul class="simple">
+<li>Members are public by default. The <tt class="xref docutils literal"><span class="pre">private</span></tt> modifier can be used to declare individual
+members as private, or you can use the block syntax to declare a whole group of members private.</li>
+<li>The constructor method for a type is always called <tt class="xref docutils literal"><span class="pre">construct()</span></tt>.</li>
+<li>Class methods are declared with the <tt class="xref docutils literal"><span class="pre">def</span></tt> keyword.</li>
+<li>You can declare named properties which have custom getters and setters that are defined with
+<tt class="xref docutils literal"><span class="pre">get</span></tt> and <tt class="xref docutils literal"><span class="pre">set</span></tt>.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In real code, you would probably want to use a naming convention - such as a trailing
+underscore - for private member variables. Such style conventions are not required by Tart,
+however, and therefore are omitted from this simple example.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="overview.html"
+                                  title="previous chapter">Overview</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="types.html"
+                                  title="next chapter">Type Expressions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/quickstart.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Type Expressions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Overview"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

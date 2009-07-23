@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Type Expressions &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Declaring variables and functions" href="declarations.html" />
+    <link rel="prev" title="Some Examples of Tart Code" href="quickstart.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declaring variables and functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Some Examples of Tart Code"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="type-expressions">
+<span id="index-25"></span><h1>Type Expressions<a class="headerlink" href="#type-expressions" title="Permalink to this headline">¶</a></h1>
+<p>Because Tart is a strongly-typed language, it supports a rich hierarchy of types. All types in
+Tart fall into one of the following groups:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Type Group</th>
+<th class="head">Explanation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>primitive</td>
+<td>Primitive types such as <tt class="xref docutils literal"><span class="pre">int</span></tt>, <tt class="xref docutils literal"><span class="pre">float</span></tt>, <tt class="xref docutils literal"><span class="pre">bool</span></tt>, etc.</td>
+</tr>
+<tr><td>composite</td>
+<td>Includes <tt class="xref docutils literal"><span class="pre">class</span></tt>, <tt class="xref docutils literal"><span class="pre">struct</span></tt>, <tt class="xref docutils literal"><span class="pre">interface</span></tt> and
+<tt class="xref docutils literal"><span class="pre">protocol</span></tt>. Arrays and maps are part of this group as well.</td>
+</tr>
+<tr><td>enumerated</td>
+<td>Enumerated types declared with <tt class="xref docutils literal"><span class="pre">enum</span></tt>.</td>
+</tr>
+<tr><td>disjoint</td>
+<td>Also known as union types, declared with <tt class="xref docutils literal"><span class="pre">or</span></tt> such as
+<tt class="docutils literal"><span class="pre">int</span> <span class="pre">or</span> <span class="pre">float</span></tt>.</td>
+</tr>
+<tr><td>function</td>
+<td>The type of a function.</td>
+</tr>
+<tr><td>tuple</td>
+<td>An unnamed sequence of types, such as <tt class="docutils literal"><span class="pre">(int,</span> <span class="pre">String)</span></tt>.</td>
+</tr>
+<tr><td>native</td>
+<td>Native machine pointers and arrays, used for calling C library functions.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="primitive-types">
+<h2>Primitive Types<a class="headerlink" href="#primitive-types" title="Permalink to this headline">¶</a></h2>
+<p>Tart supports the following primitive types:</p>
+<div class="section" id="integer-types">
+<h3>Integer Types<a class="headerlink" href="#integer-types" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="28%" />
+<col width="57%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Bit width</th>
+<th class="head">Signed Type Name</th>
+<th class="head">Unsigned Type Name</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>8</td>
+<td><tt class="xref docutils literal"><span class="pre">byte</span></tt></td>
+<td><tt class="xref docutils literal"><span class="pre">ubyte</span></tt></td>
+</tr>
+<tr><td>16</td>
+<td><tt class="xref docutils literal"><span class="pre">short</span></tt></td>
+<td><tt class="xref docutils literal"><span class="pre">ushort</span></tt></td>
+</tr>
+<tr><td>32</td>
+<td><tt class="xref docutils literal"><span class="pre">int</span></tt></td>
+<td><tt class="xref docutils literal"><span class="pre">uint</span></tt>, <tt class="xref docutils literal"><span class="pre">char</span></tt></td>
+</tr>
+<tr><td>64</td>
+<td><tt class="xref docutils literal"><span class="pre">long</span></tt></td>
+<td><tt class="xref docutils literal"><span class="pre">ulong</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>The naming convention is that unsigned types always begin with the letter &#8216;u&#8217;.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">char</span></tt> type is a 32-bit integer which represents a Unicode character, but it is not the
+same as the <tt class="xref docutils literal"><span class="pre">uint</span></tt> type. The <tt class="xref docutils literal"><span class="pre">char</span></tt> type is generally only used when dealing with
+individual characters. For sequences of characters, it is more convenient to use the
+<tt class="xref docutils literal"><span class="pre">String</span></tt> type, which stores text encoded in UTF-8.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is also a special integer type used for constants, which does not have a fixed
+size (and therefor can hold any sized number). You cannot declare a variable of this type.</p>
+</div>
+</div>
+<div class="section" id="floating-point-types">
+<h3>Floating-point Types<a class="headerlink" href="#floating-point-types" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Bit width</th>
+<th class="head">Type Name</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>32</td>
+<td><tt class="xref docutils literal"><span class="pre">float</span></tt></td>
+</tr>
+<tr><td>64</td>
+<td><tt class="xref docutils literal"><span class="pre">double</span></tt></td>
+</tr>
+<tr><td>96 <a class="footnote-reference" href="#id2" id="id1" name="id1">[*]</a></td>
+<td><tt class="xref docutils literal"><span class="pre">long</span> <span class="pre">double</span></tt></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1" name="id2">[*]</a></td><td>The size of a long double may vary depending on the platform. It will generally be the
+largest type that can be supported by the floating-point coprocessor.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="boolean-type">
+<h3>Boolean Type<a class="headerlink" href="#boolean-type" title="Permalink to this headline">¶</a></h3>
+<p>The primitive boolean type is called <tt class="xref docutils literal"><span class="pre">bool</span></tt> and supports the built-in values
+<tt class="xref docutils literal"><span class="pre">true</span></tt> and <tt class="xref docutils literal"><span class="pre">false</span></tt>.</p>
+</div>
+<div class="section" id="null-type">
+<h3>Null Type<a class="headerlink" href="#null-type" title="Permalink to this headline">¶</a></h3>
+<p>The special value <tt class="xref docutils literal"><span class="pre">null</span></tt> indicates an invalid object reference. It&#8217;s type is <tt class="xref docutils literal"><span class="pre">Nothing</span></tt>,
+however you cannot declare a variable of that type.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>It is a goal of Tart that the <tt class="xref docutils literal"><span class="pre">null</span></tt> value should be used much less frequently than
+it is in C++. In particular, the addition of disjoint types means that it is unnecessary to
+use <tt class="xref docutils literal"><span class="pre">null</span></tt> as a sentinel value when returning an object reference.</p>
+<p class="last">It would be nice to eliminate the <tt class="xref docutils literal"><span class="pre">null</span></tt> value entirely, but it is needed when calling
+external C library functions. It is also the default initialization value for variables
+of reference type.</p>
+</div>
+</div>
+<div class="section" id="void-type">
+<h3>Void Type<a class="headerlink" href="#void-type" title="Permalink to this headline">¶</a></h3>
+<p><tt class="xref docutils literal"><span class="pre">void</span></tt> is used to indicate &#8220;no value&#8221;. It can be used to declare a function that does not
+return a value. It can also be used in disjoint types. Other than those two cases, it is not
+permitted to declare a variable having void type.</p>
+</div>
+</div>
+<div class="section" id="derived-types">
+<h2>Derived Types<a class="headerlink" href="#derived-types" title="Permalink to this headline">¶</a></h2>
+<p>Most derived types in Tart are simply generic composite types - that is, classes or structs which
+happen to have one or more template parameters. For example, the <tt class="xref docutils literal"><span class="pre">Array</span></tt> type is not
+a built-in type, it is a template class. (For that matter, <tt class="xref docutils literal"><span class="pre">Object</span></tt> is not a built-in type
+either, however it is a type that the compiler knows a lot about.)</p>
+<p>There are a couple of exceptions, meaning types that are so special (or so weird) that the compiler
+has to treat them in a fundamentally different way. These types are <em>functions</em>, <em>disjoint types</em>,
+<em>tuples</em>, and <em>native types</em>. These all all derived from one or more base types, and their
+identity is determined solely by these base types - thus a tuple containing (String, int) is
+always the same type as any other tuple containing (String, int).</p>
+<p>Although the <tt class="xref docutils literal"><span class="pre">Array</span></tt> type is just a template class, there is some special syntax for
+declaring arrays - the type expression <tt class="docutils literal"><em><span class="pre">type</span></em><span class="pre">[]</span></tt> denotes an array of <tt class="docutils literal"><em><span class="pre">type</span></em></tt>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Type Expressions</a><ul>
+<li><a class="reference" href="#primitive-types">Primitive Types</a><ul>
+<li><a class="reference" href="#integer-types">Integer Types</a></li>
+<li><a class="reference" href="#floating-point-types">Floating-point Types</a></li>
+<li><a class="reference" href="#boolean-type">Boolean Type</a></li>
+<li><a class="reference" href="#null-type">Null Type</a></li>
+<li><a class="reference" href="#void-type">Void Type</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#derived-types">Derived Types</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="quickstart.html"
+                                  title="previous chapter">Some Examples of Tart Code</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="declarations.html"
+                                  title="next chapter">Declaring variables and functions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/types.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="declarations.html" title="Declaring variables and functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Some Examples of Tart Code"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>
