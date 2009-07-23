@@ -7,3 +7,7 @@ lexers._mapping.LEXERS['TartLexer'] = (
     ('*.tart'),
     ('text/x-tart')
 )
+
+def setup(app):
+  pass
+
