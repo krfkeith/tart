@@ -1,0 +1,676 @@
+// ------------------------------------------------------------------------
+
+Design TODOS:
+
+* Dynamic casting syntax.
+* Native Pointer Dereferencing.
+* Const-ness
+* Protocols
+* Mutating arithmetic operators. (i.e. +=)
+
+Implementation TODOS:
+
+* Need to work on makefile dependencies.
+* vcall and icall instructions.
+* Varargs
+* String class
+  * concatenation - requires varargs
+* String class tests
+* Iterators
+  * Iterators through interfaces.
+* Exceptions:
+  * Finally
+    * Return
+    * Break / Continue
+  * Nested catch (try inside catch or finally block) - test
+  * Stack trace
+* Assertions (requires Exceptions)
+* Enum types
+  * Enum operators (relational and bitwise).
+  * .toString
+  * .parse
+* Tuple types
+  * Destructuring assignment
+  * Named tuple types
+  * Variadic Tuple args
+* Disjoint types
+  * Cache disjoint types so that they are unique.
+  * Make sure conversion works for all member types.
+  * Nullable types
+  * Canonical sorting order
+  * Equality comparison (with member types, and with other disjoint types.)
+  * dynamic casting syntax
+* Multiple Return Values (requires Tuples)
+* Vararg functions
+* Constructors
+  * init all variables not explicitly initialized in constructor, both ones with initializers
+    and ones without.
+  * Inherit constructors from parent class if no constructors defined.
+  * Test implicit call to super() (no args) constructor if not called.
+  * Insure that constructor calls aren't recursive.
+  * Insure that we can't call constructors from non-constructor functions.
+  * Allow overloading of constructors with functions, but don't allow two classes
+    with the same template args.
+* Import-as, import-namespace tests.
+* Attributes
+  * Meta-attributes
+* Templates
+  * "requires" clauses.
+* Runtime
+  * Compile runtime with clang so as to allow optimization.
+* Source-level debug info.
+* Generator functions.
+  * Yield statement.
+  * State machine.
+* Object.toString.
+* Let with instance scope.
+
+Doc errors:
+
+* Fix operator overload syntax (infixX notation used now.)
+* Fix description of imports to match current functionality.
+* Fix template syntax back to angle brackets. <>
+* Array literals
+* Better explanation of unpacking
+* Revise haskell note and next note
+* Operator.add overload example.
+* First line of Macro section is misleading.
+
+Error TODOS: (things that should be an error)
+
+* Instantiating an abstract class.
+* Module with multiple public names at top level.
+* Assignment to a non-lvalue.
+* Multiple catch statements with the same exception.
+* Template functions cannot be extern.
+* Enforce 'readonly'
+* LValueExpr.isSideEffectFree may not be true for property
+
+TODOS from V1 Compiler:
+
+o  Our never-ending quest to get 'hello world' working!
+  o Work on FileStream
+  o Do we want to use stdio open() or fopen()? (Do we want to do our own buffering?)
+  o Need stdin/stdout/stderr pointers.
+  o Hook up C runtime. (Possibly parse C runtime into LLVM via clang.)
+o  Hook up base object and type classes
+o  Statements:
+  o For (need unpacking assignment.)
+  o Foreach (need iterators first, and static interfaces)
+  o do-while
+  o yield
+  o repeat
+  o fork/threading primitives
+  o with (what interface for using?)
+o  Finish writing out and parsing metadata files so that we don't have to compile everything
+    multuple times.
+o  Abstract class instantiation checks.
+o  Namespace merging.
+o  'virtual' arguments.
+  o  implicit convert (silent)
+  o  explicit convert
+  o  dynamic convert
+o  Implement overriding struct assignment.
+o  GC Trace functions. (Auto-generated and explicit. Also don't take the name 'trace')
+o  Add padding before static objects to make GC happy. (Maybe not.)
+o  Call gc_alloc instead of malloc.
+* Customizable casting support
+
+o  Type conversions of non-constants.
+
+// ------------------------------------------------------------------------
+
+Permissions:
+
+  [CompilerPermissions.Require("pointer-math")]
+  
+  -allow=pointer-math
+
+// ------------------------------------------------------------------------
+Templates:
+
+  class Foo![%T]
+  class Foo~[%T]
+  class Foo:[%T]
+  class Foo.[%T]
+  class Foo.<%T>
+  
+Variadic templates:
+
+  class Foo:[%T, %Args...]
+
+  def func:[%T, %Args...](t:T, args:Args...) {
+    out << t;
+    func(args);
+  }
+
+  def func.[%T, %Args...](t:T, args:Args...) {
+    out << t;
+    func(args...);
+  }
+
+  def func.[%T, %Args...](t:T, args:Args...) {
+    out << t;
+    func(args...);
+  }
+
+// ------------------------------------------------------------------------
+
+Protocols
+
+//protocol <T> Iterator {
+//  def next() -> (T | nil);
+//}
+
+protocol <T> Iterator {
+  def next() -> (bool, T);
+}
+
+protocol <T> Iterable {
+  def iterate() -> Iterator<T>;
+}
+
+def <T> length(iter:Iterable<T>) -> int;
+
+protocol Iterable<String> {}
+
+// ------------------------------------------------------------------------
+
+We need assertions! Which requires:
+  -- Exceptions
+  -- Classes
+  -- isa test
+  -- 
+
+// ------------------------------------------------------------------------
+Import logic:
+
+Where should imported symbols be placed?
+
+-- Shouldn't be in module namespace because:
+  -- can't have 1 symbol in two symbol tables.
+  -- module symbol table is what gets written out by generator
+
+When we import a module, all of its symbols are effectively in the module
+namespace. Does this mean we have to create an entry for every one?
+
+Actually what we need is the unique list of all modules that are imported into
+this one, and then search all of their top-level namespaces. (Not including
+symbols that they themselves import?)
+
+Can we not do Koenig lookup? How would that work?
+
+add(String, String)
+
+We want to look in the String module for '+'.
+
+add(maybeString(), maybeString())
+
+Well - we do have all of the potential types of the arguments...
+that may seem like a lot, but it's no worse than having them all in the
+global namespace.
+
+OK so what do we do in the mean time?
+
+Ans: Do what we did before: Put the imports in the same ns, but late-bind them.
+
+// ------------------------------------------------------------------------
+
+Analysis phases:
+
+For types:
+  o Create child members.
+  o Resolve type aliases
+  o Prepare for construction
+
+For values:
+  o Create child members.
+  o Resolve types for overload selection.
+  o 
+  
+// ------------------------------------------------------------------------
+More template ideas:
+
+  def <T:Type<N:Number>> equal(a0:N, a1:N) -> bool {
+  }
+
+  def <:Type<N:Number>> equal(a0:N, a1:N) -> bool {
+  }
+
+  [Intrinsic("numeric")]
+  def <N::Number> equal(a0:N, a1:N) -> bool;
+
+  [Intrinsic("numeric")]
+  def <N::Number or String> equal(a0:N, a1:N) -> bool;
+
+  def <::Array<N:Type>> equal(a0:N, a1:N) -> bool;
+
+  def <N == Integer> equal(a0:N, a1:N) {
+  }
+
+  def <N <= Float or Int> equal(a0:N, a1:N) {
+  }
+
+  def <:NativePointer<ElementType>> equal(a0:N, a1:N) {
+  }
+
+  def <:ElementType[]> equal(a0:N, a1:N) {
+  }
+
+  def <N::Float or Int, M:int> equal(a0:N, a1:N) {
+  }
+
+  def <N::Number, M:int> equal(a0:N, a1:N) {
+  }
+
+  def <N:Type<Number>, M:int> equal(a0:N, a1:N) {
+  }
+
+  class <?::(T:Type)[]>> equal {}
+
+  class <T::Array<E>> equal {}
+  
+  class equal<[T]>
+  
+  class equal {T}
+  class equal::(T)
+
+  class equal::String
+  
+  let x:String{} = {1, 2, 3, 4};
+  
+  class Array::String;
+  
+  def forall::(%T subtypes Iterator::%P) (in:T) {
+  }
+
+
+// ------------------------------------------------------------------------
+More template ideas:
+
+  def <T> opEqual(a0:NativePointer<T>, a1:NativePointer<T>) -> bool;
+
+// ------------------------------------------------------------------------
+
+Template result types.
+
+  Say we have the following:
+  
+    def <T> funcA() -> T;
+    def funcA() -> int;
+    
+    def <S, T> funcB(arg:S) -> T;
+    def <T> funcB(arg:T) -> T;
+    
+  And we call:
+  
+    let s:String = funcB(funcA());
+
+Or a simpler case:
+
+    def <T> funcA(arg:T) -> T;
+    
+    def <T> funcB(arg:T) -> T;
+
+    let s:String = funcB(funcA(3));
+
+I guess what we need is a kind of "pre-specialization" - that is, a
+specialization which uses a unique type variable for each template parameter,
+where the type variable is eventually replaced by the actual type.
+
+Statement of the problem: We have a function that returns a templated result
+value which is passed in to another function that takes a templated parameter.
+
+The way that our solver currently works is that each call candidate is unified
+with the calling arguments for that call site, in isolation from any other
+candidate for that site, and from any other call site. So far this has worked
+because the constraint solving happens after unification, and the constraint
+solving is applied to the entire statement rather than the individual call site.
+Also, up to this point the solver has been working primarily with concrete
+but uncertain types - that is, a collection of discrete types, and not a
+type variable. The thing about such collections is that they are able to be
+evaluated independently of the call site which created them - even though
+they have a hidden link to the call site.
+
+Type parameters, on the other hand, are only meaningful in the context of
+a specific overloaded method at a specific call site. The proof of this
+statement is that the same method could be called in two places with two
+different argument types, meaning that the evaluation of the type parameter
+yields a different answer depending on which call site we are considering.
+
+The question that we need to answer is, do we need to be able to evaluate
+a type expression containing a type variable outside of the context of a
+specific call site?
+
+In order to do this, we would need to make the type expression self-contained,
+meaning that the type expression carries the binding environment around with
+it - so that a single Type * pointer refers to both a type and a binding env.
+
+There are a couple of ways we could do this.
+
+First, we could create a wrapper type. This would essentially contain a pointer
+to a binding env, and a pointer to the wrapped type. Any call on the wrapper
+type forwards the call to the wrapped type, and includes the env. This presumes
+that we need to only consider one binding environment at a time, which might not
+be true.
+
+Another idea is to create a new type variable for each template param for each
+overload for each call site. These would be used to construct new type
+expressions, where the type variable is substituted for the type parameter in
+the original expression. This means that the type expression for each overload
+would only contain type variables that were unique to that site. Moreover,
+we could store the current bound value in the type var itself, rather than
+using a map as we do now.
+
+(much time has passed)
+
+OK, well we have implemented what was described previously - the new TypeBinding
+class represents the value of a type variable for a given overload at a given
+call site.
+
+The only part that troubles me is the need to create these TypeBindings for
+every pattern variable in every overload currently under consideration. Not only
+that, but for type variables that are used as arguments to complex type
+expressions, the entire type expression has to be replicated. My concern is that
+this means that the process of overload resolution will end up causing the
+creation of a whole bunch of temporary objects, and I am trying to think of some
+way to avoid this.
+
+A typical example is as follows: Suppose we have the following overloaded
+methods:
+
+   def func1![%T]() -> T;
+   def func1![%T]() -> List![T];
+   def func1![%T]() -> Set![T];
+   
+   def func2!(a:List![int]);
+   
+   let x = func2(func1());
+
+The way that this works is that T can either be bound to List![int], or
+just int depending on which overload of func1 is chosen. This clearly implies
+that the 'T' variable for each of the overloads is distinct from the others,
+meaning that each overload candidate has it's own TypeBinding instance for T.
+
+(more time has passed)
+
+OK so the problem with the code that I have right now is that while it does
+substitution on the return type of a function, it doesn't do substitution on the
+function params, which causes the unification to fail when we start checking
+argument compatibility. And yet, I am still somewhat hesitant to do this,
+because ParameterDefns are big and expensive to replicate. I could just
+replicate the parameter *types* and store that in the CC, however that's only
+half the job because eventually we will want to do unification on params that
+are themselves function values.
+
+What I would really like is some way to store just the bindings without having
+to call subst() to create a temporary copy of the type expression.
+
+In order to do this, I would have to introduce the concept of *nested* binding
+environments. So for example, if I have a function defn like so:
+
+   def f![%S, %T](p1:NativePointer![S], p2:NativePointer![T]);
+   
+Where NativePointer in turn is defined like so:
+
+   struct NativePointer![%Target] { ... }
+
+And then when we attempt to bind S and T to, say, ubyte and int, what we get is
+a set of nested binding environments like this:
+
+    E1 { S = ubyte, T = int }
+    E2 { Target = S } -> E1
+    E3 { Target = T } -> E1
+
+So in other words, E1 defines S and T; E2 inherits the definitions from E1, and
+then defines 'Target' in terms of the definition of S from E1, and E3 does the
+same for the definition of T in E1.
+
+The problem is that we cannot store any reference to E1-E3 in the type
+expressions listed above, because the symbol 'NativePointer' is *shared* - i.e.
+both mentiones of NativePointer in the above expression point to the *same*
+object.
+
+Instead, what we need to do is to define these binding environments entirely externally to the type expression. The question then becomes, how do we know when these environments become active?
+
+The simple answer doesn't work: That is to say, we cannot simply have a map of
+expression nodes to environments, because (again), the same expression node
+object may appear in multiple places in the environment, with a different set
+of bindings active in each place.
+
+It seems to me that we only know how to get to E2 and E3 once we are already
+inside of E1. In other words, there should be a map inside of E1 that tells you
+how to get to E2 or E3.
+
+Now, one thing that we know is that the only place where a new environment is
+introduced is where a template is invoked. That is where a template *instance*
+occurs.
+
+So now I'm thinking that the key of this map is a Defn. That is to say that
+each binding env contains a map of definitions to nested binding maps.
+
+We could even go so far as to say that there is a single uber-map for the type solver that maps all of the top-level expressions.
+
+Note that we still need to deal with constraints. So TypeBindings don't entirely go away.
+
+OK here's something I don't understand:
+
+  A![B![C]]
+  
+  Which is:
+
+    A {%a: B[C]}
+    B {%b: C}
+    
+// ------------------------------------------------------------------------
+
+Link-time code generation.
+
+[Inject]
+def construct(s:Someclass) {
+}
+
+var s:SomeClass = injector.create();
+
+def <T> InjectAttribute : Attribute {
+  def (target:T) {
+    for i in 0 .. T.params.length {
+      
+    }
+  }
+  
+  def getInstance(injector:Injector) -> T.result {
+    
+  }
+}
+
+def InjectAttribute : Attribute {
+  def <R> create (f:fn -> R) {
+    return f();
+  }
+
+  def <R, A0> create (f:fn (:A0) -> R) {
+    return f(create.<A0>());
+  }
+
+  def <R, A0, A1> create (f:fn (:A0, :A1) -> R) {
+    return f(create.<A0>(), create.<A1>());
+  }
+
+  def (target:T) {
+    for i in 0 .. T.params.length {
+      
+    }
+  }
+  
+  def getInstance(injector:Injector) -> T.result {
+    
+  }
+}
+
+namespace Numbers {
+  protocol PrimitiveNumber<T> {
+    let minVal:T;
+    let maxVal:T;
+  }
+  
+  protocol PrimitiveInt<T> : PrimitiveNumber<T> {}
+  protocol PrimitiveFloat<T> : PrimitiveNumber<T> {}
+  
+  protocol_map PrimitiveInt<byte> {
+    let minVal:byte = -128;
+    let maxVal:byte = 127;
+  }
+
+  protocol_map PrimitiveInt<short> {
+    let minVal:short = 0;
+    let maxVal:short = 0x7fff;
+  }
+  
+  // This 'extend' idea is not bad. The main problem is how to represent it
+  // in the compiler. We don't want to modify the original class, nor do we
+  // want to interfere with the lookup of the original class.
+  //
+  // The rules of 'extend' are as follows:
+  //
+  // 1) Only protocols can be added as base classes.
+  // 2) Only static or final methods can be added as methods.
+  // 3) Only static or final properties can be added as properties.
+  // 4) Only constants can be added as member variables.
+  //
+  // In other words, nothing can be added that alters the runtime representation
+  // of the object.
+  //
+  // In some ways, this is equivalent to saying:
+  //
+  // class byte : byte, PrimitiveInt {
+  //   let minVal:byte = -128;
+  //   let maxVal:byte = 127;
+  // }
+  //
+  
+  extend byte : PrimitiveInt {
+  }
+
+  extend short : PrimitiveInt {
+  }
+
+  //extend NativePointer<byte> {
+  //}
+
+  protocol_map PrimitiveInt<int> {}
+  protocol_map PrimitiveInt<long> {}
+  protocol_map PrimitiveInt<ubyte> {}
+  protocol_map PrimitiveInt<ushort> {}
+  protocol_map PrimitiveInt<uint> {}
+  protocol_map PrimitiveInt<ulong> {}
+
+  protocol_map PrimitiveFloat<float> {}
+  protocol_map PrimitiveFloat<double> {}
+  
+
+  protocol PrimitiveNumber {}
+
+  [Intrinsic]
+  def <T where T :> PrimitiveNumber> infixAdd(:T, :T) -> T;
+
+  [Intrinsic]
+  def infixSubtract(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
+
+  [Intrinsic]
+  def infixMultiply(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
+
+  [Intrinsic]
+  def infixDivide(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
+
+
+
+  [Intrinsic] def infixAdd(:int16, :int16) -> int16;
+  [Intrinsic] def infixAdd(:int32, :int32) -> int32;
+  [Intrinsic] def infixAdd(:int64, :int64) -> int64;
+  [Intrinsic] def infixAdd(:uint8, :uint8) -> uint8;
+  [Intrinsic] def infixAdd(:uint16, :uint16) -> uint16;
+  [Intrinsic] def infixAdd(:uint32, :uint32) -> uint32;
+  [Intrinsic] def infixAdd(:uint64, :uint64) -> uint64;
+  
+  
+  
+}
+
+OK, one problem we have is how to do templates with indexers and call methods:
+
+  def elementRef.[%T](index:T):T {
+    get {}
+    set {}
+  }
+  
+  def fnCall.[%T](index:T):T {
+    get {};
+    set {};
+  }
+
+  def [].[%T](index:T):T {
+    get {}
+    set {}
+  }
+  
+  def ().[%T](index:T):T {
+    get {};
+    set {};
+  }
+
+  def [](index:T):T {
+    get {}
+    set {}
+  }
+  
+  def ()(index:T):T {
+    get {};
+    set {};
+  }
+  
+// ------------------------------------------------------------------------
+
+From the docs:
+
+One difference is that the type of a variable comes *after* the variable
+name. The reason for this is that, unlike C and C++ where the name of the
+variable can sometimes occur in the middle of the type declaration (an example
+being ``int * x(const int)``), in Tart the name and the type are always kept
+separate.
+
+C# requires that you add the modifier ``overload`` to any function that
+overloads a same-named function in the superclass. This prevents accidental
+hiding of superclass functions.
+
+.. note::
+  There's a special kind of constructor which does have a return type - it's
+  used to override the way that an object is allocated. This is an advanced
+  topic which will be explained in another document.
+  
+// ------------------------------------------------------------------------
+
+Class arguments:
+
+class Foo
+
+// Functions don't actually need template argument lists, if we allow pattern variables
+// to be used directly in the function parameters. Weird.
+def foo(a:%T)
+  require 
+{
+}
+
+= List(String).create(10);
+
+= List<[String]>(10);
+
+= List[String].create(10);
+
+= List<[String]>(10);
+
+= List[].create();
+
+= List[].new();
+
+= Map(String, String)();

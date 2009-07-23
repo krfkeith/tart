@@ -1,0 +1,87 @@
+[EntryPoint]
+def main(args:String[]) -> int {
+  // Test default constructor with no arguments.
+  var t = TestClass();
+
+  // Test default constructor with a positional argument.
+  var t2 = TestClass(1);
+
+  // Test default constructor with a keyword argument.
+  var t3 = TestClass(m0=1);
+
+  // Call a method of the class.
+  var s = t.testMethod();
+  var m:short = t.test2();
+
+  // Construct a subclass with an explicit constructor
+  let u = SubClass();
+
+  // Call a method of the subclass which is defined in the base class.
+  let v = u.testMethod();
+
+  // Test reference equality
+  if t3 is u {
+    return 1;
+  }
+
+  // 'isa' test - failure
+  if t isa SubClass {
+    return 1;
+  }
+
+  // 'isa' test - success
+  if not (t isa TestClass) {
+    return 1;
+  }
+  
+  let a = cond(true, 10, 20);
+
+  testCallSuper();
+  return mtest(20) - 40;
+}
+
+class TestClass {
+  public var m0:int;
+
+  public def testMethod() {
+    return 11;
+  }
+
+  public final def test2() -> short {
+    return self.test3() + test3();
+  }
+
+  public final def test3() -> byte {
+    return 9;
+  }
+  
+  public def test4() -> byte {
+    return 33;
+  }
+}
+
+class SubClass : TestClass {
+  private var m2:int;
+  //private var m1:int[];
+  
+  public def testMethod() {
+    return 13;
+  }
+  
+  public def construct() {
+    m2 = 20;
+  }
+  
+  public def test4() -> byte {
+    return super() + 1;
+  }
+}
+
+public macro mtest(i:int) {
+  return i + i;
+}
+
+public def testCallSuper() {
+  let u = SubClass();
+  Debug.assertEq(34, u.test4());
+}

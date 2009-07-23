@@ -1,0 +1,54 @@
+// Definition of all CFG expression types
+
+EXPR_TYPE(Invalid)        // An error node
+EXPR_TYPE(NoOp)           // A do-nothing expression that returns void
+
+// Constants
+EXPR_TYPE(ConstInt)       // An integer constant
+EXPR_TYPE(ConstFloat)     // A float constant
+EXPR_TYPE(ConstString)    // A string constant
+EXPR_TYPE(ConstObject)    // A constant object (string, etc.)
+EXPR_TYPE(ConstType)      // A reference to a type
+EXPR_TYPE(ConstNull)      // The null value
+
+// Definitions
+EXPR_TYPE(LValue)         // A reference to a variable or field
+EXPR_TYPE(ScopeName)      // A reference to a scope name
+EXPR_TYPE(ElementRef)     // A reference to an element in a native array
+EXPR_TYPE(PatternVar)     // A pattern variable
+
+// Operators
+EXPR_TYPE(Assign)         // Assignment
+EXPR_TYPE(PostAssign)     // Assign, return value before assignment
+EXPR_TYPE(InitVar)        // Local variable initialization
+EXPR_TYPE(Call)           // General call
+EXPR_TYPE(FnCall)         // Function call
+EXPR_TYPE(MethodCall)     // Virtual method call
+EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
+EXPR_TYPE(PtrCall)        // Indirect call
+EXPR_TYPE(Construct)      // Constructor call
+EXPR_TYPE(Instantiate)    // An explicit template specialization
+EXPR_TYPE(New)            // A call to allocate storage for an object
+EXPR_TYPE(BinaryOpcode)   // A binary IR opcode
+EXPR_TYPE(Compare)        // A binary comparison instruction
+EXPR_TYPE(InstanceOf)     // IsInstanceOf test
+EXPR_TYPE(RefEq)          // Reference equals
+EXPR_TYPE(Not)            // Logical Not
+EXPR_TYPE(PtrDeref)       // Pointer dereference
+EXPR_TYPE(Prog2)          // Two exressions, eval both, take second
+
+// Casts
+EXPR_TYPE(ImplicitCast)   // Implicit cast
+EXPR_TYPE(ExplicitCast)   // Explicit cast
+EXPR_TYPE(UpCast)         // Cast from subclass to base/iface
+EXPR_TYPE(TryCast)        // Cast from base/iface to subclass, throw if fail
+EXPR_TYPE(DynamicCast)    // Cast from base/iface to subclass, null if fail
+EXPR_TYPE(UnionCtorCast)  // Cast to a union type.
+EXPR_TYPE(Truncate)       // Number truncation
+EXPR_TYPE(SignExtend)     // Extend signed number
+EXPR_TYPE(ZeroExtend)     // Extend unsigned number
+EXPR_TYPE(BitCast)        // Reinterpret cast
+
+// Special objects
+EXPR_TYPE(IRValue)        // An IR-level value.
+EXPR_TYPE(LocalCall)      // A jump to a local subroutine.

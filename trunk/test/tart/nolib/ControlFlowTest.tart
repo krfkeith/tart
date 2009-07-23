@@ -1,0 +1,19 @@
+[EntryPoint]
+def main(args:String[]) -> int {
+  var g:int;
+  if 1 == 2 {
+    g = 11;
+  } else {
+    g = 5;
+  }
+  
+  while g > 5 {
+    g = g - 11;
+  }
+  
+  for i = 0; i < 1; i++ {
+    g = g + 1;
+  }
+  
+  return g - 6;
+}

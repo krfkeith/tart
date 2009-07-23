@@ -1,0 +1,5 @@
+/** Attribute that indicates that the associated function is where
+    execution of the application should start. */
+class EntryPointAttribute : Attribute {
+  public def construct() {}
+}

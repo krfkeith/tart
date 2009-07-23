@@ -1,0 +1,12 @@
+/** Attribute that allows the linkage name of this function to be
+    explicitly specified. */
+public class LinkageNameAttribute : Attribute {
+  readonly var name:String;
+
+  /** Construct an LinkageNameAttribute.
+      'name' - The linkage name of the attributed method or variable.
+   */
+  def construct(name:String) {
+    self.name = name;
+  }
+}

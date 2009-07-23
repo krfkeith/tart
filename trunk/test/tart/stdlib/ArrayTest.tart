@@ -1,0 +1,18 @@
+[EntryPoint]
+def main(args:String[]) -> int {
+  testZeroLengthArray();
+  testSimpleArray();
+  return 0;
+}
+
+def testZeroLengthArray() {
+  let a = int[0];
+  Debug.assertTrue(a.isEmpty);
+  Debug.assertTrue(a.length == 0);
+}
+
+def testSimpleArray() {
+  let a = int[5];
+  Debug.assertFalse(a.isEmpty);
+  Debug.assertTrue(a.length == 5);
+}

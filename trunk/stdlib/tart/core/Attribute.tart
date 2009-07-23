@@ -1,0 +1,24 @@
+/** Base class for all attributes. */
+class Attribute {}
+
+/** Defines the set of possible attribute sites. */
+[Flags]
+enum AttributeSite {
+  None = 0,
+  Class,
+  Interface,
+  Struct,
+  Enum,
+  Attribute,
+  Function,
+  Parameter,
+  ReturnValue,
+  Variable,     /** global variable or member field */
+  Property,
+  Template,
+  Macro,
+  Constructor,
+
+  //All = Class | Interface | Struct | Enum | Attribute | Function |
+  //      Parameter | ReturnValue | Field | Property | Template | Macro | Constructor,
+}

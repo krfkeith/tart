@@ -1,0 +1,70 @@
+/** Math functions. */
+namespace Math {
+  /** Return the smaller of the two input values, where "smaller" is defined by the less-than
+      operator. */
+  def min[%T](a0:T, a1:T) -> T {
+    return a0 if a0 < a1; 
+    return a1;
+  }
+
+  /** Return the smallest of the input values, where "smallest" is defined in terms of the
+      less-than operator. */
+  def min[%T](a0:T, a1:T, a2:T) -> T {
+    return min(a0, min(a1, a2));
+  }
+
+  /** Return the smallest of the input values, where "smallest" is defined in terms of the
+      less-than operator. */
+  def min[%T](a0:T, a1:T, a2:T, a3:T) -> T {
+    return min(a0, min(a1, min(a2, a3)));
+  }
+
+  /** Return the larger of the input values, where "larger" is defined in terms of the
+      less-than operator. */
+  def max[%T](a0:T, a1:T) -> T {
+    return a1 if a0 < a1;
+    return a0;
+  }
+
+  /** Return the largest of the input values, where "largest" is defined in terms of the
+      less-than operator. */
+  def max[%T](a0:T, a1:T, a2:T) -> T {
+    return max(a0, max(a1, a2));
+  }
+
+  /** Return the largest of the input values, where "largest" is defined in terms of the
+      less-than operator. */
+  def max[%T](a0:T, a1:T, a2:T, a3:T) -> T {
+    return max(a0, max(a1, max(a2, a3)));
+  }
+  
+  /** Return the square root of the input operand. */
+  [Intrinsic]
+  def sqrt(f:float) -> float;
+
+  /** Return the square root of the input operand. */
+  [Intrinsic]
+  def sqrt(f:double) -> double;
+
+  /** Return the first operand raised to the power of the second operand. */
+  //def pow(base:float, exponent:float) -> float = 201;
+
+  /** Return the first operand raised to the power of the second operand. */
+  //def pow(base:double, exponent:float) -> double = 201;
+
+  /** Return the sine of the given angle. */
+  [Intrinsic]
+  def sin(angle:float) -> float;
+
+  /** Return the sine of the given angle. */
+  [Intrinsic]
+  def sin(angle:double) -> double;
+
+  /** Return the cosine of the given angle. */
+  [Intrinsic]
+  def cos(angle:float) -> float;
+
+  /** Return the cosine of the given angle. */
+  [Intrinsic]
+  def cos(angle:double) -> double;
+}

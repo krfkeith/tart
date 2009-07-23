@@ -1,0 +1,52 @@
+import tart.core.Memory.zeroPtr;
+import tart.core.Memory.addressOf;
+import tart.core.Memory.ptrDiff;
+
+/** Built-in array class */
+public final class Array[%ElementType] {
+  private {
+    var end:NativePointer<[ElementType]>;
+    var data:NativeArray<[ElementType, 0]>;
+
+    /** Array allocator function */
+    static def alloc(length:int) {
+      //InvalidArgumentException.when(length < 0);
+      // The 'offsetof' trick for calculating the size.
+      let self:Array = __pvalloc(zeroPtr<[Array<[ElementType]>]>().data[length]);
+      self.end = addressOf(self.data[length]);
+      return self;
+    }
+    
+    //def asBuffer() {
+    //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
+    //}
+  }
+
+  /** Construct an array of a given length */
+  static def create(length:int) -> Array {
+    let self:Array = alloc(length);
+    // TODO: Need to initialize the array elements to default values.
+    // Memory.initToDefaultValues(addressOf(data[0]), end);
+    return self;
+  }
+
+  /** True if the array is zero length. */
+  def isEmpty:bool {
+    get { return self.end == addressOf(self.data[0]); }
+  }
+
+  /** The length of the array. */
+  def length:int {
+    get { return ptrDiff(addressOf(self.data[0]), self.end); }
+  }
+
+  // Array element access
+  def [index:int]:ElementType {
+    get { return self.data[index]; }
+    set { self.data[index] = value; }
+  }
+  
+  // TODO: Copy additional constructors from old tart.
+  // def apply(args:int[]) {
+  //}
+}

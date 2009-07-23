@@ -1,0 +1,12 @@
+/** Attribute that specifies that this method or variable is an
+    externally-defined symbol. */
+public class ExternAttribute : Attribute {
+  readonly var name:String;
+
+  /** Construct an ExternAttribute.
+      'name' - The linkage name of the attributed method or variable.
+   */
+  def construct(name:String) {
+    self.name = name;
+  }
+}

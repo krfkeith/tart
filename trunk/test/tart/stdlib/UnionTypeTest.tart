@@ -1,0 +1,46 @@
+[EntryPoint]
+def main(args:String[]) -> int {
+  testValueTypeUnion();
+  testRefOrNoneTypeUnion();
+  testRefOrValueTypeUnion();
+  return 0;
+}
+
+def testValueTypeUnion() {
+  var x:int or float;
+  x = 1;
+  Debug.assertTrue(x isa int);
+  Debug.assertFalse(x isa float);
+  Debug.assertFalse(x isa String);
+  /*if let xi:int = x {
+    Debug.assertTrue(xi == 1);
+  } else {
+    Debug.fail("union member test failed");
+  }*/
+  //Debug.assertTrue(cast<[int]>(x) == 1);
+  x = 1.0;
+  Debug.assertTrue(x isa float);
+  Debug.assertFalse(x isa int);
+  Debug.assertFalse(x isa String);
+  //Debug.assertTrue(cast<[int]>(x) == 1.0);
+  /*if let xf:float = x {
+    Debug.assertTrue(xf == 1.0);
+  } else {
+    Debug.fail("union member test failed");
+  }*/
+}
+
+//def testRefTypeUnion() {
+//  var x:String or float;
+//  
+//  x = 1;
+//  x = 1.0;
+//}
+
+def testRefOrNoneTypeUnion() {
+  var x:String or void;
+}
+
+def testRefOrValueTypeUnion() {
+  var x:String or int;
+}

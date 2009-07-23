@@ -1,0 +1,7 @@
+/** The iterator interface. An iterator has a 'next' method which returns
+    either the next value in the sequence, or 'Nothing' to indicate the
+    end of the sequence.
+*/
+interface Iterator[%T] : IteratorProtocol<[T]> {
+  def next -> T or void;
+}

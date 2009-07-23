@@ -1,0 +1,3 @@
+/** The Struct metatype. Represents the type object for a struct. */
+public class Struct : Type {
+}

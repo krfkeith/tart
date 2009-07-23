@@ -1,0 +1,49 @@
+[EntryPoint]
+def main(args: String[]) {
+  testManualIteration();
+  return 0;
+}
+
+class Counter : Iterator<[int]> {
+  private var value:int;
+  private var end:int;
+  
+  def construct(end:int) {
+    self.value = 0;
+    self.end = end;
+  }
+  
+  def next -> int or void {
+    if (value < end) {
+      return value++;
+    } else {
+      return;
+    }
+  }
+}
+
+def testManualIteration() {
+  let ctr = Counter(5);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertFalse(ctr.next() isa int);
+}
+
+def testManualIteration2() {
+  var ctr = Counter(5);
+/*  Debug.assertTrue(ctr.next() == 0);
+  Debug.assertTrue(ctr.next() == 1);
+  Debug.assertTrue(ctr.next() == 2);
+  Debug.assertTrue(ctr.next() == 3);
+  Debug.assertTrue(ctr.next() == 4);
+  Debug.assertFalse(ctr.next() == void());*/
+}
+
+def testForeach() {
+  //for i in Counter(5) {
+    //Debug.writeLn(i.toString());
+  //}
+}

@@ -1,0 +1,7 @@
+/** Attribute that indicates that the associated function is a
+    built-in compiler intrinsic. */
+class IntrinsicAttribute : Attribute {
+  private var tag:String;
+  public def construct() { tag = ""; }
+  public def construct(tag:String) { self.tag = tag; }
+}

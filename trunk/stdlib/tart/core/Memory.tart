@@ -1,0 +1,34 @@
+/** Memory utility functions */
+namespace Memory {
+  /** The integer 0, converted to a pointer of a given type. Intended to be
+      used for offset calculations.
+   */
+  //[tart.config.Permissions.Require("pointer-math")]
+  [Intrinsic]
+  def zeroPtr[%ElemTy]() -> ElemTy;
+
+  /** Take the address of a variable and return the result as a native
+      pointer.
+  */
+  //[tart.config.Permissions.Require("pointer-math")]
+  [Intrinsic]
+  def addressOf[%VarType](value:VarType) -> NativePointer<[VarType]>;
+
+  /** Return the difference between two pointers. Subtracts the pointer
+      values, and then divides by the size of 'T'. Raises an exception if
+      the value is too large to be contained within a signed integer.
+   */
+  //[tart.config.Permissions.Require("pointer-math")]
+  [Intrinsic]
+  def ptrDiff[%ValTy](first:NativePointer<[ValTy]>, last:NativePointer<[ValTy]>) -> int;
+
+  /** Return the difference between two pointers. Subtracts the pointer
+      values, and then divides by the size of 'T'. Raises an exception if
+      the value is too large to be contained within a signed long.
+   */
+  //[tart.config.Permissions.Require("pointer-math")]
+  [Intrinsic]
+  //def ptrDiff![%ValTy](first:NativePointer![ValTy], last:NativePointer![ValTy]) -> long;
+
+  //def ptrDiff::%ValTy(first:NativePointer::ValTy, last:NativePointer::ValTy) -> long;
+}

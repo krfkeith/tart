@@ -1,0 +1,6 @@
+//import tart.core.Attribute.AttributeUsage;
+//import tart.core.Attribute.AttributeSite;
+
+/** Attribute that is used to indicate a thread-local variable. */
+//[AttributeUsage(AttributeSite.Variable)]
+class ThreadLocalAttribute : Attribute {}
