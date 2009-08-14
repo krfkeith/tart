@@ -10,6 +10,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/Template.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
@@ -159,6 +160,11 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       DASSERT_OBJ(irExpr->value() != NULL, irExpr);
       return irExpr->value();
     }
+    
+    case Expr::ArrayLiteral: {
+      const ArrayLiteralExpr * arrayLiteral = static_cast<const ArrayLiteralExpr *>(in);
+      return genArrayLiteral(arrayLiteral);
+    }
 
     case Expr::NoOp:
       return NULL;
@@ -199,8 +205,8 @@ Value * CodeGenerator::genInitVar(InitVarExpr * in) {
 }
 
 Value * CodeGenerator::genAssignment(AssignmentExpr * in) {
-  Value * rvalue = genExpr(in->getFromExpr());
-  Value * lvalue = genLValueAddress(in->getToExpr());
+  Value * rvalue = genExpr(in->fromExpr());
+  Value * lvalue = genLValueAddress(in->toExpr());
   
   if (rvalue != NULL && lvalue != NULL) {
     if (in->exprType() == Expr::PostAssign) {
@@ -218,7 +224,7 @@ Value * CodeGenerator::genAssignment(AssignmentExpr * in) {
 Value * CodeGenerator::genBinaryOpcode(BinaryOpcodeExpr * in) {
   Value * lOperand = genExpr(in->first());
   Value * rOperand = genExpr(in->second());
-  return builder_.CreateBinOp(in->getOpCode(), lOperand, rOperand);
+  return builder_.CreateBinOp(in->opCode(), lOperand, rOperand);
 }
 
 llvm::Value * CodeGenerator::genCompare(CompareExpr * in) {
@@ -310,6 +316,10 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     return builder_.CreateLoad(varValue, var->getName());
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
+    if (param->getIRValue() == NULL) {
+      diag.fatal(param) << "Invalid parameter IR value for " << param << " in function " <<
+        currentFunction_;
+    }
     DASSERT_OBJ(param->getIRValue() != NULL, param);
     return param->getIRValue();
   } else {
@@ -453,6 +463,7 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     const ValueDefn * field = lval->value();
     const Type * fieldType = dealias(field->getType());
     if (const ParameterDefn * param = dyn_cast<ParameterDefn>(field)) {
+      fieldType = dealias(param->internalType());
       if (param->getFlag(ParameterDefn::Reference)) {
         needsDeref = true;
       }
@@ -509,6 +520,124 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   }
 
   return baseAddr;
+}
+
+Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
+  const CompositeType * arrayType = cast<CompositeType>(in->getType());
+  const Type * elementType = arrayType->typeDefn()->templateInstance()->paramValues()[0];
+
+  const llvm::Type * etype = elementType->getIRType();
+  if (elementType->isReferenceType()) {
+    etype = PointerType::getUnqual(etype);
+  }
+
+  // Arguments to the array-creation function
+  ValueList args;
+  args.push_back(ConstantInt::get(llvm::Type::Int32Ty, in->args().size()));
+  Function * allocFunc = findMethod(arrayType, "alloc");
+  Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
+
+  // Get the function that allocates a new array
+  //funcArrayAlloc = cast_or_null<FunctionDefn>(getSingleDefn(typeArray, "alloc"));
+
+  return result;
+
+  //DFAIL("Implement");
+
+#if 0
+  const CallExpr * arrayCreate = cast<CallExpr>(array->getOperands()[0]);
+  const OpExpr * arrayArgs = static_cast<const OpExpr *>(array->getOperands()[1]);
+
+  const ExprList & elements = arrayArgs->getOperands();
+  size_t arraySize = elements.size();
+
+  assert(elementType != NULL);
+
+  const llvm::Type * etype = elementType->getIRType();
+  if (elementType->isReferenceType()) {
+    etype = llvm::PointerType::getUnqual(etype);
+  }
+
+  const llvm::ArrayType * initArrayType = llvm::ArrayType::get(etype, arraySize);
+
+  //diag.debug("Array of %s:", elementType->toString().c_str());
+  //etype->dump();
+
+  // Analyzer will have optimized out zero-length arrays
+  assert(arraySize > 0);
+
+  ValueList arrayVals;
+  arrayVals.resize(arraySize);
+  for (size_t i = 0; i < arraySize; ++i) {
+    Value * el = genExpr(elements[i]);
+    if (el == NULL) {
+      return NULL;
+    }
+
+    arrayVals[i] = el;
+  }
+
+  const ExprList & constructorArgs = arrayCreate->getArgs();
+  ValueList args;
+
+  // If at least half of the initializers are constants, then go ahead and
+  // create a global constant containing them.
+  size_t initValCount = arraySize;
+  if (constructorArgs.size() > 1) {
+    std::vector<Constant *> constVals;
+    constVals.resize(arraySize);
+    for (size_t i = 0; i < arraySize; ++i) {
+      Constant * c = dyn_cast<Constant>(arrayVals[i]);
+      if (c != NULL) {
+        constVals[i] = c;
+        arrayVals[i] = NULL;
+        --initValCount;
+      } else {
+        constVals[i] = Constant::getNullValue(etype);
+      }
+    }
+
+    Constant * constArray = ConstantArray::get(initArrayType, constVals);
+    Constant * constArrayVar = new GlobalVariable(
+      constArray->getType(), true, GlobalValue::InternalLinkage,
+      constArray, "array_literal", llModule);
+
+    Constant * indices[1];
+    indices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
+    args.push_back(
+      ConstantExpr::getPointerCast(
+        ConstantExpr::getGetElementPtr(constArrayVar, indices, 1),
+        PointerType::getUnqual(ArrayType::get(etype, 0))));
+    args.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
+  }
+
+  args.push_back(ConstantInt::get(llvm::Type::Int32Ty, arraySize));
+  Value * funcVal = genExpr(arrayCreate->getFunc());
+  if (funcVal == NULL) return NULL;
+  Value * arrayVal = genCall(funcVal, args.begin(), args.end());
+
+  // Fill in the array with the non-constant initializers
+  if (initValCount > 0) {
+    Value * indices[2];
+    indices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
+    indices[1] = ConstantInt::get(llvm::Type::Int32Ty, 2);
+    Value * nativePtr = builder.CreateGEP(arrayVal, &indices[0], &indices[2],
+        "_items");
+    for (size_t i = 0; i < arraySize; ++i) {
+      Value * initVal = arrayVals[i];
+      if (initVal != NULL) {
+        indices[1] = ConstantInt::get(llvm::Type::Int32Ty, i);
+        Value * slot = builder.CreateGEP(nativePtr, &indices[0], &indices[2],
+            "item");
+        builder.CreateStore(initVal, slot);
+      }
+    }
+  }
+
+  // Return the new array
+  return arrayVal;
+#endif
+
 }
 
 Value * CodeGenerator::genNumericCast(CastExpr * in) {
@@ -731,8 +860,8 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
 
   // One index for each supertype
   while (fromType != toType) {
-    DASSERT_OBJ(fromType->getSuper() != NULL, fromType);
-    fromType = fromType->getSuper();
+    DASSERT_OBJ(fromType->super() != NULL, fromType);
+    fromType = fromType->super();
     indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
   }
 
@@ -826,12 +955,18 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
   return builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
 }
 
-llvm::Constant * CodeGenerator::genSizeOf(Type * type) {
+llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
   ValueList indices;
   indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 1));
+
+  const llvm::Type * irType = type->getIRType();
+  if (memberSize && type->isReferenceType()) {
+    irType = PointerType::get(irType, 0);
+  }
+
   return llvm::ConstantExpr::getPtrToInt(  
       llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(PointerType::get(type->getIRType(), 0)),
+          ConstantPointerNull::get(PointerType::get(irType, 0)),
           &indices[0], 1),
       llvm::Type::Int32Ty);
 }

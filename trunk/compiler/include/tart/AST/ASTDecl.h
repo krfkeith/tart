@@ -358,14 +358,16 @@ public:
 /// A parameter definition
 class ASTParameter : public ASTVarDecl {
 private:
-  int flags;
+  int flags_;
 
 public:
   ASTParameter(const SourceLocation & loc, const char * name,
       ASTNode * typ, ASTNode * val, int flgs)
     : ASTVarDecl(Param, loc, name, typ, val, DeclModifiers())
-    , flags(flgs)
+    , flags_(flgs)
   {}
+  
+  int flags() const { return flags_; }
 
   // Overrides
 

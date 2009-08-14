@@ -554,7 +554,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 #endif
     } else {
       // Check for single argument (it's optional)
-      formalArgument(params);
+      formalArgument(params, 0);
     }
 
     // Function type.
@@ -889,7 +889,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
           formalArgumentList(setterParams, Token_RParen);
         } else {
           // Check for single argument (it's optional)
-          formalArgument(setterParams);
+          formalArgument(setterParams, 0);
         }
 
         if (setterParams.size() > 1) {
@@ -1200,7 +1200,7 @@ ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, const char *
     formalArgumentList(params, Token_RParen);
   } else {
     // Check for single argument (it's optional)
-    formalArgument(params);
+    formalArgument(params, 0);
   }
 
   // See if there's a return type declared
@@ -1341,10 +1341,16 @@ void Parser::templateRequirements(ASTNodeList & requirements) {
 }
 
 bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
+  int paramFlags = 0;
   if (match(endDelim))
     return true;
+    
+  // Handle an initial semicolon if all params are keyword-only.
+  if (match(Token_Semi)) {
+    paramFlags |= Param_KeywordOnly;
+  }
 
-  if (!formalArgument(params)) {
+  if (!formalArgument(params, paramFlags)) {
     expected("formal argument");
     return false;
   }
@@ -1353,37 +1359,45 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
     if (match(endDelim)) {
       return true;
     } else if (match(Token_Comma)) {
-      if (!formalArgument(params)) {
-        diag.fatal(lexer.getTokenLocation()) <<
-            "Formal argument expected after ','";
-        break;
+      // Fall through
+    } else if (match(Token_Semi)) {
+      if (paramFlags & Param_KeywordOnly) {
+        diag.error(lexer.getTokenLocation()) << "Only one ';' allowed in argument list";
+      } else {
+        paramFlags |= Param_KeywordOnly;
       }
-
-      // Check for duplicate argument names.
-      ASTParameter * fa = params.back();
-      for (ASTParamList::const_iterator it = params.begin();
-          it != params.end() - 1; ++it) {
-        ASTParameter * pp = *it;
-        if (fa->getName() && pp->getName() && strcmp(fa->getName(),
-            pp->getName()) == 0) {
-          diag.fatal(lexer.getTokenLocation()) <<
-              "Duplicate argument name '" << fa->getName() << "'";
-        }
-      }
+      // Fall through
     } else {
       unexpectedToken();
       break;
+    }
+
+    if (!formalArgument(params, paramFlags)) {
+      diag.fatal(lexer.getTokenLocation()) <<
+          "Formal argument expected after ','";
+      break;
+    }
+
+    // Check for duplicate argument names.
+    ASTParameter * fa = params.back();
+    for (ASTParamList::const_iterator it = params.begin();
+        it != params.end() - 1; ++it) {
+      ASTParameter * pp = *it;
+      if (fa->getName() && pp->getName() && strcmp(fa->getName(),
+          pp->getName()) == 0) {
+        diag.fatal(lexer.getTokenLocation()) <<
+            "Duplicate argument name '" << fa->getName() << "'";
+      }
     }
   }
 
   return false;
 }
 
-bool Parser::formalArgument(ASTParamList & params) {
+bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   // TODO: Check for attributes
   // TODO: Check for modifiers
 
-  int paramFlags = 0;
   SourceLocation argLoc = lexer.getTokenLocation();
   const char * argName = matchIdent();
   ASTNode * argType = NULL;

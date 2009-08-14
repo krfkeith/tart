@@ -185,10 +185,13 @@ protected:
     : Expr(k, loc, type)
   {}
 
+  bool areArgsSideEffectFree() const;
+
 public:
   
   /** The argument list. */
   ExprList & args() { return args_; }
+  const ExprList & args() const { return args_; }
   const Expr * arg(size_t index) const { return args_[index]; }
   Expr * arg(size_t index) { return args_[index]; }
   size_t argCount() const { return args_.size(); }
@@ -267,33 +270,33 @@ public:
 /// An assignment expression
 class AssignmentExpr : public Expr {
 private:
-  Expr * fromExpr;
-  Expr * toExpr;
+  Expr * fromExpr_;
+  Expr * toExpr_;
 
 public:
   AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from)
     : Expr(Assign, loc, to->getType())
-    , fromExpr(from)
-    , toExpr(to)
+    , fromExpr_(from)
+    , toExpr_(to)
   {}
   
   AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from)
     : Expr(k, loc, to->getType())
-    , fromExpr(from)
-    , toExpr(to)
+    , fromExpr_(from)
+    , toExpr_(to)
   {}
   
-  Expr * getFromExpr() const { return fromExpr; }
-  void setFromExpr(Expr * ex) { fromExpr = ex; }
+  Expr * fromExpr() const { return fromExpr_; }
+  void setFromExpr(Expr * ex) { fromExpr_ = ex; }
 
-  Expr * getToExpr() const { return toExpr; }
-  void setToExpr(Expr * ex) { toExpr = ex; }
+  Expr * toExpr() const { return toExpr_; }
+  void setToExpr(Expr * ex) { toExpr_ = ex; }
 
   // Overrides
 
   bool isSideEffectFree() const { return false; }
   bool isSingular() const {
-    return fromExpr->isSingular() && toExpr->isSingular();
+    return fromExpr_->isSingular() && toExpr_->isSingular();
   }
   void format(FormatStream & out) const;
 
@@ -506,7 +509,7 @@ private:
 /// A low-level binary machine opcode
 class BinaryOpcodeExpr : public BinaryExpr {
 private:
-  llvm::Instruction::BinaryOps opCode;
+  llvm::Instruction::BinaryOps opCode_;
 
 public:
   /** Constructor. */
@@ -514,7 +517,7 @@ public:
       llvm::Instruction::BinaryOps op,
       const SourceLocation & loc, Type * type)
     : BinaryExpr(BinaryOpcode, loc, type)
-    , opCode(op)
+    , opCode_(op)
   {}
 
   /** Constructor. */
@@ -523,11 +526,11 @@ public:
       const SourceLocation & loc, Type * type,
       Expr * a0, Expr * a1)
     : BinaryExpr(BinaryOpcode, loc, type, a0, a1)
-    , opCode(op)
+    , opCode_(op)
   {}
 
   /** The LLVM opcode for this binary expression. */
-  llvm::Instruction::BinaryOps getOpCode() const { return opCode; }
+  llvm::Instruction::BinaryOps opCode() const { return opCode_; }
 
   // Overrides
 
@@ -652,6 +655,26 @@ public:
   static inline bool classof(const LocalCallExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == LocalCall;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// An array literal.
+class ArrayLiteralExpr : public ArglistExpr {
+public:
+  ArrayLiteralExpr(const SourceLocation & loc)
+    : ArglistExpr(ArrayLiteral, loc, NULL)
+  {}
+
+  // Overrides
+
+  bool isSideEffectFree() const {
+    return areArgsSideEffectFree();
+  }
+
+  static inline bool classof(const ArrayLiteralExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == ArrayLiteral;
   }
 };
 

@@ -1,7 +1,10 @@
 /** The iterator interface. An iterator has a 'next' method which returns
     either the next value in the sequence, or 'Nothing' to indicate the
     end of the sequence.
+    
+    Concrete iterator types may also want to derive from "HasLength" if
+    the length of the sequence is known at construction time.
 */
-interface Iterator[%T] : IteratorProtocol<[T]> {
+interface Iterator[%T] {
   def next -> T or void;
 }

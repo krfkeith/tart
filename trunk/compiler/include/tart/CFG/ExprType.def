@@ -52,3 +52,4 @@ EXPR_TYPE(BitCast)        // Reinterpret cast
 // Special objects
 EXPR_TYPE(IRValue)        // An IR-level value.
 EXPR_TYPE(LocalCall)      // A jump to a local subroutine.
+EXPR_TYPE(ArrayLiteral)   // An array literal

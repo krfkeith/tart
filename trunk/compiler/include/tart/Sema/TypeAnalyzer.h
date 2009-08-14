@@ -40,10 +40,6 @@ public:
   /** Construct a function type from an AST. */
   FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
   
-  /** Given an element type, return the corresponding array type. The element
-      type must already have been fully resolved. */
-  static CompositeType * getArrayTypeForElement(Type * elementType);
-  
   /** Queue any type definitions for analysis. */
   bool analyzeTypeExpr(Type * type);
 };

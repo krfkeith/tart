@@ -1,13 +1,70 @@
 .. highlight:: tart
   :linenothreshold: 30
 
-Type conversions
-================
+Typecasts and conversions
+=========================
 
 .. warning:: This section is out of date.
 
-Tart does not have a C-style casting operator. However, it does have syntax
-for converting one type into another.
+Tart does not have a C-style casting operator. However, it does have syntax for converting or
+casting one type into another.
+
+.. note:: Although the words "cast" and "convert" are often used interchangeably when referring
+  to types, the design of Tart tries to maintain a distinction between them: "cast" or "type cast"
+  generally refers to taking an existing value and seeing it in a different way, but without
+  altering it, whereas "convert" generally implies a transformation of the data. Of course, in
+  real programs the dividing line is not always so clear-cut.
+
+Type Conversion
+---------------
+
+Type conversion is normally done by calling the destination type's constructor::
+
+  let f = float(1);
+  let i = int(1.0);
+
+In cases where the constructor is already being used for something else, a classes will usually
+have a static method named :func:`from`.
+
+  let s = String.from(10);
+
+Implicit Conversion
+-------------------
+
+At the moment, the only types that are converted implicitly are the built-in primitive types,
+especially the number types. A number type can be silently converted to any other number type that
+is capable of containing all of the values of the source type.
+
+.. note:: There is not yet a means by which implicit casts can be added to user-defined types,
+  although such a feature is under consideration.
+
+Unconditional casting
+---------------------
+
+An unconditional cast is one that either succeeds or throws an :exception:`InvalidTypeError`
+exception.
+
+The :func:`typecast` template function is used to do unconditional casts::
+
+  let str = typecast<[String]>(inVal);
+
+Of course, the template parameters can be omitted if the type can be deduced by the compiler::
+
+  let str:String = typecast(inVal);
+
+Unconditional casts work with disjoint types as well as pointer types:
+
+  // A variable which can either be an int or a float.
+  let number:int or float = 10;
+  
+  // Cast to int, if it wasn't an int then throw InvalidTypeError.
+  let intVal:int = typecast(number);
+
+Application programmers are free to create additional overloads of :func:`typecast` for their own
+types.
+
+
+
 
 
 For downcasting of reference types, the keyword :keyword:`as` is used to do a

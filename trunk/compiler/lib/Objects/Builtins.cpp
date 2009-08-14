@@ -139,9 +139,8 @@ void Builtins::loadSystemClasses() {
   AnalyzerBase::analyzeTypeDefn(typeObject->typeDefn(), Task_PrepCodeGeneration);
 
   // Get the function that tests for a type
-  funcHasBase = cast_or_null<FunctionDefn>(
-      getSingleDefn(typeTypeInfoBlock, "hasBase"));
-    
+  funcHasBase = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "hasBase"));
+
   // Get the low-level exception structure
   typeUnwindException = cast<TypeDefn>(
       getSingleDefn(typeThrowable, "UnwindException"))->getTypeValue();

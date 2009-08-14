@@ -182,6 +182,9 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       ++it;
     }
     
+    //for (Defn * de = f->parameterScope().firstMember(); de != NULL; de = de->nextInScope()) {
+    //  ParameterDefn * param = cast<ParameterDefn>(de);
+
     for (; it != f->arg_end(); ++it, ++param_index) {
 
       // Set the name of the Nth parameter
@@ -189,7 +192,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       DASSERT_OBJ(param != NULL, fdef);
       it->setName(param->getName());
 
-#if 0      
+#if 0
       // See if we need to make a local copy of the param.
       if (param->getFlag(Modified)
         || (!param->getParameterFlag(ParameterDefn::Reference)

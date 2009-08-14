@@ -63,9 +63,11 @@ namespace {
   
 // -------------------------------------------------------------------
 // ParameterDefn
+
 void ParameterDefn::trace() const {
   ValueDefn::trace();
   safeMark(type_);
+  safeMark(internalType_);
   safeMark(defaultValue_);
 }
 
@@ -146,6 +148,9 @@ const std::string & FunctionDefn::getLinkageName() const {
             lnkName.append(",");
           }
           typeLinkageName(lnkName, (*it)->getType());
+          if ((*it)->getFlag(ParameterDefn::Variadic)) {
+            lnkName.append("...");
+          }
         }
         lnkName.append(")");
       }

@@ -141,7 +141,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
 
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
   DASSERT_OBJ(type->isSingular(), type);
-  DASSERT_OBJ(type->getSuper() == NULL, type);
+  DASSERT_OBJ(type->super() == NULL, type);
 
   // Resolve base class references to real types.
   Type::TypeClass dtype = type->typeClass();
@@ -167,10 +167,6 @@ bool ClassAnalyzer::analyzeBaseClasses() {
     
     // Recursively analyze the bases of the base
     ClassAnalyzer(baseDefn).analyze(Task_PrepMemberLookup);
-
-    // Add an external reference to this base (does nothing if it's defined
-    // by this module.)
-    module->addXRef(baseDefn);
 
     Type::TypeClass baseKind = baseType->typeClass();
     bool isPrimary = false;
@@ -201,8 +197,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
         } else if (primaryBase == NULL) {
           isPrimary = true;
         } else {
-          diag.fatal(target) <<
-              "structs can only have a single concrete supertype";
+          diag.fatal(target) << "structs can only have a single concrete supertype";
         }
         break;
 
@@ -212,6 +207,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
         } else if (primaryBase == NULL) {
           isPrimary = true;
         }
+
         break;
 
       default:
@@ -219,10 +215,15 @@ bool ClassAnalyzer::analyzeBaseClasses() {
         break;
     }
 
+    // Add an external reference to this base (does nothing if it's defined
+    // by this module.)
+    CompositeType * baseClass = cast<CompositeType>(baseType);
+    baseClass->addBaseXRefs(module);
+
     if (isPrimary) {
-      primaryBase = cast<CompositeType>(baseType);
+      primaryBase = baseClass;
     } else {
-      type->bases().push_back(cast<CompositeType>(baseType));
+      type->bases().push_back(baseClass);
     }
   }
 
@@ -251,12 +252,12 @@ bool ClassAnalyzer::analyzeFields() {
   if (target->beginPass(Pass_AnalyzeFields)) {
     CompositeType * type = cast<CompositeType>(target->getTypeValue());
     // Also analyze base class fields.
-    if (type->getSuper() != NULL) {
-      ClassAnalyzer(type->getSuper()->typeDefn()).analyze(Task_PrepCallOrUse);
+    if (type->super() != NULL) {
+      ClassAnalyzer(type->super()->typeDefn()).analyze(Task_PrepCallOrUse);
     }
     
     Defn::DefnType dtype = target->defnType();
-    for (Defn * member = type->getFirstMember(); member != NULL;
+    for (Defn * member = type->firstMember(); member != NULL;
         member = member->nextInScope()) {
       if (METHOD_DEFS.contains(member->defnType())) {
         continue;
@@ -288,8 +289,8 @@ bool ClassAnalyzer::analyzeConstructors() {
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Analyze superclass constructors
-      if (type->getSuper() != NULL) {
-        ClassAnalyzer ca(type->getSuper()->typeDefn());
+      if (type->super() != NULL) {
+        ClassAnalyzer ca(type->super()->typeDefn());
         if (!ca.analyze(Task_PrepCallOrUse)) {
           return false;
         }
@@ -369,7 +370,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
-  CompositeType * superType = cast_or_null<CompositeType>(type->getSuper());
+  CompositeType * superType = cast_or_null<CompositeType>(type->super());
   if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
     for (BlockList::iterator blk = blocks.begin(); blk != blocks.end(); ++blk) {
@@ -385,7 +386,7 @@ bool ClassAnalyzer::analyzeMethods() {
   if (target->beginPass(Pass_AnalyzeMethods)) {
     CompositeType * type = cast<CompositeType>(target->getTypeValue());
     Defn::DefnType dtype = target->defnType();
-    for (Defn * member = type->getFirstMember(); member != NULL; member = member->nextInScope()) {
+    for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (member->isTemplate()) {
         continue;
       }
@@ -427,7 +428,7 @@ void ClassAnalyzer::copyBaseClassMethods() {
   // If it's not a normal class, it can still have a supertype.
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
   Type::TypeClass tcls = type->typeClass();
-  CompositeType * superClass = type->getSuper();
+  CompositeType * superClass = type->super();
   if (superClass == NULL &&
       (tcls == Type::Interface || tcls == Type::Struct) &&
       !type->bases().empty()) {
@@ -560,7 +561,7 @@ void ClassAnalyzer::addNewMethods() {
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
-  for (Defn * de = type->getFirstMember(); de != NULL;
+  for (Defn * de = type->firstMember(); de != NULL;
       de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance && de->isSingular()) {
       //if (de->analysisState != Declaration::AS_Complete) {
@@ -805,7 +806,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a default constructor.
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
-  CompositeType * super = type->getSuper();
+  CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->getDefaultConstructor() == NULL) {
     diag.fatal(target) << "Cannot create a default constructor for '" <<
@@ -819,6 +820,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   ParameterList optionalParams;
   ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
   selfParam->setType(type);
+  selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
   LValueExpr * selfExpr = new LValueExpr(target->getLocation(), NULL, selfParam);
@@ -832,7 +834,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
 
   Block * constructorBody = new Block("entry");
   constructorBody->exitReturn(target->getLocation(), NULL);
-  for (Defn * de = type->getFirstMember(); de != NULL; de = de->nextInScope()) {
+  for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance) {
       if (de->defnType() == Defn::Let) {
         VariableDefn * let = static_cast<VariableDefn *>(de);
@@ -867,6 +869,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           ParameterDefn * param = new ParameterDefn(module, memberVar->getName());
           param->setLocation(target->getLocation());
           param->setType(memberType);
+          param->setInternalType(memberType);
           param->addTrait(Defn::Singular);
           param->finishPass(Pass_ResolveVarType);
           param->setDefaultValue(defaultValue);

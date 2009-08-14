@@ -130,6 +130,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::Prog2:
       return visitProg2(static_cast<BinaryExpr *>(in));
 
+    case Expr::ArrayLiteral:
+      return visitArrayLiteral(static_cast<ArrayLiteralExpr *>(in));
+
     case Expr::IRValue:
       return in;
 
@@ -160,32 +163,25 @@ Expr * CFGPass::visitElementRef(BinaryExpr * in) {
 }
 
 Expr * CFGPass::visitAssign(AssignmentExpr * in) {
-  in->setFromExpr(visitExpr(in->getFromExpr()));
-  in->setToExpr(visitExpr(in->getToExpr()));
+  in->setFromExpr(visitExpr(in->fromExpr()));
+  in->setToExpr(visitExpr(in->toExpr()));
   return in;
 }
 
 Expr * CFGPass::visitPostAssign(AssignmentExpr * in) {
-  in->setFromExpr(visitExpr(in->getFromExpr()));
-  in->setToExpr(visitExpr(in->getToExpr()));
+  in->setFromExpr(visitExpr(in->fromExpr()));
+  in->setToExpr(visitExpr(in->toExpr()));
   return in;
 }
 
 Expr * CFGPass::visitCall(CallExpr * in) {
-  ExprList & args = in->args();
-  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
-    *it = visitExpr(*it);
-  }
+  visitExprArgs(in);
   return in;
 }
 
 Expr * CFGPass::visitFnCall(FnCallExpr * in) {
-  ExprList & args = in->args();
   in->setSelfArg(visitExpr(in->getSelfArg()));
-  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
-    *it = visitExpr(*it);
-  }
-
+  visitExprArgs(in);
   return in;
 }
 
@@ -249,6 +245,18 @@ Expr * CFGPass::visitProg2(BinaryExpr * in) {
   in->setFirst(visitExpr(in->first()));
   in->setSecond(visitExpr(in->second()));
   return in;
+}
+
+Expr * CFGPass::visitArrayLiteral(ArrayLiteralExpr * in) {
+  visitExprArgs(in);
+  return in;
+}
+
+void CFGPass::visitExprArgs(ArglistExpr * in) {
+  ExprList & args = in->args();
+  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
+    *it = visitExpr(*it);
+  }
 }
 
 } // namespace tart

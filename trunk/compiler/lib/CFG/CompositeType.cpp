@@ -116,9 +116,9 @@ const llvm::Type * CompositeType::createIRType() const {
 
   // Handle inheritance
   //const CompositeType * superClass = NULL;
-  if (super != NULL) {
+  if (super_ != NULL) {
     // Base class
-    fieldTypes.push_back(super->getIRType());
+    fieldTypes.push_back(super_->getIRType());
   }
 
   if (typeClass() == Type::Interface) {
@@ -127,7 +127,7 @@ const llvm::Type * CompositeType::createIRType() const {
   }
 
   // Handle member fields...
-  for (Defn * field = getFirstMember(); field != NULL; field = field->nextInScope()) {
+  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
     switch (field->defnType()) {
     case Defn::Var: {
       // A class member variable.
@@ -288,7 +288,7 @@ void CompositeType::addMethodXDefs(Module * module) {
 }
 
 void CompositeType::addStaticXDefs(Module * module) {
-  for (Defn * field = getFirstMember(); field != NULL; field = field->nextInScope()) {
+  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
     switch (field->defnType()) {
       case Defn::Var: {
         VariableDefn * var = static_cast<VariableDefn *>(field);
@@ -302,10 +302,18 @@ void CompositeType::addStaticXDefs(Module * module) {
   }
 }
 
+void CompositeType::addBaseXRefs(Module * module) {
+  if (module->addXRef(typeDefn())) {
+    for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+      (*it)->addBaseXRefs(module);
+    }
+  }
+}
+
 void CompositeType::trace() const {
   DeclaredType::trace();
   markList(bases_.begin(), bases_.end());
-  safeMark(super);
+  safeMark(super_);
 }
 
 } // namespace tart

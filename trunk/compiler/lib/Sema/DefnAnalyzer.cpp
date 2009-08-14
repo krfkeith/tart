@@ -33,12 +33,12 @@ bool DefnAnalyzer::analyzeModule() {
     return false;
   }
 
-  if (module->getFirstMember() == NULL) {
+  if (module->firstMember() == NULL) {
     diag.fatal() << "Module should have at least one definition";
     return false;
   }
   
-  for (Defn * de = module->getFirstMember(); de != NULL; de = de->nextInScope()) {
+  for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
     if (!de->isTemplate()) {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
         module->addXDef(de);
@@ -57,8 +57,8 @@ bool DefnAnalyzer::analyzeModule() {
   if (success) {
     std::string xdefNames("{");
     int count = 0;
-    for (Defn * de = module->getFirstMember(); de != NULL; de = de->nextInScope()) {
-      if (de != module->getFirstMember()) {
+    for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (de != module->firstMember()) {
         xdefNames += ", ";
       }
       

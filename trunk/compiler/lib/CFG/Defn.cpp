@@ -150,7 +150,7 @@ const std::string & Defn::getLinkageName() const {
 
     // Template instance parameters.
     if (tinst_ != NULL) {
-      lnkName.append("<");
+      lnkName.append("[");
       for (Defn * arg = tinst_->getFirstArg(); arg != NULL;
           arg = arg->nextInScope()) {
         // Last arg is the defn itself.
@@ -176,7 +176,7 @@ const std::string & Defn::getLinkageName() const {
         }
       }
 
-      lnkName.append(">");
+      lnkName.append("]");
     }
   }
   

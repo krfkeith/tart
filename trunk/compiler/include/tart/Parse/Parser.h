@@ -162,7 +162,7 @@ public:
   bool formalArgumentList(ASTParamList & params, TokenType endDelim);
 
   /** Parse a format argument. */
-  bool formalArgument(ASTParamList & params);
+  bool formalArgument(ASTParamList & params, int paramFlags);
 
   /** Create the 'self' argument. */
   //void createSelfParam(ParameterList & params, ASTDecl * selfType);

@@ -25,6 +25,7 @@ class CompareExpr;
 class InstanceOfExpr;
 class InitVarExpr;
 class FnCallExpr;
+class ArrayLiteralExpr;
 class NewExpr;
 class LValueExpr;
 class Defn;
@@ -145,9 +146,6 @@ public:
   llvm::Value * genITableLookup(const FunctionDef * method, const Type * interfaceType,
       llvm::Value * objectVal);
   
-  /** Generate an array literal. */
-  llvm::Value * genArrayLiteral(OpExpr * array);
-  
   /** Generate a type cast. */
   llvm::Value * genCast(const SourceLocation & loc, llvm::Value * val,
       const Type * fromType, const Type * toType);
@@ -162,6 +160,9 @@ public:
 
   /** Generate the base address of a struct or array. */
   llvm::Value * genBaseExpr(const Expr * base, ValueList & indices, FormatStream & labelStream);
+
+  /** Generate an array literal. */
+  llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
 
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
@@ -210,8 +211,11 @@ public:
   /** Generate the code to initialize the vtable pointer of a newly-allocated class instance. */
   void genInitObjVTable(const CompositeType * tdef, llvm::Value * instance);
 
-  /** Given a type, generate a constant representing the size of that type. */
-  llvm::Constant * genSizeOf(Type * type);
+  /** Given a type, generate a constant representing the size of that type.
+      'memberSize' - return how much space the type would consume as a member of another
+      type (which will be equal to the size of a reference for reference types.)
+   */
+  llvm::Constant * genSizeOf(Type * type, bool memberSize);
 
   /** Generate the program entry point. */
   void genEntryPoint();
@@ -257,6 +261,11 @@ private:
   llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
   llvm::DICompileUnit getCompileUnit(Defn * defn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
+
+  /** Find a static method of the given class, and also generate an external reference
+      to it from this module. If it's a template, then also instantiate it. This is used
+      to call various methods of core classes. */
+  llvm::Function * findMethod(const CompositeType * type, const char * methodName);
 
   llvm::IRBuilder<true> builder_;    // LLVM builder
   

@@ -127,6 +127,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         setterType->params().push_back(valueParam);
         if (valueParam->getType() == NULL) {
           valueParam->setType(type);
+          valueParam->setInternalType(type);
         } else if (!valueParam->getType()->isEqual(type)) {
           diag.fatal(setter) << "Setter parameter '" << valueParam->getName() <<
               "' must be of type '" << type << "' but is instead type '" <<
@@ -136,6 +137,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         // Create a value param.
         ParameterDefn * valueParam = new ParameterDefn(NULL, istrings.idValue);
         valueParam->setType(type);
+        valueParam->setInternalType(type);
         valueParam->addTrait(Defn::Singular);
         setterType->addParam(valueParam);
       }

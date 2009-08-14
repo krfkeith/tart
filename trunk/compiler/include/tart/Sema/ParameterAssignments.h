@@ -54,6 +54,7 @@ private:
   llvm::SmallVector<bool, 16> inUse;
   const FunctionType * ftype;
   size_t paramCount;
+  size_t nextPositionalParam;
   
   bool keywordAdded;
   bool valid;

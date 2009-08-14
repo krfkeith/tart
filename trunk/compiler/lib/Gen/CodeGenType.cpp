@@ -71,12 +71,12 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), type);
   DASSERT_OBJ(type->getIRType() != NULL, type);
 
-  if (type->getSuper() != NULL) {
-    const CompositeType * superDecl = type->getSuper();
+  /*if (type->super() != NULL) {
+    const CompositeType * superDecl = type->super();
     if (superDecl != NULL) {
       genCompositeType(superDecl);
     }
-  }
+  }*/
 
   irModule_->addTypeName(tdef->getLinkageName(), type->getIRType());
   createTypeInfoBlock(rtype);
@@ -144,8 +144,8 @@ bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
   objMembers.push_back(getTypeInfoPtr(cast<CompositeType>(Builtins::typeType)));
   typeMembers.push_back(ConstantStruct::get(objMembers));
   typeMembers.push_back(createTypeInfoPtr(rtype));
-  if (type->typeClass() == Type::Class && type->getSuper() != NULL) {
-    typeMembers.push_back(getTypeObjectPtr(type->getSuper()));
+  if (type->typeClass() == Type::Class && type->super() != NULL) {
+    typeMembers.push_back(getTypeObjectPtr(type->super()));
   } else {
     typeMembers.push_back(ConstantPointerNull::get(
         PointerType::getUnqual(Builtins::typeType->getIRType())));
@@ -177,7 +177,9 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Concrete classes first
   ConstantList baseClassList;
-  for (const CompositeType * s = type->getSuper(); s != NULL; s = s->getSuper()) {
+  for (const CompositeType * s = type->super(); s != NULL; s = s->super()) {
+    // If the class lives in this module, then create it.
+    genCompositeType(s);
     baseClassList.push_back(getTypeObjectPtr(s));
   }
 
@@ -185,6 +187,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   for (ClassSet::iterator it = baseClassSet.begin(); it != baseClassSet.end(); ++it) {
     CompositeType * baseType = *it;
     if (baseType->typeClass() == Type::Interface) {
+      genCompositeType(baseType);
       baseClassList.push_back(getTypeObjectPtr(baseType));
     }
   }
@@ -376,7 +379,7 @@ void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instanc
   while (base != NULL) {
     // First member of this type.
     indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
-    base = base->getSuper();
+    base = base->super();
   }
 
   Value * vtablePtrPtr = builder_.CreateGEP(instance,

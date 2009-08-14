@@ -1,6 +1,7 @@
 # CMake build file for Tart/test-unit
 
 include_directories(${TART_SOURCE_DIR}/third-party/gtest-1.3.0/include)
+include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.1.0/include)
 
 # Unit test executable. We specify the sources explicitly because we want
 # the tests to run in that order.
@@ -19,7 +20,7 @@ add_executable(unittest
   TypeInferenceTest.cpp
   UnifyTest.cpp)
 target_link_libraries(unittest
-    gtest compiler collector
+    gtest gmock compiler collector
     ${LLVM_BIT_WRITER}
     ${LLVM_ANALYSIS} 
     ${LLVM_TARGET}

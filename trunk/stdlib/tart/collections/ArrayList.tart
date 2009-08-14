@@ -1,0 +1,17 @@
+/** Array-backed list type. */
+class ArrayList[%ElementType] : List<[ElementType]> {
+  private var data:Array<[ElementType]>;
+  readonly var length:int;
+  
+  def construct(data:ElementType...; initialCapacity:int = 0) {
+    initialCapacity = max(initialCapacity, data.length);
+    data = Array<[ElementType]>.create(initialCapacity);
+    self.length = data.length;
+  }
+
+  def construct(data:Array<[ElementType]>, initialCapacity:int = 0) {
+    initialCapacity = max(initialCapacity, data.length);
+    data = Array<[ElementType]>.create(initialCapacity);
+    self.length = data.length;
+  }
+}

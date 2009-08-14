@@ -18,6 +18,7 @@ class Scope;
 class Expr;
 class SourceLocation;
 class NamespaceDefn;
+class ArrayLiteralExpr;
 
 /// -------------------------------------------------------------------
 /// Represents the set of possible operations that are done on a definition.
@@ -150,6 +151,15 @@ public:
   /** Do the requested analysis pass on the namesapce. */
   static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask pass);
 
+  /** Given an element type, return the corresponding array type. The element
+      type must already have been fully resolved. */
+  static CompositeType * getArrayTypeForElement(Type * elementType);
+  
+  /** Create an empty array literal, with elements of the specified type.
+      Also add to the given module the external symbols needed to support
+      construction of the array. */
+  static ArrayLiteralExpr * createArrayLiteral(const SourceLocation & loc, Type * elementType);
+  
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();
 };

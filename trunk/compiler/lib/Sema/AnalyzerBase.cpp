@@ -8,8 +8,10 @@
 #include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/Sema/PropertyAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
+#include "tart/Sema/BindingEnv.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -19,6 +21,7 @@
 #include "tart/CFG/Template.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Objects/Builtins.h"
 
 namespace tart {
 
@@ -299,7 +302,15 @@ Expr * AnalyzerBase::refToDefn(Defn * de, Expr * context, const SourceLocation &
           vdef->getName() << "' from static method.";
     }
     
-    return new LValueExpr(loc, context, vdef);
+    LValueExpr * result = new LValueExpr(loc, context, vdef);
+    
+    // If it's a variadic parameter, then the actual type is an array of the declared type.
+    if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
+      DASSERT_OBJ(param->internalType() != NULL, param);
+      result->setType(param->internalType());
+    }
+
+    return result;
   } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(de)) {
     return new ScopeNameExpr(loc, ns);
   } else if (Module * m = dyn_cast<Module>(de)) {
@@ -347,6 +358,9 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   }
 
   if (valueDef->getType() != NULL && valueDef->getType()->isSingular()) {
+    if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
+      return param->internalType();
+    }
     return valueDef->getType();
   }
 
@@ -487,6 +501,33 @@ bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
   }
   
   return true;
+}
+
+CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
+  // Look up the array class
+  TemplateSignature * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
+
+  // Do analysis on template if needed.
+  if (arrayTemplate->getAST() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module);
+    da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
+  }
+
+  DASSERT_OBJ(arrayTemplate->paramScope().getCount() == 1, elementType);
+
+  BindingEnv arrayEnv(arrayTemplate);
+  arrayEnv.bind(arrayTemplate->patternVar(0), elementType);
+  return cast<CompositeType>(cast<TypeDefn>(
+      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->getTypeValue());
+}
+
+ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(const SourceLocation & loc,
+    Type * elementType) {
+  CompositeType * arrayType = getArrayTypeForElement(elementType);
+  ArrayLiteralExpr * array = new ArrayLiteralExpr(loc);
+  array->setType(arrayType);
+  
+  return array;
 }
 
 void AnalyzerBase::dumpScopeHierarchy() {

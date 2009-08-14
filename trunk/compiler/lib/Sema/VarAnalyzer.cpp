@@ -138,6 +138,11 @@ void VarAnalyzer::setTargetType(Type * type) {
     vdef->setType(type);
   } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
     pdef->setType(type);
+    if (pdef->getFlag(ParameterDefn::Variadic)) {
+      pdef->setInternalType(getArrayTypeForElement(type));
+    } else {
+      pdef->setInternalType(type);
+    }
   } else {
     DFAIL("Invalid operation for type");
   }

@@ -377,4 +377,21 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
   return exceptionPersonality_;
 }
 
+Function * CodeGenerator::findMethod(const CompositeType * type, const char * methodName) {
+  DASSERT(type->isSingular());
+  DASSERT(type->typeDefn()->getAST() != NULL);
+  DefnList defs;
+
+  if (!type->lookupMember(methodName, defs, false)) {
+    DFAIL("Couldn't find system definition");
+  }
+
+  if (defs.size() > 1) {
+    DFAIL("Couldn't find system definition");
+  }
+
+  FunctionDefn * fn = cast<FunctionDefn>(defs.front());
+  return genFunctionValue(fn);
+}
+
 }

@@ -40,7 +40,7 @@ public:
   /** Find a declaration by name */
   virtual bool lookupMember(const char * ident, DefnList & defs, bool inherit = false) const = 0;
       
-  /** Convenience function used by testing code. */
+  /** Convenience function used to look up a member with no overloads. */
   Defn * lookupSingleMember(const char * ident, bool inherit = false) const;
 
   /** Return true if this scope allows overloading. Local scopes and parameter scopes do not. */
@@ -90,7 +90,7 @@ public:
   void setParentScope(Scope * parent);
   
   /** Return the first symbol in this scope. */
-  Defn * getFirstMember() const { return members_.getFirst(); }
+  Defn * firstMember() const { return members_.first(); }
 
   /** Return the symbol table entry for the specified symbol name. */
   const SymbolTable::Entry * findSymbol(const char * key) const {

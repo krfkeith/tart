@@ -57,7 +57,9 @@ public:
   size_t argCount() const { return paramAssignments_.size(); }
   
   /** For a given input argument index, return the type of the parameter
-      that this argument will be assigned to. */
+      that this argument will be assigned to. This may not be the same
+      as the formally declared parameter type, as pattern variable
+      substitutions may have occurred. */
   Type * paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */

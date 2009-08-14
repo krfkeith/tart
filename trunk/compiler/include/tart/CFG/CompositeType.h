@@ -58,7 +58,7 @@ public:
 
 private:
   ClassList bases_;
-  CompositeType * super;
+  CompositeType * super_;
   int classFlags;
 
   // The list of instance methods for this type
@@ -70,7 +70,7 @@ private:
 public:
   CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
     : DeclaredType(tcls, de, parentScope)
-    , super(NULL)
+    , super_(NULL)
     , classFlags(0)
   {}
 
@@ -88,9 +88,9 @@ public:
   ClassList & bases() { return bases_; }
 
   /** The super class of this type. */
-  const CompositeType * getSuper() const { return super; }
-  CompositeType * getSuper() { return super; }
-  void setSuper(CompositeType * s) { super = s; }
+  const CompositeType * super() const { return super_; }
+  CompositeType * super() { return super_; }
+  void setSuper(CompositeType * s) { super_ = s; }
 
   /** Return true if this class is the same as, or is a subclass of,
       the class 'base'. */
@@ -111,6 +111,9 @@ public:
 
   /** Add all of the static member variables of this class as definitions to this module. */
   void addStaticXDefs(Module * module);
+
+  /** Add all of the ancestor classes as references to this module. */
+  void addBaseXRefs(Module * module);
 
   // Overrides
 

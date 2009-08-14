@@ -64,7 +64,12 @@ void NativePointerType::initBuiltin() {
 
 const llvm::Type * NativePointerType::createIRType() const {
   DASSERT_OBJ(elementType != NULL, this);
-  return llvm::PointerType::getUnqual(elementType->getIRType());
+  const llvm::Type * type = elementType->getIRType();
+  if (elementType->isReferenceType()) {
+    type = llvm::PointerType::getUnqual(type);
+  }
+
+  return llvm::PointerType::getUnqual(type);
 }
 
 ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {

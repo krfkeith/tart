@@ -25,7 +25,7 @@ void CodeGenerator::genLocalStorage() {
   LocalScopeList & lsl = currentFunction_->localScopes();
   for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
     LocalScope * lscope = *it;
-    for (Defn * de = lscope->getFirstMember(); de != NULL; de = de->nextInScope()) {
+    for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (de->defnType() == Defn::Var) {
         genLocalVar(static_cast<VariableDefn *>(de));
       }

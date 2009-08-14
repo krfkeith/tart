@@ -30,6 +30,7 @@ public:
 
   Expr * visitLValue(LValueExpr * in);
   Expr * visitFnCall(FnCallExpr * in);
+  Expr * visitArrayLiteral(ArrayLiteralExpr * in);
 };
 
 } // namespace tart

@@ -674,3 +674,8 @@ def foo(a:%T)
 = List[].new();
 
 = Map(String, String)();
+
+let a:Array[int] = {0, 1, 2, 3, 4};
+
+let a:[int] = {0, 1, 2, 3, 4};
+[int](10)

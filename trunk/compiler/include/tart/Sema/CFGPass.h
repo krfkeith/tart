@@ -50,6 +50,11 @@ public:
   virtual Expr * visitNot(UnaryExpr * in);
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
+  virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  
+private:
+  void visitExprArgs(ArglistExpr * in);
+  
 };
 
 } // namespace tart

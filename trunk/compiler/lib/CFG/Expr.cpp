@@ -167,6 +167,16 @@ void BinaryExpr::trace() const {
 /// -------------------------------------------------------------------
 /// ArglistExpr
 
+bool ArglistExpr::areArgsSideEffectFree() const {
+  for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
+    if (!(*it)->isSideEffectFree()) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 bool ArglistExpr::isSingular() const {
   for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
     if (!(*it)->isSingular()) {
@@ -241,9 +251,9 @@ void ScopeNameExpr::trace() const {
 
 void AssignmentExpr::format(FormatStream & out) const {
   if (exprType() == Expr::PostAssign) {
-    out << getToExpr() << " (=) " << getFromExpr();
+    out << toExpr() << " (=) " << fromExpr();
   } else {
-    out << getToExpr() << " = " << getFromExpr();
+    out << toExpr() << " = " << fromExpr();
   }
 }
 
@@ -445,7 +455,7 @@ bool BinaryOpcodeExpr::isSideEffectFree() const {
 }
 
 void BinaryOpcodeExpr::format(FormatStream & out) const {
-  switch (opCode) {
+  switch (opCode_) {
     case llvm::Instruction::Add: {
       out << first() << " + " << second();
       break;

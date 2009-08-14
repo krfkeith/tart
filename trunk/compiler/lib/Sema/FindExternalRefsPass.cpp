@@ -78,8 +78,16 @@ Expr * FindExternalRefsPass::visitLValue(LValueExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
-  //diag.info(in) << "Found xref " << in->getFunction();
   addXRef(in->function());
+  CFGPass::visitFnCall(in);
+  return in;
+}
+
+Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
+  CompositeType * arrayType = cast<CompositeType>(in->type());
+  Defn * allocFunc = arrayType->lookupSingleMember("alloc");
+  addXRef(arrayType->typeDefn());
+  addXRef(allocFunc);
   return in;
 }
 

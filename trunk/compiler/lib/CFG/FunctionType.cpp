@@ -6,6 +6,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/Sema/ParameterAssignments.h"
+#include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Common/Diagnostics.h"
 #include <llvm/DerivedTypes.h>
 
@@ -110,12 +111,18 @@ const llvm::Type * FunctionType::createIRType() const {
   }
 
   // Generate the argument signature
-  for (ParameterList::const_iterator it = params_.begin(); it != params_.end();
-      ++it) {
+  for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    const llvm::Type * argType = param->getType()->getIRType();
-    if (param->getType()->isReferenceType()
-      || param->getFlag(ParameterDefn::Reference)) {
+    Type * paramType = param->internalType();
+    DASSERT_OBJ(paramType != NULL, param);
+    
+    // If it's a variadic type, then convert to an array.
+    //if (param->isVariadic()) {
+    //  paramType = TypeAnalyzer::getArrayTypeForElement(paramType);
+    //}
+
+    const llvm::Type * argType = paramType->getIRType();
+    if (paramType->isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
       argType = PointerType::getUnqual(argType);
     }
 

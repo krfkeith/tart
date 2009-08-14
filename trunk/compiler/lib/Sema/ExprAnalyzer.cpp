@@ -565,8 +565,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, Type * expected, bool
       diag.fatal(indexOp->getLocation(), "Incorrect number of array dimensions");
     }
 #endif
-    TypeDefn * arrayType =
-        TypeAnalyzer(module, activeScope).getArrayTypeForElement(typeExpr->value())->typeDefn();
+    TypeDefn * arrayType = getArrayTypeForElement(typeExpr->value())->typeDefn();
     ASTNodeList cargs;
     cargs.push_back(ast->args()[1]);
     return callConstructor(ast->getLocation(), arrayType->asExpr(), cargs);
@@ -787,7 +786,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(setter->returnType()->isEqual(prop->getType()), setter);
+//  DASSERT_OBJ(setter->returnType()->isEqual(prop->getType()), setter);
   
   //ExprList callingArgs;
   //callingArgs.push_back(value);
@@ -814,6 +813,9 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, Type * expected) {
   analyzeValueDefn(lvalue->value(), Task_PrepCallOrUse);
   DASSERT(lvalue->value()->getType() != NULL);
   lvalue->setType(lvalue->value()->getType());
+  if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
+    lvalue->setType(param->internalType());
+  }
 
   switch (lvalue->value()->storageClass()) {
     case Storage_Global:

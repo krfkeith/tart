@@ -5,7 +5,6 @@
 #include "tart/AST/ASTDecl.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
-#include "tart/Sema/BindingEnv.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -17,7 +16,6 @@
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
-#include "tart/Objects/Builtins.h"
 
 namespace tart {
 
@@ -169,31 +167,19 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST( const ASTFunctionDecl * ast) {
     Type * paramType = typeFromAST(aparam->getType());
     ParameterDefn * param = new ParameterDefn(NULL, aparam);
     param->setType(paramType);
+    param->setInternalType(paramType);
     params.push_back(param);
+    if (aparam->flags() & Param_Variadic) {
+      param->setFlag(ParameterDefn::Variadic, true);
+      param->setInternalType(getArrayTypeForElement(paramType));
+    }
+
+    if (aparam->flags() & Param_KeywordOnly) {
+      param->setFlag(ParameterDefn::KeywordOnly, true);
+    }
   }
   
   return new FunctionType(returnType, params);
-}
-
-CompositeType * TypeAnalyzer::getArrayTypeForElement(Type * elementType) {
-  // Look up the array class
-  TemplateSignature * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
-
-  // Do analysis on template if needed.
-  if (arrayTemplate->getAST() != NULL) {
-    DefnAnalyzer da(&Builtins::module, &Builtins::module);
-    da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
-  }
-
-  DASSERT_OBJ(arrayTemplate->paramScope().getCount() == 1, elementType);
-
-  BindingEnv arrayEnv(arrayTemplate);
-  arrayEnv.bind(arrayTemplate->patternVar(0), elementType);
-  //PatternBinding * elementTypeBinding = arrayEnv.getBinding(arrayTemplate->patternVar(0));
-  //DASSERT(elementTypeBinding != NULL);
-  //elementTypeBinding->setValue(elementType, true);
-  return cast<CompositeType>(cast<TypeDefn>(
-      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->getTypeValue());
 }
 
 bool TypeAnalyzer::analyzeTypeExpr(Type * type) {

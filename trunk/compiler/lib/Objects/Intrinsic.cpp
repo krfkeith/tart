@@ -177,7 +177,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   Value * lastVal = cg.genExpr(lastPtr);
   lastVal = cg.builder().CreatePtrToInt(lastVal, llvm::Type::Int32Ty);
   Value * diffVal = cg.builder().CreateSub(lastVal, firstVal);
-  llvm::Constant * elemSize = cg.genSizeOf(elemType);
+  llvm::Constant * elemSize = cg.genSizeOf(elemType, true);
   return cg.builder().CreateSDiv(diffVal, elemSize, "ptrDiff");
 }
 

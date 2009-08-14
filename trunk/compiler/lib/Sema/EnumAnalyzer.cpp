@@ -56,7 +56,7 @@ bool EnumAnalyzer::analyzeEnum() {
 
   // Analyze the base type of the enum.
   const PrimitiveType * intValueType_ = &IntType::instance;
-  //const Type * superType = ast->getSuper();
+  //const Type * superType = ast->super();
   if (!ast->bases().empty()) {
     // For the moment, we require enums to be derived from integer types only.
     DASSERT(ast->bases().size() == 1);

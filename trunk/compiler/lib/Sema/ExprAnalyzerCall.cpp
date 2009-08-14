@@ -195,7 +195,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
 
   TypeDefn * enclosingClassDefn = currentFunction_->enclosingClassDefn();
   CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->getTypeValue());
-  CompositeType * superClass = enclosingClass->getSuper();
+  CompositeType * superClass = enclosingClass->super();
   
   if (superClass == NULL) {
     diag.fatal(loc) << "class '" << enclosingClass << "' has no super class";

@@ -123,12 +123,8 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         VarAnalyzer(param).analyze(Task_PrepCallOrUse);
 
         if (param->getType() == NULL) {
-          diag.fatal(param) << "No type specified for parameter '" << param << "'";
+          diag.error(param) << "No type specified for parameter '" << param << "'";
         }
-        
-        // TODO: Change this to assign explicit types, or invent type
-        // variables.
-        //success &= AnalyzerBase::analyzeDefn(*it, InferTypesPass);
         
         // TODO: Should only add the param as a member if we "own" it.
         if (param->definingScope() == NULL && param->getName() != NULL) {
@@ -142,6 +138,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
       selfParam->setType(selfType->getTypeValue());
+      selfParam->setInternalType(selfType->getTypeValue());
       selfParam->addTrait(Defn::Singular);
       selfParam->copyTrait(selfType, Defn::Final);
       selfParam->setFlag(ParameterDefn::Reference, true);

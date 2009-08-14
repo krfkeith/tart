@@ -73,7 +73,7 @@ public:
   SymbolTable::Entry * add(Defn * d);
   
   /** Get the first decl in the list by order. */
-  Defn * getFirst() const { return firstSymbol; }
+  Defn * first() const { return firstSymbol; }
 };
 
 }

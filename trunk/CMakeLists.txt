@@ -66,9 +66,12 @@ add_subdirectory(third-party)
 add_subdirectory(test-unit)
 add_subdirectory(stdlib)
 
+# Build and run the unit tests
+#add_custom_target(check-unit DEPENDS unittest)
+#add_custom_command(TARGET check-unit COMMAND test-unit/unittest)
+
 # Add the check-build target
-add_custom_target(check DEPENDS unittest stdlib)
-add_custom_command(TARGET check COMMAND test-unit/unittest)
+add_custom_target(check DEPENDS unittest COMMAND test-unit/unittest)
 
 add_subdirectory(test/tart/nolib)
 add_subdirectory(test/tart/stdlib)

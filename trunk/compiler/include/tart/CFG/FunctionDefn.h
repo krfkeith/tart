@@ -19,12 +19,14 @@ public:
     Variadic = (1<<0),    // Allows multiple values via "..."
     Reference = (1<<1),   // Value passed by reference, even if value type
     LValueParam = (1<<2), // Allow taking address or mutating param
+    KeywordOnly = (1<<3), // A "keyword only" argument.
   };
-  
+
   /** Constructor that takes a name */
   ParameterDefn(Module * m, const char * name)
     : ValueDefn(Parameter, m, name)
     , type_(NULL)
+    , internalType_(NULL)
     , defaultValue_(NULL)
     , irValue_(NULL)
     , variance_(Contravariant)
@@ -35,6 +37,7 @@ public:
   ParameterDefn(DefnType dt, Module * m, const char * name)
     : ValueDefn(dt, m, name)
     , type_(NULL)
+    , internalType_(NULL)
     , defaultValue_(NULL)
     , irValue_(NULL)
     , variance_(Contravariant)
@@ -45,6 +48,7 @@ public:
   ParameterDefn(Module * m, ASTDecl * de)
     : ValueDefn(Parameter, m, de)
     , type_(NULL)
+    , internalType_(NULL)
     , defaultValue_(NULL)
     , irValue_(NULL)
     , variance_(Contravariant)
@@ -55,6 +59,7 @@ public:
   ParameterDefn(DefnType dt, Module * m, ASTDecl * de)
     : ValueDefn(dt, m, de)
     , type_(NULL)
+    , internalType_(NULL)
     , defaultValue_(NULL)
     , irValue_(NULL)
     , variance_(Contravariant)
@@ -65,10 +70,11 @@ public:
   ParameterDefn(Module * m, const char * name, Type * ty, int paramFlags, Expr * defaultVal = NULL)
     : ValueDefn(Parameter, m, name)
     , type_(ty)
+    , internalType_(ty)
     , defaultValue_(defaultVal)
     , irValue_(NULL)
     , variance_(Contravariant)
-    , flags_(0)
+    , flags_(paramFlags)
   {
     assert(ty != NULL);
   }
@@ -81,6 +87,11 @@ public:
   /** Set the type of this parameter. */
   void setType(Type * ty) { type_ = ty; }
 
+  /** The 'internal' type is the type of the parameter as it appears within the function body,
+      which may not be the same as it appears externally. */
+  Type * internalType() const { return internalType_; }
+  void setInternalType(Type * type) { internalType_ = type; }
+  
   /** IR representation of this function. */
   llvm::Value * getIRValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) { irValue_ = ir; }
@@ -101,7 +112,7 @@ public:
   }
 
   bool isVariadic() const { return getFlag(Variadic); }
-  
+
   // Overrides
 
   Type * getType() const { return type_; }
@@ -114,6 +125,7 @@ public:
 
 private:
   Type * type_;
+  Type * internalType_;
   Expr * defaultValue_;
   llvm::Value * irValue_;
   Variance variance_;
@@ -160,8 +172,8 @@ public:
   Type * returnType() const;
   
   /** Scope containing the parameters. */
-  const Scope & parameterScope() const { return parameterScope_; }
-  Scope & parameterScope() { return parameterScope_; }
+  const IterableScope & parameterScope() const { return parameterScope_; }
+  IterableScope & parameterScope() { return parameterScope_; }
 
   /** List of basic blocks. */
   const BlockList & blocks() const { return blocks_; }

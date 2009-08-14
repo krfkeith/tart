@@ -161,7 +161,7 @@ public:
 
   bool allowOverloads() { return false; }
   Scope * parentScope() const { return parentScope_; }
-  Defn * getFirstArg() const { return paramDefns_.getFirst(); }
+  Defn * getFirstArg() const { return paramDefns_.first(); }
   void addMember(Defn * d);
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full = true) const;

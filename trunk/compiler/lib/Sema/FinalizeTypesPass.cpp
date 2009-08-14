@@ -12,6 +12,7 @@
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -52,7 +53,7 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
   Expr * first = visitExpr(in->first());
   Expr * second = visitExpr(in->second());
   if (!isErrorResult(first) && !isErrorResult(second)) {
-    second = IntType::instance.implicitCast(in->getLocation(), second);
+    second = IntType::instance.implicitCast(in->location(), second);
     in->setFirst(first);
     in->setSecond(second);
     DASSERT_OBJ(first->isSingular(), first);
@@ -64,13 +65,13 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
-  DASSERT_OBJ(in->getToExpr()->getType() != NULL, in);
-  Expr * from = visitExpr(in->getFromExpr());
-  Expr * to = visitExpr(in->getToExpr());
+  DASSERT_OBJ(in->toExpr()->getType() != NULL, in);
+  Expr * from = visitExpr(in->fromExpr());
+  Expr * to = visitExpr(in->toExpr());
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
-    from = to->getType()->implicitCast(from->getLocation(), from);
+    from = to->getType()->implicitCast(from->location(), from);
     in->setFromExpr(from);
     in->setToExpr(to);
 
@@ -81,13 +82,13 @@ Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitPostAssign(AssignmentExpr * in) {
-  DASSERT_OBJ(in->getToExpr()->getType() != NULL, in);
-  Expr * from = visitExpr(in->getFromExpr());
-  Expr * to = visitExpr(in->getToExpr());
+  DASSERT_OBJ(in->toExpr()->getType() != NULL, in);
+  Expr * from = visitExpr(in->fromExpr());
+  Expr * to = visitExpr(in->toExpr());
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
-    from = to->getType()->implicitCast(from->getLocation(), from);
+    from = to->getType()->implicitCast(from->location(), from);
     in->setFromExpr(from);
     in->setToExpr(to);
 
@@ -120,7 +121,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         }
       }
 
-      method = cast<FunctionDefn>(tsig->instantiate(in->getLocation(), cd->env()));
+      method = cast<FunctionDefn>(tsig->instantiate(in->location(), cd->env()));
       if (!AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
         return &Expr::ErrorVal;
       }
@@ -134,28 +135,49 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
 
     for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+      int paramIndex = cd->getParameterIndex(argIndex);
+      ParameterDefn * param = method->functionType()->params()[paramIndex];
       Type * paramType = cd->paramType(argIndex);
       Expr * argVal = visitExpr(args[argIndex]);
       if (isErrorResult(argVal)) {
         return &Expr::ErrorVal;
       }
-      
+
       Expr * castArgVal = addCastIfNeeded(argVal, paramType);
       if (castArgVal == NULL) {
         diag.error(argVal) << "Unable to convert argument of type " << argVal->getType() <<
             " to " << paramType;
         return &Expr::ErrorVal;
       }
-
-      callingArgs[cd->getParameterIndex(argIndex)] = args[argIndex] = castArgVal;
+      
+      args[argIndex] = castArgVal;
+      if (param->isVariadic()) {
+        // Handle variadic parameters - build an array literal.
+        ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(callingArgs[paramIndex]);
+        if (arrayParam == NULL) {
+          arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
+          callingArgs[paramIndex] = arrayParam;
+        }
+        
+        arrayParam->appendArg(castArgVal);
+      } else {
+        callingArgs[paramIndex] = castArgVal;
+      }
     }
     
     // Fill in default params
     for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
       if (callingArgs[paramIndex] == NULL) {
         ParameterDefn * param = method->functionType()->params()[paramIndex];
-        callingArgs[paramIndex] = param->defaultValue();
-        DASSERT_OBJ(callingArgs[paramIndex] != NULL, param);
+        if (param->isVariadic()) {
+          // Pass a null array - possibly a static singleton.
+          ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
+              param->location(), param->type());
+          callingArgs[paramIndex] = arrayParam;
+        } else {
+          callingArgs[paramIndex] = param->defaultValue();
+          DASSERT_OBJ(callingArgs[paramIndex] != NULL, param);
+        }
       }
     }
 
@@ -170,7 +192,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     
     // See if we can evaluate the call at compile-time.
     // TODO: Dereference any 'let' statements to constants if possible.
-    Expr * expr = method->eval(in->getLocation(), selfArg, callingArgs);
+    Expr * expr = method->eval(in->location(), selfArg, callingArgs);
     if (expr != NULL) {
       DASSERT_OBJ(expr->isSingular(), expr);
       return expr;
@@ -187,7 +209,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     bool isCtorCall = in->exprType() == Expr::Construct && method->isCtor();
     FnCallExpr * result = new FnCallExpr(
       isCtorCall ? Expr::CtorCall : Expr::FnCall,
-      in->getLocation(), method, selfArg);
+      in->location(), method, selfArg);
     result->args().append(callingArgs.begin(), callingArgs.end());
 
     if (isCtorCall) {
@@ -219,7 +241,7 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   }
 
   // Attempt to cast
-  arg = in->getType()->implicitCast(in->getLocation(), arg);
+  arg = in->getType()->implicitCast(in->location(), arg);
   return arg ? arg : &Expr::ErrorVal;
 }
 
@@ -236,8 +258,8 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   DASSERT_OBJ(tyTo->isSingular(), tyTo);
   
   if (tyFrom->isEqual(tyTo)) {
-    return new BinaryExpr(Expr::Prog2, in->getLocation(), &BoolType::instance, value,
-        ConstantInteger::getConstantBool(in->getLocation(), true));
+    return new BinaryExpr(Expr::Prog2, in->location(), &BoolType::instance, value,
+        ConstantInteger::getConstantBool(in->location(), true));
   }
   
   if (UnionType * ut = dyn_cast<UnionType>(tyFrom)) {
@@ -303,9 +325,9 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   // strip off any expressions that have no side effects.
   
   if (isConstTrue) {
-    return ConstantInteger::getConstantBool(in->getLocation(), true);
+    return ConstantInteger::getConstantBool(in->location(), true);
   } else if (isConstFalse) {
-    return ConstantInteger::getConstantBool(in->getLocation(), false);
+    return ConstantInteger::getConstantBool(in->location(), false);
   } else {
     in->setValue(value);
     in->setToType(ctTo);
@@ -334,8 +356,8 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
   }
 
   if (matchingTypes.empty()) {
-    return new BinaryExpr(Expr::Prog2, in->getLocation(), &BoolType::instance, value,
-        ConstantInteger::getConstantBool(in->getLocation(), false));
+    return new BinaryExpr(Expr::Prog2, in->location(), &BoolType::instance, value,
+        ConstantInteger::getConstantBool(in->location(), false));
   } else if (matchingTypes.size() == 1) {
     // Simplest case
     Type * memberType = matchingTypes.front();
@@ -401,7 +423,7 @@ Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
   }
 
   in = LValueExpr::constValue(in);
-  return toType->implicitCast(in->getLocation(), in);
+  return toType->implicitCast(in->location(), in);
 }
 
 } // namespace tart

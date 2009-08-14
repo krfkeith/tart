@@ -3,7 +3,7 @@ import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 
 /** Built-in array class */
-public final class Array[%ElementType] {
+public final class Array[%ElementType] : Iterable<[ElementType]> {
   private {
     var end:NativePointer<[ElementType]>;
     var data:NativeArray<[ElementType, 0]>;
@@ -30,6 +30,12 @@ public final class Array[%ElementType] {
     return self;
   }
 
+  /** Static factory function which takes advantage of the built-in behavior of
+      variadic parameters to build an Array. */
+  static def of(elements:ElementType...) {
+    return elements;
+  }
+
   /** True if the array is zero length. */
   def isEmpty:bool {
     get { return self.end == addressOf(self.data[0]); }
@@ -49,4 +55,7 @@ public final class Array[%ElementType] {
   // TODO: Copy additional constructors from old tart.
   // def apply(args:int[]) {
   //}
+  
+  public final class ArrayIterator : Iterator<[T]>, HasLength {
+  }
 }
