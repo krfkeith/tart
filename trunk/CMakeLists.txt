@@ -57,30 +57,19 @@ set(GCC_CXX_FLAGS
     -fno-operator-names -ffor-scope
     -fconst-strings)
 
+# Add the check-build target
+add_custom_target(check)
+
 # Subdirs to compile
 add_subdirectory(collector)
 add_subdirectory(compiler)
 add_subdirectory(tools)
 add_subdirectory(runtime)
 add_subdirectory(third-party)
-add_subdirectory(test-unit)
+add_subdirectory(test/unit)
 add_subdirectory(stdlib)
-
-# Build and run the unit tests
-#add_custom_target(check-unit DEPENDS unittest)
-#add_custom_command(TARGET check-unit COMMAND test-unit/unittest)
-
-# Add the check-build target
-add_custom_target(check DEPENDS unittest COMMAND test-unit/unittest)
-
 add_subdirectory(test/tart/nolib)
 add_subdirectory(test/tart/stdlib)
-
-#run_nolib_tests
-#add_custom_command(TARGET check POST_BUILD COMMAND test-unit/unittest)
-
-#add_custom_target(check
-#    DEPENDS run_unittest stdlib run_nolib_test)
 
 #enable_testing()
 #add_test(UnitTest ${CMAKE_CURRENT_BINARY_DIR}/test-unit/unittest)

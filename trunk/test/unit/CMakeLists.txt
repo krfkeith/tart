@@ -27,3 +27,6 @@ target_link_libraries(unittest
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
     ${LLVM_CORE})
+
+add_custom_target(unittest.run DEPENDS unittest COMMAND unittest)
+add_dependencies(check unittest.run)
