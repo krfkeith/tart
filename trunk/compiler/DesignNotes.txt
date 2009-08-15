@@ -4,11 +4,21 @@ Design TODOS:
 
 * Dynamic casting syntax.
 * Native Pointer Dereferencing.
-* Const-ness
+* Const-ness "const" and "const?"
 * Protocols
 * Mutating arithmetic operators. (i.e. +=)
 
 Implementation TODOS:
+
+* Attributes:
+  * Use @Syntax
+  * Attributes are identified by attributes
+  * Get rid of funky naming tricks (Attribute, Effect, etc.)
+* override and redef syntax.
+  * How does that affect properties?
+  * +def
+  * Template syntax.
+  * 
 
 * Need to work on makefile dependencies.
 * vcall and icall instructions.

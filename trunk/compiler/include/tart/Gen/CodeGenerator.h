@@ -161,9 +161,6 @@ public:
   /** Generate the base address of a struct or array. */
   llvm::Value * genBaseExpr(const Expr * base, ValueList & indices, FormatStream & labelStream);
 
-  /** Generate an array literal. */
-  llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
-
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
   llvm::Value * genCallInstr(llvm::Value * func,
@@ -246,6 +243,9 @@ public:
 
   /** Generate data structures for a string literal. */
   llvm::Value * genStringLiteral(const std::string & strval);
+
+  /** Generate an array literal. */
+  llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
 
   /** Generate code to allocate an object, where the object size is not a compile-time constant. */
   llvm::Value * genVarSizeAlloc(const SourceLocation & loc, const Type * objType,

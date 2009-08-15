@@ -8,6 +8,7 @@ def main(args:String[]) -> int {
 
 def stringArgs(s:String...) {
   Debug.assertEq(3, s.length);
+  Debug.assertEq("Three", s[0]);
 }
 
 def intArgs(s:int...) {

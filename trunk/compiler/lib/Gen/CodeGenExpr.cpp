@@ -522,124 +522,6 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   return baseAddr;
 }
 
-Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
-  const CompositeType * arrayType = cast<CompositeType>(in->getType());
-  const Type * elementType = arrayType->typeDefn()->templateInstance()->paramValues()[0];
-
-  const llvm::Type * etype = elementType->getIRType();
-  if (elementType->isReferenceType()) {
-    etype = PointerType::getUnqual(etype);
-  }
-
-  // Arguments to the array-creation function
-  ValueList args;
-  args.push_back(ConstantInt::get(llvm::Type::Int32Ty, in->args().size()));
-  Function * allocFunc = findMethod(arrayType, "alloc");
-  Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
-
-  // Get the function that allocates a new array
-  //funcArrayAlloc = cast_or_null<FunctionDefn>(getSingleDefn(typeArray, "alloc"));
-
-  return result;
-
-  //DFAIL("Implement");
-
-#if 0
-  const CallExpr * arrayCreate = cast<CallExpr>(array->getOperands()[0]);
-  const OpExpr * arrayArgs = static_cast<const OpExpr *>(array->getOperands()[1]);
-
-  const ExprList & elements = arrayArgs->getOperands();
-  size_t arraySize = elements.size();
-
-  assert(elementType != NULL);
-
-  const llvm::Type * etype = elementType->getIRType();
-  if (elementType->isReferenceType()) {
-    etype = llvm::PointerType::getUnqual(etype);
-  }
-
-  const llvm::ArrayType * initArrayType = llvm::ArrayType::get(etype, arraySize);
-
-  //diag.debug("Array of %s:", elementType->toString().c_str());
-  //etype->dump();
-
-  // Analyzer will have optimized out zero-length arrays
-  assert(arraySize > 0);
-
-  ValueList arrayVals;
-  arrayVals.resize(arraySize);
-  for (size_t i = 0; i < arraySize; ++i) {
-    Value * el = genExpr(elements[i]);
-    if (el == NULL) {
-      return NULL;
-    }
-
-    arrayVals[i] = el;
-  }
-
-  const ExprList & constructorArgs = arrayCreate->getArgs();
-  ValueList args;
-
-  // If at least half of the initializers are constants, then go ahead and
-  // create a global constant containing them.
-  size_t initValCount = arraySize;
-  if (constructorArgs.size() > 1) {
-    std::vector<Constant *> constVals;
-    constVals.resize(arraySize);
-    for (size_t i = 0; i < arraySize; ++i) {
-      Constant * c = dyn_cast<Constant>(arrayVals[i]);
-      if (c != NULL) {
-        constVals[i] = c;
-        arrayVals[i] = NULL;
-        --initValCount;
-      } else {
-        constVals[i] = Constant::getNullValue(etype);
-      }
-    }
-
-    Constant * constArray = ConstantArray::get(initArrayType, constVals);
-    Constant * constArrayVar = new GlobalVariable(
-      constArray->getType(), true, GlobalValue::InternalLinkage,
-      constArray, "array_literal", llModule);
-
-    Constant * indices[1];
-    indices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
-    args.push_back(
-      ConstantExpr::getPointerCast(
-        ConstantExpr::getGetElementPtr(constArrayVar, indices, 1),
-        PointerType::getUnqual(ArrayType::get(etype, 0))));
-    args.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
-  }
-
-  args.push_back(ConstantInt::get(llvm::Type::Int32Ty, arraySize));
-  Value * funcVal = genExpr(arrayCreate->getFunc());
-  if (funcVal == NULL) return NULL;
-  Value * arrayVal = genCall(funcVal, args.begin(), args.end());
-
-  // Fill in the array with the non-constant initializers
-  if (initValCount > 0) {
-    Value * indices[2];
-    indices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
-    indices[1] = ConstantInt::get(llvm::Type::Int32Ty, 2);
-    Value * nativePtr = builder.CreateGEP(arrayVal, &indices[0], &indices[2],
-        "_items");
-    for (size_t i = 0; i < arraySize; ++i) {
-      Value * initVal = arrayVals[i];
-      if (initVal != NULL) {
-        indices[1] = ConstantInt::get(llvm::Type::Int32Ty, i);
-        Value * slot = builder.CreateGEP(nativePtr, &indices[0], &indices[2],
-            "item");
-        builder.CreateStore(initVal, slot);
-      }
-    }
-  }
-
-  // Return the new array
-  return arrayVal;
-#endif
-
-}
-
 Value * CodeGenerator::genNumericCast(CastExpr * in) {
   Value * value = genExpr(in->arg());
   if (value != NULL) {
@@ -907,6 +789,48 @@ llvm::Value * CodeGenerator::genStringLiteral(const std::string & strval) {
   strSource->replaceAllUsesWith(strConstant);
 
   return strConstant;
+}
+
+Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
+  const CompositeType * arrayType = cast<CompositeType>(in->getType());
+  const Type * elementType = arrayType->typeDefn()->templateInstance()->paramValues()[0];
+  size_t arrayLength = in->args().size();
+
+  const llvm::Type * etype = elementType->getIRType();
+  if (elementType->isReferenceType()) {
+    etype = PointerType::getUnqual(etype);
+  }
+
+  // Arguments to the array-creation function
+  ValueList args;
+  args.push_back(ConstantInt::get(llvm::Type::Int32Ty, arrayLength));
+  Function * allocFunc = findMethod(arrayType, "alloc");
+  Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
+
+  // Evaluate the array elements.
+  ValueList arrayVals;
+  arrayVals.resize(arrayLength);
+  for (size_t i = 0; i < arrayLength; ++i) {
+    Value * el = genExpr(in->args()[i]);
+    if (el == NULL) {
+      return NULL;
+    }
+
+    arrayVals[i] = el;
+  }
+
+  // Store the array elements into their slots.
+  if (arrayLength > 0) {
+    Value * arrayData = builder_.CreateStructGEP(result, 2, "data");
+    for (size_t i = 0; i < arrayLength; ++i) {
+      Value * arraySlot = builder_.CreateStructGEP(arrayData, i);
+      builder_.CreateStore(arrayVals[i], arraySlot);
+    }
+  }
+  
+  // TODO: Optimize array creation when most of the elements are constants.
+
+  return result;
 }
 
 Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromType,
