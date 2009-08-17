@@ -20,7 +20,10 @@
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/SpecializeCandidate.h"
 #include "tart/Sema/ScopeBuilder.h"
+#include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FindExternalRefsPass.h"
+#include "tart/Sema/FinalizeTypesPass.h"
+#include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
 
@@ -73,7 +76,7 @@ bool DefnAnalyzer::analyzeModule() {
     
     xdefNames += "}";
   
-    //diag.info() << "Module " << module->getQualifiedName() <<
+    //diag.info() << "Module " << module->qualifiedName() <<
     //  ": xdefs=" << xdefNames <<
     //  " xrefs=" << module->getXRefs().size();
   }
@@ -123,6 +126,16 @@ bool DefnAnalyzer::createMembersFromAST(Defn * in) {
 
 bool DefnAnalyzer::resolveAttributes(Defn * in) {
   if (in->beginPass(Pass_ResolveAttributes)) {
+    if (in == Builtins::typeAttribute->typeDefn()) {
+      // Don't evaluate attributes for class Attribute - it creates a circular dependency.
+      CompositeType * attrType = cast<CompositeType>(Builtins::typeAttribute);
+      attrType->setClassFlag(CompositeType::Attribute, true);
+      attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
+      attrType->attributeInfo().setRetained(false);
+      in->finishPass(Pass_ResolveAttributes);
+      return true;
+    }
+
     if (in->getAST() != NULL) {
       ExprAnalyzer ea(module, activeScope);
       const ASTNodeList & attrs = in->getAST()->attributes();
@@ -135,36 +148,97 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
       }
     }
 
-    handleBuiltInAttributes(in);
+    applyAttributes(in);
     in->finishPass(Pass_ResolveAttributes);
   }
 
   return true;
 }
 
-void DefnAnalyzer::handleBuiltInAttributes(Defn * in) {
+void DefnAnalyzer::applyAttributes(Defn * in) {
   ExprList & attrs = in->getAttrs();
   for (ExprList::iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    if (CallExpr * call = dyn_cast<CallExpr>(*it)) {
-      if (call->getType() == Builtins::typeEntryPointAttribute) {
-        in->addTrait(Defn::EntryPoint);
-      } else if (call->getType() == Builtins::typeIntrinsicAttribute) {
-        handleIntrinsicAttribute(in, call);
-      } else if (call->getType() == Builtins::typeExternAttribute) {
-        in->addTrait(Defn::Extern);
-      } else {
-        diag.info(in) << call->getType();
+    Expr * attrExpr = ExprAnalyzer::inferTypes(*it, NULL);
+    if (isErrorResult(attrExpr)) {
+      continue;
+    }
+  
+    // Handle @Intrinsic as a special case.
+    Type * attrType = attrExpr->type();
+    if (attrType == Builtins::typeIntrinsicAttribute) {
+      handleIntrinsicAttribute(in, attrExpr);
+      continue;
+    }
+    
+    if (attrExpr->exprType() == Expr::CtorCall) {
+      CompositeType * attrClass = cast<CompositeType>(attrType);
+      if (!attrClass->isAttribute()) {
+        diag.error(*it) << "Invalid attribute expression @" << *it;
+        continue;
+      }
+      
+      if (!attrClass->attributeInfo().canAttachTo(in)) {
+        diag.error(*it) << "Attribute '" << attrClass << "' cannot apply to target '" << in << "'";
+        continue;
+      }
+      
+      Expr * attrVal = EvalPass::eval(attrExpr, true);
+      if (attrVal != NULL && attrVal->exprType() == Expr::ConstObjRef) {
+        ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrVal);
+        DASSERT_OBJ(attrVal->type()->isEqual(attrClass), attrVal->type());
+
+        // Special case for @Attribute
+        if (attrClass == Builtins::typeAttribute) {
+          handleAttributeAttribute(in, attrObj);
+          continue;
+        }
+
+        FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
+            attrClass->lookupSingleMember("apply", true));
+        if (applyMethod != NULL) {
+          applyAttribute(in, attrObj, applyMethod);
+        } else {
+          diag.info(in) << "Unhandled attribute " << *it;
+        }
       }
     }
   }
 }
 
-void DefnAnalyzer::handleIntrinsicAttribute(Defn * de, CallExpr * attrCtor) {
-  if (FunctionDefn * func = dyn_cast<FunctionDefn>(de)) {
-    func->setIntrinsic(Intrinsic::get(func->getQualifiedName().c_str()));
-  } else {
-    diag.fatal(attrCtor) << "Only functions can be Intrinsics";
+void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
+    FunctionDefn * applyMethod) {
+  if (analyzeDefn(applyMethod, Task_PrepCodeGeneration)) {
+    ExprList args;
+    if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
+      args.push_back(tdef->asExpr());
+    } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
+      args.push_back(new LValueExpr(attrObj->location(), NULL, vdef));
+    } else {
+      DFAIL("Implement");
+    }
+
+    applyMethod->eval(de->location(), attrObj, args);
   }
+}
+
+void DefnAnalyzer::handleIntrinsicAttribute(Defn * de, Expr * attrExpr) {
+  if (FunctionDefn * func = dyn_cast<FunctionDefn>(de)) {
+    func->setIntrinsic(Intrinsic::get(func->qualifiedName().c_str()));
+  } else {
+    diag.fatal(attrExpr) << "Only functions can be Intrinsics";
+  }
+}
+
+void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrObj) {
+  int target = attrObj->getMemberValueAsInt("target");
+  int retention = attrObj->getMemberValueAsInt("retention");
+  int propagation = attrObj->getMemberValueAsInt("propagation");
+  
+  TypeDefn * targetTypeDefn = cast<TypeDefn>(de);
+  CompositeType * targetType = cast<CompositeType>(targetTypeDefn->getTypeValue());
+  targetType->setClassFlag(CompositeType::Attribute, true);
+  targetType->attributeInfo().setTarget(target);
+  targetType->attributeInfo().setRetained(retention);
 }
 
 void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope) {

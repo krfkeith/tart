@@ -120,7 +120,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param).analyze(Task_PrepCallOrUse);
+        VarAnalyzer(param, module).analyze(Task_PrepCallOrUse);
 
         if (param->getType() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";

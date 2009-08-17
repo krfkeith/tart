@@ -270,7 +270,6 @@ private:
   llvm::IRBuilder<true> builder_;    // LLVM builder
   
   Module * module;
-  FunctionDefn * entryPoint_;        // The 'main' function
   llvm::Module * irModule_;
 
   FunctionDefn * currentFunction_;

@@ -1,6 +1,7 @@
 /** Attribute that specifies that this method or variable is an
     externally-defined symbol. */
-public class ExternAttribute : Attribute {
+@Attribute
+public class Extern {
   readonly var name:String;
 
   /** Construct an ExternAttribute.
@@ -9,4 +10,6 @@ public class ExternAttribute : Attribute {
   def construct(name:String) {
     self.name = name;
   }
+
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

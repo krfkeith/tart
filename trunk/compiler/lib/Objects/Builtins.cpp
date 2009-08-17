@@ -40,10 +40,7 @@ Type * Builtins::typeInterface;
 Type * Builtins::typeEnum;
 
 Type * Builtins::typeAttribute;
-Type * Builtins::typeEntryPointAttribute;
 Type * Builtins::typeIntrinsicAttribute;
-Type * Builtins::typeExternAttribute;
-Type * Builtins::typeLinkageNameAttribute;
 
 TypeAlias Builtins::typeAliasString(NULL);
 
@@ -75,7 +72,7 @@ void Builtins::init() {
   NativePointerType::instance.initBuiltin();
   NativeArrayType::instance.initBuiltin();
 
-  DASSERT(module.getModule() != NULL);
+  DASSERT(module.module() != NULL);
   ScopeBuilder::createScopeMembers(&module);
 }
 
@@ -91,7 +88,7 @@ Module * Builtins::loadSystemModule(const char * name) {
 
 Defn * Builtins::loadSystemDef(const char * name) {
   Module * mod = loadSystemModule(name);
-  return mod->getPrimaryDefn();
+  return mod->primaryDefn();
 }
 
 Type * Builtins::loadSystemType(const char * name) {
@@ -125,10 +122,7 @@ void Builtins::loadSystemClasses() {
   typeString = loadSystemType("tart.core.String");
   typeThrowable = loadSystemType("tart.core.Throwable");
 
-  typeEntryPointAttribute = loadSystemType("tart.core.EntryPointAttribute");
-  typeIntrinsicAttribute = loadSystemType("tart.core.IntrinsicAttribute");
-  typeExternAttribute = loadSystemType("tart.core.ExternAttribute");
-  typeLinkageNameAttribute = loadSystemType("tart.core.LinkageNameAttribute");
+  typeIntrinsicAttribute = loadSystemType("tart.core.Intrinsic");
 
   typeClass = loadSystemType("tart.reflect.Class");
   typeStruct = loadSystemType("tart.reflect.Struct");

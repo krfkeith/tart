@@ -39,11 +39,11 @@ namespace Math {
   }
   
   /** Return the square root of the input operand. */
-  [Intrinsic]
+  @Intrinsic
   def sqrt(f:float) -> float;
 
   /** Return the square root of the input operand. */
-  [Intrinsic]
+  @Intrinsic
   def sqrt(f:double) -> double;
 
   /** Return the first operand raised to the power of the second operand. */
@@ -53,18 +53,18 @@ namespace Math {
   //def pow(base:double, exponent:float) -> double = 201;
 
   /** Return the sine of the given angle. */
-  [Intrinsic]
+  @Intrinsic
   def sin(angle:float) -> float;
 
   /** Return the sine of the given angle. */
-  [Intrinsic]
+  @Intrinsic
   def sin(angle:double) -> double;
 
   /** Return the cosine of the given angle. */
-  [Intrinsic]
+  @Intrinsic
   def cos(angle:float) -> float;
 
   /** Return the cosine of the given angle. */
-  [Intrinsic]
+  @Intrinsic
   def cos(angle:double) -> double;
 }

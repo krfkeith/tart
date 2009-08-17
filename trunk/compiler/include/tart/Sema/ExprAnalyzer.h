@@ -26,9 +26,14 @@ public:
     , currentFunction_(function)
   {}
   
-  /** Build expression from AST and reduce to constant. */
-  ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected, bool forceCast);
+  /** Build expression tree from AST and do all type inferencing. */
+  Expr * analyze(const ASTNode * ast, Type * expected) {
+    return inferTypes(reduceExpr(ast, expected), expected);
+  }
   
+  /** Take a reduced expression and do type inferencing. */
+  static Expr * inferTypes(Expr * expr, Type * expected);
+
   /** Build expression tree from AST. */
   Expr * reduceExpr(const ASTNode * ast, Type * expected);
   Expr * reduceExprImpl(const ASTNode * ast, Type * expected);
@@ -86,7 +91,7 @@ public:
 
   /** Reduce a call to an identifier to an actual call. */
   Expr * callName(const SourceLocation & loc, const ASTNode * callable,
-      const ASTNodeList & args, Type * expected, const char ** suffixes);
+      const ASTNodeList & args, Type * expected);
 
   /** Handle Argument-dependent lookup (ADL) */
   void lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args);
@@ -121,8 +126,8 @@ public:
       'args' - the list of argument AST nodes (for computing keyword
         assignment.)
   */
-  void addOverload(CallExpr * call, Expr * baseExpr,
-      FunctionDefn * method, const ASTNodeList & args);
+  void addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+      const ASTNodeList & args);
 
   // Templates
 

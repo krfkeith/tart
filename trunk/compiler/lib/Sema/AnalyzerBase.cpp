@@ -28,9 +28,9 @@ namespace tart {
 AnalyzerBase::AnalysisQueue AnalyzerBase::queue;
 size_t AnalyzerBase::queuePos = 0;
 
-bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, const char ** suffixes) {
+bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast) {
   std::string path;
-  lookupNameRecurse(out, ast, path, suffixes);
+  lookupNameRecurse(out, ast, path);
   return !out.empty();
 }
 
@@ -40,24 +40,23 @@ bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, const char **
 //    but there's a chance it might be a package reference.
 // If we return false and path is empty, then it means that we found nothing,
 //    and there's no hope of finding anything.
-bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
-    std::string & path, const char ** suffixes) {
+bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path) {
       
   const SourceLocation & loc = ast->getLocation();
   if (ast->getNodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
     const char * name = ident->getValue();
-    if (activeScope != NULL && lookupIdent(out, name, loc, suffixes)) {
+    if (activeScope != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
 
     path.assign(name);
-    return importName(out, path, loc, suffixes);
+    return importName(out, path, loc);
   } else if (ast->getNodeType() == ASTNode::Member) {
     const ASTMemberRef * mref = static_cast<const ASTMemberRef *>(ast);
     const ASTNode * qual = mref->getQualifier();
     ExprList lvals;
-    if (lookupNameRecurse(lvals, qual, path, NULL)) {
+    if (lookupNameRecurse(lvals, qual, path)) {
       if (lvals.size() > 1) {
         diag.fatal(ast) << "Multiply defined symbol " << qual;
         path.clear();
@@ -65,7 +64,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       }
 
       Expr * context = lvals.front();
-      if (findMemberOf(out, context, mref->getMemberName(), loc, suffixes)) {
+      if (findMemberOf(out, context, mref->getMemberName(), loc)) {
         return true;
       }
 
@@ -76,14 +75,14 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     if (!path.empty()) {
       path.push_back('.');
       path.append(mref->getMemberName());
-      return importName(out, path, loc, suffixes);
+      return importName(out, path, loc);
     }
     
     return false;
   } else if (ast->getNodeType() == ASTNode::Specialize) {
     const ASTSpecialize * spec = static_cast<const ASTSpecialize *>(ast);
     ExprList lvals;
-    if (!lookupNameRecurse(lvals, spec->getTemplateExpr(), path, suffixes)) {
+    if (!lookupNameRecurse(lvals, spec->getTemplateExpr(), path)) {
       diag.fatal(spec) << "Undefined symbol: " << spec->getTemplateExpr();
       dumpScopeHierarchy();
       return false;
@@ -147,8 +146,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
   }
 }
 
-bool AnalyzerBase::lookupIdent(ExprList & out, const char * name,
-    const SourceLocation & loc, const char ** suffixes) {
+bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, const SourceLocation & loc) {
   // Search the current active scopes.
   for (Scope * sc = activeScope; sc != NULL; sc = sc->parentScope()) {
     if (findInScope(out, name, sc, sc->getBaseExpr(), loc)) {
@@ -156,23 +154,11 @@ bool AnalyzerBase::lookupIdent(ExprList & out, const char * name,
     }
   }
   
-  // Suffixes too
-  if (suffixes) {
-    std::string fullname;
-    while (const char * suffix = *suffixes++) {
-      fullname = name;
-      fullname.append(suffix);
-      if (lookupIdent(out, fullname.c_str(), loc, NULL)) {
-        return true;
-      }
-    }
-  }
-  
   return false;
 }
 
 bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
-    const char * name, const SourceLocation & loc, const char ** suffixes) {
+    const char * name, const SourceLocation & loc) {
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
     if (Module * m = dyn_cast<Module>(scopeName->getValue())) {
       AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
@@ -222,18 +208,6 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
     }
   }
 
-  // Suffixes too
-  if (suffixes) {
-    std::string fullname;
-    while (const char * suffix = *suffixes++) {
-      fullname = name;
-      fullname.append(suffix);
-      if (findMemberOf(out, context, fullname.c_str(), loc, NULL)) {
-        return true;
-      }
-    }
-  }
-  
   return false;
 }
 
@@ -249,11 +223,13 @@ bool AnalyzerBase::findInScope(ExprList & out, const char * name,
 }
 
 bool AnalyzerBase::importName(ExprList & out, const std::string & path,
-    const SourceLocation & loc, const char ** suffixes) {
+    const SourceLocation & loc) {
 
-  DefnList defns;
-  if (module->import(path.c_str(), defns)) {
-    return getSymbolRefs(loc, defns, NULL, out);
+  if (module != NULL) {
+    DefnList defns;
+    if (module->import(path.c_str(), defns)) {
+      return getSymbolRefs(loc, defns, NULL, out);
+    }
   }
 
   //Module * m = PackageMgr::get().getModuleForImportPath(path);
@@ -261,17 +237,6 @@ bool AnalyzerBase::importName(ExprList & out, const std::string & path,
   //  out.push_back(new ScopeNameExpr(loc, m));
   //  return true;
   //}
-  
-  if (suffixes) {
-    std::string fullname;
-    while (const char * suffix = *suffixes++) {
-      fullname = path;
-      fullname.append(suffix);
-      if (importName(out, fullname, loc, NULL)) {
-        return true;
-      }
-    }
-  }
   
   return false;
 }
@@ -426,7 +391,6 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 }
 
 bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
-  // TODO - take the code from analyzeDefn and move to here.
   Type * type = in->getTypeValue();
   switch (type->typeClass()) {
     case Type::Primitive:

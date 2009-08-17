@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   Debug.assertEq(2, 1+1);
   Debug.assertEq(1, 2-1);

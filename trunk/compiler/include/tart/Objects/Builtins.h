@@ -51,11 +51,7 @@ public:
 
   // System types - attributes
   static Type * typeAttribute;
-  static Type * typeEntryPointAttribute;
   static Type * typeIntrinsicAttribute;
-  static Type * typeExternAttribute;
-  static Type * typeLinkageNameAttribute;
-  //static Type * typeFlagsAttribute;
 
   // System types - implementation
 
@@ -65,12 +61,8 @@ public:
   static const CompositeType * typeArrayType;
   
   // System attribute types
-  static const CompositeType * typeAttributeUsage;
-  static const CompositeType * typeAttributePropagation;
-  static const CompositeType * typeAttributeLifetime;
   static const CompositeType * typeAllowUnsafeAttribute;
   static const CompositeType * typeCommutativeAttribute;
-  
 #endif
 
   // Global aliases - used to create static references to types that are dynamically loaded.

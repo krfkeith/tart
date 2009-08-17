@@ -1,7 +1,7 @@
 let globalLet = 3;
 var globalVar = 4;
 
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   let localLet = 3;
   var localVar = 4;

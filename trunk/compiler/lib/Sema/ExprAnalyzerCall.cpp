@@ -26,7 +26,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
   if (callable->getNodeType() == ASTNode::Id ||
       callable->getNodeType() == ASTNode::Member ||
       callable->getNodeType() == ASTNode::Specialize) {
-    return callName(call->getLocation(), callable, args, expected, NULL);
+    return callName(call->getLocation(), callable, args, expected);
   } else if (callable->getNodeType() == ASTNode::Super) {
     return callSuper(call->getLocation(), args, expected);
   } else if (callable->getNodeType() == ASTNode::BuiltIn) {
@@ -39,8 +39,8 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
   DFAIL("Invalid call type");
 }
 
-Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable,
-    const ASTNodeList & args, Type * expected, const char ** suffixes) {
+Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNodeList & args,
+    Type * expected) {
 
   // Specialize works here because lookupName handles explicit specializations.
   DASSERT(callable->getNodeType() == ASTNode::Id ||
@@ -50,7 +50,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable,
   bool isUnqualified = callable->getNodeType() == ASTNode::Id;
 
   ExprList results;
-  lookupName(results, callable, suffixes);
+  lookupName(results, callable);
   
   // If there were no results, and it was a qualified search, then
   // it's an error. (If it's unqualified, then there are still things
@@ -71,8 +71,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable,
       return &Expr::ErrorVal;
     }
     
-    return callConstructor(loc,
-        static_cast<TypeDefn *>(typeList.front())->asExpr(), args);
+    return callConstructor(loc, static_cast<TypeDefn *>(typeList.front())->asExpr(), args);
   }
 
   CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
@@ -235,8 +234,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   return call;
 }
 
-Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr,
-    const ASTNodeList & args) {
+Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const ASTNodeList & args) {
   Type * type = typeExpr->value();
   TypeDefn * tdef = type->typeDefn();
   module->addXRef(tdef);

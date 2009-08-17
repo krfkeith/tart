@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   stringArgs("Three", "String", "Args");
   intArgs(1, 2, 3);

@@ -55,14 +55,14 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ConstString:
       return visitConstantString(static_cast<ConstantString *>(in));
 
-    case Expr::ConstObject:
-      return visitConstantObject(static_cast<ConstantExpr *>(in));
-
     case Expr::ConstType:
       return visitConstantType(static_cast<ConstantType *>(in));
 
     case Expr::ConstNull:
       return visitConstantNull(static_cast<ConstantNull *>(in));
+
+    case Expr::ConstObjRef:
+      return visitConstantObjectRef(static_cast<ConstantObjectRef *>(in));
 
     case Expr::LValue:
       return visitLValue(static_cast<LValueExpr *>(in));
@@ -113,7 +113,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitCompare(static_cast<CompareExpr *>(in));
 
     case Expr::InstanceOf:
-      return visitInstanceOf(static_cast<InstanceOfExpr *>(in));
+      return visitConstantObjectRefOf(static_cast<InstanceOfExpr *>(in));
 
     case Expr::RefEq:
       return visitRefEq(static_cast<BinaryExpr *>(in));
@@ -145,6 +145,15 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType());
   DFAIL("Fall through");
+}
+
+Expr * CFGPass::visitConstantObjectRef(ConstantObjectRef * in) {
+  ExprList & members = in->members();
+  for (ExprList::iterator it = members.begin(); it != members.end(); ++it) {
+    *it = visitExpr(*it);
+  }
+
+  return in;
 }
 
 Expr * CFGPass::visitLValue(LValueExpr * in) {
@@ -180,7 +189,7 @@ Expr * CFGPass::visitCall(CallExpr * in) {
 }
 
 Expr * CFGPass::visitFnCall(FnCallExpr * in) {
-  in->setSelfArg(visitExpr(in->getSelfArg()));
+  in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);
   return in;
 }
@@ -215,7 +224,7 @@ Expr * CFGPass::visitCompare(CompareExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitInstanceOf(InstanceOfExpr * in) {
+Expr * CFGPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
   in->setValue(visitExpr(in->getValue()));
   return in;
 }

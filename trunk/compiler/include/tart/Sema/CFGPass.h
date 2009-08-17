@@ -27,9 +27,9 @@ public:
   virtual Expr * visitConstantInteger(ConstantInteger * in) { return in; }
   virtual Expr * visitConstantFloat(ConstantFloat * in) { return in; }
   virtual Expr * visitConstantString(ConstantString * in) { return in; }
-  virtual Expr * visitConstantObject(ConstantExpr * in) { return in; }
   virtual Expr * visitConstantType(ConstantType * in) { return in; }
   virtual Expr * visitConstantNull(ConstantNull * in) { return in; }
+  virtual Expr * visitConstantObjectRef(ConstantObjectRef * in);
 
   virtual Expr * visitLValue(LValueExpr * in);
   virtual Expr * visitScopeName(ScopeNameExpr * in);
@@ -44,7 +44,7 @@ public:
   virtual Expr * visitCast(CastExpr * in);
   virtual Expr * visitBinaryOpcode(BinaryOpcodeExpr * in);
   virtual Expr * visitCompare(CompareExpr * in);
-  virtual Expr * visitInstanceOf(InstanceOfExpr * in);
+  virtual Expr * visitConstantObjectRefOf(InstanceOfExpr * in);
   virtual Expr * visitRefEq(BinaryExpr * in);
   virtual Expr * visitPtrDeref(UnaryExpr * in);
   virtual Expr * visitNot(UnaryExpr * in);

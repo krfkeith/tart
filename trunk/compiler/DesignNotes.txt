@@ -18,7 +18,8 @@ Implementation TODOS:
   * How does that affect properties?
   * +def
   * Template syntax.
-  * 
+* Typename.type
+  * Type[type]
 
 * Need to work on makefile dependencies.
 * vcall and icall instructions.
@@ -581,27 +582,27 @@ namespace Numbers {
 
   protocol PrimitiveNumber {}
 
-  [Intrinsic]
+  @Intrinsic
   def <T where T :> PrimitiveNumber> infixAdd(:T, :T) -> T;
 
-  [Intrinsic]
+  @Intrinsic
   def infixSubtract(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
 
-  [Intrinsic]
+  @Intrinsic
   def infixMultiply(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
 
-  [Intrinsic]
+  @Intrinsic
   def infixDivide(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
 
 
 
-  [Intrinsic] def infixAdd(:int16, :int16) -> int16;
-  [Intrinsic] def infixAdd(:int32, :int32) -> int32;
-  [Intrinsic] def infixAdd(:int64, :int64) -> int64;
-  [Intrinsic] def infixAdd(:uint8, :uint8) -> uint8;
-  [Intrinsic] def infixAdd(:uint16, :uint16) -> uint16;
-  [Intrinsic] def infixAdd(:uint32, :uint32) -> uint32;
-  [Intrinsic] def infixAdd(:uint64, :uint64) -> uint64;
+  @Intrinsic def infixAdd(:int16, :int16) -> int16;
+  @Intrinsic def infixAdd(:int32, :int32) -> int32;
+  @Intrinsic def infixAdd(:int64, :int64) -> int64;
+  @Intrinsic def infixAdd(:uint8, :uint8) -> uint8;
+  @Intrinsic def infixAdd(:uint16, :uint16) -> uint16;
+  @Intrinsic def infixAdd(:uint32, :uint32) -> uint32;
+  @Intrinsic def infixAdd(:uint64, :uint64) -> uint64;
   
   
   

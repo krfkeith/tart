@@ -9,6 +9,10 @@
 #include "tart/CFG/Type.h"
 #endif
 
+#ifndef TART_CFG_ATTRIBUTE_H
+#include "tart/CFG/Attribute.h"
+#endif
+
 #include <list>
 #include <llvm/ADT/SetVector.h>
 
@@ -32,7 +36,8 @@ class CompositeType : public DeclaredType {
   friend class ClassAnalyzer;
 public:
   enum ClassFlags {
-    ArrayType    = (1 << 0), // This is an array type
+    //ArrayType    = (1 << 0), // This is an array type
+    Attribute = (1<<0),         // This class is an attribute.
   };
   
   /** A table of methods that together implement a given interface. */
@@ -59,30 +64,36 @@ public:
 private:
   ClassList bases_;
   CompositeType * super_;
-  int classFlags;
+  int classFlags_;
 
   // The list of instance methods for this type
-  MethodList instanceMethods;
+  MethodList instanceMethods_;
 
   // The interface override list
-  InterfaceList interfaces;
+  InterfaceList interfaces_;
+
+  DefnList instanceFields_;
+  DefnList staticFields_;
+  
+  // For classes which are attributes
+  AttributeInfo attributeInfo_;
 
 public:
   CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
     : DeclaredType(tcls, de, parentScope)
     , super_(NULL)
-    , classFlags(0)
+    , classFlags_(0)
   {}
 
   bool getClassFlag(ClassFlags flg) const {
-    return (classFlags & flg) != 0;
+    return (classFlags_ & flg) != 0;
   }
 
   void setClassFlag(ClassFlags flg, bool enabled) {
-    if (enabled) classFlags |= flg;
-    else classFlags &= ~flg;
+    if (enabled) classFlags_ |= flg;
+    else classFlags_ &= ~flg;
   }
-  
+
   /** The list of base classes or interfaces. */
   const ClassList & bases() const { return bases_; }
   ClassList & bases() { return bases_; }
@@ -92,18 +103,46 @@ public:
   CompositeType * super() { return super_; }
   void setSuper(CompositeType * s) { super_ = s; }
 
-  /** Return true if this class is the same as, or is a subclass of,
-      the class 'base'. */
+  /** List of data members which have storage type Storage_Instance. */
+  const DefnList & instanceFields() const { return instanceFields_; }
+
+  /** List of data members which have storage type Storage_Static. */
+  const DefnList & staticFields() const { return staticFields_; }
+
+  /** Return the number of instance fields, not including the instance slot for
+      the superclass. */
+  int instanceFieldCount() const {
+    int count = instanceFields_.size();
+    return super_ != NULL ? count - 1 : count;
+  }
+
+  /** Return the number of instance fields in this class and all superclasses. */
+  int instanceFieldCountRecursive() const {
+    int count = 0;
+    for (const CompositeType * c = this; c != NULL; c = c->super_) {
+      count += instanceFieldCount();
+    }
+    
+    return count;
+  }
+
+  /** True if this class is an attribute. */
+  bool isAttribute() const { return (classFlags_ & Attribute) != 0; }
+  
+  const AttributeInfo & attributeInfo() const { return attributeInfo_; }
+  AttributeInfo & attributeInfo() { return attributeInfo_; }
+
+  /** Return true if this class is the same as, or is a subclass of, the class 'base'. */
   bool isSubclassOf(const CompositeType * base) const;
 
   /** Return the default (no-arg) constructor for this type. */
-  FunctionDefn * getDefaultConstructor();
+  FunctionDefn * defaultConstructor();
   
   /** Return true if this is a reference type. */
   bool isReferenceType() const;
 
   /** Return the set of all ancestor classes. */
-  void getAncestorClasses(ClassSet & out) const;
+  void ancestorClasses(ClassSet & out) const;
 
   /** Add all of the methods that are referred to by this class's TypeInfoBlock as
       definitions to this module. This is used for template instances. */

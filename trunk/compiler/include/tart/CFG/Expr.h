@@ -390,14 +390,14 @@ public:
 class FnCallExpr : public ArglistExpr {
 private:
   FunctionDefn * function_;
-  Expr * selfArg;
+  Expr * selfArg_;
 
 public:
   FnCallExpr(ExprType k, const SourceLocation & loc, FunctionDefn * function,
       Expr * self)
     : ArglistExpr(k, loc, NULL)
     , function_(function)
-    , selfArg(self)
+    , selfArg_(self)
   {}
 
   /** The function expression being called. */
@@ -406,8 +406,8 @@ public:
   void setFunction(FunctionDefn * function) { function_ = function; }
 
   /** The 'self' argument. */
-  Expr * getSelfArg() const { return selfArg; }
-  void setSelfArg(Expr * self) { selfArg = self; }
+  Expr * selfArg() const { return selfArg_; }
+  void setSelfArg(Expr * self) { selfArg_ = self; }
 
   // Overridden methods
 

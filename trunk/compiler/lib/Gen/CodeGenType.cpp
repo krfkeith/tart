@@ -172,7 +172,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Generate the base class list.
   ClassSet baseClassSet;
-  type->getAncestorClasses(baseClassSet);
+  type->ancestorClasses(baseClassSet);
   PointerType * typePointerType = PointerType::getUnqual(Builtins::typeType->getIRType());
 
   // Concrete classes first
@@ -216,7 +216,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   tibMembers.push_back(idispatch);
 #endif
 
-  tibMembers.push_back(genMethodArray(type->instanceMethods));
+  tibMembers.push_back(genMethodArray(type->instanceMethods_));
   Constant * tibStruct = ConstantStruct::get(tibMembers);
 
   // Assign the TIB value to the tib global variable.
@@ -290,7 +290,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   BasicBlock * blk = BasicBlock::Create("", idispatch);
   for (CompositeType::InterfaceList::const_iterator it =
-      type->interfaces.begin(); it != type->interfaces.end(); ++it) {
+      type->interfaces_.begin(); it != type->interfaces_.end(); ++it) {
 
     // Generate the method table for the interface.
     CompositeType * itDecl = it->interfaceType;
@@ -400,8 +400,10 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
 }
 
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
-  diag.fatal(type->typeDefn()) << "Implement " << type;
-  DFAIL("Implement");
+  // TODO: Implement valueOf, asString
+  return type->getIRType();
+  //diag.fatal(type->typeDefn()) << "Implement " << type;
+  //DFAIL("Implement");
 }
 
 } // namespace tart

@@ -13,7 +13,7 @@
 namespace tart {
 
 /// -------------------------------------------------------------------
-/// FinalizeTypesPass
+/// MacroExpansionPass
 
 Expr * MacroExpansionPass::runImpl(Expr * in) {
   return visitExpr(in);

@@ -10,6 +10,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Objects/Builtins.h"
 
 #include <llvm/Instructions.h>
 
@@ -27,9 +28,7 @@ EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
 }
 
 bool EnumAnalyzer::analyze() {
-  if (!analyzeEnum()) {
-    return false;
-  }
+  return analyzeEnum();
 }
 
 bool EnumAnalyzer::analyzeEnum() {
@@ -42,13 +41,20 @@ bool EnumAnalyzer::analyzeEnum() {
     return true;
   }
   
-  if (!resolveAttributes(target_)) {
+  EnumType * enumType = cast<EnumType>(target_->getTypeValue());
+  if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
+    // Don't evaluate the attributes if the parent class is Attribute, because that creates
+    // a circular dependency. For now, assume that any Enum defined within Attribute that has
+    // any attributes at all is a Flags enum.
+    if (!target_->getAST()->attributes().empty()) {
+      enumType->setIsFlags(true);
+    }
+    target_->finishPass(Pass_ResolveAttributes);
+  } else if (!resolveAttributes(target_)) {
     return false;
   }
-  
-  EnumType * enumType = cast<EnumType>(target_->getTypeValue());
-  bool isFlags = target_->findAttribute("tart.core.FlagsAttribute") != NULL;
-  enumType->setIsFlags(isFlags);
+
+  bool isFlags = enumType->isFlags();
 
   const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->getAST());
   DASSERT_OBJ(enumType->isSingular(), enumType);
@@ -131,7 +137,8 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
       diag.fatal(ast) << "Not an integer constant " << enumValue;
     }
     
-    value = static_cast<ConstantInteger *>(enumValue);
+    value = ConstantInteger::get(ast->location(), enumType,
+        static_cast<ConstantInteger *>(enumValue)->value());
     assert(value->value() != NULL);
   } else {
     // No explicit value, use the previous value.

@@ -612,6 +612,10 @@ TokenType Lexer::next() {
       readCh();
       return Token_DollarSign;
 
+    case '@':
+      readCh();
+      return Token_AtSign;
+
     case '"':
     case '\'': {
         // String literal

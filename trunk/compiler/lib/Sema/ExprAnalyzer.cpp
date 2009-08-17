@@ -25,50 +25,30 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected,
-    bool forceCast) {
-  Expr * expr = reduceExpr(ast, expected);
+Expr * ExprAnalyzer::inferTypes(Expr * expr, Type * expected) {
   if (isErrorResult(expr)) {
     return NULL;
+  }
+
+  // If it's a reference to a type, then just return it even if it's non-
+  // singular.
+  if (expr->exprType() == Expr::ConstType) {
+    return static_cast<ConstantType *>(expr);
+  }
+
+  if (expr && !expr->isSingular()) {
+    expr = TypeInferencePass::run(expr, expected);
   }
   
-  if (!expr->isSingular()) {
-    expr = TypeInferencePass::run(expr, expected);
-    if (isErrorResult(expr)) {
-      return NULL;
-    }
-  }
-
   expr = FinalizeTypesPass::run(expr);
-  if (isErrorResult(expr)) {
-    return NULL;
-  }
-
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
-    DASSERT_OBJ(expr->isSingular(), expr);
+    return NULL;
   }
   
-  if (!expr->isConstant()) {
-    diag.fatal(ast) << "Constant expression expected: " << ast;
-  }
-  
-  if (forceCast) {
-    DASSERT(expected != NULL);
-    expr = expected->implicitCast(ast->location(), expr);
-    if (isErrorResult(expr)) {
-      return NULL;
-    }
-  }
-  
-  if (ConstantExpr * ce = dyn_cast<ConstantExpr>(expr)) {
-    return ce;
-  }
-  
-  diag.fatal(ast) << "Expression cannot be cast to constant " << expr;
-  return NULL;
+  return expr;
 }
-  
+
 Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
@@ -152,26 +132,17 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
 }
 
 Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
-  static const char * suffixes[] = {
-    "Attribute",
-    "Effect",
-    NULL
-  };
-  
   switch (ast->getNodeType()) {
   case ASTNode::Id:
   case ASTNode::Member:
-    return callName(ast->getLocation(), ast, ASTNodeList(),
-        Builtins::typeAttribute, suffixes);
+    return callName(ast->getLocation(), ast, ASTNodeList(), NULL);
 
   case ASTNode::Call: {
     const ASTCall * call = static_cast<const ASTCall *>(ast);
     const ASTNode * callable = call->getFunc();
     const ASTNodeList & args = call->args();
-    if (callable->getNodeType() == ASTNode::Id ||
-        callable->getNodeType() == ASTNode::Member) {
-      return callName(call->getLocation(), callable, args,
-          Builtins::typeAttribute, suffixes);
+    if (callable->getNodeType() == ASTNode::Id || callable->getNodeType() == ASTNode::Member) {
+      return callName(call->getLocation(), callable, args, NULL);
     }
 
     diag.fatal(call) << "Invalid attribute expression " << call;
@@ -179,32 +150,16 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   }
 
   default:
-    return reduceExpr(ast, Builtins::typeAttribute);
+    return reduceExpr(ast, NULL);
   }
 }
 
 ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected) {
-  Expr * expr = reduceExpr(ast, expected);
+  Expr * expr = analyze(ast, expected);
   if (isErrorResult(expr)) {
     return NULL;
   }
 
-  // If it's a reference to a type, then just return it even if it's non-
-  // singular.
-  if (expr->exprType() == Expr::ConstType) {
-    return static_cast<ConstantType *>(expr);
-  }
-
-  if (expr && !expr->isSingular()) {
-    expr = TypeInferencePass::run(expr, expected);
-  }
-  
-  expr = FinalizeTypesPass::run(expr);
-  if (!expr->isSingular()) {
-    diag.fatal(expr) << "Non-singular expression: " << expr;
-    return NULL;
-  }
-  
   if (!expr->isConstant()) {
     diag.fatal(expr) << "Non-constant expression: " << expr << " [" <<
         exprTypeName(expr->exprType()) << "]";

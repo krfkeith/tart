@@ -54,24 +54,20 @@ protected:
   static void flushAnalysisQueue();
 
   // Recursive name-lookup helper function
-  bool lookupNameRecurse(ExprList & out, const ASTNode * ast,
-      std::string & path, const char ** suffixes = NULL);
+  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path);
 
   // Lookup an unqualified identifier in the current scope.
-  bool lookupIdent(ExprList & out, const char * name,
-    const SourceLocation & loc, const char ** suffixes);
+  bool lookupIdent(ExprList & out, const char * name, const SourceLocation & loc);
 
   // Look up a name in an explicit scope.
-  bool findMemberOf(ExprList & out, Expr * context, const char * name,
-      const SourceLocation & loc, const char ** suffixes);
+  bool findMemberOf(ExprList & out, Expr * context, const char * name, const SourceLocation & loc);
 
   // Find a name in a scope and return a list of matching expressions.
   bool findInScope(ExprList & out, const char * name, Scope * scope,
       Expr * context, const SourceLocation & loc);
 
   // Lookup helper function that attempts to load a module from 'path'.
-  bool importName(ExprList & out, const std::string & path,
-      const SourceLocation & loc, const char ** suffixes);
+  bool importName(ExprList & out, const std::string & path, const SourceLocation & loc);
 
   // Create a reference to a definition.
   Expr * refToDefn(Defn * de, Expr * context, const SourceLocation & loc);
@@ -110,16 +106,8 @@ public:
       -- By doing an implicit import from the current package.
       -- By doing an implicit import from tart.core.
       -- By doing an explicit import using an absolute package path.
-      
-      A list of optional suffixes can be supplied; If the lookup fails to
-      find any results, then it will try again for each suffix, by concatenating
-      the suffix to the last component of the dotted path. So for example,
-      if the suffix list contains 'Attribute', and the name being looked up
-      is 'tart.core.Throws', then it will look for both 'tart.core.Throws' and
-      'tart.core.ThrowsAttribute'.
   */
-  bool lookupName(ExprList & out, const ASTNode * ast,
-      const char ** suffixes = NULL);
+  bool lookupName(ExprList & out, const ASTNode * ast);
   
   /** Given a list of expression, ensures that they are either all types or
       that none of them are (an error message is emitted otherwise.) If they

@@ -7,9 +7,9 @@ EXPR_TYPE(NoOp)           // A do-nothing expression that returns void
 EXPR_TYPE(ConstInt)       // An integer constant
 EXPR_TYPE(ConstFloat)     // A float constant
 EXPR_TYPE(ConstString)    // A string constant
-EXPR_TYPE(ConstObject)    // A constant object (string, etc.)
 EXPR_TYPE(ConstType)      // A reference to a type
 EXPR_TYPE(ConstNull)      // The null value
+EXPR_TYPE(ConstObjRef)    // A constant object
 
 // Definitions
 EXPR_TYPE(LValue)         // A reference to a variable or field

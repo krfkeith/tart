@@ -3,7 +3,7 @@ public class Object {
   private var __tib:NativePointer<[TypeInfoBlock]>;
 
   /** Compiler-generated function to lookup the specified interface method. */
-  // [Intrinsic]
+  // @Intrinsic
   //private def getInterfaceMethod(
   //    interfaceType:NativePoint<Type>, methodIndex:int) -> NativePointer<void>;
 
@@ -18,7 +18,7 @@ public class Object {
       to hold the resulting type.
   */
   //[tart.config.Permissions.Require("pointer-math")]
-  [Intrinsic]
+  @Intrinsic
   protected static def __valloc[%T](size:int) -> T;
 
   /** Compiler intrinsic used to create and initialize instances of
@@ -36,6 +36,6 @@ public class Object {
       'zeroPtr' to calculate the offset of a field within a data structure.
   */
   //[tart.config.Permissions.Require("pointer-math")]
-  [Intrinsic]
+  @Intrinsic
   protected static def __pvalloc[%T, %S](size:T) -> S;
 }

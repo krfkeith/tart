@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args: String[]) {
   testManualIteration();
   return 0;
@@ -14,8 +14,8 @@ class Counter : Iterator<[int]> {
   }
   
   def next -> int or void {
-    if (value < end) {
-      return value++;
+    if (self.value < self.end) {
+      return self.value++;
     } else {
       return;
     }

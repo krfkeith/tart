@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   testZeroLengthArray();
   testSimpleArray();
@@ -41,7 +41,7 @@ def testArrayLiteral() {
 
 // TODO: Check for out of bounds exceptions, once exceptions are actually working.
 /*
-[EntryPoint]
+@EntryPoint
 def main() {
   var a:Array<int> = Array.<int>(4);
   assert(a.length == 4);

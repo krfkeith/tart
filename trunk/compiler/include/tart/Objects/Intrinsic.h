@@ -169,6 +169,42 @@ class MathIntrinsic1 : public Intrinsic {
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
+// -------------------------------------------------------------------
+// Flags.apply intrinsic
+class FlagsApplyIntrinsic : public Intrinsic {
+  static FlagsApplyIntrinsic instance;
+  FlagsApplyIntrinsic() : Intrinsic("tart.core.Flags.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Extern.apply intrinsic
+class ExternApplyIntrinsic : public Intrinsic {
+  static ExternApplyIntrinsic instance;
+  ExternApplyIntrinsic() : Intrinsic("tart.core.Extern.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// LinkageName.apply intrinsic
+class LinkageNameApplyIntrinsic : public Intrinsic {
+  static LinkageNameApplyIntrinsic instance;
+  LinkageNameApplyIntrinsic() : Intrinsic("tart.core.LinkageName.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// EntryPoint.apply intrinsic
+class EntryPointApplyIntrinsic : public Intrinsic {
+  static EntryPointApplyIntrinsic instance;
+  EntryPointApplyIntrinsic() : Intrinsic("tart.core.EntryPoint.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
 }
 
 #endif

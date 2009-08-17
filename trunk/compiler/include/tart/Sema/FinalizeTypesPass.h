@@ -33,7 +33,7 @@ public:
   Expr * visitCall(CallExpr * in);
   Expr * visitInstantiate(InstantiateExpr * in);
   Expr * visitCast(CastExpr * in);
-  Expr * visitInstanceOf(InstanceOfExpr * in);
+  Expr * visitConstantObjectRefOf(InstanceOfExpr * in);
   Expr * visitRefEq(BinaryExpr * in);
   //Expr * visitNot(UnaryExpr * in);
 

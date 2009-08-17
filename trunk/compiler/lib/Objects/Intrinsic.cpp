@@ -7,8 +7,10 @@
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/EnumType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/Module.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
@@ -83,7 +85,7 @@ PrimitiveToStringIntrinsic PrimitiveToStringIntrinsic::instance;
 
 Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const FunctionDefn * func = call->function();
-  const Expr * self = call->getSelfArg();
+  const Expr * self = call->selfArg();
   const Expr * formatString = call->arg(0);
   
   Value * selfArg = cg.genExpr(self);
@@ -229,5 +231,70 @@ MathIntrinsic1<llvm::Intrinsic::cos>
 template<>
 MathIntrinsic1<llvm::Intrinsic::sqrt>
     MathIntrinsic1<llvm::Intrinsic::sqrt>::instance("tart.core.Math.sqrt");
+
+// -------------------------------------------------------------------
+// FlagsApplyIntrinsic
+FlagsApplyIntrinsic FlagsApplyIntrinsic::instance;
+
+Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  ConstantType * ctype = cast<ConstantType>(args[0]);
+  EnumType * enumType = cast<EnumType>(ctype->value());
+  enumType->setIsFlags(true);
+  return args[0];
+}
+
+// -------------------------------------------------------------------
+// ExternApplyIntrinsic
+ExternApplyIntrinsic ExternApplyIntrinsic::instance;
+
+Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
+  const ConstantString * extName = dyn_cast<ConstantString>(selfObj->members()[1]);
+  DASSERT_OBJ(extName != NULL, self);
+
+  LValueExpr * lval = cast<LValueExpr>(args[0]);
+  lval->value()->addTrait(Defn::Extern);
+  lval->value()->setLinkageName(extName->value());
+  return self;
+}
+
+// -------------------------------------------------------------------
+// LinkageNameApplyIntrinsic
+LinkageNameApplyIntrinsic LinkageNameApplyIntrinsic::instance;
+
+Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
+  const ConstantString * linkName = cast<ConstantString>(selfObj->members()[1]);
+  LValueExpr * lval = cast<LValueExpr>(args[0]);
+  lval->value()->setLinkageName(linkName->value());
+  return self;
+}
+
+// -------------------------------------------------------------------
+// EntryPointApplyIntrinsic
+EntryPointApplyIntrinsic EntryPointApplyIntrinsic::instance;
+
+Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
+  LValueExpr * lval = cast<LValueExpr>(args[0]);
+  FunctionDefn * func = cast<FunctionDefn>(lval->value());
+  Module * module = func->module();
+  if (module->entryPoint() != NULL) {
+    diag.error(func) << "@EntryPoint attribute conflicts with earlier entry point: " <<
+        module->entryPoint();
+  } else {
+    module->setEntryPoint(func);
+  }
+
+  return self;
+}
 
 } // namespace tart

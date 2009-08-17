@@ -12,7 +12,6 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 
 namespace tart {
   

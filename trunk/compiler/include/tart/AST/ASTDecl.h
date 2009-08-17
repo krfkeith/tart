@@ -45,39 +45,6 @@ enum Variance {
 };
 
 /// -------------------------------------------------------------------
-/// Attribute targets - constraints on where attributes can be placed.
-enum AttributeTargets {
-  AttributeTarget_Class       = (1<<0),
-  AttributeTarget_Interface   = (1<<1),
-  AttributeTarget_Struct      = (1<<2),
-  AttributeTarget_Enum        = (1<<3),
-  AttributeTarget_Attribute   = (1<<4),
-  AttributeTarget_Function    = (1<<5),
-  AttributeTarget_Parameter   = (1<<6),
-  AttributeTarget_ReturnValue = (1<<7),
-  AttributeTarget_Field       = (1<<8),
-  AttributeTarget_Property    = (1<<9),
-  AttributeTarget_Template    = (1<<10),
-  AttributeTarget_Macro       = (1<<11),
-  AttributeTarget_Constructor = (1<<12),
-};
-
-/// -------------------------------------------------------------------
-/// Attribute propagation
-enum AttributePropagation {
-  Propagate_Descendants = (1<<0), // Attribute copied to descendents.
-  Propagate_Members = (1<<1),     // Attribute copied to members (with appropriate target type).
-  Propagate_Callers = (1<<2),     // Attribute copied to callers.
-};
-
-/// -------------------------------------------------------------------
-/// Attribute retention
-enum AttributeRetention {
-  Retain_CompileTime = (1<<0),
-  Retain_RunTime = (1<<1),
-};
-
-/// -------------------------------------------------------------------
 /// Declaration flags
 enum DeclFlags {
   Final = (1<<0),         // Can't be overridden

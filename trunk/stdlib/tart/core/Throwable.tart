@@ -18,8 +18,8 @@ class Throwable {
 
   protected def construct() {
     // TODO: It doesn't call the constructor for struct member types.
-    exceptInfo.exceptionClass = 0;
-    exceptInfo.private1 = 0;
-    exceptInfo.private2 = 0;
+    self.exceptInfo.exceptionClass = 0;
+    self.exceptInfo.private1 = 0;
+    self.exceptInfo.private2 = 0;
   }
 }

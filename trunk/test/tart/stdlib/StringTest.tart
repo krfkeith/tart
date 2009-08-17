@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   stringLiteralTest();
   stringComparisonTest();

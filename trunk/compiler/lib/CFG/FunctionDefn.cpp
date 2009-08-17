@@ -128,14 +128,14 @@ void FunctionDefn::trace() const {
 const std::string & FunctionDefn::getLinkageName() const {
   if (lnkName.empty()) {
     // See if we have overridden the linkage name.
-    const Expr * linkageNameAttr = findAttribute(Builtins::typeLinkageNameAttribute);
+    /*const Expr * linkageNameAttr = findAttribute(Builtins::typeLinkageNameAttribute);
     if (linkageNameAttr != NULL) {
       const CallExpr * call = dyn_cast<CallExpr>(linkageNameAttr);
       const ConstantString * extName = dyn_cast<ConstantString>(call->arg(0));
       DASSERT_OBJ(extName != NULL, this);
       lnkName.assign(extName->value());
       return lnkName;
-    }
+    }*/
 
     Defn::getLinkageName();
     

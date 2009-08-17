@@ -3,4 +3,5 @@
 
 /** Attribute that is used to indicate a thread-local variable. */
 //[AttributeUsage(AttributeSite.Variable)]
-class ThreadLocalAttribute : Attribute {}
+@Attribute(Attribute.Target.VARIABLE)
+class ThreadLocal {}

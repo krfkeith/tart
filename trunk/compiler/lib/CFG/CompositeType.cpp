@@ -20,7 +20,7 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// CompositeType
 
-FunctionDefn * CompositeType::getDefaultConstructor() {
+FunctionDefn * CompositeType::defaultConstructor() {
   const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
   if (ctors == NULL) {
     return NULL;
@@ -115,24 +115,36 @@ const llvm::Type * CompositeType::createIRType() const {
   std::vector<const llvm::Type *> fieldTypes;
 
   // Handle inheritance
-  //const CompositeType * superClass = NULL;
   if (super_ != NULL) {
     // Base class
     fieldTypes.push_back(super_->getIRType());
   }
 
   if (typeClass() == Type::Interface) {
-    fieldTypes.push_back(
-      PointerType::get(Builtins::typeTypeInfoBlock->getIRType(), 0));
+    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->getIRType(), 0));
   }
 
+  for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
+    if (*it) {
+      VariableDefn * var = static_cast<VariableDefn *>(*it);
+      DASSERT_OBJ(var->isPassFinished(Pass_ResolveVarType), var);
+      Type * varType = var->getType();
+      const llvm::Type * memberType = var->getType()->getIRType();
+      if (varType->isReferenceType()) {
+        memberType = PointerType::get(memberType, 0);
+      }
+
+      fieldTypes.push_back(memberType);
+    }
+  }
+
+#if 0
   // Handle member fields...
   for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
     switch (field->defnType()) {
     case Defn::Var: {
       // A class member variable.
       VariableDefn * var = static_cast<VariableDefn *>(field);
-      DASSERT_OBJ(var->isPassFinished(Pass_ResolveVarType), var);
       Type * varType = var->getType();
       DASSERT_OBJ(varType != NULL, var);
 
@@ -176,6 +188,7 @@ const llvm::Type * CompositeType::createIRType() const {
       DFAIL("IllegalState");
     }
   }
+#endif
 
   // This is not the normal legal way to do type refinement in LLVM.
   // Normally one would use a PATypeHolder. However, in this case it is assumed
@@ -261,11 +274,11 @@ bool CompositeType::includes(const Type * other) const {
   return false;
 }
 
-void CompositeType::getAncestorClasses(ClassSet & out) const {
+void CompositeType::ancestorClasses(ClassSet & out) const {
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     CompositeType * baseType = *it;
     if (out.insert(baseType)) {
-      baseType->getAncestorClasses(out);
+      baseType->ancestorClasses(out);
     }
   }
 }
@@ -274,12 +287,12 @@ void CompositeType::addMethodXDefs(Module * module) {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 
   // Make certain that every method that is referred to from the TIB is XRef'd.
-  for (MethodList::iterator m = instanceMethods.begin(); m != instanceMethods.end(); ++m) {
+  for (MethodList::iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
     FunctionDefn * method = *m;
     module->addXDef(method);
   }
 
-  for (InterfaceList::iterator it = interfaces.begin(); it != interfaces.end(); ++it) {
+  for (InterfaceList::iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
     for (MethodList::iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
       FunctionDefn * method = *m;
       module->addXDef(method);
@@ -288,7 +301,11 @@ void CompositeType::addMethodXDefs(Module * module) {
 }
 
 void CompositeType::addStaticXDefs(Module * module) {
-  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
+  for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
+    module->addXDef(*it);
+  }
+
+/*  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
     switch (field->defnType()) {
       case Defn::Var: {
         VariableDefn * var = static_cast<VariableDefn *>(field);
@@ -299,7 +316,7 @@ void CompositeType::addStaticXDefs(Module * module) {
         break;
       }
     }
-  }
+  }*/
 }
 
 void CompositeType::addBaseXRefs(Module * module) {

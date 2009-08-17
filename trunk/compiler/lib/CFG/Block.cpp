@@ -75,4 +75,4 @@ FormatStream & operator<<(FormatStream & out, Block * blk) {
   }
 }
 
-}
+} // namespace tart

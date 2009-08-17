@@ -92,7 +92,7 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   }
 }
 
-const std::string & Defn::getQualifiedName() const {
+const std::string & Defn::qualifiedName() const {
   if (qname_.empty()) {
     diag.fatal(this) << "Unqualified name " << name_;
   }
@@ -100,7 +100,7 @@ const std::string & Defn::getQualifiedName() const {
   return qname_;
 }
 
-std::string & Defn::getQualifiedName() {
+std::string & Defn::qualifiedName() {
   if (qname_.empty()) {
     diag.fatal(this) << "Unqualified name " << name_;
   }
@@ -114,8 +114,8 @@ void Defn::createQualifiedName(Defn * parent) {
   if (parent != NULL) {
     const std::string & qualifier =
         (parent->defnType() == Mod)
-            ? static_cast<Module *>(parent)->getPackageName()
-            : parent->getQualifiedName();
+            ? static_cast<Module *>(parent)->packageName()
+            : parent->qualifiedName();
     if (!qualifier.empty()) {
       qname_ = qualifier + "." + name_;
       return;
@@ -127,25 +127,25 @@ void Defn::createQualifiedName(Defn * parent) {
 
 const std::string & Defn::getLinkageName() const {
   if (lnkName.empty()) {
-    if (isExtern()) {
+    /*if (isExtern()) {
       // Look for external name.
       // TODO: Do this using the internal evaluator instead of looking at the
       // call.
-      const Expr * externAttr = findAttribute("tart.core.ExternAttribute");
+      const Expr * externAttr = findAttribute("tart.core.Extern");
       DASSERT_OBJ(externAttr != NULL, this);
       const CallExpr * call = dyn_cast<CallExpr>(externAttr);
       const ConstantString * extName = dyn_cast<ConstantString>(call->arg(0));
       DASSERT_OBJ(extName != NULL, this);
       lnkName.assign(extName->value());
       return lnkName;
-    }
+    }*/
 
     if (parentDefn_ != NULL && parentDefn_->defnType() != Defn::Mod) {
       lnkName = parentDefn_->getLinkageName();
       lnkName.append(".");
       lnkName.append(name_);
     } else {
-      lnkName.assign(getQualifiedName());
+      lnkName.assign(qualifiedName());
     }
 
     // Template instance parameters.
@@ -185,7 +185,7 @@ const std::string & Defn::getLinkageName() const {
   
 const Expr * Defn::findAttribute(const Type * attrType) const {
   DASSERT(attrType != NULL);
-  for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
+  for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
     Expr * attr = *it;
     if (attr->getType()->isEqual(attrType)) {
       return attr;
@@ -197,7 +197,7 @@ const Expr * Defn::findAttribute(const Type * attrType) const {
 
 const Expr * Defn::findAttribute(const char * attrTypeName) const {
   DASSERT(attrTypeName != NULL);
-  for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
+  for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
     Expr * attr = *it;
     Type * attrType = dealias(attr->getType());
     if (TypeDefn * tdef = attrType->typeDefn()) {
@@ -276,7 +276,7 @@ void Defn::dumpHierarchy(bool full) const {
       break;
   };
 
-  //diag.info() << kind << " " << getQualifiedName();
+  //diag.info() << kind << " " << qualifiedName();
 
   std::string out;
   out.append(kind);
@@ -362,17 +362,17 @@ Type * TypeDefn::metaType() const {
 
 ConstantType * TypeDefn::asExpr() {
   DASSERT(Builtins::typeType != NULL);
-  if (expr == NULL) {
-    expr = new ConstantType(ast ? ast->getLocation() : SourceLocation(), this);
+  if (expr_ == NULL) {
+    expr_ = new ConstantType(ast ? ast->getLocation() : SourceLocation(), this);
   }
   
-  return expr;
+  return expr_;
 }
 
 void TypeDefn::trace() const {
   Defn::trace();
   value->mark();
-  safeMark(expr);
+  safeMark(expr_);
 }
 
 void TypeDefn::format(FormatStream & out) const {

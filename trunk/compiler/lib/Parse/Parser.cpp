@@ -181,7 +181,7 @@ bool Parser::parse() {
 
   // Parse imports
   while (match(Token_Import)) {
-    importStmt(module->getImports());
+    importStmt(module->imports());
   }
 
   bool foundDecl = declarationList(module->getASTMembers(), DeclModifiers());
@@ -942,27 +942,40 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
 
 bool Parser::attributeList(ASTNodeList & attributes) {
   // Parse attributes
-  while (match(Token_LBracket)) {
-    ASTNode * attrExpr = primaryExpression();
-    if (attrExpr == NULL) {
-      expected("attribute expression");
+  while (match(Token_AtSign)) {
+    const char * ident = matchIdent();
+    if (ident == NULL) {
+      expectedIdentifier();
       return false;
     }
-    attributes.push_back(attrExpr);
 
-    while (match(Token_Comma)) {
-      ASTNode * attrExpr = primaryExpression();
-      if (attrExpr == NULL) {
-        expected("attribute expression");
-        return false;
+    ASTNode * attrExpr = new ASTIdent(matchLoc, ident);
+    for (;;) {
+      SourceLocation loc = lexer.getTokenLocation();
+      if (match(Token_LParen)) {
+        ASTNodeList argList;
+        if (!parseArgumentList(argList))
+          return NULL;
+        attrExpr = new ASTCall(loc, attrExpr, argList);
+      } else if (match(Token_BeginTmplArgs)) {
+        // Template specialization
+        ASTNodeList templateArgs;
+        templateArgList(templateArgs);
+        attrExpr = new ASTSpecialize(attrExpr->getLocation(), attrExpr, templateArgs);
+      } else if (match(Token_Dot)) {
+        // Member dereference
+        const char * ident = matchIdent();
+        if (ident == NULL) {
+          expectedIdentifier();
+        }
+
+        attrExpr = new ASTMemberRef(loc | attrExpr->getLocation(), attrExpr, ident);
+      } else {
+        break;
       }
-      attributes.push_back(attrExpr);
     }
-
-    if (!match(Token_RBracket)) {
-      expectedCloseBracket();
-      return false;
-    }
+    
+    attributes.push_back(attrExpr);
   }
 
   return true;
@@ -2658,7 +2671,7 @@ void Parser::expectedCloseBracket() {
 }
 
 void Parser::expected(const char * what) {
-  diag.fatal(lexer.getTokenLocation()) << "Expected " << what << ", not " << 
+  diag.error(lexer.getTokenLocation()) << "Expected " << what << ", not " << 
       GetTokenName(token);
 }
 

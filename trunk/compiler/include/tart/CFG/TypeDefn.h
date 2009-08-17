@@ -16,7 +16,7 @@ namespace tart {
 class TypeDefn : public Defn {
 protected:
   Type * value;
-  ConstantType * expr;
+  ConstantType * expr_;
   Scope * definingScope_;
 
   Type::TypeClass defnType_ToTypeClass(DefnType dt);
@@ -26,7 +26,7 @@ public:
   TypeDefn(Module * m, const char * name, Type * val = NULL)
     : Defn(Typedef, m, name)
     , value(val)
-    , expr(NULL)
+    , expr_(NULL)
     , definingScope_(NULL)
   {}
 
@@ -34,7 +34,7 @@ public:
   TypeDefn(Module * m, const ASTDecl * de)
     : Defn(Typedef, m, de)
     , value(NULL)
-    , expr(NULL)
+    , expr_(NULL)
     , definingScope_(NULL)
   {}
   

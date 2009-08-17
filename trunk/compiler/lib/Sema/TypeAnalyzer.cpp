@@ -137,7 +137,7 @@ void TypeAnalyzer::undefinedType(const ASTNode * ast) {
 
 bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   ExprList results;
-  lookupName(results, ast, NULL);
+  lookupName(results, ast);
   const SourceLocation & loc = ast->getLocation();
   for (ExprList::iterator it = results.begin(); it != results.end();
       ++it) {

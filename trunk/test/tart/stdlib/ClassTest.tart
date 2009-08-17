@@ -1,4 +1,4 @@
-[EntryPoint]
+@EntryPoint
 def main(args:String[]) -> int {
   // Test default constructor with no arguments.
   var t = TestClass();
@@ -48,7 +48,7 @@ class TestClass {
   }
 
   public final def test2() -> short {
-    return self.test3() + test3();
+    return self.test3() + self.test3();
   }
 
   public final def test3() -> byte {
@@ -69,7 +69,7 @@ class SubClass : TestClass {
   }
   
   public def construct() {
-    m2 = 20;
+    self.m2 = 20;
   }
   
   public def test4() -> byte {

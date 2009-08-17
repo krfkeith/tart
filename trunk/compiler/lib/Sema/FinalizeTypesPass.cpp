@@ -245,7 +245,7 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   return arg ? arg : &Expr::ErrorVal;
 }
 
-Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
+Expr * FinalizeTypesPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
   Expr * value = visitExpr(in->getValue());
   Type * tyFrom = dealias(value->getType());
   Type * tyTo = dealias(in->getToType());

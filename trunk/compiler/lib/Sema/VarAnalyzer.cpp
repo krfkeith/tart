@@ -7,8 +7,6 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Sema/TypeInference.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 
@@ -24,8 +22,15 @@ VarAnalyzer::VarAnalyzer(ValueDefn * var)
   , target(var)
 {
   DASSERT(var != NULL);
+  //DASSERT_OBJ(module != NULL, var);
+}
 
-  //const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->getAST());
+VarAnalyzer::VarAnalyzer(ValueDefn * var, Module * module)
+  : DefnAnalyzer(module, var->definingScope())
+  , target(var)
+{
+  DASSERT(var != NULL);
+  //DASSERT_OBJ(module != NULL, var);
 }
 
 bool VarAnalyzer::analyze(AnalysisTask task) {
@@ -59,7 +64,7 @@ bool VarAnalyzer::resolveVarType() {
     const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->getAST());
     
     // Evaluate the explicitly declared type, if any
-    if (target->getType() == NULL) {
+    if (target->type() == NULL) {
       DASSERT(ast != NULL);
       if (ast->getType() != NULL) {
         TypeAnalyzer ta(module, target->definingScope());
@@ -75,25 +80,24 @@ bool VarAnalyzer::resolveVarType() {
 
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->getValue() != NULL) {
+      Scope * savedScope = activeScope;
+      if (target->type() != NULL && target->type()->typeClass() == Type::Enum) {
+        // If the initializer is an enumerated type, then add that type's member scope
+        // to the list of scopes.
+        DelegatingScope * enumScope = new DelegatingScope(
+            target->type()->memberScope(), activeScope);
+        savedScope = setActiveScope(enumScope);
+      }
+      
       ExprAnalyzer ea(module, activeScope);
-      Expr * initExpr = ea.reduceExpr(ast->getValue(), target->getType());
-      if (isErrorResult(initExpr)) {
-        return false;
-      }
-
-      if (!initExpr->isSingular()) {
-        initExpr = TypeInferencePass::run(initExpr, target->getType());
-      }
-
-      initExpr = FinalizeTypesPass::run(initExpr);
-
+      Expr * initExpr = ea.analyze(ast->getValue(), target->type());
       if (isErrorResult(initExpr)) {
         return false;
       } else if (!initExpr->isSingular()) {
         diag.fatal(initExpr) << "Non-singular expression: " << initExpr;
         DASSERT_OBJ(initExpr->isSingular(), initExpr);
       } else {
-        Type * initType = initExpr->getType();
+        Type * initType = initExpr->type();
         DASSERT_OBJ(initType != NULL, target);
         
         if (initType->isEqual(&UnsizedIntType::instance)) {
@@ -108,11 +112,11 @@ bool VarAnalyzer::resolveVarType() {
 
         DASSERT_OBJ(initType->isSingular(), initExpr);
 
-        if (target->getType() == NULL) {
+        if (target->type() == NULL) {
           setTargetType(initType);
         }
 
-        initExpr = target->getType()->implicitCast(initExpr->getLocation(), initExpr);
+        initExpr = target->type()->implicitCast(initExpr->getLocation(), initExpr);
         if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
           vdef->setInitValue(initExpr);
         } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
@@ -121,9 +125,9 @@ bool VarAnalyzer::resolveVarType() {
       }
     }
     
-    DASSERT(target->getType() != NULL);
+    DASSERT(target->type() != NULL);
     
-    if (target->getType()->isSingular()) {
+    if (target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
     

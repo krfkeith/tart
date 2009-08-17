@@ -422,9 +422,9 @@ template<int typ>
 PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
 static SourceString infixEqSrc(
-    " [Intrinsic]"
+    " @Intrinsic"
     " def infixEQ[%T](:NativePointer<[T]>, :NativePointer<[T]>) -> bool;"
-    " [Intrinsic]"
+    " @Intrinsic"
     " def infixNE[%T](:NativePointer<[T]>, :NativePointer<[T]>) -> bool;");
 
 static SourceString infixNeSrc(

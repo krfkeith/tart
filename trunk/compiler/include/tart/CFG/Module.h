@@ -38,7 +38,7 @@ private:
   friend class tart::PackageMgr;
 
   ProgramSource * moduleSource_;
-  ASTNodeList imports;
+  ASTNodeList imports_;
   ModuleSet importModules;
   ASTDeclList decls;
   DefnList primaryDefs;
@@ -46,6 +46,7 @@ private:
   DefnSet xrefs;
   DefnList xrefsToAnalyze;
   size_t xrefsAnalyzed;
+  FunctionDefn * entryPoint_;
 
   // The LLVM module
   llvm::Module * irModule_;
@@ -54,23 +55,23 @@ public:
   /** Construct a new module at the top level. */
   Module(ProgramSource * src, const std::string & qual, Scope * builtinScope);
 
-  /** Override getModule() to return this. */
-  Module * getModule() const { return const_cast<Module *>(this); }
-
   /** List of import statements. */
-  const ASTNodeList & getImports() const { return imports; }
-  ASTNodeList & getImports() { return imports; }
+  const ASTNodeList & imports() const { return imports_; }
+  ASTNodeList & imports() { return imports_; }
 
   /** List of AST declarations defined in this module. */
   const ASTDeclList & getASTMembers() const { return decls; }
   ASTDeclList & getASTMembers() { return decls; }
   
   /** Get the qualified name of this module's package. */
-  const std::string getPackageName() const;
+  const std::string packageName() const;
 
-  /** Return the definition corresponding to the primary symbol in
-      this module. */
-  Defn * getPrimaryDefn() const;
+  /** The 'main' function for this module. */
+  FunctionDefn * entryPoint() const { return entryPoint_; }
+  void setEntryPoint(FunctionDefn * value) { entryPoint_ = value; }
+
+  /** Return the definition corresponding to the primary symbol in this module. */
+  Defn * primaryDefn() const;
   
   /** Get the set of decls which will be generated. */
   DefnSet & getXDefs() { return xdefs; }

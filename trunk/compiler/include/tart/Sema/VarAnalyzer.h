@@ -22,6 +22,7 @@ private:
 public:
   /** Constructor. */
   VarAnalyzer(ValueDefn * var);
+  VarAnalyzer(ValueDefn * var, Module * module);
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);

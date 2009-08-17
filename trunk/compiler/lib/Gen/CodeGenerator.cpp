@@ -43,7 +43,6 @@ Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 
 CodeGenerator::CodeGenerator(Module * mod)
     : module(mod)
-    , entryPoint_(NULL)
     , irModule_(mod->getIRModule())
 #if 0
     , doExpansions(false)
@@ -82,9 +81,9 @@ void CodeGenerator::generate() {
   DefnSet & xdefs = module->getXDefs();
   for (DefnSet::iterator it = xdefs.begin(); it != xdefs.end(); ++it) {
     Defn * de = *it;
-    /*if (de->getModule() != module) {
+    /*if (de->module() != module) {
         diag.debug("Generating external reference for %s",
-            de->getQualifiedName().c_str());
+            de->qualifiedName().c_str());
     }*/
 
     if (diag.inRecovery()) {
@@ -96,7 +95,7 @@ void CodeGenerator::generate() {
     }
 
     //if (ShowGen) {
-    //  diag.debug() << "Generating " << de->getQualifiedName();
+    //  diag.debug() << "Generating " << de->qualifiedName();
     //}
 
     genXDef(de);
@@ -161,7 +160,7 @@ void CodeGenerator::generate() {
   }
 #endif
 
-  if (diag.getErrorCount() == 0 && entryPoint_ != NULL) {
+  if (diag.getErrorCount() == 0 && module->entryPoint() != NULL) {
     genEntryPoint();
   }
 
@@ -265,6 +264,8 @@ unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
 
 void CodeGenerator::genEntryPoint() {
   using namespace llvm;
+  
+  FunctionDefn * entryPoint = module->entryPoint();
 
   // Generate the main method
   std::vector<const llvm::Type *> mainArgs;
@@ -286,10 +287,10 @@ void CodeGenerator::genEntryPoint() {
   BasicBlock * blkFailure = BasicBlock::Create("failure", mainFunc);
 
   // Check the type signature of the entry point function
-  llvm::Function * entryFunc = entryPoint_->irFunction();
+  llvm::Function * entryFunc = entryPoint->irFunction();
   const llvm::FunctionType * entryType = entryFunc->getFunctionType();
   if (entryType->getNumParams() > 1) {
-    diag.fatal(entryPoint_) << "EntryPoint function must have either 0 or 1 parameters";
+    diag.fatal(entryPoint) << "EntryPoint function must have either 0 or 1 parameters";
     return;
   }
 
@@ -308,7 +309,7 @@ void CodeGenerator::genEntryPoint() {
     // void entry point, return 0
     returnVal = llvm::ConstantInt::get(llvm::Type::Int32Ty, 0);
   } else if (entryType->getReturnType() != llvm::Type::Int32Ty) {
-    diag.fatal(entryPoint_) << "EntryPoint function must have either void or int32 return type";
+    diag.fatal(entryPoint) << "EntryPoint function must have either void or int32 return type";
     return;
   }
 

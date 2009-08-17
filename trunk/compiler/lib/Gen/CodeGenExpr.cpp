@@ -399,10 +399,10 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
       // TODO: Do the search later. (to handle fields in base classes.)
       //Type * referringType = obj->getCanonicalType();
       //assert(referringType == definingType);
-      DASSERT(field->getMemberIndex() >= 0);
+      DASSERT(field->memberIndex() >= 0);
 
       indices.push_back(
-          ConstantInt::get(llvm::Type::Int32Ty, field->getMemberIndex()));
+          ConstantInt::get(llvm::Type::Int32Ty, field->memberIndex()));
       labelStream << "." << field->getName();
 
       // Assert that the type is what we expected: A pointer to the field type.
@@ -631,8 +631,8 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
   ValueList args;
 
   Value * selfArg = NULL;
-  if (in->getSelfArg() != NULL) {
-    selfArg = genExpr(in->getSelfArg());
+  if (in->selfArg() != NULL) {
+    selfArg = genExpr(in->selfArg());
     if (fn->storageClass() == Storage_Instance) {
       args.push_back(selfArg);
     }

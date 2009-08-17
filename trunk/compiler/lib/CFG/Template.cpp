@@ -224,7 +224,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   if (value->getAST() != NULL) {
     result = ScopeBuilder::createDefn(tinst, value->module(), value->getAST());
     tinst->setValue(result);
-    result->setQualifiedName(value->getQualifiedName());
+    result->setQualifiedName(value->qualifiedName());
     result->addTrait(Defn::Synthetic);
     result->getTraits().addAll(value->getTraits() & INSTANTIABLE_TRAITS);
     result->setDefiningScope(tinst);

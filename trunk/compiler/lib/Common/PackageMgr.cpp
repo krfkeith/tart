@@ -107,8 +107,8 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
 }
 
 void PackageMgr::addModule(Module * mod) {
-  assert(modules.find(mod->getQualifiedName()) == modules.end());
-  modules[mod->getQualifiedName()] = mod;
+  assert(modules.find(mod->qualifiedName()) == modules.end());
+  modules[mod->qualifiedName()] = mod;
 }
 
 void PackageMgr::trace() {

@@ -1,6 +1,6 @@
 import tart.reflect.Type;
 
-[EntryPoint]
+@EntryPoint
 def main() {
   testInheritance1();
   testInheritance2();

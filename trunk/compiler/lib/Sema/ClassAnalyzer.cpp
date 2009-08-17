@@ -88,10 +88,10 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
     return false;
   }
-
-  if (passesToRun.contains(Pass_ResolveAttributes) && !resolveAttributes(target)) {
-    return false;
-  }
+  
+  //if (passesToRun.contains(Pass_ResolveAttributes) && !resolveAttributes(target)) {
+  //  return false;
+  //}
 
   if (passesToRun.contains(Pass_AnalyzeFields) && !analyzeFields()) {
     return false;
@@ -251,30 +251,62 @@ bool ClassAnalyzer::analyzeBaseClasses() {
 bool ClassAnalyzer::analyzeFields() {
   if (target->beginPass(Pass_AnalyzeFields)) {
     CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * super = type->super();
     // Also analyze base class fields.
-    if (type->super() != NULL) {
-      ClassAnalyzer(type->super()->typeDefn()).analyze(Task_PrepCallOrUse);
+    int instanceFieldCount = 0;
+    int instanceFieldCountRecursive = 0;
+    if (super != NULL) {
+      ClassAnalyzer(super->typeDefn()).analyze(Task_PrepCallOrUse);
+
+      // Reserve one slot for the superclass.
+      type->instanceFields_.push_back(NULL);
+      instanceFieldCount = 1;
+      instanceFieldCountRecursive = super->instanceFieldCountRecursive();
+    }
+
+    Defn::DefnType dtype = target->defnType();
+    for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
+      switch (member->defnType()) {
+        case Defn::Var:
+        case Defn::Let: {
+          VariableDefn * field = static_cast<VariableDefn *>(member);
+          field->copyTrait(target, Defn::Final);
+
+          analyzeValueDefn(field, Task_PrepCodeGeneration);
+          DASSERT(field->getType() != NULL);
+        
+          bool isStorageRequired = true;
+          if (field->defnType() == Defn::Let) {
+            if (field->initValue() != NULL && field->initValue()->isConstant()) {
+              // TODO: There may be other cases not handled here.
+              isStorageRequired = false;
+            }
+          }
+        
+          if (isStorageRequired) {
+            if (field->storageClass() == Storage_Instance) {
+              field->setMemberIndex(instanceFieldCount++);
+              field->setMemberIndexRecursive(instanceFieldCountRecursive++);
+              type->instanceFields_.push_back(field);
+            } else if (field->storageClass() == Storage_Static) {
+              // TODO - only if not synthetic?
+              module->addXDef(field);
+              type->staticFields_.push_back(field);
+            }
+          }
+          
+          break;
+        }
+        
+        case Defn::Typedef:
+        case Defn::Namespace: {
+          //DFAIL("Implement");
+          break;
+        }
+      }
     }
     
-    Defn::DefnType dtype = target->defnType();
-    for (Defn * member = type->firstMember(); member != NULL;
-        member = member->nextInScope()) {
-      if (METHOD_DEFS.contains(member->defnType())) {
-        continue;
-      }
-
-      if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
-        val->copyTrait(target, Defn::Final);
-
-        // This includes member types and namespaces as well.
-        analyzeValueDefn(val, Task_PrepCodeGeneration);
-        DASSERT(val->getType() != NULL);
-        //if (val->storageClass() == Storage_Static) {
-        //  module->addXDef(val);
-        //}
-      }
-    }
-
+    DASSERT(type->instanceFields_.size() == instanceFieldCount);
     target->finishPass(Pass_AnalyzeFields);
   }
 
@@ -391,7 +423,7 @@ bool ClassAnalyzer::analyzeMethods() {
         continue;
       }
 
-      if (METHOD_DEFS.contains(member->defnType())) {
+      if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
         if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
           analyzeValueDefn(val, Task_PrepCodeGeneration);
         }
@@ -438,9 +470,9 @@ void ClassAnalyzer::copyBaseClassMethods() {
   // Copy superclass methods to instance method table
   if (superClass != NULL) {
     DASSERT_OBJ(superClass->isSingular(), target);
-    type->instanceMethods.append(
-        superClass->instanceMethods.begin(),
-        superClass->instanceMethods.end());
+    type->instanceMethods_.append(
+        superClass->instanceMethods_.begin(),
+        superClass->instanceMethods_.end());
   }
 }
 
@@ -448,7 +480,7 @@ void ClassAnalyzer::createInterfaceTables() {
   // Get the set of all ancestor types.
   ClassSet ancestors;
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
-  type->getAncestorClasses(ancestors);
+  type->ancestorClasses(ancestors);
 
   // Remove from the set all types which are the first parent of some other type
   // that is already in the set, since they can use the same dispatch table.
@@ -469,11 +501,11 @@ void ClassAnalyzer::createInterfaceTables() {
   for (ClassSet::iterator it = interfaceTypes.begin(); it != interfaceTypes.end(); ++it) {
     CompositeType * itype = *it;
     DASSERT(itype->typeClass() == Type::Interface);
-    type->interfaces.push_back(CompositeType::InterfaceTable(itype));
-    CompositeType::InterfaceTable & itable = type->interfaces.back();
+    type->interfaces_.push_back(CompositeType::InterfaceTable(itype));
+    CompositeType::InterfaceTable & itable = type->interfaces_.back();
     itable.methods.append(
-        itype->instanceMethods.begin(),
-        itype->instanceMethods.end());
+        itype->instanceMethods_.begin(),
+        itype->instanceMethods_.end());
   }
 }
 
@@ -531,25 +563,25 @@ void ClassAnalyzer::overrideMembers() {
       }
 
       // Update the table of instance methods and the interface tables
-      overrideMethods(type->instanceMethods, methods, true);
+      overrideMethods(type->instanceMethods_, methods, true);
       for (CompositeType::InterfaceList::iterator it =
-          type->interfaces.begin(); it != type->interfaces.end(); ++it) {
+          type->interfaces_.begin(); it != type->interfaces_.end(); ++it) {
         overrideMethods(it->methods, methods, false);
       }
     }
 
     if (getter != NULL) {
-      overridePropertyAccessor(type->instanceMethods, getter, true);
-      for (InterfaceList::iterator it = type->interfaces.begin();
-          it != type->interfaces.end(); ++it) {
+      overridePropertyAccessor(type->instanceMethods_, getter, true);
+      for (InterfaceList::iterator it = type->interfaces_.begin();
+          it != type->interfaces_.end(); ++it) {
         overridePropertyAccessor(it->methods, getter, false);
       }
     }
 
     if (setter != NULL) {
-      overridePropertyAccessor(type->instanceMethods, setter, true);
-      for (InterfaceList::iterator it = type->interfaces.begin();
-          it != type->interfaces.end(); ++it) {
+      overridePropertyAccessor(type->instanceMethods_, setter, true);
+      for (InterfaceList::iterator it = type->interfaces_.begin();
+          it != type->interfaces_.end(); ++it) {
         overridePropertyAccessor(it->methods, setter, false);
       }
     }
@@ -574,22 +606,22 @@ void ClassAnalyzer::addNewMethods() {
         if (!de->getTraits().containsAny(
             Defn::Traits::of(Defn::Final, Defn::Override, Defn::Ctor))) {
           FunctionDefn * fn = static_cast<FunctionDefn *>(de);
-          fn->setDispatchIndex(type->instanceMethods.size());
-          type->instanceMethods.push_back(fn);
+          fn->setDispatchIndex(type->instanceMethods_.size());
+          type->instanceMethods_.push_back(fn);
         }
       } else if (dt == Defn::Property || dt == Defn::Indexer) {
         PropertyDefn * prop = static_cast<PropertyDefn *>(de);
         
         FunctionDefn * getter = prop->getter();
         if (getter != NULL && !getter->isFinal() & !getter->isOverride()) {
-          getter->setDispatchIndex(type->instanceMethods.size());
-          type->instanceMethods.push_back(getter);
+          getter->setDispatchIndex(type->instanceMethods_.size());
+          type->instanceMethods_.push_back(getter);
         }
 
         FunctionDefn * setter = prop->setter();
         if (setter != NULL && !setter->isFinal() & !setter->isOverride()) {
-          setter->setDispatchIndex(type->instanceMethods.size());
-          type->instanceMethods.push_back(setter);
+          setter->setDispatchIndex(type->instanceMethods_.size());
+          type->instanceMethods_.push_back(setter);
         }
       }
     }
@@ -601,7 +633,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
   
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
   Type::TypeClass tcls = type->typeClass();
-  MethodList & methods = type->instanceMethods;
+  MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
 
     // Check for abstract or interface methods which weren't overridden.
@@ -626,7 +658,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
       return;
     }
 
-    InterfaceList & itab = type->interfaces;
+    InterfaceList & itab = type->interfaces_;
     for (InterfaceList::iterator it = itab.begin(); it != itab.end(); ++it) {
       MethodList unimpMethods;
       for (MethodList::iterator di = it->methods.begin(); di != it->methods.end(); ++di) {
@@ -808,7 +840,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
-  if (super != NULL && super->getDefaultConstructor() == NULL) {
+  if (super != NULL && super->defaultConstructor() == NULL) {
     diag.fatal(target) << "Cannot create a default constructor for '" <<
         target << "' because super type '" << super <<
         "' has no default constructor";
@@ -901,7 +933,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         LValueExpr * memberExpr = new LValueExpr(target->getLocation(), selfExpr, memberVar);
         Expr * initExpr = new AssignmentExpr(target->getLocation(), memberExpr, initVal);
         constructorBody->append(initExpr);
-        //diag.info(de) << "Uninitialized field " << de->getQualifiedName() << " with default value " << initExpr;
+        //diag.info(de) << "Uninitialized field " << de->qualifiedName() << " with default value " << initExpr;
         //DFAIL("Implement");
       }
     }

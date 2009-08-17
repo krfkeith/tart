@@ -79,6 +79,7 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_Semi, LexToken(";"));
   EXPECT_EQ(Token_Colon, LexToken(":"));
   EXPECT_EQ(Token_Comma, LexToken(","));
+  EXPECT_EQ(Token_AtSign, LexToken("@"));
 
   // Operator tokens
   EXPECT_EQ(Token_Assign, LexToken("="));
@@ -179,7 +180,6 @@ TEST_F(LexerTest, SingleTokens) {
   
   // Erroneous tokens
   EXPECT_EQ(Token_Error, LexTokenError("#"));
-  EXPECT_EQ(Token_Error, LexTokenError("@"));
 }
 
 TEST_F(LexerTest, StringLiterals) {

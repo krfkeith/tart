@@ -121,7 +121,6 @@ public:
     //Modified = (1<<4),      // Whether definition was modified after creation.
     Extern,           // Externally defined function
     Ctor,             // Constructor function
-    EntryPoint,       // Application main function
     Singular,         // Has no unbound template params
     Synthetic,        // Generated via template
     Override,         // Overrides a superclass method
@@ -154,7 +153,7 @@ protected:
   TemplateInstance * tinst_;  // Template arguments
   DefnPasses running;         // Analysis passes currently in progress
   DefnPasses finished;        // Analysis passes completed
-  ExprList attrs;             // List of attributes
+  ExprList attrs_;             // List of attributes
   Traits traits;              // Traits of this defn
 
 public:
@@ -172,9 +171,8 @@ public:
   const char * name() const { return name_; }
 
   /** Get the fully qualified name of the definition. */
-  const std::string & getQualifiedName() const;
-  const std::string & qualifiedName() const { return getQualifiedName(); }
-  std::string & getQualifiedName();
+  const std::string & qualifiedName() const;
+  std::string & qualifiedName();
   
   /** Set the fully qualified name of the definition. */
   void setQualifiedName(const std::string & name) { qname_ = name; }
@@ -202,8 +200,8 @@ public:
   void setLocation(const SourceLocation & l) { loc = l; }
   
   /** Get the list of attributes. */
-  const ExprList & getAttrs() const { return attrs; }
-  ExprList & getAttrs() { return attrs; }
+  const ExprList & getAttrs() const { return attrs_; }
+  ExprList & getAttrs() { return attrs_; }
 
   /** Find the first attribute of the specified type. */
   const Expr * findAttribute(const Type * attrType) const;
@@ -227,7 +225,6 @@ public:
   bool isSynthetic() const { return traits.contains(Synthetic); }
   bool isExtern() const { return traits.contains(Extern); }
   bool isCtor() const { return traits.contains(Ctor); }
-  bool isEntryPoint() const { return traits.contains(EntryPoint); }
   bool isOverride() const { return traits.contains(Override); }
   
   void setSingular(bool t) {
@@ -258,8 +255,7 @@ public:
       If it's a property, then return the class enclosing the property. */
   TypeDefn * enclosingClassDefn() const;
 
-  /** Pointer to the next declaration in the defining scope, in order
-      of declaration. */
+  /** Pointer to the next declaration in the defining scope, in order of declaration. */
   Defn * nextInScope() const { return nextInScope_; }
   
   // Template methods
@@ -282,9 +278,6 @@ public:
 
   // Modifier methods
 
-  /** Get the declaration modifiers */
-  const DeclModifiers & getDeclModifiers() const { return modifiers; }
-  
   /** The visibility of this value. */
   Visibility visibility() const { return modifiers.visibility; }
 
@@ -423,6 +416,7 @@ private:
   Expr * initValue_;
   mutable llvm::Value * irValue_;
   int memberIndex_;
+  int memberIndexRecursive_;
 
 public:
   /** Constructor that takes a name */
@@ -432,6 +426,7 @@ public:
     , initValue_(value)
     , irValue_(NULL)
     , memberIndex_(0)
+    , memberIndexRecursive_(0)
   {}
 
   /** Constructor that takes an AST declaration. */
@@ -441,6 +436,7 @@ public:
     , initValue_(NULL)
     , irValue_(NULL)
     , memberIndex_(0)
+    , memberIndexRecursive_(0)
   {}
   
   /** Initial value for this variable. */
@@ -453,8 +449,12 @@ public:
   void setIRValue(llvm::Value * ir) const { irValue_ = ir; }
   
   /** For member variables, the index of this field within the class. */
-  int getMemberIndex() const { return memberIndex_; }
+  int memberIndex() const { return memberIndex_; }
   void setMemberIndex(int index) { memberIndex_ = index; }
+
+  /** For member variables, the index of this field within the class. */
+  int memberIndexRecursive() const { return memberIndexRecursive_; }
+  void setMemberIndexRecursive(int index) { memberIndexRecursive_ = index; }
 
   /** Set the type of this variable. */
   void setType(Type * ty) { type_ = ty; }

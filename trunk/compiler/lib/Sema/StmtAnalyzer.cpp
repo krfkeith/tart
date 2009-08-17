@@ -90,10 +90,11 @@ bool StmtAnalyzer::buildCFG() {
       TypeDefn * selfType = selfParam->getType()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
-      SelfScope * selfScope = new SelfScope(
-          selfType->getTypeValue()->memberScope(), function->definingScope());
-      selfScope->setSelfParam(selfParam);
-      parameterScope.setParentScope(selfScope);
+      // Uncomment to allow 'self' to be searched implicitly.
+      //SelfScope * selfScope = new SelfScope(
+      //    selfType->getTypeValue()->memberScope(), function->definingScope());
+      //selfScope->setSelfParam(selfParam);
+      //parameterScope.setParentScope(selfScope);
     }
 
     // Create the initial block.
@@ -787,17 +788,9 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 }
 
 Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
+  expr = ExprAnalyzer::inferTypes(expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
-  }
-
-  if (!expr->isSingular()) {
-    expr = TypeInferencePass::run(expr, expectedType);
-  }
-
-  expr = FinalizeTypesPass::run(expr);
-  if (!expr->isSingular()) {
-    diag.fatal(expr) << "Non-singular expression: " << expr;
   }
 
   expr = MacroExpansionPass::run(*this, expr);

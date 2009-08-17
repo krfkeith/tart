@@ -46,10 +46,10 @@ TEST_F(DefnAnalyzerTest, TestAddMember) {
   
   ASSERT_EQ(Defn::Class, cl1Defn->defnType());
   ASSERT_EQ("cl1", cl1Defn->getName());
-  ASSERT_EQ(&testModule, cl1Defn->getModule());
+  ASSERT_EQ(&testModule, cl1Defn->module());
   ASSERT_EQ(&testModule, cl1Defn->getParentScope());
   ASSERT_EQ(&testModule, cl1Defn->getParentDefn());
-  ASSERT_EQ("test.cl1", cl1Defn->getQualifiedName());
+  ASSERT_EQ("test.cl1", cl1Defn->qualifiedName());
   ASSERT_EQ(cl1Defn, testModule.lookupMember("cl1", false));
   
   DefnList defs;

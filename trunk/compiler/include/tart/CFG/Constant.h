@@ -163,9 +163,42 @@ public:
   bool isEqual(const ConstantExpr * cexpr) const;
   bool isSingular() const;
   void format(FormatStream & out) const;
+  void trace() const;
   static inline bool classof(const ConstantType *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == ConstType;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A constant reference to an object.
+class ConstantObjectRef : public Expr {
+private:
+  ExprList members_;
+
+public:
+  ConstantObjectRef(SourceLocation l, Type * val);
+
+  const ExprList & members() const { return members_; }
+  ExprList & members() { return members_; }
+  
+  Expr * getMemberValue(VariableDefn * member);
+  Expr * getMemberValue(const char * name);
+  void setMemberValue(VariableDefn * member, Expr * value);
+
+  int32_t getMemberValueAsInt(const char * name);
+
+  // Overrides
+
+  bool isConstant() const { return true; }
+  bool isSideEffectFree() const { return true; }
+  bool isSingular() const;
+
+  void format(FormatStream & out) const;
+  void trace() const;
+  static inline bool classof(const ConstantObjectRef *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == ConstObjRef;
   }
 };
 

@@ -20,7 +20,7 @@ public class Exception : Throwable {
 
   /** The error message for this exception. */
   def message:String {
-    get { return msg; }
+    get { return self.msg; }
   }
 
   /** Throw an exception if 'test' is true. */

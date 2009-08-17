@@ -39,8 +39,10 @@ public:
   bool createMembersFromAST(Defn * in);
 
   bool resolveAttributes(Defn * in);
-  void handleBuiltInAttributes(Defn * in);
-  void handleIntrinsicAttribute(Defn * de, CallExpr * attrCtor);
+  void applyAttributes(Defn * in);
+  void applyAttribute(Defn * de, ConstantObjectRef * attrObj, FunctionDefn * applyMethod);
+  void handleIntrinsicAttribute(Defn * de, Expr * attrCtor);
+  void handleAttributeAttribute(Defn * de, ConstantObjectRef * attrObj);
 
   /** Resolve the target of an import statement, and add a definition
       to the target scope. */

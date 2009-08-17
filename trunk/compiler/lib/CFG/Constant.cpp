@@ -6,6 +6,7 @@
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/CompositeType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
@@ -142,7 +143,7 @@ ConstantType::ConstantType(SourceLocation l, TypeDefn * valDefn)
   , value_(valDefn->getTypeValue())
 {
   DASSERT(value_ != NULL);
-  DASSERT_OBJ(getType() != NULL, this);
+  DASSERT_OBJ(type() != NULL, this);
 }
 
 bool ConstantType::isSingular() const {
@@ -157,8 +158,69 @@ bool ConstantType::isEqual(const ConstantExpr * cexpr) const {
   return false;
 }
 
+void ConstantType::trace() const {
+  Expr::trace();
+  value_->mark();
+}
+
 void ConstantType::format(FormatStream & out) const {
   out << value_;
 }
+
+// -------------------------------------------------------------------
+// ConstantObjectRef
+
+ConstantObjectRef::ConstantObjectRef(SourceLocation l, Type * type)
+  : Expr(ConstObjRef, l, type)
+{
+  CompositeType * ctype = cast<CompositeType>(type);
+  DASSERT_OBJ(ctype->typeDefn()->isPassFinished(Pass_AnalyzeFields), ctype);
+  members_.resize(ctype->instanceFieldCountRecursive());
+  std::fill(members_.begin(), members_.end(), (Expr *)NULL);
+}
+
+bool ConstantObjectRef::isSingular() const {
+  return type()->isSingular();
+}
+
+Expr * ConstantObjectRef::getMemberValue(VariableDefn * member) {
+  DASSERT(member->memberIndexRecursive() < members_.size());
+  return members_[member->memberIndexRecursive()];
+}
+
+void ConstantObjectRef::setMemberValue(VariableDefn * member, Expr * value) {
+  DASSERT(member->memberIndexRecursive() < members_.size());
+  members_[member->memberIndexRecursive()] = value;
+}
+
+Expr * ConstantObjectRef::getMemberValue(const char * name) {
+  DefnList defs;
+  type()->memberScope()->lookupMember(name, defs, true);
+  if (defs.size() == 1) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(defs.front())) {
+      return getMemberValue(var);
+    }
+  }
   
+  return NULL;
+}
+
+int32_t ConstantObjectRef::getMemberValueAsInt(const char * name) {
+  Expr * value = getMemberValue(name);
+  if (ConstantInteger * cint = dyn_cast_or_null<ConstantInteger>(value)) {
+    return int32_t(cint->value()->getSExtValue());
+  }
+  
+  return 0;
+}
+
+void ConstantObjectRef::trace() const {
+  Expr::trace();
+  markList(members_.begin(), members_.end());
+}
+
+void ConstantObjectRef::format(FormatStream & out) const {
+  out << "<" << type()->typeDefn()->qualifiedName() << ">";
+}
+
 } // namespace tart

@@ -1,6 +1,0 @@
-//import tart.core.Attribute.AttributeUsage;
-//import tart.core.Attribute.AttributeSite;
-
-/** Attribute used to indicate that an enumeration is a set of flags. */
-//[AttributeUsage(AttributeSite.Enum)]
-class FlagsAttribute : Attribute {}

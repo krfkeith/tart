@@ -44,7 +44,7 @@ public final class String {
   }
 
   /** Construct a string from a native byte array. */
-  [LinkageName("String_create")]
+  @LinkageName("String_create")
   static def create(bytes:NativePointer<[NativeArray<[ubyte, 0]>]>, length:int) -> String {
     let self = alloc(length);
     // TODO: Test
@@ -57,13 +57,13 @@ public final class String {
 
   /** 'true' if this is an empty string. */
   def isEmpty:bool {
-    get { return length == 0; }
+    get { return self.length == 0; }
   }
   
   /** 'true' if 's' is equal to to this string. */
   def equals(s:String) -> bool {
     return false if self.length != s.length;
-    for i = 0; i < length; i++ {
+    for i = 0; i < self.length; i++ {
       return false if self.start[i] != s.start[i];
     }
     

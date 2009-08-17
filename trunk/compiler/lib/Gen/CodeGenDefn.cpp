@@ -107,15 +107,6 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
       cast<llvm::FunctionType>(funcType->getIRType()),
       linkType, fdef->getLinkageName(), fdef->module()->getIRModule());
 
-  // Check if this is the main function
-  if (fdef->getTraits().contains(Defn::EntryPoint)) {
-    if (entryPoint_ != NULL) {
-      diag.fatal(fdef) << "There is already a entry point function defined";
-    } else {
-      entryPoint_ = fdef;
-    }
-  }
-
   fdef->setIRFunction(irValue);
   return irValue;
 }
@@ -148,7 +139,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       dbgFunction_ = dbgFactory_.CreateSubprogram(
           dbgCompileUnit_, // TODO: Replace for functions within a scope.
           fdef->getName(),
-          fdef->getQualifiedName(),
+          fdef->qualifiedName(),
           fdef->getLinkageName(),
           dbgCompileUnit_,
           getSourceLineNumber(*fdef),

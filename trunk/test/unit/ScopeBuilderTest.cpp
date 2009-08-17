@@ -53,7 +53,7 @@ TEST_F(ScopeBuilderTest, TestAddMember) {
   ASSERT_EQ(&testModule, cl1Defn->module());
   ASSERT_EQ(&testModule, cl1Defn->definingScope());
   //ASSERT_EQ(&testModule, cl1Defn->parentDefn());
-  ASSERT_EQ("test.cl1", cl1Defn->getQualifiedName());
+  ASSERT_EQ("test.cl1", cl1Defn->qualifiedName());
   ASSERT_EQ(cl1Defn, testModule.lookupSingleMember("cl1", false));
   
   DefnList defs;

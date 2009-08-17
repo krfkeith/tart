@@ -1,6 +1,7 @@
 /** Attribute that allows the linkage name of this function to be
     explicitly specified. */
-public class LinkageNameAttribute : Attribute {
+@Attribute(Attribute.Target.CALLABLE)
+public class LinkageName {
   readonly var name:String;
 
   /** Construct an LinkageNameAttribute.
@@ -9,4 +10,6 @@ public class LinkageNameAttribute : Attribute {
   def construct(name:String) {
     self.name = name;
   }
+
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

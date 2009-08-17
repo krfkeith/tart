@@ -18,9 +18,9 @@ struct TypeInfoBlock {
       by this TIB can be legally cast to a reference to type 'toType'. Used
       by the compiler to do 'isa', 'as' and 'catch' tests. */
   public final def hasBase(toType:Type) -> bool {
-    return true if type is toType;
+    return true if self.type is toType;
     var i = 0;
-    while let base:Type = bases[i++] {
+    while let base:Type = self.bases[i++] {
       return true if base is toType;
     }
 

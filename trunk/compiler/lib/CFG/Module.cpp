@@ -17,6 +17,7 @@ Module::Module(ProgramSource * src, const std::string & qual,
   , IterableScope(builtinScope)
   , moduleSource_(src)
   , irModule_(NULL)
+  , entryPoint_(NULL)
 {
   loc.file = src;
   qname_.assign(qual);
@@ -25,7 +26,7 @@ Module::Module(ProgramSource * src, const std::string & qual,
   setScopeName(istrings.intern(qual));
 }
 
-const std::string Module::getPackageName() const {
+const std::string Module::packageName() const {
   std::string result(qname_);
   size_t dot = result.rfind('.');
   if (dot == result.npos) {
@@ -74,19 +75,17 @@ bool Module::import(const char * name, DefnList & defs) {
   return false;
 }
 
-Defn * Module::getPrimaryDefn() const {
+Defn * Module::primaryDefn() const {
   Defn * result = NULL;
-  std::string moduleName(getPackageName());
+  std::string moduleName(packageName());
   if (!primaryDefs.empty()) {
-    for (DefnList::const_iterator it = primaryDefs.begin();
-        it != primaryDefs.end(); ++it) {
+    for (DefnList::const_iterator it = primaryDefs.begin(); it != primaryDefs.end(); ++it) {
       Defn * def = *it;
       if (def->visibility() != Private) {
         if (result != NULL) {
           // TODO: This is incorrect - multiple definitions of some
           // types *are* allowed.
-          diag.fatal(def) << "Multiple definitions of '" <<
-              def->getName() << "'";
+          diag.fatal(def) << "Multiple definitions of '" << def->getName() << "'";
         } else {
           result = def;
         }
@@ -102,8 +101,8 @@ bool Module::processImportStatements() {
   // module's namespace.
   if (beginPass(Pass_ResolveImport)) {
     DefnAnalyzer da(this, this);
-    for (ASTNodeList::const_iterator it = imports.begin();
-        it != imports.end(); ++it) {
+    for (ASTNodeList::const_iterator it = imports_.begin();
+        it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }
     
@@ -116,7 +115,7 @@ bool Module::processImportStatements() {
 bool Module::lookupMember(const char * name, DefnList & defs,
     bool inherit) const {
   
-  if (!imports.empty() && !isPassFinished(Pass_ResolveImport)) {
+  if (!imports_.empty() && !isPassFinished(Pass_ResolveImport)) {
     const_cast<Module *>(this)->processImportStatements();
   }
   

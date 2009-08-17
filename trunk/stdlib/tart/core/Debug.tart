@@ -1,30 +1,30 @@
 /** Simple debug printing facility for testing the compiler. */
 namespace Debug {
-  [Intrinsic]
+  @Intrinsic
   def stringify[%T](expr:T) -> String;
 
-  [Intrinsic]
+  @Intrinsic
   def locationOf[%T](expr:T) -> String;
 
-  [Extern("Debug_write")]
+  @Extern("Debug_write")
   def write(msg:String);
 
-  [Extern("Debug_writeLn")]
+  @Extern("Debug_writeLn")
   def writeLn(msg:String);
   
-  [Extern("Debug_fail")]
+  @Extern("Debug_fail")
   def fail(msg:String);
 
-  [Extern("Debug_fail2")]
+  @Extern("Debug_fail2")
   def fail(s0:String, s1:String);
 
-  [Extern("Debug_fail3")]
+  @Extern("Debug_fail3")
   def fail(s0:String, s1:String, s2:String);
 
-  [Extern("Debug_fail4")]
+  @Extern("Debug_fail4")
   def fail(s0:String, s1:String, s2:String, s3:String);
 
-  [Extern("Debug_fail5")]
+  @Extern("Debug_fail5")
   def fail(s0:String, s1:String, s2:String, s3:String, s4:String);
 
   macro assertTrue(cond:bool) {

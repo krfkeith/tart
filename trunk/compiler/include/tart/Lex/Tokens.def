@@ -32,6 +32,7 @@ DEFINE_TOKEN(EndTmplArgs)
 DEFINE_TOKEN(Semi)
 DEFINE_TOKEN(Colon)
 DEFINE_TOKEN(Comma)
+DEFINE_TOKEN(AtSign)
 
 // Operator tokens
 DEFINE_TOKEN(Assign)
