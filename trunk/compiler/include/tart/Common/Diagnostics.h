@@ -114,16 +114,14 @@ public:
     }
   };
   
-  /** Diagnostic action which prints a message with the specified severity
-      level. */
+  /** Diagnostic action which prints a message with the specified severity level. */
   template <Severity severity>
   class DiagnosticAction {
   public:
     static void write(const SourceLocation & loc, const std::string & msg);
   };
 
-  /** Diagnostic action which prints a message, then prints a stack trace
-      and exits. */
+  /** Diagnostic action which prints a message, then prints a stack trace and exits. */
   class FailAction {
   public:
     static void write(const SourceLocation & loc, const std::string & msg);
@@ -153,10 +151,33 @@ public:
       return *this;
     }
   };
+  
+  class Writer {
+  public:
+    virtual void write(const SourceLocation & loc, Severity sev, const std::string & msg) = 0;
+  };
+
+  class StdErrWriter : public Writer {
+  public:
+    void write(const SourceLocation & loc, Severity sev, const std::string & msg);
+
+    static StdErrWriter instance;
+  };
+
+  class StringWriter : public Writer {
+  public:
+    void write(const SourceLocation & loc, Severity sev, const std::string & msg);
+    const std::string & str() const { return str_; }
+    std::string & str() { return str_; }
+
+  private:
+    std::string str_;
+  };
 
 protected:
   int messageCount[Severity_Levels];
-  FILE * outstream;
+  Writer * writer_;
+  //FILE * outstream;
   RecoveryState recovery;       // True if in recovery mode.
   int indentLevel;    // Used for dumping hierarchical stuff
   Severity minSeverity;
@@ -165,6 +186,9 @@ protected:
 
 public:
   Diagnostics();
+
+  /** Set the writer. */
+  void setWriter(Writer * writer) { writer_ = writer; }
   
   /** reset counters for testing */
   void reset();

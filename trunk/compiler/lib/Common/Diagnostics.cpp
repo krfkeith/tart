@@ -22,6 +22,8 @@ DebugErrors("debug-errors",
 
 namespace tart {
     
+Diagnostics::StdErrWriter Diagnostics::StdErrWriter::instance;
+
 namespace {
   char * severityNames[Diagnostics::Severity_Levels] = {
     "",
@@ -42,7 +44,7 @@ namespace {
 Diagnostics diag;
 
 Diagnostics::Diagnostics()
-    : outstream(stderr)
+    : writer_(&StdErrWriter::instance)
     , recovery(Open)
     , indentLevel(0)
     , minSeverity(Debug) {
@@ -89,6 +91,10 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
       break;
   }
 
+  if (writer_ && sev >= minSeverity) {
+    writer_->write(loc, sev, msg);
+
+#if 0  
   if (outstream && sev >= minSeverity) {
     if (loc.file != NULL && !loc.file->getFilePath().empty()) {
       // The TextMate error parser is fairly strict
@@ -107,6 +113,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
           INDENTATION,
           msg.c_str());
     }
+#endif
     
     if (sev == Fatal && DebugErrors) {
       printStackTrace(5);
@@ -119,7 +126,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
 void Diagnostics::debug(char * msg, ...) {
   va_list ap;
   va_start(ap, msg);
-  vfprintf(outstream, msg, ap);
+  vfprintf(stderr, msg, ap);
   va_end(ap);
 }
 
@@ -165,14 +172,14 @@ void Diagnostics::writeLnIndent(char * msg, ...) {
 }
 
 void Diagnostics::assertionFailed(const char * expression, const char * filename, unsigned lineno) {
-  fprintf(outstream, "%s:%d: Assertion failed (%s)\n", filename, lineno, expression);
+  fprintf(stderr, "%s:%d: Assertion failed (%s)\n", filename, lineno, expression);
   debugBreak();
   printStackTrace(2);
   abort();
 }
 
 void Diagnostics::fail(const char * msg, const char * filename, unsigned lineno) {
-  fprintf(outstream, "%s:%d: Fatal error (%s)\n", filename, lineno, msg);
+  fprintf(stderr, "%s:%d: Fatal error (%s)\n", filename, lineno, msg);
   debugBreak();
   printStackTrace(2);
   abort();
@@ -215,7 +222,7 @@ void Diagnostics::printStackTrace(int skipFrames) {
         }
       
         if (demangled_name != NULL) {
-          fprintf(outstream, "    %s\n", demangled_name);
+          fprintf(stderr, "    %s\n", demangled_name);
 
           // Result may be a realloc of input buffer.
           buffer = demangled_name;
@@ -275,6 +282,52 @@ void Diagnostics::FailAction::write(const SourceLocation & loc, const std::strin
 void Diagnostics::AssertAction::write(const SourceLocation & loc, const std::string & msg) {
   diag.write(loc, Debug, msg);
   debugBreak();
+}
+
+void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
+    const std::string & msg) {
+  if (loc.file != NULL && !loc.file->getFilePath().empty()) {
+    // The TextMate error parser is fairly strict
+    TokenPosition tokLoc = loc.file->getTokenPosition(loc);
+    fprintf(stderr, "%s:%d: %s%.*s%s\n",
+        loc.file->getFilePath().c_str(),
+        tokLoc.beginLine + 1,
+        severityNames[(int)sev],
+        std::min(diag.indentLevel, MAX_INDENT) * 2,
+        INDENTATION,
+        msg.c_str());
+  } else {
+    fprintf(stderr, "%s%.*s%s\n",
+        severityNames[(int)sev],
+        std::min(diag.indentLevel, MAX_INDENT) * 2,
+        INDENTATION,
+        msg.c_str());
+  }
+}
+
+void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
+    const std::string & msg) {
+  char buffer[256];
+  size_t len;
+  if (loc.file != NULL && !loc.file->getFilePath().empty()) {
+    // The TextMate error parser is fairly strict
+    TokenPosition tokLoc = loc.file->getTokenPosition(loc);
+    len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
+        loc.file->getFilePath().c_str(),
+        tokLoc.beginLine + 1,
+        severityNames[(int)sev],
+        std::min(diag.indentLevel, MAX_INDENT) * 2,
+        INDENTATION,
+        msg.c_str());
+  } else {
+    len = snprintf(buffer, sizeof(buffer), "%s%.*s%s\n",
+        severityNames[(int)sev],
+        std::min(diag.indentLevel, MAX_INDENT) * 2,
+        INDENTATION,
+        msg.c_str());
+  }
+
+  str_.append(buffer, 0, len);
 }
 
 }

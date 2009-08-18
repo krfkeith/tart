@@ -1,0 +1,4 @@
+/// TEST InterfaceDataMember: Data member not allowed in interface
+interface Test {
+  var x:int;
+}

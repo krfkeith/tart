@@ -180,9 +180,7 @@ bool Parser::parse() {
   int errorCount = diag.getErrorCount();
 
   // Parse imports
-  while (match(Token_Import)) {
-    importStmt(module->imports());
-  }
+  parseImports();
 
   bool foundDecl = declarationList(module->getASTMembers(), DeclModifiers());
   if (token != Token_End || !foundDecl) {
@@ -191,6 +189,15 @@ bool Parser::parse() {
   }
 
   // Return false if parsing this module introduced any new errors.
+  return diag.getErrorCount() == errorCount;
+}
+
+bool Parser::parseImports() {
+  // Parse imports
+  int errorCount = diag.getErrorCount();
+  while (match(Token_Import)) {
+    importStmt(module->imports());
+  }
   return diag.getErrorCount() == errorCount;
 }
 
@@ -310,6 +317,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     }
   }
 
+  // Block beginning with 'private', etc.
   if ((accessType || modifier) && match(Token_LBrace)) {
     // TODO: No attributes...
     declarationList(dlist, mods);
@@ -319,6 +327,10 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     return true;
   }
 
+  // Grab the doc comment if there is one.
+  std::string docComment;
+  docComment.swap(lexer.docComment());
+  
   ASTDecl * decl = declarator(mods);
   if (decl == NULL) {
     if (modifier) {
@@ -329,6 +341,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     return true;
   }
 
+  docComment.swap(decl->docComment());
   decl->attributes().append(attributes.begin(), attributes.end());
   if (ASTTemplate * templ = dyn_cast<ASTTemplate>(decl)) {
     templ->getBody()->attributes().append(attributes.begin(),

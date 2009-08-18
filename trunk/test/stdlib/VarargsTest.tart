@@ -1,0 +1,24 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  stringArgs("Three", "String", "Args");
+  intArgs(1, 2, 3);
+  intArgs2(1, 2, 3);
+  return 0;
+}
+
+def stringArgs(s:String...) {
+  Debug.assertEq(3, s.length);
+  Debug.assertEq("Three", s[0]);
+}
+
+def intArgs(s:int...) {
+  Debug.assertEq(3, s.length);
+}
+
+def intArgs2(s:int...) {
+  let s2:Array<[int]> = s;
+  Debug.assertEq(3, s2.length);
+}
+
+// Test keyword-only arguments
+//

@@ -1,0 +1,39 @@
+@EntryPoint
+def main(args: String[]) {
+  integerLimitsTest();
+  integerToStringTest();
+  return 0;
+}
+
+def integerToStringTest() {
+  Debug.assertEq("1", byte(1).toString());
+  Debug.assertEq("1", short(1).toString());
+  Debug.assertEq("1", int(1).toString());
+  Debug.assertEq("1", long(1).toString());
+  Debug.assertEq("1", ubyte(1).toString());
+  Debug.assertEq("1", ushort(1).toString());
+  Debug.assertEq("1", uint(1).toString());
+  Debug.assertEq("1", ulong(1).toString());
+}
+
+def integerLimitsTest() {
+  Debug.assertEq(-0x80, byte.minVal);
+  Debug.assertEq(-0x8000, short.minVal);
+  Debug.assertEq(-0x80000000, int.minVal);
+  Debug.assertEq(-0x8000000000000000, long.minVal);
+
+  Debug.assertEq(0x7f, byte.maxVal);
+  Debug.assertEq(0x7fff, short.maxVal);
+  Debug.assertEq(0x7fffffff, int.maxVal);
+  Debug.assertEq(0x7fffffffffffffff, long.maxVal);
+
+  Debug.assertEq(0, ubyte.minVal);
+  Debug.assertEq(0, ushort.minVal);
+  Debug.assertEq(0, uint.minVal);
+  Debug.assertEq(0, ulong.minVal);
+
+  Debug.assertEq(0xff, ubyte.maxVal);
+  Debug.assertEq(0xffff, ushort.maxVal);
+  Debug.assertEq(0xffffffff, uint.maxVal);
+  Debug.assertEq(0xffffffffffffffff, ulong.maxVal);
+}

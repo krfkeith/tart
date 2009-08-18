@@ -95,6 +95,7 @@ protected:
   DeclModifiers modifiers_;
   ASTDeclList members_;
   ASTNodeList attributes_;
+  std::string docComment_;
 
   // Protected constructor, since this type is abstract. */
   ASTDecl(NodeType type, const SourceLocation & loc, const char * nm,
@@ -124,6 +125,10 @@ public:
   /** The list of attributes. */
   const ASTNodeList & attributes() const { return attributes_; }
   ASTNodeList & attributes() { return attributes_; }
+  
+  /** The doc comment for this declaration. */
+  const std::string & docComment() const { return docComment_; }
+  std::string & docComment() { return docComment_; }
 
   // Overrides
 

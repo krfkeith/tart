@@ -1,0 +1,11 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  Debug.assertEq(2, 1+1);
+  Debug.assertEq(1, 2-1);
+  Debug.assertEq(9, 3*3);
+  Debug.assertEq(1, 3/3);
+  
+  // TODO: The resut of the operators.
+  return 0;
+}
+

@@ -67,10 +67,16 @@ private:
 public:
   Parser(ProgramSource * src, Module * module);
 
+  /** True if we are finished parsing. */
+  bool finished() const { return token == Token_End; }
+
   /** Parse the module, and fill in the given scope with the
       resuling definitions.
   */
   bool parse();
+
+  /** Parse the import section. */
+  bool parseImports();
 
   /** Parse a declaration list. */
   bool declarationList(ASTDeclList & dlist, DeclModifiers mods);
@@ -254,6 +260,10 @@ public:
 
   /** Parse a character literal. */
   ASTNode * parseCharLiteral();
+
+  /** Return the current doc comment string. */
+  const std::string & docComment() const { return lexer.docComment(); }
+  std::string & docComment() { return lexer.docComment(); }
 };
   
 }

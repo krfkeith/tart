@@ -28,7 +28,7 @@ private:
   size_t              tokenStartOffset;// Start position of current token
   SourceLocation      tokenLocation;  // Start source location of current token
   std::string         tokenValue;     // String value of token
-  std::string         docCommentText; // Accumulated doc comment
+  std::string         docComment_; // Accumulated doc comment
   uint16_t            lineIndex;      // Current line index
   
   // Read the next character.
@@ -56,10 +56,11 @@ public:
   }
 
   /** Get the current accumulated doc comment for this token. */
-  const std::string & getDocComment() const { return docCommentText; }
+  const std::string & docComment() const { return docComment_; }
+  std::string & docComment() { return docComment_; }
 
   /** Clear the accumulated doc comment. */
-  void clearDocComment() { docCommentText.clear(); }
+  void clearDocComment() { docComment_.clear(); }
 };
 
 }

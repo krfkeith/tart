@@ -284,6 +284,10 @@ bool ClassAnalyzer::analyzeFields() {
           }
         
           if (isStorageRequired) {
+            if (type->typeClass() == Type::Interface) {
+              diag.error(field) << "Data member not allowed in interface: " << field;
+            }
+
             if (field->storageClass() == Storage_Instance) {
               field->setMemberIndex(instanceFieldCount++);
               field->setMemberIndexRecursive(instanceFieldCountRecursive++);

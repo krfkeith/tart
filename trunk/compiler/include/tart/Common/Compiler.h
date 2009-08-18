@@ -29,8 +29,6 @@ public:
 private:
   bool generateBitcode_;
   bool generateDependencies_;
-  
-  
 };
 
 }

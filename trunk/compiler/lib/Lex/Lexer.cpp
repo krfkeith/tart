@@ -224,28 +224,29 @@ TokenType Lexer::next() {
     } else if (ch == '/') {
       // Check for comment start
       readCh();
-      bool docComment = false;
+      bool inDocComment = false;
       if (ch == '/') {
         readCh();
         if (ch == '/') {
           // Doc comment
           readCh();
-          docComment = true;
+          inDocComment = true;
         }
 
         while (ch >= 0 && ch != '\n' && ch != '\r') {
-          if (docComment)
-            docCommentText.push_back(ch);
+          if (inDocComment)
+            docComment_.push_back(ch);
           readCh();
         }
-        if (docComment)
-          docCommentText.push_back('\n');
+        if (inDocComment)
+          docComment_.push_back('\n');
       } else if (ch == '*') {
         readCh();
         if (ch == '*') {
           // Doc comment
           readCh();
-          docComment = true;
+          inDocComment = true;
+          docComment_.clear();
         }
 
         for (;;) {
@@ -259,8 +260,8 @@ TokenType Lexer::next() {
               readCh();
               break;
             } else {
-              if (docComment)
-                docCommentText.push_back('*');
+              if (inDocComment)
+                docComment_.push_back('*');
               // Push the star we skipped, and reprocess the following char
             }
           } else {
@@ -273,20 +274,20 @@ TokenType Lexer::next() {
               if (ch == '\n') {
                 readCh();
               }
-              if (docComment)
-                docCommentText.push_back('\n');
+              if (inDocComment)
+                docComment_.push_back('\n');
               srcFile->newLine(currentOffset);
               lineStartOffset = currentOffset;
               lineIndex += 1;
             } else {
-              if (docComment)
-                docCommentText.push_back(ch);
+              if (inDocComment)
+                docComment_.push_back(ch);
               readCh();
             }
           }
         }
-        if (docComment)
-          docCommentText.push_back('\n');
+        if (inDocComment)
+          docComment_.push_back('\n');
       } else {
         // What comes after a '/' char.
         if (ch == '=') {
