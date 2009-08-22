@@ -94,27 +94,6 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
   if (writer_ && sev >= minSeverity) {
     writer_->write(loc, sev, msg);
 
-#if 0  
-  if (outstream && sev >= minSeverity) {
-    if (loc.file != NULL && !loc.file->getFilePath().empty()) {
-      // The TextMate error parser is fairly strict
-      TokenPosition tokLoc = loc.file->getTokenPosition(loc);
-      fprintf(outstream, "%s:%d: %s%.*s%s\n",
-          loc.file->getFilePath().c_str(),
-          tokLoc.beginLine + 1,
-          severityNames[(int)sev],
-          std::min(indentLevel, MAX_INDENT) * 2,
-          INDENTATION,
-          msg.c_str());
-    } else {
-      fprintf(outstream, "%s%.*s%s\n",
-          severityNames[(int)sev],
-          std::min(indentLevel, MAX_INDENT) * 2,
-          INDENTATION,
-          msg.c_str());
-    }
-#endif
-    
     if (sev == Fatal && DebugErrors) {
       printStackTrace(5);
     }

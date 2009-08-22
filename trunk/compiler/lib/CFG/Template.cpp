@@ -165,9 +165,9 @@ void TemplateSignature::trace() const {
 }
 
 void TemplateSignature::format(FormatStream & out) const {
-  out << "<[";
+  out << "[";
   formatTypeList(out, params_);
-  out << "]>";
+  out << "]";
 }
 
 Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env) {
@@ -230,7 +230,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     result->setDefiningScope(tinst);
   } else if (value->defnType() == Defn::Typedef) {
     TypeDefn * tdef = static_cast<TypeDefn *>(value);
-    TypeDefn * newDef = new TypeDefn(value->module(), tdef->getName());
+    TypeDefn * newDef = new TypeDefn(value->module(), tdef->name());
     
     switch (tdef->getTypeValue()->typeClass()) {
       case Type::NativePointer: {
@@ -293,7 +293,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(result)) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
       TypeDefn * nameAlias = new TypeDefn(
-          result->module(), tdef->getName(), ctype);
+          result->module(), tdef->name(), ctype);
       nameAlias->setSingular(ctype->isSingular());
       nameAlias->addTrait(Defn::Synthetic);
       tinst->addMember(nameAlias);
@@ -340,7 +340,7 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 }
 
 void TemplateInstance::format(FormatStream & out) const {
-  out << "<[";
+  out << "[";
   for (TypeList::const_iterator it = templateArgs_.begin();
       it != templateArgs_.end(); ++it) {
     if (it != templateArgs_.begin()) {
@@ -350,7 +350,7 @@ void TemplateInstance::format(FormatStream & out) const {
     out << *it;
   }
 
-  out << "]>";
+  out << "]";
 }
 
 void TemplateInstance::trace() const {

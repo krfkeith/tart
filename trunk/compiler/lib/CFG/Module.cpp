@@ -1,29 +1,36 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Module.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
 #include <llvm/Module.h>
+#include <llvm/Support/CommandLine.h>
+
+static llvm::cl::opt<std::string>
+DebugXDefs("debug-xdefs",
+    llvm::cl::desc("Debug xdefs for module"), llvm::cl::value_desc("filename"));
 
 namespace tart {
 
-Module::Module(ProgramSource * src, const std::string & qual,
-  Scope * builtinScope)
+Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinScope)
   : Defn(Mod, this, "<module>")
   , IterableScope(builtinScope)
   , moduleSource_(src)
   , irModule_(NULL)
   , entryPoint_(NULL)
+  , debug_(false)
 {
   loc.file = src;
   qname_.assign(qual);
   addTrait(Singular);
-  xrefsAnalyzed = 0;
+  defsAnalyzed_ = 0;
   setScopeName(istrings.intern(qual));
+
+  debug_ = (DebugXDefs == qual);
 }
 
 const std::string Module::packageName() const {
@@ -62,9 +69,9 @@ bool Module::import(const char * name, DefnList & defs) {
   }
 
   if (mod != NULL) {
-    importModules.insert(mod);
-    if (!mod->primaryDefs.empty()) {
-      defs.append(mod->primaryDefs.begin(), mod->primaryDefs.end());
+    importModules_.insert(mod);
+    if (!mod->primaryDefs_.empty()) {
+      defs.append(mod->primaryDefs_.begin(), mod->primaryDefs_.end());
       return true;
     }
 
@@ -78,14 +85,14 @@ bool Module::import(const char * name, DefnList & defs) {
 Defn * Module::primaryDefn() const {
   Defn * result = NULL;
   std::string moduleName(packageName());
-  if (!primaryDefs.empty()) {
-    for (DefnList::const_iterator it = primaryDefs.begin(); it != primaryDefs.end(); ++it) {
+  if (!primaryDefs_.empty()) {
+    for (DefnList::const_iterator it = primaryDefs_.begin(); it != primaryDefs_.end(); ++it) {
       Defn * def = *it;
       if (def->visibility() != Private) {
         if (result != NULL) {
           // TODO: This is incorrect - multiple definitions of some
           // types *are* allowed.
-          diag.fatal(def) << "Multiple definitions of '" << def->getName() << "'";
+          diag.fatal(def) << "Multiple definitions of '" << def->name() << "'";
         } else {
           result = def;
         }
@@ -105,60 +112,64 @@ bool Module::processImportStatements() {
         it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }
-    
+
     finishPass(Pass_ResolveImport);
   }
-  
+
   return true;
 }
 
 bool Module::lookupMember(const char * name, DefnList & defs,
     bool inherit) const {
-  
+
   if (!imports_.empty() && !isPassFinished(Pass_ResolveImport)) {
     const_cast<Module *>(this)->processImportStatements();
   }
-  
+
   return IterableScope::lookupMember(name, defs, inherit);
 }
 
-llvm::Module * Module::getIRModule() {
+llvm::Module * Module::irModule() {
   if (irModule_ == NULL) {
-    irModule_ = new llvm::Module(qname_);
+    irModule_ = new llvm::Module(qname_, llvm::getGlobalContext());
   }
   return irModule_;
 }
 
-bool Module::addXDef(Defn * de) {
-  if (xdefs.insert(de)) {
-    if (!xrefs.count(de)) {
-      xrefsToAnalyze.push_back(de);
-    }
-    return true;
+bool Module::addSymbol(Defn * de) {
+  if (de->defnType() == Defn::ExplicitImport) {
+    return false;
   }
-  
-  return false;
-}
 
-bool Module::addXRef(Defn * de) {
   DASSERT_OBJ(de->isSingular(), de);
-  if (de->module() != this) {
-    if (xrefs.insert(de)) {
-      if (!xdefs.count(de)) {
-        xrefsToAnalyze.push_back(de);
+  if (de->module() == this || de->isSynthetic()) {
+    if (exportDefs_.insert(de)) {
+      DASSERT_OBJ(!importDefs_.count(de), de);
+      defsToAnalyze_.push_back(de);
+      if (debug_) {
+        diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
+      }
+      return true;
+    }
+  } else {
+    if (importDefs_.insert(de)) {
+      DASSERT_OBJ(!exportDefs_.count(de), de);
+      defsToAnalyze_.push_back(de);
+      if (debug_) {
+        diag.info() << Format_Type << Format_QualifiedName << "Import: " << de;
       }
       return true;
     }
   }
-  
+
   return false;
 }
 
-Defn * Module::getNextXRefToAnalyze() {
-  if (xrefsAnalyzed < xrefsToAnalyze.size()) {
-    return xrefsToAnalyze[xrefsAnalyzed++];
+Defn * Module::nextDefToAnalyze() {
+  if (defsAnalyzed_ < defsToAnalyze_.size()) {
+    return defsToAnalyze_[defsAnalyzed_++];
   }
-  
+
   return NULL;
 }
 
@@ -170,13 +181,8 @@ void Module::trace() const {
   Defn::trace();
   IterableScope::trace();
   safeMark(moduleSource_);
-  markList(decls.begin(), decls.end());
-  markList(primaryDefs.begin(), primaryDefs.end());
-  
-  //ModuleSet importModules;
-  //DefnSet xdefs;
-  //DefnSet xrefs;
-  //DefnList xrefsToAnalyze;
+  markList(decls_.begin(), decls_.end());
+  markList(primaryDefs_.begin(), primaryDefs_.end());
 }
 
 }

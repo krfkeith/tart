@@ -18,6 +18,8 @@
 #include <string>
 #include <sstream>
 
+#include "llvm/Support/Compiler.h"
+
 namespace tart {
 
 /// ---------------------------------------------------------------
@@ -41,14 +43,6 @@ namespace tart {
 #define DFAIL(msg) \
   diag.fail(msg, __FILE__, __LINE__)
   
-/// ---------------------------------------------------------------
-/// noreturn attribute
-#ifdef __GNUC__
-#define NORETURN(_x) void _x __attribute__ ((noreturn))
-#else
-#define NORETURN(_x) _x
-#endif
-
 /// ---------------------------------------------------------------
 /// Various diagnostic functions.
 ///
@@ -177,7 +171,6 @@ public:
 protected:
   int messageCount[Severity_Levels];
   Writer * writer_;
-  //FILE * outstream;
   RecoveryState recovery;       // True if in recovery mode.
   int indentLevel;    // Used for dumping hierarchical stuff
   Severity minSeverity;
@@ -289,11 +282,11 @@ public:
   void writeLnIndent(char * msg, ...);
   
   /** Assertion failure. */
-  NORETURN(assertionFailed(const char * expr, const char * fname,
+  void NORETURN(assertionFailed(const char * expr, const char * fname,
       unsigned lineno));
   
   /** Fatal compiler error. */
-  NORETURN(fail(const char * msg, const char * fname, unsigned lineno));
+  void NORETURN(fail(const char * msg, const char * fname, unsigned lineno));
   
   /** Break execution. */
   static void debugBreak();

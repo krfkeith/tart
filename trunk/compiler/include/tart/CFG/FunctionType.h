@@ -22,7 +22,7 @@ private:
   Type * returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
-  mutable llvm::PATypeHolder irType;
+  mutable llvm::PATypeHolder irType_;
   mutable bool isCreatingType;
 
 public:

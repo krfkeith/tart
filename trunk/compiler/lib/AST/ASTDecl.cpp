@@ -26,7 +26,7 @@ void ASTNamespace::trace() const {
 }
 
 void ASTNamespace::format(FormatStream & out) const {
-  out << "namespace " << getName();
+  out << "namespace " << name();
 }
 
 // ---------------------------------------------------------------
@@ -58,15 +58,15 @@ void ASTTypeDecl::format(FormatStream & out) const {
       DFAIL("Illegal state");
   }
   
-  out << getName();
+  out << name();
 }
 
 // ---------------------------------------------------------------
 // ASTVarDecl
 void ASTVarDecl::trace() const {
   ASTDecl::trace();
-  safeMark(type);
-  safeMark(value);
+  safeMark(type_);
+  safeMark(value_);
 }
 
 void ASTVarDecl::format(FormatStream & out) const {
@@ -83,13 +83,13 @@ void ASTVarDecl::format(FormatStream & out) const {
       DFAIL("Illegal state");
   }
   
-  out << getName();
-  if (type) {
-    out << ":" << type;
+  out << name();
+  if (type_) {
+    out << ":" << type_;
   }
 
-  if (value) {
-    out << " = " << value;
+  if (value_) {
+    out << " = " << value_;
   }
 }
 
@@ -97,22 +97,22 @@ void ASTVarDecl::format(FormatStream & out) const {
 // PropertyDecl
 void ASTPropertyDecl::trace() const {
   ASTDecl::trace();
-  safeMark(type);
+  safeMark(type_);
   safeMark(getter_);
   safeMark(setter_);
   markList(params_.begin(), params_.end());
 }
 
 void ASTPropertyDecl::format(FormatStream & out) const {
-  out << "def " << getName();
+  out << "def " << name();
   if (!params_.empty()) {
     out << "(";
     formatParamList(out, params_);
     out << ")";
   }
 
-  if (type) {
-    out << ":" << type;
+  if (type_) {
+    out << ":" << type_;
   }
 }
 
@@ -132,11 +132,11 @@ void ASTFunctionDecl::format(FormatStream & out) const {
       break;
     
     case Function:
-      out << "def " << getName() << " ";
+      out << "def " << name() << " ";
       break;
     
     case Macro:
-      out << "macro " << getName() << " ";
+      out << "macro " << name() << " ";
       break;
     
     default:
@@ -165,16 +165,16 @@ void ASTParameter::trace() const {
 }
 
 void ASTParameter::format(FormatStream & out) const {
-  if (getName()) {
-    out << getName();
+  if (name()) {
+    out << name();
   }
   
-  if (type) {
-    out << ":" << type;
+  if (type_) {
+    out << ":" << type_;
   }
 
-  if (value) {
-    out << " = " << value;
+  if (value_) {
+    out << " = " << value_;
   }
 }
 
@@ -185,7 +185,7 @@ void ASTPatternVar::trace() const {
 }
 
 void ASTPatternVar::format(FormatStream & out) const {
-  out << "%" << getName();
+  out << "%" << name();
 }
 
 // ---------------------------------------------------------------

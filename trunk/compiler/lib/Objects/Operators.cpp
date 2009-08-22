@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/StaticType.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Module.h"
@@ -335,7 +335,7 @@ public:
         diag.fatal(loc) << "Number too large";
       }
 
-      value = llvm::ConstantExpr::getSExt(value, IntegerType::get(bitsRequired));
+      value = llvm::ConstantExpr::getSExt(value, IntegerType::get(llvm::getGlobalContext(), bitsRequired));
     }
 
     return new ConstantInteger(
@@ -361,7 +361,8 @@ public:
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
-    ConstantInt * one = ConstantInt::get(tart::StaticType<typ>::value.getIRType(), 1);
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.getIRType());
+    ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
@@ -397,7 +398,8 @@ public:
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
-    ConstantInt * one = ConstantInt::get(StaticType<typ>::value.getIRType(), 1);
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.getIRType());
+    ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(

@@ -54,7 +54,7 @@ void Builtins::init() {
       ptype = ptype->nextType()) {
     ptype->init();
     TypeDefn * de = ptype->typeDefn();
-    de->setQualifiedName(de->getName());
+    de->setQualifiedName(de->name());
     if (!ptype->isUnsizedIntType()) {
       de->addTrait(Defn::Singular);
     }
@@ -66,7 +66,7 @@ void Builtins::init() {
 
   // Built-in namespaces
   module.addMember(&nsOperator);
-  nsOperator.setQualifiedName(nsOperator.getName());
+  nsOperator.setQualifiedName(nsOperator.name());
 
   // Other built-in types
   NativePointerType::instance.initBuiltin();

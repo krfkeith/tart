@@ -105,9 +105,6 @@ public:
 /// -------------------------------------------------------------------
 /// String constant
 class ConstantString : public ConstantExpr {
-private:
-  std::string value_;
-
 public:
   ConstantString(SourceLocation l, const std::string & val);
 
@@ -121,6 +118,9 @@ public:
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == ConstString;
   }
+
+private:
+  std::string value_;
 };
 
 /// -------------------------------------------------------------------

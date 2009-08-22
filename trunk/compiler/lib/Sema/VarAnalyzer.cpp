@@ -66,9 +66,9 @@ bool VarAnalyzer::resolveVarType() {
     // Evaluate the explicitly declared type, if any
     if (target->type() == NULL) {
       DASSERT(ast != NULL);
-      if (ast->getType() != NULL) {
+      if (ast->type() != NULL) {
         TypeAnalyzer ta(module, target->definingScope());
-        Type * varType = ta.typeFromAST(ast->getType());
+        Type * varType = ta.typeFromAST(ast->type());
         if (varType == NULL) {
           return false;
         }

@@ -103,7 +103,7 @@ void CallSite::formatCallSignature(FormatStream & out) {
   Expr * functionExpr = callExpr->function();
   Candidates & cd = callExpr->candidates();
   DASSERT_OBJ(!cd.empty(), callExpr);
-  out << cd.front()->method()->getName() << "(";
+  out << cd.front()->method()->name() << "(";
   formatExprTypeList(out, callExpr->args());
   out << ")";
   if (callExpr->getExpectedReturnType() != NULL) {

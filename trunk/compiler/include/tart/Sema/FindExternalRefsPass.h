@@ -21,7 +21,8 @@ class FindExternalRefsPass : public CFGPass {
   
   FindExternalRefsPass(Module * m) : module(m) {}
   Defn * runImpl(Defn * in);
-  void addXRef(Defn * de);
+  void addSymbol(Defn * de);
+  bool addFunction(FunctionDefn * de);
 
 public:
 
@@ -30,6 +31,7 @@ public:
 
   Expr * visitLValue(LValueExpr * in);
   Expr * visitFnCall(FnCallExpr * in);
+  Expr * visitNew(NewExpr * in);
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
 };
 

@@ -99,7 +99,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
           diag.fatal(ast) << "'" << *it << "' cannot be specialized.";
         } else if (ty->isTemplateInstance()) {
           // It's an instance, so get the original template and its siblings
-          ty->templateInstance()->parentScope()->lookupMember(ty->getName(), defns, true);
+          ty->templateInstance()->parentScope()->lookupMember(ty->name(), defns, true);
         } else {
           defns.push_back(ty);
         }
@@ -108,7 +108,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
         ValueDefn * val = lv->value();
         if (val->isTemplateInstance()) {
           // It's an instance, so get the original template and its siblings
-          val->templateInstance()->parentScope()->lookupMember(val->getName(), defns, true);
+          val->templateInstance()->parentScope()->lookupMember(val->name(), defns, true);
         } else {
           defns.push_back(val);
         }
@@ -149,7 +149,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, const SourceLocation & loc) {
   // Search the current active scopes.
   for (Scope * sc = activeScope; sc != NULL; sc = sc->parentScope()) {
-    if (findInScope(out, name, sc, sc->getBaseExpr(), loc)) {
+    if (findInScope(out, name, sc, sc->baseExpr(), loc)) {
       return true;
     }
   }
@@ -264,7 +264,7 @@ Expr * AnalyzerBase::refToDefn(Defn * de, Expr * context, const SourceLocation &
   } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
     if (vdef->storageClass() == Storage_Instance && context == NULL) {
       diag.fatal(loc) << "Cannot access non-static member '" <<
-          vdef->getName() << "' from static method.";
+          vdef->name() << "' from static method.";
     }
     
     LValueExpr * result = new LValueExpr(loc, context, vdef);
@@ -306,7 +306,7 @@ bool AnalyzerBase::getTypesFromExprs(const SourceLocation & loc, ExprList & in, 
   
   if (numNonTypes > 0) {
     diag.fatal(loc) << "Incompatible definitions for '" <<
-        out.front()->getName() << "'";
+        out.front()->name() << "'";
     for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
       diag.info(*it) << *it;
     }
@@ -477,7 +477,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
     da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
   }
 
-  DASSERT_OBJ(arrayTemplate->paramScope().getCount() == 1, elementType);
+  DASSERT_OBJ(arrayTemplate->paramScope().count() == 1, elementType);
 
   BindingEnv arrayEnv(arrayTemplate);
   arrayEnv.bind(arrayTemplate->patternVar(0), elementType);

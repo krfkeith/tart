@@ -146,10 +146,10 @@ public:
 
   /** Add all of the methods that are referred to by this class's TypeInfoBlock as
       definitions to this module. This is used for template instances. */
-  void addMethodXDefs(Module * module);
+  void addMethodDefsToModule(Module * module);
 
   /** Add all of the static member variables of this class as definitions to this module. */
-  void addStaticXDefs(Module * module);
+  void addStaticDefsToModule(Module * module);
 
   /** Add all of the ancestor classes as references to this module. */
   void addBaseXRefs(Module * module);

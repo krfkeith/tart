@@ -16,7 +16,7 @@ public final class Array[%ElementType] : Iterable<[ElementType]> {
       self.end = addressOf(self.data[length]);
       return self;
     }
-    
+
     //def asBuffer() {
     //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
     //}
@@ -52,10 +52,31 @@ public final class Array[%ElementType] : Iterable<[ElementType]> {
     set { self.data[index] = value; }
   }
   
+  def iterate -> Iterator<[ElementType]> {
+    return ArrayIterator(self);
+  }
+
   // TODO: Copy additional constructors from old tart.
   // def apply(args:int[]) {
   //}
   
-  public final class ArrayIterator : Iterator<[T]>, HasLength {
+  public final class ArrayIterator : Iterator<[ElementType]>, HasLength {
+    private var array:Array;
+    private var index:int;
+    
+    def construct(array:Array) {
+      self.array = array;
+      self.index = 0;
+    }
+    
+    def next() -> ElementType or void {
+      if (self.index < self.array.length) {
+        return self.array[self.index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:long { get { return 0; } }
   }
 }

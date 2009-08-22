@@ -81,6 +81,7 @@ int main(int argc, char **argv) {
   // Process the input files.
   int failureCount = 0;
   for (unsigned i = 0, e = InputFilenames.size(); i != e; ++i) {
+    bool running = true;
     llvm::sys::Path filePath(SourcePath);
     filePath.appendComponent(InputFilenames[i]);
     SourceFile source(filePath.toString());
@@ -90,7 +91,7 @@ int main(int argc, char **argv) {
       break;
     }
     
-    while (!parser.finished()) {
+    while (!parser.finished() && running) {
       std::string testName(filePath.getBasename());
       std::string testMsg;
       if (!parser.docComment().empty()) {
@@ -114,17 +115,19 @@ int main(int argc, char **argv) {
 
       diag.reset();
       errors.str().clear();
-      module.getASTMembers().clear();
+      module.clearDefns();
 
       // Attempt to parse and analyze the declaration.
-      if (parser.declaration(module.getASTMembers(), DeclModifiers())) {
+      if (parser.declaration(module.astMembers(), DeclModifiers())) {
         while (!parser.finished() && parser.docComment().empty() &&
-            parser.declaration(module.getASTMembers(), DeclModifiers())) {}
+            parser.declaration(module.astMembers(), DeclModifiers())) {}
+      } else {
+        running = false;
       }
 
       SourceLocation loc;
-      if (!module.getASTMembers().empty()) {
-        loc = module.getASTMembers().front()->location();
+      if (!module.astMembers().empty()) {
+        loc = module.astMembers().front()->location();
         ScopeBuilder::createScopeMembers(&module);
         if (diag.getErrorCount() == 0) {
           AnalyzerBase::analyzeModule(&module);
@@ -135,7 +138,16 @@ int main(int argc, char **argv) {
       errorMsg.swap(errors.str());
       trim(errorMsg);
 
-      if (diag.getErrorCount() != 0) {
+      if (diag.getMessageCount(Diagnostics::Fatal) != 0) {
+        diag.reset();
+        diag.setWriter(&Diagnostics::StdErrWriter::instance);
+        diag.error(loc) << "ERROR: Test runner encountered a fatal error during test " <<
+            testName << ".";
+        diag.info(loc) << "Expected error message [" << testMsg << "]";
+        diag.info(loc) << "Actual error message [" << errorMsg << "]";
+        diag.setWriter(&errors);
+        ++failureCount;
+      } else if (diag.getErrorCount() != 0) {
         // A parsing error.
         if (errorMsg.find(testMsg) == errorMsg.npos) {
           diag.reset();
@@ -151,6 +163,9 @@ int main(int argc, char **argv) {
         diag.setWriter(&Diagnostics::StdErrWriter::instance);
         diag.error(loc) << "ERROR: " << testName << " should have failed, but it did not.";
         diag.info(loc) << "Expected error message [" << testMsg << "]";
+        if (!errorMsg.empty()) {
+          diag.info(loc) << "Compiler output [" << errorMsg << "]";
+        }
         diag.setWriter(&errors);
         ++failureCount;
       }

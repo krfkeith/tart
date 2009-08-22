@@ -60,9 +60,9 @@ bool PropertyAnalyzer::resolvePropertyType() {
     Type * type = target->getType();
     if (type == NULL) {
       DASSERT_OBJ(ast != NULL, target);
-      DASSERT_OBJ(ast->getType() != NULL, target);
+      DASSERT_OBJ(ast->type() != NULL, target);
       TypeAnalyzer ta(module, target->definingScope());
-      type = ta.typeFromAST(ast->getType());
+      type = ta.typeFromAST(ast->type());
       if (type == NULL) {
         return false;
       }
@@ -92,7 +92,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       }
       
       getter->setFunctionType(getterType);
-      module->addXDef(getter);
+      module->addSymbol(getter);
       analyzeLater(getter);
     }
 
@@ -128,7 +128,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
           valueParam->setType(type);
           valueParam->setInternalType(type);
         } else if (!valueParam->getType()->isEqual(type)) {
-          diag.fatal(setter) << "Setter parameter '" << valueParam->getName() <<
+          diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
               "' must be of type '" << type << "' but is instead type '" <<
               valueParam->getType() << "'";
         }
@@ -145,7 +145,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       setterType->setReturnType(&VoidType::instance);
 
       setter->setFunctionType(setterType);
-      module->addXDef(setter);
+      module->addSymbol(setter);
       analyzeLater(setter);
     }
 
@@ -201,7 +201,7 @@ bool PropertyAnalyzer::resolveIndexerParameterTypes() {
         //success &= AnalyzerBase::analyzeDefn(*it, InferTypesPass);
         
         // TODO: Should only add the param as a member if we "own" it.
-        if (param->definingScope() == NULL && param->getName() != NULL) {
+        if (param->definingScope() == NULL && param->name() != NULL) {
           target->parameterScope().addMember(param);
         }
       }

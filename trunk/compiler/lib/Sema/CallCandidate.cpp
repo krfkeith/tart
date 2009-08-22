@@ -208,7 +208,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
       // See if the parameter type is an unsigned integer type.
       if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(dealias(paramType))) {
-        if (isUnsignedIntegerType(ptype->getTypeId())) {
+        if (isUnsignedIntegerType(ptype->typeId())) {
           isUnsigned = true;
         }
       }
@@ -242,7 +242,7 @@ void CallCandidate::trace() const {
 }
 
 FormatStream & operator<<(FormatStream & out, const CallCandidate & cc) {
-  out << cc.method()->getName() << "(";
+  out << cc.method()->name() << "(";
   for (size_t i = 0; i < cc.callExpr()->argCount(); ++i) {
     if (i != 0) {
       out << ", ";

@@ -45,7 +45,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       ParameterDefn * param = mtype->params()[i];
       Expr * arg = in->arg(i);
       // TODO: Not sure a var is the right thing to use here - really want an alias.
-      VariableDefn * binding = new VariableDefn(Defn::Let, NULL, param->getName());
+      VariableDefn * binding = new VariableDefn(Defn::Let, NULL, param->name());
       binding->setInitValue(arg);
       binding->setType(param->internalType());
       binding->setStorageClass(Storage_Local);

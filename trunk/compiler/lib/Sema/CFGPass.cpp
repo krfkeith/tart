@@ -189,6 +189,7 @@ Expr * CFGPass::visitCall(CallExpr * in) {
 }
 
 Expr * CFGPass::visitFnCall(FnCallExpr * in) {
+  visit(in->function());
   in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);
   return in;

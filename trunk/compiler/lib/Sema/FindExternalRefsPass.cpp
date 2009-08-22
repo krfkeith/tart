@@ -28,40 +28,28 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
       if (tdef->isSynthetic()) {
-        ctype->addMethodXDefs(module);
+        ctype->addMethodDefsToModule(module);
       }
 
-      ctype->addStaticXDefs(module);
+      ctype->addStaticDefsToModule(module);
     }
   }
   
-  if (FunctionDefn * func = dyn_cast<FunctionDefn>(in)) {
-    if (func->isIntrinsic() || func->isExtern()) {
-      return in;
+  if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
+    if (!fn->isIntrinsic() && !fn->isExtern()) {
+      visit(fn);
     }
-
-    //diag.info(in) << "Visiting " << in;
-    visit(func);
   }
 
   return in;
 }
 
-void FindExternalRefsPass::addXRef(Defn * de) {
-  if (de->storageClass() == Storage_Static || de->storageClass() == Storage_Global) {
-    if (de->isSynthetic() /*&& de->module() != module*/) {
-      // Don't XRef intrinsics.
-      if (FunctionDefn * func = dyn_cast<FunctionDefn>(de)) {
-        if (func->isIntrinsic()) {
-          return;
-        }
-        
-        //if (func->isCtor()) {
-        //  
-        //}
-      }
-
-      module->addXDef(de);
+void FindExternalRefsPass::addSymbol(Defn * de) {
+  if (FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
+    addFunction(fn);
+  } else if (de->storageClass() == Storage_Static || de->storageClass() == Storage_Global) {
+    if (de->isSynthetic()) {
+      module->addSymbol(de);
     }
   } else if (de->storageClass() == Storage_Local) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
@@ -72,22 +60,44 @@ void FindExternalRefsPass::addXRef(Defn * de) {
   }
 }
 
+bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
+  if (!fn->isIntrinsic() && !fn->isExtern()) {
+    return module->addSymbol(fn);
+  }
+  
+  return false;
+}
+
 Expr * FindExternalRefsPass::visitLValue(LValueExpr * in) {
-  addXRef(in->value());
+  addSymbol(in->value());
   return in;
 }
 
 Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
-  addXRef(in->function());
-  CFGPass::visitFnCall(in);
+  if (addFunction(in->function())) {
+    CFGPass::visitFnCall(in);
+  } else {
+    visitExpr(in->selfArg());
+    visitExprArgs(in);
+  }
+
+  return in;
+}
+
+Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
+  TypeDefn * tdef = in->type()->typeDefn();
+  if (tdef != NULL) {
+    module->addSymbol(tdef);
+  }
+  
   return in;
 }
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   CompositeType * arrayType = cast<CompositeType>(in->type());
   Defn * allocFunc = arrayType->lookupSingleMember("alloc");
-  addXRef(arrayType->typeDefn());
-  addXRef(allocFunc);
+  addSymbol(arrayType->typeDefn());
+  addSymbol(allocFunc);
   return in;
 }
 

@@ -20,7 +20,7 @@ namespace tart {
 typedef ASTDeclList::const_iterator decl_iterator;
 
 void ScopeBuilder::createScopeMembers(Defn * parent) {
-  createScopeMembers(parent, parent->getASTMembers());
+  createScopeMembers(parent, parent->astMembers());
 }
 
 void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
@@ -139,11 +139,11 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   if (isa<ValueDefn>(member)) {
     member->copyTrait(parentDefn, Defn::Final);
   }
+
   if (parentDefn->isSingular() && member->templateSignature() == NULL) {
     member->addTrait(Defn::Singular);
   }
 
-  member->copyTrait(parentDefn, Defn::Synthetic);
   return member;
 }
 
@@ -182,7 +182,7 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
 }
 
 void ScopeBuilder::checkVariableHiding(Scope * scope, const Defn * de) {
-  const char * name = de->getName();
+  const char * name = de->name();
   DASSERT(name != NULL);
   for (Scope * s = scope; s != NULL; s = s->parentScope()) {
     // Local scopes only, please.
@@ -205,7 +205,7 @@ void ScopeBuilder::checkVariableHiding(Scope * scope, const Defn * de) {
 
 void ScopeBuilder::checkNameConflict(Scope * scope, const Defn * de) {
   DefnList dlist;
-  if (scope->lookupMember(de->getName(), dlist, false)) {
+  if (scope->lookupMember(de->name(), dlist, false)) {
     Defn * conflictingDefn = NULL;
     for (DefnList::const_iterator it = dlist.begin(); it != dlist.end(); ++it) {
       Defn * prevDef = *it;
@@ -325,12 +325,12 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
 Defn * ScopeBuilder::mergeNamespace(Scope * parent, const ASTDecl * ast) {
   // Check if there's an existing namespace with this name already.
   DefnList defns;
-  if (parent->lookupMember(ast->getName(), defns, false)) {
+  if (parent->lookupMember(ast->name(), defns, false)) {
     // Insure that the previous defn is also a namespace.
     NamespaceDefn * ns = NULL;
     for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
       if ((*it)->defnType() != Defn::Namespace) {
-        diag.fatal(ast) << "Namespace definition '" << ast->getName() <<
+        diag.fatal(ast) << "Namespace definition '" << ast->name() <<
             "' conflicts with previous definition:";
         diag.info(*it) << "'" << *it << "' defined here";
       } else {

@@ -39,14 +39,15 @@ private:
 
   ProgramSource * moduleSource_;
   ASTNodeList imports_;
-  ModuleSet importModules;
-  ASTDeclList decls;
-  DefnList primaryDefs;
-  DefnSet xdefs;
-  DefnSet xrefs;
-  DefnList xrefsToAnalyze;
-  size_t xrefsAnalyzed;
+  ModuleSet importModules_;
+  ASTDeclList decls_;
+  DefnList primaryDefs_;
+  DefnSet exportDefs_;
+  DefnSet importDefs_;
+  DefnList defsToAnalyze_;
+  size_t defsAnalyzed_;
   FunctionDefn * entryPoint_;
+  bool debug_;
 
   // The LLVM module
   llvm::Module * irModule_;
@@ -60,8 +61,8 @@ public:
   ASTNodeList & imports() { return imports_; }
 
   /** List of AST declarations defined in this module. */
-  const ASTDeclList & getASTMembers() const { return decls; }
-  ASTDeclList & getASTMembers() { return decls; }
+  const ASTDeclList & astMembers() const { return decls_; }
+  ASTDeclList & astMembers() { return decls_; }
   
   /** Get the qualified name of this module's package. */
   const std::string packageName() const;
@@ -73,23 +74,25 @@ public:
   /** Return the definition corresponding to the primary symbol in this module. */
   Defn * primaryDefn() const;
   
-  /** Get the set of decls which will be generated. */
-  DefnSet & getXDefs() { return xdefs; }
+  /** Get the set of decls_ which will be generated. */
+  DefnSet & exportDefs() { return exportDefs_; }
 
-  /** Add to the list of symbols to be emitted for this module. */
-  bool addXDef(Defn * de);
+  /** Get the set of decls_ which are referenced from this module. */
+  DefnSet & importDefs() { return importDefs_; }
 
-  /** Get the set of decls which are referenced from this module. */
-  DefnSet & getXRefs() { return xrefs; }
-
-  /** Add a symbol which is referenced by this module. */
-  bool addXRef(Defn * de);
+  /** Import this symbol into this module. If the symbol is from another module, add it
+      to the list of imported symbols. If it is from this module, or if it is synthetic, then
+      add it to the list of exported symbols. Also, add the symbol to the queue of symbols to
+      be analyzed.
+      
+      Returns true if the symbol was not already added.
+  */
+  bool addSymbol(Defn * de);
 
   /** Return the next xref that has not been analyzed. */
-  Defn * getNextXRefToAnalyze();
+  Defn * nextDefToAnalyze();
 
-  /** Attempt to import a module by name. Returns the set of primary
-      definitions for that module. */
+  /** Attempt to import a module by name. Returns the set of primary definitions for that module. */
   bool import(const char * qname, DefnList & defs);
 
   /** Process all import statements by adding an explicit import reference
@@ -99,7 +102,13 @@ public:
   /** The source file for this module. */
   ProgramSource * moduleSource() const { return moduleSource_; }
 
-  llvm::Module * getIRModule();
+  /** Remove all definitions from the module. */
+  void clearDefns() {
+    IterableScope::clear();
+    decls_.clear();
+  }
+
+  llvm::Module * irModule();
 
   // Overrides
 

@@ -2,3 +2,11 @@
 interface Test {
   var x:int;
 }
+
+/// TEST InterfaceMethodWithBody: body not allowed
+interface Test {
+  def func() {}
+}
+
+// Test private, public in interface.
+// Test interface inheritance.

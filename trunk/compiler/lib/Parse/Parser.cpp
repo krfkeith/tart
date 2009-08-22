@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Parse/Parser.h"
 #include "tart/Parse/OperatorStack.h"
 #include "tart/Common/Diagnostics.h"
@@ -13,7 +13,7 @@
 #include <errno.h>
 
 namespace tart {
-    
+
 namespace {
   // Convenience function to get the suffix of a string
   inline char lastChar(const std::string & str) {
@@ -53,7 +53,7 @@ namespace {
 
   // The operator namespace
   //ASTIdent idOperator(SourceLocation(), "Operators");
-  
+
   // Infix operators
   ASTIdent operatorAdd(SourceLocation(), "infixAdd");
   ASTIdent operatorSub(SourceLocation(), "infixSubtract");
@@ -182,7 +182,7 @@ bool Parser::parse() {
   // Parse imports
   parseImports();
 
-  bool foundDecl = declarationList(module->getASTMembers(), DeclModifiers());
+  bool foundDecl = declarationList(module->astMembers(), DeclModifiers());
   if (token != Token_End || !foundDecl) {
     expectedDeclaration();
     return false;
@@ -221,7 +221,7 @@ ASTDecl * Parser::declaration() {
       return declList[0];
     }
   }
-  
+
   return NULL;
 }
 
@@ -330,7 +330,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   // Grab the doc comment if there is one.
   std::string docComment;
   docComment.swap(lexer.docComment());
-  
+
   ASTDecl * decl = declarator(mods);
   if (decl == NULL) {
     if (modifier) {
@@ -359,7 +359,7 @@ bool Parser::importStmt(ASTNodeList & out) {
   if (match(Token_Namespace)) {
     unpack = true;
   }
-  
+
   // Parse imports
   const char * importName = matchIdent();
   if (!importName) {
@@ -393,7 +393,7 @@ bool Parser::importStmt(ASTNodeList & out) {
   if (!match(Token_Semi)) {
     expectedSemicolon();
   }
-  
+
   out.push_back(new ASTImport(loc, path, asName, unpack));
   return true;
 }
@@ -543,7 +543,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       }
 
       // Enable this if we want to allow parameterized properties.
-#if 0      
+#if 0
       // If there's a colon after the arg list, then it's a parameterized property rather
       // than a method.
       if (match(Token_Colon)) {
@@ -580,7 +580,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
         templateRequirements(requirements);
       }
     }
-    
+
     Stmt * body = NULL;
     ASTFunctionDecl * saveFunction = function;
     function = fd;
@@ -599,7 +599,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     if (!templateParams.empty()) {
       return new ASTTemplate(fd, templateParams, requirements);
     }
-    
+
     return fd;
   }
 }
@@ -631,7 +631,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
       templateRequirements(requirements);
     }
   }
-  
+
   Stmt * body = NULL;
   ASTFunctionDecl * saveFunction = function;
   function = fd;
@@ -710,7 +710,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
   }
 
   // TODO: If there were no errors
-  
+
   ASTTypeDecl * typeDecl = new ASTTypeDecl(kind, matchLoc, declName, bases, mods);
 
   if (!templateParams.empty()) {
@@ -718,7 +718,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
       templateRequirements(requirements);
     }
   }
-  
+
   if (!match(Token_LBrace)) {
     expected("class body");
     // Recovery: Look for a '{'
@@ -987,7 +987,7 @@ bool Parser::attributeList(ASTNodeList & attributes) {
         break;
       }
     }
-    
+
     attributes.push_back(attrExpr);
   }
 
@@ -1028,7 +1028,7 @@ ASTNode * Parser::typeExprBinary() {
   OperatorStack opstack(e0);
   for (;;) {
     std::string tokenVal = lexer.getTokenValue();
-    
+
     switch (token) {
       /*case Token_LogicalAnd:
         opstack.pushOperator(
@@ -1069,7 +1069,7 @@ ASTNode * Parser::typeExprPrimary() {
   SourceLocation loc = lexer.getTokenLocation();
   if (match(Token_LParen)) {
     result = typeExpression();
-    
+
     // Handle tuple type.
     if (match(Token_Comma)) {
       ASTOper * tuple = new ASTOper(ASTNode::Tuple, result);
@@ -1078,13 +1078,13 @@ ASTNode * Parser::typeExprPrimary() {
         if (result == NULL) {
           return NULL;
         }
-        
+
         tuple->append(result);
       } while (match(Token_Comma)) ;
-      
+
       result = tuple;
     }
-    
+
     if (!match(Token_RParen)) {
       expectedCloseParen();
       return NULL;
@@ -1097,11 +1097,11 @@ ASTNode * Parser::typeExprPrimary() {
       expectedIdentifier();
       return NULL;
     }
-    
+
     if (match(Token_Colon)) {
       declType = typeExpression();
     }
-    
+
     result = new ASTPatternVar(matchLoc, pvarName, declType);
   } else if (match(Token_Function)) {
     // Function type.
@@ -1144,7 +1144,7 @@ ASTNode * Parser::typeName() {
       expected("type name after '.'");
       return NULL;
     }
-  
+
     result = new ASTMemberRef(matchLoc, result, typeName);
 
     if (match(Token_BeginTmplArgs)) {
@@ -1160,10 +1160,10 @@ ASTNode * Parser::typeName() {
       expected("close bracket");
       return NULL;
     }
-    
+
     result = ASTUnaryOp::get(ASTNode::Array, result);
   }
-  
+
   return result;
 }
 
@@ -1214,7 +1214,7 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
       DASSERT(false);
   }
 }
-    
+
 ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, const char * name,
     const DeclModifiers & mods) {
 
@@ -1268,7 +1268,7 @@ ASTNode * Parser::functionReturnType() {
       return typeExpression();
     }
   }
-  
+
   return NULL;
 }
 
@@ -1278,13 +1278,13 @@ void Parser::templateParamList(ASTNodeList & templateParams) {
       diag.fatal(lexer.getTokenLocation()) << "Empty template parameter list";
       return;
     }
-    
+
     for (;;) {
       if (!templateParam(templateParams)) {
         // TODO: Skip to RBracket
         return;
       }
-      
+
       if (match(Token_RBracket)) {
         break;
       } else if (!match(Token_Comma)) {
@@ -1312,16 +1312,16 @@ bool Parser::templateParam(ASTNodeList & templateParams) {
     templateParams.push_back(param);
     return true;
   }
-  
+
   return false;
-  
+
 /*
   const char * paramName = matchIdent();
   if (paramName == NULL) {
     expectedIdentifier();
     return false;
   }
-  
+
   // TODO: Parse types, default values and varargs...
 
   ASTParameter * paramDef =
@@ -1363,14 +1363,14 @@ ASTNode * Parser::templateArg() {
 }
 
 void Parser::templateRequirements(ASTNodeList & requirements) {
-  
+
 }
 
 bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
   int paramFlags = 0;
   if (match(endDelim))
     return true;
-    
+
   // Handle an initial semicolon if all params are keyword-only.
   if (match(Token_Semi)) {
     paramFlags |= Param_KeywordOnly;
@@ -1409,10 +1409,10 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
     for (ASTParamList::const_iterator it = params.begin();
         it != params.end() - 1; ++it) {
       ASTParameter * pp = *it;
-      if (fa->getName() && pp->getName() && strcmp(fa->getName(),
-          pp->getName()) == 0) {
+      if (fa->name() && pp->name() && strcmp(fa->name(),
+          pp->name()) == 0) {
         diag.fatal(lexer.getTokenLocation()) <<
-            "Duplicate argument name '" << fa->getName() << "'";
+            "Duplicate argument name '" << fa->name() << "'";
       }
     }
   }
@@ -1457,7 +1457,7 @@ void Parser::createSelfParam(ParameterList & params, Type * selfType) {
   // type and not the original.
   TypeName * selfTypeName = TypeName::get(selfType->getDeclaration());
   //TypeReference * selfTypeRef = TypeReference::get(matchLoc,
-  //    selfType->getDeclaration()->getName());
+  //    selfType->getDeclaration()->name());
   ParameterDef * selfParam = new ParameterDef(matchLoc, istrings.idSelf,
       selfTypeName, NULL, ParameterDef::Hidden);
 
@@ -1551,7 +1551,7 @@ Stmt * Parser::blockStmt() {
     }
     block->append(st);
   }
-  
+
   block->setFinalLocation(lexer.getTokenLocation());
   return block;
 }
@@ -1687,9 +1687,9 @@ Stmt * Parser::declStmt() {
       break;
     }
 
-    if (s->find(decl->getName())) {
+    if (s->find(decl->name())) {
       diag.warn(decl->getLocation(),
-          "'%s' hides definition in outer scope", decl->getName());
+          "'%s' hides definition in outer scope", decl->name());
       break;
     }
   }
@@ -1711,7 +1711,7 @@ Stmt * Parser::ifStmt() {
     expectedCloseParen();
     return NULL;
   }
-  
+
   Stmt * thenSt = bodyStmt();
   if (thenSt == NULL)
     return NULL;
@@ -1735,7 +1735,7 @@ Stmt * Parser::whileStmt() {
     expectedCloseParen();
     return NULL;
   }
-  
+
   Stmt * bodySt = bodyStmt();
   if (bodySt == NULL)
     return NULL;
@@ -1746,7 +1746,7 @@ Stmt * Parser::whileStmt() {
 Stmt * Parser::forStmt() {
   SourceLocation loc = matchLoc;
   ASTNodeList initVars;
-  
+
   ASTNode * initExpr = NULL;
   if (!match(Token_Semi)) {
     // If it's a non-empty initialization clause, then it must declare
@@ -1762,8 +1762,8 @@ Stmt * Parser::forStmt() {
 
       Stmt * body = bodyStmt();
       return new ForEachStmt(loc, loopVar, iterable, body);
-    } 
-    
+    }
+
     // It's a 'for' statement.
     initExpr = loopVar;
     if (loopVar && match(Token_Assign)) {
@@ -1784,7 +1784,7 @@ Stmt * Parser::forStmt() {
     }
     // Fall through
   }
-  
+
   // At this point, we've just eaten a semicolon, which succeeded either
   // an initialization expression or nothing.
 
@@ -1809,7 +1809,7 @@ Stmt * Parser::bodyStmt() {
   if (st == NULL) {
     expectedStatement();
   }
-  
+
   return st;
 }
 
@@ -1834,13 +1834,13 @@ ASTNode * Parser::testOrDecl() {
     ASTNode * decl =
         localDeclList(tok == Token_Let ? ASTNode::Let : ASTNode::Var);
     if (decl != DECL_ERROR) {
-      
+
       // We require an initializer expression in this instance
       if (!match(Token_Assign)) {
         expected("'='");
         return NULL;
       }
-    
+
       ASTNode * init = expression();
       if (init == NULL) {
         expectedExpression();
@@ -1983,7 +1983,7 @@ ASTNode * Parser::assignmentExpression() {
         case Token_AssignRShift:    op = &operatorAssignRSh; break;
         case Token_AssignLShift:    op = &operatorAssignLSh; break;
       }
-      
+
       ASTCall * call = callOperator(op, loc);
       call->append(expr);
       call->append(rhs);
@@ -2004,7 +2004,7 @@ ASTNode * Parser::binaryOperator() {
   OperatorStack opstack(e0);
   for (;;) {
     TokenType operatorToken = token;
-    
+
     switch (token) {
       case Token_Plus:
         opstack.pushOperator(callOperator(
@@ -2172,7 +2172,7 @@ ASTNode * Parser::binaryOperator() {
         opstack.pushOperand(type);
         continue;
       }
-      
+
       case Token_Is: {
         TokenType tok = token;
         SourceLocation loc = lexer.getTokenLocation();
@@ -2188,7 +2188,7 @@ ASTNode * Parser::binaryOperator() {
         opstack.pushOperator(op, Prec_IsType, Left);
         break;
       }
-      
+
       case Token_In:
         opstack.pushOperator(new ASTOper(ASTNode::In,
             lexer.getTokenLocation()), Prec_Contains, Left);
@@ -2234,7 +2234,7 @@ ASTNode * Parser::binaryOperator() {
     }
     opstack.pushOperand(e1);
   }
-  
+
 done:
   if (!opstack.reduceAll()) {
     return e0;
@@ -2347,7 +2347,7 @@ ASTNode * Parser::primaryExpression() {
       next();
       return new ASTNode(ASTNode::Null, loc);
     }
-    
+
     case Token_Function: {
       next();
       result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
@@ -2550,7 +2550,7 @@ bool Parser::parseArrayIndices(ASTOper * arrayExpr) {
       expectedCloseBracket();
       return NULL;
     }
-    
+
     arrayExpr->append(arg);
     if (match(Token_RBracket))
       return true;
@@ -2579,8 +2579,7 @@ ASTNode * Parser::parseIntegerLiteral() {
   }
 
   // Figure out how many bits we need.
-  uint32_t bits = llvm::APInt::getBitsNeeded(tokenVal.c_str(), tokenVal.size(),
-      numberBase) + 1;
+  uint32_t bits = llvm::APInt::getBitsNeeded(tokenVal, numberBase) + 1;
   if (bits <= 32) {
     bits = 32;
   } else if (bits <= 64) {
@@ -2591,8 +2590,7 @@ ASTNode * Parser::parseIntegerLiteral() {
     diag.fatal(loc) << "Integer constant > 128 bits: (" << bits << " bits)";
   }
 
-  return new ASTIntegerLiteral(loc, llvm::APInt(bits, tokenVal.c_str(),
-    tokenVal.size(),numberBase));
+  return new ASTIntegerLiteral(loc, llvm::APInt(bits, tokenVal, numberBase));
 }
 
 ASTNode * Parser::parseFloatLiteral() {
@@ -2613,11 +2611,11 @@ ASTNode * Parser::parseFloatLiteral() {
       llvm::APFloat::fcZero, false);
   llvm::APFloat::opStatus status = value.convertFromString(tokenVal.c_str(),
       llvm::APFloat::rmNearestTiesToEven);
-  
+
   if (status != llvm::APFloat::opOK) {
     diag.warn(lexer.getTokenLocation()) << "conversion error";
   }
-  
+
   return new ASTFloatLiteral(loc, value);
 }
 
@@ -2632,7 +2630,7 @@ ASTNode * Parser::parseCharLiteral() {
   if (lexer.getTokenValue().size() > 1) {
     diag.fatal(lexer.getTokenLocation()) << "multi-character constant";
   }
-  
+
   ASTNode * result = new ASTCharLiteral(lexer.getTokenLocation(), (int)lexer.getTokenValue()[0]);
   next();
   return result;
@@ -2684,7 +2682,7 @@ void Parser::expectedCloseBracket() {
 }
 
 void Parser::expected(const char * what) {
-  diag.error(lexer.getTokenLocation()) << "Expected " << what << ", not " << 
+  diag.error(lexer.getTokenLocation()) << "Expected " << what << ", not " <<
       GetTokenName(token);
 }
 

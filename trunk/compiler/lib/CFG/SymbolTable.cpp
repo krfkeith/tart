@@ -8,15 +8,15 @@
 namespace tart {
 
 SymbolTable::Entry * SymbolTable::add(Defn * member) {
-  const char * key = member->getName();
+  const char * key = member->name();
   assert(key != NULL);
-  Entry & entry = map.GetOrCreateValue(key, key + strlen(key)).getValue();
+  Entry & entry = map_.GetOrCreateValue(key, key + strlen(key)).getValue();
   entry.push_back(member);
   return &entry;
 }
 
 void SymbolTable::trace() const {
-  for (decl_map_t::const_iterator it = map.begin(); it != map.end(); ++it) {
+  for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     const SymbolTable::Entry & entry = it->second;
     for (SymbolTable::Entry::const_iterator si = entry.begin(); si != entry.end(); ++si) {
       (*si)->mark();
@@ -25,24 +25,24 @@ void SymbolTable::trace() const {
 }
 
 void SymbolTable::getDebugSummary(std::string & out) const {
-  //size_t count = getCount();
+  //size_t count = count();
   size_t count = 0;
   char buffer[32];
 
   out.push_back('{');
-  for (decl_map_t::const_iterator it = map.begin(); it != map.end(); ++it) {
+  for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     if (count > 8) {
-      sprintf(buffer, " + %zd more...", map.size() - count);
+      sprintf(buffer, " + %zd more...", map_.size() - count);
       out.append(buffer);
       break;
     }
 
-    if (it != map.begin()) {
+    if (it != map_.begin()) {
       out.append(", ");
     }
 
     out.push_back('\'');
-    out.append(it->second.front()->getName());
+    out.append(it->second.front()->name());
     out.push_back('\'');
 
     if (it->second.size() > 1) {
@@ -58,13 +58,13 @@ void SymbolTable::getDebugSummary(std::string & out) const {
 SymbolTable::Entry * OrderedSymbolTable::add(Defn * member) {
   SymbolTable::Entry * result = SymbolTable::add(member);
 
-  if (lastSymbol != NULL) {
-    lastSymbol->nextInScope_ = member;
+  if (last_ != NULL) {
+    last_->nextInScope_ = member;
   } else {
-    firstSymbol = member;
+    first_ = member;
   }
 
-  lastSymbol = member;
+  last_ = member;
   return result;
 }
 

@@ -43,7 +43,7 @@ public:
   virtual void init() = 0;
 
   /** Return the type id. */
-  virtual TypeId getTypeId() const = 0;
+  virtual TypeId typeId() const = 0;
 
   /** Return the number of bits of this primitive type. */
   virtual uint32_t numBits() const = 0;
@@ -74,7 +74,7 @@ public:
 
 // -------------------------------------------------------------------
 // Implementation class for primitive types
-template<TypeId typeId>
+template<TypeId kTypeId>
 class PrimitiveTypeImpl : public PrimitiveType {
 public:
   
@@ -85,17 +85,17 @@ public:
   void init();
 
   Expr * nullInitValue() const;
-  bool isReferenceType() const { return typeId == TypeId_Null; }
+  bool isReferenceType() const { return kTypeId == TypeId_Null; }
   
   // Overrides 
 
-  TypeId getTypeId() const { return typeId; }
+  TypeId typeId() const { return kTypeId; }
   uint32_t numBits() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  static inline bool classof(const PrimitiveTypeImpl<typeId> *) { return true; }
+  static inline bool classof(const PrimitiveTypeImpl<kTypeId> *) { return true; }
   static inline bool classof(const Type * t) {
     return t->typeClass() == Type::Primitive &&
-        static_cast<const PrimitiveType *>(t)->getTypeId() == typeId;
+        static_cast<const PrimitiveType *>(t)->typeId() == kTypeId;
   }
 
   bool isSubtype(const Type * other) const;
@@ -109,20 +109,20 @@ public:
   static TypeIdSet INCLUDES;
 };
 
-template<TypeId typeId> bool PrimitiveTypeImpl<typeId>::isSubtype(const Type * other) const {
+template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtype(const Type * other) const {
   if (other == this) {
     return true;
   }
 
   if (other->typeClass() == Type::Primitive) {
     const PrimitiveType * ptype = static_cast<const PrimitiveType *>(other);
-    return MORE_GENERAL.contains(ptype->getTypeId());
+    return MORE_GENERAL.contains(ptype->typeId());
   }
 
   return false;
 }
   
-template<TypeId typeId> bool PrimitiveTypeImpl<typeId>::includes(const Type * other) const {
+template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::includes(const Type * other) const {
   other = derefEnumType(other);
   if (other == this) {
     return true;
@@ -130,18 +130,18 @@ template<TypeId typeId> bool PrimitiveTypeImpl<typeId>::includes(const Type * ot
 
   if (other->typeClass() == Type::Primitive) {
     const PrimitiveType * ptype = static_cast<const PrimitiveType *>(other);
-    return INCLUDES.contains(ptype->getTypeId());
+    return INCLUDES.contains(ptype->typeId());
   }
 
   return false;
 }
 
 
-template<TypeId typeId>
-ASTBuiltIn PrimitiveTypeImpl<typeId>::biDef(&typedefn);
+template<TypeId kTypeId>
+ASTBuiltIn PrimitiveTypeImpl<kTypeId>::biDef(&typedefn);
 
-template<TypeId typeId>
-PrimitiveTypeImpl<typeId> PrimitiveTypeImpl<typeId>::instance;
+template<TypeId kTypeId>
+PrimitiveTypeImpl<kTypeId> PrimitiveTypeImpl<kTypeId>::instance;
 
 // -------------------------------------------------------------------
 // Specific primitive type implementations

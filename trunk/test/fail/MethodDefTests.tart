@@ -1,0 +1,20 @@
+/// TEST AbstractMethod: body required
+class Test {
+  def func() -> void;
+}
+
+/// TEST AbstractMethodInConcreteClass: declared abstract
+class Test {
+  abstract def func() -> void;
+}
+
+/// TEST AbstractMethodWithBody: cannot have a body
+abstract class Test {
+  abstract def func() -> void {}
+}
+
+/// TEST SignatureConflict: signature conflict
+class Test {
+  def func() {}
+  def func() {}
+}

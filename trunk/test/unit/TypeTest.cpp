@@ -62,19 +62,19 @@ namespace tart {
 }
 
 TEST(TypeTest, Primitive) {
-  ASSERT_EQ("void", VoidType::typedefn.getName());
-  ASSERT_EQ("bool", BoolType::typedefn.getName());
-  ASSERT_EQ("char", CharType::typedefn.getName());
-  ASSERT_EQ("byte", ByteType::typedefn.getName());
-  ASSERT_EQ("short",ShortType::typedefn.getName());
-  ASSERT_EQ("int",  IntType::typedefn.getName());
-  ASSERT_EQ("long", LongType::typedefn.getName());
-  ASSERT_EQ("ubyte",UByteType::typedefn.getName());
-  ASSERT_EQ("ushort",UShortType::typedefn.getName());
-  ASSERT_EQ("uint", UIntType::typedefn.getName());
-  ASSERT_EQ("ulong",ULongType::typedefn.getName());
-  ASSERT_EQ("float",FloatType::typedefn.getName());
-  ASSERT_EQ("double",DoubleType::typedefn.getName());
+  ASSERT_EQ("void", VoidType::typedefn.name());
+  ASSERT_EQ("bool", BoolType::typedefn.name());
+  ASSERT_EQ("char", CharType::typedefn.name());
+  ASSERT_EQ("byte", ByteType::typedefn.name());
+  ASSERT_EQ("short",ShortType::typedefn.name());
+  ASSERT_EQ("int",  IntType::typedefn.name());
+  ASSERT_EQ("long", LongType::typedefn.name());
+  ASSERT_EQ("ubyte",UByteType::typedefn.name());
+  ASSERT_EQ("ushort",UShortType::typedefn.name());
+  ASSERT_EQ("uint", UIntType::typedefn.name());
+  ASSERT_EQ("ulong",ULongType::typedefn.name());
+  ASSERT_EQ("float",FloatType::typedefn.name());
+  ASSERT_EQ("double",DoubleType::typedefn.name());
 }
 
 TEST(TypeTest, PrimitiveDef) {

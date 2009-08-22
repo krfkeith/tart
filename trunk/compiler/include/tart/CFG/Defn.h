@@ -167,7 +167,6 @@ public:
   DefnType defnType() const { return defnType_; }
 
   /** Get the (short) name of this declaration. */
-  const char * getName() const { return name_; }
   const char * name() const { return name_; }
 
   /** Get the fully qualified name of the definition. */
@@ -191,7 +190,7 @@ public:
   
   /** Get the AST declaration that declared this definition. */
   const ASTDecl * getAST() const { return ast; }
-  virtual const ASTDeclList & getASTMembers() const {
+  virtual const ASTDeclList & astMembers() const {
     return ast->members();
   }
 
@@ -487,7 +486,7 @@ public:
     , getter_(NULL)
     , setter_(NULL)
   {
-    accessorScope_.setScopeName(ast->getName());
+    accessorScope_.setScopeName(ast->name());
   }
   
   FunctionDefn * getter() const { return getter_; }

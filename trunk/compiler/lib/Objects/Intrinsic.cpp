@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
@@ -18,7 +18,7 @@
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
-  
+
 using namespace llvm;
 
 namespace {
@@ -34,7 +34,7 @@ const Expr * derefMacroParam(const Expr * in) {
       }
     }
   }
-  
+
   return in;
 }
 
@@ -48,13 +48,13 @@ StringMap<Intrinsic *> Intrinsic::intrinsicMap;
 llvm::Value * Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   DFAIL("IllegalState");
 }
-  
+
 Intrinsic * Intrinsic::get(const char * name) {
   static bool init = false;
   if (!init) {
     init = true;
   }
-  
+
   llvm::StringMap<Intrinsic *>::const_iterator it = intrinsicMap.find(name);
   if (it != intrinsicMap.end()) {
     return it->second;
@@ -84,21 +84,21 @@ Value * StringifyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 PrimitiveToStringIntrinsic PrimitiveToStringIntrinsic::instance;
 
 Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const FunctionDefn * func = call->function();
+  const FunctionDefn * fn = call->function();
   const Expr * self = call->selfArg();
   const Expr * formatString = call->arg(0);
-  
+
   Value * selfArg = cg.genExpr(self);
   Value * formatStringArg = cg.genExpr(formatString);
-  
+
   const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->getType()));
-  TypeId id = ptype->getTypeId();
-  
+  TypeId id = ptype->typeId();
+
   if (functions_[id] == NULL) {
     char funcName[32];
     snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
-    
-    const llvm::Type * funcType = func->getType()->getIRType();
+
+    const llvm::Type * funcType = fn->getType()->getIRType();
     functions_[id] = llvm::Function::Create(cast<llvm::FunctionType>(funcType),
         Function::ExternalLinkage, funcName, cg.irModule());
   }
@@ -119,7 +119,7 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
     TokenPosition pos = loc.file->getTokenPosition(loc);
     sstream << loc.file->getFilePath() << ":" << pos.beginLine + 1 << ":";
   }
-  
+
   return cg.genStringLiteral(sstream.str());
 }
 
@@ -171,13 +171,13 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   const Expr * lastPtr = call->arg(1);
   // TODO: Throw an exception if it won't fit...
   // TODO: Should use uintptr_t instead of int32.
-  
+
   DASSERT_OBJ(firstPtr->getType()->isEqual(lastPtr->getType()), call);
   Type * elemType = cast<NativePointerType>(firstPtr->getType())->typeParam(0);
   Value * firstVal = cg.genExpr(firstPtr);
-  firstVal = cg.builder().CreatePtrToInt(firstVal, llvm::Type::Int32Ty);
+  firstVal = cg.builder().CreatePtrToInt(firstVal, llvm::Type::getInt32Ty(llvm::getGlobalContext()));
   Value * lastVal = cg.genExpr(lastPtr);
-  lastVal = cg.builder().CreatePtrToInt(lastVal, llvm::Type::Int32Ty);
+  lastVal = cg.builder().CreatePtrToInt(lastVal, llvm::Type::getInt32Ty(llvm::getGlobalContext()));
   Value * diffVal = cg.builder().CreateSub(lastVal, firstVal);
   llvm::Constant * elemSize = cg.genSizeOf(elemType, true);
   return cg.builder().CreateSDiv(diffVal, elemSize, "ptrDiff");
@@ -209,7 +209,7 @@ inline Value * MathIntrinsic1<id>::generate(CodeGenerator & cg, const FnCallExpr
   Value * argVal = cg.genExpr(arg);
   const Type * retType = dealias(call->getType());
 
-  if (argType->getTypeId() != TypeId_Float && argType->getTypeId() != TypeId_Double) {
+  if (argType->typeId() != TypeId_Float && argType->typeId() != TypeId_Double) {
     diag.fatal(arg->getLocation()) << "Bad intrinsic type.";
     return NULL;
   }
@@ -285,13 +285,13 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
-  FunctionDefn * func = cast<FunctionDefn>(lval->value());
-  Module * module = func->module();
+  FunctionDefn * fn = cast<FunctionDefn>(lval->value());
+  Module * module = fn->module();
   if (module->entryPoint() != NULL) {
-    diag.error(func) << "@EntryPoint attribute conflicts with earlier entry point: " <<
+    diag.error(fn) << "@EntryPoint attribute conflicts with earlier entry point: " <<
         module->entryPoint();
   } else {
-    module->setEntryPoint(func);
+    module->setEntryPoint(fn);
   }
 
   return self;

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -14,10 +14,11 @@
 #include "tart/CFG/Block.h"
 
 #include "llvm/Intrinsics.h"
+#include "llvm/Module.h"
 
 namespace tart {
 using namespace llvm;
-  
+
 void CodeGenerator::genLocalStorage() {
   BlockList & blocks = currentFunction_->blocks();
   builder_.SetInsertPoint(blocks.front()->irBlock());
@@ -49,9 +50,9 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
     // it is mutable.
     irType = PointerType::get(irType, 0);
   }
-  
+
   // Allocate space for the variable on the stack
-  Value * lValue = builder_.CreateAlloca(irType, 0, var->getName());
+  Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
   var->setIRValue(lValue);
 }
 
@@ -144,7 +145,7 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
     case BlockTerm_LocalReturn:
       genLocalReturn(blk);
       break;
-      
+
     case BlockTerm_Catch:
       genCatch(blk);
       break;
@@ -236,18 +237,18 @@ void CodeGenerator::genThrow(Block * blk) {
   Block * unwindTarget_ = blk->unwindTarget();
   Function * unwindFunc;
   const char * label = "throw";
-  
+
   if (blk->terminator() == BlockTerm_ResumeUnwind) {
     label = "resume";
     unwindFunc = getUnwindResume();
   } else {
     unwindFunc = getUnwindRaiseException();
   }
-      
+
   if (unwindTarget_ != NULL) {
     // If the 'throw' statement is in a try block, then invoke _Unwind_RaiseException.
     Function * f = currentFunction_->irFunction();
-    BasicBlock * postThrow = BasicBlock::Create("unreachable", f);
+    BasicBlock * postThrow = BasicBlock::Create(context_, "unreachable", f);
     Value * result = builder_.CreateInvoke(unwindFunc, postThrow,
         unwindTarget_->irBlock(), &unwindArgs[0], &unwindArgs[1], label);
     postThrow->moveAfter(builder_.GetInsertBlock());
@@ -273,7 +274,7 @@ void CodeGenerator::genCatch(Block * blk) {
   // Args to llvm.eh.selector
   ValueList args;
   args.push_back(ehPtr);
-  args.push_back(builder_.CreateBitCast(personality, PointerType::get(llvm::Type::Int8Ty, 0)));
+  args.push_back(builder_.CreateBitCast(personality, PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
 
   // Add an argument for each catch block, or the finally block if there is one.
   size_t numSelectors = blk->termExprs().size() - 1;
@@ -286,7 +287,7 @@ void CodeGenerator::genCatch(Block * blk) {
       args.push_back(getTypeObjectPtr(exceptType));
     } else {
       // Finally handler
-      args.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
+      args.push_back(getInt32Val(0));
     }
   }
 
@@ -295,21 +296,21 @@ void CodeGenerator::genCatch(Block * blk) {
 
   // Compute the offset of the unwind info structure from the throwable base.
   llvm::Constant * gepIndices[2];
-  gepIndices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
-  gepIndices[1] = ConstantInt::get(llvm::Type::Int32Ty, 2);
+  gepIndices[0] = getInt32Val(0);
+  gepIndices[1] = getInt32Val(2);
   const llvm::Type * throwableType = Builtins::typeThrowable->getIRType();
   llvm::Constant * unwindInfoOffset = llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
           ConstantPointerNull::get(PointerType::get(throwableType, 0)),
           gepIndices, 2),
-      llvm::Type::Int32Ty);
+      builder_.getInt32Ty());
 
   // Subtract the offset to get the address of the throwable.
   Value * offsetIndices[2];
-  offsetIndices[0] = ConstantInt::get(llvm::Type::Int32Ty, 0);
+  offsetIndices[0] = getInt32Val(0);
   offsetIndices[1] = llvm::ConstantExpr::getNeg(unwindInfoOffset);
   Value * throwValue = builder_.CreateGEP(
-      builder_.CreateBitCast(ehPtr, PointerType::get(ArrayType::get(llvm::Type::Int8Ty, 0), 0)),
+      builder_.CreateBitCast(ehPtr, PointerType::get(ArrayType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0), 0)),
       &offsetIndices[0], &offsetIndices[2],
       "eh_throwable");
 
@@ -322,7 +323,7 @@ void CodeGenerator::genCatch(Block * blk) {
     SwitchInst * si = builder_.CreateSwitch(ehAction, blk->succIRBlock(0), numSelectors);
     for (size_t i = 0; i < numSelectors; ++i) {
       BasicBlock * catchBody = blk->succIRBlock(i);
-      si->addCase(ConstantInt::get(llvm::Type::Int32Ty, i), catchBody);
+      si->addCase(getInt32Val(i), catchBody);
     }
   } else {
     builder_.CreateBr(blk->succIRBlock(0));

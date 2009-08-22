@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -19,7 +19,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   : Type(Function)
   , returnType_(rtype)
   , selfParam_(NULL)
-  , irType(llvm::OpaqueType::get())
+  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
 
 {
@@ -32,7 +32,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , returnType_(rtype)
   , selfParam_(NULL)
-  , irType(llvm::OpaqueType::get())
+  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);
@@ -44,7 +44,7 @@ FunctionType::FunctionType(
   : Type(Function)
   , returnType_(rtype)
   , selfParam_(selfParam)
-  , irType(llvm::OpaqueType::get())
+  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);
@@ -64,7 +64,7 @@ ParameterDefn * FunctionType::addParam(const char * name, Type * ty) {
 int FunctionType::getParamNameIndex(const char * name) const {
   for (size_t i = 0; i < params_.size(); i++) {
     ParameterDefn * param = params_[i];
-    if (param->getName() != NULL && strcmp(param->getName(), name) == 0)
+    if (param->name() != NULL && strcmp(param->name(), name) == 0)
       return i;
   }
 
@@ -73,20 +73,20 @@ int FunctionType::getParamNameIndex(const char * name) const {
 
 bool FunctionType::isSubtype(const Type * other) const {
   // TODO: For self param as well.
-  
+
   if (const FunctionType * otherFunc = dyn_cast<FunctionType>(other)) {
     DFAIL("Implement");
   }
-  
+
   return false;
 }
 
 const llvm::Type * FunctionType::getIRType() const {
-  if (!isCreatingType && irType.get()->getTypeID() == llvm::Type::OpaqueTyID) {
+  if (!isCreatingType && irType_.get()->getTypeID() == llvm::Type::OpaqueTyID) {
     return createIRType();
   }
 
-  return irType;
+  return irType_;
 }
 
 const llvm::Type * FunctionType::createIRType() const {
@@ -102,8 +102,8 @@ const llvm::Type * FunctionType::createIRType() const {
   // Insert the 'self' parameter if it's an instance method
   if (selfParam_ != NULL) {
     const ParameterDefn * param = selfParam_;
-    const llvm::Type * argType = param->getType()->getIRType();
-    if (!isa<PrimitiveType>(param->getType())) {
+    const llvm::Type * argType = param->type()->getIRType();
+    if (!isa<PrimitiveType>(param->type())) {
       // TODO: Also don't do this for enums.
       argType = PointerType::getUnqual(argType);
     }
@@ -115,7 +115,7 @@ const llvm::Type * FunctionType::createIRType() const {
     const ParameterDefn * param = *it;
     Type * paramType = param->internalType();
     DASSERT_OBJ(paramType != NULL, param);
-    
+
     // If it's a variadic type, then convert to an array.
     //if (param->isVariadic()) {
     //  paramType = TypeAnalyzer::getArrayTypeForElement(paramType);
@@ -144,9 +144,9 @@ const llvm::Type * FunctionType::createIRType() const {
   }
 
   // Create the function type
-  cast<OpaqueType>(irType.get())->refineAbstractTypeTo(
+  cast<OpaqueType>(irType_.get())->refineAbstractTypeTo(
     llvm::FunctionType::get(rType, parameterTypes, false));
-  return irType.get();
+  return irType_.get();
 }
 
 void FunctionType::trace() const {
@@ -171,18 +171,18 @@ bool FunctionType::isSingular() const {
   if (returnType_ == NULL || !returnType_->isSingular()) {
     return false;
   }
-  
-  if (selfParam_ != NULL && (selfParam_->getType() == NULL || !selfParam_->getType()->isSingular())) {
+
+  if (selfParam_ != NULL && (selfParam_->type() == NULL || !selfParam_->type()->isSingular())) {
     return false;
   }
-  
+
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->getType() == NULL || !param->getType()->isSingular()) {
+    if (param->type() == NULL || !param->type()->isSingular()) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -192,23 +192,21 @@ void FunctionType::whyNotSingular() const {
   } else if (!returnType_->isSingular()) {
     diag.info() << "Function has non-singular return type.";
   }
-  
+
   if (selfParam_ != NULL) {
-    if (selfParam_->getType() == NULL) {
+    if (selfParam_->type() == NULL) {
       diag.info() << "Parameter 'self' has unspecified type.";
-    } else if (!selfParam_->getType()->isSingular()) {
+    } else if (!selfParam_->type()->isSingular()) {
       diag.info() << "Parameter 'self' has non-singular type.";
     }
   }
-  
+
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->getType() == NULL) {
-      diag.info() << "Parameter '" << param->getName() <<
-          "' parameter has unspecified type.";
-    } else if (!param->getType()->isSingular()) {
-      diag.info() << "Parameter '" << param->getName() <<
-          "' parameter has non-singular type.";
+    if (param->type() == NULL) {
+      diag.info() << "Parameter '" << param->name() << "' parameter has unspecified type.";
+    } else if (!param->type()->isSingular()) {
+      diag.info() << "Parameter '" << param->name() << "' parameter has non-singular type.";
     }
   }
 }

@@ -41,7 +41,7 @@ public:
   
   void setSelfParam(ParameterDefn * self) { selfParam = self; }
 
-  Expr * getBaseExpr() {
+  Expr * baseExpr() {
     if (selfExpr == NULL) {
       selfExpr = new LValueExpr(selfParam->getLocation(), NULL, selfParam);
     }
@@ -86,8 +86,8 @@ bool StmtAnalyzer::buildCFG() {
     if (function->storageClass() == Storage_Instance) {
       ParameterDefn * selfParam = function->functionType()->selfParam();
       DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->getType() != NULL, function);
-      TypeDefn * selfType = selfParam->getType()->typeDefn();
+      DASSERT_OBJ(selfParam->type() != NULL, function);
+      TypeDefn * selfType = selfParam->type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
       // Uncomment to allow 'self' to be searched implicitly.
@@ -217,7 +217,7 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
   }
 
   DASSERT(testExpr != NULL);
-  DASSERT(testExpr->getType() != NULL);
+  DASSERT(testExpr->type() != NULL);
   if (testExpr->isConstant()) {
     // TODO: See if the test expression is a constant.
     // Check for bool and int types, not floats.
@@ -277,7 +277,7 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   }
 
   DASSERT(testExpr != NULL);
-  DASSERT_OBJ(testExpr->getType() != NULL, testExpr);
+  DASSERT_OBJ(testExpr->type() != NULL, testExpr);
   if (testExpr->isConstant()) {
     // If it's a constant, it may affect whether things fall through
     // or not.
@@ -544,7 +544,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // Get the exception type and determine if it is valid.
-      CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->getType()));
+      CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->type()));
       if (isErrorResult(exceptType)) {
         continue;
       }
@@ -570,25 +570,24 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       exceptDefn->setType(exceptType);
-      module->addXRef(exceptDefn);
+      module->addSymbol(exceptDefn);
 
       catchTypes.push_back(exceptType);
 
       // Create the catch block.
       const char * catchBlockName =
-          istrings.intern(std::string("catch-") + exceptType->typeDefn()->getName());
+          istrings.intern(std::string("catch-") + exceptType->typeDefn()->name());
       Block * catchBody = createBlock(catchBlockName);
 
       // Add the catch block to the switch statement.
-      unwindBlock->addCase(
-          new ConstantType(cst->getLocation(), exceptType), catchBody);
+      unwindBlock->addCase(new ConstantType(cst->getLocation(), exceptType), catchBody);
 
       // Make the catch scope the current scope for generating the block contents.
       Scope * savedScope = setActiveScope(catchScope);
 
       // Generate the assignment of the exception to the variable.
       setInsertPos(catchBody);
-      if (exceptDefn->getName() != NULL) {
+      if (exceptDefn->name() != NULL) {
         const SourceLocation & loc = cst->getLocation();
         Expr * initExpr = new InitVarExpr(cst->getLocation(), exceptDefn,
             new CastExpr(Expr::BitCast, loc, exceptType, activeThrowable));
@@ -702,7 +701,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
       return false;
     }
     
-    Type * exprType = resultVal->getType();
+    Type * exprType = resultVal->type();
     
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
@@ -777,7 +776,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
     // TODO: Should we insure that Let has an initializer?
     // TODO: Should we check for true constants here?
     if (var->initValue() != NULL) {
-      Expr * initVal = inferTypes(var->initValue(), var->getType());
+      Expr * initVal = inferTypes(var->initValue(), var->type());
       if (!isErrorResult(initVal)) {
         currentBlock_->append(new InitVarExpr(st->getLocation(), var, initVal));
       }
@@ -794,7 +793,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
   }
 
   expr = MacroExpansionPass::run(*this, expr);
-  if (expr->getType()->isEqual(&VoidType::instance)) {
+  if (expr->type()->isEqual(&VoidType::instance)) {
     return expr;
   }
 
@@ -850,16 +849,16 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test) {
     return &Expr::ErrorVal;
   }
 
-  if (testExpr->getType()->isEqual(&VoidType::instance)) {
+  if (testExpr->type()->isEqual(&VoidType::instance)) {
     diag.error(test) << "invalid use of void return result: " << test;
     return &Expr::ErrorVal;
   }
 
   // Compare reference type with null.
-  if (testExpr->getType()->isReferenceType()) {
+  if (testExpr->type()->isReferenceType()) {
     return new CompareExpr(test->getLocation(),
         llvm::CmpInst::ICMP_EQ, testExpr,
-        ConstantNull::get(test->getLocation(), testExpr->getType()));
+        ConstantNull::get(test->getLocation(), testExpr->type()));
   }
 
   // Cast to boolean.
@@ -1042,7 +1041,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
           blk->exprs().erase(ei);
         } else {
           // Replace the local call with a load of the state variable.
-          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->getType(),
+          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->type(),
               localCall->returnState());
           *ei = new AssignmentExpr(SourceLocation(), proc.stateExpr, stateValue);
         }

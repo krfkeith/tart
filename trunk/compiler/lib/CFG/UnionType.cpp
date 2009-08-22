@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -37,7 +37,7 @@ UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
         m = members_.erase(m);
         continue;
       }
-      
+
       ++m;
     }
 
@@ -65,7 +65,7 @@ const llvm::Type * UnionType::createIRType() const {
   // the type size for both 32 and 64 bit machines. The only problem we might have is if the
   // largest type is different on 32 bit vs. 64 bits, in which case we'll just report failure
   // for now.
-  
+
   size_t largestSize32 = 0;
   size_t largestSize64 = 0;
   const Type * largestType32 = 0;   // Largest type on 32-bit platforms
@@ -81,27 +81,27 @@ const llvm::Type * UnionType::createIRType() const {
     }
 
     irTypes_.push_back(irType);
-    
+
     size_t size32 = estimateTypeSize(irType, 32);
     size_t size64 = estimateTypeSize(irType, 64);
-    
+
     if (size32 > largestSize32 || (size32 == largestSize32 && size64 > largestSize64)) {
       largestSize32 = size32;
       largestType32 = type;
     }
-    
+
     if (size64 > largestSize64 || (size64 == largestSize64 && size32 > largestSize32)) {
       largestSize64 = size64;
       largestType64 = type;
     }
   }
-  
+
   if (largestType32 != largestType64) {
     diag.error(loc_) << "Internal error: conflict generating union type:";
     diag.info(loc_) << "  Largest type on 32-bit system is " << largestType32;
     diag.info(loc_) << "  Largest type on 64-bit system is " << largestType64;
   }
-  
+
   if (numValueTypes_ > 0) {
     size_t numStates = numValueTypes_;
     if (numReferenceTypes_ > 0 || hasNothingType_) {
@@ -110,19 +110,19 @@ const llvm::Type * UnionType::createIRType() const {
 
     const llvm::Type * discriminatorType;
     if (numStates == 2) {
-      discriminatorType = llvm::Type::Int1Ty;
+      discriminatorType = llvm::Type::getInt1Ty(llvm::getGlobalContext());
     } else if (numStates < 256) {
-      discriminatorType = llvm::Type::Int8Ty;
+      discriminatorType = llvm::Type::getInt8Ty(llvm::getGlobalContext());
     } else {
-      discriminatorType = llvm::Type::Int32Ty;
+      discriminatorType = llvm::Type::getInt32Ty(llvm::getGlobalContext());
     }
-    
+
     std::vector<const llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
     unionMembers.push_back(largestType32->getIRType());
-    return llvm::StructType::get(unionMembers);
+    return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else {
-    return llvm::PointerType::get(llvm::OpaqueType::get(), 0);
+    return llvm::PointerType::get(llvm::OpaqueType::get(llvm::getGlobalContext()), 0);
   }
 }
 
@@ -138,10 +138,10 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
     case llvm::Type::IntegerTyID:
     case llvm::Type::FunctionTyID:
       return type->getPrimitiveSizeInBits();
-      
+
     case llvm::Type::PointerTyID:
       return ptrSize;
-    
+
     case llvm::Type::StructTyID: {
       size_t total = 0;
       unsigned numFields = type->getNumContainedTypes();
@@ -149,14 +149,14 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
         total += estimateTypeSize(type->getContainedType(i), ptrSize);
         // TODO: Add padding?
       }
-      
+
       return total;
     }
-    
+
     case llvm::Type::ArrayTyID:
     case llvm::Type::VectorTyID:
       DFAIL("Implement");
-      
+
     default:
       DFAIL("IllegalState");
   }
@@ -183,17 +183,17 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
       bestType = *it;
     }
   }
-  
+
   // Since we're converting to a union type, it's not identical.
   // TODO: Don't know if we really need this.
   //if (bestRank == IdenticalTypes) {
   //  bestRank = ExactConversion;
   //}
-  
+
   if (bestType != NULL && cn.resultValue != NULL) {
     // Do the conversion to the best type first.
     bestRank = bestType->convertImpl(cn);
-    
+
     // And now add a cast to the union type.
     if (*cn.resultValue != NULL) {
       int typeIndex = getTypeIndex(bestType);
@@ -224,7 +224,7 @@ bool UnionType::isEqual(const Type * other) const {
           u->members().begin(), TypeEquals());
     }
   }
-  
+
   return false;
 }
 
@@ -257,17 +257,17 @@ int UnionType::getTypeIndex(const Type * type) const {
   if (type->isReferenceType()) {
     return 0;
   }
-  
+
   int index = 0;
   if (numReferenceTypes_ > 0) {
     index += 1;
   }
-  
+
   for (TypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     if (type->isEqual(*it)) {
       return index;
     }
-    
+
     if (!(*it)->isReferenceType()) {
       ++index;
     }
@@ -283,7 +283,7 @@ void UnionType::format(FormatStream & out) const {
     if (it != members_.begin()) {
       out << " or ";
     }
-    
+
     out << *it;
   }
 }

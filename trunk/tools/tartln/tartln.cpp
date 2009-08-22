@@ -1,30 +1,33 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/Diagnostics.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Support/RegistryParser.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/System/Signals.h"
 #include "llvm/Linker.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ModuleProvider.h"
-#include "llvm/Bitcode/ReaderWriter.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/Target/TargetMachine.h"
-#include "llvm/Target/TargetMachineRegistry.h"
-#include "llvm/Target/SubtargetFeature.h"
+#include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Analysis/LoopPass.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/Scalar.h"
+#include "llvm/Bitcode/ReaderWriter.h"
 #include "llvm/Config/config.h"
 #include "llvm/CodeGen/FileWriters.h"
 #include "llvm/CodeGen/LinkAllCodegenComponents.h"
 #include "llvm/CodeGen/LinkAllAsmWriterComponents.h"
+#include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetRegistry.h"
+#include "llvm/Target/TargetSelect.h"
+#include "llvm/Target/SubtargetFeature.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/RegistryParser.h"
+#include "llvm/Support/FormattedStream.h"
+#include "llvm/System/Signals.h"
+#include "llvm/System/Host.h"
 #include "llvm/LinkAllVMCore.h"
 
 #include <fstream>
@@ -40,6 +43,7 @@ enum OutputType {
   Unset = 0,
   BitcodeFile,
   AssemblyFile,
+  ObjectFile,
   // native object
   // native dynamic lib
   // native executable
@@ -56,10 +60,10 @@ class OutputFile {
 private:
   sys::Path path;
   raw_ostream * strm;
-  
+
 public:
   OutputFile() : strm(NULL) {}
-  
+
   ~OutputFile() {
     if (strm != &outs()) {
       delete strm;
@@ -69,19 +73,19 @@ public:
       path.eraseFromDisk();
     }
   }
-  
+
   void open(raw_ostream * s) {
     assert(path.empty());
     assert(strm == NULL);
     strm = s;
   }
-  
+
   void open(const std::string & in) {
     assert(path.empty());
     assert(strm == NULL);
     open(sys::Path(in));
   }
-  
+
   void open(const sys::Path & in) {
     assert(path.empty());
     assert(strm == NULL);
@@ -89,22 +93,22 @@ public:
     path = in;
     sys::RemoveFileOnSignal(path);
     std::string error;
-    strm = new raw_fd_ostream(path.c_str(), true, error);
+    strm = new raw_fd_ostream(path.c_str(), true, true, error);
     if (!error.empty()) {
       std::cerr << error << '\n';
       delete strm;
       strm = NULL;
     }
   }
-  
+
   void close() {
     path.clear();
   }
-  
+
   bool isValid() const {
     return strm != NULL;
   }
-  
+
   raw_ostream * getStream() const {
     assert(strm != NULL);
     return strm;
@@ -143,27 +147,27 @@ cl::opt<OptLevel> OptimizationLevel(cl::desc("Choose optimization level:"),
 static cl::opt<std::string>
 TargetTriple("mtriple", cl::desc("Override target triple for module"));
 
-static cl::opt<const TargetMachineRegistry::entry*, false,
-               RegistryParser<TargetMachine> >
-MArch("march", cl::desc("Architecture to generate code for:"));
+static cl::opt<std::string>
+MArch("march", cl::desc("Architecture to generate code for (see --version)"));
 
 static cl::opt<std::string>
-MCPU("mcpu", 
+MCPU("mcpu",
   cl::desc("Target a specific cpu type (-mcpu=help for details)"),
   cl::value_desc("cpu-name"),
   cl::init(""));
 
 static cl::list<std::string>
-MAttrs("mattr", 
+MAttrs("mattr",
   cl::CommaSeparated,
   cl::desc("Target specific attributes (-mattr=help for details)"),
   cl::value_desc("a1,+a2,-a3,..."));
-  
+
 cl::opt<OutputType>
 FileType("filetype", cl::init(Unset),
   cl::desc("Choose a file type (not all types are supported by all targets):"),
   cl::values(
      clEnumValN(BitcodeFile,  "bc", "  Emit a bitcode ('.bc') file"),
+     clEnumValN(ObjectFile, "obj", "Emit a native object ('.o') file [experimental]"),
      clEnumValN(AssemblyFile, "asm","  Emit an assembly ('.s') file"),
      clEnumValEnd));
 
@@ -186,7 +190,7 @@ FileType("filetype", cl::init(TargetMachine::AssemblyFile),
 // loadModule - Read the specified bitcode file in and return it.  This routine
 // searches the link path for the specified file to try to find it...
 static std::auto_ptr<Module> loadModule(const std::string & inputName) {
-  
+
   sys::Path fileName;
   if (!fileName.set(inputName)) {
     cerr << "Invalid file name: '" << inputName << "'\n";
@@ -197,11 +201,11 @@ static std::auto_ptr<Module> loadModule(const std::string & inputName) {
   if (fileName.exists()) {
     if (Verbose) cerr << "Loading '" << fileName.c_str() << "'\n";
     Module* Result = 0;
-    
+
     const std::string & FNStr = fileName.toString();
     if (MemoryBuffer *Buffer = MemoryBuffer::getFileOrSTDIN(FNStr,
                                                             &ErrorMessage)) {
-      Result = ParseBitcodeFile(Buffer, &ErrorMessage);
+      Result = ParseBitcodeFile(Buffer, llvm::getGlobalContext(), &ErrorMessage);
       delete Buffer;
     }
     if (Result) return std::auto_ptr<Module>(Result);   // Load successful!
@@ -298,6 +302,10 @@ static void optimize(Module & mod, TargetMachine & target) {
 /// -------------------------------------------------------------------
 /// main
 int main(int argc, char **argv) {
+  // Initialize targets first.
+  InitializeAllTargets();
+  InitializeAllAsmPrinters();
+
   cl::ParseCommandLineOptions(argc, argv, " tart\n");
   sys::PrintStackTraceOnErrorSignal();
 
@@ -330,20 +338,45 @@ int main(int argc, char **argv) {
   if (!OutputFilename.empty() && OutputFilename != "-") {
     mod.setModuleIdentifier(OutputFilename);
   }
-  
+
   // If we are supposed to override the target triple, do so now.
   if (!TargetTriple.empty())
     mod.setTargetTriple(TargetTriple);
-  
-  // Allocate target machine.  First, check whether the user has
-  // explicitly specified an architecture to compile for.
-  if (MArch == 0) {
+
+  Triple TheTriple(mod.getTargetTriple());
+  if (TheTriple.getTriple().empty())
+    TheTriple.setTriple(sys::getHostTriple());
+
+  // Allocate target machine.  First, check whether the user has explicitly
+  // specified an architecture to compile for. If so we have to look it up by
+  // name, because it might be a backend that has no mapping to a target triple.
+  const Target *TheTarget = 0;
+  if (!MArch.empty()) {
+    for (TargetRegistry::iterator it = TargetRegistry::begin(),
+           ie = TargetRegistry::end(); it != ie; ++it) {
+      if (MArch == it->getName()) {
+        TheTarget = &*it;
+        break;
+      }
+    }
+
+    if (!TheTarget) {
+      errs() << argv[0] << ": error: invalid target '" << MArch << "'.\n";
+      return 1;
+    }
+
+    // Adjust the triple to match (if known), otherwise stick with the
+    // module/host triple.
+    Triple::ArchType Type = Triple::getArchTypeForLLVMName(MArch);
+    if (Type != Triple::UnknownArch)
+      TheTriple.setArch(Type);
+  } else {
     std::string Err;
-    MArch = TargetMachineRegistry::getClosestStaticTargetForModule(mod, Err);
-    if (MArch == 0) {
-      std::cerr << argv[0] << ": error auto-selecting target for module '"
-                << Err << "'.  Please use the -march option to explicitly "
-                << "pick a target.\n";
+    TheTarget = TargetRegistry::lookupTarget(TheTriple.getTriple(), Err);
+    if (TheTarget == 0) {
+      errs() << argv[0] << ": error auto-selecting target for module '"
+             << Err << "'.  Please use the -march option to explicitly "
+             << "pick a target.\n";
       return 1;
     }
   }
@@ -353,17 +386,16 @@ int main(int argc, char **argv) {
   if (MCPU.size() || MAttrs.size()) {
     SubtargetFeatures Features;
     Features.setCPU(MCPU);
-    for (unsigned i = 0; i != MAttrs.size(); ++i) {
+    for (unsigned i = 0; i != MAttrs.size(); ++i)
       Features.AddFeature(MAttrs[i]);
-    }
-
     FeaturesStr = Features.getString();
   }
-  
-  std::auto_ptr<TargetMachine> target(MArch->CtorFn(mod, FeaturesStr));
+
+  std::auto_ptr<TargetMachine>
+    target(TheTarget->createTargetMachine(TheTriple.getTriple(), FeaturesStr));
   assert(target.get() && "Could not allocate target machine!");
-  TargetMachine & Target = *target.get();
-  
+  TargetMachine &Target = *target.get();
+
   optimize(*module.get(), Target);
 
   if (DumpAsm) {
@@ -393,12 +425,12 @@ int main(int argc, char **argv) {
         return 1;
       }
     }
-    
+
     // If no output file name was set, use the first input name
     if (outputName.empty()) {
       outputName = InputFilenames[baseArg];
     }
-    
+
     outputName.eraseSuffix();
     switch (int(FileType)) {
       case AssemblyFile:
@@ -416,7 +448,7 @@ int main(int argc, char **argv) {
       std::cerr << argv[0] << ": can't write binary bitcode to stdout\n";
       return 1;
     }
-    
+
     //std::cout << "Writing '" << outputName << "'.\n";
     std::ostream * outs = new std::ofstream(
         outputName.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
@@ -437,16 +469,29 @@ int main(int argc, char **argv) {
     }
   }
 
-  raw_ostream * outStream = outFile.getStream();
+  // Figure out where we are going to send the output...
+
+  raw_ostream * rawStream = outFile.getStream();
+  if (!rawStream) {
+    return 1;
+  }
+
+  formatted_raw_ostream * outStream = new formatted_raw_ostream(*rawStream,
+      formatted_raw_ostream::DELETE_STREAM);
+
+  //formatted_raw_ostream * outStream = GetOutputStream(TheTarget->getName(), argv[0]);
+  //if (outStream == 0) return 1;
+
+  //raw_ostream * outStream = outFile.getStream();
   TargetMachine::CodeGenFileType outFmt = TargetMachine::AssemblyFile;
-  
+
   // If this target requires addPassesToEmitWholeFile, do it now.  This is
   // used by strange things like the C backend.
   if (Target.WantsWholeFile()) {
     PassManager passMgr;
     passMgr.add(new TargetData(*Target.getTargetData()));
     passMgr.add(createVerifierPass());
-    
+
     // Ask the target to add backend passes as necessary.
     if (Target.addPassesToEmitWholeFile(passMgr, *outStream, outFmt, CodeGenOpt::Default)) {
       std::cerr << argv[0] << ": target does not support generation of this"
@@ -461,9 +506,9 @@ int main(int argc, char **argv) {
     FunctionPassManager Passes(&Provider);
     Passes.add(new TargetData(*Target.getTargetData()));
     Passes.add(createVerifierPass());
-  
+
     // Ask the target to add backend passes as necessary.
-    MachineCodeEmitter * MCE = 0;
+    ObjectCodeEmitter * MCE = 0;
 
     switch (Target.addPassesToEmitFile(Passes, *outStream, outFmt, CodeGenOpt::Default)) {
     default:
@@ -488,9 +533,9 @@ int main(int argc, char **argv) {
                 << " file type!\n";
       return 1;
     }
-  
+
     Passes.doInitialization();
-  
+
     // Run our queue of passes all at once now, efficiently.
     // TODO: this could lazily stream functions out of the module.
     for (Module::iterator it = mod.begin(); it != mod.end(); ++it) {
@@ -498,10 +543,10 @@ int main(int argc, char **argv) {
         Passes.run(*it);
       }
     }
-    
+
     Passes.doFinalization();
   }
-    
+
   outFile.close();
   return 0;
 }

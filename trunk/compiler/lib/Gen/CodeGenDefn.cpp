@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
@@ -14,11 +14,12 @@
 #include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
 
+#include <llvm/Module.h>
 #include <llvm/Function.h>
 #include <llvm/Analysis/Verifier.h>
 
 namespace tart {
-  
+
 using namespace llvm;
 
 bool CodeGenerator::genXDef(Defn * de) {
@@ -62,29 +63,24 @@ bool CodeGenerator::genXDef(Defn * de) {
 }
 
 Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
+  Function * irFunction = irModule_->getFunction(fdef->getLinkageName());
+  if (irFunction != NULL) {
+    return irFunction;
+  }
+
   // If it's a function from a different module...
   if (fdef->module() != module) {
-    Function * externalFunc = irModule_->getFunction(fdef->getLinkageName());
-    if (externalFunc != NULL) {
-      return externalFunc;
-    } else {
-      FunctionType * funcType = fdef->functionType();
-      llvm::Function * irValue = Function::Create(
-          cast<llvm::FunctionType>(funcType->getIRType()),
-          Function::ExternalLinkage, fdef->getLinkageName(),
-          irModule_);
-      return irValue;
-    }
+    FunctionType * funcType = fdef->functionType();
+    irFunction = Function::Create(
+        cast<llvm::FunctionType>(funcType->getIRType()),
+        Function::ExternalLinkage, fdef->getLinkageName(),
+        irModule_);
+    return irFunction;
   }
-  
-  // Don't generate the IR if we've already done so
-  if (fdef->irFunction() != NULL) {
-    return fdef->irFunction();
-  }
-  
+
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
   DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
-  
+
 #if 0
   // Generate the attributes
   Attributes funcAttrs;
@@ -97,18 +93,14 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
 
-  llvm::GlobalValue::LinkageTypes linkType = Function::ExternalLinkage;
-  if (fdef->isSynthetic() && fdef->hasBody() /*&& fdef->module() == module*/) {
-    //assert(module->getXDefs().count(const_cast<FunctionDef *>(fdef)) == 1);
-    linkType = llvm::GlobalValue::LinkOnceAnyLinkage;
-  }
-
-  llvm::Function * irValue = Function::Create(
+  irFunction = Function::Create(
       cast<llvm::FunctionType>(funcType->getIRType()),
-      linkType, fdef->getLinkageName(), fdef->module()->getIRModule());
+      Function::ExternalLinkage, fdef->getLinkageName(), fdef->module()->irModule());
 
-  fdef->setIRFunction(irValue);
-  return irValue;
+  // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
+  // one module.
+  fdef->setIRFunction(irFunction);
+  return irFunction;
 }
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
@@ -124,21 +116,18 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   // Create the function
   Function * f = genFunctionValue(fdef);
 
-#if 0
-  if (fdef->getBody() == NULL &&
-      f->getLinkage() == Function::LinkOnceLinkage) {
-    diag.fatal(fdef) << "Function " << fdef << " has incorrect linkage type";
-  }
-#endif
-
   if (fdef->hasBody() /*&& fdef->module() == module*/) {
     FunctionType * ftype = fdef->functionType();
+    
+    if (fdef->isSynthetic()) {
+      f->setLinkage(GlobalValue::LinkOnceAnyLinkage);
+    }
 
     if (debug && fdef->module() == module) {
       dbgCompileUnit_ = getCompileUnit(fdef);
       dbgFunction_ = dbgFactory_.CreateSubprogram(
           dbgCompileUnit_, // TODO: Replace for functions within a scope.
-          fdef->getName(),
+          fdef->name(),
           fdef->qualifiedName(),
           fdef->getLinkageName(),
           dbgCompileUnit_,
@@ -152,18 +141,17 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     BlockList & blocks = fdef->blocks();
     for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
       Block * blk = *b;
-      blk->setIRBlock(BasicBlock::Create(blk->label(), f));
+      blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
     }
 
     //void InsertSubprogramStart(DISubprogram SP, BasicBlock *BB);
-
 
     builder_.SetInsertPoint(blocks.front()->irBlock());
 
     // Handle the explicit parameters
     unsigned param_index = 0;
-    Function::arg_iterator it = f->arg_begin(); 
-  
+    Function::arg_iterator it = f->arg_begin();
+
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
       DASSERT_OBJ(fdef->storageClass() == Storage_Instance, fdef);
@@ -172,16 +160,13 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       it->setName("self");
       ++it;
     }
-    
-    //for (Defn * de = f->parameterScope().firstMember(); de != NULL; de = de->nextInScope()) {
-    //  ParameterDefn * param = cast<ParameterDefn>(de);
 
     for (; it != f->arg_end(); ++it, ++param_index) {
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
       DASSERT_OBJ(param != NULL, fdef);
-      it->setName(param->getName());
+      it->setName(param->name());
 
 #if 0
       // See if we need to make a local copy of the param.
@@ -191,7 +176,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
         // TODO: For struct parameters, make a copy of whole struct.
         // If parameter was modified, then copy to a local var.
         Value * localValue = builder_.CreateAlloca(it->getType(), 0,
-            param->getName());
+            param->name());
         builder_.CreateStore(it, localValue);
         param->setIRValue(localValue);
       } else {
@@ -244,7 +229,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   if (let->getIRValue() != NULL) {
     return let->getIRValue();
   }
-  
+
 #if 0
   // Generate the attributes
   Attributes letAttrs;
@@ -297,10 +282,10 @@ Value * CodeGenerator::genVarValue(const VariableDefn * var) {
     if (var->getIRValue() != NULL) {
       return var->getIRValue();
     }
-    
+
     DFAIL("IllegalState");
   }
-  
+
   return genGlobalVar(var);
 }
 
@@ -346,8 +331,8 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   }
 #endif
 
-  GlobalVariable * gv = new GlobalVariable(irType, true, linkType, NULL, var->getLinkageName(),
-      irModule_, false /*threadLocal*/);
+  GlobalVariable * gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL,
+      var->getLinkageName());
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.

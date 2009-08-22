@@ -150,6 +150,7 @@ public:
   virtual TypeClass typeClass() const { return cls; }
 
   /** Get the LLVM IR type corresponding to this type. */
+  const llvm::Type * irType() const { return getIRType(); }
   virtual const llvm::Type * getIRType() const = 0;
 
   /** Get the type of this type. */
@@ -239,11 +240,11 @@ public:
 /// Base class for most types.
 class TypeImpl : public Type {
 protected:
-  mutable const llvm::Type * irType;
+  mutable const llvm::Type * irType_;
 
   TypeImpl(TypeClass cls)
     : Type(cls)
-    , irType(NULL)
+    , irType_(NULL)
   {}
 
   virtual const llvm::Type * createIRType() const = 0;
@@ -257,11 +258,11 @@ public:
   //Type * typeParam(int index) const;
 
   const llvm::Type * getIRType() const {
-    if (irType == NULL) {
-      irType = createIRType();
+    if (irType_ == NULL) {
+      irType_ = createIRType();
     }
 
-    return irType;
+    return irType_;
   }
 };
 

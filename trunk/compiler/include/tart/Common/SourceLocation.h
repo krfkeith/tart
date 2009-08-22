@@ -5,7 +5,6 @@
 #ifndef TART_COMMON_SOURCELOCATION_H
 #define TART_COMMON_SOURCELOCATION_H
 
-#include <llvm/Support/DataTypes.h>
 #include <string>
 
 namespace tart {

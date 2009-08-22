@@ -47,7 +47,7 @@ public:
   virtual bool allowOverloads() { return false; }
 
   /** Get the base pointer needed to access members found in this scope.  */
-  virtual Expr * getBaseExpr() { return NULL; }
+  virtual Expr * baseExpr() { return NULL; }
 
   /** Debugging function to dump the current hierarchy. */
   virtual void dumpHierarchy(bool full = true) const = 0;
@@ -58,16 +58,6 @@ typedef llvm::SetVector<Scope *> ScopeSet;
 /// -------------------------------------------------------------------
 /// An implementation of a scope.
 class IterableScope : public Scope {
-private:
-  OrderedSymbolTable members_;
-  Scope * parentScope_;
-  Defn * defn_;
-
-#ifndef NDEBUG
-  // For debugging
-  const char * scopeName_;
-#endif
-
 public:
   IterableScope()
       : parentScope_(NULL)
@@ -106,7 +96,8 @@ public:
   void addMember(Defn * d);
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
   bool allowOverloads() { return true; }
-  size_t getCount() { return members_.getCount(); }
+  size_t count() { return members_.count(); }
+  void clear() { members_.clear(); }
   void trace() const;
   void setScopeName(const char * name) {
 #ifndef NDEBUG
@@ -114,6 +105,16 @@ public:
 #endif
   }
   void dumpHierarchy(bool full) const;
+
+private:
+  OrderedSymbolTable members_;
+  Scope * parentScope_;
+  Defn * defn_;
+
+#ifndef NDEBUG
+  // For debugging
+  const char * scopeName_;
+#endif
 };
 
 /// -------------------------------------------------------------------
@@ -150,7 +151,7 @@ public:
   }
 
   bool allowOverloads() { return delegate->allowOverloads(); }
-  Expr * getBaseExpr() { return delegate->getBaseExpr(); }
+  Expr * baseExpr() { return delegate->baseExpr(); }
   void dumpHierarchy(bool full = true) const { delegate->dumpHierarchy(); }
 };
 

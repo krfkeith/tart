@@ -131,6 +131,16 @@ o  Type conversions of non-constants.
 
 // ------------------------------------------------------------------------
 
+Command to create Eclipse project:
+
+cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -D ECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
+
+Command to create Makefile project:
+
+cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
+
+// ------------------------------------------------------------------------
+
 Permissions:
 
   [CompilerPermissions.Require("pointer-math")]

@@ -45,7 +45,7 @@ TEST_F(DefnAnalyzerTest, TestAddMember) {
   TypeDefn * cl1Defn = declAnalyzer.createCompositeType(Defn::Class, cl1);
   
   ASSERT_EQ(Defn::Class, cl1Defn->defnType());
-  ASSERT_EQ("cl1", cl1Defn->getName());
+  ASSERT_EQ("cl1", cl1Defn->name());
   ASSERT_EQ(&testModule, cl1Defn->module());
   ASSERT_EQ(&testModule, cl1Defn->getParentScope());
   ASSERT_EQ(&testModule, cl1Defn->getParentDefn());

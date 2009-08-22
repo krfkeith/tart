@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -22,7 +22,6 @@
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FindExternalRefsPass.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
@@ -40,64 +39,38 @@ bool DefnAnalyzer::analyzeModule() {
     diag.fatal() << "Module should have at least one definition";
     return false;
   }
-  
+
+  // Analyze all exported definitions.
   for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
     if (!de->isTemplate()) {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
-        module->addXDef(de);
-        FindExternalRefsPass::run(module, de);
+        module->addSymbol(de);
       } else {
         diag.info(de) << "Failed to analyze " << de;
         success = false;
       }
     }
   }
-  
+
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
   // be externally referenced.
 
-  if (success) {
-    std::string xdefNames("{");
-    int count = 0;
-    for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
-      if (de != module->firstMember()) {
-        xdefNames += ", ";
-      }
-      
-      xdefNames += de->getName();
-      ++count;
-      
-      if (count > 5) {
-        xdefNames += "...";
-        break;
-      }
+  // Analyze all external references.
+  while (Defn * de = module->nextDefToAnalyze()) {
+    if (analyzeDefn(de, Task_PrepCodeGeneration)) {
+      FindExternalRefsPass::run(module, de);
+    } else {
+      success = false;
     }
-    
-    xdefNames += "}";
-  
-    //diag.info() << "Module " << module->qualifiedName() <<
-    //  ": xdefs=" << xdefNames <<
-    //  " xrefs=" << module->getXRefs().size();
   }
 
-  // Types that are always added to every module.
-  while (Defn * de = module->getNextXRefToAnalyze()) {
-    //diag.info(de) << "Analyzing definition: " << de;
-    if (!analyzeDefn(de, Task_PrepCodeGeneration)) {
-      success = false;
-    } else {
-      FindExternalRefsPass::run(module, de);
-      //diag.info(de) << "Xref: " << de;
-    }
-  }
-  
   flushAnalysisQueue();
   return success;
 }
 
 bool DefnAnalyzer::analyze(Defn * in, DefnPasses & passes) {
-  
+
   // Create members of this scope.
   if (passes.contains(Pass_CreateMembers)) {
     createMembersFromAST(in);
@@ -120,7 +93,7 @@ bool DefnAnalyzer::createMembersFromAST(Defn * in) {
 
     in->finishPass(Pass_CreateMembers);
   }
-  
+
   return true;
 }
 
@@ -162,26 +135,26 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     if (isErrorResult(attrExpr)) {
       continue;
     }
-  
+
     // Handle @Intrinsic as a special case.
     Type * attrType = attrExpr->type();
     if (attrType == Builtins::typeIntrinsicAttribute) {
       handleIntrinsicAttribute(in, attrExpr);
       continue;
     }
-    
+
     if (attrExpr->exprType() == Expr::CtorCall) {
       CompositeType * attrClass = cast<CompositeType>(attrType);
       if (!attrClass->isAttribute()) {
         diag.error(*it) << "Invalid attribute expression @" << *it;
         continue;
       }
-      
+
       if (!attrClass->attributeInfo().canAttachTo(in)) {
         diag.error(*it) << "Attribute '" << attrClass << "' cannot apply to target '" << in << "'";
         continue;
       }
-      
+
       Expr * attrVal = EvalPass::eval(attrExpr, true);
       if (attrVal != NULL && attrVal->exprType() == Expr::ConstObjRef) {
         ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrVal);
@@ -233,7 +206,7 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   int target = attrObj->getMemberValueAsInt("target");
   int retention = attrObj->getMemberValueAsInt("retention");
   int propagation = attrObj->getMemberValueAsInt("propagation");
-  
+
   TypeDefn * targetTypeDefn = cast<TypeDefn>(de);
   CompositeType * targetType = cast<CompositeType>(targetTypeDefn->getTypeValue());
   targetType->setClassFlag(CompositeType::Attribute, true);
@@ -245,7 +218,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
   if (import->getUnpack()) {
     DFAIL("Implement import namespace");
   }
-  
+
   ExprList importDefs;
   Scope * saveScope = setActiveScope(NULL); // Inhibit unqualified search.
   if (lookupName(importDefs, import->getPath())) {
@@ -262,7 +235,7 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
     const ASTNodeList & args) {
   TypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
-  
+
   ExprAnalyzer ea(module, activeScope);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
@@ -277,15 +250,15 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
         typeArg = tdef->getTypeValue();
       }
     }
-    
+
     if (typeArg == NULL) {
       typeArg = NonTypeConstant::get(cb);
     }
-    
+
     if (!cb->isSingular()) {
       isSingularArgList = false;
     }
-    
+
     argList.push_back(typeArg);
   }
 
@@ -298,7 +271,7 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
       if (tsig->params().size() == argList.size()) {
         // Attempt unification of pattern variables with template args.
         SpecializeCandidate * spc = new SpecializeCandidate(de);
-        SourceContext candidateSite(de->location(), NULL, de, Format_Type); 
+        SourceContext candidateSite(de->location(), NULL, de, Format_Type);
         if (spc->unify(&candidateSite, argList)) {
           candidates.push_back(spc);
         }
@@ -310,7 +283,7 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
       diag.debug() << Format_Verbose << de->defnType();
     }
   }
-  
+
   if (candidates.empty()) {
     diag.error(loc) << "No templates found which match template arguments [" << args << "]";
     for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
@@ -320,11 +293,11 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
     ea.dumpScopeHierarchy();
     return NULL;
   }
-  
+
   //if (!isSingularArgList) {
-  //  return new 
+  //  return new
   //}
-  
+
   // TODO: Do template overload resolution.
   // TODO: Use parameter assignments.
   if (candidates.size() == 1) {
@@ -339,7 +312,7 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
 void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   TemplateSignature * tsig = de->templateSignature();
   DASSERT_OBJ(tsig != NULL, de);
-  
+
   if (tsig->getAST() != NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tsig->getAST()->params();
@@ -363,28 +336,28 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     for (PatternVarList::iterator it = ptypes.begin(); it != ptypes.end();
         ++it) {
       PatternVar * pv = *it;
-      TypeDefn * talias = new TypeDefn(de->module(), pv->getName(), pv);
+      TypeDefn * talias = new TypeDefn(de->module(), pv->name(), pv);
       tsig->paramScope().addMember(talias);
     }*/
 
     // Create definitions for each pattern var expr.
-    
+
 #if 0
     PatternVarExprList & ptypes = tsig->getExprVars();
     for (PatternVarExprList::iterator it = ptypes.begin(); it != ptypes.end();
         ++it) {
       PatternVarExpr * pv = *it;
       VariableDefn * var = new VariableDefn(
-          Defn::Let, de->module(), pv->getName());
+          Defn::Let, de->module(), pv->name());
       var->setInitValue(pv);
       tsig->paramScope().addMember(var);
     }
 #endif
-    
+
     // Remove the AST so that we don't re-analyze this template.
     tsig->setAST(NULL);
   }
-  
+
   // TODO: Also analyse requirement expressions.
   //DFAIL("Implement");
 #if 0
@@ -395,7 +368,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
     if (param->beginPass(Pass_ResolveVarType)) {
       analyzeTemplateParam(param);
-      
+
       // TODO: Check for subclass of Type.
       if (param->getType()->isEqual(Builtins::typeType)) {
         TypeParameterDefn * tparam = new TypeParameterDefn(param);

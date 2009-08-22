@@ -26,7 +26,7 @@ public:
   const SourceLocation & getLocation() const { return location_; }
   
   /** Return the pattern variable */
-  const char * name() const { return typeDefn()->getName(); }
+  const char * name() const { return typeDefn()->name(); }
 
   /** Return the type of this variable, which will usually be 'Type' */
   const Type * valueType() const { return valueType_; }

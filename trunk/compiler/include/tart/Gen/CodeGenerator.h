@@ -1,14 +1,14 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_GEN_CODEGENERATOR_H
 #define TART_GEN_CODEGENERATOR_H
 
 #include <llvm/Support/IRBuilder.h>
-#include <llvm/Support/DebugInfoBuilder.h>
 #include <llvm/PassManager.h>
 #include <llvm/ADT/DenseMap.h>
+#include <llvm/ADT/StringMap.h>
 #include <llvm/Analysis/DebugInfo.h>
 #include <iostream>
 
@@ -51,22 +51,17 @@ typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
 typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
-    
+typedef llvm::StringMap<llvm::Value *> StringLiteralMap;
+
 /// -------------------------------------------------------------------
 /// Code generator class.
 class CodeGenerator {
 public:
   CodeGenerator(Module * mod);
-  
+
   /** Return the builder object. */
   llvm::IRBuilder<true> & builder() { return builder_; }
 
-#if 0
-
-  /** Return the module being built. */
-  llvm::Module * getIRModule() const { return irModule_; }
-#endif
-  
   /** Function to generate the module code. */
   void generate();
 
@@ -75,7 +70,7 @@ public:
 
   // Methods to generate a reference to a definition
 
-  llvm::Function * genFunctionValue(FunctionDefn * func);
+  llvm::Function * genFunctionValue(FunctionDefn * fn);
   llvm::Value * genLetValue(const VariableDefn * let);
   llvm::Value * genVarValue(const VariableDefn * var);
   llvm::Value * genGlobalVar(const VariableDefn * var);
@@ -141,15 +136,15 @@ public:
   /** Generate the code to look up a method in a vtable. */
   llvm::Value * genVTableLookup(const FunctionDef * method, const Type * classType,
       llvm::Value * objectVal);
-  
+
   /** Generate the code to look up a method in an itable. */
   llvm::Value * genITableLookup(const FunctionDef * method, const Type * interfaceType,
       llvm::Value * objectVal);
-  
+
   /** Generate a type cast. */
   llvm::Value * genCast(const SourceLocation & loc, llvm::Value * val,
       const Type * fromType, const Type * toType);
-  
+
   /** Generate the attributes to this declaration. */
   bool genAttrs(const Declaration * de, Attributes & declAttrs);
 #endif
@@ -163,7 +158,7 @@ public:
 
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
-  llvm::Value * genCallInstr(llvm::Value * func,
+  llvm::Value * genCallInstr(llvm::Value * fn,
       ValueList::iterator firstArg, ValueList::iterator lastArg, const char * name);
 
   /** Generate an upcast instruction. */
@@ -267,8 +262,14 @@ private:
       to call various methods of core classes. */
   llvm::Function * findMethod(const CompositeType * type, const char * methodName);
 
-  llvm::IRBuilder<true> builder_;    // LLVM builder
+  void verifyModule();
+  void outputModule();
   
+  llvm::ConstantInt * getInt32Val(int value);
+
+  llvm::LLVMContext & context_;
+  llvm::IRBuilder<true> builder_;    // LLVM builder
+
   Module * module;
   llvm::Module * irModule_;
 
@@ -279,7 +280,7 @@ private:
   FunctionType * moduleInitFuncType;
   llvm::BasicBlock * moduleInitBlock;
 #endif
-  
+
   llvm::PointerType * methodPtrType;
 
   // Debug information
@@ -291,7 +292,6 @@ private:
 #if 0
   struct Attributes {
       std::vector<llvm::Constant *> irAttrs;
-      const Expr * entryPointAttr;
   };
 #endif
 
@@ -301,6 +301,7 @@ private:
   llvm::Function * exceptionPersonality_;
 
   RTTypeMap compositeTypeMap_;
+  StringLiteralMap stringLiteralMap_;
 
   bool debug;
 };

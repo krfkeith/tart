@@ -70,7 +70,7 @@ Defn::Defn(DefnType dtype, Module * m, const char * nm)
 Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   : defnType_(dtype)
   , loc(de->getLocation())
-  , name_(de->getName())
+  , name_(de->name())
   , ast(de)
   , modifiers(de->modifiers())
   , module_(m)
@@ -284,7 +284,7 @@ void Defn::dumpHierarchy(bool full) const {
     out.append(" <>");
   }
   out.append(" ");
-  out.append(getName());
+  out.append(name());
   if (isTemplateInstance()) {
     out.append("<>");
   }
@@ -314,7 +314,7 @@ NamespaceDefn::NamespaceDefn(Module * m, const char * name)
 NamespaceDefn::NamespaceDefn(Module * m, const ASTDecl * de)
   : Defn(Namespace, m, de)
 {
-  members.setScopeName(getName());
+  members.setScopeName(name());
 }
 
 void NamespaceDefn::format(FormatStream & out) const {
@@ -458,7 +458,7 @@ void IndexerDefn::format(FormatStream & out) const {
 /// -------------------------------------------------------------------
 /// ExplicitImportDefn
 void ExplicitImportDefn::format(FormatStream & out) const {
-  out << "[import " << getName() << "]";
+  out << "[import " << name() << "]";
 }
 
 void ExplicitImportDefn::trace() const {

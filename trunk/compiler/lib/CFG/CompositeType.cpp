@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
@@ -16,7 +16,7 @@
 #include <llvm/DerivedTypes.h>
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// CompositeType
 
@@ -37,13 +37,13 @@ FunctionDefn * CompositeType::defaultConstructor() {
           ++requiredArgCount;
         }
       }
-      
+
       if (requiredArgCount == 0) {
         return ctor;
       }
     }
   }
-  
+
   // Try creators
   ctors = findSymbol(istrings.idCreate);
   if (ctors == NULL) {
@@ -61,13 +61,13 @@ FunctionDefn * CompositeType::defaultConstructor() {
           ++requiredArgCount;
         }
       }
-      
+
       if (requiredArgCount == 0) {
         return ctor;
       }
     }
   }
-  
+
   return NULL;
 }
 
@@ -75,7 +75,7 @@ bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inheri
   if (DeclaredType::lookupMember(name, defs, inherit)) {
     return true;
   }
-  
+
   if (inherit) {
     DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
@@ -84,7 +84,7 @@ bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inheri
       }
     }
   }
-  
+
   return false;
 }
 
@@ -105,11 +105,11 @@ const llvm::Type * CompositeType::createIRType() const {
   DASSERT_OBJ(isSingular(), this);
   DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
   DASSERT_OBJ(typeDefn()->isPassFinished(Pass_AnalyzeFields), this);
-  DASSERT(irType == NULL);
-  
+  DASSERT(irType_ == NULL);
+
   // Temporarily get an opaque type to use if this type is self-referential
-  OpaqueType * tempIRType = OpaqueType::get();
-  irType = tempIRType;
+  OpaqueType * tempIRType = OpaqueType::get(llvm::getGlobalContext());
+  irType_ = tempIRType;
 
   // Members of the class
   std::vector<const llvm::Type *> fieldTypes;
@@ -192,24 +192,24 @@ const llvm::Type * CompositeType::createIRType() const {
 
   // This is not the normal legal way to do type refinement in LLVM.
   // Normally one would use a PATypeHolder. However, in this case it is assumed
-  // that no one is keeping a raw pointer to irType, except via an LLVM
+  // that no one is keeping a raw pointer to irType_, except via an LLVM
   // "User" class.
-  irType = StructType::get(fieldTypes);
-  tempIRType->refineAbstractTypeTo(irType);
-  return irType;
+  irType_ = StructType::get(llvm::getGlobalContext(), fieldTypes);
+  tempIRType->refineAbstractTypeTo(irType_);
+  return irType_;
 }
 
 bool CompositeType::isSubclassOf(const CompositeType * base) const {
   if (this == base) {
     return true;
   }
-  
+
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     if ((*it)->isSubclassOf(base)) {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -240,11 +240,11 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
         *cn.resultValue = new ConstantNull(
             cn.fromValue->getLocation(), const_cast<CompositeType *>(this));
       }
-      
+
       return ExactConversion;
     }
   }
-  
+
   return Incompatible;
 }
 
@@ -262,7 +262,7 @@ bool CompositeType::isSubtype(const Type * other) const {
   if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
     return otherCls == this || otherCls->isSubclassOf(this);
   }
-  
+
   return false;
 }
 
@@ -270,7 +270,7 @@ bool CompositeType::includes(const Type * other) const {
   if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
     return otherCls == this || isSubclassOf(otherCls);
   }
-  
+
   return false;
 }
 
@@ -283,26 +283,26 @@ void CompositeType::ancestorClasses(ClassSet & out) const {
   }
 }
 
-void CompositeType::addMethodXDefs(Module * module) {
+void CompositeType::addMethodDefsToModule(Module * module) {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 
   // Make certain that every method that is referred to from the TIB is XRef'd.
   for (MethodList::iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
     FunctionDefn * method = *m;
-    module->addXDef(method);
+    module->addSymbol(method);
   }
 
   for (InterfaceList::iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
     for (MethodList::iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
       FunctionDefn * method = *m;
-      module->addXDef(method);
+      module->addSymbol(method);
     }
   }
 }
 
-void CompositeType::addStaticXDefs(Module * module) {
+void CompositeType::addStaticDefsToModule(Module * module) {
   for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
-    module->addXDef(*it);
+    module->addSymbol(*it);
   }
 
 /*  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
@@ -310,7 +310,7 @@ void CompositeType::addStaticXDefs(Module * module) {
       case Defn::Var: {
         VariableDefn * var = static_cast<VariableDefn *>(field);
         if (var->storageClass() == Storage_Static) {
-          module->addXDef(var);
+          module->addSymbol(var);
         }
 
         break;
@@ -320,7 +320,7 @@ void CompositeType::addStaticXDefs(Module * module) {
 }
 
 void CompositeType::addBaseXRefs(Module * module) {
-  if (module->addXRef(typeDefn())) {
+  if (module->addSymbol(typeDefn())) {
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       (*it)->addBaseXRefs(module);
     }

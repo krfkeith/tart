@@ -202,8 +202,8 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   }
 
   DefnList methods;
-  if (!superClass->memberScope()->lookupMember(currentFunction_->getName(), methods, true)) {
-    diag.error(loc) << "Superclass method '" << currentFunction_->getName() <<
+  if (!superClass->memberScope()->lookupMember(currentFunction_->name(), methods, true)) {
+    diag.error(loc) << "Superclass method '" << currentFunction_->name() <<
         " not found in class " << enclosingClass;
     return &Expr::ErrorVal;
   }
@@ -237,7 +237,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
 Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const ASTNodeList & args) {
   Type * type = typeExpr->value();
   TypeDefn * tdef = type->typeDefn();
-  module->addXRef(tdef);
+  module->addSymbol(tdef);
 
   // First thing we need to know is how much tdef has been analyzed.
   if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse)) {

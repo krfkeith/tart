@@ -87,7 +87,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       if (TypeDefn * tdef = dyn_cast<TypeDefn>(def)) {
         return tdef->getTypeValue();
       } else {
-        diag.fatal(ast) << "'" << def->getName() << "' is not a type";
+        diag.fatal(ast) << "'" << def->name() << "' is not a type";
         return &BadType::instance;
       }
     }
@@ -164,7 +164,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST( const ASTFunctionDecl * ast) {
     
     // Note that type might be NULL if not specified. We'll pick it up
     // later from the default value.
-    Type * paramType = typeFromAST(aparam->getType());
+    Type * paramType = typeFromAST(aparam->type());
     ParameterDefn * param = new ParameterDefn(NULL, aparam);
     param->setType(paramType);
     param->setInternalType(paramType);

@@ -127,7 +127,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         }
         
         // TODO: Should only add the param as a member if we "own" it.
-        if (param->definingScope() == NULL && param->getName() != NULL) {
+        if (param->definingScope() == NULL && param->name() != NULL) {
           target->parameterScope().addMember(param);
         }
       }
@@ -163,38 +163,74 @@ bool FunctionAnalyzer::createCFG() {
   
   if (target->beginPass(Pass_CreateCFG)) {
     bool isIntrinsic = target->isIntrinsic();
+    bool isAbstract = target->isAbstract();
     bool isExtern = target->isExtern();
     bool isInterfaceMethod = false;
     
     if (isIntrinsic && isExtern) {
-      diag.fatal(target) << "Function '" << target->getName() <<
+      diag.error(target) << "Function '" << target->name() <<
           "' cannot be both external and intrinsic.";
     }
-    
+
     // Functions defined in interfaces or protocols must not have a body.
     TypeDefn * enclosingClassDefn = target->enclosingClassDefn();
     if (enclosingClassDefn != NULL) {
       CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->getTypeValue());
-      if (enclosingClass->typeClass() == Type::Interface
-          || enclosingClass->typeClass() == Type::Protocol) {
-        isInterfaceMethod = true;
+      
+      switch (enclosingClass->typeClass()) {
+        case Type::Interface:
+        case Type::Protocol: {
+          isInterfaceMethod = true;
+          break;
+        }
+
+        case Type::Class: {
+          if (isAbstract && !enclosingClassDefn->isAbstract()) {
+            diag.error(target) << "Method '" << target->name() <<
+                " declared abstract in non-abstract class";
+          }
+          
+          break;
+        }
+
+        case Type::Struct: {
+          if (isAbstract) {
+            diag.error(target) << "Struct method '" << target->name() << " cannot be abstract";
+          }
+
+          break;
+        }
+      }
+    } else {
+      if (isAbstract) {
+        if (target->storageClass() == Storage_Global) {
+          diag.error(target) << "Global function '" << target->name() << " cannot be abstract";
+        }
       }
     }
 
     if (target->getFunctionDecl() != NULL) {
       bool hasBody = target->getFunctionDecl()->getBody() != NULL || !target->blocks().empty();
-      
       if (isInterfaceMethod) {
         if (hasBody) {
-          diag.fatal(target) << "Method body not allowed for method '" << target->getName() <<
+          diag.error(target) << "Method body not allowed for method '" << target->name() <<
               "' defined in interface or protocol.";
         }
-      } else if (isExtern || isIntrinsic) {
+      } else if (isExtern || isIntrinsic || isAbstract) {
         if (hasBody) {
-          diag.fatal(target) << "External method '" << target->getName() << "' cannot have a body.";
+          const char * keyword = "abstract";
+          if (isIntrinsic) {
+            keyword = "@Intrinsic";
+          } else if (isExtern) {
+            keyword = "@Extern";
+          }
+            
+          diag.error(target) << "Method '" << target->name() << "' declared " << keyword << 
+              " cannot have a body.";
         }
       } else if (!hasBody) {
-        diag.fatal(target) << "Function '" << target->getName() << "' has no body.";
+        diag.error(target) << "Method body required for non-abstract method '"
+            << target->name() << "'.";
       } else if (target->blocks().empty()) {
         StmtAnalyzer sa(target);
         success = sa.buildCFG();

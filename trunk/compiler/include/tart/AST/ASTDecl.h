@@ -98,9 +98,9 @@ protected:
   std::string docComment_;
 
   // Protected constructor, since this type is abstract. */
-  ASTDecl(NodeType type, const SourceLocation & loc, const char * nm,
+  ASTDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
       const DeclModifiers & mods)
-      : ASTNode(type, loc)
+      : ASTNode(ntype, loc)
       , name_(nm)
       , modifiers_(mods)
   {}
@@ -108,7 +108,7 @@ protected:
 public:
 
   /** The name of this declaration. */
-  const char * getName() const { return name_; }
+  const char * name() const { return name_; }
 
   /** The list of member definitions. */
   const ASTDeclList & members() const { return members_; }
@@ -168,9 +168,9 @@ private:
 
 public:
   // Protected constructor, since this type is abstract. */
-  ASTTypeDecl(NodeType type, const SourceLocation & loc, const char * nm,
+  ASTTypeDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
       const ASTNodeList & baseList, const DeclModifiers & mods)
-      : ASTDecl(type, loc, nm, mods)
+      : ASTDecl(ntype, loc, nm, mods)
       , bases_(baseList)
   {}
 
@@ -193,26 +193,26 @@ public:
 /// A variable (let or var) definition
 class ASTVarDecl : public ASTDecl {
 protected:
-  ASTNode * type;
-  ASTNode * value;
+  ASTNode * type_;
+  ASTNode * value_;
 
 public:
-  ASTVarDecl(NodeType type, const SourceLocation & loc, const char * nm,
+  ASTVarDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
       ASTNode * ptype, ASTNode * val, const DeclModifiers & mods)
-    : ASTDecl(type, loc, nm, mods)
-    , type(ptype)
-    , value(val)
+    : ASTDecl(ntype, loc, nm, mods)
+    , type_(ptype)
+    , value_(val)
   {}
 
 
   /** The type of a variable is it's declared type. */
-  const ASTNode * getType() const { return type; }
-  ASTNode * getType() { return type; }
+  const ASTNode * type() const { return type_; }
+  ASTNode * type() { return type_; }
 
   /** The value of a variable is its initializer. */
-  const ASTNode * getValue() const { return value; }
-  ASTNode * getValue() { return value; }
-  void setValue(ASTNode * val) { value = val; }
+  const ASTNode * getValue() const { return value_; }
+  ASTNode * getValue() { return value_; }
+  void setValue(ASTNode * val) { value_ = val; }
 
   // Overrides
 
@@ -230,16 +230,16 @@ public:
 /// A property definition
 class ASTPropertyDecl : public ASTDecl {
 private:
-  ASTNode * type;
+  ASTNode * type_;
   ASTFunctionDecl * getter_;
   ASTFunctionDecl * setter_;
   ASTParamList params_;
 
 public:
-  ASTPropertyDecl(NodeType type, const SourceLocation & loc, const char * nm,
+  ASTPropertyDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
       ASTNode * ptype, const DeclModifiers & mods)
-    : ASTDecl(type, loc, nm, mods)
-    , type(ptype)
+    : ASTDecl(ntype, loc, nm, mods)
+    , type_(ptype)
     , getter_(NULL)
     , setter_(NULL)
   {}
@@ -247,14 +247,14 @@ public:
   ASTPropertyDecl(const SourceLocation & loc, const char * nm, ASTNode * ptype,
       const DeclModifiers & mods)
     : ASTDecl(ASTNode::Prop, loc, nm, mods)
-    , type(ptype)
+    , type_(ptype)
     , getter_(NULL)
     , setter_(NULL)
   {}
 
   /** The property type. */
-  const ASTNode * getType() const { return type; }
-  ASTNode * getType() { return type; }
+  const ASTNode * type() const { return type_; }
+  ASTNode * type() { return type_; }
 
   /** The getter method. */
   const ASTFunctionDecl * getter() const { return getter_; }
@@ -291,9 +291,9 @@ private:
   int generatorIndex;
 
 public:
-  ASTFunctionDecl(NodeType type, const SourceLocation & loc, const char * nm,
+  ASTFunctionDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
       ASTParamList & paramList, ASTNode * rtype, const DeclModifiers & mods)
-    : ASTDecl(type, loc, nm, mods)
+    : ASTDecl(ntype, loc, nm, mods)
     , params_(paramList)
     , returnType_(rtype)
     , body(NULL)
@@ -384,7 +384,7 @@ private:
 
 public:
   ASTTemplate(ASTDecl * bod, ASTNodeList & paramList, ASTNodeList & requirements)
-      : ASTDecl(Template, bod->getLocation(), bod->getName(), bod->modifiers())
+      : ASTDecl(Template, bod->getLocation(), bod->name(), bod->modifiers())
       , body_(bod)
       , params_(paramList)
       , requirements_(requirements)

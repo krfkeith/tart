@@ -55,7 +55,8 @@ set(GCC_CXX_FLAGS
     -Wno-deprecated -Wno-unused
     -Woverloaded-virtual
     -fno-operator-names -ffor-scope
-    -fconst-strings)
+    -fconst-strings
+    -fmessage-length=0)
 
 # Add the check-build target
 add_custom_target(check)

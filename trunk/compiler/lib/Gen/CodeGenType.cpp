@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/RuntimeTypeInfo.h"
 #include "tart/Common/Diagnostics.h"
@@ -15,10 +15,12 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/Objects/Builtins.h"
+
 #include "llvm/Function.h"
+#include "llvm/Module.h"
 
 namespace tart {
-  
+
 using namespace llvm;
 
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
@@ -58,9 +60,9 @@ const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
 const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-
+  
   // Don't need to define this twice.
-  if (rtype->isExternal() || (rtype->getTypeObjectPtr() != NULL && 
+  if (rtype->isExternal() || (rtype->getTypeObjectPtr() != NULL &&
       rtype->getTypeObjectPtr()->hasInitializer())) {
     return type->getIRType();
   }
@@ -101,10 +103,10 @@ GlobalVariable * CodeGenerator::createTypeObjectPtr(RuntimeTypeInfo * rtype) {
     // Create the global variable for the type object.
     const CompositeType * type = rtype->getType();
     rtype->setTypeObjectPtr(
-        new GlobalVariable(
+        new GlobalVariable(*irModule_,
             Builtins::typeType->getIRType(), true,
-            GlobalValue::ExternalLinkage, NULL,
-            type->typeDefn()->getLinkageName() + ".type", irModule_));
+            rtype->getLinkageType(), NULL,
+            type->typeDefn()->getLinkageName() + ".type"));
   }
 
   return rtype->getTypeObjectPtr();
@@ -119,10 +121,10 @@ Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
           PointerType::getUnqual(Builtins::typeTypeInfoBlock->getIRType())));
     } else {
       rtype->setTypeInfoBlock(
-          new GlobalVariable(
+          new GlobalVariable(*irModule_,
               rtype->getTypeInfoBlockType().get(),
               true, rtype->getLinkageType(), NULL,
-              type->typeDefn()->getLinkageName() + ".type.tib", irModule_));
+              type->typeDefn()->getLinkageName() + ".type.tib"));
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
@@ -140,9 +142,9 @@ bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
   // Generate the type object.
   ConstantList objMembers;
   ConstantList typeMembers;
-  
+
   objMembers.push_back(getTypeInfoPtr(cast<CompositeType>(Builtins::typeType)));
-  typeMembers.push_back(ConstantStruct::get(objMembers));
+  typeMembers.push_back(ConstantStruct::get(context_, objMembers));
   typeMembers.push_back(createTypeInfoPtr(rtype));
   if (type->typeClass() == Type::Class && type->super() != NULL) {
     typeMembers.push_back(getTypeObjectPtr(type->super()));
@@ -151,7 +153,7 @@ bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
         PointerType::getUnqual(Builtins::typeType->getIRType())));
   }
 
-  llvm::Constant * typeStruct = ConstantStruct::get(typeMembers);
+  llvm::Constant * typeStruct = ConstantStruct::get(context_, typeMembers);
   llvm::GlobalVariable * typePtr = createTypeObjectPtr(rtype);
   typePtr->setInitializer(typeStruct);
   return true;
@@ -159,11 +161,11 @@ bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
 
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
-  
+
   if (type->typeClass() != Type::Class) {
     return true;
   }
-  
+
   if (rtype->getTypeInfoPtr() == NULL) {
     createTypeInfoPtr(rtype);
   } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
@@ -198,10 +200,9 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   Constant * baseClassArray = ConstantArray::get(
       ArrayType::get(typePointerType, baseClassList.size()),
       baseClassList);
-  GlobalVariable * baseClassArrayPtr = new GlobalVariable(
+  GlobalVariable * baseClassArrayPtr = new GlobalVariable(*irModule_,
     baseClassArray->getType(), true, GlobalValue::InternalLinkage,
-    baseClassArray, type->typeDefn()->getLinkageName() + ".type.tib.bases",
-        irModule_);
+    baseClassArray, type->typeDefn()->getLinkageName() + ".type.tib.bases");
 
   // Generate the interface dispatch function
   //Function * idispatch = genInterfaceDispatchFunc(type);
@@ -217,7 +218,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 #endif
 
   tibMembers.push_back(genMethodArray(type->instanceMethods_));
-  Constant * tibStruct = ConstantStruct::get(tibMembers);
+  Constant * tibStruct = ConstantStruct::get(context_, tibMembers);
 
   // Assign the TIB value to the tib global variable.
   GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
@@ -233,7 +234,7 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
   for (MethodList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
     FunctionDefn * method = static_cast<FunctionDefn *>(*it);
     if (!method->isSingular()) {
-      diag.fatal(method) << "Non-singular method '" << method->getName() << "' in closed type";
+      diag.fatal(method) << "Non-singular method '" << method->name() << "' in closed type";
     }
 
     Constant * methodVal;
@@ -265,11 +266,11 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
 Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   DASSERT_OBJ(type->typeClass() == Type::Class, type);
-  
+
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
   argTypes.push_back(PointerType::get(Builtins::typeType->getIRType(), 0));
-  argTypes.push_back(llvm::Type::Int32Ty);
+  argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType, argTypes, false);
   Function * idispatch = Function::Create(
       functype, Function::InternalLinkage,
@@ -285,25 +286,25 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   Argument * methodIndex = arg++;
 
   ValueList indices;
-  indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
+  indices.push_back(getInt32Val(0));
   indices.push_back(methodIndex);
 
-  BasicBlock * blk = BasicBlock::Create("", idispatch);
+  BasicBlock * blk = BasicBlock::Create(context_, "", idispatch);
   for (CompositeType::InterfaceList::const_iterator it =
       type->interfaces_.begin(); it != type->interfaces_.end(); ++it) {
 
     // Generate the method table for the interface.
     CompositeType * itDecl = it->interfaceType;
     Constant * itableMembers = genMethodArray(it->methods);
-    GlobalVariable * itable = new GlobalVariable(
+    GlobalVariable * itable = new GlobalVariable(*irModule_,
       itableMembers->getType(), true, GlobalValue::InternalLinkage,
       itableMembers,
-      itDecl->typeDefn()->getLinkageName() + "->" + linkageName, irModule_);
+      itDecl->typeDefn()->getLinkageName() + "->" + linkageName);
     Constant * itype = getTypeObjectPtr(it->interfaceType);
 
     // Create the blocks
-    BasicBlock * ret = BasicBlock::Create(itDecl->typeDefn()->getName(), idispatch);
-    BasicBlock * next = BasicBlock::Create("", idispatch);
+    BasicBlock * ret = BasicBlock::Create(context_, itDecl->typeDefn()->name(), idispatch);
+    BasicBlock * next = BasicBlock::Create(context_, "", idispatch);
 
     // Test the interface pointer
     builder_.SetInsertPoint(blk);
@@ -331,7 +332,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   if (savePoint != NULL) {
     builder_.SetInsertPoint(savePoint);
   }
-  
+
   return idispatch;
 }
 
@@ -351,8 +352,8 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
 
     // Save the builder_ state and set to the new allocator function.
     BasicBlock * savePoint = builder_.GetInsertBlock();
-    builder_.SetInsertPoint(BasicBlock::Create("entry", allocFunc));
-    
+    builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
+
     // Allocate an instance of the object
     Value * instance = builder_.CreateMalloc(type->getIRType());
 
@@ -373,17 +374,16 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
 
 void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instance) {
   ValueList indices;
-  indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
+  indices.push_back(getInt32Val(0));
   const CompositeType * base = type;
 
   while (base != NULL) {
     // First member of this type.
-    indices.push_back(ConstantInt::get(llvm::Type::Int32Ty, 0));
+    indices.push_back(getInt32Val(0));
     base = base->super();
   }
 
-  Value * vtablePtrPtr = builder_.CreateGEP(instance,
-      indices.begin(), indices.end());
+  Value * vtablePtrPtr = builder_.CreateGEP(instance, indices.begin(), indices.end());
   Value * typeInfoPtr = getTypeInfoPtr(type);
   builder_.CreateStore(typeInfoPtr, vtablePtrPtr);
 }
@@ -393,7 +393,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
   if (it != compositeTypeMap_.end()) {
     return it->second;
   }
-  
+
   RuntimeTypeInfo * rtype = new RuntimeTypeInfo(type, module);
   compositeTypeMap_[type] = rtype;
   return rtype;

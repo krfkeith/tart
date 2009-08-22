@@ -89,10 +89,6 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
     return false;
   }
   
-  //if (passesToRun.contains(Pass_ResolveAttributes) && !resolveAttributes(target)) {
-  //  return false;
-  //}
-
   if (passesToRun.contains(Pass_AnalyzeFields) && !analyzeFields()) {
     return false;
   }
@@ -112,17 +108,9 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   return true;
 }
 
-#if 0
-  if (in->getFlags() & (Native | Extern)) {
-    diag.fatal(in->getLocation(), "Invalid type modifier");
-  }
-
-  refineAttributes(in);
-#endif
-
 bool ClassAnalyzer::analyzeBaseClasses() {
   if (target->isPassRunning(Pass_ResolveBaseTypes)) {
-    diag.fatal(target) << "Circular inheritance not allowed";
+    diag.error(target) << "Circular inheritance not allowed";
     return false;
   }
 
@@ -155,18 +143,24 @@ bool ClassAnalyzer::analyzeBaseClasses() {
     }
 
     TypeDefn * baseDefn = baseType->typeDefn();
-    if (baseDefn == NULL) {
-      diag.fatal(*it) << "'" << *it << "' is not a valid base type";
+    if (baseDefn == NULL || !isa<CompositeType>(baseType)) {
+      diag.error(*it) << "Cannot inherit from " << *it << " type";
       return false;
     }
 
     if (!baseType->isSingular()) {
-      diag.fatal(*it) << "Base type '" << baseDefn << " is a template, not a type";
+      diag.error(*it) << "Base type '" << baseDefn << "' is a template, not a type";
       return false;
     }
     
+    if (baseDefn->isFinal()) {
+      diag.error(*it) << "Base type '" << baseDefn << "' is final";
+    }
+    
     // Recursively analyze the bases of the base
-    ClassAnalyzer(baseDefn).analyze(Task_PrepMemberLookup);
+    if (!ClassAnalyzer(baseDefn).analyze(Task_PrepMemberLookup)) {
+      return false;
+    }
 
     Type::TypeClass baseKind = baseType->typeClass();
     bool isPrimary = false;
@@ -176,8 +170,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
           if (primaryBase == NULL) {
             isPrimary = true;
           } else {
-            diag.fatal(target) <<
-                "classes can only have a single concrete supertype";
+            diag.error(target) << "classes can only have a single concrete supertype";
           }
         } else if (baseKind != Type::Interface) {
           diag.fatal(target) << (Defn *)target <<
@@ -186,13 +179,8 @@ bool ClassAnalyzer::analyzeBaseClasses() {
         break;
 
       case Type::Struct:
-        if (baseKind == Type::Interface) {
-          if (!baseDefn->storageClass() == Storage_Static) {
-            diag.fatal(target) <<
-              "struct can only derive from a struct or static interface type";
-          }
-        } else if (baseKind != Type::Struct) {
-          diag.fatal(target) <<
+        if (baseKind != Type::Struct && baseKind != Type::Protocol) {
+          diag.error(target) <<
             "struct can only derive from a struct or static interface type";
         } else if (primaryBase == NULL) {
           isPrimary = true;
@@ -203,7 +191,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
 
       case Type::Interface:
         if (baseKind != Type::Interface && baseKind != Type::Protocol) {
-          diag.fatal(*it) << "interface can only inherit from interface or protocol";
+          diag.error(*it) << "interface can only inherit from interface or protocol";
         } else if (primaryBase == NULL) {
           isPrimary = true;
         }
@@ -230,7 +218,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
   // If no base was specified, use Object.
   if (dtype == Type::Class && primaryBase == NULL && type != Builtins::typeObject) {
     primaryBase = static_cast<CompositeType *>(Builtins::typeObject);
-    module->addXRef(primaryBase->typeDefn());
+    module->addSymbol(primaryBase->typeDefn());
   }
 
   type->setSuper(primaryBase);
@@ -293,8 +281,7 @@ bool ClassAnalyzer::analyzeFields() {
               field->setMemberIndexRecursive(instanceFieldCountRecursive++);
               type->instanceFields_.push_back(field);
             } else if (field->storageClass() == Storage_Static) {
-              // TODO - only if not synthetic?
-              module->addXDef(field);
+              module->addSymbol(field);
               type->staticFields_.push_back(field);
             }
           }
@@ -453,6 +440,7 @@ bool ClassAnalyzer::analyzeOverloading() {
     createInterfaceTables();
     overrideMembers();
     addNewMethods();
+    checkForRequiredMethods();
 
     target->finishPass(Pass_ResolveOverloads);
   }
@@ -523,7 +511,7 @@ void ClassAnalyzer::overrideMembers() {
   for (SymbolTable::iterator s = clMembers.begin(); s != clMembers.end(); ++s) {
     SymbolTable::Entry & entry = s->second;
     Defn * first = entry.front();
-    const char * name = first->getName();
+    const char * name = first->name();
 
     MethodList methods;
     FunctionDefn * getter = NULL;
@@ -537,7 +525,7 @@ void ClassAnalyzer::overrideMembers() {
       for (SymbolTable::Entry::iterator it = entry.begin(); it != entry.end(); ++it) {
         FunctionDefn * func = dyn_cast<FunctionDefn>(*it);
         if (func != NULL && func->isSingular()) {
-          module->addXDef(func);
+          module->addSymbol(func);
           if (func->storageClass() == Storage_Instance && !func->isCtor()) {
             methods.push_back(func);
           }
@@ -560,7 +548,7 @@ void ClassAnalyzer::overrideMembers() {
       for (size_t i = 0; i < methods.size(); ++i) {
         for (size_t j = i + 1; j < methods.size(); ++j) {
           if (hasSameSignature(methods[i], methods[j])) {
-            diag.fatal(methods[j]) << "Method type signature conflict";
+            diag.error(methods[j]) << "Method type signature conflict";
             diag.info(methods[i]) << "From here";
           }
         }
@@ -635,6 +623,10 @@ void ClassAnalyzer::addNewMethods() {
 void ClassAnalyzer::checkForRequiredMethods() {
   typedef CompositeType::InterfaceList InterfaceList;
   
+  if (target->isAbstract()) {
+    return;
+  }
+
   CompositeType * type = cast<CompositeType>(target->getTypeValue());
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
@@ -644,7 +636,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     MethodList abstractMethods;
     for (MethodList::iterator it = methods.begin(); it != methods.end(); ++it) {
       FunctionDefn * func = *it;
-      if (func->hasBody() && !func->isExtern()) {
+      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic()) {
         abstractMethods.push_back(func);
       }
     }
@@ -652,7 +644,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     if (!abstractMethods.empty()) {
       if (tcls == Type::Struct || (tcls == Type::Class && !target->isAbstract())) {
         diag.recovered();
-        diag.fatal(target) << "Concrete type '" << target <<
+        diag.error(target) << "Concrete type '" << target <<
             "'lacks definition for the following methods:";
         for (MethodList::iterator it = abstractMethods.begin(); it != abstractMethods.end(); ++it) {
           diag.info(*it) << *it;
@@ -661,42 +653,39 @@ void ClassAnalyzer::checkForRequiredMethods() {
 
       return;
     }
+  }
 
-    InterfaceList & itab = type->interfaces_;
-    for (InterfaceList::iterator it = itab.begin(); it != itab.end(); ++it) {
-      MethodList unimpMethods;
-      for (MethodList::iterator di = it->methods.begin(); di != it->methods.end(); ++di) {
-        FunctionDefn * func = *di;
-        if (func->hasBody() && !func->isExtern()) {
-          unimpMethods.push_back(func);
-        }
-      }
-
-      if (!unimpMethods.empty()) {
-        if (!target->isAbstract()) {
-          diag.recovered();
-          diag.fatal(target) << "Concrete class '" << target <<
-              "' implements interface '" << it->interfaceType <<
-              "' but lacks implementations for:";
-          for (MethodList::iterator it = unimpMethods.begin(); it != unimpMethods.end(); ++it) {
-            diag.info(*it) << *it;
-          }
-        }
-
-        return;
+  InterfaceList & itab = type->interfaces_;
+  for (InterfaceList::iterator it = itab.begin(); it != itab.end(); ++it) {
+    MethodList unimpMethods;
+    for (MethodList::iterator di = it->methods.begin(); di != it->methods.end(); ++di) {
+      FunctionDefn * func = *di;
+      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic()) {
+        unimpMethods.push_back(func);
       }
     }
 
+    if (!unimpMethods.empty()) {
+      diag.recovered();
+      diag.error(target) << "Concrete class '" << target <<
+          "' implements interface '" << it->interfaceType <<
+          "' but lacks implementations for:";
+      for (MethodList::iterator it = unimpMethods.begin(); it != unimpMethods.end(); ++it) {
+        diag.info(*it) << *it;
+      }
+
+      return;
+    }
   }
 }
 
 void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overrides,
     bool canHide) {
-  const char * name = overrides.front()->getName();
+  const char * name = overrides.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
     FunctionDefn * m = table[i];
-    if (m->getName() == name) {
+    if (m->name() == name) {
       FunctionDefn * newMethod = findOverride(m, overrides);
       if (newMethod != NULL) {
         table[i] = newMethod;
@@ -717,11 +706,11 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
 
 void ClassAnalyzer::overridePropertyAccessor(MethodList & table, FunctionDefn * accessor,
     bool canHide) {
-  const char * name = accessor->getName();
+  const char * name = accessor->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
     FunctionDefn * m = table[i];
-    if (m->getName() == name) {
+    if (m->name() == name) {
       if (canOverride(m, accessor)) {
         table[i] = accessor;
         if (canHide && !accessor->isOverride()) {
@@ -902,7 +891,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           // Native arrays must be initialized in the constructor.
           continue;
         } else if (memberVar->visibility() == Public) {
-          ParameterDefn * param = new ParameterDefn(module, memberVar->getName());
+          ParameterDefn * param = new ParameterDefn(module, memberVar->name());
           param->setLocation(target->getLocation());
           param->setType(memberType);
           param->setInternalType(memberType);
@@ -955,6 +944,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->setStorageClass(Storage_Instance);
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->addTrait(Defn::Ctor);
+  constructorDef->copyTrait(target, Defn::Synthetic);
   constructorDef->blocks().push_back(constructorBody);
   constructorDef->getFinished().addAll(
       DefnPasses::of(
@@ -970,14 +960,13 @@ bool ClassAnalyzer::createDefaultConstructor() {
     // If it's synthetic, then don't add the constructor unless someone
     // actually calls it.
     if (!target->isSynthetic()) {
-      module->addXDef(constructorDef);
+      module->addSymbol(constructorDef);
     }
   }
   
   DASSERT_OBJ(constructorDef->isSingular(), constructorDef);
   if (!funcType->isSingular()) {
-    diag.fatal(target) << "Default constructor type " << funcType <<
-      " is not singular";
+    diag.fatal(target) << "Default constructor type " << funcType << " is not singular";
     funcType->whyNotSingular();
   }
   

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -13,7 +13,7 @@
 #include <llvm/ADT/StringExtras.h>
 
 namespace tart {
-  
+
 // -------------------------------------------------------------------
 // ConstantInteger
 
@@ -22,7 +22,7 @@ const PrimitiveType * ConstantInteger::primitiveType() const {
   while (const EnumType * etype = dyn_cast<EnumType>(ty)) {
     ty = etype->baseType();
   }
-  
+
   return cast<PrimitiveType>(ty);
 }
 
@@ -30,16 +30,16 @@ bool ConstantInteger::isEqual(const ConstantExpr * cexpr) const {
   if (const ConstantInteger * ci = dyn_cast<ConstantInteger>(cexpr)) {
     return value_ == ci->value();
   }
-  
+
   return false;
 }
 
 bool ConstantInteger::isNegative() const {
   const PrimitiveType * ptype = primitiveType();
-  if (isUnsignedIntegerType(ptype->getTypeId())) {
+  if (isUnsignedIntegerType(ptype->typeId())) {
     return false;
   }
-  
+
   return value_->getValue().isNegative();
 }
 
@@ -48,17 +48,22 @@ void ConstantInteger::format(FormatStream & out) const {
     out << (value_->isZero() ? "false" : "true");
   } else {
     const PrimitiveType * ptype = primitiveType();
-    out << value_->getValue().toString(10, isSignedIntegerType(ptype->getTypeId()));
+    out << value_->getValue().toString(10, isSignedIntegerType(ptype->typeId()));
   }
 }
 
 ConstantInteger * ConstantInteger::getConstantBool(const SourceLocation & loc, bool value) {
-  return new ConstantInteger(loc, &BoolType::instance,
-      value ? llvm::ConstantInt::getTrue() : llvm::ConstantInt::getFalse());
+  return new ConstantInteger(loc, &BoolType::instance, value
+      ? llvm::ConstantInt::getTrue(llvm::getGlobalContext())
+      : llvm::ConstantInt::getFalse(llvm::getGlobalContext()));
 }
 
 ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type, int32_t value) {
-  return new ConstantInteger(loc, type, llvm::ConstantInt::get(type->getIRType(), value));
+  const llvm::Type * intType = type->irType();
+  return new ConstantInteger(loc, type,
+      cast<llvm::ConstantInt>(
+          llvm::ConstantInt::get(intType,
+              llvm::APInt(intType->getPrimitiveSizeInBits(), value, true))));
 }
 
 ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type,
@@ -68,12 +73,14 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type,
 
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value, PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
-  return new ConstantInteger(SourceLocation(), type, llvm::ConstantInt::get(value));
+  return new ConstantInteger(SourceLocation(), type,
+      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->getIRType(), value)));
 }
 
 ConstantInteger * ConstantInteger::getUnsigned(const llvm::APInt & value, PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
-  return new ConstantInteger(SourceLocation(), type, llvm::ConstantInt::get(value));
+  return new ConstantInteger(SourceLocation(), type,
+      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->getIRType(), value)));
 }
 
 // -------------------------------------------------------------------
@@ -82,7 +89,7 @@ bool ConstantFloat::isEqual(const ConstantExpr * cexpr) const {
   if (const ConstantFloat * cf = dyn_cast<ConstantFloat>(cexpr)) {
     DFAIL("Implement");
   }
-  
+
   return false;
 }
 
@@ -102,7 +109,7 @@ bool ConstantString::isEqual(const ConstantExpr * cexpr) const {
   if (const ConstantString * cs = dyn_cast<ConstantString>(cexpr)) {
     return cs->value() == value_;
   }
-  
+
   return false;
 }
 
@@ -154,7 +161,7 @@ bool ConstantType::isEqual(const ConstantExpr * cexpr) const {
   if (const ConstantType * ct = dyn_cast<ConstantType>(cexpr)) {
     return value()->isEqual(ct->value());
   }
-  
+
   return false;
 }
 
@@ -201,7 +208,7 @@ Expr * ConstantObjectRef::getMemberValue(const char * name) {
       return getMemberValue(var);
     }
   }
-  
+
   return NULL;
 }
 
@@ -210,7 +217,7 @@ int32_t ConstantObjectRef::getMemberValueAsInt(const char * name) {
   if (ConstantInteger * cint = dyn_cast_or_null<ConstantInteger>(value)) {
     return int32_t(cint->value()->getSExtValue());
   }
-  
+
   return 0;
 }
 

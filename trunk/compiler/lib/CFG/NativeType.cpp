@@ -33,7 +33,7 @@ NativePointerType * NativePointerType::create(Type * elemType) {
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
   
-  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.getName());
+  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativePointerType * np = new NativePointerType(elemType, tdef, tinst);
   tdef->setTypeValue(np);
   tdef->setSingular(elemType->isSingular());
@@ -59,7 +59,7 @@ void NativePointerType::initBuiltin() {
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
-  typedefn.setQualifiedName(typedefn.getName());
+  typedefn.setQualifiedName(typedefn.name());
 }
 
 const llvm::Type * NativePointerType::createIRType() const {
@@ -128,7 +128,7 @@ bool NativePointerType::isSubtype(const Type * other) const {
 }
 
 void NativePointerType::format(FormatStream & out) const {
-  out << "NativePointer<[" << elementType << "]>";
+  out << "NativePointer[" << elementType << "]";
 }
 
 // -------------------------------------------------------------------
@@ -151,7 +151,7 @@ NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
   
-  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.getName());
+  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativeArrayType * np = new NativeArrayType(elemType, sz, tdef, tinst);
   tdef->setTypeValue(np);
   tdef->setSingular(elemType->isSingular());
@@ -181,7 +181,7 @@ void NativeArrayType::initBuiltin() {
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
-  typedefn.setQualifiedName(typedefn.getName());
+  typedefn.setQualifiedName(typedefn.name());
 }
 
 const llvm::Type * NativeArrayType::createIRType() const {
@@ -236,7 +236,7 @@ bool NativeArrayType::isSubtype(const Type * other) const {
 }    
 
 void NativeArrayType::format(FormatStream & out) const {
-  out << "NativeArray<[" << elementType << ", " << size << "]>";
+  out << "NativeArray[" << elementType << ", " << size << "]";
 }
 
 } // namespace tart

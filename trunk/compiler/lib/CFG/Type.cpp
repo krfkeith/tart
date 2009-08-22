@@ -158,12 +158,12 @@ bool Type::isEqual(const Type * other) const {
 }
 
 bool Type::isVoidType() const {
-  return cls == Primitive && static_cast<const PrimitiveType *>(this)->getTypeId() == TypeId_Void;
+  return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Void;
 }
 
 bool Type::isUnsizedIntType() const {
   return cls == Primitive &&
-      static_cast<const PrimitiveType *>(this)->getTypeId() == TypeId_UnsizedInt;
+      static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
 }
 
 ConversionRank Type::convert(const Conversion & cn) const {
@@ -213,7 +213,7 @@ DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope)
   , defn_(de)
 {
   DASSERT(de != NULL);
-  setScopeName(de->getName());
+  setScopeName(de->name());
 }
 
   /** Return the number of type parameters of this type. */
@@ -344,11 +344,11 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
       const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
       const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
       
-      if (isIntegerType(p1->getTypeId()) && isIntegerType(p2->getTypeId())) {
-        bool isSignedResult = isSignedIntegerType(p1->getTypeId())
-            || isSignedIntegerType(p2->getTypeId());
-        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerType(p1->getTypeId()) ? 1 : 0);
-        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerType(p2->getTypeId()) ? 1 : 0);
+      if (isIntegerType(p1->typeId()) && isIntegerType(p2->typeId())) {
+        bool isSignedResult = isSignedIntegerType(p1->typeId())
+            || isSignedIntegerType(p2->typeId());
+        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerType(p1->typeId()) ? 1 : 0);
+        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerType(p2->typeId()) ? 1 : 0);
         int resultBits = std::max(type1Bits, type2Bits);
 
         if (isSignedResult) {

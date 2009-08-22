@@ -11,7 +11,7 @@ using namespace tart;
 TEST(ScopeTest, EmptyScope) {
   SymbolTable   testScope;
   
-  ASSERT_EQ(0u, testScope.getCount());
+  ASSERT_EQ(0u, testScope.count());
 }
 
 TEST(ScopeTest, IterableScope) {
@@ -19,8 +19,8 @@ TEST(ScopeTest, IterableScope) {
   
   VariableDefn var0(VariableDefn::Var, NULL, "var0");
   testScope.add(&var0);
-  ASSERT_EQ(&var0, testScope.findSymbol(var0.getName())->front());
-  ASSERT_EQ(1u, testScope.getCount());
+  ASSERT_EQ(&var0, testScope.findSymbol(var0.name())->front());
+  ASSERT_EQ(1u, testScope.count());
 }
 
 TEST(ScopeTest, LargeScope) {
@@ -37,14 +37,14 @@ TEST(ScopeTest, LargeScope) {
         new VariableDefn(VariableDefn::Var, NULL, names[i]);
     decls[i] = v;
     testScope.add(decls[i]);
-    ASSERT_EQ(decls[i], testScope.findSymbol(decls[i]->getName())->front());
+    ASSERT_EQ(decls[i], testScope.findSymbol(decls[i]->name())->front());
   }
   
   for (int i = 0; i < 32; ++i) {
-    ASSERT_EQ(decls[i], testScope.findSymbol(decls[i]->getName())->front());
+    ASSERT_EQ(decls[i], testScope.findSymbol(decls[i]->name())->front());
   }
   
-  ASSERT_EQ(32u, testScope.getCount());
+  ASSERT_EQ(32u, testScope.count());
 }
 
 #if 0
@@ -59,7 +59,7 @@ TEST(ScopeTest, BlockScope) {
   childScope.addMember(&cvar);
   
   // TODO: Redo this test.
-  //ASSERT_EQ(&pvar, childScope.findMember(pvar.getName())->front());
-  //ASSERT_EQ(&cvar, childScope.findMember(cvar.getName())->front());
+  //ASSERT_EQ(&pvar, childScope.findMember(pvar.name())->front());
+  //ASSERT_EQ(&cvar, childScope.findMember(cvar.name())->front());
 }
 #endif

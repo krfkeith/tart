@@ -1,0 +1,36 @@
+/// TEST MissingMethod: lacks implementation
+public final class Test : Iterable<[String]> {
+}
+
+/// TEST BadOverrideType: lacks implementation
+public final class Test : Iterable<[String]> {
+  def iterate -> void {}
+}
+
+/// TEST BadOverrideType: lacks implementation
+public final class Test : Iterable<[String]> {
+  def iterate (i:int) -> void {}
+}
+
+/// TEST CannotInheritFromFinalType: is final
+public final class Test : String {
+  def construct() {}
+}
+
+/// TEST BadBaseForStruct: struct can only derive from a struct
+public final struct Test : Object {}
+
+/// TEST BadBaseForInterface: interface can only inherit
+public final interface Test : Object {}
+
+/// TEST NonSingularBase: is a template
+public final class Test : Array {}
+
+/// TEST PrimitiveBase: Cannot inherit from int
+public final class Test : int {}
+
+/// TEST CircularInheritance: Circular
+public class Test : Test {}
+
+/// TEST MultipleInheritance: single concrete
+public class Test : Exception, Exception {}

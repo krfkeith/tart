@@ -52,9 +52,8 @@ public:
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   
-private:
+protected:
   void visitExprArgs(ArglistExpr * in);
-  
 };
 
 } // namespace tart

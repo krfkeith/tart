@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/EnumAnalyzer.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -40,7 +40,7 @@ bool EnumAnalyzer::analyzeEnum() {
   if (!target_->beginPass(Pass_CreateMembers)) {
     return true;
   }
-  
+
   EnumType * enumType = cast<EnumType>(target_->getTypeValue());
   if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
     // Don't evaluate the attributes if the parent class is Attribute, because that creates
@@ -70,7 +70,7 @@ bool EnumAnalyzer::analyzeEnum() {
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
       intValueType_ = cast<PrimitiveType>(baseType);
-      if (intValueType_ == NULL || !isIntegerType(intValueType_->getTypeId())) {
+      if (intValueType_ == NULL || !isIntegerType(intValueType_->typeId())) {
         diag.fatal(ast) << "Enumerations can only derive from integer types.";
         return false;
       }
@@ -115,7 +115,7 @@ bool EnumAnalyzer::analyzeEnum() {
 
 bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   DefnList dlist;
-  if (activeScope->lookupMember(ast->getName(), dlist, false)) {
+  if (activeScope->lookupMember(ast->name(), dlist, false)) {
     diag.error(ast) << "Definition of '" << ast << "' conflicts with earlier definition";
     diag.info(dlist.front()) << "defined here.";
     return false;
@@ -132,11 +132,11 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
     if (isErrorResult(enumValue)) {
       return false;
     }
-    
+
     if (!isa<ConstantInteger>(enumValue)) {
       diag.fatal(ast) << "Not an integer constant " << enumValue;
     }
-    
+
     value = ConstantInteger::get(ast->location(), enumType,
         static_cast<ConstantInteger *>(enumValue)->value());
     assert(value->value() != NULL);
@@ -153,7 +153,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
       if (isFlags) {
         // TODO: Also want to mask out any low-order bits.
         if (irVal->isNullValue()) {
-          irVal = llvm::ConstantInt::get(irType, 1);
+          irVal = llvm::ConstantInt::get(cast<llvm::IntegerType>(irType), 1, true);
         } else {
           irVal = cast<llvm::ConstantInt>(
               llvm::ConstantExpr::getShl(irVal, llvm::ConstantInt::get(irType, 1)));
@@ -193,7 +193,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
       }
     }
   }
-  
+
   return true;
 }
 

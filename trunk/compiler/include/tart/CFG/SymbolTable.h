@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_SYMBOLTABLE_H
 #define TART_CFG_SYMBOLTABLE_H
 
@@ -14,66 +14,72 @@
 #include <llvm/ADT/SmallVector.h>
 
 namespace tart {
-    
+
 /// -------------------------------------------------------------------
 /// Mapping of names to definitions
 class SymbolTable {
 public:
   typedef llvm::SmallVector<Defn *, 4> Entry;
-
-private:
   typedef llvm::StringMap<Entry> decl_map_t;
-
-  // Map of declarations by name
-  decl_map_t map;
-  
-public:
   typedef decl_map_t::iterator iterator;
-  
+
   SymbolTable() {}
   virtual ~SymbolTable() {}
-  
+
   /** Add a new declaration to this scope. */
   SymbolTable::Entry * add(Defn * d);
-  
+
   /** Get the count of items in the scope */
-  size_t getCount() const { return map.size(); }
+  size_t count() const { return map_.size(); }
 
   /** Find a declaration by name */
   const Entry * findSymbol(const char * key) const {
-    decl_map_t::const_iterator it = map.find(key, key + strlen(key));
-    if (it != map.end()) {
+    decl_map_t::const_iterator it = map_.find(llvm::StringRef(key));
+    if (it != map_.end()) {
       return &it->second;
     } else {
       return NULL;
     }
   }
-  
-  iterator begin() { return map.begin(); }
-  iterator end() { return map.end(); }
-  
+
+  iterator begin() { return map_.begin(); }
+  iterator end() { return map_.end(); }
+
+  /** Clear the symbol table. */
+  void clear() { map_.clear(); }
+
   /** GC trace function */
   void trace() const;
 
   /** Debugging helper function. */
   void getDebugSummary(std::string & out) const;
+
+private:
+
+  // Map of declarations by name
+  decl_map_t map_;
 };
 
 /// -------------------------------------------------------------------
 /// Mapping of names to declarations
 class OrderedSymbolTable : public SymbolTable {
-private:
-  Defn * firstSymbol;
-  Defn * lastSymbol;
-  
 public:
-  OrderedSymbolTable() : firstSymbol(NULL), lastSymbol(NULL) {}
-  
+  OrderedSymbolTable() : first_(NULL), last_(NULL) {}
+
+  void clear() {
+    SymbolTable::clear();
+    first_ = last_ = NULL;
+  }
+
   /** Add a new declaration to this scope. */
   SymbolTable::Entry * add(Defn * d);
-  
+
   /** Get the first decl in the list by order. */
-  Defn * first() const { return firstSymbol; }
+  Defn * first() const { return first_; }
+
+private:
+  Defn * first_;
+  Defn * last_;
 };
 
 }
