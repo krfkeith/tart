@@ -12,7 +12,7 @@ namespace Memory {
   */
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
-  def addressOf[%VarType](value:VarType) -> NativePointer<[VarType]>;
+  def addressOf[%VarType](value:VarType) -> NativePointer[VarType];
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
@@ -20,7 +20,7 @@ namespace Memory {
    */
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
-  def ptrDiff[%ValTy](first:NativePointer<[ValTy]>, last:NativePointer<[ValTy]>) -> int;
+  def ptrDiff[%ValTy](first:NativePointer[ValTy], last:NativePointer[ValTy]) -> int;
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if

@@ -136,8 +136,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() >= ASTNode::DefFirst &&
-        e->getNodeType() <= ASTNode::DefLast;
+      return e->nodeType() >= ASTNode::DefFirst && e->nodeType() <= ASTNode::DefLast;
   }
 };
 
@@ -156,7 +155,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTNamespace *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Namespace;
+      return e->nodeType() == ASTNode::Namespace;
   }
 };
 
@@ -184,8 +183,8 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTTypeDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() >= ASTNode::Class &&
-          e->getNodeType() <= ASTNode::Enum;
+      return e->nodeType() >= ASTNode::Class &&
+          e->nodeType() <= ASTNode::Enum;
   }
 };
 
@@ -220,9 +219,9 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTVarDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Let ||
-          e->getNodeType() == ASTNode::Var ||
-          e->getNodeType() == ASTNode::Param;
+      return e->nodeType() == ASTNode::Let ||
+          e->nodeType() == ASTNode::Var ||
+          e->nodeType() == ASTNode::Param;
   }
 };
 
@@ -276,8 +275,8 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTPropertyDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Prop ||
-          e->getNodeType() == ASTNode::Idx;
+      return e->nodeType() == ASTNode::Prop ||
+          e->nodeType() == ASTNode::Idx;
   }
 };
 
@@ -321,8 +320,8 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTFunctionDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Function ||
-          e->getNodeType() == ASTNode::Macro;
+      return e->nodeType() == ASTNode::Function ||
+          e->nodeType() == ASTNode::Macro;
   }
 };
 
@@ -347,7 +346,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTParameter *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Param;
+      return e->nodeType() == ASTNode::Param;
   }
 };
 
@@ -370,7 +369,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTPatternVar *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::PatternVar;
+      return e->nodeType() == ASTNode::PatternVar;
   }
 };
 
@@ -408,7 +407,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTTemplate *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Template;
+      return e->nodeType() == ASTNode::Template;
   }
 };
 

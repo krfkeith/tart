@@ -25,7 +25,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
   }
 
   const SourceLocation & loc = ast->getLocation();
-  switch (ast->getNodeType()) {
+  switch (ast->nodeType()) {
     case ASTNode::Id: 
     case ASTNode::Member:
     case ASTNode::Specialize: {
@@ -124,7 +124,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     default:
       diag.fatal(ast) << "invalid node type " <<
-          getNodeTypeName(ast->getNodeType());
+          getNodeTypeName(ast->nodeType());
       DFAIL("Unsupported node type");
   }
 }

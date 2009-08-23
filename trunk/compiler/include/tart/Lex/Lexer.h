@@ -20,16 +20,16 @@ namespace tart {
 class Lexer {
 private:
   // Source file containing the buffer
-  ProgramSource     * srcFile;        // Pointer to source file buffer
-  std::istream      & stream;         // Input stream
-  int                 ch;             // Previously read char.
-  size_t              currentOffset;  // Current char count in file
-  size_t              lineStartOffset;// Read position at line start
-  size_t              tokenStartOffset;// Start position of current token
-  SourceLocation      tokenLocation;  // Start source location of current token
-  std::string         tokenValue;     // String value of token
-  std::string         docComment_; // Accumulated doc comment
-  uint16_t            lineIndex;      // Current line index
+  ProgramSource     * srcFile;          // Pointer to source file buffer
+  std::istream      & stream;           // Input stream
+  int                 ch;               // Previously read char.
+  size_t              currentOffset;    // Current char count in file
+  size_t              lineStartOffset;  // Read position at line start
+  size_t              tokenStartOffset; // Start position of current token
+  SourceLocation      tokenLocation_;   // Start source location of current token
+  std::string         tokenValue;       // String value of token
+  std::string         docComment_;      // Accumulated doc comment
+  uint16_t            lineIndex;        // Current line index
   
   // Read the next character.
   void readCh();
@@ -50,9 +50,9 @@ public:
   const std::string & getTokenValue() const { return tokenValue; }
 
   /** Location of the token in the source file. */
-  const SourceLocation & getTokenLocation() {
-    tokenLocation.end = currentOffset;
-    return tokenLocation;
+  const SourceLocation & tokenLocation() {
+    tokenLocation_.end = currentOffset;
+    return tokenLocation_;
   }
 
   /** Get the current accumulated doc comment for this token. */

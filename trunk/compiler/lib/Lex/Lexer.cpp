@@ -184,9 +184,9 @@ Lexer::Lexer(ProgramSource * src)
     , stream(src->open()) {
   readCh();
   lineStartOffset = tokenStartOffset = currentOffset = 0;
-  tokenLocation.file = srcFile->get();
-  tokenLocation.begin = 0;
-  tokenLocation.end = 0;
+  tokenLocation_.file = srcFile->get();
+  tokenLocation_.begin = 0;
+  tokenLocation_.end = 0;
   lineIndex = 1;
 }
 
@@ -302,7 +302,7 @@ TokenType Lexer::next() {
   }
 
   tokenStartOffset = currentOffset;
-  tokenLocation.begin = currentOffset;
+  tokenLocation_.begin = currentOffset;
 
   // Identifier
   if (isNameStartChar(ch)) {
@@ -539,10 +539,6 @@ TokenType Lexer::next() {
         readCh();
         return Token_PossLess;
       }
-      if (ch == '[') {
-        readCh();
-        return Token_BeginTmplArgs;
-      }
       if (ch == '<') {
         readCh();
         if (ch == '=') {
@@ -583,10 +579,6 @@ TokenType Lexer::next() {
 
     case ']':
       readCh();
-      if (ch == '>') {
-        readCh();
-        return Token_EndTmplArgs;
-      }
       return Token_RBracket;
 
     case '(':

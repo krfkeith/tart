@@ -62,7 +62,7 @@ Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
 }
 
 Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
-  switch (ast->getNodeType()) {
+  switch (ast->nodeType()) {
     case ASTNode::Null:
       return reduceNull(ast, expected);
 
@@ -126,13 +126,13 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
 
     default:
       diag.fatal(ast) << "Unimplemented expression type: '" <<
-        getNodeTypeName(ast->getNodeType()) << "'";
+        getNodeTypeName(ast->nodeType()) << "'";
       DFAIL("Unimplemented");
   }
 }
 
 Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
-  switch (ast->getNodeType()) {
+  switch (ast->nodeType()) {
   case ASTNode::Id:
   case ASTNode::Member:
     return callName(ast->getLocation(), ast, ASTNodeList(), NULL);
@@ -141,7 +141,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
     const ASTCall * call = static_cast<const ASTCall *>(ast);
     const ASTNode * callable = call->getFunc();
     const ASTNodeList & args = call->args();
-    if (callable->getNodeType() == ASTNode::Id || callable->getNodeType() == ASTNode::Member) {
+    if (callable->nodeType() == ASTNode::Id || callable->nodeType() == ASTNode::Member) {
       return callName(call->getLocation(), callable, args, NULL);
     }
 
@@ -346,7 +346,7 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lvalue,
 }
 
 Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast, Type * expected) {
-  bool invert = (ast->getNodeType() == ASTNode::IsNot);
+  bool invert = (ast->nodeType() == ASTNode::IsNot);
   Expr * first = reduceExpr(ast->arg(0), NULL);
   Expr * second = reduceExpr(ast->arg(1), NULL);
 
@@ -367,7 +367,7 @@ Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast, Type * expected)
 }
 
 Expr * ExprAnalyzer::reduceContainsTest(const ASTOper * ast, Type * expected) {
-  bool invert = (ast->getNodeType() == ASTNode::NotIn);
+  bool invert = (ast->nodeType() == ASTNode::NotIn);
 
   DFAIL("Implement");
 }
@@ -441,7 +441,7 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast, Type * expected) {
 }
 
 Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, Type * expected, bool store) {
-  if (ast->getNodeType() == ASTNode::GetElement) {
+  if (ast->nodeType() == ASTNode::GetElement) {
     return reduceElementRef(static_cast<const ASTOper *>(ast), expected, store);
   } else {
     return reduceSymbolRef(ast, expected);
@@ -507,24 +507,61 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, Type * expected) {
 
 Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, Type * expected, bool store) {
   // TODO: We might want to support more than 1 array index.
-  DASSERT_OBJ(ast->count() == 2, ast);
-  Expr * arrayExpr = reduceExpr(ast->arg(0), NULL);
+  DASSERT_OBJ(ast->count() >= 1, ast);
+  if (ast->count() == 1) {
+    Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
+    if (ConstantType * elementType = dyn_cast_or_null<ConstantType>(elementExpr)) {
+      return new ConstantType(ast->location(), getArrayTypeForElement(elementType->value()));
+    }
+
+    diag.error(ast) << "Type expression expected before []";
+    return &Expr::ErrorVal;
+  }
+
+  // If it's a name, see if it's a specializable name.
+  const ASTNode * base = ast->arg(0);
+  Expr * arrayExpr;
+  if (base->nodeType() == ASTNode::Id || base->nodeType() == ASTNode::Member) {
+    ExprList values;
+    lookupName(values, base);
+
+    if (values.size() == 0) {
+      diag.error(base) << "Undefined symbol " << base;
+      diag.writeLnIndent("Scopes searched:");
+      dumpScopeHierarchy();
+      return &Expr::ErrorVal;
+    } else {
+      ASTNodeList args;
+      args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
+      Expr * specResult = resolveSpecialization(ast->location(), values, args);
+      if (specResult != NULL) {
+        return specResult;
+      }
+
+      if (values.size() > 1) {
+        diag.error(base) << "Multiply defined symbol " << base;
+        return &Expr::ErrorVal;
+      }
+
+      arrayExpr = values.front();
+      if (LValueExpr * lval = dyn_cast<LValueExpr>(arrayExpr)) {
+        arrayExpr = reduceLValueExpr(lval, expected);
+      } else {
+        diag.error(base) << "Expression " << base << " is neither an array type nor a template";
+        return &Expr::ErrorVal;
+      }
+    }
+  } else {
+    // TODO: We might want to support more than 1 array index.
+    DASSERT_OBJ(ast->count() == 2, ast);
+    arrayExpr = reduceExpr(base, NULL);
+  }
+
   if (isErrorResult(arrayExpr)) {
     return &Expr::ErrorVal;
   }
 
-  // An expression of the form Type[N] is an array constructor.
-  if (ConstantType * typeExpr = dyn_cast<ConstantType>(arrayExpr)) {
-#if OLD
-    if (indexOp->getOperandCount() != 2) {
-      diag.fatal(indexOp->getLocation(), "Incorrect number of array dimensions");
-    }
-#endif
-    TypeDefn * arrayType = getArrayTypeForElement(typeExpr->value())->typeDefn();
-    ASTNodeList cargs;
-    cargs.push_back(ast->args()[1]);
-    return callConstructor(ast->getLocation(), arrayType->asExpr(), cargs);
-  }
+  // What we want is to determine whether or not the expression is a template. Or even a type.
 
   Type * arrayType = dealias(arrayExpr->getType());
   DASSERT_OBJ(arrayType != NULL, arrayExpr);
@@ -574,6 +611,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, Type * expected, bool
 
   // See if the type has any indexers defined.
   DefnList indexers;
+  if (arrayType->typeDefn() != NULL) {
+    if (!AnalyzerBase::analyzeTypeDefn(arrayType->typeDefn(), Task_PrepMemberLookup)) {
+      return &Expr::ErrorVal;
+    }
+  }
+
   if (arrayType->memberScope() == NULL ||
       !arrayType->memberScope()->lookupMember(istrings.idIndex, indexers, true)) {
     diag.fatal(ast) << "Type " << arrayType << " does not support element reference operator";

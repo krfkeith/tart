@@ -42,8 +42,8 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const Stmt *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() >= ASTNode::StmtFirst &&
-          e->getNodeType() <= ASTNode::StmtLast;
+      return e->nodeType() >= ASTNode::StmtFirst &&
+          e->nodeType() <= ASTNode::StmtLast;
   }
 };
 
@@ -88,7 +88,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const BlockStmt *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->getNodeType() == ASTNode::Block;
+      return e->nodeType() == ASTNode::Block;
   }
 };
 

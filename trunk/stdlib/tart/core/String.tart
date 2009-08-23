@@ -2,7 +2,7 @@ import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
 
 /** The built-in string class. Strings are immutable. */
- /* : public Iterable<[char]> */
+ /* : public Iterable[char] */
 public final class String {
   /** The length of the string, in bytes. */
   readonly var length:int;
@@ -14,17 +14,17 @@ public final class String {
     var source:String;
     
     /** The pointer to the starting byte. */
-    var start:NativePointer<[NativeArray<[ubyte, 0]>]>;
+    var start:NativePointer[NativeArray[ubyte, 0]];
     
     /** For non-slice strings, this is the array of bytes immediately
         following the string instance in memory. */
-    var data:NativeArray<[ubyte, 0]>;
+    var data:NativeArray[ubyte, 0];
 
     /** Custom allocation function for strings. */
     //[RequireFeature]
     static def alloc(length:int) {
       // The 'offsetof' trick for calculating the size.
-      let s:String = __pvalloc(zeroPtr<[String]>().data[length]);
+      let s:String = __pvalloc(zeroPtr[String]().data[length]);
       s.length = length;
       s.source = s;
       s.start = addressOf(s.data);
@@ -45,7 +45,7 @@ public final class String {
 
   /** Construct a string from a native byte array. */
   @LinkageName("String_create")
-  static def create(bytes:NativePointer<[NativeArray<[ubyte, 0]>]>, length:int) -> String {
+  static def create(bytes:NativePointer[NativeArray[ubyte, 0]], length:int) -> String {
     let self = alloc(length);
     // TODO: Test
     // TODO: Need for array copy to work with non-native arrays I guess.

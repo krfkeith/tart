@@ -66,7 +66,12 @@ protected:
   bool findInScope(ExprList & out, const char * name, Scope * scope,
       Expr * context, const SourceLocation & loc);
 
-  // Lookup helper function that attempts to load a module from 'path'.
+  // Given a list of expressions, find which ones are LValues that have template parameters,
+  // and attempt to specialize those templates.
+  Expr * resolveSpecialization(const SourceLocation & loc, const ExprList & exprs,
+      const ASTNodeList & args);
+
+    // Lookup helper function that attempts to load a module from 'path'.
   bool importName(ExprList & out, const std::string & path, const SourceLocation & loc);
 
   // Create a reference to a definition.

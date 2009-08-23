@@ -5,7 +5,7 @@ interface List[%ElementType] {
   def add(e:ElementType);
 
   /** Iterate through the elements in the list. */
-  def iterate -> Iterable<[ElementType]>;
+  def iterate -> Iterable[ElementType];
 
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }

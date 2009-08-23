@@ -34,7 +34,7 @@ def stringGetCharTest() {
 }
 
 def stringFromArrayTest() {
-  let a = ubyte[0]; // Zero-length array
+  let a = ubyte[](0); // Zero-length array
   let s = String(a);
   Debug.assertTrue(s == "");
 }

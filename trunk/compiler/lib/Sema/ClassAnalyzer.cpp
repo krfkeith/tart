@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/ClassAnalyzer.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
@@ -19,7 +19,7 @@
 namespace tart {
 
 static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
-    
+
 static const DefnPasses PASS_SET_LOOKUP = DefnPasses::of(
   Pass_CreateMembers,
   Pass_ResolveBaseTypes
@@ -53,7 +53,7 @@ ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
 bool ClassAnalyzer::analyze(AnalysisTask task) {
   // Work out what passes need to be run.
   DefnPasses passesToRun;
-  
+
   // Skip analysis of templates - for now.
   if (target->isTemplate()) {
     // Get the template scope and set it as the active scope.
@@ -65,7 +65,7 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
     case Task_PrepMemberLookup:
       addPasses(target, passesToRun, PASS_SET_LOOKUP);
       break;
-    
+
     case Task_PrepCallOrUse:
       addPasses(target, passesToRun, PASS_SET_CONSTRUCTION);
       break;
@@ -78,7 +78,7 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
     case Task_InferType:
       break;
   }
-  
+
   if (passesToRun.empty()) {
     return true;
   }
@@ -88,11 +88,11 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
     return false;
   }
-  
+
   if (passesToRun.contains(Pass_AnalyzeFields) && !analyzeFields()) {
     return false;
   }
-  
+
   if (passesToRun.contains(Pass_AnalyzeConstructors) && !analyzeConstructors()) {
     return false;
   }
@@ -100,11 +100,11 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   if (passesToRun.contains(Pass_AnalyzeMethods) && !analyzeMethods()) {
     return false;
   }
-  
+
   if (passesToRun.contains(Pass_ResolveOverloads) && !analyzeOverloading()) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -118,12 +118,18 @@ bool ClassAnalyzer::analyzeBaseClasses() {
     return true;
   }
 
+  bool result = analyzeBaseClassesImpl();
+  target->finishPass(Pass_ResolveBaseTypes);
+  return result;
+}
+
+bool ClassAnalyzer::analyzeBaseClassesImpl() {
+
   // If there is no AST, then it means that this class was created
   // internally by the compiler, in which case the compiler is responsible
   // for setting up the base class list correctly.
   const ASTTypeDecl * ast = cast_or_null<const ASTTypeDecl>(target->getAST());
   if (ast == NULL) {
-    target->finishPass(Pass_ResolveBaseTypes);
     return true;
   }
 
@@ -152,11 +158,11 @@ bool ClassAnalyzer::analyzeBaseClasses() {
       diag.error(*it) << "Base type '" << baseDefn << "' is a template, not a type";
       return false;
     }
-    
+
     if (baseDefn->isFinal()) {
       diag.error(*it) << "Base type '" << baseDefn << "' is final";
     }
-    
+
     // Recursively analyze the bases of the base
     if (!ClassAnalyzer(baseDefn).analyze(Task_PrepMemberLookup)) {
       return false;
@@ -173,7 +179,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
             diag.error(target) << "classes can only have a single concrete supertype";
           }
         } else if (baseKind != Type::Interface) {
-          diag.fatal(target) << (Defn *)target <<
+          diag.error(target) << (Defn *)target <<
               "a class can only inherit from class or interface";
         }
         break;
@@ -185,7 +191,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
         } else if (primaryBase == NULL) {
           isPrimary = true;
         } else {
-          diag.fatal(target) << "structs can only have a single concrete supertype";
+          diag.error(target) << "structs can only have a single concrete supertype";
         }
         break;
 
@@ -231,8 +237,7 @@ bool ClassAnalyzer::analyzeBaseClasses() {
     // Supertype counts as 1 field.
     //type->setFieldCount(1);
   }
-  
-  target->finishPass(Pass_ResolveBaseTypes);
+
   return true;
 }
 
@@ -262,7 +267,7 @@ bool ClassAnalyzer::analyzeFields() {
 
           analyzeValueDefn(field, Task_PrepCodeGeneration);
           DASSERT(field->getType() != NULL);
-        
+
           bool isStorageRequired = true;
           if (field->defnType() == Defn::Let) {
             if (field->initValue() != NULL && field->initValue()->isConstant()) {
@@ -270,7 +275,7 @@ bool ClassAnalyzer::analyzeFields() {
               isStorageRequired = false;
             }
           }
-        
+
           if (isStorageRequired) {
             if (type->typeClass() == Type::Interface) {
               diag.error(field) << "Data member not allowed in interface: " << field;
@@ -285,10 +290,10 @@ bool ClassAnalyzer::analyzeFields() {
               type->staticFields_.push_back(field);
             }
           }
-          
+
           break;
         }
-        
+
         case Defn::Typedef:
         case Defn::Namespace: {
           //DFAIL("Implement");
@@ -296,7 +301,7 @@ bool ClassAnalyzer::analyzeFields() {
         }
       }
     }
-    
+
     DASSERT(type->instanceFields_.size() == instanceFieldCount);
     target->finishPass(Pass_AnalyzeFields);
   }
@@ -325,7 +330,7 @@ bool ClassAnalyzer::analyzeConstructors() {
         for (DefnList::iterator it = ctors.begin(); it != ctors.end(); ++it) {
           if (FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
-            
+
             hasConstructor = true;
             ctor->addTrait(Defn::Ctor);
 
@@ -336,7 +341,7 @@ bool ClassAnalyzer::analyzeConstructors() {
             if (ctor->returnType() == NULL) {
               ctor->functionType()->setReturnType(&VoidType::instance);
             }
-            
+
             if (!ctor->returnType()->isVoidType()) {
               diag.fatal(ctor) << "Constructor cannot declare a return type.";
               break;
@@ -378,7 +383,7 @@ bool ClassAnalyzer::analyzeConstructors() {
           }
         }
       }
-      
+
       if (!hasConstructor) {
         //diag.debug(target) << "Creating default constructor for " << target;
         createDefaultConstructor();
@@ -399,7 +404,7 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
     for (BlockList::iterator blk = blocks.begin(); blk != blocks.end(); ++blk) {
       ExprList & exprs = (*blk)->exprs();
       for (ExprList::iterator e = exprs.begin(); e != exprs.end(); ++e) {
-        //if (e->exprType() == 
+        //if (e->exprType() ==
       }
     }
   }
@@ -435,7 +440,7 @@ bool ClassAnalyzer::analyzeOverloading() {
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
       analyzeDefn((*it)->typeDefn(), Task_PrepCodeGeneration);
     }
-    
+
     copyBaseClassMethods();
     createInterfaceTables();
     overrideMembers();
@@ -603,7 +608,7 @@ void ClassAnalyzer::addNewMethods() {
         }
       } else if (dt == Defn::Property || dt == Defn::Indexer) {
         PropertyDefn * prop = static_cast<PropertyDefn *>(de);
-        
+
         FunctionDefn * getter = prop->getter();
         if (getter != NULL && !getter->isFinal() & !getter->isOverride()) {
           getter->setDispatchIndex(type->instanceMethods_.size());
@@ -622,7 +627,7 @@ void ClassAnalyzer::addNewMethods() {
 
 void ClassAnalyzer::checkForRequiredMethods() {
   typedef CompositeType::InterfaceList InterfaceList;
-  
+
   if (target->isAbstract()) {
     return;
   }
@@ -730,29 +735,29 @@ void ClassAnalyzer::overridePropertyAccessor(MethodList & table, FunctionDefn * 
 bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
   FunctionType * ft0 = f0->functionType();
   FunctionType * ft1 = f1->functionType();
-  
+
   DASSERT_OBJ(ft0->returnType() != NULL, f0);
   DASSERT_OBJ(ft1->returnType() != NULL, f1);
   if (!ft0->returnType()->isEqual(ft1->returnType())) {
     return false;
   }
-  
+
   if (ft0->params().size() != ft1->params().size()) {
     return false;
   }
-  
+
   for (size_t i = 0; i < ft0->params().size(); ++i) {
     ParameterDefn * p0 = ft0->params()[i];
     ParameterDefn * p1 = ft1->params()[i];
-    
+
     DASSERT_OBJ(p0->getType() != NULL, p0);
     DASSERT_OBJ(p1->getType() != NULL, p1);
-  
+
     if (!p0->getType()->isEqual(p1->getType())) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -796,7 +801,7 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
 
     const Type * baseArgType = baseArg->getType();
     const Type * funcArgType = funcArg->getType();
-    
+
     if (!baseArgType->isEqual(funcArgType)) {
       switch (baseArg->variance()) {
         case Invariant:
@@ -864,7 +869,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
       if (de->defnType() == Defn::Let) {
         VariableDefn * let = static_cast<VariableDefn *>(de);
         //analyze(let);
-        
+
         // TODO: Write tests for this case (instance lets)
         if (let->initValue() != NULL) {
           // We need a better way to designate which lets require runtime init.
@@ -904,7 +909,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           } else {
             requiredParams.push_back(param);
           }
-          
+
           initVal = new LValueExpr(target->getLocation(), NULL, param);
         } else {
           if (defaultValue != NULL) {
@@ -956,20 +961,20 @@ bool ClassAnalyzer::createDefaultConstructor() {
   //constructorDef->setBody(constructorBody);
   if (target->isSingular()) {
     constructorDef->addTrait(Defn::Singular);
-    
+
     // If it's synthetic, then don't add the constructor unless someone
     // actually calls it.
     if (!target->isSynthetic()) {
       module->addSymbol(constructorDef);
     }
   }
-  
+
   DASSERT_OBJ(constructorDef->isSingular(), constructorDef);
   if (!funcType->isSingular()) {
     diag.fatal(target) << "Default constructor type " << funcType << " is not singular";
     funcType->whyNotSingular();
   }
-  
+
   type->addMember(constructorDef);
   constructorDef->createQualifiedName(target);
   return true;

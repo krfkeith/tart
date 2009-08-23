@@ -40,7 +40,7 @@ bool OperatorStack::reduce(int32_t operatorPrec, bool rightAssoc) {
     if (back.operatorPrec < operatorPrec)
       break;
     ASTNode * eop = back.operatorExp;
-    ASTNodeList & args = eop->getNodeType() == ASTNode::Call ?
+    ASTNodeList & args = eop->nodeType() == ASTNode::Call ?
         static_cast<ASTCall *>(eop)->args() :
         static_cast<ASTOper *>(eop)->args();
     ASTNode * val = back.operand;

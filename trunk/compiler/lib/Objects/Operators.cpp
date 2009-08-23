@@ -425,9 +425,9 @@ PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
 static SourceString infixEqSrc(
     " @Intrinsic"
-    " def infixEQ[%T](:NativePointer<[T]>, :NativePointer<[T]>) -> bool;"
+    " def infixEQ[%T](:NativePointer[T], :NativePointer[T]) -> bool;"
     " @Intrinsic"
-    " def infixNE[%T](:NativePointer<[T]>, :NativePointer<[T]>) -> bool;");
+    " def infixNE[%T](:NativePointer[T], :NativePointer[T]) -> bool;");
 
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");

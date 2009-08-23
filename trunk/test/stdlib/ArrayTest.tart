@@ -6,28 +6,28 @@ def main(args:String[]) -> int {
 }
 
 def testZeroLengthArray() {
-  let a = int[0];
+  let a = int[](0);
   Debug.assertTrue(a.isEmpty);
   Debug.assertTrue(a.length == 0);
 }
 
 def testSimpleArray() {
-  let a = int[5];
+  let a = int[](5);
   Debug.assertFalse(a.isEmpty);
   Debug.assertEq(5, a.length);
 
   a[0] = 22;
   Debug.assertEq(22, a[0]);
 
-  let b = Array<[int]>(5);
+  let b = Array[int](5);
   Debug.assertFalse(b.isEmpty);
   Debug.assertEq(5, b.length);
 
-  //let c:Array<[int]> = Array(5);
+  //let c:Array[int] = Array(5);
   //Debug.assertFalse(c.isEmpty);
   //Debug.assertTrue(c.length == 5);
 
-  let d = Array<[String]>(5);
+  let d = Array[String](5);
   Debug.assertFalse(d.isEmpty);
   Debug.assertEq(5, d.length);
 }

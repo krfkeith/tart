@@ -37,7 +37,7 @@ void ASTTypeDecl::trace() const {
 }
 
 void ASTTypeDecl::format(FormatStream & out) const {
-  switch (getNodeType()) {
+  switch (nodeType()) {
     case Class:
       out << "class ";
       break;
@@ -70,7 +70,7 @@ void ASTVarDecl::trace() const {
 }
 
 void ASTVarDecl::format(FormatStream & out) const {
-  switch (getNodeType()) {
+  switch (nodeType()) {
     case Let:
       out << "let ";
       break;
@@ -126,7 +126,7 @@ void ASTFunctionDecl::trace() const {
 }
 
 void ASTFunctionDecl::format(FormatStream & out) const {
-  switch (nodeType) {
+  switch (nodeType_) {
     case AnonFn:
       out << "fn ";
       break;
@@ -151,7 +151,7 @@ void ASTFunctionDecl::format(FormatStream & out) const {
     out << " -> " << returnType_;
   }
   
-  if (nodeType != AnonFn) {
+  if (nodeType_ != AnonFn) {
     if (body) {
       out << body;
     }

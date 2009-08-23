@@ -235,10 +235,10 @@ TEST_F(LexerTest, Location) {
 
   EXPECT_EQ(Token_Ident, lex.next());
   
-  EXPECT_EQ(5u, lex.getTokenLocation().begin);
-  EXPECT_EQ(10u, lex.getTokenLocation().end);
+  EXPECT_EQ(5u, lex.tokenLocation().begin);
+  EXPECT_EQ(10u, lex.tokenLocation().end);
   
-  TokenPosition tl = src.getTokenPosition(lex.getTokenLocation());
+  TokenPosition tl = src.getTokenPosition(lex.tokenLocation());
   EXPECT_EQ(2u, tl.beginLine);
   EXPECT_EQ(3u, tl.beginCol);
   EXPECT_EQ(2u, tl.endLine);

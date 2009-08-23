@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_PARSE_PARSER_H
 #define TART_PARSE_PARSER_H
 
@@ -18,7 +18,7 @@ namespace tart {
 class Module;
 
 /// -------------------------------------------------------------------
-/// Parser class 
+/// Parser class
 class Parser {
 private:
   Module          * module;         // The module we're parsing.
@@ -28,28 +28,28 @@ private:
   int               templateNesting;// template nesting level
   bool              recover;        // In error recovery state.
   ASTFunctionDecl * function;       // Current function being parsed.
-  
+
   /** Read the next token. */
   void next();
-  
+
   /** Match a token. */
   bool match(TokenType tok);
 
   /** Match an identifier. */
   const char * matchIdent();
-  
+
   /** Skip until we find an open brace or bracket */
   void skipToNextOpenDelim();
 
   /** Skip until we find an open brace or bracket, or the specified token */
   void skipToRParen();
-  
+
   /** Error message functions. */
   void unexpectedToken();
-  
+
   /** Error message that indicates we expected something else here. */
   void expected(const char * what);
-  
+
   /** Various error messages. */
   void expectedImportPath();
   void expectedDeclaration();
@@ -59,11 +59,11 @@ private:
   void expectedIdentifier();
   void expectedCloseParen();
   void expectedCloseBracket();
-  
+
   /** Returns true if we matched a semicolon; Emits a fatal error and returns
       false otherwise. */
   bool needSemi();
-  
+
 public:
   Parser(ProgramSource * src, Module * module);
 
@@ -95,32 +95,32 @@ public:
 
   /** Parse a variable declaration. */
   ASTDecl * declareVariable(const DeclModifiers & mods, TokenType tok);
-  
+
   /** Parse a function or property declaration. */
   ASTDecl * declareDef(const DeclModifiers & mods,
       TokenType tok);
-  
+
   /** Parse a macro or intrinsic declaration. */
   ASTDecl * declareMacro(const DeclModifiers & mods,
       TokenType tok);
-  
+
   /** Parse a type declaration. */
   ASTDecl * declareType(const DeclModifiers & mods, TokenType tok);
-  
+
   /** Parse a namespace declaration. */
   ASTDecl * declareNamespace(DeclModifiers mods,
       TokenType tok);
-  
+
   /** Parse an enumeration declaration. */
   ASTDecl * declareEnum(const DeclModifiers & mods);
 
   /** Parse a property accessor definition. */
   bool accessorMethodList(ASTPropertyDecl * property,
       ASTParamList & accessorParams, DeclModifiers mods);
-  
+
   /** Parse list of attributes. */
   bool attributeList(ASTNodeList & attributes);
-  
+
   /** Parse access types. */
   bool accessTypeModifiers(DeclModifiers & mods);
 
@@ -156,11 +156,11 @@ public:
   bool templateParam(ASTNodeList & templateParams);
 
   /** Parse a list of template arguments. */
-  void templateArgList(ASTNodeList & typeArgs);
+  bool templateArgList(ASTNodeList & typeArgs);
 
   /** Parse a template argument. */
   ASTNode * templateArg();
-  
+
   /** Parse a list of template requirements. */
   void templateRequirements(ASTNodeList & requirements);
 
@@ -181,31 +181,31 @@ public:
 
   /** Parse a return Stmt */
   Stmt * returnStmt();
-  
+
   /** Parse a yield Stmt */
   Stmt * yieldStmt();
-  
+
   /** Parse a break Stmt */
   Stmt * breakStmt();
-  
+
   /** Parse a continue Stmt */
   Stmt * continueStmt();
-  
+
   /** Parse a throw Stmt */
   Stmt * throwStmt();
-  
+
   /** Parse a try Stmt */
   Stmt * tryStmt();
-  
+
   /** Parse a declaration Stmt */
   Stmt * declStmt();
-  
+
   /** Parse an if Stmt */
   Stmt * ifStmt();
-  
+
   /** Parse a while Stmt */
   Stmt * whileStmt();
-  
+
   /** Parse a for Stmt */
   Stmt * forStmt();
 
@@ -214,41 +214,41 @@ public:
 
   /** Parse a condition after a Stmt. */
   Stmt * postCondition(Stmt * st);
-  
+
   /** Parse either a declaration or an expression. */
   ASTNode * testOrDecl();
-  
+
   /** Parse a list of local declations. Returns either a single declaration
       or a tuple of declarations. */
   ASTNode * localDeclList(ASTNode::NodeType nt);
 
   /** Either an expression, or a tuple of expressions. */
   ASTNode * expressionList();
-  
+
   /** Parse an expression */
   ASTNode * expression();
 
   /** Parse an expression which may be a simple assignment. */
   ASTNode * assignmentExpression();
-  
+
   /** Parse a unary operator expression. */
   ASTNode * unaryOperator();
-  
+
   /** Parse a primary expression (integer, ident, etc.) */
   ASTNode * primaryExpression();
 
   /** Parse a list of arguments. */
   bool parseArgumentList(ASTNodeList & args);
-  
+
   /** Parse a list of arguments. */
   ASTNode * arrayLiteral();
-  
+
   /** Parse array arguments. */
   bool parseArrayIndices(ASTOper * arrayExpr);
-  
+
   /** Operator-precedence parser for binary operators. */
   ASTNode * binaryOperator();
-  
+
   /** Parse an integer constant. */
   ASTNode * parseIntegerLiteral();
 
@@ -265,7 +265,7 @@ public:
   const std::string & docComment() const { return lexer.docComment(); }
   std::string & docComment() { return lexer.docComment(); }
 };
-  
+
 }
 
 #endif

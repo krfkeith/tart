@@ -101,7 +101,7 @@ bool ParameterAssignmentsBuilder::check() {
 
 bool ParameterAssignmentsBuilder::assignFromAST(const ASTNodeList & args) {
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-    if ((*it)->getNodeType() == ASTNode::Keyword) {
+    if ((*it)->nodeType() == ASTNode::Keyword) {
       if (!addKeywordArg(static_cast<const ASTKeywordArg *>(*it)->getKeyword())) {
         return false;
       }

@@ -83,7 +83,7 @@ Module * Builtins::loadSystemModule(const char * name) {
   }
 
   diag.fatal() << "Error: Can't load builtin definition for '" << name << "'";
-  exit(-1);
+  abort();
 }
 
 Defn * Builtins::loadSystemDef(const char * name) {

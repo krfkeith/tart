@@ -134,7 +134,7 @@ const char * Parser::matchIdent() {
     const char * value = istrings.intern(lexer.getTokenValue().c_str());
 
     // Save the token location
-    matchLoc = lexer.getTokenLocation();
+    matchLoc = lexer.tokenLocation();
 
     // Get the next token
     token = lexer.next();
@@ -334,7 +334,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   ASTDecl * decl = declarator(mods);
   if (decl == NULL) {
     if (modifier) {
-      diag.fatal(lexer.getTokenLocation()) << "Syntax error";
+      diag.error(lexer.tokenLocation()) << "Syntax error";
     }
     return false;
   } else if (decl == DECL_ERROR) {
@@ -353,7 +353,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
 }
 
 bool Parser::importStmt(ASTNodeList & out) {
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
 
   bool unpack = false;
   if (match(Token_Namespace)) {
@@ -425,7 +425,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
   ASTNode * declValue = NULL;
 
   if (mods.flags & Final) {
-    diag.warn(lexer.getTokenLocation()) << "Values are always 'final'";
+    diag.warn(lexer.tokenLocation()) << "Values are always 'final'";
   }
 
   if (declName == NULL) {
@@ -451,13 +451,12 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
 
   // TODO: Need to do this in analysis, because constructor could init it.
   //if (tok == Token_Let && declValue == NULL) {
-  //    diag.fatal(lexer.getTokenLocation(), "'let' requires an initializer");
+  //    diag.fatal(lexer.tokenLocation(), "'let' requires an initializer");
   //    return DECL_ERROR;
   //}
 
   if (declType == NULL && declValue == NULL) {
-    diag.fatal(lexer.getTokenLocation()) << "Can't infer type for '" <<
-        declName << "'";
+    diag.fatal(lexer.tokenLocation()) << "Can't infer type for '" << declName << "'";
     return DECL_ERROR;
   }
 
@@ -477,8 +476,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     }
 
     if (params.empty()) {
-      diag.fatal(lexer.getTokenLocation()) <<
-          "Indexer must have at least one argument";
+      diag.error(lexer.tokenLocation()) << "Indexer must have at least one argument";
       return DECL_ERROR;
     }
 
@@ -587,7 +585,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     if (!match(Token_Semi)) {
       body = statement();
       if (body == NULL) {
-        diag.fatal(loc) << "Function definition with no body";
+        diag.error(loc) << "Function definition with no body";
         return DECL_ERROR;
       }
       fd->setBody(body);
@@ -606,7 +604,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
 ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   if (mods.flags & Final) {
-    diag.fatal(lexer.getTokenLocation()) << "Macros are always final";
+    diag.error(lexer.tokenLocation()) << "Macros are always final";
   }
 
   const char * declName = matchIdent();
@@ -637,7 +635,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   function = fd;
   body = statement();
   if (body == NULL) {
-    diag.fatal(loc) << "Macro definition requires a body";
+    diag.error(loc) << "Macro definition requires a body";
     return DECL_ERROR;
   }
   function = saveFunction;
@@ -652,8 +650,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
     int32_t funcId = intVal->getValue().asInt32();
     Stmt * body = Builtins::createIntrinsic(funcId);
     if (body == NULL) {
-      diag.fatal(loc,
-          "Invalid intrinsic function number '%d'", funcId);
+      diag.error(loc, "Invalid intrinsic function number '%d'", funcId);
       return DECL_ERROR;
     }
 
@@ -808,7 +805,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
   //enumType->setDeclaration(enumDef);
 
   if (!match(Token_LBrace)) {
-    diag.fatal(lexer.getTokenLocation()) << "Expecting enumeration constants";
+    diag.error(lexer.tokenLocation()) << "Expecting enumeration constants";
     // Recovery: Look for a '{'
     // Recovery: Look for a '{'
     // Recovery: skip nested '{}' and look for a name...
@@ -830,7 +827,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
 
     //ASTDeclList prevDefs;
     //if (enumDef->lookupMember(ecName, prevDefs, false)) {
-    //  diag.fatal(matchLoc, "Duplicate enum constant '%s'", ecName);
+    //  diag.error(matchLoc, "Duplicate enum constant '%s'", ecName);
     //}
 
     ASTNode * ecValue = NULL;
@@ -892,7 +889,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
         accessorName.append("set");
       }
 
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
 
       ASTParamList params;
       if (tok == Token_Set) {
@@ -906,7 +903,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
         }
 
         if (setterParams.size() > 1) {
-          diag.fatal(loc) << "Setter can have 0 or 1 parameters only.";
+          diag.error(loc) << "Setter can have 0 or 1 parameters only.";
         }
 
         params.append(setterParams.begin(), setterParams.end());
@@ -918,7 +915,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
 
 #if 0
       if (funcType->returnType() != NULL) {
-        diag.fatal(loc, "Accessor shouldn't declare a return type.");
+        diag.error(loc, "Accessor shouldn't declare a return type.");
       } else if (tok == Token_Get) {
         funcType->setReturnType(propType /*->clone()*/);
       } else {
@@ -932,7 +929,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
       if (!match(Token_Semi)) {
         body = statement();
         if (body == NULL) {
-          diag.fatal(loc) << "Function body or ';' expected.";
+          diag.error(loc) << "Function body or ';' expected.";
           return true;
         }
         fc->setBody(body);
@@ -946,8 +943,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
         parent->setSetter(fc);
       }
     } else {
-      diag.fatal(lexer.getTokenLocation()) <<
-          "'get' or 'set' expected in property definition";
+      diag.error(lexer.tokenLocation()) << "'get' or 'set' expected in property definition";
       return false;
     }
   }
@@ -964,13 +960,13 @@ bool Parser::attributeList(ASTNodeList & attributes) {
 
     ASTNode * attrExpr = new ASTIdent(matchLoc, ident);
     for (;;) {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       if (match(Token_LParen)) {
         ASTNodeList argList;
         if (!parseArgumentList(argList))
           return NULL;
         attrExpr = new ASTCall(loc, attrExpr, argList);
-      } else if (match(Token_BeginTmplArgs)) {
+      } else if (match(Token_LBracket)) {
         // Template specialization
         ASTNodeList templateArgs;
         templateArgList(templateArgs);
@@ -1015,7 +1011,7 @@ ASTNode * Parser::typeExpression() {
 /*      // Tuple type
       case Token_Comma:
         opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalOr, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::LogicalOr, lexer.tokenLocation()),
           Prec_Lowest, Left);
         next();
         break;*/
@@ -1032,7 +1028,7 @@ ASTNode * Parser::typeExprBinary() {
     switch (token) {
       /*case Token_LogicalAnd:
         opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalAnd, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::LogicalAnd, lexer.tokenLocation()),
           Prec_LogicalAnd, Left);
         next();
         break; */
@@ -1040,7 +1036,7 @@ ASTNode * Parser::typeExprBinary() {
       // Disjoint type
       case Token_LogicalOr:
         opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalOr, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::LogicalOr, lexer.tokenLocation()),
           Prec_LogicalOr, Left);
         next();
         break;
@@ -1055,7 +1051,7 @@ ASTNode * Parser::typeExprBinary() {
 
     ASTNode * e1 = typeExprPrimary();
     if (e1 == NULL) {
-      diag.fatal(lexer.getTokenLocation()) << "type expression expected after '"
+      diag.error(lexer.tokenLocation()) << "type expression expected after '"
           << tokenVal << "'";
       return NULL;
     }
@@ -1066,7 +1062,7 @@ ASTNode * Parser::typeExprBinary() {
 
 ASTNode * Parser::typeExprPrimary() {
   ASTNode * result;
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
   if (match(Token_LParen)) {
     result = typeExpression();
 
@@ -1120,7 +1116,7 @@ ASTNode * Parser::typeExprPrimary() {
 
 ASTNode * Parser::typeName() {
   ASTNode * result;
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
   if (token == Token_Ident) {
     const char * typeName = matchIdent();
     result = new ASTIdent(loc, typeName);
@@ -1132,10 +1128,17 @@ ASTNode * Parser::typeName() {
     return NULL;
   }
 
-  if (match(Token_BeginTmplArgs)) {
+  if (match(Token_LBracket)) {
     ASTNodeList templateArgs;
-    templateArgList(templateArgs);
-    result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+    if (!templateArgList(templateArgs)) {
+      return NULL;
+    }
+
+    if (templateArgs.empty()) {
+      result = ASTUnaryOp::get(ASTNode::Array, result);
+    } else {
+      result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+    }
   }
 
   while (match(Token_Dot)) {
@@ -1147,10 +1150,17 @@ ASTNode * Parser::typeName() {
 
     result = new ASTMemberRef(matchLoc, result, typeName);
 
-    if (match(Token_BeginTmplArgs)) {
+    if (match(Token_LBracket)) {
       ASTNodeList templateArgs;
-      templateArgList(templateArgs);
-      result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+      if (!templateArgList(templateArgs)) {
+        return NULL;
+      }
+
+      if (templateArgs.empty()) {
+        result = ASTUnaryOp::get(ASTNode::Array, result);
+      } else {
+        result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+      }
     }
   }
 
@@ -1275,7 +1285,7 @@ ASTNode * Parser::functionReturnType() {
 void Parser::templateParamList(ASTNodeList & templateParams) {
   if (match(Token_LBracket)) {
     if (match(Token_RBracket)) {
-      diag.fatal(lexer.getTokenLocation()) << "Empty template parameter list";
+      diag.error(lexer.tokenLocation()) << "Empty template parameter list";
       return;
     }
 
@@ -1330,27 +1340,27 @@ bool Parser::templateParam(ASTNodeList & templateParams) {
   return true; */
 }
 
-void Parser::templateArgList(ASTNodeList & templateArgs) {
+bool Parser::templateArgList(ASTNodeList & templateArgs) {
   if (match(Token_RBracket)) {
-    diag.fatal(lexer.getTokenLocation()) << "Empty type parameter list";
+    return true;
   }
 
   for (;;) {
-    SourceLocation loc = lexer.getTokenLocation();
+    SourceLocation loc = lexer.tokenLocation();
     ASTNode * arg = templateArg();
     if (arg == NULL) {
-      diag.fatal(loc) << "Template argument expected";
+      diag.error(loc) << "Template argument expected";
       skipToRParen();
-      break;
+      return false;
     } else {
       templateArgs.push_back(arg);
     }
 
-    if (match(Token_EndTmplArgs)) {
-      break;
+    if (match(Token_RBracket)) {
+      return true;
     } else if (!match(Token_Comma)) {
       unexpectedToken();
-      break;
+      return false;
     }
   }
 }
@@ -1388,7 +1398,7 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
       // Fall through
     } else if (match(Token_Semi)) {
       if (paramFlags & Param_KeywordOnly) {
-        diag.error(lexer.getTokenLocation()) << "Only one ';' allowed in argument list";
+        diag.error(lexer.tokenLocation()) << "Only one ';' allowed in argument list";
       } else {
         paramFlags |= Param_KeywordOnly;
       }
@@ -1399,8 +1409,7 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
     }
 
     if (!formalArgument(params, paramFlags)) {
-      diag.fatal(lexer.getTokenLocation()) <<
-          "Formal argument expected after ','";
+      diag.error(lexer.tokenLocation()) << "Formal argument expected after ','";
       break;
     }
 
@@ -1411,8 +1420,7 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
       ASTParameter * pp = *it;
       if (fa->name() && pp->name() && strcmp(fa->name(),
           pp->name()) == 0) {
-        diag.fatal(lexer.getTokenLocation()) <<
-            "Duplicate argument name '" << fa->name() << "'";
+        diag.error(lexer.tokenLocation()) << "Duplicate argument name '" << fa->name() << "'";
       }
     }
   }
@@ -1424,7 +1432,7 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   // TODO: Check for attributes
   // TODO: Check for modifiers
 
-  SourceLocation argLoc = lexer.getTokenLocation();
+  SourceLocation argLoc = lexer.tokenLocation();
   const char * argName = matchIdent();
   ASTNode * argType = NULL;
   if (match(Token_Colon)) {
@@ -1542,7 +1550,7 @@ Stmt * Parser::statement() {
 }
 
 Stmt * Parser::blockStmt() {
-  BlockStmt * block = new BlockStmt(lexer.getTokenLocation());
+  BlockStmt * block = new BlockStmt(lexer.tokenLocation());
   while (!match(Token_RBrace)) {
     Stmt * st = statement();
     if (st == NULL) {
@@ -1552,12 +1560,12 @@ Stmt * Parser::blockStmt() {
     block->append(st);
   }
 
-  block->setFinalLocation(lexer.getTokenLocation());
+  block->setFinalLocation(lexer.tokenLocation());
   return block;
 }
 
 Stmt * Parser::returnStmt() {
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
   ASTNode * expr = expressionList();
   Stmt * st = new ReturnStmt(loc, expr);
   st = postCondition(st);
@@ -1579,14 +1587,14 @@ Stmt * Parser::yieldStmt() {
 }
 
 Stmt * Parser::breakStmt() {
-  Stmt * st = new Stmt(Stmt::Break, lexer.getTokenLocation());
+  Stmt * st = new Stmt(Stmt::Break, lexer.tokenLocation());
   st = postCondition(st);
   needSemi();
   return st;
 }
 
 Stmt * Parser::continueStmt() {
-  Stmt * st = new Stmt(Stmt::Continue, lexer.getTokenLocation());
+  Stmt * st = new Stmt(Stmt::Continue, lexer.tokenLocation());
   st = postCondition(st);
   needSemi();
   return st;
@@ -1607,11 +1615,11 @@ Stmt * Parser::tryStmt() {
     return NULL;
   }
 
-  TryStmt * tst = new TryStmt(lexer.getTokenLocation(), st);
+  TryStmt * tst = new TryStmt(lexer.tokenLocation(), st);
   while (match(Token_Catch)) {
 
     bool parens = match(Token_LParen); // Optional parens
-    SourceLocation loc = lexer.getTokenLocation();
+    SourceLocation loc = lexer.tokenLocation();
     const char * exceptName = matchIdent();
     if (exceptName == NULL) {
       exceptName = "";
@@ -1756,7 +1764,7 @@ Stmt * Parser::forStmt() {
       // It's a 'for-in' statement.
       ASTNode * iterable = expression();
       if (iterable == NULL) {
-        diag.fatal(lexer.getTokenLocation()) << "Expression expected after 'in'";
+        diag.error(lexer.tokenLocation()) << "Expression expected after 'in'";
         return NULL;
       }
 
@@ -1769,7 +1777,7 @@ Stmt * Parser::forStmt() {
     if (loopVar && match(Token_Assign)) {
       ASTNode * rhs = expression();
       if (rhs == NULL) {
-        diag.fatal(lexer.getTokenLocation()) << "Expression expected after '='";
+        diag.error(lexer.tokenLocation()) << "Expression expected after '='";
       }
 
       if (ASTVarDecl * vdef = dyn_cast<ASTVarDecl>(loopVar)) {
@@ -1963,7 +1971,7 @@ ASTNode * Parser::assignmentExpression() {
     case Token_AssignCaret:
     case Token_AssignRShift:
     case Token_AssignLShift: {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       next();
       ASTNode * rhs = binaryOperator();
       if (rhs == NULL) {
@@ -2008,163 +2016,163 @@ ASTNode * Parser::binaryOperator() {
     switch (token) {
       case Token_Plus:
         opstack.pushOperator(callOperator(
-              &operatorAdd, lexer.getTokenLocation()), Prec_AddSub, Left);
+              &operatorAdd, lexer.tokenLocation()), Prec_AddSub, Left);
         next();
         break;
 
       case Token_Minus:
         opstack.pushOperator(callOperator(
-              &operatorSub, lexer.getTokenLocation()), Prec_AddSub, Left);
+              &operatorSub, lexer.tokenLocation()), Prec_AddSub, Left);
         next();
         break;
 
       case Token_Star:
         opstack.pushOperator(callOperator(
-              &operatorMul, lexer.getTokenLocation()), Prec_MulDiv, Left);
+              &operatorMul, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Slash:
         opstack.pushOperator(callOperator(
-              &operatorDiv, lexer.getTokenLocation()), Prec_MulDiv, Left);
+              &operatorDiv, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Percent:
         opstack.pushOperator(callOperator(
-              &operatorMod, lexer.getTokenLocation()), Prec_MulDiv, Left);
+              &operatorMod, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Ampersand:
         opstack.pushOperator(callOperator(
-              &operatorBitAnd, lexer.getTokenLocation()), Prec_BitAnd, Left);
+              &operatorBitAnd, lexer.tokenLocation()), Prec_BitAnd, Left);
         next();
         break;
 
       case Token_Bar:
         opstack.pushOperator(callOperator(
-              &operatorBitOr, lexer.getTokenLocation()), Prec_BitOr, Left);
+              &operatorBitOr, lexer.tokenLocation()), Prec_BitOr, Left);
         next();
         break;
 
       case Token_Caret:
         opstack.pushOperator(callOperator(
-              &operatorBitXor, lexer.getTokenLocation()), Prec_BitXor, Left);
+              &operatorBitXor, lexer.tokenLocation()), Prec_BitXor, Left);
         next();
         break;
 
       case Token_LogicalAnd:
         opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalAnd, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::LogicalAnd, lexer.tokenLocation()),
           Prec_LogicalAnd, Left);
         next();
         break;
 
       case Token_LogicalOr:
         opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalOr, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::LogicalOr, lexer.tokenLocation()),
           Prec_LogicalOr, Left);
         next();
         break;
 
       case Token_LShift:
         opstack.pushOperator(callOperator(
-            &operatorLSh, lexer.getTokenLocation()), Prec_Shift, Left);
+            &operatorLSh, lexer.tokenLocation()), Prec_Shift, Left);
         next();
         break;
 
       case Token_RShift:
         opstack.pushOperator(callOperator(
-            &operatorRSh, lexer.getTokenLocation()), Prec_Shift, Left);
+            &operatorRSh, lexer.tokenLocation()), Prec_Shift, Left);
         next();
         break;
 
       case Token_Range:
         opstack.pushOperator(
-          new ASTOper(ASTNode::Range, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::Range, lexer.tokenLocation()),
               Prec_Range, Left);
         next();
         break;
 
       case Token_Equal:
         opstack.pushOperator(callOperator(
-            &operatorEq, lexer.getTokenLocation()), Prec_Relational, Left);
+            &operatorEq, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_NotEqual:
         opstack.pushOperator(callOperator(
-              &operatorNe, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorNe, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       /*case Token_RefEqual:
         opstack.pushOperator(
-          new ASTOper(ASTNode::ReferenceEq, lexer.getTokenLocation()),
+          new ASTOper(ASTNode::ReferenceEq, lexer.tokenLocation()),
           Prec_Relational, Left);
         next();
         break;*/
 
       case Token_Less:
         opstack.pushOperator(callOperator(
-              &operatorLT, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorLT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_Greater:
         opstack.pushOperator(callOperator(
-              &operatorGT, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorGT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_LessEqual:
         opstack.pushOperator(callOperator(
-              &operatorLE, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorLE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_GreaterEqual:
         opstack.pushOperator(callOperator(
-              &operatorGE, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorGE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossLess:
         opstack.pushOperator(callOperator(
-              &operatorPLT, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorPLT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossGreater:
         opstack.pushOperator(callOperator(
-              &operatorPGT, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorPGT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossLessEqual:
         opstack.pushOperator(callOperator(
-              &operatorPLE, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorPLE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossGreaterEqual:
         opstack.pushOperator(callOperator(
-              &operatorPGE, lexer.getTokenLocation()), Prec_Relational, Left);
+              &operatorPGE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_As: {
         TokenType tok = token;
-        SourceLocation loc = lexer.getTokenLocation();
+        SourceLocation loc = lexer.tokenLocation();
         next();
 
-        ASTOper * op = new ASTOper(ASTNode::AsType, lexer.getTokenLocation());
+        ASTOper * op = new ASTOper(ASTNode::AsType, lexer.tokenLocation());
         opstack.pushOperator(op, Prec_IsType, Left);
 
         // For the 'as' operator the right-hand side is a type literal,
         // not an expression.
-        loc = lexer.getTokenLocation();
+        loc = lexer.tokenLocation();
         ASTNode * type = typeExpression();
         if (type == NULL) {
           return NULL;
@@ -2175,7 +2183,7 @@ ASTNode * Parser::binaryOperator() {
 
       case Token_Is: {
         TokenType tok = token;
-        SourceLocation loc = lexer.getTokenLocation();
+        SourceLocation loc = lexer.tokenLocation();
         next();
 
         ASTOper * op;
@@ -2191,25 +2199,25 @@ ASTNode * Parser::binaryOperator() {
 
       case Token_In:
         opstack.pushOperator(new ASTOper(ASTNode::In,
-            lexer.getTokenLocation()), Prec_Contains, Left);
+            lexer.tokenLocation()), Prec_Contains, Left);
         next();
         break;
 
       case Token_Isa:
         opstack.pushOperator(new ASTOper(ASTNode::IsInstanceOf,
-            lexer.getTokenLocation()), Prec_IsType, Left);
+            lexer.tokenLocation()), Prec_IsType, Left);
         next();
         break;
 
       case Token_LogicalNot: {
         // Negated operators
         next();
-        SourceLocation loc = lexer.getTokenLocation();
+        SourceLocation loc = lexer.tokenLocation();
         if (match(Token_In)) {
           opstack.pushOperator(
             new ASTOper(ASTNode::NotIn, loc), Prec_Contains, Left);
         } else {
-          diag.fatal(lexer.getTokenLocation()) << "'in' expected after 'not'";
+          diag.error(lexer.tokenLocation()) << "'in' expected after 'not'";
         }
         break;
       }
@@ -2228,8 +2236,7 @@ ASTNode * Parser::binaryOperator() {
 
     ASTNode * e1 = unaryOperator();
     if (e1 == NULL) {
-      diag.fatal(lexer.getTokenLocation()) <<
-          "value expected after " << GetTokenName(operatorToken);
+      diag.error(lexer.tokenLocation()) << "value expected after " << GetTokenName(operatorToken);
       return NULL;
     }
     opstack.pushOperand(e1);
@@ -2248,7 +2255,7 @@ ASTNode * Parser::unaryOperator() {
     case Token_LogicalNot: {
       // Negated operators
       next();
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       ASTNode * e1 = unaryOperator();
       if (e1 == NULL)
         return NULL;
@@ -2260,7 +2267,7 @@ ASTNode * Parser::unaryOperator() {
     case Token_Minus: {
       // Negated operators
       next();
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       ASTNode * e1 = unaryOperator();
       if (e1 == NULL)
         return NULL;
@@ -2274,7 +2281,7 @@ ASTNode * Parser::unaryOperator() {
       // Preincrement and predecrement
       TokenType tok = token;
       next();
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       ASTNode * e1 = primaryExpression();
       if (e1 == NULL)
         return NULL;
@@ -2319,7 +2326,7 @@ ASTNode * Parser::primaryExpression() {
 
     case Token_Super:
       next();
-      result = new ASTOper(ASTNode::Super, lexer.getTokenLocation());
+      result = new ASTOper(ASTNode::Super, lexer.tokenLocation());
       break;
 
     case Token_String:
@@ -2331,19 +2338,19 @@ ASTNode * Parser::primaryExpression() {
       break;
 
     case Token_True: {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       next();
       return new ASTBoolLiteral(loc, true);
     }
 
     case Token_False: {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       next();
       return new ASTBoolLiteral(loc, false);
     }
 
     case Token_Null: {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       next();
       return new ASTNode(ASTNode::Null, loc);
     }
@@ -2359,7 +2366,7 @@ ASTNode * Parser::primaryExpression() {
 #if 0
     case Token_TypeOf: {
       next();
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
 
       if (!match(Token_LParen)) {
         expected("'('");
@@ -2395,7 +2402,7 @@ ASTNode * Parser::primaryExpression() {
     default:
       if (token >= Token_BoolType && token <= Token_VoidType) {
         result = builtInTypeName(token);
-        //result = new ASTIdent(lexer.getTokenLocation(),
+        //result = new ASTIdent(lexer.tokenLocation(),
         //    istrings.intern(lexer.getTokenValue().c_str()));
         token = lexer.next();
       }
@@ -2406,7 +2413,7 @@ ASTNode * Parser::primaryExpression() {
   // Suffix operators
   if (result) {
     for (;;) {
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       if (match(Token_LParen)) {
         ASTNodeList argList;
         if (!parseArgumentList(argList))
@@ -2419,11 +2426,11 @@ ASTNode * Parser::primaryExpression() {
         if (!parseArrayIndices(indexop))
           return NULL;
         result = indexop;
-      } else if (match(Token_BeginTmplArgs)) {
-        // Template specialization
-        ASTNodeList templateArgs;
-        templateArgList(templateArgs);
-        result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+      //} else if (match(Token_BeginTmplArgs)) {
+      //  // Template specialization
+      //  ASTNodeList templateArgs;
+      //  templateArgList(templateArgs);
+      //  result = new ASTSpecialize(result->getLocation(), result, templateArgs);
       } else if (match(Token_Dot)) {
         // Member dereference
         const char * ident = matchIdent();
@@ -2441,7 +2448,7 @@ ASTNode * Parser::primaryExpression() {
       // Preincrement and predecrement
       TokenType tok = token;
       next();
-      SourceLocation loc = lexer.getTokenLocation();
+      SourceLocation loc = lexer.tokenLocation();
       ASTCall * incDec = callOperator(
             tok == Token_Increment ? &operatorSucc : &operatorPred, loc);
       incDec->append(result);
@@ -2471,8 +2478,8 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
     if (match(Token_Assign)) {
       // Keyword argument
       ASTNode * kwarg = expression();
-      if (arg->getNodeType() != ASTNode::Id) {
-        diag.fatal(arg->getLocation()) << "invalid keyword expression";
+      if (arg->nodeType() != ASTNode::Id) {
+        diag.error(arg->getLocation()) << "invalid keyword expression";
         ok = false;
       } else {
         const char * kwname = ((ASTIdent *)arg)->getValue();
@@ -2496,11 +2503,10 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
     for (ASTNodeList::const_iterator it = args.begin(); it != args.end();
         ++it) {
       const ASTNode * arg = *it;
-      if (arg->getNodeType() == ASTNode::Keyword) {
+      if (arg->nodeType() == ASTNode::Keyword) {
         kwArg = true;
       } else if (kwArg) {
-        diag.fatal(arg->getLocation()) <<
-            "positional arguments must come before all keyword args";
+        diag.error(arg->getLocation()) << "positional arguments must come before all keyword args";
         return NULL;
       }
     }
@@ -2512,7 +2518,7 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
 }
 
 ASTNode * Parser::arrayLiteral() {
-  ASTOper * arglist = new ASTOper(ASTNode::ArrayLiteral, lexer.getTokenLocation());
+  ASTOper * arglist = new ASTOper(ASTNode::ArrayLiteral, lexer.tokenLocation());
 
   // Check for empty argument list
   if (match(Token_RBracket))
@@ -2568,7 +2574,7 @@ ASTNode * Parser::parseIntegerLiteral() {
 
   // Copy to narrow string cause that's what LLVM uses.
   std::string tokenVal = lexer.getTokenValue();
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
   next();
 
   // Check for hex number
@@ -2587,7 +2593,7 @@ ASTNode * Parser::parseIntegerLiteral() {
   } else if (bits <= 128) {
     bits = 128;
   } else {
-    diag.fatal(loc) << "Integer constant > 128 bits: (" << bits << " bits)";
+    diag.error(loc) << "Integer constant > 128 bits: (" << bits << " bits)";
   }
 
   return new ASTIntegerLiteral(loc, llvm::APInt(bits, tokenVal, numberBase));
@@ -2596,7 +2602,7 @@ ASTNode * Parser::parseIntegerLiteral() {
 ASTNode * Parser::parseFloatLiteral() {
   // TODO: Handle long doubles.
   std::string tokenVal = lexer.getTokenValue();
-  SourceLocation loc = lexer.getTokenLocation();
+  SourceLocation loc = lexer.tokenLocation();
   next();
 
   char lastCh = lastChar(tokenVal);
@@ -2613,14 +2619,14 @@ ASTNode * Parser::parseFloatLiteral() {
       llvm::APFloat::rmNearestTiesToEven);
 
   if (status != llvm::APFloat::opOK) {
-    diag.warn(lexer.getTokenLocation()) << "conversion error";
+    diag.warn(lexer.tokenLocation()) << "conversion error";
   }
 
   return new ASTFloatLiteral(loc, value);
 }
 
 ASTNode * Parser::parseStringLiteral() {
-  ASTNode * result = new ASTStringLiteral(lexer.getTokenLocation(),
+  ASTNode * result = new ASTStringLiteral(lexer.tokenLocation(),
       lexer.getTokenValue());
   next();
   return result;
@@ -2628,17 +2634,16 @@ ASTNode * Parser::parseStringLiteral() {
 
 ASTNode * Parser::parseCharLiteral() {
   if (lexer.getTokenValue().size() > 1) {
-    diag.fatal(lexer.getTokenLocation()) << "multi-character constant";
+    diag.error(lexer.tokenLocation()) << "multi-character constant";
   }
 
-  ASTNode * result = new ASTCharLiteral(lexer.getTokenLocation(), (int)lexer.getTokenValue()[0]);
+  ASTNode * result = new ASTCharLiteral(lexer.tokenLocation(), (int)lexer.getTokenValue()[0]);
   next();
   return result;
 }
 
 void Parser::unexpectedToken() {
-  diag.fatal(lexer.getTokenLocation()) << "Unexpected token " <<
-      GetTokenName(token);
+  diag.error(lexer.tokenLocation()) << "Unexpected token " << GetTokenName(token);
 }
 
 bool Parser::needSemi() {
@@ -2682,8 +2687,7 @@ void Parser::expectedCloseBracket() {
 }
 
 void Parser::expected(const char * what) {
-  diag.error(lexer.getTokenLocation()) << "Expected " << what << ", not " <<
-      GetTokenName(token);
+  diag.error(lexer.tokenLocation()) << "Expected " << what << ", not " << GetTokenName(token);
 }
 
 }

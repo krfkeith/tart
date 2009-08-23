@@ -123,7 +123,7 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   DASSERT(parentDefn != NULL);
   
   // If it's a namespace, attempt to merge with existing ns of same name.
-  if (de->getNodeType() == ASTDecl::Namespace) {
+  if (de->nodeType() == ASTDecl::Namespace) {
     Defn * ns = mergeNamespace(scope, de);
     if (ns != NULL) {
       return ns;
@@ -252,7 +252,7 @@ void ScopeBuilder::checkNameConflict(Scope * scope, const Defn * de) {
 
 Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast) {
   DASSERT(parent != NULL);
-  switch (ast->getNodeType()) {
+  switch (ast->nodeType()) {
     case ASTDecl::Class:
     case ASTDecl::Struct:
     case ASTDecl::Interface:
@@ -260,7 +260,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
     case ASTDecl::Enum: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
 
-      switch (int(ast->getNodeType())) {
+      switch (int(ast->nodeType())) {
       case ASTDecl::Class:
         tdef->setTypeValue(new CompositeType(Type::Class, tdef, parent));
         break;
@@ -317,7 +317,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
 
     default:
       diag.fatal(ast->getLocation()) << "Can't create member " <<
-          getNodeTypeName(ast->getNodeType());
+          getNodeTypeName(ast->nodeType());
       return NULL;
   }
 }

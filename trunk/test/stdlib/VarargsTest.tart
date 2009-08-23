@@ -16,7 +16,7 @@ def intArgs(s:int...) {
 }
 
 def intArgs2(s:int...) {
-  let s2:Array<[int]> = s;
+  let s2:Array[int] = s;
   Debug.assertEq(3, s2.length);
 }
 

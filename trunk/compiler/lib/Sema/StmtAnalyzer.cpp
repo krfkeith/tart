@@ -123,7 +123,7 @@ bool StmtAnalyzer::buildCFG() {
 }
 
 bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
-  switch (st->getNodeType()) {
+  switch (st->nodeType()) {
     case ASTNode::Block:
       return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
 
@@ -166,7 +166,7 @@ bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
     //case Catch:
     default:
       diag.fatal(st->getLocation()) << "Invalid statement type '" <<
-          getNodeTypeName(st->getNodeType());
+          getNodeTypeName(st->nodeType());
       return false;
   }
 }
@@ -198,7 +198,7 @@ bool StmtAnalyzer::buildExprStmtCFG(const ExprStmt * st) {
   const ASTNode * value = st->getValue();
   Expr * expr = inferTypes(astToAssignExpr(value, NULL), NULL);
   if (!isErrorResult(expr)) {
-    if (expr->isSideEffectFree() && value->getNodeType() != ASTNode::Call) {
+    if (expr->isSideEffectFree() && value->nodeType() != ASTNode::Call) {
       diag.warn(expr) << "Statement '" << st << "' has no effect";
     }
 
@@ -327,7 +327,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   // Evaluate the initialization expression
   const ASTNode * initExpr = st->getInitExpr();
   if (initExpr != NULL) {
-    if (initExpr->getNodeType() == ASTNode::Var) {
+    if (initExpr->nodeType() == ASTNode::Var) {
       const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(initExpr);
       VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
       if (!analyzeValueDefn(initDefn, Task_PrepCodeGeneration)) {
@@ -339,7 +339,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
       //if (initDefn == NULL) {
       //  return NULL;
       //}
-    } else if (initExpr->getNodeType() == ASTNode::Tuple) {
+    } else if (initExpr->nodeType() == ASTNode::Tuple) {
       const ASTOper * initTuple = static_cast<const ASTOper *>(initExpr);
       DFAIL("Implement");
     }
@@ -802,7 +802,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
 }
 
 Expr * StmtAnalyzer::astToAssignExpr(const ASTNode * ast, Type * expectedType) {
-  if (ast->getNodeType() == ASTNode::Assign) {
+  if (ast->nodeType() == ASTNode::Assign) {
     ExprAnalyzer ea(function->module(), activeScope, function);
     return ea.reduceAssign(static_cast<const ASTOper *>(ast), expectedType);
   } else {

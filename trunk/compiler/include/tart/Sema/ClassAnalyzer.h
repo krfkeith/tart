@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_CLASSANALYZER_H
 #define TART_SEMA_CLASSANALYZER_H
 
@@ -18,7 +18,7 @@ namespace tart {
 class ClassAnalyzer : public DefnAnalyzer {
 private:
   TypeDefn * target;
-  
+
 public:
   /** Constructor. */
   ClassAnalyzer(TypeDefn * target);
@@ -27,6 +27,7 @@ public:
   bool analyze(AnalysisTask task);
 
   bool analyzeBaseClasses();
+  bool analyzeBaseClassesImpl();
   bool analyzeConstructors();
   bool analyzeFields();
   void analyzeConstructBase(FunctionDefn * ctor);

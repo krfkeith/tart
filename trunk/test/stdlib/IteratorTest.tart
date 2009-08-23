@@ -4,7 +4,7 @@ def main(args: String[]) {
   return 0;
 }
 
-class Counter : Iterator<[int]> {
+class Counter : Iterator[int] {
   private var value:int;
   private var end:int;
   

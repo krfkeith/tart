@@ -47,7 +47,7 @@ void formatNodeList(FormatStream & out, const ASTNodeList & nodes) {
 /// ---------------------------------------------------------------
 /// ASTNode
 void ASTNode::format(FormatStream & out) const {
-  out << getNodeTypeName(nodeType);
+  out << getNodeTypeName(nodeType_);
 }
 
 /// ---------------------------------------------------------------

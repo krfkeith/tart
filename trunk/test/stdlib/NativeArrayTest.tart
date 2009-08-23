@@ -10,7 +10,7 @@ def main(args:String[]) -> int {
 }
 
 class TestClass {
-  public var items:NativeArray<[int, 5]>;
+  public var items:NativeArray[int, 5];
   
   def construct() {}
 }

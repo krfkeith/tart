@@ -10,7 +10,7 @@ class Throwable {
     }
     
     // Padding needed to align the exceptInfo
-    var padding:NativePointer<[void]>;
+    var padding:NativePointer[void];
 
     // Exception structure instance.
     var exceptInfo:UnwindException;

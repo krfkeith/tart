@@ -3,27 +3,33 @@
 Design TODOS:
 
 * Dynamic casting syntax.
+	* Type casting via operations on type objects?
 * Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
 * Mutating arithmetic operators. (i.e. +=)
+	addInPlace
+	subtractInPlace
+	divideInPlace
+	multiplyInPlace
+	inPlaceAdd
+	assignAdd
+	addWith
+	increaseBy
+	decreaseBy
 
 Implementation TODOS:
 
-* Attributes:
-  * Use @Syntax
-  * Attributes are identified by attributes
-  * Get rid of funky naming tricks (Attribute, Effect, etc.)
-* override and redef syntax.
+* SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
+	location means that its hard to fold constants together. Exprs really ought to be shallow.
+* Override and redef syntax.
   * How does that affect properties?
   * +def
   * Template syntax.
 * Typename.type
-  * Type[type]
 
 * Need to work on makefile dependencies.
 * vcall and icall instructions.
-* Varargs
 * String class
   * concatenation - requires varargs
 * String class tests
@@ -52,7 +58,6 @@ Implementation TODOS:
   * Equality comparison (with member types, and with other disjoint types.)
   * dynamic casting syntax
 * Multiple Return Values (requires Tuples)
-* Vararg functions
 * Constructors
   * init all variables not explicitly initialized in constructor, both ones with initializers
     and ones without.
@@ -63,8 +68,6 @@ Implementation TODOS:
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
 * Import-as, import-namespace tests.
-* Attributes
-  * Meta-attributes
 * Templates
   * "requires" clauses.
 * Runtime
@@ -138,6 +141,8 @@ cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -D ECLIPSE_CDT
 Command to create Makefile project:
 
 cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
+
+cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
 
 // ------------------------------------------------------------------------
 

@@ -9,10 +9,10 @@ struct TypeInfoBlock {
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
-  readonly var bases:NativePointer<[NativeArray<[Type, 0]>]>;
+  readonly var bases:NativePointer[NativeArray[Type, 0]];
 
   /** Compiler-generated table of class methods. */
-  readonly var methodTable:NativeArray<[NativePointer<[void]>, 0]>;
+  readonly var methodTable:NativeArray[NativePointer[void], 0];
 
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used

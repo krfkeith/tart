@@ -10,7 +10,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // Stmt
 void Stmt::format(FormatStream & out) const {
-  switch (getNodeType()) {
+  switch (nodeType()) {
     case Break:
       out << "break;";
       break;

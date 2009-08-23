@@ -1,7 +1,7 @@
 /** The metatype object - the class that describes a type. */
 public class Type {
   /** The type info block. */
-  private var typeInfo:NativePointer<[TypeInfoBlock]>;
+  private var typeInfo:NativePointer[TypeInfoBlock];
   
   /** The superclass of this class. */
   readonly var superType:Type;

@@ -81,7 +81,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
     case Warning:
     case Info:
       // Allow info messages to follow-up a fatal, but not
-      // if the fatal was supressed from an earlier fatal.
+      // if the fatal was suppressed from an earlier fatal.
       if (recovery == Closed) {
         return;
       }
@@ -93,7 +93,6 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
 
   if (writer_ && sev >= minSeverity) {
     writer_->write(loc, sev, msg);
-
     if (sev == Fatal && DebugErrors) {
       printStackTrace(5);
     }

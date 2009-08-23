@@ -62,19 +62,19 @@ public:
   };
 
 protected:
-  const NodeType nodeType;
+  const NodeType nodeType_;
   SourceLocation loc;
 
 public:
   ASTNode(NodeType nt, const SourceLocation & sl)
-    : nodeType(nt)
+    : nodeType_(nt)
     , loc(sl)
   {}
 
   virtual ~ASTNode() {}
 
   /** Return the type of this AST node. */
-  NodeType getNodeType() const { return nodeType; }
+  NodeType nodeType() const { return nodeType_; }
   
   /** Where in the source file this expression comes from. */
   const SourceLocation & getLocation() const { return loc; }
@@ -113,7 +113,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTIdent *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-      return ast->getNodeType() == ASTNode::Id;
+      return ast->nodeType() == ASTNode::Id;
   }
 };
 
@@ -149,7 +149,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTMemberRef *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-      return ast->getNodeType() == ASTNode::Member;
+      return ast->nodeType() == ASTNode::Member;
   }
 };
 
@@ -174,7 +174,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTLiteral *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    return ast->getNodeType() == type;
+    return ast->nodeType() == type;
   }
 };
 
@@ -216,7 +216,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTUnaryOp *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    switch (ast->getNodeType()) {
+    switch (ast->nodeType()) {
       case ASTNode::Array:
         return true;
         
@@ -325,7 +325,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTCall *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    return ast->getNodeType() == Call;
+    return ast->nodeType() == Call;
   }
 };
 
@@ -354,7 +354,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTSpecialize *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    return ast->getNodeType() == Specialize;
+    return ast->nodeType() == Specialize;
   }
 };
 
@@ -385,7 +385,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTKeywordArg *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    return ast->getNodeType() == ASTNode::Keyword;
+    return ast->nodeType() == ASTNode::Keyword;
   }
 };
 
@@ -415,7 +415,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTImport *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-    return ast->getNodeType() == ASTNode::Import;
+    return ast->nodeType() == ASTNode::Import;
   }
 };
 
@@ -438,7 +438,7 @@ public:
   void trace() const;
   static inline bool classof(const ASTIdent *) { return true; }
   static inline bool classof(const ASTNode * ast) {
-      return ast->getNodeType() == ASTNode::BuiltIn;
+      return ast->nodeType() == ASTNode::BuiltIn;
   }
 };
 

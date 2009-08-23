@@ -1,6 +1,6 @@
 /** Base class of all reference types. */
 public class Object {
-  private var __tib:NativePointer<[TypeInfoBlock]>;
+  private var __tib:NativePointer[TypeInfoBlock];
 
   /** Compiler-generated function to lookup the specified interface method. */
   // @Intrinsic

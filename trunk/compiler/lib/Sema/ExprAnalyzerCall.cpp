@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -22,17 +22,20 @@ namespace tart {
 Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
   const ASTNode * callable = call->getFunc();
   const ASTNodeList & args = call->args();
-  
-  if (callable->getNodeType() == ASTNode::Id ||
-      callable->getNodeType() == ASTNode::Member ||
-      callable->getNodeType() == ASTNode::Specialize) {
+
+  if (callable->nodeType() == ASTNode::Id ||
+      callable->nodeType() == ASTNode::Member ||
+      callable->nodeType() == ASTNode::Specialize) {
     return callName(call->getLocation(), callable, args, expected);
-  } else if (callable->getNodeType() == ASTNode::Super) {
+  } else if (callable->nodeType() == ASTNode::Super) {
     return callSuper(call->getLocation(), args, expected);
-  } else if (callable->getNodeType() == ASTNode::BuiltIn) {
+  } else if (callable->nodeType() == ASTNode::BuiltIn) {
     // Built-in type constructor
     Defn * tdef = static_cast<const ASTBuiltIn *>(callable)->getValue();
     return callExpr(call->getLocation(), cast<TypeDefn>(tdef)->asExpr(), args, expected);
+  } else if (callable->nodeType() == ASTNode::GetElement) {
+    return callExpr(call->getLocation(), reduceElementRef(
+        static_cast<const ASTOper *>(callable), NULL, false), args, expected);
   }
 
   diag.fatal(call) << "Not a callable expression " << call;
@@ -43,15 +46,15 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     Type * expected) {
 
   // Specialize works here because lookupName handles explicit specializations.
-  DASSERT(callable->getNodeType() == ASTNode::Id ||
-      callable->getNodeType() == ASTNode::Member ||
-      callable->getNodeType() == ASTNode::Specialize);
-      
-  bool isUnqualified = callable->getNodeType() == ASTNode::Id;
+  DASSERT(callable->nodeType() == ASTNode::Id ||
+      callable->nodeType() == ASTNode::Member ||
+      callable->nodeType() == ASTNode::Specialize);
+
+  bool isUnqualified = callable->nodeType() == ASTNode::Id;
 
   ExprList results;
   lookupName(results, callable);
-  
+
   // If there were no results, and it was a qualified search, then
   // it's an error. (If it's unqualified, then there are still things
   // left to try.)
@@ -70,7 +73,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
       diag.error(loc) << "Multiple definitions for '" << callable << "'";
       return &Expr::ErrorVal;
     }
-    
+
     return callConstructor(loc, static_cast<TypeDefn *>(typeList.front())->asExpr(), args);
   }
 
@@ -100,7 +103,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     const char * name = static_cast<const ASTIdent *>(callable)->getValue();
     lookupByArgType(call, name, args);
   }
-  
+
   if (results.empty()) {
     diag.error(loc) << "Undefined method " << callable;
     diag.writeLnIndent("Scopes searched:");
@@ -132,7 +135,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   call->setType(reduceReturnType(call));
   return call;
 }
-  
+
 void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args) {
   //diag.debug(call) << "ADL: " << name;
   DefnList defns;
@@ -145,7 +148,7 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
       Type * argType = dealias(arg->getType());
       if (argType != NULL && typesSearched.insert(argType)) {
         AnalyzerBase::analyzeType(argType, Task_PrepMemberLookup);
-        
+
         // TODO: Also include overrides
         // TODO: Refactor
         Defn * argTypeDefn = argType->typeDefn();
@@ -159,7 +162,7 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
   }
 
   llvm::SmallPtrSet<FunctionDefn *, 32> methodsFound;
-  
+
   // Set of methods already found.
   Candidates & cclist = call->candidates();
   for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
@@ -181,6 +184,23 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
   if (ConstantType * typeExpr = dyn_cast<ConstantType>(func)) {
     // It's a type.
     return callConstructor(loc, typeExpr, args);
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(func)) {
+    CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
+    call->setExpectedReturnType(expected);
+    if (FunctionDefn * func = dyn_cast<FunctionDefn>(lval->value())) {
+      addOverload(call, lval->base(), func, args);
+    } else {
+      diag.error(loc) << func << " is not a callable expression.";
+      return &Expr::ErrorVal;
+    }
+
+    if (!reduceArgList(args, call)) {
+      return &Expr::ErrorVal;
+    }
+
+    call->setType(reduceReturnType(call));
+    return call;
+
   } else {
     DFAIL("Unimplemented");
   }
@@ -195,7 +215,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   TypeDefn * enclosingClassDefn = currentFunction_->enclosingClassDefn();
   CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->getTypeValue());
   CompositeType * superClass = enclosingClass->super();
-  
+
   if (superClass == NULL) {
     diag.fatal(loc) << "class '" << enclosingClass << "' has no super class";
     return &Expr::ErrorVal;
@@ -243,10 +263,10 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const A
   if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse)) {
     return &Expr::ErrorVal;
   }
-  
+
   /*if (tdef->isSynthetic()) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-      
+
     }
   }*/
 
@@ -254,7 +274,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const A
   ExprList coercedArgs;
   FunctionDefn * constructor = NULL;
   DefnList methods;
-  
+
   CallExpr * call = new CallExpr(Expr::Construct, loc, tdef->asExpr());
   call->setExpectedReturnType(type);
   if (type->memberScope()->lookupMember(istrings.idConstruct, methods, false)) {
@@ -300,14 +320,14 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const A
     for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
       diag.info(*it) << *it;
     }
-    
+
     return &Expr::ErrorVal;
   }
 
   if (!reduceArgList(args, call)) {
     return &Expr::ErrorVal;
   }
-  
+
   call->setType(reduceReturnType(call));
   return call;
 
@@ -326,9 +346,9 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
   ExprList & args = call->args();
   for (size_t i = 0; i < in.size(); ++i) {
     const ASTNode * arg = in[i];
-    if (arg->getNodeType() == ASTNode::Keyword) {
+    if (arg->nodeType() == ASTNode::Keyword) {
       arg = static_cast<const ASTKeywordArg *>(arg)->arg();
-    } 
+    }
 
     Type * paramType = getMappedParameterType(call, i);
     if (paramType == NULL) {
@@ -339,7 +359,7 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
     if (isErrorResult(ex)) {
       return false;
     }
-    
+
     args.push_back(ex);
   }
 
@@ -355,7 +375,7 @@ Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
 
     return ty;
   }
-  
+
   return new ResultOfConstraint(call);
 }
 
@@ -364,7 +384,7 @@ Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
   if (ty != NULL) {
     return ty;
   }
-  
+
   return new ParameterOfConstraint(call, index);
 }
 
@@ -373,7 +393,7 @@ void ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   if (!analyzeValueDefn(method, Task_PrepOverloadSelection)) {
     return;
   }
-  
+
   DASSERT_OBJ(method->getType() != NULL, method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());

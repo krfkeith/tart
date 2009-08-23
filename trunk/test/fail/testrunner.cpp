@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
   }
 
   GC::init();
-  diag.setWriter(&errors);
   
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
@@ -80,6 +79,7 @@ int main(int argc, char **argv) {
   
   // Process the input files.
   int failureCount = 0;
+  diag.setWriter(&errors);
   for (unsigned i = 0, e = InputFilenames.size(); i != e; ++i) {
     bool running = true;
     llvm::sys::Path filePath(SourcePath);

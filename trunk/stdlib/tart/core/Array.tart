@@ -3,16 +3,16 @@ import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 
 /** Built-in array class */
-public final class Array[%ElementType] : Iterable<[ElementType]> {
+public final class Array[%ElementType] : Iterable[ElementType] {
   private {
-    var end:NativePointer<[ElementType]>;
-    var data:NativeArray<[ElementType, 0]>;
+    var end:NativePointer[ElementType];
+    var data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
     static def alloc(length:int) {
       //InvalidArgumentException.when(length < 0);
       // The 'offsetof' trick for calculating the size.
-      let self:Array = __pvalloc(zeroPtr<[Array<[ElementType]>]>().data[length]);
+      let self:Array = __pvalloc(zeroPtr[Array[ElementType]]().data[length]);
       self.end = addressOf(self.data[length]);
       return self;
     }
@@ -52,7 +52,7 @@ public final class Array[%ElementType] : Iterable<[ElementType]> {
     set { self.data[index] = value; }
   }
   
-  def iterate -> Iterator<[ElementType]> {
+  def iterate -> Iterator[ElementType] {
     return ArrayIterator(self);
   }
 
@@ -60,7 +60,7 @@ public final class Array[%ElementType] : Iterable<[ElementType]> {
   // def apply(args:int[]) {
   //}
   
-  public final class ArrayIterator : Iterator<[ElementType]>, HasLength {
+  public final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
     private var index:int;
     

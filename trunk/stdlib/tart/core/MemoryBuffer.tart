@@ -4,10 +4,10 @@ struct MemoryBuffer[%T] {
   private let base:Object;
   
   // The starting address of the buffer.
-  public let begin:NativePointer<[T]>;
+  public let begin:NativePointer[T];
   
   // The ending address of the buffer.
-  public let end:NativePointer<[T]>;
+  public let end:NativePointer[T];
 
   /** Construct a memory buffer.
       Parameters:
@@ -15,7 +15,7 @@ struct MemoryBuffer[%T] {
         begin - The beginning of the buffer (points to the first object).
         end - The end of the buffer (points to one past the last object).
   */
-  public def construct(base:Object, begin:NativePointer<[T]>, end:NativePointer<[T]>) {
+  public def construct(base:Object, begin:NativePointer[T], end:NativePointer[T]) {
     self.base = base;
     self.begin = begin;
     self.end = end;
