@@ -14,6 +14,9 @@ struct TypeInfoBlock {
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[NativePointer[void], 0];
 
+  /** Compiler-generated function to lookup the specified interface method. */
+  //readonly var idispatch:fn(interfaceType:NativePointer[Type], methodIndex:int) -> NativePointer[void];
+
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used
       by the compiler to do 'isa', 'as' and 'catch' tests. */

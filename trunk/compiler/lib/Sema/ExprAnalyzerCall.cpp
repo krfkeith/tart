@@ -236,7 +236,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   Expr * selfExpr = new LValueExpr(selfParam->getLocation(), NULL, selfParam);
   selfExpr = superClass->implicitCast(loc, selfExpr);
 
-  CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
+  CallExpr * call = new CallExpr(Expr::ExactCall, loc, NULL);
   call->setExpectedReturnType(expected);
   for (DefnList::iterator it = methods.begin(); it != methods.end(); ++it) {
     if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {

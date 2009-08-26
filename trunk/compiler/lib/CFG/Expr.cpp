@@ -389,8 +389,8 @@ void CallExpr::format(FormatStream & out) const {
   }
   out << ") ";
 
-  if (out.getShowType() && expectedReturnType) {
-    out << "-> " << expectedReturnType << " ";
+  if (out.getShowType() && expectedReturnType_) {
+    out << "-> " << expectedReturnType_ << " ";
   }
 }
 

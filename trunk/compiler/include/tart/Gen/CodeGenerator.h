@@ -134,15 +134,15 @@ public:
   /** Generate the address of an array element. */
   llvm::Value * genElementAddr(const UnaryExpr * in);
 
-#if 0
   /** Generate the code to look up a method in a vtable. */
-  llvm::Value * genVTableLookup(const FunctionDef * method, const Type * classType,
+  llvm::Value * genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
       llvm::Value * objectVal);
 
   /** Generate the code to look up a method in an itable. */
-  llvm::Value * genITableLookup(const FunctionDef * method, const Type * interfaceType,
+  llvm::Value * genITableLookup(const FunctionDefn * method, const CompositeType * interfaceType,
       llvm::Value * objectVal);
 
+#if 0
   /** Generate a type cast. */
   llvm::Value * genCast(const SourceLocation & loc, llvm::Value * val,
       const Type * fromType, const Type * toType);

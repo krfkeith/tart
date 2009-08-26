@@ -19,7 +19,7 @@ public class Exception : Throwable {
   }
 
   /** The error message for this exception. */
-  def message:String {
+  final def message:String {
     get { return self.msg; }
   }
 

@@ -60,7 +60,7 @@ const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
 const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-  
+
   // Don't need to define this twice.
   if (rtype->isExternal() || (rtype->getTypeObjectPtr() != NULL &&
       rtype->getTypeObjectPtr()->hasInitializer())) {
@@ -205,19 +205,18 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     baseClassArray, type->typeDefn()->getLinkageName() + ".type.tib.bases");
 
   // Generate the interface dispatch function
-  //Function * idispatch = genInterfaceDispatchFunc(type);
+  Function * idispatch = genInterfaceDispatchFunc(type);
   //DASSERT(idispatch != NULL) {
 
   // Create the TypeInfoBlock struct
   ConstantList tibMembers;
   tibMembers.push_back(getTypeObjectPtr(type));
   tibMembers.push_back(baseClassArrayPtr);
+  tibMembers.push_back(genMethodArray(type->instanceMethods_));
 #if 0
   // TODO: Enable
   tibMembers.push_back(idispatch);
 #endif
-
-  tibMembers.push_back(genMethodArray(type->instanceMethods_));
   Constant * tibStruct = ConstantStruct::get(context_, tibMembers);
 
   // Assign the TIB value to the tib global variable.

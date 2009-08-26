@@ -147,6 +147,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     case Expr::FnCall:
     case Expr::CtorCall:
+    case Expr::VTableCall:
       return genCall(static_cast<const FnCallExpr *>(in));
 
     case Expr::New:
@@ -688,15 +689,13 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
 
   // Generate the function to call.
   Value * fnVal;
-  if (in->exprType() == Expr::MethodCall) {
+  if (in->exprType() == Expr::VTableCall) {
     DASSERT_OBJ(selfArg != NULL, in);
     const Type * classType = dealias(fn->functionType()->selfParam()->getType());
     if (classType->typeClass() == Type::Class) {
-      //fnVal = genVTableLookup(fn, classType, selfArg);
-      DFAIL("Implement");
+      fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else if (classType->typeClass() == Type::Interface) {
-      //fnVal = genITableLookup(fn, classType, selfArg);
-      DFAIL("Implement");
+      fnVal = genITableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else {
       // Struct or protocol.
       fnVal = genFunctionValue(fn);
@@ -712,6 +711,81 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
   } else {
     return result;
   }
+}
+
+Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
+    Value * selfPtr) {
+  DASSERT_OBJ(!method->isFinal(), method);
+  DASSERT_OBJ(!method->isCtor(), method);
+  int methodIndex = method->dispatchIndex();
+  if (methodIndex < 0) {
+    diag.fatal(method) << "Invalid member index of " << method;
+    return NULL;
+  }
+
+  // Make sure it's a class.
+  DASSERT(classType->typeClass() == Type::Class);
+
+  // Upcast to type 'object' and load the vtable pointer.
+  ValueList indices;
+  for (const CompositeType * t = classType; t != NULL && t != Builtins::typeObject; t = t->super()) {
+    indices.push_back(getInt32Val(0));
+  }
+  indices.push_back(getInt32Val(0));
+  indices.push_back(getInt32Val(0));
+
+  // Get the TIB
+  Value * tib = builder_.CreateLoad(
+      builder_.CreateGEP(selfPtr, indices.begin(), indices.end()),
+      "tib");
+
+  indices.clear();
+  indices.push_back(getInt32Val(0));
+  indices.push_back(getInt32Val(2));
+  indices.push_back(getInt32Val(methodIndex));
+  Value * fptr = builder_.CreateLoad(
+      builder_.CreateGEP(tib, indices.begin(), indices.end()), method->name());
+  return builder_.CreateBitCast(fptr, PointerType::getUnqual(method->type()->irType()));
+}
+
+Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
+    Value * objectPtr) {
+
+  // Interface function table entry
+  DASSERT(!method->isFinal());
+  DASSERT(!method->isCtor());
+  int methodIndex = method->dispatchIndex();
+  if (methodIndex < 0) {
+    diag.fatal(method) << "Invalid member index of " << method;
+    return NULL;
+  }
+
+  // Make sure it's an interface.
+  DASSERT(classType->typeClass() == Type::Interface);
+
+  // Get the interface ID (which is just the type pointer).
+  GlobalVariable * itype = getTypeObjectPtr(classType);
+
+  // Load the pointer to the TIB.
+  ValueList indices;
+  indices.push_back(getInt32Val(0));
+  indices.push_back(getInt32Val(0));
+  Value * tib = builder_.CreateLoad(
+      builder_.CreateGEP(objectPtr, indices.begin(), indices.end()), "tib");
+
+  // Load the pointer to the dispatcher function.
+  indices.clear();
+  indices.push_back(getInt32Val(0));
+  indices.push_back(getInt32Val(2));
+  Value * dispatcher = builder_.CreateLoad(
+      builder_.CreateGEP(tib, indices.begin(), indices.end()), "idispatch");
+
+  // Construct the call to the dispatcher
+  ValueList args;
+  args.push_back(itype);
+  args.push_back(getInt32Val(methodIndex));
+  Value * methodVal = genCallInstr(dispatcher, args.begin(), args.end(), "idispatch");
+  return builder_.CreateBitCast(methodVal, PointerType::getUnqual(method->type()->irType()));
 }
 
 Value * CodeGenerator::genNew(NewExpr * in) {

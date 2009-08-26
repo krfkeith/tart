@@ -80,12 +80,14 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitPostAssign(static_cast<AssignmentExpr *>(in));
 
     case Expr::Call:
+    case Expr::ExactCall:
     //case Expr::ICall:
     case Expr::Construct:
       return visitCall(static_cast<CallExpr *>(in));
 
     case Expr::FnCall:
     case Expr::CtorCall:
+    case Expr::VTableCall:
       return visitFnCall(static_cast<FnCallExpr *>(in));
 
     case Expr::New:

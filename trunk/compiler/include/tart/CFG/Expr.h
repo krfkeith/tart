@@ -338,13 +338,13 @@ class CallExpr : public ArglistExpr {
 private:
   Expr * function_;
   Candidates candidates_;
-  Type * expectedReturnType;
+  Type * expectedReturnType_;
 
 public:
   CallExpr(ExprType k, const SourceLocation & loc, Expr * f)
     : ArglistExpr(k, loc, NULL)
     , function_(f)
-    , expectedReturnType(NULL)
+    , expectedReturnType_(NULL)
   {}
 
   /** The function expression being called. */
@@ -355,8 +355,8 @@ public:
   Candidates & candidates() { return candidates_; }
 
   /** The function expression being called. */
-  Type * getExpectedReturnType() { return expectedReturnType; }
-  void setExpectedReturnType(Type * t) { expectedReturnType = t; }
+  Type * expectedReturnType() { return expectedReturnType_; }
+  void setExpectedReturnType(Type * t) { expectedReturnType_ = t; }
 
   /** If all of the overload candidates have the same type for the Nth
       parameter slot, then return that type, otherwise return NULL. */

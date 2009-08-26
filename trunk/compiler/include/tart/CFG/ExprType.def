@@ -21,12 +21,6 @@ EXPR_TYPE(PatternVar)     // A pattern variable
 EXPR_TYPE(Assign)         // Assignment
 EXPR_TYPE(PostAssign)     // Assign, return value before assignment
 EXPR_TYPE(InitVar)        // Local variable initialization
-EXPR_TYPE(Call)           // General call
-EXPR_TYPE(FnCall)         // Function call
-EXPR_TYPE(MethodCall)     // Virtual method call
-EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
-EXPR_TYPE(PtrCall)        // Indirect call
-EXPR_TYPE(Construct)      // Constructor call
 EXPR_TYPE(Instantiate)    // An explicit template specialization
 EXPR_TYPE(New)            // A call to allocate storage for an object
 EXPR_TYPE(BinaryOpcode)   // A binary IR opcode
@@ -36,6 +30,17 @@ EXPR_TYPE(RefEq)          // Reference equals
 EXPR_TYPE(Not)            // Logical Not
 EXPR_TYPE(PtrDeref)       // Pointer dereference
 EXPR_TYPE(Prog2)          // Two exressions, eval both, take second
+
+// Function calls (high-level)
+EXPR_TYPE(Call)           // General call
+EXPR_TYPE(ExactCall)      // Call an exact method (no vtable lookup)
+EXPR_TYPE(Construct)      // Constructor call
+
+// Function calls (implementation)
+EXPR_TYPE(FnCall)         // Function call
+EXPR_TYPE(VTableCall)     // Virtual method call
+EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
+EXPR_TYPE(PtrCall)        // Indirect call
 
 // Casts
 EXPR_TYPE(ImplicitCast)   // Implicit cast

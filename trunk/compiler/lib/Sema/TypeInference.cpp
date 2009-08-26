@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/FunctionType.h"
@@ -106,8 +106,8 @@ void CallSite::formatCallSignature(FormatStream & out) {
   out << cd.front()->method()->name() << "(";
   formatExprTypeList(out, callExpr->args());
   out << ")";
-  if (callExpr->getExpectedReturnType() != NULL) {
-    out << " -> " << callExpr->getExpectedReturnType();
+  if (callExpr->expectedReturnType() != NULL) {
+    out << " -> " << callExpr->expectedReturnType();
   }
 }
 
@@ -118,7 +118,7 @@ Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
   if (!in->candidates().empty()) {
     callSites.push_back(CallSite(in));
   }
-  
+
   return CFGPass::visitCall(in);
 }
 
@@ -141,19 +141,19 @@ Expr * TypeInferencePass::runImpl() {
     diag.fatal(rootExpr) << "Can't solve '" << rootExpr << "'";
     return rootExpr;
   }
-  
+
   bestSolutionRank = Incompatible;
   bestSolutionCount = 0;
   unifyCalls();
   update();
   reportRanks();
-  
+
   cullByConversionRank();
   cullBySpecificity();
   cullByElimination();
 
   reportRanks();
-  
+
   /*else {
     // Report ambiguity.
     //diag.fatal()
@@ -164,7 +164,7 @@ Expr * TypeInferencePass::runImpl() {
   for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
     it->finish();
   }
-  
+
   return rootExpr;
 }
 
@@ -172,7 +172,7 @@ void TypeInferencePass::update() {
   lowestRank = IdenticalTypes;
   underconstrained = false;
   overconstrained = false;
-  
+
   if (expectedType != NULL) {
     ConversionRank rootRank = expectedType->convert(rootExpr);
     if (!strict_ && rootRank < NonPreferred) {
@@ -209,7 +209,7 @@ void TypeInferencePass::checkSolution() {
       for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
         it->best = it->callExpr->getSingularCandidate();
       }
-    
+
       if (ShowInference) {
         diag.debug() << "Discovered new best solution with rank [" <<
             bestSolutionRank << "]";
@@ -270,21 +270,21 @@ void TypeInferencePass::cullByConversionRank() {
     }
     cullByConversionRank(ExactConversion);
   }
-  
+
   if (!overconstrained && underconstrained && lowestRank < IdenticalTypes) {
     if (ShowInference) {
       diag.debug() << "All sites: Culling overloads of rank < Identical";
     }
     cullByConversionRank(IdenticalTypes);
   }
-  
+
   if (overconstrained) {
     if (ShowInference) {
       diag.debug() << "  Backtracking";
     }
     backtrack();
   }
-  
+
   if (underconstrained) {
     int siteIndex = 1;
     for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it, ++siteIndex) {
@@ -302,7 +302,7 @@ void TypeInferencePass::cullByConversionRank() {
           diag.debug() << "  " << cullCount << " methods culled.";
         }
         update();
-        
+
         if (overconstrained) {
           if (ShowInference) {
             diag.debug() << "  Backtracking";
@@ -311,13 +311,13 @@ void TypeInferencePass::cullByConversionRank() {
           break;
         }
       }
-        
+
       if (!underconstrained) {
         break;
       }
     }
   }
-  
+
   checkSolution();
 }
 
@@ -364,7 +364,7 @@ void TypeInferencePass::cullBySpecificity() {
     diag.unindent();
   }
 }
-  
+
 void TypeInferencePass::cullBySpecificity(CallSite & site) {
   Candidates mostSpecific;
   Candidates & cd = site.callExpr->candidates();
@@ -372,14 +372,14 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
     if ((*cc)->isCulled()) {
       continue;
     }
-    
+
     CallCandidate * call = *cc;
     bool addNew = true;
     for (Candidates::iterator ms = mostSpecific.begin(); ms != mostSpecific.end();) {
       if ((*ms)->isCulled()) {
         continue;
       }
-      
+
       bool newIsBetter = call->isMoreSpecific(*ms);
       bool oldIsBetter = (*ms)->isMoreSpecific(call);
       if (newIsBetter) {
@@ -398,15 +398,15 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
         }
         addNew = false;
       }
-      
+
       ++ms;
     }
-    
+
     if (addNew) {
       mostSpecific.push_back(call);
     }
   }
-  
+
   for (Candidates::iterator cc = cd.begin(); cc != cd.end(); ++cc) {
     if ((*cc)->isCulled()) {
       continue;
@@ -442,7 +442,7 @@ void TypeInferencePass::cullByElimination(
         if ((*ci)->isCulled()) {
           continue;
         }
-        
+
         if (ShowInference) {
           diag.debug() << "Trying " << (*ci)->method();
         }
@@ -452,13 +452,13 @@ void TypeInferencePass::cullByElimination(
         cullAllButOne(*first, *ci);
         cullByElimination(first + 1, last);
         backtrack();
-        
+
         diag.unindent();
       }
       return;
     }
   }
-  
+
   update();
   checkSolution();
 }

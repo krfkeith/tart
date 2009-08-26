@@ -137,6 +137,15 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   DASSERT_OBJ(type->isSingular(), type);
   DASSERT_OBJ(type->super() == NULL, type);
 
+  // Check for valid finality
+  if (target->isFinal()) {
+    if (type->typeClass() == Type::Interface) {
+      diag.error(target) << "Interface type cannot be final";
+    } else if (type->typeClass() == Type::Protocol) {
+      diag.error(target) << "Protocol type cannot be final";
+    }
+  }
+
   // Resolve base class references to real types.
   Type::TypeClass dtype = type->typeClass();
   const ASTNodeList & astBases = ast->bases();
@@ -417,6 +426,16 @@ bool ClassAnalyzer::analyzeMethods() {
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (member->isTemplate()) {
         continue;
+      }
+
+      if (member->isFinal()) {
+        if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+          diag.error(target) << "Interface or protocol method cannot be final";
+        }
+      } else if (member->visibility() != Public) {
+        if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+          diag.error(target) << "Interface or protocol method cannot be non-public";
+        }
       }
 
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {

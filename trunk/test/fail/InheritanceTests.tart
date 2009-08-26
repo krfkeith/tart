@@ -21,7 +21,7 @@ public final class Test : String {
 public final struct Test : Object {}
 
 /// TEST BadBaseForInterface: interface can only inherit
-public final interface Test : Object {}
+public interface Test : Object {}
 
 /// TEST NonSingularBase: is a template
 public final class Test : Array {}
@@ -34,3 +34,19 @@ public class Test : Test {}
 
 /// TEST MultipleInheritance: single concrete
 public class Test : Exception, Exception {}
+
+/// TEST FinalInterface: Interface type cannot be final
+public final interface Test {}
+
+/// TEST FinalProtocol;: Protocol type cannot be final
+public final protocol Test {}
+
+/// TEST FinalInterfaceMethod: cannot be final
+public interface Test {
+  final def iterate -> void {}
+}
+
+/// TEST FinalInterfaceMethod: cannot be non-public
+public interface Test {
+  private def iterate -> void;
+}

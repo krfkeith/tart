@@ -210,13 +210,18 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     }
 
     // Return a function call expression
-    bool isCtorCall = in->exprType() == Expr::Construct && method->isCtor();
-    FnCallExpr * result = new FnCallExpr(
-      isCtorCall ? Expr::CtorCall : Expr::FnCall,
-      in->location(), method, selfArg);
+    Expr::ExprType callType = Expr::FnCall;
+    if (in->exprType() == Expr::Construct && method->isCtor()) {
+      callType = Expr::CtorCall;
+    } else if (method->storageClass() == Storage_Instance &&
+        !method->isFinal() && !method->isCtor() && in->exprType() != Expr::ExactCall) {
+      callType = Expr::VTableCall;
+    }
+
+    FnCallExpr * result = new FnCallExpr(callType, in->location(), method, selfArg);
     result->args().append(callingArgs.begin(), callingArgs.end());
 
-    if (isCtorCall) {
+    if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
       result->setType(method->functionType()->selfParam()->getType());
     } else {

@@ -66,6 +66,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
       return evalPostAssign(static_cast<AssignmentExpr *>(in));
 
     case Expr::Call:
+    case Expr::ExactCall:
     //case Expr::ICall:
     case Expr::Construct:
       return evalCall(static_cast<CallExpr *>(in));

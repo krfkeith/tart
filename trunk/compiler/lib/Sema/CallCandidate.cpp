@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -78,23 +78,23 @@ bool CallCandidate::isEqual(const CallCandidate * other) const {
   for (size_t i = 0; i < argCount; ++i) {
     Type * t0 = paramType(i);
     Type * t1 = paramType(i);
-    
+
     if (!t0->isEqual(t1)) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   bool same = true;
-  
+
   if (paramAssignments_.size() != other->paramAssignments_.size()) {
     diag.info() << "different number of args.";
     return false;
   }
-  
+
   // TODO: Factor in return type.
 
   /*if (!resultType()->isEqual(other->resultType())) {
@@ -109,12 +109,12 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   for (size_t i = 0; i < argCount; ++i) {
     Type * t0 = paramType(i);
     Type * t1 = other->paramType(i);
-    
+
     if (!t0->isEqual(t1)) {
       if (!t0->isSubtype(t1)) {
         return false;
       }
-      
+
       same = false;
     } else {
       bool isEQ = t1->isEqual(t0);
@@ -123,13 +123,13 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       }
     }
   }
-  
+
   //if (!same) {
   //  diag.debug(method_) << method_ << " is more specific than " << other->method_;
   //} else {
   //  diag.debug(method_) << method_ << " is the same as " << other->method_;
   //}
-  
+
   if (same) {
     // If one is a template, than it is less specific than the other.
     // TODO: If they are both templates, choose the one with the smaller number
@@ -152,8 +152,8 @@ ConversionRank CallCandidate::updateConversionRank() {
     Type * paramType = this->paramType(argIndex);
     conversionRank_ = std::min(conversionRank_, paramType->convert(argExpr));
   }
-  
-  Type * expectedReturnType = callExpr_->getExpectedReturnType();
+
+  Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
     conversionRank_ = std::min(conversionRank_, expectedReturnType->convert(resultType_));
   }
@@ -167,7 +167,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   bindingEnv_.reset();
-  
+
   // Now, for each parameter attempt unification.
   SourceContext callSite(callExpr, NULL, callExpr);
   SourceContext candidateSite(method_, &callSite, method_, Format_Type);
@@ -186,7 +186,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   // Unify the return type (Pass 1)
-  Type * expectedReturnType = callExpr_->getExpectedReturnType();
+  Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && !resultType_->isUnsizedIntType()) {
     if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
       return false;
@@ -247,10 +247,10 @@ FormatStream & operator<<(FormatStream & out, const CallCandidate & cc) {
     if (i != 0) {
       out << ", ";
     }
-    
+
     out << ":" << cc.paramType(i);
   }
-  
+
   out << ") -> " << cc.resultType();
 }
 

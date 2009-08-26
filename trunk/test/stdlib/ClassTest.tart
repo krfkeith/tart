@@ -18,6 +18,10 @@ def main(args:String[]) -> int {
 
   // Call a method of the subclass which is defined in the base class.
   let v = u.testMethod();
+  
+  let w:TestClass = u;
+  let x = w.testMethod();
+  Debug.assertEq(13, x);
 
   // Test reference equality
   if t3 is u {
