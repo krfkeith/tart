@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/AST/ASTNode.h"
 #include "tart/AST/Stmt.h"
@@ -27,19 +27,18 @@ protected:
     if (expectedErrors != 0) {
       diag.setMinSeverity(Diagnostics::Off);
     }
-  
+
     FakeSourceFile  src(srctext);
     Parser parser(&src, NULL);
     T * result = (parser.*parseFunc)();
     if (!expectedErrors) {
       EXPECT_TRUE(result != NULL) << "[src = " << srctext << "]";
     }
-  
+
     if (expectedErrors != diag.getErrorCount()) {
-      EXPECT_EQ(expectedErrors, diag.getErrorCount()) <<
-        "[src = " << srctext << "]";
+      EXPECT_EQ(expectedErrors, diag.getErrorCount()) << "[src = " << srctext << "]";
     }
-  
+
     diag.reset();
     diag.setMinSeverity(Diagnostics::Debug);
     return result;
@@ -72,7 +71,7 @@ TEST_F(ParserTest, InternStrings) {
 TEST_F(ParserTest, Types) {
 
   ASTNode * ast;
-  
+
   // Parsing tests for type names.
 
   ast = parseType("X");
@@ -158,7 +157,7 @@ TEST_F(ParserTest, Types) {
 
 TEST_F(ParserTest, Terminals) {
   ASTNode * ast;
-  
+
   // Integers
   ast = parseExpression("10");
   ASSERT_EQ(ASTNode::LitInt, ast->nodeType());
@@ -212,7 +211,7 @@ TEST_F(ParserTest, Terminals) {
 
 TEST_F(ParserTest, SimpleExpressions) {
   ASTNode * ast;
-  
+
   // TODO: Update these tests to conform to new AST style.
   ast = parseExpression("1+1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
@@ -306,9 +305,11 @@ TEST_F(ParserTest, SimpleExpressions) {
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixPossiblyGE(1, 1)", ast);
 
+#if 0
   ast = parseExpression("1 as Foo");
   ASSERT_EQ(ASTNode::AsType, ast->nodeType());
   EXPECT_AST_EQ("AsType(1, Foo)", ast);
+#endif
 
   ast = parseExpression("1 is 2");
   ASSERT_EQ(ASTNode::Is, ast->nodeType());
@@ -333,7 +334,7 @@ TEST_F(ParserTest, SimpleExpressions) {
 
 TEST_F(ParserTest, ComplexExpressions) {
   ASTNode * ast;
-  
+
   // TODO: Update these tests to conform to new AST style.
   ast = parseExpression("1+(1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
@@ -346,7 +347,7 @@ TEST_F(ParserTest, ComplexExpressions) {
 
 TEST_F(ParserTest, Arguments) {
   ASTNode * ast;
-  
+
   ast = parseExpression("f()");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f()", ast);
@@ -372,7 +373,7 @@ TEST_F(ParserTest, Arguments) {
 
 TEST_F(ParserTest, Statements) {
   Stmt * ast;
-  
+
   ast = parseStatement("f();");
   ASSERT_EQ(Stmt::Expression, ast->nodeType());
   EXPECT_AST_EQ("f();", ast);
@@ -456,11 +457,21 @@ TEST_F(ParserTest, Statements) {
   ast = parseStatement("try {} catch e:Ex {} else {} finally {}");
   ASSERT_EQ(ASTNode::Try, ast->nodeType());
   EXPECT_AST_EQ("Try ({} Catch (let e:Ex; {}); Else {} Finally {})", ast);
+
+  ast = parseStatement("switch n { case 1 {} case 2 {} else {}}");
+  ASSERT_TRUE(ast != NULL);
+  ASSERT_EQ(ASTNode::Switch, ast->nodeType());
+  ASSERT_AST_EQ("Switch (n,  Case (1, {}); Case (2, {}); {};)", ast);
+
+  ast = parseStatement("classify n { as e:T {} as e:T {} else {}}");
+  ASSERT_TRUE(ast != NULL);
+  ASSERT_EQ(ASTNode::Classify, ast->nodeType());
+  ASSERT_AST_EQ("Classify (n,  Case (let e:T, {}); Case (let e:T, {}); {};)", ast);
 }
 
 TEST_F(ParserTest, Decls) {
   ASTNode * ast;
-  
+
   // Parsing tests for declarations.
   ast = parseDeclaration("namespace X {}");
   ASSERT_EQ(ASTDecl::Namespace, ast->nodeType());

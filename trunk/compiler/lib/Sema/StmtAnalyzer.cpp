@@ -1,13 +1,15 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/EnumType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
 
@@ -29,17 +31,18 @@ namespace tart {
 
 // A scope which allows definitions in the enclosing class to be looked up
 // via the 'self' parameter.
-class SelfScope : public DelegatingScope {
+class SelfScope: public DelegatingScope {
   ParameterDefn * selfParam;
   Expr * selfExpr;
-  
+
 public:
-  SelfScope(Scope * delegate, Scope * parent)
-    : DelegatingScope(delegate, parent)
-    , selfParam(NULL), selfExpr(NULL)
-  {}
-  
-  void setSelfParam(ParameterDefn * self) { selfParam = self; }
+  SelfScope(Scope * delegate, Scope * parent) :
+    DelegatingScope(delegate, parent), selfParam(NULL), selfExpr(NULL) {
+  }
+
+  void setSelfParam(ParameterDefn * self) {
+    selfParam = self;
+  }
 
   Expr * baseExpr() {
     if (selfExpr == NULL) {
@@ -53,28 +56,17 @@ public:
 /// -------------------------------------------------------------------
 /// StmtAnalyzer
 
-StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
-  : AnalyzerBase(func->module(), &func->parameterScope())
-  , function(func)
-  , returnType(NULL)
-  , yieldType_(NULL)
-  , blocks(func->blocks())
-  , currentBlock_(NULL)
-  , continueTarget_(NULL)
-  , breakTarget(NULL)
-  , unwindTarget_(NULL)
-  , cleanups_(NULL)
-  , loopCleanups_(NULL)
-  , macroReturnVal_(NULL)
-  , macroReturnTarget_(NULL)
-{
+StmtAnalyzer::StmtAnalyzer(FunctionDefn * func) :
+  AnalyzerBase(func->module(), &func->parameterScope()), function(func), returnType(NULL),
+      yieldType_(NULL), blocks(func->blocks()), currentBlock_(NULL), continueTarget_(NULL),
+      breakTarget(NULL), unwindTarget_(NULL), cleanups_(NULL), loopCleanups_(NULL),
+      macroReturnVal_(NULL), macroReturnTarget_(NULL) {
   insertPos_ = blocks.end();
   returnType = function->returnType();
 }
 
 bool StmtAnalyzer::buildCFG() {
-  if (function->getFunctionDecl() &&
-      function->getFunctionDecl()->getBody() != NULL) {
+  if (function->getFunctionDecl() && function->getFunctionDecl()->getBody() != NULL) {
 
     // Create a temporary scope to allow lookup of the function parameters.
     DelegatingScope parameterScope(&function->parameterScope(), function->definingScope());
@@ -85,8 +77,8 @@ bool StmtAnalyzer::buildCFG() {
     // and is always searched immediately after the parameter scope.
     if (function->storageClass() == Storage_Instance) {
       ParameterDefn * selfParam = function->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->type() != NULL, function);
+      DASSERT_OBJ(selfParam != NULL, function)
+;      DASSERT_OBJ(selfParam->type() != NULL, function);
       TypeDefn * selfType = selfParam->type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
@@ -103,71 +95,77 @@ bool StmtAnalyzer::buildCFG() {
     if (!buildStmtCFG(body)) {
       return false;
     }
-    
+
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
       DASSERT_OBJ(macroReturnTarget_ == NULL, function);
       //if (macroReturnTarget_ != NULL) {
-        //currentBlock->branchTo(body->getFinalLocation(), macroReturnTarget_);
+      //currentBlock->branchTo(body->getFinalLocation(), macroReturnTarget_);
       //} else {
       currentBlock_->exitReturn(body->getFinalLocation(), NULL);
       //}
     }
-    
+
     // Now flatten all local returns.
     flattenLocalProcedureCalls();
-    
+
     return true;
   }
-  
+
   return true;
 }
 
 bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
   switch (st->nodeType()) {
     case ASTNode::Block:
-      return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
+    return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
 
     case ASTNode::Expression:
-      return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
+    return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
 
     case ASTNode::If:
-      return buildIfStmtCFG(static_cast<const IfStmt *>(st));
+    return buildIfStmtCFG(static_cast<const IfStmt *>(st));
 
     case ASTNode::While:
-      return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
+    return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
 
     case ASTNode::For:
-      return buildForStmtCFG(static_cast<const ForStmt *>(st));
+    return buildForStmtCFG(static_cast<const ForStmt *>(st));
 
     case ASTNode::ForEach:
-      return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
+    return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
+
+    case ASTNode::Switch:
+    return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
+
+    case ASTNode::Classify:
+    return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
 
     case ASTNode::Throw:
-      return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
+    return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
 
     case ASTNode::Try:
-      return buildTryStmtCFG(static_cast<const TryStmt *>(st));
+    return buildTryStmtCFG(static_cast<const TryStmt *>(st));
 
     case ASTNode::Return:
-      return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
+    return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
 
     case ASTNode::Yield:
-      return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
+    return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
 
     case ASTNode::Break:
-      return buildBreakStmtCFG(st);
+    return buildBreakStmtCFG(st);
 
     case ASTNode::Continue:
-      return buildContinueStmtCFG(st);
+    return buildContinueStmtCFG(st);
 
     case ASTNode::LocalDecl:
-      return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
-    
+    return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
+
     //case Catch:
     default:
-      diag.fatal(st->getLocation()) << "Invalid statement type '" <<
-          getNodeTypeName(st->nodeType());
-      return false;
+    diag.fatal(st->getLocation()) << "Invalid statement type '" <<
+    getNodeTypeName(st->nodeType());
+    return false;
   }
 }
 
@@ -205,7 +203,7 @@ bool StmtAnalyzer::buildExprStmtCFG(const ExprStmt * st) {
     currentBlock_->append(expr);
     return true;
   }
-  
+
   return false;
 }
 
@@ -216,7 +214,6 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
     return false;
   }
 
-  DASSERT(testExpr != NULL);
   DASSERT(testExpr->type() != NULL);
   if (testExpr->isConstant()) {
     // TODO: See if the test expression is a constant.
@@ -246,7 +243,7 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
   // Only generate a branch if we haven't returned or thrown.
   if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
     if (blkDone == NULL)
-      blkDone = createBlock("endif");
+    blkDone = createBlock("endif");
     currentBlock_->branchTo(st->getThenSt()->getFinalLocation(), blkDone);
   }
 
@@ -258,7 +255,7 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
     // Only generate a branch if we haven't returned or thrown
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
       if (blkDone == NULL)
-        blkDone = createBlock("endif");
+      blkDone = createBlock("endif");
       currentBlock_->branchTo(st->getFinalLocation(), blkDone);
     }
   }
@@ -334,8 +331,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
         return false;
       }
       DASSERT(initDefn->initValue() != NULL);
-      currentBlock_->append(new InitVarExpr(st->getLocation(), initDefn,
-          initDefn->initValue()));
+      currentBlock_->append(new InitVarExpr(st->getLocation(), initDefn, initDefn->initValue()));
       //if (initDefn == NULL) {
       //  return NULL;
       //}
@@ -345,12 +341,12 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
     }
   }
 
-#if 0  
+#if 0
   if (initExpr) {
     if (initExpr->exprType() == Expr::Let ||
         initExpr->exprType() == Expr::Var) {
       ValueDef * initDecl =
-          static_cast<ValueDef *>(const_cast<Expr *>(initExpr));
+      static_cast<ValueDef *>(const_cast<Expr *>(initExpr));
       if (!analyzeLocalDecl(initDecl)) {
         return false;
       }
@@ -362,9 +358,9 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
       if (const ValueDef * initDecl = dyn_cast<ValueDef>(to)) {
         DASSERT(false && "shouldn't happen - decls are inited, not assigned");
         /*initDecl->setValue(op->getOperands()[1]);
-        if (!analyzeLocalDecl(loopAnalyzer, initDecl)) {
-            return false;
-        }*/
+         if (!analyzeLocalDecl(loopAnalyzer, initDecl)) {
+         return false;
+         }*/
       } else if (to->getClass() == Expr::Tuple) {
         DASSERT(false && "deal with tuples.");
       } else {
@@ -417,8 +413,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   // Generate the 'test' block with the conditional branch.
   if (blkTest) {
     currentBlock_->branchTo(st->getTestExpr()->getLocation(), blkTest);
-    blkTest->condBranchTo(st->getTestExpr()->getLocation(),
-        testExpr, blkBody, blkDone);
+    blkTest->condBranchTo(st->getTestExpr()->getLocation(), testExpr, blkBody, blkDone);
   } else {
     currentBlock_->branchTo(st->getLocation(), blkBody);
   }
@@ -456,6 +451,308 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   return true;
 }
 
+bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
+  Scope * savedScope = activeScope;
+  Scope * caseValScope = activeScope;
+  Expr * testExpr = astToTestExpr(st->testExpr(), false);
+  if (isErrorResult(testExpr)) {
+    return false;
+  }
+
+  DASSERT(testExpr->type() != NULL);
+  if (testExpr->isConstant()) {
+    // TODO: See if the test expression is a constant.
+    // Check for bool and int types, not floats.
+  }
+
+  Type * testType = testExpr->type();
+
+  if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
+    if (isIntegerType(ptype->typeId())) {
+      // TODO: Implement
+    } else {
+      diag.error(st) << "Invalid expression type for switch statement: " << testType;
+    }
+  } else if (EnumType * etype = dyn_cast<EnumType>(testType)) {
+    // If it's an enum, allow unqualified enum constants to be used.
+    caseValScope = new DelegatingScope(etype->memberScope(), activeScope);
+    // TODO: Implement
+  } else if (testType == Builtins::typeString) {
+    // TODO: Implement
+    DFAIL("Implement");
+  } else {
+    diag.error(st) << "Invalid expression type for switch statement: " << testType;
+  }
+
+  Block * testBlock = currentBlock_;
+  testBlock->setTerminator(st->location(), BlockTerm_Switch);
+  testBlock->addCase(testExpr, NULL);
+  Block * endBlock = NULL;
+
+  const Stmt * elseSt = NULL;
+  const StmtList & cases = st->caseList();
+  for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
+    const Stmt * s = *it;
+    if (s->nodeType() == ASTNode::Case) {
+      CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
+      ASTNode * caseValAst = caseSt->caseExpr();
+      ExprList caseValList;
+      Scope * saveCaseScope = setActiveScope(caseValScope);
+      if (caseValAst->nodeType() == ASTNode::Tuple) {
+        const ASTOper * caseVals = static_cast<const ASTOper *>(caseValAst);
+        for (ASTNodeList::const_iterator it = caseVals->args().begin(); it != caseVals->args().end(); ++it) {
+          Expr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
+          if (caseVal == NULL) {
+            continue;
+          }
+
+          caseValList.push_back(caseVal);
+        }
+      } else {
+        Expr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
+        if (caseVal == NULL) {
+          continue;
+        }
+
+        caseValList.push_back(caseVal);
+      }
+
+      setActiveScope(saveCaseScope);
+      DASSERT(!caseValList.empty());
+
+      Block * caseBody = createBlock("casebody");
+      for (ExprList::iterator ci = caseValList.begin(); ci != caseValList.end(); ++ci) {
+        testBlock->addCase(*ci, caseBody);
+      }
+
+      // Build the body of the case.
+      setInsertPos(caseBody);
+      buildStmtCFG(caseSt->body());
+
+      // Only generate a branch if we haven't returned or thrown.
+      if (currentBlock_ && !currentBlock_->hasTerminator()) {
+        if (endBlock == NULL) {
+          endBlock = new Block("endswitch");
+        }
+
+        currentBlock_->branchTo(st->getLocation(), endBlock);
+      }
+    } else if (s->nodeType() == ASTNode::Block) {
+      if (elseSt != NULL) {
+        diag.error(elseSt) << "Only one 'else' clause is allowed.";
+      } else {
+        elseSt = s;
+      }
+    } else {
+      DFAIL("Bad case statement");
+    }
+  }
+
+  if (elseSt != NULL) {
+    Block * elseBlock = createBlock("else");
+    testBlock->succs()[0] = elseBlock;
+    setInsertPos(elseBlock);
+    buildStmtCFG(elseSt);
+
+    // Only generate a branch if we haven't returned or thrown.
+    if (currentBlock_ && !currentBlock_->hasTerminator()) {
+      if (endBlock == NULL) {
+        endBlock = new Block("endswitch");
+      }
+
+      currentBlock_->branchTo(st->getLocation(), endBlock);
+    }
+  } else {
+    if (endBlock == NULL) {
+      endBlock = new Block("endswitch");
+    }
+
+    testBlock->succs()[0] = endBlock;
+  }
+
+  if (endBlock != NULL) {
+    endBlock->setUnwindTarget(unwindTarget_);
+    blocks.push_back(endBlock);
+    setInsertPos(endBlock);
+  } else {
+    setInsertPos(NULL);
+  }
+
+  setActiveScope(savedScope);
+  return true;
+}
+
+Expr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, Type * testType) {
+  Expr * caseVal = astToExpr(ast, testType);
+  if (!caseVal->isConstant()) {
+    diag.error(ast) << "Case expression '" << ast << "' is not a constant.";
+    return NULL;
+  }
+
+  Expr * result = NULL;
+  Conversion cn(caseVal, &result);
+  ConversionRank rank = testType->convert(cn);
+  if (rank == Incompatible) {
+    diag.error(ast) << "Case value type '" << caseVal->type() <<
+        " is incompatible with switch expression type '" << testType << "'";
+    return NULL;
+  } else if (rank == Truncation) {
+    diag.error(ast) << "Case value '" << caseVal <<
+        " can never equal switch expression of type '" << testType << "'";
+  }
+
+  return result;
+}
+
+bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
+  Scope * savedScope = activeScope;
+  Expr * testExpr = astToTestExpr(st->testExpr(), false);
+  if (isErrorResult(testExpr)) {
+    return false;
+  }
+
+  DASSERT(testExpr->type() != NULL);
+  if (testExpr->isConstant()) {
+    // TODO: See if the test expression is a constant.
+  }
+
+  // TODO: There are lots of optimizations that could be done here.
+  Type * fromType = testExpr->type();
+  Expr::ExprType castType = Expr::BitCast;
+  if (fromType->isReferenceType()) {
+  } else if (UnionType * utype = dyn_cast<UnionType>(fromType)) {
+    castType = Expr::UnionMemberCast;
+  } else {
+    diag.warn(testExpr) << "Classify expression's type is already known: " << fromType;
+  }
+
+  // Create the temporary variable which is going to hold the test expression.
+  VariableDefn * testVar = new VariableDefn(Defn::Var, module, "classify-expr", testExpr);
+  testVar->setStorageClass(Storage_Local);
+  testVar->setType(testExpr->type());
+  activeScope->addMember(testVar);
+  currentBlock_->append(new InitVarExpr(st->getLocation(), testVar, testExpr));
+
+  // After this we will refer to the variable instead of referring to its value.
+  LValueExpr * testLVal = new LValueExpr(testExpr->location(), NULL, testVar);
+
+  Block * endBlock = NULL;
+  Block * prevTestBlock = currentBlock_;
+  prevTestBlock->setTerminator(st->location(), BlockTerm_Branch);
+
+  llvm::SmallSet<Type *, 16> typesSeen;
+  const Stmt * elseSt = NULL;
+  const StmtList & cases = st->caseList();
+  for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
+    const Stmt * s = *it;
+    if (s->nodeType() == ASTNode::Case) {
+      const CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
+      if (const ASTDecl * asDecl = dyn_cast<ASTDecl>(caseSt->caseExpr())) {
+        SourceLocation stLoc = asDecl->location();
+        LocalScope * caseScope = createLocalScope("as-scope");
+        Scope * prevScope = setActiveScope(caseScope);
+
+        Defn * asDefn = astToDefn(asDecl);
+        if (asDefn == NULL || !analyzeDefn(asDefn, Task_PrepCodeGeneration)) {
+          return NULL;
+        }
+
+        VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
+        Type * toType = asValueDefn->type();
+        if (!analyzeType(toType, Task_PrepCallOrUse)) {
+          return NULL;
+        }
+
+        if (typesSeen.count(toType)) {
+          diag.error(asDecl) << "Duplicate type test '" << toType << "'.";
+          setActiveScope(prevScope);
+          continue;
+        }
+
+        typesSeen.insert(toType);
+
+        // Create the block containing the type test
+        Block * testBlock = createBlock("as-test-", toType->typeDefn()->name());
+
+        // Create the block containing the case body.
+        Block * caseBlock = createBlock("as-", toType->typeDefn()->name());
+
+        // The previous test's failure target should jump to the test.
+        prevTestBlock->succs().push_back(testBlock);
+        prevTestBlock = testBlock;
+
+        // Set up the type test.
+        Expr * typeTestExpr = new InstanceOfExpr(stLoc, testLVal, toType);
+        testBlock->setTerminator(stLoc, BlockTerm_Conditional);
+        testBlock->termExprs().push_back(typeTestExpr);
+        testBlock->succs().push_back(caseBlock);
+
+        // Set up the variable
+        setInsertPos(caseBlock);
+        Expr * asValueExpr = new CastExpr(castType, stLoc, toType, testLVal);
+        currentBlock_->append(new InitVarExpr(stLoc, asValueDefn, asValueExpr));
+
+        // Build the body of the case.
+        buildStmtCFG(caseSt->body());
+
+        // Only generate a branch if we haven't returned or thrown.
+        if (currentBlock_ && !currentBlock_->hasTerminator()) {
+          if (endBlock == NULL) {
+            endBlock = new Block("endclassify");
+          }
+
+          currentBlock_->branchTo(st->getLocation(), endBlock);
+        }
+
+        setActiveScope(prevScope);
+      } else {
+        DFAIL("Bad case expression");
+      }
+    } else if (s->nodeType() == ASTNode::Block) {
+      if (elseSt != NULL) {
+        diag.error(elseSt) << "Only one 'else' clause is allowed.";
+      } else {
+        elseSt = s;
+      }
+    } else {
+      DFAIL("Bad case statement");
+    }
+  }
+
+  if (elseSt != NULL) {
+    Block * elseBlock = createBlock("else");
+    prevTestBlock->succs().push_back(elseBlock);
+    setInsertPos(elseBlock);
+    buildStmtCFG(elseSt);
+
+    // Only generate a branch if we haven't returned or thrown.
+    if (currentBlock_ && !currentBlock_->hasTerminator()) {
+      if (endBlock == NULL) {
+        endBlock = new Block("endclassify");
+      }
+
+      currentBlock_->branchTo(st->getLocation(), endBlock);
+    }
+  } else {
+    if (endBlock == NULL) {
+      endBlock = new Block("endclassify");
+    }
+
+    prevTestBlock->succs().push_back(endBlock);
+  }
+
+  if (endBlock != NULL) {
+    endBlock->setUnwindTarget(unwindTarget_);
+    blocks.push_back(endBlock);
+    setInsertPos(endBlock);
+  } else {
+    setInsertPos(NULL);
+  }
+
+  setActiveScope(savedScope);
+  return true;
+}
+
 bool StmtAnalyzer::buildThrowStmtCFG(const ThrowStmt * st) {
   Expr * resultVal = NULL;
   if (st->getValue() != NULL) {
@@ -471,7 +768,7 @@ bool StmtAnalyzer::buildThrowStmtCFG(const ThrowStmt * st) {
     if (isErrorResult(resultVal)) {
       return false;
     }
-    
+
     //if (targets.empty()) {
     //  DFAIL("Implement finally before throw ??");
     //}
@@ -487,14 +784,14 @@ bool StmtAnalyzer::canCatch(TypeList & catchTypes, CompositeType * exceptionType
       return true;
     }
   }
-  
+
   return false;
 }
 
 bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
   const StmtList & catchList = st->getCatchList();
   Block * tryBlock = createBlock("try");
-  currentBlock_->branchTo(st->getLocation(), tryBlock);  
+  currentBlock_->branchTo(st->getLocation(), tryBlock);
 
   // Create a block for the 'finally' statement if any.
   Block * finallyBlock = NULL;
@@ -504,6 +801,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
   // Create the next block for after the try/catch statement.
   Block * endTry = new Block("endTry");
+  endTry->setUnwindTarget(unwindTarget_);
 
   // Set the current exception handler context
   CleanupHandler cleanup(cleanups_, finallyBlock);
@@ -519,8 +817,8 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
     unwindBlock = createBlock("catch");
     unwindBlock->setTerminator(
         catchList.empty()
-            ? st->getFinallySt()->getLocation()
-            : (catchList.front()->getLocation() | catchList.back()->getLocation()),
+        ? st->getFinallySt()->getLocation()
+        : (catchList.front()->getLocation() | catchList.back()->getLocation()),
         BlockTerm_Catch);
 
     // The active throwable object, returned from the unwind code.
@@ -562,7 +860,6 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
         diag.warn(loc) << "Exception handler for type " << exceptType << " can never be reached";
         continue;
       }
-      
 
       // If we're catching type "Throwable", then that catches everything.
       if (exceptType->isEqual(cast<CompositeType>(Builtins::typeThrowable))) {
@@ -575,9 +872,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       catchTypes.push_back(exceptType);
 
       // Create the catch block.
-      const char * catchBlockName =
-          istrings.intern(std::string("catch-") + exceptType->typeDefn()->name());
-      Block * catchBody = createBlock(catchBlockName);
+      Block * catchBody = createBlock("catch-", exceptType->typeDefn()->name());
 
       // Add the catch block to the switch statement.
       unwindBlock->addCase(new ConstantType(cst->getLocation(), exceptType), catchBody);
@@ -700,9 +995,9 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     if (isErrorResult(resultVal)) {
       return false;
     }
-    
+
     Type * exprType = resultVal->type();
-    
+
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
     if (exprType->isUnsizedIntType() && returnType == NULL) {
@@ -717,14 +1012,14 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
   if (macroReturnTarget_ != NULL) {
     // We are inside a macro expansion, which means that 'return' doesn't
     // actually return, it assigns to the macro result andt then branches.
-    
+
     // TODO: Skip this assignment if it's void.
     Expr * exp = new AssignmentExpr(st->getLocation(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
-    
+
     if (macroReturnTarget_ != NULL) {
       currentBlock_->branchTo(st->getLocation(), macroReturnTarget_);
-      
+
       // If there are any active exception handlers in the macro, make sure
       // that we run their finally blocks.
       for (CleanupHandler * eh = cleanups_; eh != NULL; eh = eh->prev) {
@@ -770,9 +1065,9 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
     if (!analyzeValueDefn(var, Task_PrepCodeGeneration)) {
       return false;
     }
-    
+
     DASSERT_OBJ(var->isSingular(), var);
-  
+
     // TODO: Should we insure that Let has an initializer?
     // TODO: Should we check for true constants here?
     if (var->initValue() != NULL) {
@@ -810,9 +1105,9 @@ Expr * StmtAnalyzer::astToAssignExpr(const ASTNode * ast, Type * expectedType) {
   }
 }
 
-Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test) {
+Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
   Expr * testExpr;
-  
+
   if (const ASTDecl * testDecl = dyn_cast<ASTDecl>(test)) {
     LocalScope * testScope = createLocalScope("test-scope");
     setActiveScope(testScope);
@@ -821,13 +1116,13 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test) {
     if (testDefn == NULL || !analyzeDefn(testDefn, Task_PrepCodeGeneration)) {
       return NULL;
     }
-    
+
     ValueDefn * testValueDefn = cast<ValueDefn>(testDefn);
 
     //DASSERT(testDefn->initValue() != NULL);
     //currentBlock_->append(new InitVarExpr(st->getLocation(), testDefn,
     //    testDefn->initValue()));
-    
+
     // TODO: We need to cast the defn to a boolean as well.
     testExpr = new LValueExpr(test->getLocation(), NULL, testValueDefn);
   } else {
@@ -844,7 +1139,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test) {
     testExpr = MacroExpansionPass::run(*this, testExpr);
     DASSERT_OBJ(testExpr->isSingular(), testExpr);
   }
-  
+
   if (isErrorResult(testExpr)) {
     return &Expr::ErrorVal;
   }
@@ -852,6 +1147,10 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test) {
   if (testExpr->type()->isEqual(&VoidType::instance)) {
     diag.error(test) << "invalid use of void return result: " << test;
     return &Expr::ErrorVal;
+  }
+
+  if (!castToBool) {
+    return testExpr;
   }
 
   // Compare reference type with null.
@@ -913,6 +1212,11 @@ Block * StmtAnalyzer::createBlock(const char * name) {
   return block;
 }
 
+Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffix) {
+  const char * blockName = istrings.intern(std::string("prefix") + suffix);
+  return createBlock(blockName);
+}
+
 void StmtAnalyzer::defineLocalProcedure(Block * first, Block * last) {
   LocalProcedure & proc = localProcedures_[first];
   if (proc.first == NULL) {
@@ -928,7 +1232,7 @@ StmtAnalyzer::LocalProcedure & StmtAnalyzer::findLocalProcedure(Block * first) {
     DASSERT(it->second.last != NULL);
     return it->second;
   }
-  
+
   DFAIL("Block is not the start of a local procedure.");
 }
 
@@ -937,7 +1241,7 @@ int StmtAnalyzer::LocalProcedure::addFollowingBlock(Block * b) {
   if (it != followingBlocks.end()) {
     return it - followingBlocks.begin();
   }
-  
+
   followingBlocks.push_back(b);
   return followingBlocks.size() - 1;
 }
@@ -983,11 +1287,11 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
   for (LocalProcedureMap::iterator it = localProcedures_.begin(); it != localProcedures_.end();
       ++it) {
     LocalProcedure & proc = it->second;
-    
+
     // Clear out the old terminator
     DASSERT(proc.last->terminator() == BlockTerm_LocalReturn);
     proc.last->clearTerminator();
-    
+
     if (proc.followingBlocks.size() == 1) {
       // If there's only one block, then do an unconditional branch to it.
       proc.last->branchTo(SourceLocation(), proc.followingBlocks.front());
@@ -998,7 +1302,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
       proc.stateVar->setStorageClass(Storage_Local);
       proc.stateVar->addTrait(Defn::Singular);
       proc.stateExpr = new LValueExpr(SourceLocation(), NULL, proc.stateVar);
-      
+
       // Add it to the local scope
       if (stateVarScope == NULL) {
         stateVarScope = new LocalScope(activeScope);
@@ -1048,7 +1352,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
       }
     }
   }
-  
+
   //function->dumpBlocks();
 }
 

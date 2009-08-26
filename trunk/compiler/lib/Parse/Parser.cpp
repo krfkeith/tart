@@ -1501,6 +1501,14 @@ Stmt * Parser::statement() {
       token = lexer.next();
       return forStmt();
 
+    case Token_Switch:
+      token = lexer.next();
+      return switchStmt();
+
+    case Token_Classify:
+      token = lexer.next();
+      return classifyStmt();
+
     case Token_Return:
       token = lexer.next();
       return returnStmt();
@@ -1808,6 +1816,149 @@ Stmt * Parser::forStmt() {
   return new ForStmt(loc, initExpr, test, incr, body);
 }
 
+Stmt * Parser::switchStmt() {
+  SourceLocation loc = matchLoc;
+  bool parens = match(Token_LParen);
+
+  // It's a plain expression
+  ASTNode * test = expressionList();
+  if (test == NULL) {
+    expectedExpression();
+  }
+
+  if (parens && !match(Token_RParen)) {
+    expectedCloseParen();
+    return NULL;
+  }
+
+  SwitchStmt * st = new SwitchStmt(loc, test);
+  if (!match(Token_LBrace)) {
+    expected("'{'");
+    return NULL;
+  }
+
+  while (!match(Token_RBrace)) {
+    if (match(Token_Case)) {
+      Stmt * caseSt = caseStmt();
+      if (caseSt != NULL) {
+        st->caseList().push_back(caseSt);
+      }
+    } else if (match(Token_Else)) {
+      Stmt * elseBody = bodyStmt();
+      if (elseBody == NULL) {
+        return NULL;
+      }
+
+      st->caseList().push_back(elseBody);
+    } else {
+      expected("'case' or 'else' statement");
+      return NULL;
+    }
+  }
+
+  return st;
+}
+
+Stmt * Parser::caseStmt() {
+  SourceLocation loc = matchLoc;
+  ASTNode * test = expression();
+  if (test != NULL) {
+    Stmt * body = bodyStmt();
+    if (body != NULL) {
+      return new CaseStmt(loc, test, body);
+    }
+  }
+
+  return NULL;
+}
+
+Stmt * Parser::classifyStmt() {
+  SourceLocation loc = matchLoc;
+  bool parens = match(Token_LParen);
+
+  // It's a plain expression
+  ASTNode * test = expression();
+  if (test == NULL) {
+    expectedExpression();
+  }
+
+  if (parens && !match(Token_RParen)) {
+    expectedCloseParen();
+    return NULL;
+  }
+
+  ClassifyStmt * st = new ClassifyStmt(loc, test);
+
+  if (match(Token_As)) {
+    Stmt * asSt = asStmt();
+    if (asSt == NULL) {
+      return NULL;
+    }
+
+    st->caseList().push_back(asSt);
+    if (match(Token_Else)) {
+      Stmt * elseBody = bodyStmt();
+      if (elseBody == NULL) {
+        return NULL;
+      }
+
+      st->caseList().push_back(elseBody);
+    }
+  } else if (match(Token_LBrace)) {
+    while (!match(Token_RBrace)) {
+      if (match(Token_As)) {
+        Stmt * asSt = asStmt();
+        if (asSt != NULL) {
+          st->caseList().push_back(asSt);
+        }
+      } else if (match(Token_Else)) {
+        Stmt * elseBody = bodyStmt();
+        if (elseBody == NULL) {
+          return NULL;
+        }
+
+        st->caseList().push_back(elseBody);
+      } else {
+        expected("'as' or 'else' statement");
+        return NULL;
+      }
+    }
+  } else {
+    expected("'{'");
+    return NULL;
+  }
+
+  return st;
+}
+
+Stmt * Parser::asStmt() {
+  const char * declName = matchIdent();
+  SourceLocation loc = matchLoc;
+  ASTNode * declType = NULL;
+
+  if (declName == NULL) {
+    expectedIdentifier();
+    return NULL;
+  }
+
+  if (match(Token_Colon)) {
+    declType = typeExpression();
+  }
+
+  if (declType == NULL) {
+    expected("type expression");
+  }
+
+  ASTVarDecl * var = new ASTVarDecl(ASTNode::Let, matchLoc, declName, declType, NULL,
+      DeclModifiers(Storage_Local));
+  Stmt * body = bodyStmt();
+  if (body == NULL) {
+    return NULL;
+  }
+
+  return new CaseStmt(loc, var, body);
+}
+
 Stmt * Parser::bodyStmt() {
   if (token != Token_LBrace) {
     expected("'{'");
@@ -1839,8 +1990,7 @@ ASTNode * Parser::testOrDecl() {
   TokenType tok = token;
   if (match(Token_Let) || match(Token_Var)) {
     // It's a declaration - for example "if let x = f() { ... }"
-    ASTNode * decl =
-        localDeclList(tok == Token_Let ? ASTNode::Let : ASTNode::Var);
+    ASTNode * decl = localDeclList(tok == Token_Let ? ASTNode::Let : ASTNode::Var);
     if (decl != DECL_ERROR) {
 
       // We require an initializer expression in this instance
@@ -2162,6 +2312,7 @@ ASTNode * Parser::binaryOperator() {
         next();
         break;
 
+#if 0
       case Token_As: {
         TokenType tok = token;
         SourceLocation loc = lexer.tokenLocation();
@@ -2180,6 +2331,7 @@ ASTNode * Parser::binaryOperator() {
         opstack.pushOperand(type);
         continue;
       }
+#endif
 
       case Token_Is: {
         TokenType tok = token;

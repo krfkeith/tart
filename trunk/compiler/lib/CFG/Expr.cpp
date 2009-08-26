@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/Type.h"
 #include "tart/CFG/Defn.h"
@@ -43,7 +43,7 @@ void formatExprList(FormatStream & out, const ExprList & exprs) {
     if (it != exprs.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }
@@ -53,7 +53,7 @@ void formatExprTypeList(FormatStream & out, const ExprList & exprs) {
     if (it != exprs.begin()) {
       out << ", ";
     }
-    
+
     out << (*it)->type();
   }
 }
@@ -63,7 +63,7 @@ void formatTypeList(FormatStream & out, const TypeList & types) {
     if (it != types.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }
@@ -112,11 +112,11 @@ void UnaryExpr::format(FormatStream & out) const {
     case NoOp:
       out << arg_;
       break;
-    
+
     case Not:
       out << "not " << arg_;
       break;
-    
+
     default:
       out << exprTypeName(exprType()) << "(" << arg_ << ")";
       break;
@@ -173,7 +173,7 @@ bool ArglistExpr::areArgsSideEffectFree() const {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -183,7 +183,7 @@ bool ArglistExpr::isSingular() const {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -229,7 +229,7 @@ Expr * LValueExpr::constValue(Expr * in) {
       }
     }
   }
-  
+
   return in;
 }
 
@@ -261,7 +261,7 @@ void AssignmentExpr::format(FormatStream & out) const {
 /// InitVarExpr
 
 InitVarExpr::InitVarExpr(
-    const SourceLocation & loc, VariableDefn * v, Expr * expr) 
+    const SourceLocation & loc, VariableDefn * v, Expr * expr)
   : Expr(InitVar, loc, v->getType())
   , var(v)
   , initExpr(expr)
@@ -282,11 +282,11 @@ bool CallExpr::isSingular() const {
   if (!ArglistExpr::isSingular()) {
     return false;
   }
-  
+
   if (!candidates_.empty()) {
     return candidates_.size() == 1 && candidates_.front()->method()->isSingular();
   }
-  
+
   return function_ != NULL && function_->getType()->isSingular();
 }
 
@@ -304,7 +304,7 @@ Type * CallExpr::getSingularParamType(int index) {
       return NULL;
     }
   }
-  
+
   return singularType;
 }
 
@@ -327,7 +327,7 @@ Type * CallExpr::getSingularResultType() {
       return NULL;
     }
   }
-  
+
   return singularType;
 }
 
@@ -344,7 +344,7 @@ CallCandidate * CallExpr::getSingularCandidate() {
       return NULL;
     }
   }
-  
+
   return singularCandidate;
 }
 
@@ -354,7 +354,7 @@ bool CallExpr::hasAnyCandidates() const {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -381,7 +381,7 @@ void CallExpr::format(FormatStream & out) const {
     if (it != args_.begin()) {
       out << ", ";
     }
-    
+
     out << (*it);
     if (out.getShowType()) {
       out << ":" << (*it)->getType();
@@ -477,7 +477,7 @@ void BinaryOpcodeExpr::format(FormatStream & out) const {
       out << first() << " / " << second();
       break;
     }
-    
+
     default: {
       out << "BinaryOpcode(" << first() << ", " << second() << ")";
       break;
@@ -507,45 +507,45 @@ void CompareExpr::format(FormatStream & out) const {
     case llvm::CmpInst::ICMP_EQ:
       oper = "==";
       break;
-  
+
     case llvm::CmpInst::FCMP_ONE:
     case llvm::CmpInst::FCMP_UNE:
     case llvm::CmpInst::ICMP_NE:
       oper = "!=";
       break;
-  
+
     case llvm::CmpInst::FCMP_OGT:
     case llvm::CmpInst::FCMP_UGT:
     case llvm::CmpInst::ICMP_UGT:
     case llvm::CmpInst::ICMP_SGT:
       oper = ">";
       break;
-  
+
     case llvm::CmpInst::FCMP_OLT:
     case llvm::CmpInst::FCMP_ULT:
     case llvm::CmpInst::ICMP_ULT:
     case llvm::CmpInst::ICMP_SLT:
       oper = "<";
       break;
-  
+
     case llvm::CmpInst::FCMP_OGE:
     case llvm::CmpInst::FCMP_UGE:
     case llvm::CmpInst::ICMP_UGE:
     case llvm::CmpInst::ICMP_SGE:
       oper = ">=";
       break;
-  
+
     case llvm::CmpInst::FCMP_OLE:
     case llvm::CmpInst::FCMP_ULE:
     case llvm::CmpInst::ICMP_ULE:
     case llvm::CmpInst::ICMP_SLE:
       oper = ">=";
       break;
-    
+
     default:
       DFAIL("IllegalState");
   }
-  
+
   out << first() << " " << oper << " " << second();
 }
 
@@ -566,21 +566,21 @@ void LocalCallExpr::format(FormatStream & out) const {
 InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * ty)
   : Expr(InstanceOf, loc, &BoolType::instance)
   , value_(value)
-  , toType(ty)
+  , toType_(ty)
 {}
-  
+
 void InstanceOfExpr::format(FormatStream & out) const {
-  out << value_ << " isa " << toType;
+  out << value_ << " isa " << toType_;
 }
 
 void InstanceOfExpr::trace() const {
   Expr::trace();
   safeMark(value_);
-  safeMark(toType);
+  safeMark(toType_);
 }
 
 bool InstanceOfExpr::isSingular() const {
-  return value_->isSingular() && toType->isSingular();
+  return value_->isSingular() && toType_->isSingular();
 }
 
 } // namespace tart

@@ -44,6 +44,7 @@ EXPR_TYPE(UpCast)         // Cast from subclass to base/iface
 EXPR_TYPE(TryCast)        // Cast from base/iface to subclass, throw if fail
 EXPR_TYPE(DynamicCast)    // Cast from base/iface to subclass, null if fail
 EXPR_TYPE(UnionCtorCast)  // Cast to a union type.
+EXPR_TYPE(UnionMemberCast)// Cast from a union type.
 EXPR_TYPE(Truncate)       // Number truncation
 EXPR_TYPE(SignExtend)     // Extend signed number
 EXPR_TYPE(ZeroExtend)     // Extend unsigned number

@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/Expr.h"
@@ -47,27 +47,27 @@ FormatStream & operator<<(FormatStream & out, const ValueList & values) {
 using namespace llvm;
 
 namespace {
-  /** Return the type that would be generated from a GEP instruction. */
-  const llvm::Type * getGEPType(const llvm::Type * type,
-      ValueList::const_iterator first, ValueList::const_iterator last) {
-    for (ValueList::const_iterator it = first; it != last; ++it) {
-      const ConstantInt * index = cast<ConstantInt>(*it);
-      type = type->getContainedType(index->getSExtValue());
-    }
-
-    return type;
+/** Return the type that would be generated from a GEP instruction. */
+const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator first,
+    ValueList::const_iterator last) {
+  for (ValueList::const_iterator it = first; it != last; ++it) {
+    const ConstantInt * index = cast<ConstantInt> (*it);
+    type = type->getContainedType(index->getSExtValue());
   }
 
+  return type;
+}
+
 #ifdef NDEBUG
-  #define DASSERT_TYPE_EQ(expected, actual)
-  #define DASSERT_TYPE_EQ_MSG(expected, actual, msg)
+#define DASSERT_TYPE_EQ(expected, actual)
+#define DASSERT_TYPE_EQ_MSG(expected, actual, msg)
 #else
-  #define DASSERT_TYPE_EQ(expected, actual) \
+#define DASSERT_TYPE_EQ(expected, actual) \
       if (expected != actual) {\
         diag.fatal() << "Expected '" << expected << "' == '" << actual << "'"; \
       }
 
-  #define DASSERT_TYPE_EQ_MSG(expected, actual, msg) \
+#define DASSERT_TYPE_EQ_MSG(expected, actual, msg) \
       if (expected != actual) {\
         diag.fatal() << "Expected '" << expected << "' == '" << actual << \
             "' " << msg; \
@@ -79,19 +79,19 @@ namespace {
 Value * CodeGenerator::genExpr(const Expr * in) {
   switch (in->exprType()) {
     case Expr::ConstInt:
-      return static_cast<const ConstantInteger *>(in)->value();
+      return static_cast<const ConstantInteger *> (in)->value();
 
     case Expr::ConstFloat: {
-      const ConstantFloat * cfloat = static_cast<const ConstantFloat *>(in);
+      const ConstantFloat * cfloat = static_cast<const ConstantFloat *> (in);
       return cfloat->value();
     }
 
     case Expr::ConstString:
-      return genStringLiteral(static_cast<const ConstantString *>(in)->value());
+      return genStringLiteral(static_cast<const ConstantString *> (in)->value());
 
     case Expr::ConstNull: {
       DASSERT_OBJ(in->getType()->isReferenceType(), in->getType());
-      return ConstantPointerNull::get(PointerType::getUnqual(in->getType()->getIRType()));
+        return ConstantPointerNull::get(PointerType::getUnqual(in->getType()->getIRType()));
     }
 
     case Expr::LValue: {
@@ -107,7 +107,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genInitVar(static_cast<const InitVarExpr *>(in));
 
     case Expr::BinaryOpcode:
-      return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
+    return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
 
     case Expr::Truncate:
     case Expr::SignExtend:
@@ -122,6 +122,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     case Expr::UnionCtorCast:
       return genUnionCtorCast(static_cast<const CastExpr *>(in));
+
+    case Expr::UnionMemberCast:
+      return genUnionMemberCast(static_cast<const CastExpr *>(in));
 
     case Expr::Assign:
     case Expr::PostAssign:
@@ -171,7 +174,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     default:
       diag.debug(in) << "No generator for " <<
-          exprTypeName(in->exprType()) << " [" << in << "]";
+      exprTypeName(in->exprType()) << " [" << in << "]";
       DFAIL("Implement");
   }
 }
@@ -179,12 +182,12 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   switch (in->exprType()) {
     case Expr::ConstInt:
-      return static_cast<const ConstantInteger *>(in)->value();
+    return static_cast<const ConstantInteger *>(in)->value();
 
     default:
-      diag.fatal(in) << "Not a constant: " <<
-          exprTypeName(in->exprType()) << " [" << in << "]";
-      DFAIL("Implement");
+    diag.fatal(in) << "Not a constant: " <<
+    exprTypeName(in->exprType()) << " [" << in << "]";
+    DFAIL("Implement");
   }
 }
 
@@ -242,18 +245,18 @@ llvm::Value * CodeGenerator::genCompare(CompareExpr * in) {
 }
 
 Value * CodeGenerator::genInstanceOf(InstanceOfExpr * in) {
-  DASSERT_OBJ(in->getValue()->getType() != NULL, in);
-  Value * val = genExpr(in->getValue());
+  DASSERT_OBJ(in->value()->getType() != NULL, in);
+  Value * val = genExpr(in->value());
   if (val == NULL) {
     return NULL;
   }
 
-  if (UnionType * utype = dyn_cast<UnionType>(in->getValue()->getType())) {
-    return genUnionTypeTest(val, utype, in->getToType());
+  if (UnionType * utype = dyn_cast<UnionType>(in->value()->getType())) {
+    return genUnionTypeTest(val, utype, in->toType());
   }
 
-  CompositeType * fromType = cast<CompositeType>(in->getValue()->getType());
-  CompositeType * toType = cast<CompositeType>(in->getToType());
+  CompositeType * fromType = cast<CompositeType>(in->value()->getType());
+  CompositeType * toType = cast<CompositeType>(in->toType());
   DASSERT_OBJ(fromType != NULL, in);
   DASSERT_OBJ(toType != NULL, in);
   return genCompositeTypeTest(val, fromType, toType);
@@ -279,8 +282,8 @@ Value * CodeGenerator::genPtrDeref(const UnaryExpr * in) {
   if (ptrVal != NULL) {
     DASSERT(ptrVal->getType()->getTypeID() == llvm::Type::PointerTyID);
     DASSERT_TYPE_EQ_MSG(
-      in->getType()->getIRType(),
-      ptrVal->getType()->getContainedType(0), "for expression " << in);
+        in->getType()->getIRType(),
+        ptrVal->getType()->getContainedType(0), "for expression " << in);
     return builder_.CreateLoad(ptrVal);
   }
 
@@ -290,7 +293,7 @@ Value * CodeGenerator::genPtrDeref(const UnaryExpr * in) {
 Value * CodeGenerator::genNot(const UnaryExpr * in) {
   switch (in->arg()->exprType()) {
     case Expr::RefEq:
-      return genRefEq(static_cast<const BinaryExpr *>(in->arg()), true);
+    return genRefEq(static_cast<const BinaryExpr *>(in->arg()), true);
 
     default: {
       Value * result = genExpr(in->arg());
@@ -318,7 +321,7 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
     if (param->getIRValue() == NULL) {
       diag.fatal(param) << "Invalid parameter IR value for " << param << " in function " <<
-        currentFunction_;
+      currentFunction_;
     }
     DASSERT_OBJ(param->getIRValue() != NULL, param);
     return param->getIRValue();
@@ -345,7 +348,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
         DFAIL("Implement");
       } else {
-        diag.fatal(lval) << "Can't store to " << lval;
+        diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
         DFAIL("IllegalState");
       }
     }
@@ -356,8 +359,8 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
     }
 
     default:
-      diag.fatal(in) << "Not an LValue " << exprTypeName(in->exprType()) << " [" << in << "]";
-      DFAIL("Implement");
+    diag.fatal(in) << "Not an LValue " << exprTypeName(in->exprType()) << " [" << in << "]";
+    DFAIL("Implement");
   }
 }
 
@@ -368,8 +371,9 @@ Value * CodeGenerator::genMemberFieldAddr(const LValueExpr * lval) {
   std::stringstream labelStream;
   FormatStream fs(labelStream);
   Value * baseVal = genGEPIndices(lval, indices, fs);
-  if (baseVal == NULL)
+  if (baseVal == NULL) {
     return NULL;
+  }
 
   return builder_.CreateGEP(baseVal, indices.begin(), indices.end(),
       labelStream.str().c_str());
@@ -380,8 +384,9 @@ Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
   std::stringstream labelStream;
   FormatStream fs(labelStream);
   Value * baseVal = genGEPIndices(in, indices, fs);
-  if (baseVal == NULL)
+  if (baseVal == NULL) {
     return NULL;
+  }
 
   return builder_.CreateGEP(baseVal, indices.begin(), indices.end(),
       labelStream.str().c_str());
@@ -432,8 +437,8 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
     }
 
     default:
-      DFAIL("Bad GEP call");
-      break;
+    DFAIL("Bad GEP call");
+    break;
   }
 
   return NULL;
@@ -449,12 +454,12 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   bool hasBase = false;
 
   /*  Determine if the expression is actually a pointer that needs to be
-      dereferenced. This happens under the following circumstances:
+   dereferenced. This happens under the following circumstances:
 
-      1) The expression is an explicit pointer dereference.
-      2) The expression is a variable or parameter containing a reference type.
-      3) The expression is a parameter to a value type, but has the reference
-         flag set (which should only be true for the self parameter.)
+   1) The expression is an explicit pointer dereference.
+   2) The expression is a variable or parameter containing a reference type.
+   3) The expression is a parameter to a value type, but has the reference
+   flag set (which should only be true for the self parameter.)
    */
 
   const Expr * base = in;
@@ -505,8 +510,8 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   diag.debug() << "Base address '" << base << "' has type '" << baseAddr->getType() << "'";
   if (!indices.empty()) {
     diag.debug() << "Base address '" << base << "' with indices {" <<
-        indices << "} dereferences as '" <<
-        getGEPType(baseAddr->getType(), indices.begin(), indices.end()) << "'";
+    indices << "} dereferences as '" <<
+    getGEPType(baseAddr->getType(), indices.begin(), indices.end()) << "'";
   }
 #endif
 
@@ -527,19 +532,19 @@ Value * CodeGenerator::genNumericCast(CastExpr * in) {
     llvm::Instruction::CastOps castType;
     switch (in->exprType()) {
       case Expr::Truncate:
-        castType = llvm::Instruction::Trunc;
-        break;
+      castType = llvm::Instruction::Trunc;
+      break;
 
       case Expr::SignExtend:
-        castType = llvm::Instruction::SExt;
-        break;
+      castType = llvm::Instruction::SExt;
+      break;
 
       case Expr::ZeroExtend:
-        castType = llvm::Instruction::ZExt;
-        break;
+      castType = llvm::Instruction::ZExt;
+      break;
 
       default:
-        DFAIL("IllegalState");
+      DFAIL("IllegalState");
     }
 
     return builder_.CreateCast(castType, value, in->getType()->getIRType());
@@ -624,6 +629,39 @@ Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
   return NULL;
 }
 
+Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
+  // Retrieve a value from a union. Presumes that the type-test has already been done.
+  Type * fromType = in->arg()->getType();
+  Type * toType = in->getType();
+  Value * value = genLValueAddress(in->arg());
+
+  if (value == NULL) {
+    return NULL;
+  }
+
+  if (fromType != NULL) {
+    UnionType * utype = cast<UnionType>(fromType);
+    if (utype->numValueTypes() > 0) {
+      int index = utype->getTypeIndex(toType);
+      const llvm::Type * fieldType = toType->getIRType();
+      if (toType->isReferenceType()) {
+        fieldType = llvm::PointerType::get(fieldType, 0);
+      }
+
+      return builder_.CreateLoad(
+          builder_.CreateBitCast(
+              builder_.CreateConstGEP2_32(value, 0, 1),
+              PointerType::get(fieldType, 0)));
+    } else {
+      // The union contains only pointer types, so we know that its representation is simply
+      // a single pointer, so a bit cast will work.
+      return builder_.CreateBitCast(value, PointerType::get(toType->getIRType(), 0));
+    }
+  }
+
+  return NULL;
+}
+
 Value * CodeGenerator::genCall(FnCallExpr * in) {
   FunctionDefn * fn = in->function();
 
@@ -687,7 +725,7 @@ Value * CodeGenerator::genNew(NewExpr * in) {
         return builder_.CreateCall(allocator);
       } else {
         diag.fatal(in) << "Cannot create an instance of type '" <<
-          ctdef->typeDefn()->name() << "'";
+        ctdef->typeDefn()->name() << "'";
       }
     }
   }
@@ -723,7 +761,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
 
   if (!fromType->isSubclassOf(toType)) {
     diag.fatal() << "'" << fromType << "' does not inherit from '" <<
-        toType << "'";
+    toType << "'";
     return val;
   }
 
@@ -758,7 +796,7 @@ llvm::Value * CodeGenerator::genStringLiteral(const std::string & strval) {
   if (it != stringLiteralMap_.end()) {
     return it->second;
   }
-  
+
   const CompositeType * strType = dyn_cast<CompositeType>(Builtins::typeString);
   const llvm::Type * irType = strType->getIRType();
 
@@ -795,7 +833,7 @@ llvm::Value * CodeGenerator::genStringLiteral(const std::string & strval) {
 
   strDataStart->replaceAllUsesWith(llvm::ConstantExpr::getGetElementPtr(strConstant, indices, 2));
   strSource->replaceAllUsesWith(strConstant);
-  
+
   stringLiteralMap_[strval] = strConstant;
   return strConstant;
 }
@@ -860,8 +898,8 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromTyp
   indices.push_back(getInt32Val(0));
   indices.push_back(getInt32Val(0));
   Value * tib = builder_.CreateLoad(
-        builder_.CreateGEP(valueAsObjType, indices.begin(), indices.end()),
-        "tib");
+      builder_.CreateGEP(valueAsObjType, indices.begin(), indices.end()),
+      "tib");
 
   ValueList args;
   args.push_back(tib);
@@ -919,12 +957,12 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   switch (sizeExpr->exprType()) {
     case Expr::LValue:
     case Expr::ElementRef:
-      sizeValue = genLValueAddress(sizeExpr);
-      break;
+    sizeValue = genLValueAddress(sizeExpr);
+    break;
 
     default:
-      sizeValue = genExpr(sizeExpr);
-      break;
+    sizeValue = genExpr(sizeExpr);
+    break;
   }
 
   if (isa<PointerType>(sizeValue->getType())) {

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
@@ -71,6 +71,10 @@ Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
+    if (!AnalyzerBase::analyzeType(to->getType(), Task_PrepMemberLookup)) {
+      return in;
+    }
+
     from = to->getType()->implicitCast(from->location(), from);
     in->setFromExpr(from);
     in->setToExpr(to);
@@ -125,10 +129,10 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       if (!AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
         return &Expr::ErrorVal;
       }
-      
+
       cd->setMethod(method);
     }
-    
+
     size_t paramCount = method->functionType()->params().size();
     ExprList callingArgs(paramCount);
     callingArgs.resize(paramCount);
@@ -149,7 +153,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
             " to " << paramType;
         return &Expr::ErrorVal;
       }
-      
+
       args[argIndex] = castArgVal;
       if (param->isVariadic()) {
         // Handle variadic parameters - build an array literal.
@@ -158,13 +162,13 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
           arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
           callingArgs[paramIndex] = arrayParam;
         }
-        
+
         arrayParam->appendArg(castArgVal);
       } else {
         callingArgs[paramIndex] = castArgVal;
       }
     }
-    
+
     // Fill in default params
     for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
       if (callingArgs[paramIndex] == NULL) {
@@ -189,7 +193,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         return &Expr::ErrorVal;
       }
     }
-    
+
     // See if we can evaluate the call at compile-time.
     // TODO: Dereference any 'let' statements to constants if possible.
     Expr * expr = method->eval(in->location(), selfArg, callingArgs);
@@ -197,7 +201,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       DASSERT_OBJ(expr->isSingular(), expr);
       return expr;
     }
-    
+
     // Assert that there are no more unsized ints.
     if (!method->isIntrinsic()) {
       for (ExprList::iterator it = callingArgs.begin(); it != callingArgs.end(); ++it) {
@@ -223,7 +227,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     DASSERT_OBJ(result->isSingular(), result);
     return result;
   }
-  
+
   diag.error(in) << in << " has " << in->candidates().size() << " candidates";
   return &Expr::ErrorVal;
 }
@@ -234,7 +238,7 @@ Expr * FinalizeTypesPass::visitInstantiate(InstantiateExpr * in) {
 
 Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   Expr * arg = visitExpr(in->arg());
-  
+
   // Eliminate redundant cast if not needed.
   if (in->getType()->isEqual(arg->getType())) {
     return arg;
@@ -245,23 +249,23 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   return arg ? arg : &Expr::ErrorVal;
 }
 
-Expr * FinalizeTypesPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
-  Expr * value = visitExpr(in->getValue());
+Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
+  Expr * value = visitExpr(in->value());
   Type * tyFrom = dealias(value->getType());
-  Type * tyTo = dealias(in->getToType());
-  
+  Type * tyTo = dealias(in->toType());
+
   if (tyFrom == NULL || tyTo == NULL) {
     return NULL;
   }
-  
+
   DASSERT_OBJ(tyFrom->isSingular(), tyFrom);
   DASSERT_OBJ(tyTo->isSingular(), tyTo);
-  
+
   if (tyFrom->isEqual(tyTo)) {
     return new BinaryExpr(Expr::Prog2, in->location(), &BoolType::instance, value,
         ConstantInteger::getConstantBool(in->location(), true));
   }
-  
+
   if (UnionType * ut = dyn_cast<UnionType>(tyFrom)) {
     in->setValue(value);
     return visitUnionTest(in, value, ut, tyTo);
@@ -272,7 +276,7 @@ Expr * FinalizeTypesPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
 
   bool isConstTrue = false;   // Test always succeeds
   bool isConstFalse = false;  // Test always fails
-  
+
   if (ctTo != NULL && ctFrom != NULL) {
     if (ctTo->typeClass() == Type::Struct) {
       // Structs are not polymorphic, so we know the answer at compile time.
@@ -320,10 +324,10 @@ Expr * FinalizeTypesPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
   } else {
     isConstFalse = true;
   }
-  
+
   // TODO: If isConstTrue or isConstFalse is set, we can also
   // strip off any expressions that have no side effects.
-  
+
   if (isConstTrue) {
     return ConstantInteger::getConstantBool(in->location(), true);
   } else if (isConstFalse) {
@@ -369,7 +373,7 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
       return in;
       //in->setTypeIndex(index);
       //class InstanceOfExpr : public Expr {
-      
+
     }
 
     diag.info(in) << "Found " << matchingTypes.size() << " type in union: " << memberType;
@@ -388,21 +392,21 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
   Type * t1 = in->second()->getType();
   DASSERT_OBJ(t0 != NULL, in->first());
   DASSERT_OBJ(t1 != NULL, in->second());
-  
+
   if (t0->isReferenceType()) {
     if (!t1->isReferenceType()) {
       diag.fatal(in) << "Can't compare reference type '" << t0 <<
           "' with non-reference type '" << t1 << "'";
       return in;
     }
-    
+
     Type * tr = findCommonType(t0, t1);
     if (tr == NULL) {
       diag.fatal(in) << "Can't compare incompatible types '" << t0 <<
           "' and '" << t1 << "'";
       return in;
     }
-    
+
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
@@ -423,6 +427,10 @@ Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
   }
 
   in = LValueExpr::constValue(in);
+  if (!AnalyzerBase::analyzeType(toType, Task_PrepMemberLookup)) {
+    return in;
+  }
+
   return toType->implicitCast(in->location(), in);
 }
 

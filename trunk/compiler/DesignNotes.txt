@@ -3,7 +3,8 @@
 Design TODOS:
 
 * Dynamic casting syntax.
-	* Type casting via operations on type objects?
+  * Type casting via operations on type objects?
+  * typeselect
 * Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
@@ -20,14 +21,11 @@ Design TODOS:
 
 Implementation TODOS:
 
-* SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
-	location means that its hard to fold constants together. Exprs really ought to be shallow.
-* Override and redef syntax.
+* Override and redef syntax. refine toString -> String {}
   * How does that affect properties?
   * +def
   * Template syntax.
 * Typename.type
-
 * Need to work on makefile dependencies.
 * vcall and icall instructions.
 * String class
@@ -78,6 +76,11 @@ Implementation TODOS:
   * State machine.
 * Object.toString.
 * Let with instance scope.
+* SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
+	location means that its hard to fold constants together. Exprs really ought to be shallow.
+* Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
+* AttributeSite failure tests.
+* Type extension
 
 Doc errors:
 
@@ -182,26 +185,6 @@ Variadic templates:
 
 // ------------------------------------------------------------------------
 
-Protocols
-
-//protocol <T> Iterator {
-//  def next() -> (T | nil);
-//}
-
-protocol <T> Iterator {
-  def next() -> (bool, T);
-}
-
-protocol <T> Iterable {
-  def iterate() -> Iterator<T>;
-}
-
-def <T> length(iter:Iterable<T>) -> int;
-
-protocol Iterable<String> {}
-
-// ------------------------------------------------------------------------
-
 We need assertions! Which requires:
   -- Exceptions
   -- Classes
@@ -240,20 +223,6 @@ OK so what do we do in the mean time?
 
 Ans: Do what we did before: Put the imports in the same ns, but late-bind them.
 
-// ------------------------------------------------------------------------
-
-Analysis phases:
-
-For types:
-  o Create child members.
-  o Resolve type aliases
-  o Prepare for construction
-
-For values:
-  o Create child members.
-  o Resolve types for overload selection.
-  o 
-  
 // ------------------------------------------------------------------------
 More template ideas:
 
@@ -678,8 +647,6 @@ hiding of superclass functions.
 
 Class arguments:
 
-class Foo
-
 // Functions don't actually need template argument lists, if we allow pattern variables
 // to be used directly in the function parameters. Weird.
 def foo(a:%T)
@@ -687,21 +654,26 @@ def foo(a:%T)
 {
 }
 
-= List(String).create(10);
-
-= List<[String]>(10);
-
 = List[String].create(10);
-
-= List<[String]>(10);
 
 = List[].create();
 
 = List[].new();
 
-= Map(String, String)();
-
 let a:Array[int] = {0, 1, 2, 3, 4};
 
-let a:[int] = {0, 1, 2, 3, 4};
-[int](10)
+// ------------------------------------------------------------------------
+
+classify p {
+  as x:int {
+  }
+
+  as x:float {
+  }
+}
+
+typeselect p as x:int {
+}
+
+classify p as x:int {
+}

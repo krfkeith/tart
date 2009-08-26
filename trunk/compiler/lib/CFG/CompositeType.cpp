@@ -215,8 +215,9 @@ bool CompositeType::isSubclassOf(const CompositeType * base) const {
 
 ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
-  if (const CompositeType * fromClass =
-      dyn_cast_or_null<CompositeType>(fromType)) {
+  if (const CompositeType * fromClass = dyn_cast_or_null<CompositeType>(fromType)) {
+    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
+    DASSERT_OBJ(fromClass->typeDefn()->isPassFinished(Pass_ResolveBaseTypes), fromClass);
     if (fromClass == this) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = cn.fromValue;

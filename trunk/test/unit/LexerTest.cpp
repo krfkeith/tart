@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/Lex/Lexer.h"
 #include "FakeSourceFile.h"
@@ -22,7 +22,7 @@ class LexerTest : public testing::Test {
   TokenType LexToken(const char * srcText) {
       FakeSourceFile  src(srcText);
       Lexer           lex(&src);
-    
+
       TokenType result = lex.next();
       EXPECT_EQ(Token_End, lex.next());
       return result;
@@ -42,14 +42,14 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_End, LexToken(" "));
   EXPECT_EQ(Token_End, LexToken("\t"));
   EXPECT_EQ(Token_End, LexToken("\r\n"));
-  
+
   // Idents
   EXPECT_EQ(Token_Ident, LexToken("_"));
   EXPECT_EQ(Token_Ident, LexToken("a"));
   EXPECT_EQ(Token_Ident, LexToken("z"));
   EXPECT_EQ(Token_Ident, LexToken("azAZ_01"));
   EXPECT_EQ(Token_Ident, LexToken(" z "));
-  
+
   // Numbers
   EXPECT_EQ(Token_Integer, LexToken("0"));
   EXPECT_EQ(Token_Integer, LexToken(" 0 "));
@@ -149,7 +149,7 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_ULongType, LexToken("ulong"));
   EXPECT_EQ(Token_FloatType, LexToken("float"));
   EXPECT_EQ(Token_DoubleType, LexToken("double"));
-  
+
   // Metatypes
   EXPECT_EQ(Token_Class, LexToken("class"));
   EXPECT_EQ(Token_Struct, LexToken("struct"));
@@ -173,11 +173,13 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_Try, LexToken("try"));
   EXPECT_EQ(Token_Catch, LexToken("catch"));
   EXPECT_EQ(Token_Finally, LexToken("finally"));
-  
+  EXPECT_EQ(Token_Switch, LexToken("switch"));
+  EXPECT_EQ(Token_Classify, LexToken("classify"));
+
   // String literals
   EXPECT_EQ(Token_String, LexToken("\"\""));
   EXPECT_EQ(Token_Char, LexToken("''"));
-  
+
   // Erroneous tokens
   EXPECT_EQ(Token_Error, LexTokenError("#"));
 }
@@ -227,17 +229,17 @@ TEST_F(LexerTest, Comments) {
   // Unterminated comment
   EXPECT_EQ(Token_Error, LexTokenError("/* comment"));
 }
-  
+
 TEST_F(LexerTest, Location) {
-  
+
   FakeSourceFile  src("\n\n   aaaaa    ");
   Lexer           lex(&src);
 
   EXPECT_EQ(Token_Ident, lex.next());
-  
+
   EXPECT_EQ(5u, lex.tokenLocation().begin);
   EXPECT_EQ(10u, lex.tokenLocation().end);
-  
+
   TokenPosition tl = src.getTokenPosition(lex.tokenLocation());
   EXPECT_EQ(2u, tl.beginLine);
   EXPECT_EQ(3u, tl.beginCol);

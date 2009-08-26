@@ -151,7 +151,8 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
       break;
 
     case BlockTerm_Switch:
-      DFAIL("Implement");
+      genSwitch(blk);
+      break;
 
     case BlockTerm_None:
     default:
@@ -327,6 +328,30 @@ void CodeGenerator::genCatch(Block * blk) {
     }
   } else {
     builder_.CreateBr(blk->succIRBlock(0));
+  }
+}
+
+void CodeGenerator::genSwitch(Block * blk) {
+  Expr * testExpr = blk->termExprs()[0];
+  Block * defaultBlock = blk->succs()[0];
+  Value * switchValue = genExpr(testExpr);
+  if (switchValue == NULL) {
+    return;
+  }
+
+  size_t numCases = blk->succs().size() - 1;
+  if (switchValue->getType()->isInteger()) {
+    SwitchInst * switchInst = builder_.CreateSwitch(switchValue, defaultBlock->irBlock(), numCases);
+    for (size_t i = 0; i < numCases; ++i) {
+      Expr * caseValExpr = blk->termExprs()[i + 1];
+      Block * caseBody = blk->succs()[i + 1];
+      Constant * caseVal = genConstExpr(caseValExpr);
+      if (caseVal != NULL) {
+        switchInst->addCase(cast<ConstantInt>(caseVal), caseBody->irBlock());
+      }
+    }
+  } else {
+    DFAIL("Implement non-integer switch");
   }
 }
 

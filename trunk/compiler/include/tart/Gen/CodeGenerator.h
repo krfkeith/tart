@@ -100,6 +100,7 @@ public:
       llvm::BasicBlock * falseBlk);
   void genThrow(Block * blk);
   void genCatch(Block * blk);
+  void genSwitch(Block * blk);
   void genDoFinally(Block * blk);
 
   /** Generate an expression (an RValue). */
@@ -112,6 +113,7 @@ public:
   llvm::Value * genUpCast(CastExpr * in);
   llvm::Value * genBitCast(CastExpr * in);
   llvm::Value * genUnionCtorCast(CastExpr * in);
+  llvm::Value * genUnionMemberCast(CastExpr * in);
   llvm::Value * genAssignment(AssignmentExpr * in);
   llvm::Value * genInstanceOf(InstanceOfExpr * in);
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
@@ -264,7 +266,7 @@ private:
 
   void verifyModule();
   void outputModule();
-  
+
   llvm::ConstantInt * getInt32Val(int value);
 
   llvm::LLVMContext & context_;

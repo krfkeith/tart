@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_FINDEXTERNALREFSPASS_H
 #define TART_SEMA_FINDEXTERNALREFSPASS_H
 
@@ -10,15 +10,15 @@
 #endif
 
 namespace tart {
-  
+
 class Module;
-  
+
 /// -------------------------------------------------------------------
 /// Function pass which assigns final types to all expressions and
 /// inserts implicit casts as needed.
 class FindExternalRefsPass : public CFGPass {
   Module * module;
-  
+
   FindExternalRefsPass(Module * m) : module(m) {}
   Defn * runImpl(Defn * in);
   void addSymbol(Defn * de);
@@ -33,6 +33,7 @@ public:
   Expr * visitFnCall(FnCallExpr * in);
   Expr * visitNew(NewExpr * in);
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  Expr * visitInstanceOf(InstanceOfExpr * in);
 };
 
 } // namespace tart

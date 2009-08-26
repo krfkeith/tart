@@ -11,20 +11,8 @@ if let x:int = 1 {
 if (let x:int = 1) or (let y:int = 2) {
 }
 
-interface Iterator[%T] {
-  def next -> T or Nothing;
-}
-
-interface Iterator#[List#[%T]] {
-  def next -> T or Nothing;
-}
-
 var i:int = 0;
 var l:List:int = List();
-
-interface Iterator<>(List<>%T) {
-  def next -> T or Nothing;
-}
 
 interface ContextHandler {
   def enter();
@@ -32,53 +20,6 @@ interface ContextHandler {
 
   def exit();
   def exit(e:Exception);
-}
-
-// Now we want to create an iterator adapter that can wrap any abstract
-// iterator and create a polymorphic iterator. Here are the specs:
-//
-// The IterType is a concrete type.
-// The IterType has a type parameter (T) representing the value type.
-// The IterType conforms to the IteratorProtocol<T>.
-// The IterType does not implement Iterator<T>.
-// We create an PolymorphicIterator class which implements Iterator<T>.
-// The PolymorphicIterator class is parameterized on T (the element type).
-// The PolymorphicIterator class contains an IterType<T>.
-// PolymorphicIterator must be a reference type, since only reference types
-// can have virtual functions.
-
-class PolymorphicIterator.[IteratorType <: AbstractIterator.[$T]]
-    : Iterator.[T] {
-  private let iter:IteratorType;
-    
-  def construct(iter:IteratorType) {
-    self.iter = iter;
-  }
-
-  def next() -> T or Nothing {
-    return iter.next();
-  }
-}
-
-class PolymorphicIterator<IteratorType : Iterator<$T>> {
-  private let iter:IteratorType;
-    
-  def construct(iter:IteratorType) {
-    self.iter = iter;
-  }
-  
-  def next() -> T or Nothing {
-    return iter.next();
-  }
-}
-
-
-
-//Array!String;
-
-[template T:Type, IteratorType:Type]
-[require IteratorType : IteratorProtocol[T]]
-class PolymorphicIterator[IteratorType[T]] : Iterator[T] {
 }
 
 struct Vector4D[%T] require T issubtype Number {

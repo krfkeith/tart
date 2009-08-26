@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/CompositeType.h"
@@ -24,11 +24,11 @@ Expr * EvalPass::evalExpr(Expr * in) {
   if (in == NULL) {
     return NULL;
   }
-  
+
   switch (in->exprType()) {
     case Expr::Invalid:
       return &Expr::ErrorVal;
-    
+
     case Expr::TypeCount:
       DFAIL("Invalid");
 
@@ -53,7 +53,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 #if 0
     case Expr::ScopeName:
       return evalScopeName(static_cast<ScopeNameExpr *>(in));
-      
+
     case Expr::ElementRef:
       return evalElementRef(static_cast<BinaryExpr *>(in));
 #endif
@@ -81,7 +81,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 #if 0
     case Expr::Instantiate:
       return evalInstantiate(static_cast<InstantiateExpr *>(in));
-      
+
     case Expr::ImplicitCast:
     case Expr::ExplicitCast:
     case Expr::UpCast:
@@ -92,6 +92,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ZeroExtend:
     case Expr::BitCast:
     case Expr::UnionCtorCast:
+    case Expr::UnionMemberCast:
       return evalCast(static_cast<CastExpr *>(in));
 
     case Expr::BinaryOpcode:
@@ -114,7 +115,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
     case Expr::InitVar:
       return evalInitVar(static_cast<InitVarExpr *>(in));
-    
+
     case Expr::Prog2:
       return evalProg2(static_cast<BinaryExpr *>(in));
 
@@ -126,7 +127,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
     case Expr::PatternVar:
       DFAIL("PatternVar");
-    
+
     case Expr::PtrCall:
       DFAIL("PtrCall");
 #endif
@@ -138,12 +139,12 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
 bool EvalPass::evalBlocks(BlockList & blocks) {
   Block * block = blocks.front();
-  
+
   for (;;) {
     for (ExprList::iterator it = block->exprs().begin(); it != block->exprs().end(); ++it) {
       evalExpr(*it);
     }
-    
+
     switch (block->terminator()) {
       case BlockTerm_None:
         DFAIL("Invalid block term");
@@ -152,14 +153,14 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
       case BlockTerm_Branch:
         block = block->succs()[0];
         break;
-        
+
       case BlockTerm_Return: {
         if (block->termValue() != NULL) {
           callFrame_->setReturnVal(evalExpr(block->termValue()));
         } else {
           callFrame_->setReturnVal(NULL);
         }
-        
+
         return true;
       }
 
@@ -205,13 +206,13 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
   if (!AnalyzerBase::analyzeDefn(func, Task_PrepCodeGeneration)) {
     return NULL;
   }
-  
+
   DASSERT_OBJ(!func->blocks().empty(), func);
-  
+
   CallFrame * prevFrame = setCallFrame(&frame);
   evalBlocks(func->blocks());
   setCallFrame(prevFrame);
-  
+
   if (in->exprType() == Expr::CtorCall) {
     return frame.selfArg();
   }
@@ -226,7 +227,7 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
         return evalExpr(var->initValue());
       }
     }
-    
+
     switch (var->storageClass()) {
       case Storage_Global:
         DFAIL("IMPLEMENT Storage_Global");
@@ -262,13 +263,13 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
     if (param == ftype->selfParam()) {
       return callFrame_->selfArg();
     }
-    
+
     for (size_t i = 0; i < ftype->params().size(); ++i) {
       if (ftype->params()[i] == param) {
         return callFrame_->args()[i];
       }
     }
-    
+
     DFAIL("Couldn't locate param");
   }
 }
@@ -283,7 +284,7 @@ Expr * EvalPass::evalAssign(AssignmentExpr * in) {
   if (from == NULL) {
     return NULL;
   }
-  
+
   store(from, in->toExpr());
 }
 
@@ -297,7 +298,7 @@ void EvalPass::store(Expr * value, Expr * dest) {
           return;
         }
       }
-    
+
       switch (var->storageClass()) {
         case Storage_Global:
           DFAIL("IMPLEMENT Storage_Global");
@@ -309,7 +310,7 @@ void EvalPass::store(Expr * value, Expr * dest) {
           if (base == NULL) {
             return;
           }
-          
+
           if (ConstantObjectRef * inst = dyn_cast<ConstantObjectRef>(base)) {
             inst->setMemberValue(var, value);
           } else {

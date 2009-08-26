@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Lex/Lexer.h"
 #include <algorithm>
 
@@ -29,7 +29,7 @@ namespace {
   bool isHexDigitChar(char ch) {
     return (ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'f' || ch >= 'A' && ch <= 'F');
   }
-    
+
   // Instead of a hash table or sorted list, we rely on the compiler to
   // be smart about optimizing a switch statement that is known to
   // have a small number of cases.
@@ -51,9 +51,11 @@ namespace {
 
         case 'c':
           if (strcmp(kw, "class") == 0) return Token_Class;
+          if (strcmp(kw, "classify") == 0) return Token_Classify;
           if (strcmp(kw, "catch") == 0) return Token_Catch;
           if (strcmp(kw, "char") == 0) return Token_CharType;
           if (strcmp(kw, "continue") == 0) return Token_Continue;
+          if (strcmp(kw, "case") == 0) return Token_Case;
           break;
 
         case 'd':
@@ -136,6 +138,7 @@ namespace {
           if (strcmp(kw, "set") == 0) return Token_Set;
           if (strcmp(kw, "static") == 0) return Token_Static;
           if (strcmp(kw, "super") == 0) return Token_Super;
+          if (strcmp(kw, "switch") == 0) return Token_Switch;
           break;
 
         case 't':
@@ -600,7 +603,7 @@ TokenType Lexer::next() {
     case '?':
       readCh();
       return Token_QMark;
-      
+
     case '$':
       readCh();
       return Token_DollarSign;

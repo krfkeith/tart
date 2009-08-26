@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/CFGPass.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -35,11 +35,11 @@ Expr * CFGPass::visitExpr(Expr * in) {
   if (in == NULL) {
     return NULL;
   }
-  
+
   switch (in->exprType()) {
     case Expr::Invalid:
       return &Expr::ErrorVal;
-    
+
     case Expr::TypeCount:
       DFAIL("Invalid");
 
@@ -48,7 +48,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::ConstInt:
       return visitConstantInteger(static_cast<ConstantInteger *>(in));
-    
+
     case Expr::ConstFloat:
       return visitConstantFloat(static_cast<ConstantFloat *>(in));
 
@@ -69,7 +69,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::ScopeName:
       return visitScopeName(static_cast<ScopeNameExpr *>(in));
-      
+
     case Expr::ElementRef:
       return visitElementRef(static_cast<BinaryExpr *>(in));
 
@@ -93,7 +93,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::Instantiate:
       return visitInstantiate(static_cast<InstantiateExpr *>(in));
-      
+
     case Expr::ImplicitCast:
     case Expr::ExplicitCast:
     case Expr::UpCast:
@@ -104,6 +104,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ZeroExtend:
     case Expr::BitCast:
     case Expr::UnionCtorCast:
+    case Expr::UnionMemberCast:
       return visitCast(static_cast<CastExpr *>(in));
 
     case Expr::BinaryOpcode:
@@ -113,7 +114,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitCompare(static_cast<CompareExpr *>(in));
 
     case Expr::InstanceOf:
-      return visitConstantObjectRefOf(static_cast<InstanceOfExpr *>(in));
+      return visitInstanceOf(static_cast<InstanceOfExpr *>(in));
 
     case Expr::RefEq:
       return visitRefEq(static_cast<BinaryExpr *>(in));
@@ -126,7 +127,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::InitVar:
       return visitInitVar(static_cast<InitVarExpr *>(in));
-    
+
     case Expr::Prog2:
       return visitProg2(static_cast<BinaryExpr *>(in));
 
@@ -138,7 +139,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::PatternVar:
       DFAIL("PatternVar");
-    
+
     case Expr::PtrCall:
       DFAIL("PtrCall");
   }
@@ -225,8 +226,8 @@ Expr * CFGPass::visitCompare(CompareExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitConstantObjectRefOf(InstanceOfExpr * in) {
-  in->setValue(visitExpr(in->getValue()));
+Expr * CFGPass::visitInstanceOf(InstanceOfExpr * in) {
+  in->setValue(visitExpr(in->value()));
   return in;
 }
 

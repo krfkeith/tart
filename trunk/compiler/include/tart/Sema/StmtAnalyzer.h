@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_STMTANALYZER_H
 #define TART_SEMA_STMTANALYZER_H
 
@@ -20,7 +20,7 @@
 #include <llvm/ADT/DenseMap.h>
 
 namespace tart {
-  
+
 class Stmt;
 class BlockStmt;
 class ExprStmt;
@@ -28,6 +28,8 @@ class IfStmt;
 class WhileStmt;
 class ForStmt;
 class ForEachStmt;
+class SwitchStmt;
+class ClassifyStmt;
 class ThrowStmt;
 class TryStmt;
 class CatchStmt;
@@ -46,7 +48,7 @@ public:
 
   /** The target function being analyzed. */
   FunctionDefn * getTarget() { return function; }
-  
+
   /** Build the control flow graph for this function. */
   bool buildCFG();
   bool buildStmtCFG(const Stmt * st);
@@ -56,6 +58,8 @@ public:
   bool buildWhileStmtCFG(const WhileStmt * st);
   bool buildForStmtCFG(const ForStmt * st);
   bool buildForEachStmtCFG(const ForEachStmt * st);
+  bool buildSwitchStmtCFG(const SwitchStmt * st);
+  bool buildClassifyStmtCFG(const ClassifyStmt * st);
   bool buildThrowStmtCFG(const ThrowStmt * st);
   bool buildTryStmtCFG(const TryStmt * st);
   bool buildReturnStmtCFG(const ReturnStmt * st);
@@ -66,7 +70,7 @@ public:
 
   /** Infer the function return type. */
   void inferReturnType();
-  
+
   /** Warn about return type conflict. */
   void warnConflict(
     const SourceLocation & prevLoc, const Type * prevType,
@@ -81,16 +85,18 @@ public:
 
   /** Convert an AST into an lvalue expression. */
   Expr * astToLValueExpr(const ASTNode * ast, Type * expectedType);
-    
-  /** Convert an AST to a test expression, which might include a
-      let-declaration. */
-  Expr * astToTestExpr(const ASTNode * test);
+
+  /** Convert an AST to a test expression, which might include a let-declaration. */
+  Expr * astToTestExpr(const ASTNode * test, bool castToBool = true);
 
   /** Build expression tree from AST. Don't do any type inferencing yet. */
   Expr * astToExpr(const ASTNode * ast, Type * expectedType);
 
   /** Build defn from AST. Don't do any type inferencing yet. */
   Defn * astToDefn(const ASTDecl * ast);
+
+  /** Convert an AST into an switch case value. */
+  Expr * astToCaseValueExpr(const ASTNode * ast, Type * testType);
 
   /** Set the unwind target - the block that will be executed when an exception is thrown. */
   Block * setUnwindTarget(Block * target) {
@@ -102,10 +108,10 @@ public:
   /** Cause a 'return' statement to instead assign to a local variable.
       Used during macro expansion. Returns previous value. */
   LValueExpr * setMacroReturnVal(LValueExpr * retVal);
-  
+
   /** Cause a 'return' statement to jump to a block instead of returning. */
   Block * setMacroReturnTarget(Block * blk);
-  
+
   /** Create a new local scope and make it's parent the current scope.
       Do not yet set it as the current active scope. */
   LocalScope * createLocalScope(const char * scopeName);
@@ -121,9 +127,13 @@ public:
       current insertion point. */
   Block * createBlock(const char * name);
 
+  /** Create a basic block in the current function. This will insert the new block at the
+      current insertion point. */
+  Block * createBlock(const char * prefix, const std::string & suffix);
+
   /** True if any catch target can catch the specified exception type */
   static bool canCatch(TypeList & catchTypes, CompositeType * exceptionType);
-  
+
   /** Define a 'local procedure' - a sequence of blocks within a function that can be invoked
       like a subroutine. This doesn't actually get compiled into a subroutine, however - it
       gets converted into a state-machine-like set of jumps that sets a state variable and
@@ -154,12 +164,12 @@ private:
     Block * last;             // The ending block of the procedure.
     VariableDefn * stateVar;  // The variable used to determine where to return to.
     LValueExpr * stateExpr;   // Expression used to set / get this state.
-  
+
     // The set of blocks which get executed after the procedure returns.
     BlockList followingBlocks;
 
     LocalProcedure() : first(NULL), last(NULL), stateVar(NULL), stateExpr(NULL) {}
-    
+
     int addFollowingBlock(Block * b);
   };
 

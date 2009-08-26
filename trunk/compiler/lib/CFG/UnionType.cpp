@@ -219,9 +219,7 @@ bool UnionType::isEqual(const Type * other) const {
   // TODO: Handle case of unions having types declared in a different order.
   if (const UnionType * u = dyn_cast<UnionType>(other)) {
     if (u->members().size() == members_.size()) {
-      return std::equal(
-          members_.begin(), members_.end(),
-          u->members().begin(), TypeEquals());
+      return std::equal(members_.begin(), members_.end(), u->members().begin(), TypeEquals());
     }
   }
 

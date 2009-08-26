@@ -209,6 +209,18 @@ public:
   /** Parse a for Stmt */
   Stmt * forStmt();
 
+  /** Parse a classify Stmt */
+  Stmt * switchStmt();
+
+  /** The 'case' clause of a switch statement. */
+  Stmt * caseStmt();
+
+  /** Parse a classify Stmt */
+  Stmt * classifyStmt();
+
+  /** The 'as' clause of a classify statement. */
+  Stmt * asStmt();
+
   /** Parse the body of a compound statement such as 'if' or 'while'. */
   Stmt * bodyStmt();
 

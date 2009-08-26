@@ -25,11 +25,11 @@
 
 namespace tart {
 
-class Scope;  
+class Scope;
 class ErrorExpr;
 class VariableDefn;
 class CompositeType;
-  
+
 /// -------------------------------------------------------------------
 /// A Control Flow Graph value or expression
 class Expr : public GC, public Formattable, public Locatable {
@@ -40,14 +40,14 @@ public:
     #undef EXPR_TYPE
     TypeCount,
   };
-  
+
 private:
   const ExprType    exprType_;
   SourceLocation    loc_;
   Type            * type_;
-  
+
   static const ExprList emptyList;
-  
+
 public:
   Expr(ExprType k, const SourceLocation & l, Type * type)
     : exprType_(k)
@@ -59,17 +59,17 @@ public:
 
   /** The type of expression node. */
   ExprType exprType() const { return exprType_; }
-  
+
   /** The type of this expression. */
   const Type * type() const { return type_; }
   Type * type() { return type_; }
   const Type * getType() const { return type_; }
   Type * getType() { return type_; }
   void setType(Type * type) { type_ = type; }
-  
+
   /** Return true if this expression is a constant. */
   virtual bool isConstant() const { return false; }
-  
+
   /** Return true if this expression has no side effects. */
   virtual bool isSideEffectFree() const = 0;
 
@@ -87,7 +87,7 @@ public:
 
   /** Trace through all references in this expression. */
   void trace() const;
-  
+
   /** LLVM dynamic casting primitive. */
   static inline bool classof(const Expr *) { return true; }
 
@@ -188,7 +188,7 @@ protected:
   bool areArgsSideEffectFree() const;
 
 public:
-  
+
   /** The argument list. */
   ExprList & args() { return args_; }
   const ExprList & args() const { return args_; }
@@ -221,7 +221,7 @@ public:
   /** Return the reference to the definition */
   const ValueDefn * value() const { return value_; }
   ValueDefn * value() { return value_; }
-  
+
   // If the input expression is an LValue which is bound to a compile-time constant,
   // return the constant, otherwise return the input expression.
   static Expr * constValue(Expr * lv);
@@ -250,9 +250,9 @@ public:
     : Expr(ScopeName, loc, NULL)
     , value_(value)
   {}
-  
+
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   bool isSideEffectFree() const { return true; }
@@ -279,13 +279,13 @@ public:
     , fromExpr_(from)
     , toExpr_(to)
   {}
-  
+
   AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from)
     : Expr(k, loc, to->getType())
     , fromExpr_(from)
     , toExpr_(to)
   {}
-  
+
   Expr * fromExpr() const { return fromExpr_; }
   void setFromExpr(Expr * ex) { fromExpr_ = ex; }
 
@@ -315,7 +315,7 @@ private:
 
 public:
   InitVarExpr(const SourceLocation & loc, VariableDefn * var, Expr * expr);
-  
+
   Expr * getInitExpr() const { return initExpr; }
   void setInitExpr(Expr * e) { initExpr = e; }
   VariableDefn * getVar() const { return var; }
@@ -368,7 +368,7 @@ public:
 
   /** Return either the single non-culled candidate, or NULL. */
   CallCandidate * getSingularCandidate();
-  
+
   /** Return true if there is at least one non-culled candidate. */
   bool hasAnyCandidates() const;
 
@@ -493,14 +493,14 @@ public:
   // Type discriminator index used in union types
   int typeIndex() const { return typeIndex_; }
   void setTypeIndex(int index) { typeIndex_ = index; }
-  
+
   void format(FormatStream & out) const;
   static inline bool classof(const CastExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() >= ImplicitCast &&
         ex->exprType() <= ZeroExtend;
   }
-  
+
 private:
   int typeIndex_;
 };
@@ -567,21 +567,21 @@ public:
 class InstanceOfExpr : public Expr {
 private:
   Expr * value_;
-  Type * toType;
+  Type * toType_;
 
 public:
   /** Constructor. */
   InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * ty);
-    
+
   /* The instance value we are testing. */
-  const Expr * getValue() const { return value_; }
-  Expr * getValue() { return value_; }
+  const Expr * value() const { return value_; }
+  Expr * value() { return value_; }
   void setValue(Expr * value) { value_ = value; }
 
   /* The type we are testing against. */
-  const Type * getToType() const { return toType; }
-  Type * getToType() { return toType; }
-  void setToType(Type * ty) { toType = ty; }
+  const Type * toType() const { return toType_; }
+  Type * toType() { return toType_; }
+  void setToType(Type * ty) { toType_ = ty; }
 
   // Overrides
 

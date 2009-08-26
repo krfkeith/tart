@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/Common/Diagnostics.h"
@@ -11,7 +11,7 @@
 #include "tart/CFG/TypeDefn.h"
 
 namespace tart {
-  
+
 static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
   Pass_CreateMembers,
   Pass_ResolveVarType
@@ -41,7 +41,7 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
   // Work out what passes need to be run.
   DefnPasses passesToRun;
   addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
-  
+
   // Run passes
 
   if (passesToRun.empty()) {
@@ -55,14 +55,14 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 bool VarAnalyzer::resolveVarType() {
   if (target->beginPass(Pass_ResolveVarType)) {
     const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->getAST());
-    
+
     // Evaluate the explicitly declared type, if any
     if (target->type() == NULL) {
       DASSERT(ast != NULL);
@@ -72,7 +72,7 @@ bool VarAnalyzer::resolveVarType() {
         if (varType == NULL) {
           return false;
         }
-        
+
         //diag.info(target) << "Analyzing type of var '" << target << "' : " << varType;
         setTargetType(varType);
       }
@@ -84,11 +84,11 @@ bool VarAnalyzer::resolveVarType() {
       if (target->type() != NULL && target->type()->typeClass() == Type::Enum) {
         // If the initializer is an enumerated type, then add that type's member scope
         // to the list of scopes.
-        DelegatingScope * enumScope = new DelegatingScope(
-            target->type()->memberScope(), activeScope);
+        DelegatingScope * enumScope =
+            new DelegatingScope(target->type()->memberScope(), activeScope);
         savedScope = setActiveScope(enumScope);
       }
-      
+
       ExprAnalyzer ea(module, activeScope);
       Expr * initExpr = ea.analyze(ast->getValue(), target->type());
       if (isErrorResult(initExpr)) {
@@ -99,7 +99,7 @@ bool VarAnalyzer::resolveVarType() {
       } else {
         Type * initType = initExpr->type();
         DASSERT_OBJ(initType != NULL, target);
-        
+
         if (initType->isEqual(&UnsizedIntType::instance)) {
           // Only if this is a var, not a let
           initType = &IntType::instance;
@@ -124,13 +124,13 @@ bool VarAnalyzer::resolveVarType() {
         }
       }
     }
-    
+
     DASSERT(target->type() != NULL);
-    
+
     if (target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
-    
+
     target->finishPass(Pass_ResolveVarType);
   }
 

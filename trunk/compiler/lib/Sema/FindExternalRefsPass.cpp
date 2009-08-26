@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
@@ -34,7 +34,7 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
       ctype->addStaticDefsToModule(module);
     }
   }
-  
+
   if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern()) {
       visit(fn);
@@ -64,7 +64,7 @@ bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
   if (!fn->isIntrinsic() && !fn->isExtern()) {
     return module->addSymbol(fn);
   }
-  
+
   return false;
 }
 
@@ -89,7 +89,7 @@ Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
   if (tdef != NULL) {
     module->addSymbol(tdef);
   }
-  
+
   return in;
 }
 
@@ -99,6 +99,14 @@ Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   addSymbol(arrayType->typeDefn());
   addSymbol(allocFunc);
   return in;
+}
+
+Expr * FindExternalRefsPass::visitInstanceOf(InstanceOfExpr * in) {
+  if (CompositeType * cls = dyn_cast<CompositeType>(in->toType())) {
+    addSymbol(cls->typeDefn());
+  }
+
+  return CFGPass::visitInstanceOf(in);
 }
 
 } // namespace tart

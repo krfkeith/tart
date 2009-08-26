@@ -44,7 +44,7 @@ public:
   virtual Expr * visitCast(CastExpr * in);
   virtual Expr * visitBinaryOpcode(BinaryOpcodeExpr * in);
   virtual Expr * visitCompare(CompareExpr * in);
-  virtual Expr * visitConstantObjectRefOf(InstanceOfExpr * in);
+  virtual Expr * visitInstanceOf(InstanceOfExpr * in);
   virtual Expr * visitRefEq(BinaryExpr * in);
   virtual Expr * visitPtrDeref(UnaryExpr * in);
   virtual Expr * visitNot(UnaryExpr * in);

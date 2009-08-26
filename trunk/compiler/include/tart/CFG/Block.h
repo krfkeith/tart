@@ -20,7 +20,7 @@ class BasicBlock;
 }
 
 namespace tart {
-  
+
 class VariableDefn;
 class FormatStream;
 
@@ -105,7 +105,7 @@ public:
 
   /** Adds a switch or catch case. */
   void addCase(Expr * caseVal, Block * target);
-  
+
   /** Split this block - transfer the end state of this block to the new block. */
   Block * split(const char * lbl = NULL) {
     Block * newBlock = new Block(lbl ? lbl : label_);
@@ -141,7 +141,7 @@ public:
         return int(i);
       }
     }
-    
+
     return -1;
   }
 
