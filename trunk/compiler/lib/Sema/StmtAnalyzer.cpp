@@ -489,6 +489,8 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   testBlock->addCase(testExpr, NULL);
   Block * endBlock = NULL;
 
+  ConstantExprList usedCaseVals;
+
   const Stmt * elseSt = NULL;
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
@@ -496,12 +498,13 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     if (s->nodeType() == ASTNode::Case) {
       CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
       ASTNode * caseValAst = caseSt->caseExpr();
-      ExprList caseValList;
+      ConstantExprList caseValList;
       Scope * saveCaseScope = setActiveScope(caseValScope);
       if (caseValAst->nodeType() == ASTNode::Tuple) {
         const ASTOper * caseVals = static_cast<const ASTOper *>(caseValAst);
-        for (ASTNodeList::const_iterator it = caseVals->args().begin(); it != caseVals->args().end(); ++it) {
-          Expr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
+        for (ASTNodeList::const_iterator it = caseVals->args().begin();
+            it != caseVals->args().end(); ++it) {
+          ConstantExpr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
           if (caseVal == NULL) {
             continue;
           }
@@ -509,7 +512,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
           caseValList.push_back(caseVal);
         }
       } else {
-        Expr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
+        ConstantExpr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
         if (caseVal == NULL) {
           continue;
         }
@@ -521,8 +524,15 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
       DASSERT(!caseValList.empty());
 
       Block * caseBody = createBlock("casebody");
-      for (ExprList::iterator ci = caseValList.begin(); ci != caseValList.end(); ++ci) {
-        testBlock->addCase(*ci, caseBody);
+      for (ConstantExprList::iterator ci = caseValList.begin(); ci != caseValList.end(); ++ci) {
+        ConstantExpr * caseVal = *ci;
+        testBlock->addCase(caseVal, caseBody);
+        for (ConstantExprList::iterator ce = usedCaseVals.begin(); ce != usedCaseVals.end(); ++ce) {
+          if (caseVal->isEqual(*ce)) {
+            diag.error(caseVal) << "Duplicate case value in switch: " << caseVal;
+          }
+        }
+        usedCaseVals.push_back(caseVal);
       }
 
       // Build the body of the case.
@@ -582,13 +592,8 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   return true;
 }
 
-Expr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, Type * testType) {
+ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, Type * testType) {
   Expr * caseVal = astToExpr(ast, testType);
-  if (!caseVal->isConstant()) {
-    diag.error(ast) << "Case expression '" << ast << "' is not a constant.";
-    return NULL;
-  }
-
   Expr * result = NULL;
   Conversion cn(caseVal, &result);
   ConversionRank rank = testType->convert(cn);
@@ -601,7 +606,12 @@ Expr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, Type * testType) {
         " can never equal switch expression of type '" << testType << "'";
   }
 
-  return result;
+  if (!result->isConstant()) {
+    diag.error(ast) << "Case expression '" << ast << "' is not a constant.";
+    return NULL;
+  }
+
+  return cast<ConstantExpr>(result);
 }
 
 bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {

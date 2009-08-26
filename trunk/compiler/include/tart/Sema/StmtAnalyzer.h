@@ -96,7 +96,7 @@ public:
   Defn * astToDefn(const ASTDecl * ast);
 
   /** Convert an AST into an switch case value. */
-  Expr * astToCaseValueExpr(const ASTNode * ast, Type * testType);
+  ConstantExpr * astToCaseValueExpr(const ASTNode * ast, Type * testType);
 
   /** Set the unwind target - the block that will be executed when an exception is thrown. */
   Block * setUnwindTarget(Block * target) {
