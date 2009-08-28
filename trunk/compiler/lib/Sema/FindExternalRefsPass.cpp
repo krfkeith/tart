@@ -13,6 +13,7 @@
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Objects/Builtins.h"
 
 namespace tart {
 

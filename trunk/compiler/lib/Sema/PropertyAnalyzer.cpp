@@ -1,8 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
-#include "tart/Sema/PropertyAnalyzer.h"
+
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -10,11 +9,12 @@
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+#include "tart/Sema/PropertyAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 
 namespace tart {
-  
+
 static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
   Pass_CreateMembers,
   Pass_ResolveVarType
@@ -34,7 +34,7 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
   // Work out what passes need to be run.
   DefnPasses passesToRun;
   addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
-  
+
   // Run passes
 
   if (passesToRun.empty()) {
@@ -48,7 +48,7 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -90,7 +90,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         ParameterDefn * param = new ParameterDefn(module, aparam);
         getterType->addParam(new ParameterDefn(module, aparam));
       }
-      
+
       getter->setFunctionType(getterType);
       module->addSymbol(getter);
       analyzeLater(getter);
@@ -140,7 +140,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         valueParam->addTrait(Defn::Singular);
         setterType->addParam(valueParam);
       }
-      
+
       DASSERT_OBJ(setterType->returnType() == NULL, setter);
       setterType->setReturnType(&VoidType::instance);
 
@@ -154,72 +154,5 @@ bool PropertyAnalyzer::resolvePropertyType() {
 
   return true;
 }
-
-#if 0
-bool PropertyAnalyzer::resolveIndexerParameterTypes() {
-  //return new FunctionType(returnType, params);
-
-
-  //bool success = true;
-  //if (target->beginPass(Pass_ResolveParameterTypes)) {
-    //FunctionType * ftype = target->functionType();
-
-    // Set the module reference for the parameter scope.
-    //target->parameterScope().setModule(module);
-    
-    // For non-template functions, the active scope is the scope that 
-    // encloses the function. For a template instance, the parent scope
-    // will be the scope that defines the template variables.
-    //Scope * savedScope = setActiveScope(target->definingScope());
-    
-    //if (target->isTemplate()) {
-    //  // Get the template scope and set it as the active scope.
-    //  analyzeTemplateSignature(target);
-    //  TemplateSignature * tsig = target->templateSignature();
-    //  activeScope = &tsig->paramScope();
-    //}
-    
-    if (ftype != NULL) {
-      ParameterList & params = ftype->params();
-      for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
-        ParameterDefn * param = *it;
-        //DASSERT_OBJ(param->definingScope() == NULL, target);
-        //target->parameterScope().addMember(param);
-        VarAnalyzer(param).analyze(Task_PrepCallOrUse);
-
-        if (param->defaultValue() != NULL) {
-          DFAIL("Implement");
-        }
-        
-        if (param->getType() == NULL) {
-          diag.fatal(param) << "No type specified for parameter '" <<
-              param << "'";
-        }
-        
-        // TODO: Change this to assign explicit types, or invent type
-        // variables.
-        //success &= AnalyzerBase::analyzeDefn(*it, InferTypesPass);
-        
-        // TODO: Should only add the param as a member if we "own" it.
-        if (param->definingScope() == NULL && param->name() != NULL) {
-          target->parameterScope().addMember(param);
-        }
-      }
-    }
-
-    if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
-      ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
-      TypeDefn * selfType = target->enclosingClassDefn();
-      DASSERT_OBJ(selfType != NULL, target);
-      selfParam->setType(selfType->getTypeValue());
-      selfParam->addTrait(Defn::Singular);
-      selfParam->copyTrait(selfType, Defn::Final);
-      selfParam->setFlag(ParameterDefn::Reference, true);
-      ftype->setSelfParam(selfParam);
-      target->parameterScope().addMember(selfParam);
-    }
-
-}
-#endif
 
 }

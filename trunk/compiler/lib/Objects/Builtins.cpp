@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Module.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
@@ -22,6 +22,7 @@ SourceFile builtinSource("");
 }
 
 Module Builtins::module(&builtinSource, "$builtin", NULL);
+Module Builtins::syntheticModule(&builtinSource, "$synthetic", NULL);
 
 Type * Builtins::typeTypeInfoBlock;
 Type * Builtins::typeObject;
@@ -45,6 +46,7 @@ Type * Builtins::typeIntrinsicAttribute;
 TypeAlias Builtins::typeAliasString(NULL);
 
 FunctionDefn * Builtins::funcHasBase;
+FunctionDefn * Builtins::funcTypecastError;
 
 NamespaceDefn Builtins::nsOperator(&module, "Operators");
 
@@ -60,7 +62,7 @@ void Builtins::init() {
     }
     module.addMember(de);
   }
-  
+
   // Initialize all intrinsic operators and functions.
   initOperators();
 
@@ -134,6 +136,7 @@ void Builtins::loadSystemClasses() {
 
   // Get the function that tests for a type
   funcHasBase = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "hasBase"));
+  funcTypecastError = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "typecastError"));
 
   // Get the low-level exception structure
   typeUnwindException = cast<TypeDefn>(

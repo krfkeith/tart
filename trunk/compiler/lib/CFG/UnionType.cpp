@@ -117,9 +117,13 @@ const llvm::Type * UnionType::createIRType() const {
       discriminatorType = llvm::Type::getInt32Ty(llvm::getGlobalContext());
     }
 
+    const llvm::Type * largestType = largestType32->getIRType();
+    if (largestType32->isReferenceType()) {
+      largestType = llvm::PointerType::get(largestType, 0);
+    }
     std::vector<const llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
-    unionMembers.push_back(largestType32->getIRType());
+    unionMembers.push_back(largestType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else {
     return llvm::PointerType::get(llvm::OpaqueType::get(llvm::getGlobalContext()), 0);

@@ -247,6 +247,10 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     //type->setFieldCount(1);
   }
 
+  if (dtype == Type::Interface) {
+    module->addSymbol(Builtins::funcTypecastError);
+  }
+
   return true;
 }
 

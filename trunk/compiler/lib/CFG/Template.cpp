@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/FunctionType.h"
@@ -35,7 +35,7 @@ PatternVar::PatternVar(const SourceLocation & location,
   , valueType_(Builtins::typeType)
   , template_(temp)
 {}
-  
+
 const llvm::Type * PatternVar::createIRType() const {
   DFAIL("Invalid");
 }
@@ -51,7 +51,7 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
       return ty->convertImpl(cn);
     }
   }
-  
+
   return Incompatible;
 }
 
@@ -98,7 +98,7 @@ TemplateSignature * TemplateSignature::get(Defn * v, Scope * parent) {
   if (v->templateSignature() == NULL) {
     v->setTemplateSignature(new TemplateSignature(v, parent));
   }
-  
+
   return v->templateSignature();
 }
 
@@ -144,7 +144,7 @@ size_t TemplateSignature::getVarIndex(const PatternVar * var) const {
       return it - vars_.begin();
     }
   }
-  
+
   return size_t(-1);
 }
 
@@ -171,7 +171,7 @@ void TemplateSignature::format(FormatStream & out) const {
 }
 
 Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env) {
-  
+
   // Check to make sure that thre parameters are of the correct type.
   TypeList paramValues;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
@@ -194,7 +194,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     // We might need to do some coercion here...
     paramValues.push_back(value);
   }
-  
+
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
   for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
@@ -212,7 +212,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   DASSERT(value->definingScope() != NULL);
   TemplateInstance * tinst = new TemplateInstance(value->definingScope());
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
-  
+
   // Substitute into the template args to create the arg list
   for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
     Type * argValue = env.subst(*it);
@@ -222,7 +222,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   // Create the definition
   Defn * result = NULL;
   if (value->getAST() != NULL) {
-    result = ScopeBuilder::createDefn(tinst, value->module(), value->getAST());
+    result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value->getAST());
     tinst->setValue(result);
     result->setQualifiedName(value->qualifiedName());
     result->addTrait(Defn::Synthetic);
@@ -231,7 +231,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   } else if (value->defnType() == Defn::Typedef) {
     TypeDefn * tdef = static_cast<TypeDefn *>(value);
     TypeDefn * newDef = new TypeDefn(value->module(), tdef->name());
-    
+
     switch (tdef->getTypeValue()->typeClass()) {
       case Type::NativePointer: {
         NativePointerType * np = new NativePointerType(paramValues[0], newDef, tinst);
@@ -249,12 +249,12 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
         newDef->createQualifiedName(NULL);
         break;
       }
-      
+
       default:
         DFAIL("Invalid template type");
         break;
     }
-    
+
     result = newDef;
     tinst->setValue(result);
   } else {
@@ -302,7 +302,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   result->setSingular(isSingular);
   result->setTemplateInstance(tinst);
-  
+
   return result;
 }
 
@@ -328,10 +328,10 @@ bool TemplateInstance::lookupMember(const char * ident, DefnList & defs, bool in
     defs.append(entry->begin(), entry->end());
     return true;
   }
-  
+
   return false;
 }
-    
+
 void TemplateInstance::dumpHierarchy(bool full) const {
   std::string out;
   out.append("[template-instance] ");
@@ -346,7 +346,7 @@ void TemplateInstance::format(FormatStream & out) const {
     if (it != templateArgs_.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 
@@ -358,5 +358,5 @@ void TemplateInstance::trace() const {
   value_->mark();
   markList(paramValues_.begin(), paramValues_.end());
 }
-  
+
 } // namespace Tart

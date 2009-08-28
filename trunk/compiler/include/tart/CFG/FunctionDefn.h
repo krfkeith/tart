@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_FUNCTIONDEFN_H
 #define TART_CFG_FUNCTIONDEFN_H
 
@@ -54,7 +54,7 @@ public:
     , variance_(Contravariant)
     , flags_(0)
   {}
-  
+
   /** Constructor that takes an AST declaration and a defn type. */
   ParameterDefn(DefnType dt, Module * m, ASTDecl * de)
     : ValueDefn(dt, m, de)
@@ -65,7 +65,7 @@ public:
     , variance_(Contravariant)
     , flags_(0)
   {}
-  
+
   /** Constructor that takes a name and a type (for static decls.) */
   ParameterDefn(Module * m, const char * name, Type * ty, int paramFlags, Expr * defaultVal = NULL)
     : ValueDefn(Parameter, m, name)
@@ -78,12 +78,12 @@ public:
   {
     assert(ty != NULL);
   }
-  
+
   /** Default value for this parameter. */
   const Expr * defaultValue() const { return defaultValue_; }
   Expr * defaultValue() { return defaultValue_; }
   void setDefaultValue(Expr * e) { defaultValue_ = e; }
-  
+
   /** Set the type of this parameter. */
   void setType(Type * ty) { type_ = ty; }
 
@@ -91,15 +91,15 @@ public:
       which may not be the same as it appears externally. */
   Type * internalType() const { return internalType_; }
   void setInternalType(Type * type) { internalType_ = type; }
-  
+
   /** IR representation of this function. */
   llvm::Value * getIRValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) { irValue_ = ir; }
-  
+
   /** Whether this parameter is covariant, contravariant, or invariant. */
   Variance variance() const { return variance_; }
   void setVariance(Variance v) { variance_ = v; }
-  
+
   /** Parameter flags */
   bool getFlags() const { return flags_; }
   bool getFlag(ParameterFlag fl) const { return (flags_ & fl) != 0; }
@@ -170,7 +170,7 @@ public:
 
   /** Return type type. */
   Type * returnType() const;
-  
+
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }
   IterableScope & parameterScope() { return parameterScope_; }
@@ -178,16 +178,16 @@ public:
   /** List of basic blocks. */
   const BlockList & blocks() const { return blocks_; }
   BlockList & blocks() { return blocks_; }
-  
+
   /** List of all local scopes. */
   const LocalScopeList & localScopes() const { return localScopes_; }
   LocalScopeList & localScopes() { return localScopes_; }
-  
+
   /** Function AST. */
   const ASTFunctionDecl * getFunctionDecl() const {
     return static_cast<const ASTFunctionDecl *>(ast);
   }
-  
+
   /** IR representation of this function. */
   llvm::Function * irFunction() const { return irFunction_; }
   void setIRFunction(llvm::Function * ir) { irFunction_ = ir; }
@@ -195,14 +195,14 @@ public:
   /** The index into the dispatch table for the enclosing class. */
   int dispatchIndex() const { return dispatchIndex_; }
   void setDispatchIndex(int index) { dispatchIndex_ = index; }
-  
+
   Intrinsic * intrinsic() const { return intrinsic_; }
   void setIntrinsic(Intrinsic * in) { intrinsic_ = in; }
   bool isIntrinsic() const { return intrinsic_ != NULL; }
-  
+
   /** True if this function has a body. */
   bool hasBody() const;
-  
+
   /** Evaluate this function at compile-time. Return
       NULL if the function is not compile-time evaluable. */
   virtual Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const;
@@ -210,9 +210,9 @@ public:
   /** Print out the basic blocks. */
   void dumpBlocks();
 
-  // Overrides 
+  // Overrides
 
-  const std::string & getLinkageName() const;
+  const std::string & linkageName() const;
   Type * getType() const;
   void trace() const;
   void format(FormatStream & out) const;
@@ -220,7 +220,7 @@ public:
   static inline bool classof(const Defn * de) {
     return de->defnType() == Function || de->defnType() == Macro;
   }
-  
+
 private:
   FunctionType * type_;
   BlockList blocks_;

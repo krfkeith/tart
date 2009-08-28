@@ -4,7 +4,6 @@ Design TODOS:
 
 * Dynamic casting syntax.
   * Type casting via operations on type objects?
-  * typeselect
 * Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
@@ -26,10 +25,13 @@ Implementation TODOS:
   * +def
   * Template syntax.
 * Typename.type
-* Need to work on makefile dependencies.
+  * Proxy
+* Preconditions.verify[%T]
+* Boxed values: Boxed[%T] { let value:T; }
 * vcall and icall instructions.
 * String class
   * concatenation - requires varargs
+* Need to work on makefile dependencies.
 * String class tests
 * Iterators
   * Iterators through interfaces.
@@ -95,7 +97,6 @@ Doc errors:
 
 Error TODOS: (things that should be an error)
 
-* Instantiating an abstract class.
 * Module with multiple public names at top level.
 * Assignment to a non-lvalue.
 * Multiple catch statements with the same exception.

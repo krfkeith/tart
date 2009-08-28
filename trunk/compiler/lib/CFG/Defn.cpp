@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/Scope.h"
 #include "tart/CFG/Type.h"
@@ -16,7 +16,7 @@
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
-  
+
 namespace {
   bool isOverloadable(Defn::DefnType dt) {
     return dt == Defn::Function || dt == Defn::Macro;
@@ -26,7 +26,7 @@ namespace {
   void typeLinkageName(std::string & out, Type * ty) {
     ty = dealias(ty);
     if (TypeDefn * td = ty->typeDefn()) {
-      out.append(td->getLinkageName());
+      out.append(td->linkageName());
     } else if (FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
       out.append("fn");
       if (!ftype->params().empty()) {
@@ -36,12 +36,12 @@ namespace {
           if (it != params.begin()) {
             out.append(",");
           }
-          
+
           typeLinkageName(out, (*it)->getType());
         }
         out.append(")");
       }
-      
+
       if (ftype->returnType() != NULL && !ftype->returnType()->isVoidType()) {
         out.append("->");
         typeLinkageName(out, ftype->returnType());
@@ -51,7 +51,7 @@ namespace {
     }
   }
 }
-  
+
 // -------------------------------------------------------------------
 // Defn
 Defn::Defn(DefnType dtype, Module * m, const char * nm)
@@ -110,7 +110,7 @@ std::string & Defn::qualifiedName() {
 
 void Defn::createQualifiedName(Defn * parent) {
   DASSERT_OBJ(qname_.empty(), this);
-  
+
   if (parent != NULL) {
     const std::string & qualifier =
         (parent->defnType() == Mod)
@@ -121,27 +121,14 @@ void Defn::createQualifiedName(Defn * parent) {
       return;
     }
   }
-  
+
   qname_ = name_;
 }
 
-const std::string & Defn::getLinkageName() const {
+const std::string & Defn::linkageName() const {
   if (lnkName.empty()) {
-    /*if (isExtern()) {
-      // Look for external name.
-      // TODO: Do this using the internal evaluator instead of looking at the
-      // call.
-      const Expr * externAttr = findAttribute("tart.core.Extern");
-      DASSERT_OBJ(externAttr != NULL, this);
-      const CallExpr * call = dyn_cast<CallExpr>(externAttr);
-      const ConstantString * extName = dyn_cast<ConstantString>(call->arg(0));
-      DASSERT_OBJ(extName != NULL, this);
-      lnkName.assign(extName->value());
-      return lnkName;
-    }*/
-
     if (parentDefn_ != NULL && parentDefn_->defnType() != Defn::Mod) {
-      lnkName = parentDefn_->getLinkageName();
+      lnkName = parentDefn_->linkageName();
       lnkName.append(".");
       lnkName.append(name_);
     } else {
@@ -179,10 +166,10 @@ const std::string & Defn::getLinkageName() const {
       lnkName.append("]");
     }
   }
-  
+
   return lnkName;
 }
-  
+
 const Expr * Defn::findAttribute(const Type * attrType) const {
   DASSERT(attrType != NULL);
   for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
@@ -214,7 +201,7 @@ const SourceLocation & Defn::getLocation() const {
   static const SourceLocation defaultLocation;
   return ast ? ast->getLocation() : defaultLocation;
 }
-  
+
 TypeDefn * Defn::enclosingClassDefn() const {
   Defn * parent = parentDefn();
   if (parent == NULL) {
@@ -232,12 +219,12 @@ bool Defn::beginPass(DefnPass pass) {
   if (finished.contains(pass)) {
     return false;
   }
-  
+
   if (running.contains(pass)) {
     diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
     return false;
   }
-  
+
   running.add(pass);
   return true;
 }
@@ -258,10 +245,10 @@ void Defn::dumpHierarchy(bool full) const {
           kind = "unknown";
           break;
       }
-      
+
       break;
     }
-    
+
     case Defn::Namespace: kind = "namespace"; break;
     case Defn::Var: kind = "var"; break;
     case Defn::Let: kind = "let"; break;
@@ -334,7 +321,7 @@ Type * TypeDefn::metaType() const {
     case Type::Primitive:
       DASSERT(Builtins::typeType != NULL);
       return Builtins::typeType;
-      
+
     case Type::Class:
       DASSERT(Builtins::typeClass != NULL);
       return Builtins::typeClass;
@@ -353,7 +340,7 @@ Type * TypeDefn::metaType() const {
 
     case Type::Alias:
       DFAIL("Implement");
-      
+
     default:
       DFAIL("Not a type");
   }
@@ -365,7 +352,7 @@ ConstantType * TypeDefn::asExpr() {
   if (expr_ == NULL) {
     expr_ = new ConstantType(ast ? ast->getLocation() : SourceLocation(), this);
   }
-  
+
   return expr_;
 }
 
@@ -474,7 +461,7 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
     if (it != params.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }
@@ -486,7 +473,7 @@ const char * getPassName(DefnPass pass) {
 
     case Pass_ResolveBaseTypes:
       return "ResolveBaseTypes";
-  
+
     case Pass_ResolveAttributes:
       return "ResolveAttributes";
 
@@ -501,16 +488,16 @@ const char * getPassName(DefnPass pass) {
 
     case Pass_ResolveOverloads:
       return "ResolveOverloads";
-  
+
     case Pass_ResolveReturnType:
       return "ResolveReturnType";
-  
+
     case Pass_ResolveParameterTypes:
       return "ResolveParameterTypes";
-  
+
     case Pass_ResolveVarType:
       return "ResolveVarType";
-  
+
     case Pass_ResolveElementType:
       return "ResolveElementType";
 
@@ -523,7 +510,7 @@ const char * getPassName(DefnPass pass) {
     case DefnPassCount:
       DFAIL("Invalid pass");
   }
-  
+
   DFAIL("Invalid pass");
 }
 

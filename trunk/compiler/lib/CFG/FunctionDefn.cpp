@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -16,7 +16,7 @@
 #include <iostream>
 
 namespace tart {
-  
+
 namespace {
   bool isOverloadable(Defn::DefnType dt) {
     return dt == Defn::Function || dt == Defn::Macro;
@@ -26,7 +26,7 @@ namespace {
   void typeLinkageName(std::string & out, Type * ty) {
     ty = dealias(ty);
     if (TypeDefn * td = ty->typeDefn()) {
-      out.append(td->getLinkageName());
+      out.append(td->linkageName());
     } else if (FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
       out.append("fn");
       if (!ftype->params().empty()) {
@@ -36,12 +36,12 @@ namespace {
           if (it != params.begin()) {
             out.append(",");
           }
-          
+
           typeLinkageName(out, (*it)->getType());
         }
         out.append(")");
       }
-      
+
       if (ftype->returnType() != NULL && !ftype->returnType()->isVoidType()) {
         out.append("->");
         typeLinkageName(out, ftype->returnType());
@@ -51,7 +51,7 @@ namespace {
         if (it != utype->members().begin()) {
           out.append("|");
         }
-        
+
         typeLinkageName(out, *it);
       }
     } else {
@@ -60,7 +60,7 @@ namespace {
     }
   }
 }
-  
+
 // -------------------------------------------------------------------
 // ParameterDefn
 
@@ -113,7 +113,7 @@ Expr * FunctionDefn::eval(const SourceLocation & loc, Expr * self, const ExprLis
   if (intrinsic_ != NULL) {
     return intrinsic_->eval(loc, self, args, NULL);
   }
-  
+
   return NULL;
 }
 
@@ -125,20 +125,10 @@ void FunctionDefn::trace() const {
   markList(localScopes_.begin(), localScopes_.end());
 }
 
-const std::string & FunctionDefn::getLinkageName() const {
+const std::string & FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
-    // See if we have overridden the linkage name.
-    /*const Expr * linkageNameAttr = findAttribute(Builtins::typeLinkageNameAttribute);
-    if (linkageNameAttr != NULL) {
-      const CallExpr * call = dyn_cast<CallExpr>(linkageNameAttr);
-      const ConstantString * extName = dyn_cast<ConstantString>(call->arg(0));
-      DASSERT_OBJ(extName != NULL, this);
-      lnkName.assign(extName->value());
-      return lnkName;
-    }*/
+    Defn::linkageName();
 
-    Defn::getLinkageName();
-    
     if (!isExtern()) {
       if (!type_->params().empty()) {
         lnkName.append("(");
@@ -161,7 +151,7 @@ const std::string & FunctionDefn::getLinkageName() const {
       }
     }
   }
-  
+
   return lnkName;
 }
 
@@ -207,12 +197,12 @@ void FunctionDefn::dumpBlocks() {
     for (ExprList::iterator ei = blk->exprs().begin(); ei != blk->exprs().end(); ++ei) {
       stream << "    " << *ei << "\n";
     }
-    
+
     switch (blk->terminator()) {
       case BlockTerm_None:
         stream << "    **no terminator**\n";
         break;
-      
+
       case BlockTerm_Branch:
         stream << "    br " << blk->succs().front() << "\n";
         break;

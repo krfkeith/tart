@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_PROPERTYANALYZER_H
 #define TART_SEMA_PROPERTYANALYZER_H
 
@@ -16,7 +16,7 @@ namespace tart {
 class PropertyAnalyzer : public DefnAnalyzer {
 private:
   PropertyDefn * target;
-  
+
 public:
   /** Constructor. */
   PropertyAnalyzer(PropertyDefn * var);

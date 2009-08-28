@@ -46,20 +46,17 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     get { return ptrDiff(addressOf(self.data[0]), self.end); }
   }
 
-  // Array element access
+  /** Array element access. */
   def [index:int]:ElementType {
     get { return self.data[index]; }
     set { self.data[index] = value; }
   }
   
+  /** Iterate over the elements of the array. */
   def iterate -> Iterator[ElementType] {
     return ArrayIterator(self);
   }
 
-  // TODO: Copy additional constructors from old tart.
-  // def apply(args:int[]) {
-  //}
-  
   public final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
     private var index:int;
@@ -71,7 +68,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     
     def next() -> ElementType or void {
       if (self.index < self.array.length) {
-        return self.array[self.index++];
+        return self.array.data[self.index++];
       } else {
         return;
       }

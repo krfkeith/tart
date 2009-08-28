@@ -11,11 +11,11 @@ struct TypeInfoBlock {
       A null pointer terminates the list. */
   readonly var bases:NativePointer[NativeArray[Type, 0]];
 
+  /** Compiler-generated function to lookup the specified interface method. */
+  readonly var idispatch:fn(interfaceType:Type, methodIndex:int) -> NativePointer[void];
+
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[NativePointer[void], 0];
-
-  /** Compiler-generated function to lookup the specified interface method. */
-  //readonly var idispatch:fn(interfaceType:NativePointer[Type], methodIndex:int) -> NativePointer[void];
 
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used
@@ -28,5 +28,10 @@ struct TypeInfoBlock {
     }
 
     return false;
+  }
+
+  /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
+  public static def typecastError() {
+    throw TypecastException();
   }
 }

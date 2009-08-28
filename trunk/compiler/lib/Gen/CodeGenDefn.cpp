@@ -63,7 +63,7 @@ bool CodeGenerator::genXDef(Defn * de) {
 }
 
 Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
-  Function * irFunction = irModule_->getFunction(fdef->getLinkageName());
+  Function * irFunction = irModule_->getFunction(fdef->linkageName());
   if (irFunction != NULL) {
     return irFunction;
   }
@@ -73,7 +73,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
     FunctionType * funcType = fdef->functionType();
     irFunction = Function::Create(
         cast<llvm::FunctionType>(funcType->getIRType()),
-        Function::ExternalLinkage, fdef->getLinkageName(),
+        Function::ExternalLinkage, fdef->linkageName(),
         irModule_);
     return irFunction;
   }
@@ -95,7 +95,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 
   irFunction = Function::Create(
       cast<llvm::FunctionType>(funcType->getIRType()),
-      Function::ExternalLinkage, fdef->getLinkageName(), fdef->module()->irModule());
+      Function::ExternalLinkage, fdef->linkageName(), fdef->module()->irModule());
 
   // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
   // one module.
@@ -118,7 +118,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
   if (fdef->hasBody() /*&& fdef->module() == module*/) {
     FunctionType * ftype = fdef->functionType();
-    
+
     if (fdef->isSynthetic()) {
       f->setLinkage(GlobalValue::LinkOnceAnyLinkage);
     }
@@ -129,7 +129,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
           dbgCompileUnit_, // TODO: Replace for functions within a scope.
           fdef->name(),
           fdef->qualifiedName(),
-          fdef->getLinkageName(),
+          fdef->linkageName(),
           dbgCompileUnit_,
           getSourceLineNumber(*fdef),
           DIType(),
@@ -292,7 +292,7 @@ Value * CodeGenerator::genVarValue(const VariableDefn * var) {
 Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   DASSERT(var->storageClass() == Storage_Global || var->storageClass() == Storage_Static);
 
-  GlobalVariable * externalVar = irModule_->getGlobalVariable(var->getLinkageName());
+  GlobalVariable * externalVar = irModule_->getGlobalVariable(var->linkageName());
   if (externalVar != NULL) {
     return externalVar;
   }
@@ -332,7 +332,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 #endif
 
   GlobalVariable * gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL,
-      var->getLinkageName());
+      var->linkageName());
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.

@@ -73,7 +73,7 @@ public final class String {
   /** The index operator. */
   def [index:int]:ubyte {
     get {
-      //IndexOutOfRangeError.when(index < 0 or index >= length);
+      //Preconditions.verify[IndexOutOfRangeError](index < 0 or index >= length);
       return self.data[index];
     }
   }
@@ -88,7 +88,7 @@ public final class String {
     return self;
   }
 
-  /*static def concat(s:String...) {
+  /*static def concat(s:String...) -> String {
     let result = alloc(s0.length + s1.length);
     Memory.arrayCopy(result.data, 0, s0.data, 0, s0.length);
     Memory.arrayCopy(result.data, s0.length, s1.data, 0, s1.length);

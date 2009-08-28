@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/CompositeType.h"
@@ -28,11 +28,11 @@ FunctionDefn * CompositeType::defaultConstructor() {
 
   // Look for a constructor that has zero required parameters.
   for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
-    FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it);
+    FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it);
     if (ctor != NULL) {
       ParameterList & params = ctor->functionType()->params();
       int requiredArgCount = 0;
-      for (ParameterList::iterator p = params.begin(); p != params.end();++p) {
+      for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
         if ((*p)->defaultValue() == NULL) {
           ++requiredArgCount;
         }
@@ -52,11 +52,11 @@ FunctionDefn * CompositeType::defaultConstructor() {
 
   // Look for a creator that has zero required parameters.
   for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
-    FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it);
+    FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it);
     if (ctor != NULL) {
       ParameterList & params = ctor->functionType()->params();
       int requiredArgCount = 0;
-      for (ParameterList::iterator p = params.begin(); p != params.end();++p) {
+      for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
         if ((*p)->defaultValue() == NULL) {
           ++requiredArgCount;
         }
@@ -77,8 +77,8 @@ bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inheri
   }
 
   if (inherit) {
-    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
-    for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this)
+;    for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       if ((*it)->lookupMember(name, defs, inherit)) {
         return true;
       }
@@ -137,58 +137,6 @@ const llvm::Type * CompositeType::createIRType() const {
       fieldTypes.push_back(memberType);
     }
   }
-
-#if 0
-  // Handle member fields...
-  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
-    switch (field->defnType()) {
-    case Defn::Var: {
-      // A class member variable.
-      VariableDefn * var = static_cast<VariableDefn *>(field);
-      Type * varType = var->getType();
-      DASSERT_OBJ(varType != NULL, var);
-
-      if (var->storageClass() == Storage_Instance) {
-        var->setMemberIndex((int)fieldTypes.size());
-        const llvm::Type * memberType = var->getType()->getIRType();
-        if (varType->isReferenceType()) {
-          memberType = PointerType::get(memberType, 0);
-        }
-
-        fieldTypes.push_back(memberType);
-      }
-      break;
-    }
-
-    case Defn::Let: {
-      VariableDefn * let = static_cast<VariableDefn *>(field);
-      Type * varType = let->getType();
-      DASSERT(varType != NULL);
-
-      // Only if it's not a constant.
-      if (let->storageClass() == Storage_Instance) {
-        assert(false && "implement instance lets");
-      } else if (let->initValue() == NULL) {
-        diag.debug(let) << "Unimplemented non-constant let " << let;
-      } else if (!let->initValue()->isConstant()) {
-        diag.debug(let) << "Unimplemented non-constant let " << let;
-      }
-      break;
-    }
-
-    case Defn::Typedef:
-    case Defn::Property:
-    case Defn::Indexer:
-    case Defn::Namespace:
-    case Defn::Function:
-    //case Expr::Template:
-      break;
-
-    default:
-      DFAIL("IllegalState");
-    }
-  }
-#endif
 
   // This is not the normal legal way to do type refinement in LLVM.
   // Normally one would use a PATypeHolder. However, in this case it is assumed
@@ -256,7 +204,7 @@ bool CompositeType::isSingular() const {
 bool CompositeType::isReferenceType() const {
   // TODO: Not if it's a static interface...
   return (typeClass() == Type::Class ||
-          typeClass() == Type::Interface);
+      typeClass() == Type::Interface);
 }
 
 bool CompositeType::isSubtype(const Type * other) const {
@@ -305,19 +253,6 @@ void CompositeType::addStaticDefsToModule(Module * module) {
   for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
     module->addSymbol(*it);
   }
-
-/*  for (Defn * field = firstMember(); field != NULL; field = field->nextInScope()) {
-    switch (field->defnType()) {
-      case Defn::Var: {
-        VariableDefn * var = static_cast<VariableDefn *>(field);
-        if (var->storageClass() == Storage_Static) {
-          module->addSymbol(var);
-        }
-
-        break;
-      }
-    }
-  }*/
 }
 
 void CompositeType::addBaseXRefs(Module * module) {

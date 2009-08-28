@@ -122,8 +122,8 @@ void CodeGenerator::generate() {
 
     if (const TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
-        if (irModule_->getTypeByName(tdef->getLinkageName()) == NULL) {
-          irModule_->addTypeName(tdef->getLinkageName(), ctype->getIRType());
+        if (irModule_->getTypeByName(tdef->linkageName()) == NULL) {
+          irModule_->addTypeName(tdef->linkageName(), ctype->getIRType());
         }
       }
     }
@@ -195,7 +195,7 @@ void CodeGenerator::verifyModule() {
 void CodeGenerator::outputModule() {
   // File handle for output bitcode
   llvm::sys::Path binPath(outputDir);
-  const std::string & moduleName = module->getLinkageName();
+  const std::string & moduleName = module->linkageName();
   size_t pos = 0;
   for (;;) {
     size_t dot = moduleName.find('.', pos);

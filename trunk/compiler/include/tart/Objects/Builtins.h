@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_OBJECTS_BUILTINS_H
 #define TART_OBJECTS_BUILTINS_H
 
@@ -30,6 +30,7 @@ public:
 
   // The module for builtins
   static Module module;
+  static Module syntheticModule;
 
   // System types - core
   static Type * typeTypeInfoBlock;
@@ -59,7 +60,7 @@ public:
   // System types
   static const CompositeType * typeInterfaceTable;
   static const CompositeType * typeArrayType;
-  
+
   // System attribute types
   static const CompositeType * typeAllowUnsafeAttribute;
   static const CompositeType * typeCommutativeAttribute;
@@ -70,7 +71,7 @@ public:
 
   // System functions
   static FunctionDefn * funcHasBase;
-  //static FunctionDefn * funcTypecastError;
+  static FunctionDefn * funcTypecastError;
 
   // Namespaces
   static NamespaceDefn nsOperator;

@@ -28,21 +28,21 @@ namespace tart {
   if (!(expression)) { \
     diag.assertionFailed(#expression, __FILE__, __LINE__); \
   } else (void)0
-  
+
 #define DASSERT_MSG(expression, msg) \
   if (!(expression)) { \
     diag.assertionFailedMsg(msg, __FILE__, __LINE__); \
   } else (void)0
-  
+
 #define DASSERT_OBJ(expression, obj) \
   if (!(expression)) { \
-    diag.debug() << "Assertion failure context = " << obj; \
+    diag.debug() << Format_Type << "Assertion failure context = " << obj; \
     diag.assertionFailed(#expression, __FILE__, __LINE__); \
   } else (void)0
-  
+
 #define DFAIL(msg) \
   diag.fail(msg, __FILE__, __LINE__)
-  
+
 /// ---------------------------------------------------------------
 /// Various diagnostic functions.
 ///
@@ -59,16 +59,16 @@ public:
     Error,
     Fatal,
     Off,
-    
+
     Severity_Levels,
   };
-  
+
   enum RecoveryState {
     Open,         // All messages are allowed
     Gated,        // Follow-up messages allowed, but not new ones.
     Closed,       // All error messages supressed
   };
-  
+
   /** Base stream class for diagnostic messages. */
   template <class T>
   class MessageStream : public FormatStream {
@@ -77,27 +77,27 @@ public:
     std::stringstream sstream;
 
   public:
-    
+
     MessageStream()
       : FormatStream(sstream)
       , loc(SourceLocation())
     {}
-    
+
     MessageStream(const SourceLocation & l)
       : FormatStream(sstream)
       , loc(l)
     {}
-    
+
     MessageStream(const Locatable * l)
       : FormatStream(sstream)
       , loc(l ? l->getLocation() : SourceLocation())
     {}
-    
+
     MessageStream(const MessageStream & src)
       : FormatStream(sstream)
       , loc(src.loc)
     {}
-    
+
     // The destructor is where all the real action happens.
     // When the entry is destructed, the accumulated messages are
     // written to the diagnostic output.
@@ -107,7 +107,7 @@ public:
       }
     }
   };
-  
+
   /** Diagnostic action which prints a message with the specified severity level. */
   template <Severity severity>
   class DiagnosticAction {
@@ -125,7 +125,7 @@ public:
   public:
     static void write(const SourceLocation & loc, const std::string & msg);
   };
-  
+
   typedef MessageStream<DiagnosticAction<Fatal> > FatalErrorStream;
   typedef MessageStream<DiagnosticAction<Error> > ErrorStream;
   typedef MessageStream<DiagnosticAction<Warning> > WarningStream;
@@ -145,7 +145,7 @@ public:
       return *this;
     }
   };
-  
+
   class Writer {
   public:
     virtual void write(const SourceLocation & loc, Severity sev, const std::string & msg) = 0;
@@ -174,7 +174,7 @@ protected:
   RecoveryState recovery;       // True if in recovery mode.
   int indentLevel;    // Used for dumping hierarchical stuff
   Severity minSeverity;
-  
+
   void write(const SourceLocation & loc, Severity sev, const std::string & msg);
 
 public:
@@ -182,58 +182,58 @@ public:
 
   /** Set the writer. */
   void setWriter(Writer * writer) { writer_ = writer; }
-  
+
   /** reset counters for testing */
   void reset();
 
   /** Set the minimum severity level to be reported. */
   void setMinSeverity(Severity s) { minSeverity = s; }
-  
+
   /** Fatal error. */
   FatalErrorStream fatal(const SourceLocation & loc = SourceLocation()) {
     return FatalErrorStream(loc);
   }
-  
+
   /** Fatal error. */
   FatalErrorStream fatal(const Locatable * loc) {
     return FatalErrorStream(loc);
   }
-  
+
   /** Error. */
   ErrorStream error(const SourceLocation & loc = SourceLocation()) {
     return ErrorStream(loc);
   }
-  
+
   /** Error. */
   ErrorStream error(const Locatable * loc) {
     return ErrorStream(loc);
   }
-  
+
   /** Warning message. */
   WarningStream warn(const SourceLocation & loc = SourceLocation()) {
     return WarningStream(loc);
   }
-  
+
   /** Warning message. */
   WarningStream warn(const Locatable * loc) {
     return WarningStream(loc);
   }
-  
+
   /** Info message. */
   InfoStream info(const SourceLocation & loc = SourceLocation()) {
     return InfoStream(loc);
   }
-  
+
   /** Info message. */
   InfoStream info(const Locatable * loc) {
     return InfoStream(loc);
   }
-  
+
   /** Debugging message. */
   DebugStream debug(const SourceLocation & loc = SourceLocation()) {
     return DebugStream(loc);
   }
-  
+
   /** Debugging message. */
   DebugStream debug(const Locatable * loc) {
     return DebugStream(loc);
@@ -241,53 +241,53 @@ public:
 
   /** Debugging message. */
   void debug(char * msg, ...);
-  
+
   /** Return true if we're recovering from another error. */
   bool inRecovery() const { return recovery != Open; }
-  
+
   /** Let it know that we've recovered, and can start reporting
       errors again. */
   void recovered() { recovery = Open; }
 
   /** Get message count by severity. */
   int getMessageCount(Severity sev) const { return messageCount[(int)sev]; }
-  
+
   /** Get the count of errors. */
   int getErrorCount() const {
     return getMessageCount(Error) + getMessageCount(Fatal);
   }
-  
+
   /** Get the count of warnings. */
   int getWarningCount() const { return getMessageCount(Warning); }
 
   /** Print the list of source contexts. */
   void printContextStack(SourceContext * source);
-  
+
   /** Increase the indentation level. */
   void indent();
-  
+
   /** Decrease the indentation level. */
   void unindent();
 
   /** Get the current indent level. */
   int getIndentLevel();
-  
+
   /** Set the current indentation level. */
   int setIndentLevel(int level);
-  
+
   /** write an indented line. */
   void writeLnIndent(const std::string & str);
 
   /** write an indented line, formatted. */
   void writeLnIndent(char * msg, ...);
-  
+
   /** Assertion failure. */
   void NORETURN(assertionFailed(const char * expr, const char * fname,
       unsigned lineno));
-  
+
   /** Fatal compiler error. */
   void NORETURN(fail(const char * msg, const char * fname, unsigned lineno));
-  
+
   /** Break execution. */
   static void debugBreak();
 

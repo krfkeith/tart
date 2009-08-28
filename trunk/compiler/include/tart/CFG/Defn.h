@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_DEFN_H
 #define TART_CFG_DEFN_H
 
@@ -45,13 +45,13 @@ class Intrinsic;
 /// -------------------------------------------------------------------
 /// The various passes of analysis for a definition.
 enum DefnPass {
-  
+
   /** Create scope members. */
   Pass_CreateMembers,
 
   /** For classes: Resolve base class references. */
   Pass_ResolveBaseTypes,
-  
+
   /** For all defn types - resolve attribute references. */
   Pass_ResolveAttributes,
 
@@ -66,16 +66,16 @@ enum DefnPass {
 
   /** Compile method tables and resolve all overloads. */
   Pass_ResolveOverloads,
-  
+
   /** Determine function return type. */
   Pass_ResolveReturnType,
-  
+
   /** Determine function parameter types. */
   Pass_ResolveParameterTypes,
-  
+
   /** Determine variable type. */
   Pass_ResolveVarType,
-  
+
   /** For native pointers and arrays. */
   Pass_ResolveElementType,
 
@@ -112,7 +112,7 @@ public:
 
     DefnTypeCount,
   };
-  
+
   enum Trait {
     Final,            // Can't be overridden
     Abstract,         // Can't be instantiated
@@ -138,7 +138,7 @@ protected:
   friend class IterableScope;
   friend class TemplateSignature;
   friend class TemplateInstance;
-  
+
   DefnType defnType_;         // What type of defn this is
   SourceLocation loc;         // Location where this was defined.
   const char * name_;         // Local name (copied from decl)
@@ -162,7 +162,7 @@ public:
 
   /** Constructor that takes an AST declaration and a parent. */
   Defn(DefnType dtype, Module * module, const ASTDecl * de);
-  
+
   /** The type of this definition. */
   DefnType defnType() const { return defnType_; }
 
@@ -172,22 +172,21 @@ public:
   /** Get the fully qualified name of the definition. */
   const std::string & qualifiedName() const;
   std::string & qualifiedName();
-  
+
   /** Set the fully qualified name of the definition. */
   void setQualifiedName(const std::string & name) { qname_ = name; }
-  
+
   /** Get the linkage name of this definition. */
-  virtual const std::string & getLinkageName() const;
-  virtual const std::string & linkageName() const { return getLinkageName(); }
-  
+  virtual const std::string & linkageName() const;
+
   /** Set the linkage name of this definition. */
   void setLinkageName(const std::string & name) { lnkName = name; }
-  
+
   /** Create the qualified name of this definition from the name of the
       parent scope combined with the local name. Only call this after we
       have added this definition to a parent scope. */
   void createQualifiedName(Defn * parent);
-  
+
   /** Get the AST declaration that declared this definition. */
   const ASTDecl * getAST() const { return ast; }
   virtual const ASTDeclList & astMembers() const {
@@ -197,7 +196,7 @@ public:
   /** Get the source location where this definition was defined. */
   const SourceLocation & getLocation() const;
   void setLocation(const SourceLocation & l) { loc = l; }
-  
+
   /** Get the list of attributes. */
   const ExprList & getAttrs() const { return attrs_; }
   ExprList & getAttrs() { return attrs_; }
@@ -205,7 +204,7 @@ public:
   /** Find the first attribute of the specified type. */
   const Expr * findAttribute(const Type * attrType) const;
   const Expr * findAttribute(const char * attrTypeName) const;
-  
+
   /** Get the list of traits. */
   const Traits & getTraits() const { return traits; }
   Traits & getTraits() { return traits; }
@@ -215,7 +214,7 @@ public:
   void copyTrait(Defn * from, Trait t) {
     if (from->hasTrait(t)) { traits.add(t); }
   }
-  
+
   // Various trait convenience methods
 
   bool isAbstract() const { return traits.contains(Abstract); }
@@ -225,7 +224,7 @@ public:
   bool isExtern() const { return traits.contains(Extern); }
   bool isCtor() const { return traits.contains(Ctor); }
   bool isOverride() const { return traits.contains(Override); }
-  
+
   void setSingular(bool t) {
     if (t) {
       traits.add(Singular);
@@ -238,27 +237,27 @@ public:
 
   /** Add a null-terminated list of members to this defn. */
   void addMembers(Defn ** member);
-  
+
   /** Get the scope in which this is defined. */
   virtual Scope * definingScope() const = 0;
   virtual void setDefiningScope(Scope * scope) = 0;
-  
+
   /** Get the module in which this declaration was defined. */
   virtual Module * module() const { return module_; }
 
   /** Get the defn in which this is defined, if any. */
   Defn * parentDefn() const { return parentDefn_; }
   void setParentDefn(Defn * defn) { parentDefn_ = defn; }
-  
+
   /** If the immediate enclosing decl is a class or struct, return it.
       If it's a property, then return the class enclosing the property. */
   TypeDefn * enclosingClassDefn() const;
 
   /** Pointer to the next declaration in the defining scope, in order of declaration. */
   Defn * nextInScope() const { return nextInScope_; }
-  
+
   // Template methods
-  
+
   /** Return true if this declaration is a template. */
   bool isTemplate() const { return tsig_ != NULL; }
 
@@ -284,7 +283,7 @@ public:
   StorageClass storageClass() const { return modifiers.storageClass; }
   void setStorageClass(StorageClass sc) { modifiers.storageClass = sc; }
 
-#if 0 
+#if 0
   // Some predicates
   virtual bool isOverloadable() const { return false; }
 
@@ -296,16 +295,16 @@ public:
 
   /** Return the set of passes in progress. */
   DefnPasses & getRunning() { return running; }
-  
+
   /** Return true if the specified pass is running. */
   bool isPassRunning(DefnPass pass) const { return running.contains(pass); }
-  
+
   /** Return true if the specified pass is finished. */
   bool isPassFinished(DefnPass pass) const { return finished.contains(pass); }
-  
+
   /** Return the set of analysis passes completed so far. */
   DefnPasses & getFinished() { return finished; }
-  
+
   /** Mark a pass has started. */
   bool beginPass(DefnPass pass);
 
@@ -347,7 +346,7 @@ static const DefnTypeSet METHOD_DEFS = DefnTypeSet::of(
 class NamespaceDefn : public Defn {
 private:
   IterableScope members;
-  
+
 public:
   /** Constructor that takes a name */
   NamespaceDefn(Module * m, const char * name);
@@ -358,9 +357,9 @@ public:
   /** Get the scope containing the members of this namespace. */
   const Scope & memberScope() const { return members; }
   Scope & memberScope() { return members; }
-  
+
   // Overrides
-  
+
   Scope * definingScope() const { return members.parentScope(); }
   void setDefiningScope(Scope * scope) { members.setParentScope(scope); }
   void format(FormatStream & out) const;
@@ -377,7 +376,7 @@ public:
 class ValueDefn : public Defn {
 protected:
   Scope * definingScope_;
-  
+
 public:
   /** Constructor that takes a name */
   ValueDefn(DefnType dtype, Module * m, const char * name)
@@ -390,11 +389,11 @@ public:
     : Defn(dtype, m, de)
     , definingScope_(NULL)
   {}
-  
+
   /** Type of this variable. */
   virtual Type * getType() const = 0;
   Type * type() const { return getType(); }
-  
+
   // Overrides
 
   Scope * definingScope() const { return definingScope_; }
@@ -437,7 +436,7 @@ public:
     , memberIndex_(0)
     , memberIndexRecursive_(0)
   {}
-  
+
   /** Initial value for this variable. */
   const Expr * initValue() const { return initValue_; }
   Expr * initValue() { return initValue_; }
@@ -446,7 +445,7 @@ public:
   /** IR representation of this function. */
   llvm::Value * getIRValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) const { irValue_ = ir; }
-  
+
   /** For member variables, the index of this field within the class. */
   int memberIndex() const { return memberIndex_; }
   void setMemberIndex(int index) { memberIndex_ = index; }
@@ -477,7 +476,7 @@ private:
   IterableScope accessorScope_;  // Scope in which getter/setter are defined.
   FunctionDefn * getter_;    // The getter method
   FunctionDefn * setter_;    // The setter method
-  
+
 public:
   /** Constructor that takes an AST */
   PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
@@ -488,16 +487,16 @@ public:
   {
     accessorScope_.setScopeName(ast->name());
   }
-  
+
   FunctionDefn * getter() const { return getter_; }
   void setGetter(FunctionDefn * f) { getter_ = f; }
 
   FunctionDefn * setter() const { return setter_; }
   void setSetter(FunctionDefn * f) { setter_ = f; }
-  
+
   const Scope & getAccessorScope() const { return accessorScope_; }
   Scope & getAccessorScope() { return accessorScope_; }
-  
+
   void setType(Type * t) { type_ = t; }
 
   // Overrides
@@ -550,7 +549,7 @@ public:
     , definingScope_(NULL)
   {
   }
-  
+
   /** Get the value(s) of this import. */
   const ExprList & getImportValues() const { return importValues; }
   ExprList & getImportValues() { return importValues; }

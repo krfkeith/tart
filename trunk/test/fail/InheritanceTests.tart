@@ -46,7 +46,7 @@ public interface Test {
   final def iterate -> void {}
 }
 
-/// TEST FinalInterfaceMethod: cannot be non-public
+/// TEST PrivateInterfaceMethod: cannot be non-public
 public interface Test {
   private def iterate -> void;
 }
