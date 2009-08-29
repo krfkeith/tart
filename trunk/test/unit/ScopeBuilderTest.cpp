@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
 #include "tart/CFG/Module.h"
@@ -18,7 +18,7 @@ protected:
   FakeSourceFile testSource;
   Module testModule;
   ScopeBuilder builder;
-  
+
 public:
   ScopeBuilderTest()
     : testSource("")
@@ -28,18 +28,18 @@ public:
 
   virtual void SetUp() {}
   virtual void TearDown() {}
-  
+
   ASTTypeDecl * createTestClassDecl(const char * name) {
     return new ASTTypeDecl(ASTNode::Class, SourceLocation(), name, ASTNodeList(),
         DeclModifiers());
   }
-  
+
   bool hasMember(Defn * de, const char * name) {
     if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
-        return td->getTypeValue()->memberScope()->lookupSingleMember(
+        return td->typeValue()->memberScope()->lookupSingleMember(
             name, false) != NULL;
     }
-    
+
     return false;
   }
 };
@@ -47,7 +47,7 @@ public:
 TEST_F(ScopeBuilderTest, TestAddMember) {
   ASTTypeDecl * cl1 = createTestClassDecl("cl1");
   Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1);
-  
+
   ASSERT_EQ(Defn::Typedef, cl1Defn->defnType());
   ASSERT_EQ("cl1", cl1Defn->name());
   ASSERT_EQ(&testModule, cl1Defn->module());
@@ -55,7 +55,7 @@ TEST_F(ScopeBuilderTest, TestAddMember) {
   //ASSERT_EQ(&testModule, cl1Defn->parentDefn());
   ASSERT_EQ("test.cl1", cl1Defn->qualifiedName());
   ASSERT_EQ(cl1Defn, testModule.lookupSingleMember("cl1", false));
-  
+
   DefnList defs;
   bool success = testModule.lookupMember("cl1", defs, false);
   ASSERT_TRUE(success);
@@ -80,7 +80,7 @@ TEST_F(ScopeBuilderTest, TestNameConflict) {
   EXPECT_EQ(1, diag.getErrorCount());
   diag.reset();
   diag.setMinSeverity(Diagnostics::Debug);
-  
+
   // TODO: Add test with overloaded function names
 }
 
@@ -88,7 +88,7 @@ TEST_F(ScopeBuilderTest, CreateMembers) {
   ASTTypeDecl * cldecl = createTestClassDecl("cl");
   ASTTypeDecl * innerdecl = createTestClassDecl("inner");
   cldecl->members().push_back(innerdecl);
-  
+
   Defn * cl = builder.createMemberDefn(&testModule, &testModule, cldecl);
   DASSERT(cl->definingScope() != NULL);
   builder.createScopeMembers(cl);

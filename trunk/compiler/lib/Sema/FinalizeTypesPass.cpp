@@ -227,6 +227,9 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     } else {
       DASSERT_OBJ(method->returnType() != NULL, method);
       result->setType(method->returnType());
+      if (method->storageClass() != Storage_Instance) {
+        result->setSelfArg(NULL);
+      }
     }
 
     DASSERT_OBJ(result->isSingular(), result);

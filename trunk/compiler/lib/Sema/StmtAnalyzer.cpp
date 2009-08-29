@@ -66,7 +66,7 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func) :
 }
 
 bool StmtAnalyzer::buildCFG() {
-  if (function->getFunctionDecl() && function->getFunctionDecl()->getBody() != NULL) {
+  if (function->functionDecl() && function->functionDecl()->body() != NULL) {
 
     // Create a temporary scope to allow lookup of the function parameters.
     DelegatingScope parameterScope(&function->parameterScope(), function->definingScope());
@@ -84,14 +84,14 @@ bool StmtAnalyzer::buildCFG() {
 
       // Uncomment to allow 'self' to be searched implicitly.
       //SelfScope * selfScope = new SelfScope(
-      //    selfType->getTypeValue()->memberScope(), function->definingScope());
+      //    selfType->typeValue()->memberScope(), function->definingScope());
       //selfScope->setSelfParam(selfParam);
       //parameterScope.setParentScope(selfScope);
     }
 
     // Create the initial block.
     setInsertPos(createBlock("entry"));
-    const Stmt * body = function->getFunctionDecl()->getBody();
+    const Stmt * body = function->functionDecl()->body();
     if (!buildStmtCFG(body)) {
       return false;
     }
@@ -117,55 +117,54 @@ bool StmtAnalyzer::buildCFG() {
 bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
   switch (st->nodeType()) {
     case ASTNode::Block:
-    return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
+      return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
 
     case ASTNode::Expression:
-    return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
+      return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
 
     case ASTNode::If:
-    return buildIfStmtCFG(static_cast<const IfStmt *>(st));
+      return buildIfStmtCFG(static_cast<const IfStmt *>(st));
 
     case ASTNode::While:
-    return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
+      return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
 
     case ASTNode::For:
-    return buildForStmtCFG(static_cast<const ForStmt *>(st));
+      return buildForStmtCFG(static_cast<const ForStmt *>(st));
 
     case ASTNode::ForEach:
-    return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
+      return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
 
     case ASTNode::Switch:
-    return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
+      return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
 
     case ASTNode::Classify:
-    return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
+      return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
 
     case ASTNode::Throw:
-    return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
+      return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
 
     case ASTNode::Try:
-    return buildTryStmtCFG(static_cast<const TryStmt *>(st));
+      return buildTryStmtCFG(static_cast<const TryStmt *>(st));
 
     case ASTNode::Return:
-    return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
+      return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
 
     case ASTNode::Yield:
-    return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
+      return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
 
     case ASTNode::Break:
-    return buildBreakStmtCFG(st);
+      return buildBreakStmtCFG(st);
 
     case ASTNode::Continue:
-    return buildContinueStmtCFG(st);
+      return buildContinueStmtCFG(st);
 
     case ASTNode::LocalDecl:
-    return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
+      return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
 
     //case Catch:
     default:
-    diag.fatal(st->getLocation()) << "Invalid statement type '" <<
-    getNodeTypeName(st->nodeType());
-    return false;
+      diag.fatal(st->getLocation()) << "Invalid statement type '" << nodeTypeName(st->nodeType());
+      return false;
   }
 }
 

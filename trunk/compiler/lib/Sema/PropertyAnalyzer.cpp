@@ -80,7 +80,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
     if (target->getter() != NULL) {
       FunctionDefn * getter = target->getter();
       DASSERT_OBJ(getter->functionType() == NULL, getter);
-      FunctionType * getterType = ta.typeFromFunctionAST(getter->getFunctionDecl());
+      FunctionType * getterType = ta.typeFromFunctionAST(getter->functionDecl());
       DASSERT_OBJ(getterType->returnType() == NULL, getter);
       getterType->setReturnType(type);
 
@@ -100,7 +100,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       FunctionDefn * setter = target->setter();
       DASSERT_OBJ(setter->functionType() == NULL, setter);
       TypeAnalyzer ta(module, activeScope);
-      FunctionType * setterType = ta.typeFromFunctionAST(setter->getFunctionDecl());
+      FunctionType * setterType = ta.typeFromFunctionAST(setter->functionDecl());
 
       // See if the setter already has a 'value' parameter defined. If it does, we need
       // to temporarily remove it from the param list so that we can insert the property

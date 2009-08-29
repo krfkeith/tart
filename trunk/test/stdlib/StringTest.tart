@@ -43,3 +43,9 @@ def stringToStringTest() {
   // TODO: Type inference problem.
   Debug.assertEq("Hello", "Hello".toString());
 }
+
+def stringConcatenationTest() {
+  let s = String.concat("This", "Is", "A", "Test");
+  Debug.assertEq(11, s.length);
+  Debug.assertEq("ThisIsATest", s);
+}

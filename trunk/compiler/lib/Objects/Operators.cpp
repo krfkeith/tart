@@ -48,24 +48,23 @@ public:
     if (areBothConstInts(arg0, arg1)) {
       ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
       ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
-      DASSERT(c0->getType() == c1->getType());
+      DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
-            c0->getLocation() | c1->getLocation(),
-            c0->getType(),
+            c0->location() | c1->location(),
+            c0->type(),
             cast<ConstantInt>(
                 llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
     } else if (areBothConstFloats(arg0, arg1)) {
       ConstantFloat * c0 = static_cast<ConstantFloat *>(arg0);
       ConstantFloat * c1 = static_cast<ConstantFloat *>(arg1);
-      DASSERT(c0->getType() == c1->getType());
+      DASSERT(c0->type() == c1->type());
       return new ConstantFloat(
-            c0->getLocation() | c1->getLocation(),
-            c0->getType(),
+            c0->location() | c1->location(),
+            c0->type(),
             cast<ConstantFP>(
                 llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
     } else {
-      return new BinaryOpcodeExpr(opCode, loc, &StaticType<typ>::value,
-          arg0, arg1);
+      return new BinaryOpcodeExpr(opCode, loc, &StaticType<typ>::value, arg0, arg1);
     }
   }
 };
@@ -207,18 +206,18 @@ public:
     if (areBothConstInts(arg0, arg1)) {
       ConstantInteger * c0 = static_cast<const ConstantInteger *>(arg0);
       ConstantInteger * c1 = static_cast<const ConstantInteger *>(arg1);
-      DASSERT(c0->getType() == c1->getType());
+      DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
-            c0->getLocation() | c1->getLocation(),
+            c0->location() | c1->location(),
             &BoolType::instance,
             cast<ConstantInt>(
               llvm::ConstantExpr::getCompare(pred, c0->value(), c1->value())));
     } else if (areBothConstFloats(arg0, arg1)) {
       ConstantFloat * c0 = static_cast<const ConstantFloat *>(arg0);
       ConstantFloat * c1 = static_cast<const ConstantFloat *>(arg1);
-      DASSERT(c0->getType() == c1->getType());
+      DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
-            c0->getLocation() | c1->getLocation(),
+            c0->location() | c1->location(),
             &BoolType::instance,
             cast<ConstantInt>(
               llvm::ConstantExpr::getCompare(pred, c0->value(), c1->value())));
@@ -277,23 +276,23 @@ public:
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
-            cn->getLocation(),
-            cn->getType(),
+            cn->location(),
+            cn->type(),
             cast<ConstantInt>(llvm::ConstantExpr::getNeg(cn->value())));
     } else if (arg->exprType() == Expr::ConstFloat) {
       ConstantFloat * cn = static_cast<const ConstantFloat *>(arg);
       return new ConstantFloat(
-            cn->getLocation(),
-            cn->getType(),
+            cn->location(),
+            cn->type(),
             cast<ConstantFP>(llvm::ConstantExpr::getNeg(cn->value())));
     } else {
       DFAIL("Implement");
       /*Expr * constantZero = ConstNumber::get(
-            arg->getLocation(),
-            cast<const PrimitiveType>(arg->getType()),
-            Constant::getNullValue(arg->getType()->getIRType()));
+            arg->location(),
+            cast<const PrimitiveType>(arg->type()),
+            Constant::getNullValue(arg->type()->getIRType()));
       Expr * result = new BinaryExpr(Instruction::Sub, constantZero, arg);
-      result->setType(arg->getType());
+      result->setType(arg->type());
       return result;*/
     }
   }
@@ -339,8 +338,8 @@ public:
     }
 
     return new ConstantInteger(
-          cn->getLocation(),
-          cn->getType(),
+          cn->location(),
+          cn->type(),
           cast<ConstantInt>(llvm::ConstantExpr::getNeg(value)));
   }
 
@@ -353,8 +352,7 @@ NegateOp<TypeId_UnsizedInt> NegateOp<TypeId_UnsizedInt>::value;
 template<int typ>
 class SuccessorOp : public FunctionDefn {
 public:
-  SuccessorOp()
-      : FunctionDefn(NULL, "successorOf", &StaticFnType1<typ, typ>::value) {}
+  SuccessorOp() : FunctionDefn(NULL, "successorOf", &StaticFnType1<typ, typ>::value) {}
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
     assert(args.size() == 1);
@@ -366,16 +364,16 @@ public:
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
-            cn->getLocation(),
-            cn->getType(),
+            cn->location(),
+            cn->type(),
             cast<ConstantInt>(llvm::ConstantExpr::getAdd(cn->value(), one)));
     } else {
       Expr * constantOne = new ConstantInteger(
-          arg->getLocation(),
-          arg->getType(),
+          arg->location(),
+          arg->type(),
           one);
       return new BinaryOpcodeExpr(
-          Instruction::Add, loc, arg->getType(),
+          Instruction::Add, loc, arg->type(),
           arg, constantOne);
     }
   }
@@ -390,8 +388,7 @@ SuccessorOp<typ> SuccessorOp<typ>::value;
 template<int typ>
 class PredeccessorOp : public FunctionDefn {
 public:
-  PredeccessorOp()
-      : FunctionDefn(NULL, "predeccesorOf", &StaticFnType1<typ, typ>::value) {}
+  PredeccessorOp() : FunctionDefn(NULL, "predeccesorOf", &StaticFnType1<typ, typ>::value) {}
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
     assert(args.size() == 1);
@@ -403,16 +400,16 @@ public:
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
-            cn->getLocation(),
-            cn->getType(),
+            cn->location(),
+            cn->type(),
             cast<ConstantInt>(llvm::ConstantExpr::getSub(cn->value(), one)));
     } else {
       Expr * constantOne = new ConstantInteger(
-            arg->getLocation(),
-            arg->getType(),
+            arg->location(),
+            arg->type(),
             one);
       return new BinaryOpcodeExpr(
-          Instruction::Sub, loc, arg->getType(),
+          Instruction::Sub, loc, arg->type(),
           arg, constantOne);
     }
   }

@@ -208,22 +208,21 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   int propagation = attrObj->getMemberValueAsInt("propagation");
 
   TypeDefn * targetTypeDefn = cast<TypeDefn>(de);
-  CompositeType * targetType = cast<CompositeType>(targetTypeDefn->getTypeValue());
+  CompositeType * targetType = cast<CompositeType>(targetTypeDefn->typeValue());
   targetType->setClassFlag(CompositeType::Attribute, true);
   targetType->attributeInfo().setTarget(target);
   targetType->attributeInfo().setRetained(retention);
 }
 
 void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope) {
-  if (import->getUnpack()) {
+  if (import->unpack()) {
     DFAIL("Implement import namespace");
   }
 
   ExprList importDefs;
   Scope * saveScope = setActiveScope(NULL); // Inhibit unqualified search.
-  if (lookupName(importDefs, import->getPath())) {
-    targetScope->addMember(new ExplicitImportDefn(module,
-        import->getAsName(), importDefs));
+  if (lookupName(importDefs, import->path())) {
+    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
   } else {
     diag.fatal(import) << "Not found '" << import << "'";
   }
@@ -247,7 +246,7 @@ Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
     if (ConstantType * ctype = dyn_cast<ConstantType>(cb)) {
       typeArg = dealias(ctype->value());
       if (TypeDefn * tdef = typeArg->typeDefn()) {
-        typeArg = tdef->getTypeValue();
+        typeArg = tdef->typeValue();
       }
     }
 

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Attribute.h"
 #include "tart/CFG/TypeDefn.h"
 
@@ -14,7 +14,7 @@ bool AttributeInfo::canAttachTo(Defn * de) {
   switch (de->defnType()) {
     case Defn::Typedef: {
       TypeDefn * type = static_cast<TypeDefn *>(de);
-      switch (type->getTypeValue()->typeClass()) {
+      switch (type->typeValue()->typeClass()) {
         case Type::Class:
           return (target_ & CLASS) != 0;
 
@@ -23,22 +23,22 @@ bool AttributeInfo::canAttachTo(Defn * de) {
 
         case Type::Interface:
           return (target_ & INTERFACE) != 0;
-        
+
         case Type::Enum:
           return (target_ & ENUM) != 0;
-          
+
         default:
           return false;
       }
     }
-      
+
     case Defn::Namespace:
       return (target_ & NAMESPACE) != 0;
-    
+
     case Defn::Var:
     case Defn::Let:
       return (target_ & VARIABLE) != 0;
-    
+
     case Defn::Property:
     case Defn::Indexer:
       return (target_ & PROPERTY) != 0;
@@ -61,7 +61,7 @@ bool AttributeInfo::canAttachTo(Defn * de) {
     case Defn::ExplicitImport:
       return false;
   }
-  
+
   return false;
 }
 

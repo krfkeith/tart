@@ -35,7 +35,7 @@ bool CodeGenerator::genXDef(Defn * de) {
 
     case Defn::Typedef: {
       TypeDefn * tdef = static_cast<TypeDefn *>(de);
-      switch (tdef->getTypeValue()->typeClass()) {
+      switch (tdef->typeValue()->typeClass()) {
         case Type::Class:
         case Type::Struct:
         case Type::Interface:

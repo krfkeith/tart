@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -64,7 +64,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     Block * savedReturnBlock = stAn.setMacroReturnTarget(returnBlock);
-    const Stmt * macroBody = macro->getFunctionDecl()->getBody();
+    const Stmt * macroBody = macro->functionDecl()->body();
 
     stAn.buildStmtCFG(macroBody);
 
@@ -73,7 +73,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     if (finalBlock != NULL && !finalBlock->hasTerminator()) {
       finalBlock->branchTo(macroBody->getFinalLocation(), returnBlock);
     }
-    
+
     stAn.setMacroReturnTarget(savedReturnBlock);
     stAn.setActiveScope(savedScope);
     if (savedRetVal != NULL) {
@@ -84,7 +84,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     std::remove(macro->blocks().begin(), macro->blocks().end(), returnBlock);
     macro->blocks().push_back(returnBlock);
     stAn.setInsertPos(returnBlock);
-    
+
     if (retLVal != NULL) {
       return retLVal;
     } else {

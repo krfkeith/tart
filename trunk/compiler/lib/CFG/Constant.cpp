@@ -147,7 +147,7 @@ ConstantType::ConstantType(SourceLocation l, Type * val)
 
 ConstantType::ConstantType(SourceLocation l, TypeDefn * valDefn)
   : ConstantExpr(ConstType, l, Builtins::typeType)
-  , value_(valDefn->getTypeValue())
+  , value_(valDefn->typeValue())
 {
   DASSERT(value_ != NULL);
   DASSERT_OBJ(type() != NULL, this);

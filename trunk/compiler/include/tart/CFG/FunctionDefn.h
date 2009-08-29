@@ -184,7 +184,7 @@ public:
   LocalScopeList & localScopes() { return localScopes_; }
 
   /** Function AST. */
-  const ASTFunctionDecl * getFunctionDecl() const {
+  const ASTFunctionDecl * functionDecl() const {
     return static_cast<const ASTFunctionDecl *>(ast);
   }
 

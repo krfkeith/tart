@@ -25,7 +25,7 @@ using namespace llvm;
 
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
-  Type * type = tdef->getTypeValue();
+  Type * type = tdef->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
       return genPrimitiveType(static_cast<PrimitiveType *>(type));

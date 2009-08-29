@@ -45,7 +45,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   const SourceLocation & loc = ast->getLocation();
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
-    const char * name = ident->getValue();
+    const char * name = ident->value();
     if (activeScope != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
@@ -54,7 +54,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     return importName(out, path, loc);
   } else if (ast->nodeType() == ASTNode::Member) {
     const ASTMemberRef * mref = static_cast<const ASTMemberRef *>(ast);
-    const ASTNode * qual = mref->getQualifier();
+    const ASTNode * qual = mref->qualifier();
     ExprList lvals;
     if (lookupNameRecurse(lvals, qual, path)) {
       if (lvals.size() > 1) {
@@ -64,7 +64,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
       }
 
       Expr * context = lvals.front();
-      if (findMemberOf(out, context, mref->getMemberName(), loc)) {
+      if (findMemberOf(out, context, mref->memberName(), loc)) {
         return true;
       }
 
@@ -74,7 +74,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     if (!path.empty()) {
       path.push_back('.');
-      path.append(mref->getMemberName());
+      path.append(mref->memberName());
       return importName(out, path, loc);
     }
 
@@ -82,15 +82,15 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   } else if (ast->nodeType() == ASTNode::Specialize) {
     const ASTSpecialize * spec = static_cast<const ASTSpecialize *>(ast);
     ExprList lvals;
-    if (!lookupNameRecurse(lvals, spec->getTemplateExpr(), path)) {
-      diag.error(spec) << "Undefined symbol: " << spec->getTemplateExpr();
+    if (!lookupNameRecurse(lvals, spec->templateExpr(), path)) {
+      diag.error(spec) << "Undefined symbol: " << spec->templateExpr();
       dumpScopeHierarchy();
       return false;
     }
 
     Expr * expr = resolveSpecialization(loc, lvals, spec->args());
     if (expr == NULL) {
-      diag.error(spec) << "No template found matching expression: " << spec->getTemplateExpr();
+      diag.error(spec) << "No template found matching expression: " << spec->templateExpr();
       return false;
     }
 
@@ -163,7 +163,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
   } else if (context->getType() != NULL) {
     TypeDefn * typeDef = dealias(context->getType())->typeDefn();
     if (typeDef != NULL && context->getType()->memberScope() != NULL) {
-      if (typeDef->getTypeValue()->isUnsizedIntType()) {
+      if (typeDef->typeValue()->isUnsizedIntType()) {
         diag.error(loc) << "Attempt to access member of integer of unknown size";
         return false;
       }
@@ -404,7 +404,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 }
 
 bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
-  Type * type = in->getTypeValue();
+  Type * type = in->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
       return true;
@@ -495,7 +495,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
   BindingEnv arrayEnv(arrayTemplate);
   arrayEnv.bind(arrayTemplate->patternVar(0), elementType);
   return cast<CompositeType>(cast<TypeDefn>(
-      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->getTypeValue());
+      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }
 
 ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(const SourceLocation & loc,

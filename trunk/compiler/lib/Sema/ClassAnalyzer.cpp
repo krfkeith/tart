@@ -133,7 +133,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     return true;
   }
 
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   DASSERT_OBJ(type->isSingular(), type);
   DASSERT_OBJ(type->super() == NULL, type);
 
@@ -256,7 +256,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 
 bool ClassAnalyzer::analyzeFields() {
   if (target->beginPass(Pass_AnalyzeFields)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     CompositeType * super = type->super();
     // Also analyze base class fields.
     int instanceFieldCount = 0;
@@ -324,7 +324,7 @@ bool ClassAnalyzer::analyzeFields() {
 
 bool ClassAnalyzer::analyzeConstructors() {
   if (target->beginPass(Pass_AnalyzeConstructors)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     // Analyze the constructors first, because we may need them
     // during the rest of the analysis.
     Type::TypeClass tcls = type->typeClass();
@@ -410,7 +410,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 }
 
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   CompositeType * superType = cast_or_null<CompositeType>(type->super());
   if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
@@ -425,7 +425,7 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
 
 bool ClassAnalyzer::analyzeMethods() {
   if (target->beginPass(Pass_AnalyzeMethods)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     Defn::DefnType dtype = target->defnType();
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (member->isTemplate()) {
@@ -457,7 +457,7 @@ bool ClassAnalyzer::analyzeMethods() {
 
 bool ClassAnalyzer::analyzeOverloading() {
   if (target->beginPass(Pass_ResolveOverloads)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
@@ -478,7 +478,7 @@ bool ClassAnalyzer::analyzeOverloading() {
 
 void ClassAnalyzer::copyBaseClassMethods() {
   // If it's not a normal class, it can still have a supertype.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   Type::TypeClass tcls = type->typeClass();
   CompositeType * superClass = type->super();
   if (superClass == NULL &&
@@ -499,7 +499,7 @@ void ClassAnalyzer::copyBaseClassMethods() {
 void ClassAnalyzer::createInterfaceTables() {
   // Get the set of all ancestor types.
   ClassSet ancestors;
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   type->ancestorClasses(ancestors);
 
   // Remove from the set all types which are the first parent of some other type
@@ -534,7 +534,7 @@ void ClassAnalyzer::overrideMembers() {
 
   // In this case, we iterate through the symbol table so that we can
   // get all of the overloads at once.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   SymbolTable & clMembers = type->members();
   for (SymbolTable::iterator s = clMembers.begin(); s != clMembers.end(); ++s) {
     SymbolTable::Entry & entry = s->second;
@@ -612,7 +612,7 @@ void ClassAnalyzer::addNewMethods() {
   // Append all methods that aren't overrides of a superclass. Note that we
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   for (Defn * de = type->firstMember(); de != NULL;
       de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance && de->isSingular()) {
@@ -655,7 +655,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     return;
   }
 
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
@@ -858,7 +858,7 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
 bool ClassAnalyzer::createDefaultConstructor() {
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a default constructor.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->defaultConstructor() == NULL) {

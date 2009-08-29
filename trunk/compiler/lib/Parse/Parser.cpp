@@ -51,46 +51,6 @@ namespace {
     Prec_Highest
   };
 
-  // The operator namespace
-  //ASTIdent idOperator(SourceLocation(), "Operators");
-
-  // Infix operators
-  ASTIdent operatorAdd(SourceLocation(), "infixAdd");
-  ASTIdent operatorSub(SourceLocation(), "infixSubtract");
-  ASTIdent operatorMul(SourceLocation(), "infixMultiply");
-  ASTIdent operatorDiv(SourceLocation(), "infixDivide");
-  ASTIdent operatorMod(SourceLocation(), "infixModulus");
-  ASTIdent operatorBitAnd(SourceLocation(), "infixBitAnd");
-  ASTIdent operatorBitOr(SourceLocation(), "infixBitOr");
-  ASTIdent operatorBitXor(SourceLocation(), "infixBitXor");
-  ASTIdent operatorRSh(SourceLocation(), "infixRShift");
-  ASTIdent operatorLSh(SourceLocation(), "infixLShift");
-  ASTIdent operatorEq(SourceLocation(), "infixEQ");
-  ASTIdent operatorNe(SourceLocation(), "infixNE");
-  ASTIdent operatorLT(SourceLocation(), "infixLT");
-  ASTIdent operatorGT(SourceLocation(), "infixGT");
-  ASTIdent operatorLE(SourceLocation(), "infixLE");
-  ASTIdent operatorGE(SourceLocation(), "infixGE");
-  ASTIdent operatorPLT(SourceLocation(), "infixPossiblyLT");
-  ASTIdent operatorPGT(SourceLocation(), "infixPossiblyGT");
-  ASTIdent operatorPLE(SourceLocation(), "infixPossiblyLE");
-  ASTIdent operatorPGE(SourceLocation(), "infixPossiblyGE");
-
-  ASTIdent operatorNegate(SourceLocation(), "unaryNegate");
-  ASTIdent operatorSucc(SourceLocation(), "successorOf");
-  ASTIdent operatorPred(SourceLocation(), "predeccessorOf");
-
-  ASTIdent operatorAssignAdd(SourceLocation(), "assignAdd");
-  ASTIdent operatorAssignSub(SourceLocation(), "assignSubtract");
-  ASTIdent operatorAssignMul(SourceLocation(), "assignMultiply");
-  ASTIdent operatorAssignDiv(SourceLocation(), "assignDivide");
-  ASTIdent operatorAssignMod(SourceLocation(), "assignModulus");
-  ASTIdent operatorAssignBitAnd(SourceLocation(), "assignBitAnd");
-  ASTIdent operatorAssignBitOr(SourceLocation(), "assignBitOr");
-  ASTIdent operatorAssignBitXor(SourceLocation(), "assignBitXor");
-  ASTIdent operatorAssignRSh(SourceLocation(), "assignRShift");
-  ASTIdent operatorAssignLSh(SourceLocation(), "assignLShift");
-
 #if 0
   ASTIdent operatorPreInc(SourceLocation(), &idOperator, "preIncrement");
   ASTIdent operatorPreDec(SourceLocation(), &idOperator, "preDecrement");
@@ -98,8 +58,17 @@ namespace {
   ASTIdent operatorPostDec(SourceLocation(), &idOperator, "postDecrement");
 #endif
 
-  ASTCall * callOperator(ASTNode *opFunc, const SourceLocation loc) {
+  ASTCall * callOperator(ASTNode * opFunc, const SourceLocation loc) {
     return new ASTCall(loc, opFunc, ASTNodeList());
+  }
+
+  ASTCall * callOperatorMethod(char * opname, const SourceLocation loc, ASTNode * base,
+      ASTNode * arg) {
+
+    ASTMemberRef * method = new ASTMemberRef(loc, base, opname);
+    ASTCall * result = new ASTCall(loc, method, ASTNodeList());
+    result->append(arg);
+    return result;
   }
 
   ASTDecl * DECL_ERROR = (ASTDecl *) - 1;
@@ -2128,24 +2097,21 @@ ASTNode * Parser::assignmentExpression() {
         expectedExpression();
       }
 
-      ASTIdent * op = NULL;
+      ASTNode::NodeType opType;
       switch (int(tok)) {
-        case Token_AssignPlus:      op = &operatorAssignAdd; break;
-        case Token_AssignMinus:     op = &operatorAssignSub; break;
-        case Token_AssignStar:      op = &operatorAssignMul; break;
-        case Token_AssignSlash:     op = &operatorAssignDiv; break;
-        case Token_AssignPercent:   op = &operatorAssignMod; break;
-        case Token_AssignAmpersand: op = &operatorAssignBitAnd; break;
-        case Token_AssignBar:       op = &operatorAssignBitOr; break;
-        case Token_AssignCaret:     op = &operatorAssignBitXor; break;
-        case Token_AssignRShift:    op = &operatorAssignRSh; break;
-        case Token_AssignLShift:    op = &operatorAssignLSh; break;
+        case Token_AssignPlus:      opType = ASTNode::AssignAdd; break;
+        case Token_AssignMinus:     opType = ASTNode::AssignSub; break;
+        case Token_AssignStar:      opType = ASTNode::AssignMul; break;
+        case Token_AssignSlash:     opType = ASTNode::AssignDiv; break;
+        case Token_AssignPercent:   opType = ASTNode::AssignMod; break;
+        case Token_AssignAmpersand: opType = ASTNode::AssignBitAnd; break;
+        case Token_AssignBar:       opType = ASTNode::AssignBitOr; break;
+        case Token_AssignCaret:     opType = ASTNode::AssignBitXor; break;
+        case Token_AssignRShift:    opType = ASTNode::AssignRSh; break;
+        case Token_AssignLShift:    opType = ASTNode::AssignLSh; break;
       }
 
-      ASTCall * call = callOperator(op, loc);
-      call->append(expr);
-      call->append(rhs);
-      return call;
+      return new ASTOper(opType, expr, rhs);
     }
 
     // Just an expression
@@ -2166,49 +2132,49 @@ ASTNode * Parser::binaryOperator() {
     switch (token) {
       case Token_Plus:
         opstack.pushOperator(callOperator(
-              &operatorAdd, lexer.tokenLocation()), Prec_AddSub, Left);
+              &ASTIdent::operatorAdd, lexer.tokenLocation()), Prec_AddSub, Left);
         next();
         break;
 
       case Token_Minus:
         opstack.pushOperator(callOperator(
-              &operatorSub, lexer.tokenLocation()), Prec_AddSub, Left);
+              &ASTIdent::operatorSub, lexer.tokenLocation()), Prec_AddSub, Left);
         next();
         break;
 
       case Token_Star:
         opstack.pushOperator(callOperator(
-              &operatorMul, lexer.tokenLocation()), Prec_MulDiv, Left);
+              &ASTIdent::operatorMul, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Slash:
         opstack.pushOperator(callOperator(
-              &operatorDiv, lexer.tokenLocation()), Prec_MulDiv, Left);
+              &ASTIdent::operatorDiv, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Percent:
         opstack.pushOperator(callOperator(
-              &operatorMod, lexer.tokenLocation()), Prec_MulDiv, Left);
+              &ASTIdent::operatorMod, lexer.tokenLocation()), Prec_MulDiv, Left);
         next();
         break;
 
       case Token_Ampersand:
         opstack.pushOperator(callOperator(
-              &operatorBitAnd, lexer.tokenLocation()), Prec_BitAnd, Left);
+              &ASTIdent::operatorBitAnd, lexer.tokenLocation()), Prec_BitAnd, Left);
         next();
         break;
 
       case Token_Bar:
         opstack.pushOperator(callOperator(
-              &operatorBitOr, lexer.tokenLocation()), Prec_BitOr, Left);
+              &ASTIdent::operatorBitOr, lexer.tokenLocation()), Prec_BitOr, Left);
         next();
         break;
 
       case Token_Caret:
         opstack.pushOperator(callOperator(
-              &operatorBitXor, lexer.tokenLocation()), Prec_BitXor, Left);
+              &ASTIdent::operatorBitXor, lexer.tokenLocation()), Prec_BitXor, Left);
         next();
         break;
 
@@ -2228,13 +2194,13 @@ ASTNode * Parser::binaryOperator() {
 
       case Token_LShift:
         opstack.pushOperator(callOperator(
-            &operatorLSh, lexer.tokenLocation()), Prec_Shift, Left);
+            &ASTIdent::operatorLSh, lexer.tokenLocation()), Prec_Shift, Left);
         next();
         break;
 
       case Token_RShift:
         opstack.pushOperator(callOperator(
-            &operatorRSh, lexer.tokenLocation()), Prec_Shift, Left);
+            &ASTIdent::operatorRSh, lexer.tokenLocation()), Prec_Shift, Left);
         next();
         break;
 
@@ -2247,13 +2213,13 @@ ASTNode * Parser::binaryOperator() {
 
       case Token_Equal:
         opstack.pushOperator(callOperator(
-            &operatorEq, lexer.tokenLocation()), Prec_Relational, Left);
+            &ASTIdent::operatorEq, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_NotEqual:
         opstack.pushOperator(callOperator(
-              &operatorNe, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorNe, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
@@ -2266,49 +2232,49 @@ ASTNode * Parser::binaryOperator() {
 
       case Token_Less:
         opstack.pushOperator(callOperator(
-              &operatorLT, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorLT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_Greater:
         opstack.pushOperator(callOperator(
-              &operatorGT, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorGT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_LessEqual:
         opstack.pushOperator(callOperator(
-              &operatorLE, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorLE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_GreaterEqual:
         opstack.pushOperator(callOperator(
-              &operatorGE, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorGE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossLess:
         opstack.pushOperator(callOperator(
-              &operatorPLT, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorPLT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossGreater:
         opstack.pushOperator(callOperator(
-              &operatorPGT, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorPGT, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossLessEqual:
         opstack.pushOperator(callOperator(
-              &operatorPLE, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorPLE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
       case Token_PossGreaterEqual:
         opstack.pushOperator(callOperator(
-              &operatorPGE, lexer.tokenLocation()), Prec_Relational, Left);
+              &ASTIdent::operatorPGE, lexer.tokenLocation()), Prec_Relational, Left);
         next();
         break;
 
@@ -2423,7 +2389,7 @@ ASTNode * Parser::unaryOperator() {
       ASTNode * e1 = unaryOperator();
       if (e1 == NULL)
         return NULL;
-      ASTCall * result = callOperator(&operatorNegate, loc);
+      ASTCall * result = callOperator(&ASTIdent::operatorNegate, loc);
       result->append(e1);
       return result;
     }
@@ -2438,7 +2404,7 @@ ASTNode * Parser::unaryOperator() {
       if (e1 == NULL)
         return NULL;
       ASTCall * incDec = callOperator(
-            tok == Token_Increment ? &operatorSucc : &operatorPred, loc);
+            tok == Token_Increment ? &ASTIdent::operatorSucc : &ASTIdent::operatorPred, loc);
       incDec->append(e1);
       return new ASTOper(ASTNode::Assign, e1, incDec);
     }
@@ -2602,7 +2568,7 @@ ASTNode * Parser::primaryExpression() {
       next();
       SourceLocation loc = lexer.tokenLocation();
       ASTCall * incDec = callOperator(
-            tok == Token_Increment ? &operatorSucc : &operatorPred, loc);
+            tok == Token_Increment ? &ASTIdent::operatorSucc : &ASTIdent::operatorPred, loc);
       incDec->append(result);
       result = new ASTOper(ASTNode::PostAssign, result, incDec);
     }
@@ -2634,7 +2600,7 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
         diag.error(arg->getLocation()) << "invalid keyword expression";
         ok = false;
       } else {
-        const char * kwname = ((ASTIdent *)arg)->getValue();
+        const char * kwname = ((ASTIdent *)arg)->value();
         arg = new ASTKeywordArg(arg->getLocation() | kwarg->getLocation(), kwarg, kwname);
       }
     }

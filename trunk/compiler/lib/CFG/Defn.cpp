@@ -151,7 +151,7 @@ const std::string & Defn::linkageName() const {
         }
 
         if (TypeDefn * typeAlias = dyn_cast<TypeDefn>(arg)) {
-          typeLinkageName(lnkName, typeAlias->getTypeValue());
+          typeLinkageName(lnkName, typeAlias->typeValue());
         } else {
           VariableDefn * argDefn = cast<VariableDefn>(arg);
           Expr * argVal = argDefn->initValue();
@@ -233,7 +233,7 @@ void Defn::dumpHierarchy(bool full) const {
   const char * kind;
   switch (defnType_) {
     case Defn::Typedef: {
-      const Type * ty = static_cast<const TypeDefn *>(this)->getTypeValue();
+      const Type * ty = static_cast<const TypeDefn *>(this)->typeValue();
       switch (ty->typeClass()) {
         case Type::Primitive: kind = "type"; break;
         case Type::Class: kind = "class"; break;
@@ -317,7 +317,7 @@ void NamespaceDefn::trace() const {
 // TypeDefn
 #if 0
 Type * TypeDefn::metaType() const {
-  switch (getTypeValue()->typeClass()) {
+  switch (typeValue()->typeClass()) {
     case Type::Primitive:
       DASSERT(Builtins::typeType != NULL);
       return Builtins::typeType;

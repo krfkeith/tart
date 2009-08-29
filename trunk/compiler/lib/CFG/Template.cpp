@@ -132,7 +132,7 @@ void TemplateSignature::addParameter(const SourceLocation & loc, const char * na
 PatternVar * TemplateSignature::patternVar(const char * name) const {
   Defn * de = paramScope_.lookupSingleMember(name);
   if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(de)) {
-    return cast<PatternVar>(tdef->getTypeValue());
+    return cast<PatternVar>(tdef->typeValue());
   }
 
   return NULL;
@@ -232,7 +232,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     TypeDefn * tdef = static_cast<TypeDefn *>(value);
     TypeDefn * newDef = new TypeDefn(value->module(), tdef->name());
 
-    switch (tdef->getTypeValue()->typeClass()) {
+    switch (tdef->typeValue()->typeClass()) {
       case Type::NativePointer: {
         NativePointerType * np = new NativePointerType(paramValues[0], newDef, tinst);
         newDef->setTypeValue(np);
@@ -291,7 +291,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // One additional parameter, which is the name of the instantiated symbol.
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(result)) {
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
+    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
       TypeDefn * nameAlias = new TypeDefn(
           result->module(), tdef->name(), ctype);
       nameAlias->setSingular(ctype->isSingular());

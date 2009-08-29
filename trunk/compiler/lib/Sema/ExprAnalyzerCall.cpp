@@ -20,7 +20,7 @@
 namespace tart {
 
 Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
-  const ASTNode * callable = call->getFunc();
+  const ASTNode * callable = call->func();
   const ASTNodeList & args = call->args();
 
   if (callable->nodeType() == ASTNode::Id ||
@@ -31,7 +31,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
     return callSuper(call->getLocation(), args, expected);
   } else if (callable->nodeType() == ASTNode::BuiltIn) {
     // Built-in type constructor
-    Defn * tdef = static_cast<const ASTBuiltIn *>(callable)->getValue();
+    Defn * tdef = static_cast<const ASTBuiltIn *>(callable)->value();
     return callExpr(call->getLocation(), cast<TypeDefn>(tdef)->asExpr(), args, expected);
   } else if (callable->nodeType() == ASTNode::GetElement) {
     return callExpr(call->getLocation(), reduceElementRef(
@@ -43,7 +43,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
 }
 
 Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNodeList & args,
-    Type * expected) {
+    Type * expected, bool isOptional) {
 
   // Specialize works here because lookupName handles explicit specializations.
   DASSERT(callable->nodeType() == ASTNode::Id ||
@@ -59,6 +59,10 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   // it's an error. (If it's unqualified, then there are still things
   // left to try.)
   if (results.empty() && !isUnqualified) {
+    if (isOptional) {
+      return NULL;
+    }
+
     diag.error(loc) << "Undefined method " << callable;
     diag.writeLnIndent("Scopes searched:");
     dumpScopeHierarchy();
@@ -100,7 +104,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
 
   // If it's unqualified, then do ADL.
   if (isUnqualified && !args.empty()) {
-    const char * name = static_cast<const ASTIdent *>(callable)->getValue();
+    const char * name = static_cast<const ASTIdent *>(callable)->value();
     lookupByArgType(call, name, args);
   }
 
@@ -213,7 +217,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   }
 
   TypeDefn * enclosingClassDefn = currentFunction_->enclosingClassDefn();
-  CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->getTypeValue());
+  CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typeValue());
   CompositeType * superClass = enclosingClass->super();
 
   if (superClass == NULL) {

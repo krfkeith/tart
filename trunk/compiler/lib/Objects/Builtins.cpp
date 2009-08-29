@@ -94,7 +94,7 @@ Defn * Builtins::loadSystemDef(const char * name) {
 }
 
 Type * Builtins::loadSystemType(const char * name) {
-  Type * result = cast<TypeDefn>(loadSystemDef(name))->getTypeValue();
+  Type * result = cast<TypeDefn>(loadSystemDef(name))->typeValue();
   DASSERT(result != NULL);
   return result;
 }
@@ -140,7 +140,7 @@ void Builtins::loadSystemClasses() {
 
   // Get the low-level exception structure
   typeUnwindException = cast<TypeDefn>(
-      getSingleDefn(typeThrowable, "UnwindException"))->getTypeValue();
+      getSingleDefn(typeThrowable, "UnwindException"))->typeValue();
 
   // Set the aliases
   typeAliasString.setValue(typeString);

@@ -105,8 +105,7 @@ Type * FunctionDefn::returnType() const {
 }
 
 bool FunctionDefn::hasBody() const {
-  return (ast != NULL && getFunctionDecl()->getBody() != NULL) ||
-      !blocks_.empty();
+  return (ast != NULL && functionDecl()->body() != NULL) || !blocks_.empty();
 }
 
 Expr * FunctionDefn::eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
