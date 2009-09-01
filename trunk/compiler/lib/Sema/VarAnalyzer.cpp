@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/Sema/VarAnalyzer.h"
@@ -12,17 +12,14 @@
 
 namespace tart {
 
-static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
-  Pass_CreateMembers,
-  Pass_ResolveVarType
-);
+static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(Pass_CreateMembers,
+    Pass_ResolveVarType);
 
 VarAnalyzer::VarAnalyzer(ValueDefn * var)
   : DefnAnalyzer(var->module(), var->definingScope())
   , target(var)
 {
   DASSERT(var != NULL);
-  //DASSERT_OBJ(module != NULL, var);
 }
 
 VarAnalyzer::VarAnalyzer(ValueDefn * var, Module * module)
@@ -30,7 +27,6 @@ VarAnalyzer::VarAnalyzer(ValueDefn * var, Module * module)
   , target(var)
 {
   DASSERT(var != NULL);
-  //DASSERT_OBJ(module != NULL, var);
 }
 
 bool VarAnalyzer::analyze(AnalysisTask task) {
@@ -85,7 +81,7 @@ bool VarAnalyzer::resolveVarType() {
         // If the initializer is an enumerated type, then add that type's member scope
         // to the list of scopes.
         DelegatingScope * enumScope =
-            new DelegatingScope(target->type()->memberScope(), activeScope);
+        new DelegatingScope(target->type()->memberScope(), activeScope);
         savedScope = setActiveScope(enumScope);
       }
 
@@ -107,7 +103,7 @@ bool VarAnalyzer::resolveVarType() {
 
         if (!initType->isSingular()) {
           diag.debug() << "Init expression for " << target << " is " <<
-            initExpr << " with type " << initType;
+          initExpr << " with type " << initType;
         }
 
         DASSERT_OBJ(initType->isSingular(), initExpr);
@@ -116,7 +112,7 @@ bool VarAnalyzer::resolveVarType() {
           setTargetType(initType);
         }
 
-        initExpr = target->type()->implicitCast(initExpr->getLocation(), initExpr);
+        initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
         if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
           vdef->setInitValue(initExpr);
         } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/GC.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/Compiler.h"
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 
   GC::init();
   //GC::setDebugLevel(1);
-  
+
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
     const std::string &modPath = ModulePaths[i];
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
   // Now get the system classes we will need.
   Builtins::init();
   Builtins::loadSystemClasses();
-  
+
   // Process the input files.
   Compiler compiler;
   if (!Depends.empty()) {
@@ -59,8 +59,8 @@ int main(int argc, char **argv) {
   for (unsigned i = 0, e = InputFilenames.size(); i != e; ++i) {
     const std::string &inFile = InputFilenames[i];
     compiler.processInputFile(inFile);
-  }    
-  
+  }
+
   if (!Depends.empty()) {
     llvm::sys::Path dependsPath(Depends);
     fprintf(stderr, "Depends path: %s\n", dependsPath.toString().c_str());

@@ -30,12 +30,12 @@ Expr * FinalizeTypesPass::runImpl(Expr * in) {
 }
 
 Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
-  if (in->getType() == NULL) {
-    in->setType(in->value()->getType());
+  if (in->type() == NULL) {
+    in->setType(in->value()->type());
   }
 
-  DASSERT_OBJ(in->getType() != NULL, in);
-  DASSERT_OBJ(in->getType()->isSingular(), in);
+  DASSERT_OBJ(in->type() != NULL, in);
+  DASSERT_OBJ(in->type()->isSingular(), in);
   if (in->base() != NULL) {
     in->setBase(visitExpr(in->base()));
   }
@@ -65,17 +65,17 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
-  DASSERT_OBJ(in->toExpr()->getType() != NULL, in);
+  DASSERT_OBJ(in->toExpr()->type() != NULL, in);
   Expr * from = visitExpr(in->fromExpr());
   Expr * to = visitExpr(in->toExpr());
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
-    if (!AnalyzerBase::analyzeType(to->getType(), Task_PrepMemberLookup)) {
+    if (!AnalyzerBase::analyzeType(to->type(), Task_PrepMemberLookup)) {
       return in;
     }
 
-    from = to->getType()->implicitCast(from->location(), from);
+    from = to->type()->implicitCast(from->location(), from);
     in->setFromExpr(from);
     in->setToExpr(to);
 
@@ -86,13 +86,13 @@ Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitPostAssign(AssignmentExpr * in) {
-  DASSERT_OBJ(in->toExpr()->getType() != NULL, in);
+  DASSERT_OBJ(in->toExpr()->type() != NULL, in);
   Expr * from = visitExpr(in->fromExpr());
   Expr * to = visitExpr(in->toExpr());
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
-    from = to->getType()->implicitCast(from->location(), from);
+    from = to->type()->implicitCast(from->location(), from);
     in->setFromExpr(from);
     in->setToExpr(to);
 
@@ -149,7 +149,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
       Expr * castArgVal = addCastIfNeeded(argVal, paramType);
       if (castArgVal == NULL) {
-        diag.error(argVal) << "Unable to convert argument of type " << argVal->getType() <<
+        diag.error(argVal) << "Unable to convert argument of type " << argVal->type() <<
             " to " << paramType;
         return &Expr::ErrorVal;
       }
@@ -205,7 +205,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     // Assert that there are no more unsized ints.
     if (!method->isIntrinsic()) {
       for (ExprList::iterator it = callingArgs.begin(); it != callingArgs.end(); ++it) {
-        DASSERT_OBJ(!(*it)->getType()->isUnsizedIntType(), *it);
+        DASSERT_OBJ(!(*it)->type()->isUnsizedIntType(), *it);
       }
     }
 
@@ -223,7 +223,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
-      result->setType(method->functionType()->selfParam()->getType());
+      result->setType(method->functionType()->selfParam()->type());
     } else {
       DASSERT_OBJ(method->returnType() != NULL, method);
       result->setType(method->returnType());
@@ -248,18 +248,18 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   Expr * arg = visitExpr(in->arg());
 
   // Eliminate redundant cast if not needed.
-  if (in->getType()->isEqual(arg->getType())) {
+  if (in->type()->isEqual(arg->type())) {
     return arg;
   }
 
   // Attempt to cast
-  arg = in->getType()->implicitCast(in->location(), arg);
+  arg = in->type()->implicitCast(in->location(), arg);
   return arg ? arg : &Expr::ErrorVal;
 }
 
 Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   Expr * value = visitExpr(in->value());
-  Type * tyFrom = dealias(value->getType());
+  Type * tyFrom = dealias(value->type());
   Type * tyTo = dealias(in->toType());
 
   if (tyFrom == NULL || tyTo == NULL) {
@@ -396,8 +396,8 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
 }
 
 Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
-  Type * t0 = in->first()->getType();
-  Type * t1 = in->second()->getType();
+  Type * t0 = in->first()->type();
+  Type * t1 = in->second()->type();
   DASSERT_OBJ(t0 != NULL, in->first());
   DASSERT_OBJ(t1 != NULL, in->second());
 

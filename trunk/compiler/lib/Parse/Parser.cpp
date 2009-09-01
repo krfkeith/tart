@@ -214,7 +214,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
       declMods.condition = testExpr;
     } else {
       ASTOper * combined = new ASTOper(ASTNode::LogicalAnd,
-          testExpr->getLocation());
+          testExpr->location());
       combined->append(mods.condition);
       combined->append(testExpr);
       declMods.condition = combined;
@@ -238,7 +238,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
         declMods.condition = elseExpr;
       } else {
         ASTOper * combined = new ASTOper(ASTNode::LogicalAnd,
-            testExpr->getLocation());
+            testExpr->location());
         combined->append(mods.condition);
         combined->append(elseExpr);
         declMods.condition = combined;
@@ -939,7 +939,7 @@ bool Parser::attributeList(ASTNodeList & attributes) {
         // Template specialization
         ASTNodeList templateArgs;
         templateArgList(templateArgs);
-        attrExpr = new ASTSpecialize(attrExpr->getLocation(), attrExpr, templateArgs);
+        attrExpr = new ASTSpecialize(attrExpr->location(), attrExpr, templateArgs);
       } else if (match(Token_Dot)) {
         // Member dereference
         const char * ident = matchIdent();
@@ -947,7 +947,7 @@ bool Parser::attributeList(ASTNodeList & attributes) {
           expectedIdentifier();
         }
 
-        attrExpr = new ASTMemberRef(loc | attrExpr->getLocation(), attrExpr, ident);
+        attrExpr = new ASTMemberRef(loc | attrExpr->location(), attrExpr, ident);
       } else {
         break;
       }
@@ -1106,7 +1106,7 @@ ASTNode * Parser::typeName() {
     if (templateArgs.empty()) {
       result = ASTUnaryOp::get(ASTNode::Array, result);
     } else {
-      result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+      result = new ASTSpecialize(result->location(), result, templateArgs);
     }
   }
 
@@ -1128,7 +1128,7 @@ ASTNode * Parser::typeName() {
       if (templateArgs.empty()) {
         result = ASTUnaryOp::get(ASTNode::Array, result);
       } else {
-        result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+        result = new ASTSpecialize(result->location(), result, templateArgs);
       }
     }
   }
@@ -1519,7 +1519,7 @@ Stmt * Parser::statement() {
       needSemi();
 
       return new ExprStmt(Stmt::Expression,
-          expr->getLocation(), expr);
+          expr->location(), expr);
     }
   }
 
@@ -1556,7 +1556,7 @@ Stmt * Parser::yieldStmt() {
     expectedExpression();
   }
 
-  Stmt * st = new YieldStmt(expr->getLocation(), expr,
+  Stmt * st = new YieldStmt(expr->location(), expr,
       function ? function->nextGeneratorIndex() : 0);
   st = postCondition(st);
   needSemi();
@@ -1579,7 +1579,7 @@ Stmt * Parser::continueStmt() {
 
 Stmt * Parser::throwStmt() {
   ASTNode * expr = expression();
-  Stmt * st = new ThrowStmt(expr->getLocation(), expr);
+  Stmt * st = new ThrowStmt(expr->location(), expr);
   st = postCondition(st);
   needSemi();
   return st;
@@ -1626,8 +1626,8 @@ Stmt * Parser::tryStmt() {
       return NULL;
     }
 
-    tst->getCatchList().push_back(
-      new CatchStmt(loc | st->getLocation(), exceptDecl, st));
+    tst->catchList().push_back(
+      new CatchStmt(loc | st->location(), exceptDecl, st));
   }
 
   if (match(Token_Else)) {
@@ -1673,7 +1673,7 @@ Stmt * Parser::declStmt() {
     }
 
     if (s->find(decl->name())) {
-      diag.warn(decl->getLocation(),
+      diag.warn(decl->location(),
           "'%s' hides definition in outer scope", decl->name());
       break;
     }
@@ -1682,7 +1682,7 @@ Stmt * Parser::declStmt() {
 
   //scope->addMember(decl);
 
-  return new DeclStmt(decl->getLocation(), decl);
+  return new DeclStmt(decl->location(), decl);
 }
 
 Stmt * Parser::ifStmt() {
@@ -2539,7 +2539,7 @@ ASTNode * Parser::primaryExpression() {
         result = new ASTCall(loc, result, argList);
       } else if (match(Token_LBracket)) {
         // Array dereference
-        ASTOper * indexop = new ASTOper(ASTNode::GetElement, result->getLocation());
+        ASTOper * indexop = new ASTOper(ASTNode::GetElement, result->location());
         indexop->append(result);
         if (!parseArrayIndices(indexop))
           return NULL;
@@ -2548,7 +2548,7 @@ ASTNode * Parser::primaryExpression() {
       //  // Template specialization
       //  ASTNodeList templateArgs;
       //  templateArgList(templateArgs);
-      //  result = new ASTSpecialize(result->getLocation(), result, templateArgs);
+      //  result = new ASTSpecialize(result->location(), result, templateArgs);
       } else if (match(Token_Dot)) {
         // Member dereference
         const char * ident = matchIdent();
@@ -2556,7 +2556,7 @@ ASTNode * Parser::primaryExpression() {
           expectedIdentifier();
         }
 
-        result = new ASTMemberRef(loc | result->getLocation(), result, ident);
+        result = new ASTMemberRef(loc | result->location(), result, ident);
       } else {
         break;
       }
@@ -2597,11 +2597,11 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
       // Keyword argument
       ASTNode * kwarg = expression();
       if (arg->nodeType() != ASTNode::Id) {
-        diag.error(arg->getLocation()) << "invalid keyword expression";
+        diag.error(arg->location()) << "invalid keyword expression";
         ok = false;
       } else {
         const char * kwname = ((ASTIdent *)arg)->value();
-        arg = new ASTKeywordArg(arg->getLocation() | kwarg->getLocation(), kwarg, kwname);
+        arg = new ASTKeywordArg(arg->location() | kwarg->location(), kwarg, kwname);
       }
     }
 
@@ -2624,7 +2624,7 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
       if (arg->nodeType() == ASTNode::Keyword) {
         kwArg = true;
       } else if (kwArg) {
-        diag.error(arg->getLocation()) << "positional arguments must come before all keyword args";
+        diag.error(arg->location()) << "positional arguments must come before all keyword args";
         return NULL;
       }
     }

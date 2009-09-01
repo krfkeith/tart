@@ -88,3 +88,16 @@ target_link_libraries(tartln
     ${LLVM_XCORE_ASM_PRINTER}
     ${LLVM_XCORE_INFO}
     )
+
+add_executable(tartdoc tartc/tartc.cpp)
+add_dependencies(tartdoc collector compiler)
+target_link_libraries(tartdoc
+    compiler collector
+    ${LLVM_BIT_READER}
+    ${LLVM_BIT_WRITER}
+    ${LLVM_SELECTION_DAG}
+    ${LLVM_ANALYSIS} 
+    ${LLVM_TARGET}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    ${LLVM_CORE})

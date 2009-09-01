@@ -1,17 +1,17 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/EnumType.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// EnumType
 
 const llvm::Type * EnumType::createIRType() const {
-  return baseType_->getIRType();
+  return baseType_->irType();
 }
 
 bool EnumType::isSubtype(const Type * other) const {
@@ -32,7 +32,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
     }
-    
+
     return IdenticalTypes;
   }
 

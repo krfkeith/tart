@@ -4,6 +4,7 @@ def main(args:String[]) -> int {
   stringComparisonTest();
   stringGetCharTest();
   stringFromArrayTest();
+  stringConcatenationTest();
   return 0;
 }
 

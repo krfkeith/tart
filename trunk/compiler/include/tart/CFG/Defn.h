@@ -123,7 +123,6 @@ public:
     Ctor,             // Constructor function
     Singular,         // Has no unbound template params
     Synthetic,        // Generated via template
-    Override,         // Overrides a superclass method
 
     //Commutative = (1<<10),  // A function whose order of arguments can be reversed
     //Associative = (1<<11),  // A varargs function that can be combined with itself.
@@ -194,7 +193,7 @@ public:
   }
 
   /** Get the source location where this definition was defined. */
-  const SourceLocation & getLocation() const;
+  const SourceLocation & location() const;
   void setLocation(const SourceLocation & l) { loc = l; }
 
   /** Get the list of attributes. */
@@ -223,7 +222,6 @@ public:
   bool isSynthetic() const { return traits.contains(Synthetic); }
   bool isExtern() const { return traits.contains(Extern); }
   bool isCtor() const { return traits.contains(Ctor); }
-  bool isOverride() const { return traits.contains(Override); }
 
   void setSingular(bool t) {
     if (t) {
@@ -420,7 +418,7 @@ public:
   /** Constructor that takes a name */
   VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL)
     : ValueDefn(dtype, m, name)
-    , type_(value ? value->getType() : NULL)
+    , type_(value ? value->type() : NULL)
     , initValue_(value)
     , irValue_(NULL)
     , memberIndex_(0)

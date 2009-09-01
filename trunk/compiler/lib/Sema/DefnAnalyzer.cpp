@@ -369,7 +369,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       analyzeTemplateParam(param);
 
       // TODO: Check for subclass of Type.
-      if (param->getType()->isEqual(Builtins::typeType)) {
+      if (param->type()->isEqual(Builtins::typeType)) {
         TypeParameterDefn * tparam = new TypeParameterDefn(param);
         tsig->paramScope().addMember(tparam);
       } else {

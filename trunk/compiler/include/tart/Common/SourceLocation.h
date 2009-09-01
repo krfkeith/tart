@@ -1,14 +1,14 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_COMMON_SOURCELOCATION_H
 #define TART_COMMON_SOURCELOCATION_H
 
 #include <string>
 
 namespace tart {
-    
+
 class ProgramSource;
 class Formattable;
 
@@ -57,7 +57,7 @@ struct SourceLocation {
     }
     return *this;
   }
-  
+
   void trace() const;
 
   // Print this location to stderr (for debugging)
@@ -81,11 +81,10 @@ struct TokenPosition {
 /// Base class for classes that have a source location.
 class Locatable {
 public:
-  const SourceLocation & location() const { return getLocation(); }
-  virtual const SourceLocation & getLocation() const = 0;
+  virtual const SourceLocation & location() const = 0;
   virtual ~Locatable() {};
 
-  operator const SourceLocation &() { return getLocation(); }
+  operator const SourceLocation &() { return location(); }
 };
 
 /// -------------------------------------------------------------------
@@ -101,7 +100,7 @@ public:
     , expression_(expression)
     , formatOptions_(formatOptions)
   {}
-  
+
   /** Constructor that takes a locatable. */
   SourceContext(const Locatable * loc, SourceContext * parent = NULL,
       Formattable * expression = NULL, int formatOptions = 0)
@@ -110,10 +109,9 @@ public:
     , expression_(expression)
     , formatOptions_(formatOptions)
   {}
-  
+
   /** The location of the source line. */
   const SourceLocation & location() const { return location_; }
-  const SourceLocation & getLocation() const { return location_; }
 
   /** The parent context of this context. This will usually
       be used to represent the source location of the calling
@@ -122,10 +120,10 @@ public:
 
   /** A formattable object representing the calling expression or type. */
   Formattable * expression() const { return expression_; }
-  
+
   /** The set of format option flags to use. */
   int formatOptions() const { return formatOptions_; }
-  
+
 private:
   SourceLocation location_;
   SourceContext * parent_;

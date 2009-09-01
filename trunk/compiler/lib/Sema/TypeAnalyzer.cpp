@@ -24,7 +24,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     return NULL;
   }
 
-  const SourceLocation & loc = ast->getLocation();
+  const SourceLocation & loc = ast->location();
   switch (ast->nodeType()) {
     case ASTNode::Id:
     case ASTNode::Member:
@@ -106,7 +106,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         unionTypes.push_back(elementType);
       }
 
-      return UnionType::create(ast->getLocation(), unionTypes);
+      return UnionType::create(ast->location(), unionTypes);
     }
 
     case ASTNode::AnonFn: {
@@ -137,7 +137,7 @@ void TypeAnalyzer::undefinedType(const ASTNode * ast) {
 bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   ExprList results;
   lookupName(results, ast);
-  const SourceLocation & loc = ast->getLocation();
+  const SourceLocation & loc = ast->location();
   for (ExprList::iterator it = results.begin(); it != results.end();
       ++it) {
     if (ConstantType * ctype = dyn_cast<ConstantType>(*it)) {

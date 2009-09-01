@@ -99,13 +99,13 @@ public final class String {
     var index = 0;
     for i = 0; i < count; ++i {
       let src = s[i];
+      //Memory.arrayCopy(result.data, index, src.data, 0, src.length);
+      //index += src.length;
       for j = 0; j < src.length; ++j {
         result.data[index++] = src.data[j];
       }
     }
 
-    //Memory.arrayCopy(result.data, 0, s0.data, 0, s0.length);
-    //Memory.arrayCopy(result.data, s0.length, s1.data, 0, s1.length);
     return result;
   }
 }

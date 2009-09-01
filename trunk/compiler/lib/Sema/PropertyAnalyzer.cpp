@@ -57,7 +57,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->getAST());
 
     // Evaluate the explicitly declared type, if any
-    Type * type = target->getType();
+    Type * type = target->type();
     if (type == NULL) {
       DASSERT_OBJ(ast != NULL, target);
       DASSERT_OBJ(ast->type() != NULL, target);
@@ -70,7 +70,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       target->setType(type);
     }
 
-    if (target->getType()->isSingular()) {
+    if (target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
@@ -124,13 +124,13 @@ bool PropertyAnalyzer::resolvePropertyType() {
       if (valueParam != NULL) {
         // Re-add the value param.
         setterType->params().push_back(valueParam);
-        if (valueParam->getType() == NULL) {
+        if (valueParam->type() == NULL) {
           valueParam->setType(type);
           valueParam->setInternalType(type);
-        } else if (!valueParam->getType()->isEqual(type)) {
+        } else if (!valueParam->type()->isEqual(type)) {
           diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
               "' must be of type '" << type << "' but is instead type '" <<
-              valueParam->getType() << "'";
+              valueParam->type() << "'";
         }
       } else {
         // Create a value param.

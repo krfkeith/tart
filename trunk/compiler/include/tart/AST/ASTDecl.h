@@ -383,7 +383,7 @@ private:
 
 public:
   ASTTemplate(ASTDecl * bod, ASTNodeList & paramList, ASTNodeList & requirements)
-      : ASTDecl(Template, bod->getLocation(), bod->name(), bod->modifiers())
+      : ASTDecl(Template, bod->location(), bod->name(), bod->modifiers())
       , body_(bod)
       , params_(paramList)
       , requirements_(requirements)

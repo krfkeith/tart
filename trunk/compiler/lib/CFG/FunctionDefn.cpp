@@ -37,7 +37,7 @@ namespace {
             out.append(",");
           }
 
-          typeLinkageName(out, (*it)->getType());
+          typeLinkageName(out, (*it)->type());
         }
         out.append(")");
       }
@@ -124,6 +124,21 @@ void FunctionDefn::trace() const {
   markList(localScopes_.begin(), localScopes_.end());
 }
 
+bool FunctionDefn::isOverrideOf(const FunctionDefn * baseFunction) {
+  if (this == baseFunction) {
+    return true;
+  }
+
+  for (FunctionSet::iterator it = overriddenMethods_.begin(); it != overriddenMethods_.end();
+      ++it) {
+    if ((*it)->isOverrideOf(baseFunction)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const std::string & FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
     Defn::linkageName();
@@ -136,7 +151,7 @@ const std::string & FunctionDefn::linkageName() const {
           if (it != type_->params().begin()) {
             lnkName.append(",");
           }
-          typeLinkageName(lnkName, (*it)->getType());
+          typeLinkageName(lnkName, (*it)->type());
           if ((*it)->getFlag(ParameterDefn::Variadic)) {
             lnkName.append("...");
           }

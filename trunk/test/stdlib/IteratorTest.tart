@@ -1,6 +1,7 @@
 @EntryPoint
 def main(args: String[]) {
   testManualIteration();
+  testForeach();
   return 0;
 }
 
@@ -43,7 +44,12 @@ def testManualIteration2() {
 }
 
 def testForeach() {
-  //for i in Counter(5) {
-    //Debug.writeLn(i.toString());
-  //}
+  var sum = 0;
+  for i in Counter(5) {
+    sum += 1;
+    Debug.assertTrue(sum < 6);
+    Debug.writeLn(i.toString());
+  }
+
+  Debug.assertEq(5, sum);
 }

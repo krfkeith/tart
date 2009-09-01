@@ -55,7 +55,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     LValueExpr * retLVal = NULL;
     LValueExpr * savedRetVal = NULL;
     if (retVal != NULL) {
-      retLVal = new LValueExpr(in->getLocation(), NULL, retVal);
+      retLVal = new LValueExpr(in->location(), NULL, retVal);
       savedRetVal = stAn.setMacroReturnVal(retLVal);
       DASSERT_OBJ(retLVal->isSingular(), retLVal);
     }
@@ -71,7 +71,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // If control fell off the end of the macro, then branch to return block.
     Block * finalBlock = stAn.insertionBlock();
     if (finalBlock != NULL && !finalBlock->hasTerminator()) {
-      finalBlock->branchTo(macroBody->getFinalLocation(), returnBlock);
+      finalBlock->branchTo(macroBody->finalLocation(), returnBlock);
     }
 
     stAn.setMacroReturnTarget(savedReturnBlock);
@@ -89,7 +89,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       return retLVal;
     } else {
       // Return a dummy expression, it won't be used.
-      return new UnaryExpr(Expr::NoOp, in->getLocation(), &VoidType::instance, in);
+      return new UnaryExpr(Expr::NoOp, in->location(), &VoidType::instance, in);
     }
   }
 

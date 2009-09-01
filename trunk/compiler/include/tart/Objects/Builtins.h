@@ -84,6 +84,9 @@ public:
 
   /** Define built-in operators. */
   static void initOperators();
+
+  /** Register an annex type. */
+  static void registerAnnexType(Type * type);
 };
 
 }

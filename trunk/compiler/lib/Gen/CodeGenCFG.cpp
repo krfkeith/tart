@@ -38,18 +38,12 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   // Don't generate the IR if we've already done so
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
   DASSERT_OBJ(var->getIRValue() == NULL, var);
-  DASSERT_OBJ(var->getType() != NULL, var);
+  DASSERT_OBJ(var->type() != NULL, var);
 
   // Generate the variable type
-  const Type * varType = var->getType();
+  const Type * varType = var->type();
   assert(varType != NULL);
-  const llvm::Type * irType = varType->getIRType();
-
-  if (varType->isReferenceType()) {
-    // For reference types, the pointer itself is also allocated, because
-    // it is mutable.
-    irType = PointerType::get(irType, 0);
-  }
+  const llvm::Type * irType = varType->irEmbeddedType();
 
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
@@ -87,7 +81,7 @@ void CodeGenerator::genBlocks() {
     for (ExprList::iterator it = types.begin(); it != types.end(); ++it) {
       if (debug) {
         // Generate source line information.
-        TokenPosition pos = getTokenPosition((*it)->getLocation());
+        TokenPosition pos = getTokenPosition((*it)->location());
         dbgFactory_.InsertStopPoint(
             dbgCompileUnit_,
             pos.beginLine, pos.beginCol,
@@ -167,8 +161,8 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     builder_.CreateRet(NULL);
   } else {
     Value * value = genExpr(returnVal);
-    //value = genCast(resultVal->getLocation(), value,
-    //    returnVal->getType(), currentFunction_->returnType());
+    //value = genCast(resultVal->location(), value,
+    //    returnVal->type(), currentFunction_->returnType());
     DASSERT(value != NULL);
     //genDoFinally(blk);
     builder_.CreateRet(value);
@@ -206,7 +200,7 @@ void CodeGenerator::genThrow(Block * blk) {
   }
 
   if (blk->terminator() == BlockTerm_ResumeUnwind) {
-    const llvm::Type * throwableType = Builtins::typeThrowable->getIRType();
+    const llvm::Type * throwableType = Builtins::typeThrowable->irType();
     Function * ehException = llvm::Intrinsic::getDeclaration(
         irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
     unwindInfo = builder_.CreateBitCast(
@@ -219,7 +213,7 @@ void CodeGenerator::genThrow(Block * blk) {
       return;
     }
 
-    const llvm::Type * throwableType = Builtins::typeThrowable->getIRType();
+    const llvm::Type * throwableType = Builtins::typeThrowable->irType();
     irModule_->addTypeName("tart.core.Throwable", throwableType);
 
     throwable = builder_.CreateBitCast(exception, PointerType::getUnqual(throwableType));
@@ -299,7 +293,7 @@ void CodeGenerator::genCatch(Block * blk) {
   llvm::Constant * gepIndices[2];
   gepIndices[0] = getInt32Val(0);
   gepIndices[1] = getInt32Val(2);
-  const llvm::Type * throwableType = Builtins::typeThrowable->getIRType();
+  const llvm::Type * throwableType = Builtins::typeThrowable->irType();
   llvm::Constant * unwindInfoOffset = llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
           ConstantPointerNull::get(PointerType::get(throwableType, 0)),

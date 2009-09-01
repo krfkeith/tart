@@ -77,7 +77,7 @@ public:
   NodeType nodeType() const { return nodeType_; }
 
   /** Where in the source file this expression comes from. */
-  const SourceLocation & getLocation() const { return loc; }
+  const SourceLocation & location() const { return loc; }
 
   /** Produce a string representation of this node and its children. */
   const std::string toString(int formatOptions = Format_Default) const;
@@ -230,7 +230,7 @@ public:
   }
 
   static ASTUnaryOp * get(NodeType nt, ASTNode * arg) {
-    return new ASTUnaryOp(nt, arg->getLocation(), arg);
+    return new ASTUnaryOp(nt, arg->location(), arg);
   }
 
   /** The single argument. */
@@ -265,7 +265,7 @@ public:
       : ASTNode(type, loc) {}
 
   ASTOper(NodeType type, ASTNode * a0)
-      : ASTNode(type, a0->getLocation()) {
+      : ASTNode(type, a0->location()) {
     args_.push_back(a0);
   }
 
@@ -275,7 +275,7 @@ public:
   }
 
   ASTOper(NodeType type, ASTNode * a0, ASTNode * a1)
-      : ASTNode(type, a0->getLocation() | a1->getLocation()) {
+      : ASTNode(type, a0->location() | a1->location()) {
     args_.push_back(a0);
     args_.push_back(a1);
   }
@@ -284,7 +284,7 @@ public:
       : ASTNode(type, SourceLocation()) {
     args_.append(alist.begin(), alist.end());
     for (ASTNodeList::const_iterator it = alist.begin(); it != alist.end(); ++it) {
-      loc |= (*it)->getLocation();
+      loc |= (*it)->location();
     }
   }
 
@@ -310,7 +310,7 @@ public:
   /** Append an operand to the list of operands. */
   void append(ASTNode * node) {
     args_.push_back(node);
-    loc |= node->getLocation();
+    loc |= node->location();
   }
 
   /** Return the number of arguments. */

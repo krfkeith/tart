@@ -44,7 +44,7 @@ bool ConstantInteger::isNegative() const {
 }
 
 void ConstantInteger::format(FormatStream & out) const {
-  if (getType()->isEqual(&BoolType::instance)) {
+  if (type()->isEqual(&BoolType::instance)) {
     out << (value_->isZero() ? "false" : "true");
   } else {
     const PrimitiveType * ptype = primitiveType();
@@ -74,13 +74,13 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type,
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value, PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
   return new ConstantInteger(SourceLocation(), type,
-      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->getIRType(), value)));
+      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->irType(), value)));
 }
 
 ConstantInteger * ConstantInteger::getUnsigned(const llvm::APInt & value, PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
   return new ConstantInteger(SourceLocation(), type,
-      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->getIRType(), value)));
+      cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->irType(), value)));
 }
 
 // -------------------------------------------------------------------
@@ -142,7 +142,7 @@ ConstantType::ConstantType(SourceLocation l, Type * val)
   , value_(val)
 {
   DASSERT(value_ != NULL);
-  //DASSERT_OBJ(getType() != NULL, this);
+  //DASSERT_OBJ(type() != NULL, this);
 }
 
 ConstantType::ConstantType(SourceLocation l, TypeDefn * valDefn)

@@ -18,7 +18,17 @@
 namespace tart {
 
 namespace {
-SourceFile builtinSource("");
+  SourceFile builtinSource("");
+
+  struct AnnexType {
+    const char * name;
+    Type ** type;
+  };
+
+  AnnexType annexTypes[] = {
+    "tart.core.Iterable", &Builtins::typeIterable,
+    "tart.core.Iterator", &Builtins::typeIterator,
+  };
 }
 
 Module Builtins::module(&builtinSource, "$builtin", NULL);
@@ -149,6 +159,18 @@ void Builtins::loadSystemClasses() {
 bool Builtins::compileBuiltins(ProgramSource & source) {
   Parser parser(&source, &module);
   return parser.parse();
+}
+
+#define elementsof(x)   (sizeof(x)/sizeof(x[0]))
+
+void Builtins::registerAnnexType(Type * type) {
+  for (int i = 0; i < elementsof(annexTypes); ++i) {
+    AnnexType * atype = &annexTypes[i];
+    if (type->typeDefn()->qualifiedName() == atype->name) {
+      *atype->type = type;
+      break;
+    }
+  }
 }
 
 }

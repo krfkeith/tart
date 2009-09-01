@@ -178,6 +178,13 @@ private:
   /** Find a local procedure by the first block. */
   LocalProcedure & findLocalProcedure(Block * first);
 
+  /** Given an interface (which may be a template), and a concrete type, first locate the method
+      in the interface, and then find the overloaded version of that method in the concrete type. */
+  FunctionDefn * findInterfaceMethod(CompositeType * type, Type * interface, const char * method);
+
+  /** Create a temporary variable. */
+  LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
+
   FunctionDefn * function;
   Type * returnType;
   Type * yieldType_;

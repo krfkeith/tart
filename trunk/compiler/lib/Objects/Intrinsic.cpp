@@ -91,14 +91,14 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
   Value * selfArg = cg.genExpr(self);
   Value * formatStringArg = cg.genExpr(formatString);
 
-  const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->getType()));
+  const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->type()));
   TypeId id = ptype->typeId();
 
   if (functions_[id] == NULL) {
     char funcName[32];
     snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
 
-    const llvm::Type * funcType = fn->getType()->getIRType();
+    const llvm::Type * funcType = fn->type()->irType();
     functions_[id] = llvm::Function::Create(cast<llvm::FunctionType>(funcType),
         Function::ExternalLinkage, funcName, cg.irModule());
   }
@@ -114,7 +114,7 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
   std::stringstream sstream;
 
   const Expr * arg = derefMacroParam(call->arg(0));
-  SourceLocation loc = arg->getLocation();
+  SourceLocation loc = arg->location();
   if (loc.file != NULL) {
     TokenPosition pos = loc.file->getTokenPosition(loc);
     sstream << loc.file->getFilePath() << ":" << pos.beginLine + 1 << ":";
@@ -128,8 +128,8 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 VAllocIntrinsic VAllocIntrinsic::instance;
 
 Value * VAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->getType());
-  return cg.genVarSizeAlloc(call->getLocation(), retType, call->arg(0));
+  const Type * retType = dealias(call->type());
+  return cg.genVarSizeAlloc(call->location(), retType, call->arg(0));
 }
 
 // -------------------------------------------------------------------
@@ -137,8 +137,8 @@ Value * VAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
 PVAllocIntrinsic PVAllocIntrinsic::instance;
 
 Value * PVAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->getType());
-  return cg.genVarSizeAlloc(call->getLocation(), retType, call->arg(0));
+  const Type * retType = dealias(call->type());
+  return cg.genVarSizeAlloc(call->location(), retType, call->arg(0));
 }
 
 // -------------------------------------------------------------------
@@ -146,8 +146,8 @@ Value * PVAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) 
 ZeroPtrIntrinsic ZeroPtrIntrinsic::instance;
 
 Value * ZeroPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->getType());
-  const llvm::Type * type = retType->getIRType();
+  const Type * retType = dealias(call->type());
+  const llvm::Type * type = retType->irType();
   return ConstantPointerNull::get(PointerType::getUnqual(type));
 }
 
@@ -172,15 +172,12 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Throw an exception if it won't fit...
   // TODO: Should use uintptr_t instead of int32.
 
-  DASSERT_OBJ(firstPtr->getType()->isEqual(lastPtr->getType()), call);
-  Type * elemType = cast<NativePointerType>(firstPtr->getType())->typeParam(0);
+  DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
+  Type * elemType = cast<NativePointerType>(firstPtr->type())->typeParam(0);
   Value * firstVal = cg.genExpr(firstPtr);
-  firstVal = cg.builder().CreatePtrToInt(firstVal, llvm::Type::getInt32Ty(llvm::getGlobalContext()));
   Value * lastVal = cg.genExpr(lastPtr);
-  lastVal = cg.builder().CreatePtrToInt(lastVal, llvm::Type::getInt32Ty(llvm::getGlobalContext()));
-  Value * diffVal = cg.builder().CreateSub(lastVal, firstVal);
-  llvm::Constant * elemSize = cg.genSizeOf(elemType, true);
-  return cg.builder().CreateSDiv(diffVal, elemSize, "ptrDiff");
+  Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
+  return cg.builder().CreateTrunc(diffVal, cg.builder().getInt32Ty());
 }
 
 // -------------------------------------------------------------------
@@ -201,21 +198,64 @@ PointerComparisonIntrinsic<CmpInst::ICMP_NE>
     PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
 
 // -------------------------------------------------------------------
+// ArrayCopyIntrinsic
+ArrayCopyIntrinsic ArrayCopyIntrinsic::instance;
+
+Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 5);
+  const Expr * dstArray = call->arg(0);
+  const Expr * dstOffset = call->arg(1);
+  const Expr * srcArray = call->arg(2);
+  const Expr * srcOffset = call->arg(3);
+  const Expr * count = call->arg(4);
+
+  DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
+  Type * elemType = cast<NativeArrayType>(srcArray->type())->typeParam(0);
+  Value * srcPtr = cg.genLValueAddress(srcArray);
+  Value * dstPtr = cg.genLValueAddress(dstArray);
+  Value * srcIndex = cg.genExpr(srcOffset);
+  Value * dstIndex = cg.genExpr(dstOffset);
+  Value * length = cg.genExpr(count);
+
+  Value * elemSize = llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType());
+
+  const llvm::Type * types[1];
+  types[0] = cg.builder().getInt64Ty();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(
+      cg.irModule(), llvm::Intrinsic::memcpy, types, 1);
+
+  Value * idx[2];
+  idx[0] = dstIndex;
+  idx[1] = cg.getInt64Val(0);
+
+  Value * args[4];
+  args[0] = cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[2], "dst");
+
+  idx[0] = srcIndex;
+  args[1] = cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[2], "src");
+
+  args[2] = cg.builder().CreateMul(length, elemSize);
+  args[3] = cg.getInt32Val(0);
+
+  return cg.builder().CreateCall(intrinsic, &args[0], &args[4]);
+}
+
+// -------------------------------------------------------------------
 // MathIntrinsic1
 template<llvm::Intrinsic::ID id>
 inline Value * MathIntrinsic1<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
-  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->getType()));
+  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
   Value * argVal = cg.genExpr(arg);
-  const Type * retType = dealias(call->getType());
+  const Type * retType = dealias(call->type());
 
   if (argType->typeId() != TypeId_Float && argType->typeId() != TypeId_Double) {
-    diag.fatal(arg->getLocation()) << "Bad intrinsic type.";
+    diag.fatal(arg->location()) << "Bad intrinsic type.";
     return NULL;
   }
 
   const llvm::Type * types[1];
-  types[1] = argType->getIRType();
+  types[1] = argType->irType();
   Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 1);
   return cg.builder().CreateCall(intrinsic, argVal);
 }
@@ -295,6 +335,18 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
   }
 
   return self;
+}
+
+// -------------------------------------------------------------------
+// AnnexApplyIntrinsic
+AnnexApplyIntrinsic AnnexApplyIntrinsic::instance;
+
+Expr * AnnexApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  ConstantType * ctype = cast<ConstantType>(args[0]);
+  Builtins::registerAnnexType(ctype->value());
+  return ctype;
 }
 
 } // namespace tart

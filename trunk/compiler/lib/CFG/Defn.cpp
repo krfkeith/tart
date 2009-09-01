@@ -37,7 +37,7 @@ namespace {
             out.append(",");
           }
 
-          typeLinkageName(out, (*it)->getType());
+          typeLinkageName(out, (*it)->type());
         }
         out.append(")");
       }
@@ -69,7 +69,7 @@ Defn::Defn(DefnType dtype, Module * m, const char * nm)
 
 Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   : defnType_(dtype)
-  , loc(de->getLocation())
+  , loc(de->location())
   , name_(de->name())
   , ast(de)
   , modifiers(de->modifiers())
@@ -174,7 +174,7 @@ const Expr * Defn::findAttribute(const Type * attrType) const {
   DASSERT(attrType != NULL);
   for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
     Expr * attr = *it;
-    if (attr->getType()->isEqual(attrType)) {
+    if (attr->type()->isEqual(attrType)) {
       return attr;
     }
   }
@@ -186,7 +186,7 @@ const Expr * Defn::findAttribute(const char * attrTypeName) const {
   DASSERT(attrTypeName != NULL);
   for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
     Expr * attr = *it;
-    Type * attrType = dealias(attr->getType());
+    Type * attrType = dealias(attr->type());
     if (TypeDefn * tdef = attrType->typeDefn()) {
       if (tdef->qualifiedName() == attrTypeName) {
         return attr;
@@ -197,9 +197,9 @@ const Expr * Defn::findAttribute(const char * attrTypeName) const {
   return NULL;
 }
 
-const SourceLocation & Defn::getLocation() const {
+const SourceLocation & Defn::location() const {
   static const SourceLocation defaultLocation;
-  return ast ? ast->getLocation() : defaultLocation;
+  return ast ? ast->location() : defaultLocation;
 }
 
 TypeDefn * Defn::enclosingClassDefn() const {
@@ -350,7 +350,7 @@ Type * TypeDefn::metaType() const {
 ConstantType * TypeDefn::asExpr() {
   DASSERT(Builtins::typeType != NULL);
   if (expr_ == NULL) {
-    expr_ = new ConstantType(ast ? ast->getLocation() : SourceLocation(), this);
+    expr_ = new ConstantType(ast ? ast->location() : SourceLocation(), this);
   }
 
   return expr_;

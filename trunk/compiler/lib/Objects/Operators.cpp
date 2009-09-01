@@ -290,7 +290,7 @@ public:
       /*Expr * constantZero = ConstNumber::get(
             arg->location(),
             cast<const PrimitiveType>(arg->type()),
-            Constant::getNullValue(arg->type()->getIRType()));
+            Constant::getNullValue(arg->type()->irType()));
       Expr * result = new BinaryExpr(Instruction::Sub, constantZero, arg);
       result->setType(arg->type());
       return result;*/
@@ -359,7 +359,7 @@ public:
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.getIRType());
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
@@ -395,7 +395,7 @@ public:
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.getIRType());
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);

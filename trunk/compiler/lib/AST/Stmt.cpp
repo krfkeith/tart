@@ -42,15 +42,15 @@ void BlockStmt::format(FormatStream & out) const {
 // Expression
 void ExprStmt::trace() const {
   Stmt::trace();
-  safeMark(value);
+  safeMark(value_);
 }
 
 void ExprStmt::format(FormatStream & out) const {
-  out << value << ";";
+  out << value_ << ";";
 }
 
 Stmt * ExprStmt::get(ASTNode * ex) {
-  return new ExprStmt(Stmt::Expression, ex->getLocation(), ex);
+  return new ExprStmt(Stmt::Expression, ex->location(), ex);
 }
 
 // -------------------------------------------------------------------
@@ -60,7 +60,7 @@ void ReturnStmt::trace() const {
 }
 
 void ReturnStmt::format(FormatStream & out) const {
-  out << "return " << getValue() << ";";
+  out << "return " << value() << ";";
 }
 
 // -------------------------------------------------------------------
@@ -70,7 +70,7 @@ void YieldStmt::trace() const {
 }
 
 void YieldStmt::format(FormatStream & out) const {
-  out << "yield " << getValue() << ";";
+  out << "yield " << value() << ";";
 }
 
 // -------------------------------------------------------------------
@@ -80,37 +80,37 @@ void ThrowStmt::trace() const {
 }
 
 void ThrowStmt::format(FormatStream & out) const {
-  out << "throw " << getValue() << ";";
+  out << "throw " << value() << ";";
 }
 
 // -------------------------------------------------------------------
 // ASTDecl
 void DeclStmt::trace() const {
   Stmt::trace();
-  safeMark(decl);
+  safeMark(decl_);
 }
 
 void DeclStmt::format(FormatStream & out) const {
-  out << decl;
+  out << decl_;
 }
 
 Stmt * DeclStmt::get(ASTDecl * de) {
-  return new DeclStmt(de->getLocation(), de);
+  return new DeclStmt(de->location(), de);
 }
 
 // -------------------------------------------------------------------
 // If
 void IfStmt::trace() const {
   Stmt::trace();
-  safeMark(testExpr);
-  safeMark(thenSt);
-  safeMark(elseSt);
+  safeMark(testExpr_);
+  safeMark(thenSt_);
+  safeMark(elseSt_);
 }
 
 void IfStmt::format(FormatStream & out) const {
-  out << "If (" << testExpr << ", " << thenSt;
-  if (elseSt) {
-    out << ", " << elseSt;
+  out << "If (" << testExpr_ << ", " << thenSt_;
+  if (elseSt_) {
+    out << ", " << elseSt_;
   }
   out << ")";
 }
@@ -119,14 +119,14 @@ void IfStmt::format(FormatStream & out) const {
 // While
 void WhileStmt::trace() const {
   Stmt::trace();
-  safeMark(testExpr);
-  safeMark(loopBody);
+  safeMark(testExpr_);
+  safeMark(body_);
 }
 
 void WhileStmt::format(FormatStream & out) const {
-  out << "While (" << testExpr;
-  if (loopBody) {
-    out << ", " << loopBody;
+  out << "While (" << testExpr_;
+  if (body_) {
+    out << ", " << body_;
   }
   out << ")";
 }
@@ -135,31 +135,31 @@ void WhileStmt::format(FormatStream & out) const {
 // For
 void ForStmt::trace() const {
   Stmt::trace();
-  safeMark(initExpr);
-  safeMark(testExpr);
-  safeMark(incrExpr);
-  safeMark(loopBody);
+  safeMark(initExpr_);
+  safeMark(testExpr_);
+  safeMark(incrExpr_);
+  safeMark(body_);
 }
 
 void ForStmt::format(FormatStream & out) const {
   out << "For (";
-  if (initExpr) {
-    out << initExpr;
+  if (initExpr_) {
+    out << initExpr_;
   }
 
   out << "; ";
-  if (testExpr) {
-    out << testExpr;
+  if (testExpr_) {
+    out << testExpr_;
   }
 
   out << "; ";
-  if (incrExpr) {
-    out << incrExpr;
+  if (incrExpr_) {
+    out << incrExpr_;
   }
 
   out << "; ";
-  if (loopBody) {
-    out << loopBody;
+  if (body_) {
+    out << body_;
   }
 
   out << ")";
@@ -169,25 +169,25 @@ void ForStmt::format(FormatStream & out) const {
 // For each
 void ForEachStmt::trace() const {
   Stmt::trace();
-  safeMark(loopVars);
-  safeMark(iterExpr);
-  safeMark(loopBody);
+  safeMark(loopVars_);
+  safeMark(iterExpr_);
+  safeMark(body_);
 }
 
 void ForEachStmt::format(FormatStream & out) const {
   out << "ForEach (";
-  if (loopVars) {
-    out << loopVars;
+  if (loopVars_) {
+    out << loopVars_;
   }
 
   out << "; ";
-  if (iterExpr) {
-    out << iterExpr;
+  if (iterExpr_) {
+    out << iterExpr_;
   }
 
   out << "; ";
-  if (loopBody) {
-    out << loopBody;
+  if (body_) {
+    out << body_;
   }
 
   out << ")";
@@ -197,30 +197,30 @@ void ForEachStmt::format(FormatStream & out) const {
 // Try
 void TryStmt::trace() const {
   Stmt::trace();
-  for (StmtList::const_iterator it = catchList.begin(); it != catchList.end(); ++it) {
+  for (StmtList::const_iterator it = catchList_.begin(); it != catchList_.end(); ++it) {
     (*it)->mark();
   }
-  safeMark(bodySt);
-  safeMark(elseSt);
-  safeMark(finallySt);
+  safeMark(body_);
+  safeMark(elseSt_);
+  safeMark(finallySt_);
 }
 
 void TryStmt::format(FormatStream & out) const {
   out << "Try (";
-  if (bodySt) {
-    out << bodySt;
+  if (body_) {
+    out << body_;
   }
 
-  for (StmtList::const_iterator it = catchList.begin(); it != catchList.end(); ++it) {
+  for (StmtList::const_iterator it = catchList_.begin(); it != catchList_.end(); ++it) {
     out << " " << *it << ";";
   }
 
-  if (elseSt) {
-    out << " Else " << elseSt;
+  if (elseSt_) {
+    out << " Else " << elseSt_;
   }
 
-  if (finallySt) {
-    out << " Finally " << finallySt;
+  if (finallySt_) {
+    out << " Finally " << finallySt_;
   }
 
   out << ")";
@@ -230,19 +230,19 @@ void TryStmt::format(FormatStream & out) const {
 // Catch
 void CatchStmt::trace() const {
   Stmt::trace();
-  safeMark(exceptDecl);
-  safeMark(bodySt);
+  safeMark(exceptDecl_);
+  safeMark(body_);
 }
 
 void CatchStmt::format(FormatStream & out) const {
   out << "Catch (";
-  if (exceptDecl) {
-    out << exceptDecl;
+  if (exceptDecl_) {
+    out << exceptDecl_;
   }
 
   out << "; ";
-  if (bodySt) {
-    out << bodySt;
+  if (body_) {
+    out << body_;
   }
 
   out << ")";
