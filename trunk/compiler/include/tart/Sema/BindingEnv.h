@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_BINDINGENV_H
 #define TART_SEMA_BINDINGENV_H
 
@@ -20,7 +20,7 @@
 #include <llvm/ADT/DenseMap.h>
 
 namespace tart {
-  
+
 class TemplateSignature;
 class PatternVar;
 class NativePointerType;
@@ -110,13 +110,13 @@ public:
   Expr * nullInitValue() const;
   void trace() const;
   void format(FormatStream & out) const;
-  const llvm::Type * getIRType() const;
+  const llvm::Type * irType() const;
 
   static inline bool classof(const PatternValue *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == PatternVal;
   }
-  
+
 private:
   BindingEnv * env_;
   PatternVar * var_;
@@ -148,7 +148,7 @@ public:
       pattern variables have been replaced with the corresponding type
       bindings for this environment. If the parameter 'finalize' is true, then
       also replace type bindings with the actual type value.
-      
+
       This function attempts to avoid creating new type objects when
       the input expression contains no type variables.
    */
@@ -177,7 +177,7 @@ public:
         return s;
       }
     }
-    
+
     return NULL;
   }
 
@@ -186,14 +186,14 @@ public:
   void trace() const;
 private:
   friend FormatStream & operator<<(FormatStream & out, const BindingEnv & env);
-  
+
   Substitution * substitutions_;
 
   bool unifyPattern(SourceContext * source, PatternVar * pattern, Type * value, Variance variance);
   bool unifyNativePointerType(SourceContext * source, NativePointerType * pattern, Type * value);
   bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);
   bool unifyImpl(SourceContext * source, Type * pattern, Type * value, Variance variance);
-  
+
   bool hasVar(const PatternVar * var) const;
 };
 

@@ -174,20 +174,20 @@ TEST_F(ParserTest, Terminals) {
   // Floats
   ast = parseExpression("1.0");
   ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
-  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->getValue().convertToDouble());
+  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->value().convertToDouble());
 
   ast = parseExpression("1.0f");
   ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
-  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->getValue().convertToFloat());
+  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->value().convertToFloat());
 
   ast = parseExpression("5.0e3f");
   ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
-  ASSERT_FLOAT_EQ(5.0e3f, dyn_cast<ASTFloatLiteral>(ast)->getValue().convertToFloat());
+  ASSERT_FLOAT_EQ(5.0e3f, dyn_cast<ASTFloatLiteral>(ast)->value().convertToFloat());
 
   // Character literals
   ast = parseExpression("'c'");
   ASSERT_EQ(ASTNode::LitChar, ast->nodeType());
-  ASSERT_EQ(uint32_t('c'), dyn_cast<ASTCharLiteral>(ast)->getValue());
+  ASSERT_EQ(uint32_t('c'), dyn_cast<ASTCharLiteral>(ast)->value());
 
   // String literals
   ast = parseExpression("\"c\"");
@@ -197,11 +197,11 @@ TEST_F(ParserTest, Terminals) {
   // Boolean literals
   ast = parseExpression("true");
   ASSERT_EQ(ASTNode::LitBool, ast->nodeType());
-  ASSERT_EQ(true, dyn_cast<ASTBoolLiteral>(ast)->getValue());
+  ASSERT_EQ(true, dyn_cast<ASTBoolLiteral>(ast)->value());
 
   ast = parseExpression("false");
   ASSERT_EQ(ASTNode::LitBool, ast->nodeType());
-  ASSERT_EQ(false, dyn_cast<ASTBoolLiteral>(ast)->getValue());
+  ASSERT_EQ(false, dyn_cast<ASTBoolLiteral>(ast)->value());
 
   // ASTIdent
   ast = parseExpression("X");

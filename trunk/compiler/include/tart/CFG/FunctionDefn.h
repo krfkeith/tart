@@ -136,6 +136,8 @@ private:
 /// A definition of a type
 class FunctionDefn : public ValueDefn {
 public:
+  typedef llvm::SmallPtrSet<FunctionDefn *, 1> FunctionSet;
+
   /** Constructor that takes an AST */
   FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast)
     : ValueDefn(dtype, m, ast)
@@ -184,7 +186,7 @@ public:
   LocalScopeList & localScopes() { return localScopes_; }
 
   /** Function AST. */
-  const ASTFunctionDecl * getFunctionDecl() const {
+  const ASTFunctionDecl * functionDecl() const {
     return static_cast<const ASTFunctionDecl *>(ast);
   }
 
@@ -206,6 +208,13 @@ public:
   /** Evaluate this function at compile-time. Return
       NULL if the function is not compile-time evaluable. */
   virtual Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const;
+
+  /** The set of functions which have been overridden by this function. */
+  FunctionSet & overriddenMethods() { return overriddenMethods_; }
+  const FunctionSet & overriddenMethods() const { return overriddenMethods_; }
+
+  /** True if this function is an override of 'baseFunction' */
+  bool isOverrideOf(const FunctionDefn * baseFunction);
 
   /** Print out the basic blocks. */
   void dumpBlocks();
@@ -229,6 +238,7 @@ private:
   llvm::Function * irFunction_;
   int dispatchIndex_;
   Intrinsic * intrinsic_;
+  FunctionSet overriddenMethods_;
 };
 
 } // namespace tart

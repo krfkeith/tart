@@ -22,6 +22,7 @@ static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
 
 static const DefnPasses PASS_SET_LOOKUP = DefnPasses::of(
   Pass_CreateMembers,
+  Pass_ResolveAttributes,
   Pass_ResolveBaseTypes
 );
 
@@ -133,7 +134,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     return true;
   }
 
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   DASSERT_OBJ(type->isSingular(), type);
   DASSERT_OBJ(type->super() == NULL, type);
 
@@ -256,7 +257,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 
 bool ClassAnalyzer::analyzeFields() {
   if (target->beginPass(Pass_AnalyzeFields)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     CompositeType * super = type->super();
     // Also analyze base class fields.
     int instanceFieldCount = 0;
@@ -279,7 +280,7 @@ bool ClassAnalyzer::analyzeFields() {
           field->copyTrait(target, Defn::Final);
 
           analyzeValueDefn(field, Task_PrepCodeGeneration);
-          DASSERT(field->getType() != NULL);
+          DASSERT(field->type() != NULL);
 
           bool isStorageRequired = true;
           if (field->defnType() == Defn::Let) {
@@ -324,7 +325,7 @@ bool ClassAnalyzer::analyzeFields() {
 
 bool ClassAnalyzer::analyzeConstructors() {
   if (target->beginPass(Pass_AnalyzeConstructors)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     // Analyze the constructors first, because we may need them
     // during the rest of the analysis.
     Type::TypeClass tcls = type->typeClass();
@@ -410,7 +411,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 }
 
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   CompositeType * superType = cast_or_null<CompositeType>(type->super());
   if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
@@ -425,7 +426,7 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
 
 bool ClassAnalyzer::analyzeMethods() {
   if (target->beginPass(Pass_AnalyzeMethods)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     Defn::DefnType dtype = target->defnType();
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (member->isTemplate()) {
@@ -457,7 +458,7 @@ bool ClassAnalyzer::analyzeMethods() {
 
 bool ClassAnalyzer::analyzeOverloading() {
   if (target->beginPass(Pass_ResolveOverloads)) {
-    CompositeType * type = cast<CompositeType>(target->getTypeValue());
+    CompositeType * type = cast<CompositeType>(target->typeValue());
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
@@ -478,7 +479,7 @@ bool ClassAnalyzer::analyzeOverloading() {
 
 void ClassAnalyzer::copyBaseClassMethods() {
   // If it's not a normal class, it can still have a supertype.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   Type::TypeClass tcls = type->typeClass();
   CompositeType * superClass = type->super();
   if (superClass == NULL &&
@@ -499,7 +500,7 @@ void ClassAnalyzer::copyBaseClassMethods() {
 void ClassAnalyzer::createInterfaceTables() {
   // Get the set of all ancestor types.
   ClassSet ancestors;
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   type->ancestorClasses(ancestors);
 
   // Remove from the set all types which are the first parent of some other type
@@ -534,7 +535,7 @@ void ClassAnalyzer::overrideMembers() {
 
   // In this case, we iterate through the symbol table so that we can
   // get all of the overloads at once.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   SymbolTable & clMembers = type->members();
   for (SymbolTable::iterator s = clMembers.begin(); s != clMembers.end(); ++s) {
     SymbolTable::Entry & entry = s->second;
@@ -612,9 +613,8 @@ void ClassAnalyzer::addNewMethods() {
   // Append all methods that aren't overrides of a superclass. Note that we
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
-  for (Defn * de = type->firstMember(); de != NULL;
-      de = de->nextInScope()) {
+  CompositeType * type = cast<CompositeType>(target->typeValue());
+  for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance && de->isSingular()) {
       //if (de->analysisState != Declaration::AS_Complete) {
       //  diag.fatal(de) << "Analysis incomplete for member '" << de <<
@@ -623,23 +623,21 @@ void ClassAnalyzer::addNewMethods() {
 
       Defn::DefnType dt = de->defnType();
       if (dt == Defn::Function) {
-        if (!de->getTraits().containsAny(
-            Defn::Traits::of(Defn::Final, Defn::Override, Defn::Ctor))) {
-          FunctionDefn * fn = static_cast<FunctionDefn *>(de);
+        FunctionDefn * fn = static_cast<FunctionDefn *>(de);
+        if (!fn->isCtor() && !fn->isFinal() && fn->dispatchIndex() < 0) {
           fn->setDispatchIndex(type->instanceMethods_.size());
           type->instanceMethods_.push_back(fn);
         }
       } else if (dt == Defn::Property || dt == Defn::Indexer) {
         PropertyDefn * prop = static_cast<PropertyDefn *>(de);
-
         FunctionDefn * getter = prop->getter();
-        if (getter != NULL && !getter->isFinal() & !getter->isOverride()) {
+        if (getter != NULL && !getter->isFinal() && getter->dispatchIndex() < 0) {
           getter->setDispatchIndex(type->instanceMethods_.size());
           type->instanceMethods_.push_back(getter);
         }
 
         FunctionDefn * setter = prop->setter();
-        if (setter != NULL && !setter->isFinal() & !setter->isOverride()) {
+        if (setter != NULL && !setter->isFinal() && setter->dispatchIndex() < 0) {
           setter->setDispatchIndex(type->instanceMethods_.size());
           type->instanceMethods_.push_back(setter);
         }
@@ -655,7 +653,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     return;
   }
 
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
@@ -717,10 +715,10 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
       FunctionDefn * newMethod = findOverride(m, overrides);
       if (newMethod != NULL) {
         table[i] = newMethod;
-        if (canHide && !newMethod->isOverride()) {
+        if (canHide && newMethod->dispatchIndex() < 0) {
           newMethod->setDispatchIndex(i);
-          newMethod->addTrait(Defn::Override);
         }
+        newMethod->overriddenMethods().insert(m);
       } else if (canHide) {
         diag.recovered();
         diag.warn(m) << "Definition of '" << m << "' is hidden";
@@ -741,10 +739,10 @@ void ClassAnalyzer::overridePropertyAccessor(MethodList & table, FunctionDefn * 
     if (m->name() == name) {
       if (canOverride(m, accessor)) {
         table[i] = accessor;
-        if (canHide && !accessor->isOverride()) {
+        if (canHide && accessor->dispatchIndex() < 0) {
           accessor->setDispatchIndex(i);
-          accessor->addTrait(Defn::Override);
         }
+        accessor->overriddenMethods().insert(m);
       } else {
         diag.recovered();
         diag.fatal(accessor) << "'" << accessor << "' attempts to override '" <<
@@ -773,10 +771,10 @@ bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
     ParameterDefn * p0 = ft0->params()[i];
     ParameterDefn * p1 = ft1->params()[i];
 
-    DASSERT_OBJ(p0->getType() != NULL, p0);
-    DASSERT_OBJ(p1->getType() != NULL, p1);
+    DASSERT_OBJ(p0->type() != NULL, p0);
+    DASSERT_OBJ(p1->type() != NULL, p1);
 
-    if (!p0->getType()->isEqual(p1->getType())) {
+    if (!p0->type()->isEqual(p1->type())) {
       return false;
     }
   }
@@ -795,8 +793,8 @@ FunctionDefn * ClassAnalyzer::findOverride(const FunctionDefn * f, const MethodL
 }
 
 bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * func) {
-  DASSERT_OBJ(base->getType() != NULL, base);
-  DASSERT_OBJ(func->getType() != NULL, func);
+  DASSERT_OBJ(base->type() != NULL, base);
+  DASSERT_OBJ(func->type() != NULL, func);
 
   const FunctionType * baseType = base->functionType();
   const FunctionType * funcType = func->functionType();
@@ -822,8 +820,8 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
     if (baseArg->isVariadic() != funcArg->isVariadic())
       return false;
 
-    const Type * baseArgType = baseArg->getType();
-    const Type * funcArgType = funcArg->getType();
+    const Type * baseArgType = baseArg->type();
+    const Type * funcArgType = funcArg->type();
 
     if (!baseArgType->isEqual(funcArgType)) {
       switch (baseArg->variance()) {
@@ -858,7 +856,7 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
 bool ClassAnalyzer::createDefaultConstructor() {
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a default constructor.
-  CompositeType * type = cast<CompositeType>(target->getTypeValue());
+  CompositeType * type = cast<CompositeType>(target->typeValue());
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->defaultConstructor() == NULL) {
@@ -876,7 +874,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
-  LValueExpr * selfExpr = new LValueExpr(target->getLocation(), NULL, selfParam);
+  LValueExpr * selfExpr = new LValueExpr(target->location(), NULL, selfParam);
 
   //if (classType->getKind() == Type::Struct) {
   // The 'self' param of struct methods is passed by reference instead of by
@@ -886,7 +884,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   //requiredParams.push_back(selfParam);
 
   Block * constructorBody = new Block("entry");
-  constructorBody->exitReturn(target->getLocation(), NULL);
+  constructorBody->exitReturn(target->location(), NULL);
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance) {
       if (de->defnType() == Defn::Let) {
@@ -902,7 +900,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
         analyzeValueDefn(memberVar, Task_PrepCallOrUse);
         Expr * defaultValue = memberVar->initValue();
-        Type * memberType = memberVar->getType();
+        Type * memberType = memberVar->type();
         if (defaultValue == NULL) {
           // TODO: If this is 'final' it must be initialized here or in
           // the constructor.
@@ -920,7 +918,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           continue;
         } else if (memberVar->visibility() == Public) {
           ParameterDefn * param = new ParameterDefn(module, memberVar->name());
-          param->setLocation(target->getLocation());
+          param->setLocation(target->location());
           param->setType(memberType);
           param->setInternalType(memberType);
           param->addTrait(Defn::Singular);
@@ -933,7 +931,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
             requiredParams.push_back(param);
           }
 
-          initVal = new LValueExpr(target->getLocation(), NULL, param);
+          initVal = new LValueExpr(target->location(), NULL, param);
         } else {
           if (defaultValue != NULL) {
             // TODO: This doesn't work because native pointer initializations
@@ -951,8 +949,8 @@ bool ClassAnalyzer::createDefaultConstructor() {
           }
         }
 
-        LValueExpr * memberExpr = new LValueExpr(target->getLocation(), selfExpr, memberVar);
-        Expr * initExpr = new AssignmentExpr(target->getLocation(), memberExpr, initVal);
+        LValueExpr * memberExpr = new LValueExpr(target->location(), selfExpr, memberVar);
+        Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initVal);
         constructorBody->append(initExpr);
         //diag.info(de) << "Uninitialized field " << de->qualifiedName() << " with default value " << initExpr;
         //DFAIL("Implement");
@@ -968,7 +966,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   funcType->setSelfParam(selfParam);
   FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module, istrings.idConstruct);
   constructorDef->setFunctionType(funcType);
-  constructorDef->setLocation(target->getLocation());
+  constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->addTrait(Defn::Ctor);

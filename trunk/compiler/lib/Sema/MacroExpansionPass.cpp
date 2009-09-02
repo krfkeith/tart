@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -55,7 +55,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     LValueExpr * retLVal = NULL;
     LValueExpr * savedRetVal = NULL;
     if (retVal != NULL) {
-      retLVal = new LValueExpr(in->getLocation(), NULL, retVal);
+      retLVal = new LValueExpr(in->location(), NULL, retVal);
       savedRetVal = stAn.setMacroReturnVal(retLVal);
       DASSERT_OBJ(retLVal->isSingular(), retLVal);
     }
@@ -64,16 +64,16 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     Block * savedReturnBlock = stAn.setMacroReturnTarget(returnBlock);
-    const Stmt * macroBody = macro->getFunctionDecl()->getBody();
+    const Stmt * macroBody = macro->functionDecl()->body();
 
     stAn.buildStmtCFG(macroBody);
 
     // If control fell off the end of the macro, then branch to return block.
     Block * finalBlock = stAn.insertionBlock();
     if (finalBlock != NULL && !finalBlock->hasTerminator()) {
-      finalBlock->branchTo(macroBody->getFinalLocation(), returnBlock);
+      finalBlock->branchTo(macroBody->finalLocation(), returnBlock);
     }
-    
+
     stAn.setMacroReturnTarget(savedReturnBlock);
     stAn.setActiveScope(savedScope);
     if (savedRetVal != NULL) {
@@ -84,12 +84,12 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     std::remove(macro->blocks().begin(), macro->blocks().end(), returnBlock);
     macro->blocks().push_back(returnBlock);
     stAn.setInsertPos(returnBlock);
-    
+
     if (retLVal != NULL) {
       return retLVal;
     } else {
       // Return a dummy expression, it won't be used.
-      return new UnaryExpr(Expr::NoOp, in->getLocation(), &VoidType::instance, in);
+      return new UnaryExpr(Expr::NoOp, in->location(), &VoidType::instance, in);
     }
   }
 

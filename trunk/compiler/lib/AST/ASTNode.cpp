@@ -1,13 +1,13 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/AST/ASTNode.h"
 #include "tart/CFG/Defn.h"
 #include <llvm/ADT/StringExtras.h>
 
 namespace tart {
-    
+
 /// ---------------------------------------------------------------
 /// ASTNode name table
 #ifdef NODE_TYPE
@@ -22,7 +22,7 @@ const char * NodeTypeNames[] = {
 };
 }
 
-const char * getNodeTypeName(ASTNode::NodeType ec) {
+const char * nodeTypeName(ASTNode::NodeType ec) {
   uint32_t index = (uint32_t)ec;
   if (index < ASTNode::NodeTypeCount) {
     return NodeTypeNames[index];
@@ -33,13 +33,42 @@ const char * getNodeTypeName(ASTNode::NodeType ec) {
 /// ---------------------------------------------------------------
 /// Utility functions
 
+// Infix operators
+ASTIdent ASTIdent::operatorAdd(SourceLocation(), "infixAdd");
+ASTIdent ASTIdent::operatorSub(SourceLocation(), "infixSubtract");
+ASTIdent ASTIdent::operatorMul(SourceLocation(), "infixMultiply");
+ASTIdent ASTIdent::operatorDiv(SourceLocation(), "infixDivide");
+ASTIdent ASTIdent::operatorMod(SourceLocation(), "infixModulus");
+ASTIdent ASTIdent::operatorBitAnd(SourceLocation(), "infixBitAnd");
+ASTIdent ASTIdent::operatorBitOr(SourceLocation(), "infixBitOr");
+ASTIdent ASTIdent::operatorBitXor(SourceLocation(), "infixBitXor");
+ASTIdent ASTIdent::operatorRSh(SourceLocation(), "infixRShift");
+ASTIdent ASTIdent::operatorLSh(SourceLocation(), "infixLShift");
+ASTIdent ASTIdent::operatorEq(SourceLocation(), "infixEQ");
+ASTIdent ASTIdent::operatorNe(SourceLocation(), "infixNE");
+ASTIdent ASTIdent::operatorLT(SourceLocation(), "infixLT");
+ASTIdent ASTIdent::operatorGT(SourceLocation(), "infixGT");
+ASTIdent ASTIdent::operatorLE(SourceLocation(), "infixLE");
+ASTIdent ASTIdent::operatorGE(SourceLocation(), "infixGE");
+ASTIdent ASTIdent::operatorPLT(SourceLocation(), "infixPossiblyLT");
+ASTIdent ASTIdent::operatorPGT(SourceLocation(), "infixPossiblyGT");
+ASTIdent ASTIdent::operatorPLE(SourceLocation(), "infixPossiblyLE");
+ASTIdent ASTIdent::operatorPGE(SourceLocation(), "infixPossiblyGE");
+
+ASTIdent ASTIdent::operatorNegate(SourceLocation(), "unaryNegate");
+ASTIdent ASTIdent::operatorSucc(SourceLocation(), "successorOf");
+ASTIdent ASTIdent::operatorPred(SourceLocation(), "predeccessorOf");
+
+/// ---------------------------------------------------------------
+/// Utility functions
+
 void formatNodeList(FormatStream & out, const ASTNodeList & nodes) {
   for (ASTNodeList::const_iterator it = nodes.begin(); it != nodes.end();
       ++it) {
     if (it != nodes.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }
@@ -47,52 +76,52 @@ void formatNodeList(FormatStream & out, const ASTNodeList & nodes) {
 /// ---------------------------------------------------------------
 /// ASTNode
 void ASTNode::format(FormatStream & out) const {
-  out << getNodeTypeName(nodeType_);
+  out << nodeTypeName(nodeType_);
 }
 
 /// ---------------------------------------------------------------
 /// ASTIdent
 void ASTIdent::format(FormatStream & out) const {
-  out << value;
+  out << value_;
 }
 
 /// -------------------------------------------------------------------
 /// ASTMemberRef
 void ASTMemberRef::format(FormatStream & out) const {
-  out << qualifier << "." << memberName;
+  out << qualifier_ << "." << memberName_;
 }
 
 void ASTMemberRef::trace() const {
-  qualifier->mark();
+  qualifier_->mark();
 }
 
 /// ---------------------------------------------------------------
 /// ASTLiteral
 template<>
 void ASTIntegerLiteral::format(FormatStream & out) const {
-  out << value.toString(10, false);
+  out << value_.toString(10, false);
 }
 
 template<>
 void ASTFloatLiteral::format(FormatStream & out) const {
-  out << llvm::ftostr(value);
+  out << llvm::ftostr(value_);
 }
 
 template<>
 void ASTCharLiteral::format(FormatStream & out) const {
   // TODO: Should handle escapes here if specified via format options
-  out << "'" << value << "'";
+  out << "'" << value_ << "'";
 }
 
 template<>
 void ASTStringLiteral::format(FormatStream & out) const {
   // TODO: Should handle escapes here if specified via format options
-  out << "\"" << value << "\"";
+  out << "\"" << value_ << "\"";
 }
 
 template<>
 void ASTBoolLiteral::format(FormatStream & out) const {
-  out << (value ? "true" : "false");
+  out << (value_ ? "true" : "false");
 }
 
 /// -------------------------------------------------------------------
@@ -125,27 +154,27 @@ void ASTOper::trace() const {
 /// ---------------------------------------------------------------
 /// ASTCall
 void ASTCall::format(FormatStream & out) const {
-  out << func << "(";
+  out << func_ << "(";
   formatNodeList(out, args_);
   out << ")";
 }
 
 void ASTCall::trace() const {
   ASTOper::trace();
-  func->mark();
+  func_->mark();
 }
 
 /// ---------------------------------------------------------------
 /// ASTCall
 void ASTSpecialize::format(FormatStream & out) const {
-  out << templateExpr << "<";
+  out << templateExpr_ << "<";
   formatNodeList(out, args_);
   out << ">";
 }
 
 void ASTSpecialize::trace() const {
   ASTOper::trace();
-  templateExpr->mark();
+  templateExpr_->mark();
 }
 
 /// ---------------------------------------------------------------
@@ -161,21 +190,21 @@ void ASTKeywordArg::trace() const {
 /// -------------------------------------------------------------------
 /// ASTImport
 void ASTImport::format(FormatStream & out) const {
-  out<< "import " << path;
+  out << "import " << path_;
 }
 
 void ASTImport::trace() const {
-  path->mark();
+  path_->mark();
 }
 
 /// -------------------------------------------------------------------
 /// ASTBuiltIn
 void ASTBuiltIn::format(FormatStream & out) const {
-  out << value;
+  out << value_;
 }
 
 void ASTBuiltIn::trace() const {
-  value->mark();
+  value_->mark();
 }
 
 } // namespace tart

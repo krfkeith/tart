@@ -4,6 +4,7 @@ namespace Memory {
       used for offset calculations.
    */
   //[tart.config.Permissions.Require("pointer-math")]
+  //@Permissions.Require(POINTER_MATH)
   @Intrinsic
   def zeroPtr[%ElemTy]() -> ElemTy;
 
@@ -31,4 +32,8 @@ namespace Memory {
   //def ptrDiff![%ValTy](first:NativePointer![ValTy], last:NativePointer![ValTy]) -> long;
 
   //def ptrDiff::%ValTy(first:NativePointer::ValTy, last:NativePointer::ValTy) -> long;
+
+  @Intrinsic
+  def arrayCopy[%T](
+      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:long);
 }

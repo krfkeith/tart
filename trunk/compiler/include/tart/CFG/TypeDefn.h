@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_TYPEDEFN_H
 #define TART_CFG_TYPEDEFN_H
 
@@ -37,17 +37,17 @@ public:
     , expr_(NULL)
     , definingScope_(NULL)
   {}
-  
+
   /** Return an expression reference to this type. */
   ConstantType * asExpr();
-  
+
   /** Return the type expression defined by this definition. */
-  const Type * getTypeValue() const { return value; }
-  Type * getTypeValue() { return value; }
+  const Type * typeValue() const { return value; }
+  Type * typeValue() { return value; }
   void setTypeValue(Type * type) { value = type; }
-  
+
   // Overrides
-  
+
   Scope * definingScope() const { return definingScope_; }
   void setDefiningScope(Scope * scope) { definingScope_ = scope; }
   void mark() const { GC::mark(); }

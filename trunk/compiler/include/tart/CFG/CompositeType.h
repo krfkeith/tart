@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_COMPOSITETYPE_H
 #define TART_CFG_COMPOSITETYPE_H
 
@@ -39,7 +39,7 @@ public:
     //ArrayType    = (1 << 0), // This is an array type
     Attribute = (1<<0),         // This class is an attribute.
   };
-  
+
   /** A table of methods that together implement a given interface. */
   struct InterfaceTable {
     /** The base class. */
@@ -61,24 +61,6 @@ public:
 
   typedef std::list<InterfaceTable> InterfaceList;
 
-private:
-  ClassList bases_;
-  CompositeType * super_;
-  int classFlags_;
-
-  // The list of instance methods for this type
-  MethodList instanceMethods_;
-
-  // The interface override list
-  InterfaceList interfaces_;
-
-  DefnList instanceFields_;
-  DefnList staticFields_;
-  
-  // For classes which are attributes
-  AttributeInfo attributeInfo_;
-
-public:
   CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
     : DeclaredType(tcls, de, parentScope)
     , super_(NULL)
@@ -122,22 +104,26 @@ public:
     for (const CompositeType * c = this; c != NULL; c = c->super_) {
       count += instanceFieldCount();
     }
-    
+
     return count;
   }
 
   /** True if this class is an attribute. */
   bool isAttribute() const { return (classFlags_ & Attribute) != 0; }
-  
+
   const AttributeInfo & attributeInfo() const { return attributeInfo_; }
   AttributeInfo & attributeInfo() { return attributeInfo_; }
 
   /** Return true if this class is the same as, or is a subclass of, the class 'base'. */
   bool isSubclassOf(const CompositeType * base) const;
 
+  /** Similar to 'isSubclassOf', except also takes into account template specializations and
+      implicit protocol implementations. */
+  bool implements(const CompositeType * interface) const;
+
   /** Return the default (no-arg) constructor for this type. */
   FunctionDefn * defaultConstructor();
-  
+
   /** Return true if this is a reference type. */
   bool isReferenceType() const;
 
@@ -159,6 +145,8 @@ public:
   bool lookupMember(const char * name, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full) const;
   const llvm::Type * createIRType() const;
+  const llvm::Type * irEmbeddedType() const;
+  const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   void trace() const;
   bool isSubtype(const Type * other) const;
@@ -170,6 +158,25 @@ public:
     return t->typeClass() >= Type::Class &&
            t->typeClass() <= Type::Protocol;
   }
+
+private:
+  ClassList bases_;
+  CompositeType * super_;
+  int classFlags_;
+
+  // The list of instance methods for this type
+  MethodList instanceMethods_;
+
+  // The interface override list
+  InterfaceList interfaces_;
+
+  DefnList instanceFields_;
+  DefnList staticFields_;
+
+  // For classes which are attributes
+  AttributeInfo attributeInfo_;
+
+  bool implementsImpl(const CompositeType * interface) const;
 };
 
 }

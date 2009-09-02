@@ -41,7 +41,7 @@ bool EnumAnalyzer::analyzeEnum() {
     return true;
   }
 
-  EnumType * enumType = cast<EnumType>(target_->getTypeValue());
+  EnumType * enumType = cast<EnumType>(target_->typeValue());
   if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
     // Don't evaluate the attributes if the parent class is Attribute, because that creates
     // a circular dependency. For now, assume that any Enum defined within Attribute that has
@@ -121,7 +121,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
     return false;
   }
 
-  EnumType * enumType = cast<EnumType>(target_->getTypeValue());
+  EnumType * enumType = cast<EnumType>(target_->typeValue());
   bool isFlags = enumType->isFlags();
   VariableDefn * ec = new VariableDefn(Defn::Let, module, ast);
   ConstantInteger * value = NULL;
@@ -198,7 +198,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
 }
 
 void EnumAnalyzer::defineOperators() {
-  EnumType * type = cast<EnumType>(target_->getTypeValue());
+  EnumType * type = cast<EnumType>(target_->typeValue());
   if (type->isFlags()) {
     //Builtins::addOperator(new EnumOpFunction(this, "bitAnd", llvm::Instruction::And));
     //Builtins::addOperator(new EnumOpFunction(this, "bitOr", llvm::Instruction::Or));

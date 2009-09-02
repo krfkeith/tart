@@ -47,7 +47,7 @@ def main(args:String[]) -> int {
 class TestClass {
   public var m0:int;
 
-  public def testMethod() {
+  public def testMethod() -> int {
     return 11;
   }
 
@@ -68,7 +68,7 @@ class SubClass : TestClass {
   private var m2:int;
   //private var m1:int[];
   
-  public def testMethod() {
+  public def testMethod() -> int {
     return 13;
   }
   
@@ -81,7 +81,7 @@ class SubClass : TestClass {
   }
 }
 
-public macro mtest(i:int) {
+public macro mtest(i:int) -> int {
   return i + i;
 }
 

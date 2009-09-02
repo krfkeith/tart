@@ -35,8 +35,8 @@ public:
   }
 
   /** Return the location of the end of the statement. */
-  virtual const SourceLocation & getFinalLocation() const {
-    return getLocation();
+  virtual const SourceLocation & finalLocation() const {
+    return location();
   }
 
   void format(FormatStream & out) const;
@@ -55,11 +55,11 @@ typedef llvm::SmallVector<Stmt *, 8> StmtList;
 class BlockStmt: public Stmt {
 public:
   BlockStmt(SourceLocation loc) :
-    Stmt(Block, loc), finalLocation(loc) {
+    Stmt(Block, loc), finalLocation_(loc) {
   }
 
   BlockStmt(SourceLocation loc, const StmtList & stlist) :
-    Stmt(Block, loc), statements(stlist), finalLocation(loc) {
+    Stmt(Block, loc), statements(stlist), finalLocation_(loc) {
   }
 
   void append(Stmt * stmt) {
@@ -67,19 +67,15 @@ public:
   }
 
   void setFinalLocation(const SourceLocation & loc) {
-    finalLocation = loc;
+    finalLocation_ = loc;
   }
 
-  virtual const SourceLocation & getFinalLocation() const {
-    return finalLocation;
+  virtual const SourceLocation & finalLocation() const {
+    return finalLocation_;
   }
 
-  const StmtList & getStmts() const {
-    return statements;
-  }
-  StmtList & getStmts() {
-    return statements;
-  }
+  const StmtList & stmts() const { return statements; }
+  StmtList & stmts() { return statements; }
 
   void trace() const;
   void format(FormatStream & out) const;
@@ -92,7 +88,7 @@ public:
 
 private:
   StmtList statements;
-  SourceLocation finalLocation;
+  SourceLocation finalLocation_;
 };
 
 // -------------------------------------------------------------------
@@ -100,15 +96,11 @@ private:
 class ExprStmt: public Stmt {
 public:
   ExprStmt(NodeType stype, SourceLocation loc, ASTNode * val) :
-    Stmt(stype, loc), value(val) {
+    Stmt(stype, loc), value_(val) {
   }
 
-  const ASTNode * getValue() const {
-    return value;
-  }
-  void setValue(ASTNode * val) {
-    value = val;
-  }
+  const ASTNode * value() const { return value_; }
+  void setValue(ASTNode * val) { value_ = val; }
 
   void trace() const;
   void format(FormatStream & out) const;
@@ -116,7 +108,7 @@ public:
   static Stmt * get(ASTNode * ex);
 
 protected:
-  ASTNode * value;
+  ASTNode * value_;
 };
 
 // -------------------------------------------------------------------
@@ -136,18 +128,16 @@ public:
 class YieldStmt: public ExprStmt {
 public:
   YieldStmt(SourceLocation loc, ASTNode * ex, int index) :
-    ExprStmt(Yield, loc, ex), stateIndex(index) {
+    ExprStmt(Yield, loc, ex), stateIndex_(index) {
   }
 
-  int getStateIndex() const {
-    return stateIndex;
-  }
+  int stateIndex() const { return stateIndex_; }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  int stateIndex;
+  int stateIndex_;
 };
 
 // -------------------------------------------------------------------
@@ -167,15 +157,11 @@ public:
 class DeclStmt: public Stmt {
 public:
   DeclStmt(SourceLocation loc, ASTDecl * de) :
-    Stmt(LocalDecl, loc), decl(de) {
+    Stmt(LocalDecl, loc), decl_(de) {
   }
 
-  const ASTDecl * getDecl() const {
-    return decl;
-  }
-  ASTDecl * getDecl() {
-    return decl;
-  }
+  const ASTDecl * decl() const { return decl_; }
+  ASTDecl * decl() { return decl_; }
 
   void trace() const;
   void format(FormatStream & out) const;
@@ -183,7 +169,7 @@ public:
   static Stmt * get(ASTDecl * de);
 
 private:
-  ASTDecl * decl;
+  ASTDecl * decl_;
 };
 
 // -------------------------------------------------------------------
@@ -191,46 +177,38 @@ private:
 class IfStmt: public Stmt {
 public:
   IfStmt(SourceLocation loc, ASTNode * test, Stmt * th, Stmt * el) :
-    Stmt(If, loc), testExpr(test), thenSt(th), elseSt(el) {
+    Stmt(If, loc), testExpr_(test), thenSt_(th), elseSt_(el) {
   }
 
   /** The test expression. This may be a simple expression, a let-declaration,
-   or a tuple of let-declarations. */
-  const ASTNode * getTestExpr() const {
-    return testExpr;
-  }
-  void setTestExpr(ASTNode * test) {
-    testExpr = test;
-  }
+      or a tuple of let-declarations. */
+  const ASTNode * testExpr() const { return testExpr_; }
+  void setTestExpr(ASTNode * test) { testExpr_ = test; }
 
   /** The statement to execute if the test is true. */
-  Stmt * getThenSt() const {
-    return thenSt;
-  }
+  Stmt * thenSt() const { return thenSt_; }
 
   /** The statement to execute if the test is false. */
-  Stmt * getElseSt() const {
-    return elseSt;
-  }
+  Stmt * elseSt() const { return elseSt_; }
 
   // Overrides
 
-  virtual const SourceLocation & getFinalLocation() const {
-    if (elseSt)
-      return elseSt->getFinalLocation();
-    else if (thenSt)
-      return thenSt->getFinalLocation();
+  virtual const SourceLocation & finalLocation() const {
+    if (elseSt_)
+      return elseSt_->finalLocation();
+    else if (thenSt_)
+      return thenSt_->finalLocation();
     else
-      return getLocation();
+      return location();
   }
 
   void format(FormatStream & out) const;
   void trace() const;
 
 private:
-  ASTNode * testExpr;
-  Stmt * thenSt;
-  Stmt * elseSt;
+  ASTNode * testExpr_;
+  Stmt * thenSt_;
+  Stmt * elseSt_;
 };
 
 // -------------------------------------------------------------------
@@ -238,38 +216,30 @@ private:
 class WhileStmt: public Stmt {
 public:
   WhileStmt(SourceLocation loc, ASTNode * test, Stmt * body) :
-    Stmt(While, loc), testExpr(test), loopBody(body) {
+    Stmt(While, loc), testExpr_(test), body_(body) {
   }
 
   /** The test expression. This may be a simple expression, a let-declaration,
    or a tuple of let-declarations. */
-  const ASTNode * getTestExpr() const {
-    return testExpr;
-  }
-  ASTNode * getTestExpr() {
-    return testExpr;
-  }
+  const ASTNode * testExpr() const { return testExpr_; }
+  ASTNode * testExpr() { return testExpr_; }
 
-  const Stmt * getLoopBody() const {
-    return loopBody;
-  }
-  Stmt * getLoopBody() {
-    return loopBody;
-  }
+  const Stmt * body() const { return body_; }
+  Stmt * body() { return body_; }
 
-  virtual const SourceLocation & getFinalLocation() const {
-    if (loopBody)
-      return loopBody->getFinalLocation();
+  virtual const SourceLocation & finalLocation() const {
+    if (body_)
+      return body_->finalLocation();
     else
-      return getLocation();
+      return location();
   }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  ASTNode * testExpr;
-  Stmt * loopBody;
+  ASTNode * testExpr_;
+  Stmt * body_;
 };
 
 // -------------------------------------------------------------------
@@ -277,41 +247,31 @@ private:
 class ForStmt: public Stmt {
 public:
   ForStmt(SourceLocation loc, ASTNode * init, ASTNode * test, ASTNode * incr, Stmt * body) :
-    Stmt(For, loc), initExpr(init), testExpr(test), incrExpr(incr), loopBody(body) {
+    Stmt(For, loc), initExpr_(init), testExpr_(test), incrExpr_(incr), body_(body) {
   }
 
-  const ASTNode * getInitExpr() const {
-    return initExpr;
-  }
-  const ASTNode * getTestExpr() const {
-    return testExpr;
-  }
-  const ASTNode * getIncrExpr() const {
-    return incrExpr;
-  }
+  const ASTNode * initExpr() const { return initExpr_; }
+  const ASTNode * testExpr() const { return testExpr_; }
+  const ASTNode * incrExpr() const { return incrExpr_; }
 
-  const Stmt * getLoopBody() const {
-    return loopBody;
-  }
-  Stmt * getLoopBody() {
-    return loopBody;
-  }
+  const Stmt * body() const { return body_; }
+  Stmt * body() { return body_; }
 
-  virtual const SourceLocation & getFinalLocation() const {
-    if (loopBody)
-      return loopBody->getFinalLocation();
+  virtual const SourceLocation & finalLocation() const {
+    if (body_)
+      return body_->finalLocation();
     else
-      return getLocation();
+      return location();
   }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  ASTNode * initExpr;
-  ASTNode * testExpr;
-  ASTNode * incrExpr;
-  Stmt * loopBody;
+  ASTNode * initExpr_;
+  ASTNode * testExpr_;
+  ASTNode * incrExpr_;
+  Stmt * body_;
 };
 
 // -------------------------------------------------------------------
@@ -319,64 +279,52 @@ private:
 class ForEachStmt: public Stmt {
 public:
   ForEachStmt(SourceLocation loc, ASTNode * lvars, ASTNode * iter, Stmt * body) :
-    Stmt(ForEach, loc), loopVars(lvars), iterExpr(iter), loopBody(body)
+    Stmt(ForEach, loc), loopVars_(lvars), iterExpr_(iter), body_(body)
   //, initExpr(NULL)
-  //, testExpr(NULL)
+  //, testExpr_(NULL)
   //, incrExpr(NULL)
   {
     //getTestScope().setScopeName("--foreach--");
   }
 
-  const ASTNode * getLoopVars() const {
-    return loopVars;
-  }
-  ASTNode * getLoopVars() {
-    return loopVars;
-  }
+  const ASTNode * loopVars() const { return loopVars_; }
+  ASTNode * loopVars() { return loopVars_; }
 
-  const ASTNode * getIterExpr() const {
-    return iterExpr;
-  }
-  ASTNode * getIterExpr() {
-    return iterExpr;
-  }
+  const ASTNode * iterExpr() const { return iterExpr_; }
+  ASTNode * iterExpr() { return iterExpr_; }
 
-  const Stmt * getLoopBody() const {
-    return loopBody;
-  }
-  Stmt * getLoopBody() {
-    return loopBody;
-  }
+  const Stmt * body() const { return body_; }
+  Stmt * body() { return body_; }
 
   //void setIterExpr(const ASTNode * iter) { iterExpr = iter; }
 
   //const ASTNode * getInitExpr() const { return initExpr; }
   //void setInitExpr(const ASTNode * expr) { initExpr = expr; }
 
-  //const ASTNode * getTestExpr() const { return testExpr; }
-  //void setTestExpr(const ASTNode * expr) { testExpr = expr; }
+  //const ASTNode * testExpr() const { return testExpr_; }
+  //void setTestExpr(const ASTNode * expr) { testExpr_ = expr; }
 
   //const ASTNode * getIncrExpr() const { return incrExpr; }
   //void setIncrExpr(const ASTNode * expr) { incrExpr = expr; }
 
-  virtual const SourceLocation & getFinalLocation() const {
-    if (loopBody)
-      return loopBody->getFinalLocation();
+  virtual const SourceLocation & finalLocation() const {
+    if (body_)
+      return body_->finalLocation();
     else
-      return getLocation();
+      return location();
   }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  ASTNode * loopVars;
-  ASTNode * iterExpr;
-  Stmt * loopBody;
+  ASTNode * loopVars_;
+  ASTNode * iterExpr_;
+  Stmt * body_;
 
   // Generated from the iterExpr
   //ASTNode * initExpr;
-  //ASTNode * testExpr;
+  //ASTNode * testExpr_;
   //ASTNode * incrExpr;
 };
 
@@ -385,55 +333,41 @@ private:
 class TryStmt: public Stmt {
 public:
   TryStmt(SourceLocation loc, Stmt * body) :
-    Stmt(Try, loc), bodySt(body), elseSt(NULL), finallySt(NULL) {
+    Stmt(Try, loc), body_(body), elseSt_(NULL), finallySt_(NULL) {
   }
 
-  Stmt * getBodySt() const {
-    return bodySt;
-  }
+  Stmt * body() const { return body_; }
 
-  const StmtList & getCatchList() const {
-    return catchList;
-  }
-  StmtList & getCatchList() {
-    return catchList;
-  }
+  const StmtList & catchList() const { return catchList_; }
+  StmtList & catchList() { return catchList_; }
 
-  Stmt * getElseSt() const {
-    return elseSt;
-  }
-  void setElseSt(Stmt * st) {
-    elseSt = st;
-  }
+  Stmt * elseSt() const { return elseSt_; }
+  void setElseSt(Stmt * st) { elseSt_ = st; }
 
-  Stmt * getFinallySt() const {
-    return finallySt;
-  }
-  void setFinallySt(Stmt * st) {
-    finallySt = st;
-  }
+  Stmt * finallySt() const { return finallySt_; }
+  void setFinallySt(Stmt * st) { finallySt_ = st; }
 
-  virtual const SourceLocation & getFinalLocation() const {
-    if (finallySt)
-      return finallySt->getFinalLocation();
-    else if (elseSt)
-      return elseSt->getFinalLocation();
-    else if (!catchList.empty())
-      return catchList.back()->getFinalLocation();
-    else if (bodySt)
-      return bodySt->getFinalLocation();
+  virtual const SourceLocation & finalLocation() const {
+    if (finallySt_)
+      return finallySt_->finalLocation();
+    else if (elseSt_)
+      return elseSt_->finalLocation();
+    else if (!catchList_.empty())
+      return catchList_.back()->finalLocation();
+    else if (body_)
+      return body_->finalLocation();
     else
-      return getLocation();
+      return location();
   }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  Stmt * bodySt;
-  StmtList catchList;
-  Stmt * elseSt;
-  Stmt * finallySt;
+  Stmt * body_;
+  StmtList catchList_;
+  Stmt * elseSt_;
+  Stmt * finallySt_;
 };
 
 // -------------------------------------------------------------------
@@ -441,22 +375,18 @@ private:
 class CatchStmt: public Stmt {
 public:
   CatchStmt(SourceLocation loc, ASTDecl * ex, Stmt * body) :
-    Stmt(Catch, loc), exceptDecl(ex), bodySt(body) {
+    Stmt(Catch, loc), exceptDecl_(ex), body_(body) {
   }
 
-  ASTDecl * getExceptDecl() {
-    return exceptDecl;
-  }
-  Stmt * getBodySt() const {
-    return bodySt;
-  }
+  ASTDecl * exceptDecl() { return exceptDecl_; }
+  Stmt * body() const { return body_; }
 
   void trace() const;
   void format(FormatStream & out) const;
 
 private:
-  ASTDecl * exceptDecl;
-  Stmt * bodySt;
+  ASTDecl * exceptDecl_;
+  Stmt * body_;
 };
 
 // -------------------------------------------------------------------

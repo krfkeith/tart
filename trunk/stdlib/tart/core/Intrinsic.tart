@@ -1,6 +1,5 @@
 /** Attribute that indicates that the associated function is a
     built-in compiler intrinsic. */
-//@Attribute(Attribute.Target.FUNCTION | Attribute.Target.MACRO)
 @Attribute(Attribute.Target.CALLABLE)
 class Intrinsic {
   private var tag:String;

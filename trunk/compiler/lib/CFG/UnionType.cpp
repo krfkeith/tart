@@ -75,11 +75,7 @@ const llvm::Type * UnionType::createIRType() const {
   for (TypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     Type * type = dealias(*it);
 
-    const llvm::Type * irType = type->getIRType();
-    if (type->isReferenceType()) {
-      irType = llvm::PointerType::getUnqual(irType);
-    }
-
+    const llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
 
     size_t size32 = estimateTypeSize(irType, 32);
@@ -117,7 +113,7 @@ const llvm::Type * UnionType::createIRType() const {
       discriminatorType = llvm::Type::getInt32Ty(llvm::getGlobalContext());
     }
 
-    const llvm::Type * largestType = largestType32->getIRType();
+    const llvm::Type * largestType = largestType32->irType();
     if (largestType32->isReferenceType()) {
       largestType = llvm::PointerType::get(largestType, 0);
     }
@@ -203,7 +199,7 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
       int typeIndex = getTypeIndex(bestType);
       CastExpr * result = new CastExpr(
           Expr::UnionCtorCast,
-          cn.fromValue->getLocation(),
+          cn.fromValue->location(),
           const_cast<UnionType *>(this),
           *cn.resultValue);
       result->setTypeIndex(typeIndex);

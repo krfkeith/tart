@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_AST_ASTNODE_H
 #define TART_AST_ASTNODE_H
 
@@ -52,7 +52,7 @@ public:
     #define NODE_TYPE(x) x,
     #include "ASTNodeType.def"
     NodeTypeCount,
-    
+
     // First and last declaration node types
     DefFirst = Class,
     DefLast = Namespace,
@@ -75,18 +75,18 @@ public:
 
   /** Return the type of this AST node. */
   NodeType nodeType() const { return nodeType_; }
-  
+
   /** Where in the source file this expression comes from. */
-  const SourceLocation & getLocation() const { return loc; }
-  
+  const SourceLocation & location() const { return loc; }
+
   /** Produce a string representation of this node and its children. */
   const std::string toString(int formatOptions = Format_Default) const;
-  
+
   /** Produce a textual representation of this node and its children. */
   virtual void format(FormatStream & out) const;
 
   // Overrides
-  
+
   void trace() const { loc.trace(); }
   static inline bool classof(const NodeType *) { return true; }
 };
@@ -95,56 +95,83 @@ public:
 /// A reference to a name
 class ASTIdent : public ASTNode {
 private:
-  const char * value;
+  const char * value_;
 
 public:
   // Constructor needs to be public because we create static versions of this.
   ASTIdent(const SourceLocation & loc, const char * v)
     : ASTNode(Id, loc)
-    , value(v)
+    , value_(v)
   {}
-  
+
   ASTIdent * get(const SourceLocation & loc, const char * value) {
     return new ASTIdent(loc, value);
   }
-  
-  const char * getValue() const { return value; }
+
+  const char * value() const { return value_; }
 
   void format(FormatStream & out) const;
   static inline bool classof(const ASTIdent *) { return true; }
   static inline bool classof(const ASTNode * ast) {
       return ast->nodeType() == ASTNode::Id;
   }
+
+  // Infix operator names
+  static ASTIdent operatorAdd;
+  static ASTIdent operatorSub;
+  static ASTIdent operatorMul;
+  static ASTIdent operatorDiv;
+  static ASTIdent operatorMod;
+  static ASTIdent operatorBitAnd;
+  static ASTIdent operatorBitOr;
+  static ASTIdent operatorBitXor;
+  static ASTIdent operatorRSh;
+  static ASTIdent operatorLSh;
+  static ASTIdent operatorEq;
+  static ASTIdent operatorNe;
+  static ASTIdent operatorLT;
+  static ASTIdent operatorGT;
+  static ASTIdent operatorLE;
+  static ASTIdent operatorGE;
+  static ASTIdent operatorPLT;
+  static ASTIdent operatorPGT;
+  static ASTIdent operatorPLE;
+  static ASTIdent operatorPGE;
+
+  // Unary operator names
+  static ASTIdent operatorNegate;
+  static ASTIdent operatorSucc;
+  static ASTIdent operatorPred;
 };
 
 /// -------------------------------------------------------------------
 /// A reference to a member
 class ASTMemberRef : public ASTNode {
 private:
-  ASTNode * qualifier;
-  const char * memberName;
+  ASTNode * qualifier_;
+  const char * memberName_;
 
 public:
   // Constructor needs to be public because we create static versions of this.
   ASTMemberRef(const SourceLocation & loc, ASTNode * qual, const char * name)
     : ASTNode(Member, loc)
-    , qualifier(qual)
-    , memberName(name)
+    , qualifier_(qual)
+    , memberName_(name)
   {}
-  
+
   ASTMemberRef * get(const SourceLocation & loc, ASTNode * qual, const char * name) {
     return new ASTMemberRef(loc, qual, name);
   }
-  
+
   /** The object that contains the member. */
-  const ASTNode * getQualifier() const { return qualifier; }
-  ASTNode * getQualifier() { return qualifier; }
+  const ASTNode * qualifier() const { return qualifier_; }
+  ASTNode * qualifier() { return qualifier_; }
 
   /** The name of the member. */
-  const char * getMemberName() const { return memberName; }
+  const char * memberName() const { return memberName_; }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTMemberRef *) { return true; }
@@ -158,19 +185,19 @@ public:
 template<class ValueType, ASTNode::NodeType type>
 class ASTLiteral : public ASTNode {
 private:
-  ValueType value;
+  ValueType value_;
 
 public:
   ASTLiteral(const SourceLocation & loc, const ValueType & val)
       : ASTNode(type, loc)
-      , value(val)
+      , value_(val)
   {}
 
   /** The value of this literal. */
-  const ValueType & getValue() const { return value; }
-  
+  const ValueType & value() const { return value_; }
+
   // Overrides
-  
+
   void format(FormatStream & out) const;
   static inline bool classof(const ASTLiteral *) { return true; }
   static inline bool classof(const ASTNode * ast) {
@@ -197,21 +224,21 @@ public:
     : ASTNode(nt, loc)
     , arg_(a)
   {}
-  
+
   static ASTUnaryOp * get(NodeType nt, const SourceLocation & loc, ASTNode * arg = NULL) {
     return new ASTUnaryOp(nt, loc, arg);
   }
-  
+
   static ASTUnaryOp * get(NodeType nt, ASTNode * arg) {
-    return new ASTUnaryOp(nt, arg->getLocation(), arg);
+    return new ASTUnaryOp(nt, arg->location(), arg);
   }
-  
+
   /** The single argument. */
   const ASTNode * arg() const { return arg_; }
   ASTNode * arg() { return arg_; }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTUnaryOp *) { return true; }
@@ -219,7 +246,7 @@ public:
     switch (ast->nodeType()) {
       case ASTNode::Array:
         return true;
-        
+
       default:
         return false;
     }
@@ -238,7 +265,7 @@ public:
       : ASTNode(type, loc) {}
 
   ASTOper(NodeType type, ASTNode * a0)
-      : ASTNode(type, a0->getLocation()) {
+      : ASTNode(type, a0->location()) {
     args_.push_back(a0);
   }
 
@@ -248,7 +275,7 @@ public:
   }
 
   ASTOper(NodeType type, ASTNode * a0, ASTNode * a1)
-      : ASTNode(type, a0->getLocation() | a1->getLocation()) {
+      : ASTNode(type, a0->location() | a1->location()) {
     args_.push_back(a0);
     args_.push_back(a1);
   }
@@ -257,7 +284,7 @@ public:
       : ASTNode(type, SourceLocation()) {
     args_.append(alist.begin(), alist.end());
     for (ASTNodeList::const_iterator it = alist.begin(); it != alist.end(); ++it) {
-      loc |= (*it)->getLocation();
+      loc |= (*it)->location();
     }
   }
 
@@ -270,7 +297,7 @@ public:
   const ASTNodeList & args() const {
     return args_;
   }
-  
+
   ASTNodeList & args() {
     return args_;
   }
@@ -279,11 +306,11 @@ public:
   const ASTNode * arg(int i) const {
     return args_[i];
   }
-  
+
   /** Append an operand to the list of operands. */
   void append(ASTNode * node) {
     args_.push_back(node);
-    loc |= node->getLocation();
+    loc |= node->location();
   }
 
   /** Return the number of arguments. */
@@ -292,7 +319,7 @@ public:
   }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTOper *) {
@@ -304,23 +331,22 @@ public:
 /// A call expression
 class ASTCall : public ASTOper {
 private:
-  const ASTNode * func;
+  const ASTNode * func_;
 
 public:
-  ASTCall(const SourceLocation & loc, const ASTNode * f,
-      const ASTNodeList & argList)
+  ASTCall(const SourceLocation & loc, const ASTNode * f, const ASTNodeList & argList)
     : ASTOper(Call, loc, argList)
-    , func(f)
+    , func_(f)
   {
   }
 
   /** Function to be called. */
-  const ASTNode * getFunc() const {
-    return func;
+  const ASTNode * func() const {
+    return func_;
   }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTCall *) { return true; }
@@ -333,23 +359,23 @@ public:
 /// A template specialization
 class ASTSpecialize : public ASTOper {
 private:
-  const ASTNode * templateExpr;
+  const ASTNode * templateExpr_;
 
 public:
   ASTSpecialize(const SourceLocation & loc, const ASTNode * f,
       const ASTNodeList & argList)
     : ASTOper(Specialize, loc, argList)
-    , templateExpr(f)
+    , templateExpr_(f)
   {
   }
 
   /** Function to be called. */
-  const ASTNode * getTemplateExpr() const {
-    return templateExpr;
+  const ASTNode * templateExpr() const {
+    return templateExpr_;
   }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTSpecialize *) { return true; }
@@ -375,12 +401,12 @@ public:
     return arg_;
   }
 
-  const char * getKeyword() const {
+  const char * keyword() const {
     return keyword_;
   }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTKeywordArg *) { return true; }
@@ -392,25 +418,25 @@ public:
 /// -------------------------------------------------------------------
 /// An import expression
 class ASTImport : public ASTNode {
-  const ASTNode * path;
-  const char * asName;
-  bool unpack;
+  const ASTNode * path_;
+  const char * asName_;
+  bool unpack_;
 
 public:
   ASTImport(const SourceLocation & loc, const ASTNode * p, const char * as,
       bool unpk = false)
       : ASTNode(ASTNode::Import, loc)
-      , path(p)
-      , asName(as)
-      , unpack(unpk)
+      , path_(p)
+      , asName_(as)
+      , unpack_(unpk)
   {}
-  
-  const ASTNode * getPath() const { return path; }
-  const char * getAsName() const { return asName; }
-  bool getUnpack() const { return unpack; }
+
+  const ASTNode * path() const { return path_; }
+  const char * asName() const { return asName_; }
+  bool unpack() const { return unpack_; }
 
   // Overrides
-  
+
   void format(FormatStream & out) const;
   void trace() const;
   static inline bool classof(const ASTImport *) { return true; }
@@ -423,20 +449,20 @@ public:
 /// A reference to a built-in definition
 class ASTBuiltIn : public ASTNode {
 private:
-  Defn * value;
+  Defn * value_;
 
 public:
   // Constructor needs to be public because we create static versions of this.
   ASTBuiltIn(Defn * val)
     : ASTNode(BuiltIn, SourceLocation())
-    , value(val)
+    , value_(val)
   {}
-  
-  Defn * getValue() const { return value; }
+
+  Defn * value() const { return value_; }
 
   void format(FormatStream & out) const;
   void trace() const;
-  static inline bool classof(const ASTIdent *) { return true; }
+  static inline bool classof(const ASTBuiltIn * ast) { return true; }
   static inline bool classof(const ASTNode * ast) {
       return ast->nodeType() == ASTNode::BuiltIn;
   }
@@ -446,7 +472,7 @@ public:
 /// Utility functions
 
 /** Return the string name of a node type. */
-const char * getNodeTypeName(ASTNode::NodeType ec);
+const char * nodeTypeName(ASTNode::NodeType ec);
 
 /** Format a list of nodes as comma-separated values. */
 void formatNodeList(FormatStream & out, const ASTNodeList & nodes);

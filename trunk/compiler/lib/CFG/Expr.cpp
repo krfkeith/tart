@@ -104,7 +104,7 @@ bool UnaryExpr::isConstant() const {
 }
 
 bool UnaryExpr::isSingular() const {
-  return getType()->isSingular() && arg_->isSingular();
+  return type()->isSingular() && arg_->isSingular();
 }
 
 void UnaryExpr::format(FormatStream & out) const {
@@ -139,7 +139,7 @@ bool BinaryExpr::isConstant() const {
 }
 
 bool BinaryExpr::isSingular() const {
-  return getType()->isSingular() && first_->isSingular() && second_->isSingular();
+  return type()->isSingular() && first_->isSingular() && second_->isSingular();
 }
 
 void BinaryExpr::format(FormatStream & out) const {
@@ -195,7 +195,7 @@ void ArglistExpr::trace() const {
 /// -------------------------------------------------------------------
 /// LValueExpr
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
-  : Expr(LValue, loc, value->getType())
+  : Expr(LValue, loc, value->type())
   , base_(base)
   , value_(value)
 {
@@ -262,7 +262,7 @@ void AssignmentExpr::format(FormatStream & out) const {
 
 InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
-  : Expr(InitVar, loc, v->getType())
+  : Expr(InitVar, loc, v->type())
   , var(v)
   , initExpr(expr)
 {}
@@ -287,7 +287,7 @@ bool CallExpr::isSingular() const {
     return candidates_.size() == 1 && candidates_.front()->method()->isSingular();
   }
 
-  return function_ != NULL && function_->getType()->isSingular();
+  return function_ != NULL && function_->type()->isSingular();
 }
 
 Type * CallExpr::getSingularParamType(int index) {
@@ -318,7 +318,7 @@ Type * CallExpr::getSingularResultType() {
 
     Type * ty = cc->resultType();
     if (cc->method()->isCtor()) {
-      ty = cc->method()->functionType()->selfParam()->getType();
+      ty = cc->method()->functionType()->selfParam()->type();
     }
 
     if (singularType == NULL) {
@@ -384,7 +384,7 @@ void CallExpr::format(FormatStream & out) const {
 
     out << (*it);
     if (out.getShowType()) {
-      out << ":" << (*it)->getType();
+      out << ":" << (*it)->type();
     }
   }
   out << ") ";
@@ -426,20 +426,20 @@ void FnCallExpr::trace() const {
 /// -------------------------------------------------------------------
 /// NewExpr
 bool NewExpr::isSingular() const {
-  return getType()->isSingular();
+  return type()->isSingular();
 }
 
 void NewExpr::format(FormatStream & out) const {
-  out << "new " << getType();
+  out << "new " << type();
 }
 
 /// -------------------------------------------------------------------
 /// CastExpr
 void CastExpr::format(FormatStream & out) const {
   if (exprType() == ImplicitCast) {
-    out << "implicitCast<" << getType() << ">(" << arg() << ")";
+    out << "implicitCast<" << type() << ">(" << arg() << ")";
   } else {
-    out << "cast<" << getType() << ">(" << arg() << ")";
+    out << "cast<" << type() << ">(" << arg() << ")";
   }
 }
 
@@ -447,7 +447,7 @@ void CastExpr::format(FormatStream & out) const {
 /// BinaryOpcodeExpr
 
 bool BinaryOpcodeExpr::isSingular() const {
-  return getType()->isSingular() && first()->isSingular() && second()->isSingular();
+  return type()->isSingular() && first()->isSingular() && second()->isSingular();
 }
 
 bool BinaryOpcodeExpr::isSideEffectFree() const {

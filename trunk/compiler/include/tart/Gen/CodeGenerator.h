@@ -96,8 +96,7 @@ public:
   void genBlockTerminator(Block * blk);
   void genReturn(Expr * returnVal);
   void genLocalReturn(Block * blk);
-  bool genTestExpr(Expr * test, llvm::BasicBlock * trueBlk,
-      llvm::BasicBlock * falseBlk);
+  bool genTestExpr(Expr * test, llvm::BasicBlock * trueBlk, llvm::BasicBlock * falseBlk);
   void genThrow(Block * blk);
   void genCatch(Block * blk);
   void genSwitch(Block * blk);
@@ -251,6 +250,12 @@ public:
   /** Return the IR module being compiled. */
   llvm::Module * irModule() const { return irModule_; }
 
+  /** Return a 32-bit constant integer with the specified value. */
+  llvm::ConstantInt * getInt32Val(int value);
+
+  /** Return a 64-bit constant integer with the specified value. */
+  llvm::ConstantInt * getInt64Val(int64_t value);
+
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
 
@@ -266,8 +271,6 @@ private:
 
   void verifyModule();
   void outputModule();
-
-  llvm::ConstantInt * getInt32Val(int value);
 
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder

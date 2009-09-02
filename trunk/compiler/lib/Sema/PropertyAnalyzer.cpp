@@ -57,7 +57,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->getAST());
 
     // Evaluate the explicitly declared type, if any
-    Type * type = target->getType();
+    Type * type = target->type();
     if (type == NULL) {
       DASSERT_OBJ(ast != NULL, target);
       DASSERT_OBJ(ast->type() != NULL, target);
@@ -70,7 +70,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       target->setType(type);
     }
 
-    if (target->getType()->isSingular()) {
+    if (target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
@@ -80,7 +80,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
     if (target->getter() != NULL) {
       FunctionDefn * getter = target->getter();
       DASSERT_OBJ(getter->functionType() == NULL, getter);
-      FunctionType * getterType = ta.typeFromFunctionAST(getter->getFunctionDecl());
+      FunctionType * getterType = ta.typeFromFunctionAST(getter->functionDecl());
       DASSERT_OBJ(getterType->returnType() == NULL, getter);
       getterType->setReturnType(type);
 
@@ -100,7 +100,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       FunctionDefn * setter = target->setter();
       DASSERT_OBJ(setter->functionType() == NULL, setter);
       TypeAnalyzer ta(module, activeScope);
-      FunctionType * setterType = ta.typeFromFunctionAST(setter->getFunctionDecl());
+      FunctionType * setterType = ta.typeFromFunctionAST(setter->functionDecl());
 
       // See if the setter already has a 'value' parameter defined. If it does, we need
       // to temporarily remove it from the param list so that we can insert the property
@@ -124,13 +124,13 @@ bool PropertyAnalyzer::resolvePropertyType() {
       if (valueParam != NULL) {
         // Re-add the value param.
         setterType->params().push_back(valueParam);
-        if (valueParam->getType() == NULL) {
+        if (valueParam->type() == NULL) {
           valueParam->setType(type);
           valueParam->setInternalType(type);
-        } else if (!valueParam->getType()->isEqual(type)) {
+        } else if (!valueParam->type()->isEqual(type)) {
           diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
               "' must be of type '" << type << "' but is instead type '" <<
-              valueParam->getType() << "'";
+              valueParam->type() << "'";
         }
       } else {
         // Create a value param.

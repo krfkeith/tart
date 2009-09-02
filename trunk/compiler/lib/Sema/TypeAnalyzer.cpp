@@ -24,16 +24,16 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     return NULL;
   }
 
-  const SourceLocation & loc = ast->getLocation();
+  const SourceLocation & loc = ast->location();
   switch (ast->nodeType()) {
-    case ASTNode::Id: 
+    case ASTNode::Id:
     case ASTNode::Member:
     case ASTNode::Specialize: {
       // Most of the work is done by lookupName. The rest is just validating
       // the result and making sure it's a type.
       ExprList typeExprs;
       lookupName(typeExprs, ast);
-      
+
       if (typeExprs.empty()) {
         diag.fatal(loc) << "Undefined type '" << ast << "'";
         return &BadType::instance;
@@ -45,9 +45,9 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
           diag.fatal(loc) << "Multiple definitions for '" << ast << "'";
           return &BadType::instance;
         }
-        
+
         TypeDefn * tdef = static_cast<TypeDefn *>(typeList.front());
-        Type * type = tdef->getTypeValue();
+        Type * type = tdef->typeValue();
         if (type->typeClass() == Type::NativePointer) {
           AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse);
           //analyzeLater(tdef);
@@ -60,12 +60,12 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
         return type;
       }
-      
+
       diag.error(loc) << "'" << ast << "' is not a type expression";
       for (ExprList::iterator it = typeExprs.begin(); it != typeExprs.end(); ++it) {
         diag.info(*it) << Format_Verbose << *it << " (" << (*it)->exprType() << ")";
       }
-      
+
       return &BadType::instance;
     }
 
@@ -83,30 +83,30 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::BuiltIn: {
-      Defn * def = static_cast<const ASTBuiltIn *>(ast)->getValue();
+      Defn * def = static_cast<const ASTBuiltIn *>(ast)->value();
       if (TypeDefn * tdef = dyn_cast<TypeDefn>(def)) {
-        return tdef->getTypeValue();
+        return tdef->typeValue();
       } else {
         diag.fatal(ast) << "'" << def->name() << "' is not a type";
         return &BadType::instance;
       }
     }
-    
+
     case ASTNode::LogicalOr: {
       const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
       const ASTNodeList & args = unionOp->args();
       TypeList unionTypes;
-      
+
       for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
         Type * elementType = typeFromAST(*it);
         if (isErrorResult(elementType)) {
           return elementType;
         }
-        
+
         unionTypes.push_back(elementType);
       }
-      
-      return UnionType::create(ast->getLocation(), unionTypes);
+
+      return UnionType::create(ast->location(), unionTypes);
     }
 
     case ASTNode::AnonFn: {
@@ -123,8 +123,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     default:
-      diag.fatal(ast) << "invalid node type " <<
-          getNodeTypeName(ast->nodeType());
+      diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
       DFAIL("Unsupported node type");
   }
 }
@@ -138,7 +137,7 @@ void TypeAnalyzer::undefinedType(const ASTNode * ast) {
 bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   ExprList results;
   lookupName(results, ast);
-  const SourceLocation & loc = ast->getLocation();
+  const SourceLocation & loc = ast->location();
   for (ExprList::iterator it = results.begin(); it != results.end();
       ++it) {
     if (ConstantType * ctype = dyn_cast<ConstantType>(*it)) {
@@ -161,7 +160,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST( const ASTFunctionDecl * ast) {
   ParameterList params;
   for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
     ASTParameter * aparam = *it;
-    
+
     // Note that type might be NULL if not specified. We'll pick it up
     // later from the default value.
     Type * paramType = typeFromAST(aparam->type());
@@ -178,7 +177,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST( const ASTFunctionDecl * ast) {
       param->setFlag(ParameterDefn::KeywordOnly, true);
     }
   }
-  
+
   return new FunctionType(returnType, params);
 }
 
@@ -201,7 +200,7 @@ bool TypeAnalyzer::analyzeTypeExpr(Type * type) {
         break;
     }
   }
-  
+
   return true;
 }
 

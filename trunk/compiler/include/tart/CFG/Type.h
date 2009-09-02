@@ -150,8 +150,14 @@ public:
   virtual TypeClass typeClass() const { return cls; }
 
   /** Get the LLVM IR type corresponding to this type. */
-  const llvm::Type * irType() const { return getIRType(); }
-  virtual const llvm::Type * getIRType() const = 0;
+  virtual const llvm::Type * irType() const = 0;
+
+  /** Get the LLVM IR type corresponding to this type when embedded as a member within a
+      larger type. */
+  virtual const llvm::Type * irEmbeddedType() const { return irType(); }
+
+  /** Get the LLVM IR type corresponding to this type when passed as a parameter. */
+  virtual const llvm::Type * irParameterType() const { return irType(); }
 
   /** Get the type of this type. */
   virtual Type * metaType() const { return NULL; }
@@ -168,7 +174,7 @@ public:
 
   /** Return true if the specified type is more specific than 'other'. */
   virtual bool isSubtype(const Type * other) const = 0;
-  
+
   /** A type is said to "include" another type if it can represent all possible values
       of that other type. So for example, 'int' includes 'short', since an int can
       contain all possible shorts. Note that the include relationship encompasses
@@ -187,10 +193,10 @@ public:
 
   /** True if this type is the 'void' type. */
   bool isVoidType() const;
-  
+
   /** True if this type is the 'unsized int' type. */
   bool isUnsizedIntType() const;
-  
+
   /** Determine if the specified 'fromType' can be converted to this
       type. Returns the degree of compatibility. */
   ConversionRank convert(const Conversion & conversion) const;
@@ -224,9 +230,9 @@ public:
 
   void trace() const;
   static inline bool classof(const Type *) { return true; }
-  
+
   // Static utility functions
-  
+
   /** Given two types, return the one that is more specific, the lower of the two. Returns NULL
       if neither type is a specialization of the other. */
   static Type * selectMoreSpecificType(Type * type1, Type * type2);
@@ -257,7 +263,7 @@ public:
   /** Return the Nth type parameter. */
   //Type * typeParam(int index) const;
 
-  const llvm::Type * getIRType() const {
+  const llvm::Type * irType() const {
     if (irType_ == NULL) {
       irType_ = createIRType();
     }
@@ -320,7 +326,9 @@ public:
   bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
   bool includes(const Type * other) const { return value_->includes(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
-  const llvm::Type * getIRType() const;
+  const llvm::Type * irType() const;
+  const llvm::Type * irEmbeddedType() const;
+  const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;
@@ -352,7 +360,7 @@ public:
   bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const { return isEqual(other); }
   bool isReferenceType() const { return false; }
-  const llvm::Type * getIRType() const;
+  const llvm::Type * irType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const;
   void trace() const;

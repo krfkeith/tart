@@ -9,7 +9,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     var data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
-    static def alloc(length:int) {
+    static def alloc(length:int) -> Array {
       //InvalidArgumentException.when(length < 0);
       // The 'offsetof' trick for calculating the size.
       let self:Array = __pvalloc(zeroPtr[Array[ElementType]]().data[length]);
@@ -32,7 +32,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** Static factory function which takes advantage of the built-in behavior of
       variadic parameters to build an Array. */
-  static def of(elements:ElementType...) {
+  static def of(elements:ElementType...) -> Array {
     return elements;
   }
 

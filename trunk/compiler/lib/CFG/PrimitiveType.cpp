@@ -95,7 +95,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
           Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::ZeroExtend,
-              cn.fromValue->getLocation(), resultType, cn.fromValue);
+              cn.fromValue->location(), resultType, cn.fromValue);
         }
 
         return result;
@@ -105,7 +105,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
           Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
-              cn.fromValue->getLocation(), resultType, cn.fromValue);
+              cn.fromValue->location(), resultType, cn.fromValue);
         }
 
         return SignedUnsigned;
@@ -137,7 +137,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
           Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
-              cn.fromValue->getLocation(), resultType, cn.fromValue);
+              cn.fromValue->location(), resultType, cn.fromValue);
         }
 
         return result;
@@ -154,7 +154,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
           Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::ZeroExtend,
-              cn.fromValue->getLocation(), resultType, cn.fromValue);
+              cn.fromValue->location(), resultType, cn.fromValue);
         }
 
         return result;
@@ -201,7 +201,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
   const Type * fromType = cn.getFromType();
 
   DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->getType()->isEqual(fromType));
+  DASSERT(cn.fromValue->type()->isEqual(fromType));
 
   fromType = derefEnumType(fromType);
   TypeId dstId = this->typeId();
@@ -222,10 +222,10 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
 
       if (cn.resultValue) {
         *cn.resultValue = new ConstantInteger(
-            cint->getLocation(),
+            cint->location(),
             const_cast<PrimitiveType *>(this),
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
-                cint->value(), this->getIRType(), false)));
+                cint->value(), this->irType(), false)));
       }
 
       if (srcBits > dstBits) {
@@ -246,10 +246,10 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
 
       if (cn.resultValue) {
         *cn.resultValue = new ConstantInteger(
-            cint->getLocation(),
+            cint->location(),
             const_cast<PrimitiveType *>(this),
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
-                cint->value(), this->getIRType(), false)));
+                cint->value(), this->irType(), false)));
       }
 
       if (srcBits > dstBits) {
@@ -265,7 +265,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
     } else if (srcId == TypeId_Bool) {
       // Convert to 0 or 1
       if (cn.resultValue) {
-        *cn.resultValue = new ConstantInteger(cint->getLocation(),
+        *cn.resultValue = new ConstantInteger(cint->location(),
             const_cast<PrimitiveType *>(this), cint->value());
       }
 
@@ -327,7 +327,7 @@ ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, 
   if (out != NULL) {
     llvm::Constant * castVal = llvm::ConstantExpr::getCast(castOp, cint->value(), irType_);
     *out = new ConstantInteger(
-        cint->getLocation(),
+        cint->location(),
         const_cast<PrimitiveType *>(this),
         cast<llvm::ConstantInt>(castVal));
   }
@@ -402,7 +402,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
   const Type * fromType = cn.getFromType();
 
   DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->getType()->isEqual(fromType));
+  DASSERT(cn.fromValue->type()->isEqual(fromType));
 
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
@@ -422,9 +422,9 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
       uint32_t srcBits = srcVal.getActiveBits();
 
       if (cn.resultValue) {
-        //dstValue = ConstantExpr::getIntegerCast(ci, this->getIRType(),
+        //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
         //srcIsSigned);
-        //*cn.resultValue = new ConstantInteger(cint->getLocation(),
+        //*cn.resultValue = new ConstantInteger(cint->location(),
         //    this, cint->getValue());
         DFAIL("Implement");
       }
@@ -440,9 +440,9 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
       uint32_t srcBits = srcVal.getMinSignedBits();
 
       if (cn.resultValue) {
-        //dstValue = ConstantExpr::getIntegerCast(ci, this->getIRType(),
+        //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
         //srcIsSigned);
-        //*cn.resultValue = new ConstantInteger(cint->getLocation(),
+        //*cn.resultValue = new ConstantInteger(cint->location(),
         //    this, cint->getValue());
         DFAIL("Implement");
       }
@@ -461,8 +461,8 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
 
     if (cn.resultValue) {
       *cn.resultValue = new ConstantFloat(
-          cfloat->getLocation(), const_cast<PrimitiveType *>(this),
-          cast<llvm::ConstantFP>(llvm::ConstantExpr::getFPCast(cfloat->value(), getIRType())));
+          cfloat->location(), const_cast<PrimitiveType *>(this),
+          cast<llvm::ConstantFP>(llvm::ConstantExpr::getFPCast(cfloat->value(), irType())));
     }
 
     if (srcBits < dstBits) {
@@ -484,9 +484,9 @@ ConversionRank PrimitiveType::fromUnsizedIntToFloat(const ConstantInteger * cint
   TypeId dstId = typeId();
 
   if (out != NULL) {
-    //dstValue = ConstantExpr::getIntegerCast(ci, this->getIRType(),
+    //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
     //srcIsSigned);
-    //*cn.resultValue = new ConstantInteger(cint->getLocation(),
+    //*cn.resultValue = new ConstantInteger(cint->location(),
     //    this, cint->getValue());
     DFAIL("Implement");
   }
@@ -522,7 +522,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
       if (cn.fromValue && cn.resultValue) {
         // Compare with 0.
         *cn.resultValue = new CompareExpr(SourceLocation(), llvm::CmpInst::ICMP_NE, cn.fromValue,
-            ConstantInteger::get(SourceLocation(), cn.fromValue->getType(), 0));
+            ConstantInteger::get(SourceLocation(), cn.fromValue->type(), 0));
       }
 
       return IntegerToBool;
@@ -537,11 +537,11 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
       if (cn.fromValue && cn.resultValue) {
         // Compare with NULL to get boolean result.
         *cn.resultValue = new CompareExpr(
-            cn.fromValue->getLocation(),
+            cn.fromValue->location(),
             llvm::CmpInst::ICMP_EQ,
             cn.fromValue,
             ConstantNull::get(
-                cn.fromValue->getLocation(), cn.fromValue->getType()));
+                cn.fromValue->location(), cn.fromValue->type()));
       }
 
       //return NonPreferred;
@@ -563,7 +563,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
 
   const Type * fromType = cn.getFromType();
   DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->getType()->isEqual(fromType));
+  DASSERT(cn.fromValue->type()->isEqual(fromType));
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
@@ -573,7 +573,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
       Constant * cival = cint->value();
       Constant * czero = Constant::getNullValue(cival->getType());
       *cn.resultValue = new ConstantInteger(
-          cint->getLocation(),
+          cint->location(),
           &BoolType::instance,
           cast<ConstantInt>(
               llvm::ConstantExpr::getCompare(ICmpInst::ICMP_NE, cival, czero)));
@@ -590,10 +590,10 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
 }
 
 void PrimitiveType::defineConstant(const char * name, ConstantExpr * value) {
-  if (value->getType() != this) {
-    diag.error() << value->getType() << " != " << this;
+  if (value->type() != this) {
+    diag.error() << value->type() << " != " << this;
   }
-  DASSERT(value->getType() == this);
+  DASSERT(value->type() == this);
   VariableDefn * var = new VariableDefn(Defn::Let, NULL, name, value);
   var->setStorageClass(Storage_Static);
   addMember(var);

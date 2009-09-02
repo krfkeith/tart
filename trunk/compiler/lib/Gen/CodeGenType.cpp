@@ -25,7 +25,7 @@ using namespace llvm;
 
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
-  Type * type = tdef->getTypeValue();
+  Type * type = tdef->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
       return genPrimitiveType(static_cast<PrimitiveType *>(type));
@@ -53,8 +53,8 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
 }
 
 const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
-  DASSERT_OBJ(type->getIRType() != NULL, type);
-  return type->getIRType();
+  DASSERT_OBJ(type->irType() != NULL, type);
+  return type->irType();
 }
 
 const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
@@ -64,14 +64,14 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   // Don't need to define this twice.
   if (rtype->isExternal() || (rtype->getTypeObjectPtr() != NULL &&
       rtype->getTypeObjectPtr()->hasInitializer())) {
-    return type->getIRType();
+    return type->irType();
   }
 
   DASSERT_OBJ(type->isSingular(), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveBaseTypes), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_AnalyzeFields), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), Format_QualifiedName << type);
-  DASSERT_OBJ(type->getIRType() != NULL, type);
+  DASSERT_OBJ(type->irType() != NULL, type);
 
   /*if (type->super() != NULL) {
     const CompositeType * superDecl = type->super();
@@ -80,10 +80,10 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
     }
   }*/
 
-  irModule_->addTypeName(tdef->linkageName(), type->getIRType());
+  irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
   createTypeObject(rtype);
-  return type->getIRType();
+  return type->irType();
 }
 
 GlobalVariable * CodeGenerator::getTypeObjectPtr(const CompositeType * type) {
@@ -104,7 +104,7 @@ GlobalVariable * CodeGenerator::createTypeObjectPtr(RuntimeTypeInfo * rtype) {
     const CompositeType * type = rtype->getType();
     rtype->setTypeObjectPtr(
         new GlobalVariable(*irModule_,
-            Builtins::typeType->getIRType(), true,
+            Builtins::typeType->irType(), true,
             rtype->getLinkageType(), NULL,
             type->typeDefn()->linkageName() + ".type"));
   }
@@ -118,7 +118,7 @@ Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
     const CompositeType * type = rtype->getType();
     if (type->typeClass() != Type::Class) {
       rtype->setTypeInfoPtr(ConstantPointerNull::get(
-          PointerType::getUnqual(Builtins::typeTypeInfoBlock->getIRType())));
+          PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType())));
     } else {
       rtype->setTypeInfoBlock(
           new GlobalVariable(*irModule_,
@@ -128,7 +128,7 @@ Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
-              PointerType::get(Builtins::typeTypeInfoBlock->getIRType(), 0)));
+              PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0)));
     }
   }
 
@@ -150,7 +150,7 @@ bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
     typeMembers.push_back(getTypeObjectPtr(type->super()));
   } else {
     typeMembers.push_back(ConstantPointerNull::get(
-        PointerType::getUnqual(Builtins::typeType->getIRType())));
+        PointerType::getUnqual(Builtins::typeType->irType())));
   }
 
   llvm::Constant * typeStruct = ConstantStruct::get(context_, typeMembers);
@@ -175,7 +175,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Generate the base class list.
   ClassSet baseClassSet;
   type->ancestorClasses(baseClassSet);
-  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeType->getIRType());
+  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeType->irType());
 
   // Concrete classes first
   ConstantList baseClassList;
@@ -265,7 +265,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(PointerType::get(Builtins::typeType->getIRType(), 0));
+  argTypes.push_back(PointerType::get(Builtins::typeType->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType, argTypes, false);
   Function * idispatch = Function::Create(
@@ -343,7 +343,7 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
     // Declare the allocator function
     std::vector<const llvm::Type *> argTypes;
     llvm::FunctionType * alloctype = llvm::FunctionType::get(PointerType::getUnqual(
-        type->getIRType()), argTypes, false);
+        type->irType()), argTypes, false);
     Function * allocFunc = Function::Create(
         alloctype, rtype->getLinkageType(),
         type->typeDefn()->linkageName() + ".type.alloc", irModule_);
@@ -353,7 +353,7 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
     builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
 
     // Allocate an instance of the object
-    Value * instance = builder_.CreateMalloc(type->getIRType());
+    Value * instance = builder_.CreateMalloc(type->irType());
 
     // Generate code to fill in vtable pointer of new object.
     genInitObjVTable(type, instance);
@@ -399,7 +399,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
 
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   // TODO: Implement valueOf, asString
-  return type->getIRType();
+  return type->irType();
   //diag.fatal(type->typeDefn()) << "Implement " << type;
   //DFAIL("Implement");
 }

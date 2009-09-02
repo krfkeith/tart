@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Template.h"
@@ -68,7 +68,7 @@ bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
 #if 0
 Type * SpecializeCandidate::getParamType(int argIndex) const {
   ParameterList & params = method->functionType()->params();
-  return params[getParameterIndex(argIndex)]->getType();
+  return params[getParameterIndex(argIndex)]->type();
 }
 
 Type * SpecializeCandidate::getResultType() const {
@@ -79,7 +79,7 @@ bool SpecializeCandidate::isEqual(const SpecializeCandidate * other) const {
   if (paramAssignments.size() != other->paramAssignments.size()) {
     return false;
   }
-  
+
   if (getResultType()->isEqual(other->getResultType())) {
     return false;
   }
@@ -88,18 +88,18 @@ bool SpecializeCandidate::isEqual(const SpecializeCandidate * other) const {
   for (size_t i = 0; i < argCount; ++i) {
     Type * t0 = getParamType(i);
     Type * t1 = getParamType(i);
-    
+
     if (!t0->isEqual(t1)) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 bool SpecializeCandidate::isMoreSpecific(const SpecializeCandidate * other) const {
   bool same = true;
-  
+
   if (paramAssignments.size() != other->paramAssignments.size()) {
     diag.info() << "different number of args.";
     return false;
@@ -117,12 +117,12 @@ bool SpecializeCandidate::isMoreSpecific(const SpecializeCandidate * other) cons
   for (size_t i = 0; i < argCount; ++i) {
     Type * t0 = getParamType(i);
     Type * t1 = other->getParamType(i);
-    
+
     if (!t0->isEqual(t1)) {
       if (!t0->isSubtype(t1)) {
         return false;
       }
-      
+
       same = false;
     }
   }
@@ -139,7 +139,7 @@ ConversionRank SpecializeCandidate::updateConversionRank(CallExpr * callExpr) {
     Type * paramType = getParamType(argIndex);
     conversionRank = std::min(conversionRank, paramType->canConvert(argExpr));
   }
-  
+
   return conversionRank;
 }
 #endif

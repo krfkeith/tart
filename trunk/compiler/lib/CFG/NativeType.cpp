@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/StaticType.h"
 #include "tart/CFG/Module.h"
@@ -32,7 +32,7 @@ NativePointerType * NativePointerType::create(Type * elemType) {
   TemplateInstance * tinst = new TemplateInstance(&Builtins::module);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
-  
+
   TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativePointerType * np = new NativePointerType(elemType, tdef, tinst);
   tdef->setTypeValue(np);
@@ -64,11 +64,7 @@ void NativePointerType::initBuiltin() {
 
 const llvm::Type * NativePointerType::createIRType() const {
   DASSERT_OBJ(elementType != NULL, this);
-  const llvm::Type * type = elementType->getIRType();
-  if (elementType->isReferenceType()) {
-    type = llvm::PointerType::getUnqual(type);
-  }
-
+  const llvm::Type * type = elementType->irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
@@ -77,7 +73,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
   if (const NativePointerType * npFrom = dyn_cast<NativePointerType>(fromType)) {
     Type * fromElementType = npFrom->typeParam(0);
     if (fromElementType == NULL) {
-      //AnalyzerBase::analyzeTypeDefn(npFrom, 
+      //AnalyzerBase::analyzeTypeDefn(npFrom,
       DFAIL("No element type");
     }
 
@@ -121,7 +117,7 @@ bool NativePointerType::isSubtype(const Type * other) const {
   if (isEqual(other)) {
     return true;
   }
-  
+
   return false;
   //diag.debug() << (Type *)this << " != " << other;
   //DFAIL("Implement");
@@ -150,7 +146,7 @@ NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   TemplateInstance * tinst = new TemplateInstance(&Builtins::module);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
-  
+
   TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativeArrayType * np = new NativeArrayType(elemType, sz, tdef, tinst);
   tdef->setTypeValue(np);
@@ -186,15 +182,9 @@ void NativeArrayType::initBuiltin() {
 
 const llvm::Type * NativeArrayType::createIRType() const {
   DASSERT_OBJ(elementType != NULL, this);
-  
-  const llvm::Type * etype = elementType->getIRType();
-  if (elementType->isReferenceType()) {
-    etype = llvm::PointerType::getUnqual(etype);
-  }
-  
-  return llvm::ArrayType::get(etype, size);
+  return llvm::ArrayType::get(elementType->irEmbeddedType(), size);
 }
-  
+
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const NativeArrayType * naFrom =
@@ -203,11 +193,11 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
-    
+
     if (size != naFrom->getSize() && size != 0) {
       return Incompatible;
     }
-    
+
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
     elementConversion.bindingEnv = cn.bindingEnv;
@@ -233,7 +223,7 @@ bool NativeArrayType::isSingular() const {
 
 bool NativeArrayType::isSubtype(const Type * other) const {
   DFAIL("Implement");
-}    
+}
 
 void NativeArrayType::format(FormatStream & out) const {
   out << "NativeArray[" << elementType << ", " << size << "]";

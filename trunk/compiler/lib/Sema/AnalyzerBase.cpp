@@ -42,10 +42,10 @@ bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast) {
 //    and there's no hope of finding anything.
 bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path) {
 
-  const SourceLocation & loc = ast->getLocation();
+  const SourceLocation & loc = ast->location();
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
-    const char * name = ident->getValue();
+    const char * name = ident->value();
     if (activeScope != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
@@ -54,7 +54,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     return importName(out, path, loc);
   } else if (ast->nodeType() == ASTNode::Member) {
     const ASTMemberRef * mref = static_cast<const ASTMemberRef *>(ast);
-    const ASTNode * qual = mref->getQualifier();
+    const ASTNode * qual = mref->qualifier();
     ExprList lvals;
     if (lookupNameRecurse(lvals, qual, path)) {
       if (lvals.size() > 1) {
@@ -64,7 +64,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
       }
 
       Expr * context = lvals.front();
-      if (findMemberOf(out, context, mref->getMemberName(), loc)) {
+      if (findMemberOf(out, context, mref->memberName(), loc)) {
         return true;
       }
 
@@ -74,7 +74,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     if (!path.empty()) {
       path.push_back('.');
-      path.append(mref->getMemberName());
+      path.append(mref->memberName());
       return importName(out, path, loc);
     }
 
@@ -82,15 +82,15 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   } else if (ast->nodeType() == ASTNode::Specialize) {
     const ASTSpecialize * spec = static_cast<const ASTSpecialize *>(ast);
     ExprList lvals;
-    if (!lookupNameRecurse(lvals, spec->getTemplateExpr(), path)) {
-      diag.error(spec) << "Undefined symbol: " << spec->getTemplateExpr();
+    if (!lookupNameRecurse(lvals, spec->templateExpr(), path)) {
+      diag.error(spec) << "Undefined symbol: " << spec->templateExpr();
       dumpScopeHierarchy();
       return false;
     }
 
     Expr * expr = resolveSpecialization(loc, lvals, spec->args());
     if (expr == NULL) {
-      diag.error(spec) << "No template found matching expression: " << spec->getTemplateExpr();
+      diag.error(spec) << "No template found matching expression: " << spec->templateExpr();
       return false;
     }
 
@@ -160,17 +160,17 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
         return true;
       }
     }
-  } else if (context->getType() != NULL) {
-    TypeDefn * typeDef = dealias(context->getType())->typeDefn();
-    if (typeDef != NULL && context->getType()->memberScope() != NULL) {
-      if (typeDef->getTypeValue()->isUnsizedIntType()) {
+  } else if (context->type() != NULL) {
+    TypeDefn * typeDef = dealias(context->type())->typeDefn();
+    if (typeDef != NULL && context->type()->memberScope() != NULL) {
+      if (typeDef->typeValue()->isUnsizedIntType()) {
         diag.error(loc) << "Attempt to access member of integer of unknown size";
         return false;
       }
 
       DASSERT_OBJ(typeDef->isSingular(), typeDef);
       AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, context->getType()->memberScope(), context, loc)) {
+      if (findInScope(out, name, context->type()->memberScope(), context, loc)) {
         return true;
       }
     }
@@ -182,7 +182,6 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
 bool AnalyzerBase::findInScope(ExprList & out, const char * name,
     Scope * scope, Expr * context, const SourceLocation & loc) {
   DefnList defns;
-
   if (scope->lookupMember(name, defns, true)) {
     return getSymbolRefs(loc, defns, context, out);
   }
@@ -254,9 +253,8 @@ bool AnalyzerBase::importName(ExprList & out, const std::string & path,
   return false;
 }
 
-bool AnalyzerBase::getSymbolRefs(const SourceLocation & loc, DefnList & defs,
-      Expr * context, ExprList & out)
-{
+bool AnalyzerBase::getSymbolRefs(const SourceLocation & loc, DefnList & defs, Expr * context,
+    ExprList & out) {
   for (DefnList::iterator it = defs.begin(); it != defs.end(); ++it) {
     if (ExplicitImportDefn * imp = dyn_cast<ExplicitImportDefn>(*it)) {
       // TODO: Should we allow mixing of import defns with non-imports of
@@ -329,21 +327,21 @@ bool AnalyzerBase::getTypesFromExprs(const SourceLocation & loc, ExprList & in, 
 }
 
 Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
-  if (valueDef->getType() == NULL) {
+  if (valueDef->type() == NULL) {
     if (!analyzeDefn(valueDef, Task_InferType)) {
       return NULL;
     }
   }
 
-  if (valueDef->getType() != NULL && valueDef->getType()->isSingular()) {
+  if (valueDef->type() != NULL && valueDef->type()->isSingular()) {
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
       return param->internalType();
     }
-    return valueDef->getType();
+    return valueDef->type();
   }
 
-  diag.info(valueDef) << valueDef << ":" << valueDef->getType();
-  //activeScope = cast<TypeDefn>(getType());
+  diag.info(valueDef) << valueDef << ":" << valueDef->type();
+  //activeScope = cast<TypeDefn>(type());
   //dumpScopeHierarchy();
   //valueDef->getParentScope()->dumpHierarchy();
   DFAIL("Failed to determine type of value.");
@@ -404,7 +402,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 }
 
 bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
-  Type * type = in->getTypeValue();
+  Type * type = in->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
       return true;
@@ -495,7 +493,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
   BindingEnv arrayEnv(arrayTemplate);
   arrayEnv.bind(arrayTemplate->patternVar(0), elementType);
   return cast<CompositeType>(cast<TypeDefn>(
-      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->getTypeValue());
+      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }
 
 ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(const SourceLocation & loc,

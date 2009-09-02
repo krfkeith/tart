@@ -9,7 +9,7 @@ namespace tart {
     
 bool OperatorStack::pushOperand(ASTNode * operand) {
   if (stack.back().operand != NULL) {
-    diag.fatal(operand->getLocation()) << "missing operator";
+    diag.fatal(operand->location()) << "missing operator";
     return false;
   }
   stack.back().operand = operand;
@@ -19,7 +19,7 @@ bool OperatorStack::pushOperand(ASTNode * operand) {
 bool OperatorStack::pushOperator(ASTNode * oper, int32_t prec,
     Associativity assoc) {
   if (stack.back().operand == NULL) {
-    diag.fatal(oper->getLocation()) << "missing operand";
+    diag.fatal(oper->location()) << "missing operand";
     return false;
   }
 
