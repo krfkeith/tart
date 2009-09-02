@@ -186,7 +186,7 @@ public:
   Expr * getMemberValue(const char * name);
   void setMemberValue(VariableDefn * member, Expr * value);
 
-  int32_t getMemberValueAsInt(const char * name);
+  int32_t memberValueAsInt(const char * name);
 
   // Overrides
 

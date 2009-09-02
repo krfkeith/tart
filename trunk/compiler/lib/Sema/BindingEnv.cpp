@@ -218,7 +218,7 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * 
       return false;
     }
 
-    if (pat->getSize() != nav->getSize()) {
+    if (pat->size() != nav->size()) {
       return false;
     }
 
@@ -397,7 +397,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
         return in;
       }
 
-      return NativeArrayType::create(elemType, nt->getSize());
+      return NativeArrayType::create(elemType, nt->size());
     }
 
     case Type::Struct:

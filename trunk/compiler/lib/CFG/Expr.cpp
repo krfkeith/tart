@@ -264,15 +264,15 @@ InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
   : Expr(InitVar, loc, v->type())
   , var(v)
-  , initExpr(expr)
+  , initExpr_(expr)
 {}
 
 bool InitVarExpr::isSingular() const {
-  return initExpr->isSingular() && var->isSingular();
+  return initExpr_->isSingular() && var->isSingular();
 }
 
 void InitVarExpr::format(FormatStream & out) const {
-  out << var << " = " << initExpr;
+  out << var << " = " << initExpr_;
 }
 
 /// -------------------------------------------------------------------
@@ -290,7 +290,7 @@ bool CallExpr::isSingular() const {
   return function_ != NULL && function_->type()->isSingular();
 }
 
-Type * CallExpr::getSingularParamType(int index) {
+Type * CallExpr::singularParamType(int index) {
   Type * singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {
@@ -308,7 +308,7 @@ Type * CallExpr::getSingularParamType(int index) {
   return singularType;
 }
 
-Type * CallExpr::getSingularResultType() {
+Type * CallExpr::singularResultType() {
   Type * singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     CallCandidate * cc = *it;
@@ -331,7 +331,7 @@ Type * CallExpr::getSingularResultType() {
   return singularType;
 }
 
-CallCandidate * CallExpr::getSingularCandidate() {
+CallCandidate * CallExpr::singularCandidate() {
   CallCandidate * singularCandidate = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {

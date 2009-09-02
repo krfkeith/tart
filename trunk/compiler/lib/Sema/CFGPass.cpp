@@ -250,7 +250,7 @@ Expr * CFGPass::visitNot(UnaryExpr * in) {
 }
 
 Expr * CFGPass::visitInitVar(InitVarExpr * in) {
-  in->setInitExpr(visitExpr(in->getInitExpr()));
+  in->setInitExpr(visitExpr(in->initExpr()));
   return in;
 }
 

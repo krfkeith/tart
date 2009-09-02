@@ -128,12 +128,12 @@ bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, const SourceLo
 bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context,
     const char * name, const SourceLocation & loc) {
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
-    if (Module * m = dyn_cast<Module>(scopeName->getValue())) {
+    if (Module * m = dyn_cast<Module>(scopeName->value())) {
       AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
       if (findInScope(out, name, m, NULL, loc)) {
         return true;
       }
-    } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(scopeName->getValue())) {
+    } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(scopeName->value())) {
       AnalyzerBase::analyzeDefn(ns, Task_PrepMemberLookup);
       if (findInScope(out, name, &ns->memberScope(), NULL, loc)) {
         return true;
@@ -259,7 +259,7 @@ bool AnalyzerBase::getSymbolRefs(const SourceLocation & loc, DefnList & defs, Ex
     if (ExplicitImportDefn * imp = dyn_cast<ExplicitImportDefn>(*it)) {
       // TODO: Should we allow mixing of import defns with non-imports of
       // the same name?
-      ExprList & importedDefns = imp->getImportValues();
+      ExprList & importedDefns = imp->importValues();
       out.append(importedDefns.begin(), importedDefns.end());
     } else {
       out.push_back(refToDefn(*it, context, loc));
@@ -341,9 +341,6 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   }
 
   diag.info(valueDef) << valueDef << ":" << valueDef->type();
-  //activeScope = cast<TypeDefn>(type());
-  //dumpScopeHierarchy();
-  //valueDef->getParentScope()->dumpHierarchy();
   DFAIL("Failed to determine type of value.");
 }
 
@@ -469,7 +466,7 @@ void AnalyzerBase::flushAnalysisQueue() {
 
 bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
   if (task == Task_PrepMemberLookup && in->beginPass(Pass_CreateMembers)) {
-    if (in->getAST() != NULL) {
+    if (in->ast() != NULL) {
       ScopeBuilder::createScopeMembers(in);
     }
     in->finishPass(Pass_CreateMembers);
@@ -483,7 +480,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
   TemplateSignature * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
 
   // Do analysis on template if needed.
-  if (arrayTemplate->getAST() != NULL) {
+  if (arrayTemplate->ast() != NULL) {
     DefnAnalyzer da(&Builtins::module, &Builtins::module);
     da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
   }

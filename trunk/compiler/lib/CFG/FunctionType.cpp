@@ -61,7 +61,7 @@ ParameterDefn * FunctionType::addParam(const char * name, Type * ty) {
   return param;
 }
 
-int FunctionType::getParamNameIndex(const char * name) const {
+int FunctionType::paramNameIndex(const char * name) const {
   for (size_t i = 0; i < params_.size(); i++) {
     ParameterDefn * param = params_[i];
     if (param->name() != NULL && strcmp(param->name(), name) == 0)

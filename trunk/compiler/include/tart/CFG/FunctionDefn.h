@@ -93,7 +93,7 @@ public:
   void setInternalType(Type * type) { internalType_ = type; }
 
   /** IR representation of this function. */
-  llvm::Value * getIRValue() const { return irValue_; }
+  llvm::Value * irValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) { irValue_ = ir; }
 
   /** Whether this parameter is covariant, contravariant, or invariant. */
@@ -115,7 +115,7 @@ public:
 
   // Overrides
 
-  Type * getType() const { return type_; }
+  Type * type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const ParameterDefn *) { return true; }
@@ -187,7 +187,7 @@ public:
 
   /** Function AST. */
   const ASTFunctionDecl * functionDecl() const {
-    return static_cast<const ASTFunctionDecl *>(ast);
+    return static_cast<const ASTFunctionDecl *>(ast_);
   }
 
   /** IR representation of this function. */
@@ -222,7 +222,7 @@ public:
   // Overrides
 
   const std::string & linkageName() const;
-  Type * getType() const;
+  Type * type() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionDefn *) { return true; }

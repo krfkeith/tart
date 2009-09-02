@@ -78,18 +78,18 @@ public:
   
   TemplateSignature(Defn * v, Scope * parentScope);
   
-  const Defn * getValue() const { return value; }
+  const Defn * value() const { return value_; }
   
-  const ASTTemplate * getAST() const { return ast; }
-  void setAST(const ASTTemplate * a) { ast = a; }
+  const ASTTemplate * ast() const { return ast_; }
+  void setAST(const ASTTemplate * a) { ast_ = a; }
 
   /** Return the list of template pattern parameters. */
   const TypeList & params() const { return params_; }
   TypeList & params() { return params_; }
 
   /** Return the list of requirements. */
-  const ExprList & getRequirements() const { return requirements; }
-  ExprList & getRequirements() { return requirements; }
+  const ExprList & requirements() const { return requirements_; }
+  ExprList & requirements() { return requirements_; }
   
   /** Return the index of the specified pattern variable, or -1 if
       the variable is not defined for this template. */
@@ -127,11 +127,11 @@ public:
   void trace() const;
 
 private:
-  Defn * value;
-  const ASTTemplate * ast;
+  Defn * value_;
+  const ASTTemplate * ast_;
 
   TypeList params_;
-  ExprList requirements;
+  ExprList requirements_;
   PatternVarList vars_;
 
   DefnList specializations;
@@ -161,7 +161,7 @@ public:
 
   bool allowOverloads() { return false; }
   Scope * parentScope() const { return parentScope_; }
-  Defn * getFirstArg() const { return paramDefns_.first(); }
+  Defn * firstParamDefn() const { return paramDefns_.first(); }
   void addMember(Defn * d);
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full = true) const;

@@ -19,7 +19,7 @@ namespace tart {
 // Generic template for native pointers
 class NativePointerType : public DeclaredType {
 protected:
-  Type * elementType;
+  Type * elementType_;
 
 public:
 
@@ -55,8 +55,8 @@ public:
 // Generic template for native arrays
 class NativeArrayType : public DeclaredType {
 protected:
-  Type * elementType;
-  uint64_t size;
+  Type * elementType_;
+  uint64_t size_;
 
 public:
 
@@ -71,8 +71,8 @@ public:
   void initBuiltin();
 
   /** The fixed length of the array. */
-  uint64_t getSize() const { return size; }
-  void setSize(uint64_t sz) { size = sz; }
+  uint64_t size() const { return size_; }
+  void setSize(uint64_t sz) { size_ = sz; }
 
   // Overrides
   

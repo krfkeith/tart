@@ -58,7 +58,7 @@ Defn::Defn(DefnType dtype, Module * m, const char * nm)
   : defnType_(dtype)
   , loc(SourceLocation())
   , name_(nm)
-  , ast(NULL)
+  , ast_(NULL)
   , module_(m)
   , parentDefn_(NULL)
   , nextInScope_(NULL)
@@ -71,7 +71,7 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   : defnType_(dtype)
   , loc(de->location())
   , name_(de->name())
-  , ast(de)
+  , ast_(de)
   , modifiers(de->modifiers())
   , module_(m)
   , parentDefn_(NULL)
@@ -138,15 +138,14 @@ const std::string & Defn::linkageName() const {
     // Template instance parameters.
     if (tinst_ != NULL) {
       lnkName.append("[");
-      for (Defn * arg = tinst_->getFirstArg(); arg != NULL;
-          arg = arg->nextInScope()) {
+      for (Defn * arg = tinst_->firstParamDefn(); arg != NULL; arg = arg->nextInScope()) {
         // Last arg is the defn itself.
         // TODO: Should be a better way to do this.
         if (arg->nextInScope() == NULL) {
           break;
         }
 
-        if (arg != tinst_->getFirstArg()) {
+        if (arg != tinst_->firstParamDefn()) {
           lnkName.append(",");
         }
 
@@ -199,7 +198,7 @@ const Expr * Defn::findAttribute(const char * attrTypeName) const {
 
 const SourceLocation & Defn::location() const {
   static const SourceLocation defaultLocation;
-  return ast ? ast->location() : defaultLocation;
+  return ast_ ? ast_->location() : defaultLocation;
 }
 
 TypeDefn * Defn::enclosingClassDefn() const {
@@ -216,16 +215,16 @@ TypeDefn * Defn::enclosingClassDefn() const {
 }
 
 bool Defn::beginPass(DefnPass pass) {
-  if (finished.contains(pass)) {
+  if (finished_.contains(pass)) {
     return false;
   }
 
-  if (running.contains(pass)) {
+  if (running_.contains(pass)) {
     diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
     return false;
   }
 
-  running.add(pass);
+  running_.add(pass);
   return true;
 }
 
@@ -283,7 +282,7 @@ void Defn::dumpHierarchy(bool full) const {
 
 void Defn::trace() const {
   loc.trace();
-  safeMark(ast);
+  safeMark(ast_);
   safeMark(tsig_);
   safeMark(tinst_);
   safeMark(module_);
@@ -350,7 +349,7 @@ Type * TypeDefn::metaType() const {
 ConstantType * TypeDefn::asExpr() {
   DASSERT(Builtins::typeType != NULL);
   if (expr_ == NULL) {
-    expr_ = new ConstantType(ast ? ast->location() : SourceLocation(), this);
+    expr_ = new ConstantType(ast_ ? ast_->location() : SourceLocation(), this);
   }
 
   return expr_;
@@ -450,7 +449,7 @@ void ExplicitImportDefn::format(FormatStream & out) const {
 
 void ExplicitImportDefn::trace() const {
   Defn::trace();
-  markList(importValues.begin(), importValues.end());
+  markList(importValues_.begin(), importValues_.end());
 }
 
 // -------------------------------------------------------------------

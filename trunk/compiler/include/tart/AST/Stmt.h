@@ -280,11 +280,7 @@ class ForEachStmt: public Stmt {
 public:
   ForEachStmt(SourceLocation loc, ASTNode * lvars, ASTNode * iter, Stmt * body) :
     Stmt(ForEach, loc), loopVars_(lvars), iterExpr_(iter), body_(body)
-  //, initExpr(NULL)
-  //, testExpr_(NULL)
-  //, incrExpr(NULL)
   {
-    //getTestScope().setScopeName("--foreach--");
   }
 
   const ASTNode * loopVars() const { return loopVars_; }
@@ -295,17 +291,6 @@ public:
 
   const Stmt * body() const { return body_; }
   Stmt * body() { return body_; }
-
-  //void setIterExpr(const ASTNode * iter) { iterExpr = iter; }
-
-  //const ASTNode * getInitExpr() const { return initExpr; }
-  //void setInitExpr(const ASTNode * expr) { initExpr = expr; }
-
-  //const ASTNode * testExpr() const { return testExpr_; }
-  //void setTestExpr(const ASTNode * expr) { testExpr_ = expr; }
-
-  //const ASTNode * getIncrExpr() const { return incrExpr; }
-  //void setIncrExpr(const ASTNode * expr) { incrExpr = expr; }
 
   virtual const SourceLocation & finalLocation() const {
     if (body_)
@@ -321,11 +306,6 @@ private:
   ASTNode * loopVars_;
   ASTNode * iterExpr_;
   Stmt * body_;
-
-  // Generated from the iterExpr
-  //ASTNode * initExpr;
-  //ASTNode * testExpr_;
-  //ASTNode * incrExpr;
 };
 
 // -------------------------------------------------------------------

@@ -141,7 +141,7 @@ protected:
   DefnType defnType_;         // What type of defn this is
   SourceLocation loc;         // Location where this was defined.
   const char * name_;         // Local name (copied from decl)
-  const ASTDecl * ast;        // The source declaration of this defintion
+  const ASTDecl * ast_;        // The source declaration of this defintion
   DeclModifiers modifiers;    // Modifier flags
   Module * module_;           // Module in which this symbol is defined.
   Defn * parentDefn_;         // Definition which encloses this one.
@@ -150,10 +150,10 @@ protected:
   mutable std::string lnkName;// External linkage name
   TemplateSignature * tsig_;  // Template signature
   TemplateInstance * tinst_;  // Template arguments
-  DefnPasses running;         // Analysis passes currently in progress
-  DefnPasses finished;        // Analysis passes completed
+  DefnPasses running_;         // Analysis passes currently in progress
+  DefnPasses finished_;        // Analysis passes completed
   ExprList attrs_;             // List of attributes
-  Traits traits;              // Traits of this defn
+  Traits traits_;              // Traits of this defn
 
 public:
   /** Constructor that takes a name */
@@ -187,9 +187,9 @@ public:
   void createQualifiedName(Defn * parent);
 
   /** Get the AST declaration that declared this definition. */
-  const ASTDecl * getAST() const { return ast; }
+  const ASTDecl * ast() const { return ast_; }
   virtual const ASTDeclList & astMembers() const {
-    return ast->members();
+    return ast_->members();
   }
 
   /** Get the source location where this definition was defined. */
@@ -197,37 +197,37 @@ public:
   void setLocation(const SourceLocation & l) { loc = l; }
 
   /** Get the list of attributes. */
-  const ExprList & getAttrs() const { return attrs_; }
-  ExprList & getAttrs() { return attrs_; }
+  const ExprList & attrs() const { return attrs_; }
+  ExprList & attrs() { return attrs_; }
 
   /** Find the first attribute of the specified type. */
   const Expr * findAttribute(const Type * attrType) const;
   const Expr * findAttribute(const char * attrTypeName) const;
 
   /** Get the list of traits. */
-  const Traits & getTraits() const { return traits; }
-  Traits & getTraits() { return traits; }
-  bool hasTrait(Trait t) const { return traits.contains(t); }
-  void addTrait(Trait t) { traits.add(t); }
-  void removeTrait(Trait t) { traits.remove(t); }
+  const Traits & traits() const { return traits_; }
+  Traits & traits() { return traits_; }
+  bool hasTrait(Trait t) const { return traits_.contains(t); }
+  void addTrait(Trait t) { traits_.add(t); }
+  void removeTrait(Trait t) { traits_.remove(t); }
   void copyTrait(Defn * from, Trait t) {
-    if (from->hasTrait(t)) { traits.add(t); }
+    if (from->hasTrait(t)) { traits_.add(t); }
   }
 
   // Various trait convenience methods
 
-  bool isAbstract() const { return traits.contains(Abstract); }
-  bool isFinal() const { return traits.contains(Final); }
-  virtual bool isSingular() const { return traits.contains(Singular); }
-  bool isSynthetic() const { return traits.contains(Synthetic); }
-  bool isExtern() const { return traits.contains(Extern); }
-  bool isCtor() const { return traits.contains(Ctor); }
+  bool isAbstract() const { return traits_.contains(Abstract); }
+  bool isFinal() const { return traits_.contains(Final); }
+  virtual bool isSingular() const { return traits_.contains(Singular); }
+  bool isSynthetic() const { return traits_.contains(Synthetic); }
+  bool isExtern() const { return traits_.contains(Extern); }
+  bool isCtor() const { return traits_.contains(Ctor); }
 
   void setSingular(bool t) {
     if (t) {
-      traits.add(Singular);
+      traits_.add(Singular);
     } else {
-      traits.remove(Singular);
+      traits_.remove(Singular);
     }
   }
 
@@ -292,24 +292,24 @@ public:
   // Analysis pass methods
 
   /** Return the set of passes in progress. */
-  DefnPasses & getRunning() { return running; }
+  DefnPasses & running() { return running_; }
 
   /** Return true if the specified pass is running. */
-  bool isPassRunning(DefnPass pass) const { return running.contains(pass); }
+  bool isPassRunning(DefnPass pass) const { return running_.contains(pass); }
 
   /** Return true if the specified pass is finished. */
-  bool isPassFinished(DefnPass pass) const { return finished.contains(pass); }
+  bool isPassFinished(DefnPass pass) const { return finished_.contains(pass); }
 
   /** Return the set of analysis passes completed so far. */
-  DefnPasses & getFinished() { return finished; }
+  DefnPasses & finished() { return finished_; }
 
   /** Mark a pass has started. */
   bool beginPass(DefnPass pass);
 
   /** Mark a pass as ended. */
   void finishPass(DefnPass pass) {
-    running.remove(pass);
-    finished.add(pass);
+    running_.remove(pass);
+    finished_.add(pass);
   }
 
   // Internal methods made visible for testing
@@ -389,8 +389,7 @@ public:
   {}
 
   /** Type of this variable. */
-  virtual Type * getType() const = 0;
-  Type * type() const { return getType(); }
+  virtual Type * type() const = 0;
 
   // Overrides
 
@@ -441,7 +440,7 @@ public:
   void setInitValue(Expr * e) { initValue_ = e; }
 
   /** IR representation of this function. */
-  llvm::Value * getIRValue() const { return irValue_; }
+  llvm::Value * irValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) const { irValue_ = ir; }
 
   /** For member variables, the index of this field within the class. */
@@ -457,7 +456,7 @@ public:
 
   // Overrides
 
-  Type * getType() const { return type_; }
+  Type * type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
@@ -483,7 +482,7 @@ public:
     , getter_(NULL)
     , setter_(NULL)
   {
-    accessorScope_.setScopeName(ast->name());
+    accessorScope_.setScopeName(ast_->name());
   }
 
   FunctionDefn * getter() const { return getter_; }
@@ -492,14 +491,14 @@ public:
   FunctionDefn * setter() const { return setter_; }
   void setSetter(FunctionDefn * f) { setter_ = f; }
 
-  const Scope & getAccessorScope() const { return accessorScope_; }
-  Scope & getAccessorScope() { return accessorScope_; }
+  const Scope & accessorScope() const { return accessorScope_; }
+  Scope & accessorScope() { return accessorScope_; }
 
   void setType(Type * t) { type_ = t; }
 
   // Overrides
 
-  Type * getType() const { return type_; }
+  Type * type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   void setDefiningScope(Scope * scope) {
@@ -537,20 +536,20 @@ public:
 /// A reference an imported symbol as declared by an 'import' statement.
 class ExplicitImportDefn : public Defn {
 private:
-  ExprList importValues;
+  ExprList importValues_;
   Scope * definingScope_;
 
 public:
   ExplicitImportDefn(Module * m, const char * name, const ExprList & defs)
     : Defn(ExplicitImport, m, name)
-    , importValues(defs)
+    , importValues_(defs)
     , definingScope_(NULL)
   {
   }
 
   /** Get the value(s) of this import. */
-  const ExprList & getImportValues() const { return importValues; }
-  ExprList & getImportValues() { return importValues; }
+  const ExprList & importValues() const { return importValues_; }
+  ExprList & importValues() { return importValues_; }
 
   // Overrides
 

@@ -129,7 +129,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   // If there is no AST, then it means that this class was created
   // internally by the compiler, in which case the compiler is responsible
   // for setting up the base class list correctly.
-  const ASTTypeDecl * ast = cast_or_null<const ASTTypeDecl>(target->getAST());
+  const ASTTypeDecl * ast = cast_or_null<const ASTTypeDecl>(target->ast());
   if (ast == NULL) {
     return true;
   }
@@ -972,7 +972,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);
   constructorDef->blocks().push_back(constructorBody);
-  constructorDef->getFinished().addAll(
+  constructorDef->finished().addAll(
       DefnPasses::of(
           Pass_ResolveAttributes,
           Pass_CreateCFG,

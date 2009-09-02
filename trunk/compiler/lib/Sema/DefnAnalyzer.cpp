@@ -87,7 +87,7 @@ bool DefnAnalyzer::analyze(Defn * in, DefnPasses & passes) {
 bool DefnAnalyzer::createMembersFromAST(Defn * in) {
   // Create members of this scope.
   if (in->beginPass(Pass_CreateMembers)) {
-    if (in->getAST() != NULL) {
+    if (in->ast() != NULL) {
       ScopeBuilder::createScopeMembers(in);
     }
 
@@ -109,14 +109,14 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
       return true;
     }
 
-    if (in->getAST() != NULL) {
+    if (in->ast() != NULL) {
       ExprAnalyzer ea(module, activeScope);
-      const ASTNodeList & attrs = in->getAST()->attributes();
+      const ASTNodeList & attrs = in->ast()->attributes();
       for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
         Expr * attrExpr = ea.reduceAttribute(*it);
         if (attrExpr != NULL) {
           //diag.info(in) << attrExpr;
-          in->getAttrs().push_back(attrExpr);
+          in->attrs().push_back(attrExpr);
         }
       }
     }
@@ -129,7 +129,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
 }
 
 void DefnAnalyzer::applyAttributes(Defn * in) {
-  ExprList & attrs = in->getAttrs();
+  ExprList & attrs = in->attrs();
   for (ExprList::iterator it = attrs.begin(); it != attrs.end(); ++it) {
     Expr * attrExpr = ExprAnalyzer::inferTypes(*it, NULL);
     if (isErrorResult(attrExpr)) {
@@ -203,9 +203,9 @@ void DefnAnalyzer::handleIntrinsicAttribute(Defn * de, Expr * attrExpr) {
 }
 
 void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrObj) {
-  int target = attrObj->getMemberValueAsInt("target");
-  int retention = attrObj->getMemberValueAsInt("retention");
-  int propagation = attrObj->getMemberValueAsInt("propagation");
+  int target = attrObj->memberValueAsInt("target");
+  int retention = attrObj->memberValueAsInt("retention");
+  int propagation = attrObj->memberValueAsInt("propagation");
 
   TypeDefn * targetTypeDefn = cast<TypeDefn>(de);
   CompositeType * targetType = cast<CompositeType>(targetTypeDefn->typeValue());
@@ -312,9 +312,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   TemplateSignature * tsig = de->templateSignature();
   DASSERT_OBJ(tsig != NULL, de);
 
-  if (tsig->getAST() != NULL) {
+  if (tsig->ast() != NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
-    const ASTNodeList & paramsAst = tsig->getAST()->params();
+    const ASTNodeList & paramsAst = tsig->ast()->params();
     TypeList & params = tsig->params();
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
@@ -385,7 +385,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
 void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested) {
   toRun.addAll(requested);
-  toRun.removeAll(de->getFinished());
+  toRun.removeAll(de->finished());
 }
 
 }

@@ -58,7 +58,7 @@ void CallSite::finish() {
     // Ignore culled candidates unless there were no un-culled ones.
     CallCandidate * cc = *it;
     if (!cc->isCulled() || numRemaining == 0) {
-      ConversionRank rank = cc->getConversionRank();
+      ConversionRank rank = cc->conversionRank();
       if (rank > best) {
         best = rank;
       }
@@ -84,10 +84,10 @@ void CallSite::finish() {
       CallCandidate * cc = *it;
       cc->updateConversionRank();
       if (cc->env().empty()) {
-        diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->getConversionRank() << "]";
+        diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
       } else {
         diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
-            Format_Dealias << cc->env() <<" [" << cc->getConversionRank() << "] ";
+            Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";
       }
     }
   }
@@ -207,7 +207,7 @@ void TypeInferencePass::checkSolution() {
       bestSolutionCount = 1;
       bestSolutionRank = lowestRank;
       for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
-        it->best = it->callExpr->getSingularCandidate();
+        it->best = it->callExpr->singularCandidate();
       }
 
       if (ShowInference) {
@@ -235,7 +235,7 @@ void TypeInferencePass::reportRanks() {
     for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
       CallCandidate * cc = *c;
       if (!cc->isCulled()) {
-        diag.debug() << cc->method() << " [" << cc->getConversionRank() << "]";
+        diag.debug() << cc->method() << " [" << cc->conversionRank() << "]";
       }
     }
     diag.unindent();
@@ -339,7 +339,7 @@ void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit,
   Candidates & cd = site.callExpr->candidates();
   for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
     CallCandidate * cc = *c;
-    if (!cc->isCulled() && cc->getConversionRank() < lowerLimit) {
+    if (!cc->isCulled() && cc->conversionRank() < lowerLimit) {
       cc->cull(searchDepth);
       ++cullCount;
     }

@@ -425,7 +425,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
         //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
         //srcIsSigned);
         //*cn.resultValue = new ConstantInteger(cint->location(),
-        //    this, cint->getValue());
+        //    this, cint->value());
         DFAIL("Implement");
       }
 
@@ -443,7 +443,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
         //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
         //srcIsSigned);
         //*cn.resultValue = new ConstantInteger(cint->location(),
-        //    this, cint->getValue());
+        //    this, cint->value());
         DFAIL("Implement");
       }
 
@@ -487,7 +487,7 @@ ConversionRank PrimitiveType::fromUnsizedIntToFloat(const ConstantInteger * cint
     //dstValue = ConstantExpr::getIntegerCast(ci, this->irType(),
     //srcIsSigned);
     //*cn.resultValue = new ConstantInteger(cint->location(),
-    //    this, cint->getValue());
+    //    this, cint->value());
     DFAIL("Implement");
   }
 

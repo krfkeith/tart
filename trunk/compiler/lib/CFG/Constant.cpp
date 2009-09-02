@@ -212,7 +212,7 @@ Expr * ConstantObjectRef::getMemberValue(const char * name) {
   return NULL;
 }
 
-int32_t ConstantObjectRef::getMemberValueAsInt(const char * name) {
+int32_t ConstantObjectRef::memberValueAsInt(const char * name) {
   Expr * value = getMemberValue(name);
   if (ConstantInteger * cint = dyn_cast_or_null<ConstantInteger>(value)) {
     return int32_t(cint->value()->getSExtValue());

@@ -62,7 +62,7 @@ public:
   virtual ProgramSource * get() { return this; }
   
   /** Calculate the token position for the given source location. */
-  TokenPosition getTokenPosition(const SourceLocation & loc);
+  TokenPosition tokenPosition(const SourceLocation & loc);
   
   void trace() const {}
 
@@ -110,9 +110,9 @@ public:
 
 // -------------------------------------------------------------------
 // Get the token position for a given source location.
-static TokenPosition getTokenPosition(const SourceLocation & loc) {
+static TokenPosition tokenPosition(const SourceLocation & loc) {
   if (loc.file) {
-    return loc.file->getTokenPosition(loc);
+    return loc.file->tokenPosition(loc);
   } else {
     return TokenPosition();
   }

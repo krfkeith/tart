@@ -17,12 +17,12 @@ void SourceLocation::trace() const {
 
 void SourceLocation::dump() const {
   if (file != NULL && !file->getFilePath().empty()) {
-    TokenPosition pos = file->getTokenPosition(*this);
+    TokenPosition pos = file->tokenPosition(*this);
     fprintf(stderr, "%s:%d\n", file->getFilePath().c_str(), pos.beginLine + 1);
   }
 }
 
-TokenPosition ProgramSource::getTokenPosition(const SourceLocation & loc) {
+TokenPosition ProgramSource::tokenPosition(const SourceLocation & loc) {
   assert(loc.end >= loc.begin);
   std::vector<uint32_t>::const_iterator itBegin =
     std::upper_bound(lineOffsets.begin(), lineOffsets.end(), loc.begin) - 1;

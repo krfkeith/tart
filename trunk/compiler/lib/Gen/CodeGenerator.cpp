@@ -278,7 +278,7 @@ llvm::DICompileUnit CodeGenerator::getCompileUnit(Defn * defn) {
 }
 
 unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
-  TokenPosition pos = getTokenPosition(loc);
+  TokenPosition pos = tokenPosition(loc);
   return pos.beginLine;
 }
 
@@ -399,7 +399,7 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
 
 Function * CodeGenerator::findMethod(const CompositeType * type, const char * methodName) {
   DASSERT(type->isSingular());
-  DASSERT(type->typeDefn()->getAST() != NULL);
+  DASSERT(type->typeDefn()->ast() != NULL);
   DefnList defs;
 
   if (!type->lookupMember(methodName, defs, false)) {

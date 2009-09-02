@@ -45,7 +45,7 @@ NativePointerType * NativePointerType::create(Type * elemType) {
 NativePointerType::NativePointerType(Type * elemType, TypeDefn * defn,
     Scope * parentScope)
   : DeclaredType(Type::NativePointer, defn, parentScope)
-  , elementType(elemType)
+  , elementType_(elemType)
 {
   if (elemType) {
     DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
@@ -63,8 +63,8 @@ void NativePointerType::initBuiltin() {
 }
 
 const llvm::Type * NativePointerType::createIRType() const {
-  DASSERT_OBJ(elementType != NULL, this);
-  const llvm::Type * type = elementType->irEmbeddedType();
+  DASSERT_OBJ(elementType_ != NULL, this);
+  const llvm::Type * type = elementType_->irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
@@ -80,7 +80,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
     // For native pointers, the thing pointed to must be identical for
     // both types.
 
-    if (elementType->isEqual(fromElementType)) {
+    if (elementType_->isEqual(fromElementType)) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
       }
@@ -91,7 +91,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
     elementConversion.bindingEnv = cn.bindingEnv;
-    if (elementType->convert(elementConversion) == IdenticalTypes) {
+    if (elementType_->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
       }
@@ -101,7 +101,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
 
     //diag.debug() << Format_Verbose <<
     //    "Wants to convert from " << elementConversion.fromType << " to " <<
-    //    elementType << " [" << elementType->convert(elementConversion) << "]";
+    //    elementType_ << " [" << elementType_->convert(elementConversion) << "]";
     return Incompatible;
     //DFAIL("Implement");
   } else {
@@ -110,7 +110,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
 }
 
 bool NativePointerType::isSingular() const {
-  return elementType->isSingular();
+  return elementType_->isSingular();
 }
 
 bool NativePointerType::isSubtype(const Type * other) const {
@@ -124,7 +124,7 @@ bool NativePointerType::isSubtype(const Type * other) const {
 }
 
 void NativePointerType::format(FormatStream & out) const {
-  out << "NativePointer[" << elementType << "]";
+  out << "NativePointer[" << elementType_ << "]";
 }
 
 // -------------------------------------------------------------------
@@ -159,8 +159,8 @@ NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
 NativeArrayType::NativeArrayType(Type * elemType, uint64_t sz, TypeDefn * defn,
     Scope * parentScope)
   : DeclaredType(Type::NativeArray, defn, parentScope)
-  , elementType(elemType)
-  , size(sz)
+  , elementType_(elemType)
+  , size_(sz)
 {
   if (elemType) {
     DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
@@ -181,8 +181,8 @@ void NativeArrayType::initBuiltin() {
 }
 
 const llvm::Type * NativeArrayType::createIRType() const {
-  DASSERT_OBJ(elementType != NULL, this);
-  return llvm::ArrayType::get(elementType->irEmbeddedType(), size);
+  DASSERT_OBJ(elementType_ != NULL, this);
+  return llvm::ArrayType::get(elementType_->irEmbeddedType(), size_);
 }
 
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
@@ -194,14 +194,14 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
       DFAIL("No element type");
     }
 
-    if (size != naFrom->getSize() && size != 0) {
+    if (size_ != naFrom->size() && size_ != 0) {
       return Incompatible;
     }
 
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
     elementConversion.bindingEnv = cn.bindingEnv;
-    if (elementType->convert(elementConversion) == IdenticalTypes) {
+    if (elementType_->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
       }
@@ -218,7 +218,7 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
 }
 
 bool NativeArrayType::isSingular() const {
-  return elementType->isSingular();
+  return elementType_->isSingular();
 }
 
 bool NativeArrayType::isSubtype(const Type * other) const {
@@ -226,7 +226,7 @@ bool NativeArrayType::isSubtype(const Type * other) const {
 }
 
 void NativeArrayType::format(FormatStream & out) const {
-  out << "NativeArray[" << elementType << ", " << size << "]";
+  out << "NativeArray[" << elementType_ << ", " << size_ << "]";
 }
 
 } // namespace tart

@@ -209,8 +209,8 @@ public:
   ASTNode * type() { return type_; }
 
   /** The value of a variable is its initializer. */
-  const ASTNode * getValue() const { return value_; }
-  ASTNode * getValue() { return value_; }
+  const ASTNode * value() const { return value_; }
+  ASTNode * value() { return value_; }
   void setValue(ASTNode * val) { value_ = val; }
 
   // Overrides
@@ -390,8 +390,8 @@ public:
   {}
 
   /** The body of the template. */
-  const ASTDecl * getBody() const { return body_; }
-  ASTDecl * getBody() { return body_; }
+  const ASTDecl * body() const { return body_; }
+  ASTDecl * body() { return body_; }
 
   /** The list of template parameters. */
   const ASTNodeList & params() const { return params_; }
