@@ -114,6 +114,7 @@ Error TODOS: (things that should be an error)
 * Template functions cannot be extern.
 * Enforce 'readonly'
 * LValueExpr.isSideEffectFree may not be true for property
+  // Check for hiding similarly-named variable.
 
 TODOS from V1 Compiler:
 

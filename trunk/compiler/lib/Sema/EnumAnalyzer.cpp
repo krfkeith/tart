@@ -46,7 +46,7 @@ bool EnumAnalyzer::analyzeEnum() {
     // Don't evaluate the attributes if the parent class is Attribute, because that creates
     // a circular dependency. For now, assume that any Enum defined within Attribute that has
     // any attributes at all is a Flags enum.
-    if (!target_->getAST()->attributes().empty()) {
+    if (!target_->ast()->attributes().empty()) {
       enumType->setIsFlags(true);
     }
     target_->finishPass(Pass_ResolveAttributes);
@@ -56,7 +56,7 @@ bool EnumAnalyzer::analyzeEnum() {
 
   bool isFlags = enumType->isFlags();
 
-  const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->getAST());
+  const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
   DASSERT_OBJ(enumType->isSingular(), enumType);
   DASSERT_OBJ(enumType->baseType() == NULL, enumType);
 
@@ -125,10 +125,10 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   bool isFlags = enumType->isFlags();
   VariableDefn * ec = new VariableDefn(Defn::Let, module, ast);
   ConstantInteger * value = NULL;
-  if (ast->getValue() != NULL) {
+  if (ast->value() != NULL) {
     // The constant has an explicit value.
     ExprAnalyzer ea(module, activeScope);
-    ConstantExpr * enumValue = ea.reduceConstantExpr(ast->getValue(), intValueType_);
+    ConstantExpr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
     if (isErrorResult(enumValue)) {
       return false;
     }

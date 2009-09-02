@@ -57,7 +57,7 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
 
 bool VarAnalyzer::resolveVarType() {
   if (target->beginPass(Pass_ResolveVarType)) {
-    const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->getAST());
+    const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
     if (target->type() == NULL) {
@@ -75,7 +75,7 @@ bool VarAnalyzer::resolveVarType() {
     }
 
     // Evaluate the initializer expression, if any
-    if (ast != NULL && ast->getValue() != NULL) {
+    if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope;
       if (target->type() != NULL && target->type()->typeClass() == Type::Enum) {
         // If the initializer is an enumerated type, then add that type's member scope
@@ -86,7 +86,7 @@ bool VarAnalyzer::resolveVarType() {
       }
 
       ExprAnalyzer ea(module, activeScope);
-      Expr * initExpr = ea.analyze(ast->getValue(), target->type());
+      Expr * initExpr = ea.analyze(ast->value(), target->type());
       if (isErrorResult(initExpr)) {
         return false;
       } else if (!initExpr->isSingular()) {

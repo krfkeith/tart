@@ -266,7 +266,7 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
     const std::string & msg) {
   if (loc.file != NULL && !loc.file->getFilePath().empty()) {
     // The TextMate error parser is fairly strict
-    TokenPosition tokLoc = loc.file->getTokenPosition(loc);
+    TokenPosition tokLoc = loc.file->tokenPosition(loc);
     fprintf(stderr, "%s:%d: %s%.*s%s\n",
         loc.file->getFilePath().c_str(),
         tokLoc.beginLine + 1,
@@ -289,7 +289,7 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
   size_t len;
   if (loc.file != NULL && !loc.file->getFilePath().empty()) {
     // The TextMate error parser is fairly strict
-    TokenPosition tokLoc = loc.file->getTokenPosition(loc);
+    TokenPosition tokLoc = loc.file->tokenPosition(loc);
     len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
         loc.file->getFilePath().c_str(),
         tokLoc.beginLine + 1,

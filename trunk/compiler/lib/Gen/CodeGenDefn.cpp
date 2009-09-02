@@ -105,7 +105,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->isSingular(), fdef);
-  DASSERT_OBJ(fdef->getType() != NULL, fdef);
+  DASSERT_OBJ(fdef->type() != NULL, fdef);
   DASSERT_OBJ(fdef->type()->isSingular(), fdef);
 
   // Don't generate intrinsic functions.
@@ -226,8 +226,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
 Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   // Don't generate the IR if we've already done so
-  if (let->getIRValue() != NULL) {
-    return let->getIRValue();
+  if (let->irValue() != NULL) {
+    return let->irValue();
   }
 
 #if 0
@@ -276,8 +276,8 @@ Value * CodeGenerator::genVarValue(const VariableDefn * var) {
   if (var->storageClass() != Storage_Global &&
       var->storageClass() != Storage_Static) {
     // Don't generate the IR if we've already done so.
-    if (var->getIRValue() != NULL) {
-      return var->getIRValue();
+    if (var->irValue() != NULL) {
+      return var->irValue();
     }
 
     DFAIL("IllegalState");
@@ -296,7 +296,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // Global variables never set the IRValue field, because that field has a different value
   // dependig on what module we are compiling.
-  DASSERT(var->getIRValue() == NULL);
+  DASSERT(var->irValue() == NULL);
 
 #if 0
   // Generate the attributes

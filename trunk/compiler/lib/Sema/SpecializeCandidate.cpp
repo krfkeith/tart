@@ -57,7 +57,7 @@ bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
     }
   }
 
-  const ExprList & reqs = tsig->getRequirements();
+  const ExprList & reqs = tsig->requirements();
   for (ExprList::const_iterator it = reqs.begin(); it != reqs.end(); ++it) {
     DFAIL("Implement");
   }

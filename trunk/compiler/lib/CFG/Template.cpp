@@ -56,7 +56,7 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
 }
 
 const Defn * PatternVar::templateDefn() const {
-  return template_->getValue();
+  return template_->value();
 }
 
 bool PatternVar::canBindTo(const Type * value) const {
@@ -103,8 +103,8 @@ TemplateSignature * TemplateSignature::get(Defn * v, Scope * parent) {
 }
 
 TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
-  : value(v)
-  , ast(NULL)
+  : value_(v)
+  , ast_(NULL)
   , paramScope_(parentScope)
 {
   paramScope_.setScopeName("template-params");
@@ -112,7 +112,7 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
 
 PatternVar * TemplateSignature::addPatternVar(const SourceLocation & loc,
     const char * name, Type * type) {
-  TypeDefn * tdef = new TypeDefn(value->module(), name, NULL);
+  TypeDefn * tdef = new TypeDefn(value_->module(), name, NULL);
   PatternVar * var = new PatternVar(loc, tdef, &paramScope_, this);
   if (type != NULL) {
     var->setValueType(type);
@@ -157,9 +157,9 @@ size_t TemplateSignature::patternVarCount() const {
 }
 
 void TemplateSignature::trace() const {
-  safeMark(ast);
+  safeMark(ast_);
   markList(params_.begin(), params_.end());
-  markList(requirements.begin(), requirements.end());
+  markList(requirements_.begin(), requirements_.end());
   markList(specializations.begin(), specializations.end());
   paramScope_.trace();
 }
@@ -200,8 +200,8 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
     Defn * spec = *it;
     TemplateInstance * ti = spec->templateInstance();
-    DASSERT_OBJ(ti != NULL, value);
-    DASSERT_OBJ(ti->paramValues().size() == paramValues.size(), value);
+    DASSERT_OBJ(ti != NULL, value_);
+    DASSERT_OBJ(ti->paramValues().size() == paramValues.size(), value_);
     if (std::equal(paramValues.begin(), paramValues.end(),
             ti->paramValues().begin(), TypeEquals())) {
       return ti->value();
@@ -209,8 +209,8 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   }
 
   // Create the template instance
-  DASSERT(value->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value->definingScope());
+  DASSERT(value_->definingScope() != NULL);
+  TemplateInstance * tinst = new TemplateInstance(value_->definingScope());
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
 
   // Substitute into the template args to create the arg list
@@ -221,16 +221,16 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the definition
   Defn * result = NULL;
-  if (value->getAST() != NULL) {
-    result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value->getAST());
+  if (value_->ast() != NULL) {
+    result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value_->ast());
     tinst->setValue(result);
-    result->setQualifiedName(value->qualifiedName());
+    result->setQualifiedName(value_->qualifiedName());
     result->addTrait(Defn::Synthetic);
-    result->getTraits().addAll(value->getTraits() & INSTANTIABLE_TRAITS);
+    result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
     result->setDefiningScope(tinst);
-  } else if (value->defnType() == Defn::Typedef) {
-    TypeDefn * tdef = static_cast<TypeDefn *>(value);
-    TypeDefn * newDef = new TypeDefn(value->module(), tdef->name());
+  } else if (value_->defnType() == Defn::Typedef) {
+    TypeDefn * tdef = static_cast<TypeDefn *>(value_);
+    TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
 
     switch (tdef->typeValue()->typeClass()) {
       case Type::NativePointer: {
@@ -263,7 +263,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Copy over certain attributes
   if (FunctionDefn * fdef = dyn_cast<FunctionDefn>(result)) {
-    fdef->setIntrinsic(static_cast<FunctionDefn *>(value)->intrinsic());
+    fdef->setIntrinsic(static_cast<FunctionDefn *>(value_)->intrinsic());
   }
 
   specializations.push_back(result);
@@ -292,8 +292,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   // One additional parameter, which is the name of the instantiated symbol.
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(result)) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
-      TypeDefn * nameAlias = new TypeDefn(
-          result->module(), tdef->name(), ctype);
+      TypeDefn * nameAlias = new TypeDefn(result->module(), tdef->name(), ctype);
       nameAlias->setSingular(ctype->isSingular());
       nameAlias->addTrait(Defn::Synthetic);
       tinst->addMember(nameAlias);

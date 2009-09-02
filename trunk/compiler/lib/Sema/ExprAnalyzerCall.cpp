@@ -371,7 +371,7 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
 }
 
 Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
-  Type * ty = call->getSingularResultType();
+  Type * ty = call->singularResultType();
   if (ty != NULL) {
     if (call->isSingular()) {
       DASSERT_OBJ(ty->isSingular(), call);
@@ -384,7 +384,7 @@ Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
 }
 
 Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
-  Type * ty = call->getSingularParamType(index);
+  Type * ty = call->singularParamType(index);
   if (ty != NULL) {
     return ty;
   }

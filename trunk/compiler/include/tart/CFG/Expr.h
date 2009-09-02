@@ -63,8 +63,6 @@ public:
   /** The type of this expression. */
   const Type * type() const { return type_; }
   Type * type() { return type_; }
-  const Type * getType() const { return type_; }
-  Type * getType() { return type_; }
   void setType(Type * type) { type_ = type; }
 
   /** Return true if this expression is a constant. */
@@ -257,8 +255,8 @@ public:
   void trace() const;
   bool isSideEffectFree() const { return true; }
   bool isSingular() const;
-  const Defn * getValue() const { return value_; }
-  Defn * getValue() { return value_; }
+  const Defn * value() const { return value_; }
+  Defn * value() { return value_; }
 
   static inline bool classof(const ScopeNameExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
@@ -311,13 +309,13 @@ public:
 class InitVarExpr : public Expr {
 private:
   VariableDefn * var;
-  Expr * initExpr;
+  Expr * initExpr_;
 
 public:
   InitVarExpr(const SourceLocation & loc, VariableDefn * var, Expr * expr);
 
-  Expr * getInitExpr() const { return initExpr; }
-  void setInitExpr(Expr * e) { initExpr = e; }
+  Expr * initExpr() const { return initExpr_; }
+  void setInitExpr(Expr * e) { initExpr_ = e; }
   VariableDefn * getVar() const { return var; }
 
   // Overrides
@@ -360,14 +358,14 @@ public:
 
   /** If all of the overload candidates have the same type for the Nth
       parameter slot, then return that type, otherwise return NULL. */
-  Type * getSingularParamType(int arg);
+  Type * singularParamType(int arg);
 
   /** If all of the overload candidates have the same return type, then
       return that type, otherwise return NULL. */
-  Type * getSingularResultType();
+  Type * singularResultType();
 
   /** Return either the single non-culled candidate, or NULL. */
-  CallCandidate * getSingularCandidate();
+  CallCandidate * singularCandidate();
 
   /** Return true if there is at least one non-culled candidate. */
   bool hasAnyCandidates() const;

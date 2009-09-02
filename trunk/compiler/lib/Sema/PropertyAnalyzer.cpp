@@ -54,7 +54,7 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
 
 bool PropertyAnalyzer::resolvePropertyType() {
   if (target->beginPass(Pass_ResolveVarType)) {
-    const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->getAST());
+    const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
     Type * type = target->type();

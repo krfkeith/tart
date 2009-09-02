@@ -710,43 +710,4 @@ void TestAssignable() {
     } */
 }
 
-void TestArgAssignment() {
-    using namespace tart;
-
-    FunctionType * ftype;
-    std::vector<int> argPositions;
-    CallExpr * call;
-    OpExpr * args;
-    bool success;
-
-    // Function prototype
-    ftype = (FunctionType *)ParseTypeLiteral("function (a:int, b:int, c:int) -> int", 0);
-    TEST_ASSERT_EQUAL(Type::Function, ftype->getKind());
-
-    // TODO: Update this unit test to deal with the changed signature of assignArguments.
-#if 0
-    // Positional arguments
-    call = (CallExpr *)ParseExpression("func(1, 2, 3)", 0);
-    TEST_ASSERT_EQUAL(Expr::Call, call->getClass());
-    args = call->args();
-    success = ftype->assignArguments(args->getOperands(), argPositions);
-    TEST_ASSERT(success);
-    TEST_ASSERT_EQUAL(3u, argPositions.size());
-    TEST_ASSERT_EQUAL(0, argPositions[0]);
-    TEST_ASSERT_EQUAL(1, argPositions[1]);
-    TEST_ASSERT_EQUAL(2, argPositions[2]);
-
-    // Keyword arguments
-    call = (CallExpr *)ParseExpression("func(1, c=2, b=3)", 0);
-    TEST_ASSERT_EQUAL(Expr::Call, call->getClass());
-    args = call->args();
-    success = ftype->assignArguments(args->getOperands(), argPositions);
-    TEST_ASSERT(success);
-    TEST_ASSERT_EQUAL(3u, argPositions.size());
-    TEST_ASSERT_EQUAL(0, argPositions[0]);
-    TEST_ASSERT_EQUAL(2, argPositions[1]);
-    TEST_ASSERT_EQUAL(1, argPositions[2]);
-#endif
-}
-
 #endif

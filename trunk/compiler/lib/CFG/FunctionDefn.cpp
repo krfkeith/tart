@@ -96,7 +96,7 @@ void ParameterDefn::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // FunctionDefn
-Type * FunctionDefn::getType() const {
+Type * FunctionDefn::type() const {
   return type_;
 }
 
@@ -105,7 +105,7 @@ Type * FunctionDefn::returnType() const {
 }
 
 bool FunctionDefn::hasBody() const {
-  return (ast != NULL && functionDecl()->body() != NULL) || !blocks_.empty();
+  return (ast_ != NULL && functionDecl()->body() != NULL) || !blocks_.empty();
 }
 
 Expr * FunctionDefn::eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {

@@ -37,7 +37,7 @@ void CodeGenerator::genLocalStorage() {
 void CodeGenerator::genLocalVar(VariableDefn * var) {
   // Don't generate the IR if we've already done so
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
-  DASSERT_OBJ(var->getIRValue() == NULL, var);
+  DASSERT_OBJ(var->irValue() == NULL, var);
   DASSERT_OBJ(var->type() != NULL, var);
 
   // Generate the variable type
@@ -81,7 +81,7 @@ void CodeGenerator::genBlocks() {
     for (ExprList::iterator it = types.begin(); it != types.end(); ++it) {
       if (debug) {
         // Generate source line information.
-        TokenPosition pos = getTokenPosition((*it)->location());
+        TokenPosition pos = tokenPosition((*it)->location());
         dbgFactory_.InsertStopPoint(
             dbgCompileUnit_,
             pos.beginLine, pos.beginCol,
@@ -92,7 +92,7 @@ void CodeGenerator::genBlocks() {
     }
 
     if (debug) {
-      TokenPosition pos = getTokenPosition(blk->termLocation());
+      TokenPosition pos = tokenPosition(blk->termLocation());
       dbgFactory_.InsertStopPoint(
           dbgCompileUnit_,
           pos.beginLine, pos.beginCol,

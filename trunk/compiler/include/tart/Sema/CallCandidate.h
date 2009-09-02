@@ -67,7 +67,7 @@ public:
   void setResultType(Type * type) { resultType_ = type; }
 
   /** The compatibility rank for the least compatible argument. */
-  ConversionRank getConversionRank() const { return conversionRank_; }
+  ConversionRank conversionRank() const { return conversionRank_; }
 
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();

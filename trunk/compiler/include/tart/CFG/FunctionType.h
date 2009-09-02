@@ -49,7 +49,7 @@ public:
 
   /** Given the name of a parameter, return the index of that parameter,
       or -1 if there is no such parameter. */
-  int getParamNameIndex(const char * name) const;
+  int paramNameIndex(const char * name) const;
 
   // Misc methods
 

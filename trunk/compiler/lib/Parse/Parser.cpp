@@ -313,7 +313,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   docComment.swap(decl->docComment());
   decl->attributes().append(attributes.begin(), attributes.end());
   if (ASTTemplate * templ = dyn_cast<ASTTemplate>(decl)) {
-    templ->getBody()->attributes().append(attributes.begin(),
+    templ->body()->attributes().append(attributes.begin(),
         attributes.end());
   }
 
@@ -1426,27 +1426,6 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
       paramFlags));
   return true;
 }
-
-#if 0
-void Parser::createSelfParam(ParameterList & params, Type * selfType) {
-  // We create a reference to the name of the type rather than the type itself
-  // - so that when we do template expansion it will bind to the specialized
-  // type and not the original.
-  TypeName * selfTypeName = TypeName::get(selfType->getDeclaration());
-  //TypeReference * selfTypeRef = TypeReference::get(matchLoc,
-  //    selfType->getDeclaration()->name());
-  ParameterDef * selfParam = new ParameterDef(matchLoc, istrings.idSelf,
-      selfTypeName, NULL, ParameterDef::Hidden);
-
-  // The 'self' param of struct methods is passed by reference instead of by value as normal.
-  if (selfType->getKind() == Type::Struct) {
-    selfParam->setParameterFlag(ParameterDef::Reference, true);
-  }
-
-  selfParam->setVariance(Covariant);
-  params.insert(params.begin(), selfParam);
-}
-#endif
 
 // -------------------------------------------------------------------
 // Statements

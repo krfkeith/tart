@@ -124,7 +124,7 @@ bool ResultOfConstraint::includes(const Type * other) const {
 }
 
 bool ResultOfConstraint::isSingular() const {
-  return callExpr->getSingularResultType() != NULL;
+  return callExpr->singularResultType() != NULL;
 }
 
 bool ResultOfConstraint::isReferenceType() const {
@@ -231,7 +231,7 @@ bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
 }
 
 bool ParameterOfConstraint::isSingular() const {
-  return callExpr->getSingularParamType(argIndex) != NULL;
+  return callExpr->singularParamType(argIndex) != NULL;
 }
 
 bool ParameterOfConstraint::isSubtype(const Type * other) const {

@@ -90,11 +90,11 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
 }
 
 void ScopeBuilder::createAccessors(PropertyDefn * prop) {
-  const ASTPropertyDecl * ast = cast<ASTPropertyDecl>(prop->getAST());
+  const ASTPropertyDecl * ast = cast<ASTPropertyDecl>(prop->ast());
   if (ast->getter() != NULL) {
     FunctionDefn * getter = new FunctionDefn(Defn::Function, prop->module(), ast->getter());
     prop->setGetter(getter);
-    prop->getAccessorScope().addMember(getter);
+    prop->accessorScope().addMember(getter);
     getter->createQualifiedName(prop);
     getter->copyTrait(prop, Defn::Synthetic);
     getter->copyTrait(prop, Defn::Final);
@@ -107,7 +107,7 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
   if (ast->setter() != NULL) {
     FunctionDefn * setter = new FunctionDefn(Defn::Function, prop->module(), ast->setter());
     prop->setSetter(setter);
-    prop->getAccessorScope().addMember(setter);
+    prop->accessorScope().addMember(setter);
     setter->createQualifiedName(prop);
     setter->copyTrait(prop, Defn::Synthetic);
     setter->copyTrait(prop, Defn::Final);
@@ -163,7 +163,7 @@ Defn * ScopeBuilder::createLocalDefn(Scope * scope, Defn * parent, const ASTDecl
 
 Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemplate * tp) {
   DASSERT(scope != NULL);
-  Defn * body = createDefn(scope, m, tp->getBody());
+  Defn * body = createDefn(scope, m, tp->body());
   TemplateSignature * tsig = TemplateSignature::get(body, scope);
   tsig->setAST(tp);
 

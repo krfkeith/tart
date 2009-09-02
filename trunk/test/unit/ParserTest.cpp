@@ -415,7 +415,7 @@ TEST_F(ParserTest, Statements) {
   EXPECT_AST_EQ("If (a, {})", ast);
 
   //ast = parseStatement("if (a) b; else c;");
-  //ASSERT_EQ(ASTNode::If, ast->getNodeType());
+  //ASSERT_EQ(ASTNode::If, ast->nodeType());
   //EXPECT_AST_EQ("If (a, b;, c;)", ast);
 
   ast = parseStatement("if a {} else {}");
@@ -447,7 +447,7 @@ TEST_F(ParserTest, Statements) {
   EXPECT_AST_EQ("For (var a; b; c; {})", ast);
 
   //ast = parseStatement("for (a, b = 1; b; c) {}");
-  //ASSERT_EQ(ASTNode::For, ast->getNodeType());
+  //ASSERT_EQ(ASTNode::For, ast->nodeType());
   //EXPECT_AST_EQ("For (Assign(Tuple(var a, var b), 1); b; c; {})", ast);
 
   ast = parseStatement("for a in b {}");

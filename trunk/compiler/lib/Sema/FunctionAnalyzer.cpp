@@ -107,7 +107,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     }
 
     if (ftype == NULL) {
-      DASSERT(target->getAST() != NULL);
+      DASSERT(target->ast() != NULL);
       TypeAnalyzer ta(module, activeScope);
       ftype = ta.typeFromFunctionAST(target->functionDecl());
       if (ftype == NULL) {

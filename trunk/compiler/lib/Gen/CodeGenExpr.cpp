@@ -193,7 +193,7 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
 }
 
 Value * CodeGenerator::genInitVar(InitVarExpr * in) {
-  Value * initValue = genExpr(in->getInitExpr());
+  Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
   }
@@ -202,7 +202,7 @@ Value * CodeGenerator::genInitVar(InitVarExpr * in) {
   if (var->defnType() == Defn::Let) {
     var->setIRValue(initValue);
   } else {
-    builder_.CreateStore(initValue, var->getIRValue());
+    builder_.CreateStore(initValue, var->irValue());
   }
 
   return initValue;
@@ -320,12 +320,12 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     return builder_.CreateLoad(varValue, var->name());
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
-    if (param->getIRValue() == NULL) {
+    if (param->irValue() == NULL) {
       diag.fatal(param) << "Invalid parameter IR value for " << param << " in function " <<
       currentFunction_;
     }
-    DASSERT_OBJ(param->getIRValue() != NULL, param);
-    return param->getIRValue();
+    DASSERT_OBJ(param->irValue() != NULL, param);
+    return param->irValue();
   } else {
     DFAIL("IllegalState");
   }
