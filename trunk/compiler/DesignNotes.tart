@@ -1,0 +1,88 @@
+if let x:int = 1 {
+}
+
+while let x:int = b {
+}
+
+if let x:int = 1 {
+}
+
+// Wrong - y might be unassigned.
+if (let x:int = 1) or (let y:int = 2) {
+}
+
+var i:int = 0;
+var l:List:int = List();
+
+interface ContextHandler {
+  def enter();
+  def exit(e:Exception or Nothing) -> Exception or Nothing;
+
+  def exit();
+  def exit(e:Exception);
+}
+
+struct Vector4D[%T] require T issubtype Number {
+  private var data:NativeArray<[T, 4]>;
+
+  def x:T {
+    get { return data[0]; }
+    set { data[0] = value; }
+  }
+
+  def y:T {
+    get { return data[1]; }
+    set { data[1] = value; }
+  }
+
+  def z:T {
+    get { return data[2]; }
+    set { data[2] = value; }
+  }
+
+  def w:T {
+    get { return data[3]; }
+    set { data[3] = value; }
+  }
+
+  def [index:int]:T {
+    get {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      return data[index];
+    }
+    set {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      data[index] = value;
+    }
+  }
+}
+
+struct Matrix[%T, %Rows:int, %Cols:int] require T issubtype Number {
+  private var data:NativeArray<[T, Rows * Cols]>;
+
+  def [row:int, col:int]:T {
+    get {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      return data[row * Cols + col];
+    }
+    set {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      data[row * Cols + col] = value;
+    }
+  }
+  
+  def construct() {
+    for i = 0; i < Rows * Cols; ++i {
+      data[i] = 0;
+    }
+  }
+}
+
+typealias Matrix4f:Matrix<[float, 4, 4]>;
+typealias Matrix4d:Matrix<[double, 4, 4]>;
+
+class Transform {
+  private var m:Matrix4d;
+}

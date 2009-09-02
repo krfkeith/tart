@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Lexical Structure &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Tart Language Reference" href="index.html" />
+    <link rel="next" title="Types and Values" href="types.html" />
+    <link rel="prev" title="Front Matter" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Types and Values"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Front Matter"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Tart Language Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="lexical-structure">
+<h1>Lexical Structure<a class="headerlink" href="#lexical-structure" title="Permalink to this headline">¶</a></h1>
+<p>This chapter specifies the lexical structure of the Tart language.</p>
+<div class="section" id="unicode">
+<h2>Unicode<a class="headerlink" href="#unicode" title="Permalink to this headline">¶</a></h2>
+<p>Programs are written using the Unicode character set. Information about
+this character set and its associated character encodings may be found at:</p>
+<blockquote>
+<a class="reference" href="http://www.unicode.org">http://www.unicode.org</a></blockquote>
+<p>The current implementation of the compiler recognizes programs written in
+UTF-8, however support for other Unicode encodings is planned. Compiled
+programs use sequences of 16-bit code points to represent strings, although
+there are APIs to access characters as 32-bit values, as well as a variety
+of methods for encoding and decoding strings in other character encodings.</p>
+</div>
+<div class="section" id="line-terminators">
+<h2>Line Terminators<a class="headerlink" href="#line-terminators" title="Permalink to this headline">¶</a></h2>
+<p>A Tart source file consists of a sequence of lines, each of which consists
+of zero or more characters terminated by an end-of-line sequence. In source
+files, any of the standard platform line termination sequences can be
+used - the Unix form using ASCII LF (linefeed), the Windows form using
+the ASCII sequence CR LF (return followed by linefeed), or the Macintosh
+form using the ASCII CR (return) character. All of these forms can be
+used equally, regardless of platform.</p>
+<p>Tart is a &#8220;free-form&#8221; language, meaning that line separators are
+considered the same as other whitespace. The one exception to this rule
+is the &#8220;//&#8221; comment form, which is terminated by an end-of-line
+sequence.</p>
+</div>
+<div class="section" id="input-elements-and-tokens">
+<h2>Input Elements and Tokens<a class="headerlink" href="#input-elements-and-tokens" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="white-space">
+<h2>White Space<a class="headerlink" href="#white-space" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="comments">
+<h2>Comments<a class="headerlink" href="#comments" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="identifiers">
+<h2>Identifiers<a class="headerlink" href="#identifiers" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="keywords">
+<h2>Keywords<a class="headerlink" href="#keywords" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="literals">
+<h2>Literals<a class="headerlink" href="#literals" title="Permalink to this headline">¶</a></h2>
+<pre>
+<strong id="grammar-token-literal">literal   </strong> ::=  <a class="reference" href="#grammar-token-int_lit"><tt class="xref docutils literal"><span class="pre">int_lit</span></tt></a> | <a class="reference" href="#grammar-token-float_lit"><tt class="xref docutils literal"><span class="pre">float_lit</span></tt></a> | <a class="reference" href="#grammar-token-string_lit"><tt class="xref docutils literal"><span class="pre">string_lit</span></tt></a> | <a class="reference" href="#grammar-token-char_lit"><tt class="xref docutils literal"><span class="pre">char_lit</span></tt></a> | <a class="reference" href="#grammar-token-null_lit"><tt class="xref docutils literal"><span class="pre">null_lit</span></tt></a> | <a class="reference" href="#grammar-token-array_lit"><tt class="xref docutils literal"><span class="pre">array_lit</span></tt></a> | <a class="reference" href="#grammar-token-type_lit"><tt class="xref docutils literal"><span class="pre">type_lit</span></tt></a>
+<strong id="grammar-token-int_lit">int_lit   </strong> ::=  0-9+
+<strong id="grammar-token-float_lit">float_lit </strong> ::=  0-9+
+<strong id="grammar-token-string_lit">string_lit</strong> ::=  '&quot;' chars '&quot;'
+<strong id="grammar-token-char_lit">char_lit  </strong> ::=  &quot;'&quot; chars &quot;'&quot;
+<strong id="grammar-token-bool_lit">bool_lit  </strong> ::=  &quot;true&quot; | &quot;false&quot;
+<strong id="grammar-token-null_lit">null_lit  </strong> ::=  &quot;null&quot;
+<strong id="grammar-token-array_lit">array_lit </strong> ::=  &quot;[&quot; [<tt class="xref docutils literal"><span class="pre">expression</span></tt> (&quot;,&quot; <tt class="xref docutils literal"><span class="pre">expression</span></tt>)*] &quot;]&quot;
+<strong id="grammar-token-type_lit">type_lit  </strong> ::=  typeof <tt class="xref docutils literal"><span class="pre">type_expression</span></tt>
+</pre>
+<div class="section" id="integer-literals">
+<h3>Integer Literals<a class="headerlink" href="#integer-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="floating-point-literals">
+<h3>Floating-Point Literals<a class="headerlink" href="#floating-point-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="boolean-literals">
+<h3>Boolean Literals<a class="headerlink" href="#boolean-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="character-literals">
+<h3>Character Literals<a class="headerlink" href="#character-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="string-literals">
+<h3>String Literals<a class="headerlink" href="#string-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="escape-sequences-for-character-and-string-literals">
+<h3>Escape Sequences for Character and String Literals<a class="headerlink" href="#escape-sequences-for-character-and-string-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="array-literals">
+<h3>Array Literals<a class="headerlink" href="#array-literals" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="the-null-literal">
+<h3>The Null Literal<a class="headerlink" href="#the-null-literal" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="separators">
+<h2>Separators<a class="headerlink" href="#separators" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="operators">
+<h2>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Lexical Structure</a><ul>
+<li><a class="reference" href="#unicode">Unicode</a></li>
+<li><a class="reference" href="#line-terminators">Line Terminators</a></li>
+<li><a class="reference" href="#input-elements-and-tokens">Input Elements and Tokens</a></li>
+<li><a class="reference" href="#white-space">White Space</a></li>
+<li><a class="reference" href="#comments">Comments</a></li>
+<li><a class="reference" href="#identifiers">Identifiers</a></li>
+<li><a class="reference" href="#keywords">Keywords</a></li>
+<li><a class="reference" href="#literals">Literals</a><ul>
+<li><a class="reference" href="#integer-literals">Integer Literals</a></li>
+<li><a class="reference" href="#floating-point-literals">Floating-Point Literals</a></li>
+<li><a class="reference" href="#boolean-literals">Boolean Literals</a></li>
+<li><a class="reference" href="#character-literals">Character Literals</a></li>
+<li><a class="reference" href="#string-literals">String Literals</a></li>
+<li><a class="reference" href="#escape-sequences-for-character-and-string-literals">Escape Sequences for Character and String Literals</a></li>
+<li><a class="reference" href="#array-literals">Array Literals</a></li>
+<li><a class="reference" href="#the-null-literal">The Null Literal</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#separators">Separators</a></li>
+<li><a class="reference" href="#operators">Operators</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="intro.html"
+                                  title="previous chapter">Front Matter</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="types.html"
+                                  title="next chapter">Types and Values</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/lang/lex.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Types and Values"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Front Matter"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Tart Language Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

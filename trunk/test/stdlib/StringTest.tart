@@ -1,0 +1,45 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  stringLiteralTest();
+  stringComparisonTest();
+  stringGetCharTest();
+  stringFromArrayTest();
+  return 0;
+}
+
+def stringLiteralTest() {
+  let s = "Hello";
+  Debug.assertTrue(5 == s.length);
+  Debug.assertFalse(s.isEmpty);
+  Debug.assertTrue("".isEmpty);
+  Debug.assertFalse("a".isEmpty);
+}
+
+def stringComparisonTest() {
+  let s = "Hello";
+  let t = "Goodbye";
+  Debug.assertTrue(s == s);
+  Debug.assertFalse(s == t);
+  Debug.assertTrue(s == "Hello");
+  Debug.assertFalse(s == "Goodbye");
+//  Debug.assertTrue(s != "Yello");
+  
+  // TODO: Test !=
+}
+
+def stringGetCharTest() {
+  let s = "Hello";
+  Debug.assertTrue(s[0] == 'H');
+  Debug.assertTrue(s[1] == 'e');
+}
+
+def stringFromArrayTest() {
+  let a = ubyte[](0); // Zero-length array
+  let s = String(a);
+  Debug.assertTrue(s == "");
+}
+
+def stringToStringTest() {
+  // TODO: Type inference problem.
+  Debug.assertEq("Hello", "Hello".toString());
+}

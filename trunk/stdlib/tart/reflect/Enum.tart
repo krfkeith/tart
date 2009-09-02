@@ -1,0 +1,3 @@
+/** The Enum metatype. Represents the type object for an enumeration. */
+public class Enum[%T] : Type {
+}

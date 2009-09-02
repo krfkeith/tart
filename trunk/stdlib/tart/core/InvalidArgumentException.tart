@@ -1,0 +1,3 @@
+/** Exception thrown when a method argument is invalid. */
+public class InvalidArgumentException : Exception {
+}

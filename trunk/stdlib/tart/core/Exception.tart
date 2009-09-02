@@ -1,0 +1,32 @@
+/** Base class of exceptions.
+ */
+public class Exception : Throwable {
+  private var msg:String;
+  // TODO: Add cause
+  // private var cause:Exception
+  
+  /** Default constructor. */
+  def construct() {
+    // TODO: Make call to super() implicit.
+    super();
+    self.msg = "--";
+  }
+
+  /** Message constructor. */
+  def construct(msg:String) {
+    super();
+    self.msg = msg;
+  }
+
+  /** The error message for this exception. */
+  final def message:String {
+    get { return self.msg; }
+  }
+
+  /** Throw an exception if 'test' is true. */
+  /*public classmacro when(test:bool) {
+    if (test) {
+      throw self();
+    }
+  }*/
+}

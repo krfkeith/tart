@@ -1,0 +1,3 @@
+/** The Class metatype. Represents the type object for a class. */
+public class Class[%T] : Type {
+}

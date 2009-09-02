@@ -1,0 +1,4 @@
+/** An iterface for iterable collections. */
+interface Iterable[%T] {
+  def iterate -> Iterator[T];
+}

@@ -1,0 +1,48 @@
+/** Simple debug printing facility for testing the compiler. */
+namespace Debug {
+  @Intrinsic
+  def stringify[%T](expr:T) -> String;
+
+  @Intrinsic
+  def locationOf[%T](expr:T) -> String;
+
+  @Extern("Debug_write")
+  def write(msg:String);
+
+  @Extern("Debug_writeLn")
+  def writeLn(msg:String);
+  
+  @Extern("Debug_fail")
+  def fail(msg:String);
+
+  @Extern("Debug_fail2")
+  def fail(s0:String, s1:String);
+
+  @Extern("Debug_fail3")
+  def fail(s0:String, s1:String, s2:String);
+
+  @Extern("Debug_fail4")
+  def fail(s0:String, s1:String, s2:String, s3:String);
+
+  @Extern("Debug_fail5")
+  def fail(s0:String, s1:String, s2:String, s3:String, s4:String);
+
+  macro assertTrue(cond:bool) {
+    if not cond {
+      fail(locationOf(cond), "Assertion failed: ", stringify(cond));
+    }
+  }
+
+  macro assertFalse(cond:bool) {
+    if cond {
+      fail(locationOf(cond), "Assertion failed, expected false: ", stringify(cond));
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T) {
+    if expected != actual {
+      fail(locationOf(actual), "Assertion failure, expected: ", stringify(expected),
+        ", actual value: ", actual.toString());
+    }
+  }
+}

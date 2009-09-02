@@ -1,0 +1,4 @@
+@EntryPoint
+def main(args: String[]) {
+  return 1 + 2 * (2 + 1) - 7;
+}

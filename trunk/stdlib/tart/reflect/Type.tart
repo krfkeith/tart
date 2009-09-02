@@ -1,0 +1,29 @@
+/** The metatype object - the class that describes a type. */
+public class Type {
+  /** The type info block. */
+  private var typeInfo:NativePointer[TypeInfoBlock];
+  
+  /** The superclass of this class. */
+  readonly var superType:Type;
+
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+
+  /** True if this is an aggregate type. */
+  //final def isAggregate:bool { get { return false; } }
+  
+  /** True if this is an array type. */
+  //final def isArray:bool { get { return false; } }
+  
+  /** True if this is an enumeration. */
+  //final def isEnum:bool { get { return false; } }
+
+  /** True if this type is an interface. */
+  //final def isInterface:bool { get { return false; } }
+  
+  /** True if this is a primitive type. */
+  //final def isPrimitive:bool { get { return false; } }
+  
+  /** True if this is a reference type. */
+  //final def isByReference:bool { get { return false; } }
+}

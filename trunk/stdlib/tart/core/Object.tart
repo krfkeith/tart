@@ -1,0 +1,41 @@
+/** Base class of all reference types. */
+public class Object {
+  private var __tib:NativePointer[TypeInfoBlock];
+
+  /** Compiler-generated function to lookup the specified interface method. */
+  // @Intrinsic
+  //private def getInterfaceMethod(
+  //    interfaceType:NativePoint<Type>, methodIndex:int) -> NativePointer<void>;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length types.
+    
+      '__valloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It returns the
+      memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+  */
+  //[tart.config.Permissions.Require("pointer-math")]
+  @Intrinsic
+  protected static def __valloc[%T](size:int) -> T;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length object types.
+    
+      '__pvalloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It then
+      returns the memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+      
+      This version is similar to '__valloc', except that 'size' is a pointer
+      which will be bitcast to int. This is used in conjunction with
+      'zeroPtr' to calculate the offset of a field within a data structure.
+  */
+  //[tart.config.Permissions.Require("pointer-math")]
+  @Intrinsic
+  protected static def __pvalloc[%T, %S](size:T) -> S;
+}

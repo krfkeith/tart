@@ -1,0 +1,7 @@
+/** Attribute that indicates that the associated function is where
+    execution of the application should start. */
+@Attribute(Attribute.Target.FUNCTION)
+class EntryPoint {
+  public def construct() {}
+  @Intrinsic def apply(t:tart.reflect.Type);
+}

@@ -1,0 +1,365 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Templates and Metaprogramming &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Modules and Packages" href="modules.html" />
+    <link rel="prev" title="Generic Functions" href="generics.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="Modules and Packages"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="generics.html" title="Generic Functions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="index-22"></span><div class="section" id="templates-and-metaprogramming">
+<span id="index-23"></span><h1>Templates and Metaprogramming<a class="headerlink" href="#templates-and-metaprogramming" title="Permalink to this headline">¶</a></h1>
+<p>Tart allows functions (including macros) and user-defined types (including classes, structs,
+interfaces and protocols) to be templates. Tart templates are &#8220;pattern-based&#8221;, in that the list of
+template parameters for a type are specified with a list of patterns to be matched.</p>
+<p>Here&#8217;s a simple example of a template:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Example</span><span class="p">&lt;[</span><span class="nc">%T</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span>
+  <span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">T</span><span class="p">;</span>
+<span class="k">}</span>
+
+<span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">Example</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The two-character sequence <tt class="docutils literal"><span class="pre">&lt;[</span></tt> starts a template parameter list, and <tt class="docutils literal"><span class="pre">]&gt;</span></tt> terminates the list.
+The same syntax is used both for definition template parameters and explicitly invoking templates.</p>
+<p>Each template parameter is a pattern to be matched. Patterns can either be a type expression (which
+match a type), or a value expression (which match a constant value).</p>
+<p>An identifier that begins with a percent-sign <tt class="docutils literal"><span class="pre">%</span></tt> is a <em>pattern variable</em>. By default a pattern
+variables will match any type expression, and the matched expression will be bound to that variable.
+Thus, in the above example, the pattern variable <tt class="docutils literal"><span class="pre">T</span></tt> will be bound to type <tt class="xref docutils literal"><span class="pre">String</span></tt>.</p>
+<p>Note that the percent-sign prefix is only used within the template parameter list. In the template
+body, the variable is used without the prefix.</p>
+<p>Pattern variables can be used within complex type expressions:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Example2</span><span class="p">&lt;[</span><span class="nc">List</span><span class="o">&lt;</span><span class="gr">[%T]</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{}</span>
+
+<span class="k">var</span> <span class="nv">x</span><span class="p">:</span><span class="nc">Example2</span><span class="o">&lt;</span><span class="p">[</span><span class="nv">List</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="gr">var x:Example2&lt;[String]&gt;; // ERROR -- template argument does not match.</span>
+</pre></div>
+</div>
+<p>This example requires that the template argument be a List of some type <tt class="docutils literal"><span class="pre">T</span></tt>. The <tt class="docutils literal"><span class="pre">T</span></tt> parameter
+will be bound to the element type of the list.</p>
+<div class="section" id="explicit-specialization">
+<span id="index-24"></span><h2>Explicit specialization<a class="headerlink" href="#explicit-specialization" title="Permalink to this headline">¶</a></h2>
+<p>A template argument list need not contain any pattern variables. This is generally only useful when
+you want to create an explicit specialization of a generic type.:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Example3</span><span class="p">&lt;[</span><span class="nc">List</span><span class="o">&lt;</span><span class="gr">[%T]</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* non-string version. */</span> <span class="k">}</span>
+<span class="k">class</span> <span class="nc">Example3</span><span class="p">&lt;[</span><span class="nc">List</span><span class="o">&lt;</span><span class="gr">[String]</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* string version. */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>In the above example, if the template argument is <tt class="xref docutils literal"><span class="pre">String</span></tt> it will use the second template;
+if it is not, then it will use the first.</p>
+</div>
+<div class="section" id="function-templates">
+<h2>Function templates<a class="headerlink" href="#function-templates" title="Permalink to this headline">¶</a></h2>
+<p>For functions, the syntax is similar:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">forall</span><span class="p">&lt;[</span><span class="gr">%T]</span><span class="o">&gt;</span><span class="gr">(Iterator&lt;[T]</span><span class="o">&gt;</span><span class="gr">) { /* ... */ }</span>
+</pre></div>
+</div>
+<p>The example shows a function that takes an iterator of some type.</p>
+</div>
+<div class="section" id="implicit-specialization">
+<h2>Implicit specialization<a class="headerlink" href="#implicit-specialization" title="Permalink to this headline">¶</a></h2>
+<p>When a template is used, its arguments can be specified either explicitly via a template argument
+list, or implicitly based on function arguments. For example:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="c">// Return the lesser of two values.</span>
+<span class="k">def</span> <span class="nf">min</span><span class="p">&lt;[</span><span class="gr">%T]</span><span class="o">&gt;</span><span class="gr">(v0:T, v1:T) -</span><span class="o">&gt;</span> <span class="nc">T</span><span class="gr">;</span>
+
+<span class="gr">let x = min(1, 2);</span>
+</pre></div>
+</div>
+<p>In the above example, the template arguments did not need to be specified, as the compiler was able
+to deduce the type of the pattern variable (<tt class="docutils literal"><span class="pre">int</span></tt> in this case) by matching the types of the
+function arguments.</p>
+<p>Template parameters can also be deduced from the return type of a function. For example, we might
+have a function :func:<tt class="docutils literal"><span class="pre">emptyList</span></tt> which decides what kind of list to return based on what it is
+being assigned to:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">namespace</span> <span class="nc">Collections</span> <span class="k">{</span>
+  <span class="k">def</span> <span class="nf">emptyList</span><span class="p">&lt;[</span><span class="gr">%T]</span><span class="o">&gt;</span><span class="gr">() {</span>
+<span class="gr">     return List&lt;[T]</span><span class="o">&gt;</span><span class="gr">();</span>
+<span class="gr">  }</span>
+<span class="gr">}</span>
+
+<span class="gr">let x:List&lt;[String]</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nc">Collections</span><span class="o">.</span><span class="nc">emptyList</span><span class="gr">();</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="template-instantiation">
+<h2>Template instantiation<a class="headerlink" href="#template-instantiation" title="Permalink to this headline">¶</a></h2>
+<p>What happens when a template is instantiated? The Tart compiler generates a clone of the template
+for each unique combination of template arguments. This is similar to what C++ does.</p>
+<p>The cloning of a template occurs before evaluation and type resolution. This
+allows for a programming technique called <em>duck typing</em>. The term comes from
+Python, and is inspired by the old adage &#8220;if it looks like a duck, walks like a
+duck, and quacks like a duck, then it&#8217;s a duck.&#8221; In the context of templates it
+means that if a template expects a class with a &#8220;quack()&#8221; method, then any class
+having a quack() method will work, regardless of what its base classes are.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>This is different than Java&#8217;s &#8216;erasure&#8217; concept in which the
+template is compiled in such a way as to be type-neutral, meaning that the
+same code is used to operate on different types.  This greatly reduces
+code bloat, but unfortunately it severely limits what can be done with
+templates. When you declare a template parameter, you generally have to
+specify a base type or <em>upper bound</em> of the template argument. Only classes
+which are subtypes of the upper bound can be passed as template arguments,
+and the only methods you can call on that argument are those that are
+defined by the upper bound.</p>
+<p class="last">For Tart, the problem of code bloat is addressed in a different way - by
+attempting to collapse copies template that generate identical code. (That
+is the eventual plan, anyway.)</p>
+</div>
+</div>
+<div class="section" id="non-type-template-arguments">
+<h2>Non-type template arguments<a class="headerlink" href="#non-type-template-arguments" title="Permalink to this headline">¶</a></h2>
+<p>To declare a non-type template parameter, add a type specifier just as would be used to define the type of a variable:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">func</span><span class="p">&lt;[</span><span class="gr">%N:int]</span><span class="o">&gt;</span><span class="gr">();</span>
+
+<span class="gr">func&lt;[4]</span><span class="o">&gt;</span><span class="gr">();</span>
+</pre></div>
+</div>
+<p>The template argument must be a compile-time computable.</p>
+</div>
+<div class="section" id="template-guard-conditions">
+<h2>Template guard conditions<a class="headerlink" href="#template-guard-conditions" title="Permalink to this headline">¶</a></h2>
+<p>A guard condition is an additional restriction on the kind of value that can be bound to a template.
+For example, suppose we wanted a template parameter to only bind to subclasses of &#8220;Node&#8221;, so we
+define a restriction using the subclass test operator <tt class="docutils literal"><span class="pre">&lt;:</span></tt>:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Visitor</span><span class="p">&lt;[</span><span class="nc">%T</span> <span class="nc">require</span> <span class="nc">%T</span> <span class="o">&lt;:</span> <span class="nc">Node</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>This also works with non-type arguments:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Visitor</span><span class="p">&lt;[</span><span class="nc">%A</span><span class="p">:</span><span class="nc">int</span> <span class="nc">require</span> <span class="nc">%A</span> <span class="o">&lt;=</span> <span class="mf">10</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>The &#8220;require&#8221; clause must come after all of the template arguments:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Visitor</span><span class="p">&lt;[</span><span class="nc">%A</span><span class="p">,</span> <span class="nc">%B</span> <span class="nc">require</span> <span class="nc">%A</span> <span class="o">&lt;:</span> <span class="nc">%B</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>However, the require clause can also introduce new pattern variables. Here&#8217;s a more realistic
+example, where we want to define a template that operates on all subclasses of iterators of a given
+type:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">forall</span><span class="p">&lt;[</span><span class="gr">%IterType require %IterType &lt;: Iterator&lt;[%T]</span><span class="o">&gt;</span><span class="p">]&gt;(</span><span class="nv">iter</span><span class="p">:</span><span class="nc">IterType</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Because expressions like this are so common, there is a shortcut syntax which allows us to omit the
+&#8220;requires&#8221; keyword:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">def</span> <span class="nf">forall</span><span class="p">&lt;[</span><span class="gr">%IterType &lt;: Iterator&lt;[%T]</span><span class="o">&gt;</span><span class="p">]&gt;(</span><span class="nv">iter</span><span class="p">:</span><span class="nc">IterType</span><span class="p">);</span>
+<span class="k">class</span> <span class="nc">Visitor</span><span class="p">&lt;[</span><span class="nc">%A</span><span class="p">:</span><span class="nc">int</span> <span class="o">&lt;=</span> <span class="mf">10</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span> <span class="c">/* ... */</span> <span class="k">}</span>
+</pre></div>
+</div>
+<p>The general rule is as follows: A template argument consisting of a binary operator expression,
+where the left-hand side of the expression is a pattern variable, will be expanded to that variable
+plus a guard condition consisting of the original expression.</p>
+<p>Thus:</p>
+<div class="highlight-none"><div class="highlight"><pre>%X &lt;oper&gt; &lt;expression&gt;
+</pre></div>
+</div>
+<p>will be expanded to:</p>
+<div class="highlight-none"><div class="highlight"><pre>%X requires %X &lt;oper&gt; &lt;expression&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="more-sophisticated-guard-conditions-using-protocols">
+<h2>More sophisticated guard conditions using protocols<a class="headerlink" href="#more-sophisticated-guard-conditions-using-protocols" title="Permalink to this headline">¶</a></h2>
+<p>Tart supports the notion of a <em>protocol</em>, which is a contract or that a type must adhere to. A type
+is said to <em>conform</em> to a protocol if that type possesses all of the members of that protocol.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This use of the word &#8220;protocol&#8221; has nothing to do with network
+protocols, and has more in common with diplomatic protocols, meaning a
+set of guidelines for interaction between two parties.</p>
+</div>
+<p>A protocol is much like an interface, and in fact the syntax for declaring them is very similar:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">interface</span> <span class="nc">Iterator</span><span class="p">&lt;[</span><span class="nc">%T</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span>
+  <span class="k">def</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nv">T</span><span class="p">;</span>
+<span class="k">}</span>
+
+<span class="k">protocol</span> <span class="nc">AbstractIterator</span><span class="p">&lt;[</span><span class="nc">%T</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{</span>
+  <span class="k">def</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nv">T</span><span class="p">;</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>Like an interface, a protocol can declare abstract methods, properties and types within its body.
+Any non-abstract class which inherits from the protocol must supply an implementation of all of the
+method and properties, otherwise an error will result.</p>
+<p>However, there are some important differences between interfaces and protocols:</p>
+<ul class="simple">
+<li>A protocol declaration does not create a new type - you cannot declare a variable or function
+parameter whose type is the protocol.</li>
+<li>A protocol does not affect the runtime representation of a class in any way, unlike interfaces
+which create a dispatch table for each concrete type that implements the protocol.</li>
+<li>A class does not have to explicitly declare itself as implementing a protocol - any class that
+has the right set of methods and properties can be considered to conform to the protocol.
+(However, in most cases it will be useful to declare the protocol explicitly - both for purposes
+of documentation and support for automated code refactoring.)</li>
+<li>Protocols are not automatically polymorphic - if class A and class B both conform to a given
+protocol, this does not mean that they have a common base class - it merely means that they both
+conform to the same contract.</li>
+</ul>
+<p>In other words, a protocol is purely a contract, a set of constraints that a given type must adhere
+to. As such, it is a much weaker set of guarantees than an interface which creates a new type and an
+inheritance relationship.</p>
+<p>So why would you want to use a protocol rather than an interface? There are three advantages that
+protocols have over interfaces:</p>
+<ul class="simple">
+<li>A protocol can be added to a class without modifying the original class definition, either
+implicitly or explicitly using &#8216;extend&#8217;. (The &#8216;extend&#8217; keyword will be discussed later.)</li>
+<li>A protocol incurs no additional runtime overhead.</li>
+<li>A protocol can be used with value types (structs) as well as reference types. Interfaces can
+only be used with reference types (classes).</li>
+</ul>
+<p>Protocols will most often be used in template guard conditions:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">class</span> <span class="nc">IteratorWrapper</span><span class="p">&lt;[</span><span class="nc">%IterType</span> <span class="o">&lt;:</span> <span class="nc">AbstractIterator</span><span class="o">&lt;</span><span class="gr">[%T]</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">{}</span>
+</pre></div>
+</div>
+<p>What this example says is that the IteratorWrapper can only be used with types that conform to the
+AbstractIterator protocol. Since the only constraint that is imposed by <tt class="docutils literal"><span class="pre">AbstractIterator</span></tt> is that
+the class have a method <tt class="docutils literal"><span class="pre">next</span></tt> which returns a type T, what this guard condition effectively does
+is test whether <tt class="docutils literal"><span class="pre">IterType</span></tt> has a <tt class="docutils literal"><span class="pre">next</span></tt> method, something that would be hard to do otherwise.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The &#8220;protocol&#8221; feature is similar in spirit to C++0x&#8217;s &#8220;concepts&#8221; feature,
+although there are some differences.</p>
+</div>
+</div>
+<div class="section" id="goals-for-templates">
+<h2>Goals for Templates<a class="headerlink" href="#goals-for-templates" title="Permalink to this headline">¶</a></h2>
+<p>C++ templates are powerful, but many programmers find them to be complex. The
+truth is that C++ templates aren&#8217;t hard to understand because they are too
+powerful - they are hard to understand because they are <em>not quite powerful
+enough</em>. A lot of the complexity of C++ templates (as seen if you&#8217;ve ever
+tried to read the source code to BOOST) comes from trying to get around their
+limitations.</p>
+<p>One goal of Tart&#8217;s template system is to be able to generate new classes from
+old. Say for example you want to take an abstract interface and generate a
+mock implementation for testing. This mock implementation merely records all
+of the method calls and plays them back later for verification. In Java, this
+can be done via run-time creation of classes using reflection. In Tart, we do
+this at compile time by using a template that invokes a mapping transformation
+on the members of the class. The input to the template is a class (the
+interface), and the output is a class (the mock implementation). For each
+public member of the input class, we apply an inner template to it, producing
+a mock implementation of that member; the concatenation of all of those
+resulting members is the output class.</p>
+<p>The same technique could be used to generate call stubs for RPC calls.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Templates and Metaprogramming</a><ul>
+<li><a class="reference" href="#explicit-specialization">Explicit specialization</a></li>
+<li><a class="reference" href="#function-templates">Function templates</a></li>
+<li><a class="reference" href="#implicit-specialization">Implicit specialization</a></li>
+<li><a class="reference" href="#template-instantiation">Template instantiation</a></li>
+<li><a class="reference" href="#non-type-template-arguments">Non-type template arguments</a></li>
+<li><a class="reference" href="#template-guard-conditions">Template guard conditions</a></li>
+<li><a class="reference" href="#more-sophisticated-guard-conditions-using-protocols">More sophisticated guard conditions using protocols</a></li>
+<li><a class="reference" href="#goals-for-templates">Goals for Templates</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="generics.html"
+                                  title="previous chapter">Generic Functions</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="modules.html"
+                                  title="next chapter">Modules and Packages</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/templates.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="Modules and Packages"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="generics.html" title="Generic Functions"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>
