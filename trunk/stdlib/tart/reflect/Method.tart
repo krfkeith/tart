@@ -1,0 +1,9 @@
+class Method {
+  //@Extern
+  //final def call(obj:Object, args:Object[]);
+  
+  // name
+  // resultType
+  // argumentTypes
+  // flags
+}
