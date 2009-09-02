@@ -22,7 +22,7 @@ public final class String {
 
     /** Custom allocation function for strings. */
     //[RequireFeature]
-    static def alloc(length:int) {
+    static def alloc(length:int) -> String {
       // The 'offsetof' trick for calculating the size.
       let s:String = __pvalloc(zeroPtr[String]().data[length]);
       s.length = length;

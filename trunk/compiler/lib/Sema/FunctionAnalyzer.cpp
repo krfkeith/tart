@@ -276,6 +276,8 @@ bool FunctionAnalyzer::resolveReturnType() {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
     if (returnType == NULL) {
+      returnType = &VoidType::instance;
+#if 0
       BlockList & blocks = target->blocks();
       for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
         Block * bk = *it;
@@ -336,6 +338,7 @@ bool FunctionAnalyzer::resolveReturnType() {
         returnType = &BadType::instance;
       }
 
+#endif
       funcType->setReturnType(returnType);
     }
 

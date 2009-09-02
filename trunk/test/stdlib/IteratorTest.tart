@@ -1,5 +1,5 @@
 @EntryPoint
-def main(args: String[]) {
+def main(args: String[]) -> int {
   testManualIteration();
   testManualIteration2();
   testForeach();
@@ -61,7 +61,7 @@ def testForeach2() {
   Debug.assertEq(10, sum(1,5,4));
 }
 
-def sum(nums:int...) {
+def sum(nums:int...) -> int {
   var sum = 0;
   for i in nums {
     sum += i;

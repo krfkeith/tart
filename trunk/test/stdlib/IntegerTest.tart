@@ -1,5 +1,5 @@
 @EntryPoint
-def main(args: String[]) {
+def main(args: String[]) -> int {
   integerLimitsTest();
   integerToStringTest();
   return 0;
