@@ -83,12 +83,23 @@ Implementation TODOS:
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
 * AttributeSite failure tests.
 * Type extension
+* Finish writing out and parsing metadata files so that we don't have to compile everything
+  multuple times.
+* Call gc_alloc instead of malloc.
+* Statements:
+  * For (need unpacking assignment.)
+  * Foreach (need iterators first, and static interfaces)
+  * do-while
+  * yield
+  * repeat
+  * fork/threading primitives
+  * with (what interface for using?)
 
 Doc errors:
 
 * Fix operator overload syntax (infixX notation used now.)
 * Fix description of imports to match current functionality.
-* Fix template syntax back to angle brackets. <>
+* Fix template syntax back.
 * Array literals
 * Better explanation of unpacking
 * Revise haskell note and next note
