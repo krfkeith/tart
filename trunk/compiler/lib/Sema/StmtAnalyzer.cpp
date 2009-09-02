@@ -464,17 +464,35 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
   FunctionDefn * next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
   if (next == NULL) {
+    // If it's not an Iterator, see if it's an Iterable.
     FunctionDefn * iterate = findInterfaceMethod(iterType, Builtins::typeIterable, "iterate");
     if (iterate == NULL) {
       diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
       return false;
     }
 
-    DFAIL("Implement");
-  } else {
-    iterExpr = createTempVar(".iterator", iterExpr, false);
+    LValueExpr * iterMethod = new LValueExpr(iterate->location(), iterExpr, iterate);
+    iterExpr = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
+        st->location(), iterMethod, ASTNodeList(), NULL), NULL);
+    if (iterExpr == NULL) {
+      return false;
+    }
+
+    if (!isa<CompositeType>(iterExpr->type())) {
+      diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+      return false;
+    }
+
+    iterType = static_cast<CompositeType *>(iterExpr->type());
+    AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
+    next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
+    if (next == NULL) {
+      diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+      return false;
+    }
   }
 
+  iterExpr = createTempVar(".iterator", iterExpr, false);
   LValueExpr * nextMethod = new LValueExpr(next->location(), iterExpr, next);
   Expr * nextCall = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
       iterExpr->location(), nextMethod, ASTNodeList(), NULL), NULL);
