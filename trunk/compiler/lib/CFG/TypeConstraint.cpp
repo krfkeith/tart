@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -14,7 +14,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeConstraint
 
-const llvm::Type * TypeConstraint::getIRType() const {
+const llvm::Type * TypeConstraint::irType() const {
   DFAIL("TypeConstraint does not have an IRType");
 }
 
@@ -38,7 +38,7 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
       }
     }
   }
-  
+
   return best;
 }
 
@@ -59,7 +59,7 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
       }
     }
   }
-  
+
   return best;
 }
 
@@ -103,7 +103,7 @@ bool ResultOfConstraint::isSubtype(const Type * other) const {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -119,7 +119,7 @@ bool ResultOfConstraint::includes(const Type * other) const {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -149,7 +149,7 @@ void ResultOfConstraint::format(FormatStream & out) const {
     if (!first) {
       out << "|";
     }
-    
+
     out << resultType;
     first = false;
   }
@@ -276,7 +276,7 @@ void ParameterOfConstraint::format(FormatStream & out) const {
     if (!first) {
       out << "|";
     }
-    
+
     out << paramType;
     first = false;
   }

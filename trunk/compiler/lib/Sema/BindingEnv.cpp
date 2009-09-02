@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Template.h"
@@ -33,7 +33,7 @@ bool PatternValue::isSingular() const {
   if (const Type * val = value()) {
     return val->isSingular();
   }
-  
+
   return false;
 }
 
@@ -41,7 +41,7 @@ bool PatternValue::isEqual(const Type * other) const {
   if (Type * val = value()) {
     return val->isEqual(other);
   }
-  
+
   return false;
 }
 
@@ -49,7 +49,7 @@ bool PatternValue::isReferenceType() const {
   if (Type * val = value()) {
     return val->isReferenceType();
   }
-  
+
   return false;
 }
 
@@ -57,17 +57,17 @@ bool PatternValue::isSubtype(const Type * other) const {
   if (Type * val = value()) {
     return val->isSubtype(other);
   }
-  
+
   return false;
 }
 
 bool PatternValue::includes(const Type * other) const {
   return isEqual(other);
-  
+
   /*if (Type * val = value()) {
     return val->includes(other);
   }
-  
+
   return false;*/
 }
 
@@ -75,7 +75,7 @@ ConversionRank PatternValue::convertImpl(const Conversion & conversion) const {
   if (Type * val = value()) {
     return val->convert(conversion);
   }
-  
+
   return Incompatible;
 }
 
@@ -94,7 +94,7 @@ void PatternValue::format(FormatStream & out) const {
   }
 }
 
-const llvm::Type * PatternValue::getIRType() const {
+const llvm::Type * PatternValue::irType() const {
   DFAIL("IllegalState");
 }
 
@@ -124,7 +124,7 @@ bool BindingEnv::unify(SourceContext * source, Type * pattern, Type * value, Var
 
   //pattern = dealias(pattern);
   value = dealias(value);
-  
+
   if (DebugUnify) {
     diag.debug(source) << "Unify? " << pattern << " == " << value << " with " << *this;
     diag.indent();
@@ -194,7 +194,7 @@ bool BindingEnv::unifyNativePointerType(
   if (!AnalyzerBase::analyzeTypeDefn(pat->typeDefn(), Task_InferType)) {
     return false;
   }
-  
+
   if (NativePointerType * npv = dyn_cast<NativePointerType>(value)) {
     if (!AnalyzerBase::analyzeTypeDefn(npv->typeDefn(), Task_InferType)) {
       return false;
@@ -207,7 +207,7 @@ bool BindingEnv::unifyNativePointerType(
     return false;
   }
 }
-  
+
 bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * pat, Type * value) {
   if (!AnalyzerBase::analyzeTypeDefn(pat->typeDefn(), Task_InferType)) {
     return false;
@@ -217,7 +217,7 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * 
     if (!AnalyzerBase::analyzeTypeDefn(nav->typeDefn(), Task_InferType)) {
       return false;
     }
-    
+
     if (pat->getSize() != nav->getSize()) {
       return false;
     }
@@ -240,7 +240,7 @@ bool BindingEnv::unifyPattern(
     if (s->right() == pattern) {
       return true;
     }
-    
+
     if (PatternValue * pval = dyn_cast<PatternValue>(s->right())) {
       // If the value that is already bound is a pattern variable from some other
       // environment (it should never be from this one), then bind it to
@@ -249,25 +249,25 @@ bool BindingEnv::unifyPattern(
       bind(pattern, value);
       return true;
     }
-    
+
     if (PatternValue * pval = dyn_cast<PatternValue>(value)) {
       // If the value that we're trying to bind is a pattern value, and we already
       // have a value, then leave the current value as is, assuming that it can
       // be bound to that pattern variable later.
       return true;
     }
-    
+
     if (!pattern->canBindTo(value)) {
       return false;
     }
-    
+
     Type * upperBound = value;
     Type * lowerBound = value;
-    
+
     if (value->isEqual(&UnsizedIntType::instance)) {
-      //upperBound = 
+      //upperBound =
     }
-    
+
     Type * newValue = Type::selectLessSpecificType(s->right(), value);
 
     /*if (variance == Invariant) {
@@ -283,11 +283,11 @@ bool BindingEnv::unifyPattern(
       case Invariant:
         newValue = value;
         return unify(source, s->right(), value, variance);
-        
+
       case Covariant:
         //newValue = Type::selectLessSpecificType(s->right(), value);
         break;
-      
+
       case Contravariant:
         break;
     }*/
@@ -298,11 +298,11 @@ bool BindingEnv::unifyPattern(
         // No need to rebind if same as before.
         return true;
       }
-    
+
       bind(pattern, newValue);
       return true;
     }
-    
+
     return false;
   } else if (pattern->canBindTo(value)) {
     // Don't bother binding a pattern value to its own variable.
@@ -313,7 +313,7 @@ bool BindingEnv::unifyPattern(
     }
 
     if (DebugUnify) {
-      diag.debug(source->getLocation()) << "Unify: " << pattern << " <- " << value << " in environment " << *this;
+      diag.debug(source->location()) << "Unify: " << pattern << " <- " << value << " in environment " << *this;
     }
 
     // Add a new substitution of value for pattern
@@ -346,7 +346,7 @@ Type * BindingEnv::get(const PatternVar * type) const {
   if (s != NULL) {
     return s->right();
   }
-  
+
   return NULL;
 }
 
@@ -367,11 +367,11 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
 
       return in;
     }
-    
+
     case Type::PatternVal: {
       return in;
     }
-    
+
     case Type::NativePointer: {
       const NativePointerType * np = static_cast<const NativePointerType *>(in);
       if (np->typeParam(0) == NULL) {
@@ -382,10 +382,10 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
       if (elemType == np->typeParam(0)) {
         return in;
       }
-      
+
       return NativePointerType::create(elemType);
     }
-    
+
     case Type::NativeArray: {
       const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
       if (nt->typeParam(0) == NULL) {
@@ -408,7 +408,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
     case Type::NonType:
       DASSERT(in->isSingular());
       return in;
-    
+
     case Type::Primitive:
       return in;
 
@@ -431,7 +431,7 @@ FormatStream & operator<<(FormatStream & out, const BindingEnv & env) {
 
     out << s->left() << ":" << s->right();
   }
-  
+
   out << "}";
   return out;
 }

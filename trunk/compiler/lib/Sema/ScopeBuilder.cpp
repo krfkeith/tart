@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/EnumType.h"
@@ -16,7 +16,7 @@
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
-  
+
 typedef ASTDeclList::const_iterator decl_iterator;
 
 void ScopeBuilder::createScopeMembers(Defn * parent) {
@@ -28,7 +28,7 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
   switch (parent->defnType()) {
     case Defn::Typedef: {
       TypeDefn * tdef = static_cast<TypeDefn *>(parent);
-      Type * type = tdef->getTypeValue();
+      Type * type = tdef->typeValue();
       switch (type->typeClass()) {
         case Type::Primitive:
         case Type::Class:
@@ -46,7 +46,7 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
         case Type::Alias:
           DFAIL("Unimplemented");
           break;
-          
+
         default:
           DFAIL("Bad");
       }
@@ -121,7 +121,7 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
 Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const ASTDecl * de) {
   DASSERT(scope != NULL);
   DASSERT(parentDefn != NULL);
-  
+
   // If it's a namespace, attempt to merge with existing ns of same name.
   if (de->nodeType() == ASTDecl::Namespace) {
     Defn * ns = mergeNamespace(scope, de);
@@ -226,7 +226,7 @@ void ScopeBuilder::checkNameConflict(Scope * scope, const Defn * de) {
             conflictingDefn = prevDef;
           }
           break;
-        
+
         case Defn::Let:
         case Defn::Var:
         case Defn::Parameter:
@@ -235,11 +235,11 @@ void ScopeBuilder::checkNameConflict(Scope * scope, const Defn * de) {
         default:
           conflictingDefn = prevDef;
           break;
-        
+
         case Defn::Namespace:
           break;
       }
-      
+
       if (conflictingDefn) {
         diag.fatal(de) << "Definition of '" << de <<
           "' conflicts with earlier definition";
@@ -281,7 +281,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
         tdef->setTypeValue(new EnumType(tdef, parent));
         break;
       }
-      
+
       return tdef;
     }
 
@@ -316,8 +316,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
       return new NamespaceDefn(m, ast);
 
     default:
-      diag.fatal(ast->getLocation()) << "Can't create member " <<
-          getNodeTypeName(ast->nodeType());
+      diag.fatal(ast) << "Can't create member " << nodeTypeName(ast->nodeType());
       return NULL;
   }
 }
@@ -337,7 +336,7 @@ Defn * ScopeBuilder::mergeNamespace(Scope * parent, const ASTDecl * ast) {
         ns = static_cast<NamespaceDefn *>(*it);
       }
     }
-    
+
     if (ns != NULL) {
       // Go ahead and create all of the members of the scope.
       // Normally we do this lazily but in this case it's OK to do it early.
@@ -345,7 +344,7 @@ Defn * ScopeBuilder::mergeNamespace(Scope * parent, const ASTDecl * ast) {
       return ns;
     }
   }
-  
+
   return NULL;
 }
 

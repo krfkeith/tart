@@ -7,6 +7,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
@@ -117,23 +118,19 @@ const llvm::Type * CompositeType::createIRType() const {
   // Handle inheritance
   if (super_ != NULL) {
     // Base class
-    fieldTypes.push_back(super_->getIRType());
+    fieldTypes.push_back(super_->irType());
   }
 
   if (typeClass() == Type::Interface) {
-    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->getIRType(), 0));
+    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
   }
 
   for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
     if (*it) {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       DASSERT_OBJ(var->isPassFinished(Pass_ResolveVarType), var);
-      Type * varType = var->getType();
-      const llvm::Type * memberType = var->getType()->getIRType();
-      if (varType->isReferenceType()) {
-        memberType = PointerType::get(memberType, 0);
-      }
-
+      Type * varType = var->type();
+      const llvm::Type * memberType = var->type()->irEmbeddedType();
       fieldTypes.push_back(memberType);
     }
   }
@@ -147,6 +144,24 @@ const llvm::Type * CompositeType::createIRType() const {
   return irType_;
 }
 
+const llvm::Type * CompositeType::irEmbeddedType() const {
+  const llvm::Type * type = irType();
+  if (isReferenceType()) {
+    return llvm::PointerType::get(type, 0);
+  } else {
+    return type;
+  }
+}
+
+const llvm::Type * CompositeType::irParameterType() const {
+  const llvm::Type * type = irType();
+  if (isReferenceType()) {
+    return llvm::PointerType::get(type, 0);
+  } else {
+    return type;
+  }
+}
+
 bool CompositeType::isSubclassOf(const CompositeType * base) const {
   if (this == base) {
     return true;
@@ -154,6 +169,30 @@ bool CompositeType::isSubclassOf(const CompositeType * base) const {
 
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     if ((*it)->isSubclassOf(base)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool CompositeType::implements(const CompositeType * interface) const {
+  return implementsImpl(interface);
+}
+
+bool CompositeType::implementsImpl(const CompositeType * interface) const {
+  if (defn_ == interface->typeDefn()) {
+    return true;
+  }
+
+  if (defn_->isTemplateInstance()) {
+    if (defn_->templateInstance()->value() == interface->typeDefn()) {
+      return true;
+    }
+  }
+
+  for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    if ((*it)->implementsImpl(interface)) {
       return true;
     }
   }
@@ -175,7 +214,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     } else if (fromClass->isSubclassOf(this)) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = new CastExpr(Expr::UpCast,
-            cn.fromValue->getLocation(), const_cast<CompositeType *>(this),
+            cn.fromValue->location(), const_cast<CompositeType *>(this),
             cn.fromValue);
       }
 
@@ -187,7 +226,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     if (this->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = new ConstantNull(
-            cn.fromValue->getLocation(), const_cast<CompositeType *>(this));
+            cn.fromValue->location(), const_cast<CompositeType *>(this));
       }
 
       return ExactConversion;
@@ -203,8 +242,7 @@ bool CompositeType::isSingular() const {
 
 bool CompositeType::isReferenceType() const {
   // TODO: Not if it's a static interface...
-  return (typeClass() == Type::Class ||
-      typeClass() == Type::Interface);
+  return (typeClass() == Type::Class || typeClass() == Type::Interface);
 }
 
 bool CompositeType::isSubtype(const Type * other) const {

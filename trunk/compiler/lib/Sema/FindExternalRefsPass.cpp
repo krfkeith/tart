@@ -27,7 +27,7 @@ Defn * FindExternalRefsPass::run(Module * m, Defn * in) {
 
 Defn * FindExternalRefsPass::runImpl(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
+    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
       if (tdef->isSynthetic()) {
         ctype->addMethodDefsToModule(module);
       }

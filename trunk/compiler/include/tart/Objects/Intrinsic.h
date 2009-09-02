@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_OBJECTS_INTRINSIC_H
 #define TART_OBJECTS_INTRINSIC_H
 
@@ -16,7 +16,7 @@ namespace llvm {
 }
 
 namespace tart {
-  
+
 class CodeGenerator;
 class FnCallExpr;
 
@@ -34,16 +34,16 @@ class FnCallExpr;
 class Intrinsic {
 private:
   const char * name;
-  
+
   static llvm::StringMap<Intrinsic *> intrinsicMap;
 
 public:
   Intrinsic(const char * n) : name(n) {
     intrinsicMap[name] = this;
   }
-  
+
   virtual ~Intrinsic() {}
-  
+
   /** The fully qualified name of this intrinsic. */
   const char * getName() { return name; }
 
@@ -57,7 +57,7 @@ public:
 
   /** Code-generation implementation of the intrinsic. */
   virtual llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
-  
+
   /** Lookup an intrinsic by name. */
   static Intrinsic * get(const char * name);
 };
@@ -139,6 +139,14 @@ class PointerComparisonIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Memory.arrayCopy intrinsic
+class ArrayCopyIntrinsic : public Intrinsic {
+  static ArrayCopyIntrinsic instance;
+  ArrayCopyIntrinsic() : Intrinsic("tart.core.Memory.arrayCopy") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Math.sin intrinsic
 class MathSinIntrinsic : public Intrinsic {
   static MathSinIntrinsic instance;
@@ -201,6 +209,15 @@ class LinkageNameApplyIntrinsic : public Intrinsic {
 class EntryPointApplyIntrinsic : public Intrinsic {
   static EntryPointApplyIntrinsic instance;
   EntryPointApplyIntrinsic() : Intrinsic("tart.core.EntryPoint.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Annex.apply intrinsic
+class AnnexApplyIntrinsic : public Intrinsic {
+  static AnnexApplyIntrinsic instance;
+  AnnexApplyIntrinsic() : Intrinsic("tart.core.Annex.apply") {}
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
       Type * expectedReturn) const;
 };

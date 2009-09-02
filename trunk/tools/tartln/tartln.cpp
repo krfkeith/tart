@@ -26,6 +26,7 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/RegistryParser.h"
 #include "llvm/Support/FormattedStream.h"
+#include "llvm/Support/StandardPasses.h"
 #include "llvm/System/Signals.h"
 #include "llvm/System/Host.h"
 #include "llvm/LinkAllVMCore.h"
@@ -222,80 +223,42 @@ static std::auto_ptr<Module> loadModule(const std::string & inputName) {
   return std::auto_ptr<Module>();
 }
 
-static void addOptimizerPasses(PassManager & pm) {
-
-  if (NoExtern) {
-    std::vector<const char *> externs;
-    externs.push_back("main");
-    externs.push_back("String_create");
-    //externs.push_back("_String_create");
-    pm.add(createInternalizePass(externs));   // Internalize all but exported API symbols.
-  }
-
-  if (OptimizationLevel >= O1) {
-    pm.add(createRaiseAllocationsPass());     // call %malloc -> malloc inst
-    pm.add(createCFGSimplificationPass());    // Clean up disgusting code
-    pm.add(createPromoteMemoryToRegisterPass());// Kill useless allocas
-    pm.add(createGlobalOptimizerPass());      // Optimize out global vars
-    pm.add(createGlobalDCEPass());            // Remove unused fns and globs
-  }
-
-  if (OptimizationLevel >= O2) {
-    pm.add(createIPConstantPropagationPass());// IP Constant Propagation
-    pm.add(createDeadArgEliminationPass());   // Dead argument elimination
-    pm.add(createInstructionCombiningPass()); // Clean up after IPCP & DAE
-    pm.add(createCFGSimplificationPass());    // Clean up after IPCP & DAE
-
-    pm.add(createPruneEHPass());              // Remove dead EH info
-
-    //if (!DisableInline)
-    pm.add(createFunctionInliningPass());   // Inline small functions
-    pm.add(createArgumentPromotionPass());    // Scalarize uninlined fn args
-
-    pm.add(createTailDuplicationPass());      // Simplify cfg by copying code
-    pm.add(createInstructionCombiningPass()); // Cleanup for scalarrepl.
-    pm.add(createCFGSimplificationPass());    // Merge & remove BBs
-    pm.add(createScalarReplAggregatesPass()); // Break up aggregate allocas
-    pm.add(createInstructionCombiningPass()); // Combine silly seq's
-    pm.add(createCondPropagationPass());      // Propagate conditionals
-
-    pm.add(createTailCallEliminationPass());  // Eliminate tail calls
-    pm.add(createCFGSimplificationPass());    // Merge & remove BBs
-    pm.add(createReassociatePass());          // Reassociate expressions
-    pm.add(createLoopRotatePass());
-    pm.add(createLICMPass());                 // Hoist loop invariants
-    pm.add(createLoopUnswitchPass());         // Unswitch loops.
-    pm.add(createLoopIndexSplitPass());       // Index split loops.
-    pm.add(createInstructionCombiningPass()); // Clean up after LICM/reassoc
-    pm.add(createIndVarSimplifyPass());       // Canonicalize indvars
-    pm.add(createLoopUnrollPass());           // Unroll small loops
-    pm.add(createInstructionCombiningPass()); // Clean up after the unroller
-    pm.add(createGVNPass());                  // Remove redundancies
-    pm.add(createSCCPPass());                 // Constant prop with SCCP
-
-    // Run instcombine after redundancy elimination to exploit opportunities
-    // opened up by them.
-    pm.add(createInstructionCombiningPass());
-    pm.add(createCondPropagationPass());      // Propagate conditionals
-
-    pm.add(createDeadStoreEliminationPass()); // Delete dead stores
-    pm.add(createAggressiveDCEPass());        // SSA based 'Aggressive DCE'
-    pm.add(createCFGSimplificationPass());    // Merge & remove BBs
-    pm.add(createSimplifyLibCallsPass());     // Library Call Optimizations
-    pm.add(createDeadTypeEliminationPass());  // Eliminate dead types
-    pm.add(createConstantMergePass());        // Merge dup global constants
-  }
-}
-
 static void optimize(Module & mod, TargetMachine & target) {
-  PassManager pm;
+  if (OptimizationLevel >= O1) {
+    FunctionPassManager fpm(new ExistingModuleProvider(&mod));
+    fpm.add(new TargetData(*target.getTargetData()));
+    createStandardFunctionPasses(&fpm, int(OptimizationLevel));
+    fpm.doInitialization();
+    for (Module::iterator it = mod.begin(); it != mod.end(); ++it) {
+      fpm.run(*it);
+    }
+  }
 
   // If the -strip-debug command line option was specified, do it.
   //if (StripDebug)
   //pm.add(createStripSymbolsPass(true));
 
+  PassManager pm;
   pm.add(new TargetData(*target.getTargetData()));
-  addOptimizerPasses(pm);
+  createStandardModulePasses(&pm, int(OptimizationLevel),
+      false /* OptimizeSize */,
+      true  /* UnitAtATime */,
+      true  /* UnrollLoops */,
+      true  /* SimplifyLibCalls */,
+      true  /* HaveExceptions */,
+      NULL  /* *InliningPass */);
+  createStandardLTOPasses(&pm,
+      false /* Internalize */,
+      true  /* RunInliner */,
+      false  /* VerifyEach */);
+
+  if (NoExtern) {
+    std::vector<const char *> externs;
+    externs.push_back("main");
+    externs.push_back("String_create");
+    pm.add(createInternalizePass(externs));   // Internalize all but exported API symbols.
+  }
+
   pm.run(mod);
 }
 

@@ -81,7 +81,7 @@ bool FunctionType::isSubtype(const Type * other) const {
   return false;
 }
 
-const llvm::Type * FunctionType::getIRType() const {
+const llvm::Type * FunctionType::irType() const {
   if (!isCreatingType && irType_.get()->getTypeID() == llvm::Type::OpaqueTyID) {
     return createIRType();
   }
@@ -102,7 +102,7 @@ const llvm::Type * FunctionType::createIRType() const {
   // Insert the 'self' parameter if it's an instance method
   if (selfParam_ != NULL) {
     const ParameterDefn * param = selfParam_;
-    const llvm::Type * argType = param->type()->getIRType();
+    const llvm::Type * argType = param->type()->irType();
     if (!isa<PrimitiveType>(param->type())) {
       // TODO: Also don't do this for enums.
       argType = PointerType::getUnqual(argType);
@@ -116,12 +116,7 @@ const llvm::Type * FunctionType::createIRType() const {
     Type * paramType = param->internalType();
     DASSERT_OBJ(paramType != NULL, param);
 
-    // If it's a variadic type, then convert to an array.
-    //if (param->isVariadic()) {
-    //  paramType = TypeAnalyzer::getArrayTypeForElement(paramType);
-    //}
-
-    const llvm::Type * argType = paramType->getIRType();
+    const llvm::Type * argType = paramType->irType();
     if (paramType->isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
       argType = PointerType::getUnqual(argType);
     }
@@ -136,12 +131,7 @@ const llvm::Type * FunctionType::createIRType() const {
   }
 
   // Wrap return type in pointer type if needed.
-  const llvm::Type * rType = retType->getIRType();
-  if (retType->isReferenceType()) {
-    rType = PointerType::get(rType, 0);
-    //} else if (!rType->isFirstClassType() && rType != llvm::Type::VoidTy) {
-    //diag.debug("%s", retType->getCanonicalType()->toString().c_str());
-  }
+  const llvm::Type * rType = retType->irParameterType();
 
   // Create the function type
   cast<OpaqueType>(irType_.get())->refineAbstractTypeTo(
@@ -152,6 +142,14 @@ const llvm::Type * FunctionType::createIRType() const {
 void FunctionType::trace() const {
   safeMark(returnType_);
   markList(params_.begin(), params_.end());
+}
+
+const llvm::Type * FunctionType::irEmbeddedType() const {
+  return llvm::PointerType::get(irType(), 0);
+}
+
+const llvm::Type * FunctionType::irParameterType() const {
+  return llvm::PointerType::get(irType(), 0);
 }
 
 bool FunctionType::isReferenceType() const {

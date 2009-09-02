@@ -76,8 +76,8 @@ void CodeGenerator::generate() {
     getCompileUnit(module);
   }
 
-  irModule_->addTypeName("tart.core.Object", Builtins::typeObject->getIRType());
-  irModule_->addTypeName("tart.reflect.Type", Builtins::typeType->getIRType());
+  irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
+  irModule_->addTypeName("tart.reflect.Type", Builtins::typeType->irType());
 
   // Generate all declarations.
   DefnSet & xdefs = module->exportDefs();
@@ -121,9 +121,9 @@ void CodeGenerator::generate() {
     //diag.debug(de) << "XRef: " << de;
 
     if (const TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
-      if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->getTypeValue())) {
+      if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
         if (irModule_->getTypeByName(tdef->linkageName()) == NULL) {
-          irModule_->addTypeName(tdef->linkageName(), ctype->getIRType());
+          irModule_->addTypeName(tdef->linkageName(), ctype->irType());
         }
       }
     }
@@ -183,6 +183,11 @@ void CodeGenerator::generate() {
 llvm::ConstantInt * CodeGenerator::getInt32Val(int value) {
   using namespace llvm;
   return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt32Ty()), value, true);
+}
+
+llvm::ConstantInt * CodeGenerator::getInt64Val(int64_t value) {
+  using namespace llvm;
+  return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt64Ty()), value, true);
 }
 
 void CodeGenerator::verifyModule() {
@@ -313,7 +318,7 @@ void CodeGenerator::genEntryPoint() {
     const llvm::Type * argType = entryType->getParamType(0);
     argv.push_back(llvm::Constant::getNullValue(argType));
     //const llvm::Type * arrayOfStrings =
-    //    llvm::ArrayType::get(StringType::get().getIRType(), 0)
+    //    llvm::ArrayType::get(StringType::get().irType(), 0)
   }
 
   // Create the call to the entry point function
@@ -340,7 +345,7 @@ llvm::Function * CodeGenerator::getUnwindRaiseException() {
   using namespace llvm;
 
   if (unwindRaiseException_ == NULL) {
-    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->getIRType();
+    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
     std::vector<const llvm::Type *> parameterTypes;
     parameterTypes.push_back(PointerType::getUnqual(unwindExceptionType));
     const llvm::FunctionType * ftype =
@@ -357,7 +362,7 @@ llvm::Function * CodeGenerator::getUnwindResume() {
   using namespace llvm;
 
   if (unwindResume_ == NULL) {
-    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->getIRType();
+    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
     std::vector<const llvm::Type *> parameterTypes;
     parameterTypes.push_back(PointerType::getUnqual(unwindExceptionType));
     const llvm::FunctionType * ftype =

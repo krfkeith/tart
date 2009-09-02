@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/AST/ASTDecl.h"
 #include "tart/AST/Stmt.h"
 #include "tart/Common/Diagnostics.h"
@@ -53,11 +53,11 @@ void ASTTypeDecl::format(FormatStream & out) const {
     case Enum:
       out << "enum ";
       break;
-      
+
     default:
       DFAIL("Illegal state");
   }
-  
+
   out << name();
 }
 
@@ -82,7 +82,7 @@ void ASTVarDecl::format(FormatStream & out) const {
     default:
       DFAIL("Illegal state");
   }
-  
+
   out << name();
   if (type_) {
     out << ":" << type_;
@@ -122,7 +122,7 @@ void ASTFunctionDecl::trace() const {
   ASTDecl::trace();
   markList(params_.begin(), params_.end());
   safeMark(returnType_);
-  safeMark(body);
+  safeMark(body_);
 }
 
 void ASTFunctionDecl::format(FormatStream & out) const {
@@ -130,30 +130,30 @@ void ASTFunctionDecl::format(FormatStream & out) const {
     case AnonFn:
       out << "fn ";
       break;
-    
+
     case Function:
       out << "def " << name() << " ";
       break;
-    
+
     case Macro:
       out << "macro " << name() << " ";
       break;
-    
+
     default:
       DFAIL("Illegal state");
   }
-  
+
   out << "(";
   formatParamList(out, params_);
   out << ")";
-  
+
   if (returnType_) {
     out << " -> " << returnType_;
   }
-  
+
   if (nodeType_ != AnonFn) {
-    if (body) {
-      out << body;
+    if (body_) {
+      out << body_;
     }
   }
 }
@@ -168,7 +168,7 @@ void ASTParameter::format(FormatStream & out) const {
   if (name()) {
     out << name();
   }
-  
+
   if (type_) {
     out << ":" << type_;
   }
@@ -213,7 +213,7 @@ void formatParamList(FormatStream & out, const ASTParamList & params) {
     if (it != params.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }
@@ -223,7 +223,7 @@ void formatTemplateParamList(FormatStream & out, const ASTNodeList & params) {
     if (it != params.begin()) {
       out << ", ";
     }
-    
+
     out << *it;
   }
 }

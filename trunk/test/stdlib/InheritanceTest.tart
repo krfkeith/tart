@@ -1,7 +1,7 @@
 import tart.reflect.Type;
 
 @EntryPoint
-def main() {
+def main() -> int {
   testInheritance1();
   testInheritance2();
   testInheritance3();

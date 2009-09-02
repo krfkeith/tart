@@ -20,6 +20,7 @@ Design TODOS:
 
 Implementation TODOS:
 
+* Test overloading of augmented assignment operators.
 * Override and redef syntax. refine toString -> String {}
   * How does that affect properties?
   * +def
@@ -28,7 +29,6 @@ Implementation TODOS:
   * Proxy
 * Preconditions.verify[%T]
 * Boxed values: Boxed[%T] { let value:T; }
-* vcall and icall instructions.
 * String class
   * concatenation - requires varargs
 * Need to work on makefile dependencies.

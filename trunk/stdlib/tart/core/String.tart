@@ -22,7 +22,7 @@ public final class String {
 
     /** Custom allocation function for strings. */
     //[RequireFeature]
-    static def alloc(length:int) {
+    static def alloc(length:int) -> String {
       // The 'offsetof' trick for calculating the size.
       let s:String = __pvalloc(zeroPtr[String]().data[length]);
       s.length = length;
@@ -88,12 +88,26 @@ public final class String {
     return self;
   }
 
-  /*static def concat(s:String...) -> String {
-    let result = alloc(s0.length + s1.length);
-    Memory.arrayCopy(result.data, 0, s0.data, 0, s0.length);
-    Memory.arrayCopy(result.data, s0.length, s1.data, 0, s1.length);
+  static def concat(s:String...) -> String {
+    let count = s.length;
+    var length = 0;
+    for i = 0; i < count; ++i {
+      length += s[i].length;
+    }
+    
+    let result = alloc(length);
+    var index = 0;
+    for i = 0; i < count; ++i {
+      let src = s[i];
+      //Memory.arrayCopy(result.data, index, src.data, 0, src.length);
+      //index += src.length;
+      for j = 0; j < src.length; ++j {
+        result.data[index++] = src.data[j];
+      }
+    }
+
     return result;
-  }*/
+  }
 }
 
 /** Equality comparison operator for strings. */

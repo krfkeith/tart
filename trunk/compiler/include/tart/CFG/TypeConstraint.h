@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_TYPECONSTRAINT_H
 #define TART_CFG_TYPECONSTRAINT_H
 
@@ -30,7 +30,7 @@ public:
 
   // Overrides
 
-  const llvm::Type * getIRType() const;
+  const llvm::Type * irType() const;
   static inline bool classof(const TypeConstraint *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == Constraint;

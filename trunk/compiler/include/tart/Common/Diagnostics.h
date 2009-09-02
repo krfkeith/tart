@@ -90,7 +90,7 @@ public:
 
     MessageStream(const Locatable * l)
       : FormatStream(sstream)
-      , loc(l ? l->getLocation() : SourceLocation())
+      , loc(l ? l->location() : SourceLocation())
     {}
 
     MessageStream(const MessageStream & src)

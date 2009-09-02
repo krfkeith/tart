@@ -27,7 +27,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
 {
   ParameterList & methodParams = m->functionType()->params();
   for (ParameterList::iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
-    paramTypes_.push_back((*p)->getType());
+    paramTypes_.push_back((*p)->type());
   }
 
   if (m->templateSignature() != NULL) {
@@ -174,7 +174,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    Type * argType = argExpr->getType();
+    Type * argType = argExpr->type();
     Type * paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
@@ -196,7 +196,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   // Pass 2 for constant integer arguments - choose the size of the integers.
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    Type * argType = argExpr->getType();
+    Type * argType = argExpr->type();
     Type * paramType = this->paramType(argIndex);
 
     // Do the unsized types - use the information about previously bound types to determine

@@ -40,7 +40,7 @@ public:
   TypeList & members() { return members_; }
 
   /** Where in the source file this expression comes from. */
-  const SourceLocation & getLocation() const { return loc_; }
+  const SourceLocation & location() const { return loc_; }
   
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;

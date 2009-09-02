@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -9,6 +9,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Block.h"
+#include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
@@ -45,7 +46,7 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
   switch (task) {
     case Task_PrepMemberLookup:
       break;
-    
+
     case Task_PrepCallOrUse:
     case Task_PrepOverloadSelection:
     case Task_InferType:
@@ -56,7 +57,7 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
       addPasses(target, passesToRun, PASS_SET_CODEGEN);
       break;
   }
-  
+
   // Run passes
 
   if (passesToRun.empty()) {
@@ -92,53 +93,55 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
     // Set the module reference for the parameter scope.
     //target->parameterScope().setModule(module);
-    
-    // For non-template functions, the active scope is the scope that 
+
+    // For non-template functions, the active scope is the scope that
     // encloses the function. For a template instance, the parent scope
     // will be the scope that defines the template variables.
     Scope * savedScope = setActiveScope(target->definingScope());
-    
+
     if (target->isTemplate()) {
       // Get the template scope and set it as the active scope.
       analyzeTemplateSignature(target);
       TemplateSignature * tsig = target->templateSignature();
       activeScope = &tsig->paramScope();
     }
-    
+
     if (ftype == NULL) {
       DASSERT(target->getAST() != NULL);
       TypeAnalyzer ta(module, activeScope);
-      ftype = ta.typeFromFunctionAST(target->getFunctionDecl());
+      ftype = ta.typeFromFunctionAST(target->functionDecl());
       if (ftype == NULL) {
         success = false;
       } else {
         target->setFunctionType(ftype);
       }
     }
-    
+
     if (ftype != NULL) {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
         VarAnalyzer(param, module).analyze(Task_PrepCallOrUse);
 
-        if (param->getType() == NULL) {
+        if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
+        } else if (param->getFlag(ParameterDefn::Variadic)) {
+          module->addSymbol(param->internalType()->typeDefn());
         }
-        
+
         // TODO: Should only add the param as a member if we "own" it.
         if (param->definingScope() == NULL && param->name() != NULL) {
           target->parameterScope().addMember(param);
         }
       }
     }
-    
+
     if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
       ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
-      selfParam->setType(selfType->getTypeValue());
-      selfParam->setInternalType(selfType->getTypeValue());
+      selfParam->setType(selfType->typeValue());
+      selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
       selfParam->copyTrait(selfType, Defn::Final);
       selfParam->setFlag(ParameterDefn::Reference, true);
@@ -155,18 +158,18 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
 bool FunctionAnalyzer::createCFG() {
   bool success = true;
-  
+
   if (target->isTemplate()) {
     // Don't build CFG for templates
     return true;
   }
-  
+
   if (target->beginPass(Pass_CreateCFG)) {
     bool isIntrinsic = target->isIntrinsic();
     bool isAbstract = target->isAbstract();
     bool isExtern = target->isExtern();
     bool isInterfaceMethod = false;
-    
+
     if (isIntrinsic && isExtern) {
       diag.error(target) << "Function '" << target->name() <<
           "' cannot be both external and intrinsic.";
@@ -175,8 +178,8 @@ bool FunctionAnalyzer::createCFG() {
     // Functions defined in interfaces or protocols must not have a body.
     TypeDefn * enclosingClassDefn = target->enclosingClassDefn();
     if (enclosingClassDefn != NULL) {
-      CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->getTypeValue());
-      
+      CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typeValue());
+
       switch (enclosingClass->typeClass()) {
         case Type::Interface:
         case Type::Protocol: {
@@ -189,7 +192,7 @@ bool FunctionAnalyzer::createCFG() {
             diag.error(target) << "Method '" << target->name() <<
                 " declared abstract in non-abstract class";
           }
-          
+
           break;
         }
 
@@ -209,8 +212,8 @@ bool FunctionAnalyzer::createCFG() {
       }
     }
 
-    if (target->getFunctionDecl() != NULL) {
-      bool hasBody = target->getFunctionDecl()->getBody() != NULL || !target->blocks().empty();
+    if (target->functionDecl() != NULL) {
+      bool hasBody = target->hasBody();
       if (isInterfaceMethod) {
         if (hasBody) {
           diag.error(target) << "Method body not allowed for method '" << target->name() <<
@@ -224,8 +227,8 @@ bool FunctionAnalyzer::createCFG() {
           } else if (isExtern) {
             keyword = "@Extern";
           }
-            
-          diag.error(target) << "Method '" << target->name() << "' declared " << keyword << 
+
+          diag.error(target) << "Method '" << target->name() << "' declared " << keyword <<
               " cannot have a body.";
         }
       } else if (!hasBody) {
@@ -248,7 +251,7 @@ bool FunctionAnalyzer::resolveReturnType() {
 
   FunctionType * funcType = target->functionType();
   Type * returnType = funcType->returnType();
-  
+
   if (returnType == NULL && target->isPassRunning(Pass_ResolveReturnType)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
@@ -265,7 +268,7 @@ bool FunctionAnalyzer::resolveReturnType() {
 
       target->finishPass(Pass_ResolveReturnType);
     }
-    
+
     return true;
   }
 
@@ -273,6 +276,8 @@ bool FunctionAnalyzer::resolveReturnType() {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
     if (returnType == NULL) {
+      returnType = &VoidType::instance;
+#if 0
       BlockList & blocks = target->blocks();
       for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
         Block * bk = *it;
@@ -281,10 +286,10 @@ bool FunctionAnalyzer::resolveReturnType() {
           Expr * returnExpr = bk->termValue();
           SourceLocation loc;
           if (returnExpr != NULL) {
-            type = returnExpr->getType();
-            loc = returnExpr->getLocation();
+            type = returnExpr->type();
+            loc = returnExpr->location();
           }
-    
+
           if (isErrorResult(type)) {
             break;
           } else if (returnTypes.empty()) {
@@ -312,7 +317,7 @@ bool FunctionAnalyzer::resolveReturnType() {
                 }
               }
             }
-            
+
             if (insertNew) {
               returnTypes.push_back(type);
             }
@@ -332,12 +337,13 @@ bool FunctionAnalyzer::resolveReturnType() {
 
         returnType = &BadType::instance;
       }
-  
+
+#endif
       funcType->setReturnType(returnType);
     }
 
     DASSERT_OBJ(returnType != &NullType::instance, returnType);
-    
+
     // Add implicit casts to return statements if needed.
     BlockList & blocks = target->blocks();
     bool isVoidFunc = returnType == &VoidType::instance;
@@ -353,7 +359,7 @@ bool FunctionAnalyzer::resolveReturnType() {
             break;
           }
 
-          Type * type = returnExpr->getType();
+          Type * type = returnExpr->type();
           if (!returnType->isEqual(type)) {
             returnExpr = returnType->implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
@@ -362,7 +368,7 @@ bool FunctionAnalyzer::resolveReturnType() {
           }
 
           if (returnExpr) {
-            loc = returnExpr->getLocation();
+            loc = returnExpr->location();
           }
         } else if (!isVoidFunc) {
           // See if we can convert a void expression to the return type.

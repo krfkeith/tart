@@ -23,7 +23,7 @@ public:
   PatternVar(const SourceLocation & loc, TypeDefn * defn,
     Scope * parentScope, TemplateSignature * temp);
     
-  const SourceLocation & getLocation() const { return location_; }
+  const SourceLocation & location() const { return location_; }
   
   /** Return the pattern variable */
   const char * name() const { return typeDefn()->name(); }

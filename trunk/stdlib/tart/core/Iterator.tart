@@ -5,6 +5,6 @@
     Concrete iterator types may also want to derive from "HasLength" if
     the length of the sequence is known at construction time.
 */
-interface Iterator[%T] {
+@Annex interface Iterator[%T] {
   def next -> T or void;
 }

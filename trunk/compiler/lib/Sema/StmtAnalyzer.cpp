@@ -46,7 +46,7 @@ public:
 
   Expr * baseExpr() {
     if (selfExpr == NULL) {
-      selfExpr = new LValueExpr(selfParam->getLocation(), NULL, selfParam);
+      selfExpr = new LValueExpr(selfParam->location(), NULL, selfParam);
     }
 
     return selfExpr;
@@ -66,7 +66,7 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func) :
 }
 
 bool StmtAnalyzer::buildCFG() {
-  if (function->getFunctionDecl() && function->getFunctionDecl()->getBody() != NULL) {
+  if (function->functionDecl() && function->functionDecl()->body() != NULL) {
 
     // Create a temporary scope to allow lookup of the function parameters.
     DelegatingScope parameterScope(&function->parameterScope(), function->definingScope());
@@ -84,14 +84,14 @@ bool StmtAnalyzer::buildCFG() {
 
       // Uncomment to allow 'self' to be searched implicitly.
       //SelfScope * selfScope = new SelfScope(
-      //    selfType->getTypeValue()->memberScope(), function->definingScope());
+      //    selfType->typeValue()->memberScope(), function->definingScope());
       //selfScope->setSelfParam(selfParam);
       //parameterScope.setParentScope(selfScope);
     }
 
     // Create the initial block.
     setInsertPos(createBlock("entry"));
-    const Stmt * body = function->getFunctionDecl()->getBody();
+    const Stmt * body = function->functionDecl()->body();
     if (!buildStmtCFG(body)) {
       return false;
     }
@@ -99,9 +99,9 @@ bool StmtAnalyzer::buildCFG() {
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
       DASSERT_OBJ(macroReturnTarget_ == NULL, function);
       //if (macroReturnTarget_ != NULL) {
-      //currentBlock->branchTo(body->getFinalLocation(), macroReturnTarget_);
+      //currentBlock->branchTo(body->finalLocation(), macroReturnTarget_);
       //} else {
-      currentBlock_->exitReturn(body->getFinalLocation(), NULL);
+      currentBlock_->exitReturn(body->finalLocation(), NULL);
       //}
     }
 
@@ -117,55 +117,54 @@ bool StmtAnalyzer::buildCFG() {
 bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
   switch (st->nodeType()) {
     case ASTNode::Block:
-    return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
+      return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
 
     case ASTNode::Expression:
-    return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
+      return buildExprStmtCFG(static_cast<const ExprStmt *>(st));
 
     case ASTNode::If:
-    return buildIfStmtCFG(static_cast<const IfStmt *>(st));
+      return buildIfStmtCFG(static_cast<const IfStmt *>(st));
 
     case ASTNode::While:
-    return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
+      return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
 
     case ASTNode::For:
-    return buildForStmtCFG(static_cast<const ForStmt *>(st));
+      return buildForStmtCFG(static_cast<const ForStmt *>(st));
 
     case ASTNode::ForEach:
-    return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
+      return buildForEachStmtCFG(static_cast<const ForEachStmt *>(st));
 
     case ASTNode::Switch:
-    return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
+      return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
 
     case ASTNode::Classify:
-    return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
+      return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
 
     case ASTNode::Throw:
-    return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
+      return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
 
     case ASTNode::Try:
-    return buildTryStmtCFG(static_cast<const TryStmt *>(st));
+      return buildTryStmtCFG(static_cast<const TryStmt *>(st));
 
     case ASTNode::Return:
-    return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
+      return buildReturnStmtCFG(static_cast<const ReturnStmt *>(st));
 
     case ASTNode::Yield:
-    return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
+      return buildYieldStmtCFG(static_cast<const YieldStmt *>(st));
 
     case ASTNode::Break:
-    return buildBreakStmtCFG(st);
+      return buildBreakStmtCFG(st);
 
     case ASTNode::Continue:
-    return buildContinueStmtCFG(st);
+      return buildContinueStmtCFG(st);
 
     case ASTNode::LocalDecl:
-    return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
+      return buildLocalDeclStmtCFG(static_cast<const DeclStmt *>(st));
 
     //case Catch:
     default:
-    diag.fatal(st->getLocation()) << "Invalid statement type '" <<
-    getNodeTypeName(st->nodeType());
-    return false;
+      diag.fatal(st->location()) << "Invalid statement type '" << nodeTypeName(st->nodeType());
+      return false;
   }
 }
 
@@ -175,7 +174,7 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
   Scope * savedScope = setActiveScope(blockScope);
 
   // Now process all of the statements
-  const StmtList & stlist = st->getStmts();
+  const StmtList & stlist = st->stmts();
   for (StmtList::const_iterator it = stlist.begin(); it != stlist.end(); ++it) {
     // No need to continue if the block already has a terminator.
     if (currentBlock_ == NULL || currentBlock_->hasTerminator()) {
@@ -193,7 +192,7 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
 }
 
 bool StmtAnalyzer::buildExprStmtCFG(const ExprStmt * st) {
-  const ASTNode * value = st->getValue();
+  const ASTNode * value = st->value();
   Expr * expr = inferTypes(astToAssignExpr(value, NULL), NULL);
   if (!isErrorResult(expr)) {
     if (expr->isSideEffectFree() && value->nodeType() != ASTNode::Call) {
@@ -209,7 +208,7 @@ bool StmtAnalyzer::buildExprStmtCFG(const ExprStmt * st) {
 
 bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
   Scope * savedScope = activeScope;
-  Expr * testExpr = astToTestExpr(st->getTestExpr());
+  Expr * testExpr = astToTestExpr(st->testExpr());
   if (isErrorResult(testExpr)) {
     return false;
   }
@@ -220,7 +219,7 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
     // Check for bool and int types, not floats.
   }
 
-  bool hasElse = (st->getElseSt() != NULL);
+  bool hasElse = (st->elseSt() != NULL);
 
   // Create the set of basic blocks. We don't know yet
   // if we need an else block or endif block.
@@ -228,35 +227,35 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
   Block * blkElse = NULL;
   Block * blkDone = NULL;
 
-  if (st->getElseSt() != NULL) {
+  if (st->elseSt() != NULL) {
     blkElse = createBlock("else");
-    currentBlock_->condBranchTo(st->getTestExpr()->getLocation(), testExpr, blkThen, blkElse);
+    currentBlock_->condBranchTo(st->testExpr()->location(), testExpr, blkThen, blkElse);
   } else {
     blkDone = createBlock("endif");
-    currentBlock_->condBranchTo(st->getTestExpr()->getLocation(), testExpr, blkThen, blkDone);
+    currentBlock_->condBranchTo(st->testExpr()->location(), testExpr, blkThen, blkDone);
   }
 
   // Generate the contents of the 'then' block.
   setInsertPos(blkThen);
-  buildStmtCFG(st->getThenSt());
+  buildStmtCFG(st->thenSt());
 
   // Only generate a branch if we haven't returned or thrown.
   if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
     if (blkDone == NULL)
     blkDone = createBlock("endif");
-    currentBlock_->branchTo(st->getThenSt()->getFinalLocation(), blkDone);
+    currentBlock_->branchTo(st->thenSt()->finalLocation(), blkDone);
   }
 
   // Generate the contents of the 'else' block
   if (blkElse != NULL) {
     setInsertPos(blkElse);
-    buildStmtCFG(st->getElseSt());
+    buildStmtCFG(st->elseSt());
 
     // Only generate a branch if we haven't returned or thrown
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
       if (blkDone == NULL)
       blkDone = createBlock("endif");
-      currentBlock_->branchTo(st->getFinalLocation(), blkDone);
+      currentBlock_->branchTo(st->finalLocation(), blkDone);
     }
   }
 
@@ -268,7 +267,7 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
 
 bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   Scope * savedScope = activeScope;
-  Expr * testExpr = astToTestExpr(st->getTestExpr());
+  Expr * testExpr = astToTestExpr(st->testExpr());
   if (isErrorResult(testExpr)) {
     return false;
   }
@@ -287,10 +286,10 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   Block * blkDone = createBlock("endwhile");
 
   // Start by branching to the 'test' block.
-  currentBlock_->branchTo(st->getLocation(), blkTest);
+  currentBlock_->branchTo(st->location(), blkTest);
 
   // Generate the 'test' block with the conditional branch.
-  blkTest->condBranchTo(st->getTestExpr()->getLocation(),
+  blkTest->condBranchTo(st->testExpr()->location(),
       testExpr, blkBody, blkDone);
 
   // Generate the 'body' block.
@@ -301,14 +300,14 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   breakTarget = blkDone;
   loopCleanups_ = cleanups_;
   continueTarget_ = blkTest;
-  buildStmtCFG(st->getLoopBody());
+  buildStmtCFG(st->body());
   breakTarget = saveBreakTarget;
   continueTarget_ = saveContinueTarget;
   loopCleanups_ = saveLoopEH;
 
   // Only generate a branch if we haven't returned or thrown.
   if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-    currentBlock_->branchTo(st->getTestExpr()->getLocation(), blkTest);
+    currentBlock_->branchTo(st->testExpr()->location(), blkTest);
   }
 
   setInsertPos(blkDone);
@@ -322,7 +321,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   setActiveScope(forScope);
 
   // Evaluate the initialization expression
-  const ASTNode * initExpr = st->getInitExpr();
+  const ASTNode * initExpr = st->initExpr();
   if (initExpr != NULL) {
     if (initExpr->nodeType() == ASTNode::Var) {
       const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(initExpr);
@@ -331,7 +330,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
         return false;
       }
       DASSERT(initDefn->initValue() != NULL);
-      currentBlock_->append(new InitVarExpr(st->getLocation(), initDefn, initDefn->initValue()));
+      currentBlock_->append(new InitVarExpr(st->location(), initDefn, initDefn->initValue()));
       //if (initDefn == NULL) {
       //  return NULL;
       //}
@@ -378,8 +377,8 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
 
   // Evaluate the test expression
   Expr * testExpr = NULL;
-  if (st->getTestExpr() != NULL) {
-    testExpr = inferTypes(astToExpr(st->getTestExpr(), &BoolType::instance), &BoolType::instance);
+  if (st->testExpr() != NULL) {
+    testExpr = inferTypes(astToExpr(st->testExpr(), &BoolType::instance), &BoolType::instance);
   }
 
   Block * blkTest = NULL;
@@ -393,8 +392,8 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   Block * blkBody = createBlock("loopbody");
 
   Expr * incrExpr = NULL;
-  if (st->getIncrExpr() != NULL) {
-    incrExpr = inferTypes(astToExpr(st->getIncrExpr(), NULL), NULL);
+  if (st->incrExpr() != NULL) {
+    incrExpr = inferTypes(astToExpr(st->incrExpr(), NULL), NULL);
     if (incrExpr != NULL && incrExpr->isSideEffectFree()) {
       diag.warn(incrExpr) << "Loop increment expression has no effect";
     }
@@ -412,10 +411,10 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
 
   // Generate the 'test' block with the conditional branch.
   if (blkTest) {
-    currentBlock_->branchTo(st->getTestExpr()->getLocation(), blkTest);
-    blkTest->condBranchTo(st->getTestExpr()->getLocation(), testExpr, blkBody, blkDone);
+    currentBlock_->branchTo(st->testExpr()->location(), blkTest);
+    blkTest->condBranchTo(st->testExpr()->location(), testExpr, blkBody, blkDone);
   } else {
-    currentBlock_->branchTo(st->getLocation(), blkBody);
+    currentBlock_->branchTo(st->location(), blkBody);
   }
 
   // Generate the 'body' block.
@@ -426,18 +425,18 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   continueTarget_ = blkIncr ? blkIncr : (blkTest ? blkTest : blkBody);
 
   setInsertPos(blkBody);
-  buildStmtCFG(st->getLoopBody());
+  buildStmtCFG(st->body());
 
   // Only generate a branch if we haven't returned or thrown.
   if (currentBlock_ && !currentBlock_->hasTerminator()) {
-    currentBlock_->branchTo(st->getLocation(), continueTarget_);
+    currentBlock_->branchTo(st->location(), continueTarget_);
   }
 
   breakTarget = saveBreakTarget;
   continueTarget_ = saveContinueTarget;
 
   if (blkIncr) {
-    blkIncr->branchTo(st->getLocation(), blkTest ? blkTest : blkBody);
+    blkIncr->branchTo(st->location(), blkTest ? blkTest : blkBody);
   }
 
   // Continue at the 'done' block.
@@ -447,7 +446,120 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
 }
 
 bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
-  DFAIL("Unimplemented");
+  Scope * savedScope = activeScope;
+  LocalScope * forScope = createLocalScope("for-scope");
+  setActiveScope(forScope);
+
+  Expr * iterExpr = inferTypes(astToExpr(st->iterExpr(), NULL), NULL);
+  if (isErrorResult(iterExpr)) {
+    return false;
+  }
+
+  if (!isa<CompositeType>(iterExpr->type())) {
+    diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+    return false;
+  }
+
+  CompositeType * iterType = static_cast<CompositeType *>(iterExpr->type());
+  AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
+  FunctionDefn * next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
+  if (next == NULL) {
+    // If it's not an Iterator, see if it's an Iterable.
+    FunctionDefn * iterate = findInterfaceMethod(iterType, Builtins::typeIterable, "iterate");
+    if (iterate == NULL) {
+      diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+      return false;
+    }
+
+    LValueExpr * iterMethod = new LValueExpr(iterate->location(), iterExpr, iterate);
+    iterExpr = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
+        st->location(), iterMethod, ASTNodeList(), NULL), NULL);
+    if (iterExpr == NULL) {
+      return false;
+    }
+
+    if (!isa<CompositeType>(iterExpr->type())) {
+      diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+      return false;
+    }
+
+    iterType = static_cast<CompositeType *>(iterExpr->type());
+    AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
+    next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
+    if (next == NULL) {
+      diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
+      return false;
+    }
+  }
+
+  iterExpr = createTempVar(".iterator", iterExpr, false);
+  LValueExpr * nextMethod = new LValueExpr(next->location(), iterExpr, next);
+  Expr * nextCall = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
+      iterExpr->location(), nextMethod, ASTNodeList(), NULL), NULL);
+  if (nextCall == NULL) {
+    return false;
+  }
+
+  Block * blkTest = createBlock("test");
+  currentBlock_->branchTo(st->location(), blkTest);
+  setInsertPos(blkTest);
+
+  LValueExpr * nextVal = createTempVar(".iterval", nextCall, true);
+
+  UnionType * utype = dyn_cast<UnionType>(nextVal->type());
+  DASSERT(utype != NULL);
+  DASSERT(utype->members().size() == 2);
+  Type * iterVarType = NULL;
+  for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    Type * ty = *it;
+    if (!ty->isVoidType()) {
+      iterVarType = ty;
+    }
+  }
+
+  Expr * testExpr = new InstanceOfExpr(st->location(), nextVal, &VoidType::instance);
+  Expr * iterValue = new CastExpr(Expr::UnionMemberCast, st->location(), iterVarType, nextVal);
+
+  // Generate the 'body' block.
+  Block * blkBody = createBlock("loopbody");
+  Block * blkDone = createBlock("endfor");
+  Block * saveBreakTarget = breakTarget;
+  Block * saveContinueTarget = continueTarget_;
+
+  // Assign the next value to the iteration variable.
+  if (st->loopVars()->nodeType() == ASTNode::Var) {
+    const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(st->loopVars());
+    VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
+    initDefn->setType(iterVarType);
+    if (!analyzeValueDefn(initDefn, Task_PrepCodeGeneration)) {
+      return false;
+    }
+
+    DASSERT(initDefn->initValue() == NULL);
+    blkBody->append(new InitVarExpr(st->location(), initDefn, iterValue));
+  } else {
+    DFAIL("Implement multiple loop variables");
+  }
+
+  breakTarget = blkDone;
+  continueTarget_ = blkTest;
+
+  setInsertPos(blkBody);
+  buildStmtCFG(st->body());
+
+  // Only generate a branch if we haven't returned or thrown.
+  if (currentBlock_ && !currentBlock_->hasTerminator()) {
+    currentBlock_->branchTo(st->location(), continueTarget_);
+  }
+
+  breakTarget = saveBreakTarget;
+  continueTarget_ = saveContinueTarget;
+
+  blkTest->condBranchTo(testExpr->location(), testExpr, blkDone, blkBody);
+
+  // Continue at the 'done' block.
+  setInsertPos(blkDone);
+  setActiveScope(savedScope);
   return true;
 }
 
@@ -545,7 +657,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
           endBlock = new Block("endswitch");
         }
 
-        currentBlock_->branchTo(st->getLocation(), endBlock);
+        currentBlock_->branchTo(st->location(), endBlock);
       }
     } else if (s->nodeType() == ASTNode::Block) {
       if (elseSt != NULL) {
@@ -570,7 +682,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
         endBlock = new Block("endswitch");
       }
 
-      currentBlock_->branchTo(st->getLocation(), endBlock);
+      currentBlock_->branchTo(st->location(), endBlock);
     }
   } else {
     if (endBlock == NULL) {
@@ -641,7 +753,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   testVar->setStorageClass(Storage_Local);
   testVar->setType(testExpr->type());
   activeScope->addMember(testVar);
-  currentBlock_->append(new InitVarExpr(st->getLocation(), testVar, testExpr));
+  currentBlock_->append(new InitVarExpr(st->location(), testVar, testExpr));
 
   // After this we will refer to the variable instead of referring to its value.
   LValueExpr * testLVal = new LValueExpr(testExpr->location(), NULL, testVar);
@@ -711,7 +823,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
             endBlock = new Block("endclassify");
           }
 
-          currentBlock_->branchTo(st->getLocation(), endBlock);
+          currentBlock_->branchTo(st->location(), endBlock);
         }
 
         setActiveScope(prevScope);
@@ -741,7 +853,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         endBlock = new Block("endclassify");
       }
 
-      currentBlock_->branchTo(st->getLocation(), endBlock);
+      currentBlock_->branchTo(st->location(), endBlock);
     }
   } else {
     if (endBlock == NULL) {
@@ -765,14 +877,14 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
 
 bool StmtAnalyzer::buildThrowStmtCFG(const ThrowStmt * st) {
   Expr * resultVal = NULL;
-  if (st->getValue() != NULL) {
+  if (st->value() != NULL) {
     //if (funcDef->isGenerator()) {
-    //  diag.fatal(retSt->getLocation(),
+    //  diag.fatal(retSt->location(),
     //      "Return value not allowed in generator function");
     //}
 
     resultVal = inferTypes(
-        astToExpr(st->getValue(), Builtins::typeThrowable),
+        astToExpr(st->value(), Builtins::typeThrowable),
         Builtins::typeThrowable);
 
     if (isErrorResult(resultVal)) {
@@ -784,7 +896,7 @@ bool StmtAnalyzer::buildThrowStmtCFG(const ThrowStmt * st) {
     //}
   }
 
-  currentBlock_->exitThrow(st->getLocation(), resultVal);
+  currentBlock_->exitThrow(st->location(), resultVal);
   return true;
 }
 
@@ -799,13 +911,13 @@ bool StmtAnalyzer::canCatch(TypeList & catchTypes, CompositeType * exceptionType
 }
 
 bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
-  const StmtList & catchList = st->getCatchList();
+  const StmtList & catchList = st->catchList();
   Block * tryBlock = createBlock("try");
-  currentBlock_->branchTo(st->getLocation(), tryBlock);
+  currentBlock_->branchTo(st->location(), tryBlock);
 
   // Create a block for the 'finally' statement if any.
   Block * finallyBlock = NULL;
-  if (st->getFinallySt()) {
+  if (st->finallySt()) {
     finallyBlock = createBlock("finally");
   }
 
@@ -819,7 +931,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
   // Create the 'catch' statement blocks.
   Block * unwindBlock = NULL;
-  if (!catchList.empty() || st->getFinallySt()) {
+  if (!catchList.empty() || st->finallySt()) {
     TypeList catchTypes;
     bool catchAll = false;
 
@@ -827,8 +939,8 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
     unwindBlock = createBlock("catch");
     unwindBlock->setTerminator(
         catchList.empty()
-        ? st->getFinallySt()->getLocation()
-        : (catchList.front()->getLocation() | catchList.back()->getLocation()),
+        ? st->finallySt()->location()
+        : (catchList.front()->location() | catchList.back()->location()),
         BlockTerm_Catch);
 
     // The active throwable object, returned from the unwind code.
@@ -838,13 +950,13 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
     // Generate the catch cases
     for (StmtList::const_iterator it = catchList.begin(); it != catchList.end(); ++it) {
       CatchStmt * cst = static_cast<CatchStmt *>(*it);
-      const SourceLocation & loc = cst->getLocation();
+      const SourceLocation & loc = cst->location();
 
       // Create a local scope in which the exception expression will be defined.
       LocalScope * catchScope = createLocalScope("catch-scope");
 
       // Define the exception variable in the catch scope.
-      ASTDecl * exceptDecl = cst->getExceptDecl();
+      ASTDecl * exceptDecl = cst->exceptDecl();
       VariableDefn * exceptDefn = cast<VariableDefn>(
           ScopeBuilder::createLocalDefn(catchScope, function, exceptDecl));
       if (!analyzeValueDefn(exceptDefn, Task_PrepCodeGeneration)) {
@@ -885,7 +997,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       Block * catchBody = createBlock("catch-", exceptType->typeDefn()->name());
 
       // Add the catch block to the switch statement.
-      unwindBlock->addCase(new ConstantType(cst->getLocation(), exceptType), catchBody);
+      unwindBlock->addCase(new ConstantType(cst->location(), exceptType), catchBody);
 
       // Make the catch scope the current scope for generating the block contents.
       Scope * savedScope = setActiveScope(catchScope);
@@ -893,19 +1005,19 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       // Generate the assignment of the exception to the variable.
       setInsertPos(catchBody);
       if (exceptDefn->name() != NULL) {
-        const SourceLocation & loc = cst->getLocation();
-        Expr * initExpr = new InitVarExpr(cst->getLocation(), exceptDefn,
+        const SourceLocation & loc = cst->location();
+        Expr * initExpr = new InitVarExpr(cst->location(), exceptDefn,
             new CastExpr(Expr::BitCast, loc, exceptType, activeThrowable));
         currentBlock_->append(initExpr);
       }
 
       // Generate the catch body
-      buildStmtCFG(cst->getBodySt());
+      buildStmtCFG(cst->body());
       setActiveScope(savedScope);
 
       // If the catch body fell through, then jump to finally or end
       if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-        currentBlock_->branchTo(cst->getBodySt()->getFinalLocation(), endTry);
+        currentBlock_->branchTo(cst->body()->finalLocation(), endTry);
         if (finallyBlock != NULL) {
           currentBlock_->append(new LocalCallExpr(finallyBlock));
         }
@@ -924,7 +1036,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       unwindBlock->addCase(NULL, catchBody);
 
       // Resume the exception.
-      catchBody->exitResumeUnwind(st->getLocation(), activeThrowable);
+      catchBody->exitResumeUnwind(st->location(), activeThrowable);
     }
   }
 
@@ -941,29 +1053,29 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
   // Generate the code inside the body of the try block.
   setInsertPos(tryBlock);
-  buildStmtCFG(st->getBodySt());
+  buildStmtCFG(st->body());
 
   // Catch statements no longer in effect at this point, but finally still is.
   //cleanup.unwindTarget = NULL;
   setUnwindTarget(saveUnwind);
 
   // Generate the 'else' statement.
-  if (st->getElseSt() != NULL) {
+  if (st->elseSt() != NULL) {
     // If the body had a terminator, then there's no way to reach the
     // 'else' statement.
     if (currentBlock_ == NULL || currentBlock_->hasTerminator()) {
-      diag.warn(st->getElseSt()) << "'else' block is unreachable.";
+      diag.warn(st->elseSt()) << "'else' block is unreachable.";
     }
 
     // Generate the 'else' statement. We don't need to add a new block for this,
     // just append it to the try body.
-    buildStmtCFG(st->getElseSt());
+    buildStmtCFG(st->elseSt());
   }
 
   // If the body (op 'else' block) doesn't have a terminator, then branch
   // to the block after the try/catch.
   if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-    currentBlock_->branchTo(st->getFinalLocation(), endTry);
+    currentBlock_->branchTo(st->finalLocation(), endTry);
     // Execute the finally block before exiting.
     if (finallyBlock != NULL) {
       currentBlock_->append(new LocalCallExpr(finallyBlock));
@@ -974,14 +1086,14 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
   // Generate the finally block.
   if (finallyBlock != NULL) {
     setInsertPos(finallyBlock);
-    if (!buildStmtCFG(st->getFinallySt())) {
+    if (!buildStmtCFG(st->finallySt())) {
       return false;
     }
 
     // The finallyBlock exits with a "local return" which we'll convert into
     // a branch later.
     currentBlock_->setTerminator(
-        st->getFinallySt()->getFinalLocation(),
+        st->finallySt()->finalLocation(),
         BlockTerm_LocalReturn);
 
     defineLocalProcedure(finallyBlock, currentBlock_);
@@ -995,13 +1107,13 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
 bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
   Expr * resultVal = NULL;
-  if (st->getValue() != NULL) {
+  if (st->value() != NULL) {
     //if (funcDef->isGenerator()) {
-    //  diag.fatal(retSt->getLocation(),
+    //  diag.fatal(retSt->location(),
     //      "Return value not allowed in generator function");
     //}
 
-    resultVal = inferTypes(astToExpr(st->getValue(), returnType), returnType);
+    resultVal = inferTypes(astToExpr(st->value(), returnType), returnType);
     if (isErrorResult(resultVal)) {
       return false;
     }
@@ -1024,11 +1136,11 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // actually return, it assigns to the macro result andt then branches.
 
     // TODO: Skip this assignment if it's void.
-    Expr * exp = new AssignmentExpr(st->getLocation(), macroReturnVal_, resultVal);
+    Expr * exp = new AssignmentExpr(st->location(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
 
     if (macroReturnTarget_ != NULL) {
-      currentBlock_->branchTo(st->getLocation(), macroReturnTarget_);
+      currentBlock_->branchTo(st->location(), macroReturnTarget_);
 
       // If there are any active exception handlers in the macro, make sure
       // that we run their finally blocks.
@@ -1050,7 +1162,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     }
   }
 
-  currentBlock_->exitReturn(st->getLocation(), resultVal);
+  currentBlock_->exitReturn(st->location(), resultVal);
   return true;
 }
 
@@ -1070,7 +1182,7 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 }
 
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
-  Defn * de = astToDefn(st->getDecl());
+  Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
     if (!analyzeValueDefn(var, Task_PrepCodeGeneration)) {
       return false;
@@ -1083,7 +1195,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
     if (var->initValue() != NULL) {
       Expr * initVal = inferTypes(var->initValue(), var->type());
       if (!isErrorResult(initVal)) {
-        currentBlock_->append(new InitVarExpr(st->getLocation(), var, initVal));
+        currentBlock_->append(new InitVarExpr(st->location(), var, initVal));
       }
     }
   }
@@ -1130,11 +1242,11 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     ValueDefn * testValueDefn = cast<ValueDefn>(testDefn);
 
     //DASSERT(testDefn->initValue() != NULL);
-    //currentBlock_->append(new InitVarExpr(st->getLocation(), testDefn,
+    //currentBlock_->append(new InitVarExpr(st->location(), testDefn,
     //    testDefn->initValue()));
 
     // TODO: We need to cast the defn to a boolean as well.
-    testExpr = new LValueExpr(test->getLocation(), NULL, testValueDefn);
+    testExpr = new LValueExpr(test->location(), NULL, testValueDefn);
   } else {
     testExpr = astToExpr(test, &BoolType::instance);
     if (isErrorResult(testExpr)) {
@@ -1165,13 +1277,13 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
 
   // Compare reference type with null.
   if (testExpr->type()->isReferenceType()) {
-    return new CompareExpr(test->getLocation(),
+    return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_EQ, testExpr,
-        ConstantNull::get(test->getLocation(), testExpr->type()));
+        ConstantNull::get(test->location(), testExpr->type()));
   }
 
   // Cast to boolean.
-  return BoolType::instance.implicitCast(test->getLocation(), testExpr);
+  return BoolType::instance.implicitCast(test->location(), testExpr);
 }
 
 Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, Type * expectedType) {
@@ -1227,6 +1339,16 @@ Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffi
   return createBlock(blockName);
 }
 
+LValueExpr * StmtAnalyzer::createTempVar(const char * name, Expr * value, bool isMutable) {
+  VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module, name, value);
+  var->setLocation(value->location());
+  var->setType(value->type());
+  var->setStorageClass(Storage_Local);
+  activeScope->addMember(var);
+  currentBlock_->append(new InitVarExpr(value->location(), var, value));
+  return new LValueExpr(value->location(), NULL, var);
+}
+
 void StmtAnalyzer::defineLocalProcedure(Block * first, Block * last) {
   LocalProcedure & proc = localProcedures_[first];
   if (proc.first == NULL) {
@@ -1254,6 +1376,52 @@ int StmtAnalyzer::LocalProcedure::addFollowingBlock(Block * b) {
 
   followingBlocks.push_back(b);
   return followingBlocks.size() - 1;
+}
+
+FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * interface,
+    const char * method) {
+
+  // Analyze the type.
+  if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepMemberLookup)) {
+    return NULL;
+  }
+
+  // See if the type even has any members with that name.
+  DefnList defns;
+  if (!type->memberScope()->lookupMember(method, defns, true)) {
+    return NULL;
+  }
+
+  // Analyze the interface.
+  if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepMemberLookup)) {
+    return NULL;
+  }
+
+  CompositeType * interfaceClass = cast<CompositeType>(interface);
+  if (!type->implements(interfaceClass)) {
+    return NULL;
+  }
+
+  DefnList interfaceMethods;
+  if (!type->memberScope()->lookupMember(method, interfaceMethods, true)) {
+    diag.error(interface->typeDefn()) << "Interface '" << interface <<
+        "' does not define method '" << method << "'";
+    return NULL;
+  } else if (interfaceMethods.size() != 1) {
+    diag.error(interface->typeDefn()) << "Interface '" << interface <<
+        "' has multiple definitions of method '" << method << "'";
+  }
+
+  FunctionDefn * interfaceMethod = cast<FunctionDefn>(interfaceMethods.front());
+  for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
+    if (FunctionDefn * fn = dyn_cast<FunctionDefn>(*it)) {
+      if (fn->isOverrideOf(interfaceMethod)) {
+        return fn;
+      }
+    }
+  }
+
+  return NULL;
 }
 
 void StmtAnalyzer::flattenLocalProcedureCalls() {

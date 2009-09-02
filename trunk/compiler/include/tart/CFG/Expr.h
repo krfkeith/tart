@@ -77,7 +77,7 @@ public:
   virtual bool isSingular() const = 0;
 
   /** Where in the source file this expression comes from. */
-  const SourceLocation & getLocation() const { return loc_; }
+  const SourceLocation & location() const { return loc_; }
 
   /** Cast operator so we can use an expression node as a location. */
   operator const SourceLocation & () const { return loc_; }
@@ -275,13 +275,13 @@ private:
 
 public:
   AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from)
-    : Expr(Assign, loc, to->getType())
+    : Expr(Assign, loc, to->type())
     , fromExpr_(from)
     , toExpr_(to)
   {}
 
   AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from)
-    : Expr(k, loc, to->getType())
+    : Expr(k, loc, to->type())
     , fromExpr_(from)
     , toExpr_(to)
   {}

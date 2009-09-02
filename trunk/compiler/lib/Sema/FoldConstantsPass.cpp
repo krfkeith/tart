@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -16,13 +16,13 @@ namespace tart {
 
 Expr * FoldConstantsPass::visitCall(CallExpr * in) {
   CFGPass::visitCall(in);
-  
+
   // Check if all input arguments are constants, especially constant integers.
   bool hasConstArgs = true;
   bool hasConstIntArgs = true;
   for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
     if ((*it)->isConstant()) {
-      Type * ty = (*it)->getType();
+      Type * ty = (*it)->type();
       if (!ty->isEqual(&UnsizedIntType::instance)) {
         hasConstIntArgs = false;
       }
@@ -31,7 +31,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
       hasConstIntArgs = false;
     }
   }
-  
+
   if (hasConstIntArgs) {
     // We need to locate an overload. In this case, it's an exact match we are interested in.
     // Note that we don't care about the return type.
@@ -46,7 +46,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
           exactMatch = false;
         }
       }
-      
+
       if (exactMatch) {
         FunctionType * ftype = cc->method()->functionType();
         size_t paramCount = ftype->params().size();
@@ -57,7 +57,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
           Type * paramType = cc->paramType(argIndex);
           callingArgs[cc->getParameterIndex(argIndex)] = in->arg(argIndex);
         }
-    
+
         // Fill in default params
         for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
           if (callingArgs[paramIndex] == NULL) {
@@ -67,16 +67,16 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
           }
         }
 
-        Expr * result = cc->method()->eval(in->getLocation(), cc->base(), callingArgs);
+        Expr * result = cc->method()->eval(in->location(), cc->base(), callingArgs);
         if (result != NULL) {
           return result;
         }
-        
+
         break;
       }
     }
   }
-  
+
   return in;
 }
 

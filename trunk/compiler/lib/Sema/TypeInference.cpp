@@ -73,13 +73,13 @@ void CallSite::finish() {
     formatCallSignature(fs);
 
     if (isConversionWarning(best)) {
-      diag.error(callExpr->getLocation()) << compatibilityError(best) <<
+      diag.error(callExpr->location()) << compatibilityError(best) <<
           " attempting to call " << callsig.str();
     } else {
       diag.error(callExpr) << "Ambiguous overloaded methods for call to " << callsig.str() << ":";
     }
 
-    diag.info(callExpr->getLocation()) << "Candidates are:";
+    diag.info(callExpr->location()) << "Candidates are:";
     for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
       CallCandidate * cc = *it;
       cc->updateConversionRank();
@@ -96,7 +96,7 @@ void CallSite::finish() {
   // first candidate.
   removeCulled();
   CallCandidate * c = cd.front();
-  callExpr->setFunction(new LValueExpr(callExpr->getLocation(), c->base(), c->method()));
+  callExpr->setFunction(new LValueExpr(callExpr->location(), c->base(), c->method()));
 }
 
 void CallSite::formatCallSignature(FormatStream & out) {

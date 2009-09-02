@@ -125,7 +125,7 @@ public:
   /** The list of attributes. */
   const ASTNodeList & attributes() const { return attributes_; }
   ASTNodeList & attributes() { return attributes_; }
-  
+
   /** The doc comment for this declaration. */
   const std::string & docComment() const { return docComment_; }
   std::string & docComment() { return docComment_; }
@@ -286,8 +286,8 @@ class ASTFunctionDecl : public ASTDecl {
 private:
   ASTParamList params_;
   ASTNode * returnType_;
-  Stmt * body;
-  int generatorIndex;
+  Stmt * body_;
+  int generatorIndex_;
 
 public:
   ASTFunctionDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
@@ -295,7 +295,8 @@ public:
     : ASTDecl(ntype, loc, nm, mods)
     , params_(paramList)
     , returnType_(rtype)
-    , body(NULL)
+    , body_(NULL)
+    , generatorIndex_(0)
   {}
 
   /** The list of function parameters. */
@@ -307,12 +308,12 @@ public:
   ASTNode * returnType() { return returnType_; }
 
   /** The function body. */
-  const Stmt * getBody() const { return body; }
-  Stmt * getBody() { return body; }
-  void setBody(Stmt * b) { body = b; }
+  const Stmt * body() const { return body_; }
+  Stmt * body() { return body_; }
+  void setBody(Stmt * b) { body_ = b; }
 
   /** For functions that are generators, the number of yield statements. */
-  int nextGeneratorIndex() { return generatorIndex++; }
+  int nextGeneratorIndex() { return generatorIndex_++; }
 
   // Overrides
 
@@ -320,8 +321,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ASTFunctionDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->nodeType() == ASTNode::Function ||
-          e->nodeType() == ASTNode::Macro;
+      return e->nodeType() == ASTNode::Function || e->nodeType() == ASTNode::Macro;
   }
 };
 
@@ -337,7 +337,7 @@ public:
     : ASTVarDecl(Param, loc, name, typ, val, DeclModifiers())
     , flags_(flgs)
   {}
-  
+
   int flags() const { return flags_; }
 
   // Overrides
@@ -383,7 +383,7 @@ private:
 
 public:
   ASTTemplate(ASTDecl * bod, ASTNodeList & paramList, ASTNodeList & requirements)
-      : ASTDecl(Template, bod->getLocation(), bod->name(), bod->modifiers())
+      : ASTDecl(Template, bod->location(), bod->name(), bod->modifiers())
       , body_(bod)
       , params_(paramList)
       , requirements_(requirements)

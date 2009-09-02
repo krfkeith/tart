@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Type.h"
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -66,43 +66,43 @@ FormatStream & operator<<(FormatStream & out, ConversionRank rank) {
       out << "Incompatible";
       break;
     }
-      
+
     case Truncation: {
       out << "Truncation";
       break;
     }
-      
+
     case IntegerToBool: {
       out << "IntegerToBool";
       break;
     }
-      
+
     case SignedUnsigned: {
       out << "SignedUnsigned";
       break;
     }
-      
+
     case PrecisionLoss: {
       out << "PrecisionLoss";
       break;
     }
-      
+
     case NonPreferred: {
       out << "NonPreferred";
       break;
     }
-      
+
     case ExactConversion: {
       out << "ExactConversion";
       break;
     }
-      
+
     case IdenticalTypes: {
       out << "IdenticalTypes";
       break;
     }
   }
-  
+
   return out;
 }
 
@@ -116,14 +116,14 @@ Conversion::Conversion(const Type * from)
 {}
 
 Conversion::Conversion(Expr * from)
-  : fromType(from->getType())
+  : fromType(from->type())
   , fromValue(from)
   , resultValue(NULL)
   , bindingEnv(NULL)
 {}
 
 Conversion::Conversion(Expr * from, Expr ** to)
-  : fromType(from->getType())
+  : fromType(from->type())
   , fromValue(from)
   , resultValue(to)
   , bindingEnv(NULL)
@@ -131,13 +131,13 @@ Conversion::Conversion(Expr * from, Expr ** to)
 
 const Type * Conversion::getFromType() const {
   const Type * ty = dealias(fromType);
-  
+
   if (bindingEnv != NULL) {
     while (const PatternVar * pvar = dyn_cast_or_null<PatternVar>(ty)) {
       ty = dealias(bindingEnv->get(pvar));
     }
   }
-  
+
   return ty;
 }
 
@@ -190,7 +190,7 @@ ConversionRank Type::canConvert(const Type * fromType) const {
 Expr * Type::implicitCast(const SourceLocation & loc, Expr * from) const {
   Expr * result = NULL;
   ConversionRank tc = convert(Conversion(from, &result));
-  compatibilityWarning(loc, tc, from->getType(), this);
+  compatibilityWarning(loc, tc, from->type(), this);
   DASSERT(tc == Incompatible || result != NULL);
   return result;
 }
@@ -199,7 +199,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from) const {
   Expr * result = NULL;
   ConversionRank tc = convert(Conversion(from, &result));
   if (tc == Incompatible) {
-    compatibilityWarning(loc, tc, from->getType(), this);
+    compatibilityWarning(loc, tc, from->type(), this);
   }
   return result;
 }
@@ -222,26 +222,26 @@ size_t DeclaredType::numTypeParams() const {
   if (tsig != NULL) {
     return tsig->patternVarCount();
   }
-  
+
   TemplateInstance * tinst = defn_->templateInstance();
   if (tinst != NULL) {
     return tinst->paramValues().size();
   }
-  
+
   return 0;
 }
-  
+
 Type * DeclaredType::typeParam(int index) const {
   TemplateSignature * tsig = defn_->templateSignature();
   if (tsig != NULL) {
     return tsig->patternVar(index);
   }
-  
+
   TemplateInstance * tinst = defn_->templateInstance();
   if (tinst != NULL) {
     return tinst->paramValues()[index];
   }
-  
+
   DFAIL("Illegal State");
 }
 
@@ -263,9 +263,17 @@ TypeAlias::TypeAlias(Type * val)
 {
 }
 
-const llvm::Type * TypeAlias::getIRType() const {
+const llvm::Type * TypeAlias::irType() const {
   DASSERT(value_ != NULL);
-  return value_->getIRType();
+  return value_->irType();
+}
+
+const llvm::Type * TypeAlias::irEmbeddedType() const {
+  return value_->irEmbeddedType();
+}
+
+const llvm::Type * TypeAlias::irParameterType() const {
+  return value_->irParameterType();
 }
 
 ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
@@ -276,7 +284,7 @@ ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
 void TypeAlias::format(FormatStream & out) const {
   DASSERT(value_ != NULL);
   return value_->format(out);
-}  
+}
 
 void TypeAlias::trace() const {
   safeMark(value_);
@@ -294,11 +302,11 @@ bool NonTypeConstant::isEqual(const Type * other) const {
   if (const NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(other)) {
     return value_->isEqual(ntc->value());
   }
-  
+
   return false;
 }
 
-const llvm::Type * NonTypeConstant::getIRType() const {
+const llvm::Type * NonTypeConstant::irType() const {
   DFAIL("IllegalState");
 }
 
@@ -343,7 +351,7 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
     if (t1->typeClass() == Type::Primitive && t2->typeClass() == Type::Primitive) {
       const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
       const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
-      
+
       if (isIntegerType(p1->typeId()) && isIntegerType(p2->typeId())) {
         bool isSignedResult = isSignedIntegerType(p1->typeId())
             || isSignedIntegerType(p2->typeId());
@@ -376,7 +384,7 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
           } else if (resultBits <= 64) {
             return &ULongType::instance;
           }
-        
+
           diag.error() << "Integer value requires " << resultBits << " bits, too large.";
           diag.info() << "p1 = " << p1;
           diag.info() << "p2 = " << p2;
@@ -393,7 +401,7 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
 Type * findCommonType(Type * t0, Type * t1) {
   DASSERT(t0 != NULL);
   DASSERT(t1 != NULL);
-  
+
   if (t0->isEqual(t1)) {
     return t0;
   }
@@ -427,7 +435,7 @@ Type * dealiasImpl(Type * t) {
       break;
     }
   }
-  
+
   return t;
 }
 

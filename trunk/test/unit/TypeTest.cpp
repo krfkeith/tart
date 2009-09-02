@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/CFG/Type.h"
 #include "tart/CFG/TypeDefn.h"
@@ -20,43 +20,43 @@ namespace tart {
         out << "Incompatible";
         break;
       }
-      
+
       case Truncation: {
         out << "Truncation";
         break;
       }
-      
+
       case IntegerToBool: {
         out << "IntegerToBool";
         break;
       }
-      
+
       case SignedUnsigned: {
         out << "SignedUnsigned";
         break;
       }
-      
+
       case PrecisionLoss: {
         out << "PrecisionLoss";
         break;
       }
-      
+
       case NonPreferred: {
         out << "NonPreferred";
         break;
       }
-      
+
       case ExactConversion: {
         out << "ExactConversion";
         break;
       }
-      
+
       case IdenticalTypes: {
         out << "IdenticalTypes";
         break;
       }
     }
-    
+
     return out;
   }
 }
@@ -78,24 +78,24 @@ TEST(TypeTest, Primitive) {
 }
 
 TEST(TypeTest, PrimitiveDef) {
-  ASSERT_EQ(&VoidType::typedefn, VoidType::biDef.getValue());
-  ASSERT_EQ(&BoolType::typedefn, BoolType::biDef.getValue());
-  ASSERT_EQ(&CharType::typedefn, CharType::biDef.getValue());
-  ASSERT_EQ(&ByteType::typedefn, ByteType::biDef.getValue());
-  ASSERT_EQ(&ShortType::typedefn, ShortType::biDef.getValue());
-  ASSERT_EQ(&IntType::typedefn, IntType::biDef.getValue());
-  ASSERT_EQ(&LongType::typedefn, LongType::biDef.getValue());
-  ASSERT_EQ(&UByteType::typedefn, UByteType::biDef.getValue());
-  ASSERT_EQ(&UShortType::typedefn, UShortType::biDef.getValue());
-  ASSERT_EQ(&UIntType::typedefn, UIntType::biDef.getValue());
-  ASSERT_EQ(&ULongType::typedefn, ULongType::biDef.getValue());
-  ASSERT_EQ(&FloatType::typedefn, FloatType::biDef.getValue());
-  ASSERT_EQ(&DoubleType::typedefn, DoubleType::biDef.getValue());
+  ASSERT_EQ(&VoidType::typedefn, VoidType::biDef.value());
+  ASSERT_EQ(&BoolType::typedefn, BoolType::biDef.value());
+  ASSERT_EQ(&CharType::typedefn, CharType::biDef.value());
+  ASSERT_EQ(&ByteType::typedefn, ByteType::biDef.value());
+  ASSERT_EQ(&ShortType::typedefn, ShortType::biDef.value());
+  ASSERT_EQ(&IntType::typedefn, IntType::biDef.value());
+  ASSERT_EQ(&LongType::typedefn, LongType::biDef.value());
+  ASSERT_EQ(&UByteType::typedefn, UByteType::biDef.value());
+  ASSERT_EQ(&UShortType::typedefn, UShortType::biDef.value());
+  ASSERT_EQ(&UIntType::typedefn, UIntType::biDef.value());
+  ASSERT_EQ(&ULongType::typedefn, ULongType::biDef.value());
+  ASSERT_EQ(&FloatType::typedefn, FloatType::biDef.value());
+  ASSERT_EQ(&DoubleType::typedefn, DoubleType::biDef.value());
 }
 
 TEST(TypeTest, DynCasting) {
   ASSERT_EQ(&DoubleType::instance,
-      dyn_cast<PrimitiveType>(DoubleType::typedefn.getTypeValue()));
+      dyn_cast<PrimitiveType>(DoubleType::typedefn.typeValue()));
 }
 
 TEST(TypeTest, SpecificityTests) {
@@ -664,7 +664,7 @@ TEST(TypeTest, FindCommonType) {
 
 void TestAssignable() {
     using namespace tart;
-    
+
     Type * type;
 
     // Check specializations
@@ -676,7 +676,7 @@ void TestAssignable() {
     const Type * f3Type = ParseTypeLiteral("function :int -> short", 0);
     const Type * ff1Type = ParseTypeLiteral("function (:function :int -> int) -> int", 0);
     const Type * ff2Type = ParseTypeLiteral("function (:function :short -> int) -> int", 0);
-    
+
     TEST_ASSERT(intType->isAssignableFrom(shortType));
     TEST_ASSERT(!shortType->isAssignableFrom(intType));
     TEST_ASSERT(!floatType->isAssignableFrom(intType));
@@ -712,13 +712,13 @@ void TestAssignable() {
 
 void TestArgAssignment() {
     using namespace tart;
-    
+
     FunctionType * ftype;
     std::vector<int> argPositions;
     CallExpr * call;
     OpExpr * args;
     bool success;
-    
+
     // Function prototype
     ftype = (FunctionType *)ParseTypeLiteral("function (a:int, b:int, c:int) -> int", 0);
     TEST_ASSERT_EQUAL(Type::Function, ftype->getKind());

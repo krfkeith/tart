@@ -22,9 +22,8 @@ namespace tart {
   }
 
   // Make node types streamable
-  inline std::ostream & operator<<(std::ostream & out,
-      const ASTNode::NodeType nt) {
-    out << getNodeTypeName(nt);
+  inline std::ostream & operator<<(std::ostream & out, const ASTNode::NodeType nt) {
+    out << nodeTypeName(nt);
     return out;
   }
 

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -28,19 +28,19 @@ bool ParameterAssignmentsBuilder::addPositionalArg() {
   if (!valid) {
     return false;
   }
-  
+
   if (keywordAdded) {
     valid = false;
     return false;
   }
-  
+
   if (nextPositionalParam >= paramCount) {
     valid = false;
     return false;
   }
- 
+
   ParameterDefn * param = ftype->params()[nextPositionalParam];
-  
+
   // Keyword-only args cannot be defined positionally.
   if (param->getFlag(ParameterDefn::KeywordOnly)) {
     valid = false;
@@ -86,7 +86,7 @@ bool ParameterAssignmentsBuilder::check() {
   if (!valid) {
     return false;
   }
-  
+
   // Insure that any unspecified arguments have default values.
   for (size_t i = 0; i < paramCount; ++i) {
     ParameterDefn * param = ftype->params()[i];
@@ -95,25 +95,25 @@ bool ParameterAssignmentsBuilder::check() {
       return false;
     }
   }
-  
+
   return true;
 }
 
 bool ParameterAssignmentsBuilder::assignFromAST(const ASTNodeList & args) {
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     if ((*it)->nodeType() == ASTNode::Keyword) {
-      if (!addKeywordArg(static_cast<const ASTKeywordArg *>(*it)->getKeyword())) {
+      if (!addKeywordArg(static_cast<const ASTKeywordArg *>(*it)->keyword())) {
         return false;
       }
     } else if (!addPositionalArg()) {
       return false;
     }
   }
-  
+
   if (!check()) {
     return false;
   }
-  
+
   return true;
 }
 

@@ -35,7 +35,7 @@ bool CodeGenerator::genXDef(Defn * de) {
 
     case Defn::Typedef: {
       TypeDefn * tdef = static_cast<TypeDefn *>(de);
-      switch (tdef->getTypeValue()->typeClass()) {
+      switch (tdef->typeValue()->typeClass()) {
         case Type::Class:
         case Type::Struct:
         case Type::Interface:
@@ -72,7 +72,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   if (fdef->module() != module) {
     FunctionType * funcType = fdef->functionType();
     irFunction = Function::Create(
-        cast<llvm::FunctionType>(funcType->getIRType()),
+        cast<llvm::FunctionType>(funcType->irType()),
         Function::ExternalLinkage, fdef->linkageName(),
         irModule_);
     return irFunction;
@@ -94,7 +94,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   DASSERT_OBJ(funcType->isSingular(), fdef);
 
   irFunction = Function::Create(
-      cast<llvm::FunctionType>(funcType->getIRType()),
+      cast<llvm::FunctionType>(funcType->irType()),
       Function::ExternalLinkage, fdef->linkageName(), fdef->module()->irModule());
 
   // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
@@ -106,7 +106,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->isSingular(), fdef);
   DASSERT_OBJ(fdef->getType() != NULL, fdef);
-  DASSERT_OBJ(fdef->getType()->isSingular(), fdef);
+  DASSERT_OBJ(fdef->type()->isSingular(), fdef);
 
   // Don't generate intrinsic functions.
   if (fdef->isIntrinsic()) {
@@ -172,7 +172,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       // See if we need to make a local copy of the param.
       if (param->getFlag(Modified)
         || (!param->getParameterFlag(ParameterDefn::Reference)
-          && isAllocValueType(param->getType()))) {
+          && isAllocValueType(ptypeetType()))) {
         // TODO: For struct parameters, make a copy of whole struct.
         // If parameter was modified, then copy to a local var.
         Value * localValue = builder_.CreateAlloca(it->getType(), 0,
@@ -239,12 +239,9 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 #endif
 
   // Calculate the type.
-  const Type * letType = let->getType();
+  const Type * letType = let->type();
   DASSERT(letType != NULL);
-  const llvm::Type * irType = letType->getIRType();
-  if (letType->isReferenceType()) {
-    irType = llvm::PointerType::get(irType, 0);
-  }
+  const llvm::Type * irType = letType->irEmbeddedType();
 
   // Generate the value
   Value * value = NULL;
@@ -309,12 +306,9 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   }
 #endif
 
-  const Type * varType = var->getType();
+  const Type * varType = var->type();
   DASSERT(varType != NULL);
-  const llvm::Type * irType = varType->getIRType();
-  if (varType->isReferenceType() /* || isAllocValueType(varType)*/) {
-    irType = PointerType::get(irType, 0);
-  }
+  const llvm::Type * irType = varType->irEmbeddedType();
 
   // Create the global variable
   GlobalValue::LinkageTypes linkType = Function::ExternalLinkage;
@@ -327,7 +321,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   bool threadLocal = var->findAttribute(Builtins::typeThreadLocalAttribute) != NULL;
   if (threadLocal && var->storageClass() != Storage_Global &&
       var->storageClass() != Storage_Static) {
-    diag.fatal(var->getLocation()) <<  "Only global or static variables can be thread-local";
+    diag.fatal(var->location()) <<  "Only global or static variables can be thread-local";
   }
 #endif
 

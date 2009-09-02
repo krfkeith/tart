@@ -1,5 +1,5 @@
 @EntryPoint
-def main() {
+def main() -> int {
   Debug.assertTrue(Test.Rock == 1);
   Debug.assertEq(Test.Paper, 2);
   Debug.assertEq(Test.Scissors, 2);

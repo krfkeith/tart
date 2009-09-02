@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_EXPRANALYZER_H
 #define TART_SEMA_EXPRANALYZER_H
 
@@ -10,7 +10,7 @@
 #endif
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// Expression analyzer
 class ExprAnalyzer : public AnalyzerBase {
@@ -25,23 +25,23 @@ public:
     , tsig(NULL)
     , currentFunction_(function)
   {}
-  
+
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, Type * expected) {
     return inferTypes(reduceExpr(ast, expected), expected);
   }
-  
+
   /** Take a reduced expression and do type inferencing. */
   static Expr * inferTypes(Expr * expr, Type * expected);
 
   /** Build expression tree from AST. */
   Expr * reduceExpr(const ASTNode * ast, Type * expected);
   Expr * reduceExprImpl(const ASTNode * ast, Type * expected);
-  
+
   /** Similar to reduceExpr, but applies the special name lookup rules for
       attributes. */
   Expr * reduceAttribute(const ASTNode * ast);
-  
+
   /** Similar to reduceExpr, but returns a constant. */
   ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected);
   Expr * reducePattern(const ASTNode * ast, TemplateSignature * tsig);
@@ -70,11 +70,12 @@ public:
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Type * expected);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
   Expr * reducePatternVar(const ASTPatternVar * ast);
-  
+
   // Operators
 
   Expr * reduceAssign(const ASTOper * ast, Type * expected);
   Expr * reducePostAssign(const ASTOper * ast, Type * expected);
+  Expr * reduceAugmentedAssign(const ASTOper * ast, Type * expected);
   Expr * reduceLoadValue(const ASTNode * ast, Type * expected);
   Expr * reduceStoreValue(const SourceLocation & loc, Expr * lval, Expr * rval);
   Expr * reduceRefEqualityTest(const ASTOper * ast, Type * expected);
@@ -91,14 +92,14 @@ public:
 
   /** Reduce a call to an identifier to an actual call. */
   Expr * callName(const SourceLocation & loc, const ASTNode * callable,
-      const ASTNodeList & args, Type * expected);
+      const ASTNodeList & args, Type * expected, bool isOptional = false);
 
   /** Handle Argument-dependent lookup (ADL) */
   void lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args);
 
   /** Handle expressions of the form "super(args)" */
   Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, Type * expected);
-  
+
   /** Select an overload and build the call expression node. */
   Expr * callExpr(const SourceLocation & loc, Expr * fun, const ASTNodeList & args,
       Type * expected);
