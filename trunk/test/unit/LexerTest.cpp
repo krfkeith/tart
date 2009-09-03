@@ -191,7 +191,7 @@ TEST_F(LexerTest, StringLiterals) {
     Lexer           lex(&src);
 
     EXPECT_EQ(Token_String, lex.next());
-    EXPECT_EQ((size_t)0, lex.getTokenValue().length());
+    EXPECT_EQ((size_t)0, lex.tokenValue().length());
   }
 
   {
@@ -200,7 +200,7 @@ TEST_F(LexerTest, StringLiterals) {
     Lexer           lex(&src);
 
     EXPECT_EQ(Token_String, lex.next());
-    EXPECT_EQ(expected, lex.getTokenValue());
+    EXPECT_EQ(expected, lex.tokenValue());
   }
 
   {
@@ -209,7 +209,7 @@ TEST_F(LexerTest, StringLiterals) {
     Lexer           lex(&src);
 
     EXPECT_EQ(Token_String, lex.next());
-    EXPECT_EQ(expected, lex.getTokenValue());
+    EXPECT_EQ(expected, lex.tokenValue());
   }
 }
 

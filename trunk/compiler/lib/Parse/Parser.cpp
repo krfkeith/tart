@@ -100,7 +100,7 @@ inline bool Parser::match(TokenType tok) {
 const char * Parser::matchIdent() {
   if (token == Token_Ident) {
     // Save the token value as a string
-    const char * value = istrings.intern(lexer.getTokenValue().c_str());
+    const char * value = istrings.intern(lexer.tokenValue().c_str());
 
     // Save the token location
     matchLoc = lexer.tokenLocation();
@@ -992,7 +992,7 @@ ASTNode * Parser::typeExprBinary() {
 
   OperatorStack opstack(e0);
   for (;;) {
-    std::string tokenVal = lexer.getTokenValue();
+    std::string tokenVal = lexer.tokenValue();
 
     switch (token) {
       /*case Token_LogicalAnd:
@@ -2500,7 +2500,7 @@ ASTNode * Parser::primaryExpression() {
       if (token >= Token_BoolType && token <= Token_VoidType) {
         result = builtInTypeName(token);
         //result = new ASTIdent(lexer.tokenLocation(),
-        //    istrings.intern(lexer.getTokenValue().c_str()));
+        //    istrings.intern(lexer.tokenValue().c_str()));
         token = lexer.next();
       }
 
@@ -2670,7 +2670,7 @@ ASTNode * Parser::parseIntegerLiteral() {
   int numberBase = 10;
 
   // Copy to narrow string cause that's what LLVM uses.
-  std::string tokenVal = lexer.getTokenValue();
+  std::string tokenVal = lexer.tokenValue();
   SourceLocation loc = lexer.tokenLocation();
   next();
 
@@ -2698,7 +2698,7 @@ ASTNode * Parser::parseIntegerLiteral() {
 
 ASTNode * Parser::parseFloatLiteral() {
   // TODO: Handle long doubles.
-  std::string tokenVal = lexer.getTokenValue();
+  std::string tokenVal = lexer.tokenValue();
   SourceLocation loc = lexer.tokenLocation();
   next();
 
@@ -2724,17 +2724,17 @@ ASTNode * Parser::parseFloatLiteral() {
 
 ASTNode * Parser::parseStringLiteral() {
   ASTNode * result = new ASTStringLiteral(lexer.tokenLocation(),
-      lexer.getTokenValue());
+      lexer.tokenValue());
   next();
   return result;
 }
 
 ASTNode * Parser::parseCharLiteral() {
-  if (lexer.getTokenValue().size() > 1) {
+  if (lexer.tokenValue().size() > 1) {
     diag.error(lexer.tokenLocation()) << "multi-character constant";
   }
 
-  ASTNode * result = new ASTCharLiteral(lexer.tokenLocation(), (int)lexer.getTokenValue()[0]);
+  ASTNode * result = new ASTCharLiteral(lexer.tokenLocation(), (int)lexer.tokenValue()[0]);
   next();
   return result;
 }

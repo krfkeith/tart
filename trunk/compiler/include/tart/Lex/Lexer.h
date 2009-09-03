@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_LEX_LEXER_H
 #define TART_LEX_LEXER_H
 
@@ -14,40 +14,24 @@
 #endif
 
 namespace tart {
-    
+
 // -------------------------------------------------------------------
 // Lexical analyzer
 class Lexer {
-private:
-  // Source file containing the buffer
-  ProgramSource     * srcFile;          // Pointer to source file buffer
-  std::istream      & stream;           // Input stream
-  int                 ch;               // Previously read char.
-  size_t              currentOffset;    // Current char count in file
-  size_t              lineStartOffset;  // Read position at line start
-  size_t              tokenStartOffset; // Start position of current token
-  SourceLocation      tokenLocation_;   // Start source location of current token
-  std::string         tokenValue;       // String value of token
-  std::string         docComment_;      // Accumulated doc comment
-  uint16_t            lineIndex;        // Current line index
-  
-  // Read the next character.
-  void readCh();
-
 public:
   /** Constructor */
-  Lexer(ProgramSource * srcFile);
-  
+  Lexer(ProgramSource * srcFile_);
+
   /** Destructor closes the stream. */
   ~Lexer() {
-    srcFile->close();
+    srcFile_->close();
   }
-  
+
   /** Get the next token */
   TokenType next();
 
   /** Current value of the token. */
-  const std::string & getTokenValue() const { return tokenValue; }
+  const std::string & tokenValue() const { return tokenValue_; }
 
   /** Location of the token in the source file. */
   const SourceLocation & tokenLocation() {
@@ -61,6 +45,22 @@ public:
 
   /** Clear the accumulated doc comment. */
   void clearDocComment() { docComment_.clear(); }
+
+private:
+  // Source file containing the buffer
+  ProgramSource     * srcFile_;         // Pointer to source file buffer
+  std::istream      & stream_;          // Input stream
+  int                 ch;               // Previously read char.
+  size_t              currentOffset;    // Current char count in file
+  size_t              lineStartOffset;  // Read position at line start
+  size_t              tokenStartOffset; // Start position of current token
+  SourceLocation      tokenLocation_;   // Start source location of current token
+  std::string         tokenValue_;      // String value of token
+  std::string         docComment_;      // Accumulated doc comment
+  uint16_t            lineIndex;        // Current line index
+
+  // Read the next character.
+  void readCh();
 };
 
 }

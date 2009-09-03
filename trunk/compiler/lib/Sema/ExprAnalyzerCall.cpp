@@ -35,7 +35,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
     return callExpr(call->location(), cast<TypeDefn>(tdef)->asExpr(), args, expected);
   } else if (callable->nodeType() == ASTNode::GetElement) {
     return callExpr(call->location(), reduceElementRef(
-        static_cast<const ASTOper *>(callable), NULL, false), args, expected);
+        static_cast<const ASTOper *>(callable), false), args, expected);
   }
 
   diag.fatal(call) << "Not a callable expression " << call;
