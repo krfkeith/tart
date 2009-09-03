@@ -1221,7 +1221,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
 Expr * StmtAnalyzer::astToAssignExpr(const ASTNode * ast, Type * expectedType) {
   if (ast->nodeType() == ASTNode::Assign) {
     ExprAnalyzer ea(function->module(), activeScope, function);
-    return ea.reduceAssign(static_cast<const ASTOper *>(ast), expectedType);
+    return ea.reduceAssign(static_cast<const ASTOper *>(ast));
   } else {
     return astToExpr(ast, expectedType);
   }

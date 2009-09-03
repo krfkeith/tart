@@ -183,18 +183,18 @@ namespace {
 }
 
 Lexer::Lexer(ProgramSource * src)
-    : srcFile(src)
-    , stream(src->open()) {
+    : srcFile_(src)
+    , stream_(src->open()) {
   readCh();
   lineStartOffset = tokenStartOffset = currentOffset = 0;
-  tokenLocation_.file = srcFile->get();
+  tokenLocation_.file = srcFile_->get();
   tokenLocation_.begin = 0;
   tokenLocation_.end = 0;
   lineIndex = 1;
 }
 
 inline void Lexer::readCh() {
-  ch = stream.get();
+  ch = stream_.get();
   if (ch >= 0)
     currentOffset++;
 }
@@ -204,7 +204,7 @@ TokenType Lexer::next() {
   // Whitespace loop
   for (;;) {
     if (ch < 0) {
-      srcFile->newLine(currentOffset);
+      srcFile_->newLine(currentOffset);
       return Token_End;
     } else if (ch == ' ' || ch == '\t' || ch == '\b') {
       // Horizontal whitespace
@@ -212,7 +212,7 @@ TokenType Lexer::next() {
     } else if (ch == '\n') {
       // Linefeed
       readCh();
-      srcFile->newLine(currentOffset);
+      srcFile_->newLine(currentOffset);
       lineStartOffset = currentOffset;
       lineIndex += 1;
     } else if (ch == '\r') {
@@ -221,7 +221,7 @@ TokenType Lexer::next() {
       if (ch == '\n') {
         readCh();
       }
-      srcFile->newLine(currentOffset);
+      srcFile_->newLine(currentOffset);
       lineStartOffset = currentOffset;
       lineIndex += 1;
     } else if (ch == '/') {
@@ -279,7 +279,7 @@ TokenType Lexer::next() {
               }
               if (inDocComment)
                 docComment_.push_back('\n');
-              srcFile->newLine(currentOffset);
+              srcFile_->newLine(currentOffset);
               lineStartOffset = currentOffset;
               lineIndex += 1;
             } else {
@@ -309,32 +309,32 @@ TokenType Lexer::next() {
 
   // Identifier
   if (isNameStartChar(ch)) {
-    tokenValue.clear();
-    tokenValue.push_back(ch);
+    tokenValue_.clear();
+    tokenValue_.push_back(ch);
     readCh();
     while (isNameChar(ch)) {
-      tokenValue.push_back(ch);
+      tokenValue_.push_back(ch);
       readCh();
     }
 
     // Check for keyword
-    return LookupKeyword(tokenValue.c_str());
+    return LookupKeyword(tokenValue_.c_str());
   }
 
   // Number
   if (isDigitChar(ch) || ch == '.') {
     bool isFloat = false;
-    tokenValue.clear();
+    tokenValue_.clear();
 
     // Hex number check
     if (ch == '0') {
-      tokenValue.push_back('0');
+      tokenValue_.push_back('0');
       readCh();
       if (ch == 'X' || ch == 'x') {
-        tokenValue.push_back('x');
+        tokenValue_.push_back('x');
         readCh();
         while (isHexDigitChar(ch)) {
-          tokenValue.push_back(ch);
+          tokenValue_.push_back(ch);
           readCh();
         }
 
@@ -344,7 +344,7 @@ TokenType Lexer::next() {
 
     // Integer part
     while (isDigitChar(ch)) {
-      tokenValue.push_back(ch);
+      tokenValue_.push_back(ch);
       readCh();
     }
 
@@ -354,8 +354,8 @@ TokenType Lexer::next() {
 
       // Special case of '..' range token and '...' ellipsis token.
       if (ch == '.') {
-        if (!tokenValue.empty()) {
-          stream.putback('.');
+        if (!tokenValue_.empty()) {
+          stream_.putback('.');
           return Token_Integer;
         }
         readCh();
@@ -368,16 +368,16 @@ TokenType Lexer::next() {
 
       // Check for case where this isn't a decimal point,
       // but just a dot token.
-      if (!isDigitChar(ch) && tokenValue.empty()) {
+      if (!isDigitChar(ch) && tokenValue_.empty()) {
         return Token_Dot;
       }
 
       // It's a float
       isFloat = true;
 
-      tokenValue.push_back('.');
+      tokenValue_.push_back('.');
       while (isDigitChar(ch)) {
-        tokenValue.push_back(ch);
+        tokenValue_.push_back(ch);
         readCh();
       }
     }
@@ -385,21 +385,21 @@ TokenType Lexer::next() {
     // Exponent part
     if ((ch == 'e' || ch == 'E')) {
       isFloat = true;
-      tokenValue.push_back(ch);
+      tokenValue_.push_back(ch);
       readCh();
       if ((ch == '+' || ch == '-')) {
-        tokenValue.push_back(ch);
+        tokenValue_.push_back(ch);
         readCh();
       }
       while (isDigitChar(ch)) {
-        tokenValue.push_back(ch);
+        tokenValue_.push_back(ch);
         readCh();
       }
     }
 
     if ((ch == 'f' || ch == 'F')) {
       isFloat = true;
-      tokenValue.push_back(ch);
+      tokenValue_.push_back(ch);
       readCh();
     }
 
@@ -615,7 +615,7 @@ TokenType Lexer::next() {
     case '"':
     case '\'': {
         // String literal
-        tokenValue.clear();
+        tokenValue_.clear();
         char quote = ch;
         readCh();
         for (;;) {
@@ -629,39 +629,39 @@ TokenType Lexer::next() {
             readCh();
             switch (ch) {
               case '0':
-                tokenValue.push_back('\0');
+                tokenValue_.push_back('\0');
                 readCh();
                 break;
               case '\\':
-                tokenValue.push_back('\\');
+                tokenValue_.push_back('\\');
                 readCh();
                 break;
               case '\'':
-                tokenValue.push_back('\'');
+                tokenValue_.push_back('\'');
                 readCh();
                 break;
               case '\"':
-                tokenValue.push_back('\"');
+                tokenValue_.push_back('\"');
                 readCh();
                 break;
               case 'r':
-                tokenValue.push_back('\r');
+                tokenValue_.push_back('\r');
                 readCh();
                 break;
               case 'n':
-                tokenValue.push_back('\n');
+                tokenValue_.push_back('\n');
                 readCh();
                 break;
               case 't':
-                tokenValue.push_back('\t');
+                tokenValue_.push_back('\t');
                 readCh();
                 break;
               case 'b':
-                tokenValue.push_back('\b');
+                tokenValue_.push_back('\b');
                 readCh();
                 break;
               case 'v':
-                tokenValue.push_back('\v');
+                tokenValue_.push_back('\v');
                 readCh();
                 break;
               case 'x':
@@ -681,16 +681,16 @@ TokenType Lexer::next() {
                     return Token_Error;
                   }
                   charbuf[len] = 0;
-                  tokenValue.push_back(strtoul(charbuf, NULL, 16));
+                  tokenValue_.push_back(strtoul(charbuf, NULL, 16));
                   break;
                 }
               default:
-                tokenValue.push_back(ch);
+                tokenValue_.push_back(ch);
                 readCh();
                 break;
             }
           } else if (ch >= ' ') {
-            tokenValue.push_back(ch);
+            tokenValue_.push_back(ch);
             readCh();
           } else {
             // TODO: Report it

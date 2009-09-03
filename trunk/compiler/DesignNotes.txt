@@ -2,21 +2,11 @@
 
 Design TODOS:
 
-* Dynamic casting syntax.
-  * Type casting via operations on type objects?
+* Type casting via operations on type objects? (for dynamic casting of reference types)
+  * Something like 'object.asType(Type)' (Can't use 'as' because it's a keyword.)
 * Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
-* Mutating arithmetic operators. (i.e. +=)
-	addInPlace
-	subtractInPlace
-	divideInPlace
-	multiplyInPlace
-	inPlaceAdd
-	assignAdd
-	addWith
-	increaseBy
-	decreaseBy
 
 Implementation TODOS:
 
@@ -29,12 +19,7 @@ Implementation TODOS:
   * Proxy
 * Preconditions.verify[%T]
 * Boxed values: Boxed[%T] { let value:T; }
-* String class
-  * concatenation - requires varargs
 * Need to work on makefile dependencies.
-* String class tests
-* Iterators
-  * Iterators through interfaces.
 * Exceptions:
   * Finally
     * Return
@@ -84,16 +69,20 @@ Implementation TODOS:
 * AttributeSite failure tests.
 * Type extension
 * Finish writing out and parsing metadata files so that we don't have to compile everything
-  multuple times.
+  multiple times.
 * Call gc_alloc instead of malloc.
 * Statements:
-  * For (need unpacking assignment.)
-  * Foreach (need iterators first, and static interfaces)
+  * for (need unpacking assignment.)
+  * for/in
+    * unpacking assignment
   * do-while
   * yield
   * repeat
   * fork/threading primitives
   * with (what interface for using?)
+* String class
+  * text functions - substr, toLower, etc. (Character classes)
+  * character iterator functions.
 
 Doc errors:
 

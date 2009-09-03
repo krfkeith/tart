@@ -86,3 +86,76 @@ typealias Matrix4d:Matrix<[double, 4, 4]>;
 class Transform {
   private var m:Matrix4d;
 }
+
+
+class DocParser {
+public:
+  enum Token {
+    Token_End,
+    Token_Paragraph,
+    Token_Preformatted,
+    Token_Indent,
+    Token_Dedent,
+    
+  };
+
+  DocParser(const std::string & docString);
+  
+  
+};
+
+class DocNode {
+  enum NodeType {
+    Section,
+    Paragraph,
+    Preformatted,
+    ListItem,
+    Definition,
+    Link,
+  };
+  
+  enum DefinitionType {
+    Parameter,
+    Return,
+    Exception,
+  }
+};
+
+class Paragraph {
+};
+
+class Doc {
+public:
+  const std::string & name() const;
+  const std::string & qualifiedName() const;
+private:
+};
+
+class ProgramElementDoc : public Doc {
+public:
+  const ASTDecl * decl() const { return decl_; }
+
+private:
+  const ASTDecl * decl_;
+};
+
+class ClassDoc : public ProgramElementDoc {
+};
+
+class ConstructorDoc : public ProgramElementDoc {
+};
+
+class FieldDoc : public ProgramElementDoc {
+};
+
+class PropertyDoc : public ProgramElementDoc {
+};
+
+class MethodDoc : public ProgramElementDoc {
+};
+
+class PackageDoc : public ProgramElementDoc {
+};
+
+class NamespaceDoc : public ProgramElementDoc {
+};

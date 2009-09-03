@@ -48,40 +48,39 @@ public:
 
   // Literals
 
-  Expr * reduceNull(const ASTNode * ast, Type * expected);
-  Expr * reduceIntegerLiteral(const ASTIntegerLiteral * ast, Type * expected);
-  Expr * reduceFloatLiteral(const ASTFloatLiteral * ast, Type * expected);
-  Expr * reduceCharLiteral(const ASTCharLiteral * ast, Type * expected);
-  Expr * reduceStringLiteral(const ASTStringLiteral * ast, Type * expected);
-  Expr * reduceBoolLiteral(const ASTBoolLiteral * ast, Type * expected);
-  Expr * reduceBuiltInDefn(const ASTBuiltIn * ast, Type * expected);
-  Expr * reduceAnonFn(const ASTFunctionDecl * ast, Type * expected);
+  Expr * reduceNull(const ASTNode * ast);
+  Expr * reduceIntegerLiteral(const ASTIntegerLiteral * ast);
+  Expr * reduceFloatLiteral(const ASTFloatLiteral * ast);
+  Expr * reduceCharLiteral(const ASTCharLiteral * ast);
+  Expr * reduceStringLiteral(const ASTStringLiteral * ast);
+  Expr * reduceBoolLiteral(const ASTBoolLiteral * ast);
+  Expr * reduceBuiltInDefn(const ASTBuiltIn * ast);
+  Expr * reduceAnonFn(const ASTFunctionDecl * ast);
 
   // Identifiers
 
-  Expr * reduceValueRef(const ASTNode * ast, Type * expected, bool store);
-  Expr * reduceSymbolRef(const ASTNode * ast, Type * expected);
-  Expr * reduceElementRef(const ASTOper * ast, Type * expected, bool store);
-  Expr * reduceLValueExpr(LValueExpr * lvalue, Type * expected);
-  Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr,
-      PropertyDefn * prop, Type * expected);
+  Expr * reduceValueRef(const ASTNode * ast, bool store);
+  Expr * reduceSymbolRef(const ASTNode * ast);
+  Expr * reduceElementRef(const ASTOper * ast, bool store);
+  Expr * reduceLValueExpr(LValueExpr * lvalue);
+  Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop);
   Expr * reduceSetPropertyValue(const SourceLocation & loc, Expr * basePtr,
       PropertyDefn * prop, Expr * value);
-  Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Type * expected);
+  Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
   Expr * reducePatternVar(const ASTPatternVar * ast);
 
   // Operators
 
-  Expr * reduceAssign(const ASTOper * ast, Type * expected);
-  Expr * reducePostAssign(const ASTOper * ast, Type * expected);
-  Expr * reduceAugmentedAssign(const ASTOper * ast, Type * expected);
-  Expr * reduceLoadValue(const ASTNode * ast, Type * expected);
+  Expr * reduceAssign(const ASTOper * ast);
+  Expr * reducePostAssign(const ASTOper * ast);
+  Expr * reduceAugmentedAssign(const ASTOper * ast);
+  Expr * reduceLoadValue(const ASTNode * ast);
   Expr * reduceStoreValue(const SourceLocation & loc, Expr * lval, Expr * rval);
-  Expr * reduceRefEqualityTest(const ASTOper * ast, Type * expected);
-  Expr * reduceContainsTest(const ASTOper * ast, Type * expected);
-  Expr * reduceTypeTest(const ASTOper * ast, Type * expected);
-  Expr * reduceLogicalNot(const ASTOper * ast, Type * expected);
+  Expr * reduceRefEqualityTest(const ASTOper * ast);
+  Expr * reduceContainsTest(const ASTOper * ast);
+  Expr * reduceTypeTest(const ASTOper * ast);
+  Expr * reduceLogicalNot(const ASTOper * ast);
 
   // Calls
 
