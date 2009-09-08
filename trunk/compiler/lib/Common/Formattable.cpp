@@ -5,15 +5,23 @@
 #include "tart/Common/Formattable.h"
 #include <ostream>
 #include <iostream>
+#include <sstream>
 
 namespace tart {
-    
+
 // -------------------------------------------------------------------
 // Formattable
 
 void Formattable::dump() const {
   FormatStream stream(std::cerr);
   format(stream);
+}
+
+std::string Formattable::tostr() const {
+  std::stringstream ss;
+  FormatStream stream(ss);
+  format(stream);
+  return ss.str();
 }
 
 // -------------------------------------------------------------------

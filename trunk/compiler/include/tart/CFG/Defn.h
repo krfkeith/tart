@@ -114,15 +114,14 @@ public:
   };
 
   enum Trait {
-    Final,            // Can't be overridden
-    Abstract,         // Can't be instantiated
-    ReadOnly,         // Can't be written to from non-privileged code
-    //Available = (1<<3),     // Whether definition is available in current scope.
-    //Modified = (1<<4),      // Whether definition was modified after creation.
-    Extern,           // Externally defined function
-    Ctor,             // Constructor function
-    Singular,         // Has no unbound template params
-    Synthetic,        // Generated via template
+    Final,              // Can't be overridden
+    Abstract,           // Can't be instantiated
+    ReadOnly,           // Can't be written to from non-privileged code
+    Extern,             // Externally defined function
+    Ctor,               // Constructor function
+    Singular,           // Has no unbound template params
+    Synthetic,          // Generated via template
+    TemplateMember,     // Is a member of a template
 
     //Commutative = (1<<10),  // A function whose order of arguments can be reversed
     //Associative = (1<<11),  // A varargs function that can be combined with itself.
@@ -259,6 +258,9 @@ public:
   /** Return true if this declaration is a template. */
   bool isTemplate() const { return tsig_ != NULL; }
 
+  /** Return true if this declaration has an ancestor which is a template. */
+  bool isTemplateMember() const { return traits_.contains(TemplateMember); }
+
   /** Return the template signature object. */
   const TemplateSignature * templateSignature() const { return tsig_; }
   TemplateSignature * templateSignature() { return tsig_; }
@@ -282,9 +284,6 @@ public:
   void setStorageClass(StorageClass sc) { modifiers.storageClass = sc; }
 
 #if 0
-  // Some predicates
-  virtual bool isOverloadable() const { return false; }
-
   /** The condition that indicates whether this symbol is enabled. */
   const Expr * getCondition() const { return modifiers.condition; }
 #endif

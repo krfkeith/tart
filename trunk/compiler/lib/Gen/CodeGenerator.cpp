@@ -49,7 +49,7 @@ CodeGenerator::CodeGenerator(Module * mod)
 #if 0
     , doExpansions(false)
 #endif
-    , currentFunction_(NULL)
+    , currentFn_(NULL)
     , dbgFactory_(*mod->irModule())
 #if 0
     , moduleInitFunc(NULL)

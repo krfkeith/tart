@@ -78,8 +78,8 @@ bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inheri
   }
 
   if (inherit) {
-    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this)
-;    for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
+    for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       if ((*it)->lookupMember(name, defs, inherit)) {
         return true;
       }

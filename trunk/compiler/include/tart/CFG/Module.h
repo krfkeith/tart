@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_MODULE_H
 #define TART_CFG_MODULE_H
 
@@ -30,7 +30,7 @@ class Module;
 
 typedef llvm::SetVector<Module *> ModuleSet;
 typedef llvm::SetVector<Defn *> DefnSet;
-  
+
 /// -------------------------------------------------------------------
 /// A translation unit.
 class Module : public Defn, public IterableScope {
@@ -63,7 +63,7 @@ public:
   /** List of AST declarations defined in this module. */
   const ASTDeclList & astMembers() const { return decls_; }
   ASTDeclList & astMembers() { return decls_; }
-  
+
   /** Get the qualified name of this module's package. */
   const std::string packageName() const;
 
@@ -73,7 +73,7 @@ public:
 
   /** Return the definition corresponding to the primary symbol in this module. */
   Defn * primaryDefn() const;
-  
+
   /** Get the set of decls_ which will be generated. */
   DefnSet & exportDefs() { return exportDefs_; }
 
@@ -84,7 +84,7 @@ public:
       to the list of imported symbols. If it is from this module, or if it is synthetic, then
       add it to the list of exported symbols. Also, add the symbol to the queue of symbols to
       be analyzed.
-      
+
       Returns true if the symbol was not already added.
   */
   bool addSymbol(Defn * de);
@@ -93,7 +93,7 @@ public:
   Defn * nextDefToAnalyze();
 
   /** Attempt to import a module by name. Returns the set of primary definitions for that module. */
-  bool import(const char * qname, DefnList & defs);
+  bool import(const char * qname, DefnList & defs, bool absPath);
 
   /** Process all import statements by adding an explicit import reference
       for each import into this module's symbol table. */

@@ -55,7 +55,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
         std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
         for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
           Type * paramType = cc->paramType(argIndex);
-          callingArgs[cc->getParameterIndex(argIndex)] = in->arg(argIndex);
+          callingArgs[cc->parameterIndex(argIndex)] = in->arg(argIndex);
         }
 
         // Fill in default params

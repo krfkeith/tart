@@ -210,7 +210,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_->definingScope());
+  TemplateInstance * tinst = new TemplateInstance(value_->module(), value_->definingScope());
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
 
   // Substitute into the template args to create the arg list
@@ -308,9 +308,10 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Scope * ps)
+TemplateInstance::TemplateInstance(Module * srcModule, Scope * ps)
   : value_(NULL)
   , parentScope_(ps)
+  , srcModule_(srcModule)
 {
 }
 

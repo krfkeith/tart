@@ -83,6 +83,7 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
   createTypeObject(rtype);
+  createTypeAllocator(rtype);
   return type->irType();
 }
 
@@ -348,20 +349,22 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
         alloctype, rtype->getLinkageType(),
         type->typeDefn()->linkageName() + ".type.alloc", irModule_);
 
-    // Save the builder_ state and set to the new allocator function.
-    BasicBlock * savePoint = builder_.GetInsertBlock();
-    builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
+    if (!rtype->isExternal()) {
+      // Save the builder_ state and set to the new allocator function.
+      BasicBlock * savePoint = builder_.GetInsertBlock();
+      builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
 
-    // Allocate an instance of the object
-    Value * instance = builder_.CreateMalloc(type->irType());
+      // Allocate an instance of the object
+      Value * instance = builder_.CreateMalloc(type->irType());
 
-    // Generate code to fill in vtable pointer of new object.
-    genInitObjVTable(type, instance);
-    builder_.CreateRet(instance);
+      // Generate code to fill in vtable pointer of new object.
+      genInitObjVTable(type, instance);
+      builder_.CreateRet(instance);
 
-    // Restore the builder_ state.
-    if (savePoint != NULL) {
-      builder_.SetInsertPoint(savePoint);
+      // Restore the builder_ state.
+      if (savePoint != NULL) {
+        builder_.SetInsertPoint(savePoint);
+      }
     }
 
     rtype->setTypeAllocator(allocFunc);

@@ -51,6 +51,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
       callable->nodeType() == ASTNode::Specialize);
 
   bool isUnqualified = callable->nodeType() == ASTNode::Id;
+  bool success = true;
 
   ExprList results;
   lookupName(results, callable);
@@ -86,7 +87,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
     if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
-        addOverload(call, lv->base(), func, args);
+        success &= addOverload(call, lv->base(), func, args);
 
         // If there's a base pointer, then it's not really unqualified.
         //if (lv->base() != NULL) {
@@ -108,7 +109,9 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     lookupByArgType(call, name, args);
   }
 
-  if (results.empty()) {
+  if (!success) {
+    return &Expr::ErrorVal;
+  } else if (results.empty()) {
     diag.error(loc) << "Undefined method " << callable;
     diag.writeLnIndent("Scopes searched:");
     dumpScopeHierarchy();
@@ -185,7 +188,9 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
 }
 
 Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, Type * expected) {
-  if (ConstantType * typeExpr = dyn_cast<ConstantType>(func)) {
+  if (isErrorResult(func)) {
+    return func;
+  } else if (ConstantType * typeExpr = dyn_cast<ConstantType>(func)) {
     // It's a type.
     return callConstructor(loc, typeExpr, args);
   } else if (LValueExpr * lval = dyn_cast<LValueExpr>(func)) {
@@ -206,6 +211,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
     return call;
 
   } else {
+    diag.fatal(func) << Format_Verbose << "Unimplemented function type";
     DFAIL("Unimplemented");
   }
 }
@@ -261,7 +267,9 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
 Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const ASTNodeList & args) {
   Type * type = typeExpr->value();
   TypeDefn * tdef = type->typeDefn();
-  module->addSymbol(tdef);
+  if (!tdef->isTemplate() && !tdef->isTemplateMember()) {
+    module->addSymbol(tdef);
+  }
 
   // First thing we need to know is how much tdef has been analyzed.
   if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse)) {
@@ -281,48 +289,82 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const A
 
   CallExpr * call = new CallExpr(Expr::Construct, loc, tdef->asExpr());
   call->setExpectedReturnType(type);
-  if (type->memberScope()->lookupMember(istrings.idConstruct, methods, false)) {
-    Expr * newExpr = new NewExpr(loc, type);
-    DASSERT(!methods.empty());
-    for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
-      FunctionDefn * cons = cast<FunctionDefn>(*it);
-      DASSERT(cons->type() != NULL);
-      DASSERT(cons->isCtor());
-      DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
-      DASSERT(cons->storageClass() == Storage_Instance);
-      addOverload(call, newExpr, cons, args);
-    }
-  } else if (type->memberScope()->lookupMember(istrings.idCreate, methods, false)) {
-    DASSERT(!methods.empty());
-    for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
-      FunctionDefn * create = cast<FunctionDefn>(*it);
-      DASSERT(create->type() != NULL);
-      if (create->storageClass() == Storage_Static) {
-        const Type * returnType = create->returnType();
-        addOverload(call, NULL, create, args);
+  if (tdef->isTemplate()) {
+    if (lookupTemplateMember(methods, tdef, istrings.idConstruct, loc)) {
+      Expr * newExpr = new NewExpr(loc, type);
+      DASSERT(!methods.empty());
+      for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        FunctionDefn * cons = cast<FunctionDefn>(*it);
+        if (analyzeDefn(cons, Task_InferType)) {
+          DASSERT(cons->type() != NULL);
+          DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+          DASSERT(cons->storageClass() == Storage_Instance);
+          DASSERT(cons->isTemplate() || cons->isTemplateMember());
+          cons->addTrait(Defn::Ctor);
+          addOverload(call, newExpr, cons, args);
+        }
       }
-    }
-  } else if (type->memberScope()->lookupMember(istrings.idConstruct, methods, true)) {
-    Expr * newExpr = new NewExpr(loc, type);
-    DASSERT(!methods.empty());
-    for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
-      FunctionDefn * cons = cast<FunctionDefn>(*it);
-      DASSERT(cons->type() != NULL);
-      DASSERT(cons->isCtor());
-      DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
-      DASSERT(cons->storageClass() == Storage_Instance);
-      addOverload(call, newExpr, cons, args);
+    } else if (lookupTemplateMember(methods, tdef, istrings.idCreate, loc)) {
+      DASSERT(!methods.empty());
+      for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        FunctionDefn * create = cast<FunctionDefn>(*it);
+        if (create->storageClass() == Storage_Static) {
+          if (analyzeDefn(create, Task_InferType)) {
+            DASSERT(create->type() != NULL);
+            const Type * returnType = create->returnType();
+            addOverload(call, NULL, create, args);
+          }
+        }
+      }
+    } else {
+      diag.error(loc) << "No constructors found for type " << tdef;
+      DFAIL("Implement constructor inheritance for templates.");
+      return &Expr::ErrorVal;
     }
   } else {
-    diag.error(loc) << "No constructors found for type " << tdef;
-    return &Expr::ErrorVal;
+    if (type->memberScope()->lookupMember(istrings.idConstruct, methods, false)) {
+      Expr * newExpr = new NewExpr(loc, type);
+      DASSERT(!methods.empty());
+      for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        FunctionDefn * cons = cast<FunctionDefn>(*it);
+        DASSERT(cons->type() != NULL);
+        DASSERT(cons->isCtor());
+        DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+        DASSERT(cons->storageClass() == Storage_Instance);
+        addOverload(call, newExpr, cons, args);
+      }
+    } else if (type->memberScope()->lookupMember(istrings.idCreate, methods, false)) {
+      DASSERT(!methods.empty());
+      for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        FunctionDefn * create = cast<FunctionDefn>(*it);
+        DASSERT(create->type() != NULL);
+        if (create->storageClass() == Storage_Static) {
+          const Type * returnType = create->returnType();
+          addOverload(call, NULL, create, args);
+        }
+      }
+    } else if (type->memberScope()->lookupMember(istrings.idConstruct, methods, true)) {
+      Expr * newExpr = new NewExpr(loc, type);
+      DASSERT(!methods.empty());
+      for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+        FunctionDefn * cons = cast<FunctionDefn>(*it);
+        DASSERT(cons->type() != NULL);
+        DASSERT(cons->isCtor());
+        DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+        DASSERT(cons->storageClass() == Storage_Instance);
+        addOverload(call, newExpr, cons, args);
+      }
+    } else {
+      diag.error(loc) << "No constructors found for type " << tdef;
+      return &Expr::ErrorVal;
+    }
   }
 
   if (!call->hasAnyCandidates()) {
     diag.error(loc) << "No constructor found matching input arguments (" <<
       args << "), candidates are:";
     for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
-      diag.info(*it) << *it;
+      diag.info(*it) << Format_Verbose << *it;
     }
 
     return &Expr::ErrorVal;
@@ -392,10 +434,10 @@ Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
   return new ParameterOfConstraint(call, index);
 }
 
-void ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ASTNodeList & args) {
   if (!analyzeValueDefn(method, Task_PrepOverloadSelection)) {
-    return;
+    return false;
   }
 
   DASSERT_OBJ(method->type() != NULL, method);
@@ -404,6 +446,8 @@ void ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   if (builder.assignFromAST(args)) {
     call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa));
   }
+
+  return true;
 }
 
 } // namespace tart

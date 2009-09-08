@@ -1,17 +1,79 @@
+import tart.core.Math.max;
+
 /** Array-backed list type. */
-class ArrayList[%ElementType] : List[ElementType] {
-  private var data:Array[ElementType];
-  readonly var length:int;
-  
+final class ArrayList[%ElementType] : List[ElementType] {
+  private {
+    var data:ElementType[];
+    var _length:int;
+
+    def grow(amount:int) {
+      let nlength = self._length + amount;
+      if data.length < nlength {
+        let ndata = ElementType[](nlength + nlength / 2 + 16);
+        ElementType[].copyElements(ndata, 0, data, 0, self._length);
+        self.data = ndata;
+      }
+
+      self._length = nlength;
+    }
+  }
+
   def construct(data:ElementType...; initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
-    data = Array[ElementType].create(initialCapacity);
-    self.length = data.length;
+    self.data = Array[ElementType].create(initialCapacity);
+    ElementType[].copyElements(self.data, 0, data, 0, data.length);
+    _length = data.length;
   }
 
   def construct(data:Array[ElementType], initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
-    data = Array[ElementType].create(initialCapacity);
-    self.length = data.length;
+    self.data = Array[ElementType].create(initialCapacity);
+    ElementType[].copyElements(self.data, 0, data, 0, data.length);
+    _length = data.length;
+  }
+
+  def add(e:ElementType) {
+  }
+
+  def [index:int]:ElementType {
+    get {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _length);
+      return data[index];
+    }
+
+    set {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _length);
+      data[index] = value;
+    }
+  }
+  
+  def length:int {
+    get { return _length; }
+  }
+
+  def iterate -> Iterator[ElementType] {
+    return ArrayListIterator(self);
+  }
+
+  private final class ArrayListIterator : Iterator[ElementType], HasLength {
+    private var list:ArrayList;
+    private var index:int;
+    
+    def construct(list:ArrayList) {
+      self.list = list;
+      self.index = 0;
+    }
+    
+    def next() -> ElementType or void {
+      if (self.index < self.list.length) {
+        return self.list.data[self.index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:long { get { return list.length; } }
   }
 }

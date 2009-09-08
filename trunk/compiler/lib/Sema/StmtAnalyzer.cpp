@@ -27,6 +27,8 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 
+#define IMPLICIT_SELF 1
+
 namespace tart {
 
 // A scope which allows definitions in the enclosing class to be looked up
@@ -77,16 +79,18 @@ bool StmtAnalyzer::buildCFG() {
     // and is always searched immediately after the parameter scope.
     if (function->storageClass() == Storage_Instance) {
       ParameterDefn * selfParam = function->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function)
-;      DASSERT_OBJ(selfParam->type() != NULL, function);
+      DASSERT_OBJ(selfParam != NULL, function);
+      DASSERT_OBJ(selfParam->type() != NULL, function);
       TypeDefn * selfType = selfParam->type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
+#if IMPLICIT_SELF
       // Uncomment to allow 'self' to be searched implicitly.
-      //SelfScope * selfScope = new SelfScope(
-      //    selfType->typeValue()->memberScope(), function->definingScope());
-      //selfScope->setSelfParam(selfParam);
-      //parameterScope.setParentScope(selfScope);
+      SelfScope * selfScope =
+          new SelfScope(selfType->typeValue()->memberScope(), function->definingScope());
+      selfScope->setSelfParam(selfParam);
+      parameterScope.setParentScope(selfScope);
+#endif
     }
 
     // Create the initial block.

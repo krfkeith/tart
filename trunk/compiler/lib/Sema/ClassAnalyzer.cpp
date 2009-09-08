@@ -55,13 +55,6 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   // Work out what passes need to be run.
   DefnPasses passesToRun;
 
-  // Skip analysis of templates - for now.
-  if (target->isTemplate()) {
-    // Get the template scope and set it as the active scope.
-    analyzeTemplateSignature(target);
-    return true;
-  }
-
   switch (task) {
     case Task_PrepMemberLookup:
       addPasses(target, passesToRun, PASS_SET_LOOKUP);
@@ -80,7 +73,15 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
       break;
   }
 
+  passesToRun.removeAll(target->finished());
   if (passesToRun.empty()) {
+    return true;
+  }
+
+  // Skip analysis of templates - for now.
+  if (target->isTemplate()) {
+    // Get the template scope and set it as the active scope.
+    analyzeTemplateSignature(target);
     return true;
   }
 
@@ -151,7 +152,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   Type::TypeClass dtype = type->typeClass();
   const ASTNodeList & astBases = ast->bases();
   CompositeType * primaryBase = NULL;
-  TypeAnalyzer ta(target->module(), target->definingScope());
+  TypeAnalyzer ta(moduleForDefn(target), target->definingScope());
   for (ASTNodeList::const_iterator it = astBases.begin(); it != astBases.end(); ++it) {
     Type * baseType = ta.typeFromAST(*it);
     if (isErrorResult(baseType)) {
@@ -243,9 +244,6 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   if (primaryBase != NULL) {
     // Move the primary base to be first in the list.
     type->bases().insert(type->bases().begin(), primaryBase);
-
-    // Supertype counts as 1 field.
-    //type->setFieldCount(1);
   }
 
   if (dtype == Type::Interface) {
@@ -543,30 +541,42 @@ void ClassAnalyzer::overrideMembers() {
     const char * name = first->name();
 
     MethodList methods;
-    FunctionDefn * getter = NULL;
-    FunctionDefn * setter = NULL;
+    MethodList getters;
+    MethodList setters;
+    FunctionDefn * uniqueGetter = NULL;
     PropertyDefn * prop = NULL;
 
     // Look for properties and methods. Methods can have more than one implementation
     // for the same name.
-    if (first->defnType() == Defn::Function) {
-      // Find all same-named methods.
-      for (SymbolTable::Entry::iterator it = entry.begin(); it != entry.end(); ++it) {
-        FunctionDefn * func = dyn_cast<FunctionDefn>(*it);
-        if (func != NULL && func->isSingular()) {
+    // Find all same-named methods.
+    for (SymbolTable::Entry::iterator it = entry.begin(); it != entry.end(); ++it) {
+      if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {
+        if (func->isSingular()) {
           module->addSymbol(func);
           if (func->storageClass() == Storage_Instance && !func->isCtor()) {
             methods.push_back(func);
           }
         }
+      } else if ((*it)->defnType() == Defn::Property || (*it)->defnType() == Defn::Indexer) {
+        prop = cast<PropertyDefn>(*it);
+        if (prop->storageClass() == Storage_Instance && prop->isSingular()) {
+          DASSERT_OBJ(prop->isPassFinished(Pass_ResolveVarType), prop);
+          if (prop->getter() != NULL) {
+            analyzeValueDefn(prop->getter(), Task_PrepCodeGeneration);
+            getters.push_back(prop->getter());
+          }
+
+          if (prop->setter() != NULL) {
+            analyzeValueDefn(prop->setter(), Task_PrepCodeGeneration);
+            setters.push_back(prop->setter());
+          }
+        }
       }
+    }
+
+    if (first->defnType() == Defn::Function) {
     } else if (first->defnType() == Defn::Property || first->defnType() == Defn::Indexer) {
-      DASSERT(entry.size() == 1);
-      prop = cast<PropertyDefn>(first);
-      if (prop->storageClass() == Storage_Instance && prop->isSingular()) {
-        getter = prop->getter();
-        setter = prop->setter();
-      }
+      //DASSERT(entry.size() == 1);
     } else {
       // TODO: Check for multiply-defined? Not if templates...
       continue;
@@ -574,53 +584,54 @@ void ClassAnalyzer::overrideMembers() {
 
     if (!methods.empty()) {
       // Insure that there's no duplicate method signatures.
-      for (size_t i = 0; i < methods.size(); ++i) {
-        for (size_t j = i + 1; j < methods.size(); ++j) {
-          if (hasSameSignature(methods[i], methods[j])) {
-            diag.error(methods[j]) << "Method type signature conflict";
-            diag.info(methods[i]) << "From here";
-          }
-        }
-      }
+      ensureUniqueSignatures(methods);
 
       // Update the table of instance methods and the interface tables
       overrideMethods(type->instanceMethods_, methods, true);
-      for (CompositeType::InterfaceList::iterator it =
-          type->interfaces_.begin(); it != type->interfaces_.end(); ++it) {
+      for (InterfaceList::iterator it = type->interfaces_.begin();
+          it != type->interfaces_.end(); ++it) {
         overrideMethods(it->methods, methods, false);
       }
     }
 
-    if (getter != NULL) {
-      overridePropertyAccessor(type->instanceMethods_, getter, true);
+    if (!getters.empty()) {
+      ensureUniqueSignatures(getters);
+      overrideMethods(type->instanceMethods_, getters, true);
       for (InterfaceList::iterator it = type->interfaces_.begin();
           it != type->interfaces_.end(); ++it) {
-        overridePropertyAccessor(it->methods, getter, false);
+        overrideMethods(it->methods, getters, false);
       }
     }
 
-    if (setter != NULL) {
-      overridePropertyAccessor(type->instanceMethods_, setter, true);
+    if (!setters.empty()) {
+      ensureUniqueSignatures(setters);
+      overrideMethods(type->instanceMethods_, setters, true);
       for (InterfaceList::iterator it = type->interfaces_.begin();
           it != type->interfaces_.end(); ++it) {
-        overridePropertyAccessor(it->methods, setter, false);
+        overrideMethods(it->methods, setters, false);
       }
     }
   }
 }
 
-void ClassAnalyzer::addNewMethods() {
+void ClassAnalyzer::ensureUniqueSignatures(MethodList & methods) {
+  for (size_t i = 0; i < methods.size(); ++i) {
+    for (size_t j = i + 1; j < methods.size(); ++j) {
+      if (hasSameSignature(methods[i], methods[j])) {
+        diag.error(methods[j]) << "Member type signature conflict";
+        diag.info(methods[i]) << "From here";
+      }
+    }
+  }
+}
+
+  void ClassAnalyzer::addNewMethods() {
   // Append all methods that aren't overrides of a superclass. Note that we
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
   CompositeType * type = cast<CompositeType>(target->typeValue());
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance && de->isSingular()) {
-      //if (de->analysisState != Declaration::AS_Complete) {
-      //  diag.fatal(de) << "Analysis incomplete for member '" << de <<
-      //      "' in class '" << target << "'";
-      //}
-
       Defn::DefnType dt = de->defnType();
       if (dt == Defn::Function) {
         FunctionDefn * fn = static_cast<FunctionDefn *>(de);
@@ -673,7 +684,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
         diag.error(target) << "Concrete type '" << target <<
             "'lacks definition for the following methods:";
         for (MethodList::iterator it = abstractMethods.begin(); it != abstractMethods.end(); ++it) {
-          diag.info(*it) << *it;
+          diag.info(*it) << Format_Type << *it;
         }
       }
 
@@ -697,7 +708,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
           "' implements interface '" << it->interfaceType <<
           "' but lacks implementations for:";
       for (MethodList::iterator it = unimpMethods.begin(); it != unimpMethods.end(); ++it) {
-        diag.info(*it) << *it;
+        diag.info(*it) << Format_Verbose << *it;
       }
 
       return;
@@ -730,7 +741,8 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
   }
 }
 
-void ClassAnalyzer::overridePropertyAccessor(MethodList & table, FunctionDefn * accessor,
+#if 0
+void ClassAnalyzer::overridePropertyAccessors(MethodList & table, const MethodList & accessors,
     bool canHide) {
   const char * name = accessor->name();
   size_t tableSize = table.size();
@@ -752,6 +764,7 @@ void ClassAnalyzer::overridePropertyAccessor(MethodList & table, FunctionDefn * 
     }
   }
 }
+#endif
 
 bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
   FunctionType * ft0 = f0->functionType();

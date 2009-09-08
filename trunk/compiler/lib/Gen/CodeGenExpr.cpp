@@ -145,6 +145,10 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::Not:
       return genNot(static_cast<const UnaryExpr *>(in));
 
+    case Expr::And:
+    case Expr::Or:
+      return genLogicalOper(static_cast<const BinaryExpr *>(in));
+
     case Expr::FnCall:
     case Expr::CtorCall:
     case Expr::VTableCall:
@@ -303,6 +307,32 @@ Value * CodeGenerator::genNot(const UnaryExpr * in) {
   }
 }
 
+Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
+  BasicBlock * blkTrue = BasicBlock::Create(context_, "true_branch", currentFn_);
+  BasicBlock * blkFalse = BasicBlock::Create(context_, "false_branch", currentFn_);
+  BasicBlock * blkNext = BasicBlock::Create(context_, "combine", currentFn_);
+
+  blkTrue->moveAfter(builder_.GetInsertBlock());
+  blkFalse->moveAfter(blkTrue);
+  blkNext->moveAfter(blkFalse);
+
+  if (!genTestExpr(in, blkTrue, blkFalse)) {
+    return NULL;
+  }
+
+  builder_.SetInsertPoint(blkTrue);
+  builder_.CreateBr(blkNext);
+
+  builder_.SetInsertPoint(blkFalse);
+  builder_.CreateBr(blkNext);
+
+  builder_.SetInsertPoint(blkNext);
+  PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
+  phi->addIncoming(ConstantInt::getTrue(context_), blkTrue);
+  phi->addIncoming(ConstantInt::getFalse(context_), blkFalse);
+  return phi;
+}
+
 Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
   const ValueDefn * var = lval->value();
 
@@ -321,10 +351,12 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
     if (param->irValue() == NULL) {
-      diag.fatal(param) << "Invalid parameter IR value for " << param << " in function " <<
-      currentFunction_;
+      diag.fatal(param) << "Invalid parameter IR value for parameter '" << param << "'";
     }
     DASSERT_OBJ(param->irValue() != NULL, param);
+    if (param->isLValue()) {
+      return builder_.CreateLoad(param->irValue(), param->name());
+    }
     return param->irValue();
   } else {
     DFAIL("IllegalState");
@@ -347,7 +379,8 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         return genVarValue(static_cast<const VariableDefn *>(var));
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
-        DFAIL("Implement");
+        DASSERT(param->isLValue());
+        return param->irValue();
       } else {
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
         DFAIL("IllegalState");
@@ -796,7 +829,7 @@ Value * CodeGenerator::genNew(NewExpr * in) {
 Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
     ValueList::iterator lastArg, const char * name) {
   if (unwindTarget_ != NULL) {
-    Function * f = currentFunction_->irFunction();
+    Function * f = currentFn_;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     normalDest->moveAfter(builder_.GetInsertBlock());
     Value * result = builder_.CreateInvoke(func, normalDest, unwindTarget_, firstArg, lastArg, name);

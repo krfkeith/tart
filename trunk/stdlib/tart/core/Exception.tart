@@ -2,6 +2,7 @@
  */
 public class Exception : Throwable {
   private var msg:String;
+  // TODO: Add location
   // TODO: Add cause
   // private var cause:Exception
   

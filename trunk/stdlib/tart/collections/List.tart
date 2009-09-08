@@ -1,11 +1,8 @@
 /** List interface */
-interface List[%ElementType] {
+interface List[%ElementType] : Iterable[ElementType] {
   
   /** Append an item to the end of the list. */
   def add(e:ElementType);
-
-  /** Iterate through the elements in the list. */
-  def iterate -> Iterable[ElementType];
 
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }

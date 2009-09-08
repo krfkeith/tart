@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_CFGPASS_H
 #define TART_SEMA_CFGPASS_H
 
@@ -10,19 +10,19 @@
 #endif
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// Mixin class that handles iteration over the CFG expression tree and
 /// allows for arbitrary replacements.
 class CFGPass {
 public:
   virtual ~CFGPass() {}
-  
+
   virtual void visit(FunctionDefn * in);
   virtual void visitBlock(Block * in);
   virtual Expr * visitStmtExpr(Expr * in) { return visitExpr(in); }
   virtual Expr * visitTermExpr(Expr * in) { return visitExpr(in); }
-  
+
   virtual Expr * visitExpr(Expr * in);
   virtual Expr * visitConstantInteger(ConstantInteger * in) { return in; }
   virtual Expr * visitConstantFloat(ConstantFloat * in) { return in; }
@@ -48,10 +48,11 @@ public:
   virtual Expr * visitRefEq(BinaryExpr * in);
   virtual Expr * visitPtrDeref(UnaryExpr * in);
   virtual Expr * visitNot(UnaryExpr * in);
+  virtual Expr * visitLogicalOper(BinaryExpr * in);
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
-  
+
 protected:
   void visitExprArgs(ArglistExpr * in);
 };

@@ -127,6 +127,10 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::Not:
       return visitNot(static_cast<UnaryExpr *>(in));
 
+    case Expr::And:
+    case Expr::Or:
+      return visitLogicalOper(static_cast<BinaryExpr *>(in));
+
     case Expr::InitVar:
       return visitInitVar(static_cast<InitVarExpr *>(in));
 
@@ -187,6 +191,7 @@ Expr * CFGPass::visitPostAssign(AssignmentExpr * in) {
 }
 
 Expr * CFGPass::visitCall(CallExpr * in) {
+  in->setFunction(visitExpr(in->function()));
   visitExprArgs(in);
   return in;
 }
@@ -241,6 +246,12 @@ Expr * CFGPass::visitRefEq(BinaryExpr * in) {
 
 Expr * CFGPass::visitPtrDeref(UnaryExpr * in) {
   in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitLogicalOper(BinaryExpr * in) {
+  in->setFirst(visitExpr(in->first()));
+  in->setSecond(visitExpr(in->second()));
   return in;
 }
 

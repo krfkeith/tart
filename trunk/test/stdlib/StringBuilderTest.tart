@@ -1,0 +1,9 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  emptyStringBuilderTest();
+  return 0;
+}
+
+def emptyStringBuilderTest() {
+  Debug.assertFalse(false);
+}

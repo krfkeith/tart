@@ -51,13 +51,6 @@ namespace {
     Prec_Highest
   };
 
-#if 0
-  ASTIdent operatorPreInc(SourceLocation(), &idOperator, "preIncrement");
-  ASTIdent operatorPreDec(SourceLocation(), &idOperator, "preDecrement");
-  ASTIdent operatorPostInc(SourceLocation(), &idOperator, "postIncrement");
-  ASTIdent operatorPostDec(SourceLocation(), &idOperator, "postDecrement");
-#endif
-
   ASTCall * callOperator(ASTNode * opFunc, const SourceLocation loc) {
     return new ASTCall(loc, opFunc, ASTNodeList());
   }
@@ -213,8 +206,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     if (mods.condition == NULL) {
       declMods.condition = testExpr;
     } else {
-      ASTOper * combined = new ASTOper(ASTNode::LogicalAnd,
-          testExpr->location());
+      ASTOper * combined = new ASTOper(ASTNode::LogicalAnd, testExpr->location());
       combined->append(mods.condition);
       combined->append(testExpr);
       declMods.condition = combined;
@@ -237,8 +229,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
       if (mods.condition == NULL) {
         declMods.condition = elseExpr;
       } else {
-        ASTOper * combined = new ASTOper(ASTNode::LogicalAnd,
-            testExpr->location());
+        ASTOper * combined = new ASTOper(ASTNode::LogicalAnd, testExpr->location());
         combined->append(mods.condition);
         combined->append(elseExpr);
         declMods.condition = combined;

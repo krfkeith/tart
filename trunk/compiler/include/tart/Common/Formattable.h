@@ -12,19 +12,19 @@
 //#include <ostream>
 
 namespace tart {
-  
+
 class Formattable;
 class FormatStream;
-  
+
 /// -------------------------------------------------------------------
 /// Options for the format() method
 enum FormatOptions {
   Format_QualifiedName = (1 << 0),    // Include fully qualified names
   Format_Type = (1 << 1),             // Include types
   Format_Initializer = (1 << 2),      // Include initializers
-  Format_Verbose = (1 << 3),          // Include full debugging info
-  Format_Dealias = (1 << 4),          // Show underlying definitions.
-  
+  Format_Dealias = (1 << 3),          // Show underlying definitions.
+
+  Format_Verbose = Format_QualifiedName | Format_Type,
   Format_Default = 0,
 };
 
@@ -41,6 +41,9 @@ public:
 
   /** Print debugging information to output console (for use in debugger). */
   virtual void dump() const;
+
+  /** Return debugging information as a string (for use in debugger). */
+  virtual std::string tostr() const;
 };
 
 /// -------------------------------------------------------------------
@@ -48,7 +51,7 @@ public:
 class FormatStream : public llvm::OStream {
 private:
   int formatOptions_;
-  
+
 public:
   FormatStream(std::ostream &S)
     : llvm::OStream(&S)
@@ -103,7 +106,7 @@ public:
   // These are non-inline in order to avoid including <ostream> everywhere.
   // We don't use a template because we want to carefully control how
   // every type is streamed.
-  
+
   FormatStream & operator<<(const char * str);
   FormatStream & operator<<(const std::string & str);
   FormatStream & operator<<(int value);
@@ -111,7 +114,7 @@ public:
     (*func)(*this);
     return *this;
   }
-  
+
   // Enable format option
   FormatStream & operator<<(FormatOptions f);
 };

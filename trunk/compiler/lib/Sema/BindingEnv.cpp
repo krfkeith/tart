@@ -406,7 +406,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
     case Type::Protocol:
     case Type::Function:
     case Type::NonType:
-      DASSERT(in->isSingular());
+      //DASSERT(in->isSingular());
       return in;
 
     case Type::Primitive:

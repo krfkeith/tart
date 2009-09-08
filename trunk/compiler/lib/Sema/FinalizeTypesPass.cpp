@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/PrimitiveType.h"
@@ -26,7 +26,9 @@ Expr * FinalizeTypesPass::run(Expr * in) {
 }
 
 Expr * FinalizeTypesPass::runImpl(Expr * in) {
-  return visitExpr(in);
+  Expr * result = visitExpr(in);
+  DASSERT(result->isSingular());
+  return result;
 }
 
 Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
@@ -65,6 +67,14 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
+  return visitAssignImpl(in);
+}
+
+Expr * FinalizeTypesPass::visitPostAssign(AssignmentExpr * in) {
+  return visitAssignImpl(in);
+}
+
+Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
   DASSERT_OBJ(in->toExpr()->type() != NULL, in);
   Expr * from = visitExpr(in->fromExpr());
   Expr * to = visitExpr(in->toExpr());
@@ -79,22 +89,11 @@ Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
     in->setFromExpr(from);
     in->setToExpr(to);
 
-    DASSERT_OBJ(in->isSingular(), in);
-  }
-
-  return in;
-}
-
-Expr * FinalizeTypesPass::visitPostAssign(AssignmentExpr * in) {
-  DASSERT_OBJ(in->toExpr()->type() != NULL, in);
-  Expr * from = visitExpr(in->fromExpr());
-  Expr * to = visitExpr(in->toExpr());
-  if (!isErrorResult(from) && !isErrorResult(to)) {
-    DASSERT_OBJ(to->isSingular(), to);
-
-    from = to->type()->implicitCast(from->location(), from);
-    in->setFromExpr(from);
-    in->setToExpr(to);
+    if (LValueExpr * lval = dyn_cast<LValueExpr>(to)) {
+      if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
+        param->setFlag(ParameterDefn::LValueParam, true);
+      }
+    }
 
     DASSERT_OBJ(in->isSingular(), in);
   }
@@ -109,28 +108,22 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
   if (in->candidates().size() == 1) {
     CallCandidate * cd = in->candidates().front();
     FunctionDefn * method = cd->method();
+    bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
 
-    // If it's a template, get the template params that were deduced.
-    if (method->isTemplate()) {
-      TemplateSignature * tsig = method->templateSignature();
-
-      // Check to make sure that all template params are bound.
-      size_t numVars = tsig->patternVarCount();
-      for (size_t i = 0; i < numVars; ++i) {
-        const PatternVar * var = tsig->patternVar(i);
-        Type * value = cd->env().get(var);
-        if (value == NULL || !value->isSingular()) {
-          diag.fatal(in) << "Unable to deduce template parameters for call " << in;
-          return &Expr::ErrorVal;
-        }
-      }
-
-      method = cast<FunctionDefn>(tsig->instantiate(in->location(), cd->env()));
-      if (!AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
+    // Handle the case where the method is a template, or is contained within a template.
+    if (isTemplateMethod) {
+      method = cast<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
+      if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
         return &Expr::ErrorVal;
       }
 
+      DASSERT_OBJ(method->isSingular(), method);
       cd->setMethod(method);
+
+      if (method->isCtor()) {
+        NewExpr * ne = cast<NewExpr>(cd->base());
+        ne->setType(method->functionType()->selfParam()->type());
+      }
     }
 
     size_t paramCount = method->functionType()->params().size();
@@ -139,9 +132,10 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
 
     for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-      int paramIndex = cd->getParameterIndex(argIndex);
+      int paramIndex = cd->parameterIndex(argIndex);
       ParameterDefn * param = method->functionType()->params()[paramIndex];
       Type * paramType = cd->paramType(argIndex);
+      DASSERT(paramType->isSingular());
       Expr * argVal = visitExpr(args[argIndex]);
       if (isErrorResult(argVal)) {
         return &Expr::ErrorVal;
@@ -150,7 +144,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       Expr * castArgVal = addCastIfNeeded(argVal, paramType);
       if (castArgVal == NULL) {
         diag.error(argVal) << "Unable to convert argument of type " << argVal->type() <<
-            " to " << paramType;
+        " to " << paramType;
         return &Expr::ErrorVal;
       }
 
@@ -160,9 +154,11 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(callingArgs[paramIndex]);
         if (arrayParam == NULL) {
           arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
+          DASSERT(arrayParam->isSingular());
           callingArgs[paramIndex] = arrayParam;
         }
 
+        DASSERT(castArgVal->isSingular());
         arrayParam->appendArg(castArgVal);
       } else {
         callingArgs[paramIndex] = castArgVal;
@@ -199,6 +195,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     Expr * expr = method->eval(in->location(), selfArg, callingArgs);
     if (expr != NULL) {
       DASSERT_OBJ(expr->isSingular(), expr);
+      DASSERT(expr->isSingular());
       return expr;
     }
 
@@ -237,7 +234,77 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
   }
 
   diag.error(in) << in << " has " << in->candidates().size() << " candidates";
+  for (Candidates::iterator it = in->candidates().begin(); it != in->candidates().end(); ++it) {
+    CallCandidate * cc = *it;
+    cc->updateConversionRank();
+    if (cc->env().empty()) {
+      diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
+    } else {
+      diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
+          Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";
+    }
+  }
+
   return &Expr::ErrorVal;
+}
+
+Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
+  // First perform pattern substitutions on the parent definition.
+  Defn * parent = def->parentDefn();
+  if (parent != NULL && (parent->isTemplate() || parent->isTemplateMember())) {
+    parent = doPatternSubstitutions(loc, parent, env);
+    if (parent == NULL) {
+      return NULL;
+    }
+
+    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepCallOrUse)) {
+      return NULL;
+    }
+
+    Defn * newdef = NULL;
+    DefnList defns;
+
+    if (TypeDefn * tdef = dyn_cast<TypeDefn>(parent)) {
+      tdef->typeValue()->memberScope()->lookupMember(def->name(), defns, false);
+    } else {
+      DFAIL("Implement pattern substitutions for parent scopes other than types");
+    }
+
+    // Attempt to find the instantiated definition that corresponds with the original template
+    // definition 'def'. This can be identified because it has the same value for 'ast'.
+    for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
+      if ((*it)->ast() == def->ast()) {
+        newdef = *it;
+        break;
+      }
+    }
+
+    if (newdef == NULL) {
+      diag.fatal(loc) << "Missing definition in template instantiation " << def;
+      return NULL;
+    }
+
+    def = newdef;
+  }
+
+  if (def->isTemplate()) {
+    TemplateSignature * tsig = def->templateSignature();
+
+    // Check to make sure that all template params are bound.
+    size_t numVars = tsig->patternVarCount();
+    for (size_t i = 0; i < numVars; ++i) {
+      const PatternVar * var = tsig->patternVar(i);
+      Type * value = env.get(var);
+      if (value == NULL || !value->isSingular()) {
+        diag.fatal(loc) << "Unable to deduce template parameters for '" << def << "'";
+        return NULL;
+      }
+    }
+
+    def = tsig->instantiate(loc, env);
+  }
+
+  return def;
 }
 
 Expr * FinalizeTypesPass::visitInstantiate(InstantiateExpr * in) {
@@ -282,8 +349,8 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   CompositeType * ctTo = dyn_cast<CompositeType>(tyTo);
   CompositeType * ctFrom = dyn_cast<CompositeType>(tyFrom);
 
-  bool isConstTrue = false;   // Test always succeeds
-  bool isConstFalse = false;  // Test always fails
+  bool isConstTrue = false; // Test always succeeds
+  bool isConstFalse = false; // Test always fails
 
   if (ctTo != NULL && ctFrom != NULL) {
     if (ctTo->typeClass() == Type::Struct) {
@@ -404,14 +471,14 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
   if (t0->isReferenceType()) {
     if (!t1->isReferenceType()) {
       diag.fatal(in) << "Can't compare reference type '" << t0 <<
-          "' with non-reference type '" << t1 << "'";
+      "' with non-reference type '" << t1 << "'";
       return in;
     }
 
     Type * tr = findCommonType(t0, t1);
     if (tr == NULL) {
       diag.fatal(in) << "Can't compare incompatible types '" << t0 <<
-          "' and '" << t1 << "'";
+      "' and '" << t1 << "'";
       return in;
     }
 
@@ -420,7 +487,7 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     return in;
   } else if (t1->isReferenceType()) {
     diag.fatal(in) << "Can't compare non-reference type '" << t0 <<
-        "' with reference type '" << t1 << "'";
+    "' with reference type '" << t1 << "'";
     return in;
   } else {
     // Otherwise, it's just a regular equality test.

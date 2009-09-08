@@ -136,6 +136,10 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   member->setParentDefn(parentDefn);
   member->createQualifiedName(parentDefn);
   member->copyTrait(parentDefn, Defn::Synthetic);
+  if (parentDefn->isTemplate() || parentDefn->isTemplateMember()) {
+    member->addTrait(Defn::TemplateMember);
+  }
+
   if (isa<ValueDefn>(member)) {
     member->copyTrait(parentDefn, Defn::Final);
   }
@@ -166,18 +170,6 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
   Defn * body = createDefn(scope, m, tp->body());
   TemplateSignature * tsig = TemplateSignature::get(body, scope);
   tsig->setAST(tp);
-
-#if 0
-  const ASTParamList & params = tp->params();
-  for (ASTParamList::const_iterator it = params.begin(); it != params.end();
-      ++it) {
-    ASTParameter * astParam = *it;
-    ParameterDefn * tparam = new ParameterDefn(Defn::TemplateParam,
-        astParam, scope->module());
-    tsig->params().push_back(tparam);
-  }
-#endif
-
   return body;
 }
 

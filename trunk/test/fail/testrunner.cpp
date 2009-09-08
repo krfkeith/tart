@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/GC.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
   }
 
   GC::init();
-  
+
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
     const std::string &modPath = ModulePaths[i];
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   // Now get the system classes we will need.
   Builtins::init();
   Builtins::loadSystemClasses();
-  
+
   // Process the input files.
   int failureCount = 0;
   diag.setWriter(&errors);
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     if (!parser.parseImports()) {
       break;
     }
-    
+
     while (!parser.finished() && running) {
       std::string testName(filePath.getBasename());
       std::string testMsg;
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
           AnalyzerBase::analyzeModule(&module);
         }
       }
-      
+
       std::string errorMsg;
       errorMsg.swap(errors.str());
       trim(errorMsg);
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
         ++failureCount;
       }
     }
-  }    
+  }
 
   GC::uninit();
   return failureCount != 0;

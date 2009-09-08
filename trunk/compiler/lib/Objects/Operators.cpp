@@ -429,6 +429,12 @@ static SourceString infixEqSrc(
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");
 
+static SourceString infixLogicalSrc(
+    " @Intrinsic"
+    " def infixLogicalAnd(:bool, :bool) -> bool;"
+    " @Intrinsic"
+    " def infixLogicalOr(:bool, :bool) -> bool;");
+
 } // namespace
 
 void Builtins::initOperators() {
@@ -642,6 +648,7 @@ void Builtins::initOperators() {
 
   compileBuiltins(infixEqSrc);
   compileBuiltins(infixNeSrc);
+  compileBuiltins(infixLogicalSrc);
 }
 
 }

@@ -35,12 +35,13 @@ public:
   Expr * visitCast(CastExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitRefEq(BinaryExpr * in);
-  //Expr * visitNot(UnaryExpr * in);
 
 private:
   FinalizeTypesPass() {}
   Expr * runImpl(Expr * in);
   Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, UnionType * from, Type * to);
+  Expr * visitAssignImpl(AssignmentExpr * in);
+  Defn * doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env);
 };
 
 } // namespace tart

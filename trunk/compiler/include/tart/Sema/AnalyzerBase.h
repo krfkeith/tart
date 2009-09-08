@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_ANALYZERBASE_H
 #define TART_SEMA_ANALYZERBASE_H
 
@@ -38,51 +38,6 @@ enum AnalysisTask {
 /// Base class of analyzers. Contains the machinery needed to do
 /// qualified and unqualified name lookups.
 class AnalyzerBase {
-protected:
-  Module * module;
-  Scope * activeScope;
-
-  typedef llvm::SmallSetVector<Defn *, 128> AnalysisQueue;
-
-  // Queue of types to analyze
-  static AnalysisQueue queue;
-  
-  // Position in queue. Can't use iterator because queue may reallocate.
-  static size_t queuePos;
-
-  // Finish up all unanalyzed definitions.
-  static void flushAnalysisQueue();
-
-  // Recursive name-lookup helper function
-  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path);
-
-  // Lookup an unqualified identifier in the current scope.
-  bool lookupIdent(ExprList & out, const char * name, const SourceLocation & loc);
-
-  // Look up a name in an explicit scope.
-  bool findMemberOf(ExprList & out, Expr * context, const char * name, const SourceLocation & loc);
-
-  // Find a name in a scope and return a list of matching expressions.
-  bool findInScope(ExprList & out, const char * name, Scope * scope,
-      Expr * context, const SourceLocation & loc);
-
-  // Given a list of expressions, find which ones are LValues that have template parameters,
-  // and attempt to specialize those templates.
-  Expr * resolveSpecialization(const SourceLocation & loc, const ExprList & exprs,
-      const ASTNodeList & args);
-
-    // Lookup helper function that attempts to load a module from 'path'.
-  bool importName(ExprList & out, const std::string & path, const SourceLocation & loc);
-
-  // Create a reference to a definition.
-  Expr * refToDefn(Defn * de, Expr * context, const SourceLocation & loc);
-
-  // Given a list of definitions produced by a symbol lookup, convert
-  // each definition into an expression (or in the case of an imported
-  // symbol, multiple expressions) representing a reference to the definition.
-  bool getSymbolRefs(const SourceLocation & loc, DefnList & defs,
-      Expr * context, ExprList & out);
-
 public:
   /** Constructor. */
   AnalyzerBase(Module * mod, Scope * parent)
@@ -97,27 +52,30 @@ public:
     activeScope = newScope;
     return prevScope;
   }
-  
+
   /** This method accepts an AST representing either an identifier or
       a dotted path of the form 'a.b.c'. It will attempt to resolve the
       path and return a list of matching definitions (there can be more
       than one result if the definition is overloaded).
-      
+
       The method will attempt to look up the path in the following ways:
-      
+
       -- In the current scope.
       -- In the scopes enclosing the current scope.
       -- In the scopes inherited by the current and enclosing scopes.
       -- By doing an implicit import from the current package.
       -- By doing an implicit import from tart.core.
       -- By doing an explicit import using an absolute package path.
+
+      However, if 'absPath' is true, then only the absolute package path
+      method will be used.
   */
-  bool lookupName(ExprList & out, const ASTNode * ast);
-  
+  bool lookupName(ExprList & out, const ASTNode * ast, bool absPath = false);
+
   /** Given a list of expression, ensures that they are either all types or
       that none of them are (an error message is emitted otherwise.) If they
       are all types, then the type definitions are added to the output list. */
-  static bool getTypesFromExprs(const SourceLocation & loc,
+  static bool getTypesFromExprs(SLC & loc,
       ExprList & in, DefnList & out);
 
   /** Given a value definition, infer its type. */
@@ -147,14 +105,63 @@ public:
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */
   static CompositeType * getArrayTypeForElement(Type * elementType);
-  
+
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
       construction of the array. */
-  static ArrayLiteralExpr * createArrayLiteral(const SourceLocation & loc, Type * elementType);
-  
+  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, Type * elementType);
+
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();
+
+protected:
+  Module * module;
+  Scope * activeScope;
+
+  typedef llvm::SmallSetVector<Defn *, 128> AnalysisQueue;
+
+  // Queue of types to analyze
+  static AnalysisQueue queue;
+
+  // Position in queue. Can't use iterator because queue may reallocate.
+  static size_t queuePos;
+
+  // Finish up all unanalyzed definitions.
+  static void flushAnalysisQueue();
+
+  // Recursive name-lookup helper function
+  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path, bool absPath);
+
+  // Lookup an unqualified identifier in the current scope.
+  bool lookupIdent(ExprList & out, const char * name, SLC & loc);
+
+  // Look up a name in an explicit scope.
+  bool findMemberOf(ExprList & out, Expr * context, const char * name, SLC & loc);
+
+  // Find a name in a scope and return a list of matching expressions.
+  bool findInScope(ExprList & out, const char * name, Scope * scope, Expr * context, SLC & loc);
+
+  // Special lookup function for static members of templated types.
+  bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);
+
+  // Special lookup function for static members of templated types.
+  bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name,
+      SLC & loc);
+
+  // Given a list of expressions, find which ones are LValues that have template parameters,
+  // and attempt to specialize those templates.
+  Expr * resolveSpecialization(SLC & loc, const ExprList & exprs, const ASTNodeList & args);
+
+    // Lookup helper function that attempts to load a module from 'path'.
+  bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);
+
+  // Create a reference to a definition.
+  Expr * getDefnAsExpr(Defn * de, Expr * context, SLC & loc);
+
+  // Given a list of definitions produced by a symbol lookup, convert
+  // each definition into an expression (or in the case of an imported
+  // symbol, multiple expressions) representing a reference to the definition.
+  bool getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context, ExprList & out);
 };
 
 } // namespace tart

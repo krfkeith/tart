@@ -11,6 +11,17 @@ Design TODOS:
 Implementation TODOS:
 
 * Test overloading of augmented assignment operators.
+* Need a way to mark template members.
+* Constructor inheritance.
+* Move stringify and locationOf to a different place.
+* Write unit tests for primitive.toString()
+* Write unit tests for enum.toString()
+* Finish array unit tests.
+* Assertions in 'testing' package.
+* Tests for and / or.
+* Array
+  * copyOf
+  * String.toCharArray
 * Override and redef syntax. refine toString -> String {}
   * How does that affect properties?
   * +def
@@ -18,6 +29,7 @@ Implementation TODOS:
 * Typename.type
   * Proxy
 * Preconditions.verify[%T]
+* Preconditions.checkState()
 * Boxed values: Boxed[%T] { let value:T; }
 * Need to work on makefile dependencies.
 * Exceptions:
@@ -83,6 +95,8 @@ Implementation TODOS:
 * String class
   * text functions - substr, toLower, etc. (Character classes)
   * character iterator functions.
+* Tartdoc
+  * Should it be written in Tart? Or C++?
 
 Doc errors:
 
@@ -666,16 +680,29 @@ let a:Array[int] = {0, 1, 2, 3, 4};
 
 // ------------------------------------------------------------------------
 
-classify p {
-  as x:int {
-  }
+How to resolve "Array.of".
 
-  as x:float {
-  }
-}
+First, we know that in this case "of" has to be a static method. What I mean is that the problem
+of resolving template parameters on both the base and the method can only arise in the case of
+static methods.
 
-typeselect p as x:int {
-}
+The reasoning behind this is as follows: In all cases where the an expression of the
+form "base.member" occurs, "base" is either a namespace name, a type name, or an
+expression that evaluates to an object. Now, namespaces do not have type parameters. Expressions
+that evaluate to an object always produce a definite type - because we always completely resolve
+the type of an object reference before resolving the type of its members.
 
-classify p as x:int {
-}
+So the only case we care about here is the one where the 'base' is a templated type name.
+
+There are two sub-cases:
+  * The case where the type name is a template, and the method is not a template.
+  * The case where the type name is a template, and the method is a template as well.
+
+In both cases, the only things we have to work to deduce the template parameters (both kinds)
+are the arguments to, and the return type from, the static method.
+
+Now, one question to be asked is whether or not static methods are inherited. Because if they are,
+then we have an additional problem, which is that we may have additional template arguments that
+may need to be deduced - so if Array[X] inherits from Iterator[Y], then we need to deduce Y
+as well as X. For the moment, however, let's punt on that problem.
+

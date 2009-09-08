@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Scope.h"
 #include "tart/CFG/Defn.h"
 #include "tart/Common/Diagnostics.h"
@@ -17,7 +17,7 @@ Defn * Scope::lookupSingleMember(const char * ident, bool inherit) const {
   if (lookupMember(ident, defns, inherit) && defns.size() == 1) {
     return defns.front();
   }
-  
+
   return NULL;
 }
 
@@ -40,14 +40,13 @@ void IterableScope::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool IterableScope::lookupMember(
-    const char * name, DefnList & defs, bool inherit) const {
+bool IterableScope::lookupMember(const char * name, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = members_.findSymbol(name);
   if (entry != NULL) {
     defs.append(entry->begin(), entry->end());
     return true;
   }
-  
+
   return false;
 }
 

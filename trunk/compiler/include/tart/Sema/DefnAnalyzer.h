@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_DECLANALYZER_H
 #define TART_SEMA_DECLANALYZER_H
 
@@ -28,7 +28,7 @@ public:
   DefnAnalyzer(Module * mod, Scope * parent)
     : AnalyzerBase(mod, parent)
   {}
-  
+
   /** Do a full analysis of the target module. */
   bool analyzeModule();
 
@@ -57,14 +57,13 @@ public:
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);
 
-#if 0  
-  /** Analyze a template parameter. */
-  static void analyzeTemplateParam(ParameterDefn * param);
-#endif
-
   /** Add requested passes to the toRun set if not already run. */
-  static void addPasses(Defn * de, DefnPasses & toRun,
-      const DefnPasses & requested);
+  static void addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested);
+
+  /** Get the module in which a definition was defined - includes code to handle
+      template instances which are defined in no module, but whose template definition
+      is in a module. */
+  Module * moduleForDefn(const Defn * def);
 };
 
 }

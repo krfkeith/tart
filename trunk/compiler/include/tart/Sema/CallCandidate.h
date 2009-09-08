@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_CALLCANDIDATE_H
 #define TART_SEMA_CALLCANDIDATE_H
 
@@ -33,29 +33,30 @@ class CallCandidate : public GC {
 public:
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       const ParameterAssignments & params);
-  
+
   /** The call expression that this is a candidate for. */
   CallExpr * callExpr() const { return callExpr_; }
 
   /** The base ('self') expression for the method. */
   Expr * base() const { return base_; }
-  
+
   /** The callable method. */
   FunctionDefn * method() const { return method_; }
   void setMethod(FunctionDefn * m) { method_ = m; }
-  
+
   /** The mapping of input args to formal parameters. */
-  const ParameterAssignments & getParamAssignments() const {
-    return paramAssignments_; 
+  const ParameterAssignments & paramAssignments() const {
+    return paramAssignments_;
   }
-  
-  int getParameterIndex(int argIndex) const {
+
+  /** For the argument at position 'argIndex', return which parameter it was mapped to. */
+  int parameterIndex(int argIndex) const {
     return paramAssignments_[argIndex];
   }
-  
+
   /** Get the number of non-default arguments in this call. */
   size_t argCount() const { return paramAssignments_.size(); }
-  
+
   /** For a given input argument index, return the type of the parameter
       that this argument will be assigned to. This may not be the same
       as the formally declared parameter type, as pattern variable
@@ -76,10 +77,12 @@ public:
       as this one. */
   bool isEqual(const CallCandidate * other) const;
 
-  /** Return true if this candidate is more specific than the one
-      given. */
+  /** Return true if this candidate is more specific than the one given. */
   bool isMoreSpecific(const CallCandidate * other) const;
-  
+
+  /** Return true if the method and base pointer are singular. */
+  bool isSingular() const;
+
   /** Perform unification on the candidate and its arguments. */
   bool unify(CallExpr * callExpr);
 
@@ -96,7 +99,7 @@ public:
       pruningDepth_ = depth;
       return true;
     }
-    
+
     return false;
   }
 
@@ -107,13 +110,13 @@ public:
       pruningDepth_ = 0;
       return true;
     }
-    
+
     return false;
   }
 
   /** Return true if the candidate has been culld. */
   bool isCulled() const { return pruningDepth_ != 0; }
-  
+
   // Overrides
 
   void trace() const;
@@ -128,6 +131,7 @@ private:
   BindingEnv bindingEnv_;
   Type * resultType_;
   TypeList paramTypes_;
+  bool isTemplate_;
 };
 
 FormatStream & operator<<(FormatStream & out, const CallCandidate & cc);

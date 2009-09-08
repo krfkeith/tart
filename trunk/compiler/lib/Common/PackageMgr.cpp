@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/PackageMgr.h"
 
 #include "tart/CFG/Module.h"
@@ -14,7 +14,7 @@
 #include <llvm/Support/CommandLine.h>
 
 namespace tart {
-  
+
 using tart::Module;
 
 PackageMgr PackageMgr::instance;
@@ -68,13 +68,12 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
       // module, along with the file size and other info.
 
       // If it's a regular file.
-      Module * mod = new Module(new SourceFile(path.toString()), qname,
-          &Builtins::module);
+      Module * mod = new Module(new SourceFile(path.toString()), qname, &Builtins::module);
       modules[qname] = mod;
 
       if (ShowImports) {
-        diag.debug("Import: Loaded module '%s' from %s",
-            qname.c_str(), path.c_str());
+        diag.debug(SourceLocation()) << "Import: Loaded module '" << qname << "' from " <<
+            path.c_str();
       }
 
       Parser parser(mod->moduleSource(), mod);
@@ -103,6 +102,10 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
   // Add the fact that lookup failed to a 'miss set' so we don't have to
   // query the file system again.
   modules[qname] = NULL;
+  if (ShowImports) {
+    diag.debug() << "Import: module '" << qname << "' NOT FOUND";
+  }
+
   return NULL;
 }
 

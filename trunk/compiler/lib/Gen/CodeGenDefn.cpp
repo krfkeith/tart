@@ -63,19 +63,19 @@ bool CodeGenerator::genXDef(Defn * de) {
 }
 
 Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
-  Function * irFunction = irModule_->getFunction(fdef->linkageName());
-  if (irFunction != NULL) {
-    return irFunction;
+  Function * fn = irModule_->getFunction(fdef->linkageName());
+  if (fn != NULL) {
+    return fn;
   }
 
   // If it's a function from a different module...
   if (fdef->module() != module) {
     FunctionType * funcType = fdef->functionType();
-    irFunction = Function::Create(
+    fn = Function::Create(
         cast<llvm::FunctionType>(funcType->irType()),
         Function::ExternalLinkage, fdef->linkageName(),
         irModule_);
-    return irFunction;
+    return fn;
   }
 
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
@@ -93,14 +93,14 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
 
-  irFunction = Function::Create(
+  fn = Function::Create(
       cast<llvm::FunctionType>(funcType->irType()),
       Function::ExternalLinkage, fdef->linkageName(), fdef->module()->irModule());
 
   // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
   // one module.
-  fdef->setIRFunction(irFunction);
-  return irFunction;
+  fdef->setIRFunction(fn);
+  return fn;
 }
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
@@ -168,40 +168,35 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       DASSERT_OBJ(param != NULL, fdef);
       it->setName(param->name());
 
-#if 0
       // See if we need to make a local copy of the param.
-      if (param->getFlag(Modified)
-        || (!param->getParameterFlag(ParameterDefn::Reference)
-          && isAllocValueType(ptypeetType()))) {
+      if (param->isLValue()) {
+        //|| (!param->getParameterFlag(ParameterDefn::Reference)
+        //  && isAllocValueType(ptypeetType()))) {
         // TODO: For struct parameters, make a copy of whole struct.
         // If parameter was modified, then copy to a local var.
-        Value * localValue = builder_.CreateAlloca(it->getType(), 0,
-            param->name());
+        Value * localValue = builder_.CreateAlloca(it->getType(), 0, param->name());
         builder_.CreateStore(it, localValue);
         param->setIRValue(localValue);
       } else {
-#endif
         param->setIRValue(it);
-#if 0
       }
-#endif
     }
 
     // Generate the body
-    FunctionDefn * saveFunction = currentFunction_;
-    currentFunction_ = fdef;
+    Function * saveFn = currentFn_;
+    currentFn_ = f;
 #if 0
     if (fdef->isGenerator()) {
       assert(false);
     } else {
 #endif
-      genLocalStorage();
-      genBlocks();
+      genLocalStorage(fdef->blocks(), fdef->localScopes());
+      genBlocks(fdef->blocks());
 #if 0
     }
 #endif
 
-    currentFunction_ = saveFunction;
+    currentFn_ = saveFn;
 
     if (!diag.inRecovery()) {
       if (llvm::verifyFunction(*f)) {

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_TYPEINFERENCE_H
 #define TART_SEMA_TYPEINFERENCE_H
 
@@ -20,10 +20,10 @@ namespace tart {
 struct CallSite {
   /** The overloaded call. */
   CallExpr * callExpr;
-  
+
   /** Number of possible overload choices remaining after pruning. */
   int numRemaining;
-  
+
   /** The lowest compatibility score of all choices. */
   ConversionRank lowestRank;
 
@@ -43,7 +43,7 @@ struct CallSite {
     , lowestRank(IdenticalTypes)
     , best(NULL)
   {}
-  
+
   CallSite(const CallSite & src)
     : callExpr(src.callExpr)
     , numRemaining(src.numRemaining)
@@ -61,7 +61,7 @@ struct CallSite {
 
   // Update conversion rankings
   void update();
-  
+
   // Eliminate from consideration any culld candidates
   void removeCulled();
 
@@ -73,6 +73,7 @@ struct CallSite {
 };
 
 typedef llvm::SmallVector<CallSite, 16> CallSiteList;
+typedef llvm::SmallSet<CallExpr *, 16> CallExprSet;
 
 /// -------------------------------------------------------------------
 /// Pass to collect all of the constraints in the expression tree.
@@ -82,6 +83,7 @@ public:
 
 private:
   CallSiteList & callSites;
+  CallExprSet calls;
 
   Expr * visitCall(CallExpr * in);
 };
@@ -106,19 +108,19 @@ private:
   bool underconstrained;
   bool overconstrained;
   bool strict_;
-  
+
   // Map of template parameter substitutions
   //BindingMap substitutions_;
-  
+
   TypeInferencePass(Expr * root, Type * expected, bool strict = true)
     : rootExpr(root)
     , expectedType(expected)
     , searchDepth(0)
     , strict_(strict)
   {}
-  
+
   Expr * runImpl();
-  
+
   void reportRanks();
   void update();
   void checkSolution();

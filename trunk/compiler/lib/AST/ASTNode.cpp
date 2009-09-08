@@ -42,6 +42,8 @@ ASTIdent ASTIdent::operatorMod(SourceLocation(), "infixModulus");
 ASTIdent ASTIdent::operatorBitAnd(SourceLocation(), "infixBitAnd");
 ASTIdent ASTIdent::operatorBitOr(SourceLocation(), "infixBitOr");
 ASTIdent ASTIdent::operatorBitXor(SourceLocation(), "infixBitXor");
+ASTIdent ASTIdent::operatorLogicalAnd(SourceLocation(), "infixLogicalAnd");
+ASTIdent ASTIdent::operatorLogicalOr(SourceLocation(), "infixLogicalOr");
 ASTIdent ASTIdent::operatorRSh(SourceLocation(), "infixRShift");
 ASTIdent ASTIdent::operatorLSh(SourceLocation(), "infixLShift");
 ASTIdent ASTIdent::operatorEq(SourceLocation(), "infixEQ");
@@ -167,9 +169,9 @@ void ASTCall::trace() const {
 /// ---------------------------------------------------------------
 /// ASTCall
 void ASTSpecialize::format(FormatStream & out) const {
-  out << templateExpr_ << "<";
+  out << templateExpr_ << "[";
   formatNodeList(out, args_);
-  out << ">";
+  out << "]";
 }
 
 void ASTSpecialize::trace() const {

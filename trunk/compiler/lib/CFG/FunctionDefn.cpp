@@ -72,10 +72,6 @@ void ParameterDefn::trace() const {
 }
 
 void ParameterDefn::format(FormatStream & out) const {
-  if (out.isVerbose()) {
-    out << "param ";
-  }
-
   // Parameters are allowed to be unnamed (for function type declarations.)
   if (name_ != NULL) {
     if (out.getShowQualifiedName()) {
