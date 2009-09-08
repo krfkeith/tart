@@ -2,6 +2,8 @@
 def main(args:String[]) -> int {
   testZeroLengthArray();
   testSimpleArray();
+  testArrayOf();
+  testArrayLiteral();
   return 0;
 }
 
@@ -32,11 +34,18 @@ def testSimpleArray() {
   Debug.assertEq(5, d.length);
 }
 
-def testArrayLiteral() {
-/*  let a = [1, 2, 3];
+def testArrayOf() {
+  let a = Array.of(1, 2, 3);
   Debug.assertEq(1, a[0]);
   Debug.assertEq(2, a[1]);
-  Debug.assertEq(3, a[2]);*/
+  Debug.assertEq(3, a[2]);
+}
+
+def testArrayLiteral() {
+  let a = [1, 2, 3];
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
 }
 
 // TODO: Check for out of bounds exceptions, once exceptions are actually working.

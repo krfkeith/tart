@@ -46,7 +46,7 @@ bool DefnAnalyzer::analyzeModule() {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
         module->addSymbol(de);
       } else {
-        diag.info(de) << "Failed to analyze " << de;
+        //diag.info(de) << "Failed to analyze " << de;
         success = false;
       }
     }
@@ -221,7 +221,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
 
   ExprList importDefs;
   Scope * saveScope = setActiveScope(NULL); // Inhibit unqualified search.
-  if (lookupName(importDefs, import->path())) {
+  if (lookupName(importDefs, import->path(), true)) {
     targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
   } else {
     diag.fatal(import) << "Not found '" << import << "'";
@@ -230,8 +230,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
 }
 
 // Handle explicit specialization.
-Defn * DefnAnalyzer::specialize(const SourceLocation & loc, DefnList & defns,
-    const ASTNodeList & args) {
+Defn * DefnAnalyzer::specialize(SLC & loc, DefnList & defns, const ASTNodeList & args) {
   TypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
@@ -330,62 +329,22 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       }
     }
 
-    // Create definitions for each pattern var type.
-    /*PatternVarList & ptypes = tsig->getTypeVars();
-    for (PatternVarList::iterator it = ptypes.begin(); it != ptypes.end();
-        ++it) {
-      PatternVar * pv = *it;
-      TypeDefn * talias = new TypeDefn(de->module(), pv->name(), pv);
-      tsig->paramScope().addMember(talias);
-    }*/
-
-    // Create definitions for each pattern var expr.
-
-#if 0
-    PatternVarExprList & ptypes = tsig->getExprVars();
-    for (PatternVarExprList::iterator it = ptypes.begin(); it != ptypes.end();
-        ++it) {
-      PatternVarExpr * pv = *it;
-      VariableDefn * var = new VariableDefn(
-          Defn::Let, de->module(), pv->name());
-      var->setInitValue(pv);
-      tsig->paramScope().addMember(var);
-    }
-#endif
-
     // Remove the AST so that we don't re-analyze this template.
     tsig->setAST(NULL);
   }
-
-  // TODO: Also analyse requirement expressions.
-  //DFAIL("Implement");
-#if 0
-  tsig->paramScope().setParentScope(de->getParentScope());
-  for (ParameterList::iterator it = tsig->params().begin();
-      it != tsig->params().end(); ++it) {
-    ParameterDefn * param = *it;
-
-    if (param->beginPass(Pass_ResolveVarType)) {
-      analyzeTemplateParam(param);
-
-      // TODO: Check for subclass of Type.
-      if (param->type()->isEqual(Builtins::typeType)) {
-        TypeParameterDefn * tparam = new TypeParameterDefn(param);
-        tsig->paramScope().addMember(tparam);
-      } else {
-        // TODO: Not sure that this is correct.
-        tsig->paramScope().addMember(param);
-      }
-
-      param->finishPass(Pass_ResolveVarType);
-    }
-  }
-#endif
 }
 
 void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested) {
   toRun.addAll(requested);
   toRun.removeAll(de->finished());
+}
+
+Module * DefnAnalyzer::moduleForDefn(const Defn * def) {
+  if (def->isTemplateInstance()) {
+    return def->templateInstance()->srcModule();
+  } else {
+    return def->module();
+  }
 }
 
 }

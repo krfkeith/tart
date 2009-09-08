@@ -36,9 +36,10 @@ public:
 
   void overrideMembers();
   void overrideMethods(MethodList & table, const MethodList & overrides, bool canHide);
-  void overridePropertyAccessor(MethodList & table, FunctionDefn * accessor, bool canHide);
+  //void overridePropertyAccessors(MethodList & table, const MethodList & accessors, bool canHide);
   void copyBaseClassMethods();
   void createInterfaceTables();
+  void ensureUniqueSignatures(MethodList & methods);
   void addNewMethods();
   void checkForRequiredMethods();
   bool hasSameSignature(FunctionDefn * f0, FunctionDefn * f1);

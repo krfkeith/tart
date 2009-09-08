@@ -764,6 +764,7 @@ template<> TypeIdSet CharType::INCLUDES = TypeIdSet::noneOf();
 template<> void CharType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_Char, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UInt64>::value);
   addMember(&PrimitiveToString<TypeId_Char>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(32), this));
@@ -795,6 +796,9 @@ template<> void ByteType::init() {
 
   // Conversion constructors
   addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt64>::value);
   addMember(&PrimitiveToString<TypeId_SInt8>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(8), this));
@@ -827,6 +831,8 @@ template<> TypeIdSet ShortType::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UI
 template<> void ShortType::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt64>::value);
   addMember(&PrimitiveToString<TypeId_SInt16>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(16), this));
@@ -861,6 +867,7 @@ template<> TypeIdSet IntType::INCLUDES = TypeIdSet::of(
 template<> void IntType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt64>::value);
   addMember(&PrimitiveToString<TypeId_SInt32>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(32), this));
@@ -926,6 +933,9 @@ template<> TypeIdSet UByteType::INCLUDES = TypeIdSet::noneOf();
 template<> void UByteType::init() {
   irType_ = llvm::Type::getInt8Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt64>::value);
   addMember(&PrimitiveToString<TypeId_UInt8>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(8), this));
@@ -958,6 +968,8 @@ template<> TypeIdSet UShortType::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 template<> void UShortType::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt64>::value);
   addMember(&PrimitiveToString<TypeId_UInt16>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(16), this));
@@ -990,6 +1002,7 @@ template<> TypeIdSet UIntType::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UIn
 template<> void UIntType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt64>::value);
   addMember(&PrimitiveToString<TypeId_UInt32>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(32), this));

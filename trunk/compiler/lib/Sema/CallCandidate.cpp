@@ -9,6 +9,7 @@
 #include "tart/CFG/Template.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Common/Diagnostics.h"
+#include <llvm/Support/CommandLine.h>
 
 namespace tart {
 
@@ -24,45 +25,55 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , paramAssignments_(params)
   , bindingEnv_(m->templateSignature())
   , resultType_(m->functionType()->returnType())
+  , isTemplate_(false)
 {
+  if (m->isCtor()) {
+    resultType_ = m->functionType()->selfParam()->type();
+  }
+
   ParameterList & methodParams = m->functionType()->params();
   for (ParameterList::iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
     paramTypes_.push_back((*p)->type());
   }
 
-  if (m->templateSignature() != NULL) {
+  if (m->isTemplate() || m->isTemplateMember()) {
     // Normalize the return type and parameter types, replacing all pattern variables
     // with a pattern value which will eventually contain the inferred type for that
     // variable.
-    TemplateSignature * ts = m->templateSignature();
-    size_t numParams = ts->params().size();
-    if (numParams > 0) {
-      // For each template parameter, create a PatternValue instance.
-      for (size_t i = 0; i < numParams; ++i) {
-        PatternVar * var = ts->patternVar(i);
-        Type * value = bindingEnv_.get(var);
-        if (value == NULL) {
-          bindingEnv_.bind(var, new PatternValue(&bindingEnv_, var));
+    for (Defn * def = m; def != NULL && !def->isSingular(); def = def->parentDefn()) {
+      TemplateSignature * ts = def->templateSignature();
+      if (ts != NULL) {
+        isTemplate_ = true;
+        size_t numParams = ts->params().size();
+        if (numParams > 0) {
+          // For each template parameter, create a PatternValue instance.
+          for (size_t i = 0; i < numParams; ++i) {
+            PatternVar * var = ts->patternVar(i);
+            Type * value = bindingEnv_.get(var);
+            if (value == NULL) {
+              bindingEnv_.bind(var, new PatternValue(&bindingEnv_, var));
+            }
+          }
+
+          // Substitute all occurances of pattern vars in the result type
+          // the corresponding pattern value.
+          resultType_ = bindingEnv_.subst(resultType_);
+
+          // Same with function parameter types.
+          for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
+            *pt = bindingEnv_.subst(*pt);
+          }
         }
       }
-
-      // Substitute all occurances of pattern vars in the result type
-      // the corresponding pattern value.
-      resultType_ = bindingEnv_.subst(resultType_);
-
-      // Same with function parameter types.
-      for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
-        *pt = bindingEnv_.subst(*pt);
-      }
-
-      // Clear all definitions in the environment.
-      bindingEnv_.reset();
     }
+
+    // Clear all definitions in the environment.
+    bindingEnv_.reset();
   }
 }
 
 Type * CallCandidate::paramType(int argIndex) const {
-  return paramTypes_[getParameterIndex(argIndex)];
+  return paramTypes_[parameterIndex(argIndex)];
 }
 
 bool CallCandidate::isEqual(const CallCandidate * other) const {
@@ -162,7 +173,7 @@ ConversionRank CallCandidate::updateConversionRank() {
 }
 
 bool CallCandidate::unify(CallExpr * callExpr) {
-  if (!method_->isTemplate()) {
+  if (!isTemplate_) {
     return true;
   }
 
@@ -233,6 +244,10 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   return true;
+}
+
+bool CallCandidate::isSingular() const {
+  return method_->isSingular() && (base_ == NULL || base_->isSingular());
 }
 
 void CallCandidate::trace() const {

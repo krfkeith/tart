@@ -28,6 +28,8 @@ EXPR_TYPE(Compare)        // A binary comparison instruction
 EXPR_TYPE(InstanceOf)     // IsInstanceOf test
 EXPR_TYPE(RefEq)          // Reference equals
 EXPR_TYPE(Not)            // Logical Not
+EXPR_TYPE(And)            // Logical And
+EXPR_TYPE(Or)             // Logical Or
 EXPR_TYPE(PtrDeref)       // Pointer dereference
 EXPR_TYPE(Prog2)          // Two exressions, eval both, take second
 

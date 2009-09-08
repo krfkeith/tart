@@ -125,6 +125,8 @@ public:
   static ASTIdent operatorBitAnd;
   static ASTIdent operatorBitOr;
   static ASTIdent operatorBitXor;
+  static ASTIdent operatorLogicalAnd;
+  static ASTIdent operatorLogicalOr;
   static ASTIdent operatorRSh;
   static ASTIdent operatorLSh;
   static ASTIdent operatorEq;

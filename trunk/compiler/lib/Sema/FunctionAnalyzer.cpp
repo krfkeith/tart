@@ -66,8 +66,7 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
 
   DefnAnalyzer::analyze(target, passesToRun);
 
-  if (passesToRun.contains(Pass_ResolveParameterTypes) &&
-      !resolveParameterTypes()) {
+  if (passesToRun.contains(Pass_ResolveParameterTypes) && !resolveParameterTypes()) {
     return false;
   }
 
@@ -104,6 +103,15 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       analyzeTemplateSignature(target);
       TemplateSignature * tsig = target->templateSignature();
       activeScope = &tsig->paramScope();
+    } else if (target->isTemplateMember()) {
+      for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
+        if (parent->isTemplate()) {
+          analyzeTemplateSignature(parent);
+          TemplateSignature * tsig = parent->templateSignature();
+          activeScope = &tsig->paramScope();
+          break;
+        }
+      }
     }
 
     if (ftype == NULL) {
@@ -126,7 +134,9 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
-          module->addSymbol(param->internalType()->typeDefn());
+          if (param->internalType()->isSingular()) {
+            module->addSymbol(param->internalType()->typeDefn());
+          }
         }
 
         // TODO: Should only add the param as a member if we "own" it.
@@ -159,7 +169,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 bool FunctionAnalyzer::createCFG() {
   bool success = true;
 
-  if (target->isTemplate()) {
+  if (target->isTemplate() || target->isTemplateMember()) {
     // Don't build CFG for templates
     return true;
   }

@@ -112,6 +112,7 @@ public:
   }
 
   bool isVariadic() const { return getFlag(Variadic); }
+  bool isLValue() const { return getFlag(LValueParam); }
 
   // Overrides
 

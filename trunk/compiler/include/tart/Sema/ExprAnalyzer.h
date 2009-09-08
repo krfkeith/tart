@@ -60,9 +60,9 @@ public:
   // Identifiers
 
   Expr * reduceValueRef(const ASTNode * ast, bool store);
-  Expr * reduceSymbolRef(const ASTNode * ast);
+  Expr * reduceSymbolRef(const ASTNode * ast, bool store);
   Expr * reduceElementRef(const ASTOper * ast, bool store);
-  Expr * reduceLValueExpr(LValueExpr * lvalue);
+  Expr * reduceLValueExpr(LValueExpr * lvalue, bool store);
   Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop);
   Expr * reduceSetPropertyValue(const SourceLocation & loc, Expr * basePtr,
       PropertyDefn * prop, Expr * value);
@@ -80,7 +80,9 @@ public:
   Expr * reduceRefEqualityTest(const ASTOper * ast);
   Expr * reduceContainsTest(const ASTOper * ast);
   Expr * reduceTypeTest(const ASTOper * ast);
+  Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
+  Expr * reduceArrayLiteral(const ASTOper * ast, Type * expected);
 
   // Calls
 
@@ -126,7 +128,7 @@ public:
       'args' - the list of argument AST nodes (for computing keyword
         assignment.)
   */
-  void addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+  bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args);
 
   // Templates

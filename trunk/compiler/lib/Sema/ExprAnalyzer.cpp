@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/Module.h"
@@ -33,7 +33,7 @@ Expr * ExprAnalyzer::inferTypes(Expr * expr, Type * expected) {
   // If it's a reference to a type, then just return it even if it's non-
   // singular.
   if (expr->exprType() == Expr::ConstType) {
-    return static_cast<ConstantType *>(expr);
+    return static_cast<ConstantType *> (expr);
   }
 
   if (expr && !expr->isSingular()) {
@@ -67,22 +67,22 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
       return reduceNull(ast);
 
     case ASTNode::LitInt:
-      return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *>(ast));
+      return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *> (ast));
 
     case ASTNode::LitFloat:
-      return reduceFloatLiteral(static_cast<const ASTFloatLiteral *>(ast));
+      return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
 
     case ASTNode::LitString:
-      return reduceStringLiteral(static_cast<const ASTStringLiteral *>(ast));
+      return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
 
     case ASTNode::LitChar:
-      return reduceCharLiteral(static_cast<const ASTCharLiteral *>(ast));
+      return reduceCharLiteral(static_cast<const ASTCharLiteral *> (ast));
 
     case ASTNode::LitBool:
-      return reduceBoolLiteral(static_cast<const ASTBoolLiteral *>(ast));
+      return reduceBoolLiteral(static_cast<const ASTBoolLiteral *> (ast));
 
     case ASTNode::BuiltIn:
-      return reduceBuiltInDefn(static_cast<const ASTBuiltIn *>(ast));
+      return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
 
     case ASTNode::Id:
     case ASTNode::Member:
@@ -93,10 +93,10 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
       return reduceLoadValue(ast);
 
     case ASTNode::Call:
-      return reduceCall(static_cast<const ASTCall *>(ast), expected);
+      return reduceCall(static_cast<const ASTCall *> (ast), expected);
 
     case ASTNode::Assign:
-      return reduceAssign(static_cast<const ASTOper *>(ast));
+      return reduceAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::AssignAdd:
     case ASTNode::AssignSub:
@@ -108,30 +108,37 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
     case ASTNode::AssignBitXor:
     case ASTNode::AssignRSh:
     case ASTNode::AssignLSh:
-      return reduceAugmentedAssign(static_cast<const ASTOper *>(ast));
+      return reduceAugmentedAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::PostAssign:
-      return reducePostAssign(static_cast<const ASTOper *>(ast));
+      return reducePostAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::Is:
     case ASTNode::IsNot:
-      return reduceRefEqualityTest(static_cast<const ASTOper *>(ast));
+      return reduceRefEqualityTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::In:
     case ASTNode::NotIn:
-      return reduceContainsTest(static_cast<const ASTOper *>(ast));
+      return reduceContainsTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::IsInstanceOf:
-      return reduceTypeTest(static_cast<const ASTOper *>(ast));
+      return reduceTypeTest(static_cast<const ASTOper *> (ast));
+
+    case ASTNode::LogicalAnd:
+    case ASTNode::LogicalOr:
+      return reduceLogicalOper(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalNot:
-      return reduceLogicalNot(static_cast<const ASTOper *>(ast));
+      return reduceLogicalNot(static_cast<const ASTOper *> (ast));
+
+    case ASTNode::ArrayLiteral:
+      return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
 
     case ASTNode::AnonFn:
-      return reduceAnonFn(static_cast<const ASTFunctionDecl *>(ast));
+      return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
     case ASTNode::PatternVar:
-      return reducePatternVar(static_cast<const ASTPatternVar *>(ast));
+      return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
 
     default:
       diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
@@ -141,24 +148,24 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
 
 Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   switch (ast->nodeType()) {
-  case ASTNode::Id:
-  case ASTNode::Member:
-    return callName(ast->location(), ast, ASTNodeList(), NULL);
+    case ASTNode::Id:
+    case ASTNode::Member:
+      return callName(ast->location(), ast, ASTNodeList(), NULL);
 
-  case ASTNode::Call: {
-    const ASTCall * call = static_cast<const ASTCall *>(ast);
-    const ASTNode * callable = call->func();
-    const ASTNodeList & args = call->args();
-    if (callable->nodeType() == ASTNode::Id || callable->nodeType() == ASTNode::Member) {
-      return callName(call->location(), callable, args, NULL);
+    case ASTNode::Call: {
+      const ASTCall * call = static_cast<const ASTCall *> (ast);
+      const ASTNode * callable = call->func();
+      const ASTNodeList & args = call->args();
+      if (callable->nodeType() == ASTNode::Id || callable->nodeType() == ASTNode::Member) {
+        return callName(call->location(), callable, args, NULL);
+      }
+
+      diag.fatal(call) << "Invalid attribute expression " << call;
+      return &Expr::ErrorVal;
     }
 
-    diag.fatal(call) << "Invalid attribute expression " << call;
-    return &Expr::ErrorVal;
-  }
-
-  default:
-    return reduceExpr(ast, NULL);
+    default:
+      return reduceExpr(ast, NULL);
   }
 }
 
@@ -169,17 +176,17 @@ ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expe
   }
 
   if (!expr->isConstant()) {
-    diag.error(expr) << "Non-constant expression: " << expr << " [" <<
-        exprTypeName(expr->exprType()) << "]";
+    diag.error(expr) << "Non-constant expression: " << expr << " [" << exprTypeName(
+        expr->exprType()) << "]";
     return NULL;
   }
 
-  return cast<ConstantExpr>(expr);
+  return cast<ConstantExpr> (expr);
 }
 
 Expr * ExprAnalyzer::reducePattern(const ASTNode * ast, TemplateSignature * ts) {
-  DASSERT(tsig == NULL);
-  tsig = ts;
+  DASSERT(tsig == NULL)
+;  tsig = ts;
 
   Expr * expr = reduceExprImpl(ast, NULL);
   if (isErrorResult(expr)) {
@@ -270,7 +277,7 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
         pvar->setValueType(type);
       } else if (!pvar->valueType()->isEqual(type)) {
         diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
-            ast->name() << "'";
+        ast->name() << "'";
       }
     }
 
@@ -297,15 +304,37 @@ Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
 }
 
 Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
-  // PostAssign gets the value before assignment, and then modifies the value.
+  // PostAssign modifies the value, but returns the value before it was modified.
   Expr * lvalue = reduceValueRef(ast->arg(0), true);
   if (isErrorResult(lvalue)) {
     return &Expr::ErrorVal;
   }
 
-  // TODO: Insure that it is actually an LValue.
-
   Expr * newValue = reduceExpr(ast->arg(1), lvalue->type());
+
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
+    // If it's a property reference, convert it into a method call.
+    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+      Expr * setProp = reduceSetPropertyValue(ast->location(), lval->base(), prop, newValue);
+      if (isErrorResult(setProp)) {
+        return &Expr::ErrorVal;
+      }
+
+      DFAIL("Implement PostAssign of property");
+    }
+  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+    if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
+      if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+        Expr * setProp = reduceSetParamPropertyValue(ast->location(), call, newValue);
+        if (isErrorResult(setProp)) {
+          return &Expr::ErrorVal;
+        }
+
+        DFAIL("Implement PostAssign of indexed property");
+      }
+    }
+  }
+
   return new AssignmentExpr(Expr::PostAssign, ast->location(), lvalue, newValue);
 }
 
@@ -314,54 +343,54 @@ Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
   ASTIdent * infixOperIdent;
   switch (int(ast->nodeType())) {
     case ASTNode::AssignAdd:
-      assignOperName = "assignAdd";
-      infixOperIdent = &ASTIdent::operatorAdd;
-      break;
+    assignOperName = "assignAdd";
+    infixOperIdent = &ASTIdent::operatorAdd;
+    break;
 
     case ASTNode::AssignSub:
-      assignOperName = "assignSubtract";
-      infixOperIdent = &ASTIdent::operatorSub;
-      break;
+    assignOperName = "assignSubtract";
+    infixOperIdent = &ASTIdent::operatorSub;
+    break;
 
     case ASTNode::AssignMul:
-      assignOperName = "assignMultiply";
-      infixOperIdent = &ASTIdent::operatorMul;
-      break;
+    assignOperName = "assignMultiply";
+    infixOperIdent = &ASTIdent::operatorMul;
+    break;
 
     case ASTNode::AssignDiv:
-      assignOperName = "assignDivide";
-      infixOperIdent = &ASTIdent::operatorDiv;
-      break;
+    assignOperName = "assignDivide";
+    infixOperIdent = &ASTIdent::operatorDiv;
+    break;
 
     case ASTNode::AssignMod:
-      assignOperName = "assignModulus";
-      infixOperIdent = &ASTIdent::operatorMod;
-      break;
+    assignOperName = "assignModulus";
+    infixOperIdent = &ASTIdent::operatorMod;
+    break;
 
     case ASTNode::AssignBitAnd:
-      assignOperName = "assignBitAnd";
-      infixOperIdent = &ASTIdent::operatorBitAnd;
-      break;
+    assignOperName = "assignBitAnd";
+    infixOperIdent = &ASTIdent::operatorBitAnd;
+    break;
 
     case ASTNode::AssignBitOr:
-      assignOperName = "assignBitOr";
-      infixOperIdent = &ASTIdent::operatorBitOr;
-      break;
+    assignOperName = "assignBitOr";
+    infixOperIdent = &ASTIdent::operatorBitOr;
+    break;
 
     case ASTNode::AssignBitXor:
-      assignOperName = "assignBitXor";
-      infixOperIdent = &ASTIdent::operatorBitXor;
-      break;
+    assignOperName = "assignBitXor";
+    infixOperIdent = &ASTIdent::operatorBitXor;
+    break;
 
     case ASTNode::AssignRSh:
-      assignOperName = "assignRShift";
-      infixOperIdent = &ASTIdent::operatorRSh;
-      break;
+    assignOperName = "assignRShift";
+    infixOperIdent = &ASTIdent::operatorRSh;
+    break;
 
     case ASTNode::AssignLSh:
-      assignOperName = "assignLShift";
-      infixOperIdent = &ASTIdent::operatorLSh;
-      break;
+    assignOperName = "assignLShift";
+    infixOperIdent = &ASTIdent::operatorLSh;
+    break;
   }
 
   // Attempt to call augmented assignment operator as member function
@@ -498,6 +527,17 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   DFAIL("IllegalState");
 }
 
+Expr * ExprAnalyzer::reduceLogicalOper(const ASTOper * ast) {
+  ASTNode::NodeType op = ast->nodeType();
+  ASTIdent * opIdent = (op == ASTNode::LogicalAnd ?
+      &ASTIdent::operatorLogicalAnd : &ASTIdent::operatorLogicalOr);
+
+  ASTNodeList args;
+  args.push_back(const_cast<ASTNode *>(ast->arg(0)));
+  args.push_back(const_cast<ASTNode *>(ast->arg(1)));
+  return callName(ast->location(), opIdent, args, NULL, true);
+}
+
 Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
   Expr * value = reduceExpr(ast->arg(0), &BoolType::instance);
 
@@ -525,15 +565,34 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
       Expr::Not, ast->location(), &BoolType::instance, value);
 }
 
+Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, Type * expected) {
+  DefnList fnlist;
+  if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", ast->location())) {
+    DASSERT(fnlist.size() == 1);
+    CallExpr * call = new CallExpr(Expr::Call, ast->location(), NULL);
+    call->setExpectedReturnType(expected);
+    addOverload(call, Builtins::typeArray->typeDefn()->asExpr(),
+        cast<FunctionDefn>(fnlist.front()), ast->args());
+    if (!reduceArgList(ast->args(), call)) {
+      return &Expr::ErrorVal;
+    }
+
+    call->setType(reduceReturnType(call));
+    return call;
+  }
+
+  DFAIL("Array type not found for array literal");
+}
+
 Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, bool store) {
   if (ast->nodeType() == ASTNode::GetElement) {
     return reduceElementRef(static_cast<const ASTOper *>(ast), store);
   } else {
-    return reduceSymbolRef(ast);
+    return reduceSymbolRef(ast, store);
   }
 }
 
-Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast) {
+Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
   ExprList values;
   lookupName(values, ast);
 
@@ -548,7 +607,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast) {
   } else {
     Expr * value = values.front();
     if (LValueExpr * lval = dyn_cast<LValueExpr>(value)) {
-      return reduceLValueExpr(lval);
+      return reduceLValueExpr(lval, store);
     } else if (ConstantType * typeExpr = dyn_cast<ConstantType>(value)) {
       return typeExpr;
     } else if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(value)) {
@@ -630,7 +689,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
       arrayExpr = values.front();
       if (LValueExpr * lval = dyn_cast<LValueExpr>(arrayExpr)) {
-        arrayExpr = reduceLValueExpr(lval);
+        arrayExpr = reduceLValueExpr(lval, store);
       } else {
         diag.error(base) << "Expression " << base << " is neither an array type nor a template";
         return &Expr::ErrorVal;
@@ -753,11 +812,16 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
   //ExprList callingArgs;
   // TODO: Compile-time evaluation if possible.
   /*Expr * expr = getter->eval(in->location(), callingArgs);
-  if (expr != NULL) {
-    return expr;
-  }*/
+   if (expr != NULL) {
+   return expr;
+   }*/
 
-  FnCallExpr * getterCall = new FnCallExpr(Expr::FnCall, loc, getter, basePtr);
+  Expr::ExprType callType = Expr::FnCall;
+  if (basePtr->type()->typeClass() == Type::Interface ||
+      (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
+    callType = Expr::VTableCall;
+  }
+  FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   module->addSymbol(getter);
   analyzeLater(getter);
@@ -771,14 +835,14 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(prop->isSingular(), prop);
-  DASSERT_OBJ(prop->setter()->isSingular(), prop);
-
   FunctionDefn * setter = prop->setter();
   if (setter == NULL) {
-    diag.fatal(prop) << "No setter for property '" << prop->name() << "'";
+    diag.error(loc) << "Attempt to set value of read-only property '" << prop << "'";
     return &Expr::ErrorVal;
   }
+
+  DASSERT_OBJ(prop->isSingular(), prop);
+  DASSERT_OBJ(setter->isSingular(), prop);
 
   if (!analyzeValueDefn(setter, Task_PrepOverloadSelection)) {
     return &Expr::ErrorVal;
@@ -789,11 +853,16 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
 
   // TODO: Compile-time evaluation if possible.
   /*Expr * expr = getter->eval(in->location(), callingArgs);
-  if (expr != NULL) {
-    return expr;
-  }*/
+   if (expr != NULL) {
+   return expr;
+   }*/
 
-  FnCallExpr * setterCall = new FnCallExpr(Expr::FnCall, loc, setter, basePtr);
+  Expr::ExprType callType = Expr::FnCall;
+  if (basePtr->type()->typeClass() == Type::Interface ||
+      (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
+    callType = Expr::VTableCall;
+  }
+  FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
   setterCall->setType(prop->type());
   setterCall->appendArg(value);
   module->addSymbol(setter);
@@ -830,13 +899,19 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   //ExprList callingArgs;
   // TODO: Compile-time evaluation if possible.
   /*Expr * expr = getter->eval(in->location(), callingArgs);
-  if (expr != NULL) {
-    return expr;
-  }*/
+   if (expr != NULL) {
+   return expr;
+   }*/
 
   // TODO: Type check args against function signature.
 
-  FnCallExpr * getterCall = new FnCallExpr(Expr::FnCall, loc, getter, basePtr);
+
+  Expr::ExprType callType = Expr::FnCall;
+  if (basePtr->type()->typeClass() == Type::Interface ||
+      (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
+    callType = Expr::VTableCall;
+  }
+  FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   getterCall->args().append(call->args().begin(), call->args().end());
   module->addSymbol(getter);
@@ -855,33 +930,38 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(prop->isSingular(), prop);
-  DASSERT_OBJ(prop->setter()->isSingular(), prop);
-
   FunctionDefn * setter = prop->setter();
   if (setter == NULL) {
-    diag.fatal(prop) << "No setter for property '" << prop->name() << "'";
+    diag.error(loc) << "Attempt to set value of read-only property '" << prop << "'";
     return &Expr::ErrorVal;
   }
+
+  DASSERT_OBJ(prop->isSingular(), prop);
+  DASSERT_OBJ(setter->isSingular(), prop);
 
   if (!analyzeValueDefn(setter, Task_PrepOverloadSelection)) {
     return &Expr::ErrorVal;
   }
 
-//  DASSERT_OBJ(setter->returnType()->isEqual(prop->type()), setter);
+  //  DASSERT_OBJ(setter->returnType()->isEqual(prop->type()), setter);
 
   //ExprList callingArgs;
   //callingArgs.push_back(value);
 
   // TODO: Compile-time evaluation if possible.
   /*Expr * expr = getter->eval(in->location(), callingArgs);
-  if (expr != NULL) {
-    return expr;
-  }*/
+   if (expr != NULL) {
+   return expr;
+   }*/
 
   // TODO: Type check args against function signature.
 
-  FnCallExpr * setterCall = new FnCallExpr(Expr::FnCall, loc, setter, basePtr);
+  Expr::ExprType callType = Expr::FnCall;
+  if (basePtr->type()->typeClass() == Type::Interface ||
+      (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
+    callType = Expr::VTableCall;
+  }
+  FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
   setterCall->setType(prop->type());
   setterCall->args().append(call->args().begin(), call->args().end());
   setterCall->appendArg(value);
@@ -890,7 +970,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   return setterCall;
 }
 
-Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue) {
+Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
   analyzeValueDefn(lvalue->value(), Task_PrepCallOrUse);
   DASSERT(lvalue->value()->type() != NULL);
@@ -903,14 +983,14 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue) {
     case Storage_Global:
     case Storage_Static:
     case Storage_Local:
-      lvalue->setBase(NULL);
-      return lvalue;
+    lvalue->setBase(NULL);
+    return lvalue;
 
     case Storage_Instance: {
       Expr * base = lvalue->base();
       if (base == NULL || base->exprType() == Expr::ScopeName) {
         diag.error(lvalue) << "Attempt to reference non-static member " <<
-          lvalue->value()->name() << " with no object";
+        lvalue->value()->name() << " with no object";
         return &Expr::ErrorVal;
       }
 
@@ -923,7 +1003,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue) {
     case Storage_Param:
     case Storage_Closure:
     default:
-      DFAIL("Invalid storage class");
+    DFAIL("Invalid storage class");
   }
 }
 

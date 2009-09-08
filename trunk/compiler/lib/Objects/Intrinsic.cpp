@@ -198,6 +198,74 @@ PointerComparisonIntrinsic<CmpInst::ICMP_NE>
     PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
 
 // -------------------------------------------------------------------
+// LogicalAndIntrinsic
+LogicalAndIntrinsic LogicalAndIntrinsic::instance;
+
+Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 2);
+  Expr * first = args[0];
+  Expr * second = args[1];
+
+  enum {
+    Unknown,
+    True,
+    False,
+  };
+
+  int constFirst = Unknown;
+  int constSecond = Unknown;
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(first)) {
+    constFirst = cint->value() != 0 ? True : False;
+  }
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(second)) {
+    constSecond = cint->value() != 0 ? True : False;
+  }
+
+  if (constSecond == False || constSecond == False) {
+    return ConstantInteger::getConstantBool(loc, false);
+  }
+
+  return new BinaryExpr(Expr::And, loc, &BoolType::instance, first, second);
+}
+
+// -------------------------------------------------------------------
+// LogicalOrIntrinsic
+LogicalOrIntrinsic LogicalOrIntrinsic::instance;
+
+Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 2);
+  Expr * first = args[0];
+  Expr * second = args[1];
+
+  enum {
+    Unknown,
+    True,
+    False,
+  };
+
+  int constFirst = Unknown;
+  int constSecond = Unknown;
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(first)) {
+    constFirst = cint->value() != 0 ? True : False;
+  }
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(second)) {
+    constSecond = cint->value() != 0 ? True : False;
+  }
+
+  if (constSecond == True || constSecond == True) {
+    return ConstantInteger::getConstantBool(loc, true);
+  }
+
+  return new BinaryExpr(Expr::Or, loc, &BoolType::instance, first, second);
+}
+
+// -------------------------------------------------------------------
 // ArrayCopyIntrinsic
 ArrayCopyIntrinsic ArrayCopyIntrinsic::instance;
 
@@ -229,10 +297,14 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   idx[1] = cg.getInt64Val(0);
 
   Value * args[4];
-  args[0] = cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[2], "dst");
+  args[0] = cg.builder().CreatePointerCast(
+      cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[2], "dst"),
+      llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
 
   idx[0] = srcIndex;
-  args[1] = cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[2], "src");
+  args[1] = cg.builder().CreatePointerCast(
+      cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[2], "src"),
+      llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
 
   args[2] = cg.builder().CreateMul(length, elemSize);
   args[3] = cg.getInt32Val(0);

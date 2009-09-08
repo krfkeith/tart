@@ -1,0 +1,24 @@
+import tart.collections.ArrayList;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  testConstruct();
+  testImplicitType();
+  return 0;
+}
+
+def testConstruct() {
+  let a = ArrayList[int](1, 2, 3);
+  Debug.assertEq(3, a.length);
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+}
+
+def testImplicitType() {
+  let a = ArrayList(1, 2, 3);
+  Debug.assertEq(3, a.length);
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+}

@@ -1,0 +1,97 @@
+/** A mutable, extensible string. */
+ /* : public Iterable[char] */
+public final class StringBuilder {
+  private {
+    var value:char[];
+    var _length:int;
+
+    def grow(amount:int) {
+      let newSize = self._length + amount;
+      if value.length < newSize {
+        let newValue = char[](newSize + newSize / 2 + 16);
+        char[].copyElements(newValue, 0, value, 0, self._length);
+      }
+
+      self._length = newSize;
+    }
+    
+    static def insertionCount(inputLength:int, start:int, count:int) -> int {
+      Preconditions.checkIndex(inputLength >= 0);
+      Preconditions.checkIndex(count >= 0);
+      Preconditions.checkIndex(start >= 0);
+      start = Math.min(start, inputLength);
+      count = Math.min(count, inputLength - start);
+      return count;
+      //return start, count;
+    }
+  }
+
+  def construct() {
+    value = char[](0);
+    self._length = 0;
+  }
+
+  def construct(s:String, start:int = 0, count:int = int.maxVal) {
+    value = char[](0); // s.toArray()
+    self._length = s.length;
+  }
+
+  def construct(c:char[], start:int = 0, count:int = int.maxVal) {
+    value = char[](0); // s.toArray()
+    self._length = c.length;
+  }
+  
+  def length:int {
+    get { return self._length; }
+  }
+
+  def append(c:char) {
+    let n = self._length;
+    grow(1);
+    value[n] = c;
+  }
+  
+  def append(c:char[], start:int = 0, count:int = int.maxVal) {
+  }
+  
+  def append(s:String, start:int = 0, count:int = int.maxVal) {
+  }
+  
+  def append(s:Iterator[char]) {
+    insert(self._length, s);
+  }
+  
+  def insert(n:int, c:char) {
+  }
+  
+  def insert(n:int, c:char[], start:int = 0, count:int = int.maxVal) {
+  }
+  
+  def insert(n:int, s:String, start:int = 0, count:int = int.maxVal) {
+  }
+  
+  def insert(n:int, s:Iterator[char]) {
+    classify s {
+      as sequence:HasLength {
+        grow(int(sequence.length));
+        for c in s {
+          value[self._length++] = c;
+        }
+      } else {
+      }
+    }
+
+    //let n = self.length;
+    //resize(n + s.length);
+    //value[n] = c;
+  }
+
+  def remove(n:int) {
+  }
+
+  def remove(n:int, count:int) {
+  }
+  
+  def clear() {
+  }
+}

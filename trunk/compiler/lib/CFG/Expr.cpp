@@ -284,10 +284,10 @@ bool CallExpr::isSingular() const {
   }
 
   if (!candidates_.empty()) {
-    return candidates_.size() == 1 && candidates_.front()->method()->isSingular();
+    return candidates_.size() == 1 && candidates_.front()->isSingular();
   }
 
-  return function_ != NULL && function_->type()->isSingular();
+  return function_ != NULL && function_->isSingular();
 }
 
 Type * CallExpr::singularParamType(int index) {

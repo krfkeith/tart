@@ -45,9 +45,9 @@ const std::string Module::packageName() const {
   return result;
 }
 
-bool Module::import(const char * name, DefnList & defs) {
+bool Module::import(const char * name, DefnList & defs, bool absPath) {
   Module * mod = PackageMgr::get().getModuleForImportPath(name);
-  if (mod == NULL) {
+  if (mod == NULL && !absPath) {
     // Try our own package
     std::string packageName(qname_);
     size_t dot = packageName.rfind('.');
@@ -75,8 +75,7 @@ bool Module::import(const char * name, DefnList & defs) {
       return true;
     }
 
-    diag.warn(SourceLocation()) << "Module '" << name <<
-        "' has no primary defs?";
+    diag.warn(SourceLocation()) << "Module '" << name << "' has no primary defs?";
   }
 
   return false;
@@ -108,8 +107,7 @@ bool Module::processImportStatements() {
   // module's namespace.
   if (beginPass(Pass_ResolveImport)) {
     DefnAnalyzer da(this, this);
-    for (ASTNodeList::const_iterator it = imports_.begin();
-        it != imports_.end(); ++it) {
+    for (ASTNodeList::const_iterator it = imports_.begin(); it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }
 

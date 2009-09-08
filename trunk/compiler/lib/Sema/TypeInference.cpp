@@ -73,8 +73,8 @@ void CallSite::finish() {
     formatCallSignature(fs);
 
     if (isConversionWarning(best)) {
-      diag.error(callExpr->location()) << compatibilityError(best) <<
-          " attempting to call " << callsig.str();
+      diag.error(callExpr->location()) << compatibilityError(best) << " attempting to call " <<
+          callsig.str();
     } else {
       diag.error(callExpr) << "Ambiguous overloaded methods for call to " << callsig.str() << ":";
     }
@@ -115,8 +115,17 @@ void CallSite::formatCallSignature(FormatStream & out) {
 /// GatherConstraintsPass
 
 Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
-  if (!in->candidates().empty()) {
+  if (!in->candidates().empty() && calls.insert(in)) {
     callSites.push_back(CallSite(in));
+
+    // If the function is NULL, it means that the function reference is
+    // in the individual candidates.
+    if (in->function() == NULL) {
+      Candidates & cd = in->candidates();
+      for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+        visitExpr((*it)->base());
+      }
+    }
   }
 
   return CFGPass::visitCall(in);
@@ -153,12 +162,6 @@ Expr * TypeInferencePass::runImpl() {
   cullByElimination();
 
   reportRanks();
-
-  /*else {
-    // Report ambiguity.
-    //diag.fatal()
-    DFAIL("Implement error messages");
-  }*/
 
   // Remove all culled candidates
   for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
@@ -200,8 +203,7 @@ void TypeInferencePass::checkSolution() {
     if (lowestRank == bestSolutionRank) {
       ++bestSolutionCount;
       if (ShowInference) {
-        diag.debug() << "Discovered equivalent solution with rank " <<
-            bestSolutionRank;
+        diag.debug() << "Discovered equivalent solution with rank " << bestSolutionRank;
       }
     } else if (lowestRank > bestSolutionRank) {
       bestSolutionCount = 1;
@@ -211,8 +213,7 @@ void TypeInferencePass::checkSolution() {
       }
 
       if (ShowInference) {
-        diag.debug() << "Discovered new best solution with rank [" <<
-            bestSolutionRank << "]";
+        diag.debug() << "Discovered new best solution with rank [" << bestSolutionRank << "]";
       }
     }
   }
@@ -228,8 +229,8 @@ void TypeInferencePass::reportRanks() {
   diag.debug() << "lowest: " << lowestRank;
   int siteIndex = 1;
   for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it, ++siteIndex) {
-    diag.debug() << "Call site #" << siteIndex << ": " << it->numRemaining
-      << " candidates for " << it->callExpr;
+    diag.debug() << "Call site #" << siteIndex << ": " << it->numRemaining << " candidates for " <<
+        it->callExpr;
     diag.indent();
     Candidates & cd = it->callExpr->candidates();
     for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
@@ -292,8 +293,7 @@ void TypeInferencePass::cullByConversionRank() {
       while (site.lowestRank < IdenticalTypes) {
         ConversionRank limit = ConversionRank(site.lowestRank + 1);
         if (ShowInference) {
-          diag.debug() << "Site #" << siteIndex <<
-              ": culling overloads of rank < " << limit;
+          diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
         }
         ++searchDepth;
         cullCount = 0;

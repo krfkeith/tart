@@ -129,11 +129,29 @@ class PointerDiffIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Operator.equual and Operator.unequal for native pointers.
+// Operator.equal and Operator.unequal for native pointers.
 template<llvm::CmpInst::Predicate pred>
 class PointerComparisonIntrinsic : public Intrinsic {
   static PointerComparisonIntrinsic instance;
   PointerComparisonIntrinsic(const char * name) : Intrinsic(name) {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Operator.infixLogicalAnd intrinsic
+class LogicalAndIntrinsic : public Intrinsic {
+  static LogicalAndIntrinsic instance;
+  LogicalAndIntrinsic() : Intrinsic("infixLogicalAnd") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Operator.infixLogicalOr intrinsic
+class LogicalOrIntrinsic : public Intrinsic {
+  static LogicalOrIntrinsic instance;
+  LogicalOrIntrinsic() : Intrinsic("infixLogicalOr") {}
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
       Type * expectedReturn) const;
 };

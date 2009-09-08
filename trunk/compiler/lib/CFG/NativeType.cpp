@@ -20,6 +20,7 @@ NativePointerType NativePointerType::instance(NULL, &NativePointerType::typedefn
     &Builtins::module);
 TypeDefn NativePointerType::typedefn(&Builtins::module, "NativePointer", &instance);
 
+// TODO: Constant folding.
 //NativePointerType * NativePointerType::get(Type * elemType) {
 //  DASSERT(elemType != NULL);
 //  NativePointerType * result = new NativePointerType(&typedefn);
@@ -29,7 +30,7 @@ TypeDefn NativePointerType::typedefn(&Builtins::module, "NativePointer", &instan
 
 NativePointerType * NativePointerType::create(Type * elemType) {
   // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&Builtins::module);
+  TemplateInstance * tinst = new TemplateInstance(&Builtins::module, &Builtins::module);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
 
@@ -143,7 +144,7 @@ TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", &instance);
 
 NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&Builtins::module);
+  TemplateInstance * tinst = new TemplateInstance(&Builtins::module, &Builtins::module);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
 

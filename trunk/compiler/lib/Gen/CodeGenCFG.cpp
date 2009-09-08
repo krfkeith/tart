@@ -19,11 +19,8 @@
 namespace tart {
 using namespace llvm;
 
-void CodeGenerator::genLocalStorage() {
-  BlockList & blocks = currentFunction_->blocks();
+void CodeGenerator::genLocalStorage(BlockList & blocks, LocalScopeList & lsl) {
   builder_.SetInsertPoint(blocks.front()->irBlock());
-
-  LocalScopeList & lsl = currentFunction_->localScopes();
   for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -50,10 +47,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   var->setIRValue(lValue);
 }
 
-void CodeGenerator::genBlocks() {
-
-  // Create the LLVM Basic Blocks corresponding to each high level BB.
-  BlockList & blocks = currentFunction_->blocks();
+void CodeGenerator::genBlocks(BlockList & blocks) {
 
   // Generate debugging information (this has to be done after local variable allocas.)
   if (debug) {
@@ -161,8 +155,6 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     builder_.CreateRet(NULL);
   } else {
     Value * value = genExpr(returnVal);
-    //value = genCast(resultVal->location(), value,
-    //    returnVal->type(), currentFunction_->returnType());
     DASSERT(value != NULL);
     //genDoFinally(blk);
     builder_.CreateRet(value);
@@ -183,11 +175,39 @@ void CodeGenerator::genDoFinally(Block * blk) {
   DFAIL("Implement");
 }
 
-bool CodeGenerator::genTestExpr(Expr * test, BasicBlock * trueBlk, BasicBlock * falseBlk) {
-  llvm::Value * testVal = genExpr(test);
-  if (testVal == NULL) return false;
-  builder_.CreateCondBr(testVal, trueBlk, falseBlk);
-  return true;
+bool CodeGenerator::genTestExpr(const Expr * test, BasicBlock * blkTrue, BasicBlock * blkFalse) {
+  switch (test->exprType()) {
+    case Expr::And: {
+      BinaryExpr * op = static_cast<const BinaryExpr *>(test);
+      BasicBlock * blkSecond = BasicBlock::Create(context_, "and", currentFn_, blkTrue);
+      genTestExpr(op->first(), blkSecond, blkFalse);
+      builder_.SetInsertPoint(blkSecond);
+      genTestExpr(op->second(), blkTrue, blkFalse);
+      return true;
+    }
+
+    case Expr::Or: {
+      BinaryExpr * op = static_cast<const BinaryExpr *>(test);
+      BasicBlock * blkSecond = BasicBlock::Create(context_, "or", currentFn_, blkFalse);
+      genTestExpr(op->first(), blkTrue, blkSecond);
+      builder_.SetInsertPoint(blkSecond);
+      genTestExpr(op->second(), blkTrue, blkFalse);
+      return true;
+    }
+
+    case Expr::Not: {
+      // For logical negation, flip the true and false blocks.
+      UnaryExpr * op = static_cast<const UnaryExpr *>(test);
+      return genTestExpr(op->arg(), blkFalse, blkTrue);
+    }
+
+    default: {
+      llvm::Value * testVal = genExpr(test);
+      if (testVal == NULL) return false;
+      builder_.CreateCondBr(testVal, blkTrue, blkFalse);
+      return true;
+    }
+  }
 }
 
 void CodeGenerator::genThrow(Block * blk) {
@@ -242,7 +262,7 @@ void CodeGenerator::genThrow(Block * blk) {
 
   if (unwindTarget_ != NULL) {
     // If the 'throw' statement is in a try block, then invoke _Unwind_RaiseException.
-    Function * f = currentFunction_->irFunction();
+    Function * f = currentFn_;
     BasicBlock * postThrow = BasicBlock::Create(context_, "unreachable", f);
     Value * result = builder_.CreateInvoke(unwindFunc, postThrow,
         unwindTarget_->irBlock(), &unwindArgs[0], &unwindArgs[1], label);

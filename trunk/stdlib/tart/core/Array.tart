@@ -1,6 +1,7 @@
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
+import tart.core.Math.min;
 
 /** Built-in array class */
 public final class Array[%ElementType] : Iterable[ElementType] {
@@ -48,13 +49,39 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** Array element access. */
   def [index:int]:ElementType {
-    get { return self.data[index]; }
-    set { self.data[index] = value; }
+    get {
+      Preconditions.checkArgument(index >= 0);
+      return self.data[index];
+    }
+    set {
+      Preconditions.checkArgument(index >= 0);
+      self.data[index] = value;
+    }
   }
   
   /** Iterate over the elements of the array. */
   def iterate -> Iterator[ElementType] {
     return ArrayIterator(self);
+  }
+
+  /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
+      'dstOffset' in array 'dst'.
+   */  
+  static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.length);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.length);
+    count = min(count, dst.length - dstOffset, src.length - srcOffset);
+    if count > 0 {
+      Memory.arrayCopy(dst.data, dstOffset, src.data, srcOffset, count);
+    }
+  }
+
+  /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
+      'dstOffset' in this array.
+   */  
+  static def copyElements(dst:Array, dstOffset:long, src:Array, srcOffset:long, count:long) {
+    Debug.fail("Implement copyElements");
   }
 
   public final class ArrayIterator : Iterator[ElementType], HasLength {
@@ -74,6 +101,6 @@ public final class Array[%ElementType] : Iterable[ElementType] {
       }
     }
 
-    def length:long { get { return 0; } }
+    def length:long { get { return array.length; } }
   }
 }

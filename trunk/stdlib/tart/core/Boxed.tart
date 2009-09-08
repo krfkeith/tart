@@ -1,4 +1,8 @@
 /** A reference type used to contain a value type. */
 class Boxed[%T] {
-  public value:T;
+  var value:T;
+  
+  def construct(value:T) {
+    self.value = value;
+  }
 }

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_TEMPLATE_H
 #define TART_CFG_TEMPLATE_H
 
@@ -10,7 +10,7 @@
 #endif
 
 namespace tart {
-  
+
 class Template;
 class BindingEnv;
 
@@ -22,18 +22,18 @@ public:
   /** Construct a type pattern variable. */
   PatternVar(const SourceLocation & loc, TypeDefn * defn,
     Scope * parentScope, TemplateSignature * temp);
-    
+
   const SourceLocation & location() const { return location_; }
-  
+
   /** Return the pattern variable */
   const char * name() const { return typeDefn()->name(); }
 
   /** Return the type of this variable, which will usually be 'Type' */
   const Type * valueType() const { return valueType_; }
-  
+
   /** Set the type of values which can be bound to this variable. */
   void setValueType(Type * type) { valueType_ = type; }
-  
+
   /** Return the definition in which this pattern variable is defined. */
   const Defn * templateDefn() const;
 
@@ -75,11 +75,11 @@ typedef llvm::SmallVector<PatternVar *, 4> PatternVarList;
 class TemplateSignature : public GC {
 public:
   static TemplateSignature * get(Defn * v, Scope * parent);
-  
+
   TemplateSignature(Defn * v, Scope * parentScope);
-  
+
   const Defn * value() const { return value_; }
-  
+
   const ASTTemplate * ast() const { return ast_; }
   void setAST(const ASTTemplate * a) { ast_ = a; }
 
@@ -90,7 +90,7 @@ public:
   /** Return the list of requirements. */
   const ExprList & requirements() const { return requirements_; }
   ExprList & requirements() { return requirements_; }
-  
+
   /** Return the index of the specified pattern variable, or -1 if
       the variable is not defined for this template. */
   size_t getVarIndex(const PatternVar * var) const;
@@ -103,18 +103,16 @@ public:
 
   /** Look up the specified pattern variable by index. */
   PatternVar * patternVar(int index) const;
-  
+
   /** Get the parameter scope. */
   const IterableScope & paramScope() const { return paramScope_; }
   IterableScope & paramScope() { return paramScope_; }
-  
+
   /** Add a pattern variable. */
-  PatternVar * addPatternVar(const SourceLocation & loc, const char * name,
-      Type * type = NULL);
+  PatternVar * addPatternVar(const SourceLocation & loc, const char * name, Type * type = NULL);
 
   /** Add a parameter which consists of a single expression pattern variable. */
-  void addParameter(const SourceLocation & loc, const char * name,
-      Type * type = NULL);
+  void addParameter(const SourceLocation & loc, const char * name, Type * type = NULL);
 
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const BindingEnv & env);
@@ -123,7 +121,7 @@ public:
   void format(FormatStream & out) const;
 
   // Overrides
-  
+
   void trace() const;
 
 private:
@@ -143,7 +141,7 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Scope * ps);
+  TemplateInstance(Module * srcMod, Scope * ps);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
@@ -156,7 +154,11 @@ public:
   /** The template arguments for this template. */
   const TypeList & templateArgs() const { return templateArgs_; }
   TypeList & templateArgs() { return templateArgs_; }
-  
+
+  /** The module where this template was originally defined; Used for implicit imports
+      within the template body. */
+  Module * srcModule() const { return srcModule_; }
+
   // Overrides
 
   bool allowOverloads() { return false; }
@@ -169,11 +171,12 @@ public:
   void format(FormatStream & out) const;
 
 private:
-  Defn * value_;
-  TypeList paramValues_;          // The list of parameter values.
-  OrderedSymbolTable paramDefns_; // Symbol definitions for parameter values.
-  TypeList templateArgs_;         // Template arguments with substitutions
+  Defn * value_;                    // The instantiated definition
+  TypeList paramValues_;            // The list of parameter values.
+  OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
+  TypeList templateArgs_;           // Template arguments with substitutions
   Scope * parentScope_;
+  Module * srcModule_;              // Module where the template was originally defined.
 };
 
 } // namespace tart

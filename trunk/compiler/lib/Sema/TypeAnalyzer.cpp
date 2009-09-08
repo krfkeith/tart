@@ -54,7 +54,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
           //DFAIL("Implement");
           //NativePointerTypeAnalyzer(
           //  static_cast<NativePointerType *>(type)).analyze(Task_InferType);
-        } else /*if (tdef->defnType() != Defn::TypeParameter)*/ {
+        } else if (type->isSingular()) /*if (tdef->defnType() != Defn::TypeParameter)*/ {
           analyzeLater(tdef);
         }
 
@@ -154,7 +154,7 @@ bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   return !defns.empty();
 }
 
-FunctionType * TypeAnalyzer::typeFromFunctionAST( const ASTFunctionDecl * ast) {
+FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
   Type * returnType = typeFromAST(ast->returnType());
   const ASTParamList & astParams = ast->params();
   ParameterList params;
@@ -185,7 +185,9 @@ bool TypeAnalyzer::analyzeTypeExpr(Type * type) {
   TypeDefn * de = type->typeDefn();
   if (de != NULL) {
     analyzeTypeDefn(de, Task_PrepMemberLookup);
-    analyzeLater(de);
+    if (de->isSingular()) {
+      analyzeLater(de);
+    }
   } else {
     switch (type->typeClass()) {
       case Type::Function:

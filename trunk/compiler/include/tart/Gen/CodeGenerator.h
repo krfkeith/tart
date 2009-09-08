@@ -41,6 +41,7 @@ class FunctionType;
 class PrimitiveType;
 class UnionType;
 class Block;
+class LocalScope;
 class FormatStream;
 class RuntimeTypeInfo;
 class ConstantString;
@@ -52,6 +53,8 @@ typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::StringMap<llvm::Value *> StringLiteralMap;
+typedef llvm::SmallVector<Block *, 16> BlockList;
+typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
 
 /// -------------------------------------------------------------------
 /// Code generator class.
@@ -87,16 +90,16 @@ public:
   const llvm::Type * genEnumType(EnumType * tdef);
 
     /** Generate the code that allocates storage for locals on the stack. */
-  void genLocalStorage();
+  void genLocalStorage(BlockList & blocks, LocalScopeList & lsl);
   void genLocalVar(VariableDefn * var);
 
   /** Generate the function body from the basic block list. */
-  void genBlocks();
+  void genBlocks(BlockList & blocks);
   void genStmt(Expr * in);
   void genBlockTerminator(Block * blk);
   void genReturn(Expr * returnVal);
   void genLocalReturn(Block * blk);
-  bool genTestExpr(Expr * test, llvm::BasicBlock * trueBlk, llvm::BasicBlock * falseBlk);
+  bool genTestExpr(const Expr * test, llvm::BasicBlock * trueBlk, llvm::BasicBlock * falseBlk);
   void genThrow(Block * blk);
   void genCatch(Block * blk);
   void genSwitch(Block * blk);
@@ -118,6 +121,7 @@ public:
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
   llvm::Value * genPtrDeref(const UnaryExpr * in);
   llvm::Value * genNot(const UnaryExpr * in);
+  llvm::Value * genLogicalOper(const BinaryExpr * in);
   llvm::Value * genCall(FnCallExpr * in);
   llvm::Value * genNew(NewExpr * in);
 
@@ -277,8 +281,7 @@ private:
 
   Module * module;
   llvm::Module * irModule_;
-
-  FunctionDefn * currentFunction_;
+  llvm::Function * currentFn_;
 
 #if 0
   llvm::Function * moduleInitFunc;
