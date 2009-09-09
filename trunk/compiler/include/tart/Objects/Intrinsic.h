@@ -159,9 +159,11 @@ class LogicalOrIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Memory.arrayCopy intrinsic
 class ArrayCopyIntrinsic : public Intrinsic {
-  static ArrayCopyIntrinsic instance;
-  ArrayCopyIntrinsic() : Intrinsic("tart.core.Memory.arrayCopy") {}
+  static ArrayCopyIntrinsic copyInstance;
+  static ArrayCopyIntrinsic moveInstance;
+  ArrayCopyIntrinsic(const char * name, llvm::Intrinsic::ID id) : Intrinsic(name), _id(id) {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  llvm::Intrinsic::ID _id;
 };
 
 // -------------------------------------------------------------------

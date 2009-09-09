@@ -44,7 +44,7 @@ Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 CodeGenerator::CodeGenerator(Module * mod)
     : context_(llvm::getGlobalContext())
     , builder_(llvm::getGlobalContext())
-    , module(mod)
+    , module_(mod)
     , irModule_(mod->irModule())
 #if 0
     , doExpansions(false)
@@ -73,14 +73,14 @@ void CodeGenerator::generate() {
 
   // Generate debugging information
   if (debug) {
-    getCompileUnit(module);
+    getCompileUnit(module_);
   }
 
   irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
   irModule_->addTypeName("tart.reflect.Type", Builtins::typeType->irType());
 
   // Generate all declarations.
-  DefnSet & xdefs = module->exportDefs();
+  DefnSet & xdefs = module_->exportDefs();
   for (DefnSet::iterator it = xdefs.begin(); it != xdefs.end(); ++it) {
     Defn * de = *it;
     /*if (de->module() != module) {
@@ -103,7 +103,7 @@ void CodeGenerator::generate() {
     genXDef(de);
   }
 
-  DefnSet & xrefs = module->importDefs();
+  DefnSet & xrefs = module_->importDefs();
   for (DefnSet::iterator it = xrefs.begin(); it != xrefs.end(); ++it) {
     Defn * de = *it;
     if (xdefs.count(de)) {
@@ -162,7 +162,7 @@ void CodeGenerator::generate() {
   }
 #endif
 
-  if (diag.getErrorCount() == 0 && module->entryPoint() != NULL) {
+  if (diag.getErrorCount() == 0 && module_->entryPoint() != NULL) {
     genEntryPoint();
   }
 
@@ -200,7 +200,7 @@ void CodeGenerator::verifyModule() {
 void CodeGenerator::outputModule() {
   // File handle for output bitcode
   llvm::sys::Path binPath(outputDir);
-  const std::string & moduleName = module->linkageName();
+  const std::string & moduleName = module_->linkageName();
   size_t pos = 0;
   for (;;) {
     size_t dot = moduleName.find('.', pos);
@@ -243,17 +243,21 @@ void CodeGenerator::outputModule() {
   passManager.run(*irModule_);
   binOut.close();
 
-#if 0
-  // File handle for output metadata
-  llvm::sys::Path metaPath(outputDir);
-  metaPath.appendComponent(srcPath.getBasename());
-  metaPath.appendSuffix("md");
-
   // Generate the module metadata
+  llvm::sys::Path metaPath(binPath);
+  metaPath.eraseSuffix();
+  metaPath.appendSuffix("md");
   std::ofstream metaOut(metaPath.toString().c_str());
   genModuleMetadata(metaOut);
   metaOut.close();
-#endif
+}
+
+void CodeGenerator::genModuleMetadata(std::ostream & strm) {
+  const ModuleSet & modules = module_->importModules();
+  for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
+    Module * m = *it;
+    strm << "import " << m->qualifiedName() << " as %0;" << std::endl;
+  }
 }
 
 llvm::DICompileUnit CodeGenerator::getCompileUnit(const ProgramSource * source) {
@@ -285,7 +289,7 @@ unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
 void CodeGenerator::genEntryPoint() {
   using namespace llvm;
 
-  FunctionDefn * entryPoint = module->entryPoint();
+  FunctionDefn * entryPoint = module_->entryPoint();
 
   // Generate the main method
   std::vector<const llvm::Type *> mainArgs;

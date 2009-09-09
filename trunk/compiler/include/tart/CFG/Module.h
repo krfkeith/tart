@@ -60,6 +60,9 @@ public:
   const ASTNodeList & imports() const { return imports_; }
   ASTNodeList & imports() { return imports_; }
 
+  /** Return the set of modules that were imported into this module. Includes implicit imports. */
+  const ModuleSet & importModules() const { return importModules_; }
+
   /** List of AST declarations defined in this module. */
   const ASTDeclList & astMembers() const { return decls_; }
   ASTDeclList & astMembers() { return decls_; }

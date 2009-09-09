@@ -4,6 +4,12 @@ interface List[%ElementType] : Iterable[ElementType] {
   /** Append an item to the end of the list. */
   def add(e:ElementType);
 
+  /** Insert the element 'e' at the specific position 'position'. */
+  def insert(position:int, e:ElementType);
+
+  /** Remove the item at the specified index. */
+  def remove(index:int);
+
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }
   

@@ -395,7 +395,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
     return it->second;
   }
 
-  RuntimeTypeInfo * rtype = new RuntimeTypeInfo(type, module);
+  RuntimeTypeInfo * rtype = new RuntimeTypeInfo(type, module_);
   compositeTypeMap_[type] = rtype;
   return rtype;
 }

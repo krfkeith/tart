@@ -1,0 +1,22 @@
+/** Useful assertion helper functions. */
+namespace Assertions {
+  macro assertTrue(cond:bool) {
+    if not cond {
+      //throw AssertionFailedException();
+      throw AssertionFailedException(stringify(cond));
+    }
+  }
+
+  macro assertFalse(cond:bool) {
+    if cond {
+      throw AssertionFailedException(stringify(cond));
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T) {
+    if expected != actual {
+      throw AssertionFailedException(
+        String.concat("expected: ", stringify(expected), ", actual value: ", actual.toString()));
+    }
+  }
+}

@@ -267,7 +267,10 @@ Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, Expr * self,
 
 // -------------------------------------------------------------------
 // ArrayCopyIntrinsic
-ArrayCopyIntrinsic ArrayCopyIntrinsic::instance;
+ArrayCopyIntrinsic ArrayCopyIntrinsic::copyInstance(
+    "tart.core.Memory.arrayCopy", llvm::Intrinsic::memcpy);
+ArrayCopyIntrinsic ArrayCopyIntrinsic::moveInstance(
+    "tart.core.Memory.arrayMove", llvm::Intrinsic::memmove);
 
 Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   DASSERT(call->argCount() == 5);
@@ -285,23 +288,24 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   Value * dstIndex = cg.genExpr(dstOffset);
   Value * length = cg.genExpr(count);
 
-  Value * elemSize = llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType());
+  Value * elemSize = cg.builder().CreateTruncOrBitCast(
+      llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType()),
+      length->getType());
 
   const llvm::Type * types[1];
-  types[0] = cg.builder().getInt64Ty();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(
-      cg.irModule(), llvm::Intrinsic::memcpy, types, 1);
+  types[0] = length->getType();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types, 1);
 
   Value * idx[2];
-  idx[0] = dstIndex;
-  idx[1] = cg.getInt64Val(0);
+  idx[0] = ConstantInt::getSigned(length->getType(), 0);
+  idx[1] = dstIndex;
 
   Value * args[4];
   args[0] = cg.builder().CreatePointerCast(
       cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[2], "dst"),
       llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
 
-  idx[0] = srcIndex;
+  idx[1] = srcIndex;
   args[1] = cg.builder().CreatePointerCast(
       cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[2], "src"),
       llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
