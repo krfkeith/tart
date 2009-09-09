@@ -45,6 +45,7 @@ const std::string Module::packageName() const {
   return result;
 }
 
+
 bool Module::import(const char * name, DefnList & defs, bool absPath) {
   Module * mod = PackageMgr::get().getModuleForImportPath(name);
   if (mod == NULL && !absPath) {

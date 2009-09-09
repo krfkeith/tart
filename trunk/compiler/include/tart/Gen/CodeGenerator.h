@@ -276,10 +276,12 @@ private:
   void verifyModule();
   void outputModule();
 
+  void genModuleMetadata(std::ostream & strm);
+
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
 
-  Module * module;
+  Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
 

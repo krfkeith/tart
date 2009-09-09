@@ -159,3 +159,33 @@ class PackageDoc : public ProgramElementDoc {
 
 class NamespaceDoc : public ProgramElementDoc {
 };
+
+
+depends "tart/core/String.tart"; 
+depends "tart/core/Iterator.tart";
+
+import tart.core.String = 1;
+import tart.core.Iterator[char] = 2;
+
+// Compiled module format
+public final class StringBuilder : %2 {
+  private var value:char[];
+  private var _length:int;
+  private def grow(amount:int);
+  private static def insertionCount(inputLength:int, start:int, count:int) -> int;
+  public def construct();
+  public def construct(s:%1, start:int = 0, count:int = int.maxVal);
+  public def construct(c:char[], start:int = 0, count:int = int.maxVal);
+  public def length:int { get; }
+  public def append(c:char);
+  public def append(c:char[], start:int = 0, count:int = int.maxVal);
+  public def append(s:%1, start:int = 0, count:int = int.maxVal);
+  public def append(s:%2);
+  public def insert(n:int, c:char);
+  public def insert(n:int, c:char[], start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:String, start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:%2);
+  public def remove(n:int);
+  public def remove(n:int, count:int);
+  public def clear();
+}

@@ -388,7 +388,7 @@ SuccessorOp<typ> SuccessorOp<typ>::value;
 template<int typ>
 class PredeccessorOp : public FunctionDefn {
 public:
-  PredeccessorOp() : FunctionDefn(NULL, "predeccesorOf", &StaticFnType1<typ, typ>::value) {}
+  PredeccessorOp() : FunctionDefn(NULL, "predeccessorOf", &StaticFnType1<typ, typ>::value) {}
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
     assert(args.size() == 1);

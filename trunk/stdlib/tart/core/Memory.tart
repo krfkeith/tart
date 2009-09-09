@@ -33,7 +33,42 @@ namespace Memory {
 
   //def ptrDiff::%ValTy(first:NativePointer::ValTy, last:NativePointer::ValTy) -> long;
 
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Does not guarantee correct behavior if the source and destination overlap.
+      
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dst: The array containing the destination range.
+        dstOffset: The starting index of the destination range.
+        src: The array containing the source range.
+        srcOffset: The starting index of the source ranbge.
+        length: The number of elements to copy. 
+   */
+  @Intrinsic def arrayCopy[%T](
+      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:int);
+
+  /** [Ditto] */
+  @Intrinsic def arrayCopy[%T](
+      dst:NativeArray[T, 0], dstOffset:long, src:NativeArray[T, 0], srcOffset:long, length:long);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Handles the case of overlapping ranges.
+      
+      The behavior is equivalent to the CLib function memmove().
+      Parameters:
+        dst: The array containing the destination range.
+        dstOffset: The starting index of the destination range.
+        src: The array containing the source range.
+        srcOffset: The starting index of the source ranbge.
+        length: The number of elements to copy. 
+   */
   @Intrinsic
-  def arrayCopy[%T](
-      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:long);
+  def arrayMove[%T](
+      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:int);
+
+  /** [Ditto] 
+   */
+  @Intrinsic
+  def arrayMove[%T](
+      dst:NativeArray[T, 0], dstOffset:long, src:NativeArray[T, 0], srcOffset:long, length:long);
 }

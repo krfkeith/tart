@@ -69,7 +69,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   }
 
   // If it's a function from a different module...
-  if (fdef->module() != module) {
+  if (fdef->module() != module_) {
     FunctionType * funcType = fdef->functionType();
     fn = Function::Create(
         cast<llvm::FunctionType>(funcType->irType()),
@@ -123,7 +123,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       f->setLinkage(GlobalValue::LinkOnceAnyLinkage);
     }
 
-    if (debug && fdef->module() == module) {
+    if (debug && fdef->module() == module_) {
       dbgCompileUnit_ = getCompileUnit(fdef);
       dbgFunction_ = dbgFactory_.CreateSubprogram(
           dbgCompileUnit_, // TODO: Replace for functions within a scope.
@@ -325,7 +325,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
-  if (var->module() == module) {
+  if (var->module() == module_) {
     // If it has an initialization expression
     const Expr * initExpr = var->initValue();
     if (initExpr != NULL) {

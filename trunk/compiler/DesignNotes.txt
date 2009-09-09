@@ -11,10 +11,8 @@ Design TODOS:
 Implementation TODOS:
 
 * Test overloading of augmented assignment operators.
-* Need a way to mark template members.
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
-* Write unit tests for primitive.toString()
 * Write unit tests for enum.toString()
 * Finish array unit tests.
 * Assertions in 'testing' package.

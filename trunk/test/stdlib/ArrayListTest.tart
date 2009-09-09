@@ -4,6 +4,9 @@ import tart.collections.ArrayList;
 def main(args:String[]) -> int {
   testConstruct();
   testImplicitType();
+  testOutOfRange();
+  testAdd();
+  testRemove();
   return 0;
 }
 
@@ -21,4 +24,37 @@ def testImplicitType() {
   Debug.assertEq(1, a[0]);
   Debug.assertEq(2, a[1]);
   Debug.assertEq(3, a[2]);
+}
+
+def testOutOfRange() {
+  let a = ArrayList[int](1, 2, 3);
+  try {
+    let s = a[4];
+    Debug.fail("Out of range access");
+  } catch :IndexOutOfRangeException {
+  }
+
+  try {
+    let s = a[-1];
+    Debug.fail("Out of range access");
+  } catch :IndexOutOfRangeException {
+  }
+}
+
+def testAdd() {
+  let a = ArrayList[int](1, 2, 3);
+  a.add(4);
+  Debug.assertEq(4, a.length);
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+  Debug.assertEq(4, a[3]);
+}
+
+def testRemove() {
+  let a = ArrayList[int](1, 2, 3);
+  a.remove(1);
+  Debug.assertEq(2, a.length);
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(3, a[1]);
 }

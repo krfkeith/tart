@@ -9,7 +9,7 @@ public final class StringBuilder {
       let newSize = self._length + amount;
       if value.length < newSize {
         let newValue = char[](newSize + newSize / 2 + 16);
-        char[].copyElements(newValue, 0, value, 0, self._length);
+        char[].copy(newValue, 0, value, 0, self._length);
       }
 
       self._length = newSize;

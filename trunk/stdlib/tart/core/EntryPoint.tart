@@ -4,4 +4,11 @@
 class EntryPoint {
   public def construct() {}
   @Intrinsic def apply(t:tart.reflect.Type);
+  
+  static def __entry__(
+      argc:int,
+      argv:NativeArray[NativePointer[ubyte], 0],
+      func:fn :String[] -> int) -> int {
+    return 0;
+  }
 }
