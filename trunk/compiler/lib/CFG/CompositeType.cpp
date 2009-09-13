@@ -167,6 +167,10 @@ bool CompositeType::isSubclassOf(const CompositeType * base) const {
     return true;
   }
 
+  if (Type::equivalent(this, base)) {
+    return true;
+  }
+
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     if ((*it)->isSubclassOf(base)) {
       return true;
@@ -181,14 +185,8 @@ bool CompositeType::implements(const CompositeType * interface) const {
 }
 
 bool CompositeType::implementsImpl(const CompositeType * interface) const {
-  if (defn_ == interface->typeDefn()) {
+  if (defn_->ast() == interface->typeDefn()->ast()) {
     return true;
-  }
-
-  if (defn_->isTemplateInstance()) {
-    if (defn_->templateInstance()->value() == interface->typeDefn()) {
-      return true;
-    }
   }
 
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {

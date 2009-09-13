@@ -4,6 +4,7 @@
 
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/CompositeType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -107,6 +108,16 @@ Type * PatternValue::value() const {
 // BindingEnv
 BindingEnv::BindingEnv(const TemplateSignature * ts) : substitutions_(NULL) {}
 
+const char * BindingEnv::asString() const {
+  static std::string temp;
+  std::stringstream ss;
+  FormatStream stream(ss);
+  stream.setFormatOptions(Format_Verbose);
+  stream << *this;
+  temp = ss.str();
+  return temp.c_str();
+}
+
 void BindingEnv::reset() {
   substitutions_ = NULL;
 }
@@ -179,9 +190,16 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
       return unify(source, pattern, boundValue, variance);
     }
 
-    diag.debug(source) << "Unbound pattern value found in value " << value << " for pattern " << pattern;
+    diag.debug(source) << "Unbound pattern value found in value " << value <<
+        " for pattern " << pattern;
     addSubstitution(pval, value);
     return true;
+  } else if (CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
+    if (CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
+      return unifyCompositeType(source, ctPattern, ctValue, variance);
+    }
+
+    return false;
   } else {
     //diag.error() << Format_Dealias << "Implement unification of " << pattern << " and " << value;
     return false;
@@ -230,12 +248,111 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * 
   }
 }
 
+bool BindingEnv::unifyCompositeType(
+    SourceContext * source, CompositeType * pattern, CompositeType * value, Variance variance) {
+  if (pattern->isEqual(value)) {
+    return true;
+  }
+
+  if (!AnalyzerBase::analyzeTypeDefn(pattern->typeDefn(), Task_PrepMemberLookup)) {
+    return false;
+  }
+
+  if (!AnalyzerBase::analyzeTypeDefn(value->typeDefn(), Task_PrepMemberLookup)) {
+    return false;
+  }
+
+  TypeDefn * patternDefn = pattern->typeDefn();
+  TypeDefn * valueDefn = value->typeDefn();
+
+  // Compare the ASTs to see if they derive from the same original symbol.
+  if (patternDefn->ast() == valueDefn->ast()) {
+    // Now we have to see if we can bind the type variables.
+    TypeList * patternTypeParams = NULL;
+    TypeList * valueTypeParams = NULL;
+
+    if (patternDefn->isTemplate()) {
+      patternTypeParams = &patternDefn->templateSignature()->params();
+    } else if (patternDefn->isTemplateInstance()) {
+      patternTypeParams = &patternDefn->templateInstance()->paramValues();
+    }
+
+    if (valueDefn->isTemplate()) {
+      valueTypeParams = &valueDefn->templateSignature()->params();
+    } else if (valueDefn->isTemplateInstance()) {
+      valueTypeParams = &valueDefn->templateInstance()->paramValues();
+    }
+
+    if (patternTypeParams == valueTypeParams) {
+      return true;
+    }
+
+    if (patternTypeParams == NULL ||
+        valueTypeParams == NULL ||
+        patternTypeParams->size() != valueTypeParams->size()) {
+      return false;
+    }
+
+    size_t numParams = patternTypeParams->size();
+    Substitution * savedState = substitutions();
+    for (size_t i = 0; i < numParams; ++i) {
+      if (!unify(source, (*patternTypeParams)[i], (*valueTypeParams)[i], Invariant)) {
+        setSubstitutions(savedState);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  if (variance == Contravariant) {
+    Substitution * savedState = substitutions();
+    for (ClassList::iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
+      if (unifyCompositeType(source, pattern, *it, Invariant)) {
+        return true;
+      }
+
+      setSubstitutions(savedState);
+    }
+
+    return false;
+  } else if (variance == Covariant) {
+    Substitution * savedState = substitutions();
+    for (ClassList::iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
+      if (unifyCompositeType(source, *it, value, Invariant)) {
+        return true;
+      }
+
+      setSubstitutions(savedState);
+    }
+
+    return false;
+  } else {
+    return false;
+  }
+}
+
 bool BindingEnv::unifyPattern(
     SourceContext * source, PatternVar * pattern, Type * value, Variance variance) {
+
+  if (pattern == value) {
+    // Don't bind a pattern to itself.
+    return true;
+  }
+
+  /*if (isa<PatternVar>(value)) {
+    diag.error() << "PatternVar should already have been replaced with PatternVal by this point";
+    DFAIL("Abort");
+  }*/
 
   // If there is already a value bound to this pattern variable
   Substitution * s = getSubstitutionFor(pattern);
   if (s != NULL) {
+    // Early out - already bound to this same value.
+    if (s->right() == value) {
+      return true;
+    }
+
     // Early out
     if (s->right() == pattern) {
       return true;
@@ -246,11 +363,15 @@ bool BindingEnv::unifyPattern(
       // environment (it should never be from this one), then bind it to
       // this variable.
       // TODO: Might want to check if the value is bindable to this var.
-      bind(pattern, value);
+      if (pval->value() == value) {
+        return true;
+      }
+
+      addSubstitution(pattern, value);
       return true;
     }
 
-    if (PatternValue * pval = dyn_cast<PatternValue>(value)) {
+    if (isa<PatternValue>(value)) {
       // If the value that we're trying to bind is a pattern value, and we already
       // have a value, then leave the current value as is, assuming that it can
       // be bound to that pattern variable later.
@@ -259,6 +380,18 @@ bool BindingEnv::unifyPattern(
 
     if (!pattern->canBindTo(value)) {
       return false;
+    }
+
+    if (PatternVar * svar = dyn_cast<PatternVar>(s->right())) {
+      //DFAIL("Should not happen");
+      // If 'pattern' is bound to another pattern variable, then go ahead and override
+      // that binding.
+      if (svar != value && svar->canBindTo(value)) {
+        addSubstitution(svar, value);
+        addSubstitution(pattern, value);
+      }
+
+      return true;
     }
 
     Type * upperBound = value;
@@ -299,7 +432,7 @@ bool BindingEnv::unifyPattern(
         return true;
       }
 
-      bind(pattern, newValue);
+      addSubstitution(pattern, newValue);
       return true;
     }
 
@@ -317,7 +450,7 @@ bool BindingEnv::unifyPattern(
     }
 
     // Add a new substitution of value for pattern
-    bind(pattern, value);
+    addSubstitution(pattern, value);
     return true;
   } else {
     return false;
@@ -337,10 +470,6 @@ Substitution * BindingEnv::addSubstitution(const Type * left, Type * upper, Type
   return substitutions_;
 }
 
-void BindingEnv::bind(const PatternVar * var, Type * value) {
-  addSubstitution(var, value);
-}
-
 Type * BindingEnv::get(const PatternVar * type) const {
   Substitution * s = getSubstitutionFor(type);
   if (s != NULL) {
@@ -348,6 +477,28 @@ Type * BindingEnv::get(const PatternVar * type) const {
   }
 
   return NULL;
+}
+
+Type * BindingEnv::dereference(Type * type) const {
+  while (type != NULL) {
+    if (PatternVar * var = dyn_cast<PatternVar>(type)) {
+      Substitution * s = getSubstitutionFor(type);
+      if (s != NULL) {
+        type = s->right();
+      } else {
+        return NULL;
+      }
+    } else if (PatternValue * val = dyn_cast<PatternValue>(type)) {
+      type = val->value();
+      if (type == NULL) {
+        return val;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return type;
 }
 
 Type * BindingEnv::subst(Type * in, bool finalize) const {
@@ -369,6 +520,12 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
     }
 
     case Type::PatternVal: {
+      PatternValue * value = static_cast<const PatternValue *>(in);
+      Type * result = value->value();
+      if (result != NULL) {
+        return result;
+      }
+
       return in;
     }
 
@@ -403,7 +560,19 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
     case Type::Struct:
     case Type::Class:
     case Type::Interface:
-    case Type::Protocol:
+    case Type::Protocol: {
+      if (in->typeDefn() != NULL && in->typeDefn()->isTemplate()) {
+        Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
+        if (def != NULL) {
+          return cast<TypeDefn>(def)->typeValue();
+        } else {
+          return NULL;
+        }
+      }
+
+      return in;
+    }
+
     case Type::Function:
     case Type::NonType:
       //DASSERT(in->isSingular());

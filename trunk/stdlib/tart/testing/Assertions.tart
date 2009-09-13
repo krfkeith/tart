@@ -19,4 +19,12 @@ namespace Assertions {
         String.concat("expected: ", stringify(expected), ", actual value: ", actual.toString()));
     }
   }
+
+  macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
+    if not Iterators.equal(expected, actual) {
+      throw AssertionFailedException(
+        // TODO: Replace with String.format.
+        String.concat("expected: ", stringify(expected), ", actual: ", actual.toString()));
+    }
+  }
 }

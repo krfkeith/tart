@@ -30,7 +30,7 @@ TypeDefn NativePointerType::typedefn(&Builtins::module, "NativePointer", &instan
 
 NativePointerType * NativePointerType::create(Type * elemType) {
   // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&Builtins::module, &Builtins::module);
+  TemplateInstance * tinst = new TemplateInstance(&typedefn);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
 
@@ -144,7 +144,7 @@ TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", &instance);
 
 NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&Builtins::module, &Builtins::module);
+  TemplateInstance * tinst = new TemplateInstance(&typedefn);
   tinst->paramValues().push_back(elemType);
   tinst->templateArgs().push_back(elemType);
 

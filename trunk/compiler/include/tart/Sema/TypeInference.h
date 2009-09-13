@@ -70,6 +70,9 @@ struct CallSite {
 
   // Generate a printable version of the input calling signature.
   void formatCallSignature(FormatStream & out);
+
+  // Report the given error message, along with the calling signature and the candidates.
+  void reportErrors(const char * msg);
 };
 
 typedef llvm::SmallVector<CallSite, 16> CallSiteList;
@@ -125,7 +128,7 @@ private:
   void update();
   void checkSolution();
 
-  void unifyCalls();
+  bool unifyCalls();
 
   // Various pruning strategies.
 

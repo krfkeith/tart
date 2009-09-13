@@ -73,6 +73,9 @@ enum DefnPass {
   /** Determine function parameter types. */
   Pass_ResolveParameterTypes,
 
+  /** Determine function modifiers (abstract, etc.) */
+  Pass_ResolveModifiers,
+
   /** Determine variable type. */
   Pass_ResolveVarType,
 
@@ -114,14 +117,15 @@ public:
   };
 
   enum Trait {
-    Final,              // Can't be overridden
-    Abstract,           // Can't be instantiated
-    ReadOnly,           // Can't be written to from non-privileged code
-    Extern,             // Externally defined function
-    Ctor,               // Constructor function
-    Singular,           // Has no unbound template params
-    Synthetic,          // Generated via template
-    TemplateMember,     // Is a member of a template
+    Final,                  // Can't be overridden
+    Abstract,               // Can't be instantiated
+    ReadOnly,               // Can't be written to from non-privileged code
+    Extern,                 // Externally defined function
+    Ctor,                   // Constructor function
+    Singular,               // Has no unbound template params
+    Synthetic,              // Generated via template
+    TemplateMember,         // Is a member of a template
+    PartialInstantiation,   // A template instance whose variables are unbound template params.
 
     //Commutative = (1<<10),  // A function whose order of arguments can be reversed
     //Associative = (1<<11),  // A varargs function that can be combined with itself.
@@ -260,6 +264,10 @@ public:
 
   /** Return true if this declaration has an ancestor which is a template. */
   bool isTemplateMember() const { return traits_.contains(TemplateMember); }
+
+  /** Return true if this declaration is part of a partially-instantiated template, meaning
+      a template whose parameters are pattern variables of another template. */
+  bool isPartialInstantiation() const { return traits_.contains(PartialInstantiation); }
 
   /** Return the template signature object. */
   const TemplateSignature * templateSignature() const { return tsig_; }

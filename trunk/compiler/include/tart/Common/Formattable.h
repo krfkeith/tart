@@ -43,7 +43,7 @@ public:
   virtual void dump() const;
 
   /** Return debugging information as a string (for use in debugger). */
-  virtual std::string tostr() const;
+  virtual const char * asString() const;
 };
 
 /// -------------------------------------------------------------------

@@ -41,6 +41,7 @@ const llvm::Type * PatternVar::createIRType() const {
 }
 
 ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
+  DFAIL("Shouldn't be attempting to call convert on a Pattern Var (I think).");
   if (cn.bindingEnv != NULL) {
     const Type * ty = cn.bindingEnv->get(this);
     DFAIL("Deprecated");
@@ -170,10 +171,13 @@ void TemplateSignature::format(FormatStream & out) const {
   out << "]";
 }
 
-Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env) {
+Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env,
+    bool singular) {
+  bool isPartial = false;
 
   // Check to make sure that thre parameters are of the correct type.
   TypeList paramValues;
+  bool noCache = false;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
     if (var->valueType() == NULL) {
@@ -183,7 +187,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
       var->setValueType(Builtins::typeType);
     }
 
-    Type * value = env.get(var);
+    Type * value = env.subst(var);
     DASSERT(value != NULL);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
@@ -191,26 +195,48 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
       DASSERT(var->canBindTo(value));
     }
 
+    if (!value->isSingular()) {
+      if (singular) {
+        diag.fatal(loc) << "Non-singular parameter '" << var << "' = '" << value << "'";
+      }
+
+      isPartial = true;
+    }
+
+    if (isa<PatternValue>(value)) {
+      noCache = true;
+    }
+
+    //DASSERT(!isa<PatternValue>(value));
+
     // We might need to do some coercion here...
     paramValues.push_back(value);
   }
 
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
-  for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
-    Defn * spec = *it;
-    TemplateInstance * ti = spec->templateInstance();
-    DASSERT_OBJ(ti != NULL, value_);
-    DASSERT_OBJ(ti->paramValues().size() == paramValues.size(), value_);
-    if (std::equal(paramValues.begin(), paramValues.end(),
-            ti->paramValues().begin(), TypeEquals())) {
-      return ti->value();
+  if (!noCache) {
+    for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
+      Defn * spec = *it;
+      TemplateInstance * ti = spec->templateInstance();
+      DASSERT_OBJ(ti != NULL, value_);
+      DASSERT_OBJ(ti->paramValues().size() == paramValues.size(), value_);
+      if (std::equal(paramValues.begin(), paramValues.end(), ti->paramValues().begin(),
+          TypeEquals())) {
+
+        if (singular && !ti->value()->isSingular()) {
+          diag.fatal(loc) << Format_Verbose << "Expected " << ti->value() << " to be singular, why isn't it?";
+          DFAIL("Non-singular");
+        }
+
+        return ti->value();
+      }
     }
   }
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_->module(), value_->definingScope());
+  TemplateInstance * tinst = new TemplateInstance(value_);
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
 
   // Substitute into the template args to create the arg list
@@ -228,6 +254,9 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     result->addTrait(Defn::Synthetic);
     result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
     result->setDefiningScope(tinst);
+    if (isPartial) {
+      result->addTrait(Defn::PartialInstantiation);
+    }
   } else if (value_->defnType() == Defn::Typedef) {
     TypeDefn * tdef = static_cast<TypeDefn *>(value_);
     TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
@@ -266,7 +295,9 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     fdef->setIntrinsic(static_cast<FunctionDefn *>(value_)->intrinsic());
   }
 
-  specializations.push_back(result);
+  if (!noCache) {
+    specializations.push_back(result);
+  }
 
   // Create a symbol for each template parameter.
   bool isSingular = true;
@@ -277,8 +308,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
     Defn * argDefn;
     if (NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(value)) {
-      argDefn = new VariableDefn(Defn::Let, result->module(), var->name(),
-          ntc->value());
+      argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
     } else {
       argDefn = new TypeDefn(result->module(), var->name(), value);
     }
@@ -287,6 +317,10 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     isSingular &= value->isSingular();
     argDefn->addTrait(Defn::Synthetic);
     tinst->addMember(argDefn);
+  }
+
+  if (singular && !isSingular) {
+    diag.fatal(loc) << Format_Verbose << "Expected " << result << " to be singular, why isn't it?";
   }
 
   // One additional parameter, which is the name of the instantiated symbol.
@@ -302,16 +336,23 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   result->setSingular(isSingular);
   result->setTemplateInstance(tinst);
 
+  DASSERT(isSingular == result->isSingular());
+
+  if (singular && !result->isSingular()) {
+    diag.fatal(loc) << Format_Verbose << "Expected " << result << " to be singular, why isn't it?";
+    DFAIL("Non-singular");
+  }
+
   return result;
 }
 
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Module * srcModule, Scope * ps)
+TemplateInstance::TemplateInstance(Defn * templateDefn)
   : value_(NULL)
-  , parentScope_(ps)
-  , srcModule_(srcModule)
+  , templateDefn_(templateDefn)
+  , parentScope_(templateDefn->definingScope())
 {
 }
 
@@ -341,8 +382,7 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 
 void TemplateInstance::format(FormatStream & out) const {
   out << "[";
-  for (TypeList::const_iterator it = templateArgs_.begin();
-      it != templateArgs_.end(); ++it) {
+  for (TypeList::const_iterator it = templateArgs_.begin(); it != templateArgs_.end(); ++it) {
     if (it != templateArgs_.begin()) {
       out << ", ";
     }

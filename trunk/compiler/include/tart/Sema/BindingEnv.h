@@ -141,8 +141,9 @@ public:
   /** Get the value for the specified pattern variable. */
   Type * get(const PatternVar * type) const;
 
-  /** Set the value for the pattern variable in this environment. */
-  void bind(const PatternVar * var, Type * value);
+  /** Get the value for the specified pattern variable. If the binding is to another
+      variable, dereference that as well. */
+  Type * dereference(Type * type) const;
 
   /** Given a type expression, return the equivalent expression where all
       pattern variables have been replaced with the corresponding type
@@ -181,7 +182,10 @@ public:
     return NULL;
   }
 
-  // Overrides
+  // Used for displaying in debugger only, return value is ephemeral.
+  const char * asString() const;
+
+    // Overrides
 
   void trace() const;
 private:
@@ -192,6 +196,8 @@ private:
   bool unifyPattern(SourceContext * source, PatternVar * pattern, Type * value, Variance variance);
   bool unifyNativePointerType(SourceContext * source, NativePointerType * pattern, Type * value);
   bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);
+  bool unifyCompositeType(SourceContext * source, CompositeType * pattern, CompositeType * value,
+      Variance variance);
   bool unifyImpl(SourceContext * source, Type * pattern, Type * value, Variance variance);
 
   bool hasVar(const PatternVar * var) const;

@@ -113,6 +113,7 @@ Conversion::Conversion(const Type * from)
   , fromValue(NULL)
   , resultValue(NULL)
   , bindingEnv(NULL)
+  , matchPatterns(false)
 {}
 
 Conversion::Conversion(Expr * from)
@@ -120,6 +121,7 @@ Conversion::Conversion(Expr * from)
   , fromValue(from)
   , resultValue(NULL)
   , bindingEnv(NULL)
+  , matchPatterns(false)
 {}
 
 Conversion::Conversion(Expr * from, Expr ** to)
@@ -127,6 +129,7 @@ Conversion::Conversion(Expr * from, Expr ** to)
   , fromValue(from)
   , resultValue(to)
   , bindingEnv(NULL)
+  , matchPatterns(false)
 {}
 
 const Type * Conversion::getFromType() const {
@@ -329,17 +332,6 @@ void NonTypeConstant::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // Utility functions
 
-Type * Type::selectMoreSpecificType(Type * type1, Type * type2) {
-  if (type2->includes(type1)) {
-    return type1;
-  } else if (type1->includes(type2)) {
-    return type2;
-  } else {
-    diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
-    return NULL;
-  }
-}
-
 Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
   if (type2->includes(type1)) {
     return type2;
@@ -396,6 +388,71 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
     diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
     return NULL;
   }
+}
+
+bool Type::equivalent(const Type * type1, const Type * type2) {
+  if (const PatternValue * pval = dyn_cast<PatternValue>(type1)) {
+    type1 = pval->value();
+    if (type1 == NULL) {
+      return false;
+    }
+  }
+
+  if (const PatternValue * pval = dyn_cast<PatternValue>(type2)) {
+    type2 = pval->value();
+    if (type2 == NULL) {
+      return false;
+    }
+  }
+
+  if (type1 == type2) {
+    return true;
+  }
+
+  // Compare the ASTs to see if they derive from the same original symbol.
+  if (type1->typeDefn() != NULL &&
+      type2->typeDefn() != NULL &&
+      type1->typeDefn()->ast() == type2->typeDefn()->ast()) {
+
+    // Now test the type parameters to see if they are also equivalent.
+    const TypeDefn * d1 = type1->typeDefn();
+    const TypeDefn * d2 = type2->typeDefn();
+    const TypeList * type1Params = NULL;
+    const TypeList * type2Params = NULL;
+
+    if (d1->isTemplate()) {
+      type1Params = &d1->templateSignature()->params();
+    } else if (d1->isTemplateInstance()) {
+      type1Params = &d1->templateInstance()->paramValues();
+    }
+
+    if (d2->isTemplate()) {
+      type2Params = &d2->templateSignature()->params();
+    } else if (d2->isTemplateInstance()) {
+      type2Params = &d2->templateInstance()->paramValues();
+    }
+
+    if (type1Params == type2Params) {
+      return true;
+    }
+
+    if (type1Params == NULL ||
+        type2Params == NULL ||
+        type1Params->size() != type2Params->size()) {
+      return false;
+    }
+
+    size_t numParams = type1Params->size();
+    for (size_t i = 0; i < numParams; ++i) {
+      if (!equivalent((*type1Params)[i], (*type2Params)[i])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 Type * findCommonType(Type * t0, Type * t1) {

@@ -31,6 +31,20 @@
 
 namespace tart {
 
+namespace {
+  void visitSuccessors(Block * blk, llvm::SmallPtrSet<Block *, 128> & visited) {
+    if (visited.insert(blk)) {
+      for (BlockList::iterator it = blk->succs().begin(); it != blk->succs().end(); ++it) {
+        visitSuccessors(*it, visited);
+      }
+
+      if (blk->unwindTarget()) {
+        visitSuccessors(blk->unwindTarget(), visited);
+      }
+    }
+  }
+}
+
 // A scope which allows definitions in the enclosing class to be looked up
 // via the 'self' parameter.
 class SelfScope: public DelegatingScope {
@@ -58,13 +72,22 @@ public:
 /// -------------------------------------------------------------------
 /// StmtAnalyzer
 
-StmtAnalyzer::StmtAnalyzer(FunctionDefn * func) :
-  AnalyzerBase(func->module(), &func->parameterScope()), function(func), returnType(NULL),
-      yieldType_(NULL), blocks(func->blocks()), currentBlock_(NULL), continueTarget_(NULL),
-      breakTarget(NULL), unwindTarget_(NULL), cleanups_(NULL), loopCleanups_(NULL),
-      macroReturnVal_(NULL), macroReturnTarget_(NULL) {
+StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
+  : AnalyzerBase(func->module(), &func->parameterScope())
+  , function(func)
+  , returnType_(NULL)
+  , yieldType_(NULL)
+  , blocks(func->blocks())
+  , currentBlock_(NULL)
+  , continueTarget_(NULL)
+  , breakTarget_(NULL)
+  , unwindTarget_(NULL)
+  , cleanups_(NULL)
+  , loopCleanups_(NULL)
+  , macroReturnVal_(NULL)
+  , macroReturnTarget_(NULL) {
   insertPos_ = blocks.end();
-  returnType = function->returnType();
+  returnType_ = function->returnType();
 }
 
 bool StmtAnalyzer::buildCFG() {
@@ -100,17 +123,21 @@ bool StmtAnalyzer::buildCFG() {
       return false;
     }
 
-    if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-      DASSERT_OBJ(macroReturnTarget_ == NULL, function);
-      //if (macroReturnTarget_ != NULL) {
-      //currentBlock->branchTo(body->finalLocation(), macroReturnTarget_);
-      //} else {
-      currentBlock_->exitReturn(body->finalLocation(), NULL);
-      //}
-    }
-
     // Now flatten all local returns.
     flattenLocalProcedureCalls();
+    optimizeBranches();
+    removeDeadBlocks();
+
+    // Add a return statement at the end if it is needed.
+    // Note that this may be removed during dead code deletion if there is no way to
+    // get to the block.
+    if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
+      if (returnType_ != NULL && !returnType_->isEqual(&VoidType::instance)) {
+        diag.error(body->finalLocation()) <<
+            "Missing return statement at end of non-void function.";
+      }
+      currentBlock_->exitReturn(body->finalLocation(), NULL);
+    }
 
     return true;
   }
@@ -218,11 +245,6 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
   }
 
   DASSERT(testExpr->type() != NULL);
-  if (testExpr->isConstant()) {
-    // TODO: See if the test expression is a constant.
-    // Check for bool and int types, not floats.
-  }
-
   bool hasElse = (st->elseSt() != NULL);
 
   // Create the set of basic blocks. We don't know yet
@@ -278,10 +300,6 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
 
   DASSERT(testExpr != NULL);
   DASSERT_OBJ(testExpr->type() != NULL, testExpr);
-  if (testExpr->isConstant()) {
-    // If it's a constant, it may affect whether things fall through
-    // or not.
-  }
 
   // Create the set of basic blocks. We don't know yet
   // if we need an else block or endif block.
@@ -297,15 +315,15 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
       testExpr, blkBody, blkDone);
 
   // Generate the 'body' block.
-  Block * saveBreakTarget = breakTarget;
+  Block * saveBreakTarget = breakTarget_;
   Block * saveContinueTarget = continueTarget_;
   CleanupHandler * saveLoopEH = loopCleanups_;
   setInsertPos(blkBody);
-  breakTarget = blkDone;
+  breakTarget_ = blkDone;
   loopCleanups_ = cleanups_;
   continueTarget_ = blkTest;
   buildStmtCFG(st->body());
-  breakTarget = saveBreakTarget;
+  breakTarget_ = saveBreakTarget;
   continueTarget_ = saveContinueTarget;
   loopCleanups_ = saveLoopEH;
 
@@ -422,10 +440,10 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
   }
 
   // Generate the 'body' block.
-  Block * saveBreakTarget = breakTarget;
+  Block * saveBreakTarget = breakTarget_;
   Block * saveContinueTarget = continueTarget_;
 
-  breakTarget = blkDone;
+  breakTarget_ = blkDone;
   continueTarget_ = blkIncr ? blkIncr : (blkTest ? blkTest : blkBody);
 
   setInsertPos(blkBody);
@@ -436,7 +454,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
     currentBlock_->branchTo(st->location(), continueTarget_);
   }
 
-  breakTarget = saveBreakTarget;
+  breakTarget_ = saveBreakTarget;
   continueTarget_ = saveContinueTarget;
 
   if (blkIncr) {
@@ -527,7 +545,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   // Generate the 'body' block.
   Block * blkBody = createBlock("loopbody");
   Block * blkDone = createBlock("endfor");
-  Block * saveBreakTarget = breakTarget;
+  Block * saveBreakTarget = breakTarget_;
   Block * saveContinueTarget = continueTarget_;
 
   // Assign the next value to the iteration variable.
@@ -545,7 +563,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     DFAIL("Implement multiple loop variables");
   }
 
-  breakTarget = blkDone;
+  breakTarget_ = blkDone;
   continueTarget_ = blkTest;
 
   setInsertPos(blkBody);
@@ -556,7 +574,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     currentBlock_->branchTo(st->location(), continueTarget_);
   }
 
-  breakTarget = saveBreakTarget;
+  breakTarget_ = saveBreakTarget;
   continueTarget_ = saveContinueTarget;
 
   blkTest->condBranchTo(testExpr->location(), testExpr, blkDone, blkBody);
@@ -1117,29 +1135,33 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //      "Return value not allowed in generator function");
     //}
 
-    resultVal = inferTypes(astToExpr(st->value(), returnType), returnType);
+    resultVal = inferTypes(astToExpr(st->value(), returnType_), returnType_);
     if (isErrorResult(resultVal)) {
       return false;
     }
 
-    Type * exprType = resultVal->type();
-
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
-    if (exprType->isUnsizedIntType() && returnType == NULL) {
+    Type * exprType = resultVal->type();
+    if (exprType->isUnsizedIntType() && returnType_ == NULL) {
       if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&IntType::instance);
       } else if (LongType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&LongType::instance);
       }
     }
+
+    if (returnType_ != NULL) {
+      resultVal = returnType_->implicitCast(st->location(), resultVal);
+    }
   }
 
   if (macroReturnTarget_ != NULL) {
     // We are inside a macro expansion, which means that 'return' doesn't
-    // actually return, it assigns to the macro result andt then branches.
+    // actually return, it assigns to the macro result and then branches.
 
     // TODO: Skip this assignment if it's void.
+    DASSERT(returnType_->isEqual(macroReturnVal_->type()));
     Expr * exp = new AssignmentExpr(st->location(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
 
@@ -1176,13 +1198,24 @@ bool StmtAnalyzer::buildYieldStmtCFG(const YieldStmt * st) {
 }
 
 bool StmtAnalyzer::buildBreakStmtCFG(const Stmt * st) {
-  DFAIL("Unimplemented");
+  if (breakTarget_ == NULL) {
+    diag.error(st) << "Break statement outside of loop body";
+    return false;
+  } else {
+    currentBlock_->branchTo(st->location(), breakTarget_);
+    return true;
+  }
   return true;
 }
 
 bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
-  DFAIL("Unimplemented");
-  return true;
+  if (continueTarget_ == NULL) {
+    diag.error(st) << "Continue statement outside of loop body";
+    return false;
+  } else {
+    currentBlock_->branchTo(st->location(), continueTarget_);
+    return true;
+  }
 }
 
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
@@ -1197,7 +1230,12 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
     // TODO: Should we insure that Let has an initializer?
     // TODO: Should we check for true constants here?
     if (var->initValue() != NULL) {
-      Expr * initVal = inferTypes(var->initValue(), var->type());
+      Expr * initVal = MacroExpansionPass::run(*this, var->initValue());
+      if (initVal->type()->isEqual(&VoidType::instance)) {
+        //return expr;
+      }
+
+      //Expr * initVal = inferTypes(var->initValue(), var->type());
       if (!isErrorResult(initVal)) {
         currentBlock_->append(new InitVarExpr(st->location(), var, initVal));
       }
@@ -1311,6 +1349,13 @@ Block * StmtAnalyzer::setMacroReturnTarget(Block * blk) {
   return oldBlock;
 }
 
+/** Set the return type - used when doing macro expansion. */
+Type * StmtAnalyzer::setReturnType(Type * returnType) {
+  Type * oldType = returnType_;
+  returnType_ = returnType;
+  return oldType;
+}
+
 LocalScope * StmtAnalyzer::createLocalScope(const char * scopeName) {
   DASSERT(activeScope != NULL);
   LocalScope * newScope = new LocalScope(activeScope);
@@ -1397,7 +1442,7 @@ FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * in
   }
 
   // Analyze the interface.
-  if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeTypeDefn(interface->typeDefn(), Task_PrepMemberLookup)) {
     return NULL;
   }
 
@@ -1449,6 +1494,9 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
           } else if (blk->terminator() == BlockTerm_Return
               || blk->terminator() == BlockTerm_ResumeUnwind) {
             Block * newBlock = blk->split();
+            if (currentBlock_ == blk) {
+              currentBlock_ = newBlock;
+            }
             bi = blocks.insert(bi + 1, newBlock);
             blk->branchTo(blk->termLocation(), newBlock);
             localCall->setReturnState(proc.addFollowingBlock(newBlock));
@@ -1536,6 +1584,50 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
   }
 
   //function->dumpBlocks();
+}
+
+void StmtAnalyzer::optimizeBranches() {
+  for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
+    Block * blk = *b;
+    if (blk->terminator() == BlockTerm_Conditional) {
+      Expr * testExpr = blk->termValue();
+      bool isConstTrue = false;
+      bool isConstFalse = false;
+      if (ConstantInteger * cint = dyn_cast<ConstantInteger>(testExpr)) {
+        if (cint->value()->isZero()) {
+          isConstFalse = true;
+        } else {
+          isConstTrue = true;
+        }
+      }
+
+      if (isConstTrue) {
+        blk->setTerminator(blk->termLocation(), BlockTerm_Branch);
+        blk->succs().pop_back();
+      } else if (isConstFalse) {
+        blk->setTerminator(blk->termLocation(), BlockTerm_Branch);
+        blk->succs().erase(blk->succs().begin());
+      }
+    }
+  }
+}
+
+void StmtAnalyzer::removeDeadBlocks() {
+  llvm::SmallPtrSet<Block *, 128> visited;
+  visitSuccessors(blocks.front(), visited);
+  for (BlockList::iterator bi = blocks.begin(); bi != blocks.end();) {
+    Block * blk = *bi;
+    if (!visited.count(blk)) {
+      if (currentBlock_ == blk) {
+        currentBlock_ = NULL;
+      }
+
+      bi = blocks.erase(bi);
+      //++bi;
+    } else {
+      ++bi;
+    }
+  }
 }
 
 } // namespace tart

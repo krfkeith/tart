@@ -32,7 +32,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       retValScope->setScopeName("macro-return");
       stAn.getTarget()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");
-      retVal->setType(mtype->returnType());
+      retVal->setType(returnType);
       retVal->setStorageClass(Storage_Local);
       retVal->addTrait(Defn::Singular);
       retValScope->addMember(retVal);
@@ -64,6 +64,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     Block * savedReturnBlock = stAn.setMacroReturnTarget(returnBlock);
+    Type * savedReturnType = stAn.setReturnType(returnType);
     const Stmt * macroBody = macro->functionDecl()->body();
 
     stAn.buildStmtCFG(macroBody);
@@ -74,6 +75,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       finalBlock->branchTo(macroBody->finalLocation(), returnBlock);
     }
 
+    stAn.setReturnType(savedReturnType);
     stAn.setMacroReturnTarget(savedReturnBlock);
     stAn.setActiveScope(savedScope);
     if (savedRetVal != NULL) {

@@ -65,31 +65,12 @@ void CallSite::finish() {
     }
   }
 
-  if (numRemaining != 1 || isConversionWarning(best)) {
-    // Create a representation of the calling signature
-    std::stringstream callsig;
-    FormatStream fs(callsig);
-    fs << Format_Dealias;
-    formatCallSignature(fs);
-
-    if (isConversionWarning(best)) {
-      diag.error(callExpr->location()) << compatibilityError(best) << " attempting to call " <<
-          callsig.str();
-    } else {
-      diag.error(callExpr) << "Ambiguous overloaded methods for call to " << callsig.str() << ":";
-    }
-
-    diag.info(callExpr->location()) << "Candidates are:";
-    for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-      CallCandidate * cc = *it;
-      cc->updateConversionRank();
-      if (cc->env().empty()) {
-        diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
-      } else {
-        diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
-            Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";
-      }
-    }
+  if (numRemaining != 1) {
+    reportErrors("Ambiguous overloaded methods for call to ");
+  } else if (isConversionWarning(best)) {
+    std::string msg(compatibilityError(best));
+    msg.append(" attempting to call ");
+    reportErrors(msg.c_str());
   }
 
   // Regardless of whether there was an ambiguity or not, just pick the
@@ -108,6 +89,27 @@ void CallSite::formatCallSignature(FormatStream & out) {
   out << ")";
   if (callExpr->expectedReturnType() != NULL) {
     out << " -> " << callExpr->expectedReturnType();
+  }
+}
+
+void CallSite::reportErrors(const char * msg) {
+  // Create a representation of the calling signature
+  std::stringstream callsig;
+  FormatStream fs(callsig);
+  fs << Format_Dealias;
+  formatCallSignature(fs);
+  diag.error(callExpr->location()) << msg << callsig.str() << ".";
+  diag.info(callExpr->location()) << "Candidates are:";
+  Candidates & cd = callExpr->candidates();
+  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    CallCandidate * cc = *it;
+    cc->updateConversionRank();
+    if (cc->env().empty()) {
+      diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
+    } else {
+      diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
+          Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";
+    }
   }
 }
 
@@ -153,7 +155,10 @@ Expr * TypeInferencePass::runImpl() {
 
   bestSolutionRank = Incompatible;
   bestSolutionCount = 0;
-  unifyCalls();
+  if (!unifyCalls()) {
+    return rootExpr;
+  }
+
   update();
   reportRanks();
 
@@ -244,17 +249,37 @@ void TypeInferencePass::reportRanks() {
   diag.unindent();
 }
 
-void TypeInferencePass::unifyCalls() {
+bool TypeInferencePass::unifyCalls() {
   ++searchDepth;
+  bool success = true;
   for (CallSiteList::iterator site = callSites.begin(); site != callSites.end(); ++site) {
     Candidates & cclist = site->callExpr->candidates();
+    bool canUnify = false;
     for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
       CallCandidate * c = *cc;
-      if (!c->unify(site->callExpr)) {
+      if (c->unify(site->callExpr)) {
+        canUnify = true;
+      } else {
         c->cull(searchDepth);
       }
     }
+
+    if (!canUnify) {
+      for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
+        CallCandidate * c = *cc;
+        if (c->unify(site->callExpr)) {
+          canUnify = true;
+        } else {
+          c->cull(searchDepth);
+        }
+      }
+
+      site->reportErrors("No methods match calling signature: ");
+      success = false;
+    }
   }
+
+  return success;
 }
 
 void TypeInferencePass::cullByConversionRank() {

@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/Sema/VarAnalyzer.h"
@@ -69,6 +69,10 @@ bool VarAnalyzer::resolveVarType() {
           return false;
         }
 
+        if (varType->typeDefn() != NULL) {
+          analyzeTypeDefn(varType->typeDefn(), Task_PrepMemberLookup);
+        }
+
         //diag.info(target) << "Analyzing type of var '" << target << "' : " << varType;
         setTargetType(varType);
       }
@@ -77,19 +81,33 @@ bool VarAnalyzer::resolveVarType() {
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope;
-      if (target->type() != NULL && target->type()->typeClass() == Type::Enum) {
-        // If the initializer is an enumerated type, then add that type's member scope
-        // to the list of scopes.
-        DelegatingScope * enumScope =
-        new DelegatingScope(target->type()->memberScope(), activeScope);
-        savedScope = setActiveScope(enumScope);
+      if (target->type() != NULL) {
+        if (target->type()->typeDefn() != NULL) {
+          analyzeTypeDefn(target->type()->typeDefn(), Task_PrepMemberLookup);
+        }
+
+        if (target->type()->typeClass() == Type::Enum) {
+          // If the initializer is an enumerated type, then add that type's member scope
+          // to the list of scopes.
+          DelegatingScope * enumScope =
+              new DelegatingScope(target->type()->memberScope(), activeScope);
+          savedScope = setActiveScope(enumScope);
+        }
       }
 
       ExprAnalyzer ea(module, activeScope);
       Expr * initExpr = ea.analyze(ast->value(), target->type());
+      setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
         return false;
-      } else if (!initExpr->isSingular()) {
+      }
+
+      initExpr = ExprAnalyzer::inferTypes(initExpr, target->type());
+      if (isErrorResult(initExpr)) {
+        return false;
+      }
+
+      if (!initExpr->isSingular()) {
         diag.fatal(initExpr) << "Non-singular expression: " << initExpr;
         DASSERT_OBJ(initExpr->isSingular(), initExpr);
       } else {
@@ -101,15 +119,19 @@ bool VarAnalyzer::resolveVarType() {
           initType = &IntType::instance;
         }
 
-        if (!initType->isSingular()) {
-          diag.debug() << "Init expression for " << target << " is " <<
-          initExpr << " with type " << initType;
-        }
+        //if (!initType->isSingular()) {
+        //  diag.debug() << "Init expression for " << target << " is " <<
+        //  initExpr << " with type " << initType;
+        //}
 
-        DASSERT_OBJ(initType->isSingular(), initExpr);
+        //DASSERT_OBJ(initType->isSingular(), initExpr);
 
         if (target->type() == NULL) {
           setTargetType(initType);
+        }
+
+        if (target->type()->typeDefn() != NULL) {
+          analyzeTypeDefn(target->type()->typeDefn(), Task_PrepMemberLookup);
         }
 
         initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
