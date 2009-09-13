@@ -22,12 +22,14 @@ namespace tart {
 static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
   Pass_ResolveAttributes,
   Pass_ResolveParameterTypes,
+  Pass_ResolveModifiers,
   Pass_ResolveReturnType
 );
 
 static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
   Pass_ResolveAttributes,
   Pass_ResolveParameterTypes,
+  Pass_ResolveModifiers,
   Pass_CreateCFG,
   Pass_ResolveReturnType
 );
@@ -70,9 +72,14 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_ResolveReturnType)) {
-    passesToRun.add(Pass_CreateCFG);
+  if (passesToRun.contains(Pass_ResolveModifiers) && !resolveModifiers()) {
+    return false;
   }
+
+  // TODO: Only add this back in if we want to infer return type.
+  //if (passesToRun.contains(Pass_ResolveReturnType)) {
+  //  passesToRun.add(Pass_CreateCFG);
+  //}
 
   if (passesToRun.contains(Pass_CreateCFG) && !createCFG()) {
     return false;
@@ -150,6 +157,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
+      analyzeTypeDefn(selfType, Task_PrepMemberLookup);
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
@@ -166,7 +174,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
   return success;
 }
 
-bool FunctionAnalyzer::createCFG() {
+bool FunctionAnalyzer::resolveModifiers() {
   bool success = true;
 
   if (target->isTemplate() || target->isTemplateMember()) {
@@ -174,7 +182,7 @@ bool FunctionAnalyzer::createCFG() {
     return true;
   }
 
-  if (target->beginPass(Pass_CreateCFG)) {
+  if (target->beginPass(Pass_ResolveModifiers)) {
     bool isIntrinsic = target->isIntrinsic();
     bool isAbstract = target->isAbstract();
     bool isExtern = target->isExtern();
@@ -183,6 +191,7 @@ bool FunctionAnalyzer::createCFG() {
     if (isIntrinsic && isExtern) {
       diag.error(target) << "Function '" << target->name() <<
           "' cannot be both external and intrinsic.";
+      success = false;
     }
 
     // Functions defined in interfaces or protocols must not have a body.
@@ -201,6 +210,7 @@ bool FunctionAnalyzer::createCFG() {
           if (isAbstract && !enclosingClassDefn->isAbstract()) {
             diag.error(target) << "Method '" << target->name() <<
                 " declared abstract in non-abstract class";
+            success = false;
           }
 
           break;
@@ -209,6 +219,7 @@ bool FunctionAnalyzer::createCFG() {
         case Type::Struct: {
           if (isAbstract) {
             diag.error(target) << "Struct method '" << target->name() << " cannot be abstract";
+            success = false;
           }
 
           break;
@@ -218,6 +229,7 @@ bool FunctionAnalyzer::createCFG() {
       if (isAbstract) {
         if (target->storageClass() == Storage_Global) {
           diag.error(target) << "Global function '" << target->name() << " cannot be abstract";
+          success = false;
         }
       }
     }
@@ -228,6 +240,7 @@ bool FunctionAnalyzer::createCFG() {
         if (hasBody) {
           diag.error(target) << "Method body not allowed for method '" << target->name() <<
               "' defined in interface or protocol.";
+          success = false;
         }
       } else if (isExtern || isIntrinsic || isAbstract) {
         if (hasBody) {
@@ -240,14 +253,33 @@ bool FunctionAnalyzer::createCFG() {
 
           diag.error(target) << "Method '" << target->name() << "' declared " << keyword <<
               " cannot have a body.";
+          success = false;
         }
       } else if (!hasBody) {
         diag.error(target) << "Method body required for non-abstract method '"
             << target->name() << "'.";
-      } else if (target->blocks().empty()) {
-        StmtAnalyzer sa(target);
-        success = sa.buildCFG();
+        success = false;
       }
+    }
+
+    target->finishPass(Pass_ResolveModifiers);
+  }
+
+  return success;
+}
+
+bool FunctionAnalyzer::createCFG() {
+  bool success = true;
+
+  if (target->isTemplate() || target->isTemplateMember()) {
+    // Don't build CFG for templates
+    return true;
+  }
+
+  if (target->beginPass(Pass_CreateCFG)) {
+    if (target->hasBody() && target->blocks().empty()) {
+      StmtAnalyzer sa(target);
+      success = sa.buildCFG();
     }
 
     target->finishPass(Pass_CreateCFG);

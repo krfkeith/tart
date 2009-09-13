@@ -209,6 +209,9 @@ public:
   /** Parse a for Stmt */
   Stmt * forStmt();
 
+  /** Parse a repeat Stmt */
+  Stmt * repeatStmt();
+
   /** Parse a classify Stmt */
   Stmt * switchStmt();
 

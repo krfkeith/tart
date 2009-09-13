@@ -223,7 +223,7 @@ Expr * LValueExpr::constValue(Expr * in) {
   if (LValueExpr * lv = dyn_cast<LValueExpr>(in)) {
     if (lv->value()->defnType() == Defn::Let) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
-        if (ConstantExpr * cexp = dyn_cast<ConstantExpr>(var->initValue())) {
+        if (ConstantExpr * cexp = dyn_cast_or_null<ConstantExpr>(var->initValue())) {
           return cexp;
         }
       }

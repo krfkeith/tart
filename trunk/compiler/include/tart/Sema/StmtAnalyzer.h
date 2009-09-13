@@ -112,6 +112,9 @@ public:
   /** Cause a 'return' statement to jump to a block instead of returning. */
   Block * setMacroReturnTarget(Block * blk);
 
+  /** Set the return type - used when doing macro expansion. */
+  Type * setReturnType(Type * returnType);
+
   /** Create a new local scope and make it's parent the current scope.
       Do not yet set it as the current active scope. */
   LocalScope * createLocalScope(const char * scopeName);
@@ -140,6 +143,13 @@ public:
       then jumps back based on the value of that variable.
     */
   void defineLocalProcedure(Block * first, Block * last);
+
+  /** Convert branch instructions which have constant test expressions to unconditional
+      branches. */
+  void optimizeBranches();
+
+  /** Remove any blocks which have no predeccessors. */
+  void removeDeadBlocks();
 
   /** Convert local calls and local returns to branches. */
   void flattenLocalProcedureCalls();
@@ -186,13 +196,13 @@ private:
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
   FunctionDefn * function;
-  Type * returnType;
+  Type * returnType_;
   Type * yieldType_;
   BlockList & blocks;
   BlockList::iterator insertPos_;
   Block * currentBlock_;
   Block * continueTarget_;
-  Block * breakTarget;
+  Block * breakTarget_;
   Block * unwindTarget_;
 
   // The list of cleanup handlers for the current block.

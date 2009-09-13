@@ -12,12 +12,12 @@
 #include <llvm/Constants.h>
 
 namespace tart {
-  
+
 class PrimitiveType;
-  
+
 // Note that the names of these classes has been chosen not to collide
 // with the LLVM constant classes.
-  
+
 /// -------------------------------------------------------------------
 /// Base class for constant expressions.
 class ConstantExpr : public Expr {
@@ -25,7 +25,7 @@ public:
   ConstantExpr(ExprType k, SourceLocation l, Type * t)
     : Expr(k, l, t)
   {}
-  
+
   virtual bool isEqual(const ConstantExpr * cexpr) const = 0;
 
   // Overrides
@@ -54,7 +54,7 @@ public:
     : ConstantExpr(ConstInt, l, t)
     , value_(val)
   {}
-  
+
   llvm::ConstantInt * value() const { return value_; }
 
   /** Return the primitive type of this constant. If the type is an enum, it
@@ -66,7 +66,7 @@ public:
   static ConstantInteger * get(const SourceLocation & loc, Type * type, llvm::ConstantInt * value);
   static ConstantInteger * getSigned(const llvm::APInt & value, PrimitiveType * type);
   static ConstantInteger * getUnsigned(const llvm::APInt & value, PrimitiveType * type);
-  
+
   // Overrides
 
   bool isNegative() const;
@@ -109,7 +109,7 @@ public:
   ConstantString(SourceLocation l, const std::string & val);
 
   const std::string & value() const { return value_; }
-  
+
   // Overrides
 
   bool isEqual(const ConstantExpr * cexpr) const;
@@ -129,7 +129,7 @@ class ConstantNull : public ConstantExpr {
 public:
   ConstantNull(SourceLocation l);
   ConstantNull(SourceLocation l, Type * t);
-  
+
   static ConstantNull * get(const SourceLocation & l, Type * t) {
     return new ConstantNull(l, t);
   }
@@ -154,7 +154,7 @@ private:
 public:
   ConstantType(SourceLocation l, Type * val);
   ConstantType(SourceLocation l, TypeDefn * valDefn);
-  
+
   const Type * value() const { return value_; }
   Type * value() { return value_; }
 
@@ -181,7 +181,7 @@ public:
 
   const ExprList & members() const { return members_; }
   ExprList & members() { return members_; }
-  
+
   Expr * getMemberValue(VariableDefn * member);
   Expr * getMemberValue(const char * name);
   void setMemberValue(VariableDefn * member, Expr * value);

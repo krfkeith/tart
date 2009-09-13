@@ -112,7 +112,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
     // Handle the case where the method is a template, or is contained within a template.
     if (isTemplateMethod) {
-      method = cast<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
+      method = cast_or_null<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
       if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
         return &Expr::ErrorVal;
       }
@@ -134,7 +134,8 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
       int paramIndex = cd->parameterIndex(argIndex);
       ParameterDefn * param = method->functionType()->params()[paramIndex];
-      Type * paramType = cd->paramType(argIndex);
+      Type * paramType = param->type();
+      //Type * paramType = cd->paramType(argIndex);
       DASSERT(paramType->isSingular());
       Expr * argVal = visitExpr(args[argIndex]);
       if (isErrorResult(argVal)) {
@@ -294,16 +295,19 @@ Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingE
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       const PatternVar * var = tsig->patternVar(i);
-      Type * value = env.get(var);
+      const Type * value = env.get(var);
       if (value == NULL || !value->isSingular()) {
-        diag.fatal(loc) << "Unable to deduce template parameters for '" << def << "'";
+        diag.fatal(loc) << "Unable to deduce template parameter '" << var << "' for '" <<
+            Format_Verbose << def << "'";
         return NULL;
       }
     }
 
-    def = tsig->instantiate(loc, env);
+    def = tsig->instantiate(loc, env, true);
+    DASSERT_OBJ(def->isSingular(), def);
   }
 
+  DASSERT_OBJ(def->isSingular(), def);
   return def;
 }
 

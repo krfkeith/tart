@@ -17,11 +17,14 @@ void Formattable::dump() const {
   format(stream);
 }
 
-std::string Formattable::tostr() const {
+const char * Formattable::asString() const {
+  static std::string temp;
   std::stringstream ss;
   FormatStream stream(ss);
+  stream.setFormatOptions(Format_Verbose);
   format(stream);
-  return ss.str();
+  temp = ss.str();
+  return temp.c_str();
 }
 
 // -------------------------------------------------------------------

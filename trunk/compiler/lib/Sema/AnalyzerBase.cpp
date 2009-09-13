@@ -376,8 +376,7 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, DefnList & out) {
   }
 
   if (numNonTypes > 0) {
-    diag.fatal(loc) << "Incompatible definitions for '" <<
-        out.front()->name() << "'";
+    diag.fatal(loc) << "Incompatible definitions for '" << out.front()->name() << "'";
     for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
       diag.info(*it) << *it;
     }
@@ -554,7 +553,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
   }
 
   BindingEnv arrayEnv(arrayTemplate);
-  arrayEnv.bind(arrayTemplate->patternVar(0), elementType);
+  arrayEnv.addSubstitution(arrayTemplate->patternVar(0), elementType);
   return cast<CompositeType>(cast<TypeDefn>(
       arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }

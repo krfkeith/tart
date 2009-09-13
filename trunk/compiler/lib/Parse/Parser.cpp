@@ -1440,6 +1440,10 @@ Stmt * Parser::statement() {
       token = lexer.next();
       return forStmt();
 
+    case Token_Repeat:
+      token = lexer.next();
+      return repeatStmt();
+
     case Token_Switch:
       token = lexer.next();
       return switchStmt();
@@ -1753,6 +1757,15 @@ Stmt * Parser::forStmt() {
   ASTNode * incr = assignmentExpression();
   Stmt * body = bodyStmt();
   return new ForStmt(loc, initExpr, test, incr, body);
+}
+
+Stmt * Parser::repeatStmt() {
+  SourceLocation loc = matchLoc;
+  Stmt * bodySt = bodyStmt();
+  if (bodySt == NULL)
+    return NULL;
+
+  return new WhileStmt(matchLoc, new ASTBoolLiteral(loc, true), bodySt);
 }
 
 Stmt * Parser::switchStmt() {

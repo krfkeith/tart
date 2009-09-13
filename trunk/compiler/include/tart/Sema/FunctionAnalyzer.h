@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_FUNCTIONANALYZER_H
 #define TART_SEMA_FUNCTIONANALYZER_H
 
@@ -10,7 +10,7 @@
 #endif
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// Declaration analyzer
 class FunctionAnalyzer : public DefnAnalyzer {
@@ -23,9 +23,10 @@ public:
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
-  
+
   bool resolveReturnType();
   bool resolveParameterTypes();
+  bool resolveModifiers();
   bool createCFG();
   void warnConflict(
       const SourceLocation & prevLoc, const Type * prevType,

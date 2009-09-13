@@ -106,6 +106,7 @@ struct Conversion {
   Expr * fromValue;
   Expr ** resultValue;
   BindingEnv * bindingEnv;
+  bool matchPatterns;
 
   /** Test conversion from type to type. */
   Conversion(const Type * from);
@@ -233,13 +234,14 @@ public:
 
   // Static utility functions
 
-  /** Given two types, return the one that is more specific, the lower of the two. Returns NULL
-      if neither type is a specialization of the other. */
-  static Type * selectMoreSpecificType(Type * type1, Type * type2);
-
   /** Given two types, return the one that is more general, the higher of the two. Returns NULL
       if neither type is a specialization of the other. */
   static Type * selectLessSpecificType(Type * type1, Type * type2);
+
+  /** Return true if type1 and type2 are type expressions that, when finalized, will
+      reduce to the same type. For example, List[T] is equivalent to List[S] if
+      T is a pattern variable bound to S. */
+  static bool equivalent(const Type * type1, const Type * type2);
 };
 
 /// -------------------------------------------------------------------

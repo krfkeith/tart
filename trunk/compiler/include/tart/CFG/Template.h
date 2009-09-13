@@ -115,7 +115,7 @@ public:
   void addParameter(const SourceLocation & loc, const char * name, Type * type = NULL);
 
   /** Return a specialization of this template. */
-  Defn * instantiate(const SourceLocation & loc, const BindingEnv & env);
+  Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
 
   /** Print the template param list */
   void format(FormatStream & out) const;
@@ -141,11 +141,14 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Module * srcMod, Scope * ps);
+  TemplateInstance(Defn * templateDefn);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
   void setValue(Defn * value) { value_ = value; }
+
+  /** The original template defn for this instance. */
+  Defn * templateDefn() const { return templateDefn_; }
 
   /** The values that are bound to pattern variables. */
   const TypeList & paramValues() const { return paramValues_; }
@@ -157,7 +160,7 @@ public:
 
   /** The module where this template was originally defined; Used for implicit imports
       within the template body. */
-  Module * srcModule() const { return srcModule_; }
+  Module * srcModule() const { return templateDefn_->module(); }
 
   // Overrides
 
@@ -172,11 +175,11 @@ public:
 
 private:
   Defn * value_;                    // The instantiated definition
+  Defn * templateDefn_;             // The template definition from whence this came.
   TypeList paramValues_;            // The list of parameter values.
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
   TypeList templateArgs_;           // Template arguments with substitutions
-  Scope * parentScope_;
-  Module * srcModule_;              // Module where the template was originally defined.
+  Scope * parentScope_;             // Parent scope of this definition.
 };
 
 } // namespace tart

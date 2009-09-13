@@ -36,7 +36,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     paramTypes_.push_back((*p)->type());
   }
 
-  if (m->isTemplate() || m->isTemplateMember()) {
+  if (m->isTemplate() || m->isTemplateMember() || m->isPartialInstantiation()) {
     // Normalize the return type and parameter types, replacing all pattern variables
     // with a pattern value which will eventually contain the inferred type for that
     // variable.
@@ -51,7 +51,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
             PatternVar * var = ts->patternVar(i);
             Type * value = bindingEnv_.get(var);
             if (value == NULL) {
-              bindingEnv_.bind(var, new PatternValue(&bindingEnv_, var));
+              bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
             }
           }
 
@@ -161,12 +161,16 @@ ConversionRank CallCandidate::updateConversionRank() {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     Type * paramType = this->paramType(argIndex);
-    conversionRank_ = std::min(conversionRank_, paramType->convert(argExpr));
+    Conversion cn(argExpr);
+    cn.matchPatterns = true;
+    conversionRank_ = std::min(conversionRank_, paramType->convert(cn));
   }
 
   Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
-    conversionRank_ = std::min(conversionRank_, expectedReturnType->convert(resultType_));
+    Conversion cn(resultType_);
+    cn.matchPatterns = true;
+    conversionRank_ = std::min(conversionRank_, expectedReturnType->convert(cn));
   }
 
   return conversionRank_;

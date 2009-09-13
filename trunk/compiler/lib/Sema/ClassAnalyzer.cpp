@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Block.h"
 #include "tart/Common/Diagnostics.h"
@@ -82,6 +83,14 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   if (target->isTemplate()) {
     // Get the template scope and set it as the active scope.
     analyzeTemplateSignature(target);
+    if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  if (target->isTemplateMember()) {
     return true;
   }
 
@@ -136,7 +145,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   }
 
   CompositeType * type = cast<CompositeType>(target->typeValue());
-  DASSERT_OBJ(type->isSingular(), type);
+  bool isFromTemplate =
+      target->isTemplate() || target->isTemplateMember() || target->isPartialInstantiation();
+  DASSERT_OBJ(isFromTemplate || type->isSingular(), type);
   DASSERT_OBJ(type->super() == NULL, type);
 
   // Check for valid finality
@@ -153,6 +164,10 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   const ASTNodeList & astBases = ast->bases();
   CompositeType * primaryBase = NULL;
   TypeAnalyzer ta(moduleForDefn(target), target->definingScope());
+  if (target->isTemplate()) {
+    ta.setActiveScope(&target->templateSignature()->paramScope());
+  }
+
   for (ASTNodeList::const_iterator it = astBases.begin(); it != astBases.end(); ++it) {
     Type * baseType = ta.typeFromAST(*it);
     if (isErrorResult(baseType)) {
@@ -165,7 +180,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
       return false;
     }
 
-    if (!baseType->isSingular()) {
+    if (!baseType->isSingular() && !isFromTemplate) {
       diag.error(*it) << "Base type '" << baseDefn << "' is a template, not a type";
       return false;
     }
@@ -223,7 +238,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     // Add an external reference to this base (does nothing if it's defined
     // by this module.)
     CompositeType * baseClass = cast<CompositeType>(baseType);
-    baseClass->addBaseXRefs(module);
+    if (baseClass->isSingular()) {
+      baseClass->addBaseXRefs(module);
+    }
 
     if (isPrimary) {
       primaryBase = baseClass;
