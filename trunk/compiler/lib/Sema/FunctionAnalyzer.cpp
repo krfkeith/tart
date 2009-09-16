@@ -157,7 +157,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
-      analyzeTypeDefn(selfType, Task_PrepMemberLookup);
+      analyzeType(selfType->typeValue(), Task_PrepMemberLookup);
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);

@@ -112,7 +112,7 @@ Type * Builtins::loadSystemType(const char * name) {
 Defn * Builtins::getSingleDefn(Type * type, const char * name) {
   DefnList defs;
   if (CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    AnalyzerBase::analyzeTypeDefn(ctype->typeDefn(), Task_PrepMemberLookup);
+    AnalyzerBase::analyzeType(ctype, Task_PrepMemberLookup);
     if (!ctype->lookupMember(name, defs, false)) {
       DFAIL("Couldn't find system definition");
     }
@@ -142,7 +142,7 @@ void Builtins::loadSystemClasses() {
   typeEnum = loadSystemType("tart.reflect.Enum");
 
   // Make sure object class gets analyzed
-  AnalyzerBase::analyzeTypeDefn(typeObject->typeDefn(), Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
 
   // Get the function that tests for a type
   funcHasBase = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "hasBase"));

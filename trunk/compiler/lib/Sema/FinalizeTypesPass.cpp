@@ -135,7 +135,6 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       int paramIndex = cd->parameterIndex(argIndex);
       ParameterDefn * param = method->functionType()->params()[paramIndex];
       Type * paramType = param->type();
-      //Type * paramType = cd->paramType(argIndex);
       DASSERT(paramType->isSingular());
       Expr * argVal = visitExpr(args[argIndex]);
       if (isErrorResult(argVal)) {
@@ -248,6 +247,40 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
   return &Expr::ErrorVal;
 }
+
+#if 0
+Expr * FinalizeTypesPass::visitFnCall(FnCallExpr * in) {
+  if (in->areTypesFinalized()) {
+    return in;
+  }
+
+  in->setTypesFinalized(true);
+  FunctionDefn * fn = in->function();
+  if (fn == NULL || !AnalyzerBase::analyzeValueDefn(fn, Task_PrepCallOrUse)) {
+    return &Expr::ErrorVal;
+  }
+
+  in->setSelfArg(visitExpr(in->selfArg()));
+  ExprList & args = in->args();
+  size_t argCount = in->argCount();
+  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+    ParameterDefn * param = fn->functionType()->params()[argIndex];
+    Type * paramType = param->internalType();
+    DASSERT(paramType->isSingular());
+    Expr * argVal = visitExpr(args[argIndex]);
+    Expr * castArgVal = addCastIfNeeded(argVal, paramType);
+    if (castArgVal == NULL) {
+      diag.error(argVal) << "Unable to convert argument of type " << argVal->type() <<
+      " to " << paramType;
+      return &Expr::ErrorVal;
+    }
+
+    args[argIndex] = castArgVal;
+  }
+
+  return in;
+}
+#endif
 
 Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
   // First perform pattern substitutions on the parent definition.

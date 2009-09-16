@@ -94,6 +94,7 @@ protected:
   const char * name_;
   DeclModifiers modifiers_;
   ASTDeclList members_;
+  ASTNodeList imports_;
   ASTNodeList attributes_;
   std::string docComment_;
 
@@ -113,6 +114,10 @@ public:
   /** The list of member definitions. */
   const ASTDeclList & members() const { return members_; }
   ASTDeclList & members() { return members_; }
+
+  /** The list of imports. */
+  const ASTNodeList & imports() const { return imports_; }
+  ASTNodeList & imports() { return imports_; }
 
   /** Add a new member to this decl. */
   void addMember(ASTDecl * member) { members_.push_back(member); }

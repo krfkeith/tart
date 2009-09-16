@@ -76,7 +76,7 @@ public:
   bool parse();
 
   /** Parse the import section. */
-  bool parseImports();
+  bool parseImports(ASTNodeList & out);
 
   /** Parse a declaration list. */
   bool declarationList(ASTDeclList & dlist, DeclModifiers mods);
@@ -113,6 +113,9 @@ public:
 
   /** Parse an enumeration declaration. */
   ASTDecl * declareEnum(const DeclModifiers & mods);
+
+  /** Parse a type alias. */
+  ASTDecl * declareTypealias(const DeclModifiers & mods);
 
   /** Parse a property accessor definition. */
   bool accessorMethodList(ASTPropertyDecl * property,

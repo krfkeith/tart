@@ -50,7 +50,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   /** Array element access. */
   def [index:int]:ElementType {
     get {
-      Preconditions.checkArgument(index >= 0);
+      Preconditions.checkIndex(index >= 0);
       return self.data[index];
     }
     set {

@@ -189,6 +189,36 @@ public:
 template<int type>
 BinaryOpFunction<type, Instruction::Xor> BitwiseXorDecl<type>::value("infixBitXor");
 
+/** The builtin shift left operator. */
+template<int type>
+class OperatorLShiftDecl {
+public:
+  static BinaryOpFunction<type, Instruction::Shl> value;
+};
+
+template<int type>
+BinaryOpFunction<type, Instruction::Shl> OperatorLShiftDecl<type>::value("infixLShift");
+
+/** The builtin arithmetic shift right operator. */
+template<int type>
+class OperatorARShiftDecl {
+public:
+  static BinaryOpFunction<type, Instruction::AShr> value;
+};
+
+template<int type>
+BinaryOpFunction<type, Instruction::AShr> OperatorARShiftDecl<type>::value("infixRShift");
+
+/** The builtin logical shift right operator. */
+template<int type>
+class OperatorRShiftDecl {
+public:
+  static BinaryOpFunction<type, Instruction::LShr> value;
+};
+
+template<int type>
+BinaryOpFunction<type, Instruction::LShr> OperatorRShiftDecl<type>::value("infixRShift");
+
 /** Comparison op */
 template<int typ, CmpInst::Predicate pred>
 class ComparisonOp : public FunctionDefn {
@@ -645,6 +675,26 @@ void Builtins::initOperators() {
   module.addMember(&BitwiseXorDecl<TypeId_UInt32>::value);
   module.addMember(&BitwiseXorDecl<TypeId_UInt64>::value);
   module.addMember(&BitwiseXorDecl<TypeId_UnsizedInt>::value);
+
+  module.addMember(&OperatorLShiftDecl<TypeId_SInt8>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_SInt16>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_SInt32>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_SInt64>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_UInt8>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_UInt16>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_UInt32>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_UInt64>::value);
+  module.addMember(&OperatorLShiftDecl<TypeId_UnsizedInt>::value);
+
+  module.addMember(&OperatorARShiftDecl<TypeId_SInt8>::value);
+  module.addMember(&OperatorARShiftDecl<TypeId_SInt16>::value);
+  module.addMember(&OperatorARShiftDecl<TypeId_SInt32>::value);
+  module.addMember(&OperatorARShiftDecl<TypeId_SInt64>::value);
+  module.addMember(&OperatorRShiftDecl<TypeId_UInt8>::value);
+  module.addMember(&OperatorRShiftDecl<TypeId_UInt16>::value);
+  module.addMember(&OperatorRShiftDecl<TypeId_UInt32>::value);
+  module.addMember(&OperatorRShiftDecl<TypeId_UInt64>::value);
+  module.addMember(&OperatorARShiftDecl<TypeId_UnsizedInt>::value);
 
   compileBuiltins(infixEqSrc);
   compileBuiltins(infixNeSrc);

@@ -14,6 +14,7 @@ def integerToStringTest() {
   Debug.assertEq("1", ushort(1).toString());
   Debug.assertEq("1", uint(1).toString());
   Debug.assertEq("1", ulong(1).toString());
+  Debug.assertEq("A", char(65).toString());
 }
 
 def integerLimitsTest() {
@@ -36,4 +37,7 @@ def integerLimitsTest() {
   Debug.assertEq(0xffff, ushort.maxVal);
   Debug.assertEq(0xffffffff, uint.maxVal);
   Debug.assertEq(0xffffffffffffffff, ulong.maxVal);
+
+  Debug.assertEq(0, char.minVal);
+  Debug.assertEq(0xffffffff, char.maxVal);
 }

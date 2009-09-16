@@ -170,7 +170,7 @@ void FunctionDefn::format(FormatStream & out) const {
     out << "def ";
   }
 
-  if (out.getShowQualifiedName()) {
+  if (out.getShowQualifiedName() && !qname_.empty()) {
     out << qname_;
   } else {
     out << name_;

@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     SourceFile source(filePath.toString());
     Module module(&source, filePath.getBasename(), &Builtins::module);
     Parser parser(&source, &module);
-    if (!parser.parseImports()) {
+    if (!parser.parseImports(module.imports())) {
       break;
     }
 

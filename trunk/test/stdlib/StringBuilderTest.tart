@@ -5,5 +5,9 @@ def main(args:String[]) -> int {
 }
 
 def emptyStringBuilderTest() {
-  Debug.assertFalse(false);
+  let sb = StringBuilder();
+  Debug.assertEq(0, sb.length);
+}
+
+def testStringBuilderAppend() {
 }

@@ -389,6 +389,7 @@ class FnCallExpr : public ArglistExpr {
 private:
   FunctionDefn * function_;
   Expr * selfArg_;
+  bool typesFinalized_;
 
 public:
   FnCallExpr(ExprType k, const SourceLocation & loc, FunctionDefn * function,
@@ -396,6 +397,7 @@ public:
     : ArglistExpr(k, loc, NULL)
     , function_(function)
     , selfArg_(self)
+    , typesFinalized_(false)
   {}
 
   /** The function expression being called. */
@@ -406,6 +408,10 @@ public:
   /** The 'self' argument. */
   Expr * selfArg() const { return selfArg_; }
   void setSelfArg(Expr * self) { selfArg_ = self; }
+
+  /** Whether FinalizeTypes has run on this expression. */
+  bool areTypesFinalized() const { return typesFinalized_; }
+  void setTypesFinalized(bool value) { typesFinalized_ = value; }
 
   // Overridden methods
 

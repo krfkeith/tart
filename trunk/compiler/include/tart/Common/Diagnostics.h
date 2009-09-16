@@ -34,10 +34,9 @@ namespace tart {
     diag.assertionFailedMsg(msg, __FILE__, __LINE__); \
   } else (void)0
 
-#define DASSERT_OBJ(expression, obj) \
+#define DASSERT_OBJ(expression, ctx) \
   if (!(expression)) { \
-    diag.debug() << Format_Type << "Assertion failure context = " << obj; \
-    diag.assertionFailed(#expression, __FILE__, __LINE__); \
+    diag.assertionFailed(#expression, __FILE__, __LINE__, ctx); \
   } else (void)0
 
 #define DFAIL(msg) \
@@ -282,8 +281,20 @@ public:
   void writeLnIndent(char * msg, ...);
 
   /** Assertion failure. */
-  void NORETURN(assertionFailed(const char * expr, const char * fname,
-      unsigned lineno));
+  void NORETURN(assertionFailed(const char * expr, const char * fname, unsigned lineno));
+
+  /** Assertion failure. */
+  template<class T>
+  void NORETURN(assertionFailed(
+      const char * expr, const char * fname, unsigned lineno, const T & obj)) {
+    std::stringstream ss;
+    FormatStream stream(ss);
+    stream.setFormatOptions(Format_Verbose);
+    stream << expr;
+    stream << ", context = ";
+    stream << obj;
+    assertionFailed(ss.str().c_str(), fname, lineno);
+  }
 
   /** Fatal compiler error. */
   void NORETURN(fail(const char * msg, const char * fname, unsigned lineno));

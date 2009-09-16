@@ -272,7 +272,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, ConstantType * typeExpr, const A
   }
 
   // First thing we need to know is how much tdef has been analyzed.
-  if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse)) {
+  if (!AnalyzerBase::analyzeType(type, Task_PrepCallOrUse)) {
     return &Expr::ErrorVal;
   }
 

@@ -3,16 +3,16 @@
 public final class StringBuilder {
   private {
     var value:char[];
-    var _length:int;
+    var len:int;
 
     def grow(amount:int) {
-      let newSize = self._length + amount;
+      let newSize = self.len + amount;
       if value.length < newSize {
         let newValue = char[](newSize + newSize / 2 + 16);
-        char[].copy(newValue, 0, value, 0, self._length);
+        char[].copy(newValue, 0, value, 0, self.len);
       }
 
-      self._length = newSize;
+      self.len = newSize;
     }
     
     static def insertionCount(inputLength:int, start:int, count:int) -> int {
@@ -28,25 +28,25 @@ public final class StringBuilder {
 
   def construct() {
     value = char[](0);
-    self._length = 0;
+    self.len = 0;
   }
 
   def construct(s:String, start:int = 0, count:int = int.maxVal) {
     value = char[](0); // s.toArray()
-    self._length = s.length;
+    self.len = s.length;
   }
 
   def construct(c:char[], start:int = 0, count:int = int.maxVal) {
     value = char[](0); // s.toArray()
-    self._length = c.length;
+    self.len = c.length;
   }
   
   def length:int {
-    get { return self._length; }
+    get { return self.len; }
   }
 
   def append(c:char) {
-    let n = self._length;
+    let n = self.len;
     grow(1);
     value[n] = c;
   }
@@ -58,7 +58,7 @@ public final class StringBuilder {
   }
   
   def append(s:Iterator[char]) {
-    insert(self._length, s);
+    insert(self.len, s);
   }
   
   def insert(n:int, c:char) {
@@ -75,7 +75,7 @@ public final class StringBuilder {
       as sequence:HasLength {
         grow(int(sequence.length));
         for c in s {
-          value[self._length++] = c;
+          value[self.len++] = c;
         }
       } else {
       }

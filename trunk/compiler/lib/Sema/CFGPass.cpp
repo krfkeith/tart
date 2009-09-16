@@ -191,13 +191,13 @@ Expr * CFGPass::visitPostAssign(AssignmentExpr * in) {
 }
 
 Expr * CFGPass::visitCall(CallExpr * in) {
-  in->setFunction(visitExpr(in->function()));
+  //in->setFunction(visitExpr(in->function()));
   visitExprArgs(in);
   return in;
 }
 
 Expr * CFGPass::visitFnCall(FnCallExpr * in) {
-  visit(in->function());
+  //visit(in->function());
   in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);
   return in;

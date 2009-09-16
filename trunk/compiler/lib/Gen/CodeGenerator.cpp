@@ -418,4 +418,13 @@ Function * CodeGenerator::findMethod(const CompositeType * type, const char * me
   return genFunctionValue(fn);
 }
 
+bool CodeGenerator::requiresImplicitDereference(const Type * type) {
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
+    return ctype->typeClass() == Type::Struct;
+  }
+
+  return false;
+}
+
+
 }
