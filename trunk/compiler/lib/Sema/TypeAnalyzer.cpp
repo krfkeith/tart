@@ -49,7 +49,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         TypeDefn * tdef = static_cast<TypeDefn *>(typeList.front());
         Type * type = tdef->typeValue();
         if (type->typeClass() == Type::NativePointer) {
-          AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepCallOrUse);
+          AnalyzerBase::analyzeType(type, Task_PrepCallOrUse);
           //analyzeLater(tdef);
           //DFAIL("Implement");
           //NativePointerTypeAnalyzer(
@@ -184,7 +184,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
 bool TypeAnalyzer::analyzeTypeExpr(Type * type) {
   TypeDefn * de = type->typeDefn();
   if (de != NULL) {
-    analyzeTypeDefn(de, Task_PrepMemberLookup);
+    analyzeType(type, Task_PrepMemberLookup);
     if (de->isSingular()) {
       analyzeLater(de);
     }

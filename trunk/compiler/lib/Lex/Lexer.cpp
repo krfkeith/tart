@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Lex/Lexer.h"
+#include "tart/Common/Diagnostics.h"
 #include <algorithm>
 
 namespace tart {
@@ -60,6 +61,7 @@ namespace {
 
         case 'd':
           if (strcmp(kw, "def") == 0) return Token_Def;
+          if (strcmp(kw, "defover") == 0) return Token_Def;
           if (strcmp(kw, "double") == 0) return Token_DoubleType;
           break;
 
@@ -145,7 +147,7 @@ namespace {
           if (strcmp(kw, "try") == 0) return Token_Try;
           if (strcmp(kw, "throw") == 0) return Token_Throw;
           if (strcmp(kw, "true") == 0) return Token_True;
-          if (strcmp(kw, "typeof") == 0) return Token_TypeOf;
+          if (strcmp(kw, "typealias") == 0) return Token_Typealias;
           break;
 
         case 'u':
@@ -184,68 +186,71 @@ namespace {
 
 Lexer::Lexer(ProgramSource * src)
     : srcFile_(src)
-    , stream_(src->open()) {
+    , stream_(src->open())
+    , errorCode_(ERROR_NONE)
+{
   readCh();
-  lineStartOffset = tokenStartOffset = currentOffset = 0;
+  lineStartOffset_ = tokenStartOffset_ = currentOffset_ = 0;
   tokenLocation_.file = srcFile_->get();
   tokenLocation_.begin = 0;
   tokenLocation_.end = 0;
-  lineIndex = 1;
+  lineIndex_ = 1;
 }
 
 inline void Lexer::readCh() {
-  ch = stream_.get();
-  if (ch >= 0)
-    currentOffset++;
+  ch_ = stream_.get();
+  if (ch_ >= 0) {
+    currentOffset_++;
+  }
 }
 
 TokenType Lexer::next() {
 
   // Whitespace loop
   for (;;) {
-    if (ch < 0) {
-      srcFile_->newLine(currentOffset);
+    if (ch_ < 0) {
+      srcFile_->newLine(currentOffset_);
       return Token_End;
-    } else if (ch == ' ' || ch == '\t' || ch == '\b') {
+    } else if (ch_ == ' ' || ch_ == '\t' || ch_ == '\b') {
       // Horizontal whitespace
       readCh();
-    } else if (ch == '\n') {
+    } else if (ch_ == '\n') {
       // Linefeed
       readCh();
-      srcFile_->newLine(currentOffset);
-      lineStartOffset = currentOffset;
-      lineIndex += 1;
-    } else if (ch == '\r') {
+      srcFile_->newLine(currentOffset_);
+      lineStartOffset_ = currentOffset_;
+      lineIndex_ += 1;
+    } else if (ch_ == '\r') {
       // Carriage return. Look for CRLF pair and count as 1 line.
       readCh();
-      if (ch == '\n') {
+      if (ch_ == '\n') {
         readCh();
       }
-      srcFile_->newLine(currentOffset);
-      lineStartOffset = currentOffset;
-      lineIndex += 1;
-    } else if (ch == '/') {
+      srcFile_->newLine(currentOffset_);
+      lineStartOffset_ = currentOffset_;
+      lineIndex_ += 1;
+    } else if (ch_ == '/') {
       // Check for comment start
       readCh();
       bool inDocComment = false;
-      if (ch == '/') {
+      if (ch_ == '/') {
         readCh();
-        if (ch == '/') {
+        if (ch_ == '/') {
           // Doc comment
           readCh();
           inDocComment = true;
         }
 
-        while (ch >= 0 && ch != '\n' && ch != '\r') {
+        while (ch_ >= 0 && ch_ != '\n' && ch_ != '\r') {
           if (inDocComment)
-            docComment_.push_back(ch);
+            docComment_.push_back(ch_);
           readCh();
         }
         if (inDocComment)
           docComment_.push_back('\n');
-      } else if (ch == '*') {
+      } else if (ch_ == '*') {
         readCh();
-        if (ch == '*') {
+        if (ch_ == '*') {
           // Doc comment
           readCh();
           inDocComment = true;
@@ -253,13 +258,13 @@ TokenType Lexer::next() {
         }
 
         for (;;) {
-          if (ch < 0) {
-            // TODO: Flag an error
+          if (ch_ < 0) {
+            errorCode_ = UNTERMINATED_COMMENT;
             return Token_Error;
           }
-          if (ch == '*') {
+          if (ch_ == '*') {
             readCh();
-            if (ch == '/') {
+            if (ch_ == '/') {
               readCh();
               break;
             } else {
@@ -268,23 +273,23 @@ TokenType Lexer::next() {
               // Push the star we skipped, and reprocess the following char
             }
           } else {
-            if (ch == '\r' || ch == '\n') {
+            if (ch_ == '\r' || ch_ == '\n') {
               // Carriage return.
               // Look for CRLF pair and count as 1 line.
-              if (ch == '\r') {
+              if (ch_ == '\r') {
                 readCh();
               }
-              if (ch == '\n') {
+              if (ch_ == '\n') {
                 readCh();
               }
               if (inDocComment)
                 docComment_.push_back('\n');
-              srcFile_->newLine(currentOffset);
-              lineStartOffset = currentOffset;
-              lineIndex += 1;
+              srcFile_->newLine(currentOffset_);
+              lineStartOffset_ = currentOffset_;
+              lineIndex_ += 1;
             } else {
               if (inDocComment)
-                docComment_.push_back(ch);
+                docComment_.push_back(ch_);
               readCh();
             }
           }
@@ -293,7 +298,7 @@ TokenType Lexer::next() {
           docComment_.push_back('\n');
       } else {
         // What comes after a '/' char.
-        if (ch == '=') {
+        if (ch_ == '=') {
           readCh();
           return Token_AssignSlash;
         }
@@ -304,16 +309,16 @@ TokenType Lexer::next() {
     }
   }
 
-  tokenStartOffset = currentOffset;
-  tokenLocation_.begin = currentOffset;
+  tokenStartOffset_ = currentOffset_;
+  tokenLocation_.begin = currentOffset_;
 
   // Identifier
-  if (isNameStartChar(ch)) {
+  if (isNameStartChar(ch_)) {
     tokenValue_.clear();
-    tokenValue_.push_back(ch);
+    tokenValue_.push_back(ch_);
     readCh();
-    while (isNameChar(ch)) {
-      tokenValue_.push_back(ch);
+    while (isNameChar(ch_)) {
+      tokenValue_.push_back(ch_);
       readCh();
     }
 
@@ -322,19 +327,19 @@ TokenType Lexer::next() {
   }
 
   // Number
-  if (isDigitChar(ch) || ch == '.') {
+  if (isDigitChar(ch_) || ch_ == '.') {
     bool isFloat = false;
     tokenValue_.clear();
 
     // Hex number check
-    if (ch == '0') {
+    if (ch_ == '0') {
       tokenValue_.push_back('0');
       readCh();
-      if (ch == 'X' || ch == 'x') {
+      if (ch_ == 'X' || ch_ == 'x') {
         tokenValue_.push_back('x');
         readCh();
-        while (isHexDigitChar(ch)) {
-          tokenValue_.push_back(ch);
+        while (isHexDigitChar(ch_)) {
+          tokenValue_.push_back(ch_);
           readCh();
         }
 
@@ -343,23 +348,23 @@ TokenType Lexer::next() {
     }
 
     // Integer part
-    while (isDigitChar(ch)) {
-      tokenValue_.push_back(ch);
+    while (isDigitChar(ch_)) {
+      tokenValue_.push_back(ch_);
       readCh();
     }
 
     // Fractional part
-    if (ch == '.') {
+    if (ch_ == '.') {
       readCh();
 
       // Special case of '..' range token and '...' ellipsis token.
-      if (ch == '.') {
+      if (ch_ == '.') {
         if (!tokenValue_.empty()) {
           stream_.putback('.');
           return Token_Integer;
         }
         readCh();
-        if (ch == '.') {
+        if (ch_ == '.') {
           readCh();
           return Token_Ellipsis;
         }
@@ -368,7 +373,7 @@ TokenType Lexer::next() {
 
       // Check for case where this isn't a decimal point,
       // but just a dot token.
-      if (!isDigitChar(ch) && tokenValue_.empty()) {
+      if (!isDigitChar(ch_) && tokenValue_.empty()) {
         return Token_Dot;
       }
 
@@ -376,30 +381,30 @@ TokenType Lexer::next() {
       isFloat = true;
 
       tokenValue_.push_back('.');
-      while (isDigitChar(ch)) {
-        tokenValue_.push_back(ch);
+      while (isDigitChar(ch_)) {
+        tokenValue_.push_back(ch_);
         readCh();
       }
     }
 
     // Exponent part
-    if ((ch == 'e' || ch == 'E')) {
+    if ((ch_ == 'e' || ch_ == 'E')) {
       isFloat = true;
-      tokenValue_.push_back(ch);
+      tokenValue_.push_back(ch_);
       readCh();
-      if ((ch == '+' || ch == '-')) {
-        tokenValue_.push_back(ch);
+      if ((ch_ == '+' || ch_ == '-')) {
+        tokenValue_.push_back(ch_);
         readCh();
       }
-      while (isDigitChar(ch)) {
-        tokenValue_.push_back(ch);
+      while (isDigitChar(ch_)) {
+        tokenValue_.push_back(ch_);
         readCh();
       }
     }
 
-    if ((ch == 'f' || ch == 'F')) {
+    if ((ch_ == 'f' || ch_ == 'F')) {
       isFloat = true;
-      tokenValue_.push_back(ch);
+      tokenValue_.push_back(ch_);
       readCh();
     }
 
@@ -411,10 +416,10 @@ TokenType Lexer::next() {
   }
 
   // Punctionation
-  switch (ch) {
+  switch (ch_) {
     case ':':
       readCh();
-      if (ch == ':') {
+      if (ch_ == ':') {
         readCh();
         return Token_DoubleColon;
       }
@@ -422,11 +427,11 @@ TokenType Lexer::next() {
 
     case '+':
       readCh();
-      if (ch == '+') {
+      if (ch_ == '+') {
         readCh();
         return Token_Increment;
       }
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignPlus;
       }
@@ -434,15 +439,15 @@ TokenType Lexer::next() {
 
     case '-':
       readCh();
-      if (ch == '-') {
+      if (ch_ == '-') {
         readCh();
         return Token_Decrement;
       }
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignMinus;
       }
-      if (ch == '>') {
+      if (ch_ == '>') {
         readCh();
         return Token_ReturnType;
       }
@@ -450,7 +455,7 @@ TokenType Lexer::next() {
 
     case '*':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignStar;
       }
@@ -458,7 +463,7 @@ TokenType Lexer::next() {
 
     case '%':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignPercent;
       }
@@ -466,7 +471,7 @@ TokenType Lexer::next() {
 
     case '^':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignCaret;
       }
@@ -474,11 +479,11 @@ TokenType Lexer::next() {
 
     case '|':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignBar;
       }
-      if (ch == '|') {
+      if (ch_ == '|') {
         readCh();
         return Token_DoubleBar;
       }
@@ -486,11 +491,11 @@ TokenType Lexer::next() {
 
     case '&':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignAmpersand;
       }
-      if (ch == '&') {
+      if (ch_ == '&') {
         readCh();
         return Token_DoubleAmp;
       }
@@ -498,7 +503,7 @@ TokenType Lexer::next() {
 
     case '~':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_AssignTilde;
       }
@@ -506,21 +511,21 @@ TokenType Lexer::next() {
 
     case '>':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
-        if (ch == '?') {
+        if (ch_ == '?') {
           readCh();
           return Token_PossGreaterEqual;
         }
         return Token_GreaterEqual;
       }
-      if (ch == '?') {
+      if (ch_ == '?') {
         readCh();
         return Token_PossGreater;
       }
-      if (ch == '>') {
+      if (ch_ == '>') {
         readCh();
-        if (ch == '=') {
+        if (ch_ == '=') {
           readCh();
           return Token_AssignRShift;
         }
@@ -530,21 +535,21 @@ TokenType Lexer::next() {
 
     case '<':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
-        if (ch == '?') {
+        if (ch_ == '?') {
           readCh();
           return Token_PossLessEqual;
         }
         return Token_LessEqual;
       }
-      if (ch == '?') {
+      if (ch_ == '?') {
         readCh();
         return Token_PossLess;
       }
-      if (ch == '<') {
+      if (ch_ == '<') {
         readCh();
-        if (ch == '=') {
+        if (ch_ == '=') {
           readCh();
           return Token_AssignLShift;
         }
@@ -554,7 +559,7 @@ TokenType Lexer::next() {
 
     case '=':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_Equal;
       }
@@ -562,7 +567,7 @@ TokenType Lexer::next() {
 
     case '!':
       readCh();
-      if (ch == '=') {
+      if (ch_ == '=') {
         readCh();
         return Token_NotEqual;
       }
@@ -616,18 +621,19 @@ TokenType Lexer::next() {
     case '\'': {
         // String literal
         tokenValue_.clear();
-        char quote = ch;
+        char quote = ch_;
+        int charCount = 0;
         readCh();
         for (;;) {
-          if (ch < 0) {
-            // TODO: Report it
+          if (ch_ < 0) {
+            errorCode_ = UNTERMINATED_STRING;
             return Token_Error;
-          } else if (ch == quote) {
+          } else if (ch_ == quote) {
             readCh();
             break;
-          } else if (ch == '\\') {
+          } else if (ch_ == '\\') {
             readCh();
-            switch (ch) {
+            switch (ch_) {
               case '0':
                 tokenValue_.push_back('\0');
                 readCh();
@@ -664,39 +670,87 @@ TokenType Lexer::next() {
                 tokenValue_.push_back('\v');
                 readCh();
                 break;
-              case 'x':
+              case 'x': {
+                // Parse a hexidecimal character in a string.
+                char charbuf[3];
+                size_t  len = 0;
+                readCh();
+                while (isHexDigitChar(ch_) && len < 2) {
+                  charbuf[len++] = ch_;
+                  readCh();
+                }
+
+                if (len == 0) {
+                  errorCode_ = MALFORMED_ESCAPE_SEQUENCE;
+                  return Token_Error;
+                }
+
+                charbuf[len] = 0;
+                long charVal = strtoul(charbuf, NULL, 16);
+                tokenValue_.push_back(charVal);
+                break;
+              }
+
               case 'u':
               case 'U': {
-                  // Parse a hexidecimal character in a string.
-                  size_t maxLen = (ch == 'x' ? 2 : (ch == 'u' ? 4 : 8));
+                  // Parse a unicode character literal in a string.
+                  size_t maxLen = (ch_ == 'u' ? 4 : 8);
                   char charbuf[9];
                   size_t  len = 0;
                   readCh();
-                  while (isHexDigitChar(ch) && len < maxLen) {
-                    charbuf[len++] = ch;
+                  while (isHexDigitChar(ch_) && len < maxLen) {
+                    charbuf[len++] = ch_;
                     readCh();
                   }
                   if (len == 0) {
                     // TODO: Report it
+                    errorCode_ = MALFORMED_ESCAPE_SEQUENCE;
                     return Token_Error;
                   }
+
                   charbuf[len] = 0;
-                  tokenValue_.push_back(strtoul(charbuf, NULL, 16));
+                  long charVal = strtoul(charbuf, NULL, 16);
+
+                  if (quote == '"') {
+                    if (!encodeUnicodeChar(charVal)) {
+                      errorCode_ = INVALID_UNICODE_CHAR;
+                      return Token_Error;
+                    }
+                  } else {
+                    // For character literals, since the token value is a string, then just
+                    // encode it as a hex number.
+                    len = snprintf(charbuf, 9, "%0.8x", charVal);
+                    tokenValue_.append(charbuf, len);
+                  }
+
                   break;
                 }
               default:
-                tokenValue_.push_back(ch);
+                tokenValue_.push_back(ch_);
                 readCh();
                 break;
             }
-          } else if (ch >= ' ') {
-            tokenValue_.push_back(ch);
+          } else if (ch_ >= ' ') {
+            tokenValue_.push_back(ch_);
             readCh();
           } else {
-            // TODO: Report it
+            errorCode_ = ILLEGAL_CHAR;
             return Token_Error;
           }
+
+          ++charCount;
         }
+
+        if (quote == '\'') {
+          if (charCount != 1) {
+            errorCode_ = (charCount == 0 ? EMPTY_CHAR_LITERAL : MULTI_CHAR_LITERAL);
+            return Token_Error;
+          }
+          return Token_Char;
+        } else {
+          return Token_String;
+        }
+
         return quote == '"' ? Token_String : Token_Char;
       }
 
@@ -704,8 +758,31 @@ TokenType Lexer::next() {
       break;
   }
 
-  // TODO: Report it
+  errorCode_ = ILLEGAL_CHAR;
   return Token_Error;
+}
+
+bool Lexer::encodeUnicodeChar(long charVal) {
+  if (charVal < 0x80) {
+    tokenValue_.push_back(charVal);
+  } else if (charVal < 0x800) {
+    tokenValue_.push_back(0xc0 | (charVal >> 6));
+    tokenValue_.push_back(0x80 | (charVal & 0x3f));
+  } else if (charVal < 0x10000) {
+    tokenValue_.push_back(0xe0 | (charVal >> 12));
+    tokenValue_.push_back(0x80 | ((charVal >> 6) & 0x3f));
+    tokenValue_.push_back(0x80 | (charVal & 0x3f));
+  } else if (charVal < 0x100000) {
+    tokenValue_.push_back(0xf0 | (charVal >> 18));
+    tokenValue_.push_back(0x80 | ((charVal >> 12) & 0x3f));
+    tokenValue_.push_back(0x80 | ((charVal >> 6) & 0x3f));
+    tokenValue_.push_back(0x80 | (charVal & 0x3f));
+  } else {
+    errorCode_ = INVALID_UNICODE_CHAR;
+    return false;
+  }
+
+  return true;
 }
 
 }

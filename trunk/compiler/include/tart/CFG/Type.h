@@ -78,11 +78,9 @@ enum ConversionRank {
   IntegerToBool,     // let x:bool = 256     Compare with 0
 
   // Rank 2: Non-lossy conversions
-//  BoolToInteger = 0x0200,     // let x:int = true     x ? 1 : 0
   NonPreferred,      // let x:int = 1.0      Requires transformation
 
   // Rank 3-4: Trivial conversions
-//  ConstSignChange = 0x0300,   // let x:ubyte = int(1) Silent change of sign
   ExactConversion,   // let x:byte = int(1)  Lossless conversion
 
   // Rank 5: Type strengthening required (i.e. T -> int)

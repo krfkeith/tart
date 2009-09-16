@@ -96,6 +96,7 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
 
   if (functions_[id] == NULL) {
     char funcName[32];
+    DASSERT(ptype != &UnsizedIntType::instance);
     snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
 
     const llvm::Type * funcType = fn->type()->irType();
@@ -177,7 +178,11 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
-  return cg.builder().CreateTrunc(diffVal, cg.builder().getInt32Ty());
+  if (call->type() == &IntType::instance) {
+    return cg.builder().CreateTrunc(diffVal, cg.builder().getInt32Ty());
+  } else {
+    return diffVal;
+  }
 }
 
 // -------------------------------------------------------------------

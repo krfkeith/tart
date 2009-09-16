@@ -91,9 +91,6 @@ public:
   static bool analyzeDefn(Defn * in, AnalysisTask pass);
 
   /** Do the requested analysis passes on the type definition. */
-  static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
-
-  /** Do the requested analysis passes on the type definition. */
   static bool analyzeValueDefn(ValueDefn * in, AnalysisTask pass);
 
   /** Queue a definition to be fully analyzed later. */
@@ -162,6 +159,9 @@ protected:
   // each definition into an expression (or in the case of an imported
   // symbol, multiple expressions) representing a reference to the definition.
   bool getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context, ExprList & out);
+
+  /** Do the requested analysis passes on the type definition. */
+  static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
 };
 
 } // namespace tart

@@ -142,7 +142,7 @@ bool Parser::parse() {
   int errorCount = diag.getErrorCount();
 
   // Parse imports
-  parseImports();
+  parseImports(module->imports());
 
   bool foundDecl = declarationList(module->astMembers(), DeclModifiers());
   if (token != Token_End || !foundDecl) {
@@ -154,11 +154,11 @@ bool Parser::parse() {
   return diag.getErrorCount() == errorCount;
 }
 
-bool Parser::parseImports() {
+bool Parser::parseImports(ASTNodeList & out) {
   // Parse imports
   int errorCount = diag.getErrorCount();
   while (match(Token_Import)) {
-    importStmt(module->imports());
+    importStmt(out);
   }
   return diag.getErrorCount() == errorCount;
 }
@@ -373,6 +373,8 @@ ASTDecl * Parser::declarator(const DeclModifiers & mods) {
     return declareNamespace(mods, tok);
   } else if (match(Token_Enum)) {
     return declareEnum(mods);
+  } else if (match(Token_Typealias)) {
+    return declareTypealias(mods);
   } else {
     return NULL;
   }
@@ -500,29 +502,6 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
         return DECL_ERROR;
       }
 
-      // Enable this if we want to allow parameterized properties.
-#if 0
-      // If there's a colon after the arg list, then it's a parameterized property rather
-      // than a method.
-      if (match(Token_Colon)) {
-        ASTNode * declType = typeExpression();
-        if (declType == NULL) {
-          return DECL_ERROR;
-        }
-
-        ASTParamList params;
-        ASTPropertyDecl * prop = new ASTPropertyDecl(loc, declName, declType, mods);
-        prop->params().append(params.begin(), params.end());
-        if (match(Token_LBrace)) {
-          // Parse accessors
-          if (!accessorMethodList(prop, params, mods)) {
-            return DECL_ERROR;
-          }
-        }
-
-        return prop;
-      }
-#endif
     } else {
       // Check for single argument (it's optional)
       formalArgument(params, 0);
@@ -580,9 +559,6 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   SourceLocation loc = matchLoc;
 
   ASTFunctionDecl * fd = functionDeclaration(ASTNode::Macro, declName, mods);
-#if 0
-  if (tok == Token_Macro) {
-#endif
 
   if (!templateParams.empty()) {
     if (match(Token_Requires)) {
@@ -600,25 +576,6 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   }
   function = saveFunction;
   fd->setBody(body);
-
-#if 0
-  } else {
-    /*if (funcType->returnType() == NULL) {
-      funcType->setReturnType(&VoidType::biDef);
-    }*/
-
-    int32_t funcId = intVal->getValue().asInt32();
-    Stmt * body = Builtins::createIntrinsic(funcId);
-    if (body == NULL) {
-      diag.error(loc, "Invalid intrinsic function number '%d'", funcId);
-      return DECL_ERROR;
-    }
-
-    fd->setBody(body);
-
-    needSemi();
-  }
-#endif
 
   // If there were type parameters, create a template
   if (!templateParams.empty()) {
@@ -722,7 +679,7 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
 
   mods.visibility = Public;
   mods.storageClass = Storage_Global;
-  //mods.flags = Available;
+  parseImports(nsDef->imports());
   declarationList(nsDef->members(), mods);
 
   if (!match(Token_RBrace)) {
@@ -742,27 +699,19 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
     declName = "#ERROR";
   }
 
+  // Enum superclass.
   ASTNodeList bases;
-  //ASTNode * enumBase = NULL;
   if (match(Token_Colon)) {
-    // Enum superclass.
     ASTNode * enumBase = typeExpression();
     if (enumBase != NULL) {
       bases.push_back(enumBase);
     }
   }
 
-  //EnumType * enumType = new EnumType();
-  //if (enumBase != NULL) {
-  //  enumType->setSuper(enumBase);
-  //}
-
   DeclModifiers enumMods(mods);
   enumMods.storageClass = Storage_Static;
   //enumMods.flags = Final | Available;
-  ASTTypeDecl * enumDef = new ASTTypeDecl(ASTNode::Enum, matchLoc, declName,
-      bases, enumMods);
-  //enumType->setDeclaration(enumDef);
+  ASTTypeDecl * enumDef = new ASTTypeDecl(ASTNode::Enum, matchLoc, declName, bases, enumMods);
 
   if (!match(Token_LBrace)) {
     diag.error(lexer.tokenLocation()) << "Expecting enumeration constants";
@@ -784,11 +733,6 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
     if (!ecName) {
       break;
     }
-
-    //ASTDeclList prevDefs;
-    //if (enumDef->lookupMember(ecName, prevDefs, false)) {
-    //  diag.error(matchLoc, "Duplicate enum constant '%s'", ecName);
-    //}
 
     ASTNode * ecValue = NULL;
     if (match(Token_Assign)) {
@@ -813,6 +757,39 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
   }
 
   return enumDef;
+}
+
+ASTDecl * Parser::declareTypealias(const DeclModifiers & mods) {
+  const char * declName = matchIdent();
+  if (declName == NULL) {
+    expectedIdentifier();
+    skipToNextOpenDelim();
+    declName = "#ERROR";
+  }
+
+  if (mods.flags & Final) {
+    diag.warn(lexer.tokenLocation()) << "Modifier 'final' not applicable to typealias.";
+  }
+
+  if (mods.flags & Abstract) {
+    diag.warn(lexer.tokenLocation()) << "Modifier 'abstract' not applicable to typealias.";
+  }
+
+  DFAIL("Implement");
+
+#if 0
+  // Enum superclass.
+  ASTNodeList bases;
+  if (match(Token_Colon)) {
+    ASTNode * enumBase = typeExpression();
+    if (enumBase != NULL) {
+      bases.push_back(enumBase);
+    }
+  }
+
+  ASTTypeDecl * typeDef = new ASTTypeDecl(ASTNode::Enum, matchLoc, declName, bases, mods);
+  return enumDef;
+#endif
 }
 
 bool Parser::accessorMethodList(ASTPropertyDecl * parent,
@@ -2727,18 +2704,19 @@ ASTNode * Parser::parseFloatLiteral() {
 }
 
 ASTNode * Parser::parseStringLiteral() {
-  ASTNode * result = new ASTStringLiteral(lexer.tokenLocation(),
-      lexer.tokenValue());
+  ASTNode * result = new ASTStringLiteral(lexer.tokenLocation(), lexer.tokenValue());
   next();
   return result;
 }
 
 ASTNode * Parser::parseCharLiteral() {
-  if (lexer.tokenValue().size() > 1) {
-    diag.error(lexer.tokenLocation()) << "multi-character constant";
+  uint32_t charVal;
+  if (lexer.tokenValue().size() == 1) {
+    charVal = lexer.tokenValue()[0];
+  } else {
+    charVal = strtoul(lexer.tokenValue().c_str(), 0, 16);
   }
-
-  ASTNode * result = new ASTCharLiteral(lexer.tokenLocation(), (int)lexer.tokenValue()[0]);
+  ASTNode * result = new ASTCharLiteral(lexer.tokenLocation(), charVal);
   next();
   return result;
 }

@@ -278,6 +278,9 @@ private:
 
   void genModuleMetadata(std::ostream & strm);
 
+  /** Return true if 'type' requires an implicit dereference, such as a struct. */
+  bool requiresImplicitDereference(const Type * type);
+
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
 

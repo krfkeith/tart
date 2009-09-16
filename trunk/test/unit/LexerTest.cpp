@@ -178,7 +178,7 @@ TEST_F(LexerTest, SingleTokens) {
 
   // String literals
   EXPECT_EQ(Token_String, LexToken("\"\""));
-  EXPECT_EQ(Token_Char, LexToken("''"));
+  EXPECT_EQ(Token_Char, LexToken("'a'"));
 
   // Erroneous tokens
   EXPECT_EQ(Token_Error, LexTokenError("#"));
@@ -209,6 +209,89 @@ TEST_F(LexerTest, StringLiterals) {
     Lexer           lex(&src);
 
     EXPECT_EQ(Token_String, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("\x01\u00AA\u00BB");
+    FakeSourceFile  src("\"\\x01\\uAA\\uBB\"");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_String, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("\u2100");
+    FakeSourceFile  src("\"\\u2100\"");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_String, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("\U00012100");
+    FakeSourceFile  src("\"\\U00012100\"");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_String, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+}
+
+TEST_F(LexerTest, CharLiterals) {
+
+  {
+    FakeSourceFile  src("\'a\'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
+    EXPECT_EQ((size_t)1, lex.tokenValue().length());
+  }
+
+  {
+    std::string     expected("\x01");
+    FakeSourceFile  src("'\\x01'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("\xAA");
+    FakeSourceFile  src("'\\xAA'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("000000aa");
+    FakeSourceFile  src("'\\uAA'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("00002100");
+    FakeSourceFile  src("'\\u2100\'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
+    EXPECT_EQ(expected, lex.tokenValue());
+  }
+
+  {
+    std::string     expected("00012100");
+    FakeSourceFile  src("'\\U00012100'");
+    Lexer           lex(&src);
+
+    EXPECT_EQ(Token_Char, lex.next());
     EXPECT_EQ(expected, lex.tokenValue());
   }
 }

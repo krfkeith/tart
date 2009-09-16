@@ -199,8 +199,9 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     currentFn_ = saveFn;
 
     if (!diag.inRecovery()) {
-      if (llvm::verifyFunction(*f)) {
+      if (verifyFunction(*f, PrintMessageAction)) {
         f->dump();
+        DFAIL("Function failed to verify");
       }
     }
 
@@ -215,7 +216,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
   return true;
 }
-
 
 //llvm::Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 

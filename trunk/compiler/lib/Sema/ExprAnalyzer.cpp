@@ -728,7 +728,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Do automatic pointer dereferencing
   if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
-    if (!AnalyzerBase::analyzeTypeDefn(npt->typeDefn(), Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(npt, Task_InferType)) {
       return &Expr::ErrorVal;
     }
 
@@ -738,7 +738,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Handle native arrays.
   if (NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
-    if (!AnalyzerBase::analyzeTypeDefn(naType->typeDefn(), Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(naType, Task_InferType)) {
       return &Expr::ErrorVal;
     }
 
@@ -756,7 +756,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   // See if the type has any indexers defined.
   DefnList indexers;
   if (arrayType->typeDefn() != NULL) {
-    if (!AnalyzerBase::analyzeTypeDefn(arrayType->typeDefn(), Task_PrepMemberLookup)) {
+    if (!AnalyzerBase::analyzeType(arrayType, Task_PrepMemberLookup)) {
       return &Expr::ErrorVal;
     }
   }
@@ -821,6 +821,7 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
       (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
     callType = Expr::VTableCall;
   }
+
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   module->addSymbol(getter);
@@ -862,6 +863,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
       (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
     callType = Expr::VTableCall;
   }
+
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
   setterCall->setType(prop->type());
   setterCall->appendArg(value);
@@ -911,6 +913,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
       (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
     callType = Expr::VTableCall;
   }
+
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   getterCall->args().append(call->args().begin(), call->args().end());
@@ -961,10 +964,14 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
       (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
     callType = Expr::VTableCall;
   }
+
+  // TODO: Handle multiple overloads of the same property.
+  // TODO: Change this to a CallExpr for type inference.
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
   setterCall->setType(prop->type());
   setterCall->args().append(call->args().begin(), call->args().end());
-  setterCall->appendArg(value);
+  // TODO: Remove this cast when we do the above.
+  setterCall->appendArg(prop->type()->implicitCast(loc, value));
   module->addSymbol(setter);
   analyzeLater(setter);
   return setterCall;

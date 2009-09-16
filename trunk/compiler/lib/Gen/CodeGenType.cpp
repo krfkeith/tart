@@ -70,7 +70,7 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(type->isSingular(), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveBaseTypes), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_AnalyzeFields), type);
-  DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), Format_QualifiedName << type);
+  DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), type);
   DASSERT_OBJ(type->irType() != NULL, type);
 
   /*if (type->super() != NULL) {
@@ -124,7 +124,7 @@ Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
       rtype->setTypeInfoBlock(
           new GlobalVariable(*irModule_,
               rtype->getTypeInfoBlockType().get(),
-              true, rtype->getLinkageType(), NULL,
+              true, GlobalValue::ExternalLinkage, NULL,
               type->typeDefn()->linkageName() + ".type.tib"));
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::ConstantExpr::getBitCast(
@@ -219,10 +219,9 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Assign the TIB value to the tib global variable.
   GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
-  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(
-      tibStruct->getType());
+  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(tibStruct->getType());
   tibPtr->setInitializer(tibStruct);
-
+  tibPtr->setLinkage(rtype->getLinkageType());
   return true;
 }
 

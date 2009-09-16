@@ -29,19 +29,19 @@ namespace Debug {
 
   macro assertTrue(cond:bool) {
     if not cond {
-      fail(locationOf(cond), "Assertion failed: ", stringify(cond));
+      fail(locationOf(cond), " Assertion failed: ", stringify(cond));
     }
   }
 
   macro assertFalse(cond:bool) {
     if cond {
-      fail(locationOf(cond), "Assertion failed, expected false: ", stringify(cond));
+      fail(locationOf(cond), " Assertion failed, expected false: ", stringify(cond));
     }
   }
 
   macro assertEq[%T](expected:T, actual:T) {
     if expected != actual {
-      fail(locationOf(actual), "Assertion failure, expected: ", stringify(expected),
+      fail(locationOf(actual), " Assertion failure, expected: ", stringify(expected),
         ", actual value: ", actual.toString());
     }
   }

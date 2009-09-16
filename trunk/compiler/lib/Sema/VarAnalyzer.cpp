@@ -69,22 +69,18 @@ bool VarAnalyzer::resolveVarType() {
           return false;
         }
 
-        if (varType->typeDefn() != NULL) {
-          analyzeTypeDefn(varType->typeDefn(), Task_PrepMemberLookup);
-        }
-
         //diag.info(target) << "Analyzing type of var '" << target << "' : " << varType;
         setTargetType(varType);
       }
     }
 
+    analyzeType(target->type(), Task_PrepMemberLookup);
+
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope;
       if (target->type() != NULL) {
-        if (target->type()->typeDefn() != NULL) {
-          analyzeTypeDefn(target->type()->typeDefn(), Task_PrepMemberLookup);
-        }
+        analyzeType(target->type(), Task_PrepMemberLookup);
 
         if (target->type()->typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
@@ -105,9 +101,7 @@ bool VarAnalyzer::resolveVarType() {
       initExpr = ExprAnalyzer::inferTypes(initExpr, target->type());
       if (isErrorResult(initExpr)) {
         return false;
-      }
-
-      if (!initExpr->isSingular()) {
+      } else if (!initExpr->isSingular()) {
         diag.fatal(initExpr) << "Non-singular expression: " << initExpr;
         DASSERT_OBJ(initExpr->isSingular(), initExpr);
       } else {
@@ -115,25 +109,16 @@ bool VarAnalyzer::resolveVarType() {
         DASSERT_OBJ(initType != NULL, target);
 
         if (initType->isEqual(&UnsizedIntType::instance)) {
-          // Only if this is a var, not a let
+          // TODO: Only if this is a var, not a let
           initType = &IntType::instance;
         }
 
-        //if (!initType->isSingular()) {
-        //  diag.debug() << "Init expression for " << target << " is " <<
-        //  initExpr << " with type " << initType;
-        //}
-
-        //DASSERT_OBJ(initType->isSingular(), initExpr);
-
         if (target->type() == NULL) {
           setTargetType(initType);
+          analyzeType(initType, Task_PrepMemberLookup);
         }
 
-        if (target->type()->typeDefn() != NULL) {
-          analyzeTypeDefn(target->type()->typeDefn(), Task_PrepMemberLookup);
-        }
-
+        // TODO: Fold this into inferTypes.
         initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
         if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
           vdef->setInitValue(initExpr);

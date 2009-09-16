@@ -18,7 +18,6 @@ Implementation TODOS:
 * Assertions in 'testing' package.
 * Tests for and / or.
 * Array
-  * copyOf
   * String.toCharArray
 * Override and redef syntax. refine toString -> String {}
   * How does that affect properties?
@@ -36,7 +35,6 @@ Implementation TODOS:
     * Break / Continue
   * Nested catch (try inside catch or finally block) - test
   * Stack trace
-* Assertions (requires Exceptions)
 * Enum types
   * Enum operators (relational and bitwise).
   * .toString
@@ -87,7 +85,6 @@ Implementation TODOS:
     * unpacking assignment
   * do-while
   * yield
-  * repeat
   * fork/threading primitives
   * with (what interface for using?)
 * String class
@@ -579,65 +576,8 @@ namespace Numbers {
   
 
   protocol PrimitiveNumber {}
-
-  @Intrinsic
-  def <T where T :> PrimitiveNumber> infixAdd(:T, :T) -> T;
-
-  @Intrinsic
-  def infixSubtract(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
-
-  @Intrinsic
-  def infixMultiply(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
-
-  @Intrinsic
-  def infixDivide(:PrimitiveNumber, :PrimitiveNumber) -> PrimitiveNumber;
-
-
-
-  @Intrinsic def infixAdd(:int16, :int16) -> int16;
-  @Intrinsic def infixAdd(:int32, :int32) -> int32;
-  @Intrinsic def infixAdd(:int64, :int64) -> int64;
-  @Intrinsic def infixAdd(:uint8, :uint8) -> uint8;
-  @Intrinsic def infixAdd(:uint16, :uint16) -> uint16;
-  @Intrinsic def infixAdd(:uint32, :uint32) -> uint32;
-  @Intrinsic def infixAdd(:uint64, :uint64) -> uint64;
-  
-  
-  
 }
 
-OK, one problem we have is how to do templates with indexers and call methods:
-
-  def elementRef.[%T](index:T):T {
-    get {}
-    set {}
-  }
-  
-  def fnCall.[%T](index:T):T {
-    get {};
-    set {};
-  }
-
-  def [].[%T](index:T):T {
-    get {}
-    set {}
-  }
-  
-  def ().[%T](index:T):T {
-    get {};
-    set {};
-  }
-
-  def [](index:T):T {
-    get {}
-    set {}
-  }
-  
-  def ()(index:T):T {
-    get {};
-    set {};
-  }
-  
 // ------------------------------------------------------------------------
 
 From the docs:
@@ -659,48 +599,19 @@ hiding of superclass functions.
   
 // ------------------------------------------------------------------------
 
-Class arguments:
-
-// Functions don't actually need template argument lists, if we allow pattern variables
-// to be used directly in the function parameters. Weird.
-def foo(a:%T)
-  require 
-{
+final struct Interval[%T] {
+  private var collection:Object;
+  private var begin:NativePointer[T];
+  private var end:NativePointer[T];
+  
+  def [index:int] {
+    get {
+      Preconditions.checkIndex(index, begin, end);
+    }
+    
+    set {
+    }
+  }
+  
+  def length { get { return Memory.__ptrdiff(begin, end); } }
 }
-
-= List[String].create(10);
-
-= List[].create();
-
-= List[].new();
-
-let a:Array[int] = {0, 1, 2, 3, 4};
-
-// ------------------------------------------------------------------------
-
-How to resolve "Array.of".
-
-First, we know that in this case "of" has to be a static method. What I mean is that the problem
-of resolving template parameters on both the base and the method can only arise in the case of
-static methods.
-
-The reasoning behind this is as follows: In all cases where the an expression of the
-form "base.member" occurs, "base" is either a namespace name, a type name, or an
-expression that evaluates to an object. Now, namespaces do not have type parameters. Expressions
-that evaluate to an object always produce a definite type - because we always completely resolve
-the type of an object reference before resolving the type of its members.
-
-So the only case we care about here is the one where the 'base' is a templated type name.
-
-There are two sub-cases:
-  * The case where the type name is a template, and the method is not a template.
-  * The case where the type name is a template, and the method is a template as well.
-
-In both cases, the only things we have to work to deduce the template parameters (both kinds)
-are the arguments to, and the return type from, the static method.
-
-Now, one question to be asked is whether or not static methods are inherited. Because if they are,
-then we have an additional problem, which is that we may have additional template arguments that
-may need to be deduced - so if Array[X] inherits from Iterator[Y], then we need to deduce Y
-as well as X. For the moment, however, let's punt on that problem.
-

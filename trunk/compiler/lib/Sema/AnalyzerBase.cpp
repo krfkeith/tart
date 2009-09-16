@@ -404,9 +404,11 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
 }
 
 bool AnalyzerBase::analyzeType(Type * in, AnalysisTask pass) {
-  TypeDefn * de = in->typeDefn();
-  if (de != NULL) {
-    return analyzeTypeDefn(de, pass);
+  if (in != NULL) {
+    TypeDefn * de = in->typeDefn();
+    if (de != NULL) {
+      return analyzeTypeDefn(de, pass);
+    }
   }
 
   return true;
@@ -525,10 +527,22 @@ void AnalyzerBase::flushAnalysisQueue() {
 }
 
 bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
+  // Analyze namespace imports.
+  if (task == Task_PrepMemberLookup && in->ast() != NULL && in->beginPass(Pass_ResolveImport)) {
+    DefnAnalyzer da(in->module(), &in->memberScope());
+    const ASTNodeList & imports = in->ast()->imports();
+    for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+      da.importIntoScope(cast<ASTImport>(*it), &in->memberScope());
+    }
+
+    in->finishPass(Pass_ResolveImport);
+  }
+
   if (task == Task_PrepMemberLookup && in->beginPass(Pass_CreateMembers)) {
     if (in->ast() != NULL) {
       ScopeBuilder::createScopeMembers(in);
     }
+
     in->finishPass(Pass_CreateMembers);
   }
 

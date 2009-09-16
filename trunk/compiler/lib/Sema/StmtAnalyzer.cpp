@@ -483,7 +483,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   }
 
   CompositeType * iterType = static_cast<CompositeType *>(iterExpr->type());
-  AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
+  AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
   FunctionDefn * next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
   if (next == NULL) {
     // If it's not an Iterator, see if it's an Iterable.
@@ -506,7 +506,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     }
 
     iterType = static_cast<CompositeType *>(iterExpr->type());
-    AnalyzerBase::analyzeTypeDefn(iterType->typeDefn(), Task_PrepMemberLookup);
+    AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
     next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
     if (next == NULL) {
       diag.error(iterExpr) << "Invalid iterator type: " << iterExpr->type();
@@ -992,7 +992,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // Analyze the exception type definition
-      AnalyzerBase::analyzeTypeDefn(exceptType->typeDefn(), Task_PrepMemberLookup);
+      AnalyzerBase::analyzeType(exceptType, Task_PrepMemberLookup);
       if (exceptType == NULL ||
           !exceptType->isSubclassOf(cast<CompositeType>(Builtins::typeThrowable))) {
         diag.fatal(exceptDecl) << "'" << exceptDecl << "' is not a subtype of Throwable";
@@ -1135,6 +1135,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //      "Return value not allowed in generator function");
     //}
 
+    analyzeType(returnType_, Task_PrepMemberLookup);
     resultVal = inferTypes(astToExpr(st->value(), returnType_), returnType_);
     if (isErrorResult(resultVal)) {
       return false;
@@ -1152,6 +1153,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     }
 
     if (returnType_ != NULL) {
+      analyzeType(exprType, Task_PrepMemberLookup);
       resultVal = returnType_->implicitCast(st->location(), resultVal);
     }
   }
@@ -1431,7 +1433,7 @@ FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * in
     const char * method) {
 
   // Analyze the type.
-  if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(type, Task_PrepMemberLookup)) {
     return NULL;
   }
 
@@ -1442,7 +1444,7 @@ FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * in
   }
 
   // Analyze the interface.
-  if (!AnalyzerBase::analyzeTypeDefn(interface->typeDefn(), Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(interface, Task_PrepMemberLookup)) {
     return NULL;
   }
 

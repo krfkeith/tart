@@ -1,4 +1,4 @@
 /** Exception thrown when an attempt to cast an object reference to a type that is not
     a subclass of the instance. */
-public class TypecastException : Exception {
+public final class TypecastException : Exception {
 }

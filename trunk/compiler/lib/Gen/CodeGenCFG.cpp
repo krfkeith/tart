@@ -156,6 +156,9 @@ void CodeGenerator::genReturn(Expr * returnVal) {
   } else {
     Value * value = genExpr(returnVal);
     DASSERT(value != NULL);
+    if (requiresImplicitDereference(returnVal->type())) {
+      value = builder_.CreateLoad(value);
+    }
     //genDoFinally(blk);
     builder_.CreateRet(value);
   }

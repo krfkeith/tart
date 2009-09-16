@@ -209,12 +209,12 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
 
 bool BindingEnv::unifyNativePointerType(
     SourceContext * source, NativePointerType * pat, Type * value) {
-  if (!AnalyzerBase::analyzeTypeDefn(pat->typeDefn(), Task_InferType)) {
+  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
     return false;
   }
 
   if (NativePointerType * npv = dyn_cast<NativePointerType>(value)) {
-    if (!AnalyzerBase::analyzeTypeDefn(npv->typeDefn(), Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(npv, Task_InferType)) {
       return false;
     }
 
@@ -227,12 +227,12 @@ bool BindingEnv::unifyNativePointerType(
 }
 
 bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * pat, Type * value) {
-  if (!AnalyzerBase::analyzeTypeDefn(pat->typeDefn(), Task_InferType)) {
+  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
     return false;
   }
 
   if (NativeArrayType * nav = dyn_cast<NativeArrayType>(value)) {
-    if (!AnalyzerBase::analyzeTypeDefn(nav->typeDefn(), Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(nav, Task_InferType)) {
       return false;
     }
 
@@ -254,11 +254,11 @@ bool BindingEnv::unifyCompositeType(
     return true;
   }
 
-  if (!AnalyzerBase::analyzeTypeDefn(pattern->typeDefn(), Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(pattern, Task_PrepMemberLookup)) {
     return false;
   }
 
-  if (!AnalyzerBase::analyzeTypeDefn(value->typeDefn(), Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(value, Task_PrepMemberLookup)) {
     return false;
   }
 

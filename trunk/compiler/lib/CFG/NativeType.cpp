@@ -74,7 +74,6 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
   if (const NativePointerType * npFrom = dyn_cast<NativePointerType>(fromType)) {
     Type * fromElementType = npFrom->typeParam(0);
     if (fromElementType == NULL) {
-      //AnalyzerBase::analyzeTypeDefn(npFrom,
       DFAIL("No element type");
     }
 

@@ -39,8 +39,6 @@ const llvm::Type * PrimitiveType::createIRType() const {
 
 const Type * PrimitiveType::derefEnumType(const Type * in) {
   while (const EnumType * etype = dyn_cast<EnumType>(in)) {
-    //if (!AnalyzerBase::analyzeTypeDefn(etype->typeDefn(), Task_PrepCallOrUse)) {
-    //  return Incompatible;
     DASSERT(etype->baseType() != NULL);
     in = etype->baseType();
   }
@@ -183,7 +181,9 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         DFAIL("Implement");
       }
 
-      return Truncation;
+      // The only way we can get here is via overload selection on a built-in
+      // function that has an unsized int return type.
+      return NonPreferred;
     }
 
     if (srcId == TypeId_Bad || srcId == TypeId_Void) {
@@ -764,11 +764,13 @@ template<> TypeIdSet CharType::INCLUDES = TypeIdSet::noneOf();
 template<> void CharType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_Char, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UInt64>::value);
+  //addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UInt64>::value);
   addMember(&PrimitiveToString<TypeId_Char>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(32), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(32), this));
+
+  PrimitiveToString<TypeId_Char>::value.init();
 }
 
 template<> uint32_t CharType::numBits() const {
