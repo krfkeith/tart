@@ -73,12 +73,10 @@ void ParameterDefn::trace() const {
 
 void ParameterDefn::format(FormatStream & out) const {
   // Parameters are allowed to be unnamed (for function type declarations.)
-  if (name_ != NULL) {
-    if (out.getShowQualifiedName()) {
-      out << qname_;
-    } else {
-      out << name_;
-    }
+  if (!qname_.empty() && out.getShowQualifiedName()) {
+    out << qname_;
+  } else if (name_ != NULL) {
+    out << name_;
   }
 
   if (out.getShowType() && type_) {

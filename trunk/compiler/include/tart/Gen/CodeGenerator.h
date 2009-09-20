@@ -45,6 +45,8 @@ class LocalScope;
 class FormatStream;
 class RuntimeTypeInfo;
 class ConstantString;
+class ConstantObjectRef;
+class ConstantNativeArray;
 class ProgramSource;
 struct SourceLocation;
 
@@ -52,6 +54,7 @@ typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
 typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
+typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
 typedef llvm::StringMap<llvm::Value *> StringLiteralMap;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
@@ -251,6 +254,16 @@ public:
   llvm::Value * genVarSizeAlloc(const SourceLocation & loc, const Type * objType,
       const Expr * sizeExpr);
 
+  /** Generate a constant object. */
+  llvm::Constant * genConstantObject(const ConstantObjectRef * obj);
+
+  /** Generate a structure from the fields of a constant object. */
+  llvm::Constant * genConstantObjectStruct(
+      const ConstantObjectRef * obj, const CompositeType * type);
+
+  /** Generate a constant array. */
+  llvm::Constant * genConstantArray(const ConstantNativeArray * array);
+
   /** Return the IR module being compiled. */
   llvm::Module * irModule() const { return irModule_; }
 
@@ -315,6 +328,7 @@ private:
 
   RTTypeMap compositeTypeMap_;
   StringLiteralMap stringLiteralMap_;
+  ConstantObjectMap constantObjectMap_;
 
   bool debug;
 };

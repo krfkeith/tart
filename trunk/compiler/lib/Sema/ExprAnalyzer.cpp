@@ -877,6 +877,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   LValueExpr * lval = cast<LValueExpr>(call->function());
   PropertyDefn * prop = cast<PropertyDefn>(lval->value());
   Expr * basePtr = lval->base();
+  //const ASTNodeList & args = call->args();
 
   if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
     return &Expr::ErrorVal;
@@ -898,15 +899,61 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   DASSERT_OBJ(getter->returnType()->isEqual(prop->type()), getter);
   DASSERT_OBJ(!getter->returnType()->isEqual(&VoidType::instance), getter);
 
-  //ExprList callingArgs;
-  // TODO: Compile-time evaluation if possible.
-  /*Expr * expr = getter->eval(in->location(), callingArgs);
-   if (expr != NULL) {
-   return expr;
-   }*/
+#if 0
+
+  CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
+  call->setExpectedReturnType(prop->type());
+  if (!addOverload(call, basePtr, getter, args)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (!reduceArgList(args, call)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (call->candidates().empty()) {
+    // Generate the calling signature in a buffer.
+    std::stringstream callsig;
+    FormatStream fs(callsig);
+    fs << Format_Dealias << basePtr << "[";
+    formatExprTypeList(fs, call->args());
+    fs << "]";
+    fs << " -> " << prop->type();
+
+    diag.error(loc) << "No matching method for call to " << callsig.str() << ", candidates are:";
+    /*for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
+      Expr * resultMethod = *it;
+      if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
+        diag.info(lval->value()) << Format_Type << lval->value();
+      } else {
+        diag.info(*it) << *it;
+      }
+    }*/
+
+    return &Expr::ErrorVal;
+  }
+
+  call->setType(reduceReturnType(call));
+  return call;
+
+#else
+
 
   // TODO: Type check args against function signature.
 
+  ExprList castArgs;
+  size_t argCount = call->args().size();
+  for (size_t i = 0; i < argCount; ++i) {
+    Type * paramType = getter->functionType()->param(i)->type();
+    Expr * arg = call->arg(i);
+    arg = inferTypes(arg, paramType);
+    Expr * castArg = paramType->implicitCast(arg->location(), arg);
+    if (isErrorResult(castArg)) {
+      return &Expr::ErrorVal;
+    }
+
+    castArgs.push_back(castArg);
+  }
 
   Expr::ExprType callType = Expr::FnCall;
   if (basePtr->type()->typeClass() == Type::Interface ||
@@ -916,10 +963,11 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
-  getterCall->args().append(call->args().begin(), call->args().end());
+  getterCall->args().append(castArgs.begin(), castArgs.end());
   module->addSymbol(getter);
   analyzeLater(getter);
   return getterCall;
+#endif
 }
 
 Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call,
@@ -946,18 +994,19 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  //  DASSERT_OBJ(setter->returnType()->isEqual(prop->type()), setter);
-
-  //ExprList callingArgs;
-  //callingArgs.push_back(value);
-
-  // TODO: Compile-time evaluation if possible.
-  /*Expr * expr = getter->eval(in->location(), callingArgs);
-   if (expr != NULL) {
-   return expr;
-   }*/
-
   // TODO: Type check args against function signature.
+
+  ExprList castArgs;
+  size_t argCount = call->args().size();
+  for (size_t i = 0; i < argCount; ++i) {
+    Expr * arg = call->arg(i);
+    Expr * castArg = setter->functionType()->param(i)->type()->implicitCast(arg->location(), arg);
+    if (isErrorResult(castArg)) {
+      return &Expr::ErrorVal;
+    }
+
+    castArgs.push_back(castArg);
+  }
 
   Expr::ExprType callType = Expr::FnCall;
   if (basePtr->type()->typeClass() == Type::Interface ||
@@ -969,7 +1018,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   // TODO: Change this to a CallExpr for type inference.
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
   setterCall->setType(prop->type());
-  setterCall->args().append(call->args().begin(), call->args().end());
+  setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   setterCall->appendArg(prop->type()->implicitCast(loc, value));
   module->addSymbol(setter);

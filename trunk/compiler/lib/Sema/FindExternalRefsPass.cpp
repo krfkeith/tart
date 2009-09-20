@@ -32,7 +32,15 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
         ctype->addMethodDefsToModule(module);
       }
 
-      ctype->addStaticDefsToModule(module);
+      const DefnList & staticFields = ctype->staticFields();
+      for (DefnList::const_iterator it = staticFields.begin(); it != staticFields.end(); ++it) {
+        module->addSymbol(*it);
+        if (VariableDefn * var = dyn_cast<VariableDefn>(*it)) {
+          if (var->initValue()) {
+            visitExpr(var->initValue());
+          }
+        }
+      }
     }
   }
 
@@ -92,6 +100,12 @@ Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
   }
 
   return in;
+}
+
+Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
+  CompositeType * ctype = cast<CompositeType>(in->type());
+  module->addSymbol(ctype->typeDefn());
+  return CFGPass::visitConstantObjectRef(in);
 }
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {

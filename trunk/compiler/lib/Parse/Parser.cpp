@@ -294,7 +294,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   ASTDecl * decl = declarator(mods);
   if (decl == NULL) {
     if (modifier) {
-      diag.error(lexer.tokenLocation()) << "Syntax error";
+      diag.error(lexer.tokenLocation()) << "Expected declaration after modifier";
     }
     return false;
   } else if (decl == DECL_ERROR) {
@@ -1479,6 +1479,7 @@ Stmt * Parser::statement() {
 
 Stmt * Parser::blockStmt() {
   BlockStmt * block = new BlockStmt(lexer.tokenLocation());
+  SourceLocation loc = lexer.tokenLocation();
   while (!match(Token_RBrace)) {
     Stmt * st = statement();
     if (st == NULL) {
@@ -1486,9 +1487,10 @@ Stmt * Parser::blockStmt() {
       return NULL;
     }
     block->append(st);
+    loc = lexer.tokenLocation();
   }
 
-  block->setFinalLocation(lexer.tokenLocation());
+  block->setFinalLocation(loc);
   return block;
 }
 

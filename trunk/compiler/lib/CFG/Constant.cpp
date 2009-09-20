@@ -7,6 +7,7 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
@@ -177,7 +178,7 @@ void ConstantType::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // ConstantObjectRef
 
-ConstantObjectRef::ConstantObjectRef(SourceLocation l, Type * type)
+ConstantObjectRef::ConstantObjectRef(SourceLocation l, CompositeType * type)
   : Expr(ConstObjRef, l, type)
 {
   CompositeType * ctype = cast<CompositeType>(type);
@@ -190,7 +191,7 @@ bool ConstantObjectRef::isSingular() const {
   return type()->isSingular();
 }
 
-Expr * ConstantObjectRef::getMemberValue(VariableDefn * member) {
+Expr * ConstantObjectRef::getMemberValue(VariableDefn * member) const {
   DASSERT(member->memberIndexRecursive() < members_.size());
   return members_[member->memberIndexRecursive()];
 }
@@ -200,7 +201,7 @@ void ConstantObjectRef::setMemberValue(VariableDefn * member, Expr * value) {
   members_[member->memberIndexRecursive()] = value;
 }
 
-Expr * ConstantObjectRef::getMemberValue(const char * name) {
+Expr * ConstantObjectRef::getMemberValue(const char * name) const {
   DefnList defs;
   type()->memberScope()->lookupMember(name, defs, true);
   if (defs.size() == 1) {
@@ -210,6 +211,16 @@ Expr * ConstantObjectRef::getMemberValue(const char * name) {
   }
 
   return NULL;
+}
+
+void ConstantObjectRef::setMemberValue(const char * name, Expr * value) {
+  DefnList defs;
+  type()->memberScope()->lookupMember(name, defs, true);
+  if (defs.size() == 1) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(defs.front())) {
+      return setMemberValue(var, value);
+    }
+  }
 }
 
 int32_t ConstantObjectRef::memberValueAsInt(const char * name) {
@@ -223,11 +234,40 @@ int32_t ConstantObjectRef::memberValueAsInt(const char * name) {
 
 void ConstantObjectRef::trace() const {
   Expr::trace();
-  markList(members_.begin(), members_.end());
+  safeMarkList(members_.begin(), members_.end());
 }
 
 void ConstantObjectRef::format(FormatStream & out) const {
   out << "<" << type()->typeDefn()->qualifiedName() << ">";
+}
+
+/// -------------------------------------------------------------------
+/// ConstantNativeArray
+ConstantNativeArray::ConstantNativeArray(SourceLocation l, NativeArrayType * type)
+  : Expr(ConstNArray, l, type)
+{}
+
+bool ConstantNativeArray::isSingular() const {
+  // TODO: Check elements as well?
+  return type()->isSingular();
+}
+
+void ConstantNativeArray::format(FormatStream & out) const {
+  out << "[";
+  for (ExprList::const_iterator it = elements_.begin(); it != elements_.end(); ++it) {
+    if (it != elements_.begin()) {
+      out << ", ";
+    }
+
+    out << *it;
+  }
+
+  out << "]";
+}
+
+void ConstantNativeArray::trace() const {
+  Expr::trace();
+  markList(elements_.begin(), elements_.end());
 }
 
 } // namespace tart

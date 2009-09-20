@@ -530,7 +530,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(IdenticalTypes, ShortType::instance.canConvert(&ShortType::instance));
   EXPECT_EQ(Truncation, ShortType::instance.canConvert(&IntType::instance));
   EXPECT_EQ(Truncation, ShortType::instance.canConvert(&LongType::instance));
-  EXPECT_EQ(SignedUnsigned, ShortType::instance.canConvert(&UByteType::instance));
+  EXPECT_EQ(NonPreferred, ShortType::instance.canConvert(&UByteType::instance));
   EXPECT_EQ(SignedUnsigned, ShortType::instance.canConvert(&UShortType::instance));
   EXPECT_EQ(Truncation, ShortType::instance.canConvert(&UIntType::instance));
   EXPECT_EQ(Truncation, ShortType::instance.canConvert(&ULongType::instance));
@@ -544,8 +544,8 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(ExactConversion, IntType::instance.canConvert(&ShortType::instance));
   EXPECT_EQ(IdenticalTypes, IntType::instance.canConvert(&IntType::instance));
   EXPECT_EQ(Truncation, IntType::instance.canConvert(&LongType::instance));
-  EXPECT_EQ(SignedUnsigned, IntType::instance.canConvert(&UByteType::instance));
-  EXPECT_EQ(SignedUnsigned, IntType::instance.canConvert(&UShortType::instance));
+  EXPECT_EQ(NonPreferred, IntType::instance.canConvert(&UByteType::instance));
+  EXPECT_EQ(NonPreferred, IntType::instance.canConvert(&UShortType::instance));
   EXPECT_EQ(SignedUnsigned, IntType::instance.canConvert(&UIntType::instance));
   EXPECT_EQ(Truncation, IntType::instance.canConvert(&ULongType::instance));
   EXPECT_EQ(Truncation, IntType::instance.canConvert(&FloatType::instance));
@@ -553,14 +553,14 @@ TEST(TypeTest, ConversionTests) {
 
   EXPECT_EQ(Incompatible, LongType::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(ExactConversion, LongType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(SignedUnsigned, LongType::instance.canConvert(&CharType::instance));
+  EXPECT_EQ(NonPreferred, LongType::instance.canConvert(&CharType::instance));
   EXPECT_EQ(ExactConversion, LongType::instance.canConvert(&ByteType::instance));
   EXPECT_EQ(ExactConversion, LongType::instance.canConvert(&ShortType::instance));
   EXPECT_EQ(ExactConversion, LongType::instance.canConvert(&IntType::instance));
   EXPECT_EQ(IdenticalTypes, LongType::instance.canConvert(&LongType::instance));
-  EXPECT_EQ(SignedUnsigned, LongType::instance.canConvert(&UByteType::instance));
-  EXPECT_EQ(SignedUnsigned, LongType::instance.canConvert(&UShortType::instance));
-  EXPECT_EQ(SignedUnsigned, LongType::instance.canConvert(&UIntType::instance));
+  EXPECT_EQ(NonPreferred, LongType::instance.canConvert(&UByteType::instance));
+  EXPECT_EQ(NonPreferred, LongType::instance.canConvert(&UShortType::instance));
+  EXPECT_EQ(NonPreferred, LongType::instance.canConvert(&UIntType::instance));
   EXPECT_EQ(SignedUnsigned, LongType::instance.canConvert(&ULongType::instance));
   EXPECT_EQ(Truncation, LongType::instance.canConvert(&FloatType::instance));
   EXPECT_EQ(Truncation, LongType::instance.canConvert(&DoubleType::instance));

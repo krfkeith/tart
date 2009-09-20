@@ -74,13 +74,13 @@ bool VarAnalyzer::resolveVarType() {
       }
     }
 
-    analyzeType(target->type(), Task_PrepMemberLookup);
+    analyzeType(target->type(), Task_PrepTypeComparison);
 
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope;
       if (target->type() != NULL) {
-        analyzeType(target->type(), Task_PrepMemberLookup);
+        analyzeType(target->type(), Task_PrepTypeComparison);
 
         if (target->type()->typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
@@ -115,7 +115,7 @@ bool VarAnalyzer::resolveVarType() {
 
         if (target->type() == NULL) {
           setTargetType(initType);
-          analyzeType(initType, Task_PrepMemberLookup);
+          analyzeType(initType, Task_PrepTypeComparison);
         }
 
         // TODO: Fold this into inferTypes.

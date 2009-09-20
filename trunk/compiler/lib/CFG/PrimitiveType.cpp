@@ -140,7 +140,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         return result;
       } else if (isUnsignedIntegerType(srcId)) {
-        ConversionRank result = SignedUnsigned;
+        ConversionRank result = NonPreferred;
         if (srcBits > dstBits) {
           result = Truncation;
         } else if (srcBits == dstBits) {

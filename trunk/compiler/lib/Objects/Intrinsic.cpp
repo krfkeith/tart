@@ -278,19 +278,15 @@ ArrayCopyIntrinsic ArrayCopyIntrinsic::moveInstance(
     "tart.core.Memory.arrayMove", llvm::Intrinsic::memmove);
 
 Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  DASSERT(call->argCount() == 5);
+  DASSERT(call->argCount() == 3);
   const Expr * dstArray = call->arg(0);
-  const Expr * dstOffset = call->arg(1);
-  const Expr * srcArray = call->arg(2);
-  const Expr * srcOffset = call->arg(3);
-  const Expr * count = call->arg(4);
+  const Expr * srcArray = call->arg(1);
+  const Expr * count = call->arg(2);
 
   DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
-  Type * elemType = cast<NativeArrayType>(srcArray->type())->typeParam(0);
-  Value * srcPtr = cg.genLValueAddress(srcArray);
-  Value * dstPtr = cg.genLValueAddress(dstArray);
-  Value * srcIndex = cg.genExpr(srcOffset);
-  Value * dstIndex = cg.genExpr(dstOffset);
+  Type * elemType = cast<NativePointerType>(srcArray->type())->typeParam(0);
+  Value * srcPtr = cg.genExpr(srcArray);
+  Value * dstPtr = cg.genExpr(dstArray);
   Value * length = cg.genExpr(count);
 
   Value * elemSize = cg.builder().CreateTruncOrBitCast(
@@ -301,18 +297,18 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   types[0] = length->getType();
   Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types, 1);
 
-  Value * idx[2];
+  Value * idx[1];
   idx[0] = ConstantInt::getSigned(length->getType(), 0);
-  idx[1] = dstIndex;
 
   Value * args[4];
   args[0] = cg.builder().CreatePointerCast(
-      cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[2], "dst"),
+      dstPtr,
+      //cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[1], "dst"),
       llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
 
-  idx[1] = srcIndex;
   args[1] = cg.builder().CreatePointerCast(
-      cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[2], "src"),
+      srcPtr,
+      //cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[1], "src"),
       llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
 
   args[2] = cg.builder().CreateMul(length, elemSize);

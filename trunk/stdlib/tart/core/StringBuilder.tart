@@ -14,16 +14,6 @@ public final class StringBuilder {
 
       self.len = newSize;
     }
-    
-    static def insertionCount(inputLength:int, start:int, count:int) -> int {
-      Preconditions.checkIndex(inputLength >= 0);
-      Preconditions.checkIndex(count >= 0);
-      Preconditions.checkIndex(start >= 0);
-      start = Math.min(start, inputLength);
-      count = Math.min(count, inputLength - start);
-      return count;
-      //return start, count;
-    }
   }
 
   def construct() {
@@ -32,6 +22,7 @@ public final class StringBuilder {
   }
 
   def construct(s:String, start:int = 0, count:int = int.maxVal) {
+    let chars = s.toCharArray();
     value = char[](0); // s.toArray()
     self.len = s.length;
   }
@@ -52,25 +43,40 @@ public final class StringBuilder {
   }
   
   def append(c:char[], start:int = 0, count:int = int.maxVal) {
+    insert(self.len, c, start, count);
   }
   
   def append(s:String, start:int = 0, count:int = int.maxVal) {
+    append(s.toCharArray(), start, count);
   }
   
   def append(s:Iterator[char]) {
     insert(self.len, s);
   }
   
-  def insert(n:int, c:char) {
+  def insert(insertPos:int, c:char) {
   }
   
-  def insert(n:int, c:char[], start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int, c:char[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(insertPos >= 0 and insertPos <= self.len);
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(start >= 0);
+    if start < c.length {
+      count = Math.min(count, c.length - start);
+      if count > 0 {
+        grow(count);
+        char[].copy(value, insertPos, self.value, insertPos + count, self.len - insertPos);
+        char[].copy(value, insertPos, c, start, count);
+        self.len += count;
+      }
+    }
   }
   
-  def insert(n:int, s:String, start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int, s:String, start:int = 0, count:int = int.maxVal) {
+    insert(insertPos, s.toCharArray(), start, count);
   }
   
-  def insert(n:int, s:Iterator[char]) {
+  def insert(insertPos:int, s:Iterator[char]) {
     classify s {
       as sequence:HasLength {
         grow(int(sequence.length));
@@ -87,11 +93,17 @@ public final class StringBuilder {
   }
 
   def remove(n:int) {
+    remove(n, 1);
   }
 
   def remove(n:int, count:int) {
   }
   
   def clear() {
+    self.len = 0;
   }
+  
+  def toString() -> String {
+    return String(value, 0, self.len);
+  }  
 }

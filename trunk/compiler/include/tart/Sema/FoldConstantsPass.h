@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_FOLDCONSTANTSPASS_H
 #define TART_SEMA_FOLDCONSTANTSPASS_H
 
@@ -20,6 +20,7 @@ public:
 
 private:
   Expr * visitCall(CallExpr * in);
+  Expr * visitInitVar(InitVarExpr * in);
 };
 
 } // namespace tart

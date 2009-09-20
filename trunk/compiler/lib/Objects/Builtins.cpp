@@ -45,6 +45,7 @@ Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
 
 Type * Builtins::typeType;
+Type * Builtins::typeTypeDescriptor;
 Type * Builtins::typeClass;
 Type * Builtins::typeStruct;
 Type * Builtins::typeInterface;
@@ -129,6 +130,7 @@ void Builtins::loadSystemClasses() {
   typeArray = loadSystemType("tart.core.Array");
   typeAttribute = loadSystemType("tart.core.Attribute");
   typeType = loadSystemType("tart.reflect.Type");
+  typeTypeDescriptor = loadSystemType("tart.reflect.TypeDescriptor");
   typeTypeInfoBlock = loadSystemType("tart.core.TypeInfoBlock");
   typeObject = loadSystemType("tart.core.Object");
   typeString = loadSystemType("tart.core.String");

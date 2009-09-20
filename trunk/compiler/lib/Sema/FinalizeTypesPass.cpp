@@ -55,7 +55,15 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
   Expr * first = visitExpr(in->first());
   Expr * second = visitExpr(in->second());
   if (!isErrorResult(first) && !isErrorResult(second)) {
-    second = IntType::instance.implicitCast(in->location(), second);
+    bool isAlreadyInt = false;
+    if (PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(second->type())) {
+      isAlreadyInt = isIntegerType(ptype->typeId());
+    }
+
+    if (!isAlreadyInt) {
+      second = IntType::instance.implicitCast(in->location(), second);
+    }
+
     in->setFirst(first);
     in->setSecond(second);
     DASSERT_OBJ(first->isSingular(), first);
@@ -81,7 +89,7 @@ Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
   if (!isErrorResult(from) && !isErrorResult(to)) {
     DASSERT_OBJ(to->isSingular(), to);
 
-    if (!AnalyzerBase::analyzeType(to->type(), Task_PrepMemberLookup)) {
+    if (!AnalyzerBase::analyzeType(to->type(), Task_PrepTypeComparison)) {
       return in;
     }
 
@@ -539,7 +547,7 @@ Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
   }
 
   in = LValueExpr::constValue(in);
-  if (!AnalyzerBase::analyzeType(toType, Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(toType, Task_PrepTypeComparison)) {
     return in;
   }
 

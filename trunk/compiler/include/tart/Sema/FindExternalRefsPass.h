@@ -34,6 +34,7 @@ public:
   Expr * visitNew(NewExpr * in);
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
+  Expr * visitConstantObjectRef(ConstantObjectRef * in);
 };
 
 } // namespace tart
