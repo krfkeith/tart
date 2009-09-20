@@ -6,6 +6,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Block.h"
 #include "tart/Sema/EvalPass.h"
@@ -372,6 +373,8 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
 
   // Constant array objects are special because of their variable size.
   ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
+  arrayObj->setMemberValue("len",
+      ConstantInteger::get(in->location(), &UIntType::instance, arrayData->elements().size()));
   arrayObj->setMemberValue("data", arrayData);
   return arrayObj;
 }
