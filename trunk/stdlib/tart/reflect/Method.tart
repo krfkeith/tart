@@ -1,9 +1,16 @@
-class Method {
+/** Description of a callable method. */
+final class Method : Member {
+  /** Array of type parameters. */
+  let typeParams:TypeDescriptor[];
+
   //@Extern
   //final def call(obj:Object, args:Object[]);
   
-  // name
   // resultType
   // argumentTypes
   // flags
+  
+  //private var adapter:fn (instance:Object, args:Object[]);
+  
+  //def call(instance:Object, args:Object[]) -> Object;
 }

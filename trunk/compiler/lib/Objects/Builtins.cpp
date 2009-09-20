@@ -46,10 +46,11 @@ Type * Builtins::typeIterator;
 
 Type * Builtins::typeType;
 Type * Builtins::typeTypeDescriptor;
-Type * Builtins::typeClass;
-Type * Builtins::typeStruct;
-Type * Builtins::typeInterface;
-Type * Builtins::typeEnum;
+Type * Builtins::typeMember;
+Type * Builtins::typeField;
+Type * Builtins::typeProperty;
+Type * Builtins::typeMethod;
+Type * Builtins::typeModule;
 
 Type * Builtins::typeAttribute;
 Type * Builtins::typeIntrinsicAttribute;
@@ -58,6 +59,10 @@ TypeAlias Builtins::typeAliasString(NULL);
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
+
+ReflectTypeDescriptor Builtins::rfTypeDescriptor;
+ReflectMember Builtins::rfMember;
+ReflectModule Builtins::rfModule;
 
 NamespaceDefn Builtins::nsOperator(&module, "Operators");
 
@@ -138,24 +143,57 @@ void Builtins::loadSystemClasses() {
 
   typeIntrinsicAttribute = loadSystemType("tart.core.Intrinsic");
 
-  typeClass = loadSystemType("tart.reflect.Class");
-  typeStruct = loadSystemType("tart.reflect.Struct");
-  typeInterface = loadSystemType("tart.reflect.Interface");
-  typeEnum = loadSystemType("tart.reflect.Enum");
+  typeMember = loadSystemType("tart.reflect.Member");
+  typeField = loadSystemType("tart.reflect.Field");
+  typeProperty = loadSystemType("tart.reflect.Property");
+  typeMethod = loadSystemType("tart.reflect.Method");
+  typeModule = loadSystemType("tart.reflect.Module");
 
-  // Make sure object class gets analyzed
+  // Analyze class Object.
   AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
 
   // Get the function that tests for a type
-  funcHasBase = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "hasBase"));
-  funcTypecastError = cast_or_null<FunctionDefn>(getSingleDefn(typeTypeInfoBlock, "typecastError"));
+  funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock, "hasBase");
+  funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock, "typecastError");
 
   // Get the low-level exception structure
-  typeUnwindException = cast<TypeDefn>(
-      getSingleDefn(typeThrowable, "UnwindException"))->typeValue();
+  typeUnwindException = getMember<TypeDefn>(typeThrowable, "UnwindException")->typeValue();
 
   // Set the aliases
   typeAliasString.setValue(typeString);
+
+  // Analyze reflection types.
+  AnalyzerBase::analyzeType(typeTypeDescriptor, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeMember, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeField, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeProperty, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeMethod, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeModule, Task_PrepCodeGeneration);
+
+  // Get references to members of class tart.reflect.TypeDescriptor
+  rfTypeDescriptor.memberTypeKind = getMember<VariableDefn>(typeTypeDescriptor, "typeKind");
+  rfTypeDescriptor.memberSupertype = getMember<VariableDefn>(typeTypeDescriptor, "supertype");
+  rfTypeDescriptor.memberInterfaces = getMember<VariableDefn>(typeTypeDescriptor, "interfaces");
+  rfTypeDescriptor.memberTypeParams = getMember<VariableDefn>(typeTypeDescriptor, "typeParams");
+  rfTypeDescriptor.memberAttributes = getMember<VariableDefn>(typeTypeDescriptor, "attributes");
+  rfTypeDescriptor.memberFields = getMember<VariableDefn>(typeTypeDescriptor, "fields");
+  rfTypeDescriptor.memberProperties = getMember<VariableDefn>(typeTypeDescriptor, "properties");
+  rfTypeDescriptor.memberConstructors = getMember<VariableDefn>(typeTypeDescriptor, "constructors");
+  rfTypeDescriptor.memberMethods = getMember<VariableDefn>(typeTypeDescriptor, "methods");
+
+  // Get references to members of class tart.reflect.Member
+  rfMember.memberName = getMember<VariableDefn>(typeMember, "name");
+  rfMember.memberMemberType = getMember<VariableDefn>(typeMember, "memberType");
+  rfMember.memberKind = getMember<VariableDefn>(typeMember, "kind");
+  rfMember.memberDeclaringType = getMember<VariableDefn>(typeMember, "declaringType");
+  rfMember.memberAccess = getMember<VariableDefn>(typeMember, "access");
+  rfMember.memberTraits = getMember<VariableDefn>(typeMember, "traits");
+  rfMember.memberAttributes = getMember<VariableDefn>(typeMember, "attributes");
+
+  // Get references to members of class tart.reflect.Module
+  rfModule.memberName = getMember<VariableDefn>(typeModule, "name");
+  rfModule.memberTypes = getMember<VariableDefn>(typeModule, "types");
+  rfModule.memberMethods = getMember<VariableDefn>(typeModule, "methods");
 }
 
 bool Builtins::compileBuiltins(ProgramSource & source) {

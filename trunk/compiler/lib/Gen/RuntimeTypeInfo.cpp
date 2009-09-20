@@ -14,7 +14,7 @@ using namespace llvm;
 RuntimeTypeInfo::RuntimeTypeInfo(const CompositeType * ty, Module * m)
   : type(ty)
   , linkageType(GlobalValue::ExternalLinkage)
-  , typeObjectPtr(NULL)
+  , typeDescriptor_(NULL)
   , typeInfoBlock(NULL)
   , typeInfoBlockType(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , typeInfoPtr(NULL)

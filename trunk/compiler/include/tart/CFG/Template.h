@@ -198,14 +198,14 @@ public:
   TypeList & params() { return params_; }
 
   /** The type values bound to the pattern variables in the template signature. */
-  const TypeList & captures() const { return captures_; }
-  TypeList & captures() { return captures_; }
+  //const TypeList & captures() const { return captures_; }
+  //TypeList & captures() { return captures_; }
 
 private:
   Defn * source_;                   // The originating template.
   TypeList params_;                 // The values for each template parameter.
-  TypeList captures_;               // Values captures by the pattern variables in the template.
-  OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
+  //TypeList captures_;               // Values captures by the pattern variables in the template.
+  //OrderedSymbolTable _;   // Symbol definitions for parameter values.
 };
 
 } // namespace tart

@@ -56,6 +56,7 @@ namespace {
           if (strcmp(kw, "catch") == 0) return Token_Catch;
           if (strcmp(kw, "char") == 0) return Token_CharType;
           if (strcmp(kw, "continue") == 0) return Token_Continue;
+          if (strcmp(kw, "const") == 0) return Token_Const;
           if (strcmp(kw, "case") == 0) return Token_Case;
           break;
 

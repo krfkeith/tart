@@ -318,8 +318,8 @@ void NamespaceDefn::trace() const {
 Type * TypeDefn::metaType() const {
   switch (typeValue()->typeClass()) {
     case Type::Primitive:
-      DASSERT(Builtins::typeType != NULL);
-      return Builtins::typeType;
+      DASSERT(Builtins::typeTypeDescriptor != NULL);
+      return Builtins::typeTypeDescriptor;
 
     case Type::Class:
       DASSERT(Builtins::typeClass != NULL);
@@ -347,7 +347,7 @@ Type * TypeDefn::metaType() const {
 #endif
 
 ConstantType * TypeDefn::asExpr() {
-  DASSERT(Builtins::typeType != NULL);
+  DASSERT(Builtins::typeTypeDescriptor != NULL);
   if (expr_ == NULL) {
     expr_ = new ConstantType(ast_ ? ast_->location() : SourceLocation(), this);
   }

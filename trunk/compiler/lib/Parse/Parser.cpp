@@ -2469,7 +2469,7 @@ ASTNode * Parser::primaryExpression() {
           return NULL;
       }*/
       result = new ASTOper(ASTNode::Typeof, arg);
-      //result->setType(Builtins::typeType);
+      //result->setType(Builtins::typeTyp);
       break;
     }
 #endif

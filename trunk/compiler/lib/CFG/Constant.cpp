@@ -139,7 +139,7 @@ void ConstantNull::format(FormatStream & out) const {
 /// -------------------------------------------------------------------
 /// ConstantType
 ConstantType::ConstantType(SourceLocation l, Type * val)
-  : ConstantExpr(ConstType, l, Builtins::typeType)
+  : ConstantExpr(ConstType, l, Builtins::typeTypeDescriptor)
   , value_(val)
 {
   DASSERT(value_ != NULL);
@@ -147,7 +147,7 @@ ConstantType::ConstantType(SourceLocation l, Type * val)
 }
 
 ConstantType::ConstantType(SourceLocation l, TypeDefn * valDefn)
-  : ConstantExpr(ConstType, l, Builtins::typeType)
+  : ConstantExpr(ConstType, l, Builtins::typeTypeDescriptor)
   , value_(valDefn->typeValue())
 {
   DASSERT(value_ != NULL);

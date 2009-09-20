@@ -41,11 +41,15 @@ ShowGen("show-generated", llvm::cl::desc("Display generated symbols"));
 static llvm::cl::opt<bool>
 Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 
+static llvm::cl::opt<bool>
+NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
+
 CodeGenerator::CodeGenerator(Module * mod)
     : context_(llvm::getGlobalContext())
     , builder_(llvm::getGlobalContext())
     , module_(mod)
     , irModule_(mod->irModule())
+    , moduleObject_(NULL)
 #if 0
     , doExpansions(false)
 #endif
@@ -77,7 +81,7 @@ void CodeGenerator::generate() {
   }
 
   irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
-  irModule_->addTypeName("tart.reflect.Type", Builtins::typeType->irType());
+  irModule_->addTypeName("tart.reflect.TypeDescriptor", Builtins::typeTypeDescriptor->irType());
 
   // Generate all declarations.
   DefnSet & xdefs = module_->exportDefs();
@@ -131,6 +135,10 @@ void CodeGenerator::generate() {
     if (de->isSynthetic()) {
       genXDef(de);
     }
+  }
+
+  if (!NoReflect) {
+    createModuleObject();
   }
 
 #if 0

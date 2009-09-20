@@ -800,7 +800,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   DASSERT(classType->typeClass() == Type::Interface);
 
   // Get the interface ID (which is just the type pointer).
-  GlobalVariable * itype = getTypeObjectPtr(classType);
+  GlobalVariable * itype = getTypeDescriptorPtr(classType);
 
   // Load the pointer to the TIB.
   Value * tib = builder_.CreateLoad(
@@ -893,7 +893,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
   return builder_.CreateGEP(val, indices.begin(), indices.end(), "upcast");
 }
 
-llvm::Value * CodeGenerator::genStringLiteral(const std::string & strval) {
+llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
   StringLiteralMap::iterator it = stringLiteralMap_.find(strval);
   if (it != stringLiteralMap_.end()) {
     return it->second;
@@ -911,7 +911,7 @@ llvm::Value * CodeGenerator::genStringLiteral(const std::string & strval) {
 
   // Object type members
   std::vector<Constant *> objMembers;
-  objMembers.push_back(getTypeInfoPtr(strType));
+  objMembers.push_back(getTypeInfoBlockPtr(strType));
 
   // String type members
   std::vector<Constant *> members;
@@ -986,7 +986,7 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromTyp
 
   // Make sure it's a class.
   DASSERT(toType->typeClass() == Type::Class || toType->typeClass() == Type::Interface);
-  Constant * toTypeObj = getTypeObjectPtr(toType);
+  Constant * toTypeObj = getTypeDescriptorPtr(toType);
 
   // Bitcast to object type
   Value * valueAsObjType = builder_.CreateBitCast(val,
@@ -1106,7 +1106,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
   ConstantList fieldValues;
   if (type == Builtins::typeObject) {
     // Generate the TIB pointer.
-    llvm::Constant * tibPtr = getTypeInfoPtr(cast<CompositeType>(obj->type()));
+    llvm::Constant * tibPtr = getTypeInfoBlockPtr(cast<CompositeType>(obj->type()));
     if (tibPtr == NULL) {
       return NULL;
     }

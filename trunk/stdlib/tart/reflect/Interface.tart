@@ -1,3 +1,0 @@
-/** The Interface metatype. Represents the type object for an interface. */
-public class Interface[%T] : Type {
-}

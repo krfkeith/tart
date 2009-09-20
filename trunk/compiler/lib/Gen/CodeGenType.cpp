@@ -62,8 +62,8 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
   // Don't need to define this twice.
-  if (rtype->isExternal() || (rtype->getTypeObjectPtr() != NULL &&
-      rtype->getTypeObjectPtr()->hasInitializer())) {
+  if (rtype->isExternal() || (rtype->typeDescriptor() != NULL &&
+      rtype->typeDescriptor()->hasInitializer())) {
     return type->irType();
   }
 
@@ -82,38 +82,38 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 
   irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
-  createTypeObject(rtype);
+  createTypeDescriptor(rtype);
   createTypeAllocator(rtype);
   return type->irType();
 }
 
-GlobalVariable * CodeGenerator::getTypeObjectPtr(const CompositeType * type) {
-  return createTypeObjectPtr(getRTTypeInfo(type));
+GlobalVariable * CodeGenerator::getTypeDescriptorPtr(const CompositeType * type) {
+  return createTypeDescriptorPtr(getRTTypeInfo(type));
 }
 
-Constant * CodeGenerator::getTypeInfoPtr(const CompositeType * type) {
-  return createTypeInfoPtr(getRTTypeInfo(type));
+Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
+  return createTypeInfoBlockPtr(getRTTypeInfo(type));
 }
 
 Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
   return createTypeAllocator(getRTTypeInfo(type));
 }
 
-GlobalVariable * CodeGenerator::createTypeObjectPtr(RuntimeTypeInfo * rtype) {
-  if (rtype->getTypeObjectPtr() == NULL) {
+GlobalVariable * CodeGenerator::createTypeDescriptorPtr(RuntimeTypeInfo * rtype) {
+  if (rtype->typeDescriptor() == NULL) {
     // Create the global variable for the type object.
     const CompositeType * type = rtype->getType();
-    rtype->setTypeObjectPtr(
+    rtype->setTypeDescriptor(
         new GlobalVariable(*irModule_,
-            Builtins::typeType->irType(), true,
+            Builtins::typeTypeDescriptor->irType(), true,
             rtype->getLinkageType(), NULL,
             type->typeDefn()->linkageName() + ".type"));
   }
 
-  return rtype->getTypeObjectPtr();
+  return rtype->typeDescriptor();
 }
 
-Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
+Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
   if (rtype->getTypeInfoPtr() == NULL) {
     // Create the global variable for the type info block.
     const CompositeType * type = rtype->getType();
@@ -136,28 +136,41 @@ Constant * CodeGenerator::createTypeInfoPtr(RuntimeTypeInfo * rtype) {
   return rtype->getTypeInfoPtr();
 }
 
-bool CodeGenerator::createTypeObject(RuntimeTypeInfo * rtype) {
+void CodeGenerator::createTypeDescriptor(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
   const std::string & linkName = type->typeDefn()->linkageName();
 
-  // Generate the type object.
+  // Generate the type descriptor object.
   ConstantList objMembers;
-  ConstantList typeMembers;
+  ConstantList typeDescriptorMembers;
+  objMembers.clear();
+  objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(Builtins::typeTypeDescriptor)));
+  typeDescriptorMembers.push_back(ConstantStruct::get(context_, objMembers));
+  typeDescriptorMembers.push_back(createTypeInfoBlockPtr(rtype));
 
-  objMembers.push_back(getTypeInfoPtr(cast<CompositeType>(Builtins::typeType)));
-  typeMembers.push_back(ConstantStruct::get(context_, objMembers));
-  typeMembers.push_back(createTypeInfoPtr(rtype));
-  if (type->typeClass() == Type::Class && type->super() != NULL) {
-    typeMembers.push_back(getTypeObjectPtr(type->super()));
+  // TypeKind
+  typeDescriptorMembers.push_back(ConstantInt::get(Builtins::rfTypeDescriptor.memberTypeKind->type()->irEmbeddedType(), 0));
+
+  // Supertype
+  if (type->super() != NULL) {
+    typeDescriptorMembers.push_back(getTypeDescriptorPtr(type->super()));
   } else {
-    typeMembers.push_back(ConstantPointerNull::get(
-        PointerType::getUnqual(Builtins::typeType->irType())));
+    typeDescriptorMembers.push_back(ConstantPointerNull::get(
+        PointerType::getUnqual(Builtins::typeTypeDescriptor->irType())));
   }
 
-  llvm::Constant * typeStruct = ConstantStruct::get(context_, typeMembers);
-  llvm::GlobalVariable * typePtr = createTypeObjectPtr(rtype);
-  typePtr->setInitializer(typeStruct);
-  return true;
+  // Lists
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberInterfaces->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberTypeParams->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberAttributes->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberFields->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberProperties->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberConstructors->type()->irEmbeddedType())));
+  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberMethods->type()->irEmbeddedType())));
+
+  llvm::Constant * typeDescriptorStruct = ConstantStruct::get(context_, typeDescriptorMembers);
+  llvm::GlobalVariable * typeDescriptorPtr = createTypeDescriptorPtr(rtype);
+  typeDescriptorPtr->setInitializer(typeDescriptorStruct);
 }
 
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
@@ -168,7 +181,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   }
 
   if (rtype->getTypeInfoPtr() == NULL) {
-    createTypeInfoPtr(rtype);
+    createTypeInfoBlockPtr(rtype);
   } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
     return true;
   }
@@ -176,14 +189,14 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Generate the base class list.
   ClassSet baseClassSet;
   type->ancestorClasses(baseClassSet);
-  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeType->irType());
+  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeTypeDescriptor->irType());
 
   // Concrete classes first
   ConstantList baseClassList;
   for (const CompositeType * s = type->super(); s != NULL; s = s->super()) {
     // If the class lives in this module, then create it.
     genCompositeType(s);
-    baseClassList.push_back(getTypeObjectPtr(s));
+    baseClassList.push_back(getTypeDescriptorPtr(s));
   }
 
   // Interfaces next
@@ -191,7 +204,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     CompositeType * baseType = *it;
     if (baseType->typeClass() == Type::Interface) {
       genCompositeType(baseType);
-      baseClassList.push_back(getTypeObjectPtr(baseType));
+      baseClassList.push_back(getTypeDescriptorPtr(baseType));
     }
   }
 
@@ -211,7 +224,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Create the TypeInfoBlock struct
   ConstantList tibMembers;
-  tibMembers.push_back(getTypeObjectPtr(type));
+  tibMembers.push_back(getTypeDescriptorPtr(type));
   tibMembers.push_back(baseClassArrayPtr);
   tibMembers.push_back(idispatch);
   tibMembers.push_back(genMethodArray(type->instanceMethods_));
@@ -265,7 +278,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(PointerType::get(Builtins::typeType->irType(), 0));
+  argTypes.push_back(PointerType::get(Builtins::typeTypeDescriptor->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType, argTypes, false);
   Function * idispatch = Function::Create(
@@ -298,7 +311,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
       itableMembers->getType(), true, GlobalValue::InternalLinkage,
       itableMembers,
       itDecl->typeDefn()->linkageName() + "->" + linkageName);
-    Constant * itype = getTypeObjectPtr(it->interfaceType);
+    Constant * itype = getTypeDescriptorPtr(it->interfaceType);
 
     // Create the blocks
     BasicBlock * ret = BasicBlock::Create(context_, itDecl->typeDefn()->name(), idispatch);
@@ -384,7 +397,7 @@ void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instanc
   }
 
   Value * vtablePtrPtr = builder_.CreateGEP(instance, indices.begin(), indices.end());
-  Value * typeInfoPtr = getTypeInfoPtr(type);
+  Value * typeInfoPtr = getTypeInfoBlockPtr(type);
   builder_.CreateStore(typeInfoPtr, vtablePtrPtr);
 }
 

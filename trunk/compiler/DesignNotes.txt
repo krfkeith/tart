@@ -22,6 +22,9 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
+* Hook up TypeLess(Than).
+* A way to iterate over the functions in a module...?
+* Why is linking so slow?
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.

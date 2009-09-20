@@ -65,11 +65,6 @@ public final class String {
   @LinkageName("String_create")
   static def create(bytes:NativePointer[NativeArray[ubyte, 0]], length:int) -> String {
     let self = alloc(length);
-    // TODO: Test
-    // TODO: Need for array copy to work with non-native arrays I guess.
-    //for i = 0; i < self.len; i++ {
-    //  self.data[i] = bytes[i];
-    //}
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes[0]), length);
     return self;
   }

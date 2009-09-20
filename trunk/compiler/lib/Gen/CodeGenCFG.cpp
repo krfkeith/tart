@@ -302,7 +302,7 @@ void CodeGenerator::genCatch(Block * blk) {
     if (catchExpr != NULL) {
       // Catch handler
       CompositeType * exceptType = cast<CompositeType>(catchExpr->value());
-      args.push_back(getTypeObjectPtr(exceptType));
+      args.push_back(getTypeDescriptorPtr(exceptType));
     } else {
       // Finally handler
       args.push_back(getInt32Val(0));
