@@ -1093,9 +1093,6 @@ Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
 
   const CompositeType * type = cast<CompositeType>(obj->type());
   llvm::Constant * structVal = genConstantObjectStruct(obj, type);
-  /*if (structVal != NULL && structVal->getType() != type->irEmbeddedType()) {
-    structVal = llvm::ConstantExpr::getPointerCast(structVal, type->irEmbeddedType());
-  }*/
 
   constantObjectMap_[obj] = structVal;
   return structVal;
@@ -1129,15 +1126,6 @@ Constant * CodeGenerator::genConstantObjectStruct(
       if (VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
         Expr * value = obj->getMemberValue(var);
         if (value == NULL) {
-          // Special case for Array.
-          if (type->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
-            if (var->memberIndexRecursive() == 1) {
-              UndefValue * end = UndefValue::get(var->type()->irType());
-              fieldValues.push_back(end);
-              continue;
-            }
-          }
-
           diag.error(obj) << "Member value '" << var << "' has not been initialized.";
           return NULL;
         }

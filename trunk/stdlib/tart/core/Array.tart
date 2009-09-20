@@ -6,15 +6,13 @@ import tart.core.Math.min;
 /** Built-in array class */
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
-    var end:NativePointer[ElementType];
+    var len:int;
     var data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
     static def alloc(length:int) -> Array {
-      //InvalidArgumentException.when(length < 0);
-      // The 'offsetof' trick for calculating the size.
-      let self:Array = __pvalloc(zeroPtr[Array[ElementType]]().data[length]);
-      self.end = addressOf(self.data[length]);
+      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]().data[length]);
+      self.len = length;
       return self;
     }
 
@@ -25,6 +23,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** Construct an array of a given length */
   static def create(length:int) -> Array {
+    Preconditions.checkArgument(length >= 0);
     let self:Array = alloc(length);
     // TODO: Need to initialize the array elements to default values.
     // Memory.initToDefaultValues(addressOf(data[0]), end);
@@ -39,22 +38,22 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** True if the array is zero length. */
   def isEmpty:bool {
-    get { return self.end == addressOf(self.data[0]); }
+    get { return self.len == 0; }
   }
 
   /** The length of the array. */
   def length:int {
-    get { return ptrDiff(addressOf(self.data[0]), self.end); }
+    get { return len; }
   }
 
   /** Array element access. */
   def [index:int]:ElementType {
     get {
-      Preconditions.checkIndex(index >= 0 and index < length);
+      Preconditions.checkIndex(index >= 0 and index < len);
       return self.data[index];
     }
     set {
-      Preconditions.checkArgument(index >= 0 and index < length);
+      Preconditions.checkArgument(index >= 0 and index < len);
       self.data[index] = value;
     }
   }
@@ -69,9 +68,9 @@ public final class Array[%ElementType] : Iterable[ElementType] {
    */  
   static def copy(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
-    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.length);
-    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.length);
-    count = min(count, dst.length - dstOffset, src.length - srcOffset);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.len);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.len);
+    count = min(count, dst.len - dstOffset, src.len - srcOffset);
     if count > 0 {
       Memory.arrayMove(addressOf(dst.data[dstOffset]), addressOf(src.data[srcOffset]), count);
     }
@@ -80,15 +79,15 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
       'dstOffset' in this array.
    */  
-  static def copy(dst:Array, dstOffset:long, src:Array, srcOffset:long, count:long) {
+  /*static def copy(dst:Array, dstOffset:long, src:Array, srcOffset:long, count:long) {
     Preconditions.checkIndex(count >= 0);
-    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.length);
-    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.length);
-    count = min(count, dst.length - dstOffset, src.length - srcOffset);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.len);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.len);
+    count = min(count, dst.len - dstOffset, src.len - srcOffset);
     if count > 0 {
       Memory.arrayMove(addressOf(dst.data[dstOffset]), addressOf(src.data[srcOffset]), count);
     }
-  }
+  }*/
 
   public final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
@@ -100,13 +99,13 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     }
     
     def next() -> ElementType or void {
-      if (self.index < self.array.length) {
+      if (self.index < self.array.len) {
         return self.array.data[self.index++];
       } else {
         return;
       }
     }
 
-    def length:long { get { return array.length; } }
+    def length:long { get { return array.len; } }
   }
 }
