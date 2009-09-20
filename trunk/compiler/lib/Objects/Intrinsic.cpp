@@ -125,6 +125,14 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 }
 
 // -------------------------------------------------------------------
+// ThisModuleIntrinsic
+ThisModuleIntrinsic ThisModuleIntrinsic::instance;
+
+Value * ThisModuleIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  return cg.createModuleObjectPtr();
+}
+
+// -------------------------------------------------------------------
 // VAllocIntrinsic
 VAllocIntrinsic VAllocIntrinsic::instance;
 

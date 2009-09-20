@@ -1,0 +1,20 @@
+/** Description of a compiled module. */
+final class Module {
+  /** Fully-qualified name of the module. */
+  let name:String;
+
+  /** Array of types defined in this module. */
+  let types:TypeDescriptor[];
+
+  /** Array of types defined in this module. */
+  let methods:Method[];
+  
+  /** Global list of all modules in this compilation unit. */
+  //static const var modules:Module[];
+
+  /** Returns a reference to the caller's module. */  
+  @Intrinsic static def thisModule() -> Module;
+
+  /** Returns a reference to the module defining 'type'. */  
+  //@Intrinsic static def getModule(type:TypeDescriptor) -> Module;
+}

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_GEN_RUNTIMETYPEINFO_H
 #define TART_GEN_RUNTIMETYPEINFO_H
 
@@ -20,12 +20,12 @@ private:
   const CompositeType * type;
   bool external;
   llvm::GlobalValue::LinkageTypes linkageType;
-  llvm::GlobalVariable * typeObjectPtr;
+  llvm::GlobalVariable * typeDescriptor_;
   llvm::GlobalVariable * typeInfoBlock;
   llvm::PATypeHolder typeInfoBlockType;
   llvm::Constant * typeInfoPtr;
   llvm::Function * typeAllocator;
-  
+
 public:
   RuntimeTypeInfo(const CompositeType * ty, Module * m);
 
@@ -37,18 +37,18 @@ public:
   /** True if the type is defined external to the module. */
   bool isExternal() const { return external; }
 
-  /** The Type object for this type. */
-  llvm::GlobalVariable * getTypeObjectPtr() const {
-    return typeObjectPtr;
-  }
-
   /** Linkage type to use for this type. */
   llvm::GlobalValue::LinkageTypes getLinkageType() const {
     return linkageType;
   }
 
-  void setTypeObjectPtr(llvm::GlobalVariable * value) {
-    typeObjectPtr = value;
+  /** The TypeDescriptor object for this type. */
+  llvm::GlobalVariable * typeDescriptor() const {
+    return typeDescriptor_;
+  }
+
+  void setTypeDescriptor(llvm::GlobalVariable * value) {
+    typeDescriptor_ = value;
   }
 
   /** The TypeInfoBlock for this type. */

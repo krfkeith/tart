@@ -1,0 +1,12 @@
+import tart.reflect.Module;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  testModuleReflection();
+  return 0;
+}
+
+def testModuleReflection() {
+  let m = Module.thisModule();
+  Debug.assertEq("ReflectionTest", m.name);
+}

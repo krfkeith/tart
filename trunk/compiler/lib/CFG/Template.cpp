@@ -32,7 +32,7 @@ PatternVar::PatternVar(const SourceLocation & location,
     TypeDefn * defn, Scope * parentScope, TemplateSignature * temp)
   : DeclaredType(Pattern, defn, parentScope)
   , location_(location)
-  , valueType_(Builtins::typeType)
+  , valueType_(Builtins::typeTypeDescriptor)
   , template_(temp)
 {}
 
@@ -64,7 +64,7 @@ bool PatternVar::canBindTo(const Type * value) const {
   if (const NonTypeConstant * nt = dyn_cast<NonTypeConstant>(value)) {
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
-  } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeType)) {
+  } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeTypeDescriptor)) {
     return true;
   } else {
     return false;
@@ -187,8 +187,8 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     if (var->valueType() == NULL) {
       // TODO: This is needed because some pattern vars are created before
       // typeType is loaded. We should fix that.
-      DASSERT(Builtins::typeType != NULL);
-      var->setValueType(Builtins::typeType);
+      DASSERT(Builtins::typeTypeDescriptor != NULL);
+      var->setValueType(Builtins::typeTypeDescriptor);
     }
 
     Type * value = env.subst(var);

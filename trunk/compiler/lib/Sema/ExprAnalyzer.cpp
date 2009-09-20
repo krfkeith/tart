@@ -265,7 +265,7 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
   }
 
   // See if the pattern var wants a type:
-  Type * type = NULL; // Builtins::typeType;
+  Type * type = NULL; // Builtins::typeTypeD;
   if (ast->type() != NULL) {
     DFAIL("Implement");
   }

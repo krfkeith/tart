@@ -103,6 +103,7 @@ DEFINE_TOKEN(Static)
 DEFINE_TOKEN(Final)
 DEFINE_TOKEN(Abstract)
 DEFINE_TOKEN(Readonly)
+DEFINE_TOKEN(Const)
 DEFINE_TOKEN(Ref)
 
 // Primitive types

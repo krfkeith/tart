@@ -17,6 +17,41 @@ class TypeDefn;
 class ValueDefn;
 
 /// -------------------------------------------------------------------
+/// Class to hold references to members of tart.reflect.TypeDescriptor.
+struct ReflectTypeDescriptor {
+  VariableDefn * memberTypeInfo;
+  VariableDefn * memberTypeKind;
+  VariableDefn * memberSupertype;
+  VariableDefn * memberInterfaces;
+  VariableDefn * memberTypeParams;
+  VariableDefn * memberAttributes;
+  VariableDefn * memberFields;
+  VariableDefn * memberProperties;
+  VariableDefn * memberConstructors;
+  VariableDefn * memberMethods;
+};
+
+/// -------------------------------------------------------------------
+/// Class to hold references to members of tart.reflect.Member.
+struct ReflectMember {
+  VariableDefn * memberName;
+  VariableDefn * memberMemberType;
+  VariableDefn * memberKind;
+  VariableDefn * memberDeclaringType;
+  VariableDefn * memberAccess;
+  VariableDefn * memberTraits;
+  VariableDefn * memberAttributes;
+};
+
+/// -------------------------------------------------------------------
+/// Class to hold references to members of tart.reflect.Member.
+struct ReflectModule {
+  VariableDefn * memberName;
+  VariableDefn * memberTypes;
+  VariableDefn * memberMethods;
+};
+
+/// -------------------------------------------------------------------
 /// Class to hold references to all builtin types and methods.
 class Builtins {
 private:
@@ -24,6 +59,9 @@ private:
   static Defn * loadSystemDef(const char * name);
   static Type * loadSystemType(const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
+
+  template<class T> static T * getMember(Type * tdef, const char * name);
+
   static bool compileBuiltins(ProgramSource & source);
 
 public:
@@ -46,26 +84,15 @@ public:
   // System types - reflection
   static Type * typeTypeDescriptor;
   static Type * typeType;
-  static Type * typeClass;
-  static Type * typeStruct;
-  static Type * typeInterface;
-  static Type * typeEnum;
+  static Type * typeMember;
+  static Type * typeField;
+  static Type * typeProperty;
+  static Type * typeMethod;
+  static Type * typeModule;
 
   // System types - attributes
   static Type * typeAttribute;
   static Type * typeIntrinsicAttribute;
-
-  // System types - implementation
-
-#if 0
-  // System types
-  static const CompositeType * typeInterfaceTable;
-  static const CompositeType * typeArrayType;
-
-  // System attribute types
-  static const CompositeType * typeAllowUnsafeAttribute;
-  static const CompositeType * typeCommutativeAttribute;
-#endif
 
   // Global aliases - used to create static references to types that are dynamically loaded.
   static TypeAlias typeAliasString;
@@ -73,6 +100,11 @@ public:
   // System functions
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
+
+  // Information about reflection classes
+  static ReflectTypeDescriptor rfTypeDescriptor;
+  static ReflectMember rfMember;
+  static ReflectModule rfModule;
 
   // Namespaces
   static NamespaceDefn nsOperator;
@@ -89,6 +121,10 @@ public:
   /** Register an annex type. */
   static void registerAnnexType(Type * type);
 };
+
+template<class T> T * Builtins::getMember(Type * tdef, const char * name) {
+  return cast_or_null<T>(getSingleDefn(tdef, name));
+}
 
 }
 

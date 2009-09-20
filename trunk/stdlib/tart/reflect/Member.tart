@@ -1,0 +1,53 @@
+/** A member of a type */
+class Member {
+  enum Access {
+    PUBLIC,
+    PRIVATE,
+    PROTECTED,
+  }
+  
+  enum MemberKind {
+    FIELD,
+    PROPERTY,
+    METHOD,
+    CONSTRUCTOR,
+  }
+  
+  @Flags enum Traits {
+    FINAL,
+    ABSTRACT,
+    STATIC,
+  } 
+
+  private def construct() {}
+
+  /** The unqualified member name. */
+  let name:String;
+  
+  /** The type of this member. */
+  let memberType:TypeDescriptor;
+  
+  /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
+  let kind:MemberKind;
+  
+  /** The class that declared this member, or null if it's a global function. */
+  let declaringType:Type;
+
+  /** Accessibility of this member. */
+  let access:Access;
+  
+  /** Various member flags. */
+  let traits:Traits;
+
+  /** Array of attributes for this member. */
+  let attributes:Attribute[];
+
+  /** True if this member has static or global storage class. */  
+  //def isStatic:bool { get { return (traits & Traits.STATIC) != 0; } }
+
+  /** True if this member was declared 'final'. */  
+  //def isFinal:bool { get { return (traits & Traits.FINAL) != 0; } }
+
+  /** True if this member is abstract. */  
+  //def isAbstract:bool { get { return (traits & Traits.ABSTRACT) != 0; } }
+}

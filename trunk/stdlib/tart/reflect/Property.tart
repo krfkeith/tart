@@ -1,4 +1,12 @@
-class Property {
-  // type
-  // name
+class Property : Member {
+  /*
+  private var getter = NativePointer[fn (obj:Object) -> Object];
+  private var setter = NativePointer[fn (obj:Object, value:Object)];
+  
+  def isReadable:bool;
+  def isWriteable:bool;
+  
+  def getValue(obj:Object) -> Object;
+  def setValue(obj:Object, value:Object);
+  */
 }

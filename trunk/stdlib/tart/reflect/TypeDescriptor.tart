@@ -1,46 +1,51 @@
 /** The metatype object - the class that describes a type. */
 public class TypeDescriptor {
   enum TypeKind : ubyte {
-    Primitive,
-    Class,
-    Struct,
-    Interface,
-    Enum,
-    Function,
-    Tuple,
-    Union,
-    NPointer,
-    NArray,
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    NATIVE_POINTER,
+    NATIVE_ARRAY,
     //NonType
   }
+
+  /** The TypeInfoBlock for this type. */  
+  let typeInfo:NativePointer[TypeInfoBlock];
   
-  private {
-    var typeInfo:NativePointer[TypeInfoBlock];
-    var kind:TypeKind;
-    var stype:TypeDescriptor;
-    var ifaces:TypeDescriptor[];
-    var params:TypeDescriptor[];
-    var attrs:Attribute[];
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  let typeKind:TypeKind;
+  
+  /** Pointer to this type's supertype, or null. */
+  let supertype:TypeDescriptor /* or void */;
+  
+  /** Array of inherited interfaces. */
+  let interfaces:TypeDescriptor[];
+  
+  /** Array of type parameters. */
+  let typeParams:TypeDescriptor[];
+  
+  /** Array of associated attributes */
+  let attributes:Attribute[];
+  
+  /** Array of field members. */
+  let fields:Field[];
+  
+  /** Array of property members. */
+  let properties:Property[];
+  
+  /** Array of constructor members. */
+  let constructors:Method[];
+  
+  /** Array of methods. */
+  let methods:Method[];
 
-    /** Private constructor - types cannot be created by applications. */
-    private def construct() {}
-  }
-
-  /** The kind of type this is. */
-  def typekind:TypeKind { get { return kind; } }
-
-  /** The supertype of this type, or null if there is no supertype. */
-  def supertype:TypeDescriptor { get { return stype; } }
-
-  /** The list of interfaces that this type implements or extends. */
-  def interfaces:TypeDescriptor[] { get { return params; } }
-
-  /** The list of type parameters, if there are any for this type. Otherwise returns
-      a zero-length array. */
-  def typeParams:TypeDescriptor[] { get { return params; } }
-
-  /** The list of attributes associated with this type. */
-  def attributes:Attribute[] { get { return attrs; } }
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
 
   /** True if this is an aggregate type. */
   //final def isAggregate:bool { get { return false; } }
@@ -49,5 +54,8 @@ public class TypeDescriptor {
   //final def isArray:bool { get { return false; } }
   
   /** True if this is a reference type. */
-  //final def isByReference:bool { get { return kind == Class or kind == Interface; } }
+  //final def isByReference:bool { get { return typeKind == CLASS or kind == INTERFACE; } }
+
+  //def construct(constructor:Method, args:Object[]) -> Object;
+  //def construct(args:Object[]) -> Object;
 }

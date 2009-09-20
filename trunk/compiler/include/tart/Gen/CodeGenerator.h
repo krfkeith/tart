@@ -55,7 +55,7 @@ typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
-typedef llvm::StringMap<llvm::Value *> StringLiteralMap;
+typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
 
@@ -178,29 +178,23 @@ public:
   /** Generate an 'isInstance' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
 
-  /** Generate a reference to the Type object for this type. */
-  llvm::GlobalVariable * getTypeObjectPtr(const CompositeType * ctype);
+  /** Generate a reference to the Type descriptor for this type. */
+  llvm::GlobalVariable * getTypeDescriptorPtr(const CompositeType * ctype);
+  llvm::GlobalVariable * createTypeDescriptorPtr(RuntimeTypeInfo * rtype);
+  void createTypeDescriptor(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the TypeInfoBlock for this type. */
-  llvm::Constant * getTypeInfoPtr(const CompositeType * ctype);
-
-  /** Generate a reference to the allocator function for this type. */
-  llvm::Function * getTypeAllocator(const CompositeType * tdef);
-
-  /** Generate a reference to the Type object for this type. */
-  llvm::GlobalVariable * createTypeObjectPtr(RuntimeTypeInfo * rtype);
-
-  /** Generate a reference to the TypeInfoBlock for this type. */
-  llvm::Constant * createTypeInfoPtr(RuntimeTypeInfo * rtype);
-
-  /** Generate the contents of the Type object for this type. */
-  bool createTypeObject(RuntimeTypeInfo * rtype);
-
-  /** Generate the contents of the TypeInfoBlock for this type. */
+  llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
+  llvm::Constant * createTypeInfoBlockPtr(RuntimeTypeInfo * rtype);
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the allocator function for this type. */
+  llvm::Function * getTypeAllocator(const CompositeType * tdef);
   llvm::Function * createTypeAllocator(RuntimeTypeInfo * tdef);
+
+  /** Create a module object for the current module. */
+  llvm::GlobalVariable * createModuleObjectPtr();
+  void createModuleObject();
 
   /** Generate the method dispatch table for a type. */
   llvm::Constant * genMethodArray(const MethodList & methods);
@@ -245,7 +239,7 @@ public:
   llvm::Function * getExceptionPersonality();
 
   /** Generate data structures for a string literal. */
-  llvm::Value * genStringLiteral(const std::string & strval);
+  llvm::Constant * genStringLiteral(const std::string & strval);
 
   /** Generate an array literal. */
   llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
@@ -300,6 +294,7 @@ private:
   Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
+  llvm::GlobalVariable * moduleObject_;
 
 #if 0
   llvm::Function * moduleInitFunc;

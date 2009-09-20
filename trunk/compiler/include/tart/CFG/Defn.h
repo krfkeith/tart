@@ -123,6 +123,7 @@ public:
     Final,                  // Can't be overridden
     Abstract,               // Can't be instantiated
     ReadOnly,               // Can't be written to from non-privileged code
+    Const,                  // Declares a field to be immutable.
     Extern,                 // Externally defined function
     Ctor,                   // Constructor function
     Singular,               // Has no unbound template params

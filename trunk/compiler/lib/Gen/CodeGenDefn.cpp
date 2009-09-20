@@ -9,10 +9,13 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
+
+#include "tart/Objects/Builtins.h"
 
 #include <llvm/Module.h>
 #include <llvm/Function.h>
@@ -368,5 +371,29 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   return gv;
 }
 
-} // namespace tart
+GlobalVariable * CodeGenerator::createModuleObjectPtr() {
+  if (moduleObject_ == NULL) {
+    moduleObject_ = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
+        GlobalValue::ExternalLinkage, NULL, module_->linkageName() + ".module");
+  }
 
+  return moduleObject_;
+}
+
+void CodeGenerator::createModuleObject() {
+  createModuleObjectPtr();
+  if (!moduleObject_->hasInitializer()) {
+    ConstantList objMembers;
+    ConstantList moduleMembers;
+    objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(Builtins::typeModule)));
+    moduleMembers.push_back(ConstantStruct::get(context_, objMembers));
+    moduleMembers.push_back(genStringLiteral(module_->qualifiedName()));
+    moduleMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfModule.memberTypes->type()->irEmbeddedType())));
+    moduleMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfModule.memberMethods->type()->irEmbeddedType())));
+
+    llvm::Constant * moduleStruct = ConstantStruct::get(context_, moduleMembers);
+    moduleObject_->setInitializer(moduleStruct);
+  }
+}
+
+} // namespace tart

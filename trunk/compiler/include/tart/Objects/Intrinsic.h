@@ -89,6 +89,14 @@ class LocationOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Module.thisModule intrinsic
+class ThisModuleIntrinsic : public Intrinsic {
+  static ThisModuleIntrinsic instance;
+  ThisModuleIntrinsic() : Intrinsic("tart.reflect.Module.thisModule") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Object.__valloc intrinsic
 class VAllocIntrinsic : public Intrinsic {
   static VAllocIntrinsic instance;
