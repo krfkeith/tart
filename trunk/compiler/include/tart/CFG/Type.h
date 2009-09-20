@@ -408,6 +408,9 @@ const char * compatibilityError(ConversionRank tc);
 void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
     const Type * from, const Type * to);
 
+void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
+    const Expr * from, const Type * to);
+
 /** Given two types, try and find the narrowest type that both
     can be converted to.
   */
@@ -429,6 +432,12 @@ public:
   bool operator()(const Type * t0, const Type * t1) {
     return t0->isEqual(t1);
   }
+};
+
+/** Type 'less than' operator for sorting lists of types. */
+class TypeLess {
+public:
+  bool operator()(const Type * t0, const Type * t1);
 };
 
 }

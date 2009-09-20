@@ -113,14 +113,20 @@ bool NativePointerType::isSingular() const {
   return elementType_->isSingular();
 }
 
+bool NativePointerType::isEqual(const Type * other) const {
+  if (const NativePointerType * np = dyn_cast<NativePointerType>(other)) {
+    return elementType_->isEqual(np->elementType_);
+  }
+
+  return false;
+}
+
 bool NativePointerType::isSubtype(const Type * other) const {
   if (isEqual(other)) {
     return true;
   }
 
   return false;
-  //diag.debug() << (Type *)this << " != " << other;
-  //DFAIL("Implement");
 }
 
 void NativePointerType::format(FormatStream & out) const {
@@ -209,9 +215,9 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
       return IdenticalTypes;
     }
 
-    //diag.debug() << Format_Verbose <<
-    //    "Wants to convert from " << fromType << " to " << this;
-    DFAIL("Implement");
+    diag.fatal() << Format_Verbose << "Wants to convert from " << fromType << " to " << this;
+    //DFAIL("Implement");
+    return Incompatible;
   } else {
     return Incompatible;
   }
@@ -222,7 +228,18 @@ bool NativeArrayType::isSingular() const {
 }
 
 bool NativeArrayType::isSubtype(const Type * other) const {
-  DFAIL("Implement");
+  return isEqual(other);
+  //DFAIL("Implement");
+}
+
+bool NativeArrayType::isEqual(const Type * other) const {
+  if (const NativeArrayType * na = dyn_cast<NativeArrayType>(other)) {
+    if (elementType_->isEqual(na->elementType_)) {
+      return size() == na->size();
+    }
+  }
+
+  return false;
 }
 
 void NativeArrayType::format(FormatStream & out) const {

@@ -71,12 +71,10 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Intrinsic def arrayCopy[%T](
-      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:int);
+  @Intrinsic def arrayCopy[%T](dst:NativePointer[T], src:NativePointer[T], length:int);
 
   /** [Ditto] */
-  @Intrinsic def arrayCopy[%T](
-      dst:NativeArray[T, 0], dstOffset:long, src:NativeArray[T, 0], srcOffset:long, length:long);
+  @Intrinsic def arrayCopy[%T](dst:NativePointer[T], src:NativePointer[T], length:long);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
@@ -90,12 +88,10 @@ namespace Memory {
         length: The number of elements to copy. 
    */
   @Intrinsic
-  def arrayMove[%T](
-      dst:NativeArray[T, 0], dstOffset:int, src:NativeArray[T, 0], srcOffset:int, length:int);
+  def arrayMove[%T](dst:NativePointer[T], src:NativePointer[T], length:int);
 
   /** [Ditto] 
    */
   @Intrinsic
-  def arrayMove[%T](
-      dst:NativeArray[T, 0], dstOffset:long, src:NativeArray[T, 0], srcOffset:long, length:long);
+  def arrayMove[%T](dst:NativePointer[T], src:NativePointer[T], length:long);
 }

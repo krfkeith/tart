@@ -27,6 +27,7 @@ class ArrayLiteralExpr;
 /// task can begin. Each analysis task requires one or more analysis passes
 /// to be run on the definition
 enum AnalysisTask {
+  Task_PrepTypeComparison,    // Prepare to compare with other types.
   Task_PrepMemberLookup,      // Prepare the definition for member lookup.
   Task_PrepOverloadSelection, // Prepare type information for selection.
   Task_PrepCallOrUse,         // Prepare a field for calling or using.

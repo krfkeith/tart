@@ -50,11 +50,11 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   /** Array element access. */
   def [index:int]:ElementType {
     get {
-      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index >= 0 and index < length);
       return self.data[index];
     }
     set {
-      Preconditions.checkArgument(index >= 0);
+      Preconditions.checkArgument(index >= 0 and index < length);
       self.data[index] = value;
     }
   }
@@ -73,7 +73,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.length);
     count = min(count, dst.length - dstOffset, src.length - srcOffset);
     if count > 0 {
-      Memory.arrayMove(dst.data, dstOffset, src.data, srcOffset, count);
+      Memory.arrayMove(addressOf(dst.data[dstOffset]), addressOf(src.data[srcOffset]), count);
     }
   }
 
@@ -86,7 +86,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.length);
     count = min(count, dst.length - dstOffset, src.length - srcOffset);
     if count > 0 {
-      Memory.arrayMove(dst.data, dstOffset, src.data, srcOffset, count);
+      Memory.arrayMove(addressOf(dst.data[dstOffset]), addressOf(src.data[srcOffset]), count);
     }
   }
 

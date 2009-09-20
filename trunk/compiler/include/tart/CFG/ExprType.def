@@ -10,6 +10,7 @@ EXPR_TYPE(ConstString)    // A string constant
 EXPR_TYPE(ConstType)      // A reference to a type
 EXPR_TYPE(ConstNull)      // The null value
 EXPR_TYPE(ConstObjRef)    // A constant object
+EXPR_TYPE(ConstNArray)    // A constant native array
 
 // Definitions
 EXPR_TYPE(LValue)         // A reference to a variable or field

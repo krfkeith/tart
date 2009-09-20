@@ -155,7 +155,9 @@ public:
    */
   Type * subst(Type * in, bool finalize = false) const;
 
-  /** Return a list of substitutions for this environment. */
+  Type * relabel(Type * in);
+
+    /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {
     return substitutions_;
   }

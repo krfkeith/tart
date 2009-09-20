@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_EVALPASS_H
 #define TART_SEMA_EVALPASS_H
 
@@ -10,19 +10,19 @@
 #endif
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// Pass which evalutes a compile-time expression.
 class EvalPass {
 public:
-  
+
   /** Evaluate the given expression.
       'allowPartial' - means its ok if the evaluation cannot be done at compile-time.
     */
   static Expr * eval(Expr * in, bool allowPartial = false);
 
 private:
-  
+
   // Contains the parameters and local variables of a call frame.
   class CallFrame {
   public:
@@ -45,7 +45,7 @@ private:
 
   private:
     FunctionDefn * function_;
-    ExprList args_; 
+    ExprList args_;
     Expr * selfArg_;
     Expr * returnVal_;
   };
@@ -65,6 +65,7 @@ private:
   Expr * evalFnCall(FnCallExpr * in);
   Expr * evalNew(NewExpr * in);
   Expr * evalAssign(AssignmentExpr * in);
+  Expr * evalArrayLiteral(ArrayLiteralExpr * in);
 
   void store(Expr * value, Expr * dest);
 

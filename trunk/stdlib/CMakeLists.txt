@@ -6,9 +6,10 @@ file(GLOB TART_STDLIB_SRC
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     tart/core/*.tart
     tart/collections/*.tart
-    tart/charset/*.tart
     tart/io/*.tart
-    tart/reflect/*.tart)
+    tart/reflect/*.tart
+    tart/testing/*.tart
+    tart/text/encodings/*.tart)
 
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path

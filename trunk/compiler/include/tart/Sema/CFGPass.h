@@ -30,6 +30,7 @@ public:
   virtual Expr * visitConstantType(ConstantType * in) { return in; }
   virtual Expr * visitConstantNull(ConstantNull * in) { return in; }
   virtual Expr * visitConstantObjectRef(ConstantObjectRef * in);
+  virtual Expr * visitConstantNativeArray(ConstantNativeArray * in);
 
   virtual Expr * visitLValue(LValueExpr * in);
   virtual Expr * visitScopeName(ScopeNameExpr * in);

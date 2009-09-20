@@ -7,13 +7,34 @@ def main(args: String[]) -> int {
 
 def integerToStringTest() {
   Debug.assertEq("1", byte(1).toString());
+  Debug.assertEq("10", byte(10).toString());
+  Debug.assertEq("127", byte(127).toString());
+  Debug.assertEq("-128", byte(128).toString());
+  Debug.assertEq("-128", byte(-128).toString());
+
   Debug.assertEq("1", short(1).toString());
+  Debug.assertEq("10", short(10).toString());
+  Debug.assertEq("3000", short(3000).toString());
+
   Debug.assertEq("1", int(1).toString());
+  Debug.assertEq("10", int(10).toString());
+
   Debug.assertEq("1", long(1).toString());
+  Debug.assertEq("10", long(10).toString());
+
   Debug.assertEq("1", ubyte(1).toString());
+  Debug.assertEq("10", ubyte(10).toString());
+  Debug.assertEq("255", ubyte(255).toString());
+
   Debug.assertEq("1", ushort(1).toString());
+  Debug.assertEq("10", ushort(10).toString());
+
   Debug.assertEq("1", uint(1).toString());
+  Debug.assertEq("10", uint(10).toString());
+
   Debug.assertEq("1", ulong(1).toString());
+  Debug.assertEq("10", ulong(10).toString());
+
   Debug.assertEq("A", char(65).toString());
 }
 

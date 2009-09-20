@@ -89,7 +89,11 @@ void PatternVar::trace() const {
 }
 
 void PatternVar::format(FormatStream & out) const {
-  out << "%" << name();
+  if (out.getShowQualifiedName()) {
+    out << template_->value()->name() << "%" << name();
+  } else {
+    out << "%" << name();
+  }
 }
 
 /// -------------------------------------------------------------------
@@ -175,7 +179,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     bool singular) {
   bool isPartial = false;
 
-  // Check to make sure that thre parameters are of the correct type.
+  // Check to make sure that the parameters are of the correct type.
   TypeList paramValues;
   bool noCache = false;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
@@ -188,7 +192,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     }
 
     Type * value = env.subst(var);
-    DASSERT(value != NULL);
+    DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
           " incompatible with template parameter " << var << ":" << var->valueType();
@@ -395,7 +399,7 @@ void TemplateInstance::format(FormatStream & out) const {
 
 void TemplateInstance::trace() const {
   paramDefns_.trace();
-  value_->mark();
+  safeMark(value_);
   markList(paramValues_.begin(), paramValues_.end());
 }
 

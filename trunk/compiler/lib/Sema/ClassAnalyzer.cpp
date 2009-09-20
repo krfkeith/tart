@@ -15,11 +15,16 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
+#include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
 
 static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
+
+static const DefnPasses PASS_SET_COMPARE = DefnPasses::of(
+  Pass_ResolveBaseTypes
+);
 
 static const DefnPasses PASS_SET_LOOKUP = DefnPasses::of(
   Pass_CreateMembers,
@@ -42,7 +47,8 @@ static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
   Pass_AnalyzeConstructors,
   Pass_AnalyzeFields,
   Pass_AnalyzeMethods,
-  Pass_ResolveOverloads
+  Pass_ResolveOverloads,
+  Pass_ResolveStaticInitializers
 );
 
 ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
@@ -57,6 +63,10 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   DefnPasses passesToRun;
 
   switch (task) {
+    case Task_PrepTypeComparison:
+      addPasses(target, passesToRun, PASS_SET_COMPARE);
+      break;
+
     case Task_PrepMemberLookup:
       addPasses(target, passesToRun, PASS_SET_LOOKUP);
       break;
@@ -113,6 +123,10 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   }
 
   if (passesToRun.contains(Pass_ResolveOverloads) && !analyzeOverloading()) {
+    return false;
+  }
+
+  if (passesToRun.contains(Pass_ResolveStaticInitializers) && !analyzeStaticInitializers()) {
     return false;
   }
 
@@ -1029,6 +1043,37 @@ bool ClassAnalyzer::createDefaultConstructor() {
   type->addMember(constructorDef);
   constructorDef->createQualifiedName(target);
   return true;
+}
+
+bool ClassAnalyzer::analyzeStaticInitializers() {
+  bool success = true;
+
+  if (target->beginPass(Pass_ResolveStaticInitializers)) {
+    CompositeType * type = cast<CompositeType>(target->typeValue());
+    CompositeType * super = type->super();
+
+    if (super != NULL) {
+      DASSERT_OBJ(super->typeDefn()->isPassFinished(Pass_ResolveStaticInitializers), super);
+    }
+
+    for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();
+        ++it) {
+      VariableDefn * var = cast<VariableDefn>(*it);
+      if (var->initValue() != NULL) {
+        Expr * initVal = var->initValue();
+        Expr * constInitVal = EvalPass::eval(initVal, true);
+        if (constInitVal != NULL) {
+          var->setInitValue(constInitVal);
+        } else {
+          DFAIL("Implement");
+        }
+      }
+    }
+
+    target->finishPass(Pass_ResolveStaticInitializers);
+  }
+
+  return success;
 }
 
 }

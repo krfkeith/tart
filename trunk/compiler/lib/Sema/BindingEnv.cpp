@@ -18,6 +18,23 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 
 namespace tart {
 
+static void assureNoPatternVars(Type * t) {
+  if (DeclaredType * dt = dyn_cast<DeclaredType>(t)) {
+    for (int i = 0; i < dt->numTypeParams(); ++i) {
+      if (isa<PatternVar>(dt->typeParam(i))) {
+        diag.fatal() << "What's a type param doing here?" << t;
+        DFAIL("Unexpected pattern var");
+      }
+    }
+
+    if (CompositeType * ctype = dyn_cast<CompositeType>(t)) {
+      for (ClassList::iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
+        assureNoPatternVars(*it);
+      }
+    }
+  }
+}
+
 // -------------------------------------------------------------------
 // TypeBinding
 
@@ -200,6 +217,9 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
     }
 
     return false;
+  } else if (PrimitiveType * pval = dyn_cast<PrimitiveType>(pattern)) {
+    // Go ahead and unify - type inference will see if it can convert.
+    return true;
   } else {
     //diag.error() << Format_Dealias << "Implement unification of " << pattern << " and " << value;
     return false;
@@ -254,11 +274,11 @@ bool BindingEnv::unifyCompositeType(
     return true;
   }
 
-  if (!AnalyzerBase::analyzeType(pattern, Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(pattern, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (!AnalyzerBase::analyzeType(value, Task_PrepMemberLookup)) {
+  if (!AnalyzerBase::analyzeType(value, Task_PrepTypeComparison)) {
     return false;
   }
 
@@ -340,9 +360,9 @@ bool BindingEnv::unifyPattern(
     return true;
   }
 
-  /*if (isa<PatternVar>(value)) {
-    diag.error() << "PatternVar should already have been replaced with PatternVal by this point";
-    DFAIL("Abort");
+  /*if (PatternVar * pvar = dyn_cast<PatternVar>(value)) {
+    diag.debug() << pattern->templateDefn()->name() << pattern << " <- " << pvar->templateDefn()->name() << pvar << " in " << *this;
+    //DFAIL("Abort");
   }*/
 
   // If there is already a value bound to this pattern variable
@@ -363,7 +383,7 @@ bool BindingEnv::unifyPattern(
       // environment (it should never be from this one), then bind it to
       // this variable.
       // TODO: Might want to check if the value is bindable to this var.
-      if (pval->value() == value) {
+      if (pval->value() == value /*|| pval->var() == pattern && pval->env() == this*/) {
         return true;
       }
 
@@ -401,7 +421,10 @@ bool BindingEnv::unifyPattern(
       //upperBound =
     }
 
-    Type * newValue = Type::selectLessSpecificType(s->right(), value);
+    Type * commonType = Type::selectLessSpecificType(s->right(), value);
+    if (commonType == s->right()) {
+      return true;
+    }
 
     /*if (variance == Invariant) {
       diag.info() << "Invariant " << pattern;
@@ -426,13 +449,15 @@ bool BindingEnv::unifyPattern(
     }*/
 
     // Override the old substitution with a new one.
-    if (newValue != NULL) {
-      if (newValue == value) {
+    if (commonType != NULL) {
+      if (commonType == value) {
         // No need to rebind if same as before.
+        //diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
         return true;
       }
 
-      addSubstitution(pattern, newValue);
+      //diag.debug() << "Adding substitution of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+      addSubstitution(pattern, commonType);
       return true;
     }
 
@@ -458,6 +483,13 @@ bool BindingEnv::unifyPattern(
 }
 
 Substitution * BindingEnv::addSubstitution(const Type * left, Type * right) {
+  for (Substitution * s = substitutions_; s != NULL; s = s->prev()) {
+    if (s->left() == left && s->right() == right) {
+      diag.error() << "Redundant substitution: " << s->left() << " -> " << s->right();
+      DFAIL("BadState");
+    }
+  }
+
   DASSERT(left != right);
   substitutions_ = new Substitution(left, right, substitutions_);
   return substitutions_;
@@ -561,15 +593,146 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
     case Type::Class:
     case Type::Interface:
     case Type::Protocol: {
-      if (in->typeDefn() != NULL && in->typeDefn()->isTemplate()) {
+      if (in->typeDefn() == NULL) {
+        return in;
+      } else if (in->typeDefn()->isTemplate()) {
         Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
         if (def != NULL) {
           return cast<TypeDefn>(def)->typeValue();
         } else {
           return NULL;
         }
+      } else if (in->typeDefn()->isTemplateMember()) {
+        DFAIL("Implement");
+      } else if (in->typeDefn()->isPartialInstantiation()) {
+        DFAIL("Implement");
       }
 
+      return in;
+    }
+
+    case Type::Function:
+    case Type::NonType:
+      //DASSERT(in->isSingular());
+      return in;
+
+    case Type::Primitive:
+      return in;
+
+    case Type::Constraint: {
+      TypeConstraint * constraint = static_cast<TypeConstraint *>(in);
+      DFAIL("Type constraint not handled");
+      break;
+    }
+
+    default:
+      diag.fatal() << "Type class not handled: " << in->typeClass();
+      return NULL;
+  }
+}
+
+Type * BindingEnv::relabel(Type * in) {
+  if (substitutions_ == NULL) {
+    return in;
+  }
+
+  in = dealias(in);
+
+  switch (in->typeClass()) {
+    case Type::Pattern: {
+      PatternVar * var = static_cast<const PatternVar *>(in);
+      Type * value = get(var);
+      if (value != NULL) {
+        return relabel(value);
+      }
+
+      diag.debug() << "Pattern variable " << var << " not found in environment " << *this;
+      DFAIL("Missing substitution");
+
+      return in;
+    }
+
+    case Type::PatternVal: {
+      PatternValue * value = static_cast<const PatternValue *>(in);
+      DASSERT(value->env() == this);
+      Type * result = value->value();
+      if (result != NULL) {
+        return result;
+      }
+
+      return in;
+    }
+
+    case Type::NativePointer: {
+      const NativePointerType * np = static_cast<const NativePointerType *>(in);
+      if (np->typeParam(0) == NULL) {
+        return in;
+      }
+
+      Type * elemType = relabel(np->typeParam(0));
+      if (elemType == np->typeParam(0)) {
+        return in;
+      }
+
+      return NativePointerType::create(elemType);
+    }
+
+    case Type::NativeArray: {
+      const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
+      if (nt->typeParam(0) == NULL) {
+        return in;
+      }
+
+      Type * elemType = relabel(nt->typeParam(0));
+      if (elemType == nt->typeParam(0)) {
+        return in;
+      }
+
+      return NativeArrayType::create(elemType, nt->size());
+    }
+
+    case Type::Struct:
+    case Type::Class:
+    case Type::Interface:
+    case Type::Protocol: {
+      if (in->typeDefn() == NULL) {
+        return in;
+      } else if (in->typeDefn()->isTemplate()) {
+        Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
+        if (def != NULL) {
+          assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
+          return cast<TypeDefn>(def)->typeValue();
+        } else {
+          return NULL;
+        }
+      } else if (in->typeDefn()->isTemplateMember()) {
+        DFAIL("Implement");
+      } else if (in->typeDefn()->isPartialInstantiation()) {
+        TemplateInstance * tinst = in->typeDefn()->templateInstance();
+        TemplateSignature * tsig = tinst->templateDefn()->templateSignature();
+        Substitution * savedState = substitutions_;
+        // Add type param mappings.
+        size_t numParams = tsig->patternVarCount();
+        for (size_t i = 0; i < numParams; ++i) {
+          PatternVar * param = tsig->patternVar(i);
+          Type * value = tinst->paramValues()[i];
+          Type * svalue = relabel(value);
+          if (svalue != NULL) {
+            addSubstitution(param, svalue);
+          }
+        }
+
+        Defn * def = tsig->instantiate(SourceLocation(), *this);
+        substitutions_ = savedState;
+        if (def != NULL) {
+          assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
+          return cast<TypeDefn>(def)->typeValue();
+        } else {
+          return NULL;
+        }
+      }
+
+      assureNoPatternVars(in);
       return in;
     }
 

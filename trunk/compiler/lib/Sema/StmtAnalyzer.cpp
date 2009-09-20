@@ -992,7 +992,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // Analyze the exception type definition
-      AnalyzerBase::analyzeType(exceptType, Task_PrepMemberLookup);
+      AnalyzerBase::analyzeType(exceptType, Task_PrepTypeComparison);
       if (exceptType == NULL ||
           !exceptType->isSubclassOf(cast<CompositeType>(Builtins::typeThrowable))) {
         diag.fatal(exceptDecl) << "'" << exceptDecl << "' is not a subtype of Throwable";
@@ -1135,7 +1135,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //      "Return value not allowed in generator function");
     //}
 
-    analyzeType(returnType_, Task_PrepMemberLookup);
+    analyzeType(returnType_, Task_PrepTypeComparison);
     resultVal = inferTypes(astToExpr(st->value(), returnType_), returnType_);
     if (isErrorResult(resultVal)) {
       return false;
@@ -1153,7 +1153,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     }
 
     if (returnType_ != NULL) {
-      analyzeType(exprType, Task_PrepMemberLookup);
+      analyzeType(exprType, Task_PrepTypeComparison);
       resultVal = returnType_->implicitCast(st->location(), resultVal);
     }
   }

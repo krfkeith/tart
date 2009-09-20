@@ -67,6 +67,9 @@ enum DefnPass {
   /** Compile method tables and resolve all overloads. */
   Pass_ResolveOverloads,
 
+  /** Handle initialization of static members. */
+  Pass_ResolveStaticInitializers,
+
   /** Determine function return type. */
   Pass_ResolveReturnType,
 
@@ -126,6 +129,7 @@ public:
     Synthetic,              // Generated via template
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
+    CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
 
     //Commutative = (1<<10),  // A function whose order of arguments can be reversed
     //Associative = (1<<11),  // A varargs function that can be combined with itself.

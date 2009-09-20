@@ -6,8 +6,10 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/CompositeType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
 #include <llvm/Support/CommandLine.h>
 
@@ -45,26 +47,26 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       if (ts != NULL) {
         isTemplate_ = true;
         size_t numParams = ts->params().size();
-        if (numParams > 0) {
-          // For each template parameter, create a PatternValue instance.
-          for (size_t i = 0; i < numParams; ++i) {
-            PatternVar * var = ts->patternVar(i);
-            Type * value = bindingEnv_.get(var);
-            if (value == NULL) {
-              bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
-            }
-          }
-
-          // Substitute all occurances of pattern vars in the result type
-          // the corresponding pattern value.
-          resultType_ = bindingEnv_.subst(resultType_);
-
-          // Same with function parameter types.
-          for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
-            *pt = bindingEnv_.subst(*pt);
+        // For each template parameter, create a PatternValue instance.
+        for (size_t i = 0; i < numParams; ++i) {
+          PatternVar * var = ts->patternVar(i);
+          Type * value = bindingEnv_.get(var);
+          if (value == NULL) {
+            bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
           }
         }
       }
+    }
+
+    // Substitute all occurances of pattern vars in the result type
+    // the corresponding pattern value.
+    resultType_ = bindingEnv_.relabel(resultType_);
+    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
+
+    // Same with function parameter types.
+    for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
+      *pt = bindingEnv_.relabel(*pt);
+      AnalyzerBase::analyzeType(*pt, Task_PrepTypeComparison);
     }
 
     // Clear all definitions in the environment.
@@ -244,6 +246,22 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     // TODO: Determine the size of the constant integer here.
     if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
       return false;
+    }
+  }
+
+  // A proper unification requires that each template parameter be bound to something.
+  for (Defn * def = method_; def != NULL && !def->isSingular(); def = def->parentDefn()) {
+    TemplateSignature * ts = def->templateSignature();
+    if (ts != NULL) {
+      size_t numParams = ts->params().size();
+      // For each template parameter, create a PatternValue instance.
+      for (size_t i = 0; i < numParams; ++i) {
+        PatternVar * var = ts->patternVar(i);
+        Type * value = bindingEnv_.get(var);
+        if (value == NULL) {
+          return false;
+        }
+      }
     }
   }
 

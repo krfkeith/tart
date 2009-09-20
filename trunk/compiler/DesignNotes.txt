@@ -7,19 +7,27 @@ Design TODOS:
 * Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
-
+* Need a way to collect all declarations that a given attribute is assigned to.
+* Need a way to iterate through all functions in a module.
 Implementation TODOS:
 
+
+* Refactoring
+  * See if we can move template stuff into the type (CompositeType and FunctionType)
+  * See if we can make UnionType and TupleType have type params like templates.
+  * And native types.
+  * And then make native types not require TypeDefns.
+  * And then make a new kind of object that represents an exported module symbol, that can
+      point to either a constant or a function.
+  * And then reduce the number of TypeDefns by allowing specializations to share the same
+      TypeDefn object. Which means that a new template instance does not need a new
+      TypeDefn.
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
-* Write unit tests for enum.toString()
 * Finish array unit tests.
-* Assertions in 'testing' package.
-* Tests for and / or.
-* Array
-  * String.toCharArray
-* Override and redef syntax. refine toString -> String {}
+* Tests for and & or.
+* Override and redef syntax. refine toString -> String {} "defover"?
   * How does that affect properties?
   * +def
   * Template syntax.
@@ -39,6 +47,7 @@ Implementation TODOS:
   * Enum operators (relational and bitwise).
   * .toString
   * .parse
+  * Write unit tests for enum.toString()
 * Tuple types
   * Destructuring assignment
   * Named tuple types
@@ -490,30 +499,6 @@ def <T> InjectAttribute : Attribute {
   }
 }
 
-def InjectAttribute : Attribute {
-  def <R> create (f:fn -> R) {
-    return f();
-  }
-
-  def <R, A0> create (f:fn (:A0) -> R) {
-    return f(create.<A0>());
-  }
-
-  def <R, A0, A1> create (f:fn (:A0, :A1) -> R) {
-    return f(create.<A0>(), create.<A1>());
-  }
-
-  def (target:T) {
-    for i in 0 .. T.params.length {
-      
-    }
-  }
-  
-  def getInstance(injector:Injector) -> T.result {
-    
-  }
-}
-
 namespace Numbers {
   protocol PrimitiveNumber<T> {
     let minVal:T;
@@ -599,19 +584,75 @@ hiding of superclass functions.
   
 // ------------------------------------------------------------------------
 
-final struct Interval[%T] {
-  private var collection:Object;
-  private var begin:NativePointer[T];
-  private var end:NativePointer[T];
-  
-  def [index:int] {
-    get {
-      Preconditions.checkIndex(index, begin, end);
+template<class T>
+class WeakReference {
+public:
+  WeakReference() : value_(NULL) {}
+
+  WeakReference(T * value) : value_(value) {
+    if (value_ != NULL) {
+      wrMap.addReference(this);
     }
-    
-    set {
+  }
+
+  ~WeakReference() {
+    if (value_ != NULL) {
+      wrMap.removeReference(this);
     }
   }
   
-  def length { get { return Memory.__ptrdiff(begin, end); } }
-}
+  const T * value() const { return value_; }
+  T * value() { return value_; }
+
+  void setValue(T * value) {
+    it (value != value_) {
+      if (value_ != NULL) {
+        GC::removeWeakReference(this);
+      }
+
+      value_ = value;
+
+      if (value_ != NULL) {
+        GC::addWeakReference(this);
+      }
+    }
+  }
+  
+  void trace() {}
+
+private:
+  T * value_;
+};
+
+  static void addWeakReference(WeakReference * wr) {
+    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
+    if (it != wrMap_.end()) {
+      it->second().push_back(wr);
+    } else {
+      wrMap.insert(??);
+    }
+  }
+
+  static void removeWealReference(WeakReference * wr) {
+    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
+    if (it != wrMap_.end()) {
+      it->second().remove(wr);
+    }
+  }
+
+  void freeObject(GC * obj) {
+    WeakReferenceMap::iterator it = wrMap_.find(obj);
+    if (it != wrMap_.end()) {
+      for (WeakReferenceMapEntry::iterator wr = it->second().begin(); wr != it->second().end(); ++it) {
+        (*wr)->value_ = NULL;
+      }
+    }
+    
+    wrMap.erase(it);
+  }
+
+
+private:
+  typedef llvm::DenseMap<GC *, llvm::SmallVector<WeakReference *, 1> > WeakReferenceMap;
+  
+  static WeakReferenceMap wrMap;

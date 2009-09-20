@@ -44,6 +44,7 @@ public:
   static Type * typeIterator;
 
   // System types - reflection
+  static Type * typeTypeDescriptor;
   static Type * typeType;
   static Type * typeClass;
   static Type * typeStruct;

@@ -64,6 +64,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ConstObjRef:
       return visitConstantObjectRef(static_cast<ConstantObjectRef *>(in));
 
+    case Expr::ConstNArray:
+      return visitConstantNativeArray(static_cast<ConstantNativeArray *>(in));
+
     case Expr::LValue:
       return visitLValue(static_cast<LValueExpr *>(in));
 
@@ -157,6 +160,15 @@ Expr * CFGPass::visitExpr(Expr * in) {
 Expr * CFGPass::visitConstantObjectRef(ConstantObjectRef * in) {
   ExprList & members = in->members();
   for (ExprList::iterator it = members.begin(); it != members.end(); ++it) {
+    *it = visitExpr(*it);
+  }
+
+  return in;
+}
+
+Expr * CFGPass::visitConstantNativeArray(ConstantNativeArray * in) {
+  ExprList & elements = in->elements();
+  for (ExprList::iterator it = elements.begin(); it != elements.end(); ++it) {
     *it = visitExpr(*it);
   }
 

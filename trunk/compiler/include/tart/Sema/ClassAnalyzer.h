@@ -33,6 +33,7 @@ public:
   void analyzeConstructBase(FunctionDefn * ctor);
   bool analyzeMethods();
   bool analyzeOverloading();
+  bool analyzeStaticInitializers();
 
   void overrideMembers();
   void overrideMethods(MethodList & table, const MethodList & overrides, bool canHide);

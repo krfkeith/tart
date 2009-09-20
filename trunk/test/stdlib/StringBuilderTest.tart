@@ -1,13 +1,20 @@
 @EntryPoint
 def main(args:String[]) -> int {
-  emptyStringBuilderTest();
+  testEmptyStringBuilder();
+  //testStringBuilderAppend();
   return 0;
 }
 
-def emptyStringBuilderTest() {
+def testEmptyStringBuilder() {
   let sb = StringBuilder();
   Debug.assertEq(0, sb.length);
+  Debug.assertEq("", sb.toString());
 }
 
 def testStringBuilderAppend() {
+  let sb = StringBuilder();
+  sb.append("Hello");
+  Debug.assertEq("Hello", sb.toString());
+  sb.append(", World");
+  Debug.assertEq("Hello, World", sb.toString());
 }

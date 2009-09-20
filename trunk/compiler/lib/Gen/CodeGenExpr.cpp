@@ -10,6 +10,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/Gen/CodeGenerator.h"
@@ -187,12 +188,18 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   switch (in->exprType()) {
     case Expr::ConstInt:
-    return static_cast<const ConstantInteger *>(in)->value();
+      return static_cast<const ConstantInteger *>(in)->value();
+
+    case Expr::ConstObjRef:
+      return genConstantObject(static_cast<const ConstantObjectRef *>(in));
+
+    case Expr::ConstNArray:
+      return genConstantArray(static_cast<const ConstantNativeArray *>(in));
 
     default:
-    diag.fatal(in) << "Not a constant: " <<
-    exprTypeName(in->exprType()) << " [" << in << "]";
-    DFAIL("Implement");
+      diag.fatal(in) << "Not a constant: " <<
+      exprTypeName(in->exprType()) << " [" << in << "]";
+      DFAIL("Implement");
   }
 }
 
@@ -707,7 +714,12 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
 
   ExprList & inArgs = in->args();
   for (ExprList::iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
-    args.push_back(genExpr(*it));
+    Value * argVal = genExpr(*it);
+    if (argVal == NULL) {
+      return NULL;
+    }
+
+    args.push_back(argVal);
   }
 
   // TODO: VCalls and ICalls.
@@ -1071,6 +1083,90 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   }
 
   return instance;
+}
+
+Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
+  ConstantObjectMap::iterator it = constantObjectMap_.find(obj);
+  if (it != constantObjectMap_.end()) {
+    return it->second;
+  }
+
+  const CompositeType * type = cast<CompositeType>(obj->type());
+  llvm::Constant * structVal = genConstantObjectStruct(obj, type);
+  /*if (structVal != NULL && structVal->getType() != type->irEmbeddedType()) {
+    structVal = llvm::ConstantExpr::getPointerCast(structVal, type->irEmbeddedType());
+  }*/
+
+  constantObjectMap_[obj] = structVal;
+  return structVal;
+}
+
+Constant * CodeGenerator::genConstantObjectStruct(
+    const ConstantObjectRef * obj, const CompositeType * type) {
+  ConstantList fieldValues;
+  if (type == Builtins::typeObject) {
+    // Generate the TIB pointer.
+    llvm::Constant * tibPtr = getTypeInfoPtr(cast<CompositeType>(obj->type()));
+    if (tibPtr == NULL) {
+      return NULL;
+    }
+
+    fieldValues.push_back(tibPtr);
+  } else {
+    // Generate the superclass fields.
+    if (type->super() != NULL) {
+      llvm::Constant * superFields = genConstantObjectStruct(obj, type->super());
+      if (superFields == NULL) {
+        return NULL;
+      }
+
+      fieldValues.push_back(superFields);
+    }
+
+    // Now generate the values for each member.
+    for (DefnList::const_iterator it = type->instanceFields().begin();
+        it != type->instanceFields().end(); ++it) {
+      if (VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
+        Expr * value = obj->getMemberValue(var);
+        if (value == NULL) {
+          // Special case for Array.
+          if (type->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
+            if (var->memberIndexRecursive() == 1) {
+              UndefValue * end = UndefValue::get(var->type()->irType());
+              fieldValues.push_back(end);
+              continue;
+            }
+          }
+
+          diag.error(obj) << "Member value '" << var << "' has not been initialized.";
+          return NULL;
+        }
+
+        Constant * irValue = genConstExpr(value);
+        if (irValue == NULL) {
+          return NULL;
+        }
+
+        fieldValues.push_back(irValue);
+      }
+    }
+  }
+
+  return ConstantStruct::get(context_, fieldValues);
+}
+
+llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * array) {
+  ConstantList elementValues;
+  for (ExprList::const_iterator it = array->elements().begin(); it != array->elements().end(); ++it) {
+    Constant * value = genConstExpr(*it);
+    if (value == NULL) {
+      return NULL;
+    }
+
+    elementValues.push_back(value);
+  }
+
+  return ConstantArray::get(cast<ArrayType>(array->type()->irType()), elementValues);
 }
 
 } // namespace tart

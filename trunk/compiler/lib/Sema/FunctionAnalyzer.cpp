@@ -46,6 +46,7 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
 
   DefnPasses passesToRun;
   switch (task) {
+    case Task_PrepTypeComparison:
     case Task_PrepMemberLookup:
       break;
 

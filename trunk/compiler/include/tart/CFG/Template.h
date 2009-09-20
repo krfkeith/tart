@@ -182,6 +182,32 @@ private:
   Scope * parentScope_;             // Parent scope of this definition.
 };
 
+/// -------------------------------------------------------------------
+/// A list of type parameters for a type.
+/// TODO: Refactor templates to use this.
+class TypeParams {
+public:
+  TypeParams(Defn * source) : source_(source ) {}
+
+  /** A pointer to the originating template. */
+  const Defn * source() const { return source_; }
+  Defn * source() { return source_; }
+
+  /** The list of argument types that match the template signature parameters. */
+  const TypeList & params() const { return params_; }
+  TypeList & params() { return params_; }
+
+  /** The type values bound to the pattern variables in the template signature. */
+  const TypeList & captures() const { return captures_; }
+  TypeList & captures() { return captures_; }
+
+private:
+  Defn * source_;                   // The originating template.
+  TypeList params_;                 // The values for each template parameter.
+  TypeList captures_;               // Values captures by the pattern variables in the template.
+  OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
+};
+
 } // namespace tart
 
 #endif

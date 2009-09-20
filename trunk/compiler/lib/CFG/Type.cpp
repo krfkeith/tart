@@ -5,6 +5,7 @@
 #include "tart/CFG/Type.h"
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/CompositeType.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
@@ -57,6 +58,15 @@ void compatibilityWarning(const SourceLocation & loc,
   if (isConversionWarning(rank)) {
     diag.error(loc) << Format_Verbose << compatibilityError(rank) <<
         " converting from " << from << " to " << to;
+  }
+}
+
+void compatibilityWarning(const SourceLocation & loc,
+  ConversionRank rank, const Expr * from, const Type * to) {
+  DASSERT(!isErrorResult(from));
+  if (isConversionWarning(rank)) {
+    diag.error(loc) << Format_Verbose << compatibilityError(rank) <<
+        " converting " << from << " from " << from->type() << " to " << to;
   }
 }
 
@@ -193,7 +203,7 @@ ConversionRank Type::canConvert(const Type * fromType) const {
 Expr * Type::implicitCast(const SourceLocation & loc, Expr * from) const {
   Expr * result = NULL;
   ConversionRank tc = convert(Conversion(from, &result));
-  compatibilityWarning(loc, tc, from->type(), this);
+  compatibilityWarning(loc, tc, from, this);
   DASSERT(tc == Incompatible || result != NULL);
   return result;
 }
@@ -202,7 +212,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from) const {
   Expr * result = NULL;
   ConversionRank tc = convert(Conversion(from, &result));
   if (tc == Incompatible) {
-    compatibilityWarning(loc, tc, from->type(), this);
+    compatibilityWarning(loc, tc, from, this);
   }
   return result;
 }
@@ -391,14 +401,14 @@ Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
 }
 
 bool Type::equivalent(const Type * type1, const Type * type2) {
-  if (const PatternValue * pval = dyn_cast<PatternValue>(type1)) {
+  while (const PatternValue * pval = dyn_cast<PatternValue>(type1)) {
     type1 = pval->value();
     if (type1 == NULL) {
       return false;
     }
   }
 
-  if (const PatternValue * pval = dyn_cast<PatternValue>(type2)) {
+  while (const PatternValue * pval = dyn_cast<PatternValue>(type2)) {
     type2 = pval->value();
     if (type2 == NULL) {
       return false;
@@ -412,6 +422,7 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
   // Compare the ASTs to see if they derive from the same original symbol.
   if (type1->typeDefn() != NULL &&
       type2->typeDefn() != NULL &&
+      type1->typeDefn()->ast() != NULL &&
       type1->typeDefn()->ast() == type2->typeDefn()->ast()) {
 
     // Now test the type parameters to see if they are also equivalent.
@@ -502,6 +513,65 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
+}
+
+bool TypeLess::operator()(const Type * t0, const Type * t1) {
+  t0 = dealias(t0);
+  t1 = dealias(t0);
+
+  if (t0->typeClass() < t1->typeClass()) {
+    return true;
+  }
+
+  if (t0->typeClass() > t1->typeClass()) {
+    return false;
+  }
+
+  switch (t0->typeClass()) {
+    case Type::Primitive: {
+      const PrimitiveType * p0 = static_cast<const PrimitiveType *>(t0);
+      const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
+      return p0->typeId() < p1->typeId();
+    }
+
+    case Type::Class:
+    case Type::Struct:
+    case Type::Interface:
+    case Type::Protocol: {
+      const CompositeType * c0 = static_cast<const CompositeType *>(t0);
+      const CompositeType * c1 = static_cast<const CompositeType *>(t1);
+      if (c0->typeDefn()->qualifiedName() != c1->typeDefn()->qualifiedName()) {
+        return std::less<std::string>()(
+            c0->typeDefn()->qualifiedName(), c1->typeDefn()->qualifiedName());
+      }
+
+      // TODO: Make this a separate function and write unit tests for it
+      for (int i = 0; i < c0->numTypeParams(); ++i) {
+        if (i >= c1->numTypeParams()) {
+          return false;
+        }
+
+        if (!c0->typeParam(i)->isEqual(c1->typeParam(i))) {
+          return operator()(c0->typeParam(i), c1->typeParam(i));
+        }
+      }
+
+      return c0->numTypeParams() != c1->numTypeParams();
+    }
+
+    case Type::Enum:
+
+    case Type::Function:
+    case Type::Tuple:
+    case Type::Union:
+    case Type::NativePointer:
+    case Type::NativeArray: {
+      DFAIL("Implement");
+    }
+
+    default:
+      DFAIL("Bad type for less-than comparison");
+  }
 }
 
 } // namespace tart

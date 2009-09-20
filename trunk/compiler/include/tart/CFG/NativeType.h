@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_NATIVETYPE_H
 #define TART_CFG_NATIVETYPE_H
 
@@ -33,10 +33,11 @@ public:
   void initBuiltin();
 
   // Overrides
-  
+
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
+  bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
@@ -66,7 +67,7 @@ public:
   /** Construct a native array type */
   NativeArrayType(Type * elementType, uint64_t sz, TypeDefn * defn,
       Scope * parentScope);
-  
+
   /** Initialize the built-in template for this type. */
   void initBuiltin();
 
@@ -75,10 +76,11 @@ public:
   void setSize(uint64_t sz) { size_ = sz; }
 
   // Overrides
-  
+
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
+  bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;

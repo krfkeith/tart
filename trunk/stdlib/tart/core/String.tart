@@ -4,7 +4,6 @@ import tart.core.Memory.addressOf;
 /** The built-in string class. Strings are immutable. */
  /* : public Iterable[char] */
 public final class String {
-
   private {
     /** The length of the string, in bytes. */
     var len:int;
@@ -22,7 +21,6 @@ public final class String {
     var data:NativeArray[ubyte, 0];
 
     /** Custom allocation function for strings. */
-    //[RequireFeature]
     static def alloc(len:int) -> String {
       // The 'offsetof' trick for calculating the size.
       let s:String = __pvalloc(zeroPtr[String]().data[len]);
@@ -36,11 +34,30 @@ public final class String {
   /** Construct a string from a byte array. */
   static def create(bytes:ubyte[]) -> String {
     let self = alloc(bytes.length);
-    // TODO: Test
-    // TODO: Need for array copy to work with non-native arrays I guess.
-    for i = 0; i < self.len; i++ {
-      self.data[i] = bytes[i];
-    }
+    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), bytes.length);
+    return self;
+  }
+
+  /** Construct a string from a byte array. */
+  static def create(bytes:ubyte[], start:int, count:int) -> String {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, bytes.length);
+    count = Math.min(count, bytes.length - start);
+    let self = alloc(count);
+    Memory.arrayCopy(addressOf(bytes.data[start]), addressOf(self.data[0]), count);
+    return self;
+  }
+
+  /** Construct a string from a char array. */
+  static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, chars.length);
+    count = Math.min(count, chars.length - start);
+    
+    let self = alloc(count);
+    //Memory.arrayCopy(bytes.data, start, self.data, 0, count);
     return self;
   }
 
@@ -50,9 +67,10 @@ public final class String {
     let self = alloc(length);
     // TODO: Test
     // TODO: Need for array copy to work with non-native arrays I guess.
-    for i = 0; i < self.len; i++ {
-      self.data[i] = bytes[i];
-    }
+    //for i = 0; i < self.len; i++ {
+    //  self.data[i] = bytes[i];
+    //}
+    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes[0]), length);
     return self;
   }
 
@@ -166,6 +184,10 @@ public final class String {
   }
 
   static def concat(s:String...) -> String {
+    return concat(s);
+  }
+
+  static def concat(s:String[]) -> String {
     let count = s.length;
     var length = 0;
     for i = 0; i < count; ++i {

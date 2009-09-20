@@ -282,28 +282,19 @@ Value * CodeGenerator::genVarValue(const VariableDefn * var) {
 }
 
 Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
+  // Global variables never set the IRValue field, because that field has a different value
+  // depending on what module we are compiling.
+  DASSERT(var->defnType() == Defn::Var);
+  DASSERT(var->irValue() == NULL);
   DASSERT(var->storageClass() == Storage_Global || var->storageClass() == Storage_Static);
 
-  GlobalVariable * externalVar = irModule_->getGlobalVariable(var->linkageName());
-  if (externalVar != NULL) {
-    return externalVar;
+  GlobalVariable * gv = irModule_->getGlobalVariable(var->linkageName());
+  if (gv != NULL) {
+    return gv;
   }
-
-  // Global variables never set the IRValue field, because that field has a different value
-  // dependig on what module we are compiling.
-  DASSERT(var->irValue() == NULL);
-
-#if 0
-  // Generate the attributes
-  Attributes varAttrs;
-  if (!genAttrs(var, varAttrs)) {
-    return NULL;
-  }
-#endif
 
   const Type * varType = var->type();
   DASSERT(varType != NULL);
-  const llvm::Type * irType = varType->irEmbeddedType();
 
   // Create the global variable
   GlobalValue::LinkageTypes linkType = Function::ExternalLinkage;
@@ -311,8 +302,8 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
     linkType = Function::LinkOnceAnyLinkage;
   }
 
-  bool threadLocal = false;
 #if 0
+  bool threadLocal = false;
   bool threadLocal = var->findAttribute(Builtins::typeThreadLocalAttribute) != NULL;
   if (threadLocal && var->storageClass() != Storage_Global &&
       var->storageClass() != Storage_Static) {
@@ -320,8 +311,10 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   }
 #endif
 
-  GlobalVariable * gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL,
-      var->linkageName());
+  // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
+  // the type of a global variable into a pointer anyway.
+  const llvm::Type * irType = varType->irEmbeddedType();
+  gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL, var->linkageName());
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
@@ -332,7 +325,13 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
       if (initExpr->isConstant()) {
         Constant * initValue = genConstExpr(initExpr);
         if (initValue == NULL) {
-          return false;
+          return NULL;
+        }
+
+        if (varType->isReferenceType()) {
+          initValue = new GlobalVariable(
+              *irModule_, initValue->getType(), false, linkType, initValue, "");
+          initValue = llvm::ConstantExpr::getPointerCast(initValue, varType->irEmbeddedType());
         }
 
         gv->setInitializer(initValue);

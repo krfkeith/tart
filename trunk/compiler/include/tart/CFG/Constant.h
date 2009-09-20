@@ -14,6 +14,7 @@
 namespace tart {
 
 class PrimitiveType;
+class NativeArrayType;
 
 // Note that the names of these classes has been chosen not to collide
 // with the LLVM constant classes.
@@ -177,14 +178,15 @@ private:
   ExprList members_;
 
 public:
-  ConstantObjectRef(SourceLocation l, Type * val);
+  ConstantObjectRef(SourceLocation l, CompositeType * val);
 
   const ExprList & members() const { return members_; }
   ExprList & members() { return members_; }
 
-  Expr * getMemberValue(VariableDefn * member);
-  Expr * getMemberValue(const char * name);
+  Expr * getMemberValue(VariableDefn * member) const;
+  Expr * getMemberValue(const char * name) const;
   void setMemberValue(VariableDefn * member, Expr * value);
+  void setMemberValue(const char * name, Expr * value);
 
   int32_t memberValueAsInt(const char * name);
 
@@ -199,6 +201,32 @@ public:
   static inline bool classof(const ConstantObjectRef *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == ConstObjRef;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A constant native array.
+class ConstantNativeArray : public Expr {
+private:
+  ExprList elements_;
+
+public:
+  ConstantNativeArray(SourceLocation l, NativeArrayType * type);
+
+  const ExprList & elements() const { return elements_; }
+  ExprList & elements() { return elements_; }
+
+  // Overrides
+
+  bool isConstant() const { return true; }
+  bool isSideEffectFree() const { return true; }
+  bool isSingular() const;
+
+  void format(FormatStream & out) const;
+  void trace() const;
+  static inline bool classof(const ConstantNativeArray *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == ConstNArray;
   }
 };
 

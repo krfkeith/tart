@@ -6,7 +6,7 @@
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
 
 add_executable(testrunner testrunner.cpp)
-add_dependencies(testrunner collector compiler)
+add_dependencies(testrunner collector compiler unittest.run)
 target_link_libraries(testrunner
     compiler collector
     ${LLVM_BIT_READER}
@@ -33,6 +33,6 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   add_custom_command(TARGET failtests PRE_BUILD
       COMMAND testrunner ${TART_OPTIONS} -sourcepath ${SRCDIR} -i${MODPATH} ${SRC_FILE}
-      DEPENDS "${SRC_FILE}" testrunner
+      DEPENDS "${SRC_FILE}" testrunner stdlib
       COMMENT "Running failure test ${SRC_FILE}")
 endforeach(SRC_FILE)

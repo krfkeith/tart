@@ -80,4 +80,8 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
   return in;
 }
 
+Expr * FoldConstantsPass::visitInitVar(InitVarExpr * in) {
+  return CFGPass::visitInitVar(in);
+}
+
 } // namespace tart

@@ -5,6 +5,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Block.h"
 #include "tart/Sema/EvalPass.h"
@@ -119,10 +120,12 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
     case Expr::Prog2:
       return evalProg2(static_cast<BinaryExpr *>(in));
+#endif
 
     case Expr::ArrayLiteral:
       return evalArrayLiteral(static_cast<ArrayLiteralExpr *>(in));
 
+#if 0
     case Expr::IRValue:
       return in;
 
@@ -347,6 +350,30 @@ void EvalPass::store(Expr * value, Expr * dest) {
   } else {
     DFAIL("Implement");
   }
+}
+
+Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
+  CompositeType * arrayType = cast<CompositeType>(in->type());
+  Type * elementType = arrayType->typeParam(0);
+  ConstantNativeArray * arrayData =
+      new ConstantNativeArray(
+          in->location(),
+          NativeArrayType::create(elementType, in->args().size()));
+  for (ExprList::iterator it = in->args().begin(); it != in->args().end(); ++it) {
+    Expr * element = elementType->implicitCast((*it)->location(), evalExpr(*it));
+    if (element == NULL) {
+      return NULL;
+    }
+
+    arrayData->elements().push_back(element);
+
+    //*it = element;
+  }
+
+  // Constant array objects are special because of their variable size.
+  ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
+  arrayObj->setMemberValue("data", arrayData);
+  return arrayObj;
 }
 
 } // namespace tart
