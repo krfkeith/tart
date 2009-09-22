@@ -9,23 +9,23 @@ namespace Debug {
   @Extern("Debug_write")
   def write(msg:String);
 
+  def write(msgs:String...) {
+    write(String.concat(msgs));
+  }
+  
   @Extern("Debug_writeLn")
   def writeLn(msg:String);
+  
+  def writeLn(msgs:String...) {
+    writeLn(String.concat(msgs));
+  }
   
   @Extern("Debug_fail")
   def fail(msg:String);
 
-  @Extern("Debug_fail2")
-  def fail(s0:String, s1:String);
-
-  @Extern("Debug_fail3")
-  def fail(s0:String, s1:String, s2:String);
-
-  @Extern("Debug_fail4")
-  def fail(s0:String, s1:String, s2:String, s3:String);
-
-  @Extern("Debug_fail5")
-  def fail(s0:String, s1:String, s2:String, s3:String, s4:String);
+  def fail(msgs:String...) {
+    fail(String.concat(msgs));
+  }
 
   macro assertTrue(cond:bool) {
     if not cond {

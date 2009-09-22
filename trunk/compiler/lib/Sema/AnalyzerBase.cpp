@@ -104,8 +104,8 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     // See if it's an expression.
     ExprAnalyzer ea(module, activeScope);
-    Expr * result = ea.reduceExpr(ast, NULL);
-    if (result != NULL) {
+    Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
+    if (!isErrorResult(result)) {
       out.push_back(result);
       return true;
     }
@@ -568,6 +568,9 @@ bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
     for (Defn * m = in->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
       DefnAnalyzer da(in->module(), &in->memberScope());
       da.analyzeDefn(m, Task_PrepCodeGeneration);
+      if (m->isSingular()) {
+        in->module()->addSymbol(m);
+      }
     }
 
     in->finishPass(Pass_ResolveStaticInitializers);

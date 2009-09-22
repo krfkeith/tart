@@ -151,6 +151,7 @@ class UTF8 : Codec {
     
     if count > 0 {
       /** A non-zero count means we ran out of room in the destination buffer. */
+      /** TODO: Invent an exception for this. */
     }
     
     return length;

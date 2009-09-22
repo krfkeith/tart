@@ -110,7 +110,9 @@ Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   CompositeType * arrayType = cast<CompositeType>(in->type());
+  DASSERT(arrayType->typeDefn()->isPassFinished(Pass_CreateMembers));
   Defn * allocFunc = arrayType->lookupSingleMember("alloc");
+  DASSERT(allocFunc != NULL);
   addSymbol(arrayType->typeDefn());
   addSymbol(allocFunc);
   return in;

@@ -130,18 +130,21 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 
       same = false;
     } else {
-      bool isEQ = t1->isEqual(t0);
-      if (!isEQ) {
-        DASSERT(t1->isEqual(t0));
+      // Ensure that equality is symmetrical.
+      DASSERT(t1->isEqual(t0));
+
+      // Variadic parameters are less specific than non-variadic parameters.
+      ParameterDefn * p0 = method_->functionType()->param(parameterIndex(i));
+      ParameterDefn * p1 = other->method_->functionType()->param(other->parameterIndex(i));
+      if (p0->isVariadic()) {
+        if (!p1->isVariadic()) {
+          return false;
+        }
+      } else if (p1->isVariadic()) {
+        same = false;
       }
     }
   }
-
-  //if (!same) {
-  //  diag.debug(method_) << method_ << " is more specific than " << other->method_;
-  //} else {
-  //  diag.debug(method_) << method_ << " is the same as " << other->method_;
-  //}
 
   if (same) {
     // If one is a template, than it is less specific than the other.

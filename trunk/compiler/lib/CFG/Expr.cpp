@@ -152,6 +152,14 @@ void BinaryExpr::format(FormatStream & out) const {
       out << first_ << "[" << second_ << "]";
       break;
 
+    case And:
+      out << first_ << " and " << second_;
+      break;
+
+    case Or:
+      out << first_ << " or " << second_;
+      break;
+
     default:
       out << exprTypeName(exprType()) << "(" << first_ << ", " << second_ << ")";
       break;
@@ -549,7 +557,7 @@ void CompareExpr::format(FormatStream & out) const {
     case llvm::CmpInst::FCMP_ULE:
     case llvm::CmpInst::ICMP_ULE:
     case llvm::CmpInst::ICMP_SLE:
-      oper = ">=";
+      oper = "<=";
       break;
 
     default:

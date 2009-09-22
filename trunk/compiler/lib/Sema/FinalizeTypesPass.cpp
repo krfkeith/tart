@@ -162,6 +162,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(callingArgs[paramIndex]);
         if (arrayParam == NULL) {
           arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
+          AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
           DASSERT(arrayParam->isSingular());
           callingArgs[paramIndex] = arrayParam;
         }
@@ -181,6 +182,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
           // Pass a null array - possibly a static singleton.
           ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
               param->location(), param->type());
+          AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
           callingArgs[paramIndex] = arrayParam;
         } else {
           callingArgs[paramIndex] = param->defaultValue();
