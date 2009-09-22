@@ -205,11 +205,8 @@ public final class String {
     var index = 0;
     for i = 0; i < count; ++i {
       let src = s[i];
-      //Memory.arrayCopy(result.data, index, src.data, 0, src.len);
-      //index += src.len;
-      for j = 0; j < src.len; ++j {
-        result.data[index++] = src.data[j];
-      }
+      Memory.arrayCopy(addressOf(result.data[index]), addressOf(src.data[0]), src.len);
+      index += src.len;
     }
 
     return result;

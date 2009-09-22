@@ -1,10 +1,15 @@
 @EntryPoint
 def main(args:String[]) -> int {
-  testEmptyStringBuilder();
-  testNonEmptyStringBuilder();
-  //testStringBuilderAppend();
-  //testStringBuilderInsert();
-  //testStringBuilderRemove();
+  //@GenerateStackTrace
+  try {
+    testEmptyStringBuilder();
+    testNonEmptyStringBuilder();
+    testStringBuilderAppend();
+    testStringBuilderInsert();
+    testStringBuilderRemove();
+  } catch e:Exception {
+    Debug.fail("Exception BAD: ", e.msg);
+  }
   return 0;
 }
 
@@ -23,6 +28,7 @@ def testNonEmptyStringBuilder() {
 def testStringBuilderAppend() {
   let sb = StringBuilder();
   sb.append("Hello");
+  Debug.assertEq(5, sb.toString().length);
   Debug.assertEq("Hello", sb.toString());
   sb.append(", World");
   Debug.assertEq("Hello, World", sb.toString());
@@ -36,6 +42,7 @@ def testStringBuilderInsert() {
   let sb = StringBuilder();
   sb.append(", World");
   sb.insert(0, "Hello");
+  Debug.assertEq(12, sb.toString().length);
   Debug.assertEq("Hello, World", sb.toString());
   sb.insert(sb.length, '!');
 }

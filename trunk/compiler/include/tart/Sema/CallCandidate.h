@@ -77,7 +77,7 @@ public:
       as this one. */
   bool isEqual(const CallCandidate * other) const;
 
-  /** Return true if this candidate is more specific than the one given. */
+  /** Return true if *this* candidate is more specific than the one given. */
   bool isMoreSpecific(const CallCandidate * other) const;
 
   /** Return true if the method and base pointer are singular. */
