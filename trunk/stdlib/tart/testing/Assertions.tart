@@ -1,28 +1,30 @@
+import tart.core.Debug.stringify;
+
 /** Useful assertion helper functions. */
 namespace Assertions {
   macro assertTrue(cond:bool) {
     if not cond {
       //throw AssertionFailedException();
-      throw AssertionFailedException(stringify(cond));
+      throw AssertionFailureException(stringify(cond));
     }
   }
 
   macro assertFalse(cond:bool) {
     if cond {
-      throw AssertionFailedException(stringify(cond));
+      throw AssertionFailureException(stringify(cond));
     }
   }
 
   macro assertEq[%T](expected:T, actual:T) {
     if expected != actual {
-      throw AssertionFailedException(
+      throw AssertionFailureException(
         String.concat("expected: ", stringify(expected), ", actual value: ", actual.toString()));
     }
   }
 
   macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
     if not Iterators.equal(expected, actual) {
-      throw AssertionFailedException(
+      throw AssertionFailureException(
         // TODO: Replace with String.format.
         String.concat("expected: ", stringify(expected), ", actual: ", actual.toString()));
     }

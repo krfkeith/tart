@@ -193,7 +193,7 @@ public:
   const Expr * arg(size_t index) const { return args_[index]; }
   Expr * arg(size_t index) { return args_[index]; }
   size_t argCount() const { return args_.size(); }
-  void appendArg(Expr * en) { args_.push_back(en); }
+  void appendArg(Expr * arg);
 
   // Overrides
 

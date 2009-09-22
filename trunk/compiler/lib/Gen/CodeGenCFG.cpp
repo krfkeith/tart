@@ -50,7 +50,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 void CodeGenerator::genBlocks(BlockList & blocks) {
 
   // Generate debugging information (this has to be done after local variable allocas.)
-  if (debug) {
+  if (debug_ && !dbgFunction_.isNull()) {
     dbgFactory_.InsertSubprogramStart(dbgFunction_, builder_.GetInsertBlock());
   }
 
@@ -73,7 +73,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 
     ExprList & types = blk->exprs();
     for (ExprList::iterator it = types.begin(); it != types.end(); ++it) {
-      if (debug) {
+      if (debug_ && !dbgFunction_.isNull()) {
         // Generate source line information.
         TokenPosition pos = tokenPosition((*it)->location());
         dbgFactory_.InsertStopPoint(
@@ -85,7 +85,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
       genStmt(*it);
     }
 
-    if (debug) {
+    if (debug_ && !dbgFunction_.isNull()) {
       TokenPosition pos = tokenPosition(blk->termLocation());
       dbgFactory_.InsertStopPoint(
           dbgCompileUnit_,
@@ -94,7 +94,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
     }
 
     // If this is the last block, generate debugging info before the terminator.
-    if (debug && blk == blocks.back()) {
+    if (debug_ && !dbgFunction_.isNull() && blk == blocks.back()) {
       dbgFactory_.InsertRegionEnd(dbgFunction_, builder_.GetInsertBlock());
     }
 

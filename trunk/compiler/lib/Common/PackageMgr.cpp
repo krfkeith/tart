@@ -87,7 +87,7 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
         }
 
         ScopeBuilder::createScopeMembers(mod);
-        if (!mod->lookupMember(primaryName.c_str(), mod->primaryDefs_, false)) {
+        if (!mod->IterableScope::lookupMember(primaryName.c_str(), mod->primaryDefs_, false)) {
           diag.fatal(SourceLocation()) << "No symbol '" << primaryName <<
             "' found in module '" << mod->qname_ << "'";
         }

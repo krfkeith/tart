@@ -832,6 +832,7 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
 Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
     Expr * basePtr, PropertyDefn * prop, Expr * value) {
 
+  DASSERT(value != NULL);
   if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
     return &Expr::ErrorVal;
   }
@@ -1020,7 +1021,18 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   setterCall->setType(prop->type());
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
-  setterCall->appendArg(prop->type()->implicitCast(loc, value));
+  if (!value->isSingular()) {
+    value = inferTypes(value, prop->type());
+    if (isErrorResult(value)) {
+      return value;
+    }
+  }
+
+  value = prop->type()->implicitCast(loc, value);
+  if (value != NULL) {
+    setterCall->appendArg(value);
+  }
+
   module->addSymbol(setter);
   analyzeLater(setter);
   return setterCall;

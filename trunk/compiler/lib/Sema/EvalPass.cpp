@@ -42,6 +42,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ConstString:
     case Expr::ConstType:
     case Expr::ConstNull:
+    case Expr::ConstObjRef:
       return in;
 
 #if 0
@@ -138,7 +139,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 #endif
   }
 
-  diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType());
+  diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType()) << " : " << in;
   DFAIL("Fall through");
 }
 

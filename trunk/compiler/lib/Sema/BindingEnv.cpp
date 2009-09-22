@@ -125,7 +125,7 @@ Type * PatternValue::value() const {
 // BindingEnv
 BindingEnv::BindingEnv(const TemplateSignature * ts) : substitutions_(NULL) {}
 
-const char * BindingEnv::asString() const {
+const char * BindingEnv::str() const {
   static std::string temp;
   std::stringstream ss;
   FormatStream stream(ss);

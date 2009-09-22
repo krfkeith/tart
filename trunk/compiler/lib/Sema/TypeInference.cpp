@@ -114,11 +114,27 @@ void CallSite::reportErrors(const char * msg) {
 }
 
 /// -------------------------------------------------------------------
+/// ConstraintSite
+
+void ConstraintSite::update() {
+  switch (expr->exprType()) {
+    case Expr::Assign:
+    case Expr::PostAssign: {
+      const AssignmentExpr * assign = static_cast<const AssignmentExpr *>(expr);
+      rank = assign->toExpr()->type()->convert(assign->fromExpr());
+      //diag.debug(expr) << "Conversion rank for " << expr << " is " << rank;
+      //diag.debug(expr) << "Conversion rank " << rank;
+      break;
+    }
+  }
+}
+
+/// -------------------------------------------------------------------
 /// GatherConstraintsPass
 
 Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
-  if (!in->candidates().empty() && calls.insert(in)) {
-    callSites.push_back(CallSite(in));
+  if (!in->candidates().empty() && visited_.insert(in)) {
+    callSites_.push_back(CallSite(in));
 
     // If the function is NULL, it means that the function reference is
     // in the individual candidates.
@@ -133,6 +149,25 @@ Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
   return CFGPass::visitCall(in);
 }
 
+
+Expr * GatherConstraintsPass::visitAssign(AssignmentExpr * in) {
+  if (!in->isSingular() && visited_.insert(in)) {
+    cstrSites_.push_back(ConstraintSite(in));
+  }
+
+  CFGPass::visitAssign(in);
+  return in;
+}
+
+Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
+  if (!in->isSingular() && visited_.insert(in)) {
+    cstrSites_.push_back(ConstraintSite(in));
+  }
+
+  CFGPass::visitPostAssign(in);
+  return in;
+}
+
 /// -------------------------------------------------------------------
 /// TypeInference
 
@@ -142,98 +177,114 @@ Expr * TypeInferencePass::run(Expr * in, Type * expected, bool strict) {
 }
 
 Expr * TypeInferencePass::runImpl() {
-  rootExpr = FoldConstantsPass().visitExpr(rootExpr);
-  if (isErrorResult(rootExpr) || rootExpr->isSingular()) {
-    return rootExpr;
+  rootExpr_ = FoldConstantsPass().visitExpr(rootExpr_);
+  if (isErrorResult(rootExpr_) || rootExpr_->isSingular()) {
+    return rootExpr_;
   }
 
-  GatherConstraintsPass(callSites).visitExpr(rootExpr);
-  if (callSites.empty()) {
-    diag.fatal(rootExpr) << "Can't solve '" << rootExpr << "'";
-    return rootExpr;
+  GatherConstraintsPass(callSites_, cstrSites_).visitExpr(rootExpr_);
+  if (callSites_.empty()) {
+    diag.fatal(rootExpr_) << "Can't solve '" << rootExpr_ << "'";
+    return rootExpr_;
   }
 
-  bestSolutionRank = Incompatible;
-  bestSolutionCount = 0;
+  bestSolutionRank_ = Incompatible;
+  bestSolutionCount_ = 0;
   if (!unifyCalls()) {
-    return rootExpr;
+    return rootExpr_;
   }
 
   update();
-  reportRanks();
+  reportRanks(false);
 
   cullByConversionRank();
   cullBySpecificity();
   cullByElimination();
 
-  reportRanks();
+  reportRanks(true);
 
   // Remove all culled candidates
-  for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     it->finish();
   }
 
-  return rootExpr;
+  return rootExpr_;
 }
 
 void TypeInferencePass::update() {
-  lowestRank = IdenticalTypes;
-  underconstrained = false;
-  overconstrained = false;
+  lowestRank_ = IdenticalTypes;
+  underconstrained_ = false;
+  overconstrained_ = false;
 
-  if (expectedType != NULL) {
-    ConversionRank rootRank = expectedType->convert(rootExpr);
+  if (expectedType_ != NULL) {
+    ConversionRank rootRank = expectedType_->convert(rootExpr_);
     if (!strict_ && rootRank < NonPreferred) {
       rootRank = NonPreferred;
     }
 
-    lowestRank = rootRank;
+    lowestRank_ = rootRank;
   }
 
   // TODO: How do we get the explicit arguments?
 
-  for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     it->update();
-    lowestRank = std::min(lowestRank, it->lowestRank);
+    lowestRank_ = std::min(lowestRank_, it->lowestRank);
     if (it->numRemaining == 0) {
-      overconstrained = true;
+      overconstrained_ = true;
     } else if (it->numRemaining > 1) {
-      underconstrained = true;
+      underconstrained_ = true;
     }
+  }
+
+  for (ConstraintSiteList::iterator it = cstrSites_.begin(); it != cstrSites_.end(); ++it) {
+    it->update();
+    lowestRank_ = std::min(lowestRank_, it->rank);
+    /*if (it->numRemaining == 0) {
+      overconstrained_ = true;
+    } else if (it->numRemaining > 1) {
+      underconstrained_ = true;
+    }*/
   }
 }
 
 void TypeInferencePass::checkSolution() {
-  if (!overconstrained && !underconstrained) {
-    if (lowestRank == bestSolutionRank) {
-      ++bestSolutionCount;
+  if (!overconstrained_ && !underconstrained_) {
+    if (lowestRank_ == bestSolutionRank_) {
+      ++bestSolutionCount_;
       if (ShowInference) {
-        diag.debug() << "Discovered equivalent solution with rank " << bestSolutionRank;
+        diag.debug() << "Discovered equivalent solution with rank " << bestSolutionRank_;
       }
-    } else if (lowestRank > bestSolutionRank) {
-      bestSolutionCount = 1;
-      bestSolutionRank = lowestRank;
-      for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+    } else if (lowestRank_ > bestSolutionRank_) {
+      bestSolutionCount_ = 1;
+      bestSolutionRank_ = lowestRank_;
+      for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
         it->best = it->callExpr->singularCandidate();
       }
 
       if (ShowInference) {
-        diag.debug() << "Discovered new best solution with rank [" << bestSolutionRank << "]";
+        diag.debug() << "Discovered new best solution with rank [" << bestSolutionRank_ << "]";
       }
     }
   }
 }
 
-void TypeInferencePass::reportRanks() {
+void TypeInferencePass::reportRanks(bool final) {
   if (!ShowInference) {
     return;
   }
 
-  diag.debug() << "=== Conversion rankings for " << callSites.size() << " call sites: ===";
+  size_t numSites = callSites_.size();
+  if (final) {
+    diag.debug() << "=== Final conversion rankings for " << numSites << " call sites: ===";
+  } else {
+    diag.debug() << "=== Initial conversion rankings for " << numSites << " call sites: ===";
+  }
+
   diag.indent();
-  diag.debug() << "lowest: " << lowestRank;
+  diag.debug() << "lowest: " << lowestRank_;
   int siteIndex = 1;
-  for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it, ++siteIndex) {
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
     diag.debug() << "Call site #" << siteIndex << ": " << it->numRemaining << " candidates for " <<
         it->callExpr;
     diag.indent();
@@ -241,7 +292,7 @@ void TypeInferencePass::reportRanks() {
     for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
       CallCandidate * cc = *c;
       if (!cc->isCulled()) {
-        diag.debug() << cc->method() << " [" << cc->conversionRank() << "]";
+        diag.debug() << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
       }
     }
     diag.unindent();
@@ -250,9 +301,9 @@ void TypeInferencePass::reportRanks() {
 }
 
 bool TypeInferencePass::unifyCalls() {
-  ++searchDepth;
+  ++searchDepth_;
   bool success = true;
-  for (CallSiteList::iterator site = callSites.begin(); site != callSites.end(); ++site) {
+  for (CallSiteList::iterator site = callSites_.begin(); site != callSites_.end(); ++site) {
     Candidates & cclist = site->callExpr->candidates();
     bool canUnify = false;
     for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
@@ -260,7 +311,7 @@ bool TypeInferencePass::unifyCalls() {
       if (c->unify(site->callExpr)) {
         canUnify = true;
       } else {
-        c->cull(searchDepth);
+        c->cull(searchDepth_);
       }
     }
 
@@ -270,7 +321,7 @@ bool TypeInferencePass::unifyCalls() {
         if (c->unify(site->callExpr)) {
           canUnify = true;
         } else {
-          c->cull(searchDepth);
+          c->cull(searchDepth_);
         }
       }
 
@@ -283,52 +334,63 @@ bool TypeInferencePass::unifyCalls() {
 }
 
 void TypeInferencePass::cullByConversionRank() {
-  if (underconstrained && lowestRank < Truncation) {
+  if (underconstrained_ && lowestRank_ < Truncation) {
     if (ShowInference) {
       diag.debug() << "All sites: Culling overloads of rank < Truncation";
     }
     cullByConversionRank(Truncation);
   }
 
-  if (!overconstrained && underconstrained && lowestRank < ExactConversion) {
+  if (!overconstrained_ && underconstrained_ && lowestRank_ < ExactConversion) {
     if (ShowInference) {
       diag.debug() << "All sites: Culling overloads of rank < Exact";
     }
     cullByConversionRank(ExactConversion);
   }
 
-  if (!overconstrained && underconstrained && lowestRank < IdenticalTypes) {
+  if (!overconstrained_ && underconstrained_ && lowestRank_ < IdenticalTypes) {
     if (ShowInference) {
       diag.debug() << "All sites: Culling overloads of rank < Identical";
     }
     cullByConversionRank(IdenticalTypes);
   }
 
-  if (overconstrained) {
+  if (overconstrained_) {
     if (ShowInference) {
       diag.debug() << "  Backtracking";
     }
     backtrack();
   }
 
-  if (underconstrained) {
+  if (underconstrained_) {
     int siteIndex = 1;
-    for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it, ++siteIndex) {
+    for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
       CallSite & site = *it;
       while (site.lowestRank < IdenticalTypes) {
         ConversionRank limit = ConversionRank(site.lowestRank + 1);
         if (ShowInference) {
           diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
         }
-        ++searchDepth;
-        cullCount = 0;
+        ++searchDepth_;
+        cullCount_ = 0;
         cullByConversionRank(limit, site);
-        if (ShowInference) {
-          diag.debug() << "  " << cullCount << " methods culled.";
-        }
         update();
+        if (ShowInference) {
+          diag.indent();
+          diag.debug() << cullCount_ << " methods culled, " << site.numRemaining << " remaining:";
+          diag.indent();
+          Candidates & cd = site.callExpr->candidates();
+          for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
+            CallCandidate * cc = *c;
+            if (!cc->isCulled()) {
+              diag.debug() << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
+            }
+          }
+          diag.unindent();
+          diag.unindent();
+        }
 
-        if (overconstrained) {
+        if (overconstrained_) {
           if (ShowInference) {
             diag.debug() << "  Backtracking";
           }
@@ -337,7 +399,7 @@ void TypeInferencePass::cullByConversionRank() {
         }
       }
 
-      if (!underconstrained) {
+      if (!underconstrained_) {
         break;
       }
     }
@@ -347,38 +409,38 @@ void TypeInferencePass::cullByConversionRank() {
 }
 
 void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit) {
-  ++searchDepth;
-  cullCount = 0;
-  for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+  ++searchDepth_;
+  cullCount_ = 0;
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     cullByConversionRank(lowerLimit, *it);
   }
 
   if (ShowInference) {
-    diag.debug() << "  " << cullCount << " methods culled.";
+    diag.debug() << "  " << cullCount_ << " methods culled.";
   }
+
   update();
 }
 
-void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit,
-    CallSite & site) {
+void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit, CallSite & site) {
   Candidates & cd = site.callExpr->candidates();
   for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
     CallCandidate * cc = *c;
     if (!cc->isCulled() && cc->conversionRank() < lowerLimit) {
-      cc->cull(searchDepth);
-      ++cullCount;
+      cc->cull(searchDepth_);
+      ++cullCount_;
     }
   }
 }
 
 void TypeInferencePass::cullBySpecificity() {
-  if (underconstrained) {
+  if (underconstrained_) {
     if (ShowInference) {
       diag.debug() << "Culling by specificity";
     }
     diag.indent();
-    ++searchDepth;
-    for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+    ++searchDepth_;
+    for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
       if (it->numRemaining > 1) {
         cullBySpecificity(*it);
       }
@@ -405,12 +467,12 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
         continue;
       }
 
-      bool newIsBetter = call->isMoreSpecific(*ms);
-      bool oldIsBetter = (*ms)->isMoreSpecific(call);
+      bool newIsBetter = call->isMoreSpecific(*ms) && call->conversionRank() >= (*ms)->conversionRank();
+      bool oldIsBetter = (*ms)->isMoreSpecific(call) && (*ms)->conversionRank() >= call->conversionRank();
       if (newIsBetter) {
         if (!oldIsBetter) {
           if (ShowInference) {
-            diag.debug() << "Culling [" << (*ms)->method() <<
+            diag.debug() << Format_Type << "Culling [" << (*ms)->method() <<
                 "] because [" << call->method() << "] is more specific";
           }
           ms = mostSpecific.erase(ms);
@@ -418,7 +480,7 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
         }
       } else if (oldIsBetter) {
         if (ShowInference) {
-          diag.debug() << "Culling [" << call->method() << "] because [" <<
+          diag.debug() << Format_Type << "Culling [" << call->method() << "] because [" <<
               (*ms)->method() << "] is more specific";
         }
         addNew = false;
@@ -438,16 +500,16 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
     }
 
     if (std::find(mostSpecific.begin(), mostSpecific.end(), *cc) == mostSpecific.end()) {
-      (*cc)->cull(searchDepth);
+      (*cc)->cull(searchDepth_);
     }
   }
 }
 
 void TypeInferencePass::cullByElimination() {
-  if (underconstrained) {
-    cullByElimination(callSites.begin(), callSites.end());
-    if (bestSolutionCount == 1) {
-      for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+  if (underconstrained_) {
+    cullByElimination(callSites_.begin(), callSites_.end());
+    if (bestSolutionCount_ == 1) {
+      for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
         cullAllButOne(*it, it->best);
       }
     }
@@ -458,7 +520,7 @@ void TypeInferencePass::cullByElimination() {
 
 void TypeInferencePass::cullByElimination(
   CallSiteList::iterator first, CallSiteList::iterator last) {
-  while (first < last && underconstrained) {
+  while (first < last && underconstrained_) {
     if (first->numRemaining <= 1) {
       ++first;
     } else {
@@ -469,11 +531,11 @@ void TypeInferencePass::cullByElimination(
         }
 
         if (ShowInference) {
-          diag.debug() << "Trying " << (*ci)->method();
+          diag.debug() << Format_Type << "Trying " << (*ci)->method();
         }
         diag.indent();
 
-        ++searchDepth;
+        ++searchDepth_;
         cullAllButOne(*first, *ci);
         cullByElimination(first + 1, last);
         backtrack();
@@ -492,21 +554,21 @@ void TypeInferencePass::cullAllButOne(CallSite & site, CallCandidate * cc) {
   Candidates & cd = site.callExpr->candidates();
   for (Candidates::iterator c2 = cd.begin(); c2 != cd.end(); ++c2) {
     if (!(*c2)->isCulled() && *c2 != cc) {
-      (*c2)->cull(searchDepth);
+      (*c2)->cull(searchDepth_);
     }
   }
 }
 
 void TypeInferencePass::backtrack() {
-  for (CallSiteList::iterator it = callSites.begin(); it != callSites.end(); ++it) {
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     Candidates & cd = it->callExpr->candidates();
     for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
       CallCandidate * cc = *c;
-      cc->decull(searchDepth);
+      cc->decull(searchDepth_);
     }
   }
 
-  --searchDepth;
+  --searchDepth_;
   update();
 }
 

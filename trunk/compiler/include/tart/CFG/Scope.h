@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_SCOPE_H
 #define TART_CFG_SCOPE_H
 
@@ -29,17 +29,17 @@ class Expr;
 class Scope {
 protected:
   virtual ~Scope() {}
-  
+
 public:
   /** Return the next outer scope. */
   virtual Scope * parentScope() const = 0;
-  
+
   /** Add a new declaration to this scope. */
   virtual void addMember(Defn * d) = 0;
-  
+
   /** Find a declaration by name */
   virtual bool lookupMember(const char * ident, DefnList & defs, bool inherit = false) const = 0;
-      
+
   /** Convenience function used to look up a member with no overloads. */
   Defn * lookupSingleMember(const char * ident, bool inherit = false) const;
 
@@ -75,10 +75,10 @@ public:
 
   /** Get the scope which encloses this one. */
   Scope * parentScope() const;
-  
+
   /** Set the scope which encloses this one. */
   void setParentScope(Scope * parent);
-  
+
   /** Return the first symbol in this scope. */
   Defn * firstMember() const { return members_.first(); }
 
@@ -90,7 +90,7 @@ public:
   /** Return a reference to the symbol table. */
   const SymbolTable & members() const { return members_; }
   SymbolTable & members() { return members_; }
-  
+
   // Overrides
 
   void addMember(Defn * d);
@@ -135,12 +135,12 @@ public:
 class DelegatingScope : public Scope {
   Scope * delegate;
   Scope * parent;
-  
+
 public:
   DelegatingScope(Scope * s, Scope * p) : delegate(s), parent(p) {
     p = s->parentScope();
   }
-  
+
   void setDelegate(Scope * scope) { delegate = scope; }
   void setParentScope(Scope * scope) { parent = scope; }
 

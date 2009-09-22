@@ -1,5 +1,6 @@
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
+import tart.text.encodings.Codecs;
 
 /** The built-in string class. Strings are immutable. */
  /* : public Iterable[char] */
@@ -31,33 +32,46 @@ public final class String {
     }
   }
 
-  /** Construct a string from a byte array. */
+  /** Construct a string from a byte array.
+      Parameters:
+        bytes: The byte array.
+   */
   static def create(bytes:ubyte[]) -> String {
     let self = alloc(bytes.length);
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), bytes.length);
     return self;
   }
 
-  /** Construct a string from a byte array. */
+  /** Construct a string from a subrange of a byte array.
+      Parameters:
+        bytes: The byte array.
+        start: The starting index within the byte array.
+        count: The number of bytes to use in constructing the string. Will be clamped
+            to the end of the string if there are fewer than 'count' bytes following 'start'.
+   */
   static def create(bytes:ubyte[], start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, bytes.length);
     count = Math.min(count, bytes.length - start);
     let self = alloc(count);
-    Memory.arrayCopy(addressOf(bytes.data[start]), addressOf(self.data[0]), count);
+    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), count);
     return self;
   }
 
-  /** Construct a string from a char array. */
+  /** Construct a string from a char array.
+      Parameters:
+        chars: The character array.
+        start: The starting index within the character array.
+        count: The number of characters to use in constructing the string. Will be clamped
+            to the end of the string if there are fewer than 'count' characters following 'start'.
+   */
   static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
-    Preconditions.checkIndex(start >= 0);
-    Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, chars.length);
-    count = Math.min(count, chars.length - start);
-    
-    let self = alloc(count);
-    //Memory.arrayCopy(bytes.data, start, self.data, 0, count);
+    let length = Codecs.UTF_8.encodedLength(chars, start, count);
+    let bytes = ubyte[](length);
+    Codecs.UTF_8.encode(bytes, 0, chars, start, count);
+    let self = alloc(length);
+    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), length);
     return self;
   }
 
@@ -78,41 +92,39 @@ public final class String {
   def length:int { get { return self.len; } } 
   
   /** The length of the string in characters. */
-  def charLength:int {
-    get {
-      var result:int = 0;
-      var index:int = 0;
-      while index < self.len {
-        let c = self.data[index];
-        if c < 0x80 {
-          index += 1;
-        } else if c < 0xc0 {
-          // Invalid unicode char
-          break;
-        } else if c < 0xe0 {
-          index += 2;
-        } else if c < 0xf0 {
-          index += 3;
-        } else if c < 0xf5 {
-          index += 4;
-        } else {
-          // Invalid unicode char, 
-          break;
-        }
+  def charLength(start:int = 0, count:int = int.maxVal) -> int {
+    var result:int = 0;
+    var index:int = 0;
+    while index < self.len {
+      let c = self.data[index];
+      if c < 0x80 {
+        index += 1;
+      } else if c < 0xc0 {
+        // Invalid unicode char
+        break;
+      } else if c < 0xe0 {
+        index += 2;
+      } else if c < 0xf0 {
+        index += 3;
+      } else if c < 0xf5 {
+        index += 4;
+      } else {
+        // Invalid unicode char, 
+        break;
+      }
 
-        ++result;
-      }
-      
-      if index != self.len {
-      }
-      
-      return result;
+      ++result;
     }
+    
+    if index != self.len {
+    }
+    
+    return result;
   }
   
   /** Coerce a String to a String simply returns 'self'. */
-  def toCharArray -> char[] {
-    let result = char[](self.charLength);
+  def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
+    let result = char[](self.charLength(start, count));
     var index:int = 0;
     var pos:int = 0;
     while index < self.len {

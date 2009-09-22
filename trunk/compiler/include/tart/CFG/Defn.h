@@ -326,8 +326,6 @@ public:
 
   // Internal methods made visible for testing
 
-  static void checkNameConflict(SymbolTable::Entry * entry);
-
   /** Print out all of the scopes for this type. */
   void dumpHierarchy(bool full = true) const;
 
@@ -365,8 +363,8 @@ public:
   NamespaceDefn(Module * m, const ASTDecl * de);
 
   /** Get the scope containing the members of this namespace. */
-  const Scope & memberScope() const { return members; }
-  Scope & memberScope() { return members; }
+  const IterableScope & memberScope() const { return members; }
+  IterableScope & memberScope() { return members; }
 
   // Overrides
 

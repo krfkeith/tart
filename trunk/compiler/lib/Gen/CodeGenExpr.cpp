@@ -95,6 +95,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
         return ConstantPointerNull::get(PointerType::getUnqual(in->type()->irType()));
     }
 
+    case Expr::ConstObjRef:
+      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in));
+
     case Expr::LValue: {
       return genLoadLValue(static_cast<const LValueExpr *>(in));
     }
@@ -1083,6 +1086,12 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   }
 
   return instance;
+}
+
+GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj) {
+  Constant * constObject = genConstantObject(obj);
+  return new GlobalVariable(
+      *irModule_, constObject->getType(), true, GlobalValue::InternalLinkage, constObject, "");
 }
 
 Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {

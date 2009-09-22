@@ -334,6 +334,11 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   }
 }
 
+void DefnAnalyzer::addPass(Defn * de, DefnPasses & toRun, const DefnPass requested) {
+  toRun.add(requested);
+  toRun.removeAll(de->finished());
+}
+
 void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested) {
   toRun.addAll(requested);
   toRun.removeAll(de->finished());

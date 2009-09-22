@@ -1,4 +1,4 @@
-class UTF8 /*: Codec*/ {
+class UTF8 : Codec {
   private static var lengthTable:int[] = [
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -18,9 +18,17 @@ class UTF8 /*: Codec*/ {
     4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   ];
 
+  private var errorAction:ErrorAction;
+
+  /** Construct a new UTF8 codec. */  
+  def construct(errorAction:ErrorAction = REPLACE) {
+    self.errorAction = errorAction;
+  }
+  
   /** Return the number of bytes needed to encode the character 'c'. Returns 0
       if 'c' is not an encodable character. */
   static def encodedLength(c:char) -> int {
+    //  return lengthTable[byteVal];
     /*if c < 0x80 {
       return 1;
     } else if c < 0xc0 {
@@ -51,12 +59,41 @@ class UTF8 /*: Codec*/ {
   /** Return the length in bytes of the encoding character starting with
       the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
       prefix byte. */ 
-  //static def charLength(byteVal:ubyte) -> int {
-  //  return lengthTable[byteVal];
-  //}
+  static def charLength(byteVal:ubyte) -> int {
+    return lengthTable[byteVal];
+  }
+
+  final def encodedLength(src:char[], start:int, count:int) -> int {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, src.length);
+    count = Math.min(count, src.length - start);
+    
+    var length = 0;
+    var index = start;
+    while count-- > 0 {
+      let c = src[index++];
+      if c <= 0x7f {
+        length += 1;
+      } else if c <= 0x7ff {
+        length += 2;
+      } else if c <= 0xffff {
+        length += 3;
+      } else if c <= 0x10ffff {
+        length += 4;
+      } else {
+        if errorAction == ErrorAction.REPLACE {
+          length += 1;
+        } if errorAction == ErrorAction.ABORT {
+          throw InvalidCharacterException();
+        } /* Otherwise, SKIP over. */
+      }
+    }
+    
+    return length;
+  }
 
   /** Return the number of characters in the byte sequence. */
-  def decodedLength(buffer:ubyte[], start:int, length:int) -> int {
+  final def decodedLength(buffer:ubyte[], start:int, length:int) -> int {
     var charCount:int = 0;
     var index:int = 0;
     while index < length {
@@ -73,7 +110,53 @@ class UTF8 /*: Codec*/ {
     return charCount;
   }
 
-  def encodedLength(buffer:ubyte[], start:int, length:int) -> int {
+  final def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
+    Preconditions.checkIndex(srcIndex >= 0 and count >= 0 and dstIndex >= 0);
+    srcIndex = Math.min(srcIndex, src.length);
+    count = Math.min(count, src.length - srcIndex);
+    
+    var length = 0;
+    let dstLength = dst.length;
+    while count > 0 {
+      let c = src[srcIndex++];
+      if c <= 0x7f {
+        break if dstIndex >= dstLength;
+        dst[length++] = ubyte(c);
+      } else if c <= 0x7ff {
+        break if dstIndex + 2 > dstLength;
+        dst[length++] = ubyte(c >> 6) | 0xc0;
+        dst[length++] = ubyte(c) & 0x3f | 0x80;
+      } else if c <= 0xffff {
+        break if dstIndex + 3 > dstLength;
+        dst[length++] = ubyte(c >> 12) | 0xe0;
+        dst[length++] = ubyte(c >>  6) & 0x3f | 0x80;
+        dst[length++] = ubyte(c) & 0x3f | 0x80;
+      } else if c <= 0x10ffff {
+        break if dstIndex + 4 > dstLength;
+        dst[length++] = ubyte(c >> 18) | 0xf0;
+        dst[length++] = ubyte(c >> 12) & 0x3f | 0x80;
+        dst[length++] = ubyte(c >>  6) & 0x3f | 0x80;
+        dst[length++] = ubyte(c) & 0x3f | 0x80;
+      } else {
+        if errorAction == ErrorAction.REPLACE {
+          break if dstIndex >= dstLength;
+          dst[length++] = ubyte('?');
+        } if errorAction == ErrorAction.ABORT {
+          throw InvalidCharacterException();
+        } /* Otherwise, SKIP over. */
+      }
+      
+      --count;
+    }
+    
+    if count > 0 {
+      /** A non-zero count means we ran out of room in the destination buffer. */
+    }
+    
     return length;
+  }
+  
+  final def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int {
+    return 0;
   }
 }

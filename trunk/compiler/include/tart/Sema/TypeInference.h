@@ -76,19 +76,59 @@ struct CallSite {
 };
 
 typedef llvm::SmallVector<CallSite, 16> CallSiteList;
-typedef llvm::SmallSet<CallExpr *, 16> CallExprSet;
+typedef llvm::SmallSet<const Expr *, 16> ExprSet;
+
+/// -------------------------------------------------------------------
+/// Represents an additional type constraint that is not a call.
+struct ConstraintSite {
+public:
+  Expr * expr;              // Expression that defines the constraint.
+  ConversionRank rank;      // Conversion ranking for this constraint.
+
+  ConstraintSite()
+    : expr(NULL)
+    , rank(IdenticalTypes)
+  {}
+
+  ConstraintSite(Expr * ex)
+    : expr(ex)
+    , rank(IdenticalTypes)
+  {}
+
+  ConstraintSite(const ConstraintSite & src)
+    : expr(src.expr)
+    , rank(src.rank)
+  {}
+
+  const ConstraintSite & operator=(const ConstraintSite & src) {
+    expr = src.expr;
+    rank = src.rank;
+    return *this;
+  }
+
+  // Update conversion rankings
+  void update();
+};
+
+typedef llvm::SmallVector<ConstraintSite, 16> ConstraintSiteList;
 
 /// -------------------------------------------------------------------
 /// Pass to collect all of the constraints in the expression tree.
 class GatherConstraintsPass : public CFGPass {
 public:
-  GatherConstraintsPass(CallSiteList & oll) : callSites(oll) {}
+  GatherConstraintsPass(CallSiteList & callSites, ConstraintSiteList & cstrSites)
+    : callSites_(callSites)
+    , cstrSites_(cstrSites)
+  {}
 
 private:
-  CallSiteList & callSites;
-  CallExprSet calls;
+  CallSiteList & callSites_;
+  ConstraintSiteList & cstrSites_;
+  ExprSet visited_;
 
   Expr * visitCall(CallExpr * in);
+  Expr * visitAssign(AssignmentExpr * in);
+  Expr * visitPostAssign(AssignmentExpr * in);
 };
 
 /// -------------------------------------------------------------------
@@ -100,31 +140,32 @@ public:
   static Expr * run(Expr * in, Type * expected, bool strict = true);
 
 private:
-  Expr * rootExpr;
-  Type * expectedType;
-  CallSiteList callSites;
-  ConversionRank lowestRank;
-  ConversionRank bestSolutionRank;
-  int bestSolutionCount;
-  int cullCount;
-  int searchDepth;
-  bool underconstrained;
-  bool overconstrained;
+  Expr * rootExpr_;
+  Type * expectedType_;
+  CallSiteList callSites_;
+  ConstraintSiteList cstrSites_;
+  ConversionRank lowestRank_;
+  ConversionRank bestSolutionRank_;
+  int bestSolutionCount_;
+  int cullCount_;
+  int searchDepth_;
+  bool underconstrained_;
+  bool overconstrained_;
   bool strict_;
 
   // Map of template parameter substitutions
   //BindingMap substitutions_;
 
   TypeInferencePass(Expr * root, Type * expected, bool strict = true)
-    : rootExpr(root)
-    , expectedType(expected)
-    , searchDepth(0)
+    : rootExpr_(root)
+    , expectedType_(expected)
+    , searchDepth_(0)
     , strict_(strict)
   {}
 
   Expr * runImpl();
 
-  void reportRanks();
+  void reportRanks(bool final);
   void update();
   void checkSolution();
 

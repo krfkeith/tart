@@ -365,7 +365,7 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   }
 
   // Attempt to cast
-  arg = in->type()->implicitCast(in->location(), arg);
+  arg = in->type()->explicitCast(in->location(), arg);
   return arg ? arg : &Expr::ErrorVal;
 }
 

@@ -1,7 +1,10 @@
 @EntryPoint
 def main(args:String[]) -> int {
   testEmptyStringBuilder();
+  testNonEmptyStringBuilder();
   //testStringBuilderAppend();
+  //testStringBuilderInsert();
+  //testStringBuilderRemove();
   return 0;
 }
 
@@ -11,10 +14,37 @@ def testEmptyStringBuilder() {
   Debug.assertEq("", sb.toString());
 }
 
+def testNonEmptyStringBuilder() {
+  let sb = StringBuilder("Hello");
+  Debug.assertEq(5, sb.length);
+  Debug.assertEq("Hello", sb.toString());
+}
+
 def testStringBuilderAppend() {
   let sb = StringBuilder();
   sb.append("Hello");
   Debug.assertEq("Hello", sb.toString());
   sb.append(", World");
   Debug.assertEq("Hello, World", sb.toString());
+  sb.append("$!$", 1, 1);
+  Debug.assertEq("Hello, World!", sb.toString());
+  sb.append('!');
+  Debug.assertEq("Hello, World!!", sb.toString());
+}
+
+def testStringBuilderInsert() {
+  let sb = StringBuilder();
+  sb.append(", World");
+  sb.insert(0, "Hello");
+  Debug.assertEq("Hello, World", sb.toString());
+  sb.insert(sb.length, '!');
+}
+
+def testStringBuilderRemove() {
+  let sb = StringBuilder();
+  sb.append("Hello, World");
+  sb.remove(0, 7);
+  Debug.assertEq("World", sb.toString());
+  sb.remove(0, 100);
+  Debug.assertEq("", sb.toString());
 }

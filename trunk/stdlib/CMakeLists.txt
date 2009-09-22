@@ -14,6 +14,7 @@ file(GLOB TART_STDLIB_SRC
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
 set(TART_OPTIONS
+    -g
     -debug-errors
     -show-generated)
 

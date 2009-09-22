@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_VARANALYZER_H
 #define TART_SEMA_VARANALYZER_H
 
@@ -16,7 +16,7 @@ namespace tart {
 class VarAnalyzer : public DefnAnalyzer {
 private:
   ValueDefn * target;
-  
+
   void setTargetType(Type * type);
 
 public:
@@ -27,6 +27,7 @@ public:
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
   bool resolveVarType();
+  bool resolveStaticInitializers();
 };
 
 }

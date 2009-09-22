@@ -177,6 +177,11 @@ bool ArglistExpr::areArgsSideEffectFree() const {
   return true;
 }
 
+void ArglistExpr::appendArg(Expr * en) {
+  DASSERT(en != NULL);
+  args_.push_back(en);
+}
+
 bool ArglistExpr::isSingular() const {
   for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
     if (!(*it)->isSingular()) {
@@ -360,11 +365,11 @@ bool CallExpr::hasAnyCandidates() const {
 
 void CallExpr::format(FormatStream & out) const {
   if (function_ != NULL) {
-    if (out.getShowType()) {
-      out << "(" << function_ << ")";
-    } else {
+    //if (out.getShowType()) {
+    //  out << "(" << function_ << ")";
+    //} else {
       out << function_;
-    }
+    //}
   } else if (candidates_.size() == 1) {
     FunctionDefn * func = candidates_.front()->method();
     if (out.getShowType()) {
@@ -373,7 +378,9 @@ void CallExpr::format(FormatStream & out) const {
       out << func;
     }
   } else {
-    out << "{" << candidates_.size() << " candidates}";
+    FunctionDefn * func = candidates_.front()->method();
+    out << func->name();
+    //out << "{" << candidates_.size() << " candidates}";
   }
 
   out << "(";
@@ -383,9 +390,12 @@ void CallExpr::format(FormatStream & out) const {
     }
 
     out << (*it);
-    if (out.getShowType()) {
-      out << ":" << (*it)->type();
-    }
+    /*if (out.getShowType()) {
+      //out << ":" << (*it)->type();
+      //out << (*it)->type();
+    } else {
+      //out << ":" << (*it)->type();
+    }*/
   }
   out << ") ";
 

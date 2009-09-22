@@ -2,6 +2,7 @@
 
 if (CMAKE_COMPILER_IS_GNUCC)
   add_definitions(
+      -g
       -Wall
       -Wcast-align
       -Wpointer-arith)

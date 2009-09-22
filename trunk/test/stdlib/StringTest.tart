@@ -55,15 +55,15 @@ def stringConcatenationTest() {
 
 def testUnicode() {
   Debug.assertEq(2, "\u0200".length);
-  Debug.assertEq(1, "\u0200".charLength);
+  Debug.assertEq(1, "\u0200".charLength());
   Debug.assertEq(6, "Test\u0200".length);
-  Debug.assertEq(5, "Test\u0200".charLength);
+  Debug.assertEq(5, "Test\u0200".charLength());
   Debug.assertEq(3, "\u2100".length);
-  Debug.assertEq(1, "\u2100".charLength);
+  Debug.assertEq(1, "\u2100".charLength());
   Debug.assertEq(6, "\u2100\u2100".length);
-  Debug.assertEq(2, "\u2100\u2100".charLength);
+  Debug.assertEq(2, "\u2100\u2100".charLength());
   Debug.assertEq(4, "\U20000".length);
-  Debug.assertEq(1, "\U20000".charLength);
+  Debug.assertEq(1, "\U20000".charLength());
 }
 
 def testToCharArray() {

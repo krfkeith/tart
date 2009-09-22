@@ -39,6 +39,8 @@ class CompositeType;
 class EnumType;
 class FunctionType;
 class PrimitiveType;
+class NativePointerType;
+class NativeArrayType;
 class UnionType;
 class Block;
 class LocalScope;
@@ -55,6 +57,7 @@ typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
+typedef llvm::DenseMap<const Type *, llvm::DIType> DITypeMap;
 typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
@@ -249,6 +252,7 @@ public:
       const Expr * sizeExpr);
 
   /** Generate a constant object. */
+  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj);
   llvm::Constant * genConstantObject(const ConstantObjectRef * obj);
 
   /** Generate a structure from the fields of a constant object. */
@@ -267,13 +271,23 @@ public:
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
 
-private:
-  typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
-
   /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
   llvm::DICompileUnit getCompileUnit(Defn * defn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
+
+  /** Generate debugging information for types. */
+  llvm::DIType genTypeDebugInfo(Type * type);
+  llvm::DIType genPrimitiveTypeDebugInfo(PrimitiveType * type);
+  llvm::DIType genCompositeTypeDebugInfo(CompositeType * type);
+  llvm::DIType genEnumTypeDebugInfo(EnumType * type);
+  llvm::DIType genNativeArrayTypeDebugInfo(NativeArrayType * type);
+  llvm::DIType genNativePointerTypeDebugInfo(NativePointerType * type);
+  llvm::DIType genUnionTypeDebugInfo(UnionType * type);
+  llvm::DIType genFunctionTypeDebugInfo(FunctionType * type);
+
+private:
+  typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
 
   /** Find a static method of the given class, and also generate an external reference
       to it from this module. If it's a template, then also instantiate it. This is used
@@ -309,6 +323,7 @@ private:
   llvm::DIFactory dbgFactory_;
   llvm::DICompileUnit dbgCompileUnit_;
   llvm::DISubprogram dbgFunction_;
+  DITypeMap dbgTypeMap_;
 
 #if 0
   struct Attributes {
@@ -325,7 +340,8 @@ private:
   StringLiteralMap stringLiteralMap_;
   ConstantObjectMap constantObjectMap_;
 
-  bool debug;
+  bool debug_;
+  bool reflect_;
 };
 
 }
