@@ -614,6 +614,19 @@ public:
     return StaticType<to>::value.explicitCast(loc, arg);
   }
 
+  // Override format so that we can print the type name instead of just 'create'.
+  void format(FormatStream & out) const {
+    if (out.isVerbose()) {
+      out << "def ";
+    }
+
+    out << &PrimitiveTypeImpl<TypeId(to)>::instance;
+    if (out.getShowType()) {
+      out << "(" << &PrimitiveTypeImpl<TypeId(from)>::instance << ")";
+      out << " -> " << &PrimitiveTypeImpl<TypeId(to)>::instance;
+    }
+  }
+
   static PrimitiveConstructor value;
 };
 

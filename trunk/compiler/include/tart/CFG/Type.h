@@ -165,8 +165,8 @@ public:
   virtual TypeDefn * typeDefn() const { return NULL; }
 
   /** Return the scope containing the members of this type. */
-  virtual const Scope * memberScope() const { return NULL; }
-  virtual Scope * memberScope() { return NULL; }
+  virtual const IterableScope * memberScope() const { return NULL; }
+  virtual IterableScope * memberScope() { return NULL; }
 
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
@@ -295,8 +295,8 @@ public:
 
   // Overrides
 
-  const Scope * memberScope() const { return this; }
-  Scope * memberScope() { return this; }
+  const IterableScope * memberScope() const { return this; }
+  IterableScope * memberScope() { return this; }
   TypeDefn * typeDefn() const { return defn_; }
 
   void trace() const;

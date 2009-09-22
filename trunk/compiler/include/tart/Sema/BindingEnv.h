@@ -185,7 +185,7 @@ public:
   }
 
   // Used for displaying in debugger only, return value is ephemeral.
-  const char * asString() const;
+  const char * str() const;
 
     // Overrides
 

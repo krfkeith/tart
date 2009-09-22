@@ -17,7 +17,7 @@ void Formattable::dump() const {
   format(stream);
 }
 
-const char * Formattable::asString() const {
+const char * Formattable::str() const {
   static std::string temp;
   std::stringstream ss;
   FormatStream stream(ss);

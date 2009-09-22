@@ -2,18 +2,29 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Sema/VarAnalyzer.h"
 #include "tart/CFG/PrimitiveType.h"
-#include "tart/Common/Diagnostics.h"
-#include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 
+#include "tart/Sema/VarAnalyzer.h"
+#include "tart/Sema/TypeAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/EvalPass.h"
+
+#include "tart/Common/Diagnostics.h"
+
 namespace tart {
 
-static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(Pass_CreateMembers,
+static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
+    Pass_CreateMembers,
+    Pass_ResolveAttributes,
     Pass_ResolveVarType);
+
+static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
+    Pass_CreateMembers,
+    Pass_ResolveAttributes,
+    Pass_ResolveVarType,
+    Pass_ResolveStaticInitializers);
 
 VarAnalyzer::VarAnalyzer(ValueDefn * var)
   : DefnAnalyzer(var->module(), var->definingScope())
@@ -38,6 +49,10 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
   DefnPasses passesToRun;
   addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
 
+  if (task == Task_PrepCodeGeneration) {
+    addPasses(target, passesToRun, PASS_SET_CODEGEN);
+  }
+
   // Run passes
 
   if (passesToRun.empty()) {
@@ -48,6 +63,12 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
 
   if (passesToRun.contains(Pass_ResolveVarType)) {
     if (!resolveVarType()) {
+      return false;
+    }
+  }
+
+  if (passesToRun.contains(Pass_ResolveStaticInitializers)) {
+    if (!resolveStaticInitializers()) {
       return false;
     }
   }
@@ -153,6 +174,39 @@ void VarAnalyzer::setTargetType(Type * type) {
   } else {
     DFAIL("Invalid operation for type");
   }
+}
+
+bool VarAnalyzer::resolveStaticInitializers() {
+  if (target->beginPass(Pass_ResolveStaticInitializers)) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(target)) {
+      switch (var->storageClass()) {
+        case Storage_Static:
+        case Storage_Global: {
+          Expr * initVal = var->initValue();
+          if (initVal) {
+            Expr * constInitVal = EvalPass::eval(initVal, true);
+            if (constInitVal != NULL) {
+              var->setInitValue(constInitVal);
+            } else {
+              DFAIL("Implement");
+            }
+          }
+        }
+
+        case Storage_Instance:
+        case Storage_Local:
+          break;
+
+        default:
+          DFAIL("IllegalState");
+          break;
+      }
+
+      target->finishPass(Pass_ResolveStaticInitializers);
+    }
+  }
+
+  return true;
 }
 
 }

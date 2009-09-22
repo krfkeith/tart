@@ -2768,7 +2768,41 @@ void Parser::expectedCloseBracket() {
 }
 
 void Parser::expected(const char * what) {
-  diag.error(lexer.tokenLocation()) << "Expected " << what << ", not " << GetTokenName(token);
+  const SourceLocation & loc = lexer.tokenLocation();
+
+  if (token == Token_Error) {
+    switch (lexer.errorCode()) {
+      case Lexer::ILLEGAL_CHAR:
+        diag.error(loc) << "Illegal character: " << lexer.tokenValue();
+        break;
+
+      case Lexer::UNTERMINATED_COMMENT:
+        diag.error(loc) << "Unterminated comment";
+        break;
+
+      case Lexer::UNTERMINATED_STRING:
+        diag.error(loc) << "Unterminated string";
+        break;
+
+      case Lexer::MALFORMED_ESCAPE_SEQUENCE:
+        diag.error(loc) << "Malformed string escape sequence";
+        break;
+
+      case Lexer::INVALID_UNICODE_CHAR:
+        diag.error(loc) << "Invalid unicode character";
+        break;
+
+      case Lexer::EMPTY_CHAR_LITERAL:
+        diag.error(loc) << "Empty character literal";
+        break;
+
+      case Lexer::MULTI_CHAR_LITERAL:
+        diag.error(loc) << "Multiple character literal";
+        break;
+    }
+  } else {
+    diag.error(loc) << "Expected " << what << ", not " << GetTokenName(token);
+  }
 }
 
 }

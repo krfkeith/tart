@@ -528,22 +528,49 @@ void AnalyzerBase::flushAnalysisQueue() {
 
 bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
   // Analyze namespace imports.
-  if (task == Task_PrepMemberLookup && in->ast() != NULL && in->beginPass(Pass_ResolveImport)) {
-    DefnAnalyzer da(in->module(), &in->memberScope());
-    const ASTNodeList & imports = in->ast()->imports();
-    for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
-      da.importIntoScope(cast<ASTImport>(*it), &in->memberScope());
+
+  DefnPasses passesToRun;
+  switch (task) {
+    case Task_PrepMemberLookup:
+    case Task_PrepCallOrUse:
+      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
+      DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
+      break;
+
+    case Task_PrepCodeGeneration:
+      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
+      DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
+      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveStaticInitializers);
+      break;
+  }
+
+  if (in->beginPass(Pass_ResolveImport)) {
+    if (in->ast() != NULL) {
+      DefnAnalyzer da(in->module(), &in->memberScope());
+      const ASTNodeList & imports = in->ast()->imports();
+      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+        da.importIntoScope(cast<ASTImport>(*it), &in->memberScope());
+      }
     }
 
     in->finishPass(Pass_ResolveImport);
   }
 
-  if (task == Task_PrepMemberLookup && in->beginPass(Pass_CreateMembers)) {
+  if (in->beginPass(Pass_CreateMembers)) {
     if (in->ast() != NULL) {
       ScopeBuilder::createScopeMembers(in);
     }
 
     in->finishPass(Pass_CreateMembers);
+  }
+
+  if (in->beginPass(Pass_ResolveStaticInitializers)) {
+    for (Defn * m = in->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
+      DefnAnalyzer da(in->module(), &in->memberScope());
+      da.analyzeDefn(m, Task_PrepCodeGeneration);
+    }
+
+    in->finishPass(Pass_ResolveStaticInitializers);
   }
 
   return true;

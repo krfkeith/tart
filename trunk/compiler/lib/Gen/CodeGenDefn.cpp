@@ -43,6 +43,10 @@ bool CodeGenerator::genXDef(Defn * de) {
         case Type::Struct:
         case Type::Interface:
         case Type::Enum:
+          //if (debug_) {
+          //  genTypeDebugInfo(de->defnType());
+          //}
+
           return genTypeDefn(static_cast<TypeDefn*>(de));
 
         case Type::NativePointer:
@@ -126,18 +130,35 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       f->setLinkage(GlobalValue::LinkOnceAnyLinkage);
     }
 
-    if (debug && fdef->module() == module_) {
+    if (debug_ /*&& fdef->module() == module_*/) {
       dbgCompileUnit_ = getCompileUnit(fdef);
-      dbgFunction_ = dbgFactory_.CreateSubprogram(
-          dbgCompileUnit_, // TODO: Replace for functions within a scope.
-          fdef->name(),
-          fdef->qualifiedName(),
-          fdef->linkageName(),
-          dbgCompileUnit_,
-          getSourceLineNumber(*fdef),
-          DIType(),
-          fdef->isSynthetic() /* isLocalToUnit */,
-          true /* isDefinition */);
+      if (!dbgCompileUnit_.isNull()) {
+        DICompositeType dbgFuncType = dbgFactory_.CreateCompositeType(
+            llvm::dwarf::DW_TAG_subroutine_type,
+            dbgCompileUnit_,
+            fdef->qualifiedName(),
+            dbgCompileUnit_,
+            getSourceLineNumber(*fdef),
+            0, 0,
+            0, 0,
+            DIType(),
+            dbgFactory_.GetOrCreateArray(NULL, 0),
+            0);
+        dbgFunction_ = dbgFactory_.CreateSubprogram(
+            dbgCompileUnit_, // TODO: Replace for functions within a scope.
+            fdef->name(),
+            fdef->qualifiedName(),
+            fdef->linkageName(),
+            dbgCompileUnit_,
+            getSourceLineNumber(*fdef),
+            dbgFuncType,
+            fdef->isSynthetic() /* isLocalToUnit */,
+            true /* isDefinition */);
+        if (!dbgFunction_.Verify()) {
+          dbgFunction_.Verify();
+          DFAIL("BAD DBG");
+        }
+      }
     }
 
     // Create the LLVM Basic Blocks corresponding to each high level BB.
@@ -209,6 +230,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     builder_.ClearInsertionPoint();
+    dbgFunction_ = DISubprogram();
 
 #if 0
     if (debug) {
@@ -260,6 +282,11 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   } else {
     assert(false && "let value not a constant");
   }
+
+  DIType dbgType;
+  //if (debug_) {
+  //  dbgType = genTypeDebugInfo(letType);
+  //}
 
   let->setIRValue(letValue);
   return letValue;
@@ -322,6 +349,11 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
   if (var->module() == module_) {
+    /*DIType dbgType;
+    if (debug_) {
+      dbgType = genTypeDebugInfo(varType);
+    }*/
+
     // If it has an initialization expression
     const Expr * initExpr = var->initValue();
     if (initExpr != NULL) {

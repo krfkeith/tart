@@ -22,6 +22,7 @@ public:
   typedef llvm::SmallVector<Defn *, 4> Entry;
   typedef llvm::StringMap<Entry> decl_map_t;
   typedef decl_map_t::iterator iterator;
+  typedef decl_map_t::const_iterator const_iterator;
 
   SymbolTable() {}
   virtual ~SymbolTable() {}
@@ -43,7 +44,9 @@ public:
   }
 
   iterator begin() { return map_.begin(); }
+  const_iterator begin() const { return map_.begin(); }
   iterator end() { return map_.end(); }
+  const_iterator end() const { return map_.end(); }
 
   /** Clear the symbol table. */
   void clear() { map_.clear(); }

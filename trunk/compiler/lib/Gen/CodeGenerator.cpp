@@ -50,9 +50,6 @@ CodeGenerator::CodeGenerator(Module * mod)
     , module_(mod)
     , irModule_(mod->irModule())
     , moduleObject_(NULL)
-#if 0
-    , doExpansions(false)
-#endif
     , currentFn_(NULL)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -63,7 +60,8 @@ CodeGenerator::CodeGenerator(Module * mod)
     , unwindRaiseException_(NULL)
     , unwindResume_(NULL)
     , exceptionPersonality_(NULL)
-    , debug(Debug)
+    , debug_(Debug)
+    , reflect_(!NoReflect)
 {
   methodPtrType = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
 #if 0
@@ -76,7 +74,7 @@ void CodeGenerator::generate() {
   using namespace llvm;
 
   // Generate debugging information
-  if (debug) {
+  if (debug_) {
     getCompileUnit(module_);
   }
 
@@ -137,7 +135,7 @@ void CodeGenerator::generate() {
     }
   }
 
-  if (!NoReflect) {
+  if (reflect_) {
     createModuleObject();
   }
 
@@ -274,11 +272,13 @@ llvm::DICompileUnit CodeGenerator::getCompileUnit(const ProgramSource * source) 
   if (compileUnit.isNull()) {
     if (source != NULL) {
       llvm::sys::Path srcPath(source->getFilePath());
-      compileUnit = dbgFactory_.CreateCompileUnit(
-        0xABBA, // Take a chance on me...
-        srcPath.getLast(),
-        srcPath.getDirname() + "/",
-        "0.1 tartc");
+      if (!srcPath.empty()) {
+        compileUnit = dbgFactory_.CreateCompileUnit(
+          0xABBA, // Take a chance on me...
+          srcPath.getLast(),
+          srcPath.getDirname() + "/",
+          "0.1 tartc");
+      }
     }
   }
 

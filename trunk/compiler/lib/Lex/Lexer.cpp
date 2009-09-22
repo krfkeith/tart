@@ -735,7 +735,7 @@ TokenType Lexer::next() {
             tokenValue_.push_back(ch_);
             readCh();
           } else {
-            errorCode_ = ILLEGAL_CHAR;
+            errorCode_ = MALFORMED_ESCAPE_SEQUENCE;
             return Token_Error;
           }
 
@@ -759,6 +759,7 @@ TokenType Lexer::next() {
       break;
   }
 
+  tokenValue_.push_back(ch_);
   errorCode_ = ILLEGAL_CHAR;
   return Token_Error;
 }

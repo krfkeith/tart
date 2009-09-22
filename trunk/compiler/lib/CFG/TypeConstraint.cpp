@@ -137,6 +137,12 @@ void ResultOfConstraint::trace() const {
 }
 
 void ResultOfConstraint::format(FormatStream & out) const {
+  Type * singularType = callExpr->singularResultType();
+  if (singularType != NULL) {
+    out << singularType;
+    return;
+  }
+
   out << "{Result: ";
   const Candidates & cd = callExpr->candidates();
   bool first = true;

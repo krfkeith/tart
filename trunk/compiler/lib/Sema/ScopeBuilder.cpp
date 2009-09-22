@@ -35,9 +35,10 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
         case Type::Struct:
         case Type::Interface:
         case Type::Protocol:
-          for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-            Defn * member = createMemberDefn(type->memberScope(), parent, *it);
-          }
+          createScopeMembers(type->memberScope(), parent, decs);
+          //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
+          //  createMemberDefn(type->memberScope(), parent, *it);
+          //}
           break;
 
         case Type::Enum:
@@ -55,17 +56,17 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
     }
 
     case Defn::Namespace:
-      for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-        Defn * member = createMemberDefn(
-            &static_cast<NamespaceDefn *>(parent)->memberScope(),
-            parent, *it);
-      }
+      createScopeMembers(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, decs);
+      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
+      //  createMemberDefn(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, *it);
+      //}
       break;
 
     case Defn::Mod:
-      for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-        Defn * member = createMemberDefn(static_cast<Module *>(parent), parent, *it);
-      }
+      createScopeMembers(static_cast<Module *>(parent), parent, decs);
+      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
+      //  createMemberDefn(static_cast<Module *>(parent), parent, *it);
+      //}
       break;
 
     case Defn::Property:
@@ -118,6 +119,15 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
   }
 }
 
+void ScopeBuilder::createScopeMembers(
+    IterableScope * scope, Defn * parent, const ASTDeclList & decs) {
+  for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
+    createMemberDefn(scope, parent, *it);
+  }
+
+  checkNameConflicts(scope);
+}
+
 Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const ASTDecl * de) {
   DASSERT(scope != NULL);
   DASSERT(parentDefn != NULL);
@@ -131,7 +141,7 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   }
 
   Defn * member = createDefn(scope, parentDefn->module(), de);
-  checkNameConflict(scope, member);
+  //checkNameConflict(scope, member);
   scope->addMember(member);
   member->setParentDefn(parentDefn);
   member->createQualifiedName(parentDefn);
@@ -188,55 +198,60 @@ void ScopeBuilder::checkVariableHiding(Scope * scope, const Defn * de) {
       if (s == scope) {
         diag.fatal(de) << "'" << name << "' is already defined in this scope";
       } else {
-        diag.fatal(de) << "Definition of '" << name <<
-            "' hides definition in enclosing scope";
+        diag.fatal(de) << "Definition of '" << name << "' hides definition in enclosing scope";
       }
     }
   }
 }
 
-void ScopeBuilder::checkNameConflict(Scope * scope, const Defn * de) {
-  DefnList dlist;
-  if (scope->lookupMember(de->name(), dlist, false)) {
-    Defn * conflictingDefn = NULL;
-    for (DefnList::const_iterator it = dlist.begin(); it != dlist.end(); ++it) {
-      Defn * prevDef = *it;
-      switch (prevDef->defnType()) {
-        case Defn::Typedef:
-          if (de->defnType() != prevDef->defnType()) {
+void ScopeBuilder::checkNameConflicts(IterableScope * scope) {
+  const SymbolTable & scopeMembers = scope->members();
+  for (SymbolTable::const_iterator it = scopeMembers.begin(); it != scopeMembers.end(); ++it) {
+    const SymbolTable::Entry & entry = it->second;
+    if (entry.size() > 1) {
+      const Defn * conflictingDefn = NULL;
+      const Defn * prevDef = entry.front();
+      SymbolTable::Entry::const_iterator sit = entry.begin();
+      ++sit;
+      for (; sit != entry.end(); ++sit) {
+        const Defn * de = *sit;
+        switch (prevDef->defnType()) {
+          case Defn::Typedef:
+            if (de->defnType() != prevDef->defnType()) {
+              conflictingDefn = prevDef;
+            } else if (de->templateSignature() == NULL && prevDef->templateSignature() == NULL) {
+              conflictingDefn = prevDef;
+            }
+            break;
+
+          case Defn::Function:
+          case Defn::Macro:
+          case Defn::Property:
+            if (de->defnType() != prevDef->defnType()) {
+              conflictingDefn = prevDef;
+            }
+            break;
+
+          case Defn::Let:
+          case Defn::Var:
+          case Defn::Parameter:
+          case Defn::TemplateParam:
+          case Defn::Mod:
+          default:
             conflictingDefn = prevDef;
-          } else if (de->templateSignature() == NULL &&
-              prevDef->templateSignature() == NULL) {
-            conflictingDefn = prevDef;
-          }
-          break;
+            break;
 
-        case Defn::Function:
-        case Defn::Macro:
-        case Defn::Property:
-          if (de->defnType() != prevDef->defnType()) {
-            conflictingDefn = prevDef;
-          }
-          break;
+          case Defn::Namespace:
+            break;
+        }
 
-        case Defn::Let:
-        case Defn::Var:
-        case Defn::Parameter:
-        case Defn::TemplateParam:
-        case Defn::Mod:
-        default:
-          conflictingDefn = prevDef;
+        if (conflictingDefn) {
+          diag.fatal(de) << "Definition of '" << de << "' conflicts with earlier definition";
+          diag.info(conflictingDefn) << "defined here.";
           break;
+        }
 
-        case Defn::Namespace:
-          break;
-      }
-
-      if (conflictingDefn) {
-        diag.fatal(de) << "Definition of '" << de <<
-          "' conflicts with earlier definition";
-        diag.info(conflictingDefn) << "defined here.";
-        break;
+        prevDef = de;
       }
     }
   }

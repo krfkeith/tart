@@ -118,9 +118,7 @@ bool Module::processImportStatements() {
   return true;
 }
 
-bool Module::lookupMember(const char * name, DefnList & defs,
-    bool inherit) const {
-
+bool Module::lookupMember(const char * name, DefnList & defs, bool inherit) const {
   if (!imports_.empty() && !isPassFinished(Pass_ResolveImport)) {
     const_cast<Module *>(this)->processImportStatements();
   }

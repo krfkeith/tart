@@ -1,4 +1,5 @@
-/** Exception thrown when an array index is outside of the valid range of array indices. */
+/** Exception thrown when attempting to decode a sequence of input bytes which is not
+    valid for the encoding. */
 public class MalformedInputException : Exception {
   def construct() {
     super();

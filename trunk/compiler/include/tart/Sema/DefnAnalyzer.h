@@ -58,6 +58,7 @@ public:
   static void analyzeTemplateSignature(Defn * de);
 
   /** Add requested passes to the toRun set if not already run. */
+  static void addPass(Defn * de, DefnPasses & toRun, const DefnPass requested);
   static void addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested);
 
   /** Get the module in which a definition was defined - includes code to handle

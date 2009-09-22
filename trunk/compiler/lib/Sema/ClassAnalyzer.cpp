@@ -1056,7 +1056,13 @@ bool ClassAnalyzer::analyzeStaticInitializers() {
       DASSERT_OBJ(super->typeDefn()->isPassFinished(Pass_ResolveStaticInitializers), super);
     }
 
-    for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();
+    for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(member)) {
+        analyzeValueDefn(var, Task_PrepCodeGeneration);
+      }
+    }
+
+    /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();
         ++it) {
       VariableDefn * var = cast<VariableDefn>(*it);
       if (var->initValue() != NULL) {
@@ -1068,7 +1074,7 @@ bool ClassAnalyzer::analyzeStaticInitializers() {
           DFAIL("Implement");
         }
       }
-    }
+    }*/
 
     target->finishPass(Pass_ResolveStaticInitializers);
   }

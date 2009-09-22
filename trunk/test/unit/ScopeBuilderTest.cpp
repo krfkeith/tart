@@ -77,6 +77,7 @@ TEST_F(ScopeBuilderTest, TestNameConflict) {
   // But adding a class with the same name should produce an error
   diag.setMinSeverity(Diagnostics::Off);
   Defn * cl3Defn = builder.createMemberDefn(&testModule, &testModule, cl3);
+  builder.checkNameConflicts(&testModule);
   EXPECT_EQ(1, diag.getErrorCount());
   diag.reset();
   diag.setMinSeverity(Diagnostics::Debug);
