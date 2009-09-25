@@ -35,6 +35,9 @@ bool DefnAnalyzer::analyzeModule() {
     return false;
   }
 
+  analyzeType(Builtins::typeTypeDescriptor, Task_PrepMemberLookup);
+  analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
+
   if (module->firstMember() == NULL) {
     diag.fatal() << "Module should have at least one definition";
     return false;
@@ -66,6 +69,7 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   flushAnalysisQueue();
+  module->finishPass(Pass_ResolveModuleMembers);
   return success;
 }
 

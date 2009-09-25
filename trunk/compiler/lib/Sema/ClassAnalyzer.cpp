@@ -32,7 +32,7 @@ static const DefnPasses PASS_SET_LOOKUP = DefnPasses::of(
   Pass_ResolveBaseTypes
 );
 
-static const DefnPasses PASS_SET_CONSTRUCTION = DefnPasses::of(
+static const DefnPasses PASS_SET_CALL_OR_USE = DefnPasses::of(
   Pass_CreateMembers,
   Pass_ResolveBaseTypes,
   Pass_ResolveAttributes,
@@ -72,7 +72,7 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
       break;
 
     case Task_PrepCallOrUse:
-      addPasses(target, passesToRun, PASS_SET_CONSTRUCTION);
+      addPasses(target, passesToRun, PASS_SET_CALL_OR_USE);
       break;
 
     case Task_PrepCodeGeneration:
@@ -308,7 +308,7 @@ bool ClassAnalyzer::analyzeFields() {
           VariableDefn * field = static_cast<VariableDefn *>(member);
           field->copyTrait(target, Defn::Final);
 
-          analyzeValueDefn(field, Task_PrepCodeGeneration);
+          analyzeValueDefn(field, Task_PrepCallOrUse);
           DASSERT(field->type() != NULL);
 
           bool isStorageRequired = true;

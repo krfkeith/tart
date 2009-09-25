@@ -31,7 +31,7 @@ class Member {
   let kind:MemberKind;
   
   /** The class that declared this member, or null if it's a global function. */
-  let declaringType:Type;
+  let declaringType:TypeDescriptor;
 
   /** Accessibility of this member. */
   let access:Access;

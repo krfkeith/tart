@@ -356,6 +356,10 @@ void EvalPass::store(Expr * value, Expr * dest) {
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   CompositeType * arrayType = cast<CompositeType>(in->type());
+  if (!AnalyzerBase::analyzeType(arrayType, Task_PrepCallOrUse)) {
+    return NULL;
+  }
+
   Type * elementType = arrayType->typeParam(0);
   ConstantNativeArray * arrayData =
       new ConstantNativeArray(

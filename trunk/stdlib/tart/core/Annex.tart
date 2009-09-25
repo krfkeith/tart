@@ -4,5 +4,5 @@
 */
 @Attribute(Attribute.Target.TYPE)
 class Annex {
-  @Intrinsic def apply(t:tart.reflect.Type);
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
 }

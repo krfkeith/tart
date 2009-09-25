@@ -9,8 +9,8 @@ Design TODOS:
 * Protocols
 * Need a way to collect all declarations that a given attribute is assigned to.
 * Need a way to iterate through all functions in a module.
-Implementation TODOS:
 
+Implementation TODOS:
 
 * Refactoring
   * See if we can move template stuff into the type (CompositeType and FunctionType)
@@ -29,7 +29,6 @@ Implementation TODOS:
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
-* Tests for and & or.
 * Override and redef syntax. refine toString -> String {} "defover"?
   * How does that affect properties?
   * +def
@@ -38,7 +37,7 @@ Implementation TODOS:
   * Proxy
 * Preconditions.verify[%T]
 * Preconditions.checkState()
-* Boxed values: Boxed[%T] { let value:T; }
+* Boxed values: Boxed[%T] { let value:T; }. Also: auto boxing, unboxing.
 * Need to work on makefile dependencies.
 * Exceptions:
   * Finally
@@ -74,10 +73,10 @@ Implementation TODOS:
     with the same template args.
 * Import-as, import-namespace tests.
 * Templates
-  * "requires" clauses.
+  * "requires" or "where" clauses.
 * Runtime
   * Compile runtime with clang so as to allow optimization.
-* Source-level debug info.
+* Source-level debug info. (Need LLVM patch)
 * Generator functions.
   * Yield statement.
   * State machine.
@@ -87,10 +86,10 @@ Implementation TODOS:
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
 * AttributeSite failure tests.
-* Type extension
+* Class extension
 * Finish writing out and parsing metadata files so that we don't have to compile everything
   multiple times.
-* Call gc_alloc instead of malloc.
+* Call gc_alloc instead of malloc. Integrate Scarcity.
 * Statements:
   * for (need unpacking assignment.)
   * for/in

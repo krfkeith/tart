@@ -95,7 +95,7 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
 
 Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
   TypeDefn * tdef = in->type()->typeDefn();
-  if (tdef != NULL) {
+  if (tdef != NULL && tdef->isPassFinished(Pass_AnalyzeConstructors)) {
     module->addSymbol(tdef);
   }
 

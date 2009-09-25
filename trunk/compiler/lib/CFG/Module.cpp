@@ -134,6 +134,11 @@ llvm::Module * Module::irModule() {
 }
 
 bool Module::addSymbol(Defn * de) {
+  if (isPassFinished(Pass_ResolveModuleMembers)) {
+    diag.fatal(de) << "Too late to add symbol '" << de << "', analysis for module '" << this
+        << "' has already finished.";
+  }
+
   if (de->defnType() == Defn::ExplicitImport) {
     return false;
   }

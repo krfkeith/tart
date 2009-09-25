@@ -7,6 +7,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/Sema/FoldConstantsPass.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -39,6 +40,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
     for (Candidates::const_iterator it = clist.begin(); it != clist.end(); ++it) {
       bool exactMatch = true;
       CallCandidate * cc = *it;
+      DASSERT_OBJ(cc->method()->isPassFinished(Pass_ResolveParameterTypes), cc->method());
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
         Type * paramType = cc->paramType(argIndex);
@@ -62,7 +64,16 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
         for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
           if (callingArgs[paramIndex] == NULL) {
             ParameterDefn * param = ftype->params()[paramIndex];
-            callingArgs[paramIndex] = param->defaultValue();
+            if (param->defaultValue() != NULL) {
+              callingArgs[paramIndex] = param->defaultValue();
+            } else if (param->isVariadic()) {
+              // Empty array literal.
+              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type());
+              AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepCallOrUse);
+              DASSERT(arrayParam->isSingular());
+              callingArgs[paramIndex] = arrayParam;
+            }
+
             DASSERT_OBJ(callingArgs[paramIndex] != NULL, param);
           }
         }

@@ -104,7 +104,8 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     // See if it's an expression.
     ExprAnalyzer ea(module, activeScope);
-    Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
+    //Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
+    Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
       out.push_back(result);
       return true;
@@ -142,6 +143,10 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
 
   if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
     Type * type = inferType(lvalue->value());
+    if (type == NULL) {
+      return false;
+    }
+
     TypeDefn * typeDef = dealias(type)->typeDefn();
     if (typeDef != NULL && type->memberScope() != NULL) {
       DASSERT_OBJ(typeDef->isSingular(), typeDef);
@@ -396,10 +401,16 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
       return param->internalType();
     }
+
     return valueDef->type();
   }
 
-  diag.info(valueDef) << valueDef << ":" << valueDef->type();
+  if (valueDef->type() != NULL) {
+    diag.info(valueDef) << valueDef << ":" << valueDef->type();
+  } else {
+    diag.info(valueDef) << valueDef;
+  }
+
   DFAIL("Failed to determine type of value.");
 }
 

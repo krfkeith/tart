@@ -1,4 +1,5 @@
 class Property : Member {
+  var getter:int;
   /*
   private var getter = NativePointer[fn (obj:Object) -> Object];
   private var setter = NativePointer[fn (obj:Object, value:Object)];

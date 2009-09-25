@@ -1,4 +1,4 @@
-import tart.reflect.Type;
+import tart.reflect.TypeDescriptor;
 
 @EntryPoint
 def main() -> int {
