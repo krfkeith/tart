@@ -1,3 +1,5 @@
+import tart.annex.Intrinsic;
+
 /** Attribute that indicates that the associated function is where
     execution of the application should start. */
 @Attribute(Attribute.Target.FUNCTION)

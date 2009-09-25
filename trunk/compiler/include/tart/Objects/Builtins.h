@@ -119,7 +119,7 @@ public:
   static void initOperators();
 
   /** Register an annex type. */
-  static void registerAnnexType(Type * type);
+  static void registerEssentialType(Type * type);
 };
 
 template<class T> T * Builtins::getMember(Type * tdef, const char * name) {

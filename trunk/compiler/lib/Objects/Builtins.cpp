@@ -20,12 +20,12 @@ namespace tart {
 namespace {
   SourceFile builtinSource("");
 
-  struct AnnexType {
+  struct EssentialType {
     const char * name;
     Type ** type;
   };
 
-  AnnexType annexTypes[] = {
+  EssentialType annexTypes[] = {
     "tart.core.Iterable", &Builtins::typeIterable,
     "tart.core.Iterator", &Builtins::typeIterator,
   };
@@ -141,7 +141,7 @@ void Builtins::loadSystemClasses() {
   typeString = loadSystemType("tart.core.String");
   typeThrowable = loadSystemType("tart.core.Throwable");
 
-  typeIntrinsicAttribute = loadSystemType("tart.core.Intrinsic");
+  typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
 
   typeMember = loadSystemType("tart.reflect.Member");
   typeField = loadSystemType("tart.reflect.Field");
@@ -198,9 +198,9 @@ bool Builtins::compileBuiltins(ProgramSource & source) {
 
 #define elementsof(x)   (sizeof(x)/sizeof(x[0]))
 
-void Builtins::registerAnnexType(Type * type) {
+void Builtins::registerEssentialType(Type * type) {
   for (int i = 0; i < elementsof(annexTypes); ++i) {
-    AnnexType * atype = &annexTypes[i];
+    EssentialType * atype = &annexTypes[i];
     if (type->typeDefn()->qualifiedName() == atype->name) {
       *atype->type = type;
       break;

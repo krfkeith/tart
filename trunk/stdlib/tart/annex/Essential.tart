@@ -3,6 +3,6 @@
     compiler into a table of definitions that require special treatment.
 */
 @Attribute(Attribute.Target.TYPE)
-class Annex {
+class Essential {
   @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
 }

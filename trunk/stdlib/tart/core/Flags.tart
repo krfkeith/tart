@@ -1,3 +1,5 @@
+import tart.annex.Intrinsic;
+
 /** Attribute used to indicate that an enumeration is a set of flags. */
 @Attribute(Attribute.Target.ENUM)
 class Flags {

@@ -423,15 +423,27 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 }
 
 // -------------------------------------------------------------------
-// AnnexApplyIntrinsic
-AnnexApplyIntrinsic AnnexApplyIntrinsic::instance;
+// EssentialApplyIntrinsic
+EssentialApplyIntrinsic EssentialApplyIntrinsic::instance;
 
-Expr * AnnexApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
     const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantType * ctype = cast<ConstantType>(args[0]);
-  Builtins::registerAnnexType(ctype->value());
+  Builtins::registerEssentialType(ctype->value());
   return ctype;
+}
+
+// -------------------------------------------------------------------
+// GenerateStackTraceApplyIntrinsic
+GenerateStackTraceApplyIntrinsic GenerateStackTraceApplyIntrinsic::instance;
+
+Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  //ConstantType * ctype = cast<ConstantType>(args[0]);
+  DFAIL("Implement");
+  return NULL;
 }
 
 } // namespace tart
