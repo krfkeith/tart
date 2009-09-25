@@ -242,10 +242,19 @@ class EntryPointApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Annex.apply intrinsic
-class AnnexApplyIntrinsic : public Intrinsic {
-  static AnnexApplyIntrinsic instance;
-  AnnexApplyIntrinsic() : Intrinsic("tart.core.Annex.apply") {}
+// Essential.apply intrinsic
+class EssentialApplyIntrinsic : public Intrinsic {
+  static EssentialApplyIntrinsic instance;
+  EssentialApplyIntrinsic() : Intrinsic("tart.annex.Essential.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// GenerateStackTrace.apply intrinsic
+class GenerateStackTraceApplyIntrinsic : public Intrinsic {
+  static GenerateStackTraceApplyIntrinsic instance;
+  GenerateStackTraceApplyIntrinsic() : Intrinsic("tart.annex.GenerateStackTrace.apply") {}
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
       Type * expectedReturn) const;
 };

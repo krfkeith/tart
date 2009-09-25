@@ -1,0 +1,5 @@
+/** Attribute used to indicate that an enumeration is a set of flags. */
+@Attribute(Attribute.Target.STATEMENT)
+class GenerateStackTrace {
+  @Intrinsic def apply(t:tart.reflect.Method);
+}

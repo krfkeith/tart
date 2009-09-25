@@ -451,18 +451,18 @@ template<int typ>
 PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
 static SourceString infixEqSrc(
-    " @Intrinsic"
+    " @tart.annex.Intrinsic"
     " def infixEQ[%T](:NativePointer[T], :NativePointer[T]) -> bool;"
-    " @Intrinsic"
+    " @tart.annex.Intrinsic"
     " def infixNE[%T](:NativePointer[T], :NativePointer[T]) -> bool;");
 
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");
 
 static SourceString infixLogicalSrc(
-    " @Intrinsic"
+    " @tart.annex.Intrinsic"
     " def infixLogicalAnd(:bool, :bool) -> bool;"
-    " @Intrinsic"
+    " @tart.annex.Intrinsic"
     " def infixLogicalOr(:bool, :bool) -> bool;");
 
 } // namespace

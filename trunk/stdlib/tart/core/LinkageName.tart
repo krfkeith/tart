@@ -1,3 +1,5 @@
+import tart.annex.Intrinsic;
+
 /** Attribute that allows the linkage name of this function to be
     explicitly specified. */
 @Attribute(Attribute.Target.CALLABLE)

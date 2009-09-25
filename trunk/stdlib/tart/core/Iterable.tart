@@ -1,4 +1,6 @@
+import tart.annex.Essential;
+
 /** An iterface for iterable collections. */
-@Annex interface Iterable[%T] {
+@Essential interface Iterable[%T] {
   def iterate -> Iterator[T];
 }
