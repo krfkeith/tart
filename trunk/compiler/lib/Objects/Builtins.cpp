@@ -162,15 +162,8 @@ void Builtins::loadSystemClasses() {
   // Set the aliases
   typeAliasString.setValue(typeString);
 
-  // Analyze reflection types.
-  AnalyzerBase::analyzeType(typeTypeDescriptor, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeType(typeMember, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeType(typeField, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeType(typeProperty, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeType(typeMethod, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeType(typeModule, Task_PrepCodeGeneration);
-
   // Get references to members of class tart.reflect.TypeDescriptor
+  AnalyzerBase::analyzeType(typeTypeDescriptor, Task_PrepMemberLookup);
   rfTypeDescriptor.memberTypeKind = getMember<VariableDefn>(typeTypeDescriptor, "typeKind");
   rfTypeDescriptor.memberSupertype = getMember<VariableDefn>(typeTypeDescriptor, "supertype");
   rfTypeDescriptor.memberInterfaces = getMember<VariableDefn>(typeTypeDescriptor, "interfaces");
@@ -182,6 +175,7 @@ void Builtins::loadSystemClasses() {
   rfTypeDescriptor.memberMethods = getMember<VariableDefn>(typeTypeDescriptor, "methods");
 
   // Get references to members of class tart.reflect.Member
+  AnalyzerBase::analyzeType(typeMember, Task_PrepMemberLookup);
   rfMember.memberName = getMember<VariableDefn>(typeMember, "name");
   rfMember.memberMemberType = getMember<VariableDefn>(typeMember, "memberType");
   rfMember.memberKind = getMember<VariableDefn>(typeMember, "kind");
@@ -191,6 +185,7 @@ void Builtins::loadSystemClasses() {
   rfMember.memberAttributes = getMember<VariableDefn>(typeMember, "attributes");
 
   // Get references to members of class tart.reflect.Module
+  AnalyzerBase::analyzeType(typeModule, Task_PrepMemberLookup);
   rfModule.memberName = getMember<VariableDefn>(typeModule, "name");
   rfModule.memberTypes = getMember<VariableDefn>(typeModule, "types");
   rfModule.memberMethods = getMember<VariableDefn>(typeModule, "methods");

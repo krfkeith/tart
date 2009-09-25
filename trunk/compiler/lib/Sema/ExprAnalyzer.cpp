@@ -598,8 +598,10 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
 
   if (values.size() == 0) {
     diag.error(ast) << "Undefined symbol " << ast;
-    diag.writeLnIndent("Scopes searched:");
-    dumpScopeHierarchy();
+    if (ast->nodeType() != ASTNode::Member) {
+      diag.writeLnIndent("Scopes searched:");
+      dumpScopeHierarchy();
+    }
     return &Expr::ErrorVal;
   } else if (values.size() > 1) {
     diag.error(ast) << "Multiply defined symbol " << ast;

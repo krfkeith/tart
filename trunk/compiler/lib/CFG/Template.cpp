@@ -186,7 +186,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     PatternVar * var = *it;
     if (var->valueType() == NULL) {
       // TODO: This is needed because some pattern vars are created before
-      // typeType is loaded. We should fix that.
+      // typeTypeDescriptor is loaded. We should fix that.
       DASSERT(Builtins::typeTypeDescriptor != NULL);
       var->setValueType(Builtins::typeTypeDescriptor);
     }

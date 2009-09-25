@@ -37,26 +37,7 @@ bool CodeGenerator::genXDef(Defn * de) {
       return genFunction(static_cast<FunctionDefn*>(de));
 
     case Defn::Typedef: {
-      TypeDefn * tdef = static_cast<TypeDefn *>(de);
-      switch (tdef->typeValue()->typeClass()) {
-        case Type::Class:
-        case Type::Struct:
-        case Type::Interface:
-        case Type::Enum:
-          //if (debug_) {
-          //  genTypeDebugInfo(de->defnType());
-          //}
-
-          return genTypeDefn(static_cast<TypeDefn*>(de));
-
-        case Type::NativePointer:
-        case Type::NativeArray:
-          return true;
-
-        default:
-          diag.fatal(de) << "No generator for " << de;
-          return true;
-      }
+      return genTypeDefn(static_cast<TypeDefn*>(de));
     }
 
     case Defn::Macro:
@@ -348,7 +329,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
-  if (var->module() == module_) {
+  if (var->module() == module_ || var->isSynthetic()) {
     /*DIType dbgType;
     if (debug_) {
       dbgType = genTypeDebugInfo(varType);

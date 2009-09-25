@@ -1,11 +1,2 @@
 /** The metatype object - the class that describes a type. */
-public class Type {
-  /** The type info block. */
-  private var typeInfo:NativePointer[TypeInfoBlock];
-  
-  /** The superclass of this class. */
-  readonly var superType:Type;
-
-  /** Private constructor - types cannot be created by applications. */
-  private def construct() {}
-}
+public class Type[%T] : TypeDescriptor {}

@@ -198,6 +198,10 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       if (selfArg == NULL) {
         return &Expr::ErrorVal;
       }
+
+      if (!AnalyzerBase::analyzeType(selfArg->type(), Task_PrepCallOrUse)) {
+        return &Expr::ErrorVal;
+      }
     }
 
     // See if we can evaluate the call at compile-time.
@@ -230,8 +234,11 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
+      DASSERT_OBJ(method->functionType()->selfParam()->type() != NULL, method);
+      DASSERT_OBJ(!method->functionType()->selfParam()->type()->isEqual(&VoidType::instance), method);
       result->setType(method->functionType()->selfParam()->type());
     } else {
+      //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
       DASSERT_OBJ(method->returnType() != NULL, method);
       result->setType(method->returnType());
       if (method->storageClass() != Storage_Instance) {
@@ -301,7 +308,7 @@ Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingE
       return NULL;
     }
 
-    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepCallOrUse)) {
+    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepMemberLookup)) {
       return NULL;
     }
 

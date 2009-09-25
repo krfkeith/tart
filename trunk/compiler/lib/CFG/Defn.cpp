@@ -314,38 +314,6 @@ void NamespaceDefn::trace() const {
 
 // -------------------------------------------------------------------
 // TypeDefn
-#if 0
-Type * TypeDefn::metaType() const {
-  switch (typeValue()->typeClass()) {
-    case Type::Primitive:
-      DASSERT(Builtins::typeTypeDescriptor != NULL);
-      return Builtins::typeTypeDescriptor;
-
-    case Type::Class:
-      DASSERT(Builtins::typeClass != NULL);
-      return Builtins::typeClass;
-
-    case Type::Struct:
-      DASSERT(Builtins::typeStruct != NULL);
-      return Builtins::typeStruct;
-
-    case Type::Interface:
-      DASSERT(Builtins::typeInterface != NULL);
-      return Builtins::typeInterface;
-
-    case Type::Enum:
-      DASSERT(Builtins::typeEnum != NULL);
-      return Builtins::typeEnum;
-
-    case Type::Alias:
-      DFAIL("Implement");
-
-    default:
-      DFAIL("Not a type");
-  }
-}
-#endif
-
 ConstantType * TypeDefn::asExpr() {
   DASSERT(Builtins::typeTypeDescriptor != NULL);
   if (expr_ == NULL) {

@@ -18,6 +18,7 @@
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
+#include "llvm/DerivedTypes.h"
 
 namespace tart {
 
@@ -62,8 +63,8 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
   // Don't need to define this twice.
-  if (rtype->isExternal() || (rtype->typeDescriptor() != NULL &&
-      rtype->typeDescriptor()->hasInitializer())) {
+  if (rtype->isExternal() ||
+      (rtype->typeDescriptor() != NULL && rtype->typeDescriptor()->hasInitializer())) {
     return type->irType();
   }
 
@@ -72,13 +73,6 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(tdef->isPassFinished(Pass_AnalyzeFields), type);
   DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), type);
   DASSERT_OBJ(type->irType() != NULL, type);
-
-  /*if (type->super() != NULL) {
-    const CompositeType * superDecl = type->super();
-    if (superDecl != NULL) {
-      genCompositeType(superDecl);
-    }
-  }*/
 
   irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
@@ -127,7 +121,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
               true, GlobalValue::ExternalLinkage, NULL,
               type->typeDefn()->linkageName() + ".type.tib"));
       rtype->setTypeInfoPtr(
-          llvm::ConstantExpr::ConstantExpr::getBitCast(
+          llvm::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
               PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0)));
     }
@@ -137,6 +131,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
 }
 
 void CodeGenerator::createTypeDescriptor(RuntimeTypeInfo * rtype) {
+  llvm::GlobalVariable * typeDescriptorPtr = createTypeDescriptorPtr(rtype);
   const CompositeType * type = rtype->getType();
   const std::string & linkName = type->typeDefn()->linkageName();
 
@@ -160,16 +155,50 @@ void CodeGenerator::createTypeDescriptor(RuntimeTypeInfo * rtype) {
   }
 
   // Lists
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberInterfaces->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberTypeParams->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberAttributes->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberFields->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberProperties->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberConstructors->type()->irEmbeddedType())));
-  typeDescriptorMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfTypeDescriptor.memberMethods->type()->irEmbeddedType())));
+
+  // Interface list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberInterfaces,
+      ExprList()));
+
+  // Type parameter list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberTypeParams,
+      ExprList()));
+
+  // Attribute list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberAttributes,
+      ExprList()));
+
+  // Field list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberFields,
+      ExprList()));
+
+  // Property list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberProperties,
+      ExprList()));
+
+  // Constructor list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberConstructors,
+      ExprList()));
+
+  // Method list.
+  typeDescriptorMembers.push_back(genReflectionDataArray(
+      linkName,
+      Builtins::rfTypeDescriptor.memberMethods,
+      ExprList()));
 
   llvm::Constant * typeDescriptorStruct = ConstantStruct::get(context_, typeDescriptorMembers);
-  llvm::GlobalVariable * typeDescriptorPtr = createTypeDescriptorPtr(rtype);
   typeDescriptorPtr->setInitializer(typeDescriptorStruct);
 }
 
@@ -417,6 +446,39 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
   //diag.fatal(type->typeDefn()) << "Implement " << type;
   //DFAIL("Implement");
+}
+
+llvm::Constant * CodeGenerator::genReflectionDataArray(
+    const std::string & baseName, const VariableDefn * var, const ExprList & exprs)
+{
+  const Type * arrayType = var->type();
+  irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
+  DASSERT_OBJ(arrayType->typeDefn()->isPassFinished(Pass_ResolveOverloads), var);
+
+  //genCompositeType(cast<CompositeType>(arrayType));
+
+  ConstantList objMembers;
+  objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(arrayType)));
+
+  // TODO: If the size is zero, then just point to the static zero-length array.
+  ConstantList arrayMembers;
+  for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
+    Constant * element = genConstExpr(*it);
+    if (element != NULL) {
+      arrayMembers.push_back(element);
+    }
+  }
+
+  ConstantList arrayStructMembers;
+  arrayStructMembers.push_back(ConstantStruct::get(context_, objMembers));
+  arrayStructMembers.push_back(getInt32Val(arrayMembers.size()));
+  arrayStructMembers.push_back(ConstantStruct::get(context_, arrayMembers));
+
+  llvm::Constant * arrayStruct = ConstantStruct::get(context_, arrayStructMembers);
+  GlobalVariable * array = new GlobalVariable(*irModule_,
+      arrayStruct->getType(), true, GlobalValue::InternalLinkage, arrayStruct,
+      baseName + ".type." + var->name());
+  return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
 }
 
 } // namespace tart

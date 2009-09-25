@@ -11,5 +11,5 @@ public class Extern {
     self.name = name;
   }
 
-  @Intrinsic def apply(t:tart.reflect.Type);
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
 }

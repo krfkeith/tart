@@ -91,6 +91,9 @@ enum DefnPass {
   /** Resolve an import statement. */
   Pass_ResolveImport,
 
+  /** Resolve all module members. */
+  Pass_ResolveModuleMembers,
+
   /** Number of analysis passes. */
   DefnPassCount
 };

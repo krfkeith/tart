@@ -3,7 +3,7 @@
 @Attribute(Attribute.Target.FUNCTION)
 class EntryPoint {
   public def construct() {}
-  @Intrinsic def apply(t:tart.reflect.Type);
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
   
   static def __entry__(
       argc:int,

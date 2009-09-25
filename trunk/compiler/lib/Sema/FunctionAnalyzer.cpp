@@ -226,6 +226,12 @@ bool FunctionAnalyzer::resolveModifiers() {
           break;
         }
       }
+
+      // Add the constructor flag if it has the name 'construct'
+      if (target->name() == istrings.idConstruct) {
+        target->addTrait(Defn::Ctor);
+      }
+
     } else {
       if (isAbstract) {
         if (target->storageClass() == Storage_Global) {

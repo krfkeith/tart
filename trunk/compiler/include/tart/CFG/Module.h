@@ -109,6 +109,7 @@ public:
   void clearDefns() {
     IterableScope::clear();
     decls_.clear();
+    finished_.remove(Pass_ResolveModuleMembers);
   }
 
   llvm::Module * irModule();

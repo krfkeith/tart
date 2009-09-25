@@ -19,11 +19,18 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     //def asBuffer() {
     //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
     //}
+
+    // Static empty array singleton.
+    static var emptyArray:Array = [];
   }
 
   /** Construct an array of a given length */
   static def create(length:int) -> Array {
     Preconditions.checkArgument(length >= 0);
+    if (length == 0) {
+      return emptyArray;
+    }
+
     let self:Array = alloc(length);
     // TODO: Need to initialize the array elements to default values.
     // Memory.initToDefaultValues(addressOf(data[0]), end);

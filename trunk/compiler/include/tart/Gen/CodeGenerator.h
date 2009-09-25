@@ -52,6 +52,7 @@ class ConstantNativeArray;
 class ProgramSource;
 struct SourceLocation;
 
+typedef llvm::SmallVector<Expr *, 4> ExprList;
 typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
 typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
@@ -207,6 +208,10 @@ public:
 
   /** Generate the code to initialize the vtable pointer of a newly-allocated class instance. */
   void genInitObjVTable(const CompositeType * tdef, llvm::Value * instance);
+
+  /** Generate an array containing reflection data supplied by the specified array. */
+  llvm::Constant * genReflectionDataArray(
+      const std::string & baseName, const VariableDefn * var, const ExprList & exprs);
 
   /** Given a type, generate a constant representing the size of that type.
       'memberSize' - return how much space the type would consume as a member of another
