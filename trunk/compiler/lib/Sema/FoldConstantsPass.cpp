@@ -50,7 +50,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
       }
 
       if (exactMatch) {
-        FunctionType * ftype = cc->method()->functionType();
+        FunctionType * ftype = cc->functionType();
         size_t paramCount = ftype->params().size();
         ExprList callingArgs;
         callingArgs.resize(paramCount);

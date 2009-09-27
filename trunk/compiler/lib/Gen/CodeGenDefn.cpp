@@ -393,20 +393,4 @@ GlobalVariable * CodeGenerator::createModuleObjectPtr() {
   return moduleObject_;
 }
 
-void CodeGenerator::createModuleObject() {
-  createModuleObjectPtr();
-  if (!moduleObject_->hasInitializer()) {
-    ConstantList objMembers;
-    ConstantList moduleMembers;
-    objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(Builtins::typeModule)));
-    moduleMembers.push_back(ConstantStruct::get(context_, objMembers));
-    moduleMembers.push_back(genStringLiteral(module_->qualifiedName()));
-    moduleMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfModule.memberTypes->type()->irEmbeddedType())));
-    moduleMembers.push_back(ConstantPointerNull::get(cast<PointerType>(Builtins::rfModule.memberMethods->type()->irEmbeddedType())));
-
-    llvm::Constant * moduleStruct = ConstantStruct::get(context_, moduleMembers);
-    moduleObject_->setInitializer(moduleStruct);
-  }
-}
-
 } // namespace tart

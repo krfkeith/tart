@@ -91,8 +91,8 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genStringLiteral(static_cast<const ConstantString *> (in)->value());
 
     case Expr::ConstNull: {
-      DASSERT_OBJ(in->type()->isReferenceType(), in->type());
-        return ConstantPointerNull::get(PointerType::getUnqual(in->type()->irType()));
+      //DASSERT_OBJ(in->type()->isReferenceType(), in->type());
+      return ConstantPointerNull::get(cast<PointerType>(in->type()->irParameterType()));
     }
 
     case Expr::ConstObjRef:
@@ -157,6 +157,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::CtorCall:
     case Expr::VTableCall:
       return genCall(static_cast<const FnCallExpr *>(in));
+
+    case Expr::IndirectCall:
+      return genIndirectCall(static_cast<const IndirectCallExpr *>(in));
 
     case Expr::New:
       return genNew(static_cast<const NewExpr *>(in));
@@ -389,7 +392,11 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         return genVarValue(static_cast<const VariableDefn *>(var));
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
-        DASSERT(param->isLValue());
+        if (param->type()->typeClass() == Type::Struct) {
+          return param->irValue();
+        }
+
+        DASSERT_OBJ(param->isLValue(), param);
         return param->irValue();
       } else {
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
@@ -725,8 +732,6 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
     args.push_back(argVal);
   }
 
-  // TODO: VCalls and ICalls.
-
   // Generate the function to call.
   Value * fnVal;
   if (in->exprType() == Expr::VTableCall) {
@@ -751,6 +756,51 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
   } else {
     return result;
   }
+}
+
+Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
+  Expr * fn = in->function();
+  Type * fnType = fn->type();
+
+  Value * fnValue;
+  if (const NativePointerType * np = dyn_cast<NativePointerType>(fnType)) {
+    fnValue = genExpr(fn);
+    if (fnValue != NULL) {
+      fnValue = builder_.CreateLoad(fnValue);
+    }
+  } else {
+    DFAIL:("Implement");
+  }
+
+  ValueList args;
+
+
+#if 0
+  Value * selfArg = NULL;
+  if (in->selfArg() != NULL) {
+    selfArg = genExpr(in->selfArg());
+    if (fn->storageClass() == Storage_Instance) {
+      args.push_back(selfArg);
+    }
+  }
+#endif
+
+  ExprList & inArgs = in->args();
+  for (ExprList::iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
+    Value * argVal = genExpr(*it);
+    if (argVal == NULL) {
+      return NULL;
+    }
+
+    args.push_back(argVal);
+  }
+
+  // TODO: VCalls and ICalls.
+
+  // Generate the function to call.
+    //fnVal = genFunctionValue(fn);
+
+  return genCallInstr(fnValue, args.begin(), args.end(), "indirect");
 }
 
 Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -803,7 +853,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   DASSERT(classType->typeClass() == Type::Interface);
 
   // Get the interface ID (which is just the type pointer).
-  GlobalVariable * itype = getTypeDescriptorPtr(classType);
+  Constant * itype = getTypeInfoBlockPtr(classType);
 
   // Load the pointer to the TIB.
   Value * tib = builder_.CreateLoad(
@@ -989,7 +1039,7 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromTyp
 
   // Make sure it's a class.
   DASSERT(toType->typeClass() == Type::Class || toType->typeClass() == Type::Interface);
-  Constant * toTypeObj = getTypeDescriptorPtr(toType);
+  Constant * toTypeObj = getTypeInfoBlockPtr(toType);
 
   // Bitcast to object type
   Value * valueAsObjType = builder_.CreateBitCast(val,

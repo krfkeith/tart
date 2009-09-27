@@ -79,6 +79,7 @@ void CodeGenerator::generate() {
   }
 
   irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
+  irModule_->addTypeName("tart.core.TypeInfoBlock", Builtins::typeTypeInfoBlock->irType());
   irModule_->addTypeName("tart.reflect.TypeDescriptor", Builtins::typeTypeDescriptor->irType());
 
   // Generate all declarations.

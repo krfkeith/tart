@@ -1,0 +1,3 @@
+/** A compile-time reference to a type object. */
+public class TypeLiteral[%T] {
+}

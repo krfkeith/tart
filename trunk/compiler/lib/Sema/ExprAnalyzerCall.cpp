@@ -7,6 +7,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/Objects/Builtins.h"
@@ -93,6 +94,17 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //if (lv->base() != NULL) {
         //  isUnqualified = false;
         //}
+      } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
+        if (FunctionType * ft = dyn_cast<FunctionType>(var->type())) {
+          success &= addOverload(call, lv, ft, args);
+        } else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type())) {
+          Type * targetType = npt->typeParam(0);
+          if (analyzeType(targetType, Task_PrepCallOrUse)) {
+            if (FunctionType * ft = dyn_cast<FunctionType>(targetType)) {
+              success &= addOverload(call, lv, ft, args);
+            }
+          }
+        }
       }
     } else {
       diag.fatal(loc) << *it << " is not callable.";
@@ -445,6 +457,22 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   if (builder.assignFromAST(args)) {
     call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa));
+  }
+
+  return true;
+}
+
+bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, FunctionType * ftype,
+    const ASTNodeList & args) {
+  if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
+    return false;
+  }
+
+  DASSERT_OBJ(ftype != NULL, fn);
+  ParameterAssignments pa;
+  ParameterAssignmentsBuilder builder(pa, ftype);
+  if (builder.assignFromAST(args)) {
+    call->candidates().push_back(new CallCandidate(call, fn, ftype, pa));
   }
 
   return true;

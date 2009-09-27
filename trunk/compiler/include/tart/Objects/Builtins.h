@@ -80,6 +80,7 @@ public:
   static Type * typeUnwindException;
   static Type * typeIterable;
   static Type * typeIterator;
+  static Type * typeUnsupportedOperationException;
 
   // System types - reflection
   static Type * typeTypeDescriptor;

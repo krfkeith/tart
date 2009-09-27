@@ -179,6 +179,10 @@ bool Type::isUnsizedIntType() const {
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
 }
 
+Type * Type::typeParam(int index) const {
+  DFAIL("No type params");
+}
+
 ConversionRank Type::convert(const Conversion & cn) const {
   if (cn.resultValue == NULL) {
     // Ask the constraint if we can convert to this type. Most types don't

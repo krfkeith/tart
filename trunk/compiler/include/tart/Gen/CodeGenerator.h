@@ -25,6 +25,7 @@ class CompareExpr;
 class InstanceOfExpr;
 class InitVarExpr;
 class FnCallExpr;
+class IndirectCallExpr;
 class ArrayLiteralExpr;
 class NewExpr;
 class LValueExpr;
@@ -64,6 +65,9 @@ typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
 
 /// -------------------------------------------------------------------
+/// Reflected Member
+
+/// -------------------------------------------------------------------
 /// Code generator class.
 class CodeGenerator {
 public:
@@ -74,6 +78,8 @@ public:
 
   /** Function to generate the module code. */
   void generate();
+
+  llvm::LLVMContext & context() const { return context_; }
 
   /** Generate a global definition. */
   bool genXDef(Defn * de);
@@ -130,6 +136,7 @@ public:
   llvm::Value * genNot(const UnaryExpr * in);
   llvm::Value * genLogicalOper(const BinaryExpr * in);
   llvm::Value * genCall(FnCallExpr * in);
+  llvm::Value * genIndirectCall(IndirectCallExpr * in);
   llvm::Value * genNew(NewExpr * in);
 
   /** Load an expression */
@@ -183,7 +190,7 @@ public:
   llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
 
   /** Generate a reference to the Type descriptor for this type. */
-  llvm::GlobalVariable * getTypeDescriptorPtr(const CompositeType * ctype);
+  llvm::GlobalVariable * getTypeDescriptorPtr(const Type * ctype);
   llvm::GlobalVariable * createTypeDescriptorPtr(RuntimeTypeInfo * rtype);
   void createTypeDescriptor(RuntimeTypeInfo * rtype);
 
@@ -196,10 +203,6 @@ public:
   llvm::Function * getTypeAllocator(const CompositeType * tdef);
   llvm::Function * createTypeAllocator(RuntimeTypeInfo * tdef);
 
-  /** Create a module object for the current module. */
-  llvm::GlobalVariable * createModuleObjectPtr();
-  void createModuleObject();
-
   /** Generate the method dispatch table for a type. */
   llvm::Constant * genMethodArray(const MethodList & methods);
 
@@ -211,7 +214,7 @@ public:
 
   /** Generate an array containing reflection data supplied by the specified array. */
   llvm::Constant * genReflectionDataArray(
-      const std::string & baseName, const VariableDefn * var, const ExprList & exprs);
+      const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
   /** Given a type, generate a constant representing the size of that type.
       'memberSize' - return how much space the type would consume as a member of another
@@ -276,7 +279,13 @@ public:
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
 
-  /** Return the debug compile unit for the specified source file. */
+  /** Reflection methods. */
+  llvm::GlobalVariable * createModuleObjectPtr();
+  void createModuleObject();
+  llvm::Constant * reflectMethod(const FunctionDefn * func);
+  llvm::Constant * reflectMember(const CompositeType * structType, const ValueDefn * def);
+
+    /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
   llvm::DICompileUnit getCompileUnit(Defn * defn);
   unsigned getSourceLineNumber(const SourceLocation & loc);

@@ -4,11 +4,6 @@ import tart.annex.Intrinsic;
 public class Object {
   private var __tib:NativePointer[TypeInfoBlock];
 
-  /** Compiler-generated function to lookup the specified interface method. */
-  // @Intrinsic
-  //private def getInterfaceMethod(
-  //    interfaceType:NativePoint<Type>, methodIndex:int) -> NativePointer<void>;
-
   /** Compiler intrinsic used to create and initialize instances of
       variable-length types.
     

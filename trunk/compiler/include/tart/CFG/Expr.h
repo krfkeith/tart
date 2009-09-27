@@ -389,7 +389,6 @@ class FnCallExpr : public ArglistExpr {
 private:
   FunctionDefn * function_;
   Expr * selfArg_;
-  bool typesFinalized_;
 
 public:
   FnCallExpr(ExprType k, const SourceLocation & loc, FunctionDefn * function,
@@ -397,7 +396,6 @@ public:
     : ArglistExpr(k, loc, NULL)
     , function_(function)
     , selfArg_(self)
-    , typesFinalized_(false)
   {}
 
   /** The function expression being called. */
@@ -409,9 +407,34 @@ public:
   Expr * selfArg() const { return selfArg_; }
   void setSelfArg(Expr * self) { selfArg_ = self; }
 
-  /** Whether FinalizeTypes has run on this expression. */
-  bool areTypesFinalized() const { return typesFinalized_; }
-  void setTypesFinalized(bool value) { typesFinalized_ = value; }
+  // Overridden methods
+
+  void format(FormatStream & out) const;
+  bool isSideEffectFree() const { return false; }
+  bool isSingular() const;
+  void trace() const;
+
+  static inline bool classof(const FnCallExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == FnCall || ex->exprType() == CtorCall;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A call through a variable.
+class IndirectCallExpr : public ArglistExpr {
+private:
+  Expr * function_;
+
+public:
+  IndirectCallExpr(ExprType k, const SourceLocation & loc, Expr * function)
+    : ArglistExpr(k, loc, NULL)
+    , function_(function)
+  {}
+
+  /** The function expression being called. */
+  Expr * function() { return function_; }
+  const Expr * function() const { return function_; }
 
   // Overridden methods
 
@@ -420,9 +443,9 @@ public:
   bool isSingular() const;
   void trace() const;
 
-  static inline bool classof(const CallExpr *) { return true; }
+  static inline bool classof(const IndirectCallExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
-    return ex->exprType() == FnCall || ex->exprType() == CtorCall;
+    return ex->exprType() == IndirectCall;
   }
 };
 

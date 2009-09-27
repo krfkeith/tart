@@ -130,6 +130,10 @@ public:
   /** Return the set of all ancestor classes. */
   void ancestorClasses(ClassSet & out) const;
 
+  /** Search all base classes for an interface table entry that either matches 'type'
+      or is a subclass of 'type. */
+  const InterfaceTable * findBaseImplementationOf(CompositeType * type) const;
+
   /** Add all of the methods that are referred to by this class's TypeInfoBlock as
       definitions to this module. This is used for template instances. */
   void addMethodDefsToModule(Module * module);

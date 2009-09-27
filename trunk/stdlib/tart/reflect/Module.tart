@@ -2,14 +2,24 @@ import tart.annex.Intrinsic;
 
 /** Description of a compiled module. */
 final class Module {
+  private {
+    var moduleName:String;
+    var typeList:TypeDescriptor[];
+    var methodList:MethodList;
+    
+    def construct() {}
+  }
+  
   /** Fully-qualified name of the module. */
-  let name:String;
+  def name:String { get { return moduleName; } }
 
   /** Array of types defined in this module. */
-  let types:TypeDescriptor[];
+  def types:TypeDescriptor[] { get { return typeList; } }
 
   /** Array of types defined in this module. */
-  let methods:Method[];
+  def methods:MethodList {
+    get { return methodList; }
+  }
   
   /** Global list of all modules in this compilation unit. */
   //static const var modules:Module[];

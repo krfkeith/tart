@@ -182,7 +182,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Should use uintptr_t instead of int32.
 
   DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
-  Type * elemType = cast<NativePointerType>(firstPtr->type())->typeParam(0);
+  Type * elemType = firstPtr->type()->typeParam(0);
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
@@ -292,7 +292,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * count = call->arg(2);
 
   DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
-  Type * elemType = cast<NativePointerType>(srcArray->type())->typeParam(0);
+  Type * elemType = srcArray->type()->typeParam(0);
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);
   Value * length = cg.genExpr(count);

@@ -292,7 +292,8 @@ void CodeGenerator::genCatch(Block * blk) {
   // Args to llvm.eh.selector
   ValueList args;
   args.push_back(ehPtr);
-  args.push_back(builder_.CreateBitCast(personality, PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
+  args.push_back(builder_.CreateBitCast(
+      personality, PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
 
   // Add an argument for each catch block, or the finally block if there is one.
   size_t numSelectors = blk->termExprs().size() - 1;
@@ -302,7 +303,7 @@ void CodeGenerator::genCatch(Block * blk) {
     if (catchExpr != NULL) {
       // Catch handler
       CompositeType * exceptType = cast<CompositeType>(catchExpr->value());
-      args.push_back(getTypeDescriptorPtr(exceptType));
+      args.push_back(getTypeInfoBlockPtr(exceptType));
     } else {
       // Finally handler
       args.push_back(getInt32Val(0));

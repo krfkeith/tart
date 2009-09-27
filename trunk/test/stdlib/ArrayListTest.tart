@@ -2,11 +2,15 @@ import tart.collections.ArrayList;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  testConstruct();
-  testImplicitType();
-  testOutOfRange();
-  testAdd();
-  testRemove();
+  try {
+    testConstruct();
+    testImplicitType();
+    testOutOfRange();
+    testAdd();
+    testRemove();
+  } catch e:Exception {
+    Debug.fail("Exception BAD");
+  }
   return 0;
 }
 

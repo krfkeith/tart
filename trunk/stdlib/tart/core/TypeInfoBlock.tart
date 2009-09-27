@@ -9,10 +9,10 @@ struct TypeInfoBlock {
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
-  readonly var bases:NativePointer[NativeArray[TypeDescriptor, 0]];
+  readonly var bases:NativePointer[NativeArray[NativePointer[TypeInfoBlock], 0]];
 
   /** Compiler-generated function to lookup the specified interface method. */
-  readonly var idispatch:fn(interfaceType:TypeDescriptor, methodIndex:int) -> NativePointer[void];
+  readonly var idispatch:fn(interfaceType:NativePointer[TypeInfoBlock], methodIndex:int) -> NativePointer[void];
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[NativePointer[void], 0];
@@ -20,10 +20,10 @@ struct TypeInfoBlock {
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used
       by the compiler to do 'isa', 'as' and 'catch' tests. */
-  public final def hasBase(toType:TypeDescriptor) -> bool {
-    return true if self.type is toType;
+  public final def hasBase(toType:NativePointer[TypeInfoBlock]) -> bool {
+    return true if Memory.addressOf(self) is toType;
     var i = 0;
-    while let base:TypeDescriptor = self.bases[i++] {
+    while let base:NativePointer[TypeInfoBlock] = self.bases[i++] {
       return true if base is toType;
     }
 

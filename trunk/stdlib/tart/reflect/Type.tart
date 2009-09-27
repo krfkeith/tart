@@ -1,2 +1,69 @@
 /** The metatype object - the class that describes a type. */
-public class Type[%T] : TypeDescriptor {}
+public class Type {
+  enum TypeKind : ubyte {
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    NATIVE_POINTER,
+    NATIVE_ARRAY,
+    //NonType
+  }
+
+  @Flags  
+  enum TypeTraits {
+    ATTRIBUTE,
+  }
+
+  /** The TypeInfoBlock for this type. */  
+  let typeDescriptor:TypeDescriptor;
+  
+  /** The fully-qualified name of this type. */
+  let name:String;
+  
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  let typeKind:TypeKind;
+  
+  /** Pointer to this type's supertype, or null. */
+  let supertype:Type /* or void */;
+  
+  /** Array of inherited interfaces. */
+  let interfaces:TypeList;
+  
+  /** Array of type parameters. */
+  let typeParams:TypeList;
+  
+  /** Array of associated attributes */
+  let attributes:AttributeList;
+  
+  /** Array of field members. */
+  let fields:FieldList;
+  
+  /** Array of property members. */
+  let properties:PropertyList;
+  
+  /** Array of constructor members. */
+  let constructors:MethodList;
+  
+  /** Array of methods. */
+  let methods:MethodList;
+
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+
+  /** True if this is an aggregate type. */
+  //final def isAggregate:bool { get { return false; } }
+  
+  /** True if this is an array type. */
+  //final def isArray:bool { get { return false; } }
+  
+  /** True if this is a reference type. */
+  //final def isByReference:bool { get { return typeKind == CLASS or kind == INTERFACE; } }
+
+  //def construct(constructor:Method, args:Object[]) -> Object;
+  //def construct(args:Object[]) -> Object;
+}

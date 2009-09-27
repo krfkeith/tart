@@ -41,6 +41,8 @@ private:
   Expr * runImpl(Expr * in);
   Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, UnionType * from, Type * to);
   Expr * visitAssignImpl(AssignmentExpr * in);
+  bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
+  Expr * visitIndirectCall(CallExpr * in);
   Defn * doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env);
 };
 

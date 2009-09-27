@@ -258,18 +258,23 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
 Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
     const ASTNodeList & args) {
   DefnList defns;
+  TypeList types;
   DefnAnalyzer da(module, activeScope);
   Expr * base = NULL;
 
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
     if (ConstantType * tref = dyn_cast<ConstantType>(*it)) {
-      TypeDefn * ty = dealias(tref->value())->typeDefn();
-      if (ty != NULL) {
-        if (ty->isTemplate()) {
-          defns.push_back(ty);
-        } else if (ty->isTemplateInstance()) {
-          // It's an instance, so get the original template and its siblings
-          ty->templateInstance()->parentScope()->lookupMember(ty->name(), defns, true);
+      if (NativePointerType * np = dyn_cast<NativePointerType>(tref->value())) {
+        defns.push_back(&NativePointerType::typedefn);
+      } else {
+        TypeDefn * ty = dealias(tref->value())->typeDefn();
+        if (ty != NULL) {
+          if (ty->isTemplate()) {
+            defns.push_back(ty);
+          } else if (ty->isTemplateInstance()) {
+            // It's an instance, so get the original template and its siblings
+            ty->templateInstance()->parentScope()->lookupMember(ty->name(), defns, true);
+          }
         }
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
@@ -425,6 +430,15 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask pass) {
   return true;
 }
 
+void AnalyzerBase::analyzeTypeLater(Type * in) {
+  if (in != NULL && in->isSingular()) {
+    TypeDefn * de = in->typeDefn();
+    if (de != NULL) {
+      analyzeLater(de);
+    }
+  }
+}
+
 bool AnalyzerBase::analyzeModule(Module * mod) {
   DefnAnalyzer da(mod, mod);
   return da.analyzeModule();
@@ -488,21 +502,13 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
 
     case Type::NativePointer: {
       NativePointerType * np = static_cast<NativePointerType *>(type);
-      Type * elementType = np->typeParam(0);
-      if (elementType != NULL && elementType->typeDefn() != NULL && elementType->isSingular()) {
-        analyzeLater(elementType->typeDefn());
-      }
-
+      analyzeTypeLater(np->typeParam(0));
       return true;
     }
 
     case Type::NativeArray: {
       NativeArrayType * na = static_cast<NativeArrayType *>(type);
-      Type * elementType = na->typeParam(0);
-      if (elementType != NULL && elementType->typeDefn() != NULL && elementType->isSingular()) {
-        analyzeLater(elementType->typeDefn());
-      }
-
+      analyzeTypeLater(na->typeParam(0));
       return true;
     }
 

@@ -90,6 +90,27 @@ public final class String {
   
   /** The length of the string in bytes. */
   def length:int { get { return self.len; } } 
+
+  /** Return true if this string starts with the substring 's'. */  
+  def startsWith(s:String) -> bool {
+    return false if s.length > self.len;
+    for i = 0; i < s.length; ++i {
+      return false if s[i] != self.data[i];
+    }
+      
+    return true;
+  }
+  
+  /** Return true if this string ends with the substring 's'. */  
+  def endsWith(s:String) -> bool {
+    return false if s.length > self.len;
+    let offset = self.length - s.length;
+    for i = 0; i < s.length; ++i {
+      return false if s[i] != self.data[i + offset];
+    }
+      
+    return true;
+  }
   
   /** The length of the string in characters. */
   def charLength(start:int = 0, count:int = int.maxVal) -> int {

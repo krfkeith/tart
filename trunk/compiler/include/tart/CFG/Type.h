@@ -134,17 +134,6 @@ public:
 
   static const char * typeClassName(TypeClass tc);
 
-protected:
-  const TypeClass cls;
-
-  // Protected constructor
-  Type(TypeClass tc) : cls(tc) {}
-
-  // Protected destructor
-  virtual ~Type() {}
-
-public:
-
   /** Get the kind of type that this is. */
   virtual TypeClass typeClass() const { return cls; }
 
@@ -167,6 +156,12 @@ public:
   /** Return the scope containing the members of this type. */
   virtual const IterableScope * memberScope() const { return NULL; }
   virtual IterableScope * memberScope() { return NULL; }
+
+  /** Return the number of type parameters of this type. */
+  virtual size_t numTypeParams() const { return 0; }
+
+  /** Return the Nth type parameter. */
+  virtual Type * typeParam(int index) const;
 
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
@@ -240,6 +235,15 @@ public:
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */
   static bool equivalent(const Type * type1, const Type * type2);
+
+protected:
+  const TypeClass cls;
+
+  // Protected constructor
+  Type(TypeClass tc) : cls(tc) {}
+
+  // Protected destructor
+  virtual ~Type() {}
 };
 
 /// -------------------------------------------------------------------
@@ -256,12 +260,6 @@ protected:
   virtual const llvm::Type * createIRType() const = 0;
 
 public:
-
-  /** Return the number of type parameters of this type. */
-  //size_t numTypeParams() const;
-
-  /** Return the Nth type parameter. */
-  //Type * typeParam(int index) const;
 
   const llvm::Type * irType() const {
     if (irType_ == NULL) {

@@ -1,0 +1,13 @@
+/** Reflection class for a method parameter. */
+class Parameter {
+  private def construct() {}
+
+  /** The unqualified member name. */
+  let name:String;
+  
+  /** The type of this member. Note: Variadic parameter types will be converted to array types. */
+  let paramType:TypeDescriptor;
+  
+  /** Array of attributes for this parameter. */
+  let attributes:Attribute[];
+}

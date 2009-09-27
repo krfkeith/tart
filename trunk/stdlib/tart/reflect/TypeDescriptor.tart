@@ -22,6 +22,9 @@ public class TypeDescriptor {
   /** The TypeInfoBlock for this type. */  
   let typeInfo:NativePointer[TypeInfoBlock];
   
+  /** The fully-qualified name of this type. */
+  let name:String;
+  
   /** What general kind of type this is (CLASS, STRUCT, etc.) */
   let typeKind:TypeKind;
   
@@ -51,16 +54,4 @@ public class TypeDescriptor {
 
   /** Private constructor - types cannot be created by applications. */
   private def construct() {}
-
-  /** True if this is an aggregate type. */
-  //final def isAggregate:bool { get { return false; } }
-  
-  /** True if this is an array type. */
-  //final def isArray:bool { get { return false; } }
-  
-  /** True if this is a reference type. */
-  //final def isByReference:bool { get { return typeKind == CLASS or kind == INTERFACE; } }
-
-  //def construct(constructor:Method, args:Object[]) -> Object;
-  //def construct(args:Object[]) -> Object;
 }

@@ -40,6 +40,7 @@ public:
   virtual Expr * visitPostAssign(AssignmentExpr * in);
   virtual Expr * visitCall(CallExpr * in);
   virtual Expr * visitFnCall(FnCallExpr * in);
+  virtual Expr * visitIndirectCall(IndirectCallExpr * in);
   virtual Expr * visitInstantiate(InstantiateExpr * in);
   virtual Expr * visitNew(NewExpr * in);
   virtual Expr * visitCast(CastExpr * in);
