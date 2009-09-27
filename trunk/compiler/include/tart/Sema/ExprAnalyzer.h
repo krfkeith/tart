@@ -131,6 +131,9 @@ public:
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args);
 
+  /** Version of addOverload which works with variables of function type. */
+  bool addOverload(CallExpr * call, LValueExpr * fn, FunctionType * ftype,
+      const ASTNodeList & args);
   // Templates
 
   Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);

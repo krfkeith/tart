@@ -87,6 +87,10 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
     addTrait(Abstract);
   }
 
+  if (modifiers.flags & tart::Undef) {
+    addTrait(Undefined);
+  }
+
   if (modifiers.flags & tart::ReadOnly) {
     addTrait(ReadOnly);
   }

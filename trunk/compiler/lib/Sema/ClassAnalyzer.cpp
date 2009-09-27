@@ -527,6 +527,8 @@ void ClassAnalyzer::copyBaseClassMethods() {
 }
 
 void ClassAnalyzer::createInterfaceTables() {
+  typedef CompositeType::InterfaceList InterfaceList;
+
   // Get the set of all ancestor types.
   ClassSet ancestors;
   CompositeType * type = cast<CompositeType>(target->typeValue());
@@ -551,11 +553,20 @@ void ClassAnalyzer::createInterfaceTables() {
   for (ClassSet::iterator it = interfaceTypes.begin(); it != interfaceTypes.end(); ++it) {
     CompositeType * itype = *it;
     DASSERT(itype->typeClass() == Type::Interface);
+
+    // Do the search before we push the new itable entry.
+    const CompositeType::InterfaceTable * parentImpl = type->findBaseImplementationOf(itype);
+
+    // Add an itable entry.
     type->interfaces_.push_back(CompositeType::InterfaceTable(itype));
     CompositeType::InterfaceTable & itable = type->interfaces_.back();
-    itable.methods.append(
-        itype->instanceMethods_.begin(),
-        itype->instanceMethods_.end());
+
+    if (parentImpl != NULL) {
+      DASSERT(itype->instanceMethods_.size() == parentImpl->methods.size());
+      itable.methods.append(parentImpl->methods.begin(), parentImpl->methods.end());
+    } else {
+      itable.methods.append(itype->instanceMethods_.begin(), itype->instanceMethods_.end());
+    }
   }
 }
 
@@ -568,9 +579,6 @@ void ClassAnalyzer::overrideMembers() {
   SymbolTable & clMembers = type->members();
   for (SymbolTable::iterator s = clMembers.begin(); s != clMembers.end(); ++s) {
     SymbolTable::Entry & entry = s->second;
-    Defn * first = entry.front();
-    const char * name = first->name();
-
     MethodList methods;
     MethodList getters;
     MethodList setters;
@@ -605,13 +613,7 @@ void ClassAnalyzer::overrideMembers() {
       }
     }
 
-    if (first->defnType() == Defn::Function) {
-    } else if (first->defnType() == Defn::Property || first->defnType() == Defn::Indexer) {
-      //DASSERT(entry.size() == 1);
-    } else {
-      // TODO: Check for multiply-defined? Not if templates...
-      continue;
-    }
+    InterfaceList & ifaceList = type->interfaces_;
 
     if (!methods.empty()) {
       // Insure that there's no duplicate method signatures.
@@ -619,8 +621,7 @@ void ClassAnalyzer::overrideMembers() {
 
       // Update the table of instance methods and the interface tables
       overrideMethods(type->instanceMethods_, methods, true);
-      for (InterfaceList::iterator it = type->interfaces_.begin();
-          it != type->interfaces_.end(); ++it) {
+      for (InterfaceList::iterator it = ifaceList.begin(); it != ifaceList.end(); ++it) {
         overrideMethods(it->methods, methods, false);
       }
     }
@@ -628,8 +629,7 @@ void ClassAnalyzer::overrideMembers() {
     if (!getters.empty()) {
       ensureUniqueSignatures(getters);
       overrideMethods(type->instanceMethods_, getters, true);
-      for (InterfaceList::iterator it = type->interfaces_.begin();
-          it != type->interfaces_.end(); ++it) {
+      for (InterfaceList::iterator it = ifaceList.begin(); it != ifaceList.end(); ++it) {
         overrideMethods(it->methods, getters, false);
       }
     }
@@ -637,8 +637,7 @@ void ClassAnalyzer::overrideMembers() {
     if (!setters.empty()) {
       ensureUniqueSignatures(setters);
       overrideMethods(type->instanceMethods_, setters, true);
-      for (InterfaceList::iterator it = type->interfaces_.begin();
-          it != type->interfaces_.end(); ++it) {
+      for (InterfaceList::iterator it = ifaceList.begin(); it != ifaceList.end(); ++it) {
         overrideMethods(it->methods, setters, false);
       }
     }
@@ -656,7 +655,7 @@ void ClassAnalyzer::ensureUniqueSignatures(MethodList & methods) {
   }
 }
 
-  void ClassAnalyzer::addNewMethods() {
+void ClassAnalyzer::addNewMethods() {
   // Append all methods that aren't overrides of a superclass. Note that we
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
@@ -666,6 +665,11 @@ void ClassAnalyzer::ensureUniqueSignatures(MethodList & methods) {
       Defn::DefnType dt = de->defnType();
       if (dt == Defn::Function) {
         FunctionDefn * fn = static_cast<FunctionDefn *>(de);
+        if (fn->isUndefined() && fn->overriddenMethods().empty()) {
+          diag.error(fn) << "Method '" << fn->name() <<
+              "' defined with 'undef' but does not override a base class method.";
+        }
+
         if (!fn->isCtor() && !fn->isFinal() && fn->dispatchIndex() < 0) {
           fn->setDispatchIndex(type->instanceMethods_.size());
           type->instanceMethods_.push_back(fn);
@@ -704,7 +708,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     MethodList abstractMethods;
     for (MethodList::iterator it = methods.begin(); it != methods.end(); ++it) {
       FunctionDefn * func = *it;
-      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic()) {
+      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
         abstractMethods.push_back(func);
       }
     }
@@ -728,7 +732,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     MethodList unimpMethods;
     for (MethodList::iterator di = it->methods.begin(); di != it->methods.end(); ++di) {
       FunctionDefn * func = *di;
-      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic()) {
+      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
         unimpMethods.push_back(func);
       }
     }

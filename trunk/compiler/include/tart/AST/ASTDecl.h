@@ -50,10 +50,8 @@ enum DeclFlags {
   Final = (1<<0),         // Can't be overridden
   Abstract = (1<<1),      // Can't be instantiated
   ReadOnly = (1<<2),      // Can't be written to from non-privileged code
-  Modified = (1<<4),      // Whether definition was modified after creation.
-  Extern = (1<<5),        // Externally defined function
-  Native = (1<<6),        // Native function
-  Export = (1<<7),        // Exported symbol
+  Undef = (1<<3),         // Undefined method
+  Redef = (1<<4),         // Redefined method
 };
 
 /// -------------------------------------------------------------------
@@ -124,6 +122,7 @@ public:
 
   /** The modifier for this definition. */
   const DeclModifiers & modifiers() const { return modifiers_; }
+  DeclModifiers & modifiers() { return modifiers_; }
   StorageClass storageClass() const { return modifiers_.storageClass; }
   Visibility visibility() const { return modifiers_.visibility; }
 

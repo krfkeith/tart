@@ -3,9 +3,12 @@
  * ================================================================ */
 
 #include "tart/Gen/CodeGenerator.h"
+#include "tart/Gen/StructBuilder.h"
 #include "tart/Gen/RuntimeTypeInfo.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
+
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -81,8 +84,12 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   return type->irType();
 }
 
-GlobalVariable * CodeGenerator::getTypeDescriptorPtr(const CompositeType * type) {
-  return createTypeDescriptorPtr(getRTTypeInfo(type));
+GlobalVariable * CodeGenerator::getTypeDescriptorPtr(const Type * type) {
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
+    return createTypeDescriptorPtr(getRTTypeInfo(ctype));
+  } else {
+    DFAIL("Implement");
+  }
 }
 
 Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
@@ -136,69 +143,69 @@ void CodeGenerator::createTypeDescriptor(RuntimeTypeInfo * rtype) {
   const std::string & linkName = type->typeDefn()->linkageName();
 
   // Generate the type descriptor object.
-  ConstantList objMembers;
-  ConstantList typeDescriptorMembers;
-  objMembers.clear();
-  objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(Builtins::typeTypeDescriptor)));
-  typeDescriptorMembers.push_back(ConstantStruct::get(context_, objMembers));
-  typeDescriptorMembers.push_back(createTypeInfoBlockPtr(rtype));
-
-  // TypeKind
-  typeDescriptorMembers.push_back(ConstantInt::get(Builtins::rfTypeDescriptor.memberTypeKind->type()->irEmbeddedType(), 0));
-
-  // Supertype
-  if (type->super() != NULL) {
-    typeDescriptorMembers.push_back(getTypeDescriptorPtr(type->super()));
-  } else {
-    typeDescriptorMembers.push_back(ConstantPointerNull::get(
-        PointerType::getUnqual(Builtins::typeTypeDescriptor->irType())));
-  }
+  StructBuilder sb(*this);
+  sb.createObjectHeader(Builtins::typeTypeDescriptor);
+  sb.addField(createTypeInfoBlockPtr(rtype));
+  sb.addStringField(type->typeDefn()->qualifiedName());
+  sb.addIntegerField(Builtins::rfTypeDescriptor.memberTypeKind, 0);
+  sb.addTypeReference(type->super());
+#if 0
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberInterfaces, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberTypeParams, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberAttributes, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberFields, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberProperties, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberConstructors, ConstantList());
+  sb.addArrayField(Builtins::rfTypeDescriptor.memberMethods, ConstantList());
+#endif
 
   // Lists
 
   // Interface list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberInterfaces,
-      ExprList()));
+      ConstantList()));
 
   // Type parameter list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberTypeParams,
-      ExprList()));
+      ConstantList()));
 
   // Attribute list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberAttributes,
-      ExprList()));
+      ConstantList()));
 
   // Field list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberFields,
-      ExprList()));
+      ConstantList()));
 
   // Property list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberProperties,
-      ExprList()));
+      ConstantList()));
 
   // Constructor list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberConstructors,
-      ExprList()));
+      ConstantList()));
 
   // Method list.
-  typeDescriptorMembers.push_back(genReflectionDataArray(
+  sb.addField(genReflectionDataArray(
       linkName,
       Builtins::rfTypeDescriptor.memberMethods,
-      ExprList()));
+      ConstantList()));
 
-  llvm::Constant * typeDescriptorStruct = ConstantStruct::get(context_, typeDescriptorMembers);
+  //llvm::Constant * typeDescriptorStruct = ConstantStruct::get(context_, typeDescriptorMembers);
+  llvm::Constant * typeDescriptorStruct = sb.build();
+
   typeDescriptorPtr->setInitializer(typeDescriptorStruct);
 }
 
@@ -218,14 +225,14 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Generate the base class list.
   ClassSet baseClassSet;
   type->ancestorClasses(baseClassSet);
-  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeTypeDescriptor->irType());
+  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType());
 
   // Concrete classes first
   ConstantList baseClassList;
   for (const CompositeType * s = type->super(); s != NULL; s = s->super()) {
     // If the class lives in this module, then create it.
     genCompositeType(s);
-    baseClassList.push_back(getTypeDescriptorPtr(s));
+    baseClassList.push_back(getTypeInfoBlockPtr(s));
   }
 
   // Interfaces next
@@ -233,7 +240,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     CompositeType * baseType = *it;
     if (baseType->typeClass() == Type::Interface) {
       genCompositeType(baseType);
-      baseClassList.push_back(getTypeDescriptorPtr(baseType));
+      baseClassList.push_back(getTypeInfoBlockPtr(baseType));
     }
   }
 
@@ -307,7 +314,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(PointerType::get(Builtins::typeTypeDescriptor->irType(), 0));
+  argTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType, argTypes, false);
   Function * idispatch = Function::Create(
@@ -340,7 +347,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
       itableMembers->getType(), true, GlobalValue::InternalLinkage,
       itableMembers,
       itDecl->typeDefn()->linkageName() + "->" + linkageName);
-    Constant * itype = getTypeDescriptorPtr(it->interfaceType);
+    Constant * itype = getTypeInfoBlockPtr(it->interfaceType);
 
     // Create the blocks
     BasicBlock * ret = BasicBlock::Create(context_, itDecl->typeDefn()->name(), idispatch);
@@ -446,39 +453,6 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
   //diag.fatal(type->typeDefn()) << "Implement " << type;
   //DFAIL("Implement");
-}
-
-llvm::Constant * CodeGenerator::genReflectionDataArray(
-    const std::string & baseName, const VariableDefn * var, const ExprList & exprs)
-{
-  const Type * arrayType = var->type();
-  irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
-  DASSERT_OBJ(arrayType->typeDefn()->isPassFinished(Pass_ResolveOverloads), var);
-
-  //genCompositeType(cast<CompositeType>(arrayType));
-
-  ConstantList objMembers;
-  objMembers.push_back(getTypeInfoBlockPtr(cast<CompositeType>(arrayType)));
-
-  // TODO: If the size is zero, then just point to the static zero-length array.
-  ConstantList arrayMembers;
-  for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
-    Constant * element = genConstExpr(*it);
-    if (element != NULL) {
-      arrayMembers.push_back(element);
-    }
-  }
-
-  ConstantList arrayStructMembers;
-  arrayStructMembers.push_back(ConstantStruct::get(context_, objMembers));
-  arrayStructMembers.push_back(getInt32Val(arrayMembers.size()));
-  arrayStructMembers.push_back(ConstantStruct::get(context_, arrayMembers));
-
-  llvm::Constant * arrayStruct = ConstantStruct::get(context_, arrayStructMembers);
-  GlobalVariable * array = new GlobalVariable(*irModule_,
-      arrayStruct->getType(), true, GlobalValue::InternalLinkage, arrayStruct,
-      baseName + ".type." + var->name());
-  return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
 }
 
 } // namespace tart

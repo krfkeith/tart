@@ -19,18 +19,16 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 namespace tart {
 
 static void assureNoPatternVars(Type * t) {
-  if (DeclaredType * dt = dyn_cast<DeclaredType>(t)) {
-    for (int i = 0; i < dt->numTypeParams(); ++i) {
-      if (isa<PatternVar>(dt->typeParam(i))) {
-        diag.fatal() << "What's a type param doing here?" << t;
-        DFAIL("Unexpected pattern var");
-      }
+  for (int i = 0; i < t->numTypeParams(); ++i) {
+    if (isa<PatternVar>(t->typeParam(i))) {
+      diag.fatal() << "What's a type param doing here?" << t;
+      DFAIL("Unexpected pattern var");
     }
+  }
 
-    if (CompositeType * ctype = dyn_cast<CompositeType>(t)) {
-      for (ClassList::iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
-        assureNoPatternVars(*it);
-      }
+  if (CompositeType * ctype = dyn_cast<CompositeType>(t)) {
+    for (ClassList::iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
+      assureNoPatternVars(*it);
     }
   }
 }

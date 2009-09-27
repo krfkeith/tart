@@ -26,6 +26,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , pruningDepth_(0)
   , paramAssignments_(params)
   , bindingEnv_(m->templateSignature())
+  , fnType_(m->functionType())
   , resultType_(m->functionType()->returnType())
   , isTemplate_(false)
 {
@@ -71,6 +72,26 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
 
     // Clear all definitions in the environment.
     bindingEnv_.reset();
+  }
+}
+
+CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * fnType,
+    const ParameterAssignments & params)
+  : callExpr_(call)
+  , base_(fnExpr)
+  , method_(NULL)
+  , pruningDepth_(0)
+  , paramAssignments_(params)
+  , bindingEnv_(NULL)
+  , fnType_(fnType)
+  , resultType_(fnType->returnType())
+  , isTemplate_(false)
+{
+  DASSERT(fnExpr->isSingular());
+  DASSERT(fnType->isSingular());
+  ParameterList & methodParams = fnType->params();
+  for (ParameterList::iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
+    paramTypes_.push_back((*p)->type());
   }
 }
 
@@ -134,8 +155,8 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       DASSERT(t1->isEqual(t0));
 
       // Variadic parameters are less specific than non-variadic parameters.
-      ParameterDefn * p0 = method_->functionType()->param(parameterIndex(i));
-      ParameterDefn * p1 = other->method_->functionType()->param(other->parameterIndex(i));
+      ParameterDefn * p0 = fnType_->param(parameterIndex(i));
+      ParameterDefn * p1 = other->fnType_->param(other->parameterIndex(i));
       if (p0->isVariadic()) {
         if (!p1->isVariadic()) {
           return false;
@@ -186,6 +207,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     return true;
   }
 
+  DASSERT(method_ != NULL);
   bindingEnv_.reset();
 
   // Now, for each parameter attempt unification.
@@ -272,13 +294,13 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 }
 
 bool CallCandidate::isSingular() const {
-  return method_->isSingular() && (base_ == NULL || base_->isSingular());
+  return (method_ == NULL || method_->isSingular()) && (base_ == NULL || base_->isSingular());
 }
 
 void CallCandidate::trace() const {
   safeMark(base_);
   bindingEnv_.trace();
-  method_->mark();
+  safeMark(method_);
 }
 
 FormatStream & operator<<(FormatStream & out, const CallCandidate & cc) {

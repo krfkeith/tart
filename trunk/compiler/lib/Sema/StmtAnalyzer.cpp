@@ -8,6 +8,7 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/Block.h"
@@ -1322,7 +1323,11 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
   // Compare reference type with null.
   if (testExpr->type()->isReferenceType()) {
     return new CompareExpr(test->location(),
-        llvm::CmpInst::ICMP_EQ, testExpr,
+        llvm::CmpInst::ICMP_NE, testExpr,
+        ConstantNull::get(test->location(), testExpr->type()));
+  } else if (NativePointerType * np = dyn_cast<NativePointerType>(testExpr->type())) {
+    return new CompareExpr(test->location(),
+        llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
   }
 

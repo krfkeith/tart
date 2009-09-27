@@ -1,0 +1,48 @@
+import tart.core.Math.max;
+import tart.core.Memory.addressOf;
+import tart.core.Memory.zeroPtr;
+import tart.core.Memory.arrayCopy;
+
+/** A list type with a fixed set of elements. */
+class ImmutableList[%ElementType] : List[ElementType] {
+  private {
+    var data:ElementType[];
+  }
+
+  /** Create an empty ImmutableList. */
+  def construct() {
+    self.data = [];
+  }
+
+  /** Create an ImmutableList from the elements given. */
+  def construct(data:ElementType[]) {
+    self.data = data;
+  }
+
+  /** Create an ImmutableList from the elements given. */
+  def construct(data:ElementType...) {
+    self.data = data;
+  }
+
+  undef add(e:ElementType);
+  undef insert(position:int, e:ElementType);
+  undef remove(index:int);
+
+  def [index:int]:ElementType {
+    get {
+      return data[index];
+    }
+    
+    set {
+      throw UnsupportedOperationException();
+    }
+  }
+  
+  def length:int {
+    get { return self.data.length; }
+  }
+
+  def iterate -> Iterator[ElementType] {
+    return self.data.iterate();
+  }
+}

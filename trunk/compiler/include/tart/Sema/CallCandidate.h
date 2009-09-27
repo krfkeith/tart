@@ -34,15 +34,22 @@ public:
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       const ParameterAssignments & params);
 
+  CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * ftype,
+      const ParameterAssignments & params);
+
   /** The call expression that this is a candidate for. */
   CallExpr * callExpr() const { return callExpr_; }
 
   /** The base ('self') expression for the method. */
   Expr * base() const { return base_; }
 
-  /** The callable method. */
+  /** The callable method. May be null if the call is via a pointer. */
   FunctionDefn * method() const { return method_; }
   void setMethod(FunctionDefn * m) { method_ = m; }
+
+  /** The method type. */
+  FunctionType * functionType() const { return fnType_; }
+  void setFunctionType(FunctionType * fnType) { fnType_ = fnType; }
 
   /** The mapping of input args to formal parameters. */
   const ParameterAssignments & paramAssignments() const {
@@ -129,6 +136,7 @@ private:
   int pruningDepth_;
   ParameterAssignments paramAssignments_;
   BindingEnv bindingEnv_;
+  FunctionType * fnType_;
   Type * resultType_;
   TypeList paramTypes_;
   bool isTemplate_;

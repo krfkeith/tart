@@ -17,6 +17,8 @@
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Objects/Builtins.h"
 
+#define INFER_RETURN_TYPE 0
+
 namespace tart {
 
 static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
@@ -77,10 +79,11 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
     return false;
   }
 
-  // TODO: Only add this back in if we want to infer return type.
-  //if (passesToRun.contains(Pass_ResolveReturnType)) {
-  //  passesToRun.add(Pass_CreateCFG);
-  //}
+#if INFER_RETURN_TYPE
+  if (passesToRun.contains(Pass_ResolveReturnType)) {
+    passesToRun.add(Pass_CreateCFG);
+  }
+#endif
 
   if (passesToRun.contains(Pass_CreateCFG) && !createCFG()) {
     return false;
@@ -186,6 +189,7 @@ bool FunctionAnalyzer::resolveModifiers() {
   if (target->beginPass(Pass_ResolveModifiers)) {
     bool isIntrinsic = target->isIntrinsic();
     bool isAbstract = target->isAbstract();
+    bool isUndefined = target->isUndefined();
     bool isExtern = target->isExtern();
     bool isInterfaceMethod = false;
 
@@ -204,6 +208,20 @@ bool FunctionAnalyzer::resolveModifiers() {
         case Type::Interface:
         case Type::Protocol: {
           isInterfaceMethod = true;
+          if (isAbstract) {
+            diag.error(target) << "Interface or protocol method '" << target->name() <<
+                " cannot be abstract";
+            success = false;
+          } else if (isUndefined) {
+            diag.error(target) << "Interface or protocol method '" << target->name() <<
+                " cannot be undefined";
+            success = false;
+          } else if (isExtern) {
+            diag.error(target) << "Interface or protocol method '" << target->name() <<
+                " cannot be external";
+            success = false;
+          }
+
           break;
         }
 
@@ -221,6 +239,9 @@ bool FunctionAnalyzer::resolveModifiers() {
           if (isAbstract) {
             diag.error(target) << "Struct method '" << target->name() << " cannot be abstract";
             success = false;
+          } else if (isUndefined) {
+            diag.error(target) << "Struct method '" << target->name() << " cannot be undefined";
+            success = false;
           }
 
           break;
@@ -233,9 +254,12 @@ bool FunctionAnalyzer::resolveModifiers() {
       }
 
     } else {
-      if (isAbstract) {
-        if (target->storageClass() == Storage_Global) {
+      if (target->storageClass() == Storage_Global) {
+        if (isAbstract) {
           diag.error(target) << "Global function '" << target->name() << " cannot be abstract";
+          success = false;
+        } else if (isUndefined) {
+          diag.error(target) << "Global function '" << target->name() << " cannot be undefined";
           success = false;
         }
       }
@@ -249,13 +273,15 @@ bool FunctionAnalyzer::resolveModifiers() {
               "' defined in interface or protocol.";
           success = false;
         }
-      } else if (isExtern || isIntrinsic || isAbstract) {
+      } else if (isExtern || isIntrinsic || isAbstract || isUndefined) {
         if (hasBody) {
           const char * keyword = "abstract";
           if (isIntrinsic) {
             keyword = "@Intrinsic";
           } else if (isExtern) {
             keyword = "@Extern";
+          } else if (isUndefined) {
+            keyword = "with 'undef'";
           }
 
           diag.error(target) << "Method '" << target->name() << "' declared " << keyword <<
@@ -287,6 +313,11 @@ bool FunctionAnalyzer::createCFG() {
     if (target->hasBody() && target->blocks().empty()) {
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
+    } else if (target->isUndefined()) {
+      // Push a dummy block for undefined method.
+      Block * block = new Block("entry");
+      target->blocks().push_back(block);
+      module->addSymbol(Builtins::typeUnsupportedOperationException->typeDefn());
     }
 
     target->finishPass(Pass_CreateCFG);
@@ -326,7 +357,7 @@ bool FunctionAnalyzer::resolveReturnType() {
     TypeList returnTypes;
     if (returnType == NULL) {
       returnType = &VoidType::instance;
-#if 0
+#if INFER_RETURN_TYPE
       BlockList & blocks = target->blocks();
       for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
         Block * bk = *it;

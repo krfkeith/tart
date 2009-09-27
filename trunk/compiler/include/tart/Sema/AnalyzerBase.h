@@ -97,7 +97,10 @@ public:
   /** Queue a definition to be fully analyzed later. */
   static void analyzeLater(Defn * de);
 
-  /** Do the requested analysis pass on the namesapce. */
+  /** Queue a type to be fully analyzed later. */
+  static void analyzeTypeLater(Type * in);
+
+    /** Do the requested analysis pass on the namesapce. */
   static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask pass);
 
   /** Given an element type, return the corresponding array type. The element

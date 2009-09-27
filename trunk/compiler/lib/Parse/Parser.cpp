@@ -362,7 +362,7 @@ ASTDecl * Parser::declarator(const DeclModifiers & mods) {
   TokenType tok = token;
   if (match(Token_Var) || match(Token_Let)) {
     return declareVariable(mods, tok);
-  } else if (match(Token_Def)) {
+  } else if (match(Token_Def) || match(Token_Undef)) {
     return declareDef(mods, tok);
   } else if (match(Token_Macro)) {
     return declareMacro(mods, tok);
@@ -447,11 +447,6 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       returnType = typeExpression();
     }
 
-    // Function type.
-    //FunctionType * funcType = new FunctionType(returnType, params, false);
-    //return funcType;
-
-
     ASTPropertyDecl * indexer = new ASTPropertyDecl(
         ASTDecl::Idx, loc, istrings.idIndex, returnType, mods);
     indexer->params().append(params.begin(), params.end());
@@ -460,6 +455,10 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       if (!accessorMethodList(indexer, params, mods)) {
         return DECL_ERROR;
       }
+    }
+
+    if (tok == Token_Undef) {
+      indexer->modifiers().flags |= Undef;
     }
 
     return indexer;
@@ -487,6 +486,10 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       }
     }
 
+    if (tok == Token_Undef) {
+      prop->modifiers().flags |= Undef;
+    }
+
     return prop;
   } else {
     // Get template params.
@@ -511,6 +514,10 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     ASTNode * returnType = functionReturnType();
     ASTFunctionDecl * fd = new ASTFunctionDecl(
         ASTDecl::Function, loc, declName, params, returnType, mods);
+
+    if (tok == Token_Undef) {
+      fd->modifiers().flags |= Undef;
+    }
 
     if (!templateParams.empty()) {
       if (match(Token_Requires)) {

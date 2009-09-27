@@ -43,6 +43,7 @@ Type * Builtins::typeThrowable;
 Type * Builtins::typeUnwindException;
 Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
+Type * Builtins::typeUnsupportedOperationException;
 
 Type * Builtins::typeType;
 Type * Builtins::typeTypeDescriptor;
@@ -140,6 +141,7 @@ void Builtins::loadSystemClasses() {
   typeObject = loadSystemType("tart.core.Object");
   typeString = loadSystemType("tart.core.String");
   typeThrowable = loadSystemType("tart.core.Throwable");
+  typeUnsupportedOperationException = loadSystemType("tart.core.UnsupportedOperationException");
 
   typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
 
@@ -186,9 +188,9 @@ void Builtins::loadSystemClasses() {
 
   // Get references to members of class tart.reflect.Module
   AnalyzerBase::analyzeType(typeModule, Task_PrepMemberLookup);
-  rfModule.memberName = getMember<VariableDefn>(typeModule, "name");
-  rfModule.memberTypes = getMember<VariableDefn>(typeModule, "types");
-  rfModule.memberMethods = getMember<VariableDefn>(typeModule, "methods");
+  rfModule.memberName = getMember<VariableDefn>(typeModule, "moduleName");
+  rfModule.memberTypes = getMember<VariableDefn>(typeModule, "typeList");
+  rfModule.memberMethods = getMember<VariableDefn>(typeModule, "methodList");
 }
 
 bool Builtins::compileBuiltins(ProgramSource & source) {

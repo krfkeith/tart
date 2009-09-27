@@ -174,7 +174,7 @@ bool VarAnalyzer::resolveVarType() {
 
 
   DASSERT_OBJ(target->type() != NULL, target);
-  DASSERT_OBJ(!target->type()->isEqual(&VoidType::instance) != NULL, target);
+  DASSERT_OBJ(!target->type()->isEqual(&VoidType::instance), target);
 
   return true;
 }

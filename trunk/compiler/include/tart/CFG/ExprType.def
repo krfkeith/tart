@@ -43,7 +43,7 @@ EXPR_TYPE(Construct)      // Constructor call
 EXPR_TYPE(FnCall)         // Function call
 EXPR_TYPE(VTableCall)     // Virtual method call
 EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
-EXPR_TYPE(PtrCall)        // Indirect call
+EXPR_TYPE(IndirectCall)   // Indirect call
 
 // Casts
 EXPR_TYPE(ImplicitCast)   // Implicit cast

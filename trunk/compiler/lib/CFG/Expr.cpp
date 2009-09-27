@@ -330,8 +330,8 @@ Type * CallExpr::singularResultType() {
     }
 
     Type * ty = cc->resultType();
-    if (cc->method()->isCtor()) {
-      ty = cc->method()->functionType()->selfParam()->type();
+    if (cc->method() != NULL && cc->method()->isCtor()) {
+      ty = cc->functionType()->selfParam()->type();
     }
 
     if (singularType == NULL) {
@@ -437,6 +437,30 @@ bool FnCallExpr::isSingular() const {
 }
 
 void FnCallExpr::trace() const {
+  ArglistExpr::trace();
+  function_->mark();
+}
+
+/// -------------------------------------------------------------------
+/// IndirectCallExpr
+
+void IndirectCallExpr::format(FormatStream & out) const {
+  if (out.getShowType()) {
+    out << "(" << function_ << ")";
+  } else {
+    out << function_;
+  }
+
+  out << "(";
+  formatExprList(out, args_);
+  out << ")";
+}
+
+bool IndirectCallExpr::isSingular() const {
+  return (function_->isSingular() && ArglistExpr::isSingular());
+}
+
+void IndirectCallExpr::trace() const {
   ArglistExpr::trace();
   function_->mark();
 }

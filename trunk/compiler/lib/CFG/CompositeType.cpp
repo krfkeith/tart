@@ -268,6 +268,23 @@ void CompositeType::ancestorClasses(ClassSet & out) const {
   }
 }
 
+const CompositeType::InterfaceTable * CompositeType::findBaseImplementationOf(CompositeType * type)
+    const {
+  for (InterfaceList::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
+    if (it->interfaceType == type) {
+      return &*it;
+    }
+  }
+
+  for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    if (const InterfaceTable * itable = (*it)->findBaseImplementationOf(type)) {
+      return itable;
+    }
+  }
+
+  return NULL;
+}
+
 void CompositeType::addMethodDefsToModule(Module * module) {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 

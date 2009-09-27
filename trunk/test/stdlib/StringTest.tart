@@ -28,6 +28,16 @@ def stringComparisonTest() {
 //  Debug.assertTrue(s != "Yello");
   
   // TODO: Test !=
+  
+  Debug.assertTrue("Hello, World".startsWith("Hello"));
+  Debug.assertFalse("Hello, World".startsWith("Jello"));
+  Debug.assertFalse("Hello".startsWith("Hello, World"));
+  Debug.assertTrue("Hello, World".startsWith("Hello, World"));
+
+  Debug.assertTrue("Hello, World".endsWith("World"));
+  Debug.assertFalse("Hello, World".endsWith("Wirld"));
+  Debug.assertFalse("Hello".endsWith("Hello, World"));
+  Debug.assertTrue("Hello, World".endsWith("Hello, World"));
 }
 
 def stringGetCharTest() {

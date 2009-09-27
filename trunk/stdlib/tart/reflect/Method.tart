@@ -3,14 +3,28 @@ final class Method : Member {
   /** Array of type parameters. */
   let typeParams:TypeDescriptor[];
 
-  //@Extern
-  //final def call(obj:Object, args:Object[]);
+  /** The parameters of this method. */
+  let params:Parameter[];
   
-  // resultType
-  // argumentTypes
-  // flags
-  
-  //private var adapter:fn (instance:Object, args:Object[]);
-  
-  //def call(instance:Object, args:Object[]) -> Object;
+  /** The return type of the method. */
+  let returnType:TypeDescriptor;
+
+  /** A pointer to the function. */
+  private let methodPointer:NativePointer[void];
+
+  /** A pointer to a trampoline function that can take an array of objects and call
+      the actual native method with the correct argument types.
+      'obj': The object pointer, or null if it is a static or global function.
+      'm': The native method pointer.
+      'args': The argument list.
+    */
+  private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+
+  /** Invoke the method on the specified object with the given arguments.
+      TODO: Define exception types for bad argument types.
+   */
+  final def call(obj:Object, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return invoke(obj, methodPointer, args);
+  }
 }

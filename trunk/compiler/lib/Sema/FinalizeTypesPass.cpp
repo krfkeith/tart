@@ -8,11 +8,14 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
+
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -110,15 +113,16 @@ Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
 }
 
 Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
-  ExprList & args = in->args();
-  size_t argCount = in->argCount();
-
   if (in->candidates().size() == 1) {
     CallCandidate * cd = in->candidates().front();
     FunctionDefn * method = cd->method();
-    bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
+
+    if (method == NULL) {
+      return visitIndirectCall(in);
+    }
 
     // Handle the case where the method is a template, or is contained within a template.
+    bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
     if (isTemplateMethod) {
       method = cast_or_null<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
       if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
@@ -127,6 +131,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
       DASSERT_OBJ(method->isSingular(), method);
       cd->setMethod(method);
+      cd->setFunctionType(method->functionType());
 
       if (method->isCtor()) {
         NewExpr * ne = cast<NewExpr>(cd->base());
@@ -134,8 +139,13 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       }
     }
 
+    ExprList callingArgs;
+    if (!coerceArgs(cd, in->args(), callingArgs)) {
+      return &Expr::ErrorVal;
+    }
+
+#if 0
     size_t paramCount = method->functionType()->params().size();
-    ExprList callingArgs(paramCount);
     callingArgs.resize(paramCount);
     std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
 
@@ -190,6 +200,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         }
       }
     }
+#endif
 
     // Handle 'self' param
     Expr * selfArg = NULL;
@@ -265,7 +276,49 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
   return &Expr::ErrorVal;
 }
 
-#if 0
+Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
+  CallCandidate * cd = in->candidates().front();
+  DASSERT(cd->base() != NULL);
+  DASSERT(in->exprType() != Expr::Construct);
+
+  ExprList callingArgs;
+  if (!coerceArgs(cd, in->args(), callingArgs)) {
+    return &Expr::ErrorVal;
+  }
+
+  // Handle 'self' param
+  Expr * fnValue = visitExpr(cd->base());
+  if (fnValue == NULL) {
+    return &Expr::ErrorVal;
+  }
+
+  if (!AnalyzerBase::analyzeType(cd->functionType(), Task_PrepCallOrUse)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (!AnalyzerBase::analyzeType(fnValue->type(), Task_PrepCallOrUse)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (NativePointerType * np = dyn_cast<NativePointerType>(fnValue->type())) {
+  } else {
+    DFAIL("Implement");
+  }
+
+  // Return a function call expression
+  IndirectCallExpr * result = new IndirectCallExpr(Expr::IndirectCall, in->location(), fnValue);
+  result->args().append(callingArgs.begin(), callingArgs.end());
+
+  result->setType(cd->functionType()->returnType());
+  //if (method->storageClass() != Storage_Instance) {
+  //  result->setSelfArg(NULL);
+  //}
+
+  DASSERT_OBJ(result->isSingular(), result);
+  return result;
+}
+
+  #if 0
 Expr * FinalizeTypesPass::visitFnCall(FnCallExpr * in) {
   if (in->areTypesFinalized()) {
     return in;
@@ -298,6 +351,68 @@ Expr * FinalizeTypesPass::visitFnCall(FnCallExpr * in) {
   return in;
 }
 #endif
+
+bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
+
+  FunctionType * fnType = cd->functionType();
+  size_t paramCount = fnType->params().size();
+  size_t argCount = args.size();
+  outArgs.resize(paramCount);
+  std::fill(outArgs.begin(), outArgs.end(), (Expr *)NULL);
+
+  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+    int paramIndex = cd->parameterIndex(argIndex);
+    ParameterDefn * param = fnType->params()[paramIndex];
+    Type * paramType = param->type();
+    DASSERT(paramType->isSingular());
+    Expr * argVal = visitExpr(args[argIndex]);
+    if (isErrorResult(argVal)) {
+      return false;
+    }
+
+    Expr * castArgVal = addCastIfNeeded(argVal, paramType);
+    if (castArgVal == NULL) {
+      diag.error(argVal) << "Unable to convert argument of type " << argVal->type() << " to " <<
+          paramType;
+      return false;
+    }
+
+    if (param->isVariadic()) {
+      // Handle variadic parameters - build an array literal.
+      ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(outArgs[paramIndex]);
+      if (arrayParam == NULL) {
+        arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
+        AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
+        DASSERT(arrayParam->isSingular());
+        outArgs[paramIndex] = arrayParam;
+      }
+
+      DASSERT(castArgVal->isSingular());
+      arrayParam->appendArg(castArgVal);
+    } else {
+      outArgs[paramIndex] = castArgVal;
+    }
+  }
+
+  // Fill in default params
+  for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
+    if (outArgs[paramIndex] == NULL) {
+      ParameterDefn * param = fnType->params()[paramIndex];
+      if (param->isVariadic()) {
+        // Pass a null array - possibly a static singleton.
+        ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
+            param->location(), param->type());
+        AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
+        outArgs[paramIndex] = arrayParam;
+      } else {
+        outArgs[paramIndex] = param->defaultValue();
+        DASSERT_OBJ(outArgs[paramIndex] != NULL, param);
+      }
+    }
+  }
+
+  return true;
+}
 
 Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
   // First perform pattern substitutions on the parent definition.
@@ -517,6 +632,15 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
 }
 
 Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
+  Expr * v0 = visitExpr(in->first());
+  Expr * v1 = visitExpr(in->second());
+
+  if (isErrorResult(v0) || isErrorResult(v1)) {
+    return in;
+  }
+
+  in->setFirst(v0);
+  in->setSecond(v1);
   Type * t0 = in->first()->type();
   Type * t1 = in->second()->type();
   DASSERT_OBJ(t0 != NULL, in->first());
@@ -539,12 +663,39 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
+  } else if (NativePointerType * np0 = dyn_cast<NativePointerType>(t0)) {
+    if (NativePointerType * np1 = dyn_cast<NativePointerType>(t1)) {
+      if (np0->isEqual(np1)) {
+        return in;
+      }
+    } else if (t1->isReferenceType()) {
+      if (np0->typeParam(0)->isEqual(t1)) {
+        in->setSecond(addCastIfNeeded(in->second(), np0));
+        return in;
+      } else if (t1->isEqual(&NullType::instance)) {
+        in->setSecond(addCastIfNeeded(in->second(), np0));
+        return in;
+      }
+
+      diag.error(in) << "Can't compare " << t0 << " to " << t1;
+      DFAIL("Implement");
+    } else if (NativePointerType * np1 = dyn_cast<NativePointerType>(t1)) {
+      DFAIL("Implement");
+    }
+
+    diag.error(in) << "Can't compare " << t0 << " to " << t1;
+    DFAIL("Implement");
   } else if (t1->isReferenceType()) {
     diag.fatal(in) << "Can't compare non-reference type '" << t0 <<
     "' with reference type '" << t1 << "'";
     return in;
+  } else if (t0->typeClass() == Type::NativePointer
+      && t1->typeClass() == Type::NativePointer
+      && t0 == t1) {
+    return in;
   } else {
     // Otherwise, it's just a regular equality test.
+    diag.error(in) << "Can't compare " << t0 << " and " << t1;
     DFAIL("Implement");
   }
 }

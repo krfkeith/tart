@@ -131,6 +131,7 @@ public:
     Ctor,                   // Constructor function
     Singular,               // Has no unbound template params
     Synthetic,              // Generated via template
+    Undefined,              // Undefining a definition in a base class.
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
@@ -233,6 +234,7 @@ public:
   bool isSynthetic() const { return traits_.contains(Synthetic); }
   bool isExtern() const { return traits_.contains(Extern); }
   bool isCtor() const { return traits_.contains(Ctor); }
+  bool isUndefined() const { return traits_.contains(Undefined); }
 
   void setSingular(bool t) {
     if (t) {

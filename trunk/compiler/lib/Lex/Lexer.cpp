@@ -160,6 +160,7 @@ namespace {
           //if (strcmp(kw, "uint16") == 0) return Token_UInt16;
           //if (strcmp(kw, "uint32") == 0) return Token_UInt32;
           //if (strcmp(kw, "uint64") == 0) return Token_UInt64;
+          if (strcmp(kw, "undef") == 0) return Token_Undef;
           break;
 
         case 'v':

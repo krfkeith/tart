@@ -23,7 +23,7 @@ struct Type;
 // list of type pointers.
 struct TypeInfoBlock {
   const struct Type * type;
-  const struct Type * const * bases;
+  const struct TypeInfoBlock * const * bases;
   void ** methodTable;
 };
 
@@ -31,7 +31,7 @@ struct TypeInfoBlock {
 struct TartThrowable {
   struct TypeInfoBlock * tib;
   void * padding; // Required for UnwindExceptinfo alignment.
-  
+
   // _Unwind_Exception follows, but don't explicitly declare it because
   // we need to control the alignment. (The structure definition in unwind.h aligns to
   // the maximum possible alignment for the platform, which is not what our frontend
@@ -55,19 +55,19 @@ struct CallSiteInfo {
 };
 
 // isSubclass() test for Tart objects.
-static bool hasBase(const struct TypeInfoBlock * tib, const struct Type * type) {
-  if (tib->type == type) {
+static bool hasBase(const struct TypeInfoBlock * tib, const struct TypeInfoBlock * type) {
+  if (tib == type) {
     return true;
   }
-  
-  const struct Type * const * bases = tib->bases;
-  const struct Type * base;
+
+  const struct TypeInfoBlock * const * bases = tib->bases;
+  const struct TypeInfoBlock * base;
   while ((base = *bases++) != NULL) {
     if (base == type) {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -81,7 +81,7 @@ static const unsigned char * readEncodedUWord(const unsigned char * pos, _Unwind
     n |= (c & 0x7f) << shift;
     shift += 7;
   } while (c & 0x80) ;
-  
+
   *out = n;
   return pos;
 }
@@ -96,12 +96,12 @@ static const unsigned char * readEncodedSWord(const unsigned char * pos, _Unwind
     n |= (c & 0x7f) << shift;
     shift += 7;
   } while (c & 0x80) ;
-  
+
   // Check sign bit.
   if ((c & 0x40) && shift < sizeof(n) * 8) {
     n |= -(1L << shift);
   }
-  
+
   *out = n;
   return pos;
 }
@@ -111,15 +111,15 @@ static const unsigned char * readEncodedValue(
     unsigned char encoding,
     const unsigned char * pos,
     _Unwind_Ptr * out) {
-  
+
   uint32_t offset;
-  
+
   // LLVM only emits format DW_EH_PE_udata4
   if (encoding != DW_EH_PE_udata4) {
     // Other encodings not implemented.
     abort();
   }
-  
+
   memcpy(&offset, pos, sizeof(offset));
   pos += sizeof(offset);
   *out = baseAddr + offset;
@@ -163,7 +163,7 @@ const unsigned char * findCallSite(
     struct LSDAHeaderInfo * lpInfo,
     _Unwind_Ptr ip,
     struct CallSiteInfo * csInfo) {
-      
+
   csInfo->landingPad = 0;
   csInfo->actionRecord = NULL;
 
@@ -191,7 +191,7 @@ const unsigned char * findCallSite(
       if (callSiteAction) {
         csInfo->actionRecord = lpInfo->actionTable + callSiteAction - 1;
       }
-      
+
       break;
     }
   }
@@ -213,7 +213,7 @@ bool findAction(
 
     action = readEncodedSWord(action, &actionFilter);
     readEncodedSWord(action, &nextActionOffset);
-    
+
     if (actionFilter == 0) {
       *actionResult = actionResultIndex;
       return true;
@@ -224,8 +224,9 @@ bool findAction(
       }
 
       // Look up the type in the type table.
-      const struct Type * const * typeTable = (const struct Type * const *) lpInfo->typeTable;
-      const struct Type * type = typeTable[-actionFilter];
+      const struct TypeInfoBlock * const * typeTable =
+          (const struct TypeInfoBlock * const *) lpInfo->typeTable;
+      const struct TypeInfoBlock * type = typeTable[-actionFilter];
       if (hasBase(tib, type)) {
         *actionResult = actionResultIndex;
         return true;

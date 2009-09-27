@@ -529,30 +529,6 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     }
 
     return Incompatible;
-  } else if (const CompositeType * ctype = dyn_cast<CompositeType>(fromType)) {
-    #if 0
-    if (ctype->isReferenceType()) {
-      // This automatic conversion should not go here - instead it should be
-      // in the code that evaluates a test expression.
-      if (cn.fromValue && cn.resultValue) {
-        // Compare with NULL to get boolean result.
-        *cn.resultValue = new CompareExpr(
-            cn.fromValue->location(),
-            llvm::CmpInst::ICMP_EQ,
-            cn.fromValue,
-            ConstantNull::get(
-                cn.fromValue->location(), cn.fromValue->type()));
-      }
-
-      //return NonPreferred;
-      return Incompatible;
-    } else {
-    }
-    #endif
-
-    return Incompatible;
-  } else if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
-    return Incompatible;
   } else {
     return Incompatible;
   }
@@ -582,8 +558,6 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
     return IntegerToBool;
   } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
     return Incompatible;
-  } else if (ConstantNull * cnull = dyn_cast<ConstantNull>(cn.fromValue)) {
-    DFAIL("Implement");
   } else {
     return Incompatible;
   }
