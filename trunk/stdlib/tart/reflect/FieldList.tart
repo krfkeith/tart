@@ -1,4 +1,4 @@
 import tart.collections.ImmutableList;
 
-class FieldList : ImmutableList[Field] {
+class FieldList {
 }

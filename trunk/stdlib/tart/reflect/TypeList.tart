@@ -1,4 +1,4 @@
 import tart.collections.ImmutableList;
 
-class TypeList : ImmutableList[Type] {
+class TypeList {
 }

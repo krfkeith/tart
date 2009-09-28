@@ -384,13 +384,4 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   return gv;
 }
 
-GlobalVariable * CodeGenerator::createModuleObjectPtr() {
-  if (moduleObject_ == NULL) {
-    moduleObject_ = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
-        GlobalValue::ExternalLinkage, NULL, module_->linkageName() + ".module");
-  }
-
-  return moduleObject_;
-}
-
 } // namespace tart

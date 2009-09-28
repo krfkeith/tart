@@ -65,6 +65,10 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
+  if (type->isAttribute() && !type->attributeInfo().isRetained()) {
+    return NULL;
+  }
+
   // Don't need to define this twice.
   if (rtype->isExternal() ||
       (rtype->typeDescriptor() != NULL && rtype->typeDescriptor()->hasInitializer())) {
