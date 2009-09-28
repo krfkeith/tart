@@ -241,16 +241,17 @@ static void optimize(Module & mod, TargetMachine & target) {
   PassManager pm;
   pm.add(new TargetData(*target.getTargetData()));
   createStandardModulePasses(&pm, int(OptimizationLevel),
-      false /* OptimizeSize */,
+      true  /* OptimizeSize */,
       true  /* UnitAtATime */,
       true  /* UnrollLoops */,
       true  /* SimplifyLibCalls */,
       true  /* HaveExceptions */,
       NULL  /* *InliningPass */);
+
   createStandardLTOPasses(&pm,
       false /* Internalize */,
       true  /* RunInliner */,
-      false  /* VerifyEach */);
+      false /* VerifyEach */);
 
   if (NoExtern) {
     std::vector<const char *> externs;

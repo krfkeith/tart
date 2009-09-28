@@ -1,0 +1,21 @@
+struct MemberList[%MemberType] {
+  private {
+    var data:MemberType[];
+  }
+
+  /** Create an MemberList from the elements given. */
+  def construct(data:MemberType[]) {
+    self.data = data;
+  }
+
+  /** The number of members in the list. */
+  def length:int { get { return self.data.length; } }
+
+  /** Return the 'MemberType' at position 'index'. */
+  def [index:int]:MemberType { get { return data[index]; } }
+  
+  /** Iteration function. */
+  def iterate -> Iterator[MemberType] {
+    return self.data.iterate();
+  }
+}

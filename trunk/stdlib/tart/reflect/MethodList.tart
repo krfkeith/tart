@@ -1,4 +1,5 @@
-import tart.collections.ImmutableList;
-
-class MethodList : ImmutableList[Method] {
+struct MethodList : MemberList[Method] {
+  def construct(data:Method[]) {
+    super(data);
+  }
 }

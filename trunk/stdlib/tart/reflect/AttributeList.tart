@@ -1,4 +1,4 @@
 import tart.collections.ImmutableList;
 
-class AttributeList : ImmutableList[Attribute] {
+class AttributeList {
 }

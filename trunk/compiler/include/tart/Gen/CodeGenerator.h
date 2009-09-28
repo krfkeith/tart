@@ -282,6 +282,8 @@ public:
   /** Reflection methods. */
   llvm::GlobalVariable * createModuleObjectPtr();
   void createModuleObject();
+  void createModuleTable();
+  void createModuleCount();
   llvm::Constant * reflectMethod(const FunctionDefn * func);
   llvm::Constant * reflectMember(const CompositeType * structType, const ValueDefn * def);
 
@@ -323,6 +325,7 @@ private:
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
   llvm::GlobalVariable * moduleObject_;
+  llvm::GlobalVariable * moduleTable_;
 
 #if 0
   llvm::Function * moduleInitFunc;

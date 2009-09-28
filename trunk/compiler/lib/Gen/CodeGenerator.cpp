@@ -50,6 +50,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , module_(mod)
     , irModule_(mod->irModule())
     , moduleObject_(NULL)
+    , moduleTable_(NULL)
     , currentFn_(NULL)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -81,6 +82,13 @@ void CodeGenerator::generate() {
   irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
   irModule_->addTypeName("tart.core.TypeInfoBlock", Builtins::typeTypeInfoBlock->irType());
   irModule_->addTypeName("tart.reflect.TypeDescriptor", Builtins::typeTypeDescriptor->irType());
+
+  if (reflect_) {
+    createModuleTable();
+    if (module_ == Builtins::typeModule->typeDefn()->module()) {
+      createModuleCount();
+    }
+  }
 
   // Generate all declarations.
   DefnSet & xdefs = module_->exportDefs();

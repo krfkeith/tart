@@ -4,7 +4,7 @@ import tart.core.Memory.zeroPtr;
 import tart.core.Memory.arrayCopy;
 
 /** A list type with a fixed set of elements. */
-class ImmutableList[%ElementType] : List[ElementType] {
+final class ImmutableList[%ElementType] : List[ElementType] {
   private {
     var data:ElementType[];
   }
@@ -24,6 +24,7 @@ class ImmutableList[%ElementType] : List[ElementType] {
     self.data = data;
   }
 
+  // TODO: Test
   undef add(e:ElementType);
   undef insert(position:int, e:ElementType);
   undef remove(index:int);

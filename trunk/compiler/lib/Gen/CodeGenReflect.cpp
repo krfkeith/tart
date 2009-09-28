@@ -89,6 +89,16 @@ namespace {
   }
 }
 
+GlobalVariable * CodeGenerator::createModuleObjectPtr() {
+  if (moduleObject_ == NULL) {
+    irModule_->addTypeName("tart.reflect.Module", Builtins::typeModule->irType());
+    moduleObject_ = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
+        GlobalValue::ExternalLinkage, NULL, module_->linkageName() + ".module");
+  }
+
+  return moduleObject_;
+}
+
 void CodeGenerator::createModuleObject() {
   createModuleObjectPtr();
   if (!moduleObject_->hasInitializer()) {
@@ -96,10 +106,57 @@ void CodeGenerator::createModuleObject() {
     sb.createObjectHeader(Builtins::typeModule);
     sb.addStringField(module_->qualifiedName());
     sb.addNullField(Builtins::rfModule.memberTypes->type());
-    sb.addNullField(Builtins::rfModule.memberMethods->type());
+    //sb.addNullField(Builtins::rfModule.memberMethods->type());
+
+    {
+      StructBuilder ss(*this);
+      StructBuilder ss2(*this);
+      const llvm::Type * methodListType = Builtins::rfModule.memberMethods->type()->irType();
+      ss.addField(ConstantPointerNull::get(cast<PointerType>(methodListType->getContainedType(0)->getContainedType(0))));
+      ss2.addField(ss.build());
+      sb.addField(ss2.build());
+    }
+
     llvm::Constant * moduleStruct = sb.build();
     moduleObject_->setInitializer(moduleStruct);
   }
+}
+
+void CodeGenerator::createModuleTable() {
+  if (moduleTable_ == NULL) {
+    Constant * mod = createModuleObjectPtr();
+    Constant * moduleArray = ConstantArray::get(ArrayType::get(mod->getType(), 1), &mod, 1);
+    moduleTable_ = new GlobalVariable(*irModule_, moduleArray->getType(), true,
+        GlobalValue::AppendingLinkage, moduleArray, "tart.reflect.Module.moduleList");
+  }
+}
+
+void CodeGenerator::createModuleCount() {
+  createModuleTable();
+
+  // TODO: Move this.
+  Constant * indices[2];
+  indices[0] = indices[1] = getInt32Val(0);
+
+  Constant * moduleArraySize = llvm::ConstantExpr::getSizeOf(moduleTable_->getType());
+  //Constant * moduleArraySize = llvm::ConstantExpr::getSizeOf(
+  //    llvm::ConstantExpr::getInBoundsGetElementPtr(moduleTable_, indices, 1)->getType());
+  moduleArraySize = llvm::ConstantExpr::getTruncOrBitCast(moduleArraySize, builder_.getInt32Ty());
+  //Constant * moduleElementSize = llvm::ConstantExpr::getSizeOf(
+  //    llvm::ConstantExpr::getInBoundsGetElementPtr(moduleTable_, indices, 2)->getType());
+  //Constant * moduleCount64 =
+  //    llvm::ConstantExpr::getUDiv(moduleArraySize, moduleElementSize);
+  //Constant * moduleCount =
+  //    llvm::ConstantExpr::getTruncOrBitCast(moduleCount64, builder_.getInt32Ty());
+
+  new GlobalVariable(*irModule_, builder_.getInt32Ty(), true,
+      GlobalValue::ExternalLinkage, moduleArraySize, "tart.reflect.Module.moduleCount");
+
+  indices[0] = getInt32Val(1);
+  indices[1] = getInt32Val(1);
+  Constant * moduleArrayEnd = llvm::ConstantExpr::getGetElementPtr(moduleTable_, indices, 2);
+  new GlobalVariable(*irModule_, moduleArrayEnd->getType(), true,
+      GlobalValue::ExternalLinkage, moduleArrayEnd, "tart.reflect.Module.moduleListEnd");
 }
 
 llvm::Constant * CodeGenerator::genReflectionDataArray(

@@ -1,0 +1,3 @@
+/** Set interface */
+interface Set[%ElementType] : Iterable[ElementType] {
+}
