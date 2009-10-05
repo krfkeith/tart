@@ -144,12 +144,12 @@ void typeLinkageName(std::string & out, const Type * ty) {
       out.append(")");
     }
 
-    if (!ftype->returnType().isNull() && !ftype->returnType().isVoidType()) {
+    if (ftype->returnType().isNonVoidType()) {
       out.append("->");
       typeLinkageName(out, ftype->returnType());
     }
   } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
-    for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    for (TypeRefList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
       if (it != utype->members().begin()) {
         out.append("|");
       }
@@ -540,6 +540,10 @@ Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from) const {
   return type_->explicitCast(loc, from);
 }
 
+ConversionRank TypeRef::convert(const Conversion & conversion) const {
+  return type_->convert(conversion);
+}
+
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
   out << ref.type();
 }
@@ -594,6 +598,10 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
+}
+
+bool TypeLess::operator()(const TypeRef & t0, const TypeRef & t1) {
+  return operator()(t0.type(), t1.type());
 }
 
 bool TypeLess::operator()(const Type * t0, const Type * t1) {

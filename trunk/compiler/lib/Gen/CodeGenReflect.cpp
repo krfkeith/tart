@@ -105,13 +105,13 @@ void CodeGenerator::createModuleObject() {
     StructBuilder sb(*this);
     sb.createObjectHeader(Builtins::typeModule);
     sb.addStringField(module_->qualifiedName());
-    sb.addNullField(Builtins::rfModule.memberTypes->type());
+    sb.addNullField(Builtins::rfModule.memberTypes->type().type());
     //sb.addNullField(Builtins::rfModule.memberMethods->type());
 
     {
       StructBuilder ss(*this);
       StructBuilder ss2(*this);
-      const llvm::Type * methodListType = Builtins::rfModule.memberMethods->type()->irType();
+      const llvm::Type * methodListType = Builtins::rfModule.memberMethods->type().irType();
       ss.addField(ConstantPointerNull::get(cast<PointerType>(methodListType->getContainedType(0)->getContainedType(0))));
       ss2.addField(ss.build());
       sb.addField(ss2.build());
@@ -162,7 +162,7 @@ void CodeGenerator::createModuleCount() {
 llvm::Constant * CodeGenerator::genReflectionDataArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
-  const CompositeType * arrayType = cast<CompositeType>(var->type());
+  const CompositeType * arrayType = cast<CompositeType>(var->type().type());
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->typeDefn()->isPassFinished(Pass_ResolveOverloads), var);
 
@@ -200,7 +200,7 @@ llvm::Constant * CodeGenerator::reflectMember(const CompositeType * structType, 
   StructBuilder sb(*this);
   sb.createObjectHeader(structType);
   sb.addStringField(def->qualifiedName());
-  sb.addTypeReference(def->type());
+  sb.addTypeReference(def->type().type());
   sb.addIntegerField(Builtins::rfMember.memberKind, memberKind(def));
   sb.addTypeReference(parent != NULL ? parent->typeValue() : NULL);
   sb.addIntegerField(Builtins::rfMember.memberAccess, memberAccess(def));

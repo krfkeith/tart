@@ -309,7 +309,7 @@ bool ClassAnalyzer::analyzeFields() {
           field->copyTrait(target, Defn::Final);
 
           analyzeValueDefn(field, Task_PrepCallOrUse);
-          DASSERT(field->type() != NULL);
+          DASSERT(field->type().isDefined());
 
           bool isStorageRequired = true;
           if (field->defnType() == Defn::Let) {
@@ -381,11 +381,11 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
-            if (ctor->returnType().isNull()) {
+            if (!ctor->returnType().isDefined()) {
               ctor->functionType()->setReturnType(&VoidType::instance);
             }
 
-            if (!ctor->returnType().isVoidType()) {
+            if (ctor->returnType().isNonVoidType()) {
               diag.fatal(ctor) << "Constructor cannot declare a return type.";
               break;
             }
@@ -805,8 +805,8 @@ bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
   FunctionType * ft0 = f0->functionType();
   FunctionType * ft1 = f1->functionType();
 
-  DASSERT_OBJ(!ft0->returnType().isNull(), f0);
-  DASSERT_OBJ(!ft1->returnType().isNull(), f1);
+  DASSERT_OBJ(ft0->returnType().isDefined(), f0);
+  DASSERT_OBJ(ft1->returnType().isDefined(), f1);
   if (!ft0->returnType().isEqual(ft1->returnType())) {
     return false;
   }
@@ -819,10 +819,10 @@ bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
     ParameterDefn * p0 = ft0->params()[i];
     ParameterDefn * p1 = ft1->params()[i];
 
-    DASSERT_OBJ(p0->type() != NULL, p0);
-    DASSERT_OBJ(p1->type() != NULL, p1);
+    DASSERT_OBJ(p0->type().isDefined(), p0);
+    DASSERT_OBJ(p1->type().isDefined(), p1);
 
-    if (!p0->type()->isEqual(p1->type())) {
+    if (!p0->type().isEqual(p1->type())) {
       return false;
     }
   }
@@ -841,8 +841,8 @@ FunctionDefn * ClassAnalyzer::findOverride(const FunctionDefn * f, const MethodL
 }
 
 bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * func) {
-  DASSERT_OBJ(base->type() != NULL, base);
-  DASSERT_OBJ(func->type() != NULL, func);
+  DASSERT_OBJ(base->type().isDefined(), base);
+  DASSERT_OBJ(func->type().isDefined(), func);
 
   const FunctionType * baseType = base->functionType();
   const FunctionType * funcType = func->functionType();
@@ -868,10 +868,10 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
     if (baseArg->isVariadic() != funcArg->isVariadic())
       return false;
 
-    const Type * baseArgType = baseArg->type();
-    const Type * funcArgType = funcArg->type();
+    TypeRef baseArgType = baseArg->type();
+    TypeRef funcArgType = funcArg->type();
 
-    if (!baseArgType->isEqual(funcArgType)) {
+    if (!baseArgType.isEqual(funcArgType)) {
       switch (baseArg->variance()) {
         case Invariant:
           // funcArgType must be equal to base type
@@ -948,7 +948,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
         analyzeValueDefn(memberVar, Task_PrepCallOrUse);
         Expr * defaultValue = memberVar->initValue();
-        Type * memberType = memberVar->type();
+        Type * memberType = memberVar->type().type();
         if (defaultValue == NULL) {
           // TODO: If this is 'final' it must be initialized here or in
           // the constructor.

@@ -117,6 +117,10 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
       typeEncoding(type->typeId()));
 }
 
+DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
+  return genDIEmbeddedType(type.type());
+}
+
 DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class) {
@@ -136,17 +140,17 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   return di;
 }
 
-DIType CodeGenerator::genDIParameterType(const Type * type) {
+DIType CodeGenerator::genDIParameterType(const TypeRef & type) {
   DIType di = genDIType(type);
-  if (type->typeClass() == Type::Class) {
+  if (type.typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedType(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
         "",
         dbgCompileUnit_,
         0,
-        llvm::ConstantExpr::getSizeOf(type->irEmbeddedType()),
-        llvm::ConstantExpr::getAlignOf(type->irEmbeddedType()),
+        llvm::ConstantExpr::getSizeOf(type.irEmbeddedType()),
+        llvm::ConstantExpr::getAlignOf(type.irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -175,8 +179,8 @@ DIDerivedType CodeGenerator::genDITypeMember(const VariableDefn * var, Constant 
       var->name(),
       dbgCompileUnit_,
       getSourceLineNumber(var->location()),
-      llvm::ConstantExpr::getSizeOf(var->type()->irEmbeddedType()),
-      llvm::ConstantExpr::getAlignOf(var->type()->irEmbeddedType()),
+      llvm::ConstantExpr::getSizeOf(var->type().irEmbeddedType()),
+      llvm::ConstantExpr::getAlignOf(var->type().irEmbeddedType()),
       offset, 0,
       genDIEmbeddedType(var->type()));
 }
@@ -281,8 +285,8 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
 
   // Collect union members
   int memberIndex = 0;
-  for (TypeList::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
-    Type * memberType = *it;
+  for (TypeRefList::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
+    const Type * memberType = it->dealias();
     if (memberType != &VoidType::instance) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
@@ -382,7 +386,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         "self",
         dbgCompileUnit_,
         getSourceLineNumber(param->location()),
-        llvm::ConstantExpr::getSizeOf(param->type()->irParameterType()),
+        llvm::ConstantExpr::getSizeOf(param->type().irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);
@@ -399,7 +403,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         param->name() != NULL ? param->name() : "",
         dbgCompileUnit_,
         getSourceLineNumber(param->location()),
-        llvm::ConstantExpr::getSizeOf(param->internalType()->irParameterType()),
+        llvm::ConstantExpr::getSizeOf(param->internalType().irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);

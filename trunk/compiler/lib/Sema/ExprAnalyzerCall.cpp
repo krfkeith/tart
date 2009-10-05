@@ -102,16 +102,16 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //  isUnqualified = false;
         //}
       } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
-        if (FunctionType * ft = dyn_cast<FunctionType>(var->type())) {
+        if (FunctionType * ft = dyn_cast<FunctionType>(var->type().type())) {
           success &= addOverload(call, lv, ft, args);
-        } else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type())) {
+        } else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type().type())) {
           Type * targetType = npt->typeParam(0);
           if (analyzeType(targetType, Task_PrepCallOrUse)) {
             if (FunctionType * ft = dyn_cast<FunctionType>(targetType)) {
               success &= addOverload(call, lv, ft, args);
             }
           }
-        } else if (AddressType * mat = dyn_cast<AddressType>(var->type())) {
+        } else if (AddressType * mat = dyn_cast<AddressType>(var->type().type())) {
           Type * targetType = mat->typeParam(0);
           if (analyzeType(targetType, Task_PrepCallOrUse)) {
             if (FunctionType * ft = dyn_cast<FunctionType>(targetType)) {
@@ -266,8 +266,8 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
 
   ParameterDefn * selfParam = currentFunction_->functionType()->selfParam();
   DASSERT_OBJ(selfParam != NULL, currentFunction_);
-  DASSERT_OBJ(selfParam->type() != NULL, currentFunction_);
-  TypeDefn * selfType = selfParam->type()->typeDefn();
+  DASSERT_OBJ(selfParam->type().isDefined(), currentFunction_);
+  TypeDefn * selfType = selfParam->type().type()->typeDefn();
   DASSERT_OBJ(selfType != NULL, currentFunction_);
   Expr * selfExpr = new LValueExpr(selfParam->location(), NULL, selfParam);
   selfExpr = superClass->implicitCast(loc, selfExpr);
@@ -322,8 +322,8 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
         if (analyzeDefn(cons, Task_InferType)) {
-          DASSERT(cons->type() != NULL);
-          DASSERT(cons->returnType().isNull() || cons->returnType().isVoidType());
+          DASSERT(cons->type().isDefined());
+          DASSERT(!cons->returnType().isDefined() || cons->returnType().isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
           DASSERT(cons->isTemplate() || cons->isTemplateMember());
           cons->addTrait(Defn::Ctor);
@@ -336,7 +336,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
         FunctionDefn * create = cast<FunctionDefn>(*it);
         if (create->storageClass() == Storage_Static) {
           if (analyzeDefn(create, Task_InferType)) {
-            DASSERT(create->type() != NULL);
+            DASSERT(create->type().isDefined());
             //Type * returnType = create->returnType();
             addOverload(call, NULL, create, args);
           }
@@ -353,9 +353,9 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        DASSERT(cons->type() != NULL);
+        DASSERT(cons->type().isDefined());
         DASSERT(cons->isCtor());
-        DASSERT(cons->returnType().isNull() || cons->returnType().isVoidType());
+        DASSERT(!cons->returnType().isDefined() || cons->returnType().isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
         addOverload(call, newExpr, cons, args);
       }
@@ -363,7 +363,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
-        DASSERT(create->type() != NULL);
+        DASSERT(create->type().isDefined());
         if (create->storageClass() == Storage_Static) {
           //const Type * returnType = create->returnType();
           addOverload(call, NULL, create, args);
@@ -374,9 +374,9 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        DASSERT(cons->type() != NULL);
+        DASSERT(cons->type().isDefined());
         DASSERT(cons->isCtor());
-        DASSERT(cons->returnType().isNull() || cons->returnType().isVoidType());
+        DASSERT(!cons->returnType().isDefined() || cons->returnType().isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
         addOverload(call, newExpr, cons, args);
       }
@@ -466,7 +466,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
     return false;
   }
 
-  DASSERT_OBJ(method->type() != NULL, method);
+  DASSERT_OBJ(method->type().isDefined(), method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   if (builder.assignFromAST(args)) {

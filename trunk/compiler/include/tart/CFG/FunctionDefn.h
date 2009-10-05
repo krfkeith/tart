@@ -85,12 +85,12 @@ public:
   void setDefaultValue(Expr * e) { defaultValue_ = e; }
 
   /** Set the type of this parameter. */
-  void setType(Type * ty) { type_ = ty; }
+  void setType(const TypeRef & ty) { type_ = ty; }
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
       which may not be the same as it appears externally. */
-  Type * internalType() const { return internalType_; }
-  void setInternalType(Type * type) { internalType_ = type; }
+  TypeRef internalType() const { return internalType_; }
+  void setInternalType(const TypeRef & type) { internalType_ = type; }
 
   /** IR representation of this function. */
   llvm::Value * irValue() const { return irValue_; }
@@ -116,7 +116,7 @@ public:
 
   // Overrides
 
-  Type * type() const { return type_; }
+  TypeRef type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const ParameterDefn *) { return true; }
@@ -125,8 +125,8 @@ public:
   }
 
 private:
-  Type * type_;
-  Type * internalType_;
+  TypeRef type_;
+  TypeRef internalType_;
   Expr * defaultValue_;
   llvm::Value * irValue_;
   Variance variance_;
@@ -224,7 +224,7 @@ public:
   // Overrides
 
   const std::string & linkageName() const;
-  Type * type() const;
+  TypeRef type() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionDefn *) { return true; }

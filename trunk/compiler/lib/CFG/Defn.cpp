@@ -328,7 +328,7 @@ void ValueDefn::trace() const {
 // VariableDefn
 void VariableDefn::trace() const {
   ValueDefn::trace();
-  safeMark(type_);
+  type_.trace();
   safeMark(initValue_);
 }
 
@@ -348,7 +348,7 @@ void VariableDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_) {
+  if (out.getShowType() && type_.isDefined()) {
     out << ":" << type_;
   }
 
@@ -361,7 +361,7 @@ void VariableDefn::format(FormatStream & out) const {
 // PropertyDefn
 void PropertyDefn::trace() const {
   ValueDefn::trace();
-  safeMark(type_);
+  type_.trace();
   safeMark(getter_);
   safeMark(setter_);
 }

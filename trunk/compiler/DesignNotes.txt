@@ -21,6 +21,7 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
+  * Finish up the TypeRef stuff.
 * Boxed values: Boxed[%T] { let value:T; }. Also: auto boxing, unboxing.
 * Stack dumps / trace
 * Hook up TypeLess(Than).

@@ -41,6 +41,10 @@ StructBuilder & StructBuilder::addTypeReference(const Type * type) {
   return *this;
 }
 
+StructBuilder & StructBuilder::addTypeReference(const TypeRef & type) {
+  return addTypeReference(type.type());
+}
+
 StructBuilder & StructBuilder::addNullField(const Type * type) {
   const llvm::PointerType * irType = cast<llvm::PointerType>(type->irEmbeddedType());
   return addField(ConstantPointerNull::get(irType));
@@ -52,7 +56,7 @@ StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value)
 }
 
 StructBuilder & StructBuilder::addIntegerField(VariableDefn * var, int32_t value) {
-  return addIntegerField(var->type(), value);
+  return addIntegerField(var->type().type(), value);
 }
 
 StructBuilder & StructBuilder::addStringField(const std::string & strval) {
@@ -67,7 +71,7 @@ StructBuilder & StructBuilder::addArrayField(
 
 StructBuilder & StructBuilder::addArrayField(
     const VariableDefn * arrayVar, const ConstantList & values) {
-  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type())) {
+  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type().type())) {
     addArrayField(arrayType->typeParam(0), values);
   } else {
     DFAIL("Not an array type");

@@ -310,7 +310,8 @@ public:
   llvm::DIDerivedType genDITypeBase(const CompositeType * type);
   llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
   llvm::DIType genDIEmbeddedType(const Type * type);
-  llvm::DIType genDIParameterType(const Type * type);
+  llvm::DIType genDIEmbeddedType(const TypeRef & type);
+  llvm::DIType genDIParameterType(const TypeRef & type);
 
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;

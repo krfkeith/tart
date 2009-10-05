@@ -68,7 +68,7 @@ public:
       that this argument will be assigned to. This may not be the same
       as the formally declared parameter type, as pattern variable
       substitutions may have occurred. */
-  Type * paramType(int argIndex) const;
+  TypeRef paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */
   const TypeRef & resultType() const { return resultType_; }
@@ -139,7 +139,7 @@ private:
   BindingEnv bindingEnv_;
   FunctionType * fnType_;
   TypeRef resultType_;
-  TypeList paramTypes_;
+  TypeRefList paramTypes_;
   bool isTemplate_;
 };
 

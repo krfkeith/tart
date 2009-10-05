@@ -1,0 +1,4 @@
+/** Type class used for address and pointer types. */
+class DerivedType : Type {
+  let baseType:TypeRef;
+}

@@ -404,7 +404,7 @@ public:
   {}
 
   /** Type of this variable. */
-  virtual Type * type() const = 0;
+  virtual TypeRef type() const = 0;
 
   // Overrides
 
@@ -422,7 +422,7 @@ public:
 /// A definition of a variable
 class VariableDefn : public ValueDefn {
 private:
-  Type * type_;
+  TypeRef type_;
   Expr * initValue_;
   mutable llvm::Value * irValue_;
   int memberIndex_;
@@ -467,11 +467,11 @@ public:
   void setMemberIndexRecursive(int index) { memberIndexRecursive_ = index; }
 
   /** Set the type of this variable. */
-  void setType(Type * ty) { type_ = ty; }
+  void setType(const TypeRef & ty) { type_= ty; }
 
   // Overrides
 
-  Type * type() const { return type_; }
+  TypeRef type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
@@ -484,7 +484,7 @@ public:
 /// A definition of a property
 class PropertyDefn : public ValueDefn {
 private:
-  Type * type_;
+  TypeRef type_;
   IterableScope accessorScope_;  // Scope in which getter/setter are defined.
   FunctionDefn * getter_;    // The getter method
   FunctionDefn * setter_;    // The setter method
@@ -493,7 +493,6 @@ public:
   /** Constructor that takes an AST */
   PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
     : ValueDefn(dtype, m, ast)
-    , type_(NULL)
     , getter_(NULL)
     , setter_(NULL)
   {
@@ -509,11 +508,11 @@ public:
   const Scope & accessorScope() const { return accessorScope_; }
   Scope & accessorScope() { return accessorScope_; }
 
-  void setType(Type * t) { type_ = t; }
+  void setType(const TypeRef & t) { type_ = t; }
 
   // Overrides
 
-  Type * type() const { return type_; }
+  TypeRef type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   void setDefiningScope(Scope * scope) {

@@ -209,7 +209,7 @@ void ArglistExpr::trace() const {
 /// -------------------------------------------------------------------
 /// LValueExpr
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
-  : Expr(LValue, loc, value->type())
+  : Expr(LValue, loc, value->type().type())
   , base_(base)
   , value_(value)
 {
@@ -294,7 +294,7 @@ void AssignmentExpr::format(FormatStream & out) const {
 
 InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
-  : Expr(InitVar, loc, v->type())
+  : Expr(InitVar, loc, v->type().type())
   , var(v)
   , initExpr_(expr)
 {}
@@ -323,44 +323,44 @@ bool CallExpr::isSingular() const {
 }
 
 Type * CallExpr::singularParamType(int index) {
-  Type * singularType = NULL;
+  TypeRef singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    Type * ty = (*it)->paramType(index);
-    if (singularType == NULL) {
+    TypeRef ty = (*it)->paramType(index);
+    if (!singularType.isDefined()) {
       singularType = ty;
-    } else if (!ty->isEqual(singularType)) {
+    } else if (!ty.isEqual(singularType)) {
       return NULL;
     }
   }
 
-  return singularType;
+  return singularType.type();
 }
 
 Type * CallExpr::singularResultType() {
-  Type * singularType = NULL;
+  TypeRef singularType;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     CallCandidate * cc = *it;
     if (cc->isCulled()) {
       continue;
     }
 
-    Type * ty = cc->resultType().type();
+    TypeRef ty = cc->resultType();
     if (cc->method() != NULL && cc->method()->isCtor()) {
       ty = cc->functionType()->selfParam()->type();
     }
 
-    if (singularType == NULL) {
+    if (!singularType.isDefined()) {
       singularType = ty;
-    } else if (!ty->isEqual(singularType)) {
+    } else if (!ty.isEqual(singularType)) {
       return NULL;
     }
   }
 
-  return singularType;
+  return singularType.type();
 }
 
 CallCandidate * CallExpr::singularCandidate() {

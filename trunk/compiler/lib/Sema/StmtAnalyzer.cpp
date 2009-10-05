@@ -104,8 +104,8 @@ bool StmtAnalyzer::buildCFG() {
     if (function->storageClass() == Storage_Instance) {
       ParameterDefn * selfParam = function->functionType()->selfParam();
       DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->type() != NULL, function);
-      TypeDefn * selfType = selfParam->type()->typeDefn();
+      DASSERT_OBJ(selfParam->type().isDefined(), function);
+      TypeDefn * selfType = selfParam->type().type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
 #if IMPLICIT_SELF
@@ -133,7 +133,7 @@ bool StmtAnalyzer::buildCFG() {
     // Note that this may be removed during dead code deletion if there is no way to
     // get to the block.
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-      if (!returnType_.isNull() && !returnType_.isVoidType()) {
+      if (returnType_.isNonVoidType()) {
         diag.error(body->finalLocation()) <<
             "Missing return statement at end of non-void function.";
       }
@@ -533,8 +533,8 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
   Type * iterVarType = NULL;
-  for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
-    Type * ty = *it;
+  for (TypeRefList::iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    Type * ty = it->dealias();
     if (!ty->isVoidType()) {
       iterVarType = ty;
     }
@@ -803,38 +803,38 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         }
 
         VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
-        Type * toType = asValueDefn->type();
-        if (!analyzeType(toType, Task_PrepCallOrUse)) {
+        TypeRef toType = asValueDefn->type();
+        if (!analyzeType(toType.type(), Task_PrepCallOrUse)) {
           return NULL;
         }
 
-        if (typesSeen.count(toType)) {
+        if (typesSeen.count(toType.type())) {
           diag.error(asDecl) << "Duplicate type test '" << toType << "'.";
           setActiveScope(prevScope);
           continue;
         }
 
-        typesSeen.insert(toType);
+        typesSeen.insert(toType.type());
 
         // Create the block containing the type test
-        Block * testBlock = createBlock("as-test-", toType->typeDefn()->name());
+        Block * testBlock = createBlock("as-test-", toType.type()->typeDefn()->name());
 
         // Create the block containing the case body.
-        Block * caseBlock = createBlock("as-", toType->typeDefn()->name());
+        Block * caseBlock = createBlock("as-", toType.type()->typeDefn()->name());
 
         // The previous test's failure target should jump to the test.
         prevTestBlock->succs().push_back(testBlock);
         prevTestBlock = testBlock;
 
         // Set up the type test.
-        Expr * typeTestExpr = new InstanceOfExpr(stLoc, testLVal, toType);
+        Expr * typeTestExpr = new InstanceOfExpr(stLoc, testLVal, toType.type());
         testBlock->setTerminator(stLoc, BlockTerm_Conditional);
         testBlock->termExprs().push_back(typeTestExpr);
         testBlock->succs().push_back(caseBlock);
 
         // Set up the variable
         setInsertPos(caseBlock);
-        Expr * asValueExpr = new CastExpr(castType, stLoc, toType, testLVal);
+        Expr * asValueExpr = new CastExpr(castType, stLoc, toType.type(), testLVal);
         currentBlock_->append(new InitVarExpr(stLoc, asValueDefn, asValueExpr));
 
         // Build the body of the case.
@@ -987,7 +987,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // Get the exception type and determine if it is valid.
-      CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->type()));
+      CompositeType * exceptType = dyn_cast<CompositeType>(exceptDefn->type().dealias());
       if (isErrorResult(exceptType)) {
         continue;
       }
@@ -1145,7 +1145,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
     Type * exprType = resultVal->type();
-    if (exprType->isUnsizedIntType() && returnType_.isNull()) {
+    if (exprType->isUnsizedIntType() && !returnType_.isDefined()) {
       if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&IntType::instance);
       } else if (LongType::instance.canConvert(resultVal) >= ExactConversion) {
@@ -1153,7 +1153,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
       }
     }
 
-    if (!returnType_.isNull()) {
+    if (returnType_.isDefined()) {
       analyzeType(exprType, Task_PrepTypeComparison);
       resultVal = returnType_.implicitCast(st->location(), resultVal);
     }
@@ -1586,7 +1586,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
           blk->exprs().erase(ei);
         } else {
           // Replace the local call with a load of the state variable.
-          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->type(),
+          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->type().type(),
               localCall->returnState());
           *ei = new AssignmentExpr(SourceLocation(), proc.stateExpr, stateValue);
         }

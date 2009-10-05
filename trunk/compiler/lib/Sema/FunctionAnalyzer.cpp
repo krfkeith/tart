@@ -142,13 +142,13 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         ParameterDefn * param = *it;
         VarAnalyzer(param, module).analyze(Task_PrepCallOrUse);
 
-        if (param->type() == NULL) {
+        if (!param->type().isDefined()) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
         //} else if (param->type()->typeClass() == Type::NativeArray) {
         //  diag.error(param) << "Invalid parameter type (native array)";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
-          if (param->internalType()->isSingular()) {
-            module->addSymbol(param->internalType()->typeDefn());
+          if (param->internalType().isSingular()) {
+            module->addSymbol(param->internalType().type()->typeDefn());
           }
         }
 
@@ -334,7 +334,7 @@ bool FunctionAnalyzer::resolveReturnType() {
   FunctionType * funcType = target->functionType();
   TypeRef returnType = funcType->returnType();
 
-  if (returnType.isNull() && target->isPassRunning(Pass_ResolveReturnType)) {
+  if (!returnType.isDefined() && target->isPassRunning(Pass_ResolveReturnType)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
   }
@@ -344,7 +344,7 @@ bool FunctionAnalyzer::resolveReturnType() {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).
       // Templates that don't have an explicit return type are assumed void.
-      if (returnType.isNull()) {
+      if (!returnType.isDefined()) {
         funcType->setReturnType(&VoidType::instance);
       }
 
@@ -357,7 +357,7 @@ bool FunctionAnalyzer::resolveReturnType() {
   if (target->beginPass(Pass_ResolveReturnType)) {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
-    if (returnType.isNull()) {
+    if (!returnType.isDefined()) {
       returnType = &VoidType::instance;
 #if INFER_RETURN_TYPE
       BlockList & blocks = target->blocks();

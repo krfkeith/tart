@@ -35,10 +35,10 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   // Don't generate the IR if we've already done so
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
   DASSERT_OBJ(var->irValue() == NULL, var);
-  DASSERT_OBJ(var->type() != NULL, var);
+  DASSERT_OBJ(var->type().isDefined(), var);
 
   // Generate the variable type
-  const Type * varType = var->type();
+  const Type * varType = var->type().type();
   assert(varType != NULL);
   const llvm::Type * irType = varType->irEmbeddedType();
 

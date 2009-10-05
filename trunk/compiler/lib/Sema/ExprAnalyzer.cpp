@@ -248,7 +248,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
     TypeAnalyzer ta(module, activeScope);
     FunctionType * ftype = ta.typeFromFunctionAST(ast);
     if (ftype != NULL) {
-      if (ftype->returnType().isNull()) {
+      if (!ftype->returnType().isDefined()) {
         ftype->setReturnType(&VoidType::instance);
       }
       return new TypeLiteralExpr(ast->location(), ftype);
@@ -823,7 +823,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   LValueExpr * callable = new LValueExpr(ast->location(), arrayExpr, indexer);
   CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
   call->args().append(args.begin(), args.end());
-  call->setType(indexer->type());
+  call->setType(indexer->type().type());
   return call;
 }
 
@@ -861,7 +861,7 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
   }
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
-  getterCall->setType(prop->type());
+  getterCall->setType(prop->type().type());
   module->addSymbol(getter);
   analyzeLater(getter);
   return getterCall;
@@ -904,7 +904,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
   }
 
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
-  setterCall->setType(prop->type());
+  setterCall->setType(prop->type().type());
   setterCall->appendArg(value);
   module->addSymbol(setter);
   analyzeLater(setter);
@@ -935,8 +935,8 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(getter->returnType().type()->isEqual(prop->type()), getter);
-  DASSERT_OBJ(!getter->returnType().isVoidType(), getter);
+  DASSERT_OBJ(getter->returnType().isEqual(prop->type()), getter);
+  DASSERT_OBJ(getter->returnType().isNonVoidType(), getter);
 
 #if 0
 
@@ -983,10 +983,10 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   ExprList castArgs;
   size_t argCount = call->args().size();
   for (size_t i = 0; i < argCount; ++i) {
-    Type * paramType = getter->functionType()->param(i)->type();
+    TypeRef paramType = getter->functionType()->param(i)->type();
     Expr * arg = call->arg(i);
-    arg = inferTypes(arg, paramType);
-    Expr * castArg = paramType->implicitCast(arg->location(), arg);
+    arg = inferTypes(arg, paramType.type());
+    Expr * castArg = paramType.implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
     }
@@ -1001,7 +1001,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   }
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
-  getterCall->setType(prop->type());
+  getterCall->setType(prop->type().type());
   getterCall->args().append(castArgs.begin(), castArgs.end());
   module->addSymbol(getter);
   analyzeLater(getter);
@@ -1039,7 +1039,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   size_t argCount = call->args().size();
   for (size_t i = 0; i < argCount; ++i) {
     Expr * arg = call->arg(i);
-    Expr * castArg = setter->functionType()->param(i)->type()->implicitCast(arg->location(), arg);
+    Expr * castArg = setter->functionType()->param(i)->type().implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
     }
@@ -1056,17 +1056,17 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   // TODO: Handle multiple overloads of the same property.
   // TODO: Change this to a CallExpr for type inference.
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
-  setterCall->setType(prop->type());
+  setterCall->setType(prop->type().type());
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   if (!value->isSingular()) {
-    value = inferTypes(value, prop->type());
+    value = inferTypes(value, prop->type().type());
     if (isErrorResult(value)) {
       return value;
     }
   }
 
-  value = prop->type()->implicitCast(loc, value);
+  value = prop->type().implicitCast(loc, value);
   if (value != NULL) {
     setterCall->appendArg(value);
   }
@@ -1079,10 +1079,10 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
   analyzeValueDefn(lvalue->value(), Task_PrepCallOrUse);
-  DASSERT(lvalue->value()->type() != NULL);
-  lvalue->setType(lvalue->value()->type());
+  DASSERT(lvalue->value()->type().isDefined());
+  lvalue->setType(lvalue->value()->type().type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
-    lvalue->setType(param->internalType());
+    lvalue->setType(param->internalType().type());
   }
 
   switch (lvalue->value()->storageClass()) {

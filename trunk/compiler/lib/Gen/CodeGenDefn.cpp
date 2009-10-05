@@ -85,8 +85,8 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->isSingular(), fdef);
-  DASSERT_OBJ(fdef->type() != NULL, fdef);
-  DASSERT_OBJ(fdef->type()->isSingular(), fdef);
+  DASSERT_OBJ(fdef->type().isDefined(), fdef);
+  DASSERT_OBJ(fdef->type().isSingular(), fdef);
 
   // Don't generate intrinsic functions.
   if (fdef->isIntrinsic()) {
@@ -216,9 +216,8 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 #endif
 
   // Calculate the type.
-  const Type * letType = let->type();
-  DASSERT(letType != NULL);
-  const llvm::Type * irType = letType->irEmbeddedType();
+  DASSERT(let->type().isDefined());
+  const llvm::Type * irType = let->type().irEmbeddedType();
 
   // Generate the value
   Value * value = NULL;
@@ -280,8 +279,8 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
     return gv;
   }
 
-  const Type * varType = var->type();
-  DASSERT(varType != NULL);
+  TypeRef varType = var->type();
+  DASSERT(varType.isDefined());
 
   // Create the global variable
   GlobalValue::LinkageTypes linkType = Function::ExternalLinkage;
@@ -300,7 +299,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
   // the type of a global variable into a pointer anyway.
-  const llvm::Type * irType = varType->irEmbeddedType();
+  const llvm::Type * irType = varType.irEmbeddedType();
   gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL, var->linkageName());
 
   // Only supply an initialization expression if the variable was
@@ -320,10 +319,10 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
           return NULL;
         }
 
-        if (varType->isReferenceType()) {
+        if (varType.isReferenceType()) {
           initValue = new GlobalVariable(
               *irModule_, initValue->getType(), false, linkType, initValue, "");
-          initValue = llvm::ConstantExpr::getPointerCast(initValue, varType->irEmbeddedType());
+          initValue = llvm::ConstantExpr::getPointerCast(initValue, varType.irEmbeddedType());
         }
 
         gv->setInitializer(initValue);
