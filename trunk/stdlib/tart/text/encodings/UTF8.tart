@@ -1,4 +1,7 @@
-class UTF8 : Codec {
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+
+final class UTF8 : Codec {
   private static var lengthTable:int[] = [
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -25,10 +28,16 @@ class UTF8 : Codec {
     self.errorAction = errorAction;
   }
   
+  /** Return the length in bytes of the encoding character starting with
+      the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
+      prefix byte. */ 
+  static def charLength(byteVal:ubyte) -> int {
+    return lengthTable[byteVal];
+  }
+
   /** Return the number of bytes needed to encode the character 'c'. Returns 0
       if 'c' is not an encodable character. */
-  static def encodedLength(c:char) -> int {
-    //  return lengthTable[byteVal];
+  static def numEncodedBytes(c:char) -> int {
     /*if c < 0x80 {
       return 1;
     } else if c < 0xc0 {
@@ -56,14 +65,7 @@ class UTF8 : Codec {
     return 0;
   }
 
-  /** Return the length in bytes of the encoding character starting with
-      the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
-      prefix byte. */ 
-  static def charLength(byteVal:ubyte) -> int {
-    return lengthTable[byteVal];
-  }
-
-  final def encodedLength(src:char[], start:int, count:int) -> int {
+  def encodedLength(src:char[], start:int, count:int) -> int {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, src.length);
     count = Math.min(count, src.length - start);
@@ -93,71 +95,136 @@ class UTF8 : Codec {
   }
 
   /** Return the number of characters in the byte sequence. */
-  final def decodedLength(buffer:ubyte[], start:int, length:int) -> int {
+  def decodedLength(buffer:ubyte[], start:int, count:int) -> int {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, buffer.length);
+    count = Math.min(count, buffer.length - start);
+    return decodedLengthRaw(addressOf(buffer.data[start]), count);
+  }
+
+  /** Return the number of characters in the byte sequence. */
+  def decodedLengthRaw(buffer:Address[ubyte], length:int) -> int {
     var charCount:int = 0;
-    var index:int = 0;
+    var index = 0;
     while index < length {
-      let byteCount = lengthTable[buffer[index]];
-      break if byteCount == 0;
+      var byteCount = lengthTable[buffer[index]];
+      if byteCount == 0 {
+        if errorAction == ErrorAction.REPLACE {
+          byteCount = 1;
+        } if errorAction == ErrorAction.ABORT {
+          throw MalformedInputException();
+        } /* Otherwise, SKIP over. */
+      }
+
       index += byteCount;
       charCount += 1;
-    }
-    
-    if index != length {
-      throw MalformedInputException();
     }
     
     return charCount;
   }
 
-  final def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
-    Preconditions.checkIndex(srcIndex >= 0 and count >= 0 and dstIndex >= 0);
+  def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
+    Preconditions.checkIndex(
+        srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
     srcIndex = Math.min(srcIndex, src.length);
     count = Math.min(count, src.length - srcIndex);
-    
-    var length = 0;
-    let dstLength = dst.length;
-    while count > 0 {
+
+    return encodeRaw(
+      addressOf(dst.data[dstIndex]), dst.length - dstIndex,
+      addressOf(src.data[srcIndex]), count);
+  }
+  
+  def encodeRaw(dst:Address[ubyte], dstLength:int, src:Address[char], srcLength:int) -> int {
+    var srcIndex = 0;
+    var dstIndex = 0;
+    while srcIndex < srcLength and dstIndex < dstLength {
       let c = src[srcIndex++];
       if c <= 0x7f {
         break if dstIndex >= dstLength;
-        dst[length++] = ubyte(c);
+        dst[dstIndex++] = ubyte(c);
       } else if c <= 0x7ff {
         break if dstIndex + 2 > dstLength;
-        dst[length++] = ubyte(c >> 6) | 0xc0;
-        dst[length++] = ubyte(c) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c >> 6) | 0xc0;
+        dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else if c <= 0xffff {
         break if dstIndex + 3 > dstLength;
-        dst[length++] = ubyte(c >> 12) | 0xe0;
-        dst[length++] = ubyte(c >>  6) & 0x3f | 0x80;
-        dst[length++] = ubyte(c) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c >> 12) | 0xe0;
+        dst[dstIndex++] = ubyte(c >>  6) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else if c <= 0x10ffff {
         break if dstIndex + 4 > dstLength;
-        dst[length++] = ubyte(c >> 18) | 0xf0;
-        dst[length++] = ubyte(c >> 12) & 0x3f | 0x80;
-        dst[length++] = ubyte(c >>  6) & 0x3f | 0x80;
-        dst[length++] = ubyte(c) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c >> 18) | 0xf0;
+        dst[dstIndex++] = ubyte(c >> 12) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c >>  6) & 0x3f | 0x80;
+        dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else {
         if errorAction == ErrorAction.REPLACE {
           break if dstIndex >= dstLength;
-          dst[length++] = ubyte('?');
+          dst[dstIndex++] = ubyte('?');
         } if errorAction == ErrorAction.ABORT {
           throw InvalidCharacterException();
         } /* Otherwise, SKIP over. */
       }
-      
-      --count;
     }
     
-    if count > 0 {
-      /** A non-zero count means we ran out of room in the destination buffer. */
-      /** TODO: Invent an exception for this. */
+    if srcIndex < srcLength {
+      throw IndexOutOfRangeException();
     }
     
-    return length;
+    return dstIndex;
   }
   
-  final def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int {
-    return 0;
+  def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> int {
+    Preconditions.checkIndex(
+        srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
+    srcIndex = Math.min(srcIndex, src.length);
+    count = Math.min(count, src.length - srcIndex);
+
+    return decodeRaw(
+      addressOf(dst.data[dstIndex]), dst.length - dstIndex,
+      addressOf(src.data[srcIndex]), count);
+  }
+
+  def decodeRaw(dst:Address[char], dstLength:int, src:Address[ubyte], srcLength:int) -> int {
+    var srcIndex = 0;
+    var dstIndex = 0;
+    while srcIndex < srcLength and dstIndex < dstLength {
+      let b = src[srcIndex];
+      var charVal:uint = 0;
+      if b < 0x80 {
+        srcIndex += 1;
+        charVal = b;
+      } else if b < 0xc0 {
+        // Invalid unicode char
+        break;
+      } else if b < 0xe0 {
+        charVal = (uint(b & 0x3f) << 6)
+                | (src[srcIndex + 1] & 0x7f);
+        srcIndex += 2;
+      } else if b < 0xf0 {
+        charVal = (uint(b & 0x1f) << 12)
+                | (uint(src[srcIndex + 1] & 0x7f) << 6)
+                | (src[srcIndex + 2] & 0x7f);
+        srcIndex += 3;
+      } else if b < 0xf5 {
+        charVal = (uint(b & 0x0f) << 18)
+                | (uint(src[srcIndex + 1] & 0x7f) << 12)
+                | (uint(src[srcIndex + 2] & 0x7f) << 6)
+                | (src[srcIndex + 3] & 0x7f);
+        srcIndex += 4;
+      } else {
+        // Invalid unicode char, 
+        break;
+      }
+
+      dst[dstIndex++] = charVal;
+    }
+
+    if srcIndex < srcLength {
+      throw IndexOutOfRangeException();
+    }
+
+    // Return the number of bytes copied.    
+    return dstIndex;
   }
 }

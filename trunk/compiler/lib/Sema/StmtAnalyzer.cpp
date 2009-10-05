@@ -133,7 +133,7 @@ bool StmtAnalyzer::buildCFG() {
     // Note that this may be removed during dead code deletion if there is no way to
     // get to the block.
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-      if (returnType_ != NULL && !returnType_->isEqual(&VoidType::instance)) {
+      if (!returnType_.isNull() && !returnType_.isVoidType()) {
         diag.error(body->finalLocation()) <<
             "Missing return statement at end of non-void function.";
       }
@@ -1020,7 +1020,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       Block * catchBody = createBlock("catch-", exceptType->typeDefn()->name());
 
       // Add the catch block to the switch statement.
-      unwindBlock->addCase(new ConstantType(cst->location(), exceptType), catchBody);
+      unwindBlock->addCase(new TypeLiteralExpr(cst->location(), exceptType), catchBody);
 
       // Make the catch scope the current scope for generating the block contents.
       Scope * savedScope = setActiveScope(catchScope);
@@ -1136,8 +1136,8 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //      "Return value not allowed in generator function");
     //}
 
-    analyzeType(returnType_, Task_PrepTypeComparison);
-    resultVal = inferTypes(astToExpr(st->value(), returnType_), returnType_);
+    analyzeType(returnType_.type(), Task_PrepTypeComparison);
+    resultVal = inferTypes(astToExpr(st->value(), returnType_.type()), returnType_.type());
     if (isErrorResult(resultVal)) {
       return false;
     }
@@ -1145,7 +1145,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
     Type * exprType = resultVal->type();
-    if (exprType->isUnsizedIntType() && returnType_ == NULL) {
+    if (exprType->isUnsizedIntType() && returnType_.isNull()) {
       if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&IntType::instance);
       } else if (LongType::instance.canConvert(resultVal) >= ExactConversion) {
@@ -1153,9 +1153,9 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
       }
     }
 
-    if (returnType_ != NULL) {
+    if (!returnType_.isNull()) {
       analyzeType(exprType, Task_PrepTypeComparison);
-      resultVal = returnType_->implicitCast(st->location(), resultVal);
+      resultVal = returnType_.implicitCast(st->location(), resultVal);
     }
   }
 
@@ -1164,7 +1164,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // actually return, it assigns to the macro result and then branches.
 
     // TODO: Skip this assignment if it's void.
-    DASSERT(returnType_->isEqual(macroReturnVal_->type()));
+    DASSERT(returnType_.type()->isEqual(macroReturnVal_->type()));
     Expr * exp = new AssignmentExpr(st->location(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
 
@@ -1329,6 +1329,10 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
+  } else if (AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
+    return new CompareExpr(test->location(),
+        llvm::CmpInst::ICMP_NE, testExpr,
+        ConstantNull::get(test->location(), testExpr->type()));
   }
 
   // Cast to boolean.
@@ -1357,8 +1361,8 @@ Block * StmtAnalyzer::setMacroReturnTarget(Block * blk) {
 }
 
 /** Set the return type - used when doing macro expansion. */
-Type * StmtAnalyzer::setReturnType(Type * returnType) {
-  Type * oldType = returnType_;
+TypeRef StmtAnalyzer::setReturnType(const TypeRef & returnType) {
+  TypeRef oldType = returnType_;
   returnType_ = returnType;
   return oldType;
 }

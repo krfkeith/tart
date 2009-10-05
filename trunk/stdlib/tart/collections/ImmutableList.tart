@@ -1,5 +1,4 @@
 import tart.core.Math.max;
-import tart.core.Memory.addressOf;
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.arrayCopy;
 

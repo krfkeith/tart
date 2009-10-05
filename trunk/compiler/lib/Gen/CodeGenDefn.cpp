@@ -69,14 +69,6 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
   DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
 
-#if 0
-  // Generate the attributes
-  Attributes funcAttrs;
-  if (!genAttrs(fdef, funcAttrs)) {
-    return NULL;
-  }
-#endif
-
   // Generate the function reference
   FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
@@ -114,17 +106,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     if (debug_ /*&& fdef->module() == module_*/) {
       dbgCompileUnit_ = getCompileUnit(fdef);
       if (!dbgCompileUnit_.isNull()) {
-        DICompositeType dbgFuncType = dbgFactory_.CreateCompositeType(
-            llvm::dwarf::DW_TAG_subroutine_type,
-            dbgCompileUnit_,
-            fdef->qualifiedName(),
-            dbgCompileUnit_,
-            getSourceLineNumber(*fdef),
-            0, 0,
-            0, 0,
-            DIType(),
-            dbgFactory_.GetOrCreateArray(NULL, 0),
-            0);
+        DICompositeType dbgFuncType = genDIFunctionType(fdef->functionType());
         dbgFunction_ = dbgFactory_.CreateSubprogram(
             dbgCompileUnit_, // TODO: Replace for functions within a scope.
             fdef->name(),
@@ -212,12 +194,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     builder_.ClearInsertionPoint();
     dbgFunction_ = DISubprogram();
-
-#if 0
-    if (debug) {
-      debugBuilder.SetContext(saveDescriptor);
-    }
-#endif
   }
 
   return true;

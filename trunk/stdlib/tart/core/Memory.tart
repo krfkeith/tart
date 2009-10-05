@@ -2,17 +2,18 @@ import tart.annex.Intrinsic;
 
 /** Memory utility functions */
 namespace Memory {
-  //import NativePointer as Pointer;
+  // Import built-in type definition.
+  import __Address as Address;
 
   /** Represents a sub-range of an array or list or other container that uses
       contiguous storage of elements. */
   struct Buffer[%T] {
     // Reference to the container for GC purposes.
     private var container:Object;
-    private var first:NativePointer[T];
-    private var last:NativePointer[T];
+    private var first:Address[T];
+    private var last:Address[T];
     
-    def construct(container:Object, first:NativePointer[T], last:NativePointer[T]) {
+    def construct(container:Object, first:Address[T], last:Address[T]) {
       self.container = container;
       self.first = first;
       self.last = last;
@@ -28,8 +29,7 @@ namespace Memory {
   }
 
   /** Extension of Buffer to support mutatbility of elements. */
-  struct MutableBuffer[%T] : Buffer[T] {
-  }
+  struct MutableBuffer[%T] : Buffer[T] {}
 
   /** The integer 0, converted to a pointer of a given type. Intended to be
       used for offset calculations.
@@ -44,7 +44,7 @@ namespace Memory {
   */
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
-  def addressOf[%T](value:T) -> NativePointer[T];
+  def addressOf[%T](value:T) -> Address[T];
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
@@ -52,7 +52,7 @@ namespace Memory {
    */
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
-  def ptrDiff[%ValTy](first:NativePointer[ValTy], last:NativePointer[ValTy]) -> int;
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
@@ -60,7 +60,7 @@ namespace Memory {
    */
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
-  def ptrDiff[%ValTy](first:NativePointer[ValTy], last:NativePointer[ValTy]) -> long;
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> long;
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.
@@ -73,10 +73,10 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Intrinsic def arrayCopy[%T](dst:NativePointer[T], src:NativePointer[T], length:int);
+  @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
 
   /** [Ditto] */
-  @Intrinsic def arrayCopy[%T](dst:NativePointer[T], src:NativePointer[T], length:long);
+  @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:long);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
@@ -90,10 +90,10 @@ namespace Memory {
         length: The number of elements to copy. 
    */
   @Intrinsic
-  def arrayMove[%T](dst:NativePointer[T], src:NativePointer[T], length:int);
+  def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
 
   /** [Ditto] 
    */
   @Intrinsic
-  def arrayMove[%T](dst:NativePointer[T], src:NativePointer[T], length:long);
+  def arrayMove[%T](dst:Address[T], src:Address[T], length:long);
 }

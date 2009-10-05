@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_SPECIALIZECANDIDATE_H
 #define TART_SEMA_SPECIALIZECANDIDATE_H
 
@@ -22,25 +22,29 @@
 #endif
 
 namespace tart {
-  
+
 /// -------------------------------------------------------------------
 /// A candidate for template specialization
 class SpecializeCandidate : public GC {
 private:
   //Expr * base;
-  Defn * templateDefn;
+  Defn * templateDefn_;
+  Expr * base_;
   BindingEnv env_;
 
 public:
-  SpecializeCandidate(Defn * tdef);
+  SpecializeCandidate(Expr *base, Defn * tdef);
 
-  /** The callable method. */
-  Defn * getTemplateDefn() const { return templateDefn; }
-  
+  /** The template. */
+  Defn * templateDefn() const { return templateDefn_; }
+
+  /** Base expression used, if any. */
+  Expr * base() const { return base_; }
+
   /** The binding environment which maps pattern variables to values. */
   const BindingEnv & env() const { return env_; }
   BindingEnv & env() { return env_; }
-  
+
   /** Perform unification on the candidate and its arguments. */
   bool unify(SourceContext * source, const TypeList & argList);
 

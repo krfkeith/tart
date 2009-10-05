@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/Block.h"
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
@@ -20,44 +21,6 @@ namespace tart {
 namespace {
   bool isOverloadable(Defn::DefnType dt) {
     return dt == Defn::Function || dt == Defn::Macro;
-  }
-
-  // Given a type, append the linkage name of that type to the output buffer.
-  void typeLinkageName(std::string & out, Type * ty) {
-    ty = dealias(ty);
-    if (TypeDefn * td = ty->typeDefn()) {
-      out.append(td->linkageName());
-    } else if (FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
-      out.append("fn");
-      if (!ftype->params().empty()) {
-        out.append("(");
-        ParameterList & params = ftype->params();
-        for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
-          if (it != params.begin()) {
-            out.append(",");
-          }
-
-          typeLinkageName(out, (*it)->type());
-        }
-        out.append(")");
-      }
-
-      if (ftype->returnType() != NULL && !ftype->returnType()->isVoidType()) {
-        out.append("->");
-        typeLinkageName(out, ftype->returnType());
-      }
-    } else if (UnionType * utype = dyn_cast<UnionType>(ty)) {
-      for (TypeList::iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
-        if (it != utype->members().begin()) {
-          out.append("|");
-        }
-
-        typeLinkageName(out, *it);
-      }
-    } else {
-      diag.error() << "Type: " << ty;
-      DFAIL("Can't compute linkage name of type");
-    }
   }
 }
 
@@ -94,7 +57,11 @@ Type * FunctionDefn::type() const {
   return type_;
 }
 
-Type * FunctionDefn::returnType() const {
+const TypeRef & FunctionDefn::returnType() const {
+  return type_->returnType();
+}
+
+TypeRef & FunctionDefn::returnType() {
   return type_->returnType();
 }
 
@@ -153,7 +120,7 @@ const std::string & FunctionDefn::linkageName() const {
         lnkName.append(")");
       }
 
-      if (type_->returnType() != NULL && !type_->returnType()->isVoidType()) {
+      if (!type_->returnType().isNull() && !type_->returnType().isVoidType()) {
         lnkName.append("->");
         typeLinkageName(lnkName, type_->returnType());
       }
@@ -178,7 +145,7 @@ void FunctionDefn::format(FormatStream & out) const {
     out << "(";
     formatParameterList(out, type_->params());
     out << ")";
-    if (type_->returnType() != NULL && !type_->returnType()->isVoidType()) {
+    if (!type_->returnType().isNull() && !type_->returnType().isVoidType()) {
       out << " -> " << type_->returnType();
     }
   }

@@ -19,7 +19,7 @@ namespace tart {
 // Type class for functions and macros.
 class FunctionType : public Type {
 private:
-  Type * returnType_;
+  TypeRef returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
   mutable llvm::PATypeHolder irType_;
@@ -30,8 +30,10 @@ public:
   FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount);
   FunctionType(Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount);
 
-  Type * returnType() const { return returnType_; }
-  void setReturnType(Type * type) { returnType_ = type; }
+  const TypeRef & returnType() const { return returnType_; }
+  TypeRef & returnType() { return returnType_; }
+  void setReturnType(Type * type) { returnType_.setType(type); }
+  void setReturnType(const TypeRef & type) { returnType_ = type; }
 
   const llvm::Type * irType() const;
 

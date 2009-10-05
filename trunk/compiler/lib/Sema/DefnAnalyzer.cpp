@@ -18,7 +18,6 @@
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Sema/SpecializeCandidate.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FindExternalRefsPass.h"
@@ -224,15 +223,19 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
   }
 
   ExprList importDefs;
-  Scope * saveScope = setActiveScope(NULL); // Inhibit unqualified search.
+  Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
   if (lookupName(importDefs, import->path(), true)) {
+    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+  } else if (lookupName(importDefs, import->path(), false)) {
     targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
   } else {
     diag.fatal(import) << "Not found '" << import << "'";
   }
+
   setActiveScope(saveScope);
 }
 
+#if 0
 // Handle explicit specialization.
 Defn * DefnAnalyzer::specialize(SLC & loc, DefnList & defns, const ASTNodeList & args) {
   TypeList argList; // Template args, not function args.
@@ -246,7 +249,7 @@ Defn * DefnAnalyzer::specialize(SLC & loc, DefnList & defns, const ASTNodeList &
     }
 
     Type * typeArg = NULL;
-    if (ConstantType * ctype = dyn_cast<ConstantType>(cb)) {
+    if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
       typeArg = dealias(ctype->value());
       if (TypeDefn * tdef = typeArg->typeDefn()) {
         typeArg = tdef->typeValue();
@@ -310,6 +313,7 @@ Defn * DefnAnalyzer::specialize(SLC & loc, DefnList & defns, const ASTNodeList &
     DFAIL("Implement");
   }
 }
+#endif
 
 void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   TemplateSignature * tsig = de->templateSignature();
@@ -325,7 +329,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       Expr * param = ea.reducePattern(*it, tsig);
       if (param != NULL) {
         // Now, add a definition to the parameter scope for this param.
-        if (ConstantType * type = dyn_cast<ConstantType>(param)) {
+        if (TypeLiteralExpr * type = dyn_cast<TypeLiteralExpr>(param)) {
           params.push_back(type->value());
         } else if (ConstantExpr * cexp = dyn_cast<ConstantExpr>(param)) {
           params.push_back(NonTypeConstant::get(cexp));

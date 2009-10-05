@@ -364,7 +364,7 @@ FlagsApplyIntrinsic FlagsApplyIntrinsic::instance;
 Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
     const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  ConstantType * ctype = cast<ConstantType>(args[0]);
+  TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   EnumType * enumType = cast<EnumType>(ctype->value());
   enumType->setIsFlags(true);
   return args[0];
@@ -429,7 +429,7 @@ EssentialApplyIntrinsic EssentialApplyIntrinsic::instance;
 Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
     const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  ConstantType * ctype = cast<ConstantType>(args[0]);
+  TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   Builtins::registerEssentialType(ctype->value());
   return ctype;
 }

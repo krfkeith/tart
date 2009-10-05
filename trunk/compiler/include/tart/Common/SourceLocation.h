@@ -58,6 +58,14 @@ struct SourceLocation {
     return *this;
   }
 
+  bool operator==(const SourceLocation & in) const {
+    return (file == in.file && begin == in.begin && end == in.end);
+  }
+
+  bool operator!=(const SourceLocation & in) const {
+    return (file != in.file || begin != in.begin || end != in.end);
+  }
+
   void trace() const;
 
   // Print this location to stderr (for debugging)

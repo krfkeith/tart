@@ -172,7 +172,8 @@ public:
   void setFunctionType(FunctionType * ftype) { type_ = ftype; }
 
   /** Return type type. */
-  Type * returnType() const;
+  const TypeRef & returnType() const;
+  TypeRef & returnType();
 
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }

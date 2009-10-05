@@ -40,9 +40,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ConstInt:
     case Expr::ConstFloat:
     case Expr::ConstString:
-    case Expr::ConstType:
     case Expr::ConstNull:
     case Expr::ConstObjRef:
+    case Expr::TypeLiteral:
       return in;
 
 #if 0

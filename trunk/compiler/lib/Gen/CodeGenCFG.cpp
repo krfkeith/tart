@@ -52,6 +52,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
   // Generate debugging information (this has to be done after local variable allocas.)
   if (debug_ && !dbgFunction_.isNull()) {
     dbgFactory_.InsertSubprogramStart(dbgFunction_, builder_.GetInsertBlock());
+    dbgLocation_ = SourceLocation();
   }
 
   // Generate the list of predecessor blocks for each block.
@@ -71,27 +72,13 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
     builder_.SetInsertPoint(blk->irBlock());
     unwindTarget_ = blk->unwindTarget() ? blk->unwindTarget()->irBlock() : NULL;
 
-    ExprList & types = blk->exprs();
-    for (ExprList::iterator it = types.begin(); it != types.end(); ++it) {
-      if (debug_ && !dbgFunction_.isNull()) {
-        // Generate source line information.
-        TokenPosition pos = tokenPosition((*it)->location());
-        dbgFactory_.InsertStopPoint(
-            dbgCompileUnit_,
-            pos.beginLine, pos.beginCol,
-            builder_.GetInsertBlock());
-      }
-
+    ExprList & exprs = blk->exprs();
+    for (ExprList::iterator it = exprs.begin(); it != exprs.end(); ++it) {
+      genStopPoint((*it)->location());
       genStmt(*it);
     }
 
-    if (debug_ && !dbgFunction_.isNull()) {
-      TokenPosition pos = tokenPosition(blk->termLocation());
-      dbgFactory_.InsertStopPoint(
-          dbgCompileUnit_,
-          pos.beginLine, pos.beginCol,
-          builder_.GetInsertBlock());
-    }
+    genStopPoint(blk->termLocation());
 
     // If this is the last block, generate debugging info before the terminator.
     if (debug_ && !dbgFunction_.isNull() && blk == blocks.back()) {
@@ -102,6 +89,17 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
   }
 
   unwindTarget_ = NULL;
+}
+
+void CodeGenerator::genStopPoint(const SourceLocation & loc) {
+  if (debug_ && !dbgFunction_.isNull() && loc != dbgLocation_) {
+    TokenPosition pos = tokenPosition(loc);
+    dbgFactory_.InsertStopPoint(
+        dbgCompileUnit_,
+        pos.beginLine, pos.beginCol,
+        builder_.GetInsertBlock());
+    dbgLocation_ = loc;
+  }
 }
 
 void CodeGenerator::genStmt(Expr * in) {
@@ -299,7 +297,7 @@ void CodeGenerator::genCatch(Block * blk) {
   size_t numSelectors = blk->termExprs().size() - 1;
   for (size_t i = 0; i < numSelectors; ++i) {
     // First entry is the throwable, so offset by 1.
-    ConstantType * catchExpr = cast_or_null<ConstantType>(blk->termExprs()[i + 1]);
+    TypeLiteralExpr * catchExpr = cast_or_null<TypeLiteralExpr>(blk->termExprs()[i + 1]);
     if (catchExpr != NULL) {
       // Catch handler
       CompositeType * exceptType = cast<CompositeType>(catchExpr->value());

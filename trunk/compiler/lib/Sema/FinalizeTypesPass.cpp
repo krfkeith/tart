@@ -97,8 +97,10 @@ Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
     }
 
     from = to->type()->implicitCast(from->location(), from);
-    in->setFromExpr(from);
-    in->setToExpr(to);
+    if (!isErrorResult(from)) {
+      in->setFromExpr(from);
+      in->setToExpr(to);
+    }
 
     if (LValueExpr * lval = dyn_cast<LValueExpr>(to)) {
       if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
@@ -250,8 +252,8 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       result->setType(method->functionType()->selfParam()->type());
     } else {
       //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
-      DASSERT_OBJ(method->returnType() != NULL, method);
-      result->setType(method->returnType());
+      DASSERT_OBJ(!method->returnType().isNull(), method);
+      result->setType(method->returnType().type());
       if (method->storageClass() != Storage_Instance) {
         result->setSelfArg(NULL);
       }
@@ -301,6 +303,7 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
   }
 
   if (NativePointerType * np = dyn_cast<NativePointerType>(fnValue->type())) {
+  } else if (AddressType * np = dyn_cast<AddressType>(fnValue->type())) {
   } else {
     DFAIL("Implement");
   }
@@ -309,7 +312,7 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
   IndirectCallExpr * result = new IndirectCallExpr(Expr::IndirectCall, in->location(), fnValue);
   result->args().append(callingArgs.begin(), callingArgs.end());
 
-  result->setType(cd->functionType()->returnType());
+  result->setType(cd->functionType()->returnType().type());
   //if (method->storageClass() != Storage_Instance) {
   //  result->setSelfArg(NULL);
   //}
@@ -632,70 +635,79 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
 }
 
 Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
-  Expr * v0 = visitExpr(in->first());
-  Expr * v1 = visitExpr(in->second());
+  Expr * v1 = visitExpr(in->first());
+  Expr * v2 = visitExpr(in->second());
 
-  if (isErrorResult(v0) || isErrorResult(v1)) {
+  if (isErrorResult(v1) || isErrorResult(v2)) {
     return in;
   }
 
-  in->setFirst(v0);
-  in->setSecond(v1);
-  Type * t0 = in->first()->type();
-  Type * t1 = in->second()->type();
-  DASSERT_OBJ(t0 != NULL, in->first());
-  DASSERT_OBJ(t1 != NULL, in->second());
+  in->setFirst(v1);
+  in->setSecond(v2);
+  Type * t1 = in->first()->type();
+  Type * t2 = in->second()->type();
+  DASSERT_OBJ(t1 != NULL, in->first());
+  DASSERT_OBJ(t2 != NULL, in->second());
 
-  if (t0->isReferenceType()) {
-    if (!t1->isReferenceType()) {
-      diag.fatal(in) << "Can't compare reference type '" << t0 <<
-      "' with non-reference type '" << t1 << "'";
+  if (t1->isReferenceType()) {
+    if (!t2->isReferenceType()) {
+      diag.fatal(in) << "Can't compare reference type '" << t1 <<
+      "' with non-reference type '" << t2 << "'";
       return in;
     }
 
-    Type * tr = findCommonType(t0, t1);
+    Type * tr = findCommonType(t1, t2);
     if (tr == NULL) {
-      diag.fatal(in) << "Can't compare incompatible types '" << t0 <<
-      "' and '" << t1 << "'";
+      diag.fatal(in) << "Can't compare incompatible types '" << t1 <<
+      "' and '" << t2 << "'";
       return in;
     }
 
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
-  } else if (NativePointerType * np0 = dyn_cast<NativePointerType>(t0)) {
-    if (NativePointerType * np1 = dyn_cast<NativePointerType>(t1)) {
-      if (np0->isEqual(np1)) {
+  } else if (isa<NativePointerType>(t1) || isa<AddressType>(t1)) {
+    Type * e0 = t1->typeParam(0);
+    if (isa<NativePointerType>(t2) || isa<AddressType>(t2)) {
+      if (e0->isEqual(t2->typeParam(0))) {
+        if (isa<NativePointerType>(t2)) {
+          in->setFirst(addCastIfNeeded(in->first(), t2));
+        } else {
+          in->setSecond(addCastIfNeeded(in->second(), t1));
+        }
+
         return in;
       }
-    } else if (t1->isReferenceType()) {
-      if (np0->typeParam(0)->isEqual(t1)) {
-        in->setSecond(addCastIfNeeded(in->second(), np0));
+    } else if (t2->isReferenceType()) {
+      if (e0->isEqual(t2)) {
+        in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
-      } else if (t1->isEqual(&NullType::instance)) {
-        in->setSecond(addCastIfNeeded(in->second(), np0));
+      } else if (t2->isEqual(&NullType::instance)) {
+        in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       }
 
-      diag.error(in) << "Can't compare " << t0 << " to " << t1;
-      DFAIL("Implement");
-    } else if (NativePointerType * np1 = dyn_cast<NativePointerType>(t1)) {
+      diag.error(in) << "Can't compare " << t1 << " to " << t2;
       DFAIL("Implement");
     }
 
-    diag.error(in) << "Can't compare " << t0 << " to " << t1;
+    diag.error(in) << "Can't compare " << t1 << " to " << t2;
     DFAIL("Implement");
-  } else if (t1->isReferenceType()) {
-    diag.fatal(in) << "Can't compare non-reference type '" << t0 <<
-    "' with reference type '" << t1 << "'";
+  } else if (t2->isReferenceType()) {
+    diag.fatal(in) << "Can't compare non-reference type '" << t1 <<
+    "' with reference type '" << t2 << "'";
     return in;
-  } else if (t0->typeClass() == Type::NativePointer
-      && t1->typeClass() == Type::NativePointer
-      && t0 == t1) {
+  } else if (t1->typeClass() == Type::NativePointer
+      && t2->typeClass() == Type::NativePointer
+      && t1 == t2) {
+    return in;
+  } else if (t1->typeClass() == Type::Address
+      && t2->typeClass() == Type::Address
+      && t1 == t2) {
     return in;
   } else {
     // Otherwise, it's just a regular equality test.
-    diag.error(in) << "Can't compare " << t0 << " and " << t1;
+    diag.error(in) << "Can't compare " << t1 << " and " << t2;
     DFAIL("Implement");
   }
 }
@@ -711,7 +723,12 @@ Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
     return in;
   }
 
-  return toType->implicitCast(in->location(), in);
+  Expr * castExpr = toType->implicitCast(in->location(), in);
+  if (isErrorResult(castExpr)) {
+    return in;
+  }
+
+  return castExpr;
 }
 
 } // namespace tart

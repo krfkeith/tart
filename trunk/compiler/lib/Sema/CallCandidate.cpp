@@ -31,7 +31,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , isTemplate_(false)
 {
   if (m->isCtor()) {
-    resultType_ = m->functionType()->selfParam()->type();
+    resultType_ = TypeRef(m->functionType()->selfParam()->type());
   }
 
   ParameterList & methodParams = m->functionType()->params();
@@ -62,7 +62,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     // Substitute all occurances of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = bindingEnv_.relabel(resultType_);
-    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
+    AnalyzerBase::analyzeType(resultType_.type(), Task_PrepTypeComparison);
 
     // Same with function parameter types.
     for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
@@ -104,7 +104,7 @@ bool CallCandidate::isEqual(const CallCandidate * other) const {
     return false;
   }
 
-  if (resultType()->isEqual(other->resultType())) {
+  if (resultType().isEqual(other->resultType())) {
     return false;
   }
 
@@ -194,7 +194,7 @@ ConversionRank CallCandidate::updateConversionRank() {
 
   Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
-    Conversion cn(resultType_);
+    Conversion cn(resultType_.type());
     cn.matchPatterns = true;
     conversionRank_ = std::min(conversionRank_, expectedReturnType->convert(cn));
   }
@@ -229,8 +229,8 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
   // Unify the return type (Pass 1)
   Type * expectedReturnType = callExpr_->expectedReturnType();
-  if (expectedReturnType != NULL && !resultType_->isUnsizedIntType()) {
-    if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
+  if (expectedReturnType != NULL && !resultType_.isUnsizedIntType()) {
+    if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
       return false;
     }
   }
@@ -267,9 +267,9 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   // Unify the return type (Pass 2, for unsized integer types.)
-  if (expectedReturnType != NULL && resultType_->isUnsizedIntType()) {
+  if (expectedReturnType != NULL && resultType_.isUnsizedIntType()) {
     // TODO: Determine the size of the constant integer here.
-    if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
+    if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
       return false;
     }
   }

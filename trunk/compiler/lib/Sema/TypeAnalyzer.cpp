@@ -39,24 +39,24 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         return &BadType::instance;
       }
 
-      DefnList typeList;
+      TypeList typeList;
       if (getTypesFromExprs(loc, typeExprs, typeList)) {
         if (typeList.size() > 1) {
           diag.fatal(loc) << "Multiple definitions for '" << ast << "'";
           return &BadType::instance;
         }
 
-        TypeDefn * tdef = static_cast<TypeDefn *>(typeList.front());
-        Type * type = tdef->typeValue();
-        if (type->typeClass() == Type::NativePointer) {
-          AnalyzerBase::analyzeType(type, Task_PrepCallOrUse);
-          //analyzeLater(tdef);
-          //DFAIL("Implement");
-          //NativePointerTypeAnalyzer(
-          //  static_cast<NativePointerType *>(type)).analyze(Task_InferType);
-        } else if (type->isSingular()) /*if (tdef->defnType() != Defn::TypeParameter)*/ {
-          analyzeLater(tdef);
-        }
+        Type * type = typeList.front();
+        AnalyzerBase::analyzeTypeLater(type);
+        /*if (type->isSingular()) {
+          if (type->typeClass() == Type::NativePointer) {
+            AnalyzerBase::analyzeType(type->typeParam(0), Task_PrepCallOrUse);
+          } else  if (type->typeClass() == Type::Address) {
+            AnalyzerBase::analyzeType(type->typeParam(0), Task_PrepCallOrUse);
+          } else if (type->typeDefn() != NULL) {
+            analyzeLater(type->typeDefn());
+          }
+        }*/
 
         return type;
       }
@@ -115,7 +115,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         return ftype;
       }
 
-      if (ftype->returnType() == NULL) {
+      if (ftype->returnType().isNull()) {
         ftype->setReturnType(&VoidType::instance);
       }
 
@@ -140,7 +140,7 @@ bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   const SourceLocation & loc = ast->location();
   for (ExprList::iterator it = results.begin(); it != results.end();
       ++it) {
-    if (ConstantType * ctype = dyn_cast<ConstantType>(*it)) {
+    if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(*it)) {
       if (TypeDefn * tdef = ctype->value()->typeDefn()) {
         defns.push_back(tdef);
       } else {

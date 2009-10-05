@@ -4,6 +4,7 @@ def main(args:String[]) -> int {
   testSimpleArray();
   testArrayOf();
   testArrayLiteral();
+  testArrayCopy();
   return 0;
 }
 
@@ -46,6 +47,15 @@ def testArrayLiteral() {
   Debug.assertEq(1, a[0]);
   Debug.assertEq(2, a[1]);
   Debug.assertEq(3, a[2]);
+}
+
+def testArrayCopy() {
+  let a = [1, 2, 3];
+  let b = a.copy();
+  Debug.assertFalse(a is b);
+  Debug.assertEq(1, b[0]);
+  Debug.assertEq(2, b[1]);
+  Debug.assertEq(3, b[2]);
 }
 
 // TODO: Check for out of bounds exceptions, once exceptions are actually working.

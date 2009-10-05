@@ -9,7 +9,7 @@ struct TypeInfoBlock {
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
-  readonly var bases:NativePointer[NativeArray[NativePointer[TypeInfoBlock], 0]];
+  readonly var bases:__Address[NativePointer[TypeInfoBlock]];
 
   /** Compiler-generated function to lookup the specified interface method. */
   readonly var idispatch:fn(interfaceType:NativePointer[TypeInfoBlock], methodIndex:int) -> NativePointer[void];

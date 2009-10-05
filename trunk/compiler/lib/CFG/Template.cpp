@@ -263,6 +263,11 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     }
   } else if (value_->defnType() == Defn::Typedef) {
     TypeDefn * tdef = static_cast<TypeDefn *>(value_);
+
+    if (tdef == &AddressType::typedefn) {
+      DFAIL("Implement");
+    }
+
     TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
 
     switch (tdef->typeValue()->typeClass()) {
@@ -348,6 +353,78 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   }
 
   return result;
+}
+
+Type * TemplateSignature::instantiateType(const SourceLocation & loc, const BindingEnv & env,
+    bool singular) {
+
+  if (value_->ast() != NULL) {
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env, singular));
+    return tdef->typeValue();
+  }
+
+  // Create the definition
+  TypeDefn * tdef = static_cast<TypeDefn *>(value_);
+  Type * proto = tdef->typeValue();
+  if (proto->typeClass() != Type::Address) {
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env, singular));
+    return tdef->typeValue();
+  }
+
+  // TODO: This needs major refactoring.
+  // Check to make sure that the parameters are of the correct type.
+  TypeList paramValues;
+  for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
+    PatternVar * var = *it;
+    Type * value = env.subst(var);
+    DASSERT_OBJ(value != NULL, var);
+    if (!var->canBindTo(value)) {
+      diag.fatal(loc) << "Type of expression " << value <<
+          " incompatible with template parameter " << var << ":" << var->valueType();
+      DASSERT(var->canBindTo(value));
+    }
+
+    if (!value->isSingular()) {
+      if (singular) {
+        diag.fatal(loc) << "Non-singular parameter '" << var << "' = '" << value << "'";
+      }
+    }
+
+    // We might need to do some coercion here...
+    paramValues.push_back(value);
+  }
+
+  switch (tdef->typeValue()->typeClass()) {
+    case Type::Address: {
+      return AddressType::get(paramValues[0]);
+      break;
+    }
+
+#if 0
+    case Type::NativePointer: {
+      NativePointerType * np = new NativePointerType(paramValues[0], newDef, tinst);
+      newDef->setTypeValue(np);
+      newDef->createQualifiedName(NULL);
+      break;
+    }
+
+    case Type::NativeArray: {
+      NonTypeConstant * ntc = cast<NonTypeConstant>(paramValues[1]);
+      ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
+      uint64_t size = intVal->value()->getZExtValue();
+      NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);
+      newDef->setTypeValue(na);
+      newDef->createQualifiedName(NULL);
+      break;
+    }
+#endif
+
+    default:
+      DFAIL("Invalid template type");
+      break;
+  }
+
+  return NULL;
 }
 
 /// -------------------------------------------------------------------

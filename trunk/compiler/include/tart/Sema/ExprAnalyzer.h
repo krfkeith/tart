@@ -106,7 +106,7 @@ public:
       Type * expected);
 
   /** Evaluate a call to a constructor. */
-  Expr * callConstructor(const SourceLocation & loc, ConstantType * type,
+  Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef,
       const ASTNodeList & args);
 
   /** Evaluate the argument list. */

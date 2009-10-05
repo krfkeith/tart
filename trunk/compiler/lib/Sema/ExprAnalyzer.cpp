@@ -32,8 +32,8 @@ Expr * ExprAnalyzer::inferTypes(Expr * expr, Type * expected) {
 
   // If it's a reference to a type, then just return it even if it's non-
   // singular.
-  if (expr->exprType() == Expr::ConstType) {
-    return static_cast<ConstantType *> (expr);
+  if (expr->exprType() == Expr::TypeLiteral) {
+    return static_cast<TypeLiteralExpr *> (expr);
   }
 
   if (expr && !expr->isSingular()) {
@@ -248,10 +248,10 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
     TypeAnalyzer ta(module, activeScope);
     FunctionType * ftype = ta.typeFromFunctionAST(ast);
     if (ftype != NULL) {
-      if (ftype->returnType() == NULL) {
+      if (ftype->returnType().isNull()) {
         ftype->setReturnType(&VoidType::instance);
       }
-      return new ConstantType(ast->location(), ftype);
+      return new TypeLiteralExpr(ast->location(), ftype);
     }
   }
 
@@ -281,9 +281,9 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
       }
     }
 
-    return new ConstantType(ast->location(), pvar);
+    return new TypeLiteralExpr(ast->location(), pvar);
   } else {
-    return new ConstantType(ast->location(),
+    return new TypeLiteralExpr(ast->location(),
         tsig->addPatternVar(ast->location(), ast->name(), type));
   }
 }
@@ -610,7 +610,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
     Expr * value = values.front();
     if (LValueExpr * lval = dyn_cast<LValueExpr>(value)) {
       return reduceLValueExpr(lval, store);
-    } else if (ConstantType * typeExpr = dyn_cast<ConstantType>(value)) {
+    } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(value)) {
       return typeExpr;
     } else if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(value)) {
       return scopeName;
@@ -656,8 +656,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   DASSERT_OBJ(ast->count() >= 1, ast);
   if (ast->count() == 1) {
     Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
-    if (ConstantType * elementType = dyn_cast_or_null<ConstantType>(elementExpr)) {
-      return new ConstantType(ast->location(), getArrayTypeForElement(elementType->value()));
+    if (TypeLiteralExpr * elementType = dyn_cast_or_null<TypeLiteralExpr>(elementExpr)) {
+      return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elementType->value()));
     }
 
     diag.error(ast) << "Type expression expected before []";
@@ -677,11 +677,27 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       dumpScopeHierarchy();
       return &Expr::ErrorVal;
     } else {
-      ASTNodeList args;
-      args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-      Expr * specResult = resolveSpecialization(ast->location(), values, args);
-      if (specResult != NULL) {
-        return specResult;
+      // For type names and function names, brackets always mean specialize, not index.
+      bool isTypeOrFunc = false;
+      for (ExprList::iterator it = values.begin(); it != values.end(); ++it) {
+        if (isa<TypeLiteralExpr>(*it)) {
+          isTypeOrFunc = true;
+          break;
+        } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
+          if (isa<FunctionDefn>(lv->value())) {
+            isTypeOrFunc = true;
+            break;
+          }
+        }
+      }
+
+      if (isTypeOrFunc) {
+        ASTNodeList args;
+        args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
+        Expr * specResult = resolveSpecialization(ast->location(), values, args);
+        if (specResult != NULL) {
+          return specResult;
+        }
       }
 
       if (values.size() > 1) {
@@ -728,15 +744,35 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     return &Expr::ErrorVal;
   }
 
+  // Memory address type
+  if (AddressType * maType = dyn_cast<AddressType>(arrayType)) {
+    Type * elemType = maType->typeParam(0);
+    if (!AnalyzerBase::analyzeType(elemType, Task_InferType)) {
+      return &Expr::ErrorVal;
+    }
+
+    DASSERT_OBJ(elemType != NULL, maType);
+
+    if (args.size() != 1) {
+      diag.fatal(ast) << "Incorrect number of array index dimensions";
+    }
+
+    // TODO: Attempt to cast arg to an integer type of known size.
+
+    // First dereference the pointer and then get the element.
+    //arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), elemType, arrayExpr);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+  }
+
   // Do automatic pointer dereferencing
-  if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
+  /*if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
     if (!AnalyzerBase::analyzeType(npt, Task_InferType)) {
       return &Expr::ErrorVal;
     }
 
     arrayType = npt->typeParam(0);
     arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), arrayType, arrayExpr);
-  }
+  }*/
 
   // Handle native arrays.
   if (NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
@@ -899,8 +935,8 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(getter->returnType()->isEqual(prop->type()), getter);
-  DASSERT_OBJ(!getter->returnType()->isEqual(&VoidType::instance), getter);
+  DASSERT_OBJ(getter->returnType().type()->isEqual(prop->type()), getter);
+  DASSERT_OBJ(!getter->returnType().isVoidType(), getter);
 
 #if 0
 

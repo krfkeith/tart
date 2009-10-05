@@ -80,7 +80,7 @@ void Compiler::processInputFile(const std::string & inFile) {
     exit(-1);
   }
 
-  SourceFile  src(filePath.toString());
+  SourceFile  src(filePath.str());
   Module * mod = PackageMgr::get().getCachedModule(moduleName);
   if (mod == NULL) {
     mod = new Module(&src, moduleName, &Builtins::module);

@@ -1,5 +1,5 @@
 /** The metatype object - the class that describes a type. */
-public class Type {
+class Type {
   enum TypeKind : ubyte {
     PRIMITIVE,
     CLASS,
@@ -9,6 +9,7 @@ public class Type {
     FUNCTION,
     TUPLE,
     UNION,
+    ADDRESS,
     NATIVE_POINTER,
     NATIVE_ARRAY,
     //NonType
@@ -20,40 +21,41 @@ public class Type {
   }
 
   /** The TypeInfoBlock for this type. */  
-  let typeDescriptor:TypeDescriptor;
+  //let typeDescriptor:TypeDescriptor;
   
   /** The fully-qualified name of this type. */
-  let name:String;
+  //let name:String;
   
   /** What general kind of type this is (CLASS, STRUCT, etc.) */
   let typeKind:TypeKind;
   
   /** Pointer to this type's supertype, or null. */
-  let supertype:Type /* or void */;
+  //let supertype:Type /* or void */;
   
   /** Array of inherited interfaces. */
-  let interfaces:TypeList;
+  //let interfaces:TypeList;
   
   /** Array of type parameters. */
-  let typeParams:TypeList;
+  //let typeParams:TypeList;
   
   /** Array of associated attributes */
-  let attributes:AttributeList;
+  //let attributes:AttributeList;
   
   /** Array of field members. */
-  let fields:FieldList;
+  //let fields:FieldList;
   
   /** Array of property members. */
-  let properties:PropertyList;
+  //let properties:PropertyList;
   
   /** Array of constructor members. */
-  let constructors:MethodList;
+  //let constructors:MethodList;
   
   /** Array of methods. */
-  let methods:MethodList;
+  //let methods:MethodList;
 
-  /** Private constructor - types cannot be created by applications. */
-  private def construct() {}
+  protected def construct(typeKind:TypeKind) {
+    self.typeKind = typeKind;
+  }
 
   /** True if this is an aggregate type. */
   //final def isAggregate:bool { get { return false; } }

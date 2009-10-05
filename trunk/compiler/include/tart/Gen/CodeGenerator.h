@@ -5,6 +5,8 @@
 #ifndef TART_GEN_CODEGENERATOR_H
 #define TART_GEN_CODEGENERATOR_H
 
+#include <tart/Common/SourceLocation.h>
+
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/PassManager.h>
 #include <llvm/ADT/DenseMap.h>
@@ -40,6 +42,7 @@ class CompositeType;
 class EnumType;
 class FunctionType;
 class PrimitiveType;
+class AddressType;
 class NativePointerType;
 class NativeArrayType;
 class UnionType;
@@ -51,7 +54,7 @@ class ConstantString;
 class ConstantObjectRef;
 class ConstantNativeArray;
 class ProgramSource;
-struct SourceLocation;
+class TypeRef;
 
 typedef llvm::SmallVector<Expr *, 4> ExprList;
 typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
@@ -291,16 +294,23 @@ public:
   llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
   llvm::DICompileUnit getCompileUnit(Defn * defn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
+  void genStopPoint(const SourceLocation & loc);
 
   /** Generate debugging information for types. */
-  llvm::DIType genTypeDebugInfo(Type * type);
-  llvm::DIType genPrimitiveTypeDebugInfo(PrimitiveType * type);
-  llvm::DIType genCompositeTypeDebugInfo(CompositeType * type);
-  llvm::DIType genEnumTypeDebugInfo(EnumType * type);
-  llvm::DIType genNativeArrayTypeDebugInfo(NativeArrayType * type);
-  llvm::DIType genNativePointerTypeDebugInfo(NativePointerType * type);
-  llvm::DIType genUnionTypeDebugInfo(UnionType * type);
-  llvm::DIType genFunctionTypeDebugInfo(FunctionType * type);
+  llvm::DIType genDIType(const TypeRef & ref);
+  llvm::DIType genDIType(const Type * type);
+  llvm::DIBasicType genDIPrimitiveType(const PrimitiveType * type);
+  llvm::DICompositeType genDICompositeType(const CompositeType * type);
+  llvm::DIType genDIEnumType(const EnumType * type);
+  llvm::DICompositeType genDINativeArrayType(const NativeArrayType * type);
+  llvm::DIDerivedType genDIAddressType(const AddressType * type);
+  llvm::DIDerivedType genDINativePointerType(const NativePointerType * type);
+  llvm::DICompositeType genDIUnionType(const UnionType * type);
+  llvm::DICompositeType genDIFunctionType(const FunctionType * type);
+  llvm::DIDerivedType genDITypeBase(const CompositeType * type);
+  llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
+  llvm::DIType genDIEmbeddedType(const Type * type);
+  llvm::DIType genDIParameterType(const Type * type);
 
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
@@ -341,12 +351,7 @@ private:
   llvm::DICompileUnit dbgCompileUnit_;
   llvm::DISubprogram dbgFunction_;
   DITypeMap dbgTypeMap_;
-
-#if 0
-  struct Attributes {
-      std::vector<llvm::Constant *> irAttrs;
-  };
-#endif
+  SourceLocation dbgLocation_;
 
   llvm::BasicBlock * unwindTarget_;
   llvm::Function * unwindRaiseException_;

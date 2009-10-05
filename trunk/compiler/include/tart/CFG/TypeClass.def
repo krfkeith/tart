@@ -9,6 +9,7 @@ TYPE_CLASS(Enum)          // An enumeration type
 TYPE_CLASS(Function)      // A function type
 TYPE_CLASS(Tuple)         // A tuple type
 TYPE_CLASS(Union)         // A disjoint type
+TYPE_CLASS(Address)       // A machine address
 TYPE_CLASS(NativePointer) // A machine pointer
 TYPE_CLASS(NativeArray)   // A primitive array of values
 

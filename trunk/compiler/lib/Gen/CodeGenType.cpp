@@ -268,7 +268,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   tibMembers.push_back(baseClassArrayPtr);
   tibMembers.push_back(idispatch);
   tibMembers.push_back(genMethodArray(type->instanceMethods_));
-  Constant * tibStruct = ConstantStruct::get(context_, tibMembers);
+  Constant * tibStruct = ConstantStruct::get(context_, tibMembers, false);
 
   // Assign the TIB value to the tib global variable.
   GlobalVariable * tibPtr = rtype->getTypeInfoBlock();

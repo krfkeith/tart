@@ -192,6 +192,8 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
     }
   } else if (NativePointerType * npp = dyn_cast<NativePointerType>(pattern)) {
     return unifyNativePointerType(source, npp, value);
+  } else if (AddressType * npp = dyn_cast<AddressType>(pattern)) {
+    return unifyAddressType(source, npp, value);
   } else if (NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
     return unifyNativeArrayType(source, nap, value);
   } else if (PatternVar * pv = dyn_cast<PatternVar>(value)) {
@@ -232,6 +234,25 @@ bool BindingEnv::unifyNativePointerType(
   }
 
   if (NativePointerType * npv = dyn_cast<NativePointerType>(value)) {
+    if (!AnalyzerBase::analyzeType(npv, Task_InferType)) {
+      return false;
+    }
+
+    return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
+  } else if (TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+    return tc->unifyWithPattern(*this, pat);
+  } else {
+    return false;
+  }
+}
+
+bool BindingEnv::unifyAddressType(
+    SourceContext * source, AddressType * pat, Type * value) {
+  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
+    return false;
+  }
+
+  if (AddressType * npv = dyn_cast<AddressType>(value)) {
     if (!AnalyzerBase::analyzeType(npv, Task_InferType)) {
       return false;
     }
@@ -559,6 +580,20 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
       return in;
     }
 
+    case Type::Address: {
+      const AddressType * np = static_cast<const AddressType *>(in);
+      if (np->typeParam(0) == NULL) {
+        return in;
+      }
+
+      Type * elemType = subst(np->typeParam(0), finalize);
+      if (elemType == np->typeParam(0)) {
+        return in;
+      }
+
+      return AddressType::get(elemType);
+    }
+
     case Type::NativePointer: {
       const NativePointerType * np = static_cast<const NativePointerType *>(in);
       if (np->typeParam(0) == NULL) {
@@ -629,6 +664,12 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
   }
 }
 
+TypeRef BindingEnv::relabel(const TypeRef & in) {
+  TypeRef result(in);
+  result.setType(relabel(in.type()));
+  return result;
+}
+
 Type * BindingEnv::relabel(Type * in) {
   if (substitutions_ == NULL) {
     return in;
@@ -659,6 +700,20 @@ Type * BindingEnv::relabel(Type * in) {
       }
 
       return in;
+    }
+
+    case Type::Address: {
+      const AddressType * np = static_cast<const AddressType *>(in);
+      if (np->typeParam(0) == NULL) {
+        return in;
+      }
+
+      Type * elemType = relabel(np->typeParam(0));
+      if (elemType == np->typeParam(0)) {
+        return in;
+      }
+
+      return AddressType::get(elemType);
     }
 
     case Type::NativePointer: {

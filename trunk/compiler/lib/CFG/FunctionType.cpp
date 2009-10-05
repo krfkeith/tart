@@ -125,7 +125,7 @@ const llvm::Type * FunctionType::createIRType() const {
   }
 
   // Get the return type
-  Type * retType = returnType_;
+  const Type * retType = returnType_.type();
   if (retType == NULL) {
     retType = &VoidType::instance;
   }
@@ -140,7 +140,7 @@ const llvm::Type * FunctionType::createIRType() const {
 }
 
 void FunctionType::trace() const {
-  safeMark(returnType_);
+  returnType_.trace();
   markList(params_.begin(), params_.end());
 }
 
@@ -160,13 +160,13 @@ void FunctionType::format(FormatStream & out) const {
   out << "fn (";
   formatParameterList(out, params_);
   out << ")";
-  if (returnType_) {
+  if (!returnType_.isNull()) {
     out << " -> " << returnType_;
   }
 }
 
 bool FunctionType::isSingular() const {
-  if (returnType_ == NULL || !returnType_->isSingular()) {
+  if (returnType_.isNull() || !returnType_.isSingular()) {
     return false;
   }
 
@@ -185,9 +185,9 @@ bool FunctionType::isSingular() const {
 }
 
 void FunctionType::whyNotSingular() const {
-  if (returnType_ == NULL) {
+  if (returnType_.isNull()) {
     diag.info() << "Function has unspecified return type.";
-  } else if (!returnType_->isSingular()) {
+  } else if (!returnType_.isSingular()) {
     diag.info() << "Function has non-singular return type.";
   }
 

@@ -55,8 +55,8 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ConstString:
       return visitConstantString(static_cast<ConstantString *>(in));
 
-    case Expr::ConstType:
-      return visitConstantType(static_cast<ConstantType *>(in));
+    case Expr::TypeLiteral:
+      return visitTypeLiteral(static_cast<TypeLiteralExpr *>(in));
 
     case Expr::ConstNull:
       return visitConstantNull(static_cast<ConstantNull *>(in));

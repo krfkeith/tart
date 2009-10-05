@@ -23,7 +23,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
   if (in->function()->defnType() == Defn::Macro) {
     FunctionDefn * macro = in->function();
     FunctionType * mtype = macro->functionType();
-    Type * returnType = dealias(mtype->returnType());
+    Type * returnType = mtype->returnType().dealias();
 
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
@@ -64,7 +64,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     Block * savedReturnBlock = stAn.setMacroReturnTarget(returnBlock);
-    Type * savedReturnType = stAn.setReturnType(returnType);
+    TypeRef savedReturnType = stAn.setReturnType(returnType);
     const Stmt * macroBody = macro->functionDecl()->body();
 
     stAn.buildStmtCFG(macroBody);

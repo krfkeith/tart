@@ -10,8 +10,9 @@
 
 namespace tart {
 
-SpecializeCandidate::SpecializeCandidate(Defn * tdef)
-  : templateDefn(tdef)
+SpecializeCandidate::SpecializeCandidate(Expr * base, Defn * tdef)
+  : templateDefn_(tdef)
+  , base_(base)
   , env_(tdef->templateSignature())
 {
 #if 0
@@ -47,7 +48,7 @@ SpecializeCandidate::SpecializeCandidate(Defn * tdef)
 }
 
 bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
-  const TemplateSignature * tsig = templateDefn->templateSignature();
+  const TemplateSignature * tsig = templateDefn_->templateSignature();
   DASSERT(tsig->params().size() == args.size());
   for (size_t i = 0; i < args.size(); ++i) {
     Type * pattern = tsig->params()[i];
@@ -145,7 +146,7 @@ ConversionRank SpecializeCandidate::updateConversionRank(CallExpr * callExpr) {
 #endif
 
 void SpecializeCandidate::trace() const {
-  templateDefn->mark();
+  templateDefn_->mark();
 }
 
 } // namespace tart
