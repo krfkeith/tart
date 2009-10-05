@@ -34,7 +34,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual Type * typeParam(int index) const { return elementType_; }
+  virtual Type * typeParam(int index) const { return elementType_.type(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
@@ -56,7 +56,7 @@ private:
   typedef llvm::DenseMap<Type *, AddressType *> TypeMap;
   static TypeMap uniqueTypes_;
 
-  Type * elementType_;
+  TypeRef elementType_;
 
   /** Construct a native pointer type */
   AddressType(Type * elemType);

@@ -129,8 +129,8 @@ const llvm::Type * CompositeType::createIRType() const {
     if (*it) {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       DASSERT_OBJ(var->isPassFinished(Pass_ResolveVarType), var);
-      Type * varType = var->type().type();
-      const llvm::Type * memberType = varType->irEmbeddedType();
+      TypeRef varType = var->type();
+      const llvm::Type * memberType = varType.irEmbeddedType();
       fieldTypes.push_back(memberType);
     }
   }

@@ -118,20 +118,16 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
 }
 
 DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
-  return genDIEmbeddedType(type.type());
-}
-
-DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
-  if (type->typeClass() == Type::Class) {
+  if (type.typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedType(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
         "",
         dbgCompileUnit_,
         0,
-        llvm::ConstantExpr::getSizeOf(type->irEmbeddedType()),
-        llvm::ConstantExpr::getAlignOf(type->irEmbeddedType()),
+        llvm::ConstantExpr::getSizeOf(type.irEmbeddedType()),
+        llvm::ConstantExpr::getAlignOf(type.irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -286,8 +282,8 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   // Collect union members
   int memberIndex = 0;
   for (TypeRefList::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
-    const Type * memberType = it->dealias();
-    if (memberType != &VoidType::instance) {
+    TypeRef memberType = *it;
+    if (memberType.isNonVoidType()) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
       DIType memberDbgType = genDIEmbeddedType(memberType);
@@ -297,8 +293,8 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
           name,
           dbgCompileUnit_,
           0,
-          llvm::ConstantExpr::getSizeOf(memberType->irEmbeddedType()),
-          llvm::ConstantExpr::getAlignOf(memberType->irEmbeddedType()),
+          llvm::ConstantExpr::getSizeOf(memberType.irEmbeddedType()),
+          llvm::ConstantExpr::getAlignOf(memberType.irEmbeddedType()),
           getInt64Val(0), 0,
           memberDbgType));
     }

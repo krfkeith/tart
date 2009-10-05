@@ -68,7 +68,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
               callingArgs[paramIndex] = param->defaultValue();
             } else if (param->isVariadic()) {
               // Empty array literal.
-              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type().type());
+              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type());
               AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepCallOrUse);
               DASSERT(arrayParam->isSingular());
               callingArgs[paramIndex] = arrayParam;

@@ -804,7 +804,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
 
         VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
         TypeRef toType = asValueDefn->type();
-        if (!analyzeType(toType.type(), Task_PrepCallOrUse)) {
+        if (!analyzeType(toType, Task_PrepCallOrUse)) {
           return NULL;
         }
 
@@ -827,14 +827,14 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         prevTestBlock = testBlock;
 
         // Set up the type test.
-        Expr * typeTestExpr = new InstanceOfExpr(stLoc, testLVal, toType.type());
+        Expr * typeTestExpr = new InstanceOfExpr(stLoc, testLVal, toType);
         testBlock->setTerminator(stLoc, BlockTerm_Conditional);
         testBlock->termExprs().push_back(typeTestExpr);
         testBlock->succs().push_back(caseBlock);
 
         // Set up the variable
         setInsertPos(caseBlock);
-        Expr * asValueExpr = new CastExpr(castType, stLoc, toType.type(), testLVal);
+        Expr * asValueExpr = new CastExpr(castType, stLoc, toType, testLVal);
         currentBlock_->append(new InitVarExpr(stLoc, asValueDefn, asValueExpr));
 
         // Build the body of the case.
@@ -1136,7 +1136,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //      "Return value not allowed in generator function");
     //}
 
-    analyzeType(returnType_.type(), Task_PrepTypeComparison);
+    analyzeType(returnType_, Task_PrepTypeComparison);
     resultVal = inferTypes(astToExpr(st->value(), returnType_.type()), returnType_.type());
     if (isErrorResult(resultVal)) {
       return false;
@@ -1164,7 +1164,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // actually return, it assigns to the macro result and then branches.
 
     // TODO: Skip this assignment if it's void.
-    DASSERT(returnType_.type()->isEqual(macroReturnVal_->type()));
+    DASSERT(returnType_.isEqual(macroReturnVal_->type()));
     Expr * exp = new AssignmentExpr(st->location(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
 

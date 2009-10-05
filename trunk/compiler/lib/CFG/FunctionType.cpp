@@ -102,7 +102,7 @@ const llvm::Type * FunctionType::createIRType() const {
   // Insert the 'self' parameter if it's an instance method
   if (selfParam_ != NULL) {
     const ParameterDefn * param = selfParam_;
-    const llvm::Type * argType = param->type().type()->irType();
+    const llvm::Type * argType = param->type().irType();
     if (!isa<PrimitiveType>(param->type().type())) {
       // TODO: Also don't do this for enums.
       argType = PointerType::getUnqual(argType);
@@ -125,13 +125,13 @@ const llvm::Type * FunctionType::createIRType() const {
   }
 
   // Get the return type
-  const Type * retType = returnType_.type();
-  if (retType == NULL) {
-    retType = &VoidType::instance;
+  TypeRef retType = returnType_;
+  if (!retType.isDefined()) {
+    retType.setType(&VoidType::instance);
   }
 
   // Wrap return type in pointer type if needed.
-  const llvm::Type * rType = retType->irParameterType();
+  const llvm::Type * rType = retType.irParameterType();
 
   // Create the function type
   cast<OpaqueType>(irType_.get())->refineAbstractTypeTo(

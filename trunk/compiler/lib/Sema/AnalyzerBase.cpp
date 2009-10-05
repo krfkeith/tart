@@ -424,7 +424,7 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
     // If it's a variadic parameter, then the actual type is an array of the declared type.
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
       DASSERT_OBJ(param->internalType().isDefined(), param);
-      result->setType(param->internalType().type());
+      result->setType(param->internalType());
     }
 
     return result;
@@ -495,6 +495,11 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask pass) {
   }
 
   return true;
+}
+
+
+bool AnalyzerBase::analyzeType(const TypeRef & in, AnalysisTask pass) {
+  return analyzeType(in.type(), pass);
 }
 
 void AnalyzerBase::analyzeTypeLater(Type * in) {
@@ -697,8 +702,8 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
       arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }
 
-ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, Type * elementType) {
-  CompositeType * arrayType = getArrayTypeForElement(elementType);
+ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & elementType) {
+  CompositeType * arrayType = getArrayTypeForElement(elementType.type());
   ArrayLiteralExpr * array = new ArrayLiteralExpr(loc);
   array->setType(arrayType);
 

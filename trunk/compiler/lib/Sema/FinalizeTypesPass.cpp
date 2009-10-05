@@ -36,7 +36,7 @@ Expr * FinalizeTypesPass::runImpl(Expr * in) {
 
 Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
   if (in->type() == NULL) {
-    in->setType(in->value()->type().type());
+    in->setType(in->value()->type());
   }
 
   DASSERT_OBJ(in->type() != NULL, in);
@@ -137,7 +137,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
       if (method->isCtor()) {
         NewExpr * ne = cast<NewExpr>(cd->base());
-        ne->setType(method->functionType()->selfParam()->type().type());
+        ne->setType(method->functionType()->selfParam()->type());
       }
     }
 
@@ -248,12 +248,12 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
       DASSERT_OBJ(method->functionType()->selfParam()->type().isDefined(), method);
-      DASSERT_OBJ(!method->functionType()->selfParam()->type().type()->isEqual(&VoidType::instance), method);
-      result->setType(method->functionType()->selfParam()->type().type());
+      DASSERT_OBJ(!method->functionType()->selfParam()->type().isEqual(&VoidType::instance), method);
+      result->setType(method->functionType()->selfParam()->type());
     } else {
       //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
       DASSERT_OBJ(method->returnType().isDefined(), method);
-      result->setType(method->returnType().type());
+      result->setType(method->returnType());
       if (method->storageClass() != Storage_Instance) {
         result->setSelfArg(NULL);
       }
@@ -312,7 +312,7 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
   IndirectCallExpr * result = new IndirectCallExpr(Expr::IndirectCall, in->location(), fnValue);
   result->args().append(callingArgs.begin(), callingArgs.end());
 
-  result->setType(cd->functionType()->returnType().type());
+  result->setType(cd->functionType()->returnType());
   //if (method->storageClass() != Storage_Instance) {
   //  result->setSelfArg(NULL);
   //}
@@ -384,7 +384,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
       // Handle variadic parameters - build an array literal.
       ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(outArgs[paramIndex]);
       if (arrayParam == NULL) {
-        arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType.type());
+        arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         DASSERT(arrayParam->isSingular());
         outArgs[paramIndex] = arrayParam;
@@ -404,7 +404,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
       if (param->isVariadic()) {
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-            param->location(), param->type().type());
+            param->location(), param->type());
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
       } else {
