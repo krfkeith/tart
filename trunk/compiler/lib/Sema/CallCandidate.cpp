@@ -65,9 +65,9 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     AnalyzerBase::analyzeType(resultType_.type(), Task_PrepTypeComparison);
 
     // Same with function parameter types.
-    for (TypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
+    for (TypeRefList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
       *pt = bindingEnv_.relabel(*pt);
-      AnalyzerBase::analyzeType(*pt, Task_PrepTypeComparison);
+      AnalyzerBase::analyzeType(pt->type(), Task_PrepTypeComparison);
     }
 
     // Clear all definitions in the environment.
@@ -95,7 +95,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * fnTy
   }
 }
 
-Type * CallCandidate::paramType(int argIndex) const {
+TypeRef CallCandidate::paramType(int argIndex) const {
   return paramTypes_[parameterIndex(argIndex)];
 }
 
@@ -110,10 +110,10 @@ bool CallCandidate::isEqual(const CallCandidate * other) const {
 
   size_t argCount = paramAssignments_.size();
   for (size_t i = 0; i < argCount; ++i) {
-    Type * t0 = paramType(i);
-    Type * t1 = paramType(i);
+    TypeRef t0 = paramType(i);
+    TypeRef t1 = paramType(i);
 
-    if (!t0->isEqual(t1)) {
+    if (!t0.isEqual(t1)) {
       return false;
     }
   }
@@ -141,18 +141,18 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 
   size_t argCount = paramAssignments_.size();
   for (size_t i = 0; i < argCount; ++i) {
-    Type * t0 = paramType(i);
-    Type * t1 = other->paramType(i);
+    TypeRef t0 = paramType(i);
+    TypeRef t1 = other->paramType(i);
 
-    if (!t0->isEqual(t1)) {
-      if (!t0->isSubtype(t1)) {
+    if (!t0.isEqual(t1)) {
+      if (!t0.type()->isSubtype(t1.type())) {
         return false;
       }
 
       same = false;
     } else {
       // Ensure that equality is symmetrical.
-      DASSERT(t1->isEqual(t0));
+      DASSERT(t1.isEqual(t0));
 
       // Variadic parameters are less specific than non-variadic parameters.
       ParameterDefn * p0 = fnType_->param(parameterIndex(i));
@@ -186,10 +186,10 @@ ConversionRank CallCandidate::updateConversionRank() {
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    Type * paramType = this->paramType(argIndex);
+    TypeRef paramType = this->paramType(argIndex);
     Conversion cn(argExpr);
     cn.matchPatterns = true;
-    conversionRank_ = std::min(conversionRank_, paramType->convert(cn));
+    conversionRank_ = std::min(conversionRank_, paramType.type()->convert(cn));
   }
 
   Type * expectedReturnType = callExpr_->expectedReturnType();
@@ -217,11 +217,11 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     Type * argType = argExpr->type();
-    Type * paramType = this->paramType(argIndex);
+    TypeRef paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
     if (!argType->isEqual(&UnsizedIntType::instance)) {
-      if (!bindingEnv_.unify(&candidateSite, paramType, argType, Contravariant)) {
+      if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
         return false;
       }
     }
@@ -239,7 +239,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     Type * argType = argExpr->type();
-    Type * paramType = this->paramType(argIndex);
+    TypeRef paramType = this->paramType(argIndex);
 
     // Do the unsized types - use the information about previously bound types to determine
     // whether or not to make the integer type signed or unsigned.
@@ -249,7 +249,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
       bool isUnsigned = false;
 
       // See if the parameter type is an unsigned integer type.
-      if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(dealias(paramType))) {
+      if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(paramType.dealias())) {
         if (isUnsignedIntegerType(ptype->typeId())) {
           isUnsigned = true;
         }
@@ -260,7 +260,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
       argType = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
 
       // Try to bind the integer type.
-      if (!bindingEnv_.unify(&candidateSite, paramType, argType, Contravariant)) {
+      if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
         return false;
       }
     }

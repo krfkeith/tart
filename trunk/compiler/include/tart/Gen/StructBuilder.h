@@ -12,6 +12,7 @@ namespace tart {
 
 class CodeGenerator;
 class Type;
+class TypeRef;
 class VariableDefn;
 
 typedef std::vector<llvm::Constant *> ConstantList;
@@ -30,6 +31,9 @@ public:
 
   /** Add a field which contains a reference to a type descriptor for the specified type. */
   StructBuilder & addTypeReference(const Type * type);
+
+  /** Add a field which contains a reference to a type expression for the specified type. */
+  StructBuilder & addTypeReference(const TypeRef & type);
 
   /** Add a field containing a constant null pointer. */
   StructBuilder & addNullField(const Type * type);

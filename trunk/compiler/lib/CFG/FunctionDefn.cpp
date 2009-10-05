@@ -29,8 +29,8 @@ namespace {
 
 void ParameterDefn::trace() const {
   ValueDefn::trace();
-  safeMark(type_);
-  safeMark(internalType_);
+  type_.trace();
+  internalType_.trace();
   safeMark(defaultValue_);
 }
 
@@ -42,7 +42,7 @@ void ParameterDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_) {
+  if (out.getShowType() && type_.isDefined()) {
     out << ":" << type_;
   }
 
@@ -53,7 +53,7 @@ void ParameterDefn::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // FunctionDefn
-Type * FunctionDefn::type() const {
+TypeRef FunctionDefn::type() const {
   return type_;
 }
 
@@ -120,7 +120,7 @@ const std::string & FunctionDefn::linkageName() const {
         lnkName.append(")");
       }
 
-      if (!type_->returnType().isNull() && !type_->returnType().isVoidType()) {
+      if (type_->returnType().isNonVoidType()) {
         lnkName.append("->");
         typeLinkageName(lnkName, type_->returnType());
       }
@@ -145,7 +145,7 @@ void FunctionDefn::format(FormatStream & out) const {
     out << "(";
     formatParameterList(out, type_->params());
     out << ")";
-    if (!type_->returnType().isNull() && !type_->returnType().isVoidType()) {
+    if (type_->returnType().isNonVoidType()) {
       out << " -> " << type_->returnType();
     }
   }

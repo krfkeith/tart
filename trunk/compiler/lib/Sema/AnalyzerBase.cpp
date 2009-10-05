@@ -423,8 +423,8 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
 
     // If it's a variadic parameter, then the actual type is an array of the declared type.
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
-      DASSERT_OBJ(param->internalType() != NULL, param);
-      result->setType(param->internalType());
+      DASSERT_OBJ(param->internalType().isDefined(), param);
+      result->setType(param->internalType().type());
     }
 
     return result;
@@ -463,21 +463,21 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
 }
 
 Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
-  if (valueDef->type() == NULL) {
+  if (!valueDef->type().isDefined()) {
     if (!analyzeDefn(valueDef, Task_InferType)) {
       return NULL;
     }
   }
 
-  if (valueDef->type() != NULL && valueDef->type()->isSingular()) {
+  if (valueDef->type().isDefined() && valueDef->type().isSingular()) {
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
-      return param->internalType();
+      return param->internalType().type();
     }
 
-    return valueDef->type();
+    return valueDef->type().type();
   }
 
-  if (valueDef->type() != NULL) {
+  if (valueDef->type().isDefined()) {
     diag.info(valueDef) << valueDef << ":" << valueDef->type();
   } else {
     diag.info(valueDef) << valueDef;

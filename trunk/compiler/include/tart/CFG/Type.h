@@ -24,7 +24,7 @@ namespace llvm {
 namespace tart {
 
 class BindingEnv;
-class TypeReference;
+class TypeRef;
 
 /// -------------------------------------------------------------------
 /// An enumeration of all of the fundamental types known to the compiler.
@@ -405,20 +405,30 @@ public:
     modifiers_ = ref.modifiers_;
   }
 
-  void trace() const {
-    if (type_) { type_->mark(); }
-  }
+  Type::TypeClass typeClass() const { return type_->typeClass(); }
 
-  bool isNull() const { return type_ == NULL; }
-  bool isVoidType() const { return type_ != NULL && type_->isVoidType(); }
-  bool isUnsizedIntType() const { return type_ != NULL && type_->isUnsizedIntType(); }
-  bool isSingular() const { return type_ != NULL && type_->isSingular(); }
+  bool isDefined() const { return type_ != NULL; }
+  bool isVoidType() const { return isDefined() && type_->isVoidType(); }
+  bool isNonVoidType() const { return isDefined() && !type_->isVoidType(); }
+  bool isReferenceType() const { return isDefined() && type_->isReferenceType(); }
+  bool isUnsizedIntType() const { return isDefined() && type_->isUnsizedIntType(); }
+  bool isSingular() const { return isDefined() && type_->isSingular(); }
+
   bool isEqual(const TypeRef & other) const {
     return type_->isEqual(other.type_) && modifiers_ == other.modifiers_;
   }
 
   Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
   Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
+  ConversionRank convert(const Conversion & conversion) const;
+
+  const llvm::Type * irType() const { return type_->irType(); }
+  const llvm::Type * irEmbeddedType() const { return type_->irEmbeddedType(); }
+  const llvm::Type * irParameterType() const { return type_->irParameterType(); }
+
+  void trace() const {
+    if (type_) { type_->mark(); }
+  }
 
 private:
   Type * type_;
@@ -427,7 +437,13 @@ private:
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
 
-typedef llvm::SmallVector<TypeReference, 8> TypeRefList;
+typedef llvm::SmallVector<TypeRef, 8> TypeRefList;
+
+inline void traceTypeRefList(const TypeRefList & refs) {
+  for (TypeRefList::const_iterator it = refs.begin(); it != refs.end(); ++it) {
+    it->trace();
+  }
+}
 
 /// -------------------------------------------------------------------
 /// Predicate functions for type ids.
@@ -484,12 +500,17 @@ public:
   bool operator()(const Type * t0, const Type * t1) {
     return t0->isEqual(t1);
   }
+
+  bool operator()(const TypeRef & t0, const TypeRef & t1) {
+    return t0.isEqual(t1);
+  }
 };
 
 /** Type 'less than' operator for sorting lists of types. */
 class TypeLess {
 public:
   bool operator()(const Type * t0, const Type * t1);
+  bool operator()(const TypeRef & t0, const TypeRef & t1);
 };
 
 }

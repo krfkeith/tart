@@ -36,7 +36,7 @@ Expr * FinalizeTypesPass::runImpl(Expr * in) {
 
 Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
   if (in->type() == NULL) {
-    in->setType(in->value()->type());
+    in->setType(in->value()->type().type());
   }
 
   DASSERT_OBJ(in->type() != NULL, in);
@@ -137,7 +137,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
       if (method->isCtor()) {
         NewExpr * ne = cast<NewExpr>(cd->base());
-        ne->setType(method->functionType()->selfParam()->type());
+        ne->setType(method->functionType()->selfParam()->type().type());
       }
     }
 
@@ -247,12 +247,12 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
 
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
-      DASSERT_OBJ(method->functionType()->selfParam()->type() != NULL, method);
-      DASSERT_OBJ(!method->functionType()->selfParam()->type()->isEqual(&VoidType::instance), method);
-      result->setType(method->functionType()->selfParam()->type());
+      DASSERT_OBJ(method->functionType()->selfParam()->type().isDefined(), method);
+      DASSERT_OBJ(!method->functionType()->selfParam()->type().type()->isEqual(&VoidType::instance), method);
+      result->setType(method->functionType()->selfParam()->type().type());
     } else {
       //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
-      DASSERT_OBJ(!method->returnType().isNull(), method);
+      DASSERT_OBJ(method->returnType().isDefined(), method);
       result->setType(method->returnType().type());
       if (method->storageClass() != Storage_Instance) {
         result->setSelfArg(NULL);
@@ -366,14 +366,14 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     int paramIndex = cd->parameterIndex(argIndex);
     ParameterDefn * param = fnType->params()[paramIndex];
-    Type * paramType = param->type();
-    DASSERT(paramType->isSingular());
+    TypeRef paramType = param->type();
+    DASSERT(paramType.isSingular());
     Expr * argVal = visitExpr(args[argIndex]);
     if (isErrorResult(argVal)) {
       return false;
     }
 
-    Expr * castArgVal = addCastIfNeeded(argVal, paramType);
+    Expr * castArgVal = addCastIfNeeded(argVal, paramType.type());
     if (castArgVal == NULL) {
       diag.error(argVal) << "Unable to convert argument of type " << argVal->type() << " to " <<
           paramType;
@@ -384,7 +384,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
       // Handle variadic parameters - build an array literal.
       ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(outArgs[paramIndex]);
       if (arrayParam == NULL) {
-        arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
+        arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType.type());
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         DASSERT(arrayParam->isSingular());
         outArgs[paramIndex] = arrayParam;
@@ -404,7 +404,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
       if (param->isVariadic()) {
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-            param->location(), param->type());
+            param->location(), param->type().type());
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
       } else {
@@ -591,8 +591,8 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
-  for (TypeList::iterator it = from->members().begin(); it != from->members().end(); ++it) {
-    Type * memberType = dealias(*it);
+  for (TypeRefList::iterator it = from->members().begin(); it != from->members().end(); ++it) {
+    Type * memberType = it->dealias();
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = to->convert(memberType);
     if (rank != Incompatible) {

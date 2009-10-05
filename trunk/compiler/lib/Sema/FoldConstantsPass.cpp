@@ -43,8 +43,8 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
       DASSERT_OBJ(cc->method()->isPassFinished(Pass_ResolveParameterTypes), cc->method());
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-        Type * paramType = cc->paramType(argIndex);
-        if (!paramType->isEqual(&UnsizedIntType::instance)) {
+        TypeRef paramType = cc->paramType(argIndex);
+        if (!paramType.isEqual(&UnsizedIntType::instance)) {
           exactMatch = false;
         }
       }
@@ -56,7 +56,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
         callingArgs.resize(paramCount);
         std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
         for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-          Type * paramType = cc->paramType(argIndex);
+          //TypeRef paramType = cc->paramType(argIndex);
           callingArgs[cc->parameterIndex(argIndex)] = in->arg(argIndex);
         }
 
@@ -68,7 +68,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
               callingArgs[paramIndex] = param->defaultValue();
             } else if (param->isVariadic()) {
               // Empty array literal.
-              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type());
+              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type().type());
               AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepCallOrUse);
               DASSERT(arrayParam->isSingular());
               callingArgs[paramIndex] = arrayParam;

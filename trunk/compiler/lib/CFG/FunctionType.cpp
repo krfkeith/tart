@@ -102,8 +102,8 @@ const llvm::Type * FunctionType::createIRType() const {
   // Insert the 'self' parameter if it's an instance method
   if (selfParam_ != NULL) {
     const ParameterDefn * param = selfParam_;
-    const llvm::Type * argType = param->type()->irType();
-    if (!isa<PrimitiveType>(param->type())) {
+    const llvm::Type * argType = param->type().type()->irType();
+    if (!isa<PrimitiveType>(param->type().type())) {
       // TODO: Also don't do this for enums.
       argType = PointerType::getUnqual(argType);
     }
@@ -113,11 +113,11 @@ const llvm::Type * FunctionType::createIRType() const {
   // Generate the argument signature
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    Type * paramType = param->internalType();
-    DASSERT_OBJ(paramType != NULL, param);
+    TypeRef paramType = param->internalType();
+    DASSERT_OBJ(paramType.isDefined(), param);
 
-    const llvm::Type * argType = paramType->irType();
-    if (paramType->isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
+    const llvm::Type * argType = paramType.irType();
+    if (paramType.isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
       argType = PointerType::getUnqual(argType);
     }
 
@@ -160,23 +160,23 @@ void FunctionType::format(FormatStream & out) const {
   out << "fn (";
   formatParameterList(out, params_);
   out << ")";
-  if (!returnType_.isNull()) {
+  if (returnType_.isDefined()) {
     out << " -> " << returnType_;
   }
 }
 
 bool FunctionType::isSingular() const {
-  if (returnType_.isNull() || !returnType_.isSingular()) {
+  if (!returnType_.isDefined() || !returnType_.isSingular()) {
     return false;
   }
 
-  if (selfParam_ != NULL && (selfParam_->type() == NULL || !selfParam_->type()->isSingular())) {
+  if (selfParam_ != NULL && (!selfParam_->type().isDefined() || !selfParam_->type().isSingular())) {
     return false;
   }
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->type() == NULL || !param->type()->isSingular()) {
+    if (!param->type().isDefined() || !param->type().isSingular()) {
       return false;
     }
   }
@@ -185,25 +185,25 @@ bool FunctionType::isSingular() const {
 }
 
 void FunctionType::whyNotSingular() const {
-  if (returnType_.isNull()) {
+  if (!returnType_.isDefined()) {
     diag.info() << "Function has unspecified return type.";
   } else if (!returnType_.isSingular()) {
     diag.info() << "Function has non-singular return type.";
   }
 
   if (selfParam_ != NULL) {
-    if (selfParam_->type() == NULL) {
+    if (!selfParam_->type().isDefined()) {
       diag.info() << "Parameter 'self' has unspecified type.";
-    } else if (!selfParam_->type()->isSingular()) {
+    } else if (!selfParam_->type().isSingular()) {
       diag.info() << "Parameter 'self' has non-singular type.";
     }
   }
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->type() == NULL) {
+    if (!param->type().isDefined()) {
       diag.info() << "Parameter '" << param->name() << "' parameter has unspecified type.";
-    } else if (!param->type()->isSingular()) {
+    } else if (!param->type().isSingular()) {
       diag.info() << "Parameter '" << param->name() << "' parameter has non-singular type.";
     }
   }

@@ -95,7 +95,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::LogicalOr: {
       const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
       const ASTNodeList & args = unionOp->args();
-      TypeList unionTypes;
+      TypeRefList unionTypes;
 
       for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
         Type * elementType = typeFromAST(*it);
@@ -103,7 +103,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
           return elementType;
         }
 
-        unionTypes.push_back(elementType);
+        unionTypes.push_back(TypeRef(elementType));
       }
 
       return UnionType::create(ast->location(), unionTypes);
@@ -115,7 +115,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         return ftype;
       }
 
-      if (ftype->returnType().isNull()) {
+      if (!ftype->returnType().isDefined()) {
         ftype->setReturnType(&VoidType::instance);
       }
 
