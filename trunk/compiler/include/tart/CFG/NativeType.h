@@ -13,7 +13,55 @@
 #include "tart/CFG/Defn.h"
 #endif
 
+#include <llvm/ADT/DenseMap.h>
+
 namespace tart {
+
+// -------------------------------------------------------------------
+// Generic template for memory addresses. A memory address is similar
+// to a pointer, except that it also allows indexing.
+class AddressType : public TypeImpl {
+public:
+
+  /** Construct a native pointer type for the specified element type. */
+  static AddressType * get(Type * elemType);
+
+  ~AddressType();
+
+  /** Initialize the built-in template for this type. */
+  static void initBuiltin();
+
+  // Overrides
+
+  size_t numTypeParams() const { return 1; }
+  virtual Type * typeParam(int index) const { return elementType_; }
+  const llvm::Type * createIRType() const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isSingular() const;
+  bool isEqual(const Type * other) const;
+  bool isSubtype(const Type * other) const;
+  bool isReferenceType() const { return false; }
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const AddressType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == Address;
+  }
+
+  /** Singleton instance. */
+  static TypeDefn typedefn;
+  static AddressType prototype;
+
+private:
+  typedef llvm::DenseMap<Type *, AddressType *> TypeMap;
+  static TypeMap uniqueTypes_;
+
+  Type * elementType_;
+
+  /** Construct a native pointer type */
+  AddressType(Type * elemType);
+  AddressType();
+};
 
 // -------------------------------------------------------------------
 // Generic template for native pointers

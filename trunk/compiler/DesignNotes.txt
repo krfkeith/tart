@@ -4,7 +4,6 @@ Design TODOS:
 
 * Type casting via operations on type objects? (for dynamic casting of reference types)
   * Something like 'object.asType(Type)' (Can't use 'as' because it's a keyword.)
-* Native Pointer Dereferencing.
 * Const-ness "const" and "const?"
 * Protocols
 * Need a way to collect all declarations that a given attribute is assigned to.
@@ -16,16 +15,17 @@ Implementation TODOS:
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * See if we can make UnionType and TupleType have type params like templates.
   * And native types.
-  * And then make native types not require TypeDefns.
+  * And then make native types not require TypeDefns. (Done for Address)
   * And then make a new kind of object that represents an exported module symbol, that can
       point to either a constant or a function.
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
 * Boxed values: Boxed[%T] { let value:T; }. Also: auto boxing, unboxing.
+* Stack dumps / trace
 * Hook up TypeLess(Than).
 * A way to iterate over the functions in a module...?
-* Why is linking so slow?
+* Why is linking so slow? (because internalize doesn't work).
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
@@ -76,11 +76,12 @@ Implementation TODOS:
   * "requires" or "where" clauses.
 * Runtime
   * Compile runtime with clang so as to allow optimization.
-* Source-level debug info. (Need LLVM patch)
+* Source-level debug info.
 * Generator functions.
   * Yield statement.
   * State machine.
 * Object.toString.
+* String formatting
 * Let with instance scope.
 * SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
@@ -180,12 +181,6 @@ Permissions:
 // ------------------------------------------------------------------------
 Templates:
 
-  class Foo![%T]
-  class Foo~[%T]
-  class Foo:[%T]
-  class Foo.[%T]
-  class Foo.<%T>
-  
 Variadic templates:
 
   class Foo:[%T, %Args...]
@@ -211,48 +206,9 @@ We need assertions! Which requires:
   -- Exceptions
   -- Classes
   -- isa test
-  -- 
-
-// ------------------------------------------------------------------------
-Import logic:
-
-Where should imported symbols be placed?
-
--- Shouldn't be in module namespace because:
-  -- can't have 1 symbol in two symbol tables.
-  -- module symbol table is what gets written out by generator
-
-When we import a module, all of its symbols are effectively in the module
-namespace. Does this mean we have to create an entry for every one?
-
-Actually what we need is the unique list of all modules that are imported into
-this one, and then search all of their top-level namespaces. (Not including
-symbols that they themselves import?)
-
-Can we not do Koenig lookup? How would that work?
-
-add(String, String)
-
-We want to look in the String module for '+'.
-
-add(maybeString(), maybeString())
-
-Well - we do have all of the potential types of the arguments...
-that may seem like a lot, but it's no worse than having them all in the
-global namespace.
-
-OK so what do we do in the mean time?
-
-Ans: Do what we did before: Put the imports in the same ns, but late-bind them.
 
 // ------------------------------------------------------------------------
 More template ideas:
-
-  def <T:Type<N:Number>> equal(a0:N, a1:N) -> bool {
-  }
-
-  def <:Type<N:Number>> equal(a0:N, a1:N) -> bool {
-  }
 
   [Intrinsic("numeric")]
   def <N::Number> equal(a0:N, a1:N) -> bool;
@@ -300,184 +256,6 @@ More template ideas:
   
   def forall::(%T subtypes Iterator::%P) (in:T) {
   }
-
-
-// ------------------------------------------------------------------------
-More template ideas:
-
-  def <T> opEqual(a0:NativePointer<T>, a1:NativePointer<T>) -> bool;
-
-// ------------------------------------------------------------------------
-
-Template result types.
-
-  Say we have the following:
-  
-    def <T> funcA() -> T;
-    def funcA() -> int;
-    
-    def <S, T> funcB(arg:S) -> T;
-    def <T> funcB(arg:T) -> T;
-    
-  And we call:
-  
-    let s:String = funcB(funcA());
-
-Or a simpler case:
-
-    def <T> funcA(arg:T) -> T;
-    
-    def <T> funcB(arg:T) -> T;
-
-    let s:String = funcB(funcA(3));
-
-I guess what we need is a kind of "pre-specialization" - that is, a
-specialization which uses a unique type variable for each template parameter,
-where the type variable is eventually replaced by the actual type.
-
-Statement of the problem: We have a function that returns a templated result
-value which is passed in to another function that takes a templated parameter.
-
-The way that our solver currently works is that each call candidate is unified
-with the calling arguments for that call site, in isolation from any other
-candidate for that site, and from any other call site. So far this has worked
-because the constraint solving happens after unification, and the constraint
-solving is applied to the entire statement rather than the individual call site.
-Also, up to this point the solver has been working primarily with concrete
-but uncertain types - that is, a collection of discrete types, and not a
-type variable. The thing about such collections is that they are able to be
-evaluated independently of the call site which created them - even though
-they have a hidden link to the call site.
-
-Type parameters, on the other hand, are only meaningful in the context of
-a specific overloaded method at a specific call site. The proof of this
-statement is that the same method could be called in two places with two
-different argument types, meaning that the evaluation of the type parameter
-yields a different answer depending on which call site we are considering.
-
-The question that we need to answer is, do we need to be able to evaluate
-a type expression containing a type variable outside of the context of a
-specific call site?
-
-In order to do this, we would need to make the type expression self-contained,
-meaning that the type expression carries the binding environment around with
-it - so that a single Type * pointer refers to both a type and a binding env.
-
-There are a couple of ways we could do this.
-
-First, we could create a wrapper type. This would essentially contain a pointer
-to a binding env, and a pointer to the wrapped type. Any call on the wrapper
-type forwards the call to the wrapped type, and includes the env. This presumes
-that we need to only consider one binding environment at a time, which might not
-be true.
-
-Another idea is to create a new type variable for each template param for each
-overload for each call site. These would be used to construct new type
-expressions, where the type variable is substituted for the type parameter in
-the original expression. This means that the type expression for each overload
-would only contain type variables that were unique to that site. Moreover,
-we could store the current bound value in the type var itself, rather than
-using a map as we do now.
-
-(much time has passed)
-
-OK, well we have implemented what was described previously - the new TypeBinding
-class represents the value of a type variable for a given overload at a given
-call site.
-
-The only part that troubles me is the need to create these TypeBindings for
-every pattern variable in every overload currently under consideration. Not only
-that, but for type variables that are used as arguments to complex type
-expressions, the entire type expression has to be replicated. My concern is that
-this means that the process of overload resolution will end up causing the
-creation of a whole bunch of temporary objects, and I am trying to think of some
-way to avoid this.
-
-A typical example is as follows: Suppose we have the following overloaded
-methods:
-
-   def func1![%T]() -> T;
-   def func1![%T]() -> List![T];
-   def func1![%T]() -> Set![T];
-   
-   def func2!(a:List![int]);
-   
-   let x = func2(func1());
-
-The way that this works is that T can either be bound to List![int], or
-just int depending on which overload of func1 is chosen. This clearly implies
-that the 'T' variable for each of the overloads is distinct from the others,
-meaning that each overload candidate has it's own TypeBinding instance for T.
-
-(more time has passed)
-
-OK so the problem with the code that I have right now is that while it does
-substitution on the return type of a function, it doesn't do substitution on the
-function params, which causes the unification to fail when we start checking
-argument compatibility. And yet, I am still somewhat hesitant to do this,
-because ParameterDefns are big and expensive to replicate. I could just
-replicate the parameter *types* and store that in the CC, however that's only
-half the job because eventually we will want to do unification on params that
-are themselves function values.
-
-What I would really like is some way to store just the bindings without having
-to call subst() to create a temporary copy of the type expression.
-
-In order to do this, I would have to introduce the concept of *nested* binding
-environments. So for example, if I have a function defn like so:
-
-   def f![%S, %T](p1:NativePointer![S], p2:NativePointer![T]);
-   
-Where NativePointer in turn is defined like so:
-
-   struct NativePointer![%Target] { ... }
-
-And then when we attempt to bind S and T to, say, ubyte and int, what we get is
-a set of nested binding environments like this:
-
-    E1 { S = ubyte, T = int }
-    E2 { Target = S } -> E1
-    E3 { Target = T } -> E1
-
-So in other words, E1 defines S and T; E2 inherits the definitions from E1, and
-then defines 'Target' in terms of the definition of S from E1, and E3 does the
-same for the definition of T in E1.
-
-The problem is that we cannot store any reference to E1-E3 in the type
-expressions listed above, because the symbol 'NativePointer' is *shared* - i.e.
-both mentiones of NativePointer in the above expression point to the *same*
-object.
-
-Instead, what we need to do is to define these binding environments entirely externally to the type expression. The question then becomes, how do we know when these environments become active?
-
-The simple answer doesn't work: That is to say, we cannot simply have a map of
-expression nodes to environments, because (again), the same expression node
-object may appear in multiple places in the environment, with a different set
-of bindings active in each place.
-
-It seems to me that we only know how to get to E2 and E3 once we are already
-inside of E1. In other words, there should be a map inside of E1 that tells you
-how to get to E2 or E3.
-
-Now, one thing that we know is that the only place where a new environment is
-introduced is where a template is invoked. That is where a template *instance*
-occurs.
-
-So now I'm thinking that the key of this map is a Defn. That is to say that
-each binding env contains a map of definitions to nested binding maps.
-
-We could even go so far as to say that there is a single uber-map for the type solver that maps all of the top-level expressions.
-
-Note that we still need to deal with constraints. So TypeBindings don't entirely go away.
-
-OK here's something I don't understand:
-
-  A![B![C]]
-  
-  Which is:
-
-    A {%a: B[C]}
-    B {%b: C}
     
 // ------------------------------------------------------------------------
 
@@ -567,94 +345,161 @@ namespace Numbers {
 
 // ------------------------------------------------------------------------
 
-From the docs:
+Compressed reflection information:
 
-One difference is that the type of a variable comes *after* the variable
-name. The reason for this is that, unlike C and C++ where the name of the
-variable can sometimes occur in the middle of the type declaration (an example
-being ``int * x(const int)``), in Tart the name and the type are always kept
-separate.
+public class TypeExpression {
+}
 
-C# requires that you add the modifier ``overload`` to any function that
-overloads a same-named function in the superclass. This prevents accidental
-hiding of superclass functions.
+public class UnionType : TypeExpression {
+}
 
-.. note::
-  There's a special kind of constructor which does have a return type - it's
-  used to override the way that an object is allocated. This is an advanced
-  topic which will be explained in another document.
-  
-// ------------------------------------------------------------------------
+public class AddressType : TypeExpression {
+}
 
-template<class T>
-class WeakReference {
-public:
-  WeakReference() : value_(NULL) {}
+public class PointerType : TypeExpression {
+}
 
-  WeakReference(T * value) : value_(value) {
-    if (value_ != NULL) {
-      wrMap.addReference(this);
-    }
-  }
+public class FixedArrayType : TypeExpression {
+}
 
-  ~WeakReference() {
-    if (value_ != NULL) {
-      wrMap.removeReference(this);
-    }
+public class TupleType : TypeExpression {
+}
+
+/** A member of a type */
+class Member {
+  enum Access : ubyte {
+    PUBLIC,
+    PRIVATE,
+    PROTECTED,
   }
   
-  const T * value() const { return value_; }
-  T * value() { return value_; }
-
-  void setValue(T * value) {
-    it (value != value_) {
-      if (value_ != NULL) {
-        GC::removeWeakReference(this);
-      }
-
-      value_ = value;
-
-      if (value_ != NULL) {
-        GC::addWeakReference(this);
-      }
-    }
+  enum MemberKind : ubyte {
+    FIELD,
+    PROPERTY,
+    METHOD,
+    CONSTRUCTOR,
   }
   
-  void trace() {}
+  @Flags enum Traits : ubyte {
+    FINAL,
+    ABSTRACT,
+    STATIC,
+  } 
 
-private:
-  T * value_;
-};
+  private def construct() {}
 
-  static void addWeakReference(WeakReference * wr) {
-    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
-    if (it != wrMap_.end()) {
-      it->second().push_back(wr);
-    } else {
-      wrMap.insert(??);
-    }
-  }
-
-  static void removeWealReference(WeakReference * wr) {
-    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
-    if (it != wrMap_.end()) {
-      it->second().remove(wr);
-    }
-  }
-
-  void freeObject(GC * obj) {
-    WeakReferenceMap::iterator it = wrMap_.find(obj);
-    if (it != wrMap_.end()) {
-      for (WeakReferenceMapEntry::iterator wr = it->second().begin(); wr != it->second().end(); ++it) {
-        (*wr)->value_ = NULL;
-      }
-    }
-    
-    wrMap.erase(it);
-  }
-
-
-private:
-  typedef llvm::DenseMap<GC *, llvm::SmallVector<WeakReference *, 1> > WeakReferenceMap;
+  /** The unqualified member name. */
+  let name:String;
   
-  static WeakReferenceMap wrMap;
+  /** The type of this member. */
+  let memberType:Type;
+  
+  /** The class that declared this member, or null if it's a global function. */
+  let declaringType:Type;
+
+  /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
+  let kind:MemberKind;
+  
+  /** Accessibility of this member. */
+  let access:Access;
+  
+  /** Various member flags. */
+  let traits:Traits;
+
+  /** Array of attributes for this member. */
+  let attributes:Attribute[];
+}
+
+Member: 4 + 4 + 4 + 1 + 1 + 1 + 4 = 20.
+
+Method: 20 + 4 + 4 + 4 + 4 = 36.
+
+/** Description of a callable method. */
+final class Method : Member {
+  /** Array of type parameters. */
+  let typeParams:Type[];
+
+  /** The parameters of this method. */
+  let params:Parameter[];
+  
+  /** The return type of the method. */
+  let returnType:TypeDescriptor;
+
+  /** A pointer to the function. */
+  private let methodPointer:NativePointer[void];
+
+  /** A pointer to a trampoline function that can take an array of objects and call
+      the actual native method with the correct argument types.
+      'obj': The object pointer, or null if it is a static or global function.
+      'm': The native method pointer.
+      'args': The argument list.
+    */
+  private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+
+  /** Invoke the method on the specified object with the given arguments.
+      TODO: Define exception types for bad argument types.
+   */
+  final def call(obj:Object, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return invoke(obj, methodPointer, args);
+  }
+}
+
+
+/** The metatype object - the class that describes a type. */
+public class TypeDescriptor {
+  enum TypeKind : ubyte {
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    NATIVE_POINTER,
+    NATIVE_ARRAY,
+    //NonType
+  }
+
+  @Flags  
+  enum TypeTraits {
+    ATTRIBUTE,
+  }
+
+  /** The TypeInfoBlock for this type. */  
+  let typeInfo:NativePointer[TypeInfoBlock];
+  
+  /** The fully-qualified name of this type. */
+  let name:String;
+  
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  let typeKind:TypeKind;
+  
+  /** Pointer to this type's supertype, or null. */
+  let supertype:TypeDescriptor /* or void */;
+  
+  /** Array of inherited interfaces. */
+  let interfaces:TypeDescriptor[];
+  
+  /** Array of type parameters. */
+  let typeParams:TypeDescriptor[];
+  
+  /** Array of associated attributes */
+  let attributes:Attribute[];
+  
+  /** Array of field members. */
+  let fields:Field[];
+  
+  /** Array of property members. */
+  let properties:Property[];
+  
+  /** Array of constructor members. */
+  let constructors:Method[];
+  
+  /** Array of methods. */
+  let methods:Method[];
+
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+}

@@ -1,0 +1,8 @@
+/** A reference to a type, including any modifier flags (const, volatile, etc.) */
+struct TypeRef {
+  @Flags enum Modifiers {
+  }
+
+  let type:Type;
+  let modifiers:Modifiers;
+}

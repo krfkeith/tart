@@ -454,7 +454,11 @@ static SourceString infixEqSrc(
     " @tart.annex.Intrinsic"
     " def infixEQ[%T](:NativePointer[T], :NativePointer[T]) -> bool;"
     " @tart.annex.Intrinsic"
-    " def infixNE[%T](:NativePointer[T], :NativePointer[T]) -> bool;");
+    " def infixNE[%T](:NativePointer[T], :NativePointer[T]) -> bool;"
+    " @tart.annex.Intrinsic"
+    " def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic"
+    " def infixNE[%T](:__Address[T], :__Address[T]) -> bool;");
 
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");

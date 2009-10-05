@@ -12,6 +12,7 @@
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/BindingEnv.h"
+#include "tart/Sema/SpecializeCandidate.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -155,7 +156,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
         return true;
       }
     }
-  } else if (ConstantType * ctype = dyn_cast<ConstantType>(context)) {
+  } else if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(context)) {
     TypeDefn * typeDef = dealias(ctype->value())->typeDefn();
     if (typeDef != NULL && ctype->value()->memberScope() != NULL) {
       if (typeDef->isTemplate()) {
@@ -257,56 +258,126 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
 
 Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
     const ASTNodeList & args) {
-  DefnList defns;
-  TypeList types;
-  DefnAnalyzer da(module, activeScope);
-  Expr * base = NULL;
+  TypeList argList; // Template args, not function args.
+  bool isSingularArgList = true;  // True if all args are fully resolved.
 
+  // Resolve all the arguments. Note that we don't support type inference on template args,
+  // so the resolution is relatively straightforward.
+  ExprAnalyzer ea(module, activeScope);
+  for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
+    ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
+    if (isErrorResult(cb)) {
+      return NULL;
+    }
+
+    Type * typeArg = NULL;
+    if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
+      typeArg = dealias(ctype->value());
+      if (TypeDefn * tdef = typeArg->typeDefn()) {
+        typeArg = tdef->typeValue();
+      }
+    }
+
+    if (typeArg == NULL) {
+      typeArg = NonTypeConstant::get(cb);
+    }
+
+    if (!cb->isSingular()) {
+      isSingularArgList = false;
+    }
+
+    argList.push_back(typeArg);
+  }
+
+  // Examine all of the possible candidates for specialization.
+  SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
-    if (ConstantType * tref = dyn_cast<ConstantType>(*it)) {
-      if (NativePointerType * np = dyn_cast<NativePointerType>(tref->value())) {
-        defns.push_back(&NativePointerType::typedefn);
-      } else {
-        TypeDefn * ty = dealias(tref->value())->typeDefn();
-        if (ty != NULL) {
-          if (ty->isTemplate()) {
-            defns.push_back(ty);
-          } else if (ty->isTemplateInstance()) {
-            // It's an instance, so get the original template and its siblings
-            ty->templateInstance()->parentScope()->lookupMember(ty->name(), defns, true);
-          }
+    if (TypeLiteralExpr * tref = dyn_cast<TypeLiteralExpr>(*it)) {
+      Type * type = dealias(tref->value());
+      TypeDefn * typeDefn = type->typeDefn();
+      if (typeDefn != NULL) {
+        if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
+          addSpecCandidate(loc, candidates, NULL, typeDefn, argList);
         }
+      } else if (AddressType * np = dyn_cast<AddressType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, argList);
+      } else if (NativePointerType * np = dyn_cast<NativePointerType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &NativePointerType::typedefn, argList);
+      } else if (NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, argList);
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
-      if (lv->base() != NULL) {
-        base = lv->base();
-      }
-
       ValueDefn * val = lv->value();
-      if (val->isTemplate()) {
-        defns.push_back(val);
-      } else if (val->isTemplateInstance()) {
-        // It's an instance, so get the original template and its siblings
-        val->templateInstance()->parentScope()->lookupMember(val->name(), defns, true);
+      if (val->isTemplate() || val->isTemplateInstance()) {
+        addSpecCandidate(loc, candidates, lv->base(), val, argList);
       }
     }
   }
 
-  if (defns.empty()) {
+  if (candidates.empty()) {
+    diag.error(loc) << "No templates found which match template arguments [" << args << "]";
+    for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
+      diag.info(*it) << Format_Type << "candidate: " << *it;
+    }
+
+    ea.dumpScopeHierarchy();
     return NULL;
   }
 
-  // TODO: Handle expressions that have a base.
-  Defn * de = da.specialize(loc, defns, args);
-  if (de == NULL) {
-    return NULL;
-  }
+  //if (!isSingularArgList) {
+  //  return new
+  //}
 
-  return getDefnAsExpr(de, base, loc);
+  // TODO: Do template overload resolution.
+  // TODO: Use parameter assignments.
+  if (candidates.size() == 1) {
+    SpecializeCandidate * spc = *candidates.begin();
+    Defn * defn = spc->templateDefn();
+    TemplateSignature * tsig = spc->templateDefn()->templateSignature();
+    if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
+      Type * type = tsig->instantiateType(loc, spc->env());
+      if (type != NULL) {
+        return new TypeLiteralExpr(loc, type);
+      }
+    }
+
+    defn = tsig->instantiate(loc, spc->env());
+    if (defn != NULL) {
+      return getDefnAsExpr(defn, spc->base(), loc);
+    }
+  } else {
+    DFAIL("Implement");
+  }
+}
+
+void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
+    TypeList & args) {
+  if (defn->isTemplate()) {
+    DefnAnalyzer::analyzeTemplateSignature(defn);
+    const TemplateSignature * tsig = defn->templateSignature();
+    if (tsig->params().size() == args.size()) {
+      // Attempt unification of pattern variables with template args.
+      SpecializeCandidate * spc = new SpecializeCandidate(base, defn);
+      SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
+      if (spc->unify(&candidateSite, args)) {
+        spcs.insert(spc);
+      }
+    }
+  } else if (defn->isTemplateInstance()) {
+    DefnList defns;
+    defn->templateInstance()->parentScope()->lookupMember(defn->name(), defns, true);
+    for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
+      Defn * d = *it;
+      if (d->isTemplate()) {
+        addSpecCandidate(loc, spcs, base, d, args);
+      }
+    }
+  } else {
+    DFAIL("Not a template");
+  }
 }
 
 bool AnalyzerBase::importName(ExprList & out, const std::string & path, bool absPath, SLC & loc) {
-
   if (module != NULL) {
     DefnList defns;
     if (module->import(path.c_str(), defns, absPath)) {
@@ -341,7 +412,7 @@ bool AnalyzerBase::getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * cont
 
 Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
-    return new ConstantType(loc, tdef);
+    return tdef->asExpr();
   } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
     if (vdef->storageClass() == Storage_Instance && context == NULL) {
       diag.fatal(loc) << "Cannot access non-static member '" <<
@@ -367,18 +438,14 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
   }
 }
 
-bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, DefnList & out) {
+bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   int numNonTypes = 0;
   for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
-    if (ConstantType * cty = dyn_cast<ConstantType>(*it)) {
-      if (TypeDefn * tdef = cty->value()->typeDefn()) {
-        out.push_back(tdef);
-      }
-
-      continue;
+    if (TypeLiteralExpr * tle = dyn_cast<TypeLiteralExpr>(*it)) {
+      out.push_back(tle->value());
+    } else {
+      numNonTypes++;
     }
-
-    numNonTypes++;
   }
 
   if (out.empty()) {
@@ -386,7 +453,7 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, DefnList & out) {
   }
 
   if (numNonTypes > 0) {
-    diag.fatal(loc) << "Incompatible definitions for '" << out.front()->name() << "'";
+    diag.fatal(loc) << "Incompatible definitions for '" << out.front() << "'";
     for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
       diag.info(*it) << *it;
     }
@@ -435,6 +502,11 @@ void AnalyzerBase::analyzeTypeLater(Type * in) {
     TypeDefn * de = in->typeDefn();
     if (de != NULL) {
       analyzeLater(de);
+    } else {
+      size_t numTypeParams = in->numTypeParams();
+      for (size_t n = 0; n < numTypeParams; ++n) {
+        analyzeTypeLater(in->typeParam(n));
+      }
     }
   }
 }
@@ -503,6 +575,12 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
     case Type::NativePointer: {
       NativePointerType * np = static_cast<NativePointerType *>(type);
       analyzeTypeLater(np->typeParam(0));
+      return true;
+    }
+
+    case Type::Address: {
+      AddressType * ma = static_cast<AddressType *>(type);
+      analyzeTypeLater(ma->typeParam(0));
       return true;
     }
 

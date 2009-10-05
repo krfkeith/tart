@@ -18,6 +18,8 @@
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
 
+#include "llvm/Support/raw_ostream.h"
+
 namespace tart {
 
 FormatStream & operator<<(FormatStream & out, const llvm::Type * type) {
@@ -27,7 +29,8 @@ FormatStream & operator<<(FormatStream & out, const llvm::Type * type) {
 
 FormatStream & operator<<(FormatStream & out, const llvm::Value * value) {
   // Use a temporary string stream to get the printed form of the value.
-  std::stringstream ss;
+  std::string s;
+  llvm::raw_string_ostream ss(s);
   value->print(ss);
   out << ss.str();
   return out;
@@ -393,6 +396,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
         if (param->type()->typeClass() == Type::Struct) {
+          diag.info(in) << param;
           return param->irValue();
         }
 
@@ -472,7 +476,15 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
       const BinaryExpr * indexOp = static_cast<const BinaryExpr *>(expr);
       const Expr * arrayExpr = indexOp->first();
       const Expr * indexExpr = indexOp->second();
-      Value * arrayVal = genBaseExpr(arrayExpr, indices, labelStream);
+      Value * arrayVal;
+
+      if (arrayExpr->type()->typeClass() == Type::Address) {
+        // Handle auto-deref of Address type.
+        arrayVal = genExpr(arrayExpr);
+        labelStream << arrayExpr;
+      } else {
+        arrayVal = genBaseExpr(arrayExpr, indices, labelStream);
+      }
 
       // TODO: Make sure the dimensions are in the correct order here.
       // I think they might be backwards.
@@ -497,7 +509,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
 Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     FormatStream & labelStream) {
 
-  // If the base is a reference
+  // If the base is a pointer
   bool needsDeref = false;
 
   // True if the base address itself has a base.
@@ -620,8 +632,7 @@ Value * CodeGenerator::genBitCast(CastExpr * in) {
   Type * toType = in->type();
 
   if (value != NULL && toType != NULL) {
-    return builder_.CreateBitCast(
-        value, PointerType::get(toType->irType(), 0), "bitcast");
+    return builder_.CreateBitCast(value, toType->irEmbeddedType(), "bitcast");
   }
 
   return NULL;
@@ -764,6 +775,11 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
 
   Value * fnValue;
   if (const NativePointerType * np = dyn_cast<NativePointerType>(fnType)) {
+    fnValue = genExpr(fn);
+    if (fnValue != NULL) {
+      fnValue = builder_.CreateLoad(fnValue);
+    }
+  } else if (const AddressType * np = dyn_cast<AddressType>(fnType)) {
     fnValue = genExpr(fn);
     if (fnValue != NULL) {
       fnValue = builder_.CreateLoad(fnValue);
@@ -968,13 +984,13 @@ llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
 
   // String type members
   std::vector<Constant *> members;
-  members.push_back(ConstantStruct::get(context_, objMembers));
+  members.push_back(ConstantStruct::get(context_, objMembers, false));
   members.push_back(getInt32Val(strval.size()));
   members.push_back(strSource);
   members.push_back(strDataStart);
   members.push_back(ConstantArray::get(context_, strval, false));
 
-  Constant * strStruct = ConstantStruct::get(context_, members);
+  Constant * strStruct = ConstantStruct::get(context_, members, false);
   Constant * strConstant = llvm::ConstantExpr::getPointerCast(
       new GlobalVariable(*irModule_,
           strStruct->getType(), true,
@@ -1109,12 +1125,12 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   switch (sizeExpr->exprType()) {
     case Expr::LValue:
     case Expr::ElementRef:
-    sizeValue = genLValueAddress(sizeExpr);
-    break;
+      sizeValue = genLValueAddress(sizeExpr);
+      break;
 
     default:
-    sizeValue = genExpr(sizeExpr);
-    break;
+      sizeValue = genExpr(sizeExpr);
+      break;
   }
 
   if (isa<PointerType>(sizeValue->getType())) {
@@ -1199,7 +1215,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
     }
   }
 
-  return ConstantStruct::get(context_, fieldValues);
+  return ConstantStruct::get(context_, fieldValues, false);
 }
 
 llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * array) {

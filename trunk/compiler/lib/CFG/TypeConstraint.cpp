@@ -29,7 +29,7 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     ConversionRank rank = toType->convert(resultType);
     if (rank > best) {
       best = rank;
@@ -50,7 +50,7 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     ConversionRank rank = resultType->convert(conversion);
     if (rank > best) {
       best = rank;
@@ -73,7 +73,7 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
     if (env.unify(&candidateSite, pattern, resultType, Invariant)) {
       if (match) {
@@ -98,7 +98,7 @@ bool ResultOfConstraint::isSubtype(const Type * other) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     if (!resultType->isSubtype(other)) {
       return false;
     }
@@ -114,7 +114,7 @@ bool ResultOfConstraint::includes(const Type * other) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     if (resultType->includes(other)) {
       return true;
     }
@@ -151,7 +151,7 @@ void ResultOfConstraint::format(FormatStream & out) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType();
+    Type * resultType = (*it)->resultType().type();
     if (!first) {
       out << "|";
     }

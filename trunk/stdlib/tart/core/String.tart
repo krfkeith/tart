@@ -1,5 +1,6 @@
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
+import tart.core.Memory.Address;
 import tart.text.encodings.Codecs;
 
 /** The built-in string class. Strings are immutable. */
@@ -15,7 +16,7 @@ public final class String {
     var source:String;
     
     /** The pointer to the starting byte. */
-    var start:NativePointer[NativeArray[ubyte, 0]];
+    var start:Address[ubyte];
     
     /** For non-slice strings, this is the array of bytes immediately
         following the string instance in memory. */
@@ -27,7 +28,7 @@ public final class String {
       let s:String = __pvalloc(zeroPtr[String]().data[len]);
       s.len = len;
       s.source = s;
-      s.start = addressOf(s.data);
+      s.start = addressOf(s.data[0]);
       return s;
     }
   }
@@ -68,16 +69,14 @@ public final class String {
    */
   static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
     let length = Codecs.UTF_8.encodedLength(chars, start, count);
-    let bytes = ubyte[](length);
-    Codecs.UTF_8.encode(bytes, 0, chars, start, count);
     let self = alloc(length);
-    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), length);
+    Codecs.UTF_8.encodeRaw(addressOf(self.data[0]), length, addressOf(chars.data[0]), count);
     return self;
   }
 
   /** Construct a string from a native byte array. */
   @LinkageName("String_create")
-  static def create(bytes:NativePointer[NativeArray[ubyte, 0]], length:int) -> String {
+  static def create(bytes:Address[ubyte], length:int) -> String {
     let self = alloc(length);
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes[0]), length);
     return self;
@@ -112,74 +111,31 @@ public final class String {
     return true;
   }
   
-  /** The length of the string in characters. */
+  /** The length of the string in characters.
+      Parameters:
+        start: The starting byte index of the substring to measure.
+        count: The length, in bytes, of the substring to measure.
+   */
   def charLength(start:int = 0, count:int = int.maxVal) -> int {
-    var result:int = 0;
-    var index:int = 0;
-    while index < self.len {
-      let c = self.data[index];
-      if c < 0x80 {
-        index += 1;
-      } else if c < 0xc0 {
-        // Invalid unicode char
-        break;
-      } else if c < 0xe0 {
-        index += 2;
-      } else if c < 0xf0 {
-        index += 3;
-      } else if c < 0xf5 {
-        index += 4;
-      } else {
-        // Invalid unicode char, 
-        break;
-      }
-
-      ++result;
-    }
-    
-    if index != self.len {
-    }
-    
-    return result;
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, length);
+    count = Math.min(count, length - start);
+    return Codecs.UTF_8.decodedLengthRaw(addressOf(self.data[start]), count);
   }
   
-  /** Coerce a String to a String simply returns 'self'. */
+  /** Convert this string to a character array.
+      Parameters:
+        start: The starting byte index of the substring to convert.
+        count: The length, in bytes, of the substring to convert.
+   */
   def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
-    let result = char[](self.charLength(start, count));
-    var index:int = 0;
-    var pos:int = 0;
-    while index < self.len {
-      let b = self.data[index];
-      var charVal:uint = 0;
-      if b < 0x80 {
-        index += 1;
-        charVal = b;
-      } else if b < 0xc0 {
-        // Invalid unicode char
-        break;
-      } else if b < 0xe0 {
-        charVal = (uint(b & 0x3f) << 6)
-                | (self.data[index + 1] & 0x7f);
-        index += 2;
-      } else if b < 0xf0 {
-        charVal = (uint(b & 0x1f) << 12)
-                | (uint(self.data[index + 1] & 0x7f) << 6)
-                | (self.data[index + 2] & 0x7f);
-        index += 3;
-      } else if b < 0xf5 {
-        charVal = (uint(b & 0x0f) << 18)
-                | (uint(self.data[index + 1] & 0x7f) << 12)
-                | (uint(self.data[index + 2] & 0x7f) << 6)
-                | (self.data[index + 3] & 0x7f);
-        index += 4;
-      } else {
-        // Invalid unicode char, 
-        break;
-      }
-
-      result[pos++] = charVal;
-    }
-
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, length);
+    count = Math.min(count, length - start);
+    let charCount = self.charLength(start, count);
+    let result = char[](charCount);
+    Codecs.UTF_8.decodeRaw(
+        addressOf(result.data[0]), charCount, addressOf(self.data[start]), count);
     return result;
   }
 

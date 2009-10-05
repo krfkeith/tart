@@ -36,6 +36,7 @@ def integerToStringTest() {
   Debug.assertEq("10", ulong(10).toString());
 
   Debug.assertEq("A", char(65).toString());
+  //Debug.assertEq("A", String(ubyte[].of(65)));
 }
 
 def integerLimitsTest() {

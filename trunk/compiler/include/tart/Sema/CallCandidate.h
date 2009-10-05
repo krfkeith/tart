@@ -71,8 +71,9 @@ public:
   Type * paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */
-  Type * resultType() const { return resultType_; }
-  void setResultType(Type * type) { resultType_ = type; }
+  const TypeRef & resultType() const { return resultType_; }
+  TypeRef & resultType() { return resultType_; }
+  void setResultType(Type * type) { resultType_.setType(type); }
 
   /** The compatibility rank for the least compatible argument. */
   ConversionRank conversionRank() const { return conversionRank_; }
@@ -137,7 +138,7 @@ private:
   ParameterAssignments paramAssignments_;
   BindingEnv bindingEnv_;
   FunctionType * fnType_;
-  Type * resultType_;
+  TypeRef resultType_;
   TypeList paramTypes_;
   bool isTemplate_;
 };

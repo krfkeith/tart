@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     bool running = true;
     llvm::sys::Path filePath(SourcePath);
     filePath.appendComponent(InputFilenames[i]);
-    SourceFile source(filePath.toString());
+    SourceFile source(filePath.str());
     Module module(&source, filePath.getBasename(), &Builtins::module);
     Parser parser(&source, &module);
     if (!parser.parseImports(module.imports())) {

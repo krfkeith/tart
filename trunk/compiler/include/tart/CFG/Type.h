@@ -24,6 +24,7 @@ namespace llvm {
 namespace tart {
 
 class BindingEnv;
+class TypeReference;
 
 /// -------------------------------------------------------------------
 /// An enumeration of all of the fundamental types known to the compiler.
@@ -83,11 +84,7 @@ enum ConversionRank {
   // Rank 3-4: Trivial conversions
   ExactConversion,   // let x:byte = int(1)  Lossless conversion
 
-  // Rank 5: Type strengthening required (i.e. T -> int)
-//  StrengthenRequired = 0x0500,// let x:byte = 1       unsized int to sized int
-//  DeductionRequired = 0x0501, // let x:int = min(1,2) No conversion
-
-  // Rank 6: Identity conversions
+  // Rank 5: Identity conversions
   IdenticalTypes,     // let x:int = int(1)   No conversion, same type
 };
 
@@ -380,6 +377,59 @@ private:
 };
 
 /// -------------------------------------------------------------------
+/// A reference to a type, and the type modifiers.
+
+class TypeRef {
+public:
+  enum Modifiers {
+    Const = 1 << 0,
+  };
+
+  TypeRef() : type_(NULL), modifiers_(0) {}
+  TypeRef(Type * type) : type_(type), modifiers_(0) {}
+  TypeRef(Type * type, uint32_t modifiers) : type_(type), modifiers_(modifiers) {}
+  TypeRef(const TypeRef & ref) : type_(ref.type_), modifiers_(ref.modifiers_) {}
+
+  Type * type() const { return type_; }
+  void setType(Type * type) { type_ = type; }
+
+  /** Return the canonicalized version of the type. */
+  const Type * dealias() const;
+  Type * dealias();
+
+  uint32_t modifiers() const { return modifiers_; }
+  void setModifiers(uint32_t modifiers) { modifiers_ = modifiers; }
+
+  TypeRef & operator=(const TypeRef & ref) {
+    type_ = ref.type_;
+    modifiers_ = ref.modifiers_;
+  }
+
+  void trace() const {
+    if (type_) { type_->mark(); }
+  }
+
+  bool isNull() const { return type_ == NULL; }
+  bool isVoidType() const { return type_ != NULL && type_->isVoidType(); }
+  bool isUnsizedIntType() const { return type_ != NULL && type_->isUnsizedIntType(); }
+  bool isSingular() const { return type_ != NULL && type_->isSingular(); }
+  bool isEqual(const TypeRef & other) const {
+    return type_->isEqual(other.type_) && modifiers_ == other.modifiers_;
+  }
+
+  Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
+  Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
+
+private:
+  Type * type_;
+  uint32_t modifiers_;
+};
+
+FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
+
+typedef llvm::SmallVector<TypeReference, 8> TypeRefList;
+
+/// -------------------------------------------------------------------
 /// Predicate functions for type ids.
 
 inline bool isIntegerType(TypeId id) {
@@ -408,6 +458,10 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
 
 void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
     const Expr * from, const Type * to);
+
+// Given a type, append the linkage name of that type to the output buffer.
+void typeLinkageName(std::string & out, const TypeRef & ty);
+void typeLinkageName(std::string & out, const Type * ty);
 
 /** Given two types, try and find the narrowest type that both
     can be converted to.

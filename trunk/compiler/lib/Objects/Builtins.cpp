@@ -88,6 +88,7 @@ void Builtins::init() {
   nsOperator.setQualifiedName(nsOperator.name());
 
   // Other built-in types
+  AddressType::initBuiltin();
   NativePointerType::instance.initBuiltin();
   NativeArrayType::instance.initBuiltin();
 

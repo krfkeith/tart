@@ -9,7 +9,7 @@ public final class StringBuilder {
       let newSize = self.len + amount;
       if value.length < newSize {
         let newValue = char[](newSize + newSize / 2 + 16);
-        char[].copy(newValue, 0, value, 0, self.len);
+        char[].copyElements(newValue, 0, value, 0, self.len);
         value = newValue;
       }
 
@@ -36,7 +36,7 @@ public final class StringBuilder {
     start = Math.min(start, chars.length);
     count = Math.min(count, chars.length - start);
     value = char[](count);
-    char[].copy(value, 0, chars, start, count);
+    char[].copyElements(value, 0, chars, start, count);
     self.len = count;
   }
   
@@ -82,8 +82,8 @@ public final class StringBuilder {
       if count > 0 {
         let remaining = self.len - insertPos;
         grow(count);
-        char[].copy(value, insertPos + count, value, insertPos, remaining);
-        char[].copy(value, insertPos, chars, start, count);
+        char[].copyElements(value, insertPos + count, value, insertPos, remaining);
+        char[].copyElements(value, insertPos, chars, start, count);
       }
     }
   }
@@ -108,8 +108,8 @@ public final class StringBuilder {
     if chars.length > 0 {
       let remaining = self.len - insertPos;
       grow(chars.length);
-      char[].copy(value, insertPos + chars.length, value, insertPos, remaining);
-      char[].copy(value, insertPos, chars, 0, chars.length);
+      char[].copyElements(value, insertPos + chars.length, value, insertPos, remaining);
+      char[].copyElements(value, insertPos, chars, 0, chars.length);
     }
   }
   
@@ -152,7 +152,7 @@ public final class StringBuilder {
     Preconditions.checkIndex(start >= 0);
     start = Math.min(start, self.len);
     count = Math.min(count, self.len - start);
-    char[].copy(value, start, value, start + count, self.len - start - count);
+    char[].copyElements(value, start, value, start + count, self.len - start - count);
     len -= count;
   }
 

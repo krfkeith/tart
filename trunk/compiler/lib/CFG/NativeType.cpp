@@ -14,6 +14,126 @@
 namespace tart {
 
 // -------------------------------------------------------------------
+// AddressType
+
+AddressType AddressType::prototype;
+TypeDefn AddressType::typedefn(&Builtins::module, "__Address", NULL);
+AddressType::TypeMap AddressType::uniqueTypes_;
+
+void AddressType::initBuiltin() {
+  // Create type parameters
+  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
+  tsig->addParameter(SourceLocation(), "Target");
+
+  // Add to builtin name space
+  Builtins::module.addMember(&typedefn);
+  typedefn.setQualifiedName(typedefn.name());
+  typedefn.setTypeValue(&prototype);
+
+  prototype.elementType_ = tsig->params()[0];
+}
+
+AddressType * AddressType::get(Type * elemType) {
+  elemType = dealias(elemType);
+  TypeMap::iterator it = uniqueTypes_.find(elemType);
+  if (it != uniqueTypes_.end()) {
+    return it->second;
+  }
+
+  AddressType * addrType = new AddressType(elemType);
+  uniqueTypes_[elemType] = addrType;
+  return addrType;
+}
+
+AddressType::AddressType(Type * elemType)
+  : TypeImpl(Type::Address)
+  , elementType_(elemType)
+{
+  DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
+}
+
+AddressType::AddressType()
+  : TypeImpl(Type::Address)
+  , elementType_(NULL)
+{
+}
+
+AddressType::~AddressType() {
+  //TypeMap::iterator it = uniqueTypes_.find(elementType_);
+  //if (it != uniqueTypes_.end()) {
+  //  uniqueTypes_.erase(it);
+  //}
+}
+
+const llvm::Type * AddressType::createIRType() const {
+  DASSERT_OBJ(elementType_ != NULL, this);
+  const llvm::Type * type = elementType_->irEmbeddedType();
+  return llvm::PointerType::getUnqual(type);
+}
+
+ConversionRank AddressType::convertImpl(const Conversion & cn) const {
+  const Type * fromType = dealias(cn.getFromType());
+  if (isa<AddressType>(fromType)) {
+    Type * fromElementType = fromType->typeParam(0);
+    if (fromElementType == NULL) {
+      DFAIL("No element type");
+    }
+
+    // For native pointers, the thing pointed to must be identical for
+    // both types.
+
+    Expr * fromValue = cn.fromValue;
+    ConversionRank rank = Incompatible;
+    if (elementType_->isEqual(fromElementType)) {
+      rank = IdenticalTypes;
+    } else {
+      // Check conversion on element types
+      Conversion elementConversion(dealias(fromElementType));
+      elementConversion.bindingEnv = cn.bindingEnv;
+      if (elementType_->convert(elementConversion) == IdenticalTypes) {
+        rank = IdenticalTypes;
+      }
+    }
+
+    if (rank != Incompatible && cn.resultValue) {
+      *cn.resultValue = fromValue;
+    }
+
+    //diag.debug() << Format_Verbose <<
+    //    "Wants to convert from " << elementConversion.fromType << " to " <<
+    //    elementType_ << " [" << elementType_->convert(elementConversion) << "]";
+    return rank;
+    //DFAIL("Implement");
+  } else {
+    return Incompatible;
+  }
+}
+
+bool AddressType::isSingular() const {
+  return elementType_->isSingular();
+}
+
+bool AddressType::isEqual(const Type * other) const {
+  if (const AddressType * np = dyn_cast<AddressType>(other)) {
+    return elementType_->isEqual(np->elementType_);
+  }
+
+  return false;
+}
+
+bool AddressType::isSubtype(const Type * other) const {
+  if (isEqual(other)) {
+    return true;
+  }
+
+  return false;
+}
+
+void AddressType::format(FormatStream & out) const {
+  out << "Address[" << elementType_ << "]";
+}
+
+// -------------------------------------------------------------------
 // NativePointerType
 
 NativePointerType NativePointerType::instance(NULL, &NativePointerType::typedefn,
@@ -71,8 +191,9 @@ const llvm::Type * NativePointerType::createIRType() const {
 
 ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
-  if (const NativePointerType * npFrom = dyn_cast<NativePointerType>(fromType)) {
-    Type * fromElementType = npFrom->typeParam(0);
+  // Memory addresses can be silently converted to native pointers, but not vice-versa.
+  if (isa<AddressType>(fromType) || isa<NativePointerType>(fromType)) {
+    Type * fromElementType = fromType->typeParam(0);
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -80,29 +201,33 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
     // For native pointers, the thing pointed to must be identical for
     // both types.
 
+    Expr * fromValue = cn.fromValue;
+    ConversionRank bestRank = isa<AddressType>(fromType) ? ExactConversion : IdenticalTypes;
+    ConversionRank rank = Incompatible;
     if (elementType_->isEqual(fromElementType)) {
-      if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+      rank = bestRank;
+    } else {
+      // Check conversion on element types
+      Conversion elementConversion(dealias(fromElementType));
+      elementConversion.bindingEnv = cn.bindingEnv;
+      if (elementType_->convert(elementConversion) == IdenticalTypes) {
+        rank = bestRank;
       }
-
-      return IdenticalTypes;
     }
 
-    // Check conversion on element types
-    Conversion elementConversion(dealias(fromElementType));
-    elementConversion.bindingEnv = cn.bindingEnv;
-    if (elementType_->convert(elementConversion) == IdenticalTypes) {
-      if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+    if (rank != Incompatible && cn.resultValue) {
+      if (rank == ExactConversion) {
+        fromValue = new CastExpr(
+            Expr::BitCast, SourceLocation(), const_cast<NativePointerType *>(this), fromValue);
       }
 
-      return IdenticalTypes;
+      *cn.resultValue = fromValue;
     }
 
     //diag.debug() << Format_Verbose <<
     //    "Wants to convert from " << elementConversion.fromType << " to " <<
     //    elementType_ << " [" << elementType_->convert(elementConversion) << "]";
-    return Incompatible;
+    return rank;
     //DFAIL("Implement");
   } else {
     return Incompatible;

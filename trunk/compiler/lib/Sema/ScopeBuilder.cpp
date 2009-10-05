@@ -42,6 +42,7 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
           break;
 
         case Type::Enum:
+        case Type::Address:
         case Type::NativePointer:
         case Type::NativeArray:
         case Type::Alias:

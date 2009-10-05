@@ -7,10 +7,10 @@ class EntryPoint {
   public def construct() {}
   @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
   
-  static def __entry__(
+  /*static def __entry__(
       argc:int,
       argv:NativeArray[NativePointer[ubyte], 0],
       func:fn :String[] -> int) -> int {
     return 0;
-  }
+  }*/
 }

@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 
   if (!Depends.empty()) {
     llvm::sys::Path dependsPath(Depends);
-    fprintf(stderr, "Depends path: %s\n", dependsPath.toString().c_str());
+    fprintf(stderr, "Depends path: %s\n", dependsPath.c_str());
     std::ofstream dependsOut(dependsPath.c_str());
     dependsOut.close();
     return 0;

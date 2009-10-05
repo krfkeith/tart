@@ -16,7 +16,7 @@ namespace tart {
 class TypeDefn : public Defn {
 protected:
   Type * value;
-  ConstantType * expr_;
+  Expr * expr_;
   Scope * definingScope_;
 
   Type::TypeClass defnType_ToTypeClass(DefnType dt);
@@ -39,7 +39,7 @@ public:
   {}
 
   /** Return an expression reference to this type. */
-  ConstantType * asExpr();
+  Expr * asExpr();
 
   /** Return the type expression defined by this definition. */
   const Type * typeValue() const { return value; }

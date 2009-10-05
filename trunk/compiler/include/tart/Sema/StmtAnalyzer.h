@@ -113,7 +113,7 @@ public:
   Block * setMacroReturnTarget(Block * blk);
 
   /** Set the return type - used when doing macro expansion. */
-  Type * setReturnType(Type * returnType);
+  TypeRef setReturnType(const TypeRef & returnType);
 
   /** Create a new local scope and make it's parent the current scope.
       Do not yet set it as the current active scope. */
@@ -196,7 +196,7 @@ private:
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
   FunctionDefn * function;
-  Type * returnType_;
+  TypeRef returnType_;
   Type * yieldType_;
   BlockList & blocks;
   BlockList::iterator insertPos_;

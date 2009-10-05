@@ -272,17 +272,8 @@ private:
   Expr * toExpr_;
 
 public:
-  AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from)
-    : Expr(Assign, loc, to->type())
-    , fromExpr_(from)
-    , toExpr_(to)
-  {}
-
-  AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from)
-    : Expr(k, loc, to->type())
-    , fromExpr_(from)
-    , toExpr_(to)
-  {}
+  AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from);
+  AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from);
 
   Expr * fromExpr() const { return fromExpr_; }
   void setFromExpr(Expr * ex) { fromExpr_ = ex; }

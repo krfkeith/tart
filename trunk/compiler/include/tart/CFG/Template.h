@@ -117,6 +117,9 @@ public:
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
 
+  /** Special version of instantiate for types. */
+  Type * instantiateType(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
+
   /** Print the template param list */
   void format(FormatStream & out) const;
 

@@ -23,6 +23,7 @@ namespace tart {
 
 class TemplateSignature;
 class PatternVar;
+class AddressType;
 class NativePointerType;
 class NativeArrayType;
 
@@ -156,6 +157,7 @@ public:
   Type * subst(Type * in, bool finalize = false) const;
 
   Type * relabel(Type * in);
+  TypeRef relabel(const TypeRef & in);
 
     /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {
@@ -196,6 +198,7 @@ private:
   Substitution * substitutions_;
 
   bool unifyPattern(SourceContext * source, PatternVar * pattern, Type * value, Variance variance);
+  bool unifyAddressType(SourceContext * source, AddressType * pattern, Type * value);
   bool unifyNativePointerType(SourceContext * source, NativePointerType * pattern, Type * value);
   bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);
   bool unifyCompositeType(SourceContext * source, CompositeType * pattern, CompositeType * value,

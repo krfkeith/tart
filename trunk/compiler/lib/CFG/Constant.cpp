@@ -137,41 +137,32 @@ void ConstantNull::format(FormatStream & out) const {
 }
 
 /// -------------------------------------------------------------------
-/// ConstantType
-ConstantType::ConstantType(SourceLocation l, Type * val)
-  : ConstantExpr(ConstType, l, Builtins::typeTypeDescriptor)
+/// TypeLiteralExpr
+TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, Type * val)
+  : ConstantExpr(TypeLiteral, l, Builtins::typeTypeDescriptor)
   , value_(val)
 {
   DASSERT(value_ != NULL);
-  //DASSERT_OBJ(type() != NULL, this);
 }
 
-ConstantType::ConstantType(SourceLocation l, TypeDefn * valDefn)
-  : ConstantExpr(ConstType, l, Builtins::typeTypeDescriptor)
-  , value_(valDefn->typeValue())
-{
-  DASSERT(value_ != NULL);
-  DASSERT_OBJ(type() != NULL, this);
-}
-
-bool ConstantType::isSingular() const {
+bool TypeLiteralExpr::isSingular() const {
   return value_->isSingular();
 }
 
-bool ConstantType::isEqual(const ConstantExpr * cexpr) const {
-  if (const ConstantType * ct = dyn_cast<ConstantType>(cexpr)) {
+bool TypeLiteralExpr::isEqual(const ConstantExpr * cexpr) const {
+  if (const TypeLiteralExpr * ct = dyn_cast<TypeLiteralExpr>(cexpr)) {
     return value()->isEqual(ct->value());
   }
 
   return false;
 }
 
-void ConstantType::trace() const {
+void TypeLiteralExpr::trace() const {
   Expr::trace();
   value_->mark();
 }
 
-void ConstantType::format(FormatStream & out) const {
+void TypeLiteralExpr::format(FormatStream & out) const {
   out << value_;
 }
 

@@ -21,35 +21,6 @@ namespace {
   bool isOverloadable(Defn::DefnType dt) {
     return dt == Defn::Function || dt == Defn::Macro;
   }
-
-  // Given a type, append the linkage name of that type to the output buffer.
-  void typeLinkageName(std::string & out, Type * ty) {
-    ty = dealias(ty);
-    if (TypeDefn * td = ty->typeDefn()) {
-      out.append(td->linkageName());
-    } else if (FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
-      out.append("fn");
-      if (!ftype->params().empty()) {
-        out.append("(");
-        ParameterList & params = ftype->params();
-        for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
-          if (it != params.begin()) {
-            out.append(",");
-          }
-
-          typeLinkageName(out, (*it)->type());
-        }
-        out.append(")");
-      }
-
-      if (ftype->returnType() != NULL && !ftype->returnType()->isVoidType()) {
-        out.append("->");
-        typeLinkageName(out, ftype->returnType());
-      }
-    } else {
-      DFAIL("Can't compute linkage name of type");
-    }
-  }
 }
 
 // -------------------------------------------------------------------
@@ -318,10 +289,10 @@ void NamespaceDefn::trace() const {
 
 // -------------------------------------------------------------------
 // TypeDefn
-ConstantType * TypeDefn::asExpr() {
+Expr * TypeDefn::asExpr() {
   DASSERT(Builtins::typeTypeDescriptor != NULL);
   if (expr_ == NULL) {
-    expr_ = new ConstantType(ast_ ? ast_->location() : SourceLocation(), this);
+    expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), value);
   }
 
   return expr_;

@@ -144,6 +144,8 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
+        //} else if (param->type()->typeClass() == Type::NativeArray) {
+        //  diag.error(param) << "Invalid parameter type (native array)";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
           if (param->internalType()->isSingular()) {
             module->addSymbol(param->internalType()->typeDefn());
@@ -330,9 +332,9 @@ bool FunctionAnalyzer::resolveReturnType() {
   bool success = true;
 
   FunctionType * funcType = target->functionType();
-  Type * returnType = funcType->returnType();
+  TypeRef returnType = funcType->returnType();
 
-  if (returnType == NULL && target->isPassRunning(Pass_ResolveReturnType)) {
+  if (returnType.isNull() && target->isPassRunning(Pass_ResolveReturnType)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
   }
@@ -342,7 +344,7 @@ bool FunctionAnalyzer::resolveReturnType() {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).
       // Templates that don't have an explicit return type are assumed void.
-      if (returnType == NULL) {
+      if (returnType.isNull()) {
         funcType->setReturnType(&VoidType::instance);
       }
 
@@ -355,7 +357,7 @@ bool FunctionAnalyzer::resolveReturnType() {
   if (target->beginPass(Pass_ResolveReturnType)) {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
-    if (returnType == NULL) {
+    if (returnType.isNull()) {
       returnType = &VoidType::instance;
 #if INFER_RETURN_TYPE
       BlockList & blocks = target->blocks();
@@ -422,11 +424,11 @@ bool FunctionAnalyzer::resolveReturnType() {
       funcType->setReturnType(returnType);
     }
 
-    DASSERT_OBJ(returnType != &NullType::instance, returnType);
+    DASSERT_OBJ(returnType.type() != &NullType::instance, returnType);
 
     // Add implicit casts to return statements if needed.
     BlockList & blocks = target->blocks();
-    bool isVoidFunc = returnType == &VoidType::instance;
+    bool isVoidFunc = returnType.isVoidType();
     for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
       Block * bk = *it;
       if (bk->terminator() == BlockTerm_Return) {
@@ -440,8 +442,8 @@ bool FunctionAnalyzer::resolveReturnType() {
           }
 
           Type * type = returnExpr->type();
-          if (!returnType->isEqual(type)) {
-            returnExpr = returnType->implicitCast(loc, returnExpr);
+          if (!returnType.type()->isEqual(type)) {
+            returnExpr = returnType.implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
               bk->exitReturn(loc, returnExpr);
             }
@@ -453,7 +455,7 @@ bool FunctionAnalyzer::resolveReturnType() {
         } else if (!isVoidFunc) {
           // See if we can convert a void expression to the return type.
           Expr * voidExpr = ConstantNull::get(loc, &VoidType::instance);
-          returnExpr = returnType->implicitCast(loc, voidExpr);
+          returnExpr = returnType.implicitCast(loc, voidExpr);
           if (returnExpr != NULL) {
             bk->exitReturn(loc, returnExpr);
           } else {

@@ -5,6 +5,7 @@
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/Type.h"
 #include "tart/CFG/Defn.h"
+#include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
@@ -262,6 +263,24 @@ void ScopeNameExpr::trace() const {
 /// -------------------------------------------------------------------
 /// AssignmentExpr
 
+AssignmentExpr::AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from)
+  : Expr(Assign, loc, to->type())
+  , fromExpr_(from)
+  , toExpr_(to)
+{
+  DASSERT(to != NULL);
+  DASSERT(from != NULL);
+}
+
+AssignmentExpr::AssignmentExpr(ExprType k, const SourceLocation & loc, Expr * to, Expr * from)
+  : Expr(k, loc, to->type())
+  , fromExpr_(from)
+  , toExpr_(to)
+{
+  DASSERT(to != NULL);
+  DASSERT(from != NULL);
+}
+
 void AssignmentExpr::format(FormatStream & out) const {
   if (exprType() == Expr::PostAssign) {
     out << toExpr() << " (=) " << fromExpr();
@@ -329,7 +348,7 @@ Type * CallExpr::singularResultType() {
       continue;
     }
 
-    Type * ty = cc->resultType();
+    Type * ty = cc->resultType().type();
     if (cc->method() != NULL && cc->method()->isCtor()) {
       ty = cc->functionType()->selfParam()->type();
     }

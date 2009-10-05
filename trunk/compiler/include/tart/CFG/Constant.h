@@ -40,7 +40,10 @@ public:
         ex->exprType() == ConstFloat ||
         ex->exprType() == ConstString ||
         ex->exprType() == ConstNull ||
-        ex->exprType() == ConstType;
+        ex->exprType() == ConstObjRef ||
+        ex->exprType() == ConstNArray ||
+        ex->exprType() == TypeName ||
+        ex->exprType() == TypeLiteral;
   }
 };
 
@@ -148,13 +151,12 @@ public:
 /// -------------------------------------------------------------------
 /// An constant expression which refers to a type. Used for template
 /// arguments and reflection.
-class ConstantType : public ConstantExpr {
+class TypeLiteralExpr : public ConstantExpr {
 private:
   Type * value_;
 
 public:
-  ConstantType(SourceLocation l, Type * val);
-  ConstantType(SourceLocation l, TypeDefn * valDefn);
+  TypeLiteralExpr(SourceLocation l, Type * val);
 
   const Type * value() const { return value_; }
   Type * value() { return value_; }
@@ -165,9 +167,9 @@ public:
   bool isSingular() const;
   void format(FormatStream & out) const;
   void trace() const;
-  static inline bool classof(const ConstantType *) { return true; }
+  static inline bool classof(const TypeLiteralExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
-    return ex->exprType() == ConstType;
+    return ex->exprType() == TypeLiteral;
   }
 };
 

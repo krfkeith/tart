@@ -19,7 +19,7 @@ foreach(SRC_FILE ${TART_SRC})
   # Link with stdlib
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -disable-fp-elim -filetype=asm -no-extern -O1 ${BC_FILE} "${TART_BINARY_DIR}/stdlib/stdlib.bc"
+      COMMAND tartln -disable-fp-elim -filetype=asm -internalize -O0 ${BC_FILE} "${TART_BINARY_DIR}/stdlib/stdlib.bc"
       DEPENDS "${BC_FILE}" tartln stdlib
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 

@@ -15,12 +15,15 @@
 
 #include "tart/Objects/Builtins.h"
 
-#include <llvm/Config/config.h>
-#include <llvm/Support/CommandLine.h>
-#include <llvm/Target/TargetData.h>
-#include <llvm/PassManager.h>
-#include <llvm/Bitcode/ReaderWriter.h>
-#include <llvm/LinkAllVMCore.h>
+#include "llvm/Config/config.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Target/TargetData.h"
+#include "llvm/PassManager.h"
+#include "llvm/Bitcode/ReaderWriter.h"
+#include "llvm/LinkAllVMCore.h"
+#include "llvm/Support/raw_ostream.h"
+
+#include <memory>
 
 namespace tart {
 
@@ -245,24 +248,21 @@ void CodeGenerator::outputModule() {
     }
   }
 
-  std::ofstream binOut(binPath.c_str());
-  if (!binOut.good()) {
-    diag.fatal() << "Cannot write output file '" << binPath.c_str() << "'";
+  std::string errorInfo;
+  std::auto_ptr<llvm::raw_ostream> binOut(
+      new llvm::raw_fd_ostream(binPath.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary));
+  if (!errorInfo.empty()) {
+    diag.fatal() << errorInfo << '\n';
     return;
   }
 
-
-  llvm::PassManager passManager;
-  passManager.add(new llvm::TargetData(irModule_));
-  passManager.add(llvm::CreateBitcodeWriterPass(binOut));
-  passManager.run(*irModule_);
-  binOut.close();
+  llvm::WriteBitcodeToFile(irModule_, *binOut);
 
   // Generate the module metadata
   llvm::sys::Path metaPath(binPath);
   metaPath.eraseSuffix();
   metaPath.appendSuffix("md");
-  std::ofstream metaOut(metaPath.toString().c_str());
+  std::ofstream metaOut(metaPath.c_str());
   genModuleMetadata(metaOut);
   metaOut.close();
 }

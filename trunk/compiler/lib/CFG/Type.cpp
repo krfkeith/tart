@@ -6,6 +6,10 @@
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/FunctionType.h"
+#include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/NativeType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
@@ -116,6 +120,56 @@ FormatStream & operator<<(FormatStream & out, ConversionRank rank) {
   return out;
 }
 
+void typeLinkageName(std::string & out, const TypeRef & ty) {
+  typeLinkageName(out, ty.type());
+}
+
+// Given a type, append the linkage name of that type to the output buffer.
+void typeLinkageName(std::string & out, const Type * ty) {
+  ty = dealias(ty);
+  if (TypeDefn * td = ty->typeDefn()) {
+    out.append(td->linkageName());
+  } else if (const FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
+    out.append("fn");
+    if (!ftype->params().empty()) {
+      out.append("(");
+      const ParameterList & params = ftype->params();
+      for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
+        if (it != params.begin()) {
+          out.append(",");
+        }
+
+        typeLinkageName(out, (*it)->type());
+      }
+      out.append(")");
+    }
+
+    if (!ftype->returnType().isNull() && !ftype->returnType().isVoidType()) {
+      out.append("->");
+      typeLinkageName(out, ftype->returnType());
+    }
+  } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
+    for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+      if (it != utype->members().begin()) {
+        out.append("|");
+      }
+
+      typeLinkageName(out, *it);
+    }
+  } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
+    out.append("__Address[");
+    typeLinkageName(out, mat->typeParam(0));
+    out.append("]");
+  } else if (const NativePointerType * npt = dyn_cast<NativePointerType>(ty)) {
+    out.append("NativePointert[");
+    typeLinkageName(out, npt->typeParam(0));
+    out.append("]");
+  } else {
+    diag.error() << "Type: " << ty;
+    DFAIL("Can't compute linkage name of type");
+  }
+}
+
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
 Conversion::Conversion(const Type * from)
@@ -220,131 +274,6 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from) const {
   }
   return result;
 }
-
-// -------------------------------------------------------------------
-// DeclaredType
-
-DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope)
-  : TypeImpl(cls)
-  , IterableScope(parentScope)
-  , defn_(de)
-{
-  DASSERT(de != NULL);
-  setScopeName(de->name());
-}
-
-  /** Return the number of type parameters of this type. */
-size_t DeclaredType::numTypeParams() const {
-  TemplateSignature * tsig = defn_->templateSignature();
-  if (tsig != NULL) {
-    return tsig->patternVarCount();
-  }
-
-  TemplateInstance * tinst = defn_->templateInstance();
-  if (tinst != NULL) {
-    return tinst->paramValues().size();
-  }
-
-  return 0;
-}
-
-Type * DeclaredType::typeParam(int index) const {
-  TemplateSignature * tsig = defn_->templateSignature();
-  if (tsig != NULL) {
-    return tsig->patternVar(index);
-  }
-
-  TemplateInstance * tinst = defn_->templateInstance();
-  if (tinst != NULL) {
-    return tinst->paramValues()[index];
-  }
-
-  DFAIL("Illegal State");
-}
-
-void DeclaredType::trace() const {
-  safeMark(defn_);
-  IterableScope::trace();
-}
-
-void DeclaredType::format(FormatStream & out) const {
-  defn_->format(out);
-}
-
-// -------------------------------------------------------------------
-// TypeAlias
-
-TypeAlias::TypeAlias(Type * val)
-  : Type(Alias)
-  , value_(val)
-{
-}
-
-const llvm::Type * TypeAlias::irType() const {
-  DASSERT(value_ != NULL);
-  return value_->irType();
-}
-
-const llvm::Type * TypeAlias::irEmbeddedType() const {
-  return value_->irEmbeddedType();
-}
-
-const llvm::Type * TypeAlias::irParameterType() const {
-  return value_->irParameterType();
-}
-
-ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
-  DASSERT(value_ != NULL);
-  return value_->convertImpl(conversion);
-}
-
-void TypeAlias::format(FormatStream & out) const {
-  DASSERT(value_ != NULL);
-  return value_->format(out);
-}
-
-void TypeAlias::trace() const {
-  safeMark(value_);
-}
-
-// -------------------------------------------------------------------
-// NonTypeConstant
-
-NonTypeConstant * NonTypeConstant::get(ConstantExpr * value) {
-  // TODO: Fold unique values.
-  return new NonTypeConstant(value);
-}
-
-bool NonTypeConstant::isEqual(const Type * other) const {
-  if (const NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(other)) {
-    return value_->isEqual(ntc->value());
-  }
-
-  return false;
-}
-
-const llvm::Type * NonTypeConstant::irType() const {
-  DFAIL("IllegalState");
-}
-
-ConversionRank NonTypeConstant::convertImpl(const Conversion & conversion) const {
-  DFAIL("IllegalState");
-}
-
-Expr * NonTypeConstant::nullInitValue() const {
-  DFAIL("IllegalState");
-}
-
-void NonTypeConstant::trace() const {
-  value_->mark();
-}
-
-void NonTypeConstant::format(FormatStream & out) const {
-  out << value_;
-}
-
-// -------------------------------------------------------------------
-// Utility functions
 
 Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
   if (type2->includes(type1)) {
@@ -470,6 +399,154 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
   return false;
 }
 
+// -------------------------------------------------------------------
+// DeclaredType
+
+DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope)
+  : TypeImpl(cls)
+  , IterableScope(parentScope)
+  , defn_(de)
+{
+  DASSERT(de != NULL);
+  setScopeName(de->name());
+}
+
+  /** Return the number of type parameters of this type. */
+size_t DeclaredType::numTypeParams() const {
+  TemplateSignature * tsig = defn_->templateSignature();
+  if (tsig != NULL) {
+    return tsig->patternVarCount();
+  }
+
+  TemplateInstance * tinst = defn_->templateInstance();
+  if (tinst != NULL) {
+    return tinst->paramValues().size();
+  }
+
+  return 0;
+}
+
+Type * DeclaredType::typeParam(int index) const {
+  TemplateSignature * tsig = defn_->templateSignature();
+  if (tsig != NULL) {
+    return tsig->patternVar(index);
+  }
+
+  TemplateInstance * tinst = defn_->templateInstance();
+  if (tinst != NULL) {
+    return tinst->paramValues()[index];
+  }
+
+  DFAIL("Illegal State");
+}
+
+void DeclaredType::trace() const {
+  safeMark(defn_);
+  IterableScope::trace();
+}
+
+void DeclaredType::format(FormatStream & out) const {
+  defn_->format(out);
+}
+
+// -------------------------------------------------------------------
+// TypeAlias
+
+TypeAlias::TypeAlias(Type * val)
+  : Type(Alias)
+  , value_(val)
+{
+}
+
+const llvm::Type * TypeAlias::irType() const {
+  DASSERT(value_ != NULL);
+  return value_->irType();
+}
+
+const llvm::Type * TypeAlias::irEmbeddedType() const {
+  return value_->irEmbeddedType();
+}
+
+const llvm::Type * TypeAlias::irParameterType() const {
+  return value_->irParameterType();
+}
+
+ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
+  DASSERT(value_ != NULL);
+  return value_->convertImpl(conversion);
+}
+
+void TypeAlias::format(FormatStream & out) const {
+  DASSERT(value_ != NULL);
+  return value_->format(out);
+}
+
+void TypeAlias::trace() const {
+  safeMark(value_);
+}
+
+// -------------------------------------------------------------------
+// NonTypeConstant
+
+NonTypeConstant * NonTypeConstant::get(ConstantExpr * value) {
+  // TODO: Fold unique values.
+  return new NonTypeConstant(value);
+}
+
+bool NonTypeConstant::isEqual(const Type * other) const {
+  if (const NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(other)) {
+    return value_->isEqual(ntc->value());
+  }
+
+  return false;
+}
+
+const llvm::Type * NonTypeConstant::irType() const {
+  DFAIL("IllegalState");
+}
+
+ConversionRank NonTypeConstant::convertImpl(const Conversion & conversion) const {
+  DFAIL("IllegalState");
+}
+
+Expr * NonTypeConstant::nullInitValue() const {
+  DFAIL("IllegalState");
+}
+
+void NonTypeConstant::trace() const {
+  value_->mark();
+}
+
+void NonTypeConstant::format(FormatStream & out) const {
+  out << value_;
+}
+
+// -------------------------------------------------------------------
+// TypeRef
+
+const Type * TypeRef::dealias() const {
+  return tart::dealias(type_);
+}
+
+Type * TypeRef::dealias() {
+  return tart::dealias(type_);
+}
+
+Expr * TypeRef::implicitCast(const SourceLocation & loc, Expr * from) const {
+  return type_->implicitCast(loc, from);
+}
+
+Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from) const {
+  return type_->explicitCast(loc, from);
+}
+
+FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
+  out << ref.type();
+}
+
+// -------------------------------------------------------------------
+// Utility functions
+
 Type * findCommonType(Type * t0, Type * t1) {
   DASSERT(t0 != NULL);
   DASSERT(t1 != NULL);
@@ -568,6 +645,7 @@ bool TypeLess::operator()(const Type * t0, const Type * t1) {
     case Type::Function:
     case Type::Tuple:
     case Type::Union:
+    case Type::Address:
     case Type::NativePointer:
     case Type::NativeArray: {
       DFAIL("Implement");

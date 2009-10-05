@@ -381,11 +381,11 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
-            if (ctor->returnType() == NULL) {
+            if (ctor->returnType().isNull()) {
               ctor->functionType()->setReturnType(&VoidType::instance);
             }
 
-            if (!ctor->returnType()->isVoidType()) {
+            if (!ctor->returnType().isVoidType()) {
               diag.fatal(ctor) << "Constructor cannot declare a return type.";
               break;
             }
@@ -805,9 +805,9 @@ bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
   FunctionType * ft0 = f0->functionType();
   FunctionType * ft1 = f1->functionType();
 
-  DASSERT_OBJ(ft0->returnType() != NULL, f0);
-  DASSERT_OBJ(ft1->returnType() != NULL, f1);
-  if (!ft0->returnType()->isEqual(ft1->returnType())) {
+  DASSERT_OBJ(!ft0->returnType().isNull(), f0);
+  DASSERT_OBJ(!ft1->returnType().isNull(), f1);
+  if (!ft0->returnType().isEqual(ft1->returnType())) {
     return false;
   }
 
@@ -847,10 +847,10 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
   const FunctionType * baseType = base->functionType();
   const FunctionType * funcType = func->functionType();
 
-  const Type * baseReturn = baseType->returnType();
-  const Type * funcReturn = funcType->returnType();
+  const TypeRef baseReturn = baseType->returnType();
+  const TypeRef funcReturn = funcType->returnType();
 
-  if (!baseReturn->isEqual(funcReturn)) {
+  if (!baseReturn.isEqual(funcReturn)) {
     // TODO: Variance test.
     return false;
   }

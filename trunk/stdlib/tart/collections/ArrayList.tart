@@ -10,7 +10,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
       let nlength = self._length + amount;
       if data.length < nlength {
         let ndata = ElementType[](nlength + nlength / 2 + 16);
-        ElementType[].copy(ndata, 0, data, 0, self._length);
+        ElementType[].copyElements(ndata, 0, data, 0, self._length);
         self.data = ndata;
       }
 
@@ -27,7 +27,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
   def construct(data:ElementType...; initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
     self.data = ElementType[](initialCapacity);
-    ElementType[].copy(self.data, 0, data, 0, data.length);
+    ElementType[].copyElements(self.data, 0, data, 0, data.length);
     _length = data.length;
   }
 
@@ -40,7 +40,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
   def construct(data:Array[ElementType], initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
     self.data = ElementType[](initialCapacity);
-    ElementType[].copy(self.data, 0, data, 0, data.length);
+    ElementType[].copyElements(self.data, 0, data, 0, data.length);
     _length = data.length;
   }
 
@@ -56,7 +56,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
   def remove(index:int) {
     Preconditions.checkIndex(index >= 0);
     Preconditions.checkIndex(index < _length);
-    ElementType[].copy(data, index, data, index + 1, _length - index - 1);
+    ElementType[].copyElements(data, index, data, index + 1, _length - index - 1);
     --_length;
   }
 

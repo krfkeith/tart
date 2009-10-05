@@ -48,11 +48,9 @@ public:
       to the target scope. */
   void importIntoScope(const ASTImport * import, Scope * targetScope);
 
-  /** Given a list of definitions (the result of a lookup), find the one
-      that best matches the template arguments, and return a specialization
-      of that defn. */
-  Defn * specialize(const SourceLocation & loc, DefnList & defs,
-      const ASTNodeList & templateArgs);
+  /** Given a list of definitions (the result of a lookup), find the one that best matches the
+      template arguments, and return a specialization of that defn. */
+  //Expr * specialize(const SourceLocation & loc, DefnList & defs, const ASTNodeList & templateArgs);
 
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);
