@@ -948,11 +948,11 @@ bool ClassAnalyzer::createDefaultConstructor() {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
         analyzeValueDefn(memberVar, Task_PrepCallOrUse);
         Expr * defaultValue = memberVar->initValue();
-        Type * memberType = memberVar->type().type();
+        TypeRef memberType = memberVar->type().type();
         if (defaultValue == NULL) {
           // TODO: If this is 'final' it must be initialized here or in
           // the constructor.
-          defaultValue = memberType->nullInitValue();
+          defaultValue = memberType.type()->nullInitValue();
           // TODO: Must be a constant...?
           if (defaultValue && !defaultValue->isConstant()) {
             defaultValue = NULL;
@@ -960,7 +960,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         }
 
         Expr * initVal;
-        if (memberType->typeClass() == Type::NativeArray) {
+        if (memberType.typeClass() == Type::NativeArray) {
           // TODO: If this array is non-zero size, we have a problem I think.
           // Native arrays must be initialized in the constructor.
           continue;

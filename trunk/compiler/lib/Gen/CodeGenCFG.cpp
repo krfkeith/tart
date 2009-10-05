@@ -38,9 +38,9 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   DASSERT_OBJ(var->type().isDefined(), var);
 
   // Generate the variable type
-  const Type * varType = var->type().type();
-  assert(varType != NULL);
-  const llvm::Type * irType = varType->irEmbeddedType();
+  TypeRef varType = var->type();
+  DASSERT(varType.isDefined());
+  const llvm::Type * irType = varType.irEmbeddedType();
 
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());

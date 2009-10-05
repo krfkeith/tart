@@ -107,14 +107,12 @@ bool VarAnalyzer::resolveVarType() {
       }
     }
 
-    analyzeType(target->type().type(), Task_PrepTypeComparison);
+    analyzeType(target->type(), Task_PrepTypeComparison);
 
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope;
       if (target->type().isDefined()) {
-        analyzeType(target->type().type(), Task_PrepTypeComparison);
-
         if (target->type().typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
           // to the list of scopes.

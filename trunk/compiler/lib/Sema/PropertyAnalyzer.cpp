@@ -67,7 +67,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         return false;
       }
 
-      target->setType(type.type());
+      target->setType(type);
     }
 
     if (target->type().isSingular()) {
@@ -125,8 +125,8 @@ bool PropertyAnalyzer::resolvePropertyType() {
         // Re-add the value param.
         setterType->params().push_back(valueParam);
         if (!valueParam->type().isDefined()) {
-          valueParam->setType(type.type());
-          valueParam->setInternalType(type.type());
+          valueParam->setType(type);
+          valueParam->setInternalType(type);
         } else if (!valueParam->type().isEqual(type)) {
           diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
               "' must be of type '" << type << "' but is instead type '" <<

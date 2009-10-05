@@ -80,12 +80,22 @@ ErrorExpr Expr::ErrorVal;
 
 const ExprList Expr::emptyList;
 
+Expr::Expr(ExprType k, const SourceLocation & l, const TypeRef & type)
+  : exprType_(k)
+  , loc_(l)
+  , type_(type.type())
+{}
+
 void Expr::format(FormatStream & out) const {
   out << exprTypeName(exprType_);
 }
 
 void Expr::trace() const {
   safeMark(type_);
+}
+
+void Expr::setType(const TypeRef & type) {
+  type_ = type.type();
 }
 
 /// -------------------------------------------------------------------
@@ -209,7 +219,7 @@ void ArglistExpr::trace() const {
 /// -------------------------------------------------------------------
 /// LValueExpr
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
-  : Expr(LValue, loc, value->type().type())
+  : Expr(LValue, loc, value->type())
   , base_(base)
   , value_(value)
 {
@@ -294,7 +304,7 @@ void AssignmentExpr::format(FormatStream & out) const {
 
 InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
-  : Expr(InitVar, loc, v->type().type())
+  : Expr(InitVar, loc, v->type())
   , var(v)
   , initExpr_(expr)
 {}
@@ -628,6 +638,12 @@ InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * 
   : Expr(InstanceOf, loc, &BoolType::instance)
   , value_(value)
   , toType_(ty)
+{}
+
+InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, const TypeRef & ty)
+  : Expr(InstanceOf, loc, &BoolType::instance)
+  , value_(value)
+  , toType_(ty.type())
 {}
 
 void InstanceOfExpr::format(FormatStream & out) const {

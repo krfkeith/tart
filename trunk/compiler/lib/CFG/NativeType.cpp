@@ -66,8 +66,8 @@ AddressType::~AddressType() {
 }
 
 const llvm::Type * AddressType::createIRType() const {
-  DASSERT_OBJ(elementType_ != NULL, this);
-  const llvm::Type * type = elementType_->irEmbeddedType();
+  DASSERT_OBJ(elementType_.isDefined(), this);
+  const llvm::Type * type = elementType_.irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
@@ -84,13 +84,13 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
 
     Expr * fromValue = cn.fromValue;
     ConversionRank rank = Incompatible;
-    if (elementType_->isEqual(fromElementType)) {
+    if (elementType_.isEqual(fromElementType)) {
       rank = IdenticalTypes;
     } else {
       // Check conversion on element types
       Conversion elementConversion(dealias(fromElementType));
       elementConversion.bindingEnv = cn.bindingEnv;
-      if (elementType_->convert(elementConversion) == IdenticalTypes) {
+      if (elementType_.convert(elementConversion) == IdenticalTypes) {
         rank = IdenticalTypes;
       }
     }
@@ -110,12 +110,12 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
 }
 
 bool AddressType::isSingular() const {
-  return elementType_->isSingular();
+  return elementType_.isSingular();
 }
 
 bool AddressType::isEqual(const Type * other) const {
   if (const AddressType * np = dyn_cast<AddressType>(other)) {
-    return elementType_->isEqual(np->elementType_);
+    return elementType_.isEqual(np->elementType_);
   }
 
   return false;

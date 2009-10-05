@@ -442,7 +442,7 @@ bool FunctionAnalyzer::resolveReturnType() {
           }
 
           Type * type = returnExpr->type();
-          if (!returnType.type()->isEqual(type)) {
+          if (!returnType.isEqual(type)) {
             returnExpr = returnType.implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
               bk->exitReturn(loc, returnExpr);

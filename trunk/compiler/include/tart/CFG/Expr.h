@@ -29,6 +29,7 @@ class Scope;
 class ErrorExpr;
 class VariableDefn;
 class CompositeType;
+class TypeRef;
 
 /// -------------------------------------------------------------------
 /// A Control Flow Graph value or expression
@@ -55,6 +56,8 @@ public:
     , type_(type)
   {}
 
+  Expr(ExprType k, const SourceLocation & l, const TypeRef & type);
+
   virtual ~Expr() {}
 
   /** The type of expression node. */
@@ -64,6 +67,7 @@ public:
   const Type * type() const { return type_; }
   Type * type() { return type_; }
   void setType(Type * type) { type_ = type; }
+  void setType(const TypeRef & type);
 
   /** Return true if this expression is a constant. */
   virtual bool isConstant() const { return false; }
@@ -116,6 +120,12 @@ private:
 public:
   /** Constructor. */
   UnaryExpr(ExprType k, const SourceLocation & loc, Type * type, Expr * a)
+    : Expr(k, loc, type)
+    , arg_(a)
+  {}
+
+  /** Constructor. */
+  UnaryExpr(ExprType k, const SourceLocation & loc, const TypeRef & type, Expr * a)
     : Expr(k, loc, type)
     , arg_(a)
   {}
@@ -180,6 +190,10 @@ protected:
   ExprList args_;
 
   ArglistExpr(ExprType k, const SourceLocation & loc, Type * type)
+    : Expr(k, loc, type)
+  {}
+
+  ArglistExpr(ExprType k, const SourceLocation & loc, const TypeRef & type)
     : Expr(k, loc, type)
   {}
 
@@ -508,6 +522,12 @@ public:
   {
   }
 
+  CastExpr(ExprType k, const SourceLocation & loc, const TypeRef & type, Expr * a)
+    : UnaryExpr(k, loc, type, a)
+    , typeIndex_(0)
+  {
+  }
+
   // Type discriminator index used in union types
   int typeIndex() const { return typeIndex_; }
   void setTypeIndex(int index) { typeIndex_ = index; }
@@ -590,6 +610,7 @@ private:
 public:
   /** Constructor. */
   InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * ty);
+  InstanceOfExpr(const SourceLocation & loc, Expr * value, const TypeRef & ty);
 
   /* The instance value we are testing. */
   const Expr * value() const { return value_; }

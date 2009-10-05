@@ -823,7 +823,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   LValueExpr * callable = new LValueExpr(ast->location(), arrayExpr, indexer);
   CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
   call->args().append(args.begin(), args.end());
-  call->setType(indexer->type().type());
+  call->setType(indexer->type());
   return call;
 }
 
@@ -861,7 +861,7 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
   }
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
-  getterCall->setType(prop->type().type());
+  getterCall->setType(prop->type());
   module->addSymbol(getter);
   analyzeLater(getter);
   return getterCall;
@@ -904,7 +904,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
   }
 
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
-  setterCall->setType(prop->type().type());
+  setterCall->setType(prop->type());
   setterCall->appendArg(value);
   module->addSymbol(setter);
   analyzeLater(setter);
@@ -1001,7 +1001,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   }
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
-  getterCall->setType(prop->type().type());
+  getterCall->setType(prop->type());
   getterCall->args().append(castArgs.begin(), castArgs.end());
   module->addSymbol(getter);
   analyzeLater(getter);
@@ -1056,7 +1056,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   // TODO: Handle multiple overloads of the same property.
   // TODO: Change this to a CallExpr for type inference.
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
-  setterCall->setType(prop->type().type());
+  setterCall->setType(prop->type());
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   if (!value->isSingular()) {
@@ -1080,9 +1080,9 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
   analyzeValueDefn(lvalue->value(), Task_PrepCallOrUse);
   DASSERT(lvalue->value()->type().isDefined());
-  lvalue->setType(lvalue->value()->type().type());
+  lvalue->setType(lvalue->value()->type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
-    lvalue->setType(param->internalType().type());
+    lvalue->setType(param->internalType());
   }
 
   switch (lvalue->value()->storageClass()) {

@@ -86,6 +86,9 @@ public:
   /** Do the requested analysis passes on the type. */
   static bool analyzeType(Type * in, AnalysisTask pass);
 
+  /** Do the requested analysis passes on the type. */
+  static bool analyzeType(const TypeRef & in, AnalysisTask pass);
+
   /** Do the a complete analysis of the module. */
   static bool analyzeModule(Module * mod);
 
@@ -111,7 +114,7 @@ public:
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
       construction of the array. */
-  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, Type * elementType);
+  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const TypeRef & elementType);
 
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();

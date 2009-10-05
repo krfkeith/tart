@@ -62,7 +62,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     // Substitute all occurances of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = bindingEnv_.relabel(resultType_);
-    AnalyzerBase::analyzeType(resultType_.type(), Task_PrepTypeComparison);
+    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
 
     // Same with function parameter types.
     for (TypeRefList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
@@ -189,7 +189,7 @@ ConversionRank CallCandidate::updateConversionRank() {
     TypeRef paramType = this->paramType(argIndex);
     Conversion cn(argExpr);
     cn.matchPatterns = true;
-    conversionRank_ = std::min(conversionRank_, paramType.type()->convert(cn));
+    conversionRank_ = std::min(conversionRank_, paramType.convert(cn));
   }
 
   Type * expectedReturnType = callExpr_->expectedReturnType();

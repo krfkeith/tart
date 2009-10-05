@@ -29,8 +29,8 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
-    ConversionRank rank = toType->convert(resultType);
+    TypeRef resultType = (*it)->resultType();
+    ConversionRank rank = toType->convert(resultType.type());
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -50,8 +50,8 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
-    ConversionRank rank = resultType->convert(conversion);
+    TypeRef resultType = (*it)->resultType();
+    ConversionRank rank = resultType.convert(conversion);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -73,9 +73,9 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
+    TypeRef resultType = (*it)->resultType();
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, resultType, Invariant)) {
+    if (env.unify(&candidateSite, pattern, resultType.type(), Invariant)) {
       if (match) {
         env.setSubstitutions(saveSub);
         return false;
@@ -114,8 +114,8 @@ bool ResultOfConstraint::includes(const Type * other) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
-    if (resultType->includes(other)) {
+    TypeRef resultType = (*it)->resultType();
+    if (resultType.type()->includes(other)) {
       return true;
     }
   }
@@ -151,7 +151,7 @@ void ResultOfConstraint::format(FormatStream & out) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
+    TypeRef resultType = (*it)->resultType();
     if (!first) {
       out << "|";
     }
@@ -196,7 +196,7 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
     }
 
     TypeRef paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = paramType.type()->convert(conversion);
+    ConversionRank rank = paramType.convert(conversion);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
