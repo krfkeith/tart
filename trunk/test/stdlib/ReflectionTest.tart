@@ -13,10 +13,10 @@ def testModuleReflection() {
 }
 
 def testModuleList() {
-  for i = 0; i < Module.moduleCount; ++i {
-    Debug.writeLn("module");
+  //for i = 0; i < Module._moduleCount; ++i {
+  //  Debug.writeLn("module");
     //Debug.writeLn(Module.moduleList[i].name);
-  }
+  //}
   //for mod in Module.modules() {
   //  Debug.writeLn(mod.name);
   //}

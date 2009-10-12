@@ -275,6 +275,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   if (primaryBase != NULL) {
     // Move the primary base to be first in the list.
     type->bases().insert(type->bases().begin(), primaryBase);
+    target->copyTrait(primaryBase->typeDefn(), Defn::Nonreflective);
   }
 
   if (dtype == Type::Interface) {
@@ -328,6 +329,12 @@ bool ClassAnalyzer::analyzeFields() {
               field->setMemberIndex(instanceFieldCount++);
               field->setMemberIndexRecursive(instanceFieldCountRecursive++);
               type->instanceFields_.push_back(field);
+
+              // Special case for non-reflective classes, we need to also export the types
+              // of members.
+              //if (target->hasTrait(Defn::Nonreflective)) {
+              //  module->addSymbol(field);
+              //}
             } else if (field->storageClass() == Storage_Static) {
               module->addSymbol(field);
               type->staticFields_.push_back(field);
@@ -628,17 +635,17 @@ void ClassAnalyzer::overrideMembers() {
 
     if (!getters.empty()) {
       ensureUniqueSignatures(getters);
-      overrideMethods(type->instanceMethods_, getters, true);
+      overridePropertyAccessors(type->instanceMethods_, prop, getters, true);
       for (InterfaceList::iterator it = ifaceList.begin(); it != ifaceList.end(); ++it) {
-        overrideMethods(it->methods, getters, false);
+        overridePropertyAccessors(it->methods, prop, getters, false);
       }
     }
 
     if (!setters.empty()) {
       ensureUniqueSignatures(setters);
-      overrideMethods(type->instanceMethods_, setters, true);
+      overridePropertyAccessors(type->instanceMethods_, prop, setters, true);
       for (InterfaceList::iterator it = ifaceList.begin(); it != ifaceList.end(); ++it) {
-        overrideMethods(it->methods, setters, false);
+        overridePropertyAccessors(it->methods, prop, setters, false);
       }
     }
   }
@@ -666,8 +673,10 @@ void ClassAnalyzer::addNewMethods() {
       if (dt == Defn::Function) {
         FunctionDefn * fn = static_cast<FunctionDefn *>(de);
         if (fn->isUndefined() && fn->overriddenMethods().empty()) {
-          diag.error(fn) << "Method '" << fn->name() <<
-              "' defined with 'undef' but does not override a base class method.";
+          if (!fn->isCtor() || !fn->functionType()->params().empty()) {
+            diag.error(fn) << "Method '" << fn->name() <<
+                "' defined with 'undef' but does not override a base class method.";
+          }
         }
 
         if (!fn->isCtor() && !fn->isFinal() && fn->dispatchIndex() < 0) {
@@ -753,9 +762,14 @@ void ClassAnalyzer::checkForRequiredMethods() {
 
 void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overrides,
     bool canHide) {
+  // 'table' is the set of methods inherited from the superclass or interface.
+  // 'overrides' is all of the methods defined in *this* class that share the same name.
+  // 'canHide' is true if 'overrides' are from a class, false if from an interface.
   const char * name = overrides.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
+    // For every inherited method whose name matches the name of the overrides.
+    // See if there is a new method that goes in that same slot
     FunctionDefn * m = table[i];
     if (m->name() == name) {
       FunctionDefn * newMethod = findOverride(m, overrides);
@@ -776,30 +790,33 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
   }
 }
 
-#if 0
-void ClassAnalyzer::overridePropertyAccessors(MethodList & table, const MethodList & accessors,
-    bool canHide) {
-  const char * name = accessor->name();
+void ClassAnalyzer::overridePropertyAccessors(MethodList & table, PropertyDefn * prop,
+    const MethodList & accessors, bool canHide) {
+  const char * name = accessors.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
     FunctionDefn * m = table[i];
-    if (m->name() == name) {
-      if (canOverride(m, accessor)) {
-        table[i] = accessor;
-        if (canHide && accessor->dispatchIndex() < 0) {
-          accessor->setDispatchIndex(i);
+    if (PropertyDefn * p = dyn_cast_or_null<PropertyDefn>(m->parentDefn())) {
+      if (m->name() == name && p->name() == prop->name()) {
+        FunctionDefn * newAccessor = findOverride(m, accessors);
+        if (newAccessor != NULL) {
+          table[i] = newAccessor;
+          if (canHide && newAccessor->dispatchIndex() < 0) {
+            newAccessor->setDispatchIndex(i);
+          }
+          newAccessor->overriddenMethods().insert(m);
+        } else {
+          diag.recovered();
+          diag.warn(m) << "Invalid override of property accessor '" << m
+              << "' by accessor of incompatible type:";
+          for (MethodList::const_iterator it = accessors.begin(); it != accessors.end(); ++it) {
+            diag.info(*it) << "by '" << *it << "'";
+          }
         }
-        accessor->overriddenMethods().insert(m);
-      } else {
-        diag.recovered();
-        diag.fatal(accessor) << "'" << accessor << "' attempts to override '" <<
-            m << "' which has incompatible type";
-        diag.info(m) << "originally defined here";
       }
     }
   }
 }
-#endif
 
 bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
   FunctionType * ft0 = f0->functionType();
@@ -1016,6 +1033,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->setFunctionType(funcType);
   constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
+  constructorDef->setVisibility(Public);
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);

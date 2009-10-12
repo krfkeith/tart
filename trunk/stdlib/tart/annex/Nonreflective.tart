@@ -1,0 +1,7 @@
+/** Attribute that indicates that reflection data should not be generated for the attached
+    type. Note: Attribute classes which are not retained at runtime are non-reflective implicitly.
+*/
+@Attribute(Attribute.Target.TYPE, Attribute.Retention.NONE, Attribute.Propagation.SUBTYPES)
+class Nonreflective {
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+}

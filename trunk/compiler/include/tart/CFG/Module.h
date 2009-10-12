@@ -76,6 +76,7 @@ public:
 
   /** Return the definition corresponding to the primary symbol in this module. */
   Defn * primaryDefn() const;
+  bool findPrimaryDefn();
 
   /** Get the set of decls_ which will be generated. */
   DefnSet & exportDefs() { return exportDefs_; }

@@ -1,18 +1,19 @@
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
+import tart.core.Memory.Address;
 import tart.core.Math.min;
 
 /** Built-in array class */
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
-    var len:int;
-    var data:NativeArray[ElementType, 0];
+    var _length:int;
+    var _data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
     static def alloc(length:int) -> Array {
-      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]().data[length]);
-      self.len = length;
+      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[length]);
+      self._length = length;
       return self;
     }
 
@@ -45,30 +46,32 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** True if the array is zero length. */
   def isEmpty:bool {
-    get { return self.len == 0; }
+    get { return self._length == 0; }
   }
 
   /** The length of the array. */
   def length:int {
-    get { return len; }
+    get { return _length; }
   }
+
+  @Unsafe def data:Address[ElementType] { get { return addressOf(_data[0]); } }
 
   /** Array element access. */
   def [index:int]:ElementType {
     get {
-      Preconditions.checkIndex(index >= 0 and index < len);
-      return self.data[index];
+      Preconditions.checkIndex(index >= 0 and index < _length);
+      return self._data[index];
     }
     set {
-      Preconditions.checkArgument(index >= 0 and index < len);
-      self.data[index] = value;
+      Preconditions.checkArgument(index >= 0 and index < _length);
+      self._data[index] = value;
     }
   }
 
   /** Make a copy of this array. */  
   def copy() -> Array {
-    let result = Array(self.len);
-    Memory.arrayCopy(addressOf(result.data[0]), addressOf(self.data[0]), self.len);
+    let result = Array(self._length);
+    Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._length);
     return result;
   }
 
@@ -82,15 +85,15 @@ public final class Array[%ElementType] : Iterable[ElementType] {
    */  
   static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
-    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst.len);
-    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src.len);
-    count = min(count, dst.len - dstOffset, src.len - srcOffset);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._length);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._length);
+    count = min(count, dst._length - dstOffset, src._length - srcOffset);
     if count > 0 {
-      Memory.arrayMove(addressOf(dst.data[dstOffset]), addressOf(src.data[srcOffset]), count);
+      Memory.arrayMove(addressOf(dst._data[dstOffset]), addressOf(src._data[srcOffset]), count);
     }
   }
 
-  public final class ArrayIterator : Iterator[ElementType], HasLength {
+  private final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
     private var index:int;
     
@@ -100,13 +103,13 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     }
     
     def next() -> ElementType or void {
-      if (self.index < self.array.len) {
-        return self.array.data[self.index++];
+      if (self.index < self.array._length) {
+        return self.array._data[self.index++];
       } else {
         return;
       }
     }
 
-    def length:long { get { return array.len; } }
+    def length:long { get { return array._length; } }
   }
 }

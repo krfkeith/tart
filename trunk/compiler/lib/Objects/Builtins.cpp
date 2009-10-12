@@ -45,8 +45,15 @@ Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
 Type * Builtins::typeUnsupportedOperationException;
 
-Type * Builtins::typeType;
 Type * Builtins::typeTypeDescriptor;
+Type * Builtins::typeType;
+Type * Builtins::typeTypeRef;
+Type * Builtins::typeTypeLiteral;
+Type * Builtins::typeSimpleType;
+Type * Builtins::typeComplexType;
+Type * Builtins::typeEnumType;
+Type * Builtins::typeFunctionType;
+Type * Builtins::typeDerivedType;
 Type * Builtins::typeMember;
 Type * Builtins::typeField;
 Type * Builtins::typeProperty;
@@ -60,10 +67,6 @@ TypeAlias Builtins::typeAliasString(NULL);
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
-
-ReflectTypeDescriptor Builtins::rfTypeDescriptor;
-ReflectMember Builtins::rfMember;
-ReflectModule Builtins::rfModule;
 
 NamespaceDefn Builtins::nsOperator(&module, "Operators");
 
@@ -122,6 +125,7 @@ Defn * Builtins::getSingleDefn(Type * type, const char * name) {
   if (CompositeType * ctype = dyn_cast<CompositeType>(type)) {
     AnalyzerBase::analyzeType(ctype, Task_PrepMemberLookup);
     if (!ctype->lookupMember(name, defs, false)) {
+      diag.info() << "Couldn't find system definition for " << name;
       DFAIL("Couldn't find system definition");
     }
 
@@ -136,21 +140,15 @@ Defn * Builtins::getSingleDefn(Type * type, const char * name) {
 void Builtins::loadSystemClasses() {
   typeArray = loadSystemType("tart.core.Array");
   typeAttribute = loadSystemType("tart.core.Attribute");
-  typeType = loadSystemType("tart.reflect.Type");
   typeTypeDescriptor = loadSystemType("tart.reflect.TypeDescriptor");
   typeTypeInfoBlock = loadSystemType("tart.core.TypeInfoBlock");
+  typeType = loadSystemType("tart.reflect.Type");
   typeObject = loadSystemType("tart.core.Object");
   typeString = loadSystemType("tart.core.String");
   typeThrowable = loadSystemType("tart.core.Throwable");
+  //typeTypeLiteral = loadSystemType("tart.core.TypeLiteral");
   typeUnsupportedOperationException = loadSystemType("tart.core.UnsupportedOperationException");
-
   typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
-
-  typeMember = loadSystemType("tart.reflect.Member");
-  typeField = loadSystemType("tart.reflect.Field");
-  typeProperty = loadSystemType("tart.reflect.Property");
-  typeMethod = loadSystemType("tart.reflect.Method");
-  typeModule = loadSystemType("tart.reflect.Module");
 
   // Analyze class Object.
   AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
@@ -164,34 +162,29 @@ void Builtins::loadSystemClasses() {
 
   // Set the aliases
   typeAliasString.setValue(typeString);
+}
 
-  // Get references to members of class tart.reflect.TypeDescriptor
-  AnalyzerBase::analyzeType(typeTypeDescriptor, Task_PrepMemberLookup);
-  rfTypeDescriptor.memberTypeKind = getMember<VariableDefn>(typeTypeDescriptor, "typeKind");
-  rfTypeDescriptor.memberSupertype = getMember<VariableDefn>(typeTypeDescriptor, "supertype");
-  rfTypeDescriptor.memberInterfaces = getMember<VariableDefn>(typeTypeDescriptor, "interfaces");
-  rfTypeDescriptor.memberTypeParams = getMember<VariableDefn>(typeTypeDescriptor, "typeParams");
-  rfTypeDescriptor.memberAttributes = getMember<VariableDefn>(typeTypeDescriptor, "attributes");
-  rfTypeDescriptor.memberFields = getMember<VariableDefn>(typeTypeDescriptor, "fields");
-  rfTypeDescriptor.memberProperties = getMember<VariableDefn>(typeTypeDescriptor, "properties");
-  rfTypeDescriptor.memberConstructors = getMember<VariableDefn>(typeTypeDescriptor, "constructors");
-  rfTypeDescriptor.memberMethods = getMember<VariableDefn>(typeTypeDescriptor, "methods");
+void Builtins::loadReflectionClasses() {
+  if (typeModule == NULL) {
+    typeTypeRef = loadSystemType("tart.reflect.TypeRef");
+    typeSimpleType = loadSystemType("tart.reflect.SimpleType");
+    typeComplexType = loadSystemType("tart.reflect.ComplexType");
+    typeEnumType = loadSystemType("tart.reflect.EnumType");
+    typeFunctionType = loadSystemType("tart.reflect.FunctionType");
+    typeDerivedType = loadSystemType("tart.reflect.DerivedType");
+    typeMember = loadSystemType("tart.reflect.Member");
+    typeField = loadSystemType("tart.reflect.Field");
+    typeProperty = loadSystemType("tart.reflect.Property");
+    typeMethod = loadSystemType("tart.reflect.Method");
+    typeModule = loadSystemType("tart.reflect.Module");
 
-  // Get references to members of class tart.reflect.Member
-  AnalyzerBase::analyzeType(typeMember, Task_PrepMemberLookup);
-  rfMember.memberName = getMember<VariableDefn>(typeMember, "name");
-  rfMember.memberMemberType = getMember<VariableDefn>(typeMember, "memberType");
-  rfMember.memberKind = getMember<VariableDefn>(typeMember, "kind");
-  rfMember.memberDeclaringType = getMember<VariableDefn>(typeMember, "declaringType");
-  rfMember.memberAccess = getMember<VariableDefn>(typeMember, "access");
-  rfMember.memberTraits = getMember<VariableDefn>(typeMember, "traits");
-  rfMember.memberAttributes = getMember<VariableDefn>(typeMember, "attributes");
-
-  // Get references to members of class tart.reflect.Module
-  AnalyzerBase::analyzeType(typeModule, Task_PrepMemberLookup);
-  rfModule.memberName = getMember<VariableDefn>(typeModule, "moduleName");
-  rfModule.memberTypes = getMember<VariableDefn>(typeModule, "typeList");
-  rfModule.memberMethods = getMember<VariableDefn>(typeModule, "methodList");
+    // Analyzing these types should analyze the rest.
+    AnalyzerBase::analyzeType(typeModule, Task_PrepCodeGeneration);
+    AnalyzerBase::analyzeType(typeComplexType, Task_PrepCodeGeneration);
+    AnalyzerBase::analyzeType(typeEnumType, Task_PrepCodeGeneration);
+    AnalyzerBase::analyzeType(typeFunctionType, Task_PrepCodeGeneration);
+    AnalyzerBase::analyzeType(typeDerivedType, Task_PrepCodeGeneration);
+  }
 }
 
 bool Builtins::compileBuiltins(ProgramSource & source) {

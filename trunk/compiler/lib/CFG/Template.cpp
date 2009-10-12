@@ -257,6 +257,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     result->setQualifiedName(value_->qualifiedName());
     result->addTrait(Defn::Synthetic);
     result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
+    result->setParentDefn(value_->parentDefn());
     result->setDefiningScope(tinst);
     if (isPartial) {
       result->addTrait(Defn::PartialInstantiation);

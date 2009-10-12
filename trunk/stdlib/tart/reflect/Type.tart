@@ -1,10 +1,14 @@
+import tart.annex.Nonreflective;
+
 /** The metatype object - the class that describes a type. */
-class Type {
+@Nonreflective class Type {
   enum TypeKind : ubyte {
+    OPAQUE,
     PRIMITIVE,
     CLASS,
     STRUCT,
     INTERFACE,
+    PROTOCOL,
     ENUM,
     FUNCTION,
     TUPLE,
@@ -15,46 +19,15 @@ class Type {
     //NonType
   }
 
-  @Flags  
-  enum TypeTraits {
-    ATTRIBUTE,
+  private {
+    var _typeKind:TypeKind;
   }
 
-  /** The TypeInfoBlock for this type. */  
-  //let typeDescriptor:TypeDescriptor;
-  
-  /** The fully-qualified name of this type. */
-  //let name:String;
-  
   /** What general kind of type this is (CLASS, STRUCT, etc.) */
-  let typeKind:TypeKind;
-  
-  /** Pointer to this type's supertype, or null. */
-  //let supertype:Type /* or void */;
-  
-  /** Array of inherited interfaces. */
-  //let interfaces:TypeList;
-  
-  /** Array of type parameters. */
-  //let typeParams:TypeList;
-  
-  /** Array of associated attributes */
-  //let attributes:AttributeList;
-  
-  /** Array of field members. */
-  //let fields:FieldList;
-  
-  /** Array of property members. */
-  //let properties:PropertyList;
-  
-  /** Array of constructor members. */
-  //let constructors:MethodList;
-  
-  /** Array of methods. */
-  //let methods:MethodList;
+  final def typeKind:TypeKind { get { return _typeKind; } }
 
   protected def construct(typeKind:TypeKind) {
-    self.typeKind = typeKind;
+    self._typeKind = typeKind;
   }
 
   /** True if this is an aggregate type. */

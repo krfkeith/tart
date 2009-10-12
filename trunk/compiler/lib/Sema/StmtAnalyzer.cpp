@@ -18,6 +18,7 @@
 
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/MacroExpansionPass.h"
@@ -86,7 +87,9 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   , cleanups_(NULL)
   , loopCleanups_(NULL)
   , macroReturnVal_(NULL)
-  , macroReturnTarget_(NULL) {
+  , macroReturnTarget_(NULL)
+{
+  setSourceDefn(func);
   insertPos_ = blocks.end();
   returnType_ = function->returnType();
 }
@@ -105,7 +108,7 @@ bool StmtAnalyzer::buildCFG() {
       ParameterDefn * selfParam = function->functionType()->selfParam();
       DASSERT_OBJ(selfParam != NULL, function);
       DASSERT_OBJ(selfParam->type().isDefined(), function);
-      TypeDefn * selfType = selfParam->type().type()->typeDefn();
+      TypeDefn * selfType = selfParam->type().defn();
       DASSERT_OBJ(selfType != NULL, function);
 
 #if IMPLICIT_SELF
@@ -817,10 +820,10 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         typesSeen.insert(toType.type());
 
         // Create the block containing the type test
-        Block * testBlock = createBlock("as-test-", toType.type()->typeDefn()->name());
+        Block * testBlock = createBlock("as-test-", toType.defn()->name());
 
         // Create the block containing the case body.
-        Block * caseBlock = createBlock("as-", toType.type()->typeDefn()->name());
+        Block * caseBlock = createBlock("as-", toType.defn()->name());
 
         // The previous test's failure target should jump to the test.
         prevTestBlock->succs().push_back(testBlock);
@@ -1224,7 +1227,9 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    if (!analyzeValueDefn(var, Task_PrepCodeGeneration)) {
+    VarAnalyzer va(var);
+    va.setSourceDefn(function);
+    if (!va.analyze(Task_PrepCodeGeneration)) {
       return false;
     }
 
@@ -1249,7 +1254,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 }
 
 Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
-  expr = ExprAnalyzer::inferTypes(expr, expectedType);
+  expr = ExprAnalyzer::inferTypes(function, expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
   }
@@ -1266,6 +1271,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
 Expr * StmtAnalyzer::astToAssignExpr(const ASTNode * ast, Type * expectedType) {
   if (ast->nodeType() == ASTNode::Assign) {
     ExprAnalyzer ea(function->module(), activeScope, function);
+    ea.setSourceDefn(function);
     return ea.reduceAssign(static_cast<const ASTOper *>(ast));
   } else {
     return astToExpr(ast, expectedType);
@@ -1302,7 +1308,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
       testExpr = TypeInferencePass::run(testExpr, &BoolType::instance, false);
     }
 
-    testExpr = FinalizeTypesPass::run(testExpr);
+    testExpr = FinalizeTypesPass::run(function, testExpr);
     testExpr = MacroExpansionPass::run(*this, testExpr);
     DASSERT_OBJ(testExpr->isSingular(), testExpr);
   }

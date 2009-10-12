@@ -35,6 +35,7 @@ public:
 
   size_t numTypeParams() const { return 1; }
   virtual Type * typeParam(int index) const { return elementType_.type(); }
+  const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
@@ -82,6 +83,7 @@ public:
 
   // Overrides
 
+  const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
@@ -125,6 +127,7 @@ public:
 
   // Overrides
 
+  const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;

@@ -25,6 +25,7 @@ class Attribute {
   enum Retention {
     NONE,
     RUNTIME,
+    RUNTIME_ITERABLE, // Retained at runtime, and all instances iterable.
   }
 
   /** Indicates whether derived elements (callers, subclasses) get the attribute as well. */

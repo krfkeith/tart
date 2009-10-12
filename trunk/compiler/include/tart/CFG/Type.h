@@ -422,6 +422,7 @@ public:
   Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
   ConversionRank convert(const Conversion & conversion) const;
 
+  TypeDefn * defn() const { return type_->typeDefn(); }
   const llvm::Type * irType() const { return type_->irType(); }
   const llvm::Type * irEmbeddedType() const { return type_->irEmbeddedType(); }
   const llvm::Type * irParameterType() const { return type_->irParameterType(); }

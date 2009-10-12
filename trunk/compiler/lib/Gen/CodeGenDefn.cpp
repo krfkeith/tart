@@ -84,6 +84,11 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 }
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
+  // Don't generate undefined functions.
+  if (fdef->hasTrait(Defn::Undefined)) {
+    return true;
+  }
+
   DASSERT_OBJ(fdef->isSingular(), fdef);
   DASSERT_OBJ(fdef->type().isDefined(), fdef);
   DASSERT_OBJ(fdef->type().isSingular(), fdef);
@@ -100,7 +105,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     FunctionType * ftype = fdef->functionType();
 
     if (fdef->isSynthetic()) {
-      f->setLinkage(GlobalValue::LinkOnceAnyLinkage);
+      f->setLinkage(GlobalValue::LinkOnceODRLinkage);
     }
 
     if (debug_ /*&& fdef->module() == module_*/) {

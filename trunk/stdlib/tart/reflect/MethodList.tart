@@ -1,5 +1,0 @@
-struct MethodList : MemberList[Method] {
-  def construct(data:Method[]) {
-    super(data);
-  }
-}

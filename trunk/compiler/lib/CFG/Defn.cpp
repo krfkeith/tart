@@ -43,26 +43,26 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   , loc(de->location())
   , name_(de->name())
   , ast_(de)
-  , modifiers(de->modifiers())
+  , modifiers_(de->modifiers())
   , module_(m)
   , parentDefn_(NULL)
   , nextInScope_(NULL)
   , tsig_(NULL)
   , tinst_(NULL)
 {
-  if (modifiers.flags & tart::Final) {
+  if (modifiers_.flags & tart::Final) {
     addTrait(Final);
   }
 
-  if (modifiers.flags & tart::Abstract) {
+  if (modifiers_.flags & tart::Abstract) {
     addTrait(Abstract);
   }
 
-  if (modifiers.flags & tart::Undef) {
+  if (modifiers_.flags & tart::Undef) {
     addTrait(Undefined);
   }
 
-  if (modifiers.flags & tart::ReadOnly) {
+  if (modifiers_.flags & tart::ReadOnly) {
     addTrait(ReadOnly);
   }
 }
@@ -290,7 +290,7 @@ void NamespaceDefn::trace() const {
 // -------------------------------------------------------------------
 // TypeDefn
 Expr * TypeDefn::asExpr() {
-  DASSERT(Builtins::typeTypeDescriptor != NULL);
+  //DASSERT(Builtins::typeType != NULL);
   if (expr_ == NULL) {
     expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), value);
   }

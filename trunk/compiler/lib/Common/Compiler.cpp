@@ -87,6 +87,8 @@ void Compiler::processInputFile(const std::string & inFile) {
     Parser parser(&src, mod);
     if (parser.parse()) {
       ScopeBuilder::createScopeMembers(mod);
+      mod->findPrimaryDefn();
+      PackageMgr::get().addModule(mod);
     }
   }
 

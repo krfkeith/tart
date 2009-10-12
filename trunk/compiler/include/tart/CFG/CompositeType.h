@@ -13,8 +13,9 @@
 #include "tart/CFG/Attribute.h"
 #endif
 
+#include "llvm/ADT/SetVector.h"
+#include "llvm/DerivedTypes.h"
 #include <list>
-#include <llvm/ADT/SetVector.h>
 
 namespace tart {
 
@@ -36,7 +37,6 @@ class CompositeType : public DeclaredType {
   friend class ClassAnalyzer;
 public:
   enum ClassFlags {
-    //ArrayType    = (1 << 0), // This is an array type
     Attribute = (1<<0),         // This class is an attribute.
   };
 
@@ -64,6 +64,7 @@ public:
   CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
     : DeclaredType(tcls, de, parentScope)
     , super_(NULL)
+    , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
     , classFlags_(0)
   {}
 
@@ -148,6 +149,7 @@ public:
 
   bool lookupMember(const char * name, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full) const;
+  const llvm::Type * irType() const;
   const llvm::Type * createIRType() const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
@@ -164,6 +166,7 @@ public:
   }
 
 private:
+  llvm::PATypeHolder irTypeHolder_;
   ClassList bases_;
   CompositeType * super_;
   int classFlags_;

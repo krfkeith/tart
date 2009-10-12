@@ -6,6 +6,7 @@
 #define TART_GEN_CODEGENERATOR_H
 
 #include <tart/Common/SourceLocation.h>
+#include <tart/Gen/Reflector.h>
 
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/PassManager.h>
@@ -83,6 +84,7 @@ public:
   void generate();
 
   llvm::LLVMContext & context() const { return context_; }
+  Module * module() const { return module_; }
 
   /** Generate a global definition. */
   bool genXDef(Defn * de);
@@ -193,13 +195,14 @@ public:
   llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
 
   /** Generate a reference to the Type descriptor for this type. */
-  llvm::GlobalVariable * getTypeDescriptorPtr(const Type * ctype);
-  llvm::GlobalVariable * createTypeDescriptorPtr(RuntimeTypeInfo * rtype);
-  void createTypeDescriptor(RuntimeTypeInfo * rtype);
+  //llvm::GlobalVariable * getTypeDescriptorPtr(const Type * ctype);
+  //llvm::GlobalVariable * createTypeDescriptorPtr(RuntimeTypeInfo * rtype);
+  //void createTypeDescriptor(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
   llvm::Constant * createTypeInfoBlockPtr(RuntimeTypeInfo * rtype);
+  bool createTypeInfoBlock(const CompositeType * ctype);
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the allocator function for this type. */
@@ -214,10 +217,6 @@ public:
 
   /** Generate the code to initialize the vtable pointer of a newly-allocated class instance. */
   void genInitObjVTable(const CompositeType * tdef, llvm::Value * instance);
-
-  /** Generate an array containing reflection data supplied by the specified array. */
-  llvm::Constant * genReflectionDataArray(
-      const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
   /** Given a type, generate a constant representing the size of that type.
       'memberSize' - return how much space the type would consume as a member of another
@@ -282,14 +281,6 @@ public:
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
 
-  /** Reflection methods. */
-  llvm::GlobalVariable * createModuleObjectPtr();
-  void createModuleObject();
-  void createModuleTable();
-  void createModuleCount();
-  llvm::Constant * reflectMethod(const FunctionDefn * func);
-  llvm::Constant * reflectMember(const CompositeType * structType, const ValueDefn * def);
-
     /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
   llvm::DICompileUnit getCompileUnit(Defn * defn);
@@ -313,6 +304,9 @@ public:
   llvm::DIType genDIEmbeddedType(const TypeRef & type);
   llvm::DIType genDIParameterType(const TypeRef & type);
 
+  // Return the pointer to the reflection data for this module.
+  llvm::GlobalVariable * createModuleObjectPtr();
+
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
 
@@ -326,8 +320,15 @@ private:
 
   void genModuleMetadata(std::ostream & strm);
 
+  void addModuleDependencies();
+
+  llvm::Constant * genReflectionDataArray(
+      const std::string & baseName, const VariableDefn * var, const ConstantList & values);
+
   /** Return true if 'type' requires an implicit dereference, such as a struct. */
   bool requiresImplicitDereference(const Type * type);
+
+  void addTypeName(const Type * type);
 
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
@@ -344,7 +345,9 @@ private:
   llvm::BasicBlock * moduleInitBlock;
 #endif
 
-  llvm::PointerType * methodPtrType;
+  llvm::PointerType * methodPtrType_;
+
+  Reflector reflector_;
 
   // Debug information
   CompileUnitMap dbgCompileUnits_;
@@ -364,7 +367,6 @@ private:
   ConstantObjectMap constantObjectMap_;
 
   bool debug_;
-  bool reflect_;
 };
 
 }

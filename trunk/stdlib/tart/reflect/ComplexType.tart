@@ -1,0 +1,43 @@
+import tart.core.Memory.Address;
+
+/** Reflection type for classes, structs, and interfaces. */
+public class ComplexType : SimpleType {
+  private {
+    var _typeInfo:Address[TypeInfoBlock];
+    var _superType:ComplexType;
+    var _interfaces:ComplexType[];
+    var _typeParams:TypeRef[];
+    var _attributes:Attribute[];
+    var _fields:Field[];
+    var _properties:Property[];
+    var _constructors:Method[];
+    var _methods:Method[];
+  }
+
+  /** Pointer to this type's supertype, or null. */
+  def supertype:ComplexType /* or void */ { get { return self._superType; } }
+  
+  /** Array of inherited interfaces. */
+  def interfaces:ComplexType[] { get { return self._interfaces; } }
+  
+  /** Array of type parameters. */
+  def typeParams:TypeRef[] { get { return self._typeParams; } }
+  
+  /** Array of associated attributes */
+  def attributes:Attribute[] { get { return self._attributes; } }
+  
+  /** Array of field members. */
+  def fields:Field[] { get { return self._fields; } }
+  
+  /** Array of property members. */
+  def properties:Property[] { get { return self._properties; } }
+  
+  /** Array of constructor members. */
+  def constructors:Method[] { get { return self._constructors; } }
+  
+  /** Array of methods. */
+  def methods:Method[] { get { return self._methods; } }
+
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+}

@@ -128,10 +128,12 @@ public:
     ReadOnly,               // Can't be written to from non-privileged code
     Const,                  // Declares a field to be immutable.
     Extern,                 // Externally defined function
+    Unsafe,                 // Requires unsafe language extensions
     Ctor,                   // Constructor function
     Singular,               // Has no unbound template params
     Synthetic,              // Generated via template
     Undefined,              // Undefining a definition in a base class.
+    Nonreflective,          // Don't generate reflection data for this class.
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
@@ -154,7 +156,7 @@ protected:
   SourceLocation loc;         // Location where this was defined.
   const char * name_;         // Local name (copied from decl)
   const ASTDecl * ast_;        // The source declaration of this defintion
-  DeclModifiers modifiers;    // Modifier flags
+  DeclModifiers modifiers_;   // Modifier flags
   Module * module_;           // Module in which this symbol is defined.
   Defn * parentDefn_;         // Definition which encloses this one.
   Defn * nextInScope_;        // Pointer to the next defn in parent scope
@@ -295,11 +297,12 @@ public:
   // Modifier methods
 
   /** The visibility of this value. */
-  Visibility visibility() const { return modifiers.visibility; }
+  Visibility visibility() const { return modifiers_.visibility; }
+  void setVisibility(Visibility vis) { modifiers_.visibility = vis; }
 
   /** The storage class of this value. */
-  StorageClass storageClass() const { return modifiers.storageClass; }
-  void setStorageClass(StorageClass sc) { modifiers.storageClass = sc; }
+  StorageClass storageClass() const { return modifiers_.storageClass; }
+  void setStorageClass(StorageClass sc) { modifiers_.storageClass = sc; }
 
 #if 0
   /** The condition that indicates whether this symbol is enabled. */
@@ -421,13 +424,6 @@ public:
 /// -------------------------------------------------------------------
 /// A definition of a variable
 class VariableDefn : public ValueDefn {
-private:
-  TypeRef type_;
-  Expr * initValue_;
-  mutable llvm::Value * irValue_;
-  int memberIndex_;
-  int memberIndexRecursive_;
-
 public:
   /** Constructor that takes a name */
   VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL)
@@ -437,6 +433,7 @@ public:
     , irValue_(NULL)
     , memberIndex_(0)
     , memberIndexRecursive_(0)
+    , isConstant_(dtype == Defn::Let)
   {}
 
   /** Constructor that takes an AST declaration. */
@@ -447,6 +444,7 @@ public:
     , irValue_(NULL)
     , memberIndex_(0)
     , memberIndexRecursive_(0)
+, isConstant_(dtype == Defn::Let)
   {}
 
   /** Initial value for this variable. */
@@ -469,6 +467,12 @@ public:
   /** Set the type of this variable. */
   void setType(const TypeRef & ty) { type_= ty; }
 
+  /** True if the value of this variable is always the initializer. This will always be
+      true for 'let' variables except in the special case of 'let' variables that
+      are of instance scope and which are initialized in the constructor. */
+  bool isConstant() const { return isConstant_; }
+  void setIsConstant(bool isConstant) { isConstant_ = isConstant; }
+
   // Overrides
 
   TypeRef type() const { return type_; }
@@ -478,6 +482,14 @@ public:
   static inline bool classof(const Defn * de) {
     return de->defnType() == Let || de->defnType() == Var;
   }
+
+private:
+  TypeRef type_;
+  Expr * initValue_;
+  mutable llvm::Value * irValue_;
+  int memberIndex_;
+  int memberIndexRecursive_;
+  bool isConstant_;
 };
 
 /// -------------------------------------------------------------------

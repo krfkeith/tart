@@ -14,7 +14,7 @@
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Objects/Builtins.h"
 
-#include <llvm/DerivedTypes.h>
+#include "llvm/DerivedTypes.h"
 
 namespace tart {
 
@@ -100,17 +100,25 @@ void CompositeType::dumpHierarchy(bool full) const {
   }
 }
 
+const llvm::Type * CompositeType::irType() const {
+  // User irType_ as a flag to detect whether or not we've started to build the IR type,
+  // but don't actually use its value, because that is unsafe in this case.
+  // TODO: Refactor to use PATypeHolder where possible.
+  if (irType_ == NULL) {
+    irType_ = irTypeHolder_.get();
+    createIRType();
+  }
+
+  return irTypeHolder_.get();
+}
+
 const llvm::Type * CompositeType::createIRType() const {
   using namespace llvm;
 
   DASSERT_OBJ(isSingular(), this);
   DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
   DASSERT_OBJ(typeDefn()->isPassFinished(Pass_AnalyzeFields), this);
-  DASSERT(irType_ == NULL);
-
-  // Temporarily get an opaque type to use if this type is self-referential
-  OpaqueType * tempIRType = OpaqueType::get(llvm::getGlobalContext());
-  irType_ = tempIRType;
+  //DASSERT(irType_ == NULL);
 
   // Members of the class
   std::vector<const llvm::Type *> fieldTypes;
@@ -136,12 +144,12 @@ const llvm::Type * CompositeType::createIRType() const {
   }
 
   // This is not the normal legal way to do type refinement in LLVM.
-  // Normally one would use a PATypeHolder. However, in this case it is assumed
-  // that no one is keeping a raw pointer to irType_, except via an LLVM
-  // "User" class.
-  irType_ = StructType::get(llvm::getGlobalContext(), fieldTypes);
-  tempIRType->refineAbstractTypeTo(irType_);
-  return irType_;
+  // Normally irType_ would have to be a PATypeHolder as well, however we can't use that
+  // because sometimes irType_ will be NULL which PATypeHolder cannot be. However, it is
+  // assumed that no one is keeping a persistent copy of irType_ around in raw pointer form.
+  llvm::Type * finalType = StructType::get(llvm::getGlobalContext(), fieldTypes);
+  cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
+  return irTypeHolder_.get();
 }
 
 const llvm::Type * CompositeType::irEmbeddedType() const {

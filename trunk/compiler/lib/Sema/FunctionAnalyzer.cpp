@@ -148,7 +148,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         //  diag.error(param) << "Invalid parameter type (native array)";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
           if (param->internalType().isSingular()) {
-            module->addSymbol(param->internalType().type()->typeDefn());
+            module->addSymbol(param->internalType().defn());
           }
         }
 

@@ -23,7 +23,7 @@ RuntimeTypeInfo::RuntimeTypeInfo(const CompositeType * ty, Module * m)
   external = type->typeDefn()->module() != m;
   if (type->typeDefn()->isSynthetic()) {
     external = false;
-    linkageType = GlobalValue::LinkOnceAnyLinkage;
+    linkageType = GlobalValue::LinkOnceODRLinkage;
   }
 }
 

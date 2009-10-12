@@ -29,6 +29,7 @@ void AddressType::initBuiltin() {
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
   typedefn.setTypeValue(&prototype);
+  typedefn.addTrait(Defn::Unsafe);
 
   prototype.elementType_ = tsig->params()[0];
 }
@@ -157,6 +158,7 @@ NativePointerType * NativePointerType::create(Type * elemType) {
   TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativePointerType * np = new NativePointerType(elemType, tdef, tinst);
   tdef->setTypeValue(np);
+  tdef->addTrait(Defn::Unsafe);
   tdef->setSingular(elemType->isSingular());
   tdef->setTemplateInstance(tinst);
   tdef->createQualifiedName(NULL);
@@ -281,6 +283,7 @@ NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativeArrayType * np = new NativeArrayType(elemType, sz, tdef, tinst);
   tdef->setTypeValue(np);
+  tdef->addTrait(Defn::Unsafe);
   tdef->setSingular(elemType->isSingular());
   tdef->setTemplateInstance(tinst);
   tdef->createQualifiedName(NULL);

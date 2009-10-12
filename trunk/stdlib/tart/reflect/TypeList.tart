@@ -1,4 +1,0 @@
-import tart.collections.ImmutableList;
-
-class TypeList {
-}

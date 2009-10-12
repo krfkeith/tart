@@ -339,8 +339,7 @@ class NegateOp<TypeId_UnsizedInt> : public FunctionDefn {
 public:
   NegateOp()
       : FunctionDefn(NULL, "unaryNegate",
-            &StaticFnType1<TypeId_UnsizedInt, TypeId_UnsizedInt>::value)
-  {}
+            &StaticFnType1<TypeId_UnsizedInt, TypeId_UnsizedInt>::value) {}
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
     assert(args.size() == 1);

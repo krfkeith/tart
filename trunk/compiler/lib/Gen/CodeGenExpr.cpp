@@ -396,7 +396,6 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
         if (param->type().typeClass() == Type::Struct) {
-          diag.info(in) << param;
           return param->irValue();
         }
 

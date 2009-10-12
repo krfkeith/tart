@@ -1,11 +1,12 @@
-import tart.reflect.TypeDescriptor;
+import tart.annex.Nonreflective;
+import tart.reflect.Type;
 
 /** All objects contain a pointer to a TypeInfoBlock, which contains the
     pointer to the type object and the method table.
  */
-struct TypeInfoBlock {
+@Nonreflective struct TypeInfoBlock {
   /** Reference to the type object for this type. */
-  readonly var type:TypeDescriptor;
+  readonly var type:Type;
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */

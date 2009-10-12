@@ -30,13 +30,16 @@ public:
   StructBuilder & addField(llvm::Constant * value);
 
   /** Add a field which contains a reference to a type descriptor for the specified type. */
-  StructBuilder & addTypeReference(const Type * type);
+  //StructBuilder & addTypeReference(const Type * type);
 
   /** Add a field which contains a reference to a type expression for the specified type. */
-  StructBuilder & addTypeReference(const TypeRef & type);
+  //StructBuilder & addTypeReference(const TypeRef & type);
 
   /** Add a field containing a constant null pointer. */
   StructBuilder & addNullField(const Type * type);
+
+  /** Add a field containing a constant null pointer. */
+  StructBuilder & addNullField(const TypeRef & type);
 
   /** Add an integer field of the specified type. */
   StructBuilder & addIntegerField(const Type * type, int32_t value);

@@ -142,7 +142,7 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
 
     case BlockTerm_None:
     default:
-      diag.fatal() << "Invalid terminator for block " << blk->label();
+      diag.fatal() << "Invalid terminator for block '" << blk->label() << "'";
       DFAIL("Invalid terminator");
   }
 };
@@ -155,7 +155,7 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     Value * value = genExpr(returnVal);
     DASSERT(value != NULL);
     if (requiresImplicitDereference(returnVal->type())) {
-      value = builder_.CreateLoad(value);
+      //value = builder_.CreateLoad(value);
     }
     //genDoFinally(blk);
     builder_.CreateRet(value);

@@ -71,7 +71,7 @@ struct DeclModifiers {
   ASTNode       * condition;
 
   DeclModifiers()
-    : flags(0), storageClass(Storage_Global), visibility(Internal),
+    : flags(0), storageClass(Storage_Global), visibility(Public),
       condition(NULL) {}
 
   DeclModifiers(const DeclModifiers & src)
