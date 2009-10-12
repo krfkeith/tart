@@ -446,4 +446,39 @@ Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Expr *
   return NULL;
 }
 
+// -------------------------------------------------------------------
+// UnsafeApplyIntrinsic
+UnsafeApplyIntrinsic UnsafeApplyIntrinsic::instance;
+
+Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
+    if (TypeDefn * tdef = ctype->value()->typeDefn()) {
+      tdef->addTrait(Defn::Unsafe);
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    lval->value()->addTrait(Defn::Unsafe);
+  } else {
+    diag.error(loc) << "Invalid target for 'Unsafe'";
+  }
+
+  return args[0];
+}
+
+// -------------------------------------------------------------------
+// NonreflectiveApplyIntrinsic
+NonreflectiveApplyIntrinsic NonreflectiveApplyIntrinsic::instance;
+
+Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
+  if (TypeDefn * tdef = ctype->value()->typeDefn()) {
+    tdef->addTrait(Defn::Nonreflective);
+  }
+
+  return args[0];
+}
+
 } // namespace tart

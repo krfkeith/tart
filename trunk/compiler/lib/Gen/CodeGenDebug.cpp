@@ -61,7 +61,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
-      result = genDICompositeType(static_cast<const CompositeType *>(type));
+      return genDICompositeType(static_cast<const CompositeType *>(type));
       break;
 
     case Type::Enum:
@@ -90,7 +90,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
     case Type::Alias: {
       TypeAlias * alias = static_cast<const TypeAlias *>(type);
-      return genDIType(alias->value());
+      result = genDIType(alias->value());
     }
 
     default:
@@ -182,7 +182,18 @@ DIDerivedType CodeGenerator::genDITypeMember(const VariableDefn * var, Constant 
 }
 
 DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
-  DICompositeType placeHolder;
+  DICompositeType placeHolder = dbgFactory_.CreateCompositeType(
+      dwarf::DW_TAG_structure_type,
+      dbgCompileUnit_,
+      type->typeDefn()->linkageName(),
+      dbgCompileUnit_,
+      getSourceLineNumber(type->typeDefn()->location()),
+      llvm::ConstantExpr::getSizeOf(type->irType()),
+      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getInt64Val(0), 0,
+      DIType(),
+      DIArray());
+
   dbgTypeMap_[type] = placeHolder;
 
   const DefnList & fields = type->instanceFields();
@@ -237,13 +248,13 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
 DICompositeType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, type->size());
   return dbgFactory_.CreateCompositeType(
-      dwarf::DW_TAG_enumeration_type,
+      dwarf::DW_TAG_array_type,
       dbgCompileUnit_,
       "",
       dbgCompileUnit_,
       0,
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      llvm::ConstantExpr::getSizeOf(type->irEmbeddedType()),
+      llvm::ConstantExpr::getAlignOf(type->irEmbeddedType()),
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(&subrange, 1));

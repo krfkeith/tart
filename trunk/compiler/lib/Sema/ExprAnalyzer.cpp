@@ -25,7 +25,15 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-Expr * ExprAnalyzer::inferTypes(Expr * expr, Type * expected) {
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction)
+  : AnalyzerBase(mod, parent)
+  , tsig(NULL)
+  , currentFunction_(currentFunction)
+{
+  setSourceDefn(currentFunction);
+}
+
+Expr * ExprAnalyzer::inferTypes(Defn * source, Expr * expr, Type * expected) {
   if (isErrorResult(expr)) {
     return NULL;
   }
@@ -40,7 +48,7 @@ Expr * ExprAnalyzer::inferTypes(Expr * expr, Type * expected) {
     expr = TypeInferencePass::run(expr, expected);
   }
 
-  expr = FinalizeTypesPass::run(expr);
+  expr = FinalizeTypesPass::run(source, expr);
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;
@@ -173,6 +181,11 @@ ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expe
   Expr * expr = analyze(ast, expected);
   if (isErrorResult(expr)) {
     return NULL;
+  }
+
+  Expr * letConst = LValueExpr::constValue(expr);
+  if (letConst != NULL) {
+    expr = letConst;
   }
 
   if (!expr->isConstant()) {
@@ -424,14 +437,18 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
 
   DASSERT_OBJ(lvalue->type() != NULL, lvalue);
 
-  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
+  /*if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+      checkAccess(ast->location(), prop);
       return reduceGetPropertyValue(ast->location(), lval->base(), prop);
     }
-  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  } else*/
+
+  if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+        checkAccess(ast->location(), prop);
         return reduceGetParamPropertyValue(ast->location(), call);
       }
     }
@@ -446,6 +463,7 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lvalue,
   if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+      checkAccess(loc, prop);
       return reduceSetPropertyValue(loc, lval->base(), prop, rvalue);
     }
   } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
@@ -602,6 +620,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
       diag.writeLnIndent("Scopes searched:");
       dumpScopeHierarchy();
     }
+
     return &Expr::ErrorVal;
   } else if (values.size() > 1) {
     diag.error(ast) << "Multiply defined symbol " << ast;
@@ -618,37 +637,6 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
       DFAIL("Not an LValue");
     }
   }
-
-#if 0
-  // Don't refer to idents that aren't yet defined in this scope.
-  // TODO: Move this to GFC analysis possibly.
-  const char * name = result->name();
-  if (!result->isAvailable()) {
-    diag.fatal(ident->location(),
-        "Attempt to access variable '%s' before definition", name);
-    return &BadResult;
-  }
-
-  analyze(de);
-
-  // It may have been an instance variable that we found, in which
-  // case we want to convert this into a getMember expression.
-  if (de->storageClass() == Storage_Instance) {
-    // Look for an outer scope that has a 'self' parameter matching
-    // the class type of the field.
-    if (implicitSelf == NULL) {
-      diag.fatal(ident->location(),
-          "Attempt to access instance member '%s' from static function", name);
-      return &BadResult;
-    } else if (implicitSelf->getCanonicalType()->getDeclaration() !=
-        result->getParentScope()) {
-      diag.fatal(ident->location(),
-          "Instance member '%s' can't be accessed via 'self' from here", name);
-      return &BadResult;
-    }
-  }
-
-#endif
 }
 
 Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
@@ -985,7 +973,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   for (size_t i = 0; i < argCount; ++i) {
     TypeRef paramType = getter->functionType()->param(i)->type();
     Expr * arg = call->arg(i);
-    arg = inferTypes(arg, paramType.type());
+    arg = inferTypes(sourceDefn, arg, paramType.type());
     Expr * castArg = paramType.implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
@@ -1060,7 +1048,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   if (!value->isSingular()) {
-    value = inferTypes(value, prop->type().type());
+    value = inferTypes(sourceDefn, value, prop->type().type());
     if (isErrorResult(value)) {
       return value;
     }
@@ -1085,12 +1073,13 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     lvalue->setType(param->internalType());
   }
 
+  checkAccess(lvalue->location(), lvalue->value());
   switch (lvalue->value()->storageClass()) {
     case Storage_Global:
     case Storage_Static:
     case Storage_Local:
-    lvalue->setBase(NULL);
-    return lvalue;
+      lvalue->setBase(NULL);
+      break;
 
     case Storage_Instance: {
       Expr * base = lvalue->base();
@@ -1102,15 +1091,26 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
 
       // TODO: Handle type names and such
 
-      return lvalue;
+      break;
     }
 
     case Storage_Class:
     case Storage_Param:
     case Storage_Closure:
     default:
-    DFAIL("Invalid storage class");
+      DFAIL("Invalid storage class");
   }
+
+  // If it's not a store, and it's a property access, then dereference into getter calls.
+  // (If it is a store, then do nothing - that can only be handled once we know what it
+  // is we are storing.)
+  if (!store) {
+    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lvalue->value())) {
+      return reduceGetPropertyValue(lvalue->location(), lvalue->base(), prop);
+    }
+  }
+
+  return lvalue;
 }
 
 }

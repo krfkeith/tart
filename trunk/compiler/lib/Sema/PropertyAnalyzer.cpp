@@ -11,7 +11,6 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/PropertyAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
 
 namespace tart {
 

@@ -82,6 +82,16 @@ bool Module::import(const char * name, DefnList & defs, bool absPath) {
   return false;
 }
 
+bool Module::findPrimaryDefn() {
+  std::string primaryName(qname_);
+  size_t dot = primaryName.rfind('.');
+  if (dot != primaryName.npos) {
+    primaryName.erase(0, dot + 1);
+  }
+
+  return IterableScope::lookupMember(primaryName.c_str(), primaryDefs_, false);
+}
+
 Defn * Module::primaryDefn() const {
   Defn * result = NULL;
   std::string moduleName(packageName());

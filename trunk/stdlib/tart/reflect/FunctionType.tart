@@ -1,0 +1,4 @@
+/** Reflection type class for pointers, unions, tuples, and so on. */
+class FunctionType : Type {
+  private def construct() {}
+}

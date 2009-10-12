@@ -14,25 +14,17 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// Expression analyzer
 class ExprAnalyzer : public AnalyzerBase {
-private:
-  TemplateSignature * tsig;
-  FunctionDefn * currentFunction_;
-
 public:
   /** Constructor. */
-  ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * function = NULL)
-    : AnalyzerBase(mod, parent)
-    , tsig(NULL)
-    , currentFunction_(function)
-  {}
+  ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction = NULL);
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, Type * expected) {
-    return inferTypes(reduceExpr(ast, expected), expected);
+    return inferTypes(sourceDefn, reduceExpr(ast, expected), expected);
   }
 
   /** Take a reduced expression and do type inferencing. */
-  static Expr * inferTypes(Expr * expr, Type * expected);
+  static Expr * inferTypes(Defn * source, Expr * expr, Type * expected);
 
   /** Build expression tree from AST. */
   Expr * reduceExpr(const ASTNode * ast, Type * expected);
@@ -137,6 +129,10 @@ public:
   // Templates
 
   Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);
+
+private:
+  TemplateSignature * tsig;
+  FunctionDefn * currentFunction_;
 };
 
 } // namespace tart

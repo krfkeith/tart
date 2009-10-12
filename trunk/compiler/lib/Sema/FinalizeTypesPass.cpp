@@ -13,7 +13,6 @@
 
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/CallCandidate.h"
-#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -24,7 +23,12 @@ namespace tart {
 /// FinalizeTypesPass
 
 Expr * FinalizeTypesPass::run(Expr * in) {
-  FinalizeTypesPass instance;
+  FinalizeTypesPass instance(NULL);
+  return instance.runImpl(in);
+}
+
+Expr * FinalizeTypesPass::run(Defn * source, Expr * in) {
+  FinalizeTypesPass instance(source);
   return instance.runImpl(in);
 }
 
@@ -141,68 +145,14 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
       }
     }
 
+    // Insure that we can see the method.
+    AnalyzerBase::checkAccess(in->location(), sourceDefn_, method);
+
+    // Handle argument conversions.
     ExprList callingArgs;
     if (!coerceArgs(cd, in->args(), callingArgs)) {
       return &Expr::ErrorVal;
     }
-
-#if 0
-    size_t paramCount = method->functionType()->params().size();
-    callingArgs.resize(paramCount);
-    std::fill(callingArgs.begin(), callingArgs.end(), (Expr *)NULL);
-
-    for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-      int paramIndex = cd->parameterIndex(argIndex);
-      ParameterDefn * param = method->functionType()->params()[paramIndex];
-      Type * paramType = param->type();
-      DASSERT(paramType->isSingular());
-      Expr * argVal = visitExpr(args[argIndex]);
-      if (isErrorResult(argVal)) {
-        return &Expr::ErrorVal;
-      }
-
-      Expr * castArgVal = addCastIfNeeded(argVal, paramType);
-      if (castArgVal == NULL) {
-        diag.error(argVal) << "Unable to convert argument of type " << argVal->type() <<
-        " to " << paramType;
-        return &Expr::ErrorVal;
-      }
-
-      args[argIndex] = castArgVal;
-      if (param->isVariadic()) {
-        // Handle variadic parameters - build an array literal.
-        ArrayLiteralExpr * arrayParam = cast_or_null<ArrayLiteralExpr>(callingArgs[paramIndex]);
-        if (arrayParam == NULL) {
-          arrayParam = AnalyzerBase::createArrayLiteral(argVal->location(), paramType);
-          AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
-          DASSERT(arrayParam->isSingular());
-          callingArgs[paramIndex] = arrayParam;
-        }
-
-        DASSERT(castArgVal->isSingular());
-        arrayParam->appendArg(castArgVal);
-      } else {
-        callingArgs[paramIndex] = castArgVal;
-      }
-    }
-
-    // Fill in default params
-    for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
-      if (callingArgs[paramIndex] == NULL) {
-        ParameterDefn * param = method->functionType()->params()[paramIndex];
-        if (param->isVariadic()) {
-          // Pass a null array - possibly a static singleton.
-          ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-              param->location(), param->type());
-          AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
-          callingArgs[paramIndex] = arrayParam;
-        } else {
-          callingArgs[paramIndex] = param->defaultValue();
-          DASSERT_OBJ(callingArgs[paramIndex] != NULL, param);
-        }
-      }
-    }
-#endif
 
     // Handle 'self' param
     Expr * selfArg = NULL;
@@ -320,40 +270,6 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
   DASSERT_OBJ(result->isSingular(), result);
   return result;
 }
-
-  #if 0
-Expr * FinalizeTypesPass::visitFnCall(FnCallExpr * in) {
-  if (in->areTypesFinalized()) {
-    return in;
-  }
-
-  in->setTypesFinalized(true);
-  FunctionDefn * fn = in->function();
-  if (fn == NULL || !AnalyzerBase::analyzeValueDefn(fn, Task_PrepCallOrUse)) {
-    return &Expr::ErrorVal;
-  }
-
-  in->setSelfArg(visitExpr(in->selfArg()));
-  ExprList & args = in->args();
-  size_t argCount = in->argCount();
-  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-    ParameterDefn * param = fn->functionType()->params()[argIndex];
-    Type * paramType = param->internalType();
-    DASSERT(paramType->isSingular());
-    Expr * argVal = visitExpr(args[argIndex]);
-    Expr * castArgVal = addCastIfNeeded(argVal, paramType);
-    if (castArgVal == NULL) {
-      diag.error(argVal) << "Unable to convert argument of type " << argVal->type() <<
-      " to " << paramType;
-      return &Expr::ErrorVal;
-    }
-
-    args[argIndex] = castArgVal;
-  }
-
-  return in;
-}
-#endif
 
 bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
 
@@ -525,6 +441,7 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   bool isConstFalse = false; // Test always fails
 
   if (ctTo != NULL && ctFrom != NULL) {
+    AnalyzerBase::checkAccess(in->location(), sourceDefn_, ctTo->typeDefn());
     if (ctTo->typeClass() == Type::Struct) {
       // Structs are not polymorphic, so we know the answer at compile time.
       if (ctTo->typeClass() != Type::Struct) {

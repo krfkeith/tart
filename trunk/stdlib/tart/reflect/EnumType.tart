@@ -1,0 +1,18 @@
+import tart.core.Memory.Address;
+
+/** Interface type for enums. */
+public class EnumType : SimpleType {
+  private {
+    var _superType:SimpleType;
+    var _values:Field[];
+  }
+
+  /** Pointer to this type's supertype, or null. */
+  def superType:SimpleType /* or void */ { get { return self._superType; } }
+  
+  /** Array of enumeration constants. */
+  def values:Field[] { get { return self._values; } }
+  
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+}

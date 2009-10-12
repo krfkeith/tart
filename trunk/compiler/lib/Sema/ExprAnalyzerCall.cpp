@@ -267,7 +267,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
   ParameterDefn * selfParam = currentFunction_->functionType()->selfParam();
   DASSERT_OBJ(selfParam != NULL, currentFunction_);
   DASSERT_OBJ(selfParam->type().isDefined(), currentFunction_);
-  TypeDefn * selfType = selfParam->type().type()->typeDefn();
+  TypeDefn * selfType = selfParam->type().defn();
   DASSERT_OBJ(selfType != NULL, currentFunction_);
   Expr * selfExpr = new LValueExpr(selfParam->location(), NULL, selfParam);
   selfExpr = superClass->implicitCast(loc, selfExpr);
@@ -293,6 +293,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expec
 Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeList & args) {
   Type * type = tdef->typeValue();
   //TypeDefn * tdef = type->typeDefn();
+  checkAccess(loc, tdef);
   if (!tdef->isTemplate() && !tdef->isTemplateMember()) {
     module->addSymbol(tdef);
   }

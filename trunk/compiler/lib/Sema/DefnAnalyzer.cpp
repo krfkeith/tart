@@ -19,23 +19,30 @@
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
-#include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FindExternalRefsPass.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
 
+#include "llvm/Support/CommandLine.h"
+
 namespace tart {
+
+llvm::cl::opt<bool>
+NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
+
+extern BuiltinMemberRef<VariableDefn> module_types;
+extern BuiltinMemberRef<VariableDefn> module_methods;
 
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
+  bool requireReflection = false;
 
   if (!createMembersFromAST(module)) {
     return false;
   }
 
-  analyzeType(Builtins::typeTypeDescriptor, Task_PrepMemberLookup);
-  analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
+  //analyzeType(Builtins::typeTypeDescriptor, Task_PrepMemberLookup);
 
   if (module->firstMember() == NULL) {
     diag.fatal() << "Module should have at least one definition";
@@ -47,10 +54,25 @@ bool DefnAnalyzer::analyzeModule() {
     if (!de->isTemplate()) {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
         module->addSymbol(de);
+        if (!de->hasTrait(Defn::Nonreflective)) {
+          requireReflection = true;
+        }
       } else {
         //diag.info(de) << "Failed to analyze " << de;
         success = false;
       }
+    }
+  }
+
+  // If reflection is required, import those types.
+  if (!NoReflect) {
+    Builtins::loadReflectionClasses();
+    analyzeType(Builtins::typeType, Task_PrepMemberLookup);
+    analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
+    if (requireReflection) {
+      module->addSymbol(Builtins::typeModule->typeDefn());
+      module->addSymbol(module_types.get()->type().defn());
     }
   }
 
@@ -108,12 +130,14 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
       attrType->setClassFlag(CompositeType::Attribute, true);
       attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
       attrType->attributeInfo().setRetained(false);
+      attrType->typeDefn()->addTrait(Defn::Nonreflective);
       in->finishPass(Pass_ResolveAttributes);
       return true;
     }
 
     if (in->ast() != NULL) {
       ExprAnalyzer ea(module, activeScope);
+      ea.setSourceDefn(sourceDefn);
       const ASTNodeList & attrs = in->ast()->attributes();
       for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
         Expr * attrExpr = ea.reduceAttribute(*it);
@@ -134,7 +158,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
 void DefnAnalyzer::applyAttributes(Defn * in) {
   ExprList & attrs = in->attrs();
   for (ExprList::iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    Expr * attrExpr = ExprAnalyzer::inferTypes(*it, NULL);
+    Expr * attrExpr = ExprAnalyzer::inferTypes(sourceDefn, *it, NULL);
     if (isErrorResult(attrExpr)) {
       continue;
     }
@@ -215,6 +239,10 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   targetType->setClassFlag(CompositeType::Attribute, true);
   targetType->attributeInfo().setTarget(target);
   targetType->attributeInfo().setRetained(retention);
+  if (!retention) {
+    // If a type is not retained, then don't generate reflection information for it.
+    targetTypeDefn->addTrait(Defn::Nonreflective);
+  }
 }
 
 void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope) {
@@ -326,6 +354,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
       ExprAnalyzer ea(de->module(), de->definingScope());
+      ea.setSourceDefn(de);
       Expr * param = ea.reducePattern(*it, tsig);
       if (param != NULL) {
         // Now, add a definition to the parameter scope for this param.

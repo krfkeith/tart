@@ -378,9 +378,9 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
 
   // Constant array objects are special because of their variable size.
   ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
-  arrayObj->setMemberValue("len",
+  arrayObj->setMemberValue("_length",
       ConstantInteger::get(in->location(), &UIntType::instance, arrayData->elements().size()));
-  arrayObj->setMemberValue("data", arrayData);
+  arrayObj->setMemberValue("_data", arrayData);
   return arrayObj;
 }
 

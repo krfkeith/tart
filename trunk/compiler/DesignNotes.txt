@@ -413,7 +413,32 @@ class Member {
 
 Member: 4 + 4 + 4 + 1 + 1 + 1 + 4 = 20.
 
-Method: 20 + 4 + 4 + 4 + 4 = 36.
+Method: 20 + 4 + 4 + 4 + 4 = 36 + (16 * numParams).
+
+Parameter: 8 + 4 + 4 + 4 = 20.
+
+Parameter:
+  2 - name index
+  1+ type
+  
+  
+
+
+class Parameter {
+  private def construct() {}
+
+  /** The unqualified member name. */
+  let name:String;
+  
+  /** The type of this member. Note: Variadic parameter types will be converted to array types. */
+  let paramType:TypeDescriptor;
+  
+  /** Array of attributes for this parameter. */
+  let attributes:Attribute[];
+  
+  let defaultValue:Object;
+}
+
 
 /** Description of a callable method. */
 final class Method : Member {
@@ -504,3 +529,4 @@ public class TypeDescriptor {
   /** Private constructor - types cannot be created by applications. */
   private def construct() {}
 }
+

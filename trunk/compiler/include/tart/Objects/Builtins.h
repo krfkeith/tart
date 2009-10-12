@@ -17,41 +17,6 @@ class TypeDefn;
 class ValueDefn;
 
 /// -------------------------------------------------------------------
-/// Class to hold references to members of tart.reflect.TypeDescriptor.
-struct ReflectTypeDescriptor {
-  VariableDefn * memberTypeInfo;
-  VariableDefn * memberTypeKind;
-  VariableDefn * memberSupertype;
-  VariableDefn * memberInterfaces;
-  VariableDefn * memberTypeParams;
-  VariableDefn * memberAttributes;
-  VariableDefn * memberFields;
-  VariableDefn * memberProperties;
-  VariableDefn * memberConstructors;
-  VariableDefn * memberMethods;
-};
-
-/// -------------------------------------------------------------------
-/// Class to hold references to members of tart.reflect.Member.
-struct ReflectMember {
-  VariableDefn * memberName;
-  VariableDefn * memberMemberType;
-  VariableDefn * memberKind;
-  VariableDefn * memberDeclaringType;
-  VariableDefn * memberAccess;
-  VariableDefn * memberTraits;
-  VariableDefn * memberAttributes;
-};
-
-/// -------------------------------------------------------------------
-/// Class to hold references to members of tart.reflect.Member.
-struct ReflectModule {
-  VariableDefn * memberName;
-  VariableDefn * memberTypes;
-  VariableDefn * memberMethods;
-};
-
-/// -------------------------------------------------------------------
 /// Class to hold references to all builtin types and methods.
 class Builtins {
 private:
@@ -60,11 +25,11 @@ private:
   static Type * loadSystemType(const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
 
-  template<class T> static T * getMember(Type * tdef, const char * name);
-
   static bool compileBuiltins(ProgramSource & source);
 
 public:
+
+  template<class T> static T * getMember(Type * tdef, const char * name);
 
   // The module for builtins
   static Module module;
@@ -85,6 +50,13 @@ public:
   // System types - reflection
   static Type * typeTypeDescriptor;
   static Type * typeType;
+  static Type * typeTypeRef;
+  static Type * typeTypeLiteral;
+  static Type * typeSimpleType;
+  static Type * typeComplexType;
+  static Type * typeEnumType;
+  static Type * typeFunctionType;
+  static Type * typeDerivedType;
   static Type * typeMember;
   static Type * typeField;
   static Type * typeProperty;
@@ -102,11 +74,6 @@ public:
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
 
-  // Information about reflection classes
-  static ReflectTypeDescriptor rfTypeDescriptor;
-  static ReflectMember rfMember;
-  static ReflectModule rfModule;
-
   // Namespaces
   static NamespaceDefn nsOperator;
 
@@ -115,6 +82,9 @@ public:
 
   /** Load classes known to the compiler. */
   static void loadSystemClasses();
+
+  /** Load classes needed for reflection. */
+  static void loadReflectionClasses();
 
   /** Define built-in operators. */
   static void initOperators();
@@ -126,6 +96,43 @@ public:
 template<class T> T * Builtins::getMember(Type * tdef, const char * name) {
   return cast_or_null<T>(getSingleDefn(tdef, name));
 }
+
+/// -------------------------------------------------------------------
+/// Contains a lazy reference to a member of a builtin type
+template <class T>
+class BuiltinMemberRef {
+public:
+  BuiltinMemberRef(Type *& definingType, const char * fieldName)
+    : definingType_(definingType)
+    , fieldName_(fieldName)
+    , member_(NULL)
+    {}
+
+  T * get() const {
+    if (member_ == NULL) {
+      member_ = Builtins::getMember<T>(definingType_, fieldName_);
+    }
+
+    return member_;
+  }
+
+  T * operator->() const {
+    return get();
+  }
+
+  operator T *() const {
+    return get();
+  }
+
+  TypeRef type() const {
+    return get()->type();
+  }
+
+private:
+  Type *& definingType_;
+  const char * fieldName_;
+  mutable T * member_;
+};
 
 }
 

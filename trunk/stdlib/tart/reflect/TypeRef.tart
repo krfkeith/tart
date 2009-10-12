@@ -1,6 +1,10 @@
+import tart.annex.Nonreflective;
+
 /** A reference to a type, including any modifier flags (const, volatile, etc.) */
-struct TypeRef {
+@Nonreflective struct TypeRef {
   @Flags enum Modifiers {
+    CONST,
+    VOLATILE,
   }
 
   let type:Type;

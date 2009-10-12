@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/Common/Diagnostics.h"
@@ -41,6 +41,7 @@
 #include <cstring>
 
 using namespace llvm;
+using namespace tart;
 
 enum OutputType {
   Unset = 0,

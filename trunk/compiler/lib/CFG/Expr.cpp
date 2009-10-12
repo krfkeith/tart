@@ -231,7 +231,7 @@ bool LValueExpr::isSingular() const {
 
 void LValueExpr::format(FormatStream & out) const {
   if (base_ != NULL) {
-    out << base_ << "." << value_;
+    out << base_ << "." << value_->name();
   } else {
     out << value_;
   }

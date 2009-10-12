@@ -105,6 +105,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     // See if it's an expression.
     ExprAnalyzer ea(module, activeScope);
+    ea.setSourceDefn(sourceDefn);
     //Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
@@ -264,6 +265,7 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
   ExprAnalyzer ea(module, activeScope);
+  ea.setSourceDefn(sourceDefn);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
     if (isErrorResult(cb)) {
@@ -708,6 +710,71 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & e
   array->setType(arrayType);
 
   return array;
+}
+
+// Determine if the target is able to be accessed from the current source defn.
+void AnalyzerBase::checkAccess(const SourceLocation & loc, Defn * target) {
+  if (!canAccess(sourceDefn, target)) {
+    diag.fatal(loc) << "'" << target->name() << "' is " <<
+        (target->visibility() == Protected ? "protected." : "private.");
+  }
+}
+
+void AnalyzerBase::checkAccess(const SourceLocation & loc, Defn * source, Defn * target) {
+  if (!canAccess(source, target)) {
+    diag.fatal(loc) << "'" << target->name() << "' is " <<
+        (target->visibility() == Protected ? "protected." : "private.");
+  }
+}
+
+/** The set of definition types that represent namespaces that can grant access to their
+    members. */
+static const DefnTypeSet ACCESS_CONTEXTS = DefnTypeSet::of(
+    Defn::Typedef, Defn::Namespace, Defn::Mod);
+
+bool AnalyzerBase::canAccess(Defn * source, Defn * target) {
+  if (target->storageClass() == Storage_Local || target->defnType() == Defn::Parameter) {
+    return true;
+  }
+
+  if (target->visibility() != Public) {
+    // The destination context is the scope that defines who can see the visible symbol.
+    // This is never the symbol itself - it is the next outer name-space-like symbol.
+    Defn * dstContext = target;
+    if ((dstContext == target || !ACCESS_CONTEXTS.contains(dstContext->defnType()))
+        && dstContext->parentDefn() != NULL) {
+      dstContext = dstContext->parentDefn();
+    }
+
+    if (source != NULL) {
+      for (Defn * de = source; de != NULL; de = de->parentDefn()) {
+        if (de == dstContext) {
+          return true;
+        }
+      }
+
+      if (target->visibility() == Protected) {
+        if (TypeDefn * dstTypeDef = dyn_cast<TypeDefn>(dstContext)) {
+          if (CompositeType * dstType = dyn_cast_or_null<CompositeType>(dstTypeDef->typeValue())) {
+            for (Defn * de = source; de != NULL; de = de->parentDefn()) {
+              if (TypeDefn * srcTypeDef = dyn_cast<TypeDefn>(de)) {
+                if (CompositeType * srcType =
+                    dyn_cast_or_null<CompositeType>(srcTypeDef->typeValue())) {
+                  if (srcType->isSubclassOf(dstType)) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  return true;
 }
 
 void AnalyzerBase::dumpScopeHierarchy() {

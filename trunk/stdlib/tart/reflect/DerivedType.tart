@@ -1,4 +1,11 @@
-/** Type class used for address and pointer types. */
+/** Reflection type class for pointers, unions, tuples, and so on. */
 class DerivedType : Type {
-  let baseType:TypeRef;
+  private {
+    var _typeParams:TypeRef[];
+  }
+
+  def construct() {}
+
+  /** The list of type parameters for this type. */
+  def typeParams:TypeRef[] { get { return _typeParams; } }
 }

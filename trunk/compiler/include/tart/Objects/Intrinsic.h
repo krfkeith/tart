@@ -259,6 +259,24 @@ class GenerateStackTraceApplyIntrinsic : public Intrinsic {
       Type * expectedReturn) const;
 };
 
+// -------------------------------------------------------------------
+// Unsafe.apply intrinsic
+class UnsafeApplyIntrinsic : public Intrinsic {
+  static UnsafeApplyIntrinsic instance;
+  UnsafeApplyIntrinsic() : Intrinsic("tart.core.Unsafe.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Nonreflective.apply intrinsic
+class NonreflectiveApplyIntrinsic : public Intrinsic {
+  static NonreflectiveApplyIntrinsic instance;
+  NonreflectiveApplyIntrinsic() : Intrinsic("tart.annex.Nonreflective.apply") {}
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args,
+      Type * expectedReturn) const;
+};
+
 }
 
 #endif

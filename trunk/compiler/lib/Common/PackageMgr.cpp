@@ -78,18 +78,11 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
 
       Parser parser(mod->moduleSource(), mod);
       if (parser.parse()) {
-        // Look for the primary declaration. This is the one
-        // with the same name as the module.
-        std::string primaryName(qname);
-        size_t dot = primaryName.rfind('.');
-        if (dot != primaryName.npos) {
-          primaryName.erase(0, dot + 1);
-        }
-
+        // Look for the primary declaration. This is the one with the same name as the module.
         ScopeBuilder::createScopeMembers(mod);
-        if (!mod->IterableScope::lookupMember(primaryName.c_str(), mod->primaryDefs_, false)) {
-          diag.fatal(SourceLocation()) << "No symbol '" << primaryName <<
-            "' found in module '" << mod->qname_ << "'";
+        if (!mod->findPrimaryDefn()) {
+          diag.fatal(SourceLocation()) << "No primary symbol found in module '" <<
+              mod->qname_ << "'";
         }
       } else {
         return NULL;

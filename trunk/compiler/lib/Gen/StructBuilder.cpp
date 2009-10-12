@@ -30,13 +30,14 @@ StructBuilder & StructBuilder::addField(llvm::Constant * value) {
   return *this;
 }
 
+#if 0
 StructBuilder & StructBuilder::addTypeReference(const Type * type) {
   if (type != NULL) {
     members_.push_back(gen_.getTypeDescriptorPtr(type));
   } else {
     // Null type pointer
     members_.push_back(ConstantPointerNull::get(
-        cast<PointerType>(Builtins::typeTypeDescriptor->irEmbeddedType())));
+        cast<PointerType>(Builtins::typeType->irEmbeddedType())));
   }
   return *this;
 }
@@ -44,10 +45,15 @@ StructBuilder & StructBuilder::addTypeReference(const Type * type) {
 StructBuilder & StructBuilder::addTypeReference(const TypeRef & type) {
   return addTypeReference(type.type());
 }
+#endif
 
 StructBuilder & StructBuilder::addNullField(const Type * type) {
   const llvm::PointerType * irType = cast<llvm::PointerType>(type->irEmbeddedType());
   return addField(ConstantPointerNull::get(irType));
+}
+
+StructBuilder & StructBuilder::addNullField(const TypeRef & type) {
+  return addNullField(type.type());
 }
 
 StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value) {

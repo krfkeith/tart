@@ -46,6 +46,7 @@ public:
   AnalyzerBase(Module * mod, Scope * parent)
     : module(mod)
     , activeScope(parent)
+    , sourceDefn(NULL)
   {}
 
   /** Replace the current active scope with a new scope. Returns the old
@@ -55,6 +56,10 @@ public:
     activeScope = newScope;
     return prevScope;
   }
+
+  /** Represents the current scope from which accesses are being made. Used to check
+      whether private/protected variables can be seen. */
+  void setSourceDefn(Defn * defn) { sourceDefn = defn; }
 
   /** This method accepts an AST representing either an identifier or
       a dotted path of the form 'a.b.c'. It will attempt to resolve the
@@ -116,12 +121,18 @@ public:
       construction of the array. */
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const TypeRef & elementType);
 
+  // Determine if the target is able to be accessed from the current source defn.
+  void checkAccess(const SourceLocation & loc, Defn * target);
+  static void checkAccess(const SourceLocation & loc, Defn * source, Defn * target);
+  static bool canAccess(Defn * source, Defn * target);
+
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();
 
 protected:
   Module * module;
   Scope * activeScope;
+  Defn * sourceDefn;
 
   typedef llvm::SmallSetVector<Defn *, 128> AnalysisQueue;
 

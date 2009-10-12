@@ -62,12 +62,12 @@ const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
 }
 
 const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
-  TypeDefn * tdef = type->typeDefn();
-  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-
   if (type->isAttribute() && !type->attributeInfo().isRetained()) {
     return NULL;
   }
+
+  TypeDefn * tdef = type->typeDefn();
+  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
   // Don't need to define this twice.
   if (rtype->isExternal() ||
@@ -83,39 +83,21 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 
   irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
-  createTypeDescriptor(rtype);
+  //createTypeDescriptor(rtype);
   createTypeAllocator(rtype);
   return type->irType();
-}
-
-GlobalVariable * CodeGenerator::getTypeDescriptorPtr(const Type * type) {
-  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    return createTypeDescriptorPtr(getRTTypeInfo(ctype));
-  } else {
-    DFAIL("Implement");
-  }
 }
 
 Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
   return createTypeInfoBlockPtr(getRTTypeInfo(type));
 }
 
-Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
-  return createTypeAllocator(getRTTypeInfo(type));
+bool CodeGenerator::createTypeInfoBlock(const CompositeType * type) {
+  createTypeInfoBlock(getRTTypeInfo(type));
 }
 
-GlobalVariable * CodeGenerator::createTypeDescriptorPtr(RuntimeTypeInfo * rtype) {
-  if (rtype->typeDescriptor() == NULL) {
-    // Create the global variable for the type object.
-    const CompositeType * type = rtype->getType();
-    rtype->setTypeDescriptor(
-        new GlobalVariable(*irModule_,
-            Builtins::typeTypeDescriptor->irType(), true,
-            rtype->getLinkageType(), NULL,
-            type->typeDefn()->linkageName() + ".type"));
-  }
-
-  return rtype->typeDescriptor();
+Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
+  return createTypeAllocator(getRTTypeInfo(type));
 }
 
 Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
@@ -126,11 +108,13 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
       rtype->setTypeInfoPtr(ConstantPointerNull::get(
           PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType())));
     } else {
+      DASSERT(rtype->getTypeInfoBlock() == NULL);
       rtype->setTypeInfoBlock(
           new GlobalVariable(*irModule_,
               rtype->getTypeInfoBlockType().get(),
               true, GlobalValue::ExternalLinkage, NULL,
               type->typeDefn()->linkageName() + ".type.tib"));
+      DASSERT(rtype->getTypeInfoPtr() == NULL);
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
@@ -139,78 +123,6 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
   }
 
   return rtype->getTypeInfoPtr();
-}
-
-void CodeGenerator::createTypeDescriptor(RuntimeTypeInfo * rtype) {
-  llvm::GlobalVariable * typeDescriptorPtr = createTypeDescriptorPtr(rtype);
-  const CompositeType * type = rtype->getType();
-  const std::string & linkName = type->typeDefn()->linkageName();
-
-  // Generate the type descriptor object.
-  StructBuilder sb(*this);
-  sb.createObjectHeader(Builtins::typeTypeDescriptor);
-  sb.addField(createTypeInfoBlockPtr(rtype));
-  sb.addStringField(type->typeDefn()->qualifiedName());
-  sb.addIntegerField(Builtins::rfTypeDescriptor.memberTypeKind, 0);
-  sb.addTypeReference(type->super());
-#if 0
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberInterfaces, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberTypeParams, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberAttributes, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberFields, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberProperties, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberConstructors, ConstantList());
-  sb.addArrayField(Builtins::rfTypeDescriptor.memberMethods, ConstantList());
-#endif
-
-  // Lists
-
-  // Interface list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberInterfaces,
-      ConstantList()));
-
-  // Type parameter list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberTypeParams,
-      ConstantList()));
-
-  // Attribute list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberAttributes,
-      ConstantList()));
-
-  // Field list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberFields,
-      ConstantList()));
-
-  // Property list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberProperties,
-      ConstantList()));
-
-  // Constructor list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberConstructors,
-      ConstantList()));
-
-  // Method list.
-  sb.addField(genReflectionDataArray(
-      linkName,
-      Builtins::rfTypeDescriptor.memberMethods,
-      ConstantList()));
-
-  //llvm::Constant * typeDescriptorStruct = ConstantStruct::get(context_, typeDescriptorMembers);
-  llvm::Constant * typeDescriptorStruct = sb.build();
-
-  typeDescriptorPtr->setInitializer(typeDescriptorStruct);
 }
 
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
@@ -264,7 +176,8 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Create the TypeInfoBlock struct
   ConstantList tibMembers;
-  tibMembers.push_back(getTypeDescriptorPtr(type));
+  tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
+      reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
   tibMembers.push_back(baseClassArrayPtr);
   tibMembers.push_back(idispatch);
   tibMembers.push_back(genMethodArray(type->instanceMethods_));
@@ -293,23 +206,18 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
         methodVal = genFunctionValue(method);
       } else {
         // TODO: Replace this with call to throw an exception.
-        methodVal = ConstantPointerNull::get(methodPtrType);
+        methodVal = ConstantPointerNull::get(methodPtrType_);
       }
     } else {
       DASSERT_OBJ(method->isSingular(), method);
       methodVal = genFunctionValue(method);
-#if 0
-      if (fdef->isSynthetic() && fdef->hasBody() && fdef->module() == module) {
-        genFunction(method);
-      }
-#endif
     }
 
     methodValues.push_back(
-        llvm::ConstantExpr::getBitCast(methodVal, methodPtrType));
+        llvm::ConstantExpr::getBitCast(methodVal, methodPtrType_));
   }
 
-  return ConstantArray::get(ArrayType::get(methodPtrType, methodValues.size()), methodValues);
+  return ConstantArray::get(ArrayType::get(methodPtrType_, methodValues.size()), methodValues);
 }
 
 Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
@@ -320,7 +228,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   std::vector<const llvm::Type *> argTypes;
   argTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
-  llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType, argTypes, false);
+  llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
   Function * idispatch = Function::Create(
       functype, Function::InternalLinkage,
       type->typeDefn()->linkageName() + ".type.idispatch",
@@ -378,7 +286,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   typecastFailure->setDoesNotReturn(true);
   builder_.CreateCall(typecastFailure);
   //builder_.CreateUnreachable();
-  builder_.CreateRet(ConstantPointerNull::get(methodPtrType));
+  builder_.CreateRet(ConstantPointerNull::get(methodPtrType_));
 
   if (savePoint != NULL) {
     builder_.SetInsertPoint(savePoint);

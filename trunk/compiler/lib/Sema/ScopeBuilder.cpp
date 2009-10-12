@@ -12,7 +12,6 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/StmtAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
@@ -142,7 +141,6 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   }
 
   Defn * member = createDefn(scope, parentDefn->module(), de);
-  //checkNameConflict(scope, member);
   scope->addMember(member);
   member->setParentDefn(parentDefn);
   member->createQualifiedName(parentDefn);

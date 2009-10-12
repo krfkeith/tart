@@ -17,10 +17,10 @@
 
 #include "llvm/Config/config.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Target/TargetData.h"
+#include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/Bitcode/ReaderWriter.h"
-#include "llvm/LinkAllVMCore.h"
+#include "llvm/Analysis/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <memory>
@@ -44,17 +44,15 @@ ShowGen("show-generated", llvm::cl::desc("Display generated symbols"));
 static llvm::cl::opt<bool>
 Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 
-static llvm::cl::opt<bool>
-NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
+extern llvm::cl::opt<bool> NoReflect;
 
 CodeGenerator::CodeGenerator(Module * mod)
     : context_(llvm::getGlobalContext())
     , builder_(llvm::getGlobalContext())
     , module_(mod)
     , irModule_(mod->irModule())
-    , moduleObject_(NULL)
-    , moduleTable_(NULL)
     , currentFn_(NULL)
+    , reflector_(*this)
     , dbgFactory_(*mod->irModule())
 #if 0
     , moduleInitFunc(NULL)
@@ -65,9 +63,9 @@ CodeGenerator::CodeGenerator(Module * mod)
     , unwindResume_(NULL)
     , exceptionPersonality_(NULL)
     , debug_(Debug)
-    , reflect_(!NoReflect)
 {
-  methodPtrType = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
+  reflector_.setEnabled(!NoReflect);
+  methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
 #if 0
   std::vector<const llvm::Type *> args;
   moduleInitFuncType = FunctionType::get(llvm::Type::VoidTy, args, false);
@@ -82,16 +80,18 @@ void CodeGenerator::generate() {
     getCompileUnit(module_);
   }
 
-  irModule_->addTypeName("tart.core.Object", Builtins::typeObject->irType());
-  irModule_->addTypeName("tart.core.TypeInfoBlock", Builtins::typeTypeInfoBlock->irType());
-  irModule_->addTypeName("tart.reflect.TypeDescriptor", Builtins::typeTypeDescriptor->irType());
+  addTypeName(Builtins::typeObject);
+  addTypeName(Builtins::typeTypeInfoBlock);
+  addTypeName(Builtins::typeType);
+  addTypeName(Builtins::typeModule);
+  addTypeName(Builtins::typeSimpleType);
+  addTypeName(Builtins::typeComplexType);
+  addTypeName(Builtins::typeEnumType);
+  addTypeName(Builtins::typeFunctionType);
+  addTypeName(Builtins::typeMember);
 
-  if (reflect_) {
-    createModuleTable();
-    if (module_ == Builtins::typeModule->typeDefn()->module()) {
-      createModuleCount();
-    }
-  }
+  // Write out a list of all modules this one depends on.
+  addModuleDependencies();
 
   // Generate all declarations.
   DefnSet & xdefs = module_->exportDefs();
@@ -147,8 +147,8 @@ void CodeGenerator::generate() {
     }
   }
 
-  if (reflect_) {
-    createModuleObject();
+  if (reflector_.enabled()) {
+    reflector_.emitModule(module_);
   }
 
 #if 0
@@ -210,7 +210,7 @@ llvm::ConstantInt * CodeGenerator::getInt64Val(int64_t value) {
 
 void CodeGenerator::verifyModule() {
   llvm::PassManager passManager;
-  passManager.add(new llvm::TargetData(irModule_));
+  //passManager.add(new llvm::TargetData(irModule_));
   passManager.add(llvm::createVerifierPass()); // Verify that input is correct
   passManager.run(*irModule_);
 }
@@ -258,6 +258,7 @@ void CodeGenerator::outputModule() {
 
   llvm::WriteBitcodeToFile(irModule_, *binOut);
 
+#if 0
   // Generate the module metadata
   llvm::sys::Path metaPath(binPath);
   metaPath.eraseSuffix();
@@ -265,6 +266,7 @@ void CodeGenerator::outputModule() {
   std::ofstream metaOut(metaPath.c_str());
   genModuleMetadata(metaOut);
   metaOut.close();
+#endif
 }
 
 void CodeGenerator::genModuleMetadata(std::ostream & strm) {
@@ -443,5 +445,35 @@ bool CodeGenerator::requiresImplicitDereference(const Type * type) {
   return false;
 }
 
+llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {
+  return reflector_.getModulePtr(module_);
+}
+
+void CodeGenerator::addModuleDependencies() {
+  using namespace llvm;
+  const ModuleSet & modules = module_->importModules();
+  if (!modules.empty()) {
+    ConstantList deps;
+    PointerType * charPtrType = PointerType::get(builder_.getInt8Ty(), 0);
+    for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
+      Module * m = *it;
+      llvm::Constant * depName = ConstantArray::get(context_, m->qualifiedName(), false);
+      GlobalVariable * depNamePtr = new GlobalVariable(context_, depName->getType(), true,
+          GlobalValue::InternalLinkage, depName, ".module_dep." + m->qualifiedName());
+      deps.push_back(llvm::ConstantExpr::getPointerCast(depNamePtr, charPtrType));
+    }
+
+    llvm::Constant * depList =
+        llvm::ConstantArray::get(llvm::ArrayType::get(charPtrType, deps.size()), deps);
+    llvm::GlobalVariable * dep = new llvm::GlobalVariable(context_, depList->getType(), true,
+        llvm::GlobalValue::InternalLinkage, depList, ".module_dep_list");
+  }
+}
+
+void CodeGenerator::addTypeName(const Type * type) {
+  if (type != NULL && type->typeDefn() != NULL) {
+    irModule_->addTypeName(type->typeDefn()->qualifiedName(), type->irType());
+  }
+}
 
 }

@@ -1,53 +1,65 @@
+import tart.annex.Nonreflective;
+
 /** A member of a type */
-class Member {
-  enum Access {
+@Nonreflective class Member {
+  enum Access : ubyte {
     PUBLIC,
-    PRIVATE,
     PROTECTED,
+    PRIVATE,
   }
   
-  enum MemberKind {
+  enum MemberKind : ubyte {
     FIELD,
     PROPERTY,
     METHOD,
     CONSTRUCTOR,
   }
   
-  @Flags enum Traits {
+  @Flags enum Traits : ubyte {
     FINAL,
     ABSTRACT,
     STATIC,
-  } 
+    UNSAFE,
+  }
+
+  private {
+    var _name:String;
+    var _kind:MemberKind;
+    var _access:Access;
+    var _traits:Traits;
+    var _type:TypeRef;
+    var _attributes:Attribute[];
+  }
 
   private def construct() {}
 
   /** The unqualified member name. */
-  let name:String;
-  
-  /** The type of this member. */
-  let memberType:TypeDescriptor;
+  def name:String { get { return _name; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
-  let kind:MemberKind;
+  def kind:MemberKind { get { return _kind; } }
   
-  /** The class that declared this member, or null if it's a global function. */
-  let declaringType:TypeDescriptor;
-
   /** Accessibility of this member. */
-  let access:Access;
+  def access:Access { get { return _access; } }
   
   /** Various member flags. */
-  let traits:Traits;
+  def traits:Traits { get { return _traits; } }
 
+  /** The type of this member. */
+  def type:TypeRef { get { return _type; } }
+  
   /** Array of attributes for this member. */
-  let attributes:Attribute[];
+  def attributes:Attribute[] { get { return _attributes; } }
+
+  /** The class that declared this member, or null if it's a global function. */
+  //let definingScope:TypeDescriptor;
 
   /** True if this member has static or global storage class. */  
-  //def isStatic:bool { get { return (traits & Traits.STATIC) != 0; } }
+  //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }
 
   /** True if this member was declared 'final'. */  
-  //def isFinal:bool { get { return (traits & Traits.FINAL) != 0; } }
+  //def isFinal:bool { get { return (Traits.FINAL in _traits) != 0; } }
 
   /** True if this member is abstract. */  
-  //def isAbstract:bool { get { return (traits & Traits.ABSTRACT) != 0; } }
+  //def isAbstract:bool { get { return (Traits.ABSTRACT in _traits) != 0; } }
 }
