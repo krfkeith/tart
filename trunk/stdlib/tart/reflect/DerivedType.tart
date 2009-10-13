@@ -4,8 +4,8 @@ class DerivedType : Type {
     var _typeParams:TypeRef[];
   }
 
-  def construct() {}
+  undef construct();
 
   /** The list of type parameters for this type. */
-  def typeParams:TypeRef[] { get { return _typeParams; } }
+  final def typeParams:TypeRef[] { get { return _typeParams; } }
 }

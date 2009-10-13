@@ -8,10 +8,11 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
-#include <llvm/Instructions.h>
 
 #include "tart/CFG/Template.h"
 #include "tart/CFG/FunctionType.h"
+
+#include "llvm/Instructions.h"
 
 namespace tart {
 

@@ -74,9 +74,6 @@ public:
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
 
-  // Namespaces
-  static NamespaceDefn nsOperator;
-
   /** Initialization function for builtins. */
   static void init();
 

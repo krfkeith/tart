@@ -1,9 +1,11 @@
 import tart.reflect.Module;
+import tart.reflect.Method;
 
 @EntryPoint
 def main(args:String[]) -> int {
   testModuleReflection();
   testModuleList();
+  testModuleMethods();
   return 0;
 }
 
@@ -20,4 +22,16 @@ def testModuleList() {
   //for mod in Module.modules() {
   //  Debug.writeLn(mod.name);
   //}
+}
+
+def testModuleMethods() {
+  let m = Module.thisModule();
+  for method in m.methods {
+    Debug.writeLn(method.name);
+    //if m.name == "sample"
+  } 
+  //Debug.assertEq("ReflectionTest", m.name);
+}
+
+def sample() {
 }

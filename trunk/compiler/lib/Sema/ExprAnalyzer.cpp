@@ -33,7 +33,7 @@ ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentF
   setSourceDefn(currentFunction);
 }
 
-Expr * ExprAnalyzer::inferTypes(Defn * source, Expr * expr, Type * expected) {
+Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
   if (isErrorResult(expr)) {
     return NULL;
   }
@@ -48,7 +48,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * source, Expr * expr, Type * expected) {
     expr = TypeInferencePass::run(expr, expected);
   }
 
-  expr = FinalizeTypesPass::run(source, expr);
+  expr = FinalizeTypesPass::run(subject, expr);
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;
@@ -501,7 +501,18 @@ Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {
 Expr * ExprAnalyzer::reduceContainsTest(const ASTOper * ast) {
   bool invert = (ast->nodeType() == ASTNode::NotIn);
 
-  DFAIL("Implement");
+  // Otherwise call the regular infix operator and assign to the same location.
+  Expr * callResult = callName(
+      ast->location(), &ASTIdent::operatorContains, ast->args(), &BoolType::instance, false);
+  if (isErrorResult(callResult)) {
+    return callResult;
+  }
+
+  if (invert) {
+    callResult = new UnaryExpr(Expr::Not, ast->location(), &BoolType::instance, callResult);
+  }
+
+  return callResult;
 }
 
 Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
@@ -536,8 +547,6 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
 
   // See if the value is a union.
   if (UnionType * ut = dyn_cast<UnionType>(value->type())) {
-    //ConversionRank rank =
-    //DFAIL("Implement");
     return new InstanceOfExpr(ast->location(), value, type);
   }
 

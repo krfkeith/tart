@@ -34,22 +34,22 @@ import tart.annex.Nonreflective;
   private def construct() {}
 
   /** The unqualified member name. */
-  def name:String { get { return _name; } }
+  final def name:String { get { return _name; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
-  def kind:MemberKind { get { return _kind; } }
+  final def kind:MemberKind { get { return _kind; } }
   
   /** Accessibility of this member. */
-  def access:Access { get { return _access; } }
+  final def access:Access { get { return _access; } }
   
   /** Various member flags. */
-  def traits:Traits { get { return _traits; } }
+  final def traits:Traits { get { return _traits; } }
 
   /** The type of this member. */
-  def type:TypeRef { get { return _type; } }
+  final def type:TypeRef { get { return _type; } }
   
   /** Array of attributes for this member. */
-  def attributes:Attribute[] { get { return _attributes; } }
+  final def attributes:Attribute[] { get { return _attributes; } }
 
   /** The class that declared this member, or null if it's a global function. */
   //let definingScope:TypeDescriptor;

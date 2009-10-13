@@ -727,6 +727,13 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
   Value * selfArg = NULL;
   if (in->selfArg() != NULL) {
     selfArg = genExpr(in->selfArg());
+
+    // Upcast the self argument type.
+    if (fn->functionType()->selfParam() != NULL) {
+      Type * selfType = fn->functionType()->selfParam()->type().dealias();
+      selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
+    }
+
     if (fn->storageClass() == Storage_Instance) {
       args.push_back(selfArg);
     }
@@ -830,6 +837,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
 
   // Make sure it's a class.
   DASSERT(classType->typeClass() == Type::Class);
+  DASSERT_TYPE_EQ(classType->irParameterType(), selfPtr->getType());
 
   // Upcast to type 'object' and load the vtable pointer.
   ValueList indices;
@@ -842,6 +850,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   // Get the TIB
   Value * tib = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
+  DASSERT_TYPE_EQ(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0), tib->getType());
 
   indices.clear();
   indices.push_back(getInt32Val(0));

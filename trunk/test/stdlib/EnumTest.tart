@@ -13,14 +13,21 @@ def main() -> int {
   Debug.assertEq(FlagTest.Fluttering, 2);
   Debug.assertEq(FlagTest.GallantlyStreaming, 4);
   Debug.assertEq(FlagTest.All, 7);
-  
+
   // TODO: Add tests for bitwise combinations of flags.
 
   // Implicit scoping
   let b:Test = Rock;
   Debug.assertEq(b, 1);
   
+  testContainsOperator();
   return 0;
+}
+
+def testContainsOperator {
+  let v = FlagTest.Waving;
+  Debug.assertTrue(FlagTest.Waving in v);
+  Debug.assertTrue(FlagTest.Fluttering not in v);
 }
 
 enum Test {

@@ -29,6 +29,7 @@ public:
   bool analyzeBaseClasses();
   bool analyzeBaseClassesImpl();
   bool analyzeConstructors();
+  bool analyzeMemberTypes();
   bool analyzeFields();
   void analyzeConstructBase(FunctionDefn * ctor);
   bool analyzeMethods();

@@ -35,6 +35,9 @@ BuiltinMemberRef<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
 BuiltinMemberRef<VariableDefn> simpleType_subtype(Builtins::typeSimpleType, "_subtype");
 BuiltinMemberRef<VariableDefn> simpleType_size(Builtins::typeSimpleType, "_size");
 
+// Members of tart.core.reflect.DerivedType.
+BuiltinMemberRef<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
+
 // Members of tart.core.reflect.ComplexType.
 BuiltinMemberRef<VariableDefn> complexType_tib(Builtins::typeComplexType, "_typeInfo");
 BuiltinMemberRef<VariableDefn> complexType_superType(Builtins::typeComplexType, "_superType");
@@ -67,6 +70,13 @@ BuiltinMemberRef<VariableDefn> member_traits(Builtins::typeMember, "_traits");
 BuiltinMemberRef<VariableDefn> member_type(Builtins::typeMember, "_type");
 BuiltinMemberRef<VariableDefn> member_attributes(Builtins::typeMember, "_attributes");
 
+// Members of tart.core.reflect.Method.
+BuiltinMemberRef<VariableDefn> method_typeParams(Builtins::typeMethod, "_typeParams");
+BuiltinMemberRef<VariableDefn> method_returnType(Builtins::typeMethod, "_returnType");
+BuiltinMemberRef<VariableDefn> method_params(Builtins::typeMethod, "_params");
+BuiltinMemberRef<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
+BuiltinMemberRef<VariableDefn> method_invoke(Builtins::typeMethod, "_invoke");
+
 // Members of tart.core.reflect.Module.
 BuiltinMemberRef<VariableDefn> module_name(Builtins::typeModule, "_name");
 BuiltinMemberRef<VariableDefn> module_types(Builtins::typeModule, "_types");
@@ -78,6 +88,7 @@ Reflector::Reflector(CodeGenerator & cg)
     , builder_(cg.builder())
     , irModule_(cg.irModule())
     , moduleTable_(NULL)
+    , syntheticIndex_(0)
 {
 }
 
@@ -100,9 +111,10 @@ void Reflector::emitModule(Module * module) {
     GlobalVariable * modulePtr = getModulePtr(module);
     if (!modulePtr->hasInitializer()) {
       ReflectedMembers rfMembers;
-      for (DefnSet::const_iterator it = module->exportDefs().begin();
-          it != module->exportDefs().end(); ++it) {
-        visitMember(rfMembers, *it);
+
+      // First visit members which are explicitly declared in this module.
+      for (Defn * member = module->firstMember(); member != NULL; member = member->nextInScope()) {
+        visitMember(rfMembers, member);
       }
 
       StructBuilder sb(cg_);
@@ -111,6 +123,31 @@ void Reflector::emitModule(Module * module) {
       sb.addField(emitArray("tart.reflect.Module.", module_types.get(), rfMembers.types));
       sb.addField(emitArray("tart.reflect.Module.", module_methods.get(), rfMembers.methods));
       modulePtr->setInitializer(sb.build());
+    }
+
+    // If this module is the "Type" module, then also do the built-in types.
+    if (module == Builtins::typeType->typeDefn()->module()) {
+      ReflectedMembers rfBuiltins;
+      visitMember(rfBuiltins, &VoidType::typedefn);
+      visitMember(rfBuiltins, &BoolType::typedefn);
+      visitMember(rfBuiltins, &CharType::typedefn);
+      visitMember(rfBuiltins, &ByteType::typedefn);
+      visitMember(rfBuiltins, &ShortType::typedefn);
+      visitMember(rfBuiltins, &IntType::typedefn);
+      visitMember(rfBuiltins, &LongType::typedefn);
+      visitMember(rfBuiltins, &UByteType::typedefn);
+      visitMember(rfBuiltins, &UShortType::typedefn);
+      visitMember(rfBuiltins, &UIntType::typedefn);
+      visitMember(rfBuiltins, &ULongType::typedefn);
+      visitMember(rfBuiltins, &FloatType::typedefn);
+      visitMember(rfBuiltins, &DoubleType::typedefn);
+    }
+
+    // Reflect any template instantiations that were generated from this module.
+    ReflectedMembers rfSynthetics;
+    while (syntheticIndex_ < synthetics_.size()) {
+      Defn * member = synthetics_[syntheticIndex_++];
+      visitMember(rfSynthetics, member);
     }
   }
 }
@@ -131,6 +168,7 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
     GlobalValue::LinkageTypes linkageType = GlobalValue::ExternalLinkage;
     if (td->isSynthetic() && cg_.module()->exportDefs().count(td) > 0) {
       linkageType = GlobalValue::LinkOnceODRLinkage;
+      synthetics_.insert(td);
     }
 
     rfType = new GlobalVariable(*irModule_, reflectedTypeOf(type), true,
@@ -159,20 +197,10 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
   switch (member->defnType()) {
     case Defn::Typedef: {
       const TypeDefn * td = static_cast<const TypeDefn *>(member);
-      if (td->typeValue() != NULL && td->isSingular()) {
-        const Type * type = td->typeValue();
-        GlobalVariable * rfType = getTypePtr(type);
-        if (rfType != NULL) {
-          if (!rfType->hasInitializer()) {
-            rfType->setInitializer(emitType(type));
-          }
-
-          // We don't count synthetic types as being 'exported' by the module.
-          if (!td->isSynthetic()) {
-            rm.types.push_back(
-                llvm::ConstantExpr::getPointerCast(rfType, Builtins::typeType->irEmbeddedType()));
-          }
-        }
+      GlobalVariable * rfType = emitTypeDefn(td);
+      if (rfType != NULL) {
+        rm.types.push_back(
+            llvm::ConstantExpr::getPointerCast(rfType, Builtins::typeType->irEmbeddedType()));
       }
 
       break;
@@ -196,7 +224,9 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
       if (!fn->isIntrinsic() && fn->isSingular()) {
         Constant * method = emitMethod(fn);
         if (method != NULL) {
-          //rm.methods.push_back(method);
+          GlobalVariable * rMethod = new GlobalVariable(*irModule_, method->getType(), true,
+              GlobalValue::InternalLinkage, method, ".method." + fn->qualifiedName());
+          rm.methods.push_back(rMethod);
         }
       }
       break;
@@ -213,6 +243,20 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
   return true;
 }
 
+llvm::GlobalVariable * Reflector::emitTypeDefn(const TypeDefn * td) {
+  if (td->typeValue() != NULL && td->isSingular()) {
+    const Type * type = td->typeValue();
+    GlobalVariable * rfType = getTypePtr(type);
+    if (rfType != NULL && !rfType->hasInitializer()) {
+      rfType->setInitializer(emitType(type));
+    }
+
+    return rfType;
+  }
+
+  return NULL;
+}
+
 llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
@@ -220,6 +264,10 @@ llvm::Constant * Reflector::emitArray(
   const Type * elementType = arrayType->typeParam(0);
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->typeDefn()->isPassFinished(Pass_ResolveOverloads), var);
+
+  if (values.empty()) {
+    // TODO: point to shared empty array.
+  }
 
   StructBuilder sb(cg_);
   sb.createObjectHeader(arrayType);
@@ -236,33 +284,37 @@ llvm::Constant * Reflector::emitArray(
 llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
   StructBuilder sb(cg_);
   sb.addField(emitMember(cast<CompositeType>(Builtins::typeMethod), func));
-  return sb.build();
+  sb.addNullField(method_typeParams.type());
+  sb.addField(emitTypeReference(func->returnType()));
+  sb.addNullField(method_params.type());
+  sb.addNullField(method_methodPointer.type());
+  sb.addNullField(method_invoke.type());
+  return sb.build(Builtins::typeMethod->irType());
 }
 
 llvm::Constant * Reflector::emitMember(const CompositeType * structType, const ValueDefn * def) {
   TypeDefn * parent = def->enclosingClassDefn();
   Module * module = def->module();
-
   StructBuilder sb(cg_);
   sb.createObjectHeader(structType);
   sb.addStringField(def->qualifiedName());
-  sb.addField(emitTypeReference(def->type()));
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));
   sb.addIntegerField(member_traits, memberTraits(def));
+  sb.addField(emitTypeReference(def->type()));
   sb.addField(emitArray(
       module->qualifiedName(),
       member_attributes.get(),
       ConstantList()));
-
-  return sb.build();
+  return sb.build(Builtins::typeMember->irType());
 }
 
 llvm::Constant * Reflector::emitTypeReference(const TypeRef & type) {
   StructBuilder sb(cg_);
-  sb.addField(getTypePtr(type.type()));
+  sb.addField(llvm::ConstantExpr::getPointerCast(
+      getTypePtr(type.type()), Builtins::typeType->irEmbeddedType()));
   sb.addIntegerField(typeRef_modifiers, 0);
-  return sb.build();
+  return sb.build(Builtins::typeTypeRef->irType());
 }
 
 const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
@@ -301,7 +353,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
 llvm::Constant * Reflector::emitType(const Type * type) {
   switch (type->typeClass()) {
     case Type::Primitive:
-      return emitPrimitiveType(static_cast<const PrimitiveType *>(type));
+      return emitSimpleType(Builtins::typeSimpleType, static_cast<const PrimitiveType *>(type));
 
     case Type::Class:
     case Type::Struct:
@@ -331,10 +383,6 @@ llvm::Constant * Reflector::emitType(const Type * type) {
   }
 }
 
-llvm::Constant * Reflector::emitPrimitiveType(const PrimitiveType * type) {
-  DFAIL("Implement");
-}
-
 llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
   // Don't reflect non-retained attributes.
   if (type->isAttribute() && !type->attributeInfo().isRetained()) {
@@ -355,9 +403,7 @@ llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
   sb.addNullField(complexType_properties.type());
   sb.addNullField(complexType_constructors.type());
   sb.addNullField(complexType_methods.type());
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeComplexType->irType());
-  return result;
+  return sb.build(Builtins::typeComplexType->irType());
 }
 
 llvm::Constant * Reflector::emitEnumType(const EnumType * type) {
@@ -365,104 +411,103 @@ llvm::Constant * Reflector::emitEnumType(const EnumType * type) {
   sb.addField(emitSimpleType(Builtins::typeEnumType, type));
   sb.addNullField(enumType_superType.type());
   sb.addNullField(enumType_values.type());
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeEnumType->irType());
-  return result;
+  return sb.build(Builtins::typeEnumType->irType());
 }
 
 llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
   StructBuilder sb(cg_);
-  sb.addField(emitTypeBase(Builtins::typeFunctionType, type));
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeFunctionType->irType());
-  return result;
+  sb.addField(emitTypeBase(Builtins::typeFunctionType, FUNCTION));
+  return sb.build(Builtins::typeFunctionType->irType());
 }
 
 llvm::Constant * Reflector::emitDerivedType(const Type * type) {
-  DFAIL("Implement");
+  ConstantList typeParams;
+  for (int i = 0; i < type->numTypeParams(); ++i) {
+    typeParams.push_back(emitTypeReference(type->typeParam(i)));
+  }
+
+  TypeKind kind;
+  switch (type->typeClass()) {
+    case Type::Union: kind = UNION; break;
+    case Type::Address: kind = ADDRESS; break;
+    case Type::NativePointer: kind = POINTER; break;
+    case Type::NativeArray: kind = NATIVE_ARRAY; break;
+    case Type::Tuple: kind = TUPLE; break;
+    default:
+      DFAIL("Invalid subtype");
+  }
+
+  StructBuilder sb(cg_);
+  sb.addField(emitTypeBase(Builtins::typeDerivedType, UNION));
+  sb.addField(emitArray("tart.reflect.DerivedType.", derivedType_typeParams.get(), typeParams));
+  return sb.build(Builtins::typeDerivedType->irType());
 }
 
 llvm::Constant * Reflector::emitOpaqueType(const Type * type) {
   StructBuilder sb(cg_);
   DASSERT_OBJ(type->typeDefn() != NULL, type);
-  sb.addField(emitTypeBase(Builtins::typeSimpleType, type));
+  sb.addField(emitTypeBase(Builtins::typeSimpleType, OPAQUE));
   sb.addIntegerField(type_typeKind.get(), NONE);
   sb.addStringField(type->typeDefn()->qualifiedName());
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeSimpleType->irType());
-  return result;
+  return sb.build(Builtins::typeSimpleType->irType());
 }
 
 llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type * type) {
-  SubtypeId subtype;
+  SubtypeId subtype = NONE;
+  TypeKind kind;
   switch (type->typeClass()) {
     case Type::Primitive: {
+      kind = PRIMITIVE;
+      const PrimitiveType * ptype = static_cast<const PrimitiveType *>(type);
+      switch  (ptype->typeId()) {
+        case TypeId_Void: subtype = VOID; break;
+        case TypeId_Bool: subtype = BOOL; break;
+        case TypeId_Char: subtype = CHAR; break;
+        case TypeId_SInt8: subtype = BYTE; break;
+        case TypeId_SInt16: subtype = SHORT; break;
+        case TypeId_SInt32: subtype = INT; break;
+        case TypeId_SInt64: subtype = LONG; break;
+        case TypeId_UInt8: subtype = UBYTE; break;
+        case TypeId_UInt16: subtype = USHORT; break;
+        case TypeId_UInt32: subtype = UINT; break;
+        case TypeId_UInt64: subtype = ULONG; break;
+        case TypeId_Float: subtype = FLOAT; break;
+        case TypeId_Double: subtype = DOUBLE; break;
+        //case TypeId_LongDouble: subtype = VOID; break;
+        default:
+          DFAIL("Invalid subtype");
+      }
+
       break;
     }
 
-    case Type::Class:
-    case Type::Struct:
-    case Type::Interface:
-    case Type::Protocol:
-    case Type::Enum:
-      subtype = NONE;
-      break;
+    case Type::Class: kind = CLASS; break;
+    case Type::Struct: kind = STRUCT; break;
+    case Type::Interface: kind = INTERFACE; break;
+    case Type::Protocol: kind = PROTOCOL; break;
+    case Type::Enum: kind = ENUM; break;
 
-
-    case Type::Function:
-    case Type::Tuple:
-    case Type::Union:
-    case Type::Address:
-    case Type::NativePointer:
-    case Type::NativeArray:
     default:
       DFAIL("Invalid type");
   }
 
   StructBuilder sb(cg_);
   DASSERT_OBJ(type->typeDefn() != NULL, type);
-  sb.addField(emitTypeBase(reflectType, type));
+  sb.addField(emitTypeBase(reflectType, kind));
   sb.addIntegerField(type_typeKind.get(), subtype);
   sb.addStringField(type->typeDefn()->qualifiedName());
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeSimpleType->irType());
-  return result;
+  return sb.build(Builtins::typeSimpleType->irType());
 }
 
-llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, const Type * type) {
-  TypeKind kind;
-  switch (type->typeClass()) {
-    case Type::Primitive: kind = PRIMITIVE; break;
-    case Type::Class: kind = CLASS; break;
-    case Type::Struct: kind = STRUCT; break;
-    case Type::Interface: kind = INTERFACE; break;
-    case Type::Protocol: kind = PROTOCOL; break;
-    case Type::Enum: kind = ENUM; break;
-    case Type::Function: kind = FUNCTION; break;
-    case Type::Tuple: kind = TUPLE; break;
-    case Type::Union: kind = UNION; break;
-    case Type::Address: kind = ADDRESS; break;
-    case Type::NativePointer: kind = POINTER; break;
-    case Type::NativeArray: kind = NATIVE_ARRAY; break;
-
-    default:
-      DFAIL("Invalid type");
-  }
-
-  if (type->typeDefn() != NULL && type->typeDefn()->hasTrait(Defn::Nonreflective)) {
-    kind = OPAQUE;
-  }
-
+llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, TypeKind kind) {
   StructBuilder sb(cg_);
   sb.createObjectHeader(reflectType);
   sb.addIntegerField(type_typeKind.get(), kind);
-  llvm::Constant * result = sb.build();
-  DASSERT(result->getType() == Builtins::typeType->irType());
-  return result;
+  return sb.build(Builtins::typeType->irType());
 }
 
 Reflector::Access Reflector::memberAccess(const Defn * member) {

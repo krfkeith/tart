@@ -9,6 +9,7 @@
 
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/ADT/StringMap.h>
+#include <llvm/ADT/SetVector.h>
 #include <iostream>
 
 namespace tart {
@@ -31,6 +32,7 @@ class TypeRef;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::StringMap<llvm::Constant *> SymbolNameMap;
 typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
+typedef llvm::SetVector<Defn *> DefnSet;
 
 /// -------------------------------------------------------------------
 /// Represents all of the reflected symbols within a single scope.
@@ -119,6 +121,9 @@ public:
   /** Generate reflection information for a module. */
   void emitModule(Module * module);
 
+  /** Generate reflection information for a type definition in this module. */
+  llvm::GlobalVariable * emitTypeDefn(const TypeDefn * td);
+
   /** Generate reflection information for a method. */
   llvm::Constant * emitMethod(const FunctionDefn * func);
 
@@ -144,7 +149,7 @@ public:
   llvm::Constant * emitDerivedType(const Type * type);
   llvm::Constant * emitOpaqueType(const Type * type);
   llvm::Constant * emitSimpleType(const Type * reflectType, const Type * type);
-  llvm::Constant * emitTypeBase(const Type * reflectType, const Type * type);
+  llvm::Constant * emitTypeBase(const Type * reflectType, TypeKind kind);
 
 private:
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);
@@ -163,6 +168,8 @@ private:
 
   SymbolNameMap symbols_;
   GlobalVarMap globals_;
+  DefnSet synthetics_;
+  size_t syntheticIndex_;
 };
 
 }

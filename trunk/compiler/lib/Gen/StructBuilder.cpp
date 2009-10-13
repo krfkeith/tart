@@ -30,23 +30,6 @@ StructBuilder & StructBuilder::addField(llvm::Constant * value) {
   return *this;
 }
 
-#if 0
-StructBuilder & StructBuilder::addTypeReference(const Type * type) {
-  if (type != NULL) {
-    members_.push_back(gen_.getTypeDescriptorPtr(type));
-  } else {
-    // Null type pointer
-    members_.push_back(ConstantPointerNull::get(
-        cast<PointerType>(Builtins::typeType->irEmbeddedType())));
-  }
-  return *this;
-}
-
-StructBuilder & StructBuilder::addTypeReference(const TypeRef & type) {
-  return addTypeReference(type.type());
-}
-#endif
-
 StructBuilder & StructBuilder::addNullField(const Type * type) {
   const llvm::PointerType * irType = cast<llvm::PointerType>(type->irEmbeddedType());
   return addField(ConstantPointerNull::get(irType));
@@ -93,6 +76,17 @@ StructBuilder & StructBuilder::combine() {
 
 llvm::Constant * StructBuilder::build() const {
   return ConstantStruct::get(gen_.context(), members_, false);
+}
+
+llvm::Constant * StructBuilder::build(const llvm::Type * expectedType) const {
+  llvm::Constant * result = ConstantStruct::get(gen_.context(), members_, false);
+  if (result->getType() != expectedType) {
+    diag.error() << "Expected type does not match actual type:";
+    expectedType->dump(gen_.irModule());
+    result->getType()->dump(gen_.irModule());
+    DFAIL("abort");
+  }
+  return result;
 }
 
 } // namespace tart

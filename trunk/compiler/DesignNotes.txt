@@ -530,3 +530,4 @@ public class TypeDescriptor {
   private def construct() {}
 }
 
+let p = String.fn (int) -> int

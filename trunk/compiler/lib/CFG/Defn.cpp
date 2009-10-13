@@ -425,6 +425,9 @@ const char * getPassName(DefnPass pass) {
     case Pass_AnalyzeFields:
       return "AnalyzeFields";
 
+    case Pass_AnalyzeMemberTypes:
+      return "AnalyzeMemberTypes";
+
     case Pass_AnalyzeMethods:
       return "AnalyzeMethods";
 
