@@ -14,13 +14,13 @@ import tart.core.Memory.Address;
   }
   
   /** Fully-qualified name of the module. */
-  def name:String { get { return self._name; } }
+  final def name:String { get { return self._name; } }
 
   /** Array of types defined in this module. */
-  def types:Type[] { get { return self._types; } }
+  final def types:Type[] { get { return self._types; } }
 
   /** Array of types defined in this module. */
-  def methods:Method[] { get { return self._methods; } }
+  final def methods:Method[] { get { return self._methods; } }
   
   /** Returns a reference to the caller's module. */  
   @Intrinsic static def thisModule() -> Module;

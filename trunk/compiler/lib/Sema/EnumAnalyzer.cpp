@@ -6,15 +6,63 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Objects/Builtins.h"
 
-#include <llvm/Instructions.h>
+#include "llvm/Instructions.h"
 
 namespace tart {
+
+class EnumContainsFunction : public FunctionDefn {
+public:
+  EnumContainsFunction(Module * m, EnumType * type)
+      : FunctionDefn(m, "infixContains", createFunctionType(m, type))
+      , type_(type)
+  {
+    addTrait(Defn::Synthetic);
+    addTrait(Defn::Final);
+    addTrait(Defn::Singular);
+    setStorageClass(Storage_Global);
+    createQualifiedName(m);
+  }
+
+  static FunctionType * createFunctionType(Module * m, EnumType * type) {
+    ParameterList params;
+    params.push_back(new ParameterDefn(m, "e1", type, 0));
+    params.push_back(new ParameterDefn(m, "e2", type, 0));
+    return new FunctionType(&BoolType::instance, params);
+  }
+
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+    assert(args.size() == 2);
+    Expr * arg0 = args[0];
+    Expr * arg1 = args[1];
+    Expr * result;
+    Type * baseType = const_cast<Type *>(type_->baseType());
+
+    if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
+      ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
+      ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
+      DASSERT(c0->type() == c1->type());
+      result = new ConstantInteger(
+            c0->location() | c1->location(),
+            baseType,
+            cast<llvm::ConstantInt>(llvm::ConstantExpr::getAnd(c0->value(), c1->value())));
+    } else {
+      result = new BinaryOpcodeExpr(llvm::Instruction::And, loc, baseType, arg0, arg1);
+    }
+
+    return BoolType::instance.explicitCast(loc, result);
+  }
+
+private:
+  EnumType * type_;
+};
 
 EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
   : DefnAnalyzer(de->module(), de->definingScope())
@@ -61,7 +109,7 @@ bool EnumAnalyzer::analyzeEnum() {
   DASSERT_OBJ(enumType->baseType() == NULL, enumType);
 
   // Analyze the base type of the enum.
-  const PrimitiveType * intValueType_ = &IntType::instance;
+  const PrimitiveType * intValueType = &IntType::instance;
   //const Type * superType = ast->super();
   if (!ast->bases().empty()) {
     // For the moment, we require enums to be derived from integer types only.
@@ -69,15 +117,15 @@ bool EnumAnalyzer::analyzeEnum() {
     TypeAnalyzer ta(module, activeScope);
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
-      intValueType_ = cast<PrimitiveType>(baseType);
-      if (intValueType_ == NULL || !isIntegerType(intValueType_->typeId())) {
+      intValueType = cast<PrimitiveType>(baseType);
+      if (intValueType == NULL || !isIntegerType(intValueType->typeId())) {
         diag.fatal(ast) << "Enumerations can only derive from integer types.";
         return false;
       }
     }
   }
 
-  enumType->setBaseType(intValueType_);
+  enumType->setBaseType(intValueType);
 
   // Define any custom operators for this enumerated type.
   defineOperators();
@@ -201,6 +249,10 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
 void EnumAnalyzer::defineOperators() {
   EnumType * type = cast<EnumType>(target_->typeValue());
   if (type->isFlags()) {
+    EnumContainsFunction * contains = new EnumContainsFunction(target_->module(), type);
+    target_->module()->addMember(contains);
+
+    //Builtins::addOperator(new EnumOpFunction(this, "infixContains", llvm::Instruction::And));
     //Builtins::addOperator(new EnumOpFunction(this, "bitAnd", llvm::Instruction::And));
     //Builtins::addOperator(new EnumOpFunction(this, "bitOr", llvm::Instruction::Or));
     //Builtins::addOperator(new EnumOpFunction(this, "bitXor", llvm::Instruction::Xor));

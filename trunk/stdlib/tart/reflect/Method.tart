@@ -1,16 +1,26 @@
 /** Description of a callable method. */
 final class Method : Member {
+  private {
+	  var _typeParams:TypeRef[];
+	  var _returnType:TypeRef;
+	  var _params:Parameter[];
+    var _methodPointer:NativePointer[void];
+    var _invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+  }
+
+  undef construct();
+
   /** Array of type parameters. */
-  let typeParams:TypeDescriptor[];
+  final def typeParams:TypeRef[] { get { return _typeParams; } }
+
+  /** The return type of the method. */
+  final def returnType:TypeRef { get { return _returnType; } }
 
   /** The parameters of this method. */
-  let params:Parameter[];
+  final def params:Parameter[] { get { return _params; } }
   
-  /** The return type of the method. */
-  let returnType:TypeDescriptor;
-
   /** A pointer to the function. */
-  private let methodPointer:NativePointer[void];
+  //private let methodPointer:NativePointer[void];
 
   /** A pointer to a trampoline function that can take an array of objects and call
       the actual native method with the correct argument types.
@@ -18,13 +28,13 @@ final class Method : Member {
       'm': The native method pointer.
       'args': The argument list.
     */
-  private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+  //private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
 
   /** Invoke the method on the specified object with the given arguments.
       TODO: Define exception types for bad argument types.
    */
   final def call(obj:Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
-    return invoke(obj, methodPointer, args);
+    return _invoke(obj, _methodPointer, args);
   }
 }

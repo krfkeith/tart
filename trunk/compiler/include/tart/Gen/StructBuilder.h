@@ -63,6 +63,10 @@ public:
   /** Build a constant struct from the member fields. */
   llvm::Constant * build() const;
 
+  /** Build a constant struct from the member fields, and verify that it is the expected
+      type. */
+  llvm::Constant * build(const llvm::Type * expectedType) const;
+
 private:
   ConstantList members_;
   CodeGenerator & gen_;

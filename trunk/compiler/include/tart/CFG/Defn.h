@@ -61,6 +61,9 @@ enum DefnPass {
   /** Analyze all fields. */
   Pass_AnalyzeFields,
 
+  /** Analyze types that are members of types. */
+  Pass_AnalyzeMemberTypes,
+
   /** Analyze all methods. */
   Pass_AnalyzeMethods,
 

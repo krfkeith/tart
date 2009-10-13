@@ -7,12 +7,11 @@ public class EnumType : SimpleType {
     var _values:Field[];
   }
 
+  undef construct();
+
   /** Pointer to this type's supertype, or null. */
-  def superType:SimpleType /* or void */ { get { return self._superType; } }
+  final def superType:SimpleType /* or void */ { get { return self._superType; } }
   
   /** Array of enumeration constants. */
-  def values:Field[] { get { return self._values; } }
-  
-  /** Private constructor - types cannot be created by applications. */
-  private def construct() {}
+  final def values:Field[] { get { return self._values; } }
 }

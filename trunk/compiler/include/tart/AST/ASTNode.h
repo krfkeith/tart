@@ -139,6 +139,7 @@ public:
   static ASTIdent operatorPGT;
   static ASTIdent operatorPLE;
   static ASTIdent operatorPGE;
+  static ASTIdent operatorContains;
 
   // Unary operator names
   static ASTIdent operatorNegate;

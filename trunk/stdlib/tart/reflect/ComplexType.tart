@@ -14,30 +14,29 @@ public class ComplexType : SimpleType {
     var _methods:Method[];
   }
 
+  undef construct();
+
   /** Pointer to this type's supertype, or null. */
-  def supertype:ComplexType /* or void */ { get { return self._superType; } }
+  final def supertype:ComplexType /* or void */ { get { return self._superType; } }
   
   /** Array of inherited interfaces. */
-  def interfaces:ComplexType[] { get { return self._interfaces; } }
+  final def interfaces:ComplexType[] { get { return self._interfaces; } }
   
   /** Array of type parameters. */
-  def typeParams:TypeRef[] { get { return self._typeParams; } }
+  final def typeParams:TypeRef[] { get { return self._typeParams; } }
   
   /** Array of associated attributes */
-  def attributes:Attribute[] { get { return self._attributes; } }
+  final def attributes:Attribute[] { get { return self._attributes; } }
   
   /** Array of field members. */
-  def fields:Field[] { get { return self._fields; } }
+  final def fields:Field[] { get { return self._fields; } }
   
   /** Array of property members. */
-  def properties:Property[] { get { return self._properties; } }
+  final def properties:Property[] { get { return self._properties; } }
   
   /** Array of constructor members. */
-  def constructors:Method[] { get { return self._constructors; } }
+  final def constructors:Method[] { get { return self._constructors; } }
   
   /** Array of methods. */
-  def methods:Method[] { get { return self._methods; } }
-
-  /** Private constructor - types cannot be created by applications. */
-  private def construct() {}
+  final def methods:Method[] { get { return self._methods; } }
 }

@@ -33,13 +33,13 @@ class SimpleType : Type {
   }
 
   /** Size of this type in bits. */
-  def subtype:SubtypeId { get { return self._subtype; } }
+  final def subtype:SubtypeId { get { return self._subtype; } }
 
   /** Fully-qualified name of this type. */
-  def name:String { get { return self._name; } }
+  final def name:String { get { return self._name; } }
 
   /** Size of this type in bytes. */
-  def size:uint { get { return self._size; } }
+  final def size:uint { get { return self._size; } }
 
   undef construct();
 }

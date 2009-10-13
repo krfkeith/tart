@@ -18,13 +18,6 @@ namespace tart {
 // -------------------------------------------------------------------
 // Type class for functions and macros.
 class FunctionType : public Type {
-private:
-  TypeRef returnType_;
-  ParameterDefn * selfParam_;
-  ParameterList params_;
-  mutable llvm::PATypeHolder irType_;
-  mutable bool isCreatingType;
-
 public:
   FunctionType(Type * rtype, ParameterList & plist);
   FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount);
@@ -65,14 +58,56 @@ public:
   const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSubtype(const Type * other) const;
-  void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;
+  void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionType *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == Function;
   }
+
+private:
+  TypeRef returnType_;
+  ParameterDefn * selfParam_;
+  ParameterList params_;
+  mutable llvm::PATypeHolder irType_;
+  mutable bool isCreatingType;
+};
+
+// -------------------------------------------------------------------
+// Type that represents a reference to a 'bound' method.
+
+class BoundMethodType : public Type {
+public:
+  BoundMethodType(FunctionType * fnType)
+    : Type(BoundMethod)
+      , fnType_(fnType)
+      , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+    {}
+
+  const llvm::Type * irType() const;
+
+  /** The type of the function being pointed to. */
+  FunctionType * fnType() const { return fnType_; }
+
+  // Overrides
+
+  const llvm::Type * createIRType() const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isSubtype(const Type * other) const;
+  bool isReferenceType() const;
+  bool isSingular() const;
+  void trace() const;
+  void format(FormatStream & out) const;
+  static inline bool classof(const BoundMethodType *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == BoundMethod;
+  }
+
+private:
+  FunctionType * fnType_;
+  mutable llvm::PATypeHolder irType_;
 };
 
 }

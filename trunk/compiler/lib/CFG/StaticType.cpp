@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/SourceLocation.h"
 #include "tart/CFG/StaticType.h"
 #include "tart/Objects/Builtins.h"
@@ -23,8 +23,6 @@ template<> Type & StaticType<TypeId_Float>::value = FloatType::instance;
 template<> Type & StaticType<TypeId_Double>::value = DoubleType::instance;
 template<> Type & StaticType<TypeId_UnsizedInt>::value = UnsizedIntType::instance;
 
-//template<> const Type & StaticType<TypeId_Object>::value = Builtins::typeAliasObject;
-//template<> const Type & StaticType<TypeId_Type>::value = Builtins::typeAliasType;
 template<> Type & StaticType<TypeId_String>::value = Builtins::typeAliasString;
 
 template<> const char ParameterName<0>::value[3] = { 'a', '0', 0 };

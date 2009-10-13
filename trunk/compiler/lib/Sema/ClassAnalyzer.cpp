@@ -37,6 +37,7 @@ static const DefnPasses PASS_SET_CALL_OR_USE = DefnPasses::of(
   Pass_ResolveBaseTypes,
   Pass_ResolveAttributes,
   Pass_AnalyzeConstructors,
+  Pass_AnalyzeMemberTypes,
   Pass_AnalyzeFields
 );
 
@@ -45,6 +46,7 @@ static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
   Pass_ResolveBaseTypes,
   Pass_ResolveAttributes,
   Pass_AnalyzeConstructors,
+  Pass_AnalyzeMemberTypes,
   Pass_AnalyzeFields,
   Pass_AnalyzeMethods,
   Pass_ResolveOverloads,
@@ -107,6 +109,10 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   DefnAnalyzer::analyze(target, passesToRun);
 
   if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
+    return false;
+  }
+
+  if (passesToRun.contains(Pass_AnalyzeMemberTypes) && !analyzeMemberTypes()) {
     return false;
   }
 
@@ -285,6 +291,23 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   return true;
 }
 
+bool ClassAnalyzer::analyzeMemberTypes() {
+  if (target->beginPass(Pass_AnalyzeMemberTypes)) {
+    CompositeType * type = cast<CompositeType>(target->typeValue());
+    for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
+      if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
+        // TODO: Copy attributes that are inherited.
+        memberType->copyTrait(target, Defn::Nonreflective);
+        analyzeTypeDefn(memberType, Task_PrepCallOrUse);
+      }
+    }
+
+    target->finishPass(Pass_AnalyzeMemberTypes);
+  }
+
+  return true;
+}
+
 bool ClassAnalyzer::analyzeFields() {
   if (target->beginPass(Pass_AnalyzeFields)) {
     CompositeType * type = cast<CompositeType>(target->typeValue());
@@ -344,7 +367,6 @@ bool ClassAnalyzer::analyzeFields() {
           break;
         }
 
-        case Defn::Typedef:
         case Defn::Namespace: {
           //DFAIL("Implement");
           break;

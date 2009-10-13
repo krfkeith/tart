@@ -49,10 +49,7 @@ enum TypeId {
   TypeId_LongDouble,
   TypeId_Null,
 
-  // Aggregate types
-  TypeId_Object,
-  TypeId_Type,
-  TypeId_Attribute,
+  // Aggregate types - used only for static type declarations.
   TypeId_String,
 
   TypeId_Count,

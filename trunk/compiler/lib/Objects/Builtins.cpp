@@ -68,8 +68,6 @@ TypeAlias Builtins::typeAliasString(NULL);
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
 
-NamespaceDefn Builtins::nsOperator(&module, "Operators");
-
 void Builtins::init() {
   // Initialize primitive types.
   for (PrimitiveType * ptype = PrimitiveType::primitiveTypeList; ptype != NULL;
@@ -85,10 +83,6 @@ void Builtins::init() {
 
   // Initialize all intrinsic operators and functions.
   initOperators();
-
-  // Built-in namespaces
-  module.addMember(&nsOperator);
-  nsOperator.setQualifiedName(nsOperator.name());
 
   // Other built-in types
   AddressType::initBuiltin();
