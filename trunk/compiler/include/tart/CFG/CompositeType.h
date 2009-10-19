@@ -13,6 +13,10 @@
 #include "tart/CFG/Attribute.h"
 #endif
 
+#ifndef TART_COMMON_PASSMGR_H
+#include "tart/Common/PassMgr.h"
+#endif
+
 #include "llvm/ADT/SetVector.h"
 #include "llvm/DerivedTypes.h"
 #include <list>
@@ -29,6 +33,8 @@ class CompositeType;
 typedef llvm::SmallVector<CompositeType *, 4> ClassList;
 typedef llvm::SetVector<CompositeType *> ClassSet;
 
+/// -------------------------------------------------------------------
+/// Analysis passes
 /// -------------------------------------------------------------------
 /// Composite types - class, struct, interface
 class CompositeType : public DeclaredType {
@@ -60,6 +66,24 @@ public:
   };
 
   typedef std::list<InterfaceTable> InterfaceList;
+
+  enum AnalysisPass {
+    ScopeCreationPass,
+    BaseTypesPass,
+    AttributePass,
+    ConverterPass,
+    ConstructorPass,
+    MemberTypePass,
+    FieldPass,
+    MethodPass,
+    OverloadingPass,
+    FieldTypePass,
+    CompletionPass,
+    PassCount
+  };
+
+  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
+  typedef PassMgr::PassSet PassSet;
 
   CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
     : DeclaredType(tcls, de, parentScope)
@@ -125,6 +149,13 @@ public:
   /** Return the default (no-arg) constructor for this type. */
   FunctionDefn * defaultConstructor();
 
+  /** The list of implicit converters for this class */
+  const MethodList & coercers() const { return coercers_; }
+
+  /** The current passes state. */
+  const PassMgr & passes() const { return passes_; }
+  PassMgr & passes() { return passes_; }
+
   /** Return true if this is a reference type. */
   bool isReferenceType() const;
 
@@ -170,6 +201,8 @@ private:
   ClassList bases_;
   CompositeType * super_;
   int classFlags_;
+  MethodList coercers_;
+  PassMgr passes_;
 
   // The list of instance methods for this type
   MethodList instanceMethods_;

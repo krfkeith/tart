@@ -233,7 +233,7 @@ bool Type::isUnsizedIntType() const {
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
 }
 
-Type * Type::typeParam(int index) const {
+TypeRef Type::typeParam(int index) const {
   DFAIL("No type params");
 }
 
@@ -426,7 +426,7 @@ size_t DeclaredType::numTypeParams() const {
   return 0;
 }
 
-Type * DeclaredType::typeParam(int index) const {
+TypeRef DeclaredType::typeParam(int index) const {
   TemplateSignature * tsig = defn_->templateSignature();
   if (tsig != NULL) {
     return tsig->patternVar(index);
@@ -640,7 +640,7 @@ bool TypeLess::operator()(const Type * t0, const Type * t1) {
           return false;
         }
 
-        if (!c0->typeParam(i)->isEqual(c1->typeParam(i))) {
+        if (!c0->typeParam(i).type()->isEqual(c1->typeParam(i).type())) {
           return operator()(c0->typeParam(i), c1->typeParam(i));
         }
       }

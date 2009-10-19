@@ -20,7 +20,7 @@ static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
 );
 
 PropertyAnalyzer::PropertyAnalyzer(PropertyDefn * prop)
-  : DefnAnalyzer(prop->module(), prop->definingScope())
+  : DefnAnalyzer(prop->module(), prop->definingScope(), prop)
   , target(prop)
 {
 }
@@ -45,6 +45,16 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
   if (passesToRun.contains(Pass_ResolveVarType)) {
     if (!resolvePropertyType()) {
       return false;
+    }
+  }
+
+  if (task == Task_PrepCodeGeneration || task == Task_PrepEvaluation) {
+    if (target->getter() != NULL) {
+      analyzeDefn(target->getter(), task);
+    }
+
+    if (target->setter() != NULL) {
+      analyzeDefn(target->setter(), task);
     }
   }
 
@@ -92,7 +102,6 @@ bool PropertyAnalyzer::resolvePropertyType() {
 
       getter->setFunctionType(getterType);
       module->addSymbol(getter);
-      analyzeLater(getter);
     }
 
     if (target->setter() != NULL) {
@@ -145,7 +154,6 @@ bool PropertyAnalyzer::resolvePropertyType() {
 
       setter->setFunctionType(setterType);
       module->addSymbol(setter);
-      analyzeLater(setter);
     }
 
     target->finishPass(Pass_ResolveVarType);

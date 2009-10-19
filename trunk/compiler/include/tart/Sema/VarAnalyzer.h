@@ -15,19 +15,20 @@ namespace tart {
 /// Analyzer for Let, Var and function/template parameters
 class VarAnalyzer : public DefnAnalyzer {
 private:
-  ValueDefn * target;
+  VariableDefn * target;
 
   void setTargetType(Type * type);
 
 public:
   /** Constructor. */
-  VarAnalyzer(ValueDefn * var);
-  VarAnalyzer(ValueDefn * var, Module * module);
+  VarAnalyzer(VariableDefn * var);
+  VarAnalyzer(VariableDefn * var, Module * module, Defn * subject);
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
+  bool runPasses(VariableDefn::PassSet passesToRun);
   bool resolveVarType();
-  bool resolveStaticInitializers();
+  bool resolveInitializers();
 };
 
 }

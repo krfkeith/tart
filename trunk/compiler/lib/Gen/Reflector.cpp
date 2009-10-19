@@ -261,9 +261,9 @@ llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
   const CompositeType * arrayType = cast<CompositeType>(var->type().type());
-  const Type * elementType = arrayType->typeParam(0);
+  const Type * elementType = arrayType->typeParam(0).type();
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
-  DASSERT_OBJ(arrayType->typeDefn()->isPassFinished(Pass_ResolveOverloads), var);
+  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), var);
 
   if (values.empty()) {
     // TODO: point to shared empty array.

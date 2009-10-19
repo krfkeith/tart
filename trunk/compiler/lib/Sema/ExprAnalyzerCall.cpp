@@ -103,18 +103,22 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //}
       } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
         if (FunctionType * ft = dyn_cast<FunctionType>(var->type().type())) {
+          //if (!analyzeValueDefn(method, Task_PrepOverloadSelection)) {
+          //  return false;
+          //}
+
           success &= addOverload(call, lv, ft, args);
         } else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type().type())) {
-          Type * targetType = npt->typeParam(0);
-          if (analyzeType(targetType, Task_PrepCallOrUse)) {
-            if (FunctionType * ft = dyn_cast<FunctionType>(targetType)) {
+          TypeRef targetType = npt->typeParam(0);
+          if (analyzeType(targetType, Task_PrepTypeComparison)) {
+            if (FunctionType * ft = dyn_cast<FunctionType>(targetType.type())) {
               success &= addOverload(call, lv, ft, args);
             }
           }
         } else if (AddressType * mat = dyn_cast<AddressType>(var->type().type())) {
-          Type * targetType = mat->typeParam(0);
-          if (analyzeType(targetType, Task_PrepCallOrUse)) {
-            if (FunctionType * ft = dyn_cast<FunctionType>(targetType)) {
+          TypeRef targetType = mat->typeParam(0);
+          if (analyzeType(targetType, Task_PrepTypeComparison)) {
+            if (FunctionType * ft = dyn_cast<FunctionType>(targetType.type())) {
               success &= addOverload(call, lv, ft, args);
             }
           }
@@ -299,7 +303,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
   }
 
   // First thing we need to know is how much tdef has been analyzed.
-  if (!AnalyzerBase::analyzeType(type, Task_PrepCallOrUse)) {
+  if (!AnalyzerBase::analyzeType(type, Task_PrepConstruction)) {
     return &Expr::ErrorVal;
   }
 
@@ -322,7 +326,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        if (analyzeDefn(cons, Task_InferType)) {
+        if (analyzeDefn(cons, Task_PrepTypeComparison)) {
           DASSERT(cons->type().isDefined());
           DASSERT(!cons->returnType().isDefined() || cons->returnType().isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
@@ -336,7 +340,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
         if (create->storageClass() == Storage_Static) {
-          if (analyzeDefn(create, Task_InferType)) {
+          if (analyzeDefn(create, Task_PrepTypeComparison)) {
             DASSERT(create->type().isDefined());
             //Type * returnType = create->returnType();
             addOverload(call, NULL, create, args);
@@ -415,6 +419,36 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
 #endif
 }
 
+/** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
+    to 'toType'. */
+CallExpr * ExprAnalyzer::tryCoerciveCast(Expr * in, Type * toType) {
+  if (CompositeType * ctype = dyn_cast<CompositeType>(toType)) {
+    if (!ctype->coercers().empty()) {
+      if (!analyzeType(ctype, Task_PrepConversion)) {
+        return NULL;
+      }
+
+      CallExpr * call = new CallExpr(Expr::Call, in->location(), NULL);
+      call->setExpectedReturnType(toType);
+      call->args().push_back(in);
+
+      for (MethodList::const_iterator it = ctype->coercers().begin();
+          it != ctype->coercers().end(); ++it) {
+        addOverload(call, NULL, *it, call->args());
+      }
+
+      if (call->candidates().empty()) {
+        return NULL;
+      }
+
+      call->setType(reduceReturnType(call));
+      return call;
+    }
+  }
+
+  return NULL;
+}
+
 bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
   ExprList & args = call->args();
   for (size_t i = 0; i < in.size(); ++i) {
@@ -463,7 +497,7 @@ Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ASTNodeList & args) {
-  if (!analyzeValueDefn(method, Task_PrepOverloadSelection)) {
+  if (!analyzeValueDefn(method, Task_PrepConversion)) {
     return false;
   }
 
@@ -479,9 +513,9 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
 
 bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, FunctionType * ftype,
     const ASTNodeList & args) {
-  if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
-    return false;
-  }
+  //if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
+  //  return false;
+  //}
 
   DASSERT_OBJ(ftype != NULL, fn);
   ParameterAssignments pa;
@@ -490,6 +524,27 @@ bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, FunctionType * 
     call->candidates().push_back(new CallCandidate(call, fn, ftype, pa));
   }
 
+  return true;
+}
+
+bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+    const ExprList & args) {
+  if (!analyzeValueDefn(method, Task_PrepConversion)) {
+    return false;
+  }
+
+  DASSERT_OBJ(method->type().isDefined(), method);
+  ParameterAssignments pa;
+  ParameterAssignmentsBuilder builder(pa, method->functionType());
+  for (int i = 0; i < args.size(); ++i) {
+    builder.addPositionalArg();
+  }
+
+  if (!builder.check()) {
+    return false;
+  }
+
+  call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa));
   return true;
 }
 

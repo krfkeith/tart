@@ -7,6 +7,7 @@
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/FunctionType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -16,6 +17,7 @@
 #include "tart/Common/SourceFile.h"
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Sema/AnalyzerBase.h"
 
 namespace tart {
 
@@ -133,6 +135,15 @@ Value * ThisModuleIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 }
 
 // -------------------------------------------------------------------
+// ModuleOfIntrinsic
+ModuleOfIntrinsic ModuleOfIntrinsic::instance;
+
+Value * ModuleOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DFAIL("Implement");
+  return cg.createModuleObjectPtr();
+}
+
+// -------------------------------------------------------------------
 // VAllocIntrinsic
 VAllocIntrinsic VAllocIntrinsic::instance;
 
@@ -182,7 +193,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Should use uintptr_t instead of int32.
 
   DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
-  Type * elemType = firstPtr->type()->typeParam(0);
+  Type * elemType = firstPtr->type()->typeParam(0).type();
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
@@ -292,7 +303,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * count = call->arg(2);
 
   DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
-  Type * elemType = srcArray->type()->typeParam(0);
+  Type * elemType = srcArray->type()->typeParam(0).type();
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);
   Value * length = cg.genExpr(count);

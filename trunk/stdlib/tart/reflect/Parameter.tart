@@ -6,7 +6,7 @@ class Parameter {
   let name:String;
   
   /** The type of this member. Note: Variadic parameter types will be converted to array types. */
-  let paramType:TypeDescriptor;
+  let paramType:TypeRef;
   
   /** Array of attributes for this parameter. */
   let attributes:Attribute[];

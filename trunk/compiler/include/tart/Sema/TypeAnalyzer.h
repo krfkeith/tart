@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_SEMA_TYPEANALYZER_H
 #define TART_SEMA_TYPEANALYZER_H
 
@@ -14,7 +14,7 @@
 #endif
 
 namespace tart {
-  
+
 class ASTNode;
 class ASTFunctionDecl;
 class FunctionType;
@@ -30,7 +30,7 @@ public:
   TypeAnalyzer(Module * mod, Scope * parent)
     : AnalyzerBase(mod, parent)
   {}
-  
+
   /** Construct a type from an AST. */
   Type * typeFromAST(const ASTNode * ast);
 
@@ -39,9 +39,6 @@ public:
 
   /** Construct a function type from an AST. */
   FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
-  
-  /** Queue any type definitions for analysis. */
-  bool analyzeTypeExpr(Type * type);
 };
 
 }

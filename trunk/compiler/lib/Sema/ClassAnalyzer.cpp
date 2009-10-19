@@ -22,71 +22,107 @@ namespace tart {
 
 static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
 
-static const DefnPasses PASS_SET_COMPARE = DefnPasses::of(
-  Pass_ResolveBaseTypes
+static const CompositeType::PassSet PASS_SET_RESOLVE_TYPE = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass
 );
 
-static const DefnPasses PASS_SET_LOOKUP = DefnPasses::of(
-  Pass_CreateMembers,
-  Pass_ResolveAttributes,
-  Pass_ResolveBaseTypes
+static const CompositeType::PassSet PASS_SET_LOOKUP = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass
 );
 
-static const DefnPasses PASS_SET_CALL_OR_USE = DefnPasses::of(
-  Pass_CreateMembers,
-  Pass_ResolveBaseTypes,
-  Pass_ResolveAttributes,
-  Pass_AnalyzeConstructors,
-  Pass_AnalyzeMemberTypes,
-  Pass_AnalyzeFields
+static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass,
+  CompositeType::ConstructorPass
 );
 
-static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
-  Pass_CreateMembers,
-  Pass_ResolveBaseTypes,
-  Pass_ResolveAttributes,
-  Pass_AnalyzeConstructors,
-  Pass_AnalyzeMemberTypes,
-  Pass_AnalyzeFields,
-  Pass_AnalyzeMethods,
-  Pass_ResolveOverloads,
-  Pass_ResolveStaticInitializers
+static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass,
+  CompositeType::ConverterPass
+);
+
+static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass,
+  CompositeType::ConverterPass,
+  CompositeType::MemberTypePass,
+  CompositeType::FieldPass,
+  CompositeType::MethodPass,
+  CompositeType::OverloadingPass
+);
+
+static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass,
+  CompositeType::FieldPass,
+  CompositeType::FieldTypePass
+);
+
+static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::of(
+  CompositeType::ScopeCreationPass,
+  CompositeType::BaseTypesPass,
+  CompositeType::AttributePass,
+  CompositeType::ConverterPass,
+  CompositeType::ConstructorPass,
+  CompositeType::MemberTypePass,
+  CompositeType::FieldPass,
+  CompositeType::MethodPass,
+  CompositeType::OverloadingPass,
+  CompositeType::CompletionPass
 );
 
 ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
-  : DefnAnalyzer(de->module(), de->definingScope())
+  : DefnAnalyzer(de->module(), de->definingScope(), de)
   , target(de)
 {
   DASSERT(de != NULL);
+  DASSERT(isa<CompositeType>(target->typeValue()));
+}
+
+CompositeType * ClassAnalyzer::targetType() const {
+  return static_cast<CompositeType *>(target->typeValue());
 }
 
 bool ClassAnalyzer::analyze(AnalysisTask task) {
-  // Work out what passes need to be run.
-  DefnPasses passesToRun;
-
   switch (task) {
     case Task_PrepTypeComparison:
-      addPasses(target, passesToRun, PASS_SET_COMPARE);
-      break;
+      return runPasses(PASS_SET_RESOLVE_TYPE);
 
     case Task_PrepMemberLookup:
-      addPasses(target, passesToRun, PASS_SET_LOOKUP);
-      break;
+      return runPasses(PASS_SET_LOOKUP);
 
-    case Task_PrepCallOrUse:
-      addPasses(target, passesToRun, PASS_SET_CALL_OR_USE);
-      break;
+    case Task_PrepConstruction:
+      return runPasses(PASS_SET_CONSTRUCTION);
+
+    case Task_PrepConversion:
+      return runPasses(PASS_SET_CONVERSION);
+
+    case Task_PrepEvaluation:
+      return runPasses(PASS_SET_EVALUATION);
+
+    case Task_PrepTypeGeneration:
+      return runPasses(PASS_SET_TYPEGEN);
 
     case Task_PrepCodeGeneration:
-      addPasses(target, passesToRun, PASS_SET_CODEGEN);
-      break;
+      return runPasses(PASS_SET_CODEGEN);
 
-    case Task_PrepOverloadSelection:
-    case Task_InferType:
-      break;
+    default:
+      return true;
   }
+}
 
-  passesToRun.removeAll(target->finished());
+bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
+  // Work out what passes need to be run.
+  CompositeType * type = targetType();
+  passesToRun.removeAll(type->passes().finished());
   if (passesToRun.empty()) {
     return true;
   }
@@ -95,8 +131,17 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
   if (target->isTemplate()) {
     // Get the template scope and set it as the active scope.
     analyzeTemplateSignature(target);
-    if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
+    if (passesToRun.contains(CompositeType::BaseTypesPass) && !analyzeBaseClasses()) {
       return false;
+    }
+
+    if (passesToRun.contains(CompositeType::ScopeCreationPass) &&
+        type->passes().begin(CompositeType::ScopeCreationPass)) {
+      if (!createMembersFromAST(target)) {
+        return false;
+      }
+
+      type->passes().finish(CompositeType::ScopeCreationPass);
     }
 
     return true;
@@ -106,33 +151,57 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
     return true;
   }
 
-  DefnAnalyzer::analyze(target, passesToRun);
+  if (passesToRun.contains(CompositeType::ScopeCreationPass) &&
+      type->passes().begin(CompositeType::ScopeCreationPass)) {
+    if (!createMembersFromAST(target)) {
+      return false;
+    }
 
-  if (passesToRun.contains(Pass_ResolveBaseTypes) && !analyzeBaseClasses()) {
+    type->passes().finish(CompositeType::ScopeCreationPass);
+  }
+
+  if (passesToRun.contains(CompositeType::AttributePass) &&
+      type->passes().begin(CompositeType::AttributePass)) {
+    if (!resolveAttributes(target)) {
+      return false;
+    }
+
+    type->passes().finish(CompositeType::AttributePass);
+  }
+
+  if (passesToRun.contains(CompositeType::BaseTypesPass) && !analyzeBaseClasses()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_AnalyzeMemberTypes) && !analyzeMemberTypes()) {
+  if (passesToRun.contains(CompositeType::MemberTypePass) && !analyzeMemberTypes()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_AnalyzeFields) && !analyzeFields()) {
+  if (passesToRun.contains(CompositeType::FieldPass) && !analyzeFields()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_AnalyzeConstructors) && !analyzeConstructors()) {
+  if (passesToRun.contains(CompositeType::ConverterPass) && !analyzeConverters()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_AnalyzeMethods) && !analyzeMethods()) {
+  if (passesToRun.contains(CompositeType::ConstructorPass) && !analyzeConstructors()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_ResolveOverloads) && !analyzeOverloading()) {
+  if (passesToRun.contains(CompositeType::MethodPass) && !analyzeMethods()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_ResolveStaticInitializers) && !analyzeStaticInitializers()) {
+  if (passesToRun.contains(CompositeType::OverloadingPass) && !analyzeOverloading()) {
+    return false;
+  }
+
+  if (passesToRun.contains(CompositeType::FieldTypePass) && !analyzeFieldTypes()) {
+    return false;
+  }
+
+  if (passesToRun.contains(CompositeType::CompletionPass) && !analyzeCompletely()) {
     return false;
   }
 
@@ -140,17 +209,18 @@ bool ClassAnalyzer::analyze(AnalysisTask task) {
 }
 
 bool ClassAnalyzer::analyzeBaseClasses() {
-  if (target->isPassRunning(Pass_ResolveBaseTypes)) {
+  CompositeType * type = targetType();
+  if (type->passes().isRunning(CompositeType::BaseTypesPass)) {
     diag.error(target) << "Circular inheritance not allowed";
     return false;
   }
 
-  if (!target->beginPass(Pass_ResolveBaseTypes)) {
+  if (!type->passes().begin(CompositeType::BaseTypesPass)) {
     return true;
   }
 
   bool result = analyzeBaseClassesImpl();
-  target->finishPass(Pass_ResolveBaseTypes);
+  type->passes().finish(CompositeType::BaseTypesPass);
   return result;
 }
 
@@ -164,7 +234,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     return true;
   }
 
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   bool isFromTemplate =
       target->isTemplate() || target->isTemplateMember() || target->isPartialInstantiation();
   DASSERT_OBJ(isFromTemplate || type->isSingular(), type);
@@ -291,32 +361,69 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   return true;
 }
 
+bool ClassAnalyzer::analyzeConverters() {
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::ConverterPass)) {
+    Type::TypeClass tcls = type->typeClass();
+    if (tcls == Type::Class || tcls == Type::Struct) {
+      // Note: "coerce" methods are *not* inherited.
+      DefnList methods;
+      if (type->lookupMember(istrings.idCoerce, methods, false)) {
+        for (DefnList::iterator it = methods.begin(); it != methods.end(); ++it) {
+          if (FunctionDefn * fn = dyn_cast<FunctionDefn>(*it)) {
+            diag.recovered();
+
+            if (FunctionAnalyzer(fn).analyze(Task_PrepTypeComparison) &&
+                fn->returnType().isNonVoidType() &&
+                fn->storageClass() == Storage_Static &&
+                fn->functionType()->params().size() == 1) {
+
+              // Mark the constructor as singular if in fact it is.
+              if (!fn->isTemplate() && type->isSingular()) {
+                fn->addTrait(Defn::Singular);
+              }
+
+              type->coercers_.push_back(fn);
+            }
+          }
+        }
+      }
+    }
+
+    type->passes().finish(CompositeType::ConverterPass);
+  }
+
+  return true;
+}
+
 bool ClassAnalyzer::analyzeMemberTypes() {
-  if (target->beginPass(Pass_AnalyzeMemberTypes)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::MemberTypePass)) {
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
         // TODO: Copy attributes that are inherited.
         memberType->copyTrait(target, Defn::Nonreflective);
-        analyzeTypeDefn(memberType, Task_PrepCallOrUse);
       }
     }
 
-    target->finishPass(Pass_AnalyzeMemberTypes);
+    type->passes().finish(CompositeType::MemberTypePass);
   }
 
   return true;
 }
 
 bool ClassAnalyzer::analyzeFields() {
-  if (target->beginPass(Pass_AnalyzeFields)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::FieldPass)) {
     CompositeType * super = type->super();
     // Also analyze base class fields.
     int instanceFieldCount = 0;
     int instanceFieldCountRecursive = 0;
     if (super != NULL) {
-      ClassAnalyzer(super->typeDefn()).analyze(Task_PrepCallOrUse);
+      // The extra check is to prevent infinite recursion when analyzing class Object.
+      if (!super->passes().isFinished(CompositeType::FieldPass)) {
+        ClassAnalyzer(super->typeDefn()).analyze(Task_PrepTypeComparison);
+      }
 
       // Reserve one slot for the superclass.
       type->instanceFields_.push_back(NULL);
@@ -332,7 +439,7 @@ bool ClassAnalyzer::analyzeFields() {
           VariableDefn * field = static_cast<VariableDefn *>(member);
           field->copyTrait(target, Defn::Final);
 
-          analyzeValueDefn(field, Task_PrepCallOrUse);
+          analyzeValueDefn(field, Task_PrepTypeComparison);
           DASSERT(field->type().isDefined());
 
           bool isStorageRequired = true;
@@ -375,38 +482,40 @@ bool ClassAnalyzer::analyzeFields() {
     }
 
     DASSERT(type->instanceFields_.size() == instanceFieldCount);
-    target->finishPass(Pass_AnalyzeFields);
+    type->passes().finish(CompositeType::FieldPass);
   }
 
   return true;
 }
 
 bool ClassAnalyzer::analyzeConstructors() {
-  if (target->beginPass(Pass_AnalyzeConstructors)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::ConstructorPass)) {
     // Analyze the constructors first, because we may need them
     // during the rest of the analysis.
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Analyze superclass constructors
-      if (type->super() != NULL) {
+      if (type->super() != NULL &&
+          !type->super()->passes().isFinished(CompositeType::ConstructorPass) &&
+          !type->super()->passes().isRunning(CompositeType::ConstructorPass)) {
         ClassAnalyzer ca(type->super()->typeDefn());
-        if (!ca.analyze(Task_PrepCallOrUse)) {
+        if (!ca.analyze(Task_PrepConstruction)) {
           return false;
         }
       }
 
       DefnList ctors;
-      size_t hasConstructor = false;
+      bool hasConstructors = false;
       if (type->lookupMember(istrings.idConstruct, ctors, false)) {
         for (DefnList::iterator it = ctors.begin(); it != ctors.end(); ++it) {
           if (FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
 
-            hasConstructor = true;
+            hasConstructors = true;
             ctor->addTrait(Defn::Ctor);
 
-            if (!FunctionAnalyzer(ctor).analyze(Task_PrepOverloadSelection)) {
+            if (!FunctionAnalyzer(ctor).analyze(Task_PrepTypeComparison)) {
               continue;
             }
 
@@ -437,17 +546,17 @@ bool ClassAnalyzer::analyzeConstructors() {
         }
       }
 
-      // If there were no constructors, look for a creator.
+      // Look for creator functions.
       ctors.clear();
-      if (!hasConstructor && type->lookupMember(istrings.idCreate, ctors, false)) {
+      if (type->lookupMember(istrings.idCreate, ctors, false)) {
         for (DefnList::iterator it = ctors.begin(); it != ctors.end(); ++it) {
           if (FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
             if (ctor->storageClass() == Storage_Static) {
-              hasConstructor = true;
+              hasConstructors = true;
             }
 
-            if (!FunctionAnalyzer(ctor).analyze(Task_PrepOverloadSelection)) {
+            if (!FunctionAnalyzer(ctor).analyze(Task_PrepTypeComparison)) {
               continue;
             }
 
@@ -456,20 +565,19 @@ bool ClassAnalyzer::analyzeConstructors() {
         }
       }
 
-      if (!hasConstructor) {
-        //diag.debug(target) << "Creating default constructor for " << target;
+      if (!hasConstructors) {
         createDefaultConstructor();
       }
     }
 
-    target->finishPass(Pass_AnalyzeConstructors);
+    type->passes().finish(CompositeType::ConstructorPass);
   }
 
   return true;
 }
 
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   CompositeType * superType = cast_or_null<CompositeType>(type->super());
   if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
@@ -483,8 +591,8 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
 }
 
 bool ClassAnalyzer::analyzeMethods() {
-  if (target->beginPass(Pass_AnalyzeMethods)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::MethodPass)) {
     Defn::DefnType dtype = target->defnType();
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (member->isTemplate()) {
@@ -503,24 +611,24 @@ bool ClassAnalyzer::analyzeMethods() {
 
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
         if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
-          analyzeValueDefn(val, Task_PrepCodeGeneration);
+          analyzeValueDefn(val, Task_PrepTypeComparison);
         }
       }
     }
 
-    target->finishPass(Pass_AnalyzeMethods);
+    type->passes().finish(CompositeType::MethodPass);
   }
 
   return true;
 }
 
 bool ClassAnalyzer::analyzeOverloading() {
-  if (target->beginPass(Pass_ResolveOverloads)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::OverloadingPass)) {
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
-      analyzeDefn((*it)->typeDefn(), Task_PrepCodeGeneration);
+      analyzeDefn((*it)->typeDefn(), Task_PrepEvaluation);
     }
 
     copyBaseClassMethods();
@@ -529,7 +637,7 @@ bool ClassAnalyzer::analyzeOverloading() {
     addNewMethods();
     checkForRequiredMethods();
 
-    target->finishPass(Pass_ResolveOverloads);
+    type->passes().finish(CompositeType::OverloadingPass);
   }
 
   return true;
@@ -537,7 +645,7 @@ bool ClassAnalyzer::analyzeOverloading() {
 
 void ClassAnalyzer::copyBaseClassMethods() {
   // If it's not a normal class, it can still have a supertype.
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   Type::TypeClass tcls = type->typeClass();
   CompositeType * superClass = type->super();
   if (superClass == NULL &&
@@ -560,7 +668,7 @@ void ClassAnalyzer::createInterfaceTables() {
 
   // Get the set of all ancestor types.
   ClassSet ancestors;
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   type->ancestorClasses(ancestors);
 
   // Remove from the set all types which are the first parent of some other type
@@ -604,7 +712,7 @@ void ClassAnalyzer::overrideMembers() {
 
   // In this case, we iterate through the symbol table so that we can
   // get all of the overloads at once.
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   SymbolTable & clMembers = type->members();
   for (SymbolTable::iterator s = clMembers.begin(); s != clMembers.end(); ++s) {
     SymbolTable::Entry & entry = s->second;
@@ -688,7 +796,7 @@ void ClassAnalyzer::addNewMethods() {
   // Append all methods that aren't overrides of a superclass. Note that we
   // don't need to include 'final' methods since they are never called via
   // vtable lookup.
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance && de->isSingular()) {
       Defn::DefnType dt = de->defnType();
@@ -730,7 +838,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     return;
   }
 
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
@@ -943,7 +1051,7 @@ bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * 
 bool ClassAnalyzer::createDefaultConstructor() {
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a default constructor.
-  CompositeType * type = cast<CompositeType>(target->typeValue());
+  CompositeType * type = targetType();
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->defaultConstructor() == NULL) {
@@ -985,7 +1093,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         }
       } else if (de->defnType() == Defn::Var) {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
-        analyzeValueDefn(memberVar, Task_PrepCallOrUse);
+        analyzeValueDefn(memberVar, Task_PrepConstruction);
         Expr * defaultValue = memberVar->initValue();
         TypeRef memberType = memberVar->type().type();
         if (defaultValue == NULL) {
@@ -1009,8 +1117,8 @@ bool ClassAnalyzer::createDefaultConstructor() {
           param->setType(memberType);
           param->setInternalType(memberType);
           param->addTrait(Defn::Singular);
-          param->finishPass(Pass_ResolveVarType);
-          param->setDefaultValue(defaultValue);
+          param->passes().finish(VariableDefn::VariableTypePass);
+          param->setInitValue(defaultValue);
 
           if (defaultValue != NULL) {
             optionalParams.push_back(param);
@@ -1060,12 +1168,12 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->addTrait(Defn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);
   constructorDef->blocks().push_back(constructorBody);
-  constructorDef->finished().addAll(
-      DefnPasses::of(
-          Pass_ResolveAttributes,
-          Pass_CreateCFG,
-          Pass_ResolveParameterTypes,
-          Pass_ResolveReturnType));
+  constructorDef->passes().finished().addAll(
+      FunctionDefn::PassSet::of(
+          FunctionDefn::AttributePass,
+          FunctionDefn::ControlFlowPass,
+          FunctionDefn::ParameterTypePass,
+          FunctionDefn::ReturnTypePass));
 
   //constructorDef->setBody(constructorBody);
   if (target->isSingular()) {
@@ -1089,21 +1197,39 @@ bool ClassAnalyzer::createDefaultConstructor() {
   return true;
 }
 
-bool ClassAnalyzer::analyzeStaticInitializers() {
-  bool success = true;
+bool ClassAnalyzer::analyzeFieldTypes() {
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::FieldTypePass, true)) {
+    if (type->super() != NULL) {
+      analyzeType(type->super(), Task_PrepTypeGeneration);
+    }
 
-  if (target->beginPass(Pass_ResolveStaticInitializers)) {
-    CompositeType * type = cast<CompositeType>(target->typeValue());
+    for (DefnList::iterator it = type->instanceFields_.begin(); it != type->instanceFields_.end();
+        ++it) {
+      VariableDefn * var = dyn_cast_or_null<VariableDefn>(*it);
+      if (var != NULL) {
+        analyzeType(var->type(), Task_PrepTypeGeneration);
+      }
+    }
+
+    type->passes().finish(CompositeType::FieldTypePass);
+  }
+
+  return true;
+}
+
+bool ClassAnalyzer::analyzeCompletely() {
+  // In this case, it's OK if it's already running. All we care about is that it eventually
+  // completes, not that it completes right now.
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::CompletionPass, true)) {
     CompositeType * super = type->super();
-
     if (super != NULL) {
-      DASSERT_OBJ(super->typeDefn()->isPassFinished(Pass_ResolveStaticInitializers), super);
+      analyzeType(super, Task_PrepCodeGeneration);
     }
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
-      if (VariableDefn * var = dyn_cast<VariableDefn>(member)) {
-        analyzeValueDefn(var, Task_PrepCodeGeneration);
-      }
+      analyzeDefn(member, Task_PrepCodeGeneration);
     }
 
     /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();
@@ -1120,10 +1246,10 @@ bool ClassAnalyzer::analyzeStaticInitializers() {
       }
     }*/
 
-    target->finishPass(Pass_ResolveStaticInitializers);
+    type->passes().finish(CompositeType::CompletionPass);
   }
 
-  return success;
+  return true;
 }
 
 }

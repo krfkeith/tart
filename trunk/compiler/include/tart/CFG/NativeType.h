@@ -25,6 +25,7 @@ public:
 
   /** Construct a native pointer type for the specified element type. */
   static AddressType * get(Type * elemType);
+  static AddressType * get(const TypeRef & elemType);
 
   ~AddressType();
 
@@ -34,7 +35,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual Type * typeParam(int index) const { return elementType_.type(); }
+  virtual TypeRef typeParam(int index) const { return elementType_; }
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -74,6 +75,7 @@ public:
 
   /** Construct a native pointer type for the specified element type. */
   static NativePointerType * create(Type * elemType);
+  static NativePointerType * get(const TypeRef & elemType);
 
   /** Construct a native pointer type */
   NativePointerType(Type * elemType, TypeDefn * defn, Scope * parentScope);
@@ -113,6 +115,7 @@ public:
 
   /** Construct a native array for the specified element type. */
   static NativeArrayType * create(Type * elemType, uint64_t sz);
+  static NativeArrayType * get(const TypeRef & elemType, uint64_t sz);
 
   /** Construct a native array type */
   NativeArrayType(Type * elementType, uint64_t sz, TypeDefn * defn,

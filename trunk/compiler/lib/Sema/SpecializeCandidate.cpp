@@ -13,7 +13,6 @@ namespace tart {
 SpecializeCandidate::SpecializeCandidate(Expr * base, Defn * tdef)
   : templateDefn_(tdef)
   , base_(base)
-  , env_(tdef->templateSignature())
 {
 #if 0
   if (tdef->templateSignature() != NULL) {

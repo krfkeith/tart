@@ -27,4 +27,14 @@ import tart.core.Memory.Address;
 
   /** Returns a reference to module that contains the specified type. */
   @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
+
+  def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }
 }

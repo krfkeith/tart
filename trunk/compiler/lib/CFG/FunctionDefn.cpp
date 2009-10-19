@@ -7,7 +7,6 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/UnionType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/Block.h"
 #include "tart/Objects/Intrinsic.h"
@@ -28,10 +27,10 @@ namespace {
 // ParameterDefn
 
 void ParameterDefn::trace() const {
-  ValueDefn::trace();
-  type_.trace();
+  VariableDefn::trace();
+  //type_.trace();
   internalType_.trace();
-  safeMark(defaultValue_);
+  //safeMark(defaultValue_);
 }
 
 void ParameterDefn::format(FormatStream & out) const {
@@ -42,12 +41,12 @@ void ParameterDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_.isDefined()) {
-    out << ":" << type_;
+  if (out.getShowType() && type().isDefined()) {
+    out << ":" << type();
   }
 
-  if (out.isVerbose() && defaultValue_) {
-    out << "=" << defaultValue_;
+  if (out.isVerbose() && initValue()) {
+    out << "=" << initValue();
   }
 }
 
@@ -136,7 +135,11 @@ void FunctionDefn::format(FormatStream & out) const {
   }
 
   if (out.getShowQualifiedName() && !qname_.empty()) {
-    out << qname_;
+    if (out.getShowType() && parentDefn()) {
+      out << parentDefn() << "." << name_;
+    } else {
+      out << qname_;
+    }
   } else {
     out << name_;
   }

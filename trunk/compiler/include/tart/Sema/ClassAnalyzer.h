@@ -9,32 +9,32 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
-#include <llvm/ADT/SetVector.h>
-
 namespace tart {
 
 /// -------------------------------------------------------------------
 /// Analyzer for classes, structs, and interfaces.
 class ClassAnalyzer : public DefnAnalyzer {
-private:
-  TypeDefn * target;
-
 public:
   /** Constructor. */
   ClassAnalyzer(TypeDefn * target);
 
+  CompositeType * targetType() const;
+
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
+  bool runPasses(CompositeType::PassSet passesToRun);
 
   bool analyzeBaseClasses();
   bool analyzeBaseClassesImpl();
+  bool analyzeConverters();
   bool analyzeConstructors();
   bool analyzeMemberTypes();
   bool analyzeFields();
   void analyzeConstructBase(FunctionDefn * ctor);
   bool analyzeMethods();
   bool analyzeOverloading();
-  bool analyzeStaticInitializers();
+  bool analyzeFieldTypes();
+  bool analyzeCompletely();
 
   void overrideMembers();
   void overrideMethods(MethodList & table, const MethodList & overrides, bool canHide);
@@ -50,6 +50,9 @@ public:
   bool canOverride(const FunctionDefn * base, const FunctionDefn * func);
 
   bool createDefaultConstructor();
+
+private:
+  TypeDefn * target;
 };
 
 }

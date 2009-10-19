@@ -308,6 +308,17 @@ public:
 
 extern Diagnostics diag;
 
+/// ---------------------------------------------------------------
+/// Convenience class that increases indentation level within a scope.
+class AutoIndent {
+public:
+  AutoIndent(bool enabled = true) : enabled_(enabled) { if (enabled_) diag.indent(); }
+  ~AutoIndent() { if (enabled_) diag.unindent(); }
+
+private:
+  bool enabled_;
+};
+
 }
 
 #endif

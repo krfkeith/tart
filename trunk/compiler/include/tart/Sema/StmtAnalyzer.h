@@ -17,6 +17,10 @@
 #include "tart/CFG/Block.h"
 #endif
 
+#ifndef TART_SEMA_EXPRANALYZER_H
+#include "tart/Sema/ExprAnalyzer.h"
+#endif
+
 #include <llvm/ADT/DenseMap.h>
 
 namespace tart {
@@ -41,7 +45,7 @@ class FunctionDefn;
 
 /// -------------------------------------------------------------------
 /// Declaration analyzer
-class StmtAnalyzer : public AnalyzerBase {
+class StmtAnalyzer : public ExprAnalyzer {
 public:
   /** Constructor. */
   StmtAnalyzer(FunctionDefn * func);

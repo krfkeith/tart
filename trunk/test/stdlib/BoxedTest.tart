@@ -1,0 +1,31 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  testManualBoxing();
+  testManualUnboxing();
+  testAutoBoxing();
+  return 0;
+}
+
+def testManualBoxing() {
+  let b = Boxed(3);
+  Debug.assertTrue(b isa Boxed[int]);
+  Debug.assertEq(3, b.value);
+}
+
+def testManualUnboxing() {
+}
+
+def testAutoBoxing() {
+  let b = echo(3);
+  Debug.assertTrue(b isa Boxed[int]);
+  let c = echo2(3);
+  Debug.assertTrue(c isa Boxed[int]);
+}
+
+private def echo(v:Object) -> Object {
+  return v;
+}
+
+private def echo2(v:int) -> Object {
+  return v;
+}

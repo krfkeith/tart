@@ -20,7 +20,7 @@ class FinalizeTypesPass : public CFGPass {
 public:
 
   /** Run this pass on the specified expression. */
-  static Expr * run(Expr * in);
+  //static Expr * run(Expr * in);
   static Expr * run(Defn * source, Expr * in);
 
   Expr * addCastIfNeeded(Expr * in, Type * toType);
@@ -38,9 +38,9 @@ public:
   Expr * visitRefEq(BinaryExpr * in);
 
 private:
-  Defn * sourceDefn_;
+  Defn * subject_;
 
-  FinalizeTypesPass(Defn * sourceDefn) : sourceDefn_(sourceDefn) {}
+  FinalizeTypesPass(Defn * subject) : subject_(subject) {}
   Expr * runImpl(Expr * in);
   Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, UnionType * from, Type * to);
   Expr * visitAssignImpl(AssignmentExpr * in);

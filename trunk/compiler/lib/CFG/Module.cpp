@@ -27,7 +27,6 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   loc.file = src;
   qname_.assign(qual);
   addTrait(Singular);
-  defsAnalyzed_ = 0;
   setScopeName(istrings.intern(qual));
 
   debug_ = (DebugXDefs == qual);
@@ -117,7 +116,7 @@ bool Module::processImportStatements() {
   // If not already done so, add the list of imported symbols to the
   // module's namespace.
   if (beginPass(Pass_ResolveImport)) {
-    DefnAnalyzer da(this, this);
+    DefnAnalyzer da(this, this, this);
     for (ASTNodeList::const_iterator it = imports_.begin(); it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }
@@ -145,8 +144,8 @@ llvm::Module * Module::irModule() {
 
 bool Module::addSymbol(Defn * de) {
   if (isPassFinished(Pass_ResolveModuleMembers)) {
-    diag.fatal(de) << "Too late to add symbol '" << de << "', analysis for module '" << this
-        << "' has already finished.";
+    diag.fatal(de) << Format_Verbose << "Too late to add symbol '" << de <<
+        "', analysis for module '" << this << "' has already finished.";
   }
 
   if (de->defnType() == Defn::ExplicitImport) {
@@ -157,7 +156,7 @@ bool Module::addSymbol(Defn * de) {
   if (de->module() == this || de->isSynthetic()) {
     if (exportDefs_.insert(de)) {
       DASSERT_OBJ(!importDefs_.count(de), de);
-      defsToAnalyze_.push_back(de);
+      defsToAnalyze_.append(de);
       if (debug_) {
         diag.info() << Format_Type << Format_QualifiedName << "Export: " << de->linkageName();
       }
@@ -166,7 +165,7 @@ bool Module::addSymbol(Defn * de) {
   } else {
     if (importDefs_.insert(de)) {
       DASSERT_OBJ(!exportDefs_.count(de), de);
-      defsToAnalyze_.push_back(de);
+      defsToAnalyze_.append(de);
       if (debug_) {
         diag.info() << Format_Type << Format_QualifiedName << "Import: " << de->linkageName();
       }
@@ -178,8 +177,8 @@ bool Module::addSymbol(Defn * de) {
 }
 
 Defn * Module::nextDefToAnalyze() {
-  if (defsAnalyzed_ < defsToAnalyze_.size()) {
-    return defsToAnalyze_[defsAnalyzed_++];
+  if (!defsToAnalyze_.empty()) {
+    return defsToAnalyze_.next();
   }
 
   return NULL;

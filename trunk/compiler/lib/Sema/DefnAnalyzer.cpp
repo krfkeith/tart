@@ -42,8 +42,6 @@ bool DefnAnalyzer::analyzeModule() {
     return false;
   }
 
-  //analyzeType(Builtins::typeTypeDescriptor, Task_PrepMemberLookup);
-
   if (module->firstMember() == NULL) {
     diag.fatal() << "Module should have at least one definition";
     return false;
@@ -76,6 +74,9 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
+  analyzeType(Builtins::typeTypeInfoBlock, Task_PrepCodeGeneration);
+  analyzeDefn(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
   // be externally referenced.
@@ -89,7 +90,11 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
-  flushAnalysisQueue();
+  /*for (DefnSet::iterator it = module->exportDefs().begin(); it != module->exportDefs().end(); ++it) {
+    diag.debug() << "Export " << Format_Verbose << *it;
+  }*/
+
+  // Prevent further symbols from being added.
   module->finishPass(Pass_ResolveModuleMembers);
   return success;
 }
@@ -136,8 +141,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     }
 
     if (in->ast() != NULL) {
-      ExprAnalyzer ea(module, activeScope);
-      ea.setSourceDefn(sourceDefn);
+      ExprAnalyzer ea(module, activeScope, subject());
       const ASTNodeList & attrs = in->ast()->attributes();
       for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
         Expr * attrExpr = ea.reduceAttribute(*it);
@@ -158,7 +162,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
 void DefnAnalyzer::applyAttributes(Defn * in) {
   ExprList & attrs = in->attrs();
   for (ExprList::iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    Expr * attrExpr = ExprAnalyzer::inferTypes(sourceDefn, *it, NULL);
+    Expr * attrExpr = ExprAnalyzer::inferTypes(subject(), *it, NULL);
     if (isErrorResult(attrExpr)) {
       continue;
     }
@@ -207,7 +211,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
 
 void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
     FunctionDefn * applyMethod) {
-  if (analyzeDefn(applyMethod, Task_PrepCodeGeneration)) {
+  if (analyzeDefn(applyMethod, Task_PrepEvaluation)) {
     ExprList args;
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       args.push_back(tdef->asExpr());
@@ -353,8 +357,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     TypeList & params = tsig->params();
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
-      ExprAnalyzer ea(de->module(), de->definingScope());
-      ea.setSourceDefn(de);
+      ExprAnalyzer ea(de->module(), de->definingScope(), de);
       Expr * param = ea.reducePattern(*it, tsig);
       if (param != NULL) {
         // Now, add a definition to the parameter scope for this param.

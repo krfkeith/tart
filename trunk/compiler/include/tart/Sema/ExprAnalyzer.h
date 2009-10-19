@@ -17,10 +17,11 @@ class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
   ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction = NULL);
+  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject);
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, Type * expected) {
-    return inferTypes(sourceDefn, reduceExpr(ast, expected), expected);
+    return inferTypes(subject(), reduceExpr(ast, expected), expected);
   }
 
   /** Take a reduced expression and do type inferencing. */
@@ -37,6 +38,11 @@ public:
   /** Similar to reduceExpr, but returns a constant. */
   ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected);
   Expr * reducePattern(const ASTNode * ast, TemplateSignature * tsig);
+
+  /** Attempt to silently case 'in' to 'toType', using whatever means available.
+      Report an error if the cast is not possible. */
+  Expr * doImplicitCast(Expr * in, Type * toType);
+  Expr * doImplicitCast(Expr * in, const TypeRef & toType);
 
   // Literals
 
@@ -101,6 +107,10 @@ public:
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef,
       const ASTNodeList & args);
 
+  /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
+      to 'toType'. */
+  CallExpr * tryCoerciveCast(Expr * in, Type * toType);
+
   /** Evaluate the argument list. */
   bool reduceArgList(const ASTNodeList & in, CallExpr * call);
 
@@ -128,10 +138,15 @@ public:
       const ASTNodeList & args);
   // Templates
 
+  /** Version of overload which works with pre-analyzed arguments. No keyword mapping
+      is done, args are simply mapped 1:1 to parameters. */
+  bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+      const ExprList & args);
+
   Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);
 
 private:
-  TemplateSignature * tsig;
+  TemplateSignature * tsig_;
   FunctionDefn * currentFunction_;
 };
 

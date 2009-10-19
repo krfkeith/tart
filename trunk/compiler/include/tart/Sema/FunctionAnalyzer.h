@@ -9,6 +9,10 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
+#ifndef TART_CFG_FUNCTIONDEFN_H
+#include "tart/CFG/FunctionDefn.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -23,11 +27,13 @@ public:
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
+  bool runPasses(FunctionDefn::PassSet passesToRun);
 
   bool resolveReturnType();
   bool resolveParameterTypes();
   bool resolveModifiers();
   bool createCFG();
+  bool analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass);
   void warnConflict(
       const SourceLocation & prevLoc, const Type * prevType,
       const SourceLocation & nextLoc, const Type * nextType) const;

@@ -17,7 +17,7 @@
 #include "tart/Sema/ParameterAssignments.h"
 #endif
 
-#ifndef TART_SEMA_UNIFIER_H
+#ifndef TART_SEMA_BINDINGENV_H
 #include "tart/Sema/BindingEnv.h"
 #endif
 

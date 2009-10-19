@@ -16,8 +16,10 @@
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/PackageMgr.h"
@@ -25,10 +27,9 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Objects/Builtins.h"
 
-namespace tart {
+#include "llvm/Support/CommandLine.h"
 
-AnalyzerBase::AnalysisQueue AnalyzerBase::queue;
-size_t AnalyzerBase::queuePos = 0;
+namespace tart {
 
 bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, bool absPath) {
   std::string path;
@@ -104,8 +105,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     path.clear();
 
     // See if it's an expression.
-    ExprAnalyzer ea(module, activeScope);
-    ea.setSourceDefn(sourceDefn);
+    ExprAnalyzer ea(module, activeScope, subject());
     //Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
@@ -157,30 +157,38 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
         return true;
       }
     }
-  } else if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(context)) {
-    TypeDefn * typeDef = dealias(ctype->value())->typeDefn();
-    if (typeDef != NULL && ctype->value()->memberScope() != NULL) {
+  } else if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
+    Type * type = dealias(typeNameExpr->value());
+    TypeDefn * typeDef = type->typeDefn();
+    if (typeDef != NULL && type->memberScope() != NULL) {
       if (typeDef->isTemplate()) {
         return findStaticTemplateMember(out, typeDef, name, loc);
       }
 
-      DASSERT_OBJ(ctype->isSingular(), typeDef);
+      DASSERT_OBJ(typeNameExpr->isSingular(), typeDef);
       AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, ctype->value()->memberScope(), context, loc)) {
+      if (findInScope(out, name, type->memberScope(), context, loc)) {
         return true;
       }
     }
   } else if (context->type() != NULL) {
-    TypeDefn * typeDef = dealias(context->type())->typeDefn();
-    if (typeDef != NULL && context->type()->memberScope() != NULL) {
-      if (typeDef->typeValue()->isUnsizedIntType()) {
+    Type * contextType = dealias(context->type());
+
+    // If it's a native pointer, then do an implicit dereference.
+    if (NativePointerType * nptype = dyn_cast<NativePointerType>(contextType)) {
+      contextType = nptype->typeParam(0).type();
+    }
+
+    TypeDefn * typeDef = contextType->typeDefn();
+    if (typeDef != NULL && contextType->memberScope() != NULL) {
+      if (contextType->isUnsizedIntType()) {
         diag.error(loc) << "Attempt to access member of integer of unknown size";
         return false;
       }
 
       DASSERT_OBJ(typeDef->isSingular(), typeDef);
       AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, context->type()->memberScope(), context, loc)) {
+      if (findInScope(out, name, contextType->memberScope(), context, loc)) {
         return true;
       }
     }
@@ -230,14 +238,6 @@ bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef, 
 bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name,
     SLC & loc) {
   AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-  if (typeDef->beginPass(Pass_CreateMembers)) {
-    if (typeDef->ast() != NULL) {
-      ScopeBuilder::createScopeMembers(typeDef);
-    }
-
-    typeDef->finishPass(Pass_CreateMembers);
-  }
-
   if (CompositeType * ctype = dyn_cast<CompositeType>(typeDef->typeValue())) {
     if (ctype->memberScope()->lookupMember(name, out, false)) {
       return true;
@@ -264,8 +264,7 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
-  ExprAnalyzer ea(module, activeScope);
-  ea.setSourceDefn(sourceDefn);
+  ExprAnalyzer ea(module, activeScope, subject());
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
     if (isErrorResult(cb)) {
@@ -466,7 +465,7 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
 
 Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   if (!valueDef->type().isDefined()) {
-    if (!analyzeDefn(valueDef, Task_InferType)) {
+    if (!analyzeDefn(valueDef, Task_PrepTypeComparison)) {
       return NULL;
     }
   }
@@ -488,38 +487,58 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   DFAIL("Failed to determine type of value.");
 }
 
-bool AnalyzerBase::analyzeType(Type * in, AnalysisTask pass) {
+bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
   if (in != NULL) {
     TypeDefn * de = in->typeDefn();
     if (de != NULL) {
-      return analyzeTypeDefn(de, pass);
+      return analyzeTypeDefn(de, task);
+    }
+
+    switch (in->typeClass()) {
+      case Type::Function: {
+        FunctionType * ftype = static_cast<FunctionType *>(in);
+        ParameterList & params = ftype->params();
+        for(ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
+          analyzeType((*it)->type(), task);
+        }
+
+        if (ftype->selfParam() != NULL) {
+          analyzeType(ftype->selfParam()->type(), task);
+        }
+
+        if (ftype->returnType().isNonVoidType()) {
+          analyzeType(ftype->returnType(), task);
+        }
+
+        size_t numTypes = in->numTypeParams();
+        for (size_t i = 0; i < numTypes; ++i) {
+          analyzeType(in->typeParam(i), task);
+        }
+
+        break;
+      }
+
+      case Type::Address:
+      case Type::NativePointer:
+      case Type::NativeArray:
+      case Type::Union: {
+        size_t numTypes = in->numTypeParams();
+        for (size_t i = 0; i < numTypes; ++i) {
+          analyzeType(in->typeParam(i), task);
+        }
+      }
     }
   }
 
   return true;
 }
 
-
-bool AnalyzerBase::analyzeType(const TypeRef & in, AnalysisTask pass) {
-  return analyzeType(in.type(), pass);
-}
-
-void AnalyzerBase::analyzeTypeLater(Type * in) {
-  if (in != NULL && in->isSingular()) {
-    TypeDefn * de = in->typeDefn();
-    if (de != NULL) {
-      analyzeLater(de);
-    } else {
-      size_t numTypeParams = in->numTypeParams();
-      for (size_t n = 0; n < numTypeParams; ++n) {
-        analyzeTypeLater(in->typeParam(n));
-      }
-    }
-  }
+bool AnalyzerBase::analyzeType(const TypeRef & in, AnalysisTask task) {
+  return analyzeType(in.type(), task);
 }
 
 bool AnalyzerBase::analyzeModule(Module * mod) {
-  DefnAnalyzer da(mod, mod);
+  DefnAnalyzer da(mod, mod, mod);
   return da.analyzeModule();
 }
 
@@ -535,7 +554,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
     case Defn::Let:
     case Defn::Parameter:
     case Defn::TemplateParam: {
-      return VarAnalyzer(static_cast<ValueDefn *>(in)).analyze(task);
+      return VarAnalyzer(static_cast<VariableDefn *>(in)).analyze(task);
     }
 
     case Defn::Property:
@@ -550,7 +569,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 
     case Defn::Mod: {
       Module * m = static_cast<Module *>(in);
-      return DefnAnalyzer(m, m).analyzeModule();
+      return DefnAnalyzer(m, m, m).analyzeModule();
     }
 
     case Defn::ExplicitImport:
@@ -563,7 +582,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
   }
 }
 
-bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
+bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
   Type * type = in->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
@@ -573,27 +592,16 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol: {
-      return ClassAnalyzer(in).analyze(pass);
+      return ClassAnalyzer(in).analyze(task);
     }
 
     case Type::Enum:
       return EnumAnalyzer(in).analyze();
 
-    case Type::NativePointer: {
-      NativePointerType * np = static_cast<NativePointerType *>(type);
-      analyzeTypeLater(np->typeParam(0));
-      return true;
-    }
-
-    case Type::Address: {
-      AddressType * ma = static_cast<AddressType *>(type);
-      analyzeTypeLater(ma->typeParam(0));
-      return true;
-    }
-
+    case Type::Address:
+    case Type::NativePointer:
     case Type::NativeArray: {
-      NativeArrayType * na = static_cast<NativeArrayType *>(type);
-      analyzeTypeLater(na->typeParam(0));
+      analyzeType(type->typeParam(0), task);
       return true;
     }
 
@@ -610,22 +618,8 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask pass) {
   }
 }
 
-bool AnalyzerBase::analyzeValueDefn(ValueDefn * in, AnalysisTask pass) {
-  return analyzeDefn(in, pass);
-}
-
-void AnalyzerBase::analyzeLater(Defn * de) {
-  DASSERT_OBJ(de->isSingular(), de);
-  if (queue.insert(de)) {
-    //diag.debug() << de << " added to queue";
-  }
-}
-
-void AnalyzerBase::flushAnalysisQueue() {
-  while (queuePos < queue.size()) {
-    Defn * de = queue[queuePos++];
-    analyzeDefn(de, Task_PrepCodeGeneration);
-  }
+bool AnalyzerBase::analyzeValueDefn(ValueDefn * in, AnalysisTask task) {
+  return analyzeDefn(in, task);
 }
 
 bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
@@ -634,12 +628,14 @@ bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
   DefnPasses passesToRun;
   switch (task) {
     case Task_PrepMemberLookup:
-    case Task_PrepCallOrUse:
+    //case Task_PrepCallOrUse:
       DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
       DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
       break;
 
+    case Task_PrepTypeGeneration:
     case Task_PrepCodeGeneration:
+    case Task_PrepEvaluation:
       DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
       DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
       DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveStaticInitializers);
@@ -648,7 +644,7 @@ bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
 
   if (in->beginPass(Pass_ResolveImport)) {
     if (in->ast() != NULL) {
-      DefnAnalyzer da(in->module(), &in->memberScope());
+      DefnAnalyzer da(in->module(), &in->memberScope(), in);
       const ASTNodeList & imports = in->ast()->imports();
       for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
         da.importIntoScope(cast<ASTImport>(*it), &in->memberScope());
@@ -668,7 +664,7 @@ bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
 
   if (in->beginPass(Pass_ResolveStaticInitializers)) {
     for (Defn * m = in->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
-      DefnAnalyzer da(in->module(), &in->memberScope());
+      DefnAnalyzer da(in->module(), &in->memberScope(), in);
       da.analyzeDefn(m, Task_PrepCodeGeneration);
       if (m->isSingular()) {
         in->module()->addSymbol(m);
@@ -687,7 +683,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
 
   // Do analysis on template if needed.
   if (arrayTemplate->ast() != NULL) {
-    DefnAnalyzer da(&Builtins::module, &Builtins::module);
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module);
     da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
   }
 
@@ -698,7 +694,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
     return cast<CompositeType>(Builtins::typeArray);
   }
 
-  BindingEnv arrayEnv(arrayTemplate);
+  BindingEnv arrayEnv;
   arrayEnv.addSubstitution(arrayTemplate->patternVar(0), elementType);
   return cast<CompositeType>(cast<TypeDefn>(
       arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
@@ -714,7 +710,7 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & e
 
 // Determine if the target is able to be accessed from the current source defn.
 void AnalyzerBase::checkAccess(const SourceLocation & loc, Defn * target) {
-  if (!canAccess(sourceDefn, target)) {
+  if (!canAccess(subject_, target)) {
     diag.fatal(loc) << "'" << target->name() << "' is " <<
         (target->visibility() == Protected ? "protected." : "private.");
   }

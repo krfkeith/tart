@@ -9,6 +9,10 @@
 #include "tart/CFG/Defn.h"
 #endif
 
+#ifndef TART_COMMON_AGENDA_H
+#include "tart/Common/Agenda.h"
+#endif
+
 #include <llvm/ADT/SetVector.h>
 
 namespace tart {
@@ -29,12 +33,13 @@ typedef llvm::SmallSetVector<SpecializeCandidate *, 8> SpCandidateSet;
 /// task can begin. Each analysis task requires one or more analysis passes
 /// to be run on the definition
 enum AnalysisTask {
-  Task_PrepTypeComparison,    // Prepare to compare with other types.
-  Task_PrepMemberLookup,      // Prepare the definition for member lookup.
-  Task_PrepOverloadSelection, // Prepare type information for selection.
-  Task_PrepCallOrUse,         // Prepare a field for calling or using.
-  Task_PrepCodeGeneration,    // Prepare for code generation.
-  Task_InferType,             // Do type inference
+  Task_PrepTypeComparison,      // Prepare to compare with other types.
+  Task_PrepMemberLookup,        // Prepare the definition for member lookup.
+  Task_PrepConstruction,        // Analyze constructors.
+  Task_PrepConversion,          // Analyze converters.
+  Task_PrepEvaluation,          // Prepare for compile-time evaluation.
+  Task_PrepTypeGeneration,      // Prepare to generate the low-level type.
+  Task_PrepCodeGeneration,      // Prepare for code generation.
 };
 
 /// -------------------------------------------------------------------
@@ -43,10 +48,10 @@ enum AnalysisTask {
 class AnalyzerBase {
 public:
   /** Constructor. */
-  AnalyzerBase(Module * mod, Scope * parent)
+  AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL)
     : module(mod)
     , activeScope(parent)
-    , sourceDefn(NULL)
+    , subject_(subject)
   {}
 
   /** Replace the current active scope with a new scope. Returns the old
@@ -59,7 +64,8 @@ public:
 
   /** Represents the current scope from which accesses are being made. Used to check
       whether private/protected variables can be seen. */
-  void setSourceDefn(Defn * defn) { sourceDefn = defn; }
+  //void setSubject(Defn * subject) { subject_ = subject; }
+  Defn * subject() const { return subject_; }
 
   /** This method accepts an AST representing either an identifier or
       a dotted path of the form 'a.b.c'. It will attempt to resolve the
@@ -103,12 +109,6 @@ public:
   /** Do the requested analysis passes on the type definition. */
   static bool analyzeValueDefn(ValueDefn * in, AnalysisTask pass);
 
-  /** Queue a definition to be fully analyzed later. */
-  static void analyzeLater(Defn * de);
-
-  /** Queue a type to be fully analyzed later. */
-  static void analyzeTypeLater(Type * in);
-
     /** Do the requested analysis pass on the namesapce. */
   static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask pass);
 
@@ -132,18 +132,7 @@ public:
 protected:
   Module * module;
   Scope * activeScope;
-  Defn * sourceDefn;
-
-  typedef llvm::SmallSetVector<Defn *, 128> AnalysisQueue;
-
-  // Queue of types to analyze
-  static AnalysisQueue queue;
-
-  // Position in queue. Can't use iterator because queue may reallocate.
-  static size_t queuePos;
-
-  // Finish up all unanalyzed definitions.
-  static void flushAnalysisQueue();
+  Defn * subject_;
 
   // Recursive name-lookup helper function
   bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path, bool absPath);
@@ -161,8 +150,7 @@ protected:
   bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);
 
   // Special lookup function for static members of templated types.
-  bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name,
-      SLC & loc);
+  bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name, SLC & loc);
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.

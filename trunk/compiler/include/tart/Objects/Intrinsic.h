@@ -97,6 +97,14 @@ class ThisModuleIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Module.of intrinsic
+class ModuleOfIntrinsic : public Intrinsic {
+  static ModuleOfIntrinsic instance;
+  ModuleOfIntrinsic() : Intrinsic("tart.reflect.Module.of") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Object.__valloc intrinsic
 class VAllocIntrinsic : public Intrinsic {
   static VAllocIntrinsic instance;

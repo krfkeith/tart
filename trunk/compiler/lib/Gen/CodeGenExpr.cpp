@@ -676,6 +676,10 @@ Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
       uvalue = builder_.CreateInsertValue(uvalue, value, 1);
       return uvalue;
 #endif
+    } else if (fromType->isVoidType()) {
+      // If there are no value types, but there is a void type, then represent void
+      // as a null pointer.
+      return llvm::ConstantPointerNull::getNullValue(utype->irType());
     } else {
       // The type returned from irType() is a pointer type.
       //Value * uvalue = builder_.CreateBitCast(utype->irType());
@@ -705,6 +709,9 @@ Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
           builder_.CreateBitCast(
               builder_.CreateConstGEP2_32(value, 0, 1),
               PointerType::get(fieldType, 0)));
+    } else if (toType->isVoidType()) {
+      // If the union's representation if a pointer then a 'void' type gets turned into null.
+      return ConstantPointerNull::getNullValue(PointerType::get(toType->irType(), 0));
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.
@@ -1089,17 +1096,60 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
   DASSERT(fromType != NULL);
   DASSERT(toType != NULL);
 
-  // The index of the actual type.
-  Value * actualTypeIndex = builder_.CreateExtractValue(val, 0);
+  if (fromType->numValueTypes() > 0) {
+    // The index of the actual type.
+    Value * actualTypeIndex = builder_.CreateExtractValue(val, 0);
 
-  int testIndex = fromType->getTypeIndex(toType);
-  Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
+    int testIndex = fromType->getTypeIndex(toType);
+    Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
 
-  if (index == 0 && fromType->numRefTypes() != 0) {
-    DFAIL("Add special handling for reference types.");
+    if (index == 0 && fromType->numRefTypes() != 0) {
+      DFAIL("Add special handling for reference types.");
+    }
+
+    return builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
+  } else if (fromType->hasVoidType()) {
+    if (toType->isVoidType()) {
+      // If we're testing vs. void, then just compare to a null pointer.
+      return builder_.CreateICmp(CmpInst::ICMP_EQ, val,
+          ConstantPointerNull::getNullValue(val->getType()));
+    }
+
+    // Otherwise, we have to do both a null test and a type test.
+    BasicBlock * start = builder_.GetInsertBlock();
+    BasicBlock * blkIsNotNull = BasicBlock::Create(context_, "is_not_null", currentFn_);
+    BasicBlock * blkIsNull = BasicBlock::Create(context_, "is_null", currentFn_);
+    blkIsNotNull->moveAfter(builder_.GetInsertBlock());
+    blkIsNull->moveAfter(blkIsNotNull);
+
+    // Do the test for null, and branch to the end if it is null.
+    Value * isNullTest = builder_.CreateICmp(
+        CmpInst::ICMP_NE, val, ConstantPointerNull::getNullValue(val->getType()));
+    builder_.CreateCondBr(isNullTest, blkIsNotNull, blkIsNull);
+    builder_.SetInsertPoint(blkIsNotNull);
+
+    Value * testResult;
+    if (fromType->numRefTypes() > 1) {
+      // More than one reference type means we have to do a type test.
+      int testIndex = fromType->getTypeIndex(toType);
+      CompositeType * elementType = cast<CompositeType>(fromType->typeParam(testIndex).type());
+      testResult = genCompositeTypeTest(val, elementType, cast<CompositeType>(toType));
+    } else {
+      // Only one reference type means that the null pointer check is enough.
+      testResult = ConstantInt::getTrue(context_);
+    }
+
+    builder_.CreateBr(blkIsNull);
+
+    builder_.SetInsertPoint(blkIsNull);
+    PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
+    phi->addIncoming(testResult, blkIsNotNull);
+    phi->addIncoming(ConstantInt::getFalse(context_), start);
+    return phi;
+
+  } else {
+    DFAIL("Implement");
   }
-
-  return builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
 }
 
 llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {

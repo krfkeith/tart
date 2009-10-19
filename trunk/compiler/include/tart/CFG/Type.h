@@ -155,7 +155,7 @@ public:
   virtual size_t numTypeParams() const { return 0; }
 
   /** Return the Nth type parameter. */
-  virtual Type * typeParam(int index) const;
+  virtual TypeRef typeParam(int index) const;
 
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
@@ -283,7 +283,7 @@ public:
   size_t numTypeParams() const;
 
   /** Return the Nth type parameter. */
-  Type * typeParam(int index) const;
+  TypeRef typeParam(int index) const;
 
   // Overrides
 
@@ -400,6 +400,10 @@ public:
   TypeRef & operator=(const TypeRef & ref) {
     type_ = ref.type_;
     modifiers_ = ref.modifiers_;
+  }
+
+  bool operator==(const TypeRef & other) {
+    return (type_ == other.type_ || type_->isEqual(other.type_)) && modifiers_ == other.modifiers_;
   }
 
   Type::TypeClass typeClass() const { return type_->typeClass(); }

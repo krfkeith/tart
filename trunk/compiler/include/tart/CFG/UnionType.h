@@ -30,6 +30,12 @@ public:
   const TypeRefList & members() const { return members_; }
   TypeRefList & members() { return members_; }
 
+  /** Return the number of type parameters of this type. */
+  size_t numTypeParams() const { return members_.size(); }
+
+  /** Return the Nth type parameter. */
+  TypeRef typeParam(int index) const { return members_[index]; }
+
   /** Where in the source file this expression comes from. */
   const SourceLocation & location() const { return loc_; }
 
@@ -41,6 +47,9 @@ public:
 
   /** The number of reference types in the union. */
   size_t numRefTypes() const { return numReferenceTypes_; }
+
+  /** Whether the 'void' type is included. */
+  size_t hasVoidType() const { return hasVoidType_; }
 
   // Overrides
 
@@ -70,7 +79,7 @@ protected:
   TypeRefList members_;
   size_t numValueTypes_;
   size_t numReferenceTypes_;
-  bool hasNothingType_;
+  bool hasVoidType_;
 
   mutable IRTypeList irTypes_; // IR types corresponding to tart types.
 };

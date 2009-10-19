@@ -5,6 +5,7 @@
 #include "tart/AST/ASTDecl.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -46,19 +47,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
           return &BadType::instance;
         }
 
-        Type * type = typeList.front();
-        AnalyzerBase::analyzeTypeLater(type);
-        /*if (type->isSingular()) {
-          if (type->typeClass() == Type::NativePointer) {
-            AnalyzerBase::analyzeType(type->typeParam(0), Task_PrepCallOrUse);
-          } else  if (type->typeClass() == Type::Address) {
-            AnalyzerBase::analyzeType(type->typeParam(0), Task_PrepCallOrUse);
-          } else if (type->typeDefn() != NULL) {
-            analyzeLater(type->typeDefn());
-          }
-        }*/
-
-        return type;
+        return typeList.front();
       }
 
       diag.error(loc) << "'" << ast << "' is not a type expression";
@@ -73,13 +62,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       const ASTUnaryOp * arrayOp = static_cast<const ASTUnaryOp *>(ast);
       Type * elementType = typeFromAST(arrayOp->arg());
       DASSERT(elementType != NULL);
-
-      CompositeType * arrayType = getArrayTypeForElement(elementType);
-      if (arrayType->isSingular()) {
-        analyzeLater(arrayType->typeDefn());
-      }
-
-      return arrayType;
+      return getArrayTypeForElement(elementType);
     }
 
     case ASTNode::BuiltIn: {
@@ -120,6 +103,20 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       }
 
       return ftype;
+    }
+
+    case ASTNode::GetElement: {
+      // Easiest way to handle this is to try and evaluate it as an expression, and see if
+      // the result is a type literal.
+      Expr * typeExpr = ExprAnalyzer(module, activeScope, subject()).reduceExpr(ast, NULL);
+      if (isErrorResult(typeExpr)) {
+        return &BadType::instance;
+      } else if (TypeLiteralExpr * type = dyn_cast_or_null<TypeLiteralExpr>(typeExpr)) {
+        return type->value();
+      } else {
+        diag.error(ast) << "Type name expected";
+        return &BadType::instance;
+      }
     }
 
     default:
@@ -179,31 +176,6 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
   }
 
   return new FunctionType(returnType, params);
-}
-
-bool TypeAnalyzer::analyzeTypeExpr(Type * type) {
-  TypeDefn * de = type->typeDefn();
-  if (de != NULL) {
-    analyzeType(type, Task_PrepMemberLookup);
-    if (de->isSingular()) {
-      analyzeLater(de);
-    }
-  } else {
-    switch (type->typeClass()) {
-      case Type::Function:
-        return true;
-
-      case Type::Constraint:
-      case Type::Tuple:
-      case Type::Pattern:
-      //case Type::Binding:
-      default:
-        DFAIL("Implement");
-        break;
-    }
-  }
-
-  return true;
 }
 
 } // namespace tart

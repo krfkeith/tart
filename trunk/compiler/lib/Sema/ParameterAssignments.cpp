@@ -42,7 +42,7 @@ bool ParameterAssignmentsBuilder::addPositionalArg() {
   ParameterDefn * param = ftype->params()[nextPositionalParam];
 
   // Keyword-only args cannot be defined positionally.
-  if (param->getFlag(ParameterDefn::KeywordOnly)) {
+  if (param->isKeywordOnly()) {
     valid = false;
     return false;
   }
@@ -90,7 +90,7 @@ bool ParameterAssignmentsBuilder::check() {
   // Insure that any unspecified arguments have default values.
   for (size_t i = 0; i < paramCount; ++i) {
     ParameterDefn * param = ftype->params()[i];
-    if (!inUse[i] && param->defaultValue() == NULL && !param->isVariadic()) {
+    if (!inUse[i] && param->initValue() == NULL && !param->isVariadic()) {
       valid = false;
       return false;
     }

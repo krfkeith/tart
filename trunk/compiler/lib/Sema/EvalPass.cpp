@@ -5,6 +5,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Constant.h"
@@ -209,7 +210,7 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
     return NULL;
   }
 
-  if (!AnalyzerBase::analyzeDefn(func, Task_PrepCodeGeneration)) {
+  if (!AnalyzerBase::analyzeDefn(func, Task_PrepEvaluation)) {
     return NULL;
   }
 
@@ -282,6 +283,10 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
 
 Expr * EvalPass::evalNew(NewExpr * in) {
   CompositeType * type = cast<CompositeType>(in->type());
+  if (!AnalyzerBase::analyzeDefn(type->typeDefn(), Task_PrepEvaluation)) {
+    return NULL;
+  }
+
   return new ConstantObjectRef(in->location(), type);
 }
 
@@ -356,11 +361,11 @@ void EvalPass::store(Expr * value, Expr * dest) {
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   CompositeType * arrayType = cast<CompositeType>(in->type());
-  if (!AnalyzerBase::analyzeType(arrayType, Task_PrepCallOrUse)) {
+  if (!AnalyzerBase::analyzeType(arrayType, Task_PrepEvaluation)) {
     return NULL;
   }
 
-  Type * elementType = arrayType->typeParam(0);
+  Type * elementType = arrayType->typeParam(0).type();
   ConstantNativeArray * arrayData =
       new ConstantNativeArray(
           in->location(),

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
 #include "tart/CFG/Module.h"
@@ -17,22 +17,22 @@ protected:
   FakeSourceFile testSource;
   Module testModule;
   DefnAnalyzer declAnalyzer;
-  
+
 public:
   DefnAnalyzerTest()
     : testSource("")
     , testModule(&testSource, "test", &Builtins::module)
-    , declAnalyzer(&testModule, &testModule)
+    , declAnalyzer(&testModule, &testModule, &testModule)
   {}
 
   virtual void SetUp() {}
   virtual void TearDown() {}
-  
+
   ASTTypeDecl * createTestClassDecl(const char * name) {
     return new ASTTypeDecl(ASTNode::Class, SourceLocation(), name, ASTNodeList(),
         DeclModifiers());
   }
-  
+
   //bool hasMember(Defn * de, const char * name) {
   //  DefnList defs;
   //  return de->lookupMember(name, defs, false);
@@ -43,7 +43,7 @@ public:
 TEST_F(DefnAnalyzerTest, TestAddMember) {
   ASTTypeDecl * cl1 = createTestClassDecl("cl1");
   TypeDefn * cl1Defn = declAnalyzer.createCompositeType(Defn::Class, cl1);
-  
+
   ASSERT_EQ(Defn::Class, cl1Defn->defnType());
   ASSERT_EQ("cl1", cl1Defn->name());
   ASSERT_EQ(&testModule, cl1Defn->module());
@@ -51,7 +51,7 @@ TEST_F(DefnAnalyzerTest, TestAddMember) {
   ASSERT_EQ(&testModule, cl1Defn->getParentDefn());
   ASSERT_EQ("test.cl1", cl1Defn->qualifiedName());
   ASSERT_EQ(cl1Defn, testModule.lookupMember("cl1", false));
-  
+
   DefnList defs;
   bool success = testModule.lookupMember("cl1", defs, false);
   ASSERT_TRUE(success);
@@ -76,19 +76,19 @@ TEST_F(DefnAnalyzerTest, TestNameConflict) {
   EXPECT_EQ(1, diag.getErrorCount());
   diag.reset();
   diag.setMinSeverity(Diagnostics::Debug);
-  
+
   // TODO: Add test with overloaded function names
 }
 
 TEST_F(DefnAnalyzerTest, CreateMembers) {
   ASTTypeDecl * cldecl = createTestClassDecl("cl");
   ASTTypeDecl * innerdecl = createTestClassDecl("inner");
-  
+
   TypeDefn * cl = declAnalyzer.createCompositeType(Defn::Class, cldecl);
   DefnAnalyzer da(cl);
-  
+
   cldecl->addMember(innerdecl);
-  
+
   ASSERT_FALSE(cl->isPhaseComplete(CreateMembers));
   ASSERT_FALSE(cl->isPhaseInProgress(CreateMembers));
   ASSERT_FALSE(hasMember(cl, "inner"));

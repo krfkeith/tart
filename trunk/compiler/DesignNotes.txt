@@ -22,10 +22,17 @@ Implementation TODOS:
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
   * Finish up the TypeRef stuff.
-* Boxed values: Boxed[%T] { let value:T; }. Also: auto boxing, unboxing.
+* Boxed values:
+  * Auto boxing
+  * unboxing.
+  * Conversions
+* Reflection
+  * Iterate functions, properties, find by name
+  * PropertyHolder / PropertyDescriptor / CustomType
+  * Attributes
+  * Find all properties/functions having some attribute
 * Stack dumps / trace
 * Hook up TypeLess(Than).
-* A way to iterate over the functions in a module...?
 * Why is linking so slow? (because internalize doesn't work).
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
@@ -57,6 +64,7 @@ Implementation TODOS:
   * Variadic Tuple args
 * Disjoint types
   * Cache disjoint types so that they are unique.
+    * Need type uniquing
   * Make sure conversion works for all member types.
   * Nullable types
   * Canonical sorting order
@@ -101,10 +109,10 @@ Implementation TODOS:
   * fork/threading primitives
   * with (what interface for using?)
 * String class
-  * text functions - substr, toLower, etc. (Character classes)
+  * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
   * character iterator functions.
 * Tartdoc
-  * Should it be written in Tart? Or C++?
+  * Requires command-line parsing lib.
 
 Doc errors:
 
@@ -531,3 +539,4 @@ public class TypeDescriptor {
 }
 
 let p = String.fn (int) -> int
+

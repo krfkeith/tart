@@ -128,7 +128,7 @@ private:
 /// bindings.
 class BindingEnv {
 public:
-  BindingEnv(const TemplateSignature * ts);
+  BindingEnv() : substitutions_(NULL) {}
 
   /** Return true if there are no variable bindings. */
   bool empty() const { return substitutions_ == NULL; }
@@ -137,6 +137,8 @@ public:
   void reset();
 
   /** Perform unification from a pattern type to a value type. */
+  bool unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
+      Variance variance);
   bool unify(SourceContext * source, Type * pattern, Type * value, Variance variance);
 
   /** Get the value for the specified pattern variable. */
@@ -155,6 +157,7 @@ public:
       the input expression contains no type variables.
    */
   Type * subst(Type * in, bool finalize = false) const;
+  TypeRef subst(const TypeRef & in, bool finalize = false) const;
 
   Type * relabel(Type * in);
   TypeRef relabel(const TypeRef & in);

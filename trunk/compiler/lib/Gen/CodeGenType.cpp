@@ -71,19 +71,18 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 
   // Don't need to define this twice.
   if (rtype->isExternal() ||
-      (rtype->typeDescriptor() != NULL && rtype->typeDescriptor()->hasInitializer())) {
+      (rtype->getTypeInfoBlock() != NULL && rtype->getTypeInfoBlock()->hasInitializer())) {
     return type->irType();
   }
 
   DASSERT_OBJ(type->isSingular(), type);
-  DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveBaseTypes), type);
-  DASSERT_OBJ(tdef->isPassFinished(Pass_AnalyzeFields), type);
-  DASSERT_OBJ(tdef->isPassFinished(Pass_ResolveOverloads), type);
+  DASSERT_OBJ(type->passes().isFinished(CompositeType::BaseTypesPass), type);
+  DASSERT_OBJ(type->passes().isFinished(CompositeType::FieldPass), type);
+  DASSERT_OBJ(type->passes().isFinished(CompositeType::OverloadingPass), type);
   DASSERT_OBJ(type->irType() != NULL, type);
 
   irModule_->addTypeName(tdef->linkageName(), type->irType());
   createTypeInfoBlock(rtype);
-  //createTypeDescriptor(rtype);
   createTypeAllocator(rtype);
   return type->irType();
 }

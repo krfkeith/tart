@@ -507,7 +507,7 @@ TEST_F(ParserTest, Decls) {
 
   ast = parseDeclaration("def [x:int]:int;");
   ASSERT_EQ(ASTNode::Idx, ast->nodeType());
-  EXPECT_AST_EQ("def .index(x:int):int", ast);
+  EXPECT_AST_EQ("def $index(x:int):int", ast);
 
   ast = parseDeclaration("def X();");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
