@@ -4,7 +4,7 @@
 
 #include "tart/AST/ASTNode.h"
 #include "tart/CFG/Defn.h"
-#include <llvm/ADT/StringExtras.h>
+#include "llvm/ADT/StringExtras.h"
 
 namespace tart {
 

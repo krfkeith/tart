@@ -35,4 +35,14 @@ public class Object {
   //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
   protected static def __pvalloc[%T, %S](size:T) -> S;
+
+  /** Return the reflected type of this object. */
+  //def type:tart.reflect.Type { get { return self.__tib.type; } }
+  
+  /** Default constructor. */
+  def construct() {}
+
+  /** Implicitly convert non-object values to Boxed types. */
+  static def coerce[%T] (value:T) -> Object { return Boxed[T](value); }
+  static def coerce(value:Object) -> Object { return value; }
 }

@@ -13,11 +13,15 @@
 #include "tart/CFG/Defn.h"
 #endif
 
+#ifndef TART_COMMON_AGENDA_H
+#include "tart/Common/Agenda.h"
+#endif
+
 #ifndef TART_COMMON_SOURCEFILE_H
 #include "tart/Common/SourceFile.h"
 #endif
 
-#include <llvm/ADT/SetVector.h>
+#include "llvm/ADT/SetVector.h"
 
 namespace llvm {
 class Module;
@@ -44,8 +48,7 @@ private:
   DefnList primaryDefs_;
   DefnSet exportDefs_;
   DefnSet importDefs_;
-  DefnList defsToAnalyze_;
-  size_t defsAnalyzed_;
+  Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
   bool debug_;
 

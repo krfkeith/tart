@@ -4,7 +4,6 @@
 
 #include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/CFG/FunctionType.h"
-#include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Template.h"
@@ -21,75 +20,109 @@
 
 namespace tart {
 
-static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
-  Pass_ResolveAttributes,
-  Pass_ResolveParameterTypes,
-  Pass_ResolveModifiers,
-  Pass_ResolveReturnType
+static const FunctionDefn::PassSet PASS_SET_RESOLVETYPE = FunctionDefn::PassSet::of(
+  FunctionDefn::AttributePass,
+  FunctionDefn::ParameterTypePass,
+  FunctionDefn::ModifierPass,
+  FunctionDefn::ReturnTypePass
 );
 
-static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
-  Pass_ResolveAttributes,
-  Pass_ResolveParameterTypes,
-  Pass_ResolveModifiers,
-  Pass_CreateCFG,
-  Pass_ResolveReturnType
+static const FunctionDefn::PassSet PASS_SET_EVAL = FunctionDefn::PassSet::of(
+  FunctionDefn::AttributePass,
+  FunctionDefn::ParameterTypePass,
+  FunctionDefn::ModifierPass,
+  FunctionDefn::ControlFlowPass,
+  FunctionDefn::ReturnTypePass
+);
+
+static const FunctionDefn::PassSet PASS_SET_PREP_CONVERSION = FunctionDefn::PassSet::of(
+  FunctionDefn::AttributePass,
+  FunctionDefn::ParameterTypePass,
+  FunctionDefn::ModifierPass,
+  FunctionDefn::ReturnTypePass,
+  FunctionDefn::PrepConversionPass
+);
+
+static const FunctionDefn::PassSet PASS_SET_CODEGEN = FunctionDefn::PassSet::of(
+  FunctionDefn::AttributePass,
+  FunctionDefn::ParameterTypePass,
+  FunctionDefn::ModifierPass,
+  FunctionDefn::ControlFlowPass,
+  FunctionDefn::ReturnTypePass,
+  FunctionDefn::CompletionPass
 );
 
 FunctionAnalyzer::FunctionAnalyzer(FunctionDefn * func)
-  : DefnAnalyzer(func->module(), func->definingScope())
+  : DefnAnalyzer(func->module(), func->definingScope(), func)
   , target(func)
 {
   DASSERT(func != NULL);
 }
 
 bool FunctionAnalyzer::analyze(AnalysisTask task) {
-  // Work out what passes need to be run.
-
-  DefnPasses passesToRun;
   switch (task) {
-    case Task_PrepTypeComparison:
     case Task_PrepMemberLookup:
-      break;
+    case Task_PrepTypeComparison:
+    case Task_PrepTypeGeneration:
+    case Task_PrepConstruction:
+      return runPasses(PASS_SET_RESOLVETYPE);
 
-    case Task_PrepCallOrUse:
-    case Task_PrepOverloadSelection:
-    case Task_InferType:
-      addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
-      break;
+    case Task_PrepConversion:
+      return runPasses(PASS_SET_PREP_CONVERSION);
+
+    case Task_PrepEvaluation:
+      return runPasses(PASS_SET_EVAL);
 
     case Task_PrepCodeGeneration:
-      addPasses(target, passesToRun, PASS_SET_CODEGEN);
-      break;
+      return runPasses(PASS_SET_CODEGEN);
+
+    default:
+      return true;
   }
+}
 
-  // Run passes
-
+bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
+  passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
     return true;
   }
 
-  DefnAnalyzer::analyze(target, passesToRun);
-
-  if (passesToRun.contains(Pass_ResolveParameterTypes) && !resolveParameterTypes()) {
+  if (passesToRun.contains(FunctionDefn::AttributePass) && !resolveAttributes(target)) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_ResolveModifiers) && !resolveModifiers()) {
+  if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {
+    return false;
+  }
+
+  if (passesToRun.contains(FunctionDefn::ModifierPass) && !resolveModifiers()) {
     return false;
   }
 
 #if INFER_RETURN_TYPE
-  if (passesToRun.contains(Pass_ResolveReturnType)) {
-    passesToRun.add(Pass_CreateCFG);
+  if (passesToRun.contains(FunctionDefn::ReturnTypePass)) {
+    passesToRun.add(FunctionDefn::ControlFlowPass);
   }
 #endif
 
-  if (passesToRun.contains(Pass_CreateCFG) && !createCFG()) {
+  if (passesToRun.contains(FunctionDefn::ControlFlowPass) && !createCFG()) {
     return false;
   }
 
-  if (passesToRun.contains(Pass_ResolveReturnType) && !resolveReturnType()) {
+  if (passesToRun.contains(FunctionDefn::ReturnTypePass) && !resolveReturnType()) {
+    return false;
+  }
+
+  if (passesToRun.contains(FunctionDefn::PrepConversionPass) &&
+      !analyzeRecursive(Task_PrepConversion, FunctionDefn::PrepConversionPass)) {
+    return false;
+  }
+
+  // In this case, it's OK if it's already running. All we care about is that it eventually
+  // completes, not that it completes right now.
+  if (passesToRun.contains(FunctionDefn::CompletionPass) &&
+      !target->passes().isRunning(FunctionDefn::CompletionPass) &&
+      !analyzeRecursive(Task_PrepTypeGeneration, FunctionDefn::CompletionPass)) {
     return false;
   }
 
@@ -98,7 +131,7 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
 
 bool FunctionAnalyzer::resolveParameterTypes() {
   bool success = true;
-  if (target->beginPass(Pass_ResolveParameterTypes)) {
+  if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
     FunctionType * ftype = target->functionType();
 
     // Set the module reference for the parameter scope.
@@ -140,7 +173,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param, module).analyze(Task_PrepCallOrUse);
+        VarAnalyzer(param, module, target).analyze(Task_PrepTypeComparison);
 
         if (!param->type().isDefined()) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
@@ -174,7 +207,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     }
 
     setActiveScope(savedScope);
-    target->finishPass(Pass_ResolveParameterTypes);
+    target->passes().finish(FunctionDefn::ParameterTypePass);
   }
 
   return success;
@@ -188,7 +221,7 @@ bool FunctionAnalyzer::resolveModifiers() {
     return true;
   }
 
-  if (target->beginPass(Pass_ResolveModifiers)) {
+  if (target->passes().begin(FunctionDefn::ModifierPass)) {
     bool isIntrinsic = target->isIntrinsic();
     bool isAbstract = target->isAbstract();
     bool isUndefined = target->isUndefined();
@@ -297,7 +330,7 @@ bool FunctionAnalyzer::resolveModifiers() {
       }
     }
 
-    target->finishPass(Pass_ResolveModifiers);
+    target->passes().finish(FunctionDefn::ModifierPass);
   }
 
   return success;
@@ -311,7 +344,7 @@ bool FunctionAnalyzer::createCFG() {
     return true;
   }
 
-  if (target->beginPass(Pass_CreateCFG)) {
+  if (target->passes().begin(FunctionDefn::ControlFlowPass)) {
     if (target->hasBody() && target->blocks().empty()) {
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
@@ -322,7 +355,7 @@ bool FunctionAnalyzer::createCFG() {
       module->addSymbol(Builtins::typeUnsupportedOperationException->typeDefn());
     }
 
-    target->finishPass(Pass_CreateCFG);
+    target->passes().finish(FunctionDefn::ControlFlowPass);
   }
 
   return success;
@@ -334,13 +367,13 @@ bool FunctionAnalyzer::resolveReturnType() {
   FunctionType * funcType = target->functionType();
   TypeRef returnType = funcType->returnType();
 
-  if (!returnType.isDefined() && target->isPassRunning(Pass_ResolveReturnType)) {
+  if (!returnType.isDefined() && target->passes().isRunning(FunctionDefn::ReturnTypePass)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
   }
 
   if (target->isTemplate()) {
-    if (target->beginPass(Pass_ResolveReturnType)) {
+    if (target->passes().begin(FunctionDefn::ReturnTypePass)) {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).
       // Templates that don't have an explicit return type are assumed void.
@@ -348,13 +381,13 @@ bool FunctionAnalyzer::resolveReturnType() {
         funcType->setReturnType(&VoidType::instance);
       }
 
-      target->finishPass(Pass_ResolveReturnType);
+      target->passes().finish(FunctionDefn::ReturnTypePass);
     }
 
     return true;
   }
 
-  if (target->beginPass(Pass_ResolveReturnType)) {
+  if (target->passes().begin(FunctionDefn::ReturnTypePass)) {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
     if (!returnType.isDefined()) {
@@ -443,6 +476,8 @@ bool FunctionAnalyzer::resolveReturnType() {
 
           Type * type = returnExpr->type();
           if (!returnType.isEqual(type)) {
+            AnalyzerBase(module, activeScope, subject())
+                .analyzeType(returnType, Task_PrepTypeComparison);
             returnExpr = returnType.implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
               bk->exitReturn(loc, returnExpr);
@@ -466,10 +501,19 @@ bool FunctionAnalyzer::resolveReturnType() {
       }
     }
 
-    target->finishPass(Pass_ResolveReturnType);
+    target->passes().finish(FunctionDefn::ReturnTypePass);
   }
 
   return success;
+}
+
+bool FunctionAnalyzer::analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass) {
+  if (target->passes().begin(pass)) {
+    analyzeType(target->functionType(), task);
+    target->passes().finish(pass);
+  }
+
+  return true;
 }
 
 void FunctionAnalyzer::warnConflict(

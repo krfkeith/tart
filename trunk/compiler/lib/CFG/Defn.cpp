@@ -306,7 +306,11 @@ void TypeDefn::trace() const {
 
 void TypeDefn::format(FormatStream & out) const {
   if (out.getShowQualifiedName()) {
-    out << qname_;
+    if (out.getShowType() && enclosingClassDefn()) {
+      out << enclosingClassDefn() << "." << name_;
+    } else {
+      out << qname_;
+    }
   } else {
     out << name_;
   }
@@ -343,7 +347,11 @@ void VariableDefn::format(FormatStream & out) const {
   }
 
   if (out.getShowQualifiedName()) {
-    out << qname_;
+    if (out.getShowType() && enclosingClassDefn()) {
+      out << enclosingClassDefn() << "." << name_;
+    } else {
+      out << qname_;
+    }
   } else {
     out << name_;
   }
@@ -368,7 +376,11 @@ void PropertyDefn::trace() const {
 
 void PropertyDefn::format(FormatStream & out) const {
   if (out.getShowQualifiedName()) {
-    out << qname_;
+    if (out.getShowType() && enclosingClassDefn()) {
+      out << enclosingClassDefn() << "." << name_;
+    } else {
+      out << qname_;
+    }
   } else {
     out << name_;
   }
@@ -381,7 +393,29 @@ void IndexerDefn::trace() const {
 }
 
 void IndexerDefn::format(FormatStream & out) const {
-  out << "[]";
+  if (out.isVerbose()) {
+    out << "def ";
+  }
+
+  if (out.getShowQualifiedName() && !qname_.empty()) {
+    if (out.getShowType() && parentDefn()) {
+      out << parentDefn() << "[]";
+    } else {
+      out << qname_;
+    }
+  } else {
+    out << "[]";
+  }
+
+  FunctionType * ftype = dyn_cast_or_null<FunctionType>(type().type());
+  if (out.getShowType() && ftype != NULL) {
+    out << "(";
+    formatParameterList(out, ftype->params());
+    out << ")";
+    if (ftype->returnType().isNonVoidType()) {
+      out << ":" << ftype->returnType();
+    }
+  }
 }
 
 /// -------------------------------------------------------------------
@@ -400,11 +434,22 @@ void ExplicitImportDefn::trace() const {
 void formatParameterList(FormatStream & out, const ParameterList & params) {
   for (ParameterList::const_iterator it = params.begin(); it != params.end();
       ++it) {
+    const ParameterDefn * param = *it;
     if (it != params.begin()) {
       out << ", ";
     }
 
-    out << *it;
+    if (param->name() != NULL) {
+      out << param->name();
+    }
+
+    if (out.getShowType() && param->type().isDefined()) {
+      out << ":" << param->type();
+    }
+
+    if (out.isVerbose() && param->initValue()) {
+      out << "=" << param->initValue();
+    }
   }
 }
 
@@ -413,41 +458,8 @@ const char * getPassName(DefnPass pass) {
     case Pass_CreateMembers:
       return "CreateMembers";
 
-    case Pass_ResolveBaseTypes:
-      return "ResolveBaseTypes";
-
     case Pass_ResolveAttributes:
       return "ResolveAttributes";
-
-    case Pass_AnalyzeConstructors:
-      return "AnalyzeConstructors";
-
-    case Pass_AnalyzeFields:
-      return "AnalyzeFields";
-
-    case Pass_AnalyzeMemberTypes:
-      return "AnalyzeMemberTypes";
-
-    case Pass_AnalyzeMethods:
-      return "AnalyzeMethods";
-
-    case Pass_ResolveOverloads:
-      return "ResolveOverloads";
-
-    case Pass_ResolveReturnType:
-      return "ResolveReturnType";
-
-    case Pass_ResolveParameterTypes:
-      return "ResolveParameterTypes";
-
-    case Pass_ResolveVarType:
-      return "ResolveVarType";
-
-    case Pass_ResolveElementType:
-      return "ResolveElementType";
-
-    case Pass_CreateCFG:
-      return "CreateCFG";
 
     case Pass_ResolveImport:
       return "ResolveImport";

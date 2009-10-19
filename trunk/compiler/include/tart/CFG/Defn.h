@@ -21,12 +21,12 @@
 #include "tart/AST/ASTDecl.h"
 #endif
 
-#ifndef TART_COMMON_FORMATTABLE_H
-#include "tart/Common/Formattable.h"
+#ifndef TART_COMMON_PASSMGR_H
+#include "tart/Common/PassMgr.h"
 #endif
 
-#ifndef TART_COMMON_SMALLENUMSET_H
-#include "tart/Common/SmallEnumSet.h"
+#ifndef TART_COMMON_FORMATTABLE_H
+#include "tart/Common/Formattable.h"
 #endif
 
 namespace llvm {
@@ -49,47 +49,14 @@ enum DefnPass {
   /** Create scope members. */
   Pass_CreateMembers,
 
-  /** For classes: Resolve base class references. */
-  Pass_ResolveBaseTypes,
-
   /** For all defn types - resolve attribute references. */
   Pass_ResolveAttributes,
-
-  /** Determine what constructors the class has. */
-  Pass_AnalyzeConstructors,
-
-  /** Analyze all fields. */
-  Pass_AnalyzeFields,
-
-  /** Analyze types that are members of types. */
-  Pass_AnalyzeMemberTypes,
-
-  /** Analyze all methods. */
-  Pass_AnalyzeMethods,
-
-  /** Compile method tables and resolve all overloads. */
-  Pass_ResolveOverloads,
 
   /** Handle initialization of static members. */
   Pass_ResolveStaticInitializers,
 
-  /** Determine function return type. */
-  Pass_ResolveReturnType,
-
-  /** Determine function parameter types. */
-  Pass_ResolveParameterTypes,
-
-  /** Determine function modifiers (abstract, etc.) */
-  Pass_ResolveModifiers,
-
   /** Determine variable type. */
   Pass_ResolveVarType,
-
-  /** For native pointers and arrays. */
-  Pass_ResolveElementType,
-
-  /** Build CFG pass */
-  Pass_CreateCFG,
 
   /** Resolve an import statement. */
   Pass_ResolveImport,
@@ -393,9 +360,6 @@ public:
 /// -------------------------------------------------------------------
 /// A definition that has a type - variable, function, etc.
 class ValueDefn : public Defn {
-protected:
-  Scope * definingScope_;
-
 public:
   /** Constructor that takes a name */
   ValueDefn(DefnType dtype, Module * m, const char * name)
@@ -422,12 +386,26 @@ public:
   static inline bool classof(const Defn * de) {
     return TYPED_DEFNS.contains(de->defnType());
   }
+
+protected:
+  Scope * definingScope_;
 };
 
 /// -------------------------------------------------------------------
 /// A definition of a variable
 class VariableDefn : public ValueDefn {
 public:
+  enum AnalysisPass {
+    AttributePass,
+    VariableTypePass,
+    InitializerPass,
+    CompletionPass,
+    PassCount
+  };
+
+  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
+  typedef PassMgr::PassSet PassSet;
+
   /** Constructor that takes a name */
   VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL)
     : ValueDefn(dtype, m, name)
@@ -442,12 +420,11 @@ public:
   /** Constructor that takes an AST declaration. */
   VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
     : ValueDefn(dtype, m, de)
-    , type_(NULL)
     , initValue_(NULL)
     , irValue_(NULL)
     , memberIndex_(0)
     , memberIndexRecursive_(0)
-, isConstant_(dtype == Defn::Let)
+    , isConstant_(dtype == Defn::Let)
   {}
 
   /** Initial value for this variable. */
@@ -476,6 +453,10 @@ public:
   bool isConstant() const { return isConstant_; }
   void setIsConstant(bool isConstant) { isConstant_ = isConstant; }
 
+  /** The current passes state. */
+  const PassMgr & passes() const { return passes_; }
+  PassMgr & passes() { return passes_; }
+
   // Overrides
 
   TypeRef type() const { return type_; }
@@ -493,6 +474,7 @@ private:
   int memberIndex_;
   int memberIndexRecursive_;
   bool isConstant_;
+  PassMgr passes_;
 };
 
 /// -------------------------------------------------------------------

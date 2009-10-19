@@ -12,8 +12,9 @@ InternedStrings::InternedStrings() {
   idValue = intern("value");
   idConstruct = intern("construct");
   idCreate = intern("create");
-  idIndex = intern(".index");
-  idCall = intern(".call");
+  idCoerce = intern("coerce");
+  idIndex = intern("$index");
+  idCall = intern("$call");
 }
 
 InternedStrings::~InternedStrings() {

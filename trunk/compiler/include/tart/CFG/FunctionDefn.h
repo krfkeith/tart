@@ -13,7 +13,7 @@ namespace tart {
 
 /// -------------------------------------------------------------------
 /// A definition of a function parameter
-class ParameterDefn : public ValueDefn {
+class ParameterDefn : public VariableDefn {
 public:
   enum ParameterFlag {
     Variadic = (1<<0),    // Allows multiple values via "..."
@@ -24,77 +24,47 @@ public:
 
   /** Constructor that takes a name */
   ParameterDefn(Module * m, const char * name)
-    : ValueDefn(Parameter, m, name)
-    , type_(NULL)
-    , internalType_(NULL)
-    , defaultValue_(NULL)
-    , irValue_(NULL)
+    : VariableDefn(Parameter, m, name)
     , variance_(Contravariant)
     , flags_(0)
   {}
 
   /** Constructor that takes a name and a defn type */
   ParameterDefn(DefnType dt, Module * m, const char * name)
-    : ValueDefn(dt, m, name)
-    , type_(NULL)
-    , internalType_(NULL)
-    , defaultValue_(NULL)
-    , irValue_(NULL)
+    : VariableDefn(dt, m, name)
     , variance_(Contravariant)
     , flags_(0)
   {}
 
   /** Constructor that takes an AST declaration. */
   ParameterDefn(Module * m, ASTDecl * de)
-    : ValueDefn(Parameter, m, de)
-    , type_(NULL)
-    , internalType_(NULL)
-    , defaultValue_(NULL)
-    , irValue_(NULL)
+    : VariableDefn(Parameter, m, de)
     , variance_(Contravariant)
     , flags_(0)
   {}
 
   /** Constructor that takes an AST declaration and a defn type. */
   ParameterDefn(DefnType dt, Module * m, ASTDecl * de)
-    : ValueDefn(dt, m, de)
-    , type_(NULL)
-    , internalType_(NULL)
-    , defaultValue_(NULL)
-    , irValue_(NULL)
+    : VariableDefn(dt, m, de)
     , variance_(Contravariant)
     , flags_(0)
   {}
 
   /** Constructor that takes a name and a type (for static decls.) */
   ParameterDefn(Module * m, const char * name, Type * ty, int paramFlags, Expr * defaultVal = NULL)
-    : ValueDefn(Parameter, m, name)
-    , type_(ty)
+    : VariableDefn(Parameter, m, name, defaultVal)
     , internalType_(ty)
-    , defaultValue_(defaultVal)
-    , irValue_(NULL)
     , variance_(Contravariant)
     , flags_(paramFlags)
   {
+    setType(ty);
     assert(ty != NULL);
   }
-
-  /** Default value for this parameter. */
-  const Expr * defaultValue() const { return defaultValue_; }
-  Expr * defaultValue() { return defaultValue_; }
-  void setDefaultValue(Expr * e) { defaultValue_ = e; }
-
-  /** Set the type of this parameter. */
-  void setType(const TypeRef & ty) { type_ = ty; }
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
       which may not be the same as it appears externally. */
   TypeRef internalType() const { return internalType_; }
   void setInternalType(const TypeRef & type) { internalType_ = type; }
-
-  /** IR representation of this function. */
-  llvm::Value * irValue() const { return irValue_; }
-  void setIRValue(llvm::Value * ir) { irValue_ = ir; }
 
   /** Whether this parameter is covariant, contravariant, or invariant. */
   Variance variance() const { return variance_; }
@@ -112,11 +82,11 @@ public:
   }
 
   bool isVariadic() const { return getFlag(Variadic); }
+  bool isKeywordOnly() const { return getFlag(KeywordOnly); }
   bool isLValue() const { return getFlag(LValueParam); }
 
   // Overrides
 
-  TypeRef type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const ParameterDefn *) { return true; }
@@ -125,10 +95,7 @@ public:
   }
 
 private:
-  TypeRef type_;
   TypeRef internalType_;
-  Expr * defaultValue_;
-  llvm::Value * irValue_;
   Variance variance_;
   uint32_t flags_;
 };
@@ -138,6 +105,20 @@ private:
 class FunctionDefn : public ValueDefn {
 public:
   typedef llvm::SmallPtrSet<FunctionDefn *, 1> FunctionSet;
+
+  enum AnalysisPass {
+    AttributePass,
+    ParameterTypePass,
+    ModifierPass,
+    ControlFlowPass,
+    ReturnTypePass,
+    PrepConversionPass,
+    CompletionPass,
+    PassCount,
+  };
+
+  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
+  typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes an AST */
   FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast)
@@ -218,6 +199,10 @@ public:
   /** True if this function is an override of 'baseFunction' */
   bool isOverrideOf(const FunctionDefn * baseFunction);
 
+  /** The current passes state. */
+  const PassMgr & passes() const { return passes_; }
+  PassMgr & passes() { return passes_; }
+
   /** Print out the basic blocks. */
   void dumpBlocks();
 
@@ -241,6 +226,7 @@ private:
   int dispatchIndex_;
   Intrinsic * intrinsic_;
   FunctionSet overriddenMethods_;
+  PassMgr passes_;
 };
 
 } // namespace tart

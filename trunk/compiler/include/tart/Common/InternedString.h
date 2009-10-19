@@ -27,9 +27,10 @@ public:
 
   // Special IDs, all of which begin with a dot.
   const char * idConstruct; // Name of constructors
-  const char * idCreate;  // Name of creators
-  const char * idIndex;   // Name of 'def []'.
-  const char * idCall;    // Name of 'def ()'.
+  const char * idCreate;    // Name of creators
+  const char * idCoerce;    // Name of coercers
+  const char * idIndex;     // Name of 'def []'.
+  const char * idCall;      // Name of 'def ()'.
 
 private:
   llvm::StringSet<> data_;

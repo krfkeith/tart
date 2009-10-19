@@ -94,7 +94,7 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
 
 Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
   TypeDefn * tdef = in->type()->typeDefn();
-  if (tdef != NULL && tdef->isPassFinished(Pass_AnalyzeConstructors)) {
+  if (tdef != NULL) {
     module->addSymbol(tdef);
   }
 
@@ -109,7 +109,7 @@ Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   CompositeType * arrayType = cast<CompositeType>(in->type());
-  DASSERT(arrayType->typeDefn()->isPassFinished(Pass_CreateMembers));
+  DASSERT(arrayType->passes().isFinished(CompositeType::ScopeCreationPass));
   Defn * allocFunc = arrayType->lookupSingleMember("alloc");
   DASSERT(allocFunc != NULL);
   addSymbol(arrayType->typeDefn());

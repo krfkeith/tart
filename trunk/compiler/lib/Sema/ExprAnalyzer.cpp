@@ -26,11 +26,17 @@ namespace tart {
 /// ExprAnalyzer
 
 ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction)
-  : AnalyzerBase(mod, parent)
-  , tsig(NULL)
+  : AnalyzerBase(mod, parent, currentFunction)
+  , tsig_(NULL)
   , currentFunction_(currentFunction)
 {
-  setSourceDefn(currentFunction);
+}
+
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject)
+  : AnalyzerBase(mod, parent, subject)
+  , tsig_(NULL)
+  , currentFunction_(NULL)
+{
 }
 
 Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
@@ -198,15 +204,15 @@ ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expe
 }
 
 Expr * ExprAnalyzer::reducePattern(const ASTNode * ast, TemplateSignature * ts) {
-  DASSERT(tsig == NULL)
-;  tsig = ts;
+  DASSERT(tsig_ == NULL);
+  tsig_ = ts;
 
   Expr * expr = reduceExprImpl(ast, NULL);
   if (isErrorResult(expr)) {
     return NULL;
   }
 
-  tsig = NULL;
+  tsig_ = NULL;
   return expr;
 }
 
@@ -272,7 +278,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 }
 
 Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
-  if (tsig == NULL) {
+  if (tsig_ == NULL) {
     diag.error(ast) << "Pattern variable used outside of pattern.";
     return &Expr::ErrorVal;
   }
@@ -283,7 +289,7 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
     DFAIL("Implement");
   }
 
-  PatternVar * pvar = tsig->patternVar(ast->name());
+  PatternVar * pvar = tsig_->patternVar(ast->name());
   if (pvar != NULL) {
     if (type != NULL) {
       if (pvar->valueType() == NULL) {
@@ -297,7 +303,7 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
     return new TypeLiteralExpr(ast->location(), pvar);
   } else {
     return new TypeLiteralExpr(ast->location(),
-        tsig->addPatternVar(ast->location(), ast->name(), type));
+        tsig_->addPatternVar(ast->location(), ast->name(), type));
   }
 }
 
@@ -743,12 +749,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Memory address type
   if (AddressType * maType = dyn_cast<AddressType>(arrayType)) {
-    Type * elemType = maType->typeParam(0);
-    if (!AnalyzerBase::analyzeType(elemType, Task_InferType)) {
+    TypeRef elemType = maType->typeParam(0);
+    if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
-    DASSERT_OBJ(elemType != NULL, maType);
+    DASSERT_OBJ(elemType.isDefined(), maType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array index dimensions";
@@ -758,12 +764,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
     // First dereference the pointer and then get the element.
     //arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), elemType, arrayExpr);
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType.type(), arrayExpr, args[0]);
   }
 
   // Do automatic pointer dereferencing
   /*if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
-    if (!AnalyzerBase::analyzeType(npt, Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(npt, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
@@ -773,19 +779,19 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Handle native arrays.
   if (NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
-    if (!AnalyzerBase::analyzeType(naType, Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(naType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
-    Type * elemType = naType->typeParam(0);
-    DASSERT_OBJ(elemType != NULL, naType);
+    TypeRef elemType = naType->typeParam(0);
+    DASSERT_OBJ(elemType.isDefined(), naType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array index dimensions";
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType.type(), arrayExpr, args[0]);
   }
 
   // See if the type has any indexers defined.
@@ -812,7 +818,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   PropertyDefn * indexer = cast<PropertyDefn>(indexers.front());
-  if (!analyzeDefn(indexer, Task_PrepCallOrUse)) {
+  if (!analyzeDefn(indexer, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -827,7 +833,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr,
     PropertyDefn * prop) {
 
-  if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
+  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -860,7 +866,6 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   module->addSymbol(getter);
-  analyzeLater(getter);
   return getterCall;
 }
 
@@ -868,7 +873,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
     Expr * basePtr, PropertyDefn * prop, Expr * value) {
 
   DASSERT(value != NULL);
-  if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
+  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -881,7 +886,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
   DASSERT_OBJ(prop->isSingular(), prop);
   DASSERT_OBJ(setter->isSingular(), prop);
 
-  if (!analyzeValueDefn(setter, Task_PrepOverloadSelection)) {
+  if (!analyzeValueDefn(setter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -904,7 +909,6 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
   setterCall->setType(prop->type());
   setterCall->appendArg(value);
   module->addSymbol(setter);
-  analyzeLater(setter);
   return setterCall;
 }
 
@@ -915,7 +919,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   Expr * basePtr = lval->base();
   //const ASTNodeList & args = call->args();
 
-  if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
+  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -928,7 +932,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  if (!analyzeValueDefn(getter, Task_PrepOverloadSelection)) {
+  if (!analyzeValueDefn(getter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -982,7 +986,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   for (size_t i = 0; i < argCount; ++i) {
     TypeRef paramType = getter->functionType()->param(i)->type();
     Expr * arg = call->arg(i);
-    arg = inferTypes(sourceDefn, arg, paramType.type());
+    arg = inferTypes(subject(), arg, paramType.type());
     Expr * castArg = paramType.implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
@@ -1001,7 +1005,6 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   getterCall->setType(prop->type());
   getterCall->args().append(castArgs.begin(), castArgs.end());
   module->addSymbol(getter);
-  analyzeLater(getter);
   return getterCall;
 #endif
 }
@@ -1013,7 +1016,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   PropertyDefn * prop = cast<PropertyDefn>(lval->value());
   Expr * basePtr = lval->base();
 
-  if (!analyzeValueDefn(prop, Task_PrepCallOrUse)) {
+  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1026,7 +1029,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   DASSERT_OBJ(prop->isSingular(), prop);
   DASSERT_OBJ(setter->isSingular(), prop);
 
-  if (!analyzeValueDefn(setter, Task_PrepOverloadSelection)) {
+  if (!analyzeValueDefn(setter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1057,7 +1060,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   if (!value->isSingular()) {
-    value = inferTypes(sourceDefn, value, prop->type().type());
+    value = inferTypes(subject(), value, prop->type().type());
     if (isErrorResult(value)) {
       return value;
     }
@@ -1069,13 +1072,12 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   }
 
   module->addSymbol(setter);
-  analyzeLater(setter);
   return setterCall;
 }
 
 Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
-  analyzeValueDefn(lvalue->value(), Task_PrepCallOrUse);
+  analyzeValueDefn(lvalue->value(), Task_PrepTypeComparison);
   DASSERT(lvalue->value()->type().isDefined());
   lvalue->setType(lvalue->value()->type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
@@ -1120,6 +1122,41 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   }
 
   return lvalue;
+}
+
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, const TypeRef & toType) {
+  return doImplicitCast(in, toType.type());
+}
+
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, Type * toType) {
+  DASSERT(in != NULL);
+  if (isErrorResult(toType)) {
+    return in;
+  }
+
+  in = LValueExpr::constValue(in);
+  if (!AnalyzerBase::analyzeType(toType, Task_PrepTypeComparison)) {
+    return in;
+  }
+
+  Expr * castExpr = NULL;
+  ConversionRank rank = toType->convert(Conversion(in, &castExpr));
+  DASSERT(rank == Incompatible || castExpr != NULL);
+
+  if (rank == Incompatible) {
+    // Try a coercive cast.
+    castExpr = tryCoerciveCast(in, toType);
+    if (castExpr != NULL) {
+      return inferTypes(subject_, castExpr, toType);
+    }
+  }
+
+  compatibilityWarning(in->location(), rank, in, toType);
+  if (isErrorResult(castExpr)) {
+    return in;
+  }
+
+  return castExpr;
 }
 
 }

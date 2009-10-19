@@ -5,7 +5,8 @@ import tart.reflect.Method;
 def main(args:String[]) -> int {
   testModuleReflection();
   testModuleList();
-  testModuleMethods();
+  //testModuleMethods();
+  //testFindMethod();
   return 0;
 }
 
@@ -31,6 +32,14 @@ def testModuleMethods() {
     //if m.name == "sample"
   } 
   //Debug.assertEq("ReflectionTest", m.name);
+}
+
+def testFindMethod() {
+  let m = Module.thisModule();
+  let f1 = m.findMethod("sample");
+  Debug.assertTrue(f1 isa Method);
+  let f2 = m.findMethod("ample");
+  Debug.assertFalse(f2 isa Method);
 }
 
 def sample() {

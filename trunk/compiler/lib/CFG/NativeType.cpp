@@ -34,6 +34,10 @@ void AddressType::initBuiltin() {
   prototype.elementType_ = tsig->params()[0];
 }
 
+AddressType * AddressType::get(const TypeRef & elemType) {
+  return get(elemType.type());
+}
+
 AddressType * AddressType::get(Type * elemType) {
   elemType = dealias(elemType);
   TypeMap::iterator it = uniqueTypes_.find(elemType);
@@ -75,7 +79,7 @@ const llvm::Type * AddressType::createIRType() const {
 ConversionRank AddressType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   if (isa<AddressType>(fromType)) {
-    Type * fromElementType = fromType->typeParam(0);
+    Type * fromElementType = fromType->typeParam(0).type();
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -149,6 +153,10 @@ TypeDefn NativePointerType::typedefn(&Builtins::module, "NativePointer", &instan
 //  return result;
 //}
 
+NativePointerType * NativePointerType::get(const TypeRef & elemType) {
+  return create(elemType.type());
+}
+
 NativePointerType * NativePointerType::create(Type * elemType) {
   // Create the template instance
   TemplateInstance * tinst = new TemplateInstance(&typedefn);
@@ -195,7 +203,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   // Memory addresses can be silently converted to native pointers, but not vice-versa.
   if (isa<AddressType>(fromType) || isa<NativePointerType>(fromType)) {
-    Type * fromElementType = fromType->typeParam(0);
+    Type * fromElementType = fromType->typeParam(0).type();
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -274,6 +282,10 @@ TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", &instance);
   return result;
 }*/
 
+NativeArrayType * NativeArrayType::get(const TypeRef & elemType, uint64_t sz) {
+  return create(elemType.type(), sz);
+}
+
 NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   // Create the template instance
   TemplateInstance * tinst = new TemplateInstance(&typedefn);
@@ -323,7 +335,7 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const NativeArrayType * naFrom =
       dyn_cast<NativeArrayType>(fromType)) {
-    Type * fromElementType = naFrom->typeParam(0);
+    Type * fromElementType = naFrom->typeParam(0).type();
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }

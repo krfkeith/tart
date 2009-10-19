@@ -10,6 +10,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Objects/Builtins.h"
@@ -21,8 +22,8 @@ namespace tart {
 class EnumContainsFunction : public FunctionDefn {
 public:
   EnumContainsFunction(Module * m, EnumType * type)
-      : FunctionDefn(m, "infixContains", createFunctionType(m, type))
-      , type_(type)
+    : FunctionDefn(m, ASTIdent::operatorContains.value(), createFunctionType(m, type))
+    , type_(type)
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Final);
@@ -64,8 +65,52 @@ private:
   EnumType * type_;
 };
 
+class EnumBinaryFunction : public FunctionDefn {
+public:
+  EnumBinaryFunction(Module * m, EnumType * type, ASTIdent * id,
+      llvm::Instruction::BinaryOps opCode)
+    : FunctionDefn(m, id->value(), createFunctionType(m, type))
+    , type_(type)
+    , opCode_(opCode)
+  {
+    addTrait(Defn::Synthetic);
+    addTrait(Defn::Final);
+    addTrait(Defn::Singular);
+    setStorageClass(Storage_Global);
+    createQualifiedName(m);
+  }
+
+  static FunctionType * createFunctionType(Module * m, EnumType * type) {
+    ParameterList params;
+    params.push_back(new ParameterDefn(m, "e1", type, 0));
+    params.push_back(new ParameterDefn(m, "e2", type, 0));
+    return new FunctionType(type, params);
+  }
+
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+    assert(args.size() == 2);
+    Expr * arg0 = args[0];
+    Expr * arg1 = args[1];
+    if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
+      ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
+      ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
+      DASSERT(c0->type() == c1->type());
+      return new ConstantInteger(
+            c0->location() | c1->location(),
+            type_,
+            cast<llvm::ConstantInt>(llvm::ConstantExpr::get(opCode_, c0->value(), c1->value())));
+    } else {
+      return new BinaryOpcodeExpr(opCode_, loc, type_, arg0, arg1);
+    }
+  }
+
+private:
+  EnumType * type_;
+  llvm::Instruction::BinaryOps opCode_;
+};
+
 EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
-  : DefnAnalyzer(de->module(), de->definingScope())
+  : DefnAnalyzer(de->module(), de->definingScope(), de)
   , target_(de)
   , prevValue_(NULL)
   , minValue_(NULL)
@@ -80,18 +125,13 @@ bool EnumAnalyzer::analyze() {
 }
 
 bool EnumAnalyzer::analyzeEnum() {
-  if (target_->isPassRunning(Pass_ResolveBaseTypes)) {
-    diag.fatal(target_) << "Circular inheritance not allowed";
-    return false;
-  }
-
   if (!target_->beginPass(Pass_CreateMembers)) {
     return true;
   }
 
   EnumType * enumType = cast<EnumType>(target_->typeValue());
   if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
-    // Don't evaluate the attributes if the parent class is Attribute, because that creates
+    // Don't evaluate the attributes if the enclosing class is Attribute, because that creates
     // a circular dependency. For now, assume that any Enum defined within Attribute that has
     // any attributes at all is a Flags enum.
     if (!target_->ast()->attributes().empty()) {
@@ -145,15 +185,19 @@ bool EnumAnalyzer::analyzeEnum() {
     VariableDefn * minDef = new VariableDefn(Defn::Let, module, "minVal", minValue_);
     minDef->setType(enumType);
     minDef->setLocation(target_->location());
-    minDef->finishPass(Pass_CreateMembers);
-    minDef->finishPass(Pass_ResolveVarType);
+    minDef->passes().finish(VariableDefn::AttributePass);
+    minDef->passes().finish(VariableDefn::VariableTypePass);
+    minDef->passes().finish(VariableDefn::InitializerPass);
+    minDef->passes().finish(VariableDefn::CompletionPass);
     enumType->memberScope()->addMember(minDef);
 
     VariableDefn * maxDef = new VariableDefn(Defn::Let, module, "maxVal", maxValue_);
     maxDef->setType(enumType);
     maxDef->setLocation(target_->location());
-    maxDef->finishPass(Pass_CreateMembers);
-    maxDef->finishPass(Pass_ResolveVarType);
+    maxDef->passes().finish(VariableDefn::AttributePass);
+    maxDef->passes().finish(VariableDefn::VariableTypePass);
+    maxDef->passes().finish(VariableDefn::InitializerPass);
+    maxDef->passes().finish(VariableDefn::CompletionPass);
     enumType->memberScope()->addMember(maxDef);
   }
 
@@ -175,8 +219,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ConstantInteger * value = NULL;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
-    ExprAnalyzer ea(module, activeScope);
-    ea.setSourceDefn(sourceDefn);
+    ExprAnalyzer ea(module, activeScope, subject());
     ConstantExpr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
     if (isErrorResult(enumValue)) {
       return false;
@@ -220,8 +263,10 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ec->addTrait(Defn::Singular);
   ec->setInitValue(value);
   ec->setType(enumType);
-  ec->finishPass(Pass_CreateMembers);
-  ec->finishPass(Pass_ResolveVarType);
+  ec->passes().finish(VariableDefn::AttributePass);
+  ec->passes().finish(VariableDefn::VariableTypePass);
+  ec->passes().finish(VariableDefn::InitializerPass);
+  ec->passes().finish(VariableDefn::CompletionPass);
   enumType->memberScope()->addMember(ec);
 
   prevValue_ = value;
@@ -248,14 +293,18 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
 
 void EnumAnalyzer::defineOperators() {
   EnumType * type = cast<EnumType>(target_->typeValue());
-  if (type->isFlags()) {
-    EnumContainsFunction * contains = new EnumContainsFunction(target_->module(), type);
-    target_->module()->addMember(contains);
+  Scope * parentScope = target_->definingScope();
+  DASSERT(parentScope != NULL);
 
-    //Builtins::addOperator(new EnumOpFunction(this, "infixContains", llvm::Instruction::And));
-    //Builtins::addOperator(new EnumOpFunction(this, "bitAnd", llvm::Instruction::And));
-    //Builtins::addOperator(new EnumOpFunction(this, "bitOr", llvm::Instruction::Or));
-    //Builtins::addOperator(new EnumOpFunction(this, "bitXor", llvm::Instruction::Xor));
+  if (type->isFlags()) {
+    Module * m = target_->module();
+    parentScope->addMember(new EnumContainsFunction(m, type));
+    parentScope->addMember(
+        new EnumBinaryFunction(m, type, &ASTIdent::operatorBitAnd, llvm::Instruction::And));
+    parentScope->addMember(
+        new EnumBinaryFunction(m, type, &ASTIdent::operatorBitOr, llvm::Instruction::Or));
+    parentScope->addMember(
+        new EnumBinaryFunction(m, type, &ASTIdent::operatorBitXor, llvm::Instruction::Xor));
   } else {
   }
 }

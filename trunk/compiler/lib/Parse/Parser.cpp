@@ -2513,11 +2513,6 @@ ASTNode * Parser::primaryExpression() {
         if (!parseArrayIndices(indexop))
           return NULL;
         result = indexop;
-      //} else if (match(Token_BeginTmplArgs)) {
-      //  // Template specialization
-      //  ASTNodeList templateArgs;
-      //  templateArgList(templateArgs);
-      //  result = new ASTSpecialize(result->location(), result, templateArgs);
       } else if (match(Token_Dot)) {
         // Member dereference
         const char * ident = matchIdent();

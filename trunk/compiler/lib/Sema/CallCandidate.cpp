@@ -25,7 +25,6 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , method_(m)
   , pruningDepth_(0)
   , paramAssignments_(params)
-  , bindingEnv_(m->templateSignature())
   , fnType_(m->functionType())
   , resultType_(m->functionType()->returnType())
   , isTemplate_(false)
@@ -82,7 +81,6 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * fnTy
   , method_(NULL)
   , pruningDepth_(0)
   , paramAssignments_(params)
-  , bindingEnv_(NULL)
   , fnType_(fnType)
   , resultType_(fnType->returnType())
   , isTemplate_(false)
@@ -214,63 +212,80 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   SourceContext callSite(callExpr, NULL, callExpr);
   SourceContext candidateSite(method_, &callSite, method_, Format_Type);
   size_t argCount = callExpr_->argCount();
+  bool hasUnsizedArgs = false;
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     Type * argType = argExpr->type();
     TypeRef paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
-    if (!argType->isEqual(&UnsizedIntType::instance)) {
-      if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
-        return false;
-      }
+    if (argType->isEqual(&UnsizedIntType::instance)) {
+      hasUnsizedArgs = true;
+    } else if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
+      return false;
     }
   }
 
   // Unify the return type (Pass 1)
   Type * expectedReturnType = callExpr_->expectedReturnType();
-  if (expectedReturnType != NULL && !resultType_.isUnsizedIntType()) {
-    if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
+  if (expectedReturnType != NULL) {
+    if (resultType_.isUnsizedIntType()) {
+      hasUnsizedArgs = true;
+    } else if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
       return false;
     }
   }
 
+  // See if any of the variables are bound to an unsized integer. If so, find a sized
+  // integer that will work.
   // Pass 2 for constant integer arguments - choose the size of the integers.
-  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-    Expr * argExpr = callExpr_->arg(argIndex);
-    Type * argType = argExpr->type();
-    TypeRef paramType = this->paramType(argIndex);
+  if (hasUnsizedArgs) {
+    for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+      Expr * argExpr = callExpr_->arg(argIndex);
+      Type * argType = argExpr->type();
+      TypeRef paramType = this->paramType(argIndex);
 
-    // Do the unsized types - use the information about previously bound types to determine
-    // whether or not to make the integer type signed or unsigned.
-    if (argType->isEqual(&UnsizedIntType::instance)) {
-      ConstantInteger * cint = cast<ConstantInteger>(argExpr);
-      const llvm::APInt & intVal = cint->value()->getValue();
-      bool isUnsigned = false;
+      // Do the unsized types - use the information about previously bound types to determine
+      // whether or not to make the integer type signed or unsigned.
+      if (argType->isEqual(&UnsizedIntType::instance)) {
+        ConstantInteger * cint = cast<ConstantInteger>(argExpr);
+        const llvm::APInt & intVal = cint->value()->getValue();
+        bool isUnsigned = false;
 
-      // See if the parameter type is an unsigned integer type.
-      if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(paramType.dealias())) {
-        if (isUnsignedIntegerType(ptype->typeId())) {
-          isUnsigned = true;
+        // See if the parameter type is a pattern variable.
+        if (PatternValue * pvar = dyn_cast<PatternValue>(paramType.dealias())) {
+          if (pvar->value() == NULL) {
+            // There are no constraints, so bind it to an int.
+            bindingEnv_.addSubstitution(pvar->var(), &IntType::instance);
+            continue;
+          }
+        }
+
+        // See if the parameter type is an unsigned integer type.
+        if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(paramType.dealias())) {
+          if (isUnsignedIntegerType(ptype->typeId())) {
+            isUnsigned = true;
+          }
+        }
+
+        // Calculate the sized argument type based on the value of the integer.
+        unsigned bitsRequired = isUnsigned ? intVal.getActiveBits() : intVal.getMinSignedBits();
+        argType = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
+
+        // Try to bind the integer type.
+        if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
+          return false;
         }
       }
+    }
 
-      // Calculate the sized argument type based on the value of the integer.
-      unsigned bitsRequired = isUnsigned ? intVal.getActiveBits() : intVal.getMinSignedBits();
-      argType = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
-
-      // Try to bind the integer type.
-      if (!bindingEnv_.unify(&candidateSite, paramType.type(), argType, Contravariant)) {
+    // Unify the return type (Pass 2, for unsized integer types.)
+    if (expectedReturnType != NULL && resultType_.isUnsizedIntType()) {
+      // TODO: Determine the size of the constant integer here.
+      if (!bindingEnv_.unify(
+          &candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
         return false;
       }
-    }
-  }
-
-  // Unify the return type (Pass 2, for unsized integer types.)
-  if (expectedReturnType != NULL && resultType_.isUnsizedIntType()) {
-    // TODO: Determine the size of the constant integer here.
-    if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
-      return false;
     }
   }
 

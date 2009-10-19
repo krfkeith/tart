@@ -17,7 +17,6 @@
 #include "tart/AST/Stmt.h"
 
 #include "tart/Sema/StmtAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FinalizeTypesPass.h"
@@ -75,7 +74,7 @@ public:
 /// StmtAnalyzer
 
 StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
-  : AnalyzerBase(func->module(), &func->parameterScope())
+  : ExprAnalyzer(func->module(), &func->parameterScope(), func)
   , function(func)
   , returnType_(NULL)
   , yieldType_(NULL)
@@ -89,7 +88,6 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   , macroReturnVal_(NULL)
   , macroReturnTarget_(NULL)
 {
-  setSourceDefn(func);
   insertPos_ = blocks.end();
   returnType_ = function->returnType();
 }
@@ -352,7 +350,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
     if (initExpr->nodeType() == ASTNode::Var) {
       const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(initExpr);
       VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
-      if (!analyzeValueDefn(initDefn, Task_PrepCodeGeneration)) {
+      if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
         return false;
       }
       DASSERT(initDefn->initValue() != NULL);
@@ -498,8 +496,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     }
 
     LValueExpr * iterMethod = new LValueExpr(iterate->location(), iterExpr, iterate);
-    iterExpr = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
-        st->location(), iterMethod, ASTNodeList(), NULL), NULL);
+    iterExpr = inferTypes(callExpr(st->location(), iterMethod, ASTNodeList(), NULL), NULL);
     if (iterExpr == NULL) {
       return false;
     }
@@ -520,8 +517,8 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
 
   iterExpr = createTempVar(".iterator", iterExpr, false);
   LValueExpr * nextMethod = new LValueExpr(next->location(), iterExpr, next);
-  Expr * nextCall = inferTypes(ExprAnalyzer(module, activeScope, function).callExpr(
-      iterExpr->location(), nextMethod, ASTNodeList(), NULL), NULL);
+  Expr * nextCall = inferTypes(
+      callExpr(iterExpr->location(), nextMethod, ASTNodeList(), NULL), NULL);
   if (nextCall == NULL) {
     return false;
   }
@@ -557,7 +554,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(st->loopVars());
     VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
     initDefn->setType(iterVarType);
-    if (!analyzeValueDefn(initDefn, Task_PrepCodeGeneration)) {
+    if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
       return false;
     }
 
@@ -807,7 +804,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
 
         VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
         TypeRef toType = asValueDefn->type();
-        if (!analyzeType(toType, Task_PrepCallOrUse)) {
+        if (!analyzeType(toType, Task_PrepTypeComparison)) {
           return NULL;
         }
 
@@ -1158,9 +1155,27 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
 
     if (returnType_.isDefined()) {
       analyzeType(exprType, Task_PrepTypeComparison);
-      resultVal = returnType_.implicitCast(st->location(), resultVal);
+      resultVal = doImplicitCast(resultVal, returnType_);
     }
+  } else if (returnType_.type()->typeClass() == Type::Union) {
+    // Converting a void to a union.
+    UnionType * utype = static_cast<UnionType *>(returnType_.type());
+    if (utype->hasVoidType()) {
+      int typeIndex = utype->getTypeIndex(&VoidType::instance);
+      CastExpr * voidValue = new CastExpr(
+          Expr::UnionCtorCast,
+          st->location(),
+          utype,
+          ConstantNull::get(st->location(), &VoidType::instance));
+      voidValue->setTypeIndex(typeIndex);
+      resultVal = voidValue;
+    } else {
+      diag.error(st) << "Return value required for non-void function";
+    }
+  } else if (returnType_.isNonVoidType()) {
+    diag.error(st) << "Return value required for non-void function";
   }
+
 
   if (macroReturnTarget_ != NULL) {
     // We are inside a macro expansion, which means that 'return' doesn't
@@ -1227,9 +1242,8 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    VarAnalyzer va(var);
-    va.setSourceDefn(function);
-    if (!va.analyze(Task_PrepCodeGeneration)) {
+    VarAnalyzer va(var, module, function);
+    if (!va.analyze(Task_PrepConstruction)) {
       return false;
     }
 
@@ -1270,9 +1284,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
 
 Expr * StmtAnalyzer::astToAssignExpr(const ASTNode * ast, Type * expectedType) {
   if (ast->nodeType() == ASTNode::Assign) {
-    ExprAnalyzer ea(function->module(), activeScope, function);
-    ea.setSourceDefn(function);
-    return ea.reduceAssign(static_cast<const ASTOper *>(ast));
+    return reduceAssign(static_cast<const ASTOper *>(ast));
   } else {
     return astToExpr(ast, expectedType);
   }
@@ -1286,7 +1298,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     setActiveScope(testScope);
 
     Defn * testDefn = astToDefn(testDecl);
-    if (testDefn == NULL || !analyzeDefn(testDefn, Task_PrepCodeGeneration)) {
+    if (testDefn == NULL || !analyzeDefn(testDefn, Task_PrepConstruction)) {
       return NULL;
     }
 
@@ -1346,8 +1358,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
 }
 
 Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, Type * expectedType) {
-  ExprAnalyzer ea(function->module(), activeScope, function);
-  return ea.reduceExpr(ast, expectedType);
+  return reduceExpr(ast, expectedType);
 }
 
 Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {

@@ -173,7 +173,7 @@ ConstantObjectRef::ConstantObjectRef(SourceLocation l, CompositeType * type)
   : Expr(ConstObjRef, l, type)
 {
   CompositeType * ctype = cast<CompositeType>(type);
-  DASSERT_OBJ(ctype->typeDefn()->isPassFinished(Pass_AnalyzeFields), ctype);
+  DASSERT_OBJ(ctype->passes().isFinished(CompositeType::FieldPass), ctype);
   members_.resize(ctype->instanceFieldCountRecursive());
   std::fill(members_.begin(), members_.end(), (Expr *)NULL);
 }

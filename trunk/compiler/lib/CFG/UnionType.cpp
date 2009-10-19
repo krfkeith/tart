@@ -6,6 +6,7 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Objects/Builtins.h"
 //#include <llvm/DerivedTypes.h>
 
 namespace tart {
@@ -22,7 +23,7 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
   , loc_(loc)
   , numValueTypes_(0)
   , numReferenceTypes_(0)
-  , hasNothingType_(false)
+  , hasVoidType_(false)
 {
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
@@ -48,8 +49,8 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
 
   for (TypeRefList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     const Type * memberType = it->dealias();
-    if (memberType == &NullType::instance) {
-      hasNothingType_ = true;
+    if (memberType == &NullType::instance || memberType == &VoidType::instance) {
+      hasVoidType_ = true;
     } else if (memberType->isReferenceType()) {
       numReferenceTypes_ += 1;
     } else {
@@ -100,7 +101,7 @@ const llvm::Type * UnionType::createIRType() const {
 
   if (numValueTypes_ > 0) {
     size_t numStates = numValueTypes_;
-    if (numReferenceTypes_ > 0 || hasNothingType_) {
+    if (numReferenceTypes_ > 0 || hasVoidType_) {
       numStates += 1;
     }
 
@@ -122,7 +123,7 @@ const llvm::Type * UnionType::createIRType() const {
     unionMembers.push_back(largestType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else {
-    return llvm::PointerType::get(llvm::OpaqueType::get(llvm::getGlobalContext()), 0);
+    return Builtins::typeObject->irParameterType();
   }
 }
 

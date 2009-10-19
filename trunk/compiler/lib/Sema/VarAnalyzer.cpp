@@ -18,26 +18,33 @@
 
 namespace tart {
 
-static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
-    Pass_CreateMembers,
-    Pass_ResolveAttributes,
-    Pass_ResolveVarType);
+static const VariableDefn::PassSet PASS_SET_RESOLVETYPE = VariableDefn::PassSet::of(
+  VariableDefn::AttributePass,
+  VariableDefn::VariableTypePass
+);
 
-static const DefnPasses PASS_SET_CODEGEN = DefnPasses::of(
-    Pass_CreateMembers,
-    Pass_ResolveAttributes,
-    Pass_ResolveVarType,
-    Pass_ResolveStaticInitializers);
+static const VariableDefn::PassSet PASS_SET_CONSTRUCT = VariableDefn::PassSet::of(
+  VariableDefn::AttributePass,
+  VariableDefn::VariableTypePass,
+  VariableDefn::InitializerPass
+);
 
-VarAnalyzer::VarAnalyzer(ValueDefn * var)
-  : DefnAnalyzer(var->module(), var->definingScope())
+static const VariableDefn::PassSet PASS_SET_COMPLETE = VariableDefn::PassSet::of(
+  VariableDefn::AttributePass,
+  VariableDefn::VariableTypePass,
+  VariableDefn::InitializerPass,
+  VariableDefn::CompletionPass
+);
+
+VarAnalyzer::VarAnalyzer(VariableDefn * var)
+  : DefnAnalyzer(var->module(), var->definingScope(), var)
   , target(var)
 {
   DASSERT(var != NULL);
 }
 
-VarAnalyzer::VarAnalyzer(ValueDefn * var, Module * module)
-  : DefnAnalyzer(module, var->definingScope())
+VarAnalyzer::VarAnalyzer(VariableDefn * var, Module * module, Defn * subject)
+  : DefnAnalyzer(module, var->definingScope(), subject)
   , target(var)
 {
   DASSERT(var != NULL);
@@ -48,16 +55,23 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
     return true;
   }
 
-  // Work out what passes need to be run.
-  DefnPasses passesToRun;
-  addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
+  switch (task) {
+    default:
+      return runPasses(PASS_SET_RESOLVETYPE);
 
-  if (task == Task_PrepCodeGeneration) {
-    addPasses(target, passesToRun, PASS_SET_CODEGEN);
+    case Task_PrepConversion:
+    case Task_PrepConstruction:
+    case Task_PrepEvaluation:
+    case Task_PrepTypeGeneration:
+      return runPasses(PASS_SET_CONSTRUCT);
+
+    case Task_PrepCodeGeneration:
+      return runPasses(PASS_SET_COMPLETE);
   }
+}
 
-  // Run passes
-
+bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
+  passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
     if (!target->type().isDefined()) {
       return false;
@@ -66,25 +80,33 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
     return true;
   }
 
-  DefnAnalyzer::analyze(target, passesToRun);
-
-  if (passesToRun.contains(Pass_ResolveVarType)) {
-    if (!resolveVarType()) {
+  if (passesToRun.contains(VariableDefn::AttributePass) &&
+      target->passes().begin(VariableDefn::AttributePass)) {
+    if (!resolveAttributes(target)) {
       return false;
     }
+
+    target->passes().finish(VariableDefn::AttributePass);
   }
 
-  if (passesToRun.contains(Pass_ResolveStaticInitializers)) {
-    if (!resolveStaticInitializers()) {
-      return false;
-    }
+  if (passesToRun.contains(VariableDefn::VariableTypePass) && !resolveVarType()) {
+    return false;
+  }
+
+  if (passesToRun.contains(VariableDefn::InitializerPass) && !resolveInitializers()) {
+    return false;
+  }
+
+  if (passesToRun.contains(VariableDefn::CompletionPass) &&
+      !analyzeType(target->type(), Task_PrepTypeGeneration)) {
+    return false;
   }
 
   return true;
 }
 
 bool VarAnalyzer::resolveVarType() {
-  if (target->beginPass(Pass_ResolveVarType)) {
+  if (target->passes().begin(VariableDefn::VariableTypePass)) {
     const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
@@ -94,7 +116,7 @@ bool VarAnalyzer::resolveVarType() {
         TypeAnalyzer ta(module, target->definingScope());
         Type * varType = ta.typeFromAST(ast->type());
         if (varType == NULL) {
-          target->finishPass(Pass_ResolveVarType);
+          target->passes().finish(VariableDefn::VariableTypePass);
           return false;
         }
 
@@ -122,22 +144,21 @@ bool VarAnalyzer::resolveVarType() {
         }
       }
 
-      ExprAnalyzer ea(module, activeScope);
-      ea.setSourceDefn(sourceDefn);
+      ExprAnalyzer ea(module, activeScope, subject());
       Expr * initExpr = ea.analyze(ast->value(), target->type().type());
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
-        target->finishPass(Pass_ResolveVarType);
+        target->passes().finish(VariableDefn::VariableTypePass);
         return false;
       } else if (!initExpr->isSingular()) {
         diag.fatal(initExpr) << "Non-singular expression: " << initExpr;
         DASSERT_OBJ(initExpr->isSingular(), initExpr);
-        target->finishPass(Pass_ResolveVarType);
+        target->passes().finish(VariableDefn::VariableTypePass);
         return false;
       } else if (initExpr->type()->isEqual(&VoidType::instance)) {
         diag.error(initExpr) << "Attempt to assign void expression '" << initExpr <<
             "' to variable '" << target << "'";
-        target->finishPass(Pass_ResolveVarType);
+        target->passes().finish(VariableDefn::VariableTypePass);
         return false;
       } else {
         Type * initType = initExpr->type();
@@ -158,7 +179,7 @@ bool VarAnalyzer::resolveVarType() {
         if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
           vdef->setInitValue(initExpr);
         } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
-          pdef->setDefaultValue(initExpr);
+          pdef->setInitValue(initExpr);
         }
       }
     }
@@ -168,7 +189,7 @@ bool VarAnalyzer::resolveVarType() {
       target->addTrait(Defn::Singular);
     }
 
-    target->finishPass(Pass_ResolveVarType);
+    target->passes().finish(VariableDefn::VariableTypePass);
   }
 
 
@@ -177,22 +198,19 @@ bool VarAnalyzer::resolveVarType() {
 }
 
 void VarAnalyzer::setTargetType(Type * type) {
-  if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
-    vdef->setType(type);
-  } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
+  target->setType(type);
+  if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
     pdef->setType(type);
     if (pdef->getFlag(ParameterDefn::Variadic)) {
       pdef->setInternalType(getArrayTypeForElement(type));
     } else {
       pdef->setInternalType(type);
     }
-  } else {
-    DFAIL("Invalid operation for type");
   }
 }
 
-bool VarAnalyzer::resolveStaticInitializers() {
-  if (target->beginPass(Pass_ResolveStaticInitializers)) {
+bool VarAnalyzer::resolveInitializers() {
+  if (target->passes().begin(VariableDefn::InitializerPass)) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(target)) {
       switch (var->storageClass()) {
         case Storage_Static:
@@ -223,7 +241,7 @@ bool VarAnalyzer::resolveStaticInitializers() {
           break;
       }
 
-      target->finishPass(Pass_ResolveStaticInitializers);
+      target->passes().finish(VariableDefn::InitializerPass);
     }
   }
 

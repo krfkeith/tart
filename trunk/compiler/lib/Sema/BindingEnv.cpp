@@ -20,7 +20,7 @@ namespace tart {
 
 static void assureNoPatternVars(Type * t) {
   for (int i = 0; i < t->numTypeParams(); ++i) {
-    if (isa<PatternVar>(t->typeParam(i))) {
+    if (isa<PatternVar>(t->typeParam(i).type())) {
       diag.fatal() << "What's a type param doing here?" << t;
       DFAIL("Unexpected pattern var");
     }
@@ -121,7 +121,6 @@ Type * PatternValue::value() const {
 
 // -------------------------------------------------------------------
 // BindingEnv
-BindingEnv::BindingEnv(const TemplateSignature * ts) : substitutions_(NULL) {}
 
 const char * BindingEnv::str() const {
   static std::string temp;
@@ -135,6 +134,11 @@ const char * BindingEnv::str() const {
 
 void BindingEnv::reset() {
   substitutions_ = NULL;
+}
+
+bool BindingEnv::unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
+    Variance variance) {
+  return unify(source, pattern.type(), value.type(), variance);
 }
 
 bool BindingEnv::unify(SourceContext * source, Type * pattern, Type * value, Variance variance) {
@@ -229,12 +233,12 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
 
 bool BindingEnv::unifyNativePointerType(
     SourceContext * source, NativePointerType * pat, Type * value) {
-  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
+  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
   if (NativePointerType * npv = dyn_cast<NativePointerType>(value)) {
-    if (!AnalyzerBase::analyzeType(npv, Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
       return false;
     }
 
@@ -248,12 +252,12 @@ bool BindingEnv::unifyNativePointerType(
 
 bool BindingEnv::unifyAddressType(
     SourceContext * source, AddressType * pat, Type * value) {
-  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
+  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
   if (AddressType * npv = dyn_cast<AddressType>(value)) {
-    if (!AnalyzerBase::analyzeType(npv, Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
       return false;
     }
 
@@ -266,12 +270,12 @@ bool BindingEnv::unifyAddressType(
 }
 
 bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * pat, Type * value) {
-  if (!AnalyzerBase::analyzeType(pat, Task_InferType)) {
+  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
   if (NativeArrayType * nav = dyn_cast<NativeArrayType>(value)) {
-    if (!AnalyzerBase::analyzeType(nav, Task_InferType)) {
+    if (!AnalyzerBase::analyzeType(nav, Task_PrepTypeComparison)) {
       return false;
     }
 
@@ -552,6 +556,12 @@ Type * BindingEnv::dereference(Type * type) const {
   return type;
 }
 
+TypeRef BindingEnv::subst(const TypeRef & in, bool finalize) const {
+  TypeRef result(in);
+  result.setType(subst(in.type(), finalize));
+  return result;
+}
+
 Type * BindingEnv::subst(Type * in, bool finalize) const {
   if (substitutions_ == NULL) {
     return in;
@@ -582,11 +592,11 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
 
     case Type::Address: {
       const AddressType * np = static_cast<const AddressType *>(in);
-      if (np->typeParam(0) == NULL) {
+      if (!np->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = subst(np->typeParam(0), finalize);
+      TypeRef elemType = subst(np->typeParam(0), finalize);
       if (elemType == np->typeParam(0)) {
         return in;
       }
@@ -596,30 +606,30 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
 
     case Type::NativePointer: {
       const NativePointerType * np = static_cast<const NativePointerType *>(in);
-      if (np->typeParam(0) == NULL) {
+      if (!np->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = subst(np->typeParam(0), finalize);
+      TypeRef elemType = subst(np->typeParam(0), finalize);
       if (elemType == np->typeParam(0)) {
         return in;
       }
 
-      return NativePointerType::create(elemType);
+      return NativePointerType::get(elemType);
     }
 
     case Type::NativeArray: {
       const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
-      if (nt->typeParam(0) == NULL) {
+      if (!nt->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = subst(nt->typeParam(0), finalize);
+      TypeRef elemType = subst(nt->typeParam(0), finalize);
       if (elemType == nt->typeParam(0)) {
         return in;
       }
 
-      return NativeArrayType::create(elemType, nt->size());
+      return NativeArrayType::get(elemType, nt->size());
     }
 
     case Type::Struct:
@@ -704,11 +714,11 @@ Type * BindingEnv::relabel(Type * in) {
 
     case Type::Address: {
       const AddressType * np = static_cast<const AddressType *>(in);
-      if (np->typeParam(0) == NULL) {
+      if (!np->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = relabel(np->typeParam(0));
+      TypeRef elemType = relabel(np->typeParam(0));
       if (elemType == np->typeParam(0)) {
         return in;
       }
@@ -718,30 +728,30 @@ Type * BindingEnv::relabel(Type * in) {
 
     case Type::NativePointer: {
       const NativePointerType * np = static_cast<const NativePointerType *>(in);
-      if (np->typeParam(0) == NULL) {
+      if (!np->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = relabel(np->typeParam(0));
+      TypeRef elemType = relabel(np->typeParam(0));
       if (elemType == np->typeParam(0)) {
         return in;
       }
 
-      return NativePointerType::create(elemType);
+      return NativePointerType::get(elemType);
     }
 
     case Type::NativeArray: {
       const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
-      if (nt->typeParam(0) == NULL) {
+      if (!nt->typeParam(0).isDefined()) {
         return in;
       }
 
-      Type * elemType = relabel(nt->typeParam(0));
+      TypeRef elemType = relabel(nt->typeParam(0));
       if (elemType == nt->typeParam(0)) {
         return in;
       }
 
-      return NativeArrayType::create(elemType, nt->size());
+      return NativeArrayType::get(elemType, nt->size());
     }
 
     case Type::Struct:

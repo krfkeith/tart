@@ -34,7 +34,7 @@ FunctionDefn * CompositeType::defaultConstructor() {
       ParameterList & params = ctor->functionType()->params();
       int requiredArgCount = 0;
       for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
-        if ((*p)->defaultValue() == NULL) {
+        if ((*p)->initValue() == NULL) {
           ++requiredArgCount;
         }
       }
@@ -58,7 +58,7 @@ FunctionDefn * CompositeType::defaultConstructor() {
       ParameterList & params = ctor->functionType()->params();
       int requiredArgCount = 0;
       for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
-        if ((*p)->defaultValue() == NULL) {
+        if ((*p)->initValue() == NULL) {
           ++requiredArgCount;
         }
       }
@@ -78,7 +78,7 @@ bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inheri
   }
 
   if (inherit) {
-    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
+    DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       if ((*it)->lookupMember(name, defs, inherit)) {
         return true;
@@ -116,8 +116,8 @@ const llvm::Type * CompositeType::createIRType() const {
   using namespace llvm;
 
   DASSERT_OBJ(isSingular(), this);
-  DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
-  DASSERT_OBJ(typeDefn()->isPassFinished(Pass_AnalyzeFields), this);
+  DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
+  DASSERT_OBJ(passes_.isFinished(FieldPass), this);
   //DASSERT(irType_ == NULL);
 
   // Members of the class
@@ -136,7 +136,7 @@ const llvm::Type * CompositeType::createIRType() const {
   for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
     if (*it) {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
-      DASSERT_OBJ(var->isPassFinished(Pass_ResolveVarType), var);
+      DASSERT_OBJ(var->passes().isFinished(VariableDefn::VariableTypePass), var);
       TypeRef varType = var->type();
       const llvm::Type * memberType = varType.irEmbeddedType();
       fieldTypes.push_back(memberType);
@@ -209,8 +209,8 @@ bool CompositeType::implementsImpl(const CompositeType * interface) const {
 ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const CompositeType * fromClass = dyn_cast_or_null<CompositeType>(fromType)) {
-    DASSERT_OBJ(typeDefn()->isPassFinished(Pass_ResolveBaseTypes), this);
-    DASSERT_OBJ(fromClass->typeDefn()->isPassFinished(Pass_ResolveBaseTypes), fromClass);
+    DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
+    DASSERT_OBJ(fromClass->passes().isFinished(BaseTypesPass), this);
     if (fromClass == this) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = cn.fromValue;
@@ -224,10 +224,9 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
             cn.fromValue);
       }
 
-      //return StrengthenRequired;
       return ExactConversion;
     }
-  } else if (fromType == &NullType::instance) {
+/*  } else if (fromType == &NullType::instance) {
     // Conversion from 'null'.
     if (this->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
@@ -236,7 +235,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       }
 
       return ExactConversion;
-    }
+    }*/
   }
 
   return Incompatible;

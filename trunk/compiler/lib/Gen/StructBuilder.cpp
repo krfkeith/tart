@@ -61,7 +61,7 @@ StructBuilder & StructBuilder::addArrayField(
 StructBuilder & StructBuilder::addArrayField(
     const VariableDefn * arrayVar, const ConstantList & values) {
   if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type().type())) {
-    addArrayField(arrayType->typeParam(0), values);
+    addArrayField(arrayType->typeParam(0).type(), values);
   } else {
     DFAIL("Not an array type");
   }

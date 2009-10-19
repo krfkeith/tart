@@ -40,7 +40,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
     for (Candidates::const_iterator it = clist.begin(); it != clist.end(); ++it) {
       bool exactMatch = true;
       CallCandidate * cc = *it;
-      DASSERT_OBJ(cc->method()->isPassFinished(Pass_ResolveParameterTypes), cc->method());
+      DASSERT_OBJ(cc->method()->passes().isFinished(FunctionDefn::ParameterTypePass), cc->method());
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
         TypeRef paramType = cc->paramType(argIndex);
@@ -64,12 +64,12 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
         for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
           if (callingArgs[paramIndex] == NULL) {
             ParameterDefn * param = ftype->params()[paramIndex];
-            if (param->defaultValue() != NULL) {
-              callingArgs[paramIndex] = param->defaultValue();
+            if (param->initValue() != NULL) {
+              callingArgs[paramIndex] = param->initValue();
             } else if (param->isVariadic()) {
               // Empty array literal.
               Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type());
-              AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepCallOrUse);
+              AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepConstruction);
               DASSERT(arrayParam->isSingular());
               callingArgs[paramIndex] = arrayParam;
             }

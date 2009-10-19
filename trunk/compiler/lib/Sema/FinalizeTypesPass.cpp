@@ -14,6 +14,7 @@
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/TypeAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -22,10 +23,10 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// FinalizeTypesPass
 
-Expr * FinalizeTypesPass::run(Expr * in) {
+/*Expr * FinalizeTypesPass::run(Expr * in) {
   FinalizeTypesPass instance(NULL);
   return instance.runImpl(in);
-}
+}*/
 
 Expr * FinalizeTypesPass::run(Defn * source, Expr * in) {
   FinalizeTypesPass instance(source);
@@ -131,7 +132,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
     if (isTemplateMethod) {
       method = cast_or_null<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
-      if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepCallOrUse)) {
+      if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepTypeComparison)) {
         return &Expr::ErrorVal;
       }
 
@@ -146,7 +147,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     }
 
     // Insure that we can see the method.
-    AnalyzerBase::checkAccess(in->location(), sourceDefn_, method);
+    AnalyzerBase::checkAccess(in->location(), subject_, method);
 
     // Handle argument conversions.
     ExprList callingArgs;
@@ -162,7 +163,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
         return &Expr::ErrorVal;
       }
 
-      if (!AnalyzerBase::analyzeType(selfArg->type(), Task_PrepCallOrUse)) {
+      if (!AnalyzerBase::analyzeType(selfArg->type(), Task_PrepTypeComparison)) {
         return &Expr::ErrorVal;
       }
     }
@@ -244,11 +245,11 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  if (!AnalyzerBase::analyzeType(cd->functionType(), Task_PrepCallOrUse)) {
+  if (!AnalyzerBase::analyzeType(cd->functionType(), Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
-  if (!AnalyzerBase::analyzeType(fnValue->type(), Task_PrepCallOrUse)) {
+  if (!AnalyzerBase::analyzeType(fnValue->type(), Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -324,7 +325,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
       } else {
-        outArgs[paramIndex] = param->defaultValue();
+        outArgs[paramIndex] = param->initValue();
         DASSERT_OBJ(outArgs[paramIndex] != NULL, param);
       }
     }
@@ -441,7 +442,7 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   bool isConstFalse = false; // Test always fails
 
   if (ctTo != NULL && ctFrom != NULL) {
-    AnalyzerBase::checkAccess(in->location(), sourceDefn_, ctTo->typeDefn());
+    AnalyzerBase::checkAccess(in->location(), subject_, ctTo->typeDefn());
     if (ctTo->typeClass() == Type::Struct) {
       // Structs are not polymorphic, so we know the answer at compile time.
       if (ctTo->typeClass() != Type::Struct) {
@@ -584,9 +585,9 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
   } else if (isa<NativePointerType>(t1) || isa<AddressType>(t1)) {
-    Type * e0 = t1->typeParam(0);
+    Type * e0 = t1->typeParam(0).type();
     if (isa<NativePointerType>(t2) || isa<AddressType>(t2)) {
-      if (e0->isEqual(t2->typeParam(0))) {
+      if (e0->isEqual(t2->typeParam(0).type())) {
         if (isa<NativePointerType>(t2)) {
           in->setFirst(addCastIfNeeded(in->first(), t2));
         } else {
@@ -630,22 +631,8 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
-  DASSERT(in != NULL);
-  if (isErrorResult(toType)) {
-    return in;
-  }
-
-  in = LValueExpr::constValue(in);
-  if (!AnalyzerBase::analyzeType(toType, Task_PrepTypeComparison)) {
-    return in;
-  }
-
-  Expr * castExpr = toType->implicitCast(in->location(), in);
-  if (isErrorResult(castExpr)) {
-    return in;
-  }
-
-  return castExpr;
+  return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
+      .doImplicitCast(in, toType);
 }
 
 } // namespace tart
