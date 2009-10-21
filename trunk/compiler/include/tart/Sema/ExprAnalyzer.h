@@ -145,6 +145,9 @@ public:
 
   Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);
 
+  /** Given an LValue, return the base expression. */
+  Expr * lvalueBase(LValueExpr * lval);
+
 private:
   TemplateSignature * tsig_;
   FunctionDefn * currentFunction_;

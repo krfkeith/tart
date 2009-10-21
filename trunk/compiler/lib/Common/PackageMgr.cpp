@@ -68,7 +68,7 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
       // module, along with the file size and other info.
 
       // If it's a regular file.
-      Module * mod = new Module(new SourceFile(path.str()), qname, &Builtins::module);
+      Module * mod = new Module(new SourceFile(path.c_str()), qname, &Builtins::module);
       modules[qname] = mod;
 
       if (ShowImports) {

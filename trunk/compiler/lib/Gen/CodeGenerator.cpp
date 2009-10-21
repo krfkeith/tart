@@ -62,6 +62,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , unwindRaiseException_(NULL)
     , unwindResume_(NULL)
     , exceptionPersonality_(NULL)
+    , globalAlloc_(NULL)
     , debug_(Debug)
 {
   reflector_.setEnabled(!NoReflect);
@@ -77,7 +78,7 @@ void CodeGenerator::generate() {
 
   // Generate debugging information
   if (debug_) {
-    getCompileUnit(module_);
+    genDICompileUnit(module_);
   }
 
   addTypeName(Builtins::typeObject);
@@ -249,8 +250,10 @@ void CodeGenerator::outputModule() {
   }
 
   std::string errorInfo;
+//  std::auto_ptr<llvm::raw_ostream> binOut(
+//      new llvm::raw_fd_ostream(binPath.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary));
   std::auto_ptr<llvm::raw_ostream> binOut(
-      new llvm::raw_fd_ostream(binPath.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary));
+      new llvm::raw_fd_ostream(binPath.c_str(), true, true, errorInfo));
   if (!errorInfo.empty()) {
     diag.fatal() << errorInfo << '\n';
     return;
@@ -275,34 +278,6 @@ void CodeGenerator::genModuleMetadata(std::ostream & strm) {
     Module * m = *it;
     strm << "import " << m->qualifiedName() << " as %0;" << std::endl;
   }
-}
-
-llvm::DICompileUnit CodeGenerator::getCompileUnit(const ProgramSource * source) {
-  using namespace llvm;
-  DICompileUnit & compileUnit = dbgCompileUnits_[source];
-  if (compileUnit.isNull()) {
-    if (source != NULL) {
-      llvm::sys::Path srcPath(source->getFilePath());
-      if (!srcPath.empty()) {
-        compileUnit = dbgFactory_.CreateCompileUnit(
-          0xABBA, // Take a chance on me...
-          srcPath.getLast(),
-          srcPath.getDirname() + "/",
-          "0.1 tartc");
-      }
-    }
-  }
-
-  return compileUnit;
-}
-
-llvm::DICompileUnit CodeGenerator::getCompileUnit(Defn * defn) {
-  return getCompileUnit(defn->module()->moduleSource());
-}
-
-unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
-  TokenPosition pos = tokenPosition(loc);
-  return pos.beginLine;
 }
 
 void CodeGenerator::genEntryPoint() {
@@ -418,6 +393,26 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
   }
 
   return exceptionPersonality_;
+}
+
+llvm::Function * CodeGenerator::getGlobalAlloc() {
+  using namespace llvm;
+  using llvm::Type;
+  using llvm::FunctionType;
+
+  if (globalAlloc_ == NULL) {
+    std::vector<const Type *> parameterTypes;
+    parameterTypes.push_back(builder_.getInt64Ty());
+    const FunctionType * ftype = FunctionType::get(
+        PointerType::get(builder_.getInt8Ty(), 0),
+        parameterTypes,
+        false);
+
+    globalAlloc_ = cast<Function>(irModule_->getOrInsertFunction("malloc", ftype));
+    globalAlloc_->addFnAttr(Attribute::NoUnwind);
+  }
+
+  return globalAlloc_;
 }
 
 Function * CodeGenerator::findMethod(const CompositeType * type, const char * methodName) {

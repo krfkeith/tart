@@ -18,7 +18,7 @@ void SourceLocation::trace() const {
 void SourceLocation::dump() const {
   if (file != NULL && !file->getFilePath().empty()) {
     TokenPosition pos = file->tokenPosition(*this);
-    fprintf(stderr, "%s:%d\n", file->getFilePath().c_str(), pos.beginLine + 1);
+    fprintf(stderr, "%s:%d\n", file->getFilePath().c_str(), pos.beginLine);
   }
 }
 
@@ -30,9 +30,9 @@ TokenPosition ProgramSource::tokenPosition(const SourceLocation & loc) {
     std::upper_bound(lineOffsets.begin(), lineOffsets.end(), loc.end) - 1;
 
   TokenPosition result;
-  result.beginLine = itBegin - lineOffsets.begin();
+  result.beginLine = itBegin - lineOffsets.begin() + 1;
   result.beginCol = loc.begin - *itBegin;
-  result.endLine = itEnd - lineOffsets.begin();
+  result.endLine = itEnd - lineOffsets.begin() + 1;
   result.endCol = loc.end - *itEnd;
   return result;
 }

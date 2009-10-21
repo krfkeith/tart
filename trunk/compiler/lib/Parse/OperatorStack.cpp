@@ -1,12 +1,12 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Parse/OperatorStack.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
-    
+
 bool OperatorStack::pushOperand(ASTNode * operand) {
   if (stack.back().operand != NULL) {
     diag.fatal(operand->location()) << "missing operator";
@@ -48,6 +48,7 @@ bool OperatorStack::reduce(int32_t operatorPrec, bool rightAssoc) {
     stack.pop_back();
     args.push_back(stack.back().operand);
     args.push_back(val);
+    eop->location() = stack.back().operand->location() | val->location();
     stack.back().operand = eop;
   }
   return true;

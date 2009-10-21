@@ -1079,9 +1079,9 @@ ASTNode * Parser::typeName() {
     }
 
     if (templateArgs.empty()) {
-      result = ASTUnaryOp::get(ASTNode::Array, result);
+      result = ASTUnaryOp::get(ASTNode::Array, result->location() | matchLoc, result);
     } else {
-      result = new ASTSpecialize(result->location(), result, templateArgs);
+      result = new ASTSpecialize(matchLoc | result->location(), result, templateArgs);
     }
   }
 
@@ -1092,7 +1092,7 @@ ASTNode * Parser::typeName() {
       return NULL;
     }
 
-    result = new ASTMemberRef(matchLoc, result, typeName);
+    result = new ASTMemberRef(loc | matchLoc, result, typeName);
 
     if (match(Token_LBracket)) {
       ASTNodeList templateArgs;
@@ -1101,13 +1101,14 @@ ASTNode * Parser::typeName() {
       }
 
       if (templateArgs.empty()) {
-        result = ASTUnaryOp::get(ASTNode::Array, result);
+        result = ASTUnaryOp::get(ASTNode::Array, result->location() | matchLoc, result);
       } else {
         result = new ASTSpecialize(result->location(), result, templateArgs);
       }
     }
   }
 
+  loc = lexer.tokenLocation();
   while (match(Token_LBracket)) {
     // Array
     if (!match(Token_RBracket)) {
@@ -1115,7 +1116,7 @@ ASTNode * Parser::typeName() {
       return NULL;
     }
 
-    result = ASTUnaryOp::get(ASTNode::Array, result);
+    result = ASTUnaryOp::get(ASTNode::Array, result->location() | loc, result);
   }
 
   return result;
@@ -1300,6 +1301,7 @@ bool Parser::templateArgList(ASTNodeList & templateArgs) {
       templateArgs.push_back(arg);
     }
 
+    matchLoc = lexer.tokenLocation();
     if (match(Token_RBracket)) {
       return true;
     } else if (!match(Token_Comma)) {
@@ -1474,10 +1476,10 @@ Stmt * Parser::statement() {
         return NULL;
       }
 
+      SourceLocation loc = lexer.tokenLocation();
       needSemi();
 
-      return new ExprStmt(Stmt::Expression,
-          expr->location(), expr);
+      return new ExprStmt(Stmt::Expression, expr->location() | loc, expr);
     }
   }
 
@@ -2505,7 +2507,7 @@ ASTNode * Parser::primaryExpression() {
         ASTNodeList argList;
         if (!parseArgumentList(argList))
           return NULL;
-        result = new ASTCall(loc, result, argList);
+        result = new ASTCall(matchLoc | result->location(), result, argList);
       } else if (match(Token_LBracket)) {
         // Array dereference
         ASTOper * indexop = new ASTOper(ASTNode::GetElement, result->location());
@@ -2569,6 +2571,7 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
       }
     }
 
+    matchLoc = lexer.tokenLocation();
     args.push_back(arg);
     if (match(Token_RParen))
       break;

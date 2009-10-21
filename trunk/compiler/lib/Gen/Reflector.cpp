@@ -297,6 +297,7 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   Module * module = def->module();
   StructBuilder sb(cg_);
   sb.createObjectHeader(structType);
+  sb.addStringField(def->name());
   sb.addStringField(def->qualifiedName());
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));

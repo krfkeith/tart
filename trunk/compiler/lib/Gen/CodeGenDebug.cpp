@@ -24,7 +24,7 @@ namespace tart {
 
 using namespace llvm;
 
-typedef llvm::SmallVector<llvm::DIDescriptor, 16> DIDescriptorArray;
+typedef SmallVector<DIDescriptor, 16> DIDescriptorArray;
 
 static unsigned typeEncoding(TypeId id) {
   if (id == TypeId_Bool) {
@@ -42,17 +42,118 @@ static unsigned typeEncoding(TypeId id) {
   return 0;
 }
 
-llvm::DIType CodeGenerator::genDIType(const TypeRef & ref) {
+DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
+  using namespace llvm;
+  DICompileUnit & compileUnit = dbgCompileUnits_[source];
+  if (compileUnit.isNull()) {
+    if (source != NULL) {
+      sys::Path srcPath(source->getFilePath());
+      if (!srcPath.empty()) {
+        DASSERT(srcPath.isAbsolute());
+        compileUnit = dbgFactory_.CreateCompileUnit(
+          0xABBA, // Take a chance on me...
+          srcPath.getLast(),
+          srcPath.getDirname(),
+          "0.1 tartc",
+          module_->entryPoint() != NULL);
+      }
+    }
+  }
+
+  return compileUnit;
+}
+
+DICompileUnit CodeGenerator::genDICompileUnit(const Defn * defn) {
+  if (defn == NULL || defn->module() == NULL) {
+    return dbgCompileUnit_;
+  }
+
+  return genDICompileUnit(defn->module()->moduleSource());
+}
+
+void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
+  dbgCompileUnit_ = genDICompileUnit(fn);
+  if (!dbgCompileUnit_.isNull()) {
+    DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
+    dbgFunction_ = dbgFactory_.CreateSubprogram(
+        dbgCompileUnit_, // TODO: Replace for functions within a scope.
+        fn->name(),
+        fn->qualifiedName(),
+        fn->linkageName(),
+        dbgCompileUnit_,
+        getSourceLineNumber(fn->location()),
+        dbgFuncType,
+        fn->isSynthetic() /* isLocalToUnit */,
+        true /* isDefinition */);
+    if (!dbgFunction_.Verify()) {
+      dbgFunction_.Verify();
+      DFAIL("BAD DBG");
+    }
+  }
+}
+
+void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
+  // Generate debugging information (this has to be done after local variable allocas.)
+  if (debug_ && !dbgFunction_.isNull()) {
+    dbgFactory_.InsertSubprogramStart(dbgFunction_, builder_.GetInsertBlock());
+    dbgLocation_ = SourceLocation();
+
+#if 0
+    const FunctionType * ftype = fn->functionType();
+    if (ftype->selfParam() != NULL) {
+      /// CreateVariable - Create a new descriptor for the specified variable.
+      const ParameterDefn * p = ftype->selfParam();
+      DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
+          p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+          genDIParameterType(p->type()));
+      dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+    }
+
+    for (ParameterList::const_iterator it = ftype->params().begin(); it != ftype->params().end();
+        ++it) {
+      const ParameterDefn * p = *it;
+      if (p->isLValue()) {
+        // TODO: Handle this case later.
+      } else {
+        /// CreateVariable - Create a new descriptor for the specified variable.
+        DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
+            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+            genDIParameterType(p->type()));
+        dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+      }
+    }
+#endif
+    const LocalScopeList & lsl = fn->localScopes();
+    for (LocalScopeList::const_iterator it = lsl.begin(); it != lsl.end(); ++it) {
+      LocalScope * lscope = *it;
+      for (const Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
+        if (de->defnType() == Defn::Var) {
+          /// CreateVariable - Create a new descriptor for the specified variable.
+          const VariableDefn * var = static_cast<const VariableDefn *>(de);
+          DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgFunction_,
+              var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
+              genDIEmbeddedType(var->type()));
+          dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
+        }
+      }
+    }
+  }
+}
+
+DIType CodeGenerator::genDIType(const TypeRef & ref) {
   return genDIType(ref.type());
 }
 
 DIType CodeGenerator::genDIType(const Type * type) {
-  DITypeMap::iterator it = dbgTypeMap_.find(type);
-  if (it != dbgTypeMap_.end()) {
-    return it->second;
+  DIType & result = dbgTypeMap_[type];
+  if (!result.isNull()) {
+    return result;
   }
 
-  DIType result;
+  if (dbgCompileUnit_.isNull()) {
+    dbgCompileUnit_ = genDICompileUnit(module_);
+  }
+
   switch (type->typeClass()) {
     case Type::Primitive:
       result = genDIPrimitiveType(static_cast<const PrimitiveType *>(type));
@@ -99,19 +200,18 @@ DIType CodeGenerator::genDIType(const Type * type) {
       break;
   }
 
-  dbgTypeMap_[type] = result;
   return result;
 }
 
 DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   /// CreateBasicType - Create a basic type like int, float, etc.
   const llvm::Type * irType = type->irType();
-  return dbgFactory_.CreateBasicType(
+  return dbgFactory_.CreateBasicTypeEx(
       dbgCompileUnit_,
       type->typeDefn()->qualifiedName(),
-      dbgCompileUnit_, 0,
-      llvm::ConstantExpr::getSizeOf(irType),
-      llvm::ConstantExpr::getAlignOf(irType),
+      DICompileUnit(), 0,
+      getSizeOfInBits(irType),
+      getAlignOfInBits(irType),
       getInt64Val(0), // Offset
       0, // Flags
       typeEncoding(type->typeId()));
@@ -120,14 +220,14 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
 DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
   DIType di = genDIType(type);
   if (type.typeClass() == Type::Class) {
-    di = dbgFactory_.CreateDerivedType(
+    di = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
         "",
-        dbgCompileUnit_,
+        genDICompileUnit(type.type()->typeDefn()),
         0,
-        llvm::ConstantExpr::getSizeOf(type.irEmbeddedType()),
-        llvm::ConstantExpr::getAlignOf(type.irEmbeddedType()),
+        getSizeOfInBits(type.irEmbeddedType()),
+        getAlignOfInBits(type.irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -139,14 +239,14 @@ DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
 DIType CodeGenerator::genDIParameterType(const TypeRef & type) {
   DIType di = genDIType(type);
   if (type.typeClass() == Type::Class) {
-    di = dbgFactory_.CreateDerivedType(
+    di = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
         "",
-        dbgCompileUnit_,
+        genDICompileUnit(type.type()->typeDefn()),
         0,
-        llvm::ConstantExpr::getSizeOf(type.irEmbeddedType()),
-        llvm::ConstantExpr::getAlignOf(type.irEmbeddedType()),
+        getSizeOfInBits(type.irEmbeddedType()),
+        getAlignOfInBits(type.irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -156,40 +256,40 @@ DIType CodeGenerator::genDIParameterType(const TypeRef & type) {
 }
 
 DIDerivedType CodeGenerator::genDITypeBase(const CompositeType * type) {
-  return dbgFactory_.CreateDerivedType(
+  return dbgFactory_.CreateDerivedTypeEx(
       dwarf::DW_TAG_inheritance,
       dbgCompileUnit_,
       type->typeDefn()->name(),
-      dbgCompileUnit_,
+      genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       genDIType(type));
 }
 
 DIDerivedType CodeGenerator::genDITypeMember(const VariableDefn * var, Constant * offset) {
-  return dbgFactory_.CreateDerivedType(
+  return dbgFactory_.CreateDerivedTypeEx(
       dwarf::DW_TAG_member,
       dbgCompileUnit_,
       var->name(),
-      dbgCompileUnit_,
+      genDICompileUnit(var),
       getSourceLineNumber(var->location()),
-      llvm::ConstantExpr::getSizeOf(var->type().irEmbeddedType()),
-      llvm::ConstantExpr::getAlignOf(var->type().irEmbeddedType()),
+      getSizeOfInBits(var->type().irEmbeddedType()),
+      getAlignOfInBits(var->type().irEmbeddedType()),
       offset, 0,
       genDIEmbeddedType(var->type()));
 }
 
 DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
-  DICompositeType placeHolder = dbgFactory_.CreateCompositeType(
+  DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
       type->typeDefn()->linkageName(),
-      dbgCompileUnit_,
+      genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       DIType(),
       DIArray());
@@ -206,20 +306,20 @@ DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
   for (DefnList::const_iterator it = fields.begin(); it != fields.end(); ++it) {
     if (*it) {
       const VariableDefn * var = cast<VariableDefn>(*it);
-      Constant * offset = llvm::ConstantExpr::getOffsetOf(
+      Constant * offset = getOffsetOfInBits(
           cast<StructType>(type->irType()), var->memberIndex());
       members.push_back(genDITypeMember(var, offset));
     }
   }
 
-  DICompositeType di = dbgFactory_.CreateCompositeType(
+  DICompositeType di = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
       type->typeDefn()->linkageName(),
-      dbgCompileUnit_,
+      genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(members.data(), members.size()));
@@ -232,14 +332,14 @@ DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
 
 DIType CodeGenerator::genDIEnumType(const EnumType * type) {
   DIDescriptorArray members;
-  return dbgFactory_.CreateCompositeType(
+  return dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_enumeration_type,
       dbgCompileUnit_,
       type->typeDefn()->name(),
-      dbgCompileUnit_,
+      genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(members.data(), members.size()));
@@ -247,41 +347,41 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
 
 DICompositeType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, type->size());
-  return dbgFactory_.CreateCompositeType(
+  return dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_array_type,
       dbgCompileUnit_,
       "",
       dbgCompileUnit_,
       0,
-      llvm::ConstantExpr::getSizeOf(type->irEmbeddedType()),
-      llvm::ConstantExpr::getAlignOf(type->irEmbeddedType()),
+      getSizeOfInBits(type->irEmbeddedType()),
+      getAlignOfInBits(type->irEmbeddedType()),
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(&subrange, 1));
 }
 
 DIDerivedType CodeGenerator::genDINativePointerType(const NativePointerType * type) {
-  return dbgFactory_.CreateDerivedType(
+  return dbgFactory_.CreateDerivedTypeEx(
       dwarf::DW_TAG_pointer_type,
       dbgCompileUnit_,
       "",
       dbgCompileUnit_,
       0,
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       genDIType(type->typeParam(0)));
 }
 
 DIDerivedType CodeGenerator::genDIAddressType(const AddressType * type) {
-  return dbgFactory_.CreateDerivedType(
+  return dbgFactory_.CreateDerivedTypeEx(
       dwarf::DW_TAG_pointer_type,
       dbgCompileUnit_,
       "",
       dbgCompileUnit_,
       0,
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       genDIType(type->typeParam(0)));
 }
@@ -298,14 +398,14 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
       DIType memberDbgType = genDIEmbeddedType(memberType);
-      unionMembers.push_back(dbgFactory_.CreateDerivedType(
+      unionMembers.push_back(dbgFactory_.CreateDerivedTypeEx(
           dwarf::DW_TAG_member,
           dbgCompileUnit_,
           name,
-          dbgCompileUnit_,
+          DICompileUnit(),
           0,
-          llvm::ConstantExpr::getSizeOf(memberType.irEmbeddedType()),
-          llvm::ConstantExpr::getAlignOf(memberType.irEmbeddedType()),
+          getSizeOfInBits(memberType.irEmbeddedType()),
+          getAlignOfInBits(memberType.irEmbeddedType()),
           getInt64Val(0), 0,
           memberDbgType));
     }
@@ -314,14 +414,14 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   }
 
   // Create the non-discriminated union.
-  DICompositeType unionType = dbgFactory_.CreateCompositeType(
+  DICompositeType unionType = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_union_type,
       dbgCompileUnit_,
       "",
-      dbgCompileUnit_,
+      DICompileUnit(),
       0,
-      llvm::ConstantExpr::getSizeOf(type->irType()),
-      llvm::ConstantExpr::getAlignOf(type->irType()),
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(unionMembers.data(), unionMembers.size()));
@@ -330,48 +430,48 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   if (irType->getNumContainedTypes() > 1) {
     const llvm::Type * discType = irType->getContainedType(0);
     DIDescriptorArray structMembers;
-    DIType discDbgType = dbgFactory_.CreateBasicType(
+    DIType discDbgType = dbgFactory_.CreateBasicTypeEx(
         dbgCompileUnit_,
         "",
-        dbgCompileUnit_, 0,
-        llvm::ConstantExpr::getSizeOf(discType),
-        llvm::ConstantExpr::getAlignOf(discType),
+        DICompileUnit(), 0,
+        getSizeOfInBits(discType),
+        getAlignOfInBits(discType),
         getInt64Val(0), // Offset
         0, // Flags
         dwarf::DW_ATE_unsigned);
 
-    structMembers.push_back(dbgFactory_.CreateDerivedType(
+    structMembers.push_back(dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_member,
         dbgCompileUnit_,
         "vindex",
-        dbgCompileUnit_,
+        DICompileUnit(),
         0,
-        llvm::ConstantExpr::getSizeOf(discType),
-        llvm::ConstantExpr::getAlignOf(discType),
-        llvm::ConstantExpr::getOffsetOf(cast<StructType>(type->irType()), 0),
+        getSizeOfInBits(discType),
+        getAlignOfInBits(discType),
+        getOffsetOfInBits(cast<StructType>(type->irType()), 0),
         0,
         discDbgType));
 
-    structMembers.push_back(dbgFactory_.CreateDerivedType(
+    structMembers.push_back(dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_member,
         dbgCompileUnit_,
         ".value",
-        dbgCompileUnit_,
+        DICompileUnit(),
         0,
-        llvm::ConstantExpr::getSizeOf(irType->getContainedType(1)),
-        llvm::ConstantExpr::getAlignOf(irType->getContainedType(1)),
-        llvm::ConstantExpr::getOffsetOf(cast<StructType>(type->irType()), 1),
+        getSizeOfInBits(irType->getContainedType(1)),
+        getAlignOfInBits(irType->getContainedType(1)),
+        getOffsetOfInBits(cast<StructType>(type->irType()), 1),
         0,
         unionType));
 
-    unionType = dbgFactory_.CreateCompositeType(
+    unionType = dbgFactory_.CreateCompositeTypeEx(
         dwarf::DW_TAG_structure_type,
         dbgCompileUnit_,
         "",
-        dbgCompileUnit_,
+        DICompileUnit(),
         0,
-        llvm::ConstantExpr::getSizeOf(type->irType()),
-        llvm::ConstantExpr::getAlignOf(type->irType()),
+        getSizeOfInBits(type->irType()),
+        getAlignOfInBits(type->irType()),
         getInt64Val(0), 0,
         DIType(),
         dbgFactory_.GetOrCreateArray(structMembers.data(), structMembers.size()));
@@ -387,13 +487,13 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   if (type->selfParam() != NULL) {
     const ParameterDefn * param = type->selfParam();
     DIType ptype = genDIParameterType(param->type());
-    ptype = dbgFactory_.CreateDerivedType(
+    ptype = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_formal_parameter,
         dbgCompileUnit_,
         "self",
-        dbgCompileUnit_,
+        genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        llvm::ConstantExpr::getSizeOf(param->type().irParameterType()),
+        getSizeOfInBits(param->type().irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);
@@ -404,13 +504,13 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
     DIType ptype = genDIParameterType(param->type());
-    ptype = dbgFactory_.CreateDerivedType(
+    ptype = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_formal_parameter,
         dbgCompileUnit_,
         param->name() != NULL ? param->name() : "",
-        dbgCompileUnit_,
+        genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        llvm::ConstantExpr::getSizeOf(param->internalType().irParameterType()),
+        getSizeOfInBits(param->internalType().irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);
@@ -418,17 +518,37 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   }
 
   return dbgFactory_.CreateCompositeType(
-      llvm::dwarf::DW_TAG_subroutine_type,
+      dwarf::DW_TAG_subroutine_type,
       dbgCompileUnit_,
       "",
       dbgCompileUnit_,
       0, // Source line
-      uint64_t(0), // Size
+      0, // Size
       0, // Align
       0, // Offset
       0, // Flags
       DIType(),
       dbgFactory_.GetOrCreateArray(args.data(), args.size()));
+}
+
+unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
+  TokenPosition pos = tokenPosition(loc);
+  return pos.beginLine;
+}
+
+Constant * CodeGenerator::getSizeOfInBits(const llvm::Type * ty) {
+  Constant * c = llvm::ConstantExpr::getSizeOf(ty);
+  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
+}
+
+Constant * CodeGenerator::getAlignOfInBits(const llvm::Type * ty) {
+  Constant * c = llvm::ConstantExpr::getAlignOf(ty);
+  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
+}
+
+Constant * CodeGenerator::getOffsetOfInBits(const StructType * st, unsigned fieldIndex) {
+  Constant * c = llvm::ConstantExpr::getOffsetOf(st, fieldIndex);
+  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
 }
 
 } // namespace tart

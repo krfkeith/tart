@@ -420,6 +420,7 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
           vdef->name() << "' from static method.";
     }
 
+    analyzeDefn(vdef, Task_PrepTypeComparison);
     LValueExpr * result = new LValueExpr(loc, context, vdef);
 
     // If it's a variadic parameter, then the actual type is an array of the declared type.

@@ -191,6 +191,7 @@ Lexer::Lexer(ProgramSource * src)
     , stream_(src->open())
     , errorCode_(ERROR_NONE)
 {
+  ch_ = 0;
   readCh();
   lineStartOffset_ = tokenStartOffset_ = currentOffset_ = 0;
   tokenLocation_.file = srcFile_->get();
@@ -200,10 +201,11 @@ Lexer::Lexer(ProgramSource * src)
 }
 
 inline void Lexer::readCh() {
-  ch_ = stream_.get();
   if (ch_ >= 0) {
     currentOffset_++;
   }
+
+  ch_ = stream_.get();
 }
 
 TokenType Lexer::next() {

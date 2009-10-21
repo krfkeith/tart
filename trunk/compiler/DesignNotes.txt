@@ -113,6 +113,7 @@ Implementation TODOS:
   * character iterator functions.
 * Tartdoc
   * Requires command-line parsing lib.
+* 'get' and 'set' should not be keywords. Properties can do just fine.
 
 Doc errors:
 
@@ -429,114 +430,37 @@ Parameter:
   2 - name index
   1+ type
   
+// ------------------------------------------------------------------------
+
+Weak references implemented in terms of finalization:
+
+class WeakReference[%T:Object] {
+  @Untraced value:T;
   
-
-
-class Parameter {
-  private def construct() {}
-
-  /** The unqualified member name. */
-  let name:String;
-  
-  /** The type of this member. Note: Variadic parameter types will be converted to array types. */
-  let paramType:TypeDescriptor;
-  
-  /** Array of attributes for this parameter. */
-  let attributes:Attribute[];
-  
-  let defaultValue:Object;
-}
-
-
-/** Description of a callable method. */
-final class Method : Member {
-  /** Array of type parameters. */
-  let typeParams:Type[];
-
-  /** The parameters of this method. */
-  let params:Parameter[];
-  
-  /** The return type of the method. */
-  let returnType:TypeDescriptor;
-
-  /** A pointer to the function. */
-  private let methodPointer:NativePointer[void];
-
-  /** A pointer to a trampoline function that can take an array of objects and call
-      the actual native method with the correct argument types.
-      'obj': The object pointer, or null if it is a static or global function.
-      'm': The native method pointer.
-      'args': The argument list.
-    */
-  private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
-
-  /** Invoke the method on the specified object with the given arguments.
-      TODO: Define exception types for bad argument types.
-   */
-  final def call(obj:Object, args:Object[]) -> Object {
-    // TODO: Need a static function for attempt to call an abstract method.
-    return invoke(obj, methodPointer, args);
+  def construct {
+    value = null;
   }
-}
-
-
-/** The metatype object - the class that describes a type. */
-public class TypeDescriptor {
-  enum TypeKind : ubyte {
-    PRIMITIVE,
-    CLASS,
-    STRUCT,
-    INTERFACE,
-    ENUM,
-    FUNCTION,
-    TUPLE,
-    UNION,
-    NATIVE_POINTER,
-    NATIVE_ARRAY,
-    //NonType
+  
+  def construct(value:T) {
+    value = null;
+    set(value);
   }
+  
+  def get() { return value; }
+  
+  def set(value:T) {
+    if self.value is not null {
+      self.value.removeFinalizer(self.finalize);
+    }
 
-  @Flags  
-  enum TypeTraits {
-    ATTRIBUTE,
+    self.value = value;
+
+    if self.value is not null {
+      self.value.addFinalizer(self.finalize);
+    }
   }
-
-  /** The TypeInfoBlock for this type. */  
-  let typeInfo:NativePointer[TypeInfoBlock];
   
-  /** The fully-qualified name of this type. */
-  let name:String;
-  
-  /** What general kind of type this is (CLASS, STRUCT, etc.) */
-  let typeKind:TypeKind;
-  
-  /** Pointer to this type's supertype, or null. */
-  let supertype:TypeDescriptor /* or void */;
-  
-  /** Array of inherited interfaces. */
-  let interfaces:TypeDescriptor[];
-  
-  /** Array of type parameters. */
-  let typeParams:TypeDescriptor[];
-  
-  /** Array of associated attributes */
-  let attributes:Attribute[];
-  
-  /** Array of field members. */
-  let fields:Field[];
-  
-  /** Array of property members. */
-  let properties:Property[];
-  
-  /** Array of constructor members. */
-  let constructors:Method[];
-  
-  /** Array of methods. */
-  let methods:Method[];
-
-  /** Private constructor - types cannot be created by applications. */
-  private def construct() {}
-}
-
-let p = String.fn (int) -> int
-
+  def finalize() {
+    value = null;
+  }
+}  

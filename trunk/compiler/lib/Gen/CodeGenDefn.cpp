@@ -109,24 +109,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     if (debug_ /*&& fdef->module() == module_*/) {
-      dbgCompileUnit_ = getCompileUnit(fdef);
-      if (!dbgCompileUnit_.isNull()) {
-        DICompositeType dbgFuncType = genDIFunctionType(fdef->functionType());
-        dbgFunction_ = dbgFactory_.CreateSubprogram(
-            dbgCompileUnit_, // TODO: Replace for functions within a scope.
-            fdef->name(),
-            fdef->qualifiedName(),
-            fdef->linkageName(),
-            dbgCompileUnit_,
-            getSourceLineNumber(*fdef),
-            dbgFuncType,
-            fdef->isSynthetic() /* isLocalToUnit */,
-            true /* isDefinition */);
-        if (!dbgFunction_.Verify()) {
-          dbgFunction_.Verify();
-          DFAIL("BAD DBG");
-        }
-      }
+      genDISubprogram(fdef);
     }
 
     // Create the LLVM Basic Blocks corresponding to each high level BB.
@@ -183,6 +166,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     } else {
 #endif
       genLocalStorage(fdef->blocks(), fdef->localScopes());
+      genDISubprogramStart(fdef);
       genBlocks(fdef->blocks());
 #if 0
     }

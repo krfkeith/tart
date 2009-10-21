@@ -314,7 +314,12 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
       builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
 
       // Allocate an instance of the object
-      Value * instance = builder_.CreateMalloc(type->irType());
+      Value * instance = builder_.CreatePointerCast(
+          builder_.CreateCall(
+              getGlobalAlloc(),
+              llvm::ConstantExpr::getSizeOf(type->irType()),
+              "new"),
+          PointerType::get(type->irType(), 0));
 
       // Generate code to fill in vtable pointer of new object.
       genInitObjVTable(type, instance);

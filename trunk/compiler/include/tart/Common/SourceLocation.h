@@ -34,27 +34,29 @@ struct SourceLocation {
 
   friend SourceLocation operator|(const SourceLocation & a, const SourceLocation & b) {
     SourceLocation result;
-    if (a.file == NULL) {
-      result = b;
-    } else if (b.file != a.file) {
-      result = a;
-    } else {
+    if (a.file == b.file) {
       result.file = a.file;
       result.begin = a.begin < b.begin ? a.begin : b.begin;
       result.end = a.end > b.end ? a.end : b.end;
+    } else if (a.file == NULL) {
+      result = b;
+    } else {
+      result = a;
     }
+
     return result;
   }
 
   SourceLocation operator|=(const SourceLocation & a) {
-    if (file == NULL) {
+    if (a.file == file) {
+      if (a.begin < begin) begin = a.begin;
+      if (a.end > end) end = a.end;
+    } else if (file == NULL) {
       file = a.file;
       begin = a.begin;
       end = a.end;
-    } else if (a.file == file) {
-      if (a.begin < begin) begin = a.begin;
-      if (a.end > end) end = a.end;
     }
+
     return *this;
   }
 

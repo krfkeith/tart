@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Defn.h"
+#include "tart/CFG/Module.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/CompositeType.h"
@@ -49,12 +50,6 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 
 void CodeGenerator::genBlocks(BlockList & blocks) {
 
-  // Generate debugging information (this has to be done after local variable allocas.)
-  if (debug_ && !dbgFunction_.isNull()) {
-    dbgFactory_.InsertSubprogramStart(dbgFunction_, builder_.GetInsertBlock());
-    dbgLocation_ = SourceLocation();
-  }
-
   // Generate the list of predecessor blocks for each block.
   for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
     Block * blk = *b;
@@ -79,24 +74,31 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
     }
 
     genStopPoint(blk->termLocation());
-
-    // If this is the last block, generate debugging info before the terminator.
-    if (debug_ && !dbgFunction_.isNull() && blk == blocks.back()) {
-      dbgFactory_.InsertRegionEnd(dbgFunction_, builder_.GetInsertBlock());
-    }
-
     genBlockTerminator(blk);
+  }
+
+  // If this is the last block, generate debugging info before the terminator.
+  if (debug_ && !dbgFunction_.isNull()) {
+    BasicBlock & lastBlock = currentFn_->getBasicBlockList().back();
+    builder_.SetInsertPoint(&lastBlock);
+    TerminatorInst * term = lastBlock.getTerminator();
+    term->removeFromParent();
+    dbgFactory_.InsertRegionEnd(dbgFunction_, &lastBlock);
+    builder_.Insert(term);
   }
 
   unwindTarget_ = NULL;
 }
 
 void CodeGenerator::genStopPoint(const SourceLocation & loc) {
-  if (debug_ && !dbgFunction_.isNull() && loc != dbgLocation_) {
+  if (debug_ &&
+      loc.file == module_->moduleSource() &&
+      !dbgFunction_.isNull() &&
+      loc != dbgLocation_) {
     TokenPosition pos = tokenPosition(loc);
     dbgFactory_.InsertStopPoint(
         dbgCompileUnit_,
-        pos.beginLine, pos.beginCol,
+        pos.endLine, pos.endCol,
         builder_.GetInsertBlock());
     dbgLocation_ = loc;
   }
@@ -148,7 +150,6 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
 };
 
 void CodeGenerator::genReturn(Expr * returnVal) {
-  //Expr * returnVal = blk->termValue();
   if (returnVal == NULL) {
     builder_.CreateRet(NULL);
   } else {

@@ -4,25 +4,16 @@ import tart.reflect.Method;
 @EntryPoint
 def main(args:String[]) -> int {
   testModuleReflection();
-  testModuleList();
-  //testModuleMethods();
-  //testFindMethod();
+  testModuleMethods();
+  testFindMethod();
   return 0;
 }
 
 def testModuleReflection() {
   let m = Module.thisModule();
   Debug.assertEq("ReflectionTest", m.name);
-}
-
-def testModuleList() {
-  //for i = 0; i < Module._moduleCount; ++i {
-  //  Debug.writeLn("module");
-    //Debug.writeLn(Module.moduleList[i].name);
-  //}
-  //for mod in Module.modules() {
-  //  Debug.writeLn(mod.name);
-  //}
+  Debug.assertEq(0, m.types.length);
+  Debug.assertEq(5, m.methods.length);
 }
 
 def testModuleMethods() {
@@ -42,5 +33,4 @@ def testFindMethod() {
   Debug.assertFalse(f2 isa Method);
 }
 
-def sample() {
-}
+def sample() {}
