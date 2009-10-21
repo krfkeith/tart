@@ -324,9 +324,9 @@ TEST_F(LexerTest, Location) {
   EXPECT_EQ(10u, lex.tokenLocation().end);
 
   TokenPosition tl = src.tokenPosition(lex.tokenLocation());
-  EXPECT_EQ(2u, tl.beginLine);
+  EXPECT_EQ(3u, tl.beginLine);
   EXPECT_EQ(3u, tl.beginCol);
-  EXPECT_EQ(2u, tl.endLine);
+  EXPECT_EQ(3u, tl.endLine);
   EXPECT_EQ(8u, tl.endCol);
 
   std::string line;

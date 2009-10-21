@@ -652,7 +652,7 @@ Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
   if (toType != NULL) {
     UnionType * utype = cast<UnionType>(toType);
 
-    if (utype->numValueTypes() > 0) {
+    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
       int index = utype->getTypeIndex(fromType);
       Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
 
@@ -702,16 +702,16 @@ Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
 
   if (fromType != NULL) {
     UnionType * utype = cast<UnionType>(fromType);
-    if (utype->numValueTypes() > 0) {
+    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
       int index = utype->getTypeIndex(toType);
       const llvm::Type * fieldType = toType->irEmbeddedType();
       return builder_.CreateLoad(
           builder_.CreateBitCast(
               builder_.CreateConstGEP2_32(value, 0, 1),
               PointerType::get(fieldType, 0)));
-    } else if (toType->isVoidType()) {
-      // If the union's representation if a pointer then a 'void' type gets turned into null.
-      return ConstantPointerNull::getNullValue(PointerType::get(toType->irType(), 0));
+    //} else if (toType->isVoidType()) {
+    //  // If the union's representation if a pointer then a 'void' type gets turned into null.
+    //  return ConstantPointerNull::getNullValue(PointerType::get(toType->irType(), 0));
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.
@@ -1096,7 +1096,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
   DASSERT(fromType != NULL);
   DASSERT(toType != NULL);
 
-  if (fromType->numValueTypes() > 0) {
+  if (fromType->numValueTypes() > 0 || fromType->hasVoidType()) {
     // The index of the actual type.
     Value * actualTypeIndex = builder_.CreateExtractValue(val, 0);
 
@@ -1108,7 +1108,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
     }
 
     return builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
-  } else if (fromType->hasVoidType()) {
+  } /*else if (fromType->hasVoidType()) {
     if (toType->isVoidType()) {
       // If we're testing vs. void, then just compare to a null pointer.
       return builder_.CreateICmp(CmpInst::ICMP_EQ, val,
@@ -1147,7 +1147,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
     phi->addIncoming(ConstantInt::getFalse(context_), start);
     return phi;
 
-  } else {
+  } */else {
     DFAIL("Implement");
   }
 }
@@ -1193,16 +1193,16 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
 
   if (isa<PointerType>(sizeValue->getType())) {
     if (Constant * c = dyn_cast<Constant>(sizeValue)) {
-      sizeValue = llvm::ConstantExpr::getPtrToInt(c, builder_.getInt32Ty());
+      sizeValue = llvm::ConstantExpr::getPtrToInt(c, builder_.getInt64Ty());
     } else {
-      sizeValue = builder_.CreatePtrToInt(sizeValue, builder_.getInt32Ty());
+      sizeValue = builder_.CreatePtrToInt(sizeValue, builder_.getInt64Ty());
     }
   }
 
   std::stringstream labelStream;
   FormatStream fs(labelStream);
   fs << objType;
-  Value * alloc = builder_.CreateMalloc(builder_.getInt8Ty(), sizeValue, labelStream.str().c_str());
+  Value * alloc = builder_.CreateCall(getGlobalAlloc(), sizeValue, labelStream.str().c_str());
   Value * instance = builder_.CreateBitCast(alloc, resultType);
 
   if (const CompositeType * classType = dyn_cast<CompositeType>(objType)) {

@@ -251,6 +251,9 @@ public:
   /** return a reference to the exception personality function. */
   llvm::Function * getExceptionPersonality();
 
+  /** return a reference to the global allocator function. */
+  llvm::Function * CodeGenerator::getGlobalAlloc();
+
   /** Generate data structures for a string literal. */
   llvm::Constant * genStringLiteral(const std::string & strval);
 
@@ -282,8 +285,10 @@ public:
   llvm::ConstantInt * getInt64Val(int64_t value);
 
     /** Return the debug compile unit for the specified source file. */
-  llvm::DICompileUnit getCompileUnit(const ProgramSource * source);
-  llvm::DICompileUnit getCompileUnit(Defn * defn);
+  llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
+  llvm::DICompileUnit genDICompileUnit(const Defn * defn);
+  void genDISubprogram(const FunctionDefn * fn);
+  void genDISubprogramStart(const FunctionDefn * fn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void genStopPoint(const SourceLocation & loc);
 
@@ -330,6 +335,10 @@ private:
 
   void addTypeName(const Type * type);
 
+  llvm::Constant * getSizeOfInBits(const llvm::Type * ty);
+  llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
+  llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
+
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
 
@@ -361,6 +370,7 @@ private:
   llvm::Function * unwindRaiseException_;
   llvm::Function * unwindResume_;
   llvm::Function * exceptionPersonality_;
+  llvm::Function * globalAlloc_;
 
   RTTypeMap compositeTypeMap_;
   StringLiteralMap stringLiteralMap_;

@@ -78,6 +78,7 @@ public:
 
   /** Where in the source file this expression comes from. */
   const SourceLocation & location() const { return loc; }
+  SourceLocation & location() { return loc; }
 
   /** Produce a string representation of this node and its children. */
   const std::string toString(int formatOptions = Format_Default) const;

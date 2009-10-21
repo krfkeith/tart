@@ -334,7 +334,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
   if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-      Expr * setProp = reduceSetPropertyValue(ast->location(), lval->base(), prop, newValue);
+      Expr * setProp = reduceSetPropertyValue(ast->location(), lvalueBase(lval), prop, newValue);
       if (isErrorResult(setProp)) {
         return &Expr::ErrorVal;
       }
@@ -443,15 +443,13 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
 
   DASSERT_OBJ(lvalue->type() != NULL, lvalue);
 
-  /*if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
       checkAccess(ast->location(), prop);
-      return reduceGetPropertyValue(ast->location(), lval->base(), prop);
+      return reduceGetPropertyValue(ast->location(), lvalueBase(lval), prop);
     }
-  } else*/
-
-  if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
         checkAccess(ast->location(), prop);
@@ -470,7 +468,7 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lvalue,
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
       checkAccess(loc, prop);
-      return reduceSetPropertyValue(loc, lval->base(), prop, rvalue);
+      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rvalue);
     }
   } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
@@ -916,7 +914,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
 
   LValueExpr * lval = cast<LValueExpr>(call->function());
   PropertyDefn * prop = cast<PropertyDefn>(lval->value());
-  Expr * basePtr = lval->base();
+  Expr * basePtr = lvalueBase(lval);
   //const ASTNodeList & args = call->args();
 
   if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
@@ -1014,7 +1012,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 
   LValueExpr * lval = cast<LValueExpr>(call->function());
   PropertyDefn * prop = cast<PropertyDefn>(lval->value());
-  Expr * basePtr = lval->base();
+  Expr * basePtr = lvalueBase(lval);
 
   if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
@@ -1093,7 +1091,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       break;
 
     case Storage_Instance: {
-      Expr * base = lvalue->base();
+      Expr * base = lvalueBase(lvalue);
       if (base == NULL || base->exprType() == Expr::ScopeName) {
         diag.error(lvalue) << "Attempt to reference non-static member " <<
         lvalue->value()->name() << " with no object";
@@ -1117,11 +1115,21 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   // is we are storing.)
   if (!store) {
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lvalue->value())) {
-      return reduceGetPropertyValue(lvalue->location(), lvalue->base(), prop);
+      return reduceGetPropertyValue(lvalue->location(), lvalueBase(lvalue), prop);
     }
   }
 
   return lvalue;
+}
+
+/** Given an LValue, return the base expression. */
+Expr * ExprAnalyzer::lvalueBase(LValueExpr * lval) {
+  Expr * base = lval->base();
+  if (LValueExpr * lvbase = dyn_cast_or_null<LValueExpr>(base)) {
+    return reduceLValueExpr(lvbase, false);
+  }
+
+  return base;
 }
 
 Expr * ExprAnalyzer::doImplicitCast(Expr * in, const TypeRef & toType) {

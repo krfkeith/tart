@@ -95,7 +95,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
     if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
-        success &= addOverload(call, lv->base(), func, args);
+        success &= addOverload(call, lvalueBase(lv), func, args);
 
         // If there's a base pointer, then it's not really unqualified.
         //if (lv->base() != NULL) {
@@ -227,7 +227,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
     CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
     call->setExpectedReturnType(expected);
     if (FunctionDefn * func = dyn_cast<FunctionDefn>(lval->value())) {
-      addOverload(call, lval->base(), func, args);
+      addOverload(call, lvalueBase(lval), func, args);
     } else {
       diag.error(loc) << func << " is not a callable expression.";
       return &Expr::ErrorVal;

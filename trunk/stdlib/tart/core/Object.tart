@@ -45,4 +45,9 @@ public class Object {
   /** Implicitly convert non-object values to Boxed types. */
   static def coerce[%T] (value:T) -> Object { return Boxed[T](value); }
   static def coerce(value:Object) -> Object { return value; }
+
+  /** Set a finalization callback to be called when this object has been deleted.
+      Note that the finalizer must *not* hold a reference to the object or it
+      will never be deleted. */
+  // @Intrinsic setFinalizer(finalizer:fn);
 }

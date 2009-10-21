@@ -99,7 +99,7 @@ const llvm::Type * UnionType::createIRType() const {
     diag.info(loc_) << "  Largest type on 64-bit system is " << largestType64;
   }
 
-  if (numValueTypes_ > 0) {
+  if (numValueTypes_ > 0 || hasVoidType_) {
     size_t numStates = numValueTypes_;
     if (numReferenceTypes_ > 0 || hasVoidType_) {
       numStates += 1;

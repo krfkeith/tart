@@ -21,7 +21,7 @@ DebugErrors("debug-errors",
     llvm::cl::desc("Print compiler stack trace on fatal error"));
 
 namespace tart {
-    
+
 Diagnostics::StdErrWriter Diagnostics::StdErrWriter::instance;
 
 namespace {
@@ -65,7 +65,7 @@ void Diagnostics::reset() {
 
 void Diagnostics::write(const SourceLocation & loc, Severity sev,
     const std::string & msg) {
-      
+
   switch (sev) {
     case Fatal:
     case Error:
@@ -74,10 +74,10 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
         recovery = Closed;
         return;
       }
-      
+
       recovery = Gated;
       break;
-      
+
     case Warning:
     case Info:
       // Allow info messages to follow-up a fatal, but not
@@ -86,7 +86,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
         return;
       }
       break;
-      
+
     default:
       break;
   }
@@ -116,7 +116,7 @@ void Diagnostics::printContextStack(SourceContext * source) {
     }
   }
 }
-  
+
 void Diagnostics::indent() {
   ++indentLevel;
 }
@@ -177,7 +177,7 @@ void Diagnostics::printStackTrace(int skipFrames) {
 
 #if HAVE_CXXABI_H
   if (char ** symbols = backtrace_symbols(stackTrace, depth)) {
-    
+
     // Name buffer used to contain demangling result.
     size_t sz = 256;
     char * buffer = (char *)malloc(sz);
@@ -198,7 +198,7 @@ void Diagnostics::printStackTrace(int skipFrames) {
             demangled_name = abi::__cxa_demangle(begin, buffer, &sz, &status);
           }
         }
-      
+
         if (demangled_name != NULL) {
           fprintf(stderr, "    %s\n", demangled_name);
 
@@ -269,7 +269,7 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
     TokenPosition tokLoc = loc.file->tokenPosition(loc);
     fprintf(stderr, "%s:%d: %s%.*s%s\n",
         loc.file->getFilePath().c_str(),
-        tokLoc.beginLine + 1,
+        tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,
         INDENTATION,
@@ -292,7 +292,7 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
     TokenPosition tokLoc = loc.file->tokenPosition(loc);
     len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
         loc.file->getFilePath().c_str(),
-        tokLoc.beginLine + 1,
+        tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,
         INDENTATION,

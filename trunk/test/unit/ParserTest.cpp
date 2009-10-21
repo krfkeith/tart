@@ -77,10 +77,14 @@ TEST_F(ParserTest, Types) {
   ast = parseType("X");
   ASSERT_EQ(ASTNode::Id, ast->nodeType());
   EXPECT_AST_EQ("X", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(1, ast->location().end);
 
   ast = parseType("(X)");
   ASSERT_EQ(ASTNode::Id, ast->nodeType());
   EXPECT_AST_EQ("X", ast);
+  EXPECT_EQ(1, ast->location().begin);
+  EXPECT_EQ(2, ast->location().end);
 
   ast = parseType("(", 1);
   ASSERT_EQ(NULL, ast);
@@ -88,6 +92,8 @@ TEST_F(ParserTest, Types) {
   ast = parseType("X[]");
   ASSERT_EQ(ASTNode::Array, ast->nodeType());
   EXPECT_AST_EQ("Array(X)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  //EXPECT_EQ(3, ast->location().end);
 
   ast = parseType("X[", 1);
   ASSERT_EQ(NULL, ast);
@@ -95,6 +101,8 @@ TEST_F(ParserTest, Types) {
   ast = parseType("X.Y");
   ASSERT_EQ(ASTNode::Member, ast->nodeType());
   EXPECT_AST_EQ("X.Y", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseType("bool");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
@@ -162,19 +170,27 @@ TEST_F(ParserTest, Terminals) {
   ast = parseExpression("10");
   ASSERT_EQ(ASTNode::LitInt, ast->nodeType());
   ASSERT_PRED2(ASTCmp, "10", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(2, ast->location().end);
 
   ast = parseExpression("0x10");
   ASSERT_EQ(ASTNode::LitInt, ast->nodeType());
   ASSERT_PRED2(ASTCmp, "16", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(4, ast->location().end);
 
   ast = parseExpression("0x100000000");
   ASSERT_EQ(ASTNode::LitInt, ast->nodeType());
   ASSERT_PRED2(ASTCmp, "4294967296", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(11, ast->location().end);
 
   // Floats
   ast = parseExpression("1.0");
   ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
   ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->value().convertToDouble());
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1.0f");
   ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
@@ -188,16 +204,22 @@ TEST_F(ParserTest, Terminals) {
   ast = parseExpression("'c'");
   ASSERT_EQ(ASTNode::LitChar, ast->nodeType());
   ASSERT_EQ(uint32_t('c'), dyn_cast<ASTCharLiteral>(ast)->value());
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   // String literals
   ast = parseExpression("\"c\"");
   ASSERT_EQ(ASTNode::LitString, ast->nodeType());
   ASSERT_PRED2(ASTCmp, "\"c\"", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   // Boolean literals
   ast = parseExpression("true");
   ASSERT_EQ(ASTNode::LitBool, ast->nodeType());
   ASSERT_EQ(true, dyn_cast<ASTBoolLiteral>(ast)->value());
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(4, ast->location().end);
 
   ast = parseExpression("false");
   ASSERT_EQ(ASTNode::LitBool, ast->nodeType());
@@ -216,42 +238,62 @@ TEST_F(ParserTest, SimpleExpressions) {
   ast = parseExpression("1+1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixAdd(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1-1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixSubtract(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1*1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixMultiply(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1/1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixDivide(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1%1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixModulus(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1&1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixBitAnd(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1|1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixBitOr(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1^1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixBitXor(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(3, ast->location().end);
 
   ast = parseExpression("1 and 1");
   ASSERT_EQ(ASTNode::LogicalAnd, ast->nodeType());
   EXPECT_AST_EQ("LogicalAnd(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(7, ast->location().end);
 
   ast = parseExpression("1 or 1");
   ASSERT_EQ(ASTNode::LogicalOr, ast->nodeType());
   EXPECT_AST_EQ("LogicalOr(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(6, ast->location().end);
 
   ast = parseExpression("1 << 1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
@@ -339,6 +381,8 @@ TEST_F(ParserTest, ComplexExpressions) {
   ast = parseExpression("1+(1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("infixAdd(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(4, ast->location().end);
 
   ast = parseExpression("(1-1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
@@ -351,18 +395,26 @@ TEST_F(ParserTest, Arguments) {
   ast = parseExpression("f()");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f()", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(1, ast->location().end);
 
   ast = parseExpression("f(1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(4, ast->location().end);
 
   ast = parseExpression("f(1, 1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1, 1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(7, ast->location().end);
 
   ast = parseExpression("f(1, n=1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1, n=1)", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(9, ast->location().end);
 
   ast = parseExpression("f(1,)", 1);
   ASSERT_EQ(NULL, ast);
@@ -377,6 +429,8 @@ TEST_F(ParserTest, Statements) {
   ast = parseStatement("f();");
   ASSERT_EQ(Stmt::Expression, ast->nodeType());
   EXPECT_AST_EQ("f();", ast);
+  EXPECT_EQ(0, ast->location().begin);
+  EXPECT_EQ(4, ast->location().end);
 
   ast = parseStatement("a = b;");
   ASSERT_EQ(ASTNode::Expression, ast->nodeType());

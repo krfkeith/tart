@@ -34,6 +34,9 @@ check_function_exists(backtrace HAVE_BACKTRACE)
 # Check for LLVM
 find_package(LLVM REQUIRED)
 
+# Check for dsymutil
+find_program(DSYMUTIL dsymutil)
+
 # Generate the config.h file
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in

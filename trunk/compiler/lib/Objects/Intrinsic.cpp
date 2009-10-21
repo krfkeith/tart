@@ -120,7 +120,7 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
   SourceLocation loc = arg->location();
   if (loc.file != NULL) {
     TokenPosition pos = loc.file->tokenPosition(loc);
-    sstream << loc.file->getFilePath() << ":" << pos.beginLine + 1 << ":";
+    sstream << loc.file->getFilePath() << ":" << pos.beginLine << ":";
   }
 
   return cg.genStringLiteral(sstream.str());

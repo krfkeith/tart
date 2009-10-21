@@ -26,7 +26,9 @@ foreach(SRC_FILE ${TART_SRC})
   # Assemble and run
   string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${EXE_FILE}
-      COMMAND gcc -g -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime -l runtime
+      COMMAND gcc -g -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
+      COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime -lruntime ${EXE_FILE}.o
+      COMMAND dsymutil ${EXE_FILE}
       DEPENDS "${ASM_FILE}" runtime
       COMMENT "Assembling ${ASM_FILE}")
 
