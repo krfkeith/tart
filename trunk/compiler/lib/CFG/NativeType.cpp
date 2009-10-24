@@ -34,11 +34,7 @@ void AddressType::initBuiltin() {
   prototype.elementType_ = tsig->params()[0];
 }
 
-AddressType * AddressType::get(const TypeRef & elemType) {
-  return get(elemType.type());
-}
-
-AddressType * AddressType::get(Type * elemType) {
+AddressType * AddressType::get(TypeRef elemType) {
   elemType = dealias(elemType);
   TypeMap::iterator it = uniqueTypes_.find(elemType);
   if (it != uniqueTypes_.end()) {
@@ -50,11 +46,11 @@ AddressType * AddressType::get(Type * elemType) {
   return addrType;
 }
 
-AddressType::AddressType(Type * elemType)
+AddressType::AddressType(const TypeRef & elemType)
   : TypeImpl(Type::Address)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
+  DASSERT_OBJ(!isa<NonTypeConstant>(elemType.type()), elemType);
 }
 
 AddressType::AddressType()
@@ -64,10 +60,10 @@ AddressType::AddressType()
 }
 
 AddressType::~AddressType() {
-  //TypeMap::iterator it = uniqueTypes_.find(elementType_);
-  //if (it != uniqueTypes_.end()) {
-  //  uniqueTypes_.erase(it);
-  //}
+  /*TypeMap::iterator it = uniqueTypes_.find(elementType_);
+  if (it != uniqueTypes_.end()) {
+    uniqueTypes_.erase(it);
+  }*/
 }
 
 const llvm::Type * AddressType::createIRType() const {
@@ -79,8 +75,8 @@ const llvm::Type * AddressType::createIRType() const {
 ConversionRank AddressType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   if (isa<AddressType>(fromType)) {
-    Type * fromElementType = fromType->typeParam(0).type();
-    if (fromElementType == NULL) {
+    TypeRef fromElementType = fromType->typeParam(0);
+    if (fromElementType.isUndefined()) {
       DFAIL("No element type");
     }
 
@@ -93,7 +89,7 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
       rank = IdenticalTypes;
     } else {
       // Check conversion on element types
-      Conversion elementConversion(dealias(fromElementType));
+      Conversion elementConversion(dealias(fromElementType.type()));
       elementConversion.bindingEnv = cn.bindingEnv;
       if (elementType_.convert(elementConversion) == IdenticalTypes) {
         rank = IdenticalTypes;
@@ -104,11 +100,7 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
       *cn.resultValue = fromValue;
     }
 
-    //diag.debug() << Format_Verbose <<
-    //    "Wants to convert from " << elementConversion.fromType << " to " <<
-    //    elementType_ << " [" << elementType_->convert(elementConversion) << "]";
     return rank;
-    //DFAIL("Implement");
   } else {
     return Incompatible;
   }
@@ -139,72 +131,63 @@ void AddressType::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// NativePointerType
+// PointerType
 
-NativePointerType NativePointerType::instance(NULL, &NativePointerType::typedefn,
-    &Builtins::module);
-TypeDefn NativePointerType::typedefn(&Builtins::module, "NativePointer", &instance);
+PointerType PointerType::prototype;
+TypeDefn PointerType::typedefn(&Builtins::module, "__Pointer", NULL);
+PointerType::TypeMap PointerType::uniqueTypes_;
 
-// TODO: Constant folding.
-//NativePointerType * NativePointerType::get(Type * elemType) {
-//  DASSERT(elemType != NULL);
-//  NativePointerType * result = new NativePointerType(&typedefn);
-//  result->setTypeArg(0, elemType);
-//  return result;
-//}
-
-NativePointerType * NativePointerType::get(const TypeRef & elemType) {
-  return create(elemType.type());
-}
-
-NativePointerType * NativePointerType::create(Type * elemType) {
-  // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&typedefn);
-  tinst->paramValues().push_back(elemType);
-  tinst->templateArgs().push_back(elemType);
-
-  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
-  NativePointerType * np = new NativePointerType(elemType, tdef, tinst);
-  tdef->setTypeValue(np);
-  tdef->addTrait(Defn::Unsafe);
-  tdef->setSingular(elemType->isSingular());
-  tdef->setTemplateInstance(tinst);
-  tdef->createQualifiedName(NULL);
-  return np;
-}
-
-NativePointerType::NativePointerType(Type * elemType, TypeDefn * defn,
-    Scope * parentScope)
-  : DeclaredType(Type::NativePointer, defn, parentScope)
-  , elementType_(elemType)
-{
-  if (elemType) {
-    DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
-  }
-}
-
-void NativePointerType::initBuiltin() {
+void PointerType::initBuiltin() {
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->addParameter(SourceLocation(), "TargetType");
+  tsig->addParameter(SourceLocation(), "Target");
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
+  typedefn.setTypeValue(&prototype);
+  typedefn.addTrait(Defn::Unsafe);
+
+  prototype.elementType_ = tsig->params()[0];
 }
 
-const llvm::Type * NativePointerType::createIRType() const {
-  DASSERT_OBJ(elementType_ != NULL, this);
-  const llvm::Type * type = elementType_->irEmbeddedType();
+PointerType * PointerType::get(TypeRef elemType) {
+  elemType = dealias(elemType);
+  TypeMap::iterator it = uniqueTypes_.find(elemType);
+  if (it != uniqueTypes_.end()) {
+    return it->second;
+  }
+
+  PointerType * addrType = new PointerType(elemType);
+  uniqueTypes_[elemType] = addrType;
+  return addrType;
+}
+
+PointerType::PointerType(const TypeRef & elemType)
+  : TypeImpl(Type::Pointer)
+  , elementType_(elemType)
+{
+  DASSERT_OBJ(!isa<NonTypeConstant>(elemType.type()), elemType);
+}
+
+PointerType::PointerType()
+  : TypeImpl(Type::Pointer)
+  , elementType_(NULL)
+{
+}
+
+const llvm::Type * PointerType::createIRType() const {
+  DASSERT_OBJ(elementType_.isDefined(), this);
+  const llvm::Type * type = elementType_.irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
-ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
+ConversionRank PointerType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   // Memory addresses can be silently converted to native pointers, but not vice-versa.
-  if (isa<AddressType>(fromType) || isa<NativePointerType>(fromType)) {
-    Type * fromElementType = fromType->typeParam(0).type();
-    if (fromElementType == NULL) {
+  if (isa<AddressType>(fromType) || isa<PointerType>(fromType)) {
+    TypeRef fromElementType = fromType->typeParam(0);
+    if (fromElementType.isUndefined()) {
       DFAIL("No element type");
     }
 
@@ -214,13 +197,13 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
     Expr * fromValue = cn.fromValue;
     ConversionRank bestRank = isa<AddressType>(fromType) ? ExactConversion : IdenticalTypes;
     ConversionRank rank = Incompatible;
-    if (elementType_->isEqual(fromElementType)) {
+    if (elementType_.isEqual(fromElementType)) {
       rank = bestRank;
     } else {
       // Check conversion on element types
-      Conversion elementConversion(dealias(fromElementType));
+      Conversion elementConversion(dealias(fromElementType.type()));
       elementConversion.bindingEnv = cn.bindingEnv;
-      if (elementType_->convert(elementConversion) == IdenticalTypes) {
+      if (elementType_.convert(elementConversion) == IdenticalTypes) {
         rank = bestRank;
       }
     }
@@ -228,7 +211,7 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
     if (rank != Incompatible && cn.resultValue) {
       if (rank == ExactConversion) {
         fromValue = new CastExpr(
-            Expr::BitCast, SourceLocation(), const_cast<NativePointerType *>(this), fromValue);
+            Expr::BitCast, SourceLocation(), const_cast<PointerType *>(this), fromValue);
       }
 
       *cn.resultValue = fromValue;
@@ -244,19 +227,19 @@ ConversionRank NativePointerType::convertImpl(const Conversion & cn) const {
   }
 }
 
-bool NativePointerType::isSingular() const {
-  return elementType_->isSingular();
+bool PointerType::isSingular() const {
+  return elementType_.isSingular();
 }
 
-bool NativePointerType::isEqual(const Type * other) const {
-  if (const NativePointerType * np = dyn_cast<NativePointerType>(other)) {
-    return elementType_->isEqual(np->elementType_);
+bool PointerType::isEqual(const Type * other) const {
+  if (const PointerType * np = dyn_cast<PointerType>(other)) {
+    return elementType_.isEqual(np->elementType_);
   }
 
   return false;
 }
 
-bool NativePointerType::isSubtype(const Type * other) const {
+bool PointerType::isSubtype(const Type * other) const {
   if (isEqual(other)) {
     return true;
   }
@@ -264,8 +247,8 @@ bool NativePointerType::isSubtype(const Type * other) const {
   return false;
 }
 
-void NativePointerType::format(FormatStream & out) const {
-  out << "NativePointer[" << elementType_ << "]";
+void PointerType::format(FormatStream & out) const {
+  out << "__Pointer[" << elementType_ << "]";
 }
 
 // -------------------------------------------------------------------

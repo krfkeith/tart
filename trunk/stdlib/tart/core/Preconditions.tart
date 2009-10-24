@@ -15,7 +15,7 @@ namespace Preconditions {
     }
   }
 
-  macro checkIndex[%T](index:int, begin:NativePointer[T], end:NativePointer[T]) {
+  macro checkIndex[%T](index:int, begin:__Pointer[T], end:__Pointer[T]) {
     if not Memory.between(index, begin, end) {
       throw IndexOutOfRangeException(Debug.stringify(expr));
     }

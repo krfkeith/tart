@@ -175,7 +175,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
     Type * contextType = dealias(context->type());
 
     // If it's a native pointer, then do an implicit dereference.
-    if (NativePointerType * nptype = dyn_cast<NativePointerType>(contextType)) {
+    if (PointerType * nptype = dyn_cast<PointerType>(contextType)) {
       contextType = nptype->typeParam(0).type();
     }
 
@@ -302,8 +302,8 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
         }
       } else if (AddressType * np = dyn_cast<AddressType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, argList);
-      } else if (NativePointerType * np = dyn_cast<NativePointerType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &NativePointerType::typedefn, argList);
+      } else if (PointerType * np = dyn_cast<PointerType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, argList);
       } else if (NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, argList);
       }
@@ -520,7 +520,7 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
       }
 
       case Type::Address:
-      case Type::NativePointer:
+      case Type::Pointer:
       case Type::NativeArray:
       case Type::Union: {
         size_t numTypes = in->numTypeParams();
@@ -600,7 +600,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
       return EnumAnalyzer(in).analyze();
 
     case Type::Address:
-    case Type::NativePointer:
+    case Type::Pointer:
     case Type::NativeArray: {
       analyzeType(type->typeParam(0), task);
       return true;

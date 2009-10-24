@@ -1,3 +1,5 @@
+import tart.core.Memory.Pointer;
+
 /** The metatype object - the class that describes a type. */
 public class TypeDescriptor {
   enum TypeKind : ubyte {
@@ -20,7 +22,7 @@ public class TypeDescriptor {
   }
 
   /** The TypeInfoBlock for this type. */  
-  let typeInfo:NativePointer[TypeInfoBlock];
+  let typeInfo:Pointer[TypeInfoBlock];
   
   /** The fully-qualified name of this type. */
   let name:String;

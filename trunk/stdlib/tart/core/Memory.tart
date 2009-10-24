@@ -4,6 +4,7 @@ import tart.annex.Intrinsic;
 namespace Memory {
   // Import built-in type definition.
   import __Address as Address;
+  import __Pointer as Pointer;
 
   /** Represents a sub-range of an array or list or other container that uses
       contiguous storage of elements. */

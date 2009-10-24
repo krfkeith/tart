@@ -264,13 +264,6 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-/*  if (NativePointerType * np = dyn_cast<NativePointerType>(fnValue->type())) {
-  } else if (AddressType * np = dyn_cast<AddressType>(fnValue->type())) {
-  } else {
-    diag.error(in) << "Unimplemented: " << in;
-    DFAIL("Implement");
-  }*/
-
   if (FunctionType * fnType = dyn_cast<FunctionType>(fnValue->type())) {
     if (!fnType->isStatic()) {
       diag.error(in) << "Attempt to call function expression '" << fnValue << "'" <<
@@ -609,11 +602,11 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
-  } else if (isa<NativePointerType>(t1) || isa<AddressType>(t1)) {
+  } else if (isa<PointerType>(t1) || isa<AddressType>(t1)) {
     Type * e0 = t1->typeParam(0).type();
-    if (isa<NativePointerType>(t2) || isa<AddressType>(t2)) {
+    if (isa<PointerType>(t2) || isa<AddressType>(t2)) {
       if (e0->isEqual(t2->typeParam(0).type())) {
-        if (isa<NativePointerType>(t2)) {
+        if (isa<PointerType>(t2)) {
           in->setFirst(addCastIfNeeded(in->first(), t2));
         } else {
           in->setSecond(addCastIfNeeded(in->second(), t1));
@@ -640,8 +633,8 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     diag.fatal(in) << "Can't compare non-reference type '" << t1 <<
     "' with reference type '" << t2 << "'";
     return in;
-  } else if (t1->typeClass() == Type::NativePointer
-      && t2->typeClass() == Type::NativePointer
+  } else if (t1->typeClass() == Type::Pointer
+      && t2->typeClass() == Type::Pointer
       && t1 == t2) {
     return in;
   } else if (t1->typeClass() == Type::Address

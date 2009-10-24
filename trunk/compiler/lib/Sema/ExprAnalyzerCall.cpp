@@ -111,22 +111,6 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         } else if (BoundMethodType * bmt = dyn_cast<BoundMethodType>(var->type().type())) {
           success &= addOverload(call, lv, bmt->fnType(), args);
         }
-
-        /*else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type().type())) {
-          TypeRef targetType = npt->typeParam(0);
-          if (analyzeType(targetType, Task_PrepTypeComparison)) {
-            if (FunctionType * ft = dyn_cast<FunctionType>(targetType.type())) {
-              success &= addOverload(call, lv, ft, args);
-            }
-          }
-        } else if (AddressType * mat = dyn_cast<AddressType>(var->type().type())) {
-          TypeRef targetType = mat->typeParam(0);
-          if (analyzeType(targetType, Task_PrepTypeComparison)) {
-            if (FunctionType * ft = dyn_cast<FunctionType>(targetType.type())) {
-              success &= addOverload(call, lv, ft, args);
-            }
-          }
-        }*/
       }
     } else {
       diag.fatal(loc) << *it << " is not callable.";

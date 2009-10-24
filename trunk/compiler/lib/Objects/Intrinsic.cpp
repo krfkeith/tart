@@ -168,7 +168,7 @@ ZeroPtrIntrinsic ZeroPtrIntrinsic::instance;
 Value * ZeroPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Type * retType = dealias(call->type());
   const llvm::Type * type = retType->irType();
-  return ConstantPointerNull::get(PointerType::getUnqual(type));
+  return ConstantPointerNull::get(llvm::PointerType::getUnqual(type));
 }
 
 // -------------------------------------------------------------------

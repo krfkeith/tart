@@ -86,7 +86,7 @@ void Builtins::init() {
 
   // Other built-in types
   AddressType::initBuiltin();
-  NativePointerType::instance.initBuiltin();
+  PointerType::initBuiltin();
   NativeArrayType::instance.initBuiltin();
 
   DASSERT(module.module() != NULL);

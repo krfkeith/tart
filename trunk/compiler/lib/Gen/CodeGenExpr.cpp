@@ -95,7 +95,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     case Expr::ConstNull: {
       //DASSERT_OBJ(in->type()->isReferenceType(), in->type());
-      return ConstantPointerNull::get(cast<PointerType>(in->type()->irParameterType()));
+      return ConstantPointerNull::get(cast<llvm::PointerType>(in->type()->irParameterType()));
     }
 
     case Expr::ConstObjRef:
@@ -712,14 +712,14 @@ Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
       return builder_.CreateLoad(
           builder_.CreateBitCast(
               builder_.CreateConstGEP2_32(value, 0, 1),
-              PointerType::get(fieldType, 0)));
+              llvm::PointerType::get(fieldType, 0)));
     //} else if (toType->isVoidType()) {
     //  // If the union's representation if a pointer then a 'void' type gets turned into null.
     //  return ConstantPointerNull::getNullValue(PointerType::get(toType->irType(), 0));
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.
-      return builder_.CreateBitCast(value, PointerType::get(toType->irType(), 0));
+      return builder_.CreateBitCast(value, llvm::PointerType::get(toType->irType(), 0));
     }
   }
 
@@ -793,17 +793,7 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
   Value * fnValue;
   ValueList args;
 
-  /*if (const NativePointerType * np = dyn_cast<NativePointerType>(fnType)) {
-    fnValue = genExpr(fn);
-    if (fnValue != NULL) {
-      fnValue = builder_.CreateLoad(fnValue);
-    }
-  } else if (const AddressType * np = dyn_cast<AddressType>(fnType)) {
-    fnValue = genExpr(fn);
-    if (fnValue != NULL) {
-      fnValue = builder_.CreateLoad(fnValue);
-    }
-  } else*/ if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
+  if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
     fnValue = genExpr(fn);
     if (fnValue != NULL) {
       if (ft->isStatic()) {
@@ -883,7 +873,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   // Get the TIB
   Value * tib = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
-  DASSERT_TYPE_EQ(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0), tib->getType());
+  DASSERT_TYPE_EQ(llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0), tib->getType());
 
   indices.clear();
   indices.push_back(getInt32Val(0));
@@ -891,7 +881,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   indices.push_back(getInt32Val(methodIndex));
   Value * fptr = builder_.CreateLoad(
       builder_.CreateGEP(tib, indices.begin(), indices.end()), method->name());
-  return builder_.CreateBitCast(fptr, PointerType::getUnqual(method->type().irType()));
+  return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type().irType()));
 }
 
 Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -926,7 +916,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   args.push_back(getInt32Val(methodIndex));
   Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
   return builder_.CreateBitCast(
-      methodPtr, PointerType::getUnqual(method->type().irType()), "method");
+      methodPtr, llvm::PointerType::getUnqual(method->type().irType()), "method");
 }
 
 /** Get the address of a value. */
@@ -976,7 +966,8 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   Value * result = builder_.CreateAlloca(fnValType);
   builder_.CreateStore(fnVal, builder_.CreateConstInBoundsGEP2_32(result, 0, 0, "method"));
   builder_.CreateStore(selfArg, builder_.CreateConstInBoundsGEP2_32(result, 0, 1, "self"));
-  result = builder_.CreateLoad(builder_.CreateBitCast(result, PointerType::get(type->irType(), 0)));
+  result = builder_.CreateLoad(
+      builder_.CreateBitCast(result, llvm::PointerType::get(type->irType(), 0)));
   return result;
 }
 
@@ -1035,7 +1026,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
 
   // If it's an interface, then we'll need to simply bit-cast it.
   if (toType->typeClass() == Type::Interface) {
-    return builder_.CreateBitCast(val, PointerType::get(toType->irType(), 0), "intf_ptr");
+    return builder_.CreateBitCast(val, llvm::PointerType::get(toType->irType(), 0), "intf_ptr");
   }
 
   // List of GetElementPtr indices
@@ -1067,8 +1058,8 @@ llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
   llvm::Type * charDataType = ArrayType::get(builder_.getInt8Ty(), 0);
 
   // Self-referential member values
-  UndefValue * strDataStart = UndefValue::get(PointerType::getUnqual(charDataType));
-  UndefValue * strSource = UndefValue::get(PointerType::getUnqual(irType));
+  UndefValue * strDataStart = UndefValue::get(llvm::PointerType::getUnqual(charDataType));
+  UndefValue * strSource = UndefValue::get(llvm::PointerType::getUnqual(irType));
 
   // Object type members
   std::vector<Constant *> objMembers;
@@ -1088,7 +1079,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
           strStruct->getType(), true,
           GlobalValue::InternalLinkage,
           strStruct, "string"),
-      PointerType::getUnqual(irType));
+      llvm::PointerType::getUnqual(irType));
 
   Constant * indices[2];
   indices[0] = getInt32Val(0);
@@ -1151,7 +1142,7 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromTyp
 
   // Bitcast to object type
   Value * valueAsObjType = builder_.CreateBitCast(val,
-      PointerType::getUnqual(Builtins::typeObject->irType()));
+      llvm::PointerType::getUnqual(Builtins::typeObject->irType()));
 
   // Upcase to type 'object' and load the TIB pointer.
   ValueList indices;
@@ -1235,12 +1226,12 @@ llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
 
   const llvm::Type * irType = type->irType();
   if (memberSize && type->isReferenceType()) {
-    irType = PointerType::get(irType, 0);
+    irType = llvm::PointerType::get(irType, 0);
   }
 
   return llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(PointerType::get(irType, 0)),
+          ConstantPointerNull::get(llvm::PointerType::get(irType, 0)),
           &indices[0], 1),
       builder_.getInt32Ty());
 }
@@ -1254,7 +1245,7 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   }
 
   const llvm::Type * resultType = objType->irType();
-  resultType = PointerType::get(resultType, 0);
+  resultType = llvm::PointerType::get(resultType, 0);
 
   Value * sizeValue;
   switch (sizeExpr->exprType()) {
@@ -1268,7 +1259,7 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
       break;
   }
 
-  if (isa<PointerType>(sizeValue->getType())) {
+  if (isa<llvm::PointerType>(sizeValue->getType())) {
     if (Constant * c = dyn_cast<Constant>(sizeValue)) {
       sizeValue = llvm::ConstantExpr::getPtrToInt(c, builder_.getInt64Ty());
     } else {

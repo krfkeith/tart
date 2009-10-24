@@ -24,8 +24,7 @@ class AddressType : public TypeImpl {
 public:
 
   /** Construct a native pointer type for the specified element type. */
-  static AddressType * get(Type * elemType);
-  static AddressType * get(const TypeRef & elemType);
+  static AddressType * get(TypeRef elemType);
 
   ~AddressType();
 
@@ -55,36 +54,30 @@ public:
   static AddressType prototype;
 
 private:
-  typedef llvm::DenseMap<Type *, AddressType *> TypeMap;
+  typedef llvm::DenseMap<TypeRef, AddressType *, TypeRef::KeyInfo> TypeMap;
   static TypeMap uniqueTypes_;
 
-  TypeRef elementType_;
-
-  /** Construct a native pointer type */
-  AddressType(Type * elemType);
+  AddressType(const TypeRef & elemType);
   AddressType();
+
+  TypeRef elementType_;
 };
 
 // -------------------------------------------------------------------
 // Generic template for native pointers
-class NativePointerType : public DeclaredType {
-protected:
-  Type * elementType_;
-
+class PointerType : public TypeImpl {
 public:
 
   /** Construct a native pointer type for the specified element type. */
-  static NativePointerType * create(Type * elemType);
-  static NativePointerType * get(const TypeRef & elemType);
-
-  /** Construct a native pointer type */
-  NativePointerType(Type * elemType, TypeDefn * defn, Scope * parentScope);
+  static PointerType * get(TypeRef elemType);
 
   /** Initialize the built-in template for this type. */
-  void initBuiltin();
+  static void initBuiltin();
 
   // Overrides
 
+  size_t numTypeParams() const { return 1; }
+  virtual TypeRef typeParam(int index) const { return elementType_; }
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -94,14 +87,23 @@ public:
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
 
-  static inline bool classof(const NativePointerType *) { return true; }
+  static inline bool classof(const PointerType *) { return true; }
   static inline bool classof(const Type * t) {
-    return t->typeClass() == NativePointer;
+    return t->typeClass() == Pointer;
   }
 
   /** Singleton instance. */
-  static NativePointerType instance;
+  static PointerType prototype;
   static TypeDefn typedefn;
+
+protected:
+  typedef llvm::DenseMap<TypeRef, PointerType *, TypeRef::KeyInfo> TypeMap;
+  static TypeMap uniqueTypes_;
+
+  PointerType(const TypeRef & elemType);
+  PointerType();
+
+  TypeRef elementType_;
 };
 
 // -------------------------------------------------------------------

@@ -1343,7 +1343,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
-  } else if (NativePointerType * np = dyn_cast<NativePointerType>(testExpr->type())) {
+  } else if (PointerType * np = dyn_cast<PointerType>(testExpr->type())) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));

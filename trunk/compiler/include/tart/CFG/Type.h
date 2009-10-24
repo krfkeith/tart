@@ -207,7 +207,7 @@ public:
   Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
 
   /** Add an explicit cast. If no cast is needed, then simply return 'from'.
-      This supresses warnings unless the cast is impossible. */
+      This suppresses warnings unless the cast is impossible. */
   Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
 
   /** Get the default initialization value for this type, or NULL if
@@ -402,13 +402,14 @@ public:
     modifiers_ = ref.modifiers_;
   }
 
-  bool operator==(const TypeRef & other) {
+  bool operator==(const TypeRef & other) const {
     return (type_ == other.type_ || type_->isEqual(other.type_)) && modifiers_ == other.modifiers_;
   }
 
   Type::TypeClass typeClass() const { return type_->typeClass(); }
 
   bool isDefined() const { return type_ != NULL; }
+  bool isUndefined() const { return type_ == NULL; }
   bool isVoidType() const { return isDefined() && type_->isVoidType(); }
   bool isNonVoidType() const { return isDefined() && !type_->isVoidType(); }
   bool isReferenceType() const { return isDefined() && type_->isReferenceType(); }
@@ -431,6 +432,22 @@ public:
   void trace() const {
     if (type_) { type_->mark(); }
   }
+
+  // Structure used when using type ref as a key.
+  struct KeyInfo {
+    static inline TypeRef getEmptyKey() { return TypeRef(NULL, uint32_t(-1)); }
+    static inline TypeRef getTombstoneKey() { return TypeRef(NULL, uint32_t(-2)); }
+
+    static unsigned getHashValue(const TypeRef & val) {
+      return (uintptr_t(val.type_) >> 4) ^ (uintptr_t(val.type_) >> 9) ^ val.modifiers_;
+    }
+
+    static bool isEqual(const TypeRef & lhs, const TypeRef & rhs) {
+      return lhs.type_ == rhs.type_ && lhs.modifiers_ == rhs.modifiers_;
+    }
+
+    static bool isPod() { return true; }
+  };
 
 private:
   Type * type_;
@@ -490,6 +507,7 @@ Type * findCommonType(Type * t0, Type * t1);
     real underlying type. */
 const Type * dealias(const Type * t);
 Type * dealias(Type * t);
+TypeRef dealias(const TypeRef & tr);
 
 /** Stream operator for pass names. */
 inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {

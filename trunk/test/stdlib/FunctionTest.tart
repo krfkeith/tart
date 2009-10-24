@@ -1,7 +1,6 @@
 @EntryPoint
 def main(args: String[]) -> int {
   defaultArgsTest();
-  //integerToStringTest();
   functionVarTest();
   return 0;
 }
