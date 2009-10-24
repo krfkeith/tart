@@ -26,6 +26,7 @@ public:
   Expr * addCastIfNeeded(Expr * in, Type * toType);
 
   Expr * visitLValue(LValueExpr * in);
+  Expr * visitBoundMethod(BoundMethodExpr * in);
   Expr * visitScopeName(ScopeNameExpr * in);
   Expr * visitElementRef(BinaryExpr * in);
 

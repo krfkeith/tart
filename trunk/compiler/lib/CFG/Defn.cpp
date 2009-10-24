@@ -432,8 +432,7 @@ void ExplicitImportDefn::trace() const {
 // -------------------------------------------------------------------
 // Utility functions
 void formatParameterList(FormatStream & out, const ParameterList & params) {
-  for (ParameterList::const_iterator it = params.begin(); it != params.end();
-      ++it) {
+  for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
     if (it != params.begin()) {
       out << ", ";

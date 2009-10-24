@@ -134,7 +134,7 @@ public:
       const ASTNodeList & args);
 
   /** Version of addOverload which works with variables of function type. */
-  bool addOverload(CallExpr * call, LValueExpr * fn, FunctionType * ftype,
+  bool addOverload(CallExpr * call, LValueExpr * fn, const FunctionType * ftype,
       const ASTNodeList & args);
   // Templates
 

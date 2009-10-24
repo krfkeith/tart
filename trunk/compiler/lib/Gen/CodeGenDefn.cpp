@@ -50,7 +50,7 @@ bool CodeGenerator::genXDef(Defn * de) {
   }
 }
 
-Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
+Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   Function * fn = irModule_->getFunction(fdef->linkageName());
   if (fn != NULL) {
     return fn;
@@ -58,7 +58,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 
   // If it's a function from a different module...
   if (fdef->module() != module_) {
-    FunctionType * funcType = fdef->functionType();
+    const FunctionType * funcType = fdef->functionType();
     fn = Function::Create(
         cast<llvm::FunctionType>(funcType->irType()),
         Function::ExternalLinkage, fdef->linkageName(),
@@ -70,7 +70,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
   DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
 
   // Generate the function reference
-  FunctionType * funcType = fdef->functionType();
+  const FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
 
   fn = Function::Create(
@@ -79,7 +79,7 @@ Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
 
   // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
   // one module.
-  fdef->setIRFunction(fn);
+  //fdef->setIRFunction(fn);
   return fn;
 }
 

@@ -32,6 +32,7 @@ class IndirectCallExpr;
 class ArrayLiteralExpr;
 class NewExpr;
 class LValueExpr;
+class BoundMethodExpr;
 class Defn;
 class TypeDefn;
 class ValueDefn;
@@ -47,6 +48,7 @@ class AddressType;
 class NativePointerType;
 class NativeArrayType;
 class UnionType;
+class BoundMethodType;
 class Block;
 class LocalScope;
 class FormatStream;
@@ -91,7 +93,7 @@ public:
 
   // Methods to generate a reference to a definition
 
-  llvm::Function * genFunctionValue(FunctionDefn * fn);
+  llvm::Function * genFunctionValue(const FunctionDefn * fn);
   llvm::Value * genLetValue(const VariableDefn * let);
   llvm::Value * genVarValue(const VariableDefn * var);
   llvm::Value * genGlobalVar(const VariableDefn * var);
@@ -156,14 +158,6 @@ public:
   /** Generate the address of an array element. */
   llvm::Value * genElementAddr(const UnaryExpr * in);
 
-  /** Generate the code to look up a method in a vtable. */
-  llvm::Value * genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
-      llvm::Value * objectVal);
-
-  /** Generate the code to look up a method in an itable. */
-  llvm::Value * genITableLookup(const FunctionDefn * method, const CompositeType * interfaceType,
-      llvm::Value * objectVal);
-
 #if 0
   /** Generate a type cast. */
   llvm::Value * genCast(const SourceLocation & loc, llvm::Value * val,
@@ -180,10 +174,21 @@ public:
   /** Generate the base address of a struct or array. */
   llvm::Value * genBaseExpr(const Expr * base, ValueList & indices, FormatStream & labelStream);
 
+  /** Generate the code to look up a method in a vtable. */
+  llvm::Value * genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
+      llvm::Value * objectVal);
+
+  /** Generate the code to look up a method in an itable. */
+  llvm::Value * genITableLookup(const FunctionDefn * method, const CompositeType * interfaceType,
+      llvm::Value * objectVal);
+
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
   llvm::Value * genCallInstr(llvm::Value * fn,
       ValueList::iterator firstArg, ValueList::iterator lastArg, const char * name);
+
+  /** Get the address of a value. */
+  llvm::Value * genBoundMethod(const BoundMethodExpr * in);
 
   /** Generate an upcast instruction. */
   llvm::Value * genUpCastInstr(llvm::Value * val, const Type * fromType, const Type * toType);
@@ -193,11 +198,6 @@ public:
 
   /** Generate an 'isInstance' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
-
-  /** Generate a reference to the Type descriptor for this type. */
-  //llvm::GlobalVariable * getTypeDescriptorPtr(const Type * ctype);
-  //llvm::GlobalVariable * createTypeDescriptorPtr(RuntimeTypeInfo * rtype);
-  //void createTypeDescriptor(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
@@ -303,8 +303,11 @@ public:
   llvm::DIDerivedType genDINativePointerType(const NativePointerType * type);
   llvm::DICompositeType genDIUnionType(const UnionType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);
+  llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
   llvm::DIDerivedType genDITypeBase(const CompositeType * type);
   llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
+  llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * type,
+      llvm::StringRef name, int index);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIEmbeddedType(const TypeRef & type);
   llvm::DIType genDIParameterType(const TypeRef & type);

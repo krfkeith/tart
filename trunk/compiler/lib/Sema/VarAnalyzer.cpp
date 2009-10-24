@@ -4,6 +4,7 @@
 
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/FunctionType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Module.h"
 
@@ -122,6 +123,10 @@ bool VarAnalyzer::resolveVarType() {
 
         if (varType->isEqual(&VoidType::instance)) {
           diag.error(target) << "Variable type cannot be void";
+        } else if (FunctionType * fnType = dyn_cast<FunctionType>(varType)) {
+          if (!fnType->isStatic()) {
+            varType = new BoundMethodType(fnType);
+          }
         }
 
         //diag.info(target) << "Analyzing type of var '" << target << "' : " << varType;
@@ -176,11 +181,7 @@ bool VarAnalyzer::resolveVarType() {
 
         // TODO: Fold this into inferTypes.
         initExpr = target->type().implicitCast(initExpr->location(), initExpr);
-        if (VariableDefn * vdef = dyn_cast<VariableDefn>(target)) {
-          vdef->setInitValue(initExpr);
-        } else if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
-          pdef->setInitValue(initExpr);
-        }
+        target->setInitValue(initExpr);
       }
     }
 

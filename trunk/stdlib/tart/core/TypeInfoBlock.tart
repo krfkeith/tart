@@ -13,7 +13,7 @@ import tart.reflect.Type;
   readonly var bases:__Address[NativePointer[TypeInfoBlock]];
 
   /** Compiler-generated function to lookup the specified interface method. */
-  readonly var idispatch:fn(interfaceType:NativePointer[TypeInfoBlock], methodIndex:int) -> NativePointer[void];
+  readonly var idispatch:static fn(interfaceType:NativePointer[TypeInfoBlock], methodIndex:int) -> NativePointer[void];
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[NativePointer[void], 0];

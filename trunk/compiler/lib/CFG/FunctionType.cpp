@@ -8,6 +8,7 @@
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Objects/Builtins.h"
 #include <llvm/DerivedTypes.h>
 
 namespace tart {
@@ -17,6 +18,7 @@ namespace tart {
 
 FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   : Type(Function)
+  , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
@@ -30,6 +32,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
 
 FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
+  , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
@@ -42,6 +45,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
 FunctionType::FunctionType(
     Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
+  , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(selfParam)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
@@ -82,8 +86,10 @@ bool FunctionType::isSubtype(const Type * other) const {
 }
 
 const llvm::Type * FunctionType::irType() const {
-  if (!isCreatingType && irType_.get()->getTypeID() == llvm::Type::OpaqueTyID) {
-    return createIRType();
+  if (llvm::OpaqueType * otype = dyn_cast<llvm::OpaqueType>(irType_.get())) {
+    if (!isCreatingType) {
+      otype->refineAbstractTypeTo(createIRType());
+    }
   }
 
   return irType_;
@@ -96,22 +102,42 @@ const llvm::Type * FunctionType::createIRType() const {
   // created.
   isCreatingType = true;
 
+  // Insert the 'self' parameter if it's an instance method
+  Type * selfType = NULL;
+  if (selfParam_ != NULL) {
+    selfType = selfParam_->type().type();
+  }
+
+  // Get the return type
+  TypeRef retType = returnType_;
+  if (!retType.isDefined()) {
+    retType.setType(&VoidType::instance);
+  }
+
+  // Create the function type
+  return createIRFunctionType(selfType, params_, returnType_);
+}
+
+const llvm::FunctionType * FunctionType::createIRFunctionType(
+    const Type * selfType, const ParameterList & params, const TypeRef & returnType) const {
+  using namespace llvm;
+
   // Types of the function parameters.
   std::vector<const llvm::Type *> parameterTypes;
 
   // Insert the 'self' parameter if it's an instance method
-  if (selfParam_ != NULL) {
-    const ParameterDefn * param = selfParam_;
-    const llvm::Type * argType = param->type().irType();
-    if (!isa<PrimitiveType>(param->type().type())) {
+  if (selfType != NULL) {
+    const llvm::Type * argType = selfType->irType();
+    if (!isa<PrimitiveType>(selfType)) {
       // TODO: Also don't do this for enums.
       argType = PointerType::getUnqual(argType);
     }
+
     parameterTypes.push_back(argType);
   }
 
   // Generate the argument signature
-  for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
+  for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
     TypeRef paramType = param->internalType();
     DASSERT_OBJ(paramType.isDefined(), param);
@@ -124,19 +150,10 @@ const llvm::Type * FunctionType::createIRType() const {
     parameterTypes.push_back(argType);
   }
 
-  // Get the return type
-  TypeRef retType = returnType_;
-  if (!retType.isDefined()) {
-    retType.setType(&VoidType::instance);
-  }
-
-  // Wrap return type in pointer type if needed.
-  const llvm::Type * rType = retType.irParameterType();
+  const llvm::Type * rType = returnType.irParameterType();
 
   // Create the function type
-  cast<OpaqueType>(irType_.get())->refineAbstractTypeTo(
-    llvm::FunctionType::get(rType, parameterTypes, false));
-  return irType_.get();
+  return llvm::FunctionType::get(rType, parameterTypes, false);
 }
 
 void FunctionType::trace() const {
@@ -145,11 +162,51 @@ void FunctionType::trace() const {
 }
 
 const llvm::Type * FunctionType::irEmbeddedType() const {
-  return llvm::PointerType::get(irType(), 0);
+  if (isStatic()) {
+    return llvm::PointerType::get(irType(), 0);
+  } else {
+    DFAIL("Plain function type cannot be embedded");
+  }
 }
 
 const llvm::Type * FunctionType::irParameterType() const {
-  return llvm::PointerType::get(irType(), 0);
+  if (isStatic()) {
+    return llvm::PointerType::get(irType(), 0);
+  } else {
+    DFAIL("Plain function type cannot be passed as a parameter");
+  }
+}
+
+bool FunctionType::isEqual(const Type * other) const {
+  if (const FunctionType * ft = dyn_cast<FunctionType>(other)) {
+    if (ft->params().size() != params_.size()) {
+      return false;
+    }
+
+    // Note that selfParam types are not compared. I *think* that's right, but
+    // I'm not sure - if not, we'll need to revise BoundMethodType to tell it
+    // not to take selfParam into account.
+
+    if (ft->isStatic() != isStatic()) {
+      return false;
+    }
+
+    DASSERT(ft->returnType().isDefined());
+    if (!ft->returnType().isEqual(returnType())) {
+      return false;
+    }
+
+    size_t numParams = params_.size();
+    for (size_t i = 0; i < numParams; ++i) {
+      if (!params_[i]->type().isEqual(ft->params_[i]->type())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 bool FunctionType::isReferenceType() const {
@@ -209,8 +266,90 @@ void FunctionType::whyNotSingular() const {
   }
 }
 
-ConversionRank FunctionType::convertImpl(const Conversion & conversion) const {
-  DFAIL("Implement");
+ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
+  return Incompatible;
+}
+
+// -------------------------------------------------------------------
+// Type that represents a reference to a 'bound' method.
+
+const llvm::Type * BoundMethodType::irType() const {
+  if (llvm::OpaqueType * ty = dyn_cast<llvm::OpaqueType>(irType_.get())) {
+    ty->refineAbstractTypeTo(createIRType());
+  }
+
+  return irType_.get();
+}
+
+const llvm::Type * BoundMethodType::createIRType() const {
+  const llvm::FunctionType * irFnType = fnType_->createIRFunctionType(
+      Builtins::typeObject, fnType_->params(), fnType_->returnType());
+
+  std::vector<const llvm::Type *> fieldTypes;
+  fieldTypes.push_back(llvm::PointerType::get(irFnType, 0));
+  fieldTypes.push_back(Builtins::typeObject->irEmbeddedType());
+  return llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
+}
+
+ConversionRank BoundMethodType::convertImpl(const Conversion & cn) const {
+  if (const BoundMethodType * btFrom = dyn_cast<BoundMethodType>(cn.fromType)) {
+    if (fnType_->isEqual(btFrom->fnType())) {
+      if (cn.resultValue != NULL) {
+        *cn.resultValue = cn.fromValue;
+      }
+
+      return IdenticalTypes;
+    }
+
+    return Incompatible;
+  } else if (const FunctionType * fnFrom = dyn_cast<FunctionType>(cn.fromType)) {
+    if (fnType_->isEqual(fnFrom)) {
+      if (cn.resultValue != NULL) {
+        if (LValueExpr * lval = dyn_cast<LValueExpr>(cn.fromValue)) {
+          Expr * base = lval->base();
+          if (FunctionDefn * fnVal = dyn_cast<FunctionDefn>(lval->value())) {
+            DASSERT(fnFrom->selfParam() != NULL);
+            BoundMethodType * bmType = new BoundMethodType(fnFrom);
+            BoundMethodExpr * boundMethod = new BoundMethodExpr(lval->location(),
+                base, fnVal, bmType);
+            *cn.resultValue = boundMethod;
+            return ExactConversion;
+          } else {
+            return Incompatible;
+          }
+        } else {
+          return Incompatible;
+        }
+      }
+    }
+
+    return Incompatible;
+  }
+
+  return Incompatible;
+}
+
+bool BoundMethodType::isEqual(const Type * other) const {
+  if (const BoundMethodType * bmOther = dyn_cast<BoundMethodType>(other)) {
+    return fnType_->isEqual(bmOther->fnType());
+  }
+
+  return false;
+}
+
+bool BoundMethodType::isSubtype(const Type * other) const {
+  return isEqual(other);
+}
+
+bool BoundMethodType::isReferenceType() const { return false; }
+bool BoundMethodType::isSingular() const { return fnType_->isSingular(); }
+
+void BoundMethodType::trace() const {
+  fnType_->mark();
+}
+
+void BoundMethodType::format(FormatStream & out) const {
+  out << fnType_;
 }
 
 }

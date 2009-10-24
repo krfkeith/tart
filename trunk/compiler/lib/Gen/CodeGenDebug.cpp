@@ -15,6 +15,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/EnumType.h"
+#include "tart/Objects/Builtins.h"
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
@@ -189,6 +190,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDIFunctionType(static_cast<const FunctionType *>(type));
       break;
 
+    case Type::BoundMethod:
+      result = genDIBoundMethodType(static_cast<const BoundMethodType *>(type));
+      break;
+
     case Type::Alias: {
       TypeAlias * alias = static_cast<const TypeAlias *>(type);
       result = genDIType(alias->value());
@@ -228,6 +233,25 @@ DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
         0,
         getSizeOfInBits(type.irEmbeddedType()),
         getAlignOfInBits(type.irEmbeddedType()),
+        getInt64Val(0), 0,
+        di);
+  }
+
+  di.Verify();
+  return di;
+}
+
+DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
+  DIType di = genDIType(type);
+  if (type->typeClass() == Type::Class) {
+    di = dbgFactory_.CreateDerivedTypeEx(
+        dwarf::DW_TAG_pointer_type,
+        dbgCompileUnit_,
+        "",
+        genDICompileUnit(type->typeDefn()),
+        0,
+        getSizeOfInBits(type->irEmbeddedType()),
+        getAlignOfInBits(type->irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -279,6 +303,21 @@ DIDerivedType CodeGenerator::genDITypeMember(const VariableDefn * var, Constant 
       getAlignOfInBits(var->type().irEmbeddedType()),
       offset, 0,
       genDIEmbeddedType(var->type()));
+}
+
+DIDerivedType CodeGenerator::genDITypeMember(const Type * type, const StructType * containingType,
+    StringRef name, int index) {
+  const llvm::Type * memberType = containingType->getContainedType(0);
+  return dbgFactory_.CreateDerivedTypeEx(
+      dwarf::DW_TAG_member,
+      dbgCompileUnit_,
+      name,
+      dbgCompileUnit_,
+      0,
+      getSizeOfInBits(memberType),
+      getAlignOfInBits(memberType),
+      getOffsetOfInBits(containingType, index), 0,
+      genDIEmbeddedType(type));
 }
 
 DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
@@ -529,6 +568,49 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
       0, // Flags
       DIType(),
       dbgFactory_.GetOrCreateArray(args.data(), args.size()));
+}
+
+DICompositeType CodeGenerator::genDIBoundMethodType(const BoundMethodType * type) {
+  const StructType * stype = cast<StructType>(type->irType());
+  const FunctionType * fnType = type->fnType();
+  std::string typeName(".fnref.");
+  typeLinkageName(typeName, fnType);
+
+  DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_structure_type,
+      dbgCompileUnit_,
+      typeName,
+      DICompileUnit(),
+      0,
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
+      getInt64Val(0), 0,
+      DIType(),
+      DIArray());
+
+  dbgTypeMap_[type] = placeHolder;
+
+  //const DefnList & fields = type->instanceFields();
+  DIDescriptorArray members;
+  members.push_back(genDITypeMember(fnType, stype, "method", 0));
+  members.push_back(genDITypeMember(Builtins::typeObject, stype, "self", 1));
+
+  DICompositeType di = dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_structure_type,
+      dbgCompileUnit_,
+      typeName,
+      DICompileUnit(),
+      0,
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
+      getInt64Val(0), 0,
+      DIType(),
+      dbgFactory_.GetOrCreateArray(members.data(), members.size()));
+
+  dbgTypeMap_[type] = di;
+  placeHolder.replaceAllUsesWith(di);
+  di.Verify();
+  return di;
 }
 
 unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {

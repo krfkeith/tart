@@ -53,6 +53,16 @@ Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
   return in;
 }
 
+Expr * FinalizeTypesPass::visitBoundMethod(BoundMethodExpr * in) {
+  DASSERT_OBJ(in->type() != NULL, in);
+  DASSERT_OBJ(in->type()->isSingular(), in);
+  if (in->selfArg() != NULL) {
+    in->setSelfArg(visitExpr(in->selfArg()));
+  }
+
+  return in;
+}
+
 Expr * FinalizeTypesPass::visitScopeName(ScopeNameExpr * in) {
   DFAIL("Implement");
 }
@@ -245,7 +255,8 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  if (!AnalyzerBase::analyzeType(cd->functionType(), Task_PrepTypeComparison)) {
+  if (!AnalyzerBase::analyzeType(
+      const_cast<FunctionType *>(cd->functionType()), Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -253,10 +264,24 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  if (NativePointerType * np = dyn_cast<NativePointerType>(fnValue->type())) {
+/*  if (NativePointerType * np = dyn_cast<NativePointerType>(fnValue->type())) {
   } else if (AddressType * np = dyn_cast<AddressType>(fnValue->type())) {
   } else {
+    diag.error(in) << "Unimplemented: " << in;
     DFAIL("Implement");
+  }*/
+
+  if (FunctionType * fnType = dyn_cast<FunctionType>(fnValue->type())) {
+    if (!fnType->isStatic()) {
+      diag.error(in) << "Attempt to call function expression '" << fnValue << "'" <<
+          " with no object";
+      return &Expr::ErrorVal;
+    }
+  } else if (BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnValue->type())) {
+    // TODO: Extra checks needed?
+  } else {
+    diag.error(in) << "Non-callable type '" << fnValue->type() << "'";
+    return &Expr::ErrorVal;
   }
 
   // Return a function call expression
@@ -274,7 +299,7 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
 
 bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
 
-  FunctionType * fnType = cd->functionType();
+  const FunctionType * fnType = cd->functionType();
   size_t paramCount = fnType->params().size();
   size_t argCount = args.size();
   outArgs.resize(paramCount);

@@ -5,7 +5,7 @@ final class Method : Member {
 	  var _returnType:TypeRef;
 	  var _params:Parameter[];
     var _methodPointer:NativePointer[void];
-    var _invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+    var _invoke:static fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object;
   }
 
   undef construct();
@@ -28,12 +28,17 @@ final class Method : Member {
       'm': The native method pointer.
       'args': The argument list.
     */
-  //private let invoke:NativePointer[fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object];
+  //private let invoke:static fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object;
 
   /** Invoke the method on the specified object with the given arguments.
       TODO: Define exception types for bad argument types.
    */
   final def call(obj:Object, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return _invoke(obj, _methodPointer, args);
+  }
+
+  final def call(obj:Object, args:Object...) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
     return _invoke(obj, _methodPointer, args);
   }

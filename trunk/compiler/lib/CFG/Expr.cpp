@@ -318,6 +318,35 @@ void InitVarExpr::format(FormatStream & out) const {
 }
 
 /// -------------------------------------------------------------------
+/// BoundMethodExpr
+
+BoundMethodExpr::BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
+    Type * type)
+  : Expr(BoundMethod, loc, type)
+  , selfArg_(selfArg)
+  , method_(method)
+{
+}
+
+bool BoundMethodExpr::isSingular() const {
+  return (selfArg_ == NULL || selfArg_->isSingular()) && method_->isSingular();
+}
+
+void BoundMethodExpr::format(FormatStream & out) const {
+  if (selfArg_ != NULL) {
+    out << selfArg_ << "." << method_->name();
+  } else {
+    out << method_;
+  }
+}
+
+void BoundMethodExpr::trace() const {
+  Expr::trace();
+  safeMark(selfArg_);
+  method_->mark();
+}
+
+/// -------------------------------------------------------------------
 /// CallExpr
 
 bool CallExpr::isSingular() const {
@@ -409,7 +438,9 @@ void CallExpr::format(FormatStream & out) const {
     //}
   } else if (candidates_.size() == 1) {
     FunctionDefn * func = candidates_.front()->method();
-    if (out.getShowType()) {
+    if (func == NULL) {
+      out << "(" << candidates_.front()->base() << ")";
+    } else if (out.getShowType()) {
       out << "(" << func << ")";
     } else {
       out << func;

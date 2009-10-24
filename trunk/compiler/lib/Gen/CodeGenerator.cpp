@@ -304,7 +304,7 @@ void CodeGenerator::genEntryPoint() {
   BasicBlock * blkFailure = BasicBlock::Create(context_, "failure", mainFunc);
 
   // Check the type signature of the entry point function
-  llvm::Function * entryFunc = entryPoint->irFunction();
+  llvm::Function * entryFunc = genFunctionValue(entryPoint);
   const llvm::FunctionType * entryType = entryFunc->getFunctionType();
   if (entryType->getNumParams() > 1) {
     diag.fatal(entryPoint) << "EntryPoint function must have either 0 or 1 parameters";

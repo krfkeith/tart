@@ -124,7 +124,6 @@ public:
   FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast)
     : ValueDefn(dtype, m, ast)
     , type_(NULL)
-    , irFunction_(NULL)
     , dispatchIndex_(-1)
     , intrinsic_(NULL)
   {}
@@ -133,7 +132,6 @@ public:
   FunctionDefn(DefnType dtype, Module * m, const char * name)
     : ValueDefn(dtype, m, name)
     , type_(NULL)
-    , irFunction_(NULL)
     , dispatchIndex_(-1)
     , intrinsic_(NULL)
   {}
@@ -142,7 +140,6 @@ public:
   FunctionDefn(Module * m, const char * name, FunctionType * ty)
     : ValueDefn(Function, m, name)
     , type_(ty)
-    , irFunction_(NULL)
     , dispatchIndex_(-1)
     , intrinsic_(NULL)
   {}
@@ -172,10 +169,6 @@ public:
   const ASTFunctionDecl * functionDecl() const {
     return static_cast<const ASTFunctionDecl *>(ast_);
   }
-
-  /** IR representation of this function. */
-  llvm::Function * irFunction() const { return irFunction_; }
-  void setIRFunction(llvm::Function * ir) { irFunction_ = ir; }
 
   /** The index into the dispatch table for the enclosing class. */
   int dispatchIndex() const { return dispatchIndex_; }
@@ -222,7 +215,6 @@ private:
   BlockList blocks_;
   IterableScope parameterScope_;
   LocalScopeList localScopes_;
-  llvm::Function * irFunction_;
   int dispatchIndex_;
   Intrinsic * intrinsic_;
   FunctionSet overriddenMethods_;
