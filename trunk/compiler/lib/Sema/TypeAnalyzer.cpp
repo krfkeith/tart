@@ -17,6 +17,8 @@
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
+#include "tart/Common/InternedString.h"
+#include "tart/Objects/Builtins.h"
 
 namespace tart {
 
@@ -93,13 +95,27 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::AnonFn: {
-      FunctionType * ftype = typeFromFunctionAST(static_cast<const ASTFunctionDecl *>(ast));
+      const ASTFunctionDecl * fnDecl = static_cast<const ASTFunctionDecl *>(ast);
+      FunctionType * ftype = typeFromFunctionAST(fnDecl);
       if (isErrorResult(ftype)) {
         return ftype;
       }
 
       if (!ftype->returnType().isDefined()) {
         ftype->setReturnType(&VoidType::instance);
+      }
+
+      if (fnDecl->storageClass() == Storage_Static) {
+        ftype->setIsStatic(true);
+      } else {
+        // Non-static functions must have a self param, even though we don't know what type
+        // it is.
+        /*ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
+        selfParam->setType(Builtins::typeObject);
+        selfParam->setInternalType(Builtins::typeObject);
+        selfParam->addTrait(Defn::Singular);
+        selfParam->setFlag(ParameterDefn::Reference, true);
+        ftype->setSelfParam(selfParam);*/
       }
 
       return ftype;

@@ -30,6 +30,7 @@ public:
   static Defn * run(Module * m, Defn * in);
 
   Expr * visitLValue(LValueExpr * in);
+  Expr * visitBoundMethod(BoundMethodExpr * in);
   Expr * visitFnCall(FnCallExpr * in);
   Expr * visitNew(NewExpr * in);
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);

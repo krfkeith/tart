@@ -70,6 +70,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::LValue:
       return visitLValue(static_cast<LValueExpr *>(in));
 
+    case Expr::BoundMethod:
+      return visitBoundMethod(static_cast<BoundMethodExpr *>(in));
+
     case Expr::ScopeName:
       return visitScopeName(static_cast<ScopeNameExpr *>(in));
 
@@ -177,6 +180,11 @@ Expr * CFGPass::visitConstantNativeArray(ConstantNativeArray * in) {
 
 Expr * CFGPass::visitLValue(LValueExpr * in) {
   in->setBase(visitExpr(in->base()));
+  return in;
+}
+
+Expr * CFGPass::visitBoundMethod(BoundMethodExpr * in) {
+  in->setSelfArg(visitExpr(in->selfArg()));
   return in;
 }
 

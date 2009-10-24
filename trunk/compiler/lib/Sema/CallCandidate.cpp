@@ -74,7 +74,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   }
 }
 
-CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * fnType,
+CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType * fnType,
     const ParameterAssignments & params)
   : callExpr_(call)
   , base_(fnExpr)
@@ -87,8 +87,8 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * fnTy
 {
   DASSERT(fnExpr->isSingular());
   DASSERT(fnType->isSingular());
-  ParameterList & methodParams = fnType->params();
-  for (ParameterList::iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
+  const ParameterList & methodParams = fnType->params();
+  for (ParameterList::const_iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
     paramTypes_.push_back((*p)->type());
   }
 }
@@ -153,8 +153,8 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       DASSERT(t1.isEqual(t0));
 
       // Variadic parameters are less specific than non-variadic parameters.
-      ParameterDefn * p0 = fnType_->param(parameterIndex(i));
-      ParameterDefn * p1 = other->fnType_->param(other->parameterIndex(i));
+      const ParameterDefn * p0 = fnType_->param(parameterIndex(i));
+      const ParameterDefn * p1 = other->fnType_->param(other->parameterIndex(i));
       if (p0->isVariadic()) {
         if (!p1->isVariadic()) {
           return false;

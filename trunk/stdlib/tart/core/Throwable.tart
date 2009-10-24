@@ -4,7 +4,7 @@ class Throwable {
     // Exception structure needed by libunwind.
     final struct UnwindException {
       var exceptionClass:ulong;
-      var exceptionCleanup:fn(:int, :int);
+      var exceptionCleanup:static fn(:int, :int);
       var private1:ulong;
       var private2:ulong;
     }

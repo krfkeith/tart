@@ -336,6 +336,38 @@ public:
 };
 
 /// -------------------------------------------------------------------
+/// A bound method: Method reference + object to call.
+class BoundMethodExpr : public Expr {
+private:
+  Expr * selfArg_;
+  FunctionDefn * method_;
+
+public:
+  /** Constructor. */
+  BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method, Type * type);
+
+  /** Return the reference to the 'self' param */
+  Expr * selfArg() const { return selfArg_; }
+  void setSelfArg(Expr * b) { selfArg_ = b; }
+
+  /** Return the reference to the method */
+  const FunctionDefn * method() const { return method_; }
+  FunctionDefn * method() { return method_; }
+
+  // Overrides
+
+  void format(FormatStream & out) const;
+  void trace() const;
+  bool isSideEffectFree() const { return true; }
+  bool isSingular() const;
+
+  static inline bool classof(const BoundMethodExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == BoundMethod;
+  }
+};
+
+/// -------------------------------------------------------------------
 /// A general function call
 class CallExpr : public ArglistExpr {
 private:

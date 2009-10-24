@@ -6,6 +6,7 @@ def main(args:String[]) -> int {
   testModuleReflection();
   testModuleMethods();
   testFindMethod();
+  testCallMethod();
   return 0;
 }
 
@@ -13,16 +14,19 @@ def testModuleReflection() {
   let m = Module.thisModule();
   Debug.assertEq("ReflectionTest", m.name);
   Debug.assertEq(0, m.types.length);
-  Debug.assertEq(5, m.methods.length);
+  Debug.assertEq(7, m.methods.length);
 }
 
 def testModuleMethods() {
   let m = Module.thisModule();
+  var foundSample = false;
   for method in m.methods {
-    Debug.writeLn(method.name);
-    //if m.name == "sample"
+    if method.name == "sample" {
+      foundSample = true;
+    }
   } 
-  //Debug.assertEq("ReflectionTest", m.name);
+
+  Debug.assertTrue(foundSample);
 }
 
 def testFindMethod() {
@@ -33,4 +37,24 @@ def testFindMethod() {
   Debug.assertFalse(f2 isa Method);
 }
 
-def sample() {}
+def sample() {
+}
+
+def testCallMethod() {
+  let m = Module.thisModule();
+  let method = m.findMethod("sample2");
+  classify method as sample:Method {
+    savedValue = 0;
+    //Debug.writeLn("calling Sample");
+    //sample.call(77);
+    //Debug.writeLn("called Sample");
+  } else {
+    Debug.fail("Failed to find method 'sample'");
+  }
+}
+
+var savedValue:int;
+
+def sample2(arg:int) {
+  savedValue = arg;
+}

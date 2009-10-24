@@ -20,6 +20,10 @@ def testAutoBoxing() {
   Debug.assertTrue(b isa Boxed[int]);
   let c = echo2(3);
   Debug.assertTrue(c isa Boxed[int]);
+  let d = echo3(1, 2, 3);
+  Debug.assertTrue(d[0] isa Boxed[int]);
+  Debug.assertTrue(d[1] isa Boxed[int]);
+  Debug.assertTrue(d[2] isa Boxed[int]);
 }
 
 private def echo(v:Object) -> Object {
@@ -27,5 +31,9 @@ private def echo(v:Object) -> Object {
 }
 
 private def echo2(v:int) -> Object {
+  return v;
+}
+
+private def echo3(v:Object...) -> Object[] {
   return v;
 }

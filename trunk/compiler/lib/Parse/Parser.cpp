@@ -1043,6 +1043,14 @@ ASTNode * Parser::typeExprPrimary() {
     }
 
     result = new ASTPatternVar(matchLoc, pvarName, declType);
+  } else if (match(Token_Static)) {
+    if (match(Token_Function)) {
+      // Function type.
+      result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers(Storage_Static));
+    } else {
+      expected("function type after 'static'");
+      return NULL;
+    }
   } else if (match(Token_Function)) {
     // Function type.
     result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());

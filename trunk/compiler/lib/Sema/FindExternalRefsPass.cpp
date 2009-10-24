@@ -77,7 +77,14 @@ bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
 }
 
 Expr * FindExternalRefsPass::visitLValue(LValueExpr * in) {
+  visitExpr(in->base());
   addSymbol(in->value());
+  return in;
+}
+
+Expr * FindExternalRefsPass::visitBoundMethod(BoundMethodExpr * in) {
+  visitExpr(in->selfArg());
+  addSymbol(in->method());
   return in;
 }
 

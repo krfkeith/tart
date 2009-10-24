@@ -55,6 +55,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
       return evalLValue(static_cast<LValueExpr *>(in));
 
 #if 0
+    case Expr::BoundMethod:
+      return evalBoundMethod(static_cast<BoundMethodExpr *>(in));
+
     case Expr::ScopeName:
       return evalScopeName(static_cast<ScopeNameExpr *>(in));
 

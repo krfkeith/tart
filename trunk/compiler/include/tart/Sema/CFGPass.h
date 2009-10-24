@@ -33,6 +33,7 @@ public:
   virtual Expr * visitTypeLiteral(TypeLiteralExpr * in) { return in; }
 
   virtual Expr * visitLValue(LValueExpr * in);
+  virtual Expr * visitBoundMethod(BoundMethodExpr * in);
   virtual Expr * visitScopeName(ScopeNameExpr * in);
   virtual Expr * visitElementRef(BinaryExpr * in);
 

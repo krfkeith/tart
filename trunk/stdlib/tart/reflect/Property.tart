@@ -1,8 +1,8 @@
 class Property : Member {
   var getter:int;
   /*
-  private var getter = NativePointer[fn (obj:Object) -> Object];
-  private var setter = NativePointer[fn (obj:Object, value:Object)];
+  private var getter = static fn (obj:Object) -> Object;
+  private var setter = static fn (obj:Object, value:Object);
   
   def isReadable:bool;
   def isWriteable:bool;

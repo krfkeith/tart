@@ -342,9 +342,15 @@ TokenType Lexer::next() {
       if (ch_ == 'X' || ch_ == 'x') {
         tokenValue_.push_back('x');
         readCh();
-        while (isHexDigitChar(ch_)) {
-          tokenValue_.push_back(ch_);
-          readCh();
+        for (;;) {
+          if (isHexDigitChar(ch_)) {
+            tokenValue_.push_back(ch_);
+            readCh();
+          } else if (ch_ == '_') {
+            readCh();
+          } else {
+            break;
+          }
         }
 
         return Token_Integer;
@@ -352,9 +358,15 @@ TokenType Lexer::next() {
     }
 
     // Integer part
-    while (isDigitChar(ch_)) {
-      tokenValue_.push_back(ch_);
-      readCh();
+    for (;;) {
+      if (isDigitChar(ch_)) {
+        tokenValue_.push_back(ch_);
+        readCh();
+      } else if (ch_ == '_') {
+        readCh();
+      } else {
+        break;
+      }
     }
 
     // Fractional part
@@ -385,9 +397,15 @@ TokenType Lexer::next() {
       isFloat = true;
 
       tokenValue_.push_back('.');
-      while (isDigitChar(ch_)) {
-        tokenValue_.push_back(ch_);
-        readCh();
+      for (;;) {
+        if (isDigitChar(ch_)) {
+          tokenValue_.push_back(ch_);
+          readCh();
+        } else if (ch_ == '_') {
+          readCh();
+        } else {
+          break;
+        }
       }
     }
 
@@ -400,9 +418,15 @@ TokenType Lexer::next() {
         tokenValue_.push_back(ch_);
         readCh();
       }
-      while (isDigitChar(ch_)) {
-        tokenValue_.push_back(ch_);
-        readCh();
+      for (;;) {
+        if (isDigitChar(ch_)) {
+          tokenValue_.push_back(ch_);
+          readCh();
+        } else if (ch_ == '_') {
+          readCh();
+        } else {
+          break;
+        }
       }
     }
 
@@ -535,6 +559,9 @@ TokenType Lexer::next() {
         }
         return Token_RShift;
       }
+      if (ch_ == ':') {
+        return Token_IsSuperclass;
+      }
       return Token_Greater;
 
     case '<':
@@ -558,6 +585,9 @@ TokenType Lexer::next() {
           return Token_AssignLShift;
         }
         return Token_LShift;
+      }
+      if (ch_ == ':') {
+        return Token_IsSubclass;
       }
       return Token_Less;
 

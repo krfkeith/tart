@@ -23,6 +23,11 @@ public:
   FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount);
   FunctionType(Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount);
 
+  // isStatic
+  bool isStatic() const { return isStatic_; }
+  void setIsStatic(bool value) { isStatic_ = value; }
+
+  // Return type
   const TypeRef & returnType() const { return returnType_; }
   TypeRef & returnType() { return returnType_; }
   void setReturnType(Type * type) { returnType_.setType(type); }
@@ -38,6 +43,7 @@ public:
 
   ParameterList & params() { return params_; }
   const ParameterList & params() const { return params_; }
+  const ParameterDefn * param(int index) const { return params_[index]; }
   ParameterDefn * param(int index) { return params_[index]; }
   void addParam(ParameterDefn * param);
   ParameterDefn * addParam(const char * name, Type * type);
@@ -54,9 +60,12 @@ public:
   // Overrides
 
   const llvm::Type * createIRType() const;
+  const llvm::FunctionType * createIRFunctionType(
+      const Type * selfType, const ParameterList & params, const TypeRef & returnType) const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
   bool isSingular() const;
@@ -68,6 +77,7 @@ public:
   }
 
 private:
+  bool isStatic_;
   TypeRef returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
@@ -80,7 +90,7 @@ private:
 
 class BoundMethodType : public Type {
 public:
-  BoundMethodType(FunctionType * fnType)
+  BoundMethodType(const FunctionType * fnType)
     : Type(BoundMethod)
       , fnType_(fnType)
       , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
@@ -89,12 +99,13 @@ public:
   const llvm::Type * irType() const;
 
   /** The type of the function being pointed to. */
-  FunctionType * fnType() const { return fnType_; }
+  const FunctionType * fnType() const { return fnType_; }
 
   // Overrides
 
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
   bool isSingular() const;
@@ -106,7 +117,7 @@ public:
   }
 
 private:
-  FunctionType * fnType_;
+  const FunctionType * fnType_;
   mutable llvm::PATypeHolder irType_;
 };
 

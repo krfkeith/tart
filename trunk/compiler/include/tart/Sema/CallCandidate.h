@@ -34,7 +34,7 @@ public:
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       const ParameterAssignments & params);
 
-  CallCandidate(CallExpr * call, Expr * fnExpr, FunctionType * ftype,
+  CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType * ftype,
       const ParameterAssignments & params);
 
   /** The call expression that this is a candidate for. */
@@ -48,7 +48,7 @@ public:
   void setMethod(FunctionDefn * m) { method_ = m; }
 
   /** The method type. */
-  FunctionType * functionType() const { return fnType_; }
+  const FunctionType * functionType() const { return fnType_; }
   void setFunctionType(FunctionType * fnType) { fnType_ = fnType; }
 
   /** The mapping of input args to formal parameters. */
@@ -137,7 +137,7 @@ private:
   int pruningDepth_;
   ParameterAssignments paramAssignments_;
   BindingEnv bindingEnv_;
-  FunctionType * fnType_;
+  const FunctionType * fnType_;
   TypeRef resultType_;
   TypeRefList paramTypes_;
   bool isTemplate_;

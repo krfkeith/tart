@@ -102,13 +102,17 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //  isUnqualified = false;
         //}
       } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
-        if (FunctionType * ft = dyn_cast<FunctionType>(var->type().type())) {
-          //if (!analyzeValueDefn(method, Task_PrepOverloadSelection)) {
-          //  return false;
-          //}
+        if (!analyzeValueDefn(var, Task_PrepTypeComparison)) {
+          return false;
+        }
 
+        if (FunctionType * ft = dyn_cast<FunctionType>(var->type().type())) {
           success &= addOverload(call, lv, ft, args);
-        } else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type().type())) {
+        } else if (BoundMethodType * bmt = dyn_cast<BoundMethodType>(var->type().type())) {
+          success &= addOverload(call, lv, bmt->fnType(), args);
+        }
+
+        /*else if (NativePointerType * npt = dyn_cast<NativePointerType>(var->type().type())) {
           TypeRef targetType = npt->typeParam(0);
           if (analyzeType(targetType, Task_PrepTypeComparison)) {
             if (FunctionType * ft = dyn_cast<FunctionType>(targetType.type())) {
@@ -122,7 +126,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
               success &= addOverload(call, lv, ft, args);
             }
           }
-        }
+        }*/
       }
     } else {
       diag.fatal(loc) << *it << " is not callable.";
@@ -511,7 +515,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   return true;
 }
 
-bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, FunctionType * ftype,
+bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, const FunctionType * ftype,
     const ASTNodeList & args) {
   //if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
   //  return false;

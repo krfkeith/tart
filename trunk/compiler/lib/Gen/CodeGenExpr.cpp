@@ -105,6 +105,10 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genLoadLValue(static_cast<const LValueExpr *>(in));
     }
 
+    case Expr::BoundMethod: {
+      return genBoundMethod(static_cast<const BoundMethodExpr *>(in));
+    }
+
     case Expr::ElementRef: {
       Value * addr = genElementAddr(static_cast<const UnaryExpr *>(in));
       return addr != NULL ? builder_.CreateLoad(addr) : NULL;
@@ -413,8 +417,8 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
     }
 
     default:
-    diag.fatal(in) << "Not an LValue " << exprTypeName(in->exprType()) << " [" << in << "]";
-    DFAIL("Implement");
+      diag.fatal(in) << "Not an LValue " << exprTypeName(in->exprType()) << " [" << in << "]";
+      DFAIL("Implement");
   }
 }
 
@@ -787,7 +791,9 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
   Type * fnType = fn->type();
 
   Value * fnValue;
-  if (const NativePointerType * np = dyn_cast<NativePointerType>(fnType)) {
+  ValueList args;
+
+  /*if (const NativePointerType * np = dyn_cast<NativePointerType>(fnType)) {
     fnValue = genExpr(fn);
     if (fnValue != NULL) {
       fnValue = builder_.CreateLoad(fnValue);
@@ -797,12 +803,32 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
     if (fnValue != NULL) {
       fnValue = builder_.CreateLoad(fnValue);
     }
+  } else*/ if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
+    fnValue = genExpr(fn);
+    if (fnValue != NULL) {
+      if (ft->isStatic()) {
+        //fnValue = builder_.CreateLoad(fnValue);
+      } else {
+        DFAIL("Implement");
+      }
+    }
+  } else if (BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
+    Value * fnref = genExpr(fn);
+    if (fnref == NULL) {
+      return NULL;
+    }
+
+    fnValue = builder_.CreateExtractValue(fnref, 0, "method");
+    Value * selfArg = builder_.CreateExtractValue(fnref, 1, "self");
+    if (selfArg == NULL) {
+      return NULL;
+    }
+
+    args.push_back(selfArg);
   } else {
-    DFAIL:("Implement");
+    diag.info(in) << in->function() << " - " << in->function()->exprType();
+    DFAIL("Invalid function type");
   }
-
-  ValueList args;
-
 
 #if 0
   Value * selfArg = NULL;
@@ -901,6 +927,57 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
   return builder_.CreateBitCast(
       methodPtr, PointerType::getUnqual(method->type().irType()), "method");
+}
+
+/** Get the address of a value. */
+Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
+  const BoundMethodType * type = cast<BoundMethodType>(in->type());
+  const FunctionDefn * fn = in->method();
+  if (fn->isIntrinsic()) {
+    diag.error(in) << "Intrinsic methods cannot be called indirectly.";
+    return NULL;
+  } else if (fn->isCtor()) {
+    diag.error(in) << "Constructors cannot be called indirectly (yet).";
+    return NULL;
+  }
+
+  Value * selfArg = NULL;
+  if (in->selfArg() != NULL) {
+    selfArg = genExpr(in->selfArg());
+
+    // Upcast the self argument type.
+    if (fn->functionType()->selfParam() != NULL) {
+      Type * selfType = fn->functionType()->selfParam()->type().dealias();
+      selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
+    }
+  }
+
+  // Generate the function to call.
+  Value * fnVal;
+  if (in->exprType() == Expr::VTableCall) {
+    DASSERT_OBJ(selfArg != NULL, in);
+    const Type * classType = fn->functionType()->selfParam()->type().dealias();
+    if (classType->typeClass() == Type::Class) {
+      fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
+    } else if (classType->typeClass() == Type::Interface) {
+      fnVal = genITableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
+    } else {
+      // Struct or protocol.
+      fnVal = genFunctionValue(fn);
+    }
+  } else {
+    fnVal = genFunctionValue(fn);
+  }
+
+
+  const llvm::Type * fnValType =
+      StructType::get(context_, fnVal->getType(), selfArg->getType(), NULL);
+
+  Value * result = builder_.CreateAlloca(fnValType);
+  builder_.CreateStore(fnVal, builder_.CreateConstInBoundsGEP2_32(result, 0, 0, "method"));
+  builder_.CreateStore(selfArg, builder_.CreateConstInBoundsGEP2_32(result, 0, 1, "self"));
+  result = builder_.CreateLoad(builder_.CreateBitCast(result, PointerType::get(type->irType(), 0)));
+  return result;
 }
 
 Value * CodeGenerator::genNew(NewExpr * in) {
