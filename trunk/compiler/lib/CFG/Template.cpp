@@ -267,18 +267,13 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
     if (tdef == &AddressType::typedefn) {
       DFAIL("Implement");
+    } else if (tdef == &PointerType::typedefn) {
+      DFAIL("Implement");
     }
 
     TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
 
     switch (tdef->typeValue()->typeClass()) {
-      case Type::NativePointer: {
-        NativePointerType * np = new NativePointerType(paramValues[0], newDef, tinst);
-        newDef->setTypeValue(np);
-        newDef->createQualifiedName(NULL);
-        break;
-      }
-
       case Type::NativeArray: {
         NonTypeConstant * ntc = cast<NonTypeConstant>(paramValues[1]);
         ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
@@ -367,7 +362,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   // Create the definition
   TypeDefn * tdef = static_cast<TypeDefn *>(value_);
   Type * proto = tdef->typeValue();
-  if (proto->typeClass() != Type::Address) {
+  if (proto->typeClass() != Type::Address && proto->typeClass() != Type::Pointer) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env, singular));
     return tdef->typeValue();
   }
@@ -398,6 +393,11 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   switch (tdef->typeValue()->typeClass()) {
     case Type::Address: {
       return AddressType::get(paramValues[0]);
+      break;
+    }
+
+    case Type::Pointer: {
+      return PointerType::get(paramValues[0]);
       break;
     }
 

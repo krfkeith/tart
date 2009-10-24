@@ -227,7 +227,7 @@ void CodeGenerator::genThrow(Block * blk) {
         irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
     unwindInfo = builder_.CreateBitCast(
         builder_.CreateCall(ehException, "eh_ptr"),
-        PointerType::get(throwableType->getContainedType(2), 0));
+        llvm::PointerType::get(throwableType->getContainedType(2), 0));
   } else if (exceptVal != NULL) {
     // Construct the exception object
     Value * exception = genExpr(exceptVal);
@@ -238,7 +238,7 @@ void CodeGenerator::genThrow(Block * blk) {
     const llvm::Type * throwableType = Builtins::typeThrowable->irType();
     irModule_->addTypeName("tart.core.Throwable", throwableType);
 
-    throwable = builder_.CreateBitCast(exception, PointerType::getUnqual(throwableType));
+    throwable = builder_.CreateBitCast(exception, llvm::PointerType::getUnqual(throwableType));
     unwindInfo = builder_.CreateStructGEP(throwable, 2);
   } else {
     diag.warn(blk->termLocation()) << "Unimplemented re-throw of exception.";
@@ -292,7 +292,7 @@ void CodeGenerator::genCatch(Block * blk) {
   ValueList args;
   args.push_back(ehPtr);
   args.push_back(builder_.CreateBitCast(
-      personality, PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
+      personality, llvm::PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
 
   // Add an argument for each catch block, or the finally block if there is one.
   size_t numSelectors = blk->termExprs().size() - 1;
@@ -319,7 +319,7 @@ void CodeGenerator::genCatch(Block * blk) {
   const llvm::Type * throwableType = Builtins::typeThrowable->irType();
   llvm::Constant * unwindInfoOffset = llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(PointerType::get(throwableType, 0)),
+          ConstantPointerNull::get(llvm::PointerType::get(throwableType, 0)),
           gepIndices, 2),
       builder_.getInt32Ty());
 
@@ -328,7 +328,8 @@ void CodeGenerator::genCatch(Block * blk) {
   offsetIndices[0] = getInt32Val(0);
   offsetIndices[1] = llvm::ConstantExpr::getNeg(unwindInfoOffset);
   Value * throwValue = builder_.CreateGEP(
-      builder_.CreateBitCast(ehPtr, PointerType::get(ArrayType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0), 0)),
+      builder_.CreateBitCast(ehPtr, llvm::PointerType::get(
+          ArrayType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0), 0)),
       &offsetIndices[0], &offsetIndices[2],
       "eh_throwable");
 

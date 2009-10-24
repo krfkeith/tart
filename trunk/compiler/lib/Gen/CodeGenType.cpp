@@ -105,7 +105,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
     const CompositeType * type = rtype->getType();
     if (type->typeClass() != Type::Class) {
       rtype->setTypeInfoPtr(ConstantPointerNull::get(
-          PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType())));
+          llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType())));
     } else {
       DASSERT(rtype->getTypeInfoBlock() == NULL);
       rtype->setTypeInfoBlock(
@@ -117,7 +117,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
-              PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0)));
+              llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0)));
     }
   }
 
@@ -140,7 +140,8 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Generate the base class list.
   ClassSet baseClassSet;
   type->ancestorClasses(baseClassSet);
-  PointerType * typePointerType = PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType());
+  llvm::PointerType * typePointerType =
+      llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType());
 
   // Concrete classes first
   ConstantList baseClassList;
@@ -225,7 +226,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
+  argTypes.push_back(llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
   Function * idispatch = Function::Create(
@@ -302,7 +303,7 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
 
     // Declare the allocator function
     std::vector<const llvm::Type *> argTypes;
-    llvm::FunctionType * alloctype = llvm::FunctionType::get(PointerType::getUnqual(
+    llvm::FunctionType * alloctype = llvm::FunctionType::get(llvm::PointerType::getUnqual(
         type->irType()), argTypes, false);
     Function * allocFunc = Function::Create(
         alloctype, rtype->getLinkageType(),
@@ -319,7 +320,7 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
               getGlobalAlloc(),
               llvm::ConstantExpr::getSizeOf(type->irType()),
               "new"),
-          PointerType::get(type->irType(), 0));
+          llvm::PointerType::get(type->irType(), 0));
 
       // Generate code to fill in vtable pointer of new object.
       genInitObjVTable(type, instance);

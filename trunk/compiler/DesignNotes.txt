@@ -7,7 +7,6 @@ Design TODOS:
 * Const-ness "const" and "const?"
 * Protocols
 * Need a way to collect all declarations that a given attribute is assigned to.
-* Need a way to iterate through all functions in a module.
 
 Implementation TODOS:
 
@@ -15,7 +14,7 @@ Implementation TODOS:
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * See if we can make UnionType and TupleType have type params like templates.
   * And native types.
-  * And then make native types not require TypeDefns. (Done for Address)
+  * And then make native types not require TypeDefns. (Done for Address and Pointer)
   * And then make a new kind of object that represents an exported module symbol, that can
       point to either a constant or a function.
   * And then reduce the number of TypeDefns by allowing specializations to share the same

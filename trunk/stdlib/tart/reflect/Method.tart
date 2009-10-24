@@ -1,11 +1,13 @@
+import tart.core.Memory.Pointer;
+
 /** Description of a callable method. */
 final class Method : Member {
   private {
 	  var _typeParams:TypeRef[];
 	  var _returnType:TypeRef;
 	  var _params:Parameter[];
-    var _methodPointer:NativePointer[void];
-    var _invoke:static fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object;
+    var _methodPointer:Pointer[void];
+    var _invoke:static fn (obj:Object, m:Pointer[void], args:Object[]) -> Object;
   }
 
   undef construct();
@@ -20,7 +22,7 @@ final class Method : Member {
   final def params:Parameter[] { get { return _params; } }
   
   /** A pointer to the function. */
-  //private let methodPointer:NativePointer[void];
+  //private let methodPointer:Pointer[void];
 
   /** A pointer to a trampoline function that can take an array of objects and call
       the actual native method with the correct argument types.
@@ -28,7 +30,7 @@ final class Method : Member {
       'm': The native method pointer.
       'args': The argument list.
     */
-  //private let invoke:static fn (obj:Object, m:NativePointer[void], args:Object[]) -> Object;
+  //private let invoke:static fn (obj:Object, m:Pointer[void], args:Object[]) -> Object;
 
   /** Invoke the method on the specified object with the given arguments.
       TODO: Define exception types for bad argument types.

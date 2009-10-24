@@ -194,8 +194,8 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
       //return false;
       return true;
     }
-  } else if (NativePointerType * npp = dyn_cast<NativePointerType>(pattern)) {
-    return unifyNativePointerType(source, npp, value);
+  } else if (PointerType * npp = dyn_cast<PointerType>(pattern)) {
+    return unifyPointerType(source, npp, value);
   } else if (AddressType * npp = dyn_cast<AddressType>(pattern)) {
     return unifyAddressType(source, npp, value);
   } else if (NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
@@ -231,13 +231,13 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
   }
 }
 
-bool BindingEnv::unifyNativePointerType(
-    SourceContext * source, NativePointerType * pat, Type * value) {
+bool BindingEnv::unifyPointerType(
+    SourceContext * source, PointerType * pat, Type * value) {
   if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (NativePointerType * npv = dyn_cast<NativePointerType>(value)) {
+  if (PointerType * npv = dyn_cast<PointerType>(value)) {
     if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
       return false;
     }
@@ -563,7 +563,7 @@ TypeRef BindingEnv::subst(const TypeRef & in, bool finalize) const {
 }
 
 Type * BindingEnv::subst(Type * in, bool finalize) const {
-  if (substitutions_ == NULL) {
+  if (substitutions_ == NULL || isErrorResult(in)) {
     return in;
   }
 
@@ -604,8 +604,8 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
       return AddressType::get(elemType);
     }
 
-    case Type::NativePointer: {
-      const NativePointerType * np = static_cast<const NativePointerType *>(in);
+    case Type::Pointer: {
+      const PointerType * np = static_cast<const PointerType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
       }
@@ -615,7 +615,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
         return in;
       }
 
-      return NativePointerType::get(elemType);
+      return PointerType::get(elemType);
     }
 
     case Type::NativeArray: {
@@ -726,8 +726,8 @@ Type * BindingEnv::relabel(Type * in) {
       return AddressType::get(elemType);
     }
 
-    case Type::NativePointer: {
-      const NativePointerType * np = static_cast<const NativePointerType *>(in);
+    case Type::Pointer: {
+      const PointerType * np = static_cast<const PointerType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
       }
@@ -737,7 +737,7 @@ Type * BindingEnv::relabel(Type * in) {
         return in;
       }
 
-      return NativePointerType::get(elemType);
+      return PointerType::get(elemType);
     }
 
     case Type::NativeArray: {

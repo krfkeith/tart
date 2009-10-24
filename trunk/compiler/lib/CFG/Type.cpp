@@ -160,8 +160,8 @@ void typeLinkageName(std::string & out, const Type * ty) {
     out.append("__Address[");
     typeLinkageName(out, mat->typeParam(0));
     out.append("]");
-  } else if (const NativePointerType * npt = dyn_cast<NativePointerType>(ty)) {
-    out.append("NativePointert[");
+  } else if (const PointerType * npt = dyn_cast<PointerType>(ty)) {
+    out.append("__Pointer[");
     typeLinkageName(out, npt->typeParam(0));
     out.append("]");
   } else {
@@ -234,6 +234,7 @@ bool Type::isUnsizedIntType() const {
 }
 
 TypeRef Type::typeParam(int index) const {
+  diag.debug() << "Type " << this << " does not have type parameters.";
   DFAIL("No type params");
 }
 
@@ -600,6 +601,10 @@ Type * dealias(Type * t) {
   return dealiasImpl(t);
 }
 
+TypeRef dealias(const TypeRef & tr) {
+  return TypeRef(dealias(tr.type()), tr.modifiers());
+}
+
 bool TypeLess::operator()(const TypeRef & t0, const TypeRef & t1) {
   return operator()(t0.type(), t1.type());
 }
@@ -654,7 +659,7 @@ bool TypeLess::operator()(const Type * t0, const Type * t1) {
     case Type::Tuple:
     case Type::Union:
     case Type::Address:
-    case Type::NativePointer:
+    case Type::Pointer:
     case Type::NativeArray: {
       DFAIL("Implement");
     }

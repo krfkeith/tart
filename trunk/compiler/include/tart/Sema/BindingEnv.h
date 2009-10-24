@@ -24,7 +24,7 @@ namespace tart {
 class TemplateSignature;
 class PatternVar;
 class AddressType;
-class NativePointerType;
+class PointerType;
 class NativeArrayType;
 
 // -------------------------------------------------------------------
@@ -202,7 +202,7 @@ private:
 
   bool unifyPattern(SourceContext * source, PatternVar * pattern, Type * value, Variance variance);
   bool unifyAddressType(SourceContext * source, AddressType * pattern, Type * value);
-  bool unifyNativePointerType(SourceContext * source, NativePointerType * pattern, Type * value);
+  bool unifyPointerType(SourceContext * source, PointerType * pattern, Type * value);
   bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);
   bool unifyCompositeType(SourceContext * source, CompositeType * pattern, CompositeType * value,
       Variance variance);
