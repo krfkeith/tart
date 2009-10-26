@@ -98,6 +98,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::Truncate:
     case Expr::SignExtend:
     case Expr::ZeroExtend:
+    case Expr::IntToFloat:
     case Expr::BitCast:
     case Expr::UnionCtorCast:
     case Expr::UnionMemberCast:
@@ -180,6 +181,7 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
       case BlockTerm_ResumeUnwind:
       case BlockTerm_LocalReturn:
       case BlockTerm_Catch:
+      case BlockTerm_TraceCatch:
         DFAIL("block term not handled");
         break;
     }
@@ -286,7 +288,7 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
 
 Expr * EvalPass::evalNew(NewExpr * in) {
   CompositeType * type = cast<CompositeType>(in->type());
-  if (!AnalyzerBase::analyzeDefn(type->typeDefn(), Task_PrepEvaluation)) {
+  if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepEvaluation)) {
     return NULL;
   }
 

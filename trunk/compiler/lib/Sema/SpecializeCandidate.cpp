@@ -65,6 +65,19 @@ bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
   return true;
 }
 
+ConversionRank SpecializeCandidate::updateConversionRank(const TypeList & argList) {
+  conversionRank_ = IdenticalTypes;
+
+  const TemplateSignature * tsig = templateDefn_->templateSignature();
+  for (size_t i = 0; i < argList.size(); ++i) {
+    Type * pattern = tsig->params()[i];
+    Type * value = argList[i];
+    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value));
+  }
+
+  return conversionRank_;
+}
+
 #if 0
 Type * SpecializeCandidate::getParamType(int argIndex) const {
   ParameterList & params = method->functionType()->params();

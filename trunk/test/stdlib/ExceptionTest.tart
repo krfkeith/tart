@@ -12,6 +12,7 @@ def main(args:String[]) -> int {
   testTryFinally();
   testTryCatchFinally();
   //testTryReturnFinally();
+  testStackTrace();
   return 0;
 }
 
@@ -177,3 +178,10 @@ def testTryCatchFinally() {
   Debug.fail("failed to return");
 }
 */
+
+def testStackTrace() {
+  try {
+    throwSomething();
+  } catch @tart.annex.GenerateStackTrace t:Exception {
+  }
+}

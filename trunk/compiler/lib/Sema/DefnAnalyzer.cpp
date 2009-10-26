@@ -49,7 +49,11 @@ bool DefnAnalyzer::analyzeModule() {
 
   // Analyze all exported definitions.
   for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
-    if (!de->isTemplate()) {
+    if (de->isTemplate()) {
+      analyzeTemplateSignature(de);
+    }
+
+    if (!de->hasUnboundTypeParams()) {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
         module->addSymbol(de);
         if (!de->hasTrait(Defn::Nonreflective)) {
@@ -267,86 +271,6 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
   setActiveScope(saveScope);
 }
 
-#if 0
-// Handle explicit specialization.
-Defn * DefnAnalyzer::specialize(SLC & loc, DefnList & defns, const ASTNodeList & args) {
-  TypeList argList; // Template args, not function args.
-  bool isSingularArgList = true;  // True if all args are fully resolved.
-
-  ExprAnalyzer ea(module, activeScope);
-  for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-    ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
-    if (isErrorResult(cb)) {
-      return NULL;
-    }
-
-    Type * typeArg = NULL;
-    if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
-      typeArg = dealias(ctype->value());
-      if (TypeDefn * tdef = typeArg->typeDefn()) {
-        typeArg = tdef->typeValue();
-      }
-    }
-
-    if (typeArg == NULL) {
-      typeArg = NonTypeConstant::get(cb);
-    }
-
-    if (!cb->isSingular()) {
-      isSingularArgList = false;
-    }
-
-    argList.push_back(typeArg);
-  }
-
-  SpCandidates candidates;
-  for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
-    Defn * de = *it;
-    if (de->isTemplate()) {
-      analyzeTemplateSignature(de);
-      const TemplateSignature * tsig = de->templateSignature();
-      if (tsig->params().size() == argList.size()) {
-        // Attempt unification of pattern variables with template args.
-        SpecializeCandidate * spc = new SpecializeCandidate(de);
-        SourceContext candidateSite(de->location(), NULL, de, Format_Type);
-        if (spc->unify(&candidateSite, argList)) {
-          candidates.push_back(spc);
-        }
-      }
-    } else if (de->isTemplateInstance()) {
-      diag.fatal(de) << "Shouldn't encounter template instance here";
-      DFAIL("IllegalState - template instances should have been removed.");
-    } else {
-      diag.debug() << Format_Verbose << de->defnType();
-    }
-  }
-
-  if (candidates.empty()) {
-    diag.error(loc) << "No templates found which match template arguments [" << args << "]";
-    for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
-      diag.info(*it) << Format_Type << "candidate: " << *it;
-    }
-
-    ea.dumpScopeHierarchy();
-    return NULL;
-  }
-
-  //if (!isSingularArgList) {
-  //  return new
-  //}
-
-  // TODO: Do template overload resolution.
-  // TODO: Use parameter assignments.
-  if (candidates.size() == 1) {
-    SpecializeCandidate * spc = candidates.front();
-    TemplateSignature * tsig = spc->getTemplateDefn()->templateSignature();
-    return tsig->instantiate(loc, spc->env());
-  } else {
-    DFAIL("Implement");
-  }
-}
-#endif
-
 void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   TemplateSignature * tsig = de->templateSignature();
   DASSERT_OBJ(tsig != NULL, de);
@@ -364,9 +288,13 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         if (TypeLiteralExpr * type = dyn_cast<TypeLiteralExpr>(param)) {
           params.push_back(type->value());
         } else if (ConstantExpr * cexp = dyn_cast<ConstantExpr>(param)) {
-          params.push_back(NonTypeConstant::get(cexp));
+          params.push_back(SingleValueType::get(cexp));
         }
       }
+    }
+
+    if (!de->hasUnboundTypeParams()) {
+      de->addTrait(Defn::Singular);
     }
 
     // Remove the AST so that we don't re-analyze this template.

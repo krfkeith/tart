@@ -37,6 +37,7 @@ static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassS
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::NamingConflictPass,
   CompositeType::ConstructorPass
 );
 
@@ -44,6 +45,7 @@ static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::NamingConflictPass,
   CompositeType::ConverterPass
 );
 
@@ -51,6 +53,7 @@ static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::NamingConflictPass,
   CompositeType::ConverterPass,
   CompositeType::MemberTypePass,
   CompositeType::FieldPass,
@@ -61,6 +64,7 @@ static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet
 static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
+  CompositeType::NamingConflictPass,
   CompositeType::AttributePass,
   CompositeType::FieldPass,
   CompositeType::FieldTypePass
@@ -70,6 +74,7 @@ static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::o
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::NamingConflictPass,
   CompositeType::ConverterPass,
   CompositeType::ConstructorPass,
   CompositeType::MemberTypePass,
@@ -131,6 +136,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
   if (target->isTemplate()) {
     // Get the template scope and set it as the active scope.
     analyzeTemplateSignature(target);
+
     if (passesToRun.contains(CompositeType::BaseTypesPass) && !analyzeBaseClasses()) {
       return false;
     }
@@ -167,6 +173,10 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     }
 
     type->passes().finish(CompositeType::AttributePass);
+  }
+
+  if (passesToRun.contains(CompositeType::NamingConflictPass) && !checkNameConflicts()) {
+    return false;
   }
 
   if (passesToRun.contains(CompositeType::BaseTypesPass) && !analyzeBaseClasses()) {
@@ -206,6 +216,35 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
   }
 
   return true;
+}
+
+bool ClassAnalyzer::checkNameConflicts() {
+  CompositeType * type = targetType();
+  bool success = true;
+  if (type->passes().begin(CompositeType::NamingConflictPass)) {
+    Defn::DefnType dtype = target->defnType();
+    const SymbolTable & symbols = type->members();
+    for (SymbolTable::const_iterator entry = symbols.begin(); entry != symbols.end(); ++entry) {
+      const SymbolTable::Entry & defns = entry->second;
+      Defn::DefnType dtype = defns.front()->defnType();
+
+      // First insure that all entries are the same type
+      for (SymbolTable::Entry::const_iterator it = defns.begin(); it != defns.end(); ++it) {
+        Defn * de = *it;
+        if (de->defnType() != dtype) {
+          diag.error(de) << "Definition of '" << de->name() << "' as '" << de <<
+              "' conflicts with earlier definition:";
+          diag.info(defns.front()) << defns.front();
+          success = false;
+          break;
+        }
+      }
+    }
+
+    type->passes().finish(CompositeType::NamingConflictPass);
+  }
+
+  return success;
 }
 
 bool ClassAnalyzer::analyzeBaseClasses() {
@@ -379,7 +418,7 @@ bool ClassAnalyzer::analyzeConverters() {
                 fn->functionType()->params().size() == 1) {
 
               // Mark the constructor as singular if in fact it is.
-              if (!fn->isTemplate() && type->isSingular()) {
+              if (!fn->hasUnboundTypeParams() && type->isSingular()) {
                 fn->addTrait(Defn::Singular);
               }
 
@@ -533,7 +572,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               break;
             }
 
-            if (!ctor->isTemplate() && type->isSingular()) {
+            if (!ctor->hasUnboundTypeParams() && type->isSingular()) {
               // Mark the constructor as singular if in fact it is.
               ctor->addTrait(Defn::Singular);
             }
@@ -594,24 +633,72 @@ bool ClassAnalyzer::analyzeMethods() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::MethodPass)) {
     Defn::DefnType dtype = target->defnType();
+
+    // Analyze all methods
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
-      if (member->isTemplate()) {
-        continue;
-      }
-
-      if (member->isFinal()) {
-        if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
-          diag.error(target) << "Interface or protocol method cannot be final";
-        }
-      } else if (member->visibility() != Public) {
-        if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
-          diag.error(target) << "Interface or protocol method cannot be non-public";
-        }
-      }
-
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
+        if (member->isTemplate()) {
+         analyzeTemplateSignature(member);
+         if (member->hasUnboundTypeParams()) {
+           continue;
+         }
+        }
+
+        if (member->isFinal()) {
+          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+            diag.error(target) << "Interface or protocol method cannot be final";
+          }
+        } else if (member->visibility() != Public) {
+          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+            diag.error(target) << "Interface or protocol method cannot be non-public";
+          }
+        }
+
         if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
           analyzeValueDefn(val, Task_PrepTypeComparison);
+        }
+      }
+    }
+
+    const SymbolTable & symbols = type->members();
+    for (SymbolTable::const_iterator entry = symbols.begin(); entry != symbols.end(); ++entry) {
+      const SymbolTable::Entry & defns = entry->second;
+      Defn::DefnType dtype = defns.front()->defnType();
+
+      if (METHOD_DEFS.contains(dtype) || dtype == Defn::Property) {
+        for (SymbolTable::Entry::const_iterator it = defns.begin(); it != defns.end(); ++it) {
+          ValueDefn * val = cast<ValueDefn>(*it);
+          if (val->hasUnboundTypeParams()) {
+            continue;
+          }
+
+          // Compare with all previous defns
+          for (SymbolTable::Entry::const_iterator m = defns.begin(); m != it; ++m) {
+            ValueDefn * prevVal = cast<ValueDefn>(*m);
+            if (prevVal->hasUnboundTypeParams()) {
+              continue;
+            }
+
+            if (dtype == Defn::Property) {
+              PropertyDefn * p1 = cast<PropertyDefn>(val);
+              PropertyDefn * p2 = cast<PropertyDefn>(prevVal);
+              if (p1->type().isEqual(p2->type())) {
+                diag.error(p2) << "Definition of property << '" << p2 <<
+                    "' conflicts with earlier definition:";
+                diag.info(p1) << p1;
+              }
+            } else if (dtype == Defn::Indexer) {
+              IndexerDefn * i1 = cast<IndexerDefn>(val);
+              IndexerDefn * i2 = cast<IndexerDefn>(prevVal);
+            } else {
+              FunctionDefn * f1 = cast<FunctionDefn>(val);
+              FunctionDefn * f2 = cast<FunctionDefn>(prevVal);
+              if (hasSameSignature(f1, f2)) {
+                diag.error(f2) << "Member type signature conflict";
+                diag.info(f1) << "From here";
+              }
+            }
+          }
         }
       }
     }
@@ -628,7 +715,7 @@ bool ClassAnalyzer::analyzeOverloading() {
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
-      analyzeDefn((*it)->typeDefn(), Task_PrepEvaluation);
+      analyzeTypeDefn((*it)->typeDefn(), Task_PrepEvaluation);
     }
 
     copyBaseClassMethods();

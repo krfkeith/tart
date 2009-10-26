@@ -1,0 +1,133 @@
+/** Abstract class used to represent a reference to some value. */
+abstract class Ref {
+  static def valueOf[bool](ref:Object) -> bool {
+    classify ref {
+      as v:ValueRef[bool]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[char](ref:Object) -> char {
+    classify ref {
+      as v:ValueRef[char]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[byte](ref:Object) -> byte {
+    classify ref {
+      as v:ValueRef[byte]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[short](ref:Object) -> short {
+    classify ref {
+      as v:ValueRef[byte]   { return v.value; }
+      as v:ValueRef[short]  { return v.value; }
+      as v:ValueRef[ubyte]  { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[int](ref:Object) -> int {
+    classify ref {
+      as v:ValueRef[byte]   { return v.value; }
+      as v:ValueRef[short]  { return v.value; }
+      as v:ValueRef[int]    { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[long](ref:Object) -> long {
+    classify ref {
+      as v:ValueRef[byte]   { return v.value; }
+      as v:ValueRef[short]  { return v.value; }
+      as v:ValueRef[int]    { return v.value; }
+      as v:ValueRef[long]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[ubyte](ref:Object) -> ubyte {
+    classify ref {
+      as v:ValueRef[ubyte]  { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[ushort](ref:Object) -> ushort {
+    classify ref {
+      as v:ValueRef[ubyte]  { return v.value; }
+      as v:ValueRef[ushort] { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[uint](ref:Object) -> uint {
+    classify ref {
+      as v:ValueRef[ubyte]  { return v.value; }
+      as v:ValueRef[ushort] { return v.value; }
+      as v:ValueRef[uint]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[ulong](ref:Object) -> ulong {
+    classify ref {
+      as v:ValueRef[ubyte]  { return v.value; }
+      as v:ValueRef[ushort] { return v.value; }
+      as v:ValueRef[uint]   { return v.value; }
+      as v:ValueRef[ulong]  { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[float](ref:Object) -> float {
+    classify ref {
+      as v:ValueRef[byte]   { return float(v.value); }
+      as v:ValueRef[short]  { return float(v.value); }
+      as v:ValueRef[int]    { return float(v.value); }
+      as v:ValueRef[long]   { return float(v.value); }
+      as v:ValueRef[float]  { return v.value; }
+      as v:ValueRef[double] { return float(v.value); }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+
+  static def valueOf[double](ref:Object) -> double {
+    classify ref {
+      as v:ValueRef[byte]   { return double(v.value); }
+      as v:ValueRef[short]  { return double(v.value); }
+      as v:ValueRef[int]    { return double(v.value); }
+      as v:ValueRef[long]   { return double(v.value); }
+      as v:ValueRef[float]  { return v.value; }
+      as v:ValueRef[double] { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }
+}

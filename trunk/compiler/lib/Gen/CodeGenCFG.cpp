@@ -135,6 +135,7 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
       break;
 
     case BlockTerm_Catch:
+    case BlockTerm_TraceCatch:
       genCatch(blk);
       break;
 
@@ -279,6 +280,7 @@ void CodeGenerator::genThrow(Block * blk) {
 }
 
 void CodeGenerator::genCatch(Block * blk) {
+  bool requestStackTrace = blk->terminator() == BlockTerm_TraceCatch;
   Function * ehException = llvm::Intrinsic::getDeclaration(
       irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
   Function * ehSelector = llvm::Intrinsic::getDeclaration(
@@ -292,7 +294,7 @@ void CodeGenerator::genCatch(Block * blk) {
   ValueList args;
   args.push_back(ehPtr);
   args.push_back(builder_.CreateBitCast(
-      personality, llvm::PointerType::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), 0)));
+      personality, llvm::PointerType::get(builder_.getInt8Ty(), 0)));
 
   // Add an argument for each catch block, or the finally block if there is one.
   size_t numSelectors = blk->termExprs().size() - 1;

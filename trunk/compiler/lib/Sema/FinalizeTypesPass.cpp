@@ -530,7 +530,7 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
   for (TypeRefList::iterator it = from->members().begin(); it != from->members().end(); ++it) {
     Type * memberType = it->dealias();
     // TODO: Should this use conversion test, or subtype test?
-    ConversionRank rank = to->convert(memberType);
+    ConversionRank rank = to->canConvert(memberType);
     if (rank != Incompatible) {
       if (rank > bestRank) {
         bestRank = rank;

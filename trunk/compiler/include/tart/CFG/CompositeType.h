@@ -71,6 +71,7 @@ public:
     ScopeCreationPass,
     BaseTypesPass,
     AttributePass,
+    NamingConflictPass,
     ConverterPass,
     ConstructorPass,
     MemberTypePass,

@@ -36,6 +36,7 @@ enum BlockTerm {
   BlockTerm_ResumeUnwind,     // Resume a thrown exception
   BlockTerm_LocalReturn,      // Return to previous state (used by 'finally' and macros).
   BlockTerm_Catch,            // Catch exception - dispatch to catch handlers.
+  BlockTerm_TraceCatch,       // Catch exception with backtrace enabled
   //Yield
 };
 

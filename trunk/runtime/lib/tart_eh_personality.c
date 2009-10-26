@@ -7,6 +7,7 @@
 #include "stddef.h"
 #include "stdbool.h"
 #include "string.h"
+//#include "config.h"
 
 #define TART_EXCEPTION_CLASS 0
 //#define TART_EXCEPTION_CLASS (('T' << 56L) << ('A' << 48L) << ('R' << 40L) << ('T' << 32L))
@@ -245,6 +246,15 @@ bool findAction(
   }
 }
 
+#if 0
+_Unwind_Reason_Code backtraceCallback(struct _Unwind_Context * context, void * vthrowable) {
+  const struct TartThrowable * throwable = (const struct TartThrowable *) vthrowable;
+  _Unwind_Ptr ip = _Unwind_GetIP(context);
+  fprintf(stderr, "Backtrace callback %p\n", ip);
+  return _URC_NO_REASON;
+}
+#endif
+
 _Unwind_Reason_Code __tart_eh_personality(
     int version,
     _Unwind_Action actions,
@@ -264,6 +274,14 @@ _Unwind_Reason_Code __tart_eh_personality(
   if (version != 1) {
     return _URC_FATAL_PHASE1_ERROR;
   }
+
+#if 0
+  ip = _Unwind_GetIP(context) - 1;
+  fprintf(stderr, "Begin Backtrace %d\n", actions);
+  _Unwind_Reason_Code code;
+  code = _Unwind_Backtrace(backtraceCallback, (void *) throwable);
+  fprintf(stderr, "End Backtrace %d %p\n\n", code, ip);
+#endif
 
   // Find the language-specific data
   langSpecData = (const unsigned char *) _Unwind_GetLanguageSpecificData(context);

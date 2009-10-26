@@ -280,7 +280,7 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
     }
 
     if (typeArg == NULL) {
-      typeArg = NonTypeConstant::get(cb);
+      typeArg = SingleValueType::get(cb);
     }
 
     if (!cb->isSingular()) {
@@ -328,26 +328,44 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
   //if (!isSingularArgList) {
   //  return new
   //}
-
-  // TODO: Do template overload resolution.
-  // TODO: Use parameter assignments.
-  if (candidates.size() == 1) {
-    SpecializeCandidate * spc = *candidates.begin();
-    Defn * defn = spc->templateDefn();
-    TemplateSignature * tsig = spc->templateDefn()->templateSignature();
-    if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
-      Type * type = tsig->instantiateType(loc, spc->env());
-      if (type != NULL) {
-        return new TypeLiteralExpr(loc, type);
+  // Remove candidates that aren't an exact match.
+  SpecializeCandidate * bestSp = NULL;
+  if (candidates.size() > 1) {
+    for (SpCandidateSet::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+      SpecializeCandidate * sp = *it;
+      ConversionRank rank = sp->updateConversionRank(argList);
+      if (rank == IdenticalTypes) {
+        if (bestSp != NULL) {
+          diag.error(loc) << "Ambiguous template argument match:";
+          diag.info(loc) << bestSp->templateDefn();
+          diag.info(loc) << sp->templateDefn();
+        } else {
+          bestSp = sp;
+        }
       }
     }
 
-    defn = tsig->instantiate(loc, spc->env());
-    if (defn != NULL) {
-      return getDefnAsExpr(defn, spc->base(), loc);
+    if (bestSp == NULL) {
+      bestSp = *candidates.begin();
     }
   } else {
-    DFAIL("Implement");
+    bestSp = *candidates.begin();
+  }
+
+  // TODO: Do template overload resolution.
+  // TODO: Use parameter assignments.
+  Defn * defn = bestSp->templateDefn();
+  TemplateSignature * tsig = bestSp->templateDefn()->templateSignature();
+  if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
+    Type * type = tsig->instantiateType(loc, bestSp->env());
+    if (type != NULL) {
+      return new TypeLiteralExpr(loc, type);
+    }
+  }
+
+  defn = tsig->instantiate(loc, bestSp->env());
+  if (defn != NULL) {
+    return getDefnAsExpr(defn, bestSp->base(), loc);
   }
 }
 

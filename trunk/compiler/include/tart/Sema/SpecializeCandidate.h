@@ -31,6 +31,7 @@ private:
   Defn * templateDefn_;
   Expr * base_;
   BindingEnv env_;
+  ConversionRank conversionRank_;
 
 public:
   SpecializeCandidate(Expr *base, Defn * tdef);
@@ -53,6 +54,9 @@ public:
 
   /** Return true if this candidate is more specific than the one given. */
   bool isMoreSpecific(const SpecializeCandidate * other) const;
+
+  /** Update the compatibility score for this candidate. */
+  ConversionRank updateConversionRank(const TypeList & argList);
 
   // Overrides
 

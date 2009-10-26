@@ -57,6 +57,7 @@ EXPR_TYPE(UnionMemberCast)// Cast from a union type.
 EXPR_TYPE(Truncate)       // Number truncation
 EXPR_TYPE(SignExtend)     // Extend signed number
 EXPR_TYPE(ZeroExtend)     // Extend unsigned number
+EXPR_TYPE(IntToFloat)     // Integer to float.
 EXPR_TYPE(BitCast)        // Reinterpret cast
 
 // Special objects

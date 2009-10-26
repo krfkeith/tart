@@ -35,14 +35,11 @@ public:
   }
 
   /** Return the location of the end of the statement. */
-  virtual const SourceLocation & finalLocation() const {
-    return location();
-  }
+  virtual const SourceLocation & finalLocation() const { return location(); }
 
   void format(FormatStream & out) const;
-  static inline bool classof(const Stmt *) {
-    return true;
-  }
+
+  static inline bool classof(const Stmt *) { return true; }
   static inline bool classof(const ASTNode * e) {
     return e->nodeType() >= ASTNode::StmtFirst && e->nodeType() <= ASTNode::StmtLast;
   }

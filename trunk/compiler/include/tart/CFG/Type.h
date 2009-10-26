@@ -94,11 +94,14 @@ FormatStream & operator<<(FormatStream & out, ConversionRank tc);
 /// -------------------------------------------------------------------
 /// Input parameters for a type conversion operation.
 struct Conversion {
+  enum Options {
+    Coerce = (1<<0),        // Try coercive casts
+  };
+
   const Type * fromType;
   Expr * fromValue;
   Expr ** resultValue;
-  BindingEnv * bindingEnv;
-  bool matchPatterns;
+  int options;
 
   /** Test conversion from type to type. */
   Conversion(const Type * from);
@@ -111,6 +114,12 @@ struct Conversion {
 
   /** Returns the 'from' type, with aliases and type parameters resolved. */
   const Type * getFromType() const;
+
+  /** Set conversion option. */
+  Conversion & setOption(int option) {
+    options |= option;
+    return *this;
+  }
 };
 
 /// -------------------------------------------------------------------
@@ -193,8 +202,8 @@ public:
   virtual ConversionRank convertImpl(const Conversion & conversion) const = 0;
 
   /** Some convenient wrappers around 'convert'. */
-  ConversionRank canConvert(Expr * fromExpr) const;
-  ConversionRank canConvert(const Type * fromType) const;
+  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
+  ConversionRank canConvert(const Type * fromType, int options = 0) const;
 
   /** Reverse conversion function, used when the source is a constraint. */
   virtual ConversionRank convertTo(const Type * toType) const {
@@ -301,47 +310,12 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// A named alias of a type.
-class TypeAlias : public Type {
-public:
-  /** Construct a new typealias. */
-  TypeAlias(Type * val);
-
-  /** The target of this alias. */
-  Type * value() const { return value_; }
-  void setValue(Type * value) { value_ = value; }
-
-  // Overrides
-
-  bool isSingular() const { return value_->isSingular(); }
-  bool isEqual(const Type * other) const { return value_->isEqual(other); }
-  bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
-  bool includes(const Type * other) const { return value_->includes(other); }
-  bool isReferenceType() const { return value_->isReferenceType(); }
-  const llvm::Type * irType() const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  Expr * nullInitValue() const { return value_->nullInitValue(); }
-  void trace() const;
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const TypeAlias *) { return true; }
-  static inline bool classof(const Type * ty) {
-    return ty->typeClass() == Alias;
-  }
-
-private:
-  Type * value_;
-};
-
-/// -------------------------------------------------------------------
-/// A value which isn't a type, but which can be treated as one - used
-/// for non-type template arguments.
-class NonTypeConstant : public Type {
+/// A type which consists of a single value, used for value template
+/// arguments.
+class SingleValueType : public Type {
 public:
   // Static factory function.
-  static NonTypeConstant * get(ConstantExpr * value);
+  static SingleValueType * get(ConstantExpr * value);
 
   // The constant value.
   ConstantExpr * value() const { return value_; }
@@ -358,7 +332,7 @@ public:
   void trace() const;
   void format(FormatStream & out) const;
 
-  static inline bool classof(const NonTypeConstant *) { return true; }
+  static inline bool classof(const SingleValueType *) { return true; }
   static inline bool classof(const Type * ty) {
     return ty->typeClass() == NonType;
   }
@@ -367,7 +341,7 @@ private:
   ConstantExpr * value_;
 
   /** Construct a new typealias. */
-  NonTypeConstant(ConstantExpr * value)
+  SingleValueType(ConstantExpr * value)
     : Type(NonType)
     , value_(value)
   {}
@@ -423,6 +397,9 @@ public:
   Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
   Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
   ConversionRank convert(const Conversion & conversion) const;
+  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
+  ConversionRank canConvert(const Type * fromType, int options = 0) const;
+  ConversionRank canConvert(const TypeRef & fromType, int options = 0) const;
 
   TypeDefn * defn() const { return type_->typeDefn(); }
   const llvm::Type * irType() const { return type_->irType(); }

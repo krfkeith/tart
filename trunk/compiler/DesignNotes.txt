@@ -4,8 +4,10 @@ Design TODOS:
 
 * Type casting via operations on type objects? (for dynamic casting of reference types)
   * Something like 'object.asType(Type)' (Can't use 'as' because it's a keyword.)
-* Const-ness "const" and "const?"
+  * Scala uses object.asInstanceOf[type]
+* Const-ness "const" and "const? / constable"
 * Protocols
+* Null vs. Void, and nullable types.
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Implementation TODOS:
@@ -20,10 +22,16 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Finish up the TypeRef stuff.
+  * Rename NonTypeConst to SingletonType.
+* TypeRef
+  * Expressions
+  * Template arguments
+  * Conversions
+  * Move TypeAlias to its own header, and then use TypeRef.
 * Boxed values:
   * unboxing.
   * Conversions
+  * Closure Cells
 * Reflection
   * Iterate functions, properties, find by name
   * PropertyHolder / PropertyDescriptor / CustomType
@@ -82,21 +90,26 @@ Implementation TODOS:
 * Import-as, import-namespace tests.
 * Templates
   * "requires" or "where" clauses.
+  * Parameter constraints. <: and >:
 * Runtime
   * Compile runtime with clang so as to allow optimization.
 * Source-level debug info.
+  * Fix gdb problem with function entry points.
+  * Isolate and report bugs.
 * Generator functions.
   * Yield statement.
   * State machine.
 * Object.toString.
+  * Need a base implementation for Object.
+  * Define toStringFmt
 * String formatting
 * Let with instance scope.
 * SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
 * AttributeSite failure tests.
-* Class extension
-* Finish writing out and parsing metadata files so that we don't have to compile everything
+* Class "extension"
+* Finish writing out and parsing metadata so that we don't have to compile everything
   multiple times.
 * Call gc_alloc instead of malloc. Integrate Scarcity.
 * Statements:
@@ -141,21 +154,9 @@ o  Our never-ending quest to get 'hello world' working!
   o Work on FileStream
   o Do we want to use stdio open() or fopen()? (Do we want to do our own buffering?)
   o Need stdin/stdout/stderr pointers.
-  o Hook up C runtime. (Possibly parse C runtime into LLVM via clang.)
 o  Hook up base object and type classes
-o  Statements:
-  o For (need unpacking assignment.)
-  o Foreach (need iterators first, and static interfaces)
-  o do-while
-  o yield
-  o repeat
-  o fork/threading primitives
-  o with (what interface for using?)
-o  Finish writing out and parsing metadata files so that we don't have to compile everything
-    multuple times.
-o  Abstract class instantiation checks.
 o  Namespace merging.
-o  'virtual' arguments.
+o  'virtual' arguments. (Or 'dispatched')
   o  implicit convert (silent)
   o  explicit convert
   o  dynamic convert
@@ -163,7 +164,6 @@ o  Implement overriding struct assignment.
 o  GC Trace functions. (Auto-generated and explicit. Also don't take the name 'trace')
 o  Add padding before static objects to make GC happy. (Maybe not.)
 o  Call gc_alloc instead of malloc.
-* Customizable casting support
 
 o  Type conversions of non-constants.
 
@@ -216,56 +216,6 @@ We need assertions! Which requires:
   -- Classes
   -- isa test
 
-// ------------------------------------------------------------------------
-More template ideas:
-
-  [Intrinsic("numeric")]
-  def <N::Number> equal(a0:N, a1:N) -> bool;
-
-  [Intrinsic("numeric")]
-  def <N::Number or String> equal(a0:N, a1:N) -> bool;
-
-  def <::Array<N:Type>> equal(a0:N, a1:N) -> bool;
-
-  def <N == Integer> equal(a0:N, a1:N) {
-  }
-
-  def <N <= Float or Int> equal(a0:N, a1:N) {
-  }
-
-  def <:NativePointer<ElementType>> equal(a0:N, a1:N) {
-  }
-
-  def <:ElementType[]> equal(a0:N, a1:N) {
-  }
-
-  def <N::Float or Int, M:int> equal(a0:N, a1:N) {
-  }
-
-  def <N::Number, M:int> equal(a0:N, a1:N) {
-  }
-
-  def <N:Type<Number>, M:int> equal(a0:N, a1:N) {
-  }
-
-  class <?::(T:Type)[]>> equal {}
-
-  class <T::Array<E>> equal {}
-  
-  class equal<[T]>
-  
-  class equal {T}
-  class equal::(T)
-
-  class equal::String
-  
-  let x:String{} = {1, 2, 3, 4};
-  
-  class Array::String;
-  
-  def forall::(%T subtypes Iterator::%P) (in:T) {
-  }
-    
 // ------------------------------------------------------------------------
 
 Link-time code generation.
