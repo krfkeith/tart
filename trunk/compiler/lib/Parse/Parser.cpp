@@ -529,7 +529,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     ASTFunctionDecl * saveFunction = function;
     function = fd;
     if (!match(Token_Semi)) {
-      body = statement();
+      body = bodyStmt();
       if (body == NULL) {
         diag.error(loc) << "Function definition with no body";
         return DECL_ERROR;
@@ -576,7 +576,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   Stmt * body = NULL;
   ASTFunctionDecl * saveFunction = function;
   function = fd;
-  body = statement();
+  body = bodyStmt();
   if (body == NULL) {
     diag.error(loc) << "Macro definition requires a body";
     return DECL_ERROR;
@@ -871,7 +871,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
       ASTFunctionDecl * saveFunction = function;
       function = fc;
       if (!match(Token_Semi)) {
-        body = statement();
+        body = bodyStmt();
         if (body == NULL) {
           diag.error(loc) << "Function body or ';' expected.";
           return true;
@@ -1503,6 +1503,7 @@ Stmt * Parser::blockStmt() {
       expectedStatement();
       return NULL;
     }
+
     block->append(st);
     loc = lexer.tokenLocation();
   }
@@ -1556,7 +1557,7 @@ Stmt * Parser::throwStmt() {
 }
 
 Stmt * Parser::tryStmt() {
-  Stmt * st = statement();
+  Stmt * st = bodyStmt();
   if (st == NULL) {
     expectedStatement();
     return NULL;
@@ -1567,6 +1568,13 @@ Stmt * Parser::tryStmt() {
 
     bool parens = match(Token_LParen); // Optional parens
     SourceLocation loc = lexer.tokenLocation();
+
+    // Parse attributes
+    ASTNodeList attributes;
+    if (!attributeList(attributes)) {
+      return false;
+    }
+
     const char * exceptName = matchIdent();
     if (exceptName == NULL) {
       exceptName = "";
@@ -1589,8 +1597,11 @@ Stmt * Parser::tryStmt() {
     mods.visibility = Public;
     ASTDecl * exceptDecl = new ASTVarDecl(ASTNode::Let, loc, exceptName, exceptType,
         NULL, mods);
+    if (!attributes.empty()) {
+      exceptDecl->attributes().swap(attributes);
+    }
 
-    st = statement();
+    st = bodyStmt();
     if (st == NULL) {
       expectedStatement();
       return NULL;
@@ -1601,7 +1612,7 @@ Stmt * Parser::tryStmt() {
   }
 
   if (match(Token_Else)) {
-    st = statement();
+    st = bodyStmt();
     if (st == NULL) {
       expectedStatement();
       return NULL;
@@ -1610,7 +1621,7 @@ Stmt * Parser::tryStmt() {
   }
 
   if (match(Token_Finally)) {
-    st = statement();
+    st = bodyStmt();
     if (st == NULL) {
       expectedStatement();
       return NULL;
@@ -1673,7 +1684,11 @@ Stmt * Parser::ifStmt() {
 
   Stmt * elseSt = NULL;
   if (match(Token_Else)) {
-    elseSt = statement();
+    if (match(Token_If)) {
+      elseSt = ifStmt();
+    } else {
+      elseSt = bodyStmt();
+    }
   }
 
   return new IfStmt(matchLoc, testExpr, thenSt, elseSt);

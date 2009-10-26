@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Type.h"
+#include "tart/CFG/TypeAlias.h"
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
@@ -176,35 +177,25 @@ Conversion::Conversion(const Type * from)
   : fromType(from)
   , fromValue(NULL)
   , resultValue(NULL)
-  , bindingEnv(NULL)
-  , matchPatterns(false)
+  , options(0)
 {}
 
 Conversion::Conversion(Expr * from)
   : fromType(from->type())
   , fromValue(from)
   , resultValue(NULL)
-  , bindingEnv(NULL)
-  , matchPatterns(false)
+  , options(0)
 {}
 
 Conversion::Conversion(Expr * from, Expr ** to)
   : fromType(from->type())
   , fromValue(from)
   , resultValue(to)
-  , bindingEnv(NULL)
-  , matchPatterns(false)
+  , options(0)
 {}
 
 const Type * Conversion::getFromType() const {
   const Type * ty = dealias(fromType);
-
-  if (bindingEnv != NULL) {
-    while (const PatternVar * pvar = dyn_cast_or_null<PatternVar>(ty)) {
-      ty = dealias(bindingEnv->get(pvar));
-    }
-  }
-
   return ty;
 }
 
@@ -239,24 +230,49 @@ TypeRef Type::typeParam(int index) const {
 }
 
 ConversionRank Type::convert(const Conversion & cn) const {
+  ConversionRank rank;
   if (cn.resultValue == NULL) {
     // Ask the constraint if we can convert to this type. Most types don't
     // know about constraints, but constraints know about most types.
-    ConversionRank rank = cn.fromType->convertTo(this);
+    rank = cn.fromType->convertTo(this);
     if (rank != Incompatible) {
       return rank;
     }
   }
 
-  return convertImpl(cn);
+  rank = convertImpl(cn);
+
+  if (rank == Incompatible && (cn.options & Conversion::Coerce) && !cn.resultValue) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(this)) {
+      if (!ctype->passes().isFinished(CompositeType::ConverterPass)) {
+        diag.warn() << "Converter pass for " << ctype << " not done.";
+      }
+
+      if (!ctype->coercers().empty()) {
+        const MethodList & coercers = ctype->coercers();
+        ConversionRank bestRank = Incompatible;
+        for (MethodList::const_iterator it = coercers.begin(); it != coercers.end(); ++it) {
+          const FunctionType * fnType = (*it)->functionType();
+          rank = std::min(
+              fnType->param(0)->type().canConvert(cn.fromType),
+              canConvert(fnType->returnType().type()));
+          bestRank = std::max(bestRank, rank);
+        }
+
+        rank = bestRank;
+      }
+    }
+  }
+
+  return rank;
 }
 
-ConversionRank Type::canConvert(Expr * fromExpr) const {
-  return convert(Conversion(fromExpr));
+ConversionRank Type::canConvert(Expr * fromExpr, int options) const {
+  return convert(Conversion(fromExpr).setOption(options));
 }
 
-ConversionRank Type::canConvert(const Type * fromType) const {
-  return convert(Conversion(fromType));
+ConversionRank Type::canConvert(const Type * fromType, int options) const {
+  return convert(Conversion(fromType).setOption(options));
 }
 
 Expr * Type::implicitCast(const SourceLocation & loc, Expr * from) const {
@@ -451,74 +467,38 @@ void DeclaredType::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// TypeAlias
-
-TypeAlias::TypeAlias(Type * val)
-  : Type(Alias)
-  , value_(val)
-{
-}
-
-const llvm::Type * TypeAlias::irType() const {
-  DASSERT(value_ != NULL);
-  return value_->irType();
-}
-
-const llvm::Type * TypeAlias::irEmbeddedType() const {
-  return value_->irEmbeddedType();
-}
-
-const llvm::Type * TypeAlias::irParameterType() const {
-  return value_->irParameterType();
-}
-
-ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
-  DASSERT(value_ != NULL);
-  return value_->convertImpl(conversion);
-}
-
-void TypeAlias::format(FormatStream & out) const {
-  DASSERT(value_ != NULL);
-  return value_->format(out);
-}
-
-void TypeAlias::trace() const {
-  safeMark(value_);
-}
-
-// -------------------------------------------------------------------
 // NonTypeConstant
 
-NonTypeConstant * NonTypeConstant::get(ConstantExpr * value) {
+SingleValueType * SingleValueType::get(ConstantExpr * value) {
   // TODO: Fold unique values.
-  return new NonTypeConstant(value);
+  return new SingleValueType(value);
 }
 
-bool NonTypeConstant::isEqual(const Type * other) const {
-  if (const NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(other)) {
+bool SingleValueType::isEqual(const Type * other) const {
+  if (const SingleValueType * ntc = dyn_cast<SingleValueType>(other)) {
     return value_->isEqual(ntc->value());
   }
 
   return false;
 }
 
-const llvm::Type * NonTypeConstant::irType() const {
+const llvm::Type * SingleValueType::irType() const {
   DFAIL("IllegalState");
 }
 
-ConversionRank NonTypeConstant::convertImpl(const Conversion & conversion) const {
+ConversionRank SingleValueType::convertImpl(const Conversion & conversion) const {
   DFAIL("IllegalState");
 }
 
-Expr * NonTypeConstant::nullInitValue() const {
+Expr * SingleValueType::nullInitValue() const {
   DFAIL("IllegalState");
 }
 
-void NonTypeConstant::trace() const {
+void SingleValueType::trace() const {
   value_->mark();
 }
 
-void NonTypeConstant::format(FormatStream & out) const {
+void SingleValueType::format(FormatStream & out) const {
   out << value_;
 }
 
@@ -543,6 +523,18 @@ Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from) const {
 
 ConversionRank TypeRef::convert(const Conversion & conversion) const {
   return type_->convert(conversion);
+}
+
+ConversionRank TypeRef::canConvert(Expr * fromExpr, int options) const {
+  return type()->canConvert(fromExpr, options);
+}
+
+ConversionRank TypeRef::canConvert(const Type * fromType, int options) const {
+  return type()->canConvert(fromType, options);
+}
+
+ConversionRank TypeRef::canConvert(const TypeRef & fromType, int options) const {
+  return type()->canConvert(fromType.type(), options);
 }
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
@@ -574,7 +566,7 @@ Type * findCommonType(Type * t0, Type * t1) {
 Type * dealiasImpl(Type * t) {
   while (t != NULL && t->typeClass() == Type::Alias) {
     if (TypeAlias * alias = dyn_cast<TypeAlias>(t)) {
-      t = alias->value();
+      t = alias->value().type();
       DASSERT_OBJ(t != NULL, alias);
     } else {
       break;

@@ -26,6 +26,7 @@ public:
 
   bool analyzeBaseClasses();
   bool analyzeBaseClassesImpl();
+  bool checkNameConflicts();
   bool analyzeConverters();
   bool analyzeConstructors();
   bool analyzeMemberTypes();

@@ -1,5 +1,5 @@
 /** A reference type used to contain a value type. */
-class Boxed[%T] {
+class ValueRef[%T] : Ref {
   let value:T;
   
   def construct(value:T) {

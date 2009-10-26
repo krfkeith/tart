@@ -986,6 +986,10 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
         return false;
       }
 
+      if (exceptDefn->hasTrait(Defn::RequestStackTrace)) {
+        unwindBlock->setTerminator(unwindBlock->termLocation(), BlockTerm_TraceCatch);
+      }
+
       // Get the exception type and determine if it is valid.
       CompositeType * exceptType = dyn_cast<CompositeType>(exceptDefn->type().dealias());
       if (isErrorResult(exceptType)) {

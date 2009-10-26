@@ -123,6 +123,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::Truncate:
     case Expr::SignExtend:
     case Expr::ZeroExtend:
+    case Expr::IntToFloat:
       return genNumericCast(static_cast<const CastExpr *>(in));
 
     case Expr::UpCast:
@@ -593,23 +594,44 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
 
 Value * CodeGenerator::genNumericCast(CastExpr * in) {
   Value * value = genExpr(in->arg());
+  TypeId fromTypeId = TypeId_Void;
+  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->arg()->type())) {
+    fromTypeId = ptype->typeId();
+  }
+
   if (value != NULL) {
     llvm::Instruction::CastOps castType;
     switch (in->exprType()) {
       case Expr::Truncate:
-      castType = llvm::Instruction::Trunc;
-      break;
+        if (isFloatingType(fromTypeId)) {
+          castType = llvm::Instruction::FPTrunc;
+        } else {
+          castType = llvm::Instruction::Trunc;
+        }
+        break;
 
       case Expr::SignExtend:
-      castType = llvm::Instruction::SExt;
-      break;
+        if (isFloatingType(fromTypeId)) {
+          castType = llvm::Instruction::FPExt;
+        } else {
+          castType = llvm::Instruction::SExt;
+        }
+        break;
 
       case Expr::ZeroExtend:
-      castType = llvm::Instruction::ZExt;
-      break;
+        castType = llvm::Instruction::ZExt;
+        break;
+
+      case Expr::IntToFloat:
+        if (isUnsignedIntegerType(fromTypeId)) {
+          castType = llvm::Instruction::UIToFP;
+        } else {
+          castType = llvm::Instruction::SIToFP;
+        }
+        break;
 
       default:
-      DFAIL("IllegalState");
+        DFAIL("IllegalState");
     }
 
     return builder_.CreateCast(castType, value, in->type()->irType());

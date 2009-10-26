@@ -107,6 +107,7 @@ public:
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
+    RequestStackTrace,      // Set on catch variables that want stack tracing.
 
     //Commutative = (1<<10),  // A function whose order of arguments can be reversed
     //Associative = (1<<11),  // A varargs function that can be combined with itself.
@@ -184,10 +185,6 @@ public:
   const ExprList & attrs() const { return attrs_; }
   ExprList & attrs() { return attrs_; }
 
-  /** Find the first attribute of the specified type. */
-  const Expr * findAttribute(const Type * attrType) const;
-  const Expr * findAttribute(const char * attrTypeName) const;
-
   /** Get the list of traits. */
   const Traits & traits() const { return traits_; }
   Traits & traits() { return traits_; }
@@ -250,6 +247,10 @@ public:
   /** Return true if this declaration is part of a partially-instantiated template, meaning
       a template whose parameters are pattern variables of another template. */
   bool isPartialInstantiation() const { return traits_.contains(PartialInstantiation); }
+
+  /** Returns true if this symbol is a template *and* has one or more pattern variables
+      in its template signature. */
+  bool hasUnboundTypeParams() const;
 
   /** Return the template signature object. */
   const TemplateSignature * templateSignature() const { return tsig_; }

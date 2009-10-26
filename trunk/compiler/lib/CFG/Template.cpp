@@ -41,8 +41,15 @@ const llvm::Type * PatternVar::createIRType() const {
 }
 
 ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
-  DFAIL("Shouldn't be attempting to call convert on a Pattern Var (I think).");
-  if (cn.bindingEnv != NULL) {
+  // The only place where this conversion function is called is when attempting to
+  // determine if a custom coercion can be done (without actually doing it.)
+  if (cn.resultValue != NULL) {
+    DFAIL("Shouldn't be attempting to call convert on a Pattern Var (I think).");
+  }
+
+  return NonPreferred;
+
+  /*if (cn.bindingEnv != NULL) {
     const Type * ty = cn.bindingEnv->get(this);
     DFAIL("Deprecated");
     if (ty == NULL) {
@@ -51,9 +58,9 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
     } else {
       return ty->convertImpl(cn);
     }
-  }
+  }*/
 
-  return Incompatible;
+  //return Incompatible;
 }
 
 const Defn * PatternVar::templateDefn() const {
@@ -61,7 +68,7 @@ const Defn * PatternVar::templateDefn() const {
 }
 
 bool PatternVar::canBindTo(const Type * value) const {
-  if (const NonTypeConstant * nt = dyn_cast<NonTypeConstant>(value)) {
+  if (const SingleValueType * nt = dyn_cast<SingleValueType>(value)) {
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
   } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeTypeDescriptor)) {
@@ -275,7 +282,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
     switch (tdef->typeValue()->typeClass()) {
       case Type::NativeArray: {
-        NonTypeConstant * ntc = cast<NonTypeConstant>(paramValues[1]);
+        SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
         ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
         uint64_t size = intVal->value()->getZExtValue();
         NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);
@@ -312,7 +319,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     Type * value = paramValues[i];
 
     Defn * argDefn;
-    if (NonTypeConstant * ntc = dyn_cast<NonTypeConstant>(value)) {
+    if (SingleValueType * ntc = dyn_cast<SingleValueType>(value)) {
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
     } else {
       argDefn = new TypeDefn(result->module(), var->name(), value);
@@ -410,7 +417,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
     }
 
     case Type::NativeArray: {
-      NonTypeConstant * ntc = cast<NonTypeConstant>(paramValues[1]);
+      SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
       ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
       uint64_t size = intVal->value()->getZExtValue();
       NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);

@@ -113,6 +113,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::Truncate:
     case Expr::SignExtend:
     case Expr::ZeroExtend:
+    case Expr::IntToFloat:
     case Expr::BitCast:
     case Expr::UnionCtorCast:
     case Expr::UnionMemberCast:

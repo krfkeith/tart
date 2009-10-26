@@ -216,7 +216,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 bool FunctionAnalyzer::resolveModifiers() {
   bool success = true;
 
-  if (target->isTemplate() || target->isTemplateMember()) {
+  if (target->hasUnboundTypeParams() || target->isTemplateMember()) {
     // Don't build CFG for templates
     return true;
   }
@@ -339,7 +339,7 @@ bool FunctionAnalyzer::resolveModifiers() {
 bool FunctionAnalyzer::createCFG() {
   bool success = true;
 
-  if (target->isTemplate() || target->isTemplateMember()) {
+  if (target->hasUnboundTypeParams() || target->isTemplateMember()) {
     // Don't build CFG for templates
     return true;
   }
@@ -372,7 +372,7 @@ bool FunctionAnalyzer::resolveReturnType() {
     return false;
   }
 
-  if (target->isTemplate()) {
+  if (target->hasUnboundTypeParams()) {
     if (target->passes().begin(FunctionDefn::ReturnTypePass)) {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).

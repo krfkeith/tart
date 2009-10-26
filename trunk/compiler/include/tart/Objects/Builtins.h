@@ -9,6 +9,10 @@
 #include "tart/CFG/Scope.h"
 #endif
 
+#ifndef TART_CFG_TYPEALIAS_H
+#include "tart/CFG/TypeAlias.h"
+#endif
+
 namespace tart {
 
 class Module;

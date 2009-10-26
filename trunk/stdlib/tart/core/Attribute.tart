@@ -14,11 +14,10 @@ class Attribute {
     VARIABLE,
     PROPERTY,
     MACRO,
-    STATEMENT,
 
     TYPE = CLASS | STRUCT | INTERFACE | ENUM,
     CALLABLE = CONSTRUCTOR | FUNCTION | MACRO,
-    ANY = TYPE | NAMESPACE | CALLABLE | PARAMETER | VARIABLE | PROPERTY | STATEMENT,
+    ANY = TYPE | NAMESPACE | CALLABLE | PARAMETER | VARIABLE | PROPERTY,
   }
 
   /** Indicates whether the attribute is retained in the compiled binary. */

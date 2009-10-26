@@ -145,7 +145,7 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   member->setParentDefn(parentDefn);
   member->createQualifiedName(parentDefn);
   member->copyTrait(parentDefn, Defn::Synthetic);
-  if (parentDefn->isTemplate() || parentDefn->isTemplateMember()) {
+  if (parentDefn->hasUnboundTypeParams() || parentDefn->isTemplateMember()) {
     member->addTrait(Defn::TemplateMember);
   }
 

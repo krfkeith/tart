@@ -30,7 +30,7 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
     }
 
     TypeRef resultType = (*it)->resultType();
-    ConversionRank rank = toType->convert(resultType.type());
+    ConversionRank rank = toType->canConvert(resultType.type());
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -175,7 +175,7 @@ ConversionRank ParameterOfConstraint::convertTo(const Type * toType) const {
     }
 
     TypeRef paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = toType->convert(paramType.type());
+    ConversionRank rank = toType->canConvert(paramType.type());
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {

@@ -218,7 +218,8 @@ void FunctionDefn::dumpBlocks() {
         stream << "    local return\n";
         break;
 
-      case BlockTerm_Catch: {
+      case BlockTerm_Catch:
+      case BlockTerm_TraceCatch: {
         size_t numSelectors = blk->termExprs().size() - 1;
         for (size_t i = 0; i < numSelectors; ++i) {
           Expr * catchExpr = blk->termExprs()[i + 1];

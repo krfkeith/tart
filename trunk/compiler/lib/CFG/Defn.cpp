@@ -144,33 +144,6 @@ const std::string & Defn::linkageName() const {
   return lnkName;
 }
 
-const Expr * Defn::findAttribute(const Type * attrType) const {
-  DASSERT(attrType != NULL);
-  for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
-    Expr * attr = *it;
-    if (attr->type()->isEqual(attrType)) {
-      return attr;
-    }
-  }
-
-  return NULL;
-}
-
-const Expr * Defn::findAttribute(const char * attrTypeName) const {
-  DASSERT(attrTypeName != NULL);
-  for (ExprList::const_iterator it = attrs_.begin(); it != attrs_.end(); ++it) {
-    Expr * attr = *it;
-    Type * attrType = dealias(attr->type());
-    if (TypeDefn * tdef = attrType->typeDefn()) {
-      if (tdef->qualifiedName() == attrTypeName) {
-        return attr;
-      }
-    }
-  }
-
-  return NULL;
-}
-
 const SourceLocation & Defn::location() const {
   static const SourceLocation defaultLocation;
   return ast_ ? ast_->location() : defaultLocation;
@@ -187,6 +160,14 @@ TypeDefn * Defn::enclosingClassDefn() const {
   } else {
     return NULL;
   }
+}
+
+bool Defn::hasUnboundTypeParams() const {
+  if (tsig_ != NULL) {
+    return tsig_->patternVarCount() > 0;
+  }
+
+  return false;
 }
 
 bool Defn::beginPass(DefnPass pass) {
@@ -285,41 +266,6 @@ void NamespaceDefn::format(FormatStream & out) const {
 void NamespaceDefn::trace() const {
   Defn::trace();
   members.trace();
-}
-
-// -------------------------------------------------------------------
-// TypeDefn
-Expr * TypeDefn::asExpr() {
-  //DASSERT(Builtins::typeType != NULL);
-  if (expr_ == NULL) {
-    expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), value);
-  }
-
-  return expr_;
-}
-
-void TypeDefn::trace() const {
-  Defn::trace();
-  value->mark();
-  safeMark(expr_);
-}
-
-void TypeDefn::format(FormatStream & out) const {
-  if (out.getShowQualifiedName()) {
-    if (out.getShowType() && enclosingClassDefn()) {
-      out << enclosingClassDefn() << "." << name_;
-    } else {
-      out << qname_;
-    }
-  } else {
-    out << name_;
-  }
-
-  if (isTemplate() /*&& out.getShowType()*/) {
-    templateSignature()->format(out);
-  } else if (templateInstance() != NULL) {
-    templateInstance()->format(out);
-  }
 }
 
 // -------------------------------------------------------------------

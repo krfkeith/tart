@@ -185,16 +185,14 @@ ConversionRank CallCandidate::updateConversionRank() {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     TypeRef paramType = this->paramType(argIndex);
-    Conversion cn(argExpr);
-    cn.matchPatterns = true;
-    conversionRank_ = std::min(conversionRank_, paramType.convert(cn));
+    conversionRank_ = std::min(conversionRank_, paramType.canConvert(argExpr, Conversion::Coerce));
   }
 
   Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
-    Conversion cn(resultType_.type());
-    cn.matchPatterns = true;
-    conversionRank_ = std::min(conversionRank_, expectedReturnType->convert(cn));
+    conversionRank_ = std::min(
+        conversionRank_,
+        expectedReturnType->canConvert(resultType_.type(), Conversion::Coerce));
   }
 
   return conversionRank_;

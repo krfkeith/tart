@@ -363,7 +363,10 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
     if (isFloatingType(srcId)) {
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        DFAIL("Implement");
+        Type * resultType = const_cast<PrimitiveType *>(this);
+        *cn.resultValue = new CastExpr(
+            srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
+            cn.fromValue->location(), resultType, cn.fromValue);
       }
 
       return srcBits > dstBits ? Truncation : ExactConversion;
@@ -375,7 +378,9 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        DFAIL("Implement");
+        Type * resultType = const_cast<PrimitiveType *>(this);
+        *cn.resultValue = new CastExpr(Expr::IntToFloat,
+            cn.fromValue->location(), resultType, cn.fromValue);
       }
 
       return result;
@@ -387,7 +392,9 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        DFAIL("Implement");
+        Type * resultType = const_cast<PrimitiveType *>(this);
+        *cn.resultValue = new CastExpr(Expr::IntToFloat,
+            cn.fromValue->location(), resultType, cn.fromValue);
       }
 
       return result;
@@ -1057,6 +1064,7 @@ template<> TypeIdSet FloatType::INCLUDES = TypeIdSet::noneOf();
 template<> void FloatType::init() {
   irType_ = llvm::Type::getFloatTy(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_Float, TypeId_Float>::value);
+  addMember(&PrimitiveConstructor<TypeId_Float, TypeId_Double>::value);
   addMember(&PrimitiveToString<TypeId_Float>::value);
 
   PrimitiveToString<TypeId_Float>::value.init();

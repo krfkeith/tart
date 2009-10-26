@@ -1,0 +1,50 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  testManualBoxing();
+  testManualUnboxing();
+  testAutoBoxing();
+  return 0;
+}
+
+def testManualBoxing() {
+  let b = ValueRef(3);
+  Debug.assertTrue(b isa ValueRef[int]);
+  Debug.assertEq(3, b.value);
+}
+
+def testManualUnboxing() {
+  let b = ValueRef(true);
+  let c = Ref.valueOf[bool](b);
+  Debug.assertTrue(c);
+  Debug.assertTrue(Ref.valueOf[bool](true));
+  Debug.assertFalse(Ref.valueOf[bool](false));
+  Debug.assertEq('a', Ref.valueOf[char]('a'));
+  Debug.assertEq(1, Ref.valueOf[int](1));
+  Debug.assertEq(2, Ref.valueOf[int](2));
+  Debug.assertEq(7, Ref.valueOf[int](byte(7)));
+  Debug.assertEq(7, Ref.valueOf[int](short(7)));
+  //Debug.assertEq(7, Ref.valueOf[byte](int(7)));
+}
+
+def testAutoBoxing() {
+  let b = echo(3);
+  Debug.assertTrue(b isa ValueRef[int]);
+  let c = echo2(3);
+  Debug.assertTrue(c isa ValueRef[int]);
+  let d = echo3(1, 2, 3);
+  Debug.assertTrue(d[0] isa ValueRef[int]);
+  Debug.assertTrue(d[1] isa ValueRef[int]);
+  Debug.assertTrue(d[2] isa ValueRef[int]);
+}
+
+private def echo(v:Object) -> Object {
+  return v;
+}
+
+private def echo2(v:int) -> Object {
+  return v;
+}
+
+private def echo3(v:Object...) -> Object[] {
+  return v;
+}

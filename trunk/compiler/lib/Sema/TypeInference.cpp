@@ -121,7 +121,7 @@ void ConstraintSite::update() {
     case Expr::Assign:
     case Expr::PostAssign: {
       const AssignmentExpr * assign = static_cast<const AssignmentExpr *>(expr);
-      rank = assign->toExpr()->type()->convert(assign->fromExpr());
+      rank = assign->toExpr()->type()->canConvert(assign->fromExpr());
       //diag.debug(expr) << "Conversion rank for " << expr << " is " << rank;
       //diag.debug(expr) << "Conversion rank " << rank;
       break;
@@ -217,7 +217,7 @@ void TypeInferencePass::update() {
   overconstrained_ = false;
 
   if (expectedType_ != NULL) {
-    ConversionRank rootRank = expectedType_->convert(rootExpr_);
+    ConversionRank rootRank = expectedType_->canConvert(rootExpr_);
     if (!strict_ && rootRank < NonPreferred) {
       rootRank = NonPreferred;
     }

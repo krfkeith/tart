@@ -50,7 +50,7 @@ AddressType::AddressType(const TypeRef & elemType)
   : TypeImpl(Type::Address)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<NonTypeConstant>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
 }
 
 AddressType::AddressType()
@@ -89,9 +89,7 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
       rank = IdenticalTypes;
     } else {
       // Check conversion on element types
-      Conversion elementConversion(dealias(fromElementType.type()));
-      elementConversion.bindingEnv = cn.bindingEnv;
-      if (elementType_.convert(elementConversion) == IdenticalTypes) {
+      if (elementType_.canConvert(fromElementType.type()) == IdenticalTypes) {
         rank = IdenticalTypes;
       }
     }
@@ -167,7 +165,7 @@ PointerType::PointerType(const TypeRef & elemType)
   : TypeImpl(Type::Pointer)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<NonTypeConstant>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
 }
 
 PointerType::PointerType()
@@ -201,9 +199,7 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
       rank = bestRank;
     } else {
       // Check conversion on element types
-      Conversion elementConversion(dealias(fromElementType.type()));
-      elementConversion.bindingEnv = cn.bindingEnv;
-      if (elementType_.convert(elementConversion) == IdenticalTypes) {
+      if (elementType_.canConvert(fromElementType.type()) == IdenticalTypes) {
         rank = bestRank;
       }
     }
@@ -217,9 +213,6 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
       *cn.resultValue = fromValue;
     }
 
-    //diag.debug() << Format_Verbose <<
-    //    "Wants to convert from " << elementConversion.fromType << " to " <<
-    //    elementType_ << " [" << elementType_->convert(elementConversion) << "]";
     return rank;
     //DFAIL("Implement");
   } else {
@@ -292,7 +285,7 @@ NativeArrayType::NativeArrayType(Type * elemType, uint64_t sz, TypeDefn * defn,
   , size_(sz)
 {
   if (elemType) {
-    DASSERT_OBJ(!isa<NonTypeConstant>(elemType), elemType);
+    DASSERT_OBJ(!isa<SingleValueType>(elemType), elemType);
   }
 }
 
@@ -329,7 +322,6 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
 
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
-    elementConversion.bindingEnv = cn.bindingEnv;
     if (elementType_->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;

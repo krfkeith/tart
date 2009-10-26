@@ -452,9 +452,18 @@ GenerateStackTraceApplyIntrinsic GenerateStackTraceApplyIntrinsic::instance;
 Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
     const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  //ConstantType * ctype = cast<ConstantType>(args[0]);
-  DFAIL("Implement");
-  return NULL;
+  LValueExpr * lval = cast<LValueExpr>(args[0]);
+  if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+    if (var->defnType() != Defn::Let) {
+      diag.error(loc) << "Invalid target for attribute: " << lval;
+    } else {
+      var->addTrait(Defn::RequestStackTrace);
+    }
+  } else {
+    diag.error(loc) << "Invalid target for attribute: " << lval;
+  }
+
+  return args[0];
 }
 
 // -------------------------------------------------------------------

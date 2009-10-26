@@ -109,6 +109,9 @@ public:
   /** Do the requested analysis passes on the type definition. */
   static bool analyzeValueDefn(ValueDefn * in, AnalysisTask pass);
 
+  /** Do the requested analysis passes on the type definition. */
+  static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
+
     /** Do the requested analysis pass on the namesapce. */
   static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask pass);
 
@@ -170,8 +173,6 @@ protected:
   // symbol, multiple expressions) representing a reference to the definition.
   bool getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context, ExprList & out);
 
-  /** Do the requested analysis passes on the type definition. */
-  static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
 };
 
 } // namespace tart
