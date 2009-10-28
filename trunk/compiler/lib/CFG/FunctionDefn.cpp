@@ -9,6 +9,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/Block.h"
+#include "tart/CFG/Template.h"
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
 
@@ -28,16 +29,12 @@ namespace {
 
 void ParameterDefn::trace() const {
   VariableDefn::trace();
-  //type_.trace();
   internalType_.trace();
-  //safeMark(defaultValue_);
 }
 
 void ParameterDefn::format(FormatStream & out) const {
   // Parameters are allowed to be unnamed (for function type declarations.)
-  if (!qname_.empty() && out.getShowQualifiedName()) {
-    out << qname_;
-  } else if (name_ != NULL) {
+  if (name_ != NULL) {
     out << name_;
   }
 
@@ -144,12 +141,19 @@ void FunctionDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_ != NULL) {
-    out << "(";
-    formatParameterList(out, type_->params());
-    out << ")";
-    if (type_->returnType().isNonVoidType()) {
-      out << " -> " << type_->returnType();
+  if (out.getShowType()) {
+    const TemplateSignature * ts = templateSignature();
+    if (ts != NULL) {
+      ts->format(out);
+    }
+
+    if (type_ != NULL) {
+      out << "(";
+      formatParameterList(out, type_->params());
+      out << ")";
+      if (type_->returnType().isNonVoidType()) {
+        out << " -> " << type_->returnType();
+      }
     }
   }
 }

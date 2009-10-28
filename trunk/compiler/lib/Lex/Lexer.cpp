@@ -62,7 +62,7 @@ namespace {
 
         case 'd':
           if (strcmp(kw, "def") == 0) return Token_Def;
-          if (strcmp(kw, "defover") == 0) return Token_Def;
+          //if (strcmp(kw, "defover") == 0) return Token_Def;
           if (strcmp(kw, "double") == 0) return Token_DoubleType;
           break;
 
@@ -75,7 +75,6 @@ namespace {
           if (strcmp(kw, "float") == 0) return Token_FloatType;
           if (strcmp(kw, "for") == 0) return Token_For;
           if (strcmp(kw, "finally") == 0) return Token_Finally;
-          if (strcmp(kw, "function") == 0) return Token_Function;
           if (strcmp(kw, "fn") == 0) return Token_Function;
           if (strcmp(kw, "final") == 0) return Token_Final;
           if (strcmp(kw, "false") == 0) return Token_False;
@@ -89,6 +88,10 @@ namespace {
           if (strcmp(kw, "import") == 0) return Token_Import;
           if (strcmp(kw, "interface") == 0) return Token_Interface;
           if (strcmp(kw, "isa") == 0) return Token_Isa;
+          if (strcmp(kw, "int8") == 0) return Token_ByteType;
+          if (strcmp(kw, "int16") == 0) return Token_ShortType;
+          if (strcmp(kw, "int32") == 0) return Token_IntType;
+          if (strcmp(kw, "int64") == 0) return Token_LongType;
           break;
 
         case 'g':
@@ -127,17 +130,12 @@ namespace {
           if (strcmp(kw, "repeat") == 0) return Token_Repeat;
           if (strcmp(kw, "readonly") == 0) return Token_Readonly;
           if (strcmp(kw, "redef") == 0) return Token_Redef;
-          if (strcmp(kw, "requires") == 0) return Token_Requires;
           break;
 
         case 's':
           if (strcmp(kw, "short") == 0) return Token_ShortType;
           if (strcmp(kw, "struct") == 0) return Token_Struct;
-          //if (strcmp(kw, "sbyte") == 0) return Token_SInt8;
-          //if (strcmp(kw, "sint8") == 0) return Token_SInt8;
-          //if (strcmp(kw, "sint16") == 0) return Token_SInt16;
-          //if (strcmp(kw, "sint32") == 0) return Token_SInt32;
-          //if (strcmp(kw, "sint64") == 0) return Token_SInt64;
+          if (strcmp(kw, "sbyte") == 0) return Token_ByteType;
           if (strcmp(kw, "set") == 0) return Token_Set;
           if (strcmp(kw, "static") == 0) return Token_Static;
           if (strcmp(kw, "super") == 0) return Token_Super;
@@ -149,6 +147,7 @@ namespace {
           if (strcmp(kw, "throw") == 0) return Token_Throw;
           if (strcmp(kw, "true") == 0) return Token_True;
           if (strcmp(kw, "typealias") == 0) return Token_Typealias;
+          if (strcmp(kw, "typecast") == 0) return Token_Typecast;
           break;
 
         case 'u':
@@ -156,10 +155,10 @@ namespace {
           if (strcmp(kw, "ushort") == 0) return Token_UShortType;
           if (strcmp(kw, "uint") == 0) return Token_UIntType;
           if (strcmp(kw, "ulong") == 0) return Token_ULongType;
-          //if (strcmp(kw, "uint8") == 0) return Token_UInt8;
-          //if (strcmp(kw, "uint16") == 0) return Token_UInt16;
-          //if (strcmp(kw, "uint32") == 0) return Token_UInt32;
-          //if (strcmp(kw, "uint64") == 0) return Token_UInt64;
+          if (strcmp(kw, "uint8") == 0) return Token_UByteType;
+          if (strcmp(kw, "uint16") == 0) return Token_UShortType;
+          if (strcmp(kw, "uint32") == 0) return Token_UIntType;
+          if (strcmp(kw, "uint64") == 0) return Token_ULongType;
           if (strcmp(kw, "undef") == 0) return Token_Undef;
           break;
 
@@ -170,16 +169,13 @@ namespace {
 
         case 'w':
           if (strcmp(kw, "while") == 0) return Token_While;
+          if (strcmp(kw, "while") == 0) return Token_Where;
           break;
 
         case 'y':
           if (strcmp(kw, "yield") == 0) return Token_Yield;
           break;
       }
-    } else if (ch == '_') {
-      if (strcmp(kw, "__intrinsic") == 0) return Token_Intrinsic;
-      if (strcmp(kw, "__ref") == 0) return Token_Ref;
-      //if (strcmp(kw, "__reinterpret") == 0) return Token_Offset;
     }
 
     return Token_Ident;

@@ -286,7 +286,7 @@ void TypeInferencePass::reportRanks(bool final) {
   int siteIndex = 1;
   for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
     diag.debug() << "Call site #" << siteIndex << ": " << it->numRemaining << " candidates for " <<
-        it->callExpr;
+        Format_Type << it->callExpr;
     diag.indent();
     Candidates & cd = it->callExpr->candidates();
     for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
@@ -316,6 +316,8 @@ bool TypeInferencePass::unifyCalls() {
     }
 
     if (!canUnify) {
+      // This code is here for debugging unification failures so that you can step through
+      // unify after a unification failure.
       for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
         CallCandidate * c = *cc;
         if (c->unify(site->callExpr)) {

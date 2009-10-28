@@ -60,8 +60,8 @@ bool DefnAnalyzer::analyzeModule() {
           requireReflection = true;
         }
       } else {
-        //diag.info(de) << "Failed to analyze " << de;
         success = false;
+        diag.recovered();
       }
     }
   }
@@ -91,6 +91,7 @@ bool DefnAnalyzer::analyzeModule() {
       FindExternalRefsPass::run(module, de);
     } else {
       success = false;
+      diag.recovered();
     }
   }
 

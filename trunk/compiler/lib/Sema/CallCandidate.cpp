@@ -9,9 +9,10 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
-#include <llvm/Support/CommandLine.h>
+#include "llvm/Support/CommandLine.h"
 
 namespace tart {
 
@@ -19,7 +20,7 @@ namespace tart {
 // CallCandidate
 
 CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
-    const ParameterAssignments & params)
+    const ParameterAssignments & params, SpCandidate * spCandidate)
   : callExpr_(call)
   , base_(baseExpr)
   , method_(m)
@@ -27,10 +28,15 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , paramAssignments_(params)
   , fnType_(m->functionType())
   , resultType_(m->functionType()->returnType())
+  , spCandidate_(spCandidate)
   , isTemplate_(false)
 {
   if (m->isCtor()) {
     resultType_ = TypeRef(m->functionType()->selfParam()->type());
+  }
+
+  if (spCandidate != NULL) {
+    bindingEnv_.setSubstitutions(spCandidate->env().substitutions());
   }
 
   ParameterList & methodParams = m->functionType()->params();
@@ -54,11 +60,19 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
           if (value == NULL) {
             bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
           }
+
         }
       }
     }
 
-    // Substitute all occurances of pattern vars in the result type
+    if (spCandidate_ != NULL) {
+      TemplateSignature * ts = m->templateSignature();
+      for (TypeList::const_iterator it = ts->params().begin(); it != ts->params().end(); ++it) {
+        templateParams_.push_back(bindingEnv_.relabel(*it));
+      }
+    }
+
+    // Substitute all occurrences of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = bindingEnv_.relabel(resultType_);
     AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
@@ -83,6 +97,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType 
   , paramAssignments_(params)
   , fnType_(fnType)
   , resultType_(fnType->returnType())
+  , spCandidate_(NULL)
   , isTemplate_(false)
 {
   DASSERT(fnExpr->isSingular());
@@ -195,6 +210,22 @@ ConversionRank CallCandidate::updateConversionRank() {
         expectedReturnType->canConvert(resultType_.type(), Conversion::Coerce));
   }
 
+  // If there are explicit specializations, then check those too.
+  // Note that these must be an exact match.
+  if (spCandidate_ != NULL) {
+    const TypeVector * spArgs = spCandidate_->args();
+    size_t typeArgCount = spArgs->size();
+    for (size_t i = 0; i < typeArgCount; ++i) {
+      const TypeRef & typeArg = (*spArgs)[i];
+      const TypeRef & typeParam = templateParams_[i];
+      ConversionRank rank = typeParam.canConvert(typeArg);
+      if (rank < IdenticalTypes) {
+        conversionRank_ = Incompatible;
+        break;
+      }
+    }
+  }
+
   return conversionRank_;
 }
 
@@ -204,7 +235,11 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   DASSERT(method_ != NULL);
-  bindingEnv_.reset();
+  if (spCandidate_ != NULL) {
+    bindingEnv_.setSubstitutions(spCandidate_->env().substitutions());
+  } else {
+    bindingEnv_.setSubstitutions(NULL);
+  }
 
   // Now, for each parameter attempt unification.
   SourceContext callSite(callExpr, NULL, callExpr);

@@ -542,6 +542,31 @@ FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
 }
 
 // -------------------------------------------------------------------
+// TypeVector
+
+TypeVector::TypeVectorMap TypeVector::uniqueValues_;
+const TypeVector TypeVector::emptyValue_(uint32_t(-1));
+const TypeVector TypeVector::tombstoneValue_(uint32_t(-2));
+
+const TypeVector * TypeVector::get(const TypeRef * first, const TypeRef * last) {
+  TypeVector key(first, last);
+  TypeVectorMap::iterator it = uniqueValues_.find(&key);
+  if (it != uniqueValues_.end()) {
+    return it->first;
+  }
+
+  const TypeVector * newEntry = new TypeVector(first, last);
+  uniqueValues_[newEntry] = 0;
+  return newEntry;
+}
+
+TypeVector::~TypeVector() {
+  if (this != &emptyValue_ && this != &tombstoneValue_) {
+    uniqueValues_.erase(this);
+  }
+}
+
+// -------------------------------------------------------------------
 // Utility functions
 
 Type * findCommonType(Type * t0, Type * t1) {

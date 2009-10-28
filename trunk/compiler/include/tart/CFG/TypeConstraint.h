@@ -27,6 +27,7 @@ public:
 
   // Unify with the input pattern
   virtual bool unifyWithPattern(BindingEnv &env, Type * pattern) = 0;
+  virtual TypeRef singularValue() const = 0;
 
   // Overrides
 
@@ -50,6 +51,7 @@ public:
 
   // Overrides
 
+  TypeRef singularValue() const;
   bool unifyWithPattern(BindingEnv &env, Type * pattern);
   ConversionRank convertTo(const Type * toType) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -77,6 +79,7 @@ public:
 
   // Overrides
 
+  TypeRef singularValue() const;
   bool unifyWithPattern(BindingEnv &env, Type * pattern);
   ConversionRank convertTo(const Type * toType) const;
   ConversionRank convertImpl(const Conversion & conversion) const;

@@ -250,14 +250,6 @@ void PointerType::format(FormatStream & out) const {
 NativeArrayType NativeArrayType::instance(NULL, 0, &NativeArrayType::typedefn, &Builtins::module);
 TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", &instance);
 
-/*NativeArrayType * NativeArrayType::get(Type * elemType, uint64_t size) {
-  DASSERT(elemType != NULL);
-  NativeArrayType * result = new NativeArrayType(&typedefn);
-  result->setTypeArg(0, elemType);
-  result->setSize(size);
-  return result;
-}*/
-
 NativeArrayType * NativeArrayType::get(const TypeRef & elemType, uint64_t sz) {
   return create(elemType.type(), sz);
 }

@@ -39,6 +39,7 @@ EXPR_TYPE(Prog2)          // Two exressions, eval both, take second
 EXPR_TYPE(Call)           // General call
 EXPR_TYPE(ExactCall)      // Call an exact method (no vtable lookup)
 EXPR_TYPE(Construct)      // Constructor call
+EXPR_TYPE(Specialize)     // Call to a template with type arguments.
 
 // Function calls (implementation)
 EXPR_TYPE(FnCall)         // Function call

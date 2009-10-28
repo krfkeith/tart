@@ -12,7 +12,7 @@
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/BindingEnv.h"
-#include "tart/Sema/SpecializeCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -92,7 +92,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
       return false;
     }
 
-    Expr * expr = resolveSpecialization(loc, lvals, spec->args());
+    Expr * expr = specialize(loc, lvals, spec->args());
     if (expr == NULL) {
       diag.error(spec) << "No template found matching expression: " << spec->templateExpr();
       return false;
@@ -257,9 +257,9 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
   return false;
 }
 
-Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
-    const ASTNodeList & args) {
-  TypeList argList; // Template args, not function args.
+Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args) {
+  //TypeList argList; // Template args, not function args.
+  TypeRefList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
@@ -290,6 +290,8 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
     argList.push_back(typeArg);
   }
 
+  const TypeVector * tv = TypeVector::get(argList);
+
   // Examine all of the possible candidates for specialization.
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
@@ -298,19 +300,19 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
       TypeDefn * typeDefn = type->typeDefn();
       if (typeDefn != NULL) {
         if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
-          addSpecCandidate(loc, candidates, NULL, typeDefn, argList);
+          addSpecCandidate(loc, candidates, NULL, typeDefn, tv);
         }
       } else if (AddressType * np = dyn_cast<AddressType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, argList);
+        addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, tv);
       } else if (PointerType * np = dyn_cast<PointerType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, argList);
+        addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, tv);
       } else if (NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, argList);
+        addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, tv);
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
       ValueDefn * val = lv->value();
       if (val->isTemplate() || val->isTemplateInstance()) {
-        addSpecCandidate(loc, candidates, lv->base(), val, argList);
+        addSpecCandidate(loc, candidates, lv->base(), val, tv);
       }
     }
   }
@@ -325,60 +327,38 @@ Expr * AnalyzerBase::resolveSpecialization(SLC & loc, const ExprList & exprs,
     return NULL;
   }
 
-  //if (!isSingularArgList) {
-  //  return new
-  //}
-  // Remove candidates that aren't an exact match.
-  SpecializeCandidate * bestSp = NULL;
   if (candidates.size() > 1) {
-    for (SpCandidateSet::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
-      SpecializeCandidate * sp = *it;
-      ConversionRank rank = sp->updateConversionRank(argList);
-      if (rank == IdenticalTypes) {
-        if (bestSp != NULL) {
-          diag.error(loc) << "Ambiguous template argument match:";
-          diag.info(loc) << bestSp->templateDefn();
-          diag.info(loc) << sp->templateDefn();
-        } else {
-          bestSp = sp;
-        }
-      }
-    }
-
-    if (bestSp == NULL) {
-      bestSp = *candidates.begin();
-    }
-  } else {
-    bestSp = *candidates.begin();
+    return new SpecializeExpr(loc, candidates, tv);
   }
 
   // TODO: Do template overload resolution.
   // TODO: Use parameter assignments.
-  Defn * defn = bestSp->templateDefn();
-  TemplateSignature * tsig = bestSp->templateDefn()->templateSignature();
+  SpCandidate * sp = *candidates.begin();
+  Defn * defn = sp->templateDefn();
+  TemplateSignature * tsig = defn->templateSignature();
   if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
-    Type * type = tsig->instantiateType(loc, bestSp->env());
+    Type * type = tsig->instantiateType(loc, sp->env());
     if (type != NULL) {
       return new TypeLiteralExpr(loc, type);
     }
   }
 
-  defn = tsig->instantiate(loc, bestSp->env());
+  defn = tsig->instantiate(loc, sp->env());
   if (defn != NULL) {
-    return getDefnAsExpr(defn, bestSp->base(), loc);
+    return getDefnAsExpr(defn, sp->base(), loc);
   }
 }
 
 void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
-    TypeList & args) {
+    const TypeVector * args) {
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();
-    if (tsig->params().size() == args.size()) {
+    if (tsig->params().size() == args->size()) {
       // Attempt unification of pattern variables with template args.
-      SpecializeCandidate * spc = new SpecializeCandidate(base, defn);
+      SpCandidate * spc = new SpCandidate(base, defn, args);
       SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
-      if (spc->unify(&candidateSite, args)) {
+      if (spc->unify(&candidateSite)) {
         spcs.insert(spc);
       }
     }

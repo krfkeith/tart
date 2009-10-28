@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_CFG_H
 #define TART_CFG_CFG_H
 
@@ -10,7 +10,7 @@
 #include <llvm/Support/Casting.h>
 
 namespace tart {
-  
+
 using llvm::dyn_cast;
 using llvm::dyn_cast_or_null;
 using llvm::cast;
@@ -32,7 +32,7 @@ class Type;
 class Block;
 class ParameterAssignments;
 class CallCandidate;
-class SpecializeCandidate;
+class SpCandidate;
 
 // -------------------------------------------------------------------
 // Container types
@@ -43,7 +43,6 @@ typedef llvm::SmallVector<ParameterDefn *, 8> ParameterList;
 typedef llvm::SmallVector<ConstantExpr *, 8> ConstantExprList;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<CallCandidate *, 8> Candidates;
-typedef llvm::SmallVector<SpecializeCandidate *, 8> SpCandidates;
 typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
 
 } // namespace tart

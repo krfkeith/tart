@@ -224,6 +224,8 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     paramValues.push_back(value);
   }
 
+  //TypeVector * tv = TypeVector::get(paramValues);
+
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
   if (!noCache) {
@@ -249,6 +251,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   DASSERT(value_->definingScope() != NULL);
   TemplateInstance * tinst = new TemplateInstance(value_);
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
+  tinst->instantiatedFrom() = loc;
 
   // Substitute into the template args to create the arg list
   for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
@@ -409,13 +412,6 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
     }
 
 #if 0
-    case Type::NativePointer: {
-      NativePointerType * np = new NativePointerType(paramValues[0], newDef, tinst);
-      newDef->setTypeValue(np);
-      newDef->createQualifiedName(NULL);
-      break;
-    }
-
     case Type::NativeArray: {
       SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
       ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());

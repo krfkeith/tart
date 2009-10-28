@@ -165,6 +165,10 @@ public:
       within the template body. */
   Module * srcModule() const { return templateDefn_->module(); }
 
+  /** The location from which this template was instantiated. */
+  const SourceLocation & instantiatedFrom() const { return instantiatedFrom_; }
+  SourceLocation & instantiatedFrom() { return instantiatedFrom_; }
+
   // Overrides
 
   bool allowOverloads() { return false; }
@@ -183,6 +187,7 @@ private:
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
   TypeList templateArgs_;           // Template arguments with substitutions
   Scope * parentScope_;             // Parent scope of this definition.
+  SourceLocation instantiatedFrom_; // Location which produced this instance.
 };
 
 /// -------------------------------------------------------------------

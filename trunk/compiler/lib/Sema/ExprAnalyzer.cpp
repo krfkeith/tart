@@ -66,6 +66,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
 Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
+    DASSERT(result->exprType() < Expr::TypeCount);
     if (result->type() == NULL) {
       diag.fatal() << "Expression '" << result << "' has no type.";
       DFAIL("MissingType");
@@ -695,9 +696,11 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       if (isTypeOrFunc) {
         ASTNodeList args;
         args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-        Expr * specResult = resolveSpecialization(ast->location(), values, args);
+        Expr * specResult = specialize(ast->location(), values, args);
         if (specResult != NULL) {
           return specResult;
+        } else {
+          return &Expr::ErrorVal;
         }
       }
 

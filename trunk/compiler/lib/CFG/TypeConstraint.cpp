@@ -90,6 +90,24 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
   return match;
 }
 
+TypeRef ResultOfConstraint::singularValue() const {
+  TypeRef result;
+  Candidates & cd = callExpr->candidates();
+  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    if (result.isDefined()) {
+      return TypeRef();
+    }
+
+    result = (*it)->resultType();
+  }
+
+  return result;
+}
+
 bool ResultOfConstraint::isSubtype(const Type * other) const {
   // It's a subtype only if it's a subtype of every member
   const Candidates & cd = callExpr->candidates();
@@ -206,6 +224,24 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
   }
 
   return best;
+}
+
+TypeRef ParameterOfConstraint::singularValue() const {
+  TypeRef result;
+  Candidates & cd = callExpr->candidates();
+  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    if (result.isDefined()) {
+      return TypeRef();
+    }
+
+    result = (*it)->paramType(argIndex);
+  }
+
+  return result;
 }
 
 bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {

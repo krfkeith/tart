@@ -129,6 +129,7 @@ private:
 class BindingEnv {
 public:
   BindingEnv() : substitutions_(NULL) {}
+  BindingEnv(const BindingEnv & env) : substitutions_(env.substitutions()) {}
 
   /** Return true if there are no variable bindings. */
   bool empty() const { return substitutions_ == NULL; }
@@ -150,15 +151,16 @@ public:
 
   /** Given a type expression, return the equivalent expression where all
       pattern variables have been replaced with the corresponding type
-      bindings for this environment. If the parameter 'finalize' is true, then
-      also replace type bindings with the actual type value.
+      bindings for this environment.
 
       This function attempts to avoid creating new type objects when
       the input expression contains no type variables.
    */
-  Type * subst(Type * in, bool finalize = false) const;
-  TypeRef subst(const TypeRef & in, bool finalize = false) const;
+  Type * subst(Type * in) const;
+  TypeRef subst(const TypeRef & in) const;
 
+  /** Given a type expression, replace all pattern variables with pattern values that
+      are local to this specific environment. */
   Type * relabel(Type * in);
   TypeRef relabel(const TypeRef & in);
 

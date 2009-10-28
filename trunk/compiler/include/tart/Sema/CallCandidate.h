@@ -27,12 +27,14 @@
 
 namespace tart {
 
+class SpCandidate;
+
 /// -------------------------------------------------------------------
 /// A call candidate
 class CallCandidate : public GC {
 public:
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
-      const ParameterAssignments & params);
+      const ParameterAssignments & param, SpCandidate * spCandidate = NULL);
 
   CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType * ftype,
       const ParameterAssignments & params);
@@ -140,6 +142,8 @@ private:
   const FunctionType * fnType_;
   TypeRef resultType_;
   TypeRefList paramTypes_;
+  TypeRefList templateParams_;
+  SpCandidate * spCandidate_;
   bool isTemplate_;
 };
 
