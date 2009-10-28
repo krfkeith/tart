@@ -25,19 +25,23 @@ namespace tart {
 
 /// -------------------------------------------------------------------
 /// A candidate for template specialization
-class SpecializeCandidate : public GC {
+class SpCandidate : public GC {
 private:
   //Expr * base;
   Defn * templateDefn_;
   Expr * base_;
+  const TypeVector * args_;
   BindingEnv env_;
   ConversionRank conversionRank_;
 
 public:
-  SpecializeCandidate(Expr *base, Defn * tdef);
+  SpCandidate(Expr *base, Defn * tdef, const TypeVector * args);
 
   /** The template. */
   Defn * templateDefn() const { return templateDefn_; }
+
+  /** The type arguments. */
+  const TypeVector * args() const { return args_; }
 
   /** Base expression used, if any. */
   Expr * base() const { return base_; }
@@ -47,21 +51,23 @@ public:
   BindingEnv & env() { return env_; }
 
   /** Perform unification on the candidate and its arguments. */
-  bool unify(SourceContext * source, const TypeList & argList);
+  bool unify(SourceContext * source);
 
   /** Return true if this specified call candidate has the same type as this one. */
-  bool isEqual(const SpecializeCandidate * other) const;
+  bool isEqual(const SpCandidate * other) const;
 
   /** Return true if this candidate is more specific than the one given. */
-  bool isMoreSpecific(const SpecializeCandidate * other) const;
+  bool isMoreSpecific(const SpCandidate * other) const;
 
   /** Update the compatibility score for this candidate. */
-  ConversionRank updateConversionRank(const TypeList & argList);
+  ConversionRank updateConversionRank();
 
   // Overrides
 
   void trace() const;
 };
+
+FormatStream & operator<<(FormatStream & out, const SpCandidate & sp);
 
 } // namespace tart
 

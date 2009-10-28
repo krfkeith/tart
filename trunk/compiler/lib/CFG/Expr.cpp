@@ -12,12 +12,13 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
 
-/// -------------------------------------------------------------------
-/// Utility functions
+// -------------------------------------------------------------------
+// Utility functions
 
 #ifdef EXPR_TYPE
 #undef EXPR_TYPE
@@ -73,8 +74,8 @@ bool isErrorResult(const Type * ex) {
   return BadType::instance.isEqual(ex);
 }
 
-/// -------------------------------------------------------------------
-/// Expr
+// -------------------------------------------------------------------
+// Expr
 
 ErrorExpr Expr::ErrorVal;
 
@@ -98,14 +99,14 @@ void Expr::setType(const TypeRef & type) {
   type_ = type.type();
 }
 
-/// -------------------------------------------------------------------
-/// ErrorExpr
+// -------------------------------------------------------------------
+// ErrorExpr
 ErrorExpr::ErrorExpr()
   : Expr(Invalid, SourceLocation(), &BadType::instance)
 {}
 
-/// -------------------------------------------------------------------
-/// UnaryExpr
+// -------------------------------------------------------------------
+// UnaryExpr
 bool UnaryExpr::isSideEffectFree() const {
   return arg_->isSideEffectFree();
 }
@@ -139,8 +140,8 @@ void UnaryExpr::trace() const {
   safeMark(arg_);
 }
 
-/// -------------------------------------------------------------------
-/// BinaryExpr
+// -------------------------------------------------------------------
+// BinaryExpr
 bool BinaryExpr::isSideEffectFree() const {
   return first_->isSideEffectFree() && second_->isSideEffectFree();
 }
@@ -183,8 +184,8 @@ void BinaryExpr::trace() const {
   safeMark(second_);
 }
 
-/// -------------------------------------------------------------------
-/// ArglistExpr
+// -------------------------------------------------------------------
+// ArglistExpr
 
 bool ArglistExpr::areArgsSideEffectFree() const {
   for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
@@ -216,8 +217,8 @@ void ArglistExpr::trace() const {
   markList(args_.begin(), args_.end());
 }
 
-/// -------------------------------------------------------------------
-/// LValueExpr
+// -------------------------------------------------------------------
+// LValueExpr
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
   : Expr(LValue, loc, value->type())
   , base_(base)
@@ -231,7 +232,14 @@ bool LValueExpr::isSingular() const {
 
 void LValueExpr::format(FormatStream & out) const {
   if (base_ != NULL) {
-    out << base_ << "." << value_->name();
+    int saveOptions = out.formatOptions();
+    out.setFormatOptions(saveOptions & ~Format_Type);
+    out << base_;
+    out.setFormatOptions(saveOptions);
+    out << "." << value_->name();
+    if (out.getShowType()) {
+      out << ":" << value_->type();
+    }
   } else {
     out << value_;
   }
@@ -257,8 +265,8 @@ Expr * LValueExpr::constValue(Expr * in) {
   return in;
 }
 
-/// -------------------------------------------------------------------
-/// ScopeNameExpr
+// -------------------------------------------------------------------
+// ScopeNameExpr
 bool ScopeNameExpr::isSingular() const { return true; }
 
 void ScopeNameExpr::format(FormatStream & out) const {
@@ -270,8 +278,8 @@ void ScopeNameExpr::trace() const {
   safeMark(value_);
 }
 
-/// -------------------------------------------------------------------
-/// AssignmentExpr
+// -------------------------------------------------------------------
+// AssignmentExpr
 
 AssignmentExpr::AssignmentExpr(const SourceLocation & loc, Expr * to, Expr * from)
   : Expr(Assign, loc, to->type())
@@ -299,8 +307,8 @@ void AssignmentExpr::format(FormatStream & out) const {
   }
 }
 
-/// -------------------------------------------------------------------
-/// InitVarExpr
+// -------------------------------------------------------------------
+// InitVarExpr
 
 InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
@@ -317,8 +325,8 @@ void InitVarExpr::format(FormatStream & out) const {
   out << var << " = " << initExpr_;
 }
 
-/// -------------------------------------------------------------------
-/// BoundMethodExpr
+// -------------------------------------------------------------------
+// BoundMethodExpr
 
 BoundMethodExpr::BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
     Type * type)
@@ -346,8 +354,8 @@ void BoundMethodExpr::trace() const {
   method_->mark();
 }
 
-/// -------------------------------------------------------------------
-/// CallExpr
+// -------------------------------------------------------------------
+// CallExpr
 
 bool CallExpr::isSingular() const {
   if (!ArglistExpr::isSingular()) {
@@ -457,12 +465,9 @@ void CallExpr::format(FormatStream & out) const {
       out << ", ";
     }
 
-    out << (*it);
+    out << *it;
     /*if (out.getShowType()) {
-      //out << ":" << (*it)->type();
-      //out << (*it)->type();
-    } else {
-      //out << ":" << (*it)->type();
+      out << ":" << (*it)->type();
     }*/
   }
   out << ") ";
@@ -477,8 +482,53 @@ void CallExpr::trace() const {
   markList(candidates_.begin(), candidates_.end());
 }
 
+// -------------------------------------------------------------------
+// SpecializeExpr
+
 /// -------------------------------------------------------------------
-/// FnCallExpr
+/// A call to a template
+  SpCandidateSet candidates_;
+  const TypeVector * args_;
+
+  /** Return true if there is at least one non-culled candidate. */
+bool SpecializeExpr::hasAnyCandidates() const {
+  DFAIL("IMPLEMENT");
+}
+
+  // Overridden methods
+
+void SpecializeExpr::format(FormatStream & out) const {
+  if (candidates_.size() == 1) {
+    SpCandidate * sp = *candidates_.begin();
+    out << sp->templateDefn()->name();
+  } else {
+    SpCandidate * sp = *candidates_.begin();
+    out << sp->templateDefn()->name();
+    out << "... {" << candidates_.size() << " candidates}";
+  }
+
+  out << "[...";
+  /*for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
+    if (it != args_.begin()) {
+      out << ", ";
+    }
+
+    out << (*it);
+  }*/
+  out << "] ";
+}
+
+bool SpecializeExpr::isSingular() const {
+  return false;
+}
+
+void SpecializeExpr::trace() const {
+  markList(candidates_.begin(), candidates_.end());
+  args_->mark();
+}
+
+// -------------------------------------------------------------------
+// FnCallExpr
 
 void FnCallExpr::format(FormatStream & out) const {
   if (out.getShowType()) {
@@ -501,8 +551,8 @@ void FnCallExpr::trace() const {
   function_->mark();
 }
 
-/// -------------------------------------------------------------------
-/// IndirectCallExpr
+// -------------------------------------------------------------------
+// IndirectCallExpr
 
 void IndirectCallExpr::format(FormatStream & out) const {
   if (out.getShowType()) {
@@ -525,8 +575,8 @@ void IndirectCallExpr::trace() const {
   function_->mark();
 }
 
-/// -------------------------------------------------------------------
-/// NewExpr
+// -------------------------------------------------------------------
+// NewExpr
 bool NewExpr::isSingular() const {
   return type()->isSingular();
 }
@@ -535,8 +585,8 @@ void NewExpr::format(FormatStream & out) const {
   out << "new " << type();
 }
 
-/// -------------------------------------------------------------------
-/// CastExpr
+// -------------------------------------------------------------------
+// CastExpr
 void CastExpr::format(FormatStream & out) const {
   if (exprType() == ImplicitCast) {
     out << "implicitCast<" << type() << ">(" << arg() << ")";
@@ -545,8 +595,8 @@ void CastExpr::format(FormatStream & out) const {
   }
 }
 
-/// -------------------------------------------------------------------
-/// BinaryOpcodeExpr
+// -------------------------------------------------------------------
+// BinaryOpcodeExpr
 
 bool BinaryOpcodeExpr::isSingular() const {
   return type()->isSingular() && first()->isSingular() && second()->isSingular();
@@ -587,8 +637,8 @@ void BinaryOpcodeExpr::format(FormatStream & out) const {
   }
 }
 
-/// -------------------------------------------------------------------
-/// CompareExpr
+// -------------------------------------------------------------------
+// CompareExpr
 CompareExpr::CompareExpr(const SourceLocation & loc, Predicate pred)
   : BinaryExpr(Compare, loc, &BoolType::instance)
   , predicate(pred)
@@ -651,20 +701,20 @@ void CompareExpr::format(FormatStream & out) const {
   out << first() << " " << oper << " " << second();
 }
 
-/// -------------------------------------------------------------------
-/// IRValueExpr
+// -------------------------------------------------------------------
+// IRValueExpr
 void IRValueExpr::format(FormatStream & out) const {
   out << "<IRValue>";
 }
 
-/// -------------------------------------------------------------------
-/// LocalCallExpr
+// -------------------------------------------------------------------
+// LocalCallExpr
 void LocalCallExpr::format(FormatStream & out) const {
   out << "local call " << target_ << " return=" << returnState_;
 }
 
-/// -------------------------------------------------------------------
-/// InstanceOfExpr
+// -------------------------------------------------------------------
+// InstanceOfExpr
 InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * ty)
   : Expr(InstanceOf, loc, &BoolType::instance)
   , value_(value)

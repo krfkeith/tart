@@ -24,8 +24,6 @@ class SourceLocation;
 class NamespaceDefn;
 class ArrayLiteralExpr;
 
-typedef llvm::SmallSetVector<SpecializeCandidate *, 8> SpCandidateSet;
-
 /// -------------------------------------------------------------------
 /// Represents the set of possible operations that are done on a definition.
 /// Since definitions are evaluated lazily, we need to ensure that the
@@ -157,10 +155,11 @@ protected:
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
-  Expr * resolveSpecialization(SLC & loc, const ExprList & exprs, const ASTNodeList & args);
+  Expr * specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args);
 
   // Add a candidate to the list of specializations being considered.
-  void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de, TypeList & args);
+  void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de,
+      const TypeVector * args);
 
     // Lookup helper function that attempts to load a module from 'path'.
   bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);

@@ -556,13 +556,13 @@ Type * BindingEnv::dereference(Type * type) const {
   return type;
 }
 
-TypeRef BindingEnv::subst(const TypeRef & in, bool finalize) const {
+TypeRef BindingEnv::subst(const TypeRef & in) const {
   TypeRef result(in);
-  result.setType(subst(in.type(), finalize));
+  result.setType(subst(in.type()));
   return result;
 }
 
-Type * BindingEnv::subst(Type * in, bool finalize) const {
+Type * BindingEnv::subst(Type * in) const {
   if (substitutions_ == NULL || isErrorResult(in)) {
     return in;
   }
@@ -574,7 +574,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
       PatternVar * var = static_cast<const PatternVar *>(in);
       Type * value = get(var);
       if (value != NULL) {
-        return subst(value, finalize);
+        return subst(value);
       }
 
       return in;
@@ -596,7 +596,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
         return in;
       }
 
-      TypeRef elemType = subst(np->typeParam(0), finalize);
+      TypeRef elemType = subst(np->typeParam(0));
       if (elemType == np->typeParam(0)) {
         return in;
       }
@@ -610,7 +610,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
         return in;
       }
 
-      TypeRef elemType = subst(np->typeParam(0), finalize);
+      TypeRef elemType = subst(np->typeParam(0));
       if (elemType == np->typeParam(0)) {
         return in;
       }
@@ -624,7 +624,7 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
         return in;
       }
 
-      TypeRef elemType = subst(nt->typeParam(0), finalize);
+      TypeRef elemType = subst(nt->typeParam(0));
       if (elemType == nt->typeParam(0)) {
         return in;
       }
@@ -664,6 +664,10 @@ Type * BindingEnv::subst(Type * in, bool finalize) const {
 
     case Type::Constraint: {
       TypeConstraint * constraint = static_cast<TypeConstraint *>(in);
+      if (constraint->isSingular()) {
+        return constraint->singularValue().type();
+      }
+
       DFAIL("Type constraint not handled");
       break;
     }

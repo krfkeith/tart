@@ -13,9 +13,15 @@
 #include "tart/Common/SmallEnumSet.h"
 #endif
 
+#ifndef TART_COMMON_HASH_H
+#include "tart/Common/Hash.h"
+#endif
+
 #ifndef TART_CFG_SCOPE_H
 #include "tart/CFG/Scope.h"
 #endif
+
+#include "llvm/ADT/DenseMap.h"
 
 namespace llvm {
   class Type;
@@ -377,7 +383,7 @@ public:
   }
 
   bool operator==(const TypeRef & other) const {
-    return (type_ == other.type_ || type_->isEqual(other.type_)) && modifiers_ == other.modifiers_;
+    return type_ == other.type_ && modifiers_ == other.modifiers_;
   }
 
   Type::TypeClass typeClass() const { return type_->typeClass(); }
@@ -433,13 +439,86 @@ private:
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
 
-typedef llvm::SmallVector<TypeRef, 8> TypeRefList;
+typedef llvm::SmallVector<TypeRef, 4> TypeRefList;
 
 inline void traceTypeRefList(const TypeRefList & refs) {
   for (TypeRefList::const_iterator it = refs.begin(); it != refs.end(); ++it) {
     it->trace();
   }
 }
+
+/// -------------------------------------------------------------------
+/// An immutable vector of type references. Can be used as a map key.
+
+class TypeVector : public GC {
+public:
+  typedef TypeRefList::const_iterator iterator;
+  typedef TypeRefList::const_iterator const_iterator;
+
+  static const TypeVector * get(const TypeRef * first, const TypeRef * last);
+  static const TypeVector * get(const TypeRefList & trefs) {
+    return get(&*trefs.begin(), &*trefs.end());
+  }
+
+  iterator begin() const { return data_.begin(); }
+  iterator end() const { return data_.end(); }
+  size_t size() const { return data_.size(); }
+
+  const TypeRef & operator[](int index) const { return data_[index]; }
+
+  void trace() const {
+    for (iterator it = begin(); it != end(); ++it) {
+      it->trace();
+    }
+  }
+
+  // Structure used when using type vector as a map key.
+  struct KeyInfo {
+    static inline const TypeVector * getEmptyKey() { return &emptyValue_; }
+    static inline const TypeVector * getTombstoneKey() { return &tombstoneValue_; }
+
+    static unsigned getHashValue(const TypeVector * val) {
+      return val->hashVal_;
+    }
+
+    static bool isEqual(const TypeVector * lhs, const TypeVector * rhs) {
+      if (lhs->size() == rhs->size()) {
+        return std::equal(lhs->data_.begin(), lhs->data_.end(), rhs->data_.begin());
+      }
+
+      return false;
+    }
+
+    static bool isPod() { return false; }
+  };
+
+private:
+  typedef llvm::DenseMap<const TypeVector *, char, TypeVector::KeyInfo> TypeVectorMap;
+
+  TypeVector(const TypeRef * first, const TypeRef * last) : data_(first, last) {
+    hashVal_ = hashBytes(first, (char *)last - (char *)first);
+  }
+
+  // Special constructor for empty and tombstone values.
+  TypeVector(uint32_t hashVal) : hashVal_(hashVal) {}
+
+  // Destructor removes this from the uniqueValues_ map.
+  ~TypeVector();
+
+  void calcHash() {
+    hashVal_ = 0;
+    for (iterator it = begin(); it != end(); ++it) {
+      hashVal_ = (hashVal_ << 1) ^ TypeRef::KeyInfo::getHashValue(*it);
+    }
+  }
+
+  uint32_t hashVal_;
+  TypeRefList data_;
+
+  static TypeVectorMap uniqueValues_;
+  static const TypeVector emptyValue_;
+  static const TypeVector tombstoneValue_;
+};
 
 /// -------------------------------------------------------------------
 /// Predicate functions for type ids.

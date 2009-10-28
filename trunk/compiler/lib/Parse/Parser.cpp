@@ -520,7 +520,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     }
 
     if (!templateParams.empty()) {
-      if (match(Token_Requires)) {
+      if (match(Token_Where)) {
         templateRequirements(requirements);
       }
     }
@@ -568,7 +568,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   ASTFunctionDecl * fd = functionDeclaration(ASTNode::Macro, declName, mods);
 
   if (!templateParams.empty()) {
-    if (match(Token_Requires)) {
+    if (match(Token_Where)) {
       templateRequirements(requirements);
     }
   }
@@ -635,7 +635,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
   ASTTypeDecl * typeDecl = new ASTTypeDecl(kind, matchLoc, declName, bases, mods);
 
   if (!templateParams.empty()) {
-    if (match(Token_Requires)) {
+    if (match(Token_Where)) {
       templateRequirements(requirements);
     }
   }
@@ -2439,6 +2439,11 @@ ASTNode * Parser::primaryExpression() {
     case Token_Super:
       next();
       result = new ASTOper(ASTNode::Super, lexer.tokenLocation());
+      break;
+
+    case Token_Typecast:
+      next();
+      result = new ASTOper(ASTNode::Typecast, lexer.tokenLocation());
       break;
 
     case Token_String:

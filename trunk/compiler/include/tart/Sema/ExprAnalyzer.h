@@ -133,6 +133,11 @@ public:
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args);
 
+  /** Version of addOverload which accepts an environment containing explicit specialization
+      bindings. */
+  bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+      const ASTNodeList & args, SpCandidate * sp);
+
   /** Version of addOverload which works with variables of function type. */
   bool addOverload(CallExpr * call, LValueExpr * fn, const FunctionType * ftype,
       const ASTNodeList & args);

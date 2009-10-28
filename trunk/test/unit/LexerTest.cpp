@@ -157,7 +157,6 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_Var, LexToken("var"));
   EXPECT_EQ(Token_Let, LexToken("let"));
   EXPECT_EQ(Token_Def, LexToken("def"));
-  EXPECT_EQ(Token_Function, LexToken("function"));
 
   EXPECT_EQ(Token_Module, LexToken("module"));
   EXPECT_EQ(Token_Import, LexToken("import"));

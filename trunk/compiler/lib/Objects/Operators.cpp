@@ -534,7 +534,6 @@ void Builtins::initOperators() {
   module.addMember(&OperatorFModDecl<TypeId_Double>::value);
   module.addMember(&OperatorSModDecl<TypeId_UnsizedInt>::value);
 
-  // TODO: Add bool and pointer types
   module.addMember(&OperatorCmp<TypeId_Bool,  CmpInst::ICMP_EQ>::equal);
   module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_EQ>::equal);
   module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_EQ>::equal);
@@ -650,6 +649,7 @@ void Builtins::initOperators() {
   module.addMember(&PredeccessorOp<TypeId_UInt64>::value);
   module.addMember(&PredeccessorOp<TypeId_UnsizedInt>::value);
 
+  module.addMember(&BitwiseAndDecl<TypeId_Char>::value);
   module.addMember(&BitwiseAndDecl<TypeId_SInt8>::value);
   module.addMember(&BitwiseAndDecl<TypeId_SInt16>::value);
   module.addMember(&BitwiseAndDecl<TypeId_SInt32>::value);
@@ -660,6 +660,7 @@ void Builtins::initOperators() {
   module.addMember(&BitwiseAndDecl<TypeId_UInt64>::value);
   module.addMember(&BitwiseAndDecl<TypeId_UnsizedInt>::value);
 
+  module.addMember(&BitwiseOrDecl<TypeId_Char>::value);
   module.addMember(&BitwiseOrDecl<TypeId_SInt8>::value);
   module.addMember(&BitwiseOrDecl<TypeId_SInt16>::value);
   module.addMember(&BitwiseOrDecl<TypeId_SInt32>::value);
@@ -670,6 +671,7 @@ void Builtins::initOperators() {
   module.addMember(&BitwiseOrDecl<TypeId_UInt64>::value);
   module.addMember(&BitwiseOrDecl<TypeId_UnsizedInt>::value);
 
+  module.addMember(&BitwiseXorDecl<TypeId_Char>::value);
   module.addMember(&BitwiseXorDecl<TypeId_SInt8>::value);
   module.addMember(&BitwiseXorDecl<TypeId_SInt16>::value);
   module.addMember(&BitwiseXorDecl<TypeId_SInt32>::value);
@@ -680,6 +682,7 @@ void Builtins::initOperators() {
   module.addMember(&BitwiseXorDecl<TypeId_UInt64>::value);
   module.addMember(&BitwiseXorDecl<TypeId_UnsizedInt>::value);
 
+  module.addMember(&OperatorLShiftDecl<TypeId_Char>::value);
   module.addMember(&OperatorLShiftDecl<TypeId_SInt8>::value);
   module.addMember(&OperatorLShiftDecl<TypeId_SInt16>::value);
   module.addMember(&OperatorLShiftDecl<TypeId_SInt32>::value);
@@ -690,6 +693,7 @@ void Builtins::initOperators() {
   module.addMember(&OperatorLShiftDecl<TypeId_UInt64>::value);
   module.addMember(&OperatorLShiftDecl<TypeId_UnsizedInt>::value);
 
+  module.addMember(&OperatorARShiftDecl<TypeId_Char>::value);
   module.addMember(&OperatorARShiftDecl<TypeId_SInt8>::value);
   module.addMember(&OperatorARShiftDecl<TypeId_SInt16>::value);
   module.addMember(&OperatorARShiftDecl<TypeId_SInt32>::value);

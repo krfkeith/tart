@@ -22,6 +22,7 @@
 #endif
 
 #include <llvm/Instructions.h>
+#include <llvm/ADT/SetVector.h>
 
 namespace tart {
 
@@ -30,6 +31,9 @@ class ErrorExpr;
 class VariableDefn;
 class CompositeType;
 class TypeRef;
+class TypeVector;
+
+typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
 
 /// -------------------------------------------------------------------
 /// A Control Flow Graph value or expression
@@ -417,6 +421,45 @@ public:
   static inline bool classof(const CallExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == Call || ex->exprType() == Construct;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A call to a template
+class SpecializeExpr : public Expr {
+private:
+  SpCandidateSet candidates_;
+  const TypeVector * args_;
+
+public:
+  SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, const TypeVector * args)
+    : Expr(Specialize, loc, NULL)
+    , candidates_(candidates)
+    , args_(args)
+  {}
+
+  /** The list of overload candidates. */
+  const SpCandidateSet & candidates() const { return candidates_; }
+  SpCandidateSet & candidates() { return candidates_; }
+
+  const TypeVector * args() const { return args_; }
+
+  /** Return either the single non-culled candidate, or NULL. */
+  //CallCandidate * singularCandidate();
+
+  /** Return true if there is at least one non-culled candidate. */
+  bool hasAnyCandidates() const;
+
+  // Overridden methods
+
+  void format(FormatStream & out) const;
+  bool isSideEffectFree() const { return true; }
+  bool isSingular() const;
+  void trace() const;
+
+  static inline bool classof(const SpecializeExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == Specialize;
   }
 };
 

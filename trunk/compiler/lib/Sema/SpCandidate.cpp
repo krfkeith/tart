@@ -5,14 +5,15 @@
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Template.h"
-#include "tart/Sema/SpecializeCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
 
-SpecializeCandidate::SpecializeCandidate(Expr * base, Defn * tdef)
+SpCandidate::SpCandidate(Expr * base, Defn * tdef, const TypeVector * args)
   : templateDefn_(tdef)
   , base_(base)
+  , args_(args)
 {
 #if 0
   if (tdef->templateSignature() != NULL) {
@@ -46,12 +47,12 @@ SpecializeCandidate::SpecializeCandidate(Expr * base, Defn * tdef)
 #endif
 }
 
-bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
+bool SpCandidate::unify(SourceContext * source) {
   const TemplateSignature * tsig = templateDefn_->templateSignature();
-  DASSERT(tsig->params().size() == args.size());
-  for (size_t i = 0; i < args.size(); ++i) {
+  DASSERT(tsig->params().size() == args_->size());
+  for (size_t i = 0; i < args_->size(); ++i) {
     Type * pattern = tsig->params()[i];
-    Type * value = args[i];
+    TypeRef value = (*args_)[i];
     if (!env_.unify(source, pattern, value, Invariant)) {
       return false;
     }
@@ -65,30 +66,21 @@ bool SpecializeCandidate::unify(SourceContext * source, const TypeList & args) {
   return true;
 }
 
-ConversionRank SpecializeCandidate::updateConversionRank(const TypeList & argList) {
+ConversionRank SpCandidate::updateConversionRank() {
   conversionRank_ = IdenticalTypes;
 
   const TemplateSignature * tsig = templateDefn_->templateSignature();
-  for (size_t i = 0; i < argList.size(); ++i) {
+  for (size_t i = 0; i < args_->size(); ++i) {
     Type * pattern = tsig->params()[i];
-    Type * value = argList[i];
-    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value));
+    TypeRef value = (*args_)[i];
+    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value.type()));
   }
 
   return conversionRank_;
 }
 
 #if 0
-Type * SpecializeCandidate::getParamType(int argIndex) const {
-  ParameterList & params = method->functionType()->params();
-  return params[getParameterIndex(argIndex)]->type();
-}
-
-Type * SpecializeCandidate::getResultType() const {
-  return method->functionType()->returnType();
-}
-
-bool SpecializeCandidate::isEqual(const SpecializeCandidate * other) const {
+bool SpCandidate::isEqual(const SpCandidate * other) const {
   if (paramAssignments.size() != other->paramAssignments.size()) {
     return false;
   }
@@ -110,7 +102,7 @@ bool SpecializeCandidate::isEqual(const SpecializeCandidate * other) const {
   return true;
 }
 
-bool SpecializeCandidate::isMoreSpecific(const SpecializeCandidate * other) const {
+bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
   bool same = true;
 
   if (paramAssignments.size() != other->paramAssignments.size()) {
@@ -144,21 +136,24 @@ bool SpecializeCandidate::isMoreSpecific(const SpecializeCandidate * other) cons
   return !same;
 }
 
-ConversionRank SpecializeCandidate::updateConversionRank(CallExpr * callExpr) {
-  conversionRank = IdenticalTypes;
-  size_t argCount = callExpr->getInputArgCount();
-  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-    Expr * argExpr = callExpr->getInputArg(argIndex);
-    Type * paramType = getParamType(argIndex);
-    conversionRank = std::min(conversionRank, paramType->canConvert(argExpr));
-  }
-
-  return conversionRank;
-}
 #endif
 
-void SpecializeCandidate::trace() const {
+void SpCandidate::trace() const {
   templateDefn_->mark();
+}
+
+FormatStream & operator<<(FormatStream & out, const SpCandidate & sp) {
+  out << sp.templateDefn()->name() << "[";
+  for (TypeVector::iterator it = sp.args()->begin(); it != sp.args()->end(); ++it) {
+    if (it != sp.args()->begin()) {
+      out << ", ";
+    }
+
+    out << *it;
+  }
+
+  out << "]";
+  return out;
 }
 
 } // namespace tart

@@ -283,16 +283,16 @@ void VariableDefn::trace() const {
 }
 
 void VariableDefn::format(FormatStream & out) const {
-  if (out.isVerbose()) {
+  /*if (out.isVerbose()) {
     switch (defnType()) {
       case Defn::Let: out << "let "; break;
       case Defn::Var: out << "var "; break;
       default:
         break;
     }
-  }
+  }*/
 
-  if (out.getShowQualifiedName()) {
+  if (out.getShowQualifiedName() && storageClass() != Storage_Local) {
     if (out.getShowType() && enclosingClassDefn()) {
       out << enclosingClassDefn() << "." << name_;
     } else {

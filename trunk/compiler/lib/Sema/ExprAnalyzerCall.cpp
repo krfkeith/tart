@@ -16,6 +16,7 @@
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include <llvm/DerivedTypes.h>
 
 namespace tart {
@@ -228,6 +229,25 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
     call->setType(reduceReturnType(call));
     return call;
 
+  } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(func)) {
+    CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
+    const SpCandidateSet & candidates = spe->candidates();
+    call->setExpectedReturnType(expected);
+    for (SpCandidateSet::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+      SpCandidate * sp = *it;
+      if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->templateDefn())) {
+        addOverload(call, sp->base(), func, args, sp);
+      } else {
+        diag.error(loc) << sp->templateDefn() << " is not a callable expression.";
+      }
+    }
+
+    if (!reduceArgList(args, call)) {
+      return &Expr::ErrorVal;
+    }
+
+    call->setType(reduceReturnType(call));
+    return call;
   } else {
     diag.fatal(func) << Format_Verbose << "Unimplemented function type";
     DFAIL("Unimplemented");
@@ -494,6 +514,22 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   if (builder.assignFromAST(args)) {
     call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa));
+  }
+
+  return true;
+}
+
+bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+    const ASTNodeList & args, SpCandidate * sp) {
+  if (!analyzeValueDefn(method, Task_PrepConversion)) {
+    return false;
+  }
+
+  DASSERT_OBJ(method->type().isDefined(), method);
+  ParameterAssignments pa;
+  ParameterAssignmentsBuilder builder(pa, method->functionType());
+  if (builder.assignFromAST(args)) {
+    call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa, sp));
   }
 
   return true;
