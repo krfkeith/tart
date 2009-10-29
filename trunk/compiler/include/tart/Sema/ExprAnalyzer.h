@@ -49,6 +49,7 @@ public:
   Expr * reduceNull(const ASTNode * ast);
   Expr * reduceIntegerLiteral(const ASTIntegerLiteral * ast);
   Expr * reduceFloatLiteral(const ASTFloatLiteral * ast);
+  Expr * reduceDoubleLiteral(const ASTDoubleLiteral * ast);
   Expr * reduceCharLiteral(const ASTCharLiteral * ast);
   Expr * reduceStringLiteral(const ASTStringLiteral * ast);
   Expr * reduceBoolLiteral(const ASTBoolLiteral * ast);

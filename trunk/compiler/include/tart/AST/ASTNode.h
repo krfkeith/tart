@@ -213,6 +213,7 @@ public:
 /// Various literal types
 typedef ASTLiteral<llvm::APInt, ASTNode::LitInt> ASTIntegerLiteral;
 typedef ASTLiteral<llvm::APFloat, ASTNode::LitFloat> ASTFloatLiteral;
+typedef ASTLiteral<llvm::APFloat, ASTNode::LitDouble> ASTDoubleLiteral;
 typedef ASTLiteral<std::string, ASTNode::LitString> ASTStringLiteral;
 typedef ASTLiteral<uint32_t, ASTNode::LitChar> ASTCharLiteral;
 typedef ASTLiteral<bool, ASTNode::LitBool> ASTBoolLiteral;

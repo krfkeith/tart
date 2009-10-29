@@ -12,9 +12,11 @@ Design TODOS:
 
 Implementation TODOS:
 
+* Get interning working
 * Refactoring
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * See if we can make UnionType and TupleType have type params like templates.
+  * Convert templates, unions to use TypeVector.
   * And native types.
   * And then make native types not require TypeDefns. (Done for Address and Pointer)
   * And then make a new kind of object that represents an exported module symbol, that can
@@ -22,22 +24,25 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Rename NonTypeConst to SingletonType.
 * TypeRef
   * Expressions
   * Template arguments
   * Conversions
   * Move TypeAlias to its own header, and then use TypeRef.
+* typecast[type](in);
 * Boxed values:
   * unboxing.
   * Conversions
   * Closure Cells
 * Reflection
+  * Object.toString() prints class name.
   * Iterate functions, properties, find by name
   * PropertyHolder / PropertyDescriptor / CustomType
   * Attributes
   * Find all properties/functions having some attribute
   * Generate trampoline functions.
+  * _scopeName + _name;
+  * auto TypeLiteral
 * Stack dumps / trace
 * Hook up TypeLess(Than).
 * Why is linking so slow? (because internalize doesn't work).

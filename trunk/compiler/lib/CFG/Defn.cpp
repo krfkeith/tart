@@ -113,28 +113,25 @@ const std::string & Defn::linkageName() const {
     // Template instance parameters.
     if (tinst_ != NULL) {
       lnkName.append("[");
-      for (Defn * arg = tinst_->firstParamDefn(); arg != NULL; arg = arg->nextInScope()) {
-        // Last arg is the defn itself.
-        // TODO: Should be a better way to do this.
-        if (arg->nextInScope() == NULL) {
-          break;
-        }
-
-        if (arg != tinst_->firstParamDefn()) {
+      const TypeList & typeArgs = tinst_->paramValues();
+      for (TypeList::const_iterator it = typeArgs.begin(); it != typeArgs.end(); ++it) {
+        if (it != typeArgs.begin()) {
           lnkName.append(",");
         }
 
-        if (TypeDefn * typeAlias = dyn_cast<TypeDefn>(arg)) {
-          typeLinkageName(lnkName, typeAlias->typeValue());
-        } else {
-          VariableDefn * argDefn = cast<VariableDefn>(arg);
-          Expr * argVal = argDefn->initValue();
-          if (ConstantExpr * lval = dyn_cast<ConstantExpr>(argVal)) {
-            DFAIL("Implement");
-          } else {
-            DFAIL("Non-constant template argument");
-          }
+        typeLinkageName(lnkName, *it);
+      }
+
+      lnkName.append("]");
+    } else if (tsig_ != NULL) {
+      lnkName.append("[");
+      const TypeList & typeParams = tsig_->params();
+      for (TypeList::const_iterator it = typeParams.begin(); it != typeParams.end(); ++it) {
+        if (it != typeParams.begin()) {
+          lnkName.append(",");
         }
+
+        typeLinkageName(lnkName, *it);
       }
 
       lnkName.append("]");

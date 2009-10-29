@@ -24,7 +24,7 @@ import tart.annex.Nonreflective;
 
   private {
     var _name:String;
-    var _fullName:String;
+    var _scopeName:String;
     var _kind:MemberKind;
     var _access:Access;
     var _traits:Traits;
@@ -37,8 +37,11 @@ import tart.annex.Nonreflective;
   /** The unqualified member name. */
   final def name:String { get { return _name; } }
   
+  /** The name of the scope in which this is defined. */
+  final def scopeName:String { get { return _scopeName; } }
+  
   /** The qualified member name. */
-  final def fullName:String { get { return _fullName; } }
+  //final def fullName:String { get { return _fullName; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
   final def kind:MemberKind { get { return _kind; } }

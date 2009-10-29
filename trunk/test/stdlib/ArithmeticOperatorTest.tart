@@ -41,11 +41,16 @@ def testRelationalOperators() {
   Debug.assertTrue(1 > 0);
   Debug.assertFalse(0 > 1);
   Debug.assertFalse(0 > 0);
+  Debug.assertTrue(1 > -128);
 
   // Greater or equal
   Debug.assertTrue(1 >= 0);
   Debug.assertTrue(1 >= 1);
   Debug.assertFalse(0 >= 1);
+
+  // Unit test for a bug fix - signed integer constants not being sign extended.
+  Debug.assertTrue(int32(int8(-1)) < int32(1));
+  Debug.assertTrue(int32(int8(-128)) < int32(1));
 }
 
 def testRelationalOperatorsNonConst() {

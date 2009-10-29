@@ -2735,7 +2735,11 @@ ASTNode * Parser::parseFloatLiteral() {
     diag.warn(lexer.tokenLocation()) << "conversion error";
   }
 
-  return new ASTFloatLiteral(loc, value);
+  if (isSingle) {
+    return new ASTFloatLiteral(loc, value);
+  } else {
+    return new ASTDoubleLiteral(loc, value);
+  }
 }
 
 ASTNode * Parser::parseStringLiteral() {
