@@ -29,6 +29,7 @@ class SimpleType : Type {
   private {
     var _subtype:SubtypeId;
     var _name:String;
+    //var _scopeName:String;
     var _size:uint;
   }
 

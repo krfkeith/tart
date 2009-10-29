@@ -187,8 +187,8 @@ TEST_F(ParserTest, Terminals) {
 
   // Floats
   ast = parseExpression("1.0");
-  ASSERT_EQ(ASTNode::LitFloat, ast->nodeType());
-  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTFloatLiteral>(ast)->value().convertToDouble());
+  ASSERT_EQ(ASTNode::LitDouble, ast->nodeType());
+  ASSERT_FLOAT_EQ(1.0, dyn_cast<ASTDoubleLiteral>(ast)->value().convertToDouble());
   EXPECT_EQ(0, ast->location().begin);
   EXPECT_EQ(3, ast->location().end);
 

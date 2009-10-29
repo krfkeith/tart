@@ -19,7 +19,7 @@ const String * bool_toString(bool value, const String * format) {
 
 const String * char_toString(uint32_t value, const String * format) {
   if (format == NULL) {
-    char data[4];
+    char data[16];
     int length;
     if (value == 0) {
       length = snprintf(data, sizeof(data), "\\0");
@@ -28,6 +28,7 @@ const String * char_toString(uint32_t value, const String * format) {
     } else {
       length = snprintf(data, sizeof(data), "%lc", value);
     }
+
     return String_create(data, length);
   }
 

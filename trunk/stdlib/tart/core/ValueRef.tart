@@ -5,4 +5,9 @@ class ValueRef[%T] : Ref {
   def construct(value:T) {
     self.value = value;
   }
+
+  /** Return a string representation of the contained value. */
+  /*override*/ def toString() -> String {
+    return self.value.toString();
+  }
 }

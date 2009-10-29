@@ -87,6 +87,9 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
     case ASTNode::LitFloat:
       return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
 
+    case ASTNode::LitDouble:
+      return reduceDoubleLiteral(static_cast<const ASTDoubleLiteral *> (ast));
+
     case ASTNode::LitString:
       return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
 
@@ -229,6 +232,13 @@ Expr * ExprAnalyzer::reduceIntegerLiteral(const ASTIntegerLiteral * ast) {
 }
 
 Expr * ExprAnalyzer::reduceFloatLiteral(const ASTFloatLiteral * ast) {
+  return new ConstantFloat(
+      ast->location(),
+      &FloatType::instance,
+      llvm::ConstantFP::get(llvm::getGlobalContext(), ast->value()));
+}
+
+Expr * ExprAnalyzer::reduceDoubleLiteral(const ASTDoubleLiteral * ast) {
   return new ConstantFloat(
       ast->location(),
       &DoubleType::instance,

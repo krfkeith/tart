@@ -61,6 +61,8 @@ abstract class Ref {
       }
     }
   }
+
+  /// Convert an object containing a number to the requested number type.
 	
   static def valueOf[bool](ref:Object) -> bool {
     classify ref {
@@ -75,12 +77,18 @@ abstract class Ref {
     classify ref {
       as v:ValueRef[int8]   { signCheck(v.value); return char(v.value); }
       as v:ValueRef[int16]  { signCheck(v.value); return char(v.value); }
-      //as v:ValueRef[int32]  { rangeCheck[char](v.value); return char(v.value); }
-      //as v:ValueRef[int64]  { rangeCheck[char](v.value); return char(v.value); }
+      as v:ValueRef[int32]  { 
+        check(v.value >= 0 and uint32(v.value) <= uint32(char.maxVal));
+        return char(v.value);
+      }
+      as v:ValueRef[int64]  {
+        check(v.value >= 0 and uint64(v.value) <= uint64(char.maxVal));
+        return char(v.value);
+      }
       as v:ValueRef[uint8]  { return char(v.value); }
       as v:ValueRef[uint16] { return char(v.value); }
-      //as v:ValueRef[uint32] { rangeCheck[char](v.value); return char(v.value); }
-      //as v:ValueRef[uint64] { rangeCheck[char](v.value); return char(v.value); }
+      as v:ValueRef[uint32] { check(v.value <= uint32(char.maxVal)); return char(v.value); }
+      as v:ValueRef[uint64] { check(v.value <= uint64(char.maxVal)); return char(v.value); }
       as v:ValueRef[char]   { return v.value; }
       else {
         throw TypecastException();
@@ -159,9 +167,18 @@ abstract class Ref {
   static def valueOf[uint8](ref:Object) -> uint8 {
     classify ref {
       as v:ValueRef[int8]   { signCheck(v.value); return uint8(v.value); }
-      as v:ValueRef[int16]  { check(v.value < 0 or v.value > int16(uint8.maxVal)); return uint8(v.value); }
-      as v:ValueRef[int32]  { check(v.value < 0 or v.value > int32(uint8.maxVal)); return uint8(v.value); }
-      as v:ValueRef[int64]  { check(v.value < 0 or v.value > int64(uint8.maxVal)); return uint8(v.value); }
+      as v:ValueRef[int16]  {
+        check(v.value >= 0 and v.value <= int16(uint8.maxVal));
+        return uint8(v.value);
+      }
+      as v:ValueRef[int32]  {
+        check(v.value >= 0 and v.value <= int32(uint8.maxVal));
+        return uint8(v.value);
+      }
+      as v:ValueRef[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint8.maxVal));
+        return uint8(v.value);
+      }
       as v:ValueRef[uint8]  { return v.value; }
       as v:ValueRef[uint16] { rangeCheck[uint8](v.value); return uint8(v.value); }
       as v:ValueRef[uint32] { rangeCheck[uint8](v.value); return uint8(v.value); }
@@ -177,8 +194,14 @@ abstract class Ref {
     classify ref {
       as v:ValueRef[int8]   { signCheck(v.value); return uint16(v.value); }
       as v:ValueRef[int16]  { signCheck(v.value); return uint16(v.value); }
-      //as v:ValueRef[int32]  { rangeCheck[uint16](v.value); return uint16(v.value); }
-      //as v:ValueRef[int64]  { rangeCheck[uint16](v.value); return uint16(v.value); }
+      as v:ValueRef[int32]  {
+        check(v.value >= 0 and v.value <= int32(uint16.maxVal));
+        return uint16(v.value);
+      }
+      as v:ValueRef[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint16.maxVal));
+        return uint16(v.value);
+      }
       as v:ValueRef[uint8]  { return v.value; }
       as v:ValueRef[uint16] { return v.value; }
       as v:ValueRef[uint32] { rangeCheck[uint16](v.value); return uint16(v.value); }
@@ -195,7 +218,10 @@ abstract class Ref {
       as v:ValueRef[int8]   { signCheck(v.value); return uint32(v.value); }
       as v:ValueRef[int16]  { signCheck(v.value); return uint32(v.value); }
       as v:ValueRef[int32]  { signCheck(v.value); return uint32(v.value); }
-      //as v:ValueRef[int64]  { rangeCheck(v.value); return uint32(v.value); }
+      as v:ValueRef[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint32.maxVal));
+        return uint32(v.value);
+      }
       as v:ValueRef[uint8]  { return uint32(v.value); }
       as v:ValueRef[uint16] { return uint32(v.value); }
       as v:ValueRef[uint32] { return v.value; }

@@ -50,4 +50,9 @@ public class Object {
       Note that the finalizer must *not* hold a reference to the object or it
       will never be deleted. */
   // @Intrinsic setFinalizer(finalizer:fn);
+  
+  /** Return a string representation of this object. */
+  def toString() -> String {
+    return "<Object>";
+  }
 }

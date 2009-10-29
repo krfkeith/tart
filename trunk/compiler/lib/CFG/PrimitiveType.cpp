@@ -249,7 +249,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
             cint->location(),
             const_cast<PrimitiveType *>(this),
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
-                cint->value(), this->irType(), false)));
+                cint->value(), this->irType(), true)));
       }
 
       if (srcBits > dstBits) {
@@ -369,6 +369,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
             cn.fromValue->location(), resultType, cn.fromValue);
       }
 
+      DASSERT(srcBits != dstBits);
       return srcBits > dstBits ? Truncation : ExactConversion;
     } else if (isUnsignedIntegerType(srcId)) {
       ConversionRank result = NonPreferred;
@@ -833,9 +834,11 @@ template<> TypeIdSet ShortType::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UI
 template<> void ShortType::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt8>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt8>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt64>::value);
@@ -874,8 +877,12 @@ template<> TypeIdSet IntType::INCLUDES = TypeIdSet::of(
 template<> void IntType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt64>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UnsizedInt>::value);
@@ -912,7 +919,13 @@ template<> TypeIdSet LongType::INCLUDES = TypeIdSet::of(
 template<> void LongType::init() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt64>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UnsizedInt>::value);
   addMember(&PrimitiveToString<TypeId_SInt64>::value);
@@ -988,9 +1001,11 @@ template<> TypeIdSet UShortType::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 template<> void UShortType::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt8>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt8>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt64>::value);
@@ -1027,8 +1042,12 @@ template<> TypeIdSet UIntType::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UIn
 template<> void UIntType::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt64>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UnsizedInt>::value);
@@ -1065,6 +1084,12 @@ template<> TypeIdSet ULongType::INCLUDES =
 template<> void ULongType::init() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt64>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt64>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UnsizedInt>::value);

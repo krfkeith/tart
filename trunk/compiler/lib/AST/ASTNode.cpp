@@ -111,6 +111,11 @@ void ASTFloatLiteral::format(FormatStream & out) const {
 }
 
 template<>
+void ASTDoubleLiteral::format(FormatStream & out) const {
+  out << llvm::ftostr(value_);
+}
+
+template<>
 void ASTCharLiteral::format(FormatStream & out) const {
   // TODO: Should handle escapes here if specified via format options
   out << "'" << value_ << "'";
