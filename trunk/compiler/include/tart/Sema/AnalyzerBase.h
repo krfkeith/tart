@@ -159,7 +159,7 @@ protected:
 
   // Add a candidate to the list of specializations being considered.
   void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de,
-      const TypeVector * args);
+      TypeVector * args);
 
     // Lookup helper function that attempts to load a module from 'path'.
   bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);

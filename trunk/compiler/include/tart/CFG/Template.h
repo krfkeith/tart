@@ -144,7 +144,7 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Defn * templateDefn);
+  TemplateInstance(Defn * templateDefn, TypeVector * templateArgs);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
@@ -158,8 +158,7 @@ public:
   TypeList & paramValues() { return paramValues_; }
 
   /** The template arguments for this template. */
-  const TypeList & templateArgs() const { return templateArgs_; }
-  TypeList & templateArgs() { return templateArgs_; }
+  TypeVector * templateArgs() const { return templateArgs_; }
 
   /** The module where this template was originally defined; Used for implicit imports
       within the template body. */
@@ -185,7 +184,7 @@ private:
   Defn * templateDefn_;             // The template definition from whence this came.
   TypeList paramValues_;            // The list of parameter values.
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
-  TypeList templateArgs_;           // Template arguments with substitutions
+  TypeVector * templateArgs_;       // Template arguments with substitutions
   Scope * parentScope_;             // Parent scope of this definition.
   SourceLocation instantiatedFrom_; // Location which produced this instance.
 };

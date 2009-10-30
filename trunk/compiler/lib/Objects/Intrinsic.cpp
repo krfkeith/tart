@@ -77,6 +77,7 @@ Value * StringifyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * arg = derefMacroParam(call->arg(0));
   fs << arg;
 
+  fs.flush();
   DASSERT_OBJ(!sstream.str().empty(), arg);
   return cg.genStringLiteral(sstream.str());
 }

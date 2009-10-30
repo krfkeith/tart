@@ -4,10 +4,9 @@ import tart.core.Memory.Pointer;
 final class Method : Member {
   private {
 	  var _typeParams:TypeRef[];
-	  var _returnType:TypeRef;
+    //var _fnType:FunctionType;
 	  var _params:Parameter[];
     var _methodPointer:Pointer[void];
-    var _invoke:static fn (obj:Object, m:Pointer[void], args:Object[]) -> Object;
   }
 
   undef construct();
@@ -15,33 +14,25 @@ final class Method : Member {
   /** Array of type parameters. */
   final def typeParams:TypeRef[] { get { return _typeParams; } }
 
+  /** The type of the method. */
+  final def functionType:FunctionType { get { var f:FunctionType; return f; } }
+
   /** The return type of the method. */
-  final def returnType:TypeRef { get { return _returnType; } }
+  final def returnType:TypeRef { get { return functionType.returnType; } }
+
+  /** The array of function parameter types. */
+  final def paramTypes:TypeRef[] { get { return functionType.paramTypes; } }
 
   /** The parameters of this method. */
   final def params:Parameter[] { get { return _params; } }
   
-  /** A pointer to the function. */
-  //private let methodPointer:Pointer[void];
-
-  /** A pointer to a trampoline function that can take an array of objects and call
-      the actual native method with the correct argument types.
-      'obj': The object pointer, or null if it is a static or global function.
-      'm': The native method pointer.
-      'args': The argument list.
-    */
-  //private let invoke:static fn (obj:Object, m:Pointer[void], args:Object[]) -> Object;
-
-  /** Invoke the method on the specified object with the given arguments.
-      TODO: Define exception types for bad argument types.
-   */
+  /** Invoke the method on the specified object with the given arguments. */
   final def call(obj:Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
-    return _invoke(obj, _methodPointer, args);
+    return functionType.invoke(_methodPointer, obj, args);
   }
 
   final def call(obj:Object, args:Object...) -> Object {
-    // TODO: Need a static function for attempt to call an abstract method.
-    return _invoke(obj, _methodPointer, args);
+    return functionType.invoke(_methodPointer, obj, args);
   }
 }

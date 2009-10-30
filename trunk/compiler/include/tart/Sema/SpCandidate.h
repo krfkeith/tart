@@ -30,18 +30,18 @@ private:
   //Expr * base;
   Defn * templateDefn_;
   Expr * base_;
-  const TypeVector * args_;
+  TypeVector * args_;
   BindingEnv env_;
   ConversionRank conversionRank_;
 
 public:
-  SpCandidate(Expr *base, Defn * tdef, const TypeVector * args);
+  SpCandidate(Expr *base, Defn * tdef, TypeVector * args);
 
   /** The template. */
   Defn * templateDefn() const { return templateDefn_; }
 
   /** The type arguments. */
-  const TypeVector * args() const { return args_; }
+  TypeVector * args() const { return args_; }
 
   /** Base expression used, if any. */
   Expr * base() const { return base_; }

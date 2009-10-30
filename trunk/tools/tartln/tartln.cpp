@@ -416,12 +416,12 @@ std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
 void generateBitcode(Module * module, const sys::Path & outputFilePath) {
 
   if (optVerbose) {
-    outs() << "Generating bitcode to " << outputFilePath.toString() << '\n';
+    outs() << "Generating bitcode to " << outputFilePath.str() << '\n';
   }
 
   // Create the output file.
   std::string errorInfo;
-  raw_fd_ostream bcOut(outputFilePath.c_str(), true, true, errorInfo);
+  raw_fd_ostream bcOut(outputFilePath.c_str(), errorInfo, raw_fd_ostream::F_Binary);
   if (!errorInfo.empty()) {
     printAndExit(errorInfo);
   }
@@ -444,7 +444,7 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
   std::string errMsg;
 
   if (optVerbose) {
-    outs() << "Generating assembly to " << assemblyFile.toString() << '\n';
+    outs() << "Generating assembly to " << assemblyFile.str() << '\n';
   }
 
   // Figure out where we are going to send the output...
@@ -453,12 +453,12 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
   std::auto_ptr<formatted_raw_ostream> asOut;
   formatted_raw_ostream * pOut;
 
-  if (assemblyFile.toString() == "-") {
+  if (assemblyFile.str() == "-") {
     outs() << "Generating assembly to stdout\n";
     pOut = &fouts();
   } else {
     raw_fd_ostream * fdOut =
-        new raw_fd_ostream(assemblyFile.c_str(), true, true, errMsg);
+        new raw_fd_ostream(assemblyFile.c_str(), errMsg, raw_fd_ostream::F_Binary);
     if (!errMsg.empty()) {
       errs() << errMsg << '\n';
       delete fdOut;

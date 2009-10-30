@@ -102,6 +102,13 @@ void Defn::createQualifiedName(Defn * parent) {
 
 const std::string & Defn::linkageName() const {
   if (lnkName.empty()) {
+    if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray->typeDefn()) {
+      // Handle arrays specially.
+      typeLinkageName(lnkName, tinst_->paramValues()[0]);
+      lnkName.append("[]");
+      return lnkName;
+    }
+
     if (parentDefn_ != NULL && parentDefn_->defnType() != Defn::Mod) {
       lnkName = parentDefn_->linkageName();
       lnkName.append(".");

@@ -158,7 +158,7 @@ bool Module::addSymbol(Defn * de) {
       DASSERT_OBJ(!importDefs_.count(de), de);
       defsToAnalyze_.append(de);
       if (debug_) {
-        diag.info() << Format_Type << Format_QualifiedName << "Export: " << de->linkageName();
+        diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
       }
       return true;
     }
@@ -167,7 +167,7 @@ bool Module::addSymbol(Defn * de) {
       DASSERT_OBJ(!exportDefs_.count(de), de);
       defsToAnalyze_.append(de);
       if (debug_) {
-        diag.info() << Format_Type << Format_QualifiedName << "Import: " << de->linkageName();
+        diag.info() << Format_Type << Format_QualifiedName << "Import: " << de;
       }
       return true;
     }

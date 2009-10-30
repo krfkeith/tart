@@ -16,7 +16,7 @@ import tart.annex.Nonreflective;
     ADDRESS,
     NATIVE_POINTER,
     NATIVE_ARRAY,
-    //NonType
+    SINGLETON,
   }
 
   private {

@@ -171,6 +171,16 @@ void typeLinkageName(std::string & out, const Type * ty) {
   }
 }
 
+void typeLinkageName(std::string & out, TypeVector * tv) {
+  for (TypeVector::iterator it = tv->begin(); it != tv->end(); ++it) {
+    if (it != tv->begin()) {
+      out.append(",");
+    }
+
+    typeLinkageName(out, *it);
+  }
+}
+
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
 Conversion::Conversion(const Type * from)
@@ -545,17 +555,21 @@ FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
 // TypeVector
 
 TypeVector::TypeVectorMap TypeVector::uniqueValues_;
-const TypeVector TypeVector::emptyValue_(uint32_t(-1));
-const TypeVector TypeVector::tombstoneValue_(uint32_t(-2));
+TypeVector TypeVector::emptyValue_(uint32_t(-1));
+TypeVector TypeVector::tombstoneValue_(uint32_t(-2));
 
-const TypeVector * TypeVector::get(const TypeRef * first, const TypeRef * last) {
+TypeVector * TypeVector::get(const TypeRef typeArg) {
+  return get(&typeArg, &typeArg + 1);
+}
+
+TypeVector * TypeVector::get(const TypeRef * first, const TypeRef * last) {
   TypeVector key(first, last);
   TypeVectorMap::iterator it = uniqueValues_.find(&key);
   if (it != uniqueValues_.end()) {
     return it->first;
   }
 
-  const TypeVector * newEntry = new TypeVector(first, last);
+  TypeVector * newEntry = new TypeVector(first, last);
   uniqueValues_[newEntry] = 0;
   return newEntry;
 }
@@ -564,6 +578,14 @@ TypeVector::~TypeVector() {
   if (this != &emptyValue_ && this != &tombstoneValue_) {
     uniqueValues_.erase(this);
   }
+}
+
+void TypeVector::format(FormatStream & out) const {
+  out << "(";
+  for (TypeVector::iterator it = begin(); it != end(); ++it) {
+    out << *it;
+  }
+  out << ")";
 }
 
 // -------------------------------------------------------------------

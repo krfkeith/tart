@@ -48,19 +48,6 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
   }
 
   return NonPreferred;
-
-  /*if (cn.bindingEnv != NULL) {
-    const Type * ty = cn.bindingEnv->get(this);
-    DFAIL("Deprecated");
-    if (ty == NULL) {
-      diag.fatal() << "Unbound type param " << this << " in environment " << *cn.bindingEnv;
-      DFAIL("Unbound type param");
-    } else {
-      return ty->convertImpl(cn);
-    }
-  }*/
-
-  //return Incompatible;
 }
 
 const Defn * PatternVar::templateDefn() const {
@@ -224,6 +211,14 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     paramValues.push_back(value);
   }
 
+  TypeRefList typeArgs;
+  // Substitute into the template args to create the arg list
+  for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
+    typeArgs.push_back(env.subst(*it));
+  }
+
+  TypeVector * typeArgVector = TypeVector::get(typeArgs);
+
   //TypeVector * tv = TypeVector::get(paramValues);
 
   // See if we can find an existing specialization that matches the arguments.
@@ -249,15 +244,15 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_);
+  TemplateInstance * tinst = new TemplateInstance(value_, typeArgVector);
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
   tinst->instantiatedFrom() = loc;
 
   // Substitute into the template args to create the arg list
-  for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
+  /*for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
     Type * argValue = env.subst(*it);
     tinst->templateArgs().push_back(argValue);
-  }
+  }*/
 
   // Create the definition
   Defn * result = NULL;
@@ -434,9 +429,10 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Defn * templateDefn)
+TemplateInstance::TemplateInstance(Defn * templateDefn, TypeVector * templateArgs)
   : value_(NULL)
   , templateDefn_(templateDefn)
+  , templateArgs_(templateArgs)
   , parentScope_(templateDefn->definingScope())
 {
 }
@@ -467,8 +463,8 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 
 void TemplateInstance::format(FormatStream & out) const {
   out << "[";
-  for (TypeList::const_iterator it = templateArgs_.begin(); it != templateArgs_.end(); ++it) {
-    if (it != templateArgs_.begin()) {
+  for (TypeVector::iterator it = templateArgs_->begin(); it != templateArgs_->end(); ++it) {
+    if (it != templateArgs_->begin()) {
       out << ", ";
     }
 
@@ -481,6 +477,7 @@ void TemplateInstance::format(FormatStream & out) const {
 void TemplateInstance::trace() const {
   paramDefns_.trace();
   safeMark(value_);
+  safeMark(templateArgs_);
   markList(paramValues_.begin(), paramValues_.end());
 }
 

@@ -290,7 +290,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     argList.push_back(typeArg);
   }
 
-  const TypeVector * tv = TypeVector::get(argList);
+  TypeVector * tv = TypeVector::get(argList);
 
   // Examine all of the possible candidates for specialization.
   SpCandidateSet candidates;
@@ -350,7 +350,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
 }
 
 void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
-    const TypeVector * args) {
+    TypeVector * args) {
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();

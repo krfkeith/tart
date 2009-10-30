@@ -28,7 +28,6 @@ target_link_libraries(tartln
     ${LLVM_BIT_WRITER}
     ${LLVM_CODE_GEN}
     ${LLVM_CORE}
-    ${LLVM_DEBUGGER}
     ${LLVM_EXECUTION_ENGINE}
     ${LLVM_HELLO}
     ${LLVM_INSTRUMENTATION}
