@@ -429,10 +429,10 @@ public:
 class SpecializeExpr : public Expr {
 private:
   SpCandidateSet candidates_;
-  const TypeVector * args_;
+  TypeVector * args_;
 
 public:
-  SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, const TypeVector * args)
+  SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, TypeVector * args)
     : Expr(Specialize, loc, NULL)
     , candidates_(candidates)
     , args_(args)
@@ -442,7 +442,7 @@ public:
   const SpCandidateSet & candidates() const { return candidates_; }
   SpCandidateSet & candidates() { return candidates_; }
 
-  const TypeVector * args() const { return args_; }
+  TypeVector * args() const { return args_; }
 
   /** Return either the single non-culled candidate, or NULL. */
   //CallCandidate * singularCandidate();

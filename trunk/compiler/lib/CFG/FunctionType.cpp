@@ -21,6 +21,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(NULL)
+  , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
 
@@ -35,6 +36,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
   , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(NULL)
+  , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
 {
   for (size_t i = 0; i < pcount; ++i) {
@@ -48,6 +50,7 @@ FunctionType::FunctionType(
   , isStatic_(false)
   , returnType_(rtype)
   , selfParam_(selfParam)
+  , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
 {
   for (size_t i = 0; i < pcount; ++i) {
@@ -83,6 +86,20 @@ bool FunctionType::isSubtype(const Type * other) const {
   }
 
   return false;
+}
+
+TypeVector * FunctionType::paramTypes() const {
+  if (paramTypes_ == NULL) {
+    TypeRefList typeRefs;
+    for (size_t i = 0; i < params_.size(); i++) {
+      ParameterDefn * param = params_[i];
+      typeRefs.push_back(param->type());
+    }
+
+    paramTypes_ = TypeVector::get(typeRefs);
+  }
+
+  return paramTypes_;
 }
 
 const llvm::Type * FunctionType::irType() const {
@@ -159,6 +176,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
 void FunctionType::trace() const {
   returnType_.trace();
   markList(params_.begin(), params_.end());
+  safeMark(paramTypes_);
 }
 
 const llvm::Type * FunctionType::irEmbeddedType() const {

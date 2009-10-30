@@ -250,10 +250,8 @@ void CodeGenerator::outputModule() {
   }
 
   std::string errorInfo;
-//  std::auto_ptr<llvm::raw_ostream> binOut(
-//      new llvm::raw_fd_ostream(binPath.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary));
   std::auto_ptr<llvm::raw_ostream> binOut(
-      new llvm::raw_fd_ostream(binPath.c_str(), true, true, errorInfo));
+      new llvm::raw_fd_ostream(binPath.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary));
   if (!errorInfo.empty()) {
     diag.fatal() << errorInfo << '\n';
     return;

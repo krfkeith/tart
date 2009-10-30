@@ -33,6 +33,7 @@ NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
 
 extern BuiltinMemberRef<VariableDefn> module_types;
 extern BuiltinMemberRef<VariableDefn> module_methods;
+extern BuiltinMemberRef<VariableDefn> method_typeParams;
 
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
@@ -71,10 +72,13 @@ bool DefnAnalyzer::analyzeModule() {
     Builtins::loadReflectionClasses();
     analyzeType(Builtins::typeType, Task_PrepMemberLookup);
     analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeMethod, Task_PrepCodeGeneration);
     analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
     if (requireReflection) {
       module->addSymbol(Builtins::typeModule->typeDefn());
       module->addSymbol(module_types.get()->type().defn());
+      module->addSymbol(module_methods.get()->type().defn());
+      module->addSymbol(method_typeParams.get()->type().defn());
     }
   }
 

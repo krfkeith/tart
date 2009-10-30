@@ -23,6 +23,7 @@ const char * Formattable::str() const {
   FormatStream stream(ss);
   stream.setFormatOptions(Format_Verbose);
   format(stream);
+  stream.flush();
   temp = ss.str();
   return temp.c_str();
 }
@@ -31,17 +32,17 @@ const char * Formattable::str() const {
 // FormatStream
 
 FormatStream & FormatStream::operator<<(const char * str) {
-  *stream() << str;
+  llvm::raw_os_ostream::operator<<(str);
   return *this;
 }
 
 FormatStream & FormatStream::operator<<(const std::string & str) {
-  *stream() << str;
+  llvm::raw_os_ostream::operator<<(str);
   return *this;
 }
 
 FormatStream & FormatStream::operator<<(int value) {
-  *stream() << value;
+  llvm::raw_os_ostream::operator<<(value);
   return *this;
 }
 

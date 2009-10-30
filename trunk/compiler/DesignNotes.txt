@@ -12,7 +12,8 @@ Design TODOS:
 
 Implementation TODOS:
 
-* Get interning working
+* Get -internalize link pass working
+* Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * See if we can make UnionType and TupleType have type params like templates.
@@ -31,8 +32,6 @@ Implementation TODOS:
   * Move TypeAlias to its own header, and then use TypeRef.
 * typecast[type](in);
 * Boxed values:
-  * unboxing.
-  * Conversions
   * Closure Cells
 * Reflection
   * Object.toString() prints class name.

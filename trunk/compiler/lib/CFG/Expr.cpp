@@ -488,7 +488,7 @@ void CallExpr::trace() const {
 /// -------------------------------------------------------------------
 /// A call to a template
   SpCandidateSet candidates_;
-  const TypeVector * args_;
+  TypeVector * args_;
 
   /** Return true if there is at least one non-culled candidate. */
 bool SpecializeExpr::hasAnyCandidates() const {

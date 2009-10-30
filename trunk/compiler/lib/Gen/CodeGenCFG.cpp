@@ -284,7 +284,7 @@ void CodeGenerator::genCatch(Block * blk) {
   Function * ehException = llvm::Intrinsic::getDeclaration(
       irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
   Function * ehSelector = llvm::Intrinsic::getDeclaration(
-      irModule_, llvm::Intrinsic::eh_selector_i32, NULL, 0);
+      irModule_, llvm::Intrinsic::eh_selector, NULL, 0);
   Function * personality = getExceptionPersonality();
 
   // Exception header

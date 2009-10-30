@@ -33,6 +33,7 @@ namespace tart {
       std::stringstream strm;
       FormatStream stream(strm);
       actual->format(stream);
+      stream.flush();
       return strm.str() == expected;
     }
 

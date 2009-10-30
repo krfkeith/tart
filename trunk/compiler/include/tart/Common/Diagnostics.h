@@ -101,6 +101,7 @@ public:
     // When the entry is destructed, the accumulated messages are
     // written to the diagnostic output.
     ~MessageStream() {
+      flush();
       if (!sstream.str().empty()) {
         T::write(loc, sstream.str());
       }

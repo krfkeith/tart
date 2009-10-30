@@ -82,7 +82,7 @@ add_subdirectory(runtime)
 add_subdirectory(third-party)
 add_subdirectory(test/unit)
 add_subdirectory(stdlib)
-add_subdirectory(test/nolib)
+#add_subdirectory(test/nolib)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/fail)
 

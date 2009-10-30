@@ -213,7 +213,7 @@ ConversionRank CallCandidate::updateConversionRank() {
   // If there are explicit specializations, then check those too.
   // Note that these must be an exact match.
   if (spCandidate_ != NULL) {
-    const TypeVector * spArgs = spCandidate_->args();
+    TypeVector * spArgs = spCandidate_->args();
     size_t typeArgCount = spArgs->size();
     for (size_t i = 0; i < typeArgCount; ++i) {
       const TypeRef & typeArg = (*spArgs)[i];

@@ -450,13 +450,14 @@ inline void traceTypeRefList(const TypeRefList & refs) {
 /// -------------------------------------------------------------------
 /// An immutable vector of type references. Can be used as a map key.
 
-class TypeVector : public GC {
+class TypeVector : public GC, public Formattable {
 public:
   typedef TypeRefList::const_iterator iterator;
   typedef TypeRefList::const_iterator const_iterator;
 
-  static const TypeVector * get(const TypeRef * first, const TypeRef * last);
-  static const TypeVector * get(const TypeRefList & trefs) {
+  static TypeVector * get(const TypeRef typeArg);
+  static TypeVector * get(const TypeRef * first, const TypeRef * last);
+  static TypeVector * get(const TypeRefList & trefs) {
     return get(&*trefs.begin(), &*trefs.end());
   }
 
@@ -472,17 +473,19 @@ public:
     }
   }
 
+  void format(FormatStream & out) const;
+
   // Structure used when using type vector as a map key.
   struct KeyInfo {
-    static inline const TypeVector * getEmptyKey() { return &emptyValue_; }
-    static inline const TypeVector * getTombstoneKey() { return &tombstoneValue_; }
+    static inline TypeVector * getEmptyKey() { return &emptyValue_; }
+    static inline TypeVector * getTombstoneKey() { return &tombstoneValue_; }
 
-    static unsigned getHashValue(const TypeVector * val) {
+    static unsigned getHashValue(TypeVector * val) {
       return val->hashVal_;
     }
 
-    static bool isEqual(const TypeVector * lhs, const TypeVector * rhs) {
-      if (lhs->size() == rhs->size()) {
+    static bool isEqual(TypeVector * lhs, TypeVector * rhs) {
+      if (lhs->size() == rhs->size() && lhs->hashVal_ == rhs->hashVal_) {
         return std::equal(lhs->data_.begin(), lhs->data_.end(), rhs->data_.begin());
       }
 
@@ -493,7 +496,7 @@ public:
   };
 
 private:
-  typedef llvm::DenseMap<const TypeVector *, char, TypeVector::KeyInfo> TypeVectorMap;
+  typedef llvm::DenseMap<TypeVector *, char, TypeVector::KeyInfo> TypeVectorMap;
 
   TypeVector(const TypeRef * first, const TypeRef * last) : data_(first, last) {
     hashVal_ = hashBytes(first, (char *)last - (char *)first);
@@ -516,8 +519,8 @@ private:
   TypeRefList data_;
 
   static TypeVectorMap uniqueValues_;
-  static const TypeVector emptyValue_;
-  static const TypeVector tombstoneValue_;
+  static TypeVector emptyValue_;
+  static TypeVector tombstoneValue_;
 };
 
 /// -------------------------------------------------------------------
@@ -553,6 +556,7 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(std::string & out, const TypeRef & ty);
 void typeLinkageName(std::string & out, const Type * ty);
+void typeLinkageName(std::string & out, TypeVector * tv);
 
 /** Given two types, try and find the narrowest type that both
     can be converted to.

@@ -256,9 +256,10 @@ NativeArrayType * NativeArrayType::get(const TypeRef & elemType, uint64_t sz) {
 
 NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
   // Create the template instance
-  TemplateInstance * tinst = new TemplateInstance(&typedefn);
+  TypeRef elemTypeRef(elemType);
+  TemplateInstance * tinst = new TemplateInstance(&typedefn, TypeVector::get(elemTypeRef));
   tinst->paramValues().push_back(elemType);
-  tinst->templateArgs().push_back(elemType);
+  //tinst->templateArgs().push_back(elemType);
 
   TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
   NativeArrayType * np = new NativeArrayType(elemType, sz, tdef, tinst);

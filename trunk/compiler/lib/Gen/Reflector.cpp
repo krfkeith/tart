@@ -53,6 +53,12 @@ BuiltinMemberRef<VariableDefn> complexType_methods(Builtins::typeComplexType, "_
 BuiltinMemberRef<VariableDefn> enumType_superType(Builtins::typeEnumType, "_superType");
 BuiltinMemberRef<VariableDefn> enumType_values(Builtins::typeEnumType, "_values");
 
+// Members of tart.core.reflect.FunctionType.
+BuiltinMemberRef<VariableDefn> functionType_returnType(Builtins::typeFunctionType, "_returnType");
+BuiltinMemberRef<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
+BuiltinMemberRef<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
+BuiltinMemberRef<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
+
 // Members of tart.core.reflect.TypeRef.
 BuiltinMemberRef<VariableDefn> typeRef_type(Builtins::typeTypeRef, "type");
 BuiltinMemberRef<VariableDefn> typeRef_modifiers(Builtins::typeTypeRef, "modifiers");
@@ -72,10 +78,9 @@ BuiltinMemberRef<VariableDefn> member_attributes(Builtins::typeMember, "_attribu
 
 // Members of tart.core.reflect.Method.
 BuiltinMemberRef<VariableDefn> method_typeParams(Builtins::typeMethod, "_typeParams");
-BuiltinMemberRef<VariableDefn> method_returnType(Builtins::typeMethod, "_returnType");
+//BuiltinMemberRef<VariableDefn> method_functionType(Builtins::typeMethod, "_functionType");
 BuiltinMemberRef<VariableDefn> method_params(Builtins::typeMethod, "_params");
 BuiltinMemberRef<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
-BuiltinMemberRef<VariableDefn> method_invoke(Builtins::typeMethod, "_invoke");
 
 // Members of tart.core.reflect.Module.
 BuiltinMemberRef<VariableDefn> module_name(Builtins::typeModule, "_name");
@@ -285,10 +290,9 @@ llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
   StructBuilder sb(cg_);
   sb.addField(emitMember(cast<CompositeType>(Builtins::typeMethod), func));
   sb.addNullField(method_typeParams.type());
-  sb.addField(emitTypeReference(func->returnType()));
+  //sb.addField(emitFunctionType(func->functionType()));
   sb.addNullField(method_params.type());
   sb.addNullField(method_methodPointer.type());
-  sb.addNullField(method_invoke.type());
   return sb.build(Builtins::typeMethod->irType());
 }
 
@@ -314,7 +318,7 @@ llvm::Constant * Reflector::emitTypeReference(const TypeRef & type) {
   StructBuilder sb(cg_);
   sb.addField(llvm::ConstantExpr::getPointerCast(
       getTypePtr(type.type()), Builtins::typeType->irEmbeddedType()));
-  sb.addIntegerField(typeRef_modifiers, 0);
+  //sb.addIntegerField(typeRef_modifiers, 0);
   return sb.build(Builtins::typeTypeRef->irType());
 }
 
@@ -416,8 +420,13 @@ llvm::Constant * Reflector::emitEnumType(const EnumType * type) {
 }
 
 llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
+  // TODO: Merge with same type.
   StructBuilder sb(cg_);
   sb.addField(emitTypeBase(Builtins::typeFunctionType, FUNCTION));
+  sb.addField(emitTypeReference(type->returnType()));
+  sb.addNullField(functionType_selfType.type());
+  sb.addField(emitTypeVector(type->paramTypes()));
+  sb.addNullField(functionType_invoke.type());
   return sb.build(Builtins::typeFunctionType->irType());
 }
 
@@ -509,6 +518,41 @@ llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, TypeKind kind
   sb.createObjectHeader(reflectType);
   sb.addIntegerField(type_typeKind.get(), kind);
   return sb.build(Builtins::typeType->irType());
+}
+
+llvm::Constant * Reflector::emitTypeVector(TypeVector * types) {
+  // Get cached version if already generated.
+  std::string typeVectorName(".typetuple(");
+  typeLinkageName(typeVectorName, types);
+  typeVectorName.append(")");
+  GlobalVarMap::iterator it = globals_.find(typeVectorName);
+  if (it != globals_.end()) {
+    return it->second;
+  }
+
+  // Generate the list of values.
+  ConstantList values;
+  for (TypeVector::iterator it = types->begin(); it != types->end(); ++it) {
+    values.push_back(emitTypeReference(*it));
+  }
+
+  const CompositeType * arrayType = cast<CompositeType>(derivedType_typeParams->type().type());
+  const Type * elementType = arrayType->typeParam(0).type();
+  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), derivedType_typeParams);
+
+  if (values.empty()) {
+    // TODO: point to shared empty array.
+  }
+
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(arrayType);
+  sb.addField(cg_.getInt32Val(values.size()));
+  sb.addArrayField(elementType, values);
+
+  llvm::Constant * arrayStruct = sb.build();
+  GlobalVariable * array = new GlobalVariable(*irModule_, arrayStruct->getType(),
+      true, GlobalValue::LinkOnceODRLinkage, arrayStruct, typeVectorName);
+  return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
 }
 
 Reflector::Access Reflector::memberAccess(const Defn * member) {

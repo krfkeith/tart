@@ -5,9 +5,10 @@
 #ifndef TART_CFG_CFG_H
 #define TART_CFG_CFG_H
 
-#include <llvm/ADT/SmallVector.h>
-#include <llvm/ADT/FoldingSet.h>
-#include <llvm/Support/Casting.h>
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/FoldingSet.h"
+#include "llvm/LLVMContext.h"
+#include "llvm/Support/Casting.h"
 
 namespace tart {
 

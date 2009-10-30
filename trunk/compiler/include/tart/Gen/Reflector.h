@@ -5,12 +5,12 @@
 #ifndef TART_GEN_REFLECTOR_H
 #define TART_GEN_REFLECTOR_H
 
-#include <tart/Common/SourceLocation.h>
+#include "tart/Common/SourceLocation.h"
 
-#include <llvm/Support/IRBuilder.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/ADT/SetVector.h>
-#include <iostream>
+#include "llvm/Support/IRBuilder.h"
+#include "llvm/ADT/StringMap.h"
+#include "llvm/ADT/SetVector.h"
+#include "iostream"
 
 namespace tart {
 
@@ -28,6 +28,7 @@ class FunctionType;
 class IterableScope;
 class TypeDefn;
 class TypeRef;
+class TypeVector;
 
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::StringMap<llvm::Constant *> SymbolNameMap;
@@ -150,6 +151,7 @@ public:
   llvm::Constant * emitOpaqueType(const Type * type);
   llvm::Constant * emitSimpleType(const Type * reflectType, const Type * type);
   llvm::Constant * emitTypeBase(const Type * reflectType, TypeKind kind);
+  llvm::Constant * emitTypeVector(TypeVector * types);
 
 private:
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);

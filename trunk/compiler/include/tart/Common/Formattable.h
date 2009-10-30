@@ -5,7 +5,7 @@
 #ifndef TART_COMMON_FORMATTABLE_H
 #define TART_COMMON_FORMATTABLE_H
 
-#include <llvm/Support/Streams.h>
+#include "llvm/Support/raw_os_ostream.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
@@ -48,18 +48,18 @@ public:
 
 /// -------------------------------------------------------------------
 /// Stream class that also holds format options.
-class FormatStream : public llvm::OStream {
+class FormatStream : public llvm::raw_os_ostream {
 private:
   int formatOptions_;
 
 public:
   FormatStream(std::ostream &S)
-    : llvm::OStream(&S)
+    : llvm::raw_os_ostream(S)
     , formatOptions_(Format_Default)
   {}
 
   FormatStream(std::ostream *S)
-    : llvm::OStream(S)
+    : llvm::raw_os_ostream(*S)
     , formatOptions_(Format_Default)
   {}
 

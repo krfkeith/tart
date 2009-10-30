@@ -10,7 +10,7 @@
 
 namespace tart {
 
-SpCandidate::SpCandidate(Expr * base, Defn * tdef, const TypeVector * args)
+SpCandidate::SpCandidate(Expr * base, Defn * tdef, TypeVector * args)
   : templateDefn_(tdef)
   , base_(base)
   , args_(args)

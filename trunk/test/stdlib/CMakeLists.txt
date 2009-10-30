@@ -5,7 +5,8 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
-set(TART_OPTIONS -g -debug-errors -show-generated)
+#set(TART_OPTIONS -g -debug-errors -show-generated)
+set(TART_OPTIONS -debug-errors -show-generated)
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
