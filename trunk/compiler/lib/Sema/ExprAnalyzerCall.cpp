@@ -231,14 +231,14 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
 
   } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(func)) {
     CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
-    const SpCandidateSet & candidates = spe->candidates();
+    const SpCandidateList & candidates = spe->candidates();
     call->setExpectedReturnType(expected);
-    for (SpCandidateSet::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+    for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
       SpCandidate * sp = *it;
-      if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->templateDefn())) {
+      if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->def())) {
         addOverload(call, sp->base(), func, args, sp);
       } else {
-        diag.error(loc) << sp->templateDefn() << " is not a callable expression.";
+        diag.error(loc) << sp->def() << " is not a callable expression.";
       }
     }
 

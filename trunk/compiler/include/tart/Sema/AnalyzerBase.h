@@ -38,6 +38,7 @@ enum AnalysisTask {
   Task_PrepEvaluation,          // Prepare for compile-time evaluation.
   Task_PrepTypeGeneration,      // Prepare to generate the low-level type.
   Task_PrepCodeGeneration,      // Prepare for code generation.
+  Task_PrepReflection,          // Prepare to generate reflection data
 };
 
 /// -------------------------------------------------------------------
@@ -122,7 +123,10 @@ public:
       construction of the array. */
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const TypeRef & elementType);
 
-  // Determine if the target is able to be accessed from the current source defn.
+  /** Given a type, return the coercion function to convert it to a reference type. */
+  static FunctionDefn * coerceToObjectFn(Type * type);
+
+  /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);
   static void checkAccess(const SourceLocation & loc, Defn * source, Defn * target);
   static bool canAccess(Defn * source, Defn * target);
@@ -156,6 +160,10 @@ protected:
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
   Expr * specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args);
+
+  // Given a list of expressions, find which ones are LValues that have template parameters,
+  // and attempt to specialize those templates.
+  Expr * specialize(SLC & loc, const ExprList & exprs, TypeVector * tv);
 
   // Add a candidate to the list of specializations being considered.
   void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de,

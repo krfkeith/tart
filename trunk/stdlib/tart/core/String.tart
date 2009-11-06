@@ -163,7 +163,7 @@ public final class String {
   //}
 
   /** Coerce a String to a String simply returns 'self'. */
-  def toString -> String {
+  override toString -> String {
     return self;
   }
 

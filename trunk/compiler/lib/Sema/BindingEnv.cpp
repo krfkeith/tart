@@ -5,13 +5,15 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/TypeTransform.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
-#include <llvm/Support/CommandLine.h>
+#include "llvm/Support/CommandLine.h"
 
 static llvm::cl::opt<bool>
 DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(false));
@@ -557,9 +559,14 @@ Type * BindingEnv::dereference(Type * type) const {
 }
 
 TypeRef BindingEnv::subst(const TypeRef & in) const {
-  TypeRef result(in);
+  if (substitutions_ == NULL) {
+    return in;
+  }
+
+  return SubstitutionTransform(*this).transform(in);
+  /*TypeRef result(in);
   result.setType(subst(in.type()));
-  return result;
+  return result;*/
 }
 
 Type * BindingEnv::subst(Type * in) const {
@@ -567,6 +574,8 @@ Type * BindingEnv::subst(Type * in) const {
     return in;
   }
 
+  return SubstitutionTransform(*this).transform(in);
+#if 0
   in = dealias(in);
 
   switch (in->typeClass()) {
@@ -590,7 +599,7 @@ Type * BindingEnv::subst(Type * in) const {
       return in;
     }
 
-    case Type::Address: {
+    case Type::NAddress: {
       const AddressType * np = static_cast<const AddressType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
@@ -604,7 +613,7 @@ Type * BindingEnv::subst(Type * in) const {
       return AddressType::get(elemType);
     }
 
-    case Type::Pointer: {
+    case Type::NPointer: {
       const PointerType * np = static_cast<const PointerType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
@@ -618,7 +627,7 @@ Type * BindingEnv::subst(Type * in) const {
       return PointerType::get(elemType);
     }
 
-    case Type::NativeArray: {
+    case Type::NArray: {
       const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
       if (!nt->typeParam(0).isDefined()) {
         return in;
@@ -654,8 +663,23 @@ Type * BindingEnv::subst(Type * in) const {
       return in;
     }
 
+    case Type::Union: {
+      TypeRefList members;
+      UnionType * ut = static_cast<UnionType *>(in);
+      for (TypeVector::iterator it = ut->members().begin(); it != ut->members().end(); ++it) {
+        members.push_back(subst(*it));
+      }
+
+      TypeVector * tv = TypeVector::get(members);
+      if (tv != &ut->members()) {
+        return UnionType::create(ut->location(), members);
+      }
+
+      return in;
+    }
+
     case Type::Function:
-    case Type::NonType:
+    case Type::SingleValue:
       //DASSERT(in->isSingular());
       return in;
 
@@ -676,8 +700,14 @@ Type * BindingEnv::subst(Type * in) const {
       diag.fatal() << "Type class not handled: " << in->typeClass();
       return NULL;
   }
+#endif
 }
 
+TypeVector * BindingEnv::relabel(TypeVector * in) {
+  return RelabelTransform(*this).transform(in);
+}
+
+#if 0
 TypeRef BindingEnv::relabel(const TypeRef & in) {
   TypeRef result(in);
   result.setType(relabel(in.type()));
@@ -716,7 +746,7 @@ Type * BindingEnv::relabel(Type * in) {
       return in;
     }
 
-    case Type::Address: {
+    case Type::NAddress: {
       const AddressType * np = static_cast<const AddressType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
@@ -730,7 +760,7 @@ Type * BindingEnv::relabel(Type * in) {
       return AddressType::get(elemType);
     }
 
-    case Type::Pointer: {
+    case Type::NPointer: {
       const PointerType * np = static_cast<const PointerType *>(in);
       if (!np->typeParam(0).isDefined()) {
         return in;
@@ -744,7 +774,7 @@ Type * BindingEnv::relabel(Type * in) {
       return PointerType::get(elemType);
     }
 
-    case Type::NativeArray: {
+    case Type::NArray: {
       const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
       if (!nt->typeParam(0).isDefined()) {
         return in;
@@ -804,7 +834,7 @@ Type * BindingEnv::relabel(Type * in) {
     }
 
     case Type::Function:
-    case Type::NonType:
+    case Type::SingleValue:
       //DASSERT(in->isSingular());
       return in;
 
@@ -816,6 +846,7 @@ Type * BindingEnv::relabel(Type * in) {
       return NULL;
   }
 }
+#endif
 
 void BindingEnv::trace() const {
   GC::safeMark(substitutions_);

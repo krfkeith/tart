@@ -47,17 +47,13 @@ AddressType * AddressType::get(TypeRef elemType) {
 }
 
 AddressType::AddressType(const TypeRef & elemType)
-  : TypeImpl(Type::Address)
+  : TypeImpl(Type::NAddress)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
 }
 
-AddressType::AddressType()
-  : TypeImpl(Type::Address)
-  , elementType_(NULL)
-{
-}
+AddressType::AddressType() : TypeImpl(Type::NAddress) {}
 
 AddressType::~AddressType() {
   /*TypeMap::iterator it = uniqueTypes_.find(elementType_);
@@ -162,17 +158,13 @@ PointerType * PointerType::get(TypeRef elemType) {
 }
 
 PointerType::PointerType(const TypeRef & elemType)
-  : TypeImpl(Type::Pointer)
+  : TypeImpl(Type::NPointer)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
 }
 
-PointerType::PointerType()
-  : TypeImpl(Type::Pointer)
-  , elementType_(NULL)
-{
-}
+PointerType::PointerType() : TypeImpl(Type::NPointer) {}
 
 const llvm::Type * PointerType::createIRType() const {
   DASSERT_OBJ(elementType_.isDefined(), this);
@@ -273,7 +265,7 @@ NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
 
 NativeArrayType::NativeArrayType(Type * elemType, uint64_t sz, TypeDefn * defn,
     Scope * parentScope)
-  : DeclaredType(Type::NativeArray, defn, parentScope)
+  : DeclaredType(Type::NArray, defn, parentScope)
   , elementType_(elemType)
   , size_(sz)
 {

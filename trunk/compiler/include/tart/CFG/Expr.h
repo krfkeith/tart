@@ -34,6 +34,7 @@ class TypeRef;
 class TypeVector;
 
 typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
+typedef llvm::SmallVector<SpCandidate *, 8> SpCandidateList;
 
 /// -------------------------------------------------------------------
 /// A Control Flow Graph value or expression
@@ -428,24 +429,21 @@ public:
 /// A call to a template
 class SpecializeExpr : public Expr {
 private:
-  SpCandidateSet candidates_;
+  SpCandidateList candidates_;
   TypeVector * args_;
 
 public:
   SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, TypeVector * args)
     : Expr(Specialize, loc, NULL)
-    , candidates_(candidates)
+    , candidates_(candidates.begin(), candidates.end())
     , args_(args)
   {}
 
   /** The list of overload candidates. */
-  const SpCandidateSet & candidates() const { return candidates_; }
-  SpCandidateSet & candidates() { return candidates_; }
+  const SpCandidateList & candidates() const { return candidates_; }
+  SpCandidateList & candidates() { return candidates_; }
 
   TypeVector * args() const { return args_; }
-
-  /** Return either the single non-culled candidate, or NULL. */
-  //CallCandidate * singularCandidate();
 
   /** Return true if there is at least one non-culled candidate. */
   bool hasAnyCandidates() const;

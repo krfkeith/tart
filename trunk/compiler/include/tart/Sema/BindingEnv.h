@@ -93,7 +93,7 @@ public:
     , var_(var)
   {}
 
-  BindingEnv * env() const { return env_; }
+  const BindingEnv * env() const { return env_; }
   PatternVar * var() const { return var_; }
 
   // The value that is currently bound to var in env. Can return null if there's no value
@@ -137,6 +137,11 @@ public:
   /** Reset all bindings. */
   void reset();
 
+  /** If the given variable does not already have a definition in this environment,
+      then bind it to a PatternValue instance
+   */
+  void defineVar(PatternVar * var);
+
   /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
       Variance variance);
@@ -161,8 +166,9 @@ public:
 
   /** Given a type expression, replace all pattern variables with pattern values that
       are local to this specific environment. */
-  Type * relabel(Type * in);
-  TypeRef relabel(const TypeRef & in);
+  //Type * relabel(Type * in);
+  //TypeRef relabel(const TypeRef & in);
+  TypeVector * relabel(TypeVector * in);
 
     /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {

@@ -28,6 +28,7 @@ public:
     addTrait(Defn::Synthetic);
     addTrait(Defn::Final);
     addTrait(Defn::Singular);
+    addTrait(Defn::Nonreflective);
     setStorageClass(Storage_Global);
     createQualifiedName(m);
   }
@@ -76,6 +77,7 @@ public:
     addTrait(Defn::Synthetic);
     addTrait(Defn::Final);
     addTrait(Defn::Singular);
+    addTrait(Defn::Nonreflective);
     setStorageClass(Storage_Global);
     createQualifiedName(m);
   }

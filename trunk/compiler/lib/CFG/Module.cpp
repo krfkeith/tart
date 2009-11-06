@@ -14,6 +14,9 @@ static llvm::cl::opt<std::string>
 DebugXDefs("debug-xdefs",
     llvm::cl::desc("Debug xdefs for module"), llvm::cl::value_desc("filename"));
 
+llvm::cl::opt<bool>
+NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
+
 namespace tart {
 
 Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinScope)
@@ -22,14 +25,20 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   , moduleSource_(src)
   , irModule_(NULL)
   , entryPoint_(NULL)
-  , debug_(false)
+  , flags_(Module_Reflect)
 {
   loc.file = src;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
 
-  debug_ = (DebugXDefs == qual);
+  if (DebugXDefs == qual) {
+    flags_ |= Module_Debug;
+  }
+
+  if (NoReflect) {
+    flags_ &= ~Module_Reflect;
+  }
 }
 
 const std::string Module::packageName() const {
@@ -157,7 +166,7 @@ bool Module::addSymbol(Defn * de) {
     if (exportDefs_.insert(de)) {
       DASSERT_OBJ(!importDefs_.count(de), de);
       defsToAnalyze_.append(de);
-      if (debug_) {
+      if (isDebug()) {
         diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
       }
       return true;
@@ -166,7 +175,7 @@ bool Module::addSymbol(Defn * de) {
     if (importDefs_.insert(de)) {
       DASSERT_OBJ(!exportDefs_.count(de), de);
       defsToAnalyze_.append(de);
-      if (debug_) {
+      if (isDebug()) {
         diag.info() << Format_Type << Format_QualifiedName << "Import: " << de;
       }
       return true;

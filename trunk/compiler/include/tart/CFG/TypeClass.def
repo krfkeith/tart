@@ -10,13 +10,13 @@ TYPE_CLASS(Function)      // A function type
 TYPE_CLASS(BoundMethod)   // A reference to a bound method
 TYPE_CLASS(Tuple)         // A tuple type
 TYPE_CLASS(Union)         // A disjoint type
-TYPE_CLASS(Address)       // A machine address
-TYPE_CLASS(Pointer)       // A machine pointer
-TYPE_CLASS(NativeArray)   // A primitive array of values
+TYPE_CLASS(NAddress)      // A machine address
+TYPE_CLASS(NPointer)      // A machine pointer
+TYPE_CLASS(NArray)        // A primitive array of values
+TYPE_CLASS(SingleValue)   // A type which consists of a single constant value
 
 // Non-type placeholders for types.
 TYPE_CLASS(Alias)         // A named alias for a type expression
 TYPE_CLASS(Pattern)       // A type parameter
 TYPE_CLASS(PatternVal)    // The value of a type parameter
 TYPE_CLASS(Constraint)    // A type constraint or indeterminate type
-TYPE_CLASS(NonType)       // A non-type template argument

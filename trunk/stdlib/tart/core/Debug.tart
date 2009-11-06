@@ -47,4 +47,11 @@ namespace Debug {
         ", actual value: ", actual.toString());
     }
   }
+
+  macro assertNe[%T](expected:T, actual:T) {
+    if expected == actual {
+      fail(locationOf(actual), " Assertion failure: ", stringify(expected),
+        " not expected to equal ", actual.toString());
+    }
+  }
 }

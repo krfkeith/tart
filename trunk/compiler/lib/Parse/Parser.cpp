@@ -362,7 +362,7 @@ ASTDecl * Parser::declarator(const DeclModifiers & mods) {
   TokenType tok = token;
   if (match(Token_Var) || match(Token_Let)) {
     return declareVariable(mods, tok);
-  } else if (match(Token_Def) || match(Token_Undef)) {
+  } else if (match(Token_Def) || match(Token_Undef) || match(Token_Override)) {
     return declareDef(mods, tok);
   } else if (match(Token_Macro)) {
     return declareMacro(mods, tok);
@@ -459,6 +459,8 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
     if (tok == Token_Undef) {
       indexer->modifiers().flags |= Undef;
+    } else if (tok == Token_Override) {
+      indexer->modifiers().flags |= Override;
     }
 
     return indexer;
@@ -488,6 +490,8 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
     if (tok == Token_Undef) {
       prop->modifiers().flags |= Undef;
+    } else if (tok == Token_Override) {
+      prop->modifiers().flags |= Override;
     }
 
     return prop;
@@ -517,6 +521,8 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
     if (tok == Token_Undef) {
       fd->modifiers().flags |= Undef;
+    } else if (tok == Token_Override) {
+      fd->modifiers().flags |= Override;
     }
 
     if (!templateParams.empty()) {
@@ -2441,11 +2447,6 @@ ASTNode * Parser::primaryExpression() {
       result = new ASTOper(ASTNode::Super, lexer.tokenLocation());
       break;
 
-    case Token_Typecast:
-      next();
-      result = new ASTOper(ASTNode::Typecast, lexer.tokenLocation());
-      break;
-
     case Token_String:
       result = parseStringLiteral();
       break;
@@ -2477,39 +2478,6 @@ ASTNode * Parser::primaryExpression() {
       result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
       break;
     }
-
-      //return ConstantNullPtr::get(&PrimitiveType::NullType);
-
-#if 0
-    case Token_TypeOf: {
-      next();
-      SourceLocation loc = lexer.tokenLocation();
-
-      if (!match(Token_LParen)) {
-        expected("'('");
-        return NULL;
-      }
-
-      ASTNode * arg = expression();
-      if (arg == NULL) {
-        expectedExpression();
-        return NULL;
-      }
-
-      if (!match(Token_RParen)) {
-        expectedCloseParen();
-        return NULL;
-      }
-
-      /*Type * type = typeExpression(false);
-      if (type == NULL) {
-          return NULL;
-      }*/
-      result = new ASTOper(ASTNode::Typeof, arg);
-      //result->setType(Builtins::typeTyp);
-      break;
-    }
-#endif
 
     case Token_LBracket:
       next();

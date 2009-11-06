@@ -52,6 +52,7 @@ enum DeclFlags {
   ReadOnly = (1<<2),      // Can't be written to from non-privileged code
   Undef = (1<<3),         // Undefined method
   Redef = (1<<4),         // Redefined method
+  Override = (1<<4),      // Overridden method
 };
 
 /// -------------------------------------------------------------------

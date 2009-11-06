@@ -4,6 +4,7 @@ def main(args:String[]) -> int {
 	  testManualBoxing();
 	  testManualUnboxing();
 	  testUnboxingFailure();
+    testTypecast();
 	  testAutoBoxing();
   } catch e:Exception {
     Debug.fail("Unexpected exception");
@@ -245,6 +246,17 @@ def expectFailure[%T](o:Object) {
   } catch e:TypecastException {
     return;
   }
+}
+
+def testTypecast() {
+  // typecast of Object -> primitive type is similar to valueOf, except that the
+  // input isn't coerced to an object - that is, if both the input and result
+  // types are the same, then no conversion is done at all.
+  Debug.assertTrue(typecast[bool](true));
+  Debug.assertFalse(typecast[bool](false));
+  //Debug.assertTrue(typecast[bool](ValueRef(true)));
+  //Debug.assertEq(1, typecast[int](ValueRef(1)));
+  //Debug.assertNe(1, typecast[int](ValueRef(2)));
 }
 
 def testAutoBoxing() {

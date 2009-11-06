@@ -44,14 +44,13 @@ ShowGen("show-generated", llvm::cl::desc("Display generated symbols"));
 static llvm::cl::opt<bool>
 Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 
-extern llvm::cl::opt<bool> NoReflect;
-
 CodeGenerator::CodeGenerator(Module * mod)
     : context_(llvm::getGlobalContext())
     , builder_(llvm::getGlobalContext())
     , module_(mod)
     , irModule_(mod->irModule())
     , currentFn_(NULL)
+    , invokeFnType_(NULL)
     , reflector_(*this)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -65,7 +64,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , globalAlloc_(NULL)
     , debug_(Debug)
 {
-  reflector_.setEnabled(!NoReflect);
+  reflector_.setEnabled(mod->isReflectionEnabled());
   methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
 #if 0
   std::vector<const llvm::Type *> args;

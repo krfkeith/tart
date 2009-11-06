@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/PrimitiveType.h"
@@ -14,9 +14,9 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
-#include <llvm/ADT/APInt.h>
-#include <llvm/DerivedTypes.h>
-#include <llvm/Instructions.h>
+#include "llvm/ADT/APInt.h"
+#include "llvm/DerivedTypes.h"
+#include "llvm/Instructions.h"
 
 namespace tart {
 
@@ -26,8 +26,8 @@ PrimitiveType * PrimitiveType::primitiveTypeList;
 
 /// -------------------------------------------------------------------
 /// Primitive types
-PrimitiveType::PrimitiveType(TypeDefn * de)
-    : DeclaredType(Type::Primitive, de, &Builtins::module) {
+PrimitiveType::PrimitiveType(TypeDefn * de) :
+  DeclaredType(Type::Primitive, de, &Builtins::module) {
   nextType_ = primitiveTypeList;
   primitiveTypeList = this;
 }
@@ -38,9 +38,9 @@ const llvm::Type * PrimitiveType::createIRType() const {
 }
 
 const Type * PrimitiveType::derefEnumType(const Type * in) {
-  while (const EnumType * etype = dyn_cast<EnumType>(in)) {
-    DASSERT(etype->baseType() != NULL);
-    in = etype->baseType();
+  while (const EnumType * etype = dyn_cast<EnumType> (in)) {
+    DASSERT(etype->baseType() != NULL)
+;    in = etype->baseType();
   }
 
   return in;
@@ -192,6 +192,8 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
     diag.fatal() << "cannot convert " << fromType << " to " << this;
     DFAIL("Illegal State");
+  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+    return convertFromObject(cn);
   } else {
     return Incompatible;
   }
@@ -225,7 +227,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
             cint->location(),
             const_cast<PrimitiveType *>(this),
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
-                cint->value(), this->irType(), false)));
+                    cint->value(), this->irType(), false)));
       }
 
       if (srcBits > dstBits) {
@@ -249,7 +251,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
             cint->location(),
             const_cast<PrimitiveType *>(this),
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
-                cint->value(), this->irType(), true)));
+                    cint->value(), this->irType(), true)));
       }
 
       if (srcBits > dstBits) {
@@ -293,8 +295,8 @@ ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, 
 
   // Number of bits needed to hold the integer constant.
   uint32_t bitsNeeded = dstIsSigned
-      ? cint->value()->getValue().getMinSignedBits()
-      : cint->value()->getValue().getActiveBits();
+  ? cint->value()->getValue().getMinSignedBits()
+  : cint->value()->getValue().getActiveBits();
   uint32_t srcBits = cint->value()->getBitWidth();
   ConversionRank rank;
   unsigned castOp;
@@ -400,6 +402,8 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       return result;
     }
+  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+    return convertFromObject(cn);
   }
 
   return Incompatible;
@@ -533,6 +537,8 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     }
 
     return Incompatible;
+  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+    return convertFromObject(cn);
   } else {
     return Incompatible;
   }
@@ -565,6 +571,15 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
   } else {
     return Incompatible;
   }
+}
+
+ConversionRank PrimitiveType::convertFromObject(const Conversion & cn) const {
+  if (cn.resultValue != NULL) {
+    *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
+        const_cast<PrimitiveType *>(this), cn.fromValue);
+  }
+
+  return NonPreferred;
 }
 
 void PrimitiveType::defineConstant(const char * name, ConstantExpr * value) {
@@ -654,7 +669,7 @@ ParameterDefn PrimitiveToString<kTypeId>::formatParam(
     &formatParamDefault);
 
 template<int kTypeId>
-ParameterDefn * PrimitiveToString<kTypeId>::params[] = { &formatParam };
+ParameterDefn * PrimitiveToString<kTypeId>::params[] = {&formatParam};
 
 template<int kTypeId>
 FunctionType PrimitiveToString<kTypeId>::type(
@@ -785,7 +800,7 @@ template<> Expr * CharType::nullInitValue() const {
 
 template<> TypeDefn ByteType::typedefn(&Builtins::module, "byte", &ByteType::instance);
 template<> TypeIdSet ByteType::MORE_GENERAL =
-    TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
+TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
 template<> TypeIdSet ByteType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void ByteType::init() {
@@ -954,7 +969,7 @@ template<> Expr * LongType::nullInitValue() const {
 
 template<> TypeDefn UByteType::typedefn(&Builtins::module, "ubyte", &UByteType::instance);
 template<> TypeIdSet UByteType::MORE_GENERAL =
-    TypeIdSet::of(TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
+TypeIdSet::of(TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
 template<> TypeIdSet UByteType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void UByteType::init() {
@@ -1079,7 +1094,7 @@ template<> Expr * UIntType::nullInitValue() const {
 template<> TypeDefn ULongType::typedefn(&Builtins::module, "ulong", &ULongType::instance);
 template<> TypeIdSet ULongType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet ULongType::INCLUDES =
-    TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
+TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
 
 template<> void ULongType::init() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
@@ -1206,14 +1221,42 @@ template<> Expr * NullType::nullInitValue() const {
 }
 
 /// -------------------------------------------------------------------
+/// Primitive type: Any
+
+template<> TypeDefn AnyType::typedefn(&Builtins::module, "__Any", &AnyType::instance);
+template<> TypeIdSet AnyType::MORE_GENERAL = TypeIdSet::noneOf();
+template<> TypeIdSet AnyType::INCLUDES = TypeIdSet::noneOf();
+
+template<> void AnyType::init() {
+  irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
+}
+
+template<> uint32_t AnyType::numBits() const {
+  return 0;
+}
+
+template<> ConversionRank
+AnyType::convertImpl(const Conversion & cn) const {
+  if (cn.resultValue) {
+    *cn.resultValue = cn.fromValue;
+  }
+
+  return NonPreferred;
+}
+
+template<> Expr * AnyType::nullInitValue() const {
+  DASSERT("IllegalState");
+}
+
+/// -------------------------------------------------------------------
 /// Primitive type: UnsizedInt
 
 template<> TypeDefn UnsizedIntType::typedefn(&Builtins::module, "#constant_int",
     &UnsizedIntType::instance);
 template<> TypeIdSet UnsizedIntType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet UnsizedIntType::INCLUDES = TypeIdSet::of(
-  TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_SInt64,
-  TypeId_UInt8, TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
+    TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_SInt64,
+    TypeId_UInt8, TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
 
 template<> void UnsizedIntType::init() {
   // irType_ = NULL

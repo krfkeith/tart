@@ -11,8 +11,10 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/EnumType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/Module.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
@@ -283,8 +285,6 @@ Value * CodeGenerator::genInstanceOf(InstanceOfExpr * in) {
 
   CompositeType * fromType = cast<CompositeType>(in->value()->type());
   CompositeType * toType = cast<CompositeType>(in->toType());
-  DASSERT_OBJ(fromType != NULL, in);
-  DASSERT_OBJ(toType != NULL, in);
   return genCompositeTypeTest(val, fromType, toType);
 }
 
@@ -434,7 +434,8 @@ Value * CodeGenerator::genMemberFieldAddr(const LValueExpr * lval) {
     return NULL;
   }
 
-  return builder_.CreateGEP(baseVal, indices.begin(), indices.end(), labelStream.str().c_str());
+  return builder_.CreateInBoundsGEP(
+      baseVal, indices.begin(), indices.end(), labelStream.str().c_str());
 }
 
 Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
@@ -446,7 +447,7 @@ Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
     return NULL;
   }
 
-  return builder_.CreateGEP(baseVal, indices.begin(), indices.end(),
+  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(),
       labelStream.str().c_str());
 }
 
@@ -482,7 +483,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
       const Expr * indexExpr = indexOp->second();
       Value * arrayVal;
 
-      if (arrayExpr->type()->typeClass() == Type::Address) {
+      if (arrayExpr->type()->typeClass() == Type::NAddress) {
         // Handle auto-deref of Address type.
         arrayVal = genExpr(arrayExpr);
         labelStream << arrayExpr;
@@ -590,6 +591,74 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   }
 
   return baseAddr;
+}
+
+Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * toType) {
+  // If types are the same, no need for a cast.
+  if (fromType->isEqual(toType)) {
+    return in;
+  }
+
+  TypeRefPair conversionKey(fromType, toType);
+  ConverterMap::iterator it = module_->converters().find(conversionKey);
+  if (it != module_->converters().end()) {
+    const FunctionDefn * converter = it->second;
+    diag.debug(converter) << Format_Type << converter;
+    DFAIL("Implement");
+  }
+
+  if (const CompositeType * cfrom = dyn_cast<CompositeType>(fromType)) {
+    if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
+      if (cto->isReferenceType() && cfrom->isReferenceType()) {
+        if (cfrom->isSubclassOf(cto)) {
+          // Upcast, no need for type test.
+          return genUpCastInstr(in, cfrom, cto);
+        } else if (cto->isSubclassOf(cfrom)) {
+        }
+
+        // Composite to composite.
+        Value * typeTest = genCompositeTypeTest(in, cfrom, cto);
+        BasicBlock * blkCastFail = BasicBlock::Create(context_, "typecast_fail", currentFn_);
+        BasicBlock * blkCastSucc = BasicBlock::Create(context_, "typecast_succ", currentFn_);
+        builder_.CreateCondBr(typeTest, blkCastSucc, blkCastFail);
+        builder_.SetInsertPoint(blkCastFail);
+        Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
+        typecastFailure->setDoesNotReturn(true);
+        builder_.CreateCall(typecastFailure);
+        builder_.CreateUnreachable();
+        builder_.SetInsertPoint(blkCastSucc);
+        return builder_.CreatePointerCast(in, cto->irEmbeddedType(), "typecast");
+      }
+    } else if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
+    } else if (const EnumType * eto = dyn_cast<EnumType>(toType)) {
+      return genCast(in, fromType, eto->baseType());
+    }
+  } else if (const PrimitiveType * pfrom = dyn_cast<PrimitiveType>(fromType)) {
+    if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
+    } else if (toType == Builtins::typeObject) {
+      const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
+      const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
+          tsig->findSpecialization(TypeVector::get(TypeRef(const_cast<Type *>(fromType)))));
+      if (coerceFn == NULL) {
+        diag.error() << "Missing function Object.coerce[" << fromType << "]";
+        DFAIL("Missing Object.coerce fn");
+      }
+
+      ValueList args;
+      Value * fnVal = genFunctionValue(coerceFn);
+      args.push_back(in);
+      return genCallInstr(fnVal, args.begin(), args.end(), "coerce");
+    } else if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
+      // TODO: This would be *much* easier to handle in the analysis phase.
+      // But that means doing the invoke function in the analysis phase as well.
+      //return tart.core.ValueRef[type].create(in).
+    }
+  } else if (const EnumType * efrom = dyn_cast<EnumType>(fromType)) {
+    return genCast(in, efrom->baseType(), toType);
+  }
+
+  diag.debug() << "Unsupported cast from " << fromType << " to " << toType;
+  DFAIL("Implement");
 }
 
 Value * CodeGenerator::genNumericCast(CastExpr * in) {
@@ -902,7 +971,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   indices.push_back(getInt32Val(3));
   indices.push_back(getInt32Val(methodIndex));
   Value * fptr = builder_.CreateLoad(
-      builder_.CreateGEP(tib, indices.begin(), indices.end()), method->name());
+      builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
   return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type().irType()));
 }
 
@@ -1064,7 +1133,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
     indices.push_back(getInt32Val(0));
   }
 
-  return builder_.CreateGEP(val, indices.begin(), indices.end(), "upcast");
+  return builder_.CreateInBoundsGEP(val, indices.begin(), indices.end(), "upcast");
 }
 
 llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
@@ -1153,8 +1222,8 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   return result;
 }
 
-Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromType,
-    CompositeType * toType) {
+Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * fromType,
+    const CompositeType * toType) {
   DASSERT(fromType != NULL);
   DASSERT(toType != NULL);
 
@@ -1166,12 +1235,12 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, CompositeType * fromTyp
   Value * valueAsObjType = builder_.CreateBitCast(val,
       llvm::PointerType::getUnqual(Builtins::typeObject->irType()));
 
-  // Upcase to type 'object' and load the TIB pointer.
+  // Upcast to type 'object' and load the TIB pointer.
   ValueList indices;
   indices.push_back(getInt32Val(0));
   indices.push_back(getInt32Val(0));
   Value * tib = builder_.CreateLoad(
-      builder_.CreateGEP(valueAsObjType, indices.begin(), indices.end()),
+      builder_.CreateInBoundsGEP(valueAsObjType, indices.begin(), indices.end()),
       "tib");
 
   ValueList args;

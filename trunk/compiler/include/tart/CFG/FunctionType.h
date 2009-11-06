@@ -45,6 +45,7 @@ public:
   const ParameterList & params() const { return params_; }
   const ParameterDefn * param(int index) const { return params_[index]; }
   ParameterDefn * param(int index) { return params_[index]; }
+  TypeRef paramType(int index) const;
   void addParam(ParameterDefn * param);
   ParameterDefn * addParam(const char * name, Type * type);
 
@@ -59,6 +60,9 @@ public:
 
   /** Print an explanation as to why this function type is not singular. */
   void whyNotSingular() const;
+
+  /** Return the name of the 'invoke' trampoline function for this function type. */
+  const std::string & invokeName() const;
 
   // Overrides
 
@@ -87,6 +91,7 @@ private:
   mutable TypeVector * paramTypes_;
   mutable llvm::PATypeHolder irType_;
   mutable bool isCreatingType;
+  mutable std::string invokeName_;
 };
 
 // -------------------------------------------------------------------

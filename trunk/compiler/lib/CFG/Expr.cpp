@@ -370,7 +370,7 @@ bool CallExpr::isSingular() const {
 }
 
 Type * CallExpr::singularParamType(int index) {
-  TypeRef singularType = NULL;
+  TypeRef singularType;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
@@ -485,11 +485,6 @@ void CallExpr::trace() const {
 // -------------------------------------------------------------------
 // SpecializeExpr
 
-/// -------------------------------------------------------------------
-/// A call to a template
-  SpCandidateSet candidates_;
-  TypeVector * args_;
-
   /** Return true if there is at least one non-culled candidate. */
 bool SpecializeExpr::hasAnyCandidates() const {
   DFAIL("IMPLEMENT");
@@ -500,10 +495,10 @@ bool SpecializeExpr::hasAnyCandidates() const {
 void SpecializeExpr::format(FormatStream & out) const {
   if (candidates_.size() == 1) {
     SpCandidate * sp = *candidates_.begin();
-    out << sp->templateDefn()->name();
+    out << sp->def()->name();
   } else {
     SpCandidate * sp = *candidates_.begin();
-    out << sp->templateDefn()->name();
+    out << sp->def()->name();
     out << "... {" << candidates_.size() << " candidates}";
   }
 

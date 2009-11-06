@@ -131,6 +131,7 @@ public:
   llvm::Value * genInitVar(InitVarExpr * in);
   llvm::Value * genBinaryOpcode(BinaryOpcodeExpr * expr);
   llvm::Value * genCompare(CompareExpr * in);
+  llvm::Value * genCast(llvm::Value * in, const Type * fromType, const Type * toType);
   llvm::Value * genNumericCast(CastExpr * in);
   llvm::Value * genUpCast(CastExpr * in);
   llvm::Value * genBitCast(CastExpr * in);
@@ -194,7 +195,8 @@ public:
   llvm::Value * genUpCastInstr(llvm::Value * val, const Type * fromType, const Type * toType);
 
   /** Generate an 'isInstanceOf' test for composite types. */
-  llvm::Value * genCompositeTypeTest(llvm::Value * val, CompositeType * fromType, CompositeType * toType);
+  llvm::Value * genCompositeTypeTest(llvm::Value * val, const CompositeType * fromType,
+      const CompositeType * toType);
 
   /** Generate an 'isInstance' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
@@ -315,6 +317,9 @@ public:
   // Return the pointer to the reflection data for this module.
   llvm::GlobalVariable * createModuleObjectPtr();
 
+  llvm::Function * genInvokeFn(const FunctionType * fnType);
+  llvm::FunctionType * getInvokeFnType();
+
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
 
@@ -348,8 +353,9 @@ private:
   Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
-  llvm::GlobalVariable * moduleObject_;
-  llvm::GlobalVariable * moduleTable_;
+  //llvm::GlobalVariable * moduleObject_;
+  //llvm::GlobalVariable * moduleTable_;
+  llvm::FunctionType * invokeFnType_;
 
 #if 0
   llvm::Function * moduleInitFunc;

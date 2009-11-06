@@ -159,7 +159,11 @@ void TemplateSignature::trace() const {
   safeMark(ast_);
   markList(params_.begin(), params_.end());
   markList(requirements_.begin(), requirements_.end());
-  markList(specializations.begin(), specializations.end());
+  for (SpecializationMap::const_iterator it = specializations_.begin();
+      it != specializations_.end(); ++it) {
+    it->first->mark();
+    it->second->mark();
+  }
   paramScope_.trace();
 }
 
@@ -167,6 +171,15 @@ void TemplateSignature::format(FormatStream & out) const {
   out << "[";
   formatTypeList(out, params_);
   out << "]";
+}
+
+Defn * TemplateSignature::findSpecialization(TypeVector * tv) const {
+  SpecializationMap::iterator it = specializations_.find(tv);
+  if (it != specializations_.end()) {
+    return it->second;
+  }
+
+  return NULL;
 }
 
 Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env,
@@ -193,19 +206,9 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
       DASSERT(var->canBindTo(value));
     }
 
-    if (!value->isSingular()) {
-      if (singular) {
-        diag.fatal(loc) << "Non-singular parameter '" << var << "' = '" << value << "'";
-      }
-
-      isPartial = true;
-    }
-
     if (isa<PatternValue>(value)) {
       noCache = true;
     }
-
-    //DASSERT(!isa<PatternValue>(value));
 
     // We might need to do some coercion here...
     paramValues.push_back(value);
@@ -219,12 +222,25 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   TypeVector * typeArgVector = TypeVector::get(typeArgs);
 
+  if (!typeArgVector->isSingular()) {
+    if (singular) {
+      diag.fatal(loc) << "Non-singular parameters [" << typeArgVector << "]";
+    }
+
+    isPartial = true;
+  }
+
   //TypeVector * tv = TypeVector::get(paramValues);
 
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
   if (!noCache) {
-    for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
+    Defn * sp = findSpecialization(typeArgVector);
+    if (sp != NULL) {
+      return sp;
+    }
+
+    /*for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
       Defn * spec = *it;
       TemplateInstance * ti = spec->templateInstance();
       DASSERT_OBJ(ti != NULL, value_);
@@ -239,7 +255,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
         return ti->value();
       }
-    }
+    }*/
   }
 
   // Create the template instance
@@ -247,12 +263,6 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   TemplateInstance * tinst = new TemplateInstance(value_, typeArgVector);
   tinst->paramValues().append(paramValues.begin(), paramValues.end());
   tinst->instantiatedFrom() = loc;
-
-  // Substitute into the template args to create the arg list
-  /*for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
-    Type * argValue = env.subst(*it);
-    tinst->templateArgs().push_back(argValue);
-  }*/
 
   // Create the definition
   Defn * result = NULL;
@@ -279,7 +289,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
 
     switch (tdef->typeValue()->typeClass()) {
-      case Type::NativeArray: {
+      case Type::NArray: {
         SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
         ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
         uint64_t size = intVal->value()->getZExtValue();
@@ -306,7 +316,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   }
 
   if (!noCache) {
-    specializations.push_back(result);
+    specializations_[typeArgVector] = result;
   }
 
   // Create a symbol for each template parameter.
@@ -356,19 +366,18 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   return result;
 }
 
-Type * TemplateSignature::instantiateType(const SourceLocation & loc, const BindingEnv & env,
-    bool singular) {
+Type * TemplateSignature::instantiateType(const SourceLocation & loc, const BindingEnv & env) {
 
   if (value_->ast() != NULL) {
-    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env, singular));
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
     return tdef->typeValue();
   }
 
   // Create the definition
   TypeDefn * tdef = static_cast<TypeDefn *>(value_);
   Type * proto = tdef->typeValue();
-  if (proto->typeClass() != Type::Address && proto->typeClass() != Type::Pointer) {
-    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env, singular));
+  if (proto->typeClass() != Type::NAddress && proto->typeClass() != Type::NPointer) {
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
     return tdef->typeValue();
   }
 
@@ -386,9 +395,9 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
     }
 
     if (!value->isSingular()) {
-      if (singular) {
+      /*if (singular) {
         diag.fatal(loc) << "Non-singular parameter '" << var << "' = '" << value << "'";
-      }
+      }*/
     }
 
     // We might need to do some coercion here...
@@ -396,18 +405,18 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   }
 
   switch (tdef->typeValue()->typeClass()) {
-    case Type::Address: {
+    case Type::NAddress: {
       return AddressType::get(paramValues[0]);
       break;
     }
 
-    case Type::Pointer: {
+    case Type::NPointer: {
       return PointerType::get(paramValues[0]);
       break;
     }
 
 #if 0
-    case Type::NativeArray: {
+    case Type::NArray: {
       SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
       ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
       uint64_t size = intVal->value()->getZExtValue();

@@ -4,16 +4,17 @@
 
 #include "tart/CFG/Attribute.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/FunctionDefn.h"
 
 namespace tart {
 
 /// -------------------------------------------------------------------
 /// AttributeInfo
 
-bool AttributeInfo::canAttachTo(Defn * de) {
+bool AttributeInfo::canAttachTo(const Defn * de) const {
   switch (de->defnType()) {
     case Defn::Typedef: {
-      TypeDefn * type = static_cast<TypeDefn *>(de);
+      const TypeDefn * type = static_cast<const TypeDefn *>(de);
       switch (type->typeValue()->typeClass()) {
         case Type::Class:
           return (target_ & CLASS) != 0;
@@ -44,7 +45,7 @@ bool AttributeInfo::canAttachTo(Defn * de) {
       return (target_ & PROPERTY) != 0;
 
     case Defn::Function:
-      if (de->isCtor()) {
+      if (static_cast<const FunctionDefn *>(de)->isCtor()) {
         return (target_ & (CONSTRUCTOR|FUNCTION)) != 0;
       } else {
         return (target_ & FUNCTION) != 0;

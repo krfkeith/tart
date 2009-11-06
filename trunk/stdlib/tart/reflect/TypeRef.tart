@@ -8,5 +8,7 @@ import tart.annex.Nonreflective;
   }
 
   let type:Type;
+
+  // TODO: re-enable when we can handle structs larger than 8 bytes.
   //let modifiers:Modifiers;
 }

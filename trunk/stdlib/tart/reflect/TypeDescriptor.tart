@@ -13,7 +13,7 @@ public class TypeDescriptor {
     UNION,
     NATIVE_POINTER,
     NATIVE_ARRAY,
-    //NonType
+    //SingleValue
   }
 
   @Flags  

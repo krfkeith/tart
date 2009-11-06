@@ -1,5 +1,7 @@
+import tart.annex.Nonreflective;
+
 /** Abstract class used to represent a reference to some value. */
-abstract class Ref {
+@Nonreflective abstract class Ref {
   private static {
     /// Convert signed integers to their unsigned equivalents. Supresses conversion warnings.
 
@@ -285,4 +287,13 @@ abstract class Ref {
       }
     }
   }
+
+  /*static def valueOf[%T](ref:Object) -> T {
+    classify ref {
+      as v:ValueRef[T]   { return v.value; }
+      else {
+        throw TypecastException();
+      }
+    }
+  }*/
 }

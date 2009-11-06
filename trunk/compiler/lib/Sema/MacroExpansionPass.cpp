@@ -42,7 +42,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     paramScope.setScopeName("macro-params");
     size_t argCount = in->argCount();
     for (size_t i = 0; i < argCount; ++i) {
-      ParameterDefn * param = mtype->params()[i];
+      ParameterDefn * param = macro->params()[i];
       Expr * arg = in->arg(i);
       // TODO: Not sure a var is the right thing to use here - really want an alias.
       VariableDefn * binding = new VariableDefn(Defn::Let, NULL, param->name());

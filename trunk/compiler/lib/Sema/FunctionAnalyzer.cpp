@@ -49,7 +49,15 @@ static const FunctionDefn::PassSet PASS_SET_CODEGEN = FunctionDefn::PassSet::of(
   FunctionDefn::ModifierPass,
   FunctionDefn::ControlFlowPass,
   FunctionDefn::ReturnTypePass,
+  FunctionDefn::ReflectionPass,
   FunctionDefn::CompletionPass
+);
+
+static const FunctionDefn::PassSet PASS_SET_REFLECT = FunctionDefn::PassSet::of(
+  FunctionDefn::AttributePass,
+  FunctionDefn::ParameterTypePass,
+  FunctionDefn::ReturnTypePass,
+  FunctionDefn::ReflectionPass
 );
 
 FunctionAnalyzer::FunctionAnalyzer(FunctionDefn * func)
@@ -75,6 +83,9 @@ bool FunctionAnalyzer::analyze(AnalysisTask task) {
 
     case Task_PrepCodeGeneration:
       return runPasses(PASS_SET_CODEGEN);
+
+    case Task_PrepReflection:
+      return runPasses(PASS_SET_REFLECT);
 
     default:
       return true;
@@ -115,6 +126,10 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
 
   if (passesToRun.contains(FunctionDefn::PrepConversionPass) &&
       !analyzeRecursive(Task_PrepConversion, FunctionDefn::PrepConversionPass)) {
+    return false;
+  }
+
+  if (passesToRun.contains(FunctionDefn::ReflectionPass) && !createReflectionData()) {
     return false;
   }
 
@@ -177,7 +192,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
         if (!param->type().isDefined()) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
-        //} else if (param->type()->typeClass() == Type::NativeArray) {
+        //} else if (param->type()->typeClass() == Type::NArray) {
         //  diag.error(param) << "Invalid parameter type (native array)";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
           if (param->internalType().isSingular()) {
@@ -505,6 +520,129 @@ bool FunctionAnalyzer::resolveReturnType() {
   }
 
   return success;
+}
+
+bool FunctionAnalyzer::createReflectionData() {
+  if (target->passes().begin(FunctionDefn::ReflectionPass)) {
+    bool doReflect = true;
+    if (!target->isSingular() || target->defnType() == Defn::Macro) {
+      // Don't reflect uninstantiated templates
+      doReflect = false;
+    } else if (target->storageClass() == Storage_Local || target->storageClass() == Storage_Closure) {
+      // Don't reflect local methods
+      doReflect = false;
+      target->addTrait(Defn::Nonreflective);
+    } else {
+      // Don't reflect if any parent is non-reflective.
+      for (Defn * de = target; de != NULL; de = de->parentDefn()) {
+        if (de->hasTrait(Defn::Nonreflective)) {
+          target->addTrait(Defn::Nonreflective);
+          doReflect = false;
+          break;
+        }
+      }
+
+      if (doReflect) {
+        FunctionType * ftype = target->functionType();
+        if (ftype->selfParam() != NULL) {
+          const Type * selfType = ftype->selfParam()->type().type();
+          if (const CompositeType * cself = dyn_cast<CompositeType>(selfType)) {
+            // Don't reflect structs (for now) or protocols.
+            if (cself->typeClass() == Type::Struct || cself->typeClass() == Type::Protocol) {
+              target->addTrait(Defn::Nonreflective);
+              doReflect = false;
+            }
+          } else {
+            // Don't reflect functions of non-composite types.
+            target->addTrait(Defn::Nonreflective);
+            doReflect = false;
+          }
+        }
+      }
+    }
+
+    if (doReflect && false) {
+      //FunctionType * ftype = target->functionType();
+      //diag.debug(target) << Format_Type << "Generating reflection info for type: " << ftype;
+
+      //CallExpr * call = new CallExpr()
+      for (ParameterList::const_iterator it = target->params().begin();
+          it != target->params().end(); ++it) {
+        Type * paramType = dealias((*it)->type().type());
+        switch (paramType->typeClass()) {
+          // Types that need to be boxed.
+          case Type::Primitive:
+          case Type::Struct:
+          case Type::Enum:
+          case Type::BoundMethod:
+          case Type::Tuple:
+          case Type::Union: {
+            FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_)
+                .getUnboxFn((*it)->location(), paramType);
+            if (unboxFn->isSingular()) {
+              module->addSymbol(unboxFn);
+            }
+            break;
+          }
+
+          // Types that need to be down-cast
+          case Type::Class:
+          case Type::Interface:
+            break;
+
+          // Types that aren't handled via reflection
+          case Type::NAddress:
+          case Type::NPointer:
+            break;
+
+          // Types that can't be passed as a parameter
+          case Type::Protocol:
+          case Type::NArray:
+          default:
+            diag.error(target) << "Invalid parameter type: " << paramType;
+            DFAIL("Invalid parameter type");
+        }
+      }
+
+      if (target->returnType().isNonVoidType()) {
+        Type * returnType = target->returnType().type();
+        switch (returnType->typeClass()) {
+          // Types that need to be unboxed.
+          case Type::Primitive:
+          case Type::Struct:
+          case Type::Enum:
+          case Type::BoundMethod:
+          case Type::Tuple:
+          case Type::Union: {
+            FunctionDefn * coerceFn = coerceToObjectFn(returnType);
+            module->addSymbol(coerceFn);
+            break;
+          }
+
+          // Types that need to be upcast
+          case Type::Class:
+          case Type::Interface:
+            break;
+
+          // Types that aren't handled via reflection
+          case Type::NAddress:
+          case Type::NPointer:
+            break;
+
+          // Types that can't be passed as a parameter
+          case Type::Protocol:
+          case Type::NArray:
+          default:
+            diag.error(target) << "Invalid parameter type: " << returnType;
+            DFAIL("Invalid parameter type");
+        }
+      }
+    }
+
+    target->passes().finish(FunctionDefn::ReflectionPass);
+  }
+
+  return true;
 }
 
 bool FunctionAnalyzer::analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass) {

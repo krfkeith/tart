@@ -17,6 +17,7 @@
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 #include <llvm/DerivedTypes.h>
 
@@ -25,18 +26,12 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction)
-  : AnalyzerBase(mod, parent, currentFunction)
-  , tsig_(NULL)
-  , currentFunction_(currentFunction)
-{
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction) :
+  AnalyzerBase(mod, parent, currentFunction), tsig_(NULL), currentFunction_(currentFunction) {
 }
 
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject)
-  : AnalyzerBase(mod, parent, subject)
-  , tsig_(NULL)
-  , currentFunction_(NULL)
-{
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject) :
+  AnalyzerBase(mod, parent, subject), tsig_(NULL), currentFunction_(NULL) {
 }
 
 Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
@@ -66,8 +61,8 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
 Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
-    DASSERT(result->exprType() < Expr::TypeCount);
-    if (result->type() == NULL) {
+    DASSERT(result->exprType() < Expr::TypeCount)
+;    if (result->type() == NULL) {
       diag.fatal() << "Expression '" << result << "' has no type.";
       DFAIL("MissingType");
     }
@@ -79,42 +74,42 @@ Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
 Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
   switch (ast->nodeType()) {
     case ASTNode::Null:
-      return reduceNull(ast);
+    return reduceNull(ast);
 
     case ASTNode::LitInt:
-      return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *> (ast));
+    return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *> (ast));
 
     case ASTNode::LitFloat:
-      return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
+    return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
 
     case ASTNode::LitDouble:
-      return reduceDoubleLiteral(static_cast<const ASTDoubleLiteral *> (ast));
+    return reduceDoubleLiteral(static_cast<const ASTDoubleLiteral *> (ast));
 
     case ASTNode::LitString:
-      return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
+    return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
 
     case ASTNode::LitChar:
-      return reduceCharLiteral(static_cast<const ASTCharLiteral *> (ast));
+    return reduceCharLiteral(static_cast<const ASTCharLiteral *> (ast));
 
     case ASTNode::LitBool:
-      return reduceBoolLiteral(static_cast<const ASTBoolLiteral *> (ast));
+    return reduceBoolLiteral(static_cast<const ASTBoolLiteral *> (ast));
 
     case ASTNode::BuiltIn:
-      return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
+    return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
 
     case ASTNode::Id:
     case ASTNode::Member:
     case ASTNode::GetElement:
     case ASTNode::Specialize:
-      // Specialize works here because lookupName() does explicit specialization
-      // for us.
-      return reduceLoadValue(ast);
+    // Specialize works here because lookupName() does explicit specialization
+    // for us.
+    return reduceLoadValue(ast);
 
     case ASTNode::Call:
-      return reduceCall(static_cast<const ASTCall *> (ast), expected);
+    return reduceCall(static_cast<const ASTCall *> (ast), expected);
 
     case ASTNode::Assign:
-      return reduceAssign(static_cast<const ASTOper *> (ast));
+    return reduceAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::AssignAdd:
     case ASTNode::AssignSub:
@@ -126,41 +121,41 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
     case ASTNode::AssignBitXor:
     case ASTNode::AssignRSh:
     case ASTNode::AssignLSh:
-      return reduceAugmentedAssign(static_cast<const ASTOper *> (ast));
+    return reduceAugmentedAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::PostAssign:
-      return reducePostAssign(static_cast<const ASTOper *> (ast));
+    return reducePostAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::Is:
     case ASTNode::IsNot:
-      return reduceRefEqualityTest(static_cast<const ASTOper *> (ast));
+    return reduceRefEqualityTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::In:
     case ASTNode::NotIn:
-      return reduceContainsTest(static_cast<const ASTOper *> (ast));
+    return reduceContainsTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::IsInstanceOf:
-      return reduceTypeTest(static_cast<const ASTOper *> (ast));
+    return reduceTypeTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalAnd:
     case ASTNode::LogicalOr:
-      return reduceLogicalOper(static_cast<const ASTOper *> (ast));
+    return reduceLogicalOper(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalNot:
-      return reduceLogicalNot(static_cast<const ASTOper *> (ast));
+    return reduceLogicalNot(static_cast<const ASTOper *> (ast));
 
     case ASTNode::ArrayLiteral:
-      return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
+    return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
 
     case ASTNode::AnonFn:
-      return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
+    return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
     case ASTNode::PatternVar:
-      return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
+    return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
 
     default:
-      diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
-      DFAIL("Unimplemented");
+    diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
+    DFAIL("Unimplemented");
   }
 }
 
@@ -168,7 +163,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   switch (ast->nodeType()) {
     case ASTNode::Id:
     case ASTNode::Member:
-      return callName(ast->location(), ast, ASTNodeList(), NULL);
+    return callName(ast->location(), ast, ASTNodeList(), NULL);
 
     case ASTNode::Call: {
       const ASTCall * call = static_cast<const ASTCall *> (ast);
@@ -183,7 +178,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
     }
 
     default:
-      return reduceExpr(ast, NULL);
+    return reduceExpr(ast, NULL);
   }
 }
 
@@ -780,13 +775,13 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Do automatic pointer dereferencing
   /*if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
-    if (!AnalyzerBase::analyzeType(npt, Task_PrepTypeComparison)) {
-      return &Expr::ErrorVal;
-    }
+   if (!AnalyzerBase::analyzeType(npt, Task_PrepTypeComparison)) {
+   return &Expr::ErrorVal;
+   }
 
-    arrayType = npt->typeParam(0);
-    arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), arrayType, arrayExpr);
-  }*/
+   arrayType = npt->typeParam(0);
+   arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), arrayType, arrayExpr);
+   }*/
 
   // Handle native arrays.
   if (NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
@@ -973,13 +968,13 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
 
     diag.error(loc) << "No matching method for call to " << callsig.str() << ", candidates are:";
     /*for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
-      Expr * resultMethod = *it;
-      if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
-        diag.info(lval->value()) << Format_Type << lval->value();
-      } else {
-        diag.info(*it) << *it;
-      }
-    }*/
+     Expr * resultMethod = *it;
+     if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
+     diag.info(lval->value()) << Format_Type << lval->value();
+     } else {
+     diag.info(*it) << *it;
+     }
+     }*/
 
     return &Expr::ErrorVal;
   }
@@ -988,7 +983,6 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   return call;
 
 #else
-
 
   // TODO: Type check args against function signature.
 
@@ -1100,8 +1094,8 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     case Storage_Global:
     case Storage_Static:
     case Storage_Local:
-      lvalue->setBase(NULL);
-      break;
+    lvalue->setBase(NULL);
+    break;
 
     case Storage_Instance: {
       Expr * base = lvalueBase(lvalue);
@@ -1120,7 +1114,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     case Storage_Param:
     case Storage_Closure:
     default:
-      DFAIL("Invalid storage class");
+    DFAIL("Invalid storage class");
   }
 
   // If it's not a store, and it's a property access, then dereference into getter calls.
@@ -1165,7 +1159,8 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, Type * toType) {
   DASSERT(rank == Incompatible || castExpr != NULL);
 
   if (rank == Incompatible) {
-    // Try a coercive cast.
+    // Try a coercive cast. Note that we don't do this in 'convert' because it
+    // can't handle building the actual call expression.
     castExpr = tryCoerciveCast(in, toType);
     if (castExpr != NULL) {
       return inferTypes(subject_, castExpr, toType);
@@ -1178,6 +1173,126 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, Type * toType) {
   }
 
   return castExpr;
+}
+
+Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
+  const SpCandidateList & candidates = spe->candidates();
+  ConversionRank bestRank = Incompatible;
+  for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+    SpCandidate * sp = *it;
+    bestRank = std::max(bestRank, sp->updateConversionRank());
+  }
+
+  if (bestRank == Incompatible) {
+    SpCandidate * front = *candidates.begin();
+    diag.error(spe) << "No candidate found for '" << front->def()->name() <<
+        "' which matches template arguments [" << spe->args() << "]:";
+    diag.info(spe) << "Candidates are:";
+    for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+      SpCandidate * sp = *it;
+      diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
+    }
+    return NULL;
+  }
+
+  SpCandidateList bestCandidates;
+  for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+    SpCandidate * sp = *it;
+    if (sp->conversionRank() == bestRank) {
+      bool addNew = true;
+      for (SpCandidateList::iterator bc = bestCandidates.begin(); bc != bestCandidates.end();) {
+        bool newIsBetter = sp->isMoreSpecific(*bc);
+        bool oldIsBetter = (*bc)->isMoreSpecific(sp);
+
+        if (newIsBetter) {
+          if (!oldIsBetter) {
+            /*if (ShowInference) {
+              diag.debug() << Format_Type << "Culling [" << (*ms)->method() <<
+                  "] because [" << call->method() << "] is more specific";
+            }*/
+            bc = bestCandidates.erase(bc);
+            continue;
+          }
+        } else if (oldIsBetter) {
+          /*if (ShowInference) {
+            diag.debug() << Format_Type << "Culling [" << call->method() << "] because [" <<
+                (*ms)->method() << "] is more specific";
+          }*/
+
+          addNew = false;
+        }
+
+        ++bc;
+      }
+
+      if (addNew) {
+        bestCandidates.push_back(sp);
+      }
+    }
+  }
+
+  if (bestCandidates.size() > 1) {
+    SpCandidate * front = *candidates.begin();
+    diag.error(spe) << "Ambiguous matches for '" << front->def()->name() <<
+        "' which matches template arguments [" << spe->args() << "]:";
+    diag.info(spe) << "Candidates are:";
+    for (SpCandidateList::const_iterator it = bestCandidates.begin(); it != bestCandidates.end();
+        ++it) {
+      SpCandidate * sp = *it;
+      diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
+    }
+    DFAIL("Implement better culling of SpCandidates");
+  }
+
+  SpCandidate * spBest = *bestCandidates.begin();
+  if (spBest->def()->hasUnboundTypeParams()) {
+    return spBest->def()->templateSignature()->instantiate(spe->location(), spBest->env());
+  }
+
+  return spBest->def();
+}
+
+Expr * ExprAnalyzer::doUnboxCast(Expr * in, Type * toType) {
+  FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType);
+  if (valueOfMethod == NULL) {
+    return NULL;
+  }
+
+  FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), valueOfMethod, NULL);
+  call->appendArg(doImplicitCast(in, Builtins::typeObject));
+  call->setType(valueOfMethod->returnType());
+  return call;
+}
+
+FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, Type * toType) {
+  ExprList methods;
+  TypeRefPair conversionKey(Builtins::typeObject.get(), toType);
+  ConverterMap::iterator it = module->converters().find(conversionKey);
+  if (it != module->converters().end()) {
+    return it->second;
+  }
+
+  analyzeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
+  findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc);
+  DASSERT(!methods.empty());
+  Expr * valueOf = specialize(loc, methods, TypeVector::get(toType));
+  FunctionDefn * valueOfMethod;
+  if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(valueOf)) {
+    valueOfMethod = cast_or_null<FunctionDefn>(findBestSpecialization(spe));
+    if (valueOfMethod == NULL) {
+      return NULL;
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(valueOf)) {
+    valueOfMethod = cast<FunctionDefn>(lval->value());
+  } else {
+    diag.error(loc) << "Unknown expression " << valueOf;
+    DFAIL("IllegalState");
+  }
+
+  analyzeDefn(valueOfMethod, Task_PrepTypeComparison);
+  module->converters()[conversionKey] = valueOfMethod;
+  diag.debug(loc) << Format_Type << "Defining unbox function: " << valueOfMethod;
+  return valueOfMethod;
 }
 
 }

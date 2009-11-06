@@ -31,7 +31,7 @@ FunctionDefn * CompositeType::defaultConstructor() {
   for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
     FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it);
     if (ctor != NULL) {
-      ParameterList & params = ctor->functionType()->params();
+      ParameterList & params = ctor->params();
       int requiredArgCount = 0;
       for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
         if ((*p)->initValue() == NULL) {
@@ -55,7 +55,7 @@ FunctionDefn * CompositeType::defaultConstructor() {
   for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
     FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it);
     if (ctor != NULL) {
-      ParameterList & params = ctor->functionType()->params();
+      ParameterList & params = ctor->params();
       int requiredArgCount = 0;
       for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
         if ((*p)->initValue() == NULL) {
@@ -217,7 +217,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       }
 
       return IdenticalTypes;
-    } else if (fromClass->isSubclassOf(this)) {
+    } else if (typeClass() != Type::Struct && fromClass->isSubclassOf(this)) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = new CastExpr(Expr::UpCast,
             cn.fromValue->location(), const_cast<CompositeType *>(this),
@@ -236,6 +236,17 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
 
       return ExactConversion;
     }*/
+
+
+    // Check dynamic casts.
+    if ((cn.options & Conversion::Dynamic) && isReferenceType() && fromClass->isReferenceType()) {
+      if (cn.fromValue && cn.resultValue) {
+        *cn.resultValue = new CastExpr(Expr::DynamicCast, cn.fromValue->location(),
+            const_cast<CompositeType *>(this), cn.fromValue);
+      }
+
+      return NonPreferred;
+    }
   }
 
   return Incompatible;

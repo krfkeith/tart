@@ -67,7 +67,7 @@ bool FunctionDefn::hasBody() const {
 
 Expr * FunctionDefn::eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
   if (intrinsic_ != NULL) {
-    return intrinsic_->eval(loc, self, args, NULL);
+    return intrinsic_->eval(loc, this, self, args, NULL);
   }
 
   return NULL;
@@ -101,11 +101,10 @@ const std::string & FunctionDefn::linkageName() const {
     Defn::linkageName();
 
     if (!isExtern()) {
-      if (!type_->params().empty()) {
+      if (!params().empty()) {
         lnkName.append("(");
-        for (ParameterList::iterator it = type_->params().begin(); it != type_->params().end();
-            ++it) {
-          if (it != type_->params().begin()) {
+        for (ParameterList::const_iterator it = params().begin(); it != params().end(); ++it) {
+          if (it != params().begin()) {
             lnkName.append(",");
           }
           typeLinkageName(lnkName, (*it)->type());
@@ -149,7 +148,7 @@ void FunctionDefn::format(FormatStream & out) const {
 
     if (type_ != NULL) {
       out << "(";
-      formatParameterList(out, type_->params());
+      formatParameterList(out, params());
       out << ")";
       if (type_->returnType().isNonVoidType()) {
         out << " -> " << type_->returnType();

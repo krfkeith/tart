@@ -82,7 +82,7 @@ public:
     ADDRESS,
     POINTER,
     NATIVE_ARRAY,
-    //NonType
+    //SingleValue
   };
 
   // Keep this enum in sync with SimpleType.tart
@@ -152,6 +152,9 @@ public:
   llvm::Constant * emitSimpleType(const Type * reflectType, const Type * type);
   llvm::Constant * emitTypeBase(const Type * reflectType, TypeKind kind);
   llvm::Constant * emitTypeVector(TypeVector * types);
+
+  /** Return the type of the 'invoke' function for a function type. */
+  llvm::FunctionType * getInvokeFnType();
 
 private:
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);

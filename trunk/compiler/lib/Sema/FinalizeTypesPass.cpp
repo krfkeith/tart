@@ -182,6 +182,10 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
     // TODO: Dereference any 'let' statements to constants if possible.
     Expr * expr = method->eval(in->location(), selfArg, callingArgs);
     if (expr != NULL) {
+      // Special case for dynamic cast, which is returned by typecast[T] intrinsic.
+      if (expr->exprType() == Expr::UnboxCast) {
+        expr = handleUnboxCast(static_cast<CastExpr *>(expr));
+      }
       DASSERT_OBJ(expr->isSingular(), expr);
       DASSERT(expr->isSingular());
       return expr;
@@ -426,6 +430,10 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
     return arg;
   }
 
+  if (in->exprType() == Expr::UnboxCast) {
+    return handleUnboxCast(in);
+  }
+
   // Attempt to cast
   arg = in->type()->explicitCast(in->location(), arg);
   return arg ? arg : &Expr::ErrorVal;
@@ -527,8 +535,8 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
-  for (TypeRefList::iterator it = from->members().begin(); it != from->members().end(); ++it) {
-    Type * memberType = it->dealias();
+  for (TypeVector::iterator it = from->members().begin(); it != from->members().end(); ++it) {
+    Type * memberType = const_cast<Type *>(it->dealias());
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = to->canConvert(memberType);
     if (rank != Incompatible) {
@@ -633,12 +641,12 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
     diag.fatal(in) << "Can't compare non-reference type '" << t1 <<
     "' with reference type '" << t2 << "'";
     return in;
-  } else if (t1->typeClass() == Type::Pointer
-      && t2->typeClass() == Type::Pointer
+  } else if (t1->typeClass() == Type::NPointer
+      && t2->typeClass() == Type::NPointer
       && t1 == t2) {
     return in;
-  } else if (t1->typeClass() == Type::Address
-      && t2->typeClass() == Type::Address
+  } else if (t1->typeClass() == Type::NAddress
+      && t2->typeClass() == Type::NAddress
       && t1 == t2) {
     return in;
   } else {
@@ -651,6 +659,15 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
 Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
       .doImplicitCast(in, toType);
+}
+
+Expr * FinalizeTypesPass::handleUnboxCast(CastExpr * in) {
+  if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
+    return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
+        .doUnboxCast(in->arg(), in->type());
+  }
+
+  return in;
 }
 
 } // namespace tart

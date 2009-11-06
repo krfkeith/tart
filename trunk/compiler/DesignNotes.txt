@@ -20,17 +20,25 @@ Implementation TODOS:
   * Convert templates, unions to use TypeVector.
   * And native types.
   * And then make native types not require TypeDefns. (Done for Address and Pointer)
+  * Separate the Type from the type members, so that Type can be a true constant.
+  * Use TypeTransform to process types.
   * And then make a new kind of object that represents an exported module symbol, that can
       point to either a constant or a function.
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
+  * Find a better name for PatternVar.
+  * Try to come up with a more comprehensible way to do relabeling.
+  * Some means to cache relabeled specializations?
+  * Fill out TypeOrderings.h
+  * Finish up override keyword, with failure tests.
+  * See if we can make Expr::type() a constant, and a TypeRef. (But template first)
 * TypeRef
   * Expressions
   * Template arguments
   * Conversions
-  * Move TypeAlias to its own header, and then use TypeRef.
 * typecast[type](in);
+  * More tests
 * Boxed values:
   * Closure Cells
 * Reflection
@@ -418,102 +426,9 @@ class WeakReference[%T:Object] {
   }
 }  
 
+// ------------------------------------------------------------------------
 
-// I'm really not understanding at all how to do unboxing.
-// Part of that is because I've never really decided what the syntax for *casting* should be.
+Unboxing as generic funtions:
 
-int x = a.to(int);
-
-int x = typecast[int](a);
-int x = int(a);
-
-Hmmmm....'int' taking an object?
-No, this is not right - typecast is not the same as construction for reference types.
-
-int x = typecast(a);
-int x = recast(a);
-
-classify - consider, match, 
-
-def typecast[int](a:Boxed[int]) {
-}
-
-def typecast[int](a:Boxed) {
-}
-
-x = x as int;
-x = x to int;
-
-def typecast[int](match a:Object) { return a.value; }
-def typecast[int](a:Boxed[int]) { return a.value; }
-def typecast[int](a:Boxed[short]) { return int(a.value); }
-def typecast[int](a:Boxed[byte]) { return int(a.value); }
-//def typecast[int](a:Boxed[uint]) { return int(a.value); }
-def typecast[int](a:Boxed[ushort]) { return int(a.value); }
-def typecast[int](a:Boxed[ubyte]) { return int(a.value); }
-
-def valueOf[int](value:Object) {
-  classify value {
-    as v:Boxed[bool] { return int(cond(v.value, 1, 0)); }
-    as v:Boxed[char] { return int(v.value); }
-    as v:Boxed[byte] { return int(v.value); }
-    as v:Boxed[short] { return int(v.value); }
-    as v:Boxed[int] { return int(v.value); }
-    as v:Boxed[long] {
-      if v.value <= int.maxVal and v.value >= int.minVal) {
-        return int(v.value);
-      }
-  
-      //throw TypecastException("Cannot convert to int");
-    }
-    default {
-      throw TypecastException("Cannot convert to int");
-    }
-  }
-}
-
-interface BoxedValue {
-  def boolValue() -> bool;
-  def charValue() -> char;
-  def byteValue() -> byte;
-  def shortValue() -> short;
-  def intValue() -> int;
-  def longValue() -> long;
-  def ubyteValue() -> ubyte;
-  def ushortValue() -> ushort;
-  def uintValue() -> uint;
-  def ulongValue() -> ulong;
-  def floatValue() -> float;
-  def doubleValue() -> double;
-}
-
-namespace ValueType {
-  def of[%T:Object](value:Object) -> T {}
-  def of[%T](value:Object) -> T {}
-
-  def of[bool](value:Object) -> bool {
-  }
-
-  def of[char](value:Object) -> char;
-  def of[byte](value:Object) -> byte;
-  def of[short](value:Object) -> short;
-  def of[int](value:Object) -> int;
-  def of[long](value:Object) -> long;
-  def of[ubyte](value:Object) -> ubyte;
-  def of[ushort](value:Object) -> ushort;
-  def of[uint](value:Object) -> uint;
-  def of[ulong](value:Object) -> ulong;
-  def of[float](value:Object) -> float;
-  def of[double](value:Object) -> double;
-}
-
-def toInt(value:Object) -> int {
-}
-
-I would really like for this conversion 'scheme' to somehow be distributable, meaning that
-widely-separated classes could participate. In other words, two independent classes could
-both opt-in to being convertable to some third type.
-
-However: The real issue is that I have not addressed the issue of how truly-independent code
-modules can interact. Right now, I rely heavily on the "whole world" assumption of the linker,
-and I don't have any concrete plans for dealing with loadable modules or shared libraries.
+def valueOf[int](dispatched obj:Object) -> int;
+override valueOf[int](v:ValueRef[int]) -> int { return v.value; }

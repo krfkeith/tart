@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+ TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/Expr.h"
@@ -8,9 +8,11 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
+#include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
@@ -30,7 +32,7 @@ namespace {
 const Expr * derefMacroParam(const Expr * in) {
   if (const LValueExpr * lval = dyn_cast<LValueExpr>(in)) {
     if (lval->value()->defnType() == Defn::Let) {
-      const VariableDefn * defn = static_cast<const VariableDefn *>(lval->value());
+      const VariableDefn * defn = static_cast<const VariableDefn *> (lval->value());
       if (defn->initValue() != NULL) {
         return defn->initValue();
       }
@@ -64,6 +66,21 @@ Intrinsic * Intrinsic::get(const char * name) {
 
   diag.fatal() << "Unknown intrinsic function '" << name << "'";
   return NULL;
+}
+
+// -------------------------------------------------------------------
+// TypecastIntrinsic
+TypecastIntrinsic TypecastIntrinsic::instance;
+
+Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
+  DASSERT(args.size() == 1)
+;  DASSERT(method->isTemplateInstance());
+  DASSERT(method->templateInstance()->paramValues().size() == 1);
+  Expr * fromExpr = args[0];
+  Type * fromType = dealias(fromExpr->type());
+  TypeRef toType = method->templateInstance()->paramValues()[0];
+  return toType.explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
 }
 
 // -------------------------------------------------------------------
@@ -208,26 +225,26 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 // -------------------------------------------------------------------
 // PointerComparisonIntrinsic
 template<llvm::CmpInst::Predicate pred>
-Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   return new CompareExpr(loc, pred, args[0], args[1]);
 }
 
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_EQ>
-    PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEQ");
+PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEQ");
 
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>
-    PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
+PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
 
 // -------------------------------------------------------------------
 // LogicalAndIntrinsic
 LogicalAndIntrinsic LogicalAndIntrinsic::instance;
 
-Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   Expr * first = args[0];
   Expr * second = args[1];
@@ -260,8 +277,8 @@ Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // LogicalOrIntrinsic
 LogicalOrIntrinsic LogicalOrIntrinsic::instance;
 
-Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   Expr * first = args[0];
   Expr * second = args[1];
@@ -359,22 +376,22 @@ inline Value * MathIntrinsic1<id>::generate(CodeGenerator & cg, const FnCallExpr
 
 template<>
 MathIntrinsic1<llvm::Intrinsic::sin>
-    MathIntrinsic1<llvm::Intrinsic::sin>::instance("tart.core.Math.sin");
+MathIntrinsic1<llvm::Intrinsic::sin>::instance("tart.core.Math.sin");
 
 template<>
 MathIntrinsic1<llvm::Intrinsic::cos>
-    MathIntrinsic1<llvm::Intrinsic::cos>::instance("tart.core.Math.cos");
+MathIntrinsic1<llvm::Intrinsic::cos>::instance("tart.core.Math.cos");
 
 template<>
 MathIntrinsic1<llvm::Intrinsic::sqrt>
-    MathIntrinsic1<llvm::Intrinsic::sqrt>::instance("tart.core.Math.sqrt");
+MathIntrinsic1<llvm::Intrinsic::sqrt>::instance("tart.core.Math.sqrt");
 
 // -------------------------------------------------------------------
 // FlagsApplyIntrinsic
 FlagsApplyIntrinsic FlagsApplyIntrinsic::instance;
 
-Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   EnumType * enumType = cast<EnumType>(ctype->value());
@@ -386,8 +403,8 @@ Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // ExternApplyIntrinsic
 ExternApplyIntrinsic ExternApplyIntrinsic::instance;
 
-Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   const ConstantString * extName = dyn_cast<ConstantString>(selfObj->members()[1]);
@@ -403,8 +420,8 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // LinkageNameApplyIntrinsic
 LinkageNameApplyIntrinsic LinkageNameApplyIntrinsic::instance;
 
-Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   const ConstantString * linkName = cast<ConstantString>(selfObj->members()[1]);
@@ -417,8 +434,8 @@ Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // EntryPointApplyIntrinsic
 EntryPointApplyIntrinsic EntryPointApplyIntrinsic::instance;
 
-Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
@@ -426,7 +443,7 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
   Module * module = fn->module();
   if (module->entryPoint() != NULL) {
     diag.error(fn) << "@EntryPoint attribute conflicts with earlier entry point: " <<
-        module->entryPoint();
+    module->entryPoint();
   } else {
     module->setEntryPoint(fn);
   }
@@ -438,8 +455,8 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // EssentialApplyIntrinsic
 EssentialApplyIntrinsic EssentialApplyIntrinsic::instance;
 
-Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   Builtins::registerEssentialType(ctype->value());
@@ -450,8 +467,8 @@ Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // GenerateStackTraceApplyIntrinsic
 GenerateStackTraceApplyIntrinsic GenerateStackTraceApplyIntrinsic::instance;
 
-Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
   if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
@@ -471,8 +488,8 @@ Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Expr *
 // UnsafeApplyIntrinsic
 UnsafeApplyIntrinsic UnsafeApplyIntrinsic::instance;
 
-Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
     if (TypeDefn * tdef = ctype->value()->typeDefn()) {
@@ -491,8 +508,8 @@ Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
 // NonreflectiveApplyIntrinsic
 NonreflectiveApplyIntrinsic NonreflectiveApplyIntrinsic::instance;
 
-Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   if (TypeDefn * tdef = ctype->value()->typeDefn()) {
