@@ -9,6 +9,10 @@
 #include "tart/CFG/Defn.h"
 #endif
 
+#ifndef TART_CFG_FUNCTIONTYPE_H
+#include "tart/CFG/FunctionType.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -114,6 +118,7 @@ public:
     ReturnTypePass,
     PrepConversionPass,
     CompletionPass,
+    ReflectionPass,
     PassCount,
   };
 
@@ -149,7 +154,11 @@ public:
   const FunctionType * functionType() const { return type_; }
   void setFunctionType(FunctionType * ftype) { type_ = ftype; }
 
-  /** Return type type. */
+  /** Function parameter definitions. */
+  const ParameterList & params() const { return type_->params(); }
+  ParameterList & params() { return type_->params(); }
+
+  /** Return type. */
   const TypeRef & returnType() const;
   TypeRef & returnType();
 
@@ -177,6 +186,11 @@ public:
   Intrinsic * intrinsic() const { return intrinsic_; }
   void setIntrinsic(Intrinsic * in) { intrinsic_ = in; }
   bool isIntrinsic() const { return intrinsic_ != NULL; }
+
+  /** Various function aspects. */
+  bool isCtor() const { return hasTrait(Ctor); }
+  bool isUndefined() const { return hasTrait(Undefined); }
+  bool isOverride() const { return hasTrait(Override); }
 
   /** True if this function has a body. */
   bool hasBody() const;

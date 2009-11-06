@@ -24,12 +24,7 @@
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
 
-#include "llvm/Support/CommandLine.h"
-
 namespace tart {
-
-llvm::cl::opt<bool>
-NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
 
 extern BuiltinMemberRef<VariableDefn> module_types;
 extern BuiltinMemberRef<VariableDefn> module_methods;
@@ -68,7 +63,7 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   // If reflection is required, import those types.
-  if (!NoReflect) {
+  if (module->isReflectionEnabled()) {
     Builtins::loadReflectionClasses();
     analyzeType(Builtins::typeType, Task_PrepMemberLookup);
     analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
@@ -92,6 +87,10 @@ bool DefnAnalyzer::analyzeModule() {
   // Analyze all external references.
   while (Defn * de = module->nextDefToAnalyze()) {
     if (analyzeDefn(de, Task_PrepCodeGeneration)) {
+      if (module->isReflectionEnabled() && module->exportDefs().count(de) > 0) {
+        analyzeDefn(de, Task_PrepReflection);
+      }
+
       FindExternalRefsPass::run(module, de);
     } else {
       success = false;
@@ -162,7 +161,76 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     }
 
     applyAttributes(in);
+
+    // Also propagate attributes from the parent defn.
+    Defn * parent = in->parentDefn();
+    if (parent != NULL) {
+      for (ExprList::const_iterator it = parent->attrs().begin(); it != parent->attrs().end(); ++it) {
+        propagateMemberAttributes(parent, in);
+      }
+    }
+
     in->finishPass(Pass_ResolveAttributes);
+  }
+
+  return true;
+}
+
+bool DefnAnalyzer::propagateSubtypeAttributes(Defn * baseDefn, Defn * target) {
+  const ExprList & baseAttributes = baseDefn->attrs();
+  for (ExprList::const_iterator it = baseAttributes.begin(); it != baseAttributes.end(); ++it) {
+    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type())) {
+      DASSERT(attrType->isAttribute());
+      if (attrType->attributeInfo().propagation() & AttributeInfo::SUBTYPES) {
+        if (!propagateAttribute(target, *it)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+bool DefnAnalyzer::propagateMemberAttributes(Defn * scopeDefn, Defn * target) {
+  const ExprList & scopeAttributes = scopeDefn->attrs();
+  for (ExprList::const_iterator it = scopeAttributes.begin(); it != scopeAttributes.end(); ++it) {
+    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type())) {
+      DASSERT(attrType->isAttribute());
+      if (attrType->attributeInfo().propagation() & AttributeInfo::MEMBERS) {
+        if (!propagateAttribute(target, *it)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
+  const CompositeType * attrType = cast<CompositeType>(attr->type());
+  DASSERT(attrType->isAttribute());
+  for (ExprList::const_iterator it = in->attrs().begin(); it != in->attrs().end(); ++it) {
+    Expr * existingAttr = *it;
+    const CompositeType * existingAttrType = cast<CompositeType>(existingAttr->type());
+    if (existingAttrType->isEqual(attrType)) {
+      return true;
+    }
+  }
+
+  if (attrType->attributeInfo().canAttachTo(in)) {
+    in->attrs().push_back(attr);
+    if (attr->exprType() == Expr::ConstObjRef) {
+      ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attr);
+      FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
+          attrType->lookupSingleMember("apply", true));
+      if (applyMethod != NULL) {
+        applyAttribute(in, attrObj, applyMethod);
+      } else {
+        diag.info(in) << "Unhandled attribute " << attr;
+      }
+    }
   }
 
   return true;
@@ -175,6 +243,8 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     if (isErrorResult(attrExpr)) {
       continue;
     }
+
+    *it = attrExpr;
 
     // Handle @Intrinsic as a special case.
     Type * attrType = attrExpr->type();
@@ -195,8 +265,17 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
         continue;
       }
 
+      // Evaluate the attribute. If it returns NULL, it simply means that it could not
+      // be evaluated at compile-time.
       Expr * attrVal = EvalPass::eval(attrExpr, true);
-      if (attrVal != NULL && attrVal->exprType() == Expr::ConstObjRef) {
+      if (isErrorResult(attrVal)) {
+        continue;
+      }
+
+      // Replace the attribute with its compiled representation.
+      *it = attrVal;
+
+      if (attrVal->exprType() == Expr::ConstObjRef) {
         ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrVal);
         DASSERT_OBJ(attrVal->type()->isEqual(attrClass), attrVal->type());
 
@@ -252,6 +331,7 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   targetType->setClassFlag(CompositeType::Attribute, true);
   targetType->attributeInfo().setTarget(target);
   targetType->attributeInfo().setRetained(retention);
+  targetType->attributeInfo().setPropagation(propagation);
   if (!retention) {
     // If a type is not retained, then don't generate reflection information for it.
     targetTypeDefn->addTrait(Defn::Nonreflective);

@@ -54,6 +54,7 @@ enum TypeId {
   TypeId_Double,
   TypeId_LongDouble,
   TypeId_Null,
+  TypeId_Any,
 
   // Aggregate types - used only for static type declarations.
   TypeId_String,
@@ -101,7 +102,8 @@ FormatStream & operator<<(FormatStream & out, ConversionRank tc);
 /// Input parameters for a type conversion operation.
 struct Conversion {
   enum Options {
-    Coerce = (1<<0),        // Try coercive casts
+    Coerce = (1<<0),        // Allow coercive casts
+    Dynamic = (1<<1),       // Allow dynamic casts
   };
 
   const Type * fromType;
@@ -116,7 +118,7 @@ struct Conversion {
   Conversion(Expr * from);
 
   /** Convert expression. */
-  Conversion(Expr * from, Expr ** to);
+  Conversion(Expr * from, Expr ** to, int options = 0);
 
   /** Returns the 'from' type, with aliases and type parameters resolved. */
   const Type * getFromType() const;
@@ -219,11 +221,11 @@ public:
   /** Add an implicit cast. If no cast is needed, then simply return 'from'.
       As a side effect, emit appropriate warning messages if the cast wasn't
       possible or had problems. */
-  Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
+  Expr * implicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
 
   /** Add an explicit cast. If no cast is needed, then simply return 'from'.
       This suppresses warnings unless the cast is impossible. */
-  Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
+  Expr * explicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
 
   /** Get the default initialization value for this type, or NULL if
       this type cannot be null-initialized. */
@@ -244,6 +246,24 @@ public:
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */
   static bool equivalent(const Type * type1, const Type * type2);
+
+  // Structure used when using type as a key.
+  struct KeyInfo {
+    static inline Type * getEmptyKey() { return reinterpret_cast<Type *>(0); }
+    static inline Type * getTombstoneKey() { return reinterpret_cast<Type *>(-1); }
+
+    static unsigned getHashValue(const Type * val) {
+      // TODO: Replace with hash of canonical type.
+      return (uintptr_t(val) >> 4) ^ (uintptr_t(val) >> 9);
+    }
+
+    static bool isEqual(const Type * lhs, const Type * rhs) {
+      // TODO: Replace with canonical comparison
+      return lhs == rhs;
+    }
+
+    static bool isPod() { return true; }
+  };
 
 protected:
   const TypeClass cls;
@@ -340,7 +360,7 @@ public:
 
   static inline bool classof(const SingleValueType *) { return true; }
   static inline bool classof(const Type * ty) {
-    return ty->typeClass() == NonType;
+    return ty->typeClass() == SingleValue;
   }
 
 private:
@@ -348,7 +368,7 @@ private:
 
   /** Construct a new typealias. */
   SingleValueType(ConstantExpr * value)
-    : Type(NonType)
+    : Type(SingleValue)
     , value_(value)
   {}
 };
@@ -364,6 +384,7 @@ public:
 
   TypeRef() : type_(NULL), modifiers_(0) {}
   TypeRef(Type * type) : type_(type), modifiers_(0) {}
+  TypeRef(const Type * type) : type_(const_cast<Type *>(type)), modifiers_(0) {}
   TypeRef(Type * type, uint32_t modifiers) : type_(type), modifiers_(modifiers) {}
   TypeRef(const TypeRef & ref) : type_(ref.type_), modifiers_(ref.modifiers_) {}
 
@@ -386,6 +407,10 @@ public:
     return type_ == other.type_ && modifiers_ == other.modifiers_;
   }
 
+  bool operator!=(const TypeRef & other) const {
+    return !(*this == other);
+  }
+
   Type::TypeClass typeClass() const { return type_->typeClass(); }
 
   bool isDefined() const { return type_ != NULL; }
@@ -395,13 +420,14 @@ public:
   bool isReferenceType() const { return isDefined() && type_->isReferenceType(); }
   bool isUnsizedIntType() const { return isDefined() && type_->isUnsizedIntType(); }
   bool isSingular() const { return isDefined() && type_->isSingular(); }
+  bool isSubtype(const TypeRef & other) const;
 
   bool isEqual(const TypeRef & other) const {
     return type_->isEqual(other.type_) && modifiers_ == other.modifiers_;
   }
 
-  Expr * implicitCast(const SourceLocation & loc, Expr * from) const;
-  Expr * explicitCast(const SourceLocation & loc, Expr * from) const;
+  Expr * implicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
+  Expr * explicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
   ConversionRank convert(const Conversion & conversion) const;
   ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
   ConversionRank canConvert(const Type * fromType, int options = 0) const;
@@ -422,11 +448,11 @@ public:
     static inline TypeRef getTombstoneKey() { return TypeRef(NULL, uint32_t(-2)); }
 
     static unsigned getHashValue(const TypeRef & val) {
-      return (uintptr_t(val.type_) >> 4) ^ (uintptr_t(val.type_) >> 9) ^ val.modifiers_;
+      return Type::KeyInfo::getHashValue(val.type_) ^ val.modifiers_;
     }
 
     static bool isEqual(const TypeRef & lhs, const TypeRef & rhs) {
-      return lhs.type_ == rhs.type_ && lhs.modifiers_ == rhs.modifiers_;
+      return Type::KeyInfo::isEqual(lhs.type_, rhs.type_) && lhs.modifiers_ == rhs.modifiers_;
     }
 
     static bool isPod() { return true; }
@@ -448,6 +474,52 @@ inline void traceTypeRefList(const TypeRefList & refs) {
 }
 
 /// -------------------------------------------------------------------
+/// A pair of type refs - used as a map key.
+class TypeRefPair {
+public:
+  TypeRefPair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypeRefPair(const TypeRefPair & src) : first_(src.first_), second_(src.second_) {}
+
+  const TypeRef & first() { return first_; }
+  const TypeRef & second() { return second_; }
+
+  bool operator==(const TypeRefPair & other) const {
+    return first_ == other.first_ && second_ == other.second_;
+  }
+
+  bool operator!=(const TypeRefPair & other) const {
+    return !(*this == other);
+  }
+
+  // Structure used when using type ref as a key.
+  struct KeyInfo {
+    static inline TypeRefPair getEmptyKey() {
+      return TypeRefPair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+    }
+
+    static inline TypeRefPair getTombstoneKey() {
+      return TypeRefPair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+    }
+
+    static unsigned getHashValue(const TypeRefPair & val) {
+      return TypeRef::KeyInfo::getHashValue(val.first_) ^
+          (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
+    }
+
+    static bool isEqual(const TypeRefPair & lhs, const TypeRefPair & rhs) {
+      return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
+          TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
+    }
+
+    static bool isPod() { return true; }
+  };
+
+private:
+  TypeRef first_;
+  TypeRef second_;
+};
+
+/// -------------------------------------------------------------------
 /// An immutable vector of type references. Can be used as a map key.
 
 class TypeVector : public GC, public Formattable {
@@ -455,7 +527,7 @@ public:
   typedef TypeRefList::const_iterator iterator;
   typedef TypeRefList::const_iterator const_iterator;
 
-  static TypeVector * get(const TypeRef typeArg);
+  static TypeVector * get(const TypeRef singleTypeArg);
   static TypeVector * get(const TypeRef * first, const TypeRef * last);
   static TypeVector * get(const TypeRefList & trefs) {
     return get(&*trefs.begin(), &*trefs.end());
@@ -466,6 +538,8 @@ public:
   size_t size() const { return data_.size(); }
 
   const TypeRef & operator[](int index) const { return data_[index]; }
+
+  bool isSingular() const;
 
   void trace() const {
     for (iterator it = begin(); it != end(); ++it) {

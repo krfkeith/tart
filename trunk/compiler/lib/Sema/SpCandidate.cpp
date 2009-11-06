@@ -6,14 +6,16 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/SpCandidate.h"
+#include "tart/Sema/TypeTransform.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
 
 SpCandidate::SpCandidate(Expr * base, Defn * tdef, TypeVector * args)
-  : templateDefn_(tdef)
+  : def_(tdef)
   , base_(base)
   , args_(args)
+  , params_(NULL)
 {
 #if 0
   if (tdef->templateSignature() != NULL) {
@@ -48,7 +50,7 @@ SpCandidate::SpCandidate(Expr * base, Defn * tdef, TypeVector * args)
 }
 
 bool SpCandidate::unify(SourceContext * source) {
-  const TemplateSignature * tsig = templateDefn_->templateSignature();
+  const TemplateSignature * tsig = def_->templateSignature();
   DASSERT(tsig->params().size() == args_->size());
   for (size_t i = 0; i < args_->size(); ++i) {
     Type * pattern = tsig->params()[i];
@@ -67,16 +69,57 @@ bool SpCandidate::unify(SourceContext * source) {
 }
 
 ConversionRank SpCandidate::updateConversionRank() {
-  conversionRank_ = IdenticalTypes;
+  const TemplateSignature * tsig = def_->templateSignature();
+  if (params_ == NULL) {
+    TypeRefList typeParams;
+    if (def_->hasUnboundTypeParams()) {
+      RelabelTransform rt(env_);
+      for (TypeList::const_iterator it = tsig->params().begin(); it != tsig->params().end(); ++it) {
+        typeParams.push_back(rt.transform(*it));
+      }
+    } else {
+      for (TypeList::const_iterator it = tsig->params().begin(); it != tsig->params().end(); ++it) {
+        TypeRef tf = *it;
+        typeParams.push_back(*it);
+      }
+    }
 
-  const TemplateSignature * tsig = templateDefn_->templateSignature();
+    params_ = TypeVector::get(typeParams);
+  }
+
+  conversionRank_ = IdenticalTypes;
   for (size_t i = 0; i < args_->size(); ++i) {
-    Type * pattern = tsig->params()[i];
+    Type * pattern = (*params_)[i].type();
     TypeRef value = (*args_)[i];
     conversionRank_ = std::min(conversionRank_, pattern->canConvert(value.type()));
   }
 
   return conversionRank_;
+}
+
+bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
+  const TemplateSignature * tsig = def_->templateSignature();
+  const TemplateSignature * otsig = other->def_->templateSignature();
+
+  if (tsig->params().size() != otsig->params().size()) {
+    return false;
+  }
+
+  bool same = true;
+  size_t numParams = tsig->params().size();
+  for (size_t i = 0; i < numParams; ++i) {
+    TypeRef param = tsig->params()[i];
+    TypeRef oparam = otsig->params()[i];
+
+    if (!param.isEqual(oparam)) {
+      same = false;
+      if (!param.isSubtype(oparam)) {
+        return false;
+      }
+    }
+  }
+
+  return !same;
 }
 
 #if 0
@@ -102,48 +145,14 @@ bool SpCandidate::isEqual(const SpCandidate * other) const {
   return true;
 }
 
-bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
-  bool same = true;
-
-  if (paramAssignments.size() != other->paramAssignments.size()) {
-    diag.info() << "different number of args.";
-    return false;
-  }
-
-  /*if (!getResultType()->isEqual(other->getResultType())) {
-    if (!getResultType()->isSubtype(other->getResultType())) {
-      return false;
-    }
-
-    same = false;
-  }*/
-
-  size_t argCount = paramAssignments.size();
-  for (size_t i = 0; i < argCount; ++i) {
-    Type * t0 = getParamType(i);
-    Type * t1 = other->getParamType(i);
-
-    if (!t0->isEqual(t1)) {
-      if (!t0->isSubtype(t1)) {
-        return false;
-      }
-
-      same = false;
-    }
-  }
-
-  // Return true if they are not the same.
-  return !same;
-}
-
 #endif
 
 void SpCandidate::trace() const {
-  templateDefn_->mark();
+  def_->mark();
 }
 
 FormatStream & operator<<(FormatStream & out, const SpCandidate & sp) {
-  out << sp.templateDefn()->name() << "[";
+  out << sp.def()->name() << "[";
   for (TypeVector::iterator it = sp.args()->begin(); it != sp.args()->end(); ++it) {
     if (it != sp.args()->begin()) {
       out << ", ";

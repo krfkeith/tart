@@ -88,12 +88,16 @@ bool FunctionType::isSubtype(const Type * other) const {
   return false;
 }
 
+TypeRef FunctionType::paramType(int index) const {
+  return params_[index]->type();
+}
+
 TypeVector * FunctionType::paramTypes() const {
   if (paramTypes_ == NULL) {
     TypeRefList typeRefs;
     for (size_t i = 0; i < params_.size(); i++) {
       ParameterDefn * param = params_[i];
-      typeRefs.push_back(param->type());
+      typeRefs.push_back(param->internalType());
     }
 
     paramTypes_ = TypeVector::get(typeRefs);
@@ -286,6 +290,24 @@ void FunctionType::whyNotSingular() const {
 
 ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
   return Incompatible;
+}
+
+const std::string & FunctionType::invokeName() const {
+  if (invokeName_.empty()) {
+    if (isStatic_) {
+      invokeName_.append(".invoke_static.(");
+    } else {
+      invokeName_.append(".invoke.(");
+    }
+    typeLinkageName(invokeName_, paramTypes());
+    invokeName_.append(")");
+    if (returnType_.isNonVoidType()) {
+      invokeName_.append("->");
+      typeLinkageName(invokeName_, returnType_);
+    }
+  }
+
+  return invokeName_;
 }
 
 // -------------------------------------------------------------------

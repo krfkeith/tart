@@ -62,6 +62,10 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
     addTrait(Undefined);
   }
 
+  if (modifiers_.flags & tart::Override) {
+    addTrait(Override);
+  }
+
   if (modifiers_.flags & tart::ReadOnly) {
     addTrait(ReadOnly);
   }
@@ -357,7 +361,7 @@ void IndexerDefn::format(FormatStream & out) const {
     out << "[]";
   }
 
-  FunctionType * ftype = dyn_cast_or_null<FunctionType>(type().type());
+  const FunctionType * ftype = dyn_cast_or_null<FunctionType>(type().type());
   if (out.getShowType() && ftype != NULL) {
     out << "(";
     formatParameterList(out, ftype->params());
@@ -394,6 +398,9 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
 
     if (out.getShowType() && param->type().isDefined()) {
       out << ":" << param->type();
+      if (param->isVariadic()) {
+        out << "...";
+      }
     }
 
     if (out.isVerbose() && param->initValue()) {

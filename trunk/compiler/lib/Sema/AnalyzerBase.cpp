@@ -290,8 +290,10 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     argList.push_back(typeArg);
   }
 
-  TypeVector * tv = TypeVector::get(argList);
+  return specialize(loc, exprs, TypeVector::get(argList));
+}
 
+Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TypeVector * tv) {
   // Examine all of the possible candidates for specialization.
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
@@ -318,12 +320,12 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   }
 
   if (candidates.empty()) {
-    diag.error(loc) << "No templates found which match template arguments [" << args << "]";
+    diag.error(loc) << "No templates found which match template arguments [" << tv << "]";
     for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
       diag.info(*it) << Format_Type << "candidate: " << *it;
     }
 
-    ea.dumpScopeHierarchy();
+    //ea.dumpScopeHierarchy();
     return NULL;
   }
 
@@ -334,7 +336,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   // TODO: Do template overload resolution.
   // TODO: Use parameter assignments.
   SpCandidate * sp = *candidates.begin();
-  Defn * defn = sp->templateDefn();
+  Defn * defn = sp->def();
   TemplateSignature * tsig = defn->templateSignature();
   if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
     Type * type = tsig->instantiateType(loc, sp->env());
@@ -517,9 +519,9 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
         break;
       }
 
-      case Type::Address:
-      case Type::Pointer:
-      case Type::NativeArray:
+      case Type::NAddress:
+      case Type::NPointer:
+      case Type::NArray:
       case Type::Union: {
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
@@ -597,9 +599,9 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     case Type::Enum:
       return EnumAnalyzer(in).analyze();
 
-    case Type::Address:
-    case Type::Pointer:
-    case Type::NativeArray: {
+    case Type::NAddress:
+    case Type::NPointer:
+    case Type::NArray: {
       analyzeType(type->typeParam(0), task);
       return true;
     }
@@ -705,6 +707,28 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & e
   array->setType(arrayType);
 
   return array;
+}
+
+/** Given a type, return the coercion function to convert it to a reference type. */
+FunctionDefn * AnalyzerBase::coerceToObjectFn(Type * type) {
+  DASSERT(!type->isReferenceType());
+  DASSERT(type->typeClass() != Type::NPointer);
+  DASSERT(type->typeClass() != Type::NAddress);
+  DASSERT(type->typeClass() != Type::NArray);
+
+  FunctionDefn * coerceFn = Builtins::objectCoerceFn();
+  TemplateSignature * coerceTemplate = coerceFn->templateSignature();
+
+  DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
+  // Do analysis on template if needed.
+  if (coerceTemplate->ast() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module);
+    da.analyzeTemplateSignature(coerceFn);
+  }
+
+  BindingEnv env;
+  env.addSubstitution(coerceTemplate->patternVar(0), type);
+  return cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
 }
 
 // Determine if the target is able to be accessed from the current source defn.

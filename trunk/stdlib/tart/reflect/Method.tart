@@ -9,6 +9,13 @@ final class Method : Member {
     var _methodPointer:Pointer[void];
   }
 
+  /** Helper function to check the number of arguments. */
+  static def checkArgCount(args:Object[], count:int) {
+    if args.length != count {
+      throw InvocationException("Incorrect number of arguments");
+    }
+  }
+
   undef construct();
 
   /** Array of type parameters. */

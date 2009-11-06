@@ -35,7 +35,7 @@ Module Builtins::module(&builtinSource, "$builtin", NULL);
 Module Builtins::syntheticModule(&builtinSource, "$synthetic", NULL);
 
 Type * Builtins::typeTypeInfoBlock;
-Type * Builtins::typeObject;
+SystemClass Builtins::typeObject("tart.core.Object");
 Type * Builtins::typeString;
 Type * Builtins::typeArray;
 Type * Builtins::typeRange;
@@ -63,7 +63,13 @@ Type * Builtins::typeModule;
 Type * Builtins::typeAttribute;
 Type * Builtins::typeIntrinsicAttribute;
 
-TypeAlias Builtins::typeAliasString(NULL);
+SystemClass Builtins::typeRef("tart.core.Ref");
+SystemClass Builtins::typeValueRef("tart.core.ValueRef");
+
+//SystemTypeRef Builtins::typeComplexType("tart.reflect.ComplexType");
+//SystemTypeRef Builtins::typeEnumType("tart.reflect.EnumType");
+
+TypeAlias Builtins::typeAliasString = TypeRef();
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
@@ -137,7 +143,8 @@ void Builtins::loadSystemClasses() {
   typeTypeDescriptor = loadSystemType("tart.reflect.TypeDescriptor");
   typeTypeInfoBlock = loadSystemType("tart.core.TypeInfoBlock");
   typeType = loadSystemType("tart.reflect.Type");
-  typeObject = loadSystemType("tart.core.Object");
+  typeObject.get();
+  //typeObject = loadSystemType("tart.core.Object");
   typeString = loadSystemType("tart.core.String");
   typeThrowable = loadSystemType("tart.core.Throwable");
   //typeTypeLiteral = loadSystemType("tart.core.TypeLiteral");
@@ -145,7 +152,8 @@ void Builtins::loadSystemClasses() {
   typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
 
   // Analyze class Object.
-  AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
+  //AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeType(typeObject, Task_PrepMemberLookup);
 
   // Get the function that tests for a type
   funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock, "hasBase");
@@ -197,5 +205,32 @@ void Builtins::registerEssentialType(Type * type) {
     }
   }
 }
+
+FunctionDefn * Builtins::objectCoerceFn() {
+  if (!AnalyzerBase::analyzeType(Builtins::typeObject, Task_PrepConversion)) {
+    return NULL;
+  }
+
+  // Get the coerce function that's a template.
+  FunctionDefn * coerceFn = NULL;
+  const MethodList & coercers = Builtins::typeObject->coercers();
+  for (MethodList::const_iterator it = coercers.begin(); it != coercers.end(); ++it) {
+    if ((*it)->isTemplate()) {
+      coerceFn = *it;
+      break;
+    }
+  }
+
+  return coerceFn;
+}
+
+CompositeType * SystemClass::get() const {
+  if (type_ == NULL) {
+    type_ = cast<CompositeType>(Builtins::loadSystemType(typeName_));
+  }
+
+  return type_;
+}
+
 
 }

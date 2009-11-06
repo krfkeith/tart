@@ -6,9 +6,9 @@
 #define TART_CFG_ATTRIBUTE_H
 
 namespace tart {
-  
+
 class Defn;
-  
+
 /// -------------------------------------------------------------------
 /// Information about classes which are attributes.
 class AttributeInfo {
@@ -28,9 +28,16 @@ public:
     PROPERTY    = (1<<9),
     MACRO       = (1<<10),
   };
-  
+
+  enum Propagation {
+    SUBTYPES    = (1<<0),
+    MEMBERS     = (1<<1),
+    CALLERS     = (1<<2),
+  };
+
   AttributeInfo()
     : target_(0)
+    , propagation_(0)
     , retained_(false)
   {
   }
@@ -43,11 +50,16 @@ public:
   bool isRetained() const { return retained_; }
   void setRetained(bool value) { retained_ = value; }
 
+  /** How this attribute is propagated. */
+  short propagation() const { return propagation_; }
+  void setPropagation(bool value) { propagation_ = value; }
+
   /** Returns true if this attribute is allowed to attach to this defn. */
-  bool canAttachTo(Defn * de);
+  bool canAttachTo(const Defn * de) const;
 
 private:
   short target_;
+  short propagation_;
   bool retained_;
 };
 

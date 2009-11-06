@@ -13,7 +13,6 @@ NODE_TYPE(LitFloat)
 NODE_TYPE(LitDouble)
 NODE_TYPE(LitString)
 NODE_TYPE(BuiltIn)
-NODE_TYPE(Typecast)
 
 // Other literals
 NODE_TYPE(ArrayLiteral)

@@ -38,7 +38,19 @@ public:
   /** Call the ScopeBuilder to create members of this defn. */
   bool createMembersFromAST(Defn * in);
 
+  /** Resolve attributes explicitly called out in the AST. */
   bool resolveAttributes(Defn * in);
+
+  /** Propagate attributes from a base type to its subtypes. */
+  bool propagateSubtypeAttributes(Defn * baseDefn, Defn * target);
+
+  /** Propagate attributes from an enclosing scope to it's members. */
+  bool propagateMemberAttributes(Defn * scopeDefn, Defn * target);
+
+  /** Add an additional attribute propagated from some other source. Does nothing if
+      an attribute of the same type is already present. */
+  bool propagateAttribute(Defn * in, Expr * attr);
+
   void applyAttributes(Defn * in);
   void applyAttribute(Defn * de, ConstantObjectRef * attrObj, FunctionDefn * applyMethod);
   void handleIntrinsicAttribute(Defn * de, Expr * attrCtor);
@@ -47,10 +59,6 @@ public:
   /** Resolve the target of an import statement, and add a definition
       to the target scope. */
   void importIntoScope(const ASTImport * import, Scope * targetScope);
-
-  /** Given a list of definitions (the result of a lookup), find the one that best matches the
-      template arguments, and return a specialization of that defn. */
-  //Expr * specialize(const SourceLocation & loc, DefnList & defs, const ASTNodeList & templateArgs);
 
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);

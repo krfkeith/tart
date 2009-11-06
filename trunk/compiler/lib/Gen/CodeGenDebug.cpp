@@ -170,15 +170,15 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDIEnumType(static_cast<const EnumType *>(type));
       break;
 
-    case Type::NativeArray:
+    case Type::NArray:
       result = genDINativeArrayType(static_cast<const NativeArrayType *>(type));
       break;
 
-    case Type::Pointer:
+    case Type::NPointer:
       result = genDIPointerType(static_cast<const PointerType *>(type));
       break;
 
-    case Type::Address:
+    case Type::NAddress:
       result = genDIAddressType(static_cast<const AddressType *>(type));
       break;
 

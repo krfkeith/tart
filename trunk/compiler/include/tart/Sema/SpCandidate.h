@@ -26,19 +26,11 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// A candidate for template specialization
 class SpCandidate : public GC {
-private:
-  //Expr * base;
-  Defn * templateDefn_;
-  Expr * base_;
-  TypeVector * args_;
-  BindingEnv env_;
-  ConversionRank conversionRank_;
-
 public:
   SpCandidate(Expr *base, Defn * tdef, TypeVector * args);
 
-  /** The template. */
-  Defn * templateDefn() const { return templateDefn_; }
+  /** The definition that has type arguments. */
+  Defn * def() const { return def_; }
 
   /** The type arguments. */
   TypeVector * args() const { return args_; }
@@ -62,9 +54,20 @@ public:
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
 
+  /** Return the compatibility score for this candidate. */
+  ConversionRank conversionRank() const { return conversionRank_; }
+
   // Overrides
 
   void trace() const;
+
+private:
+  Defn * def_;
+  Expr * base_;
+  TypeVector * args_;
+  TypeVector * params_;
+  BindingEnv env_;
+  ConversionRank conversionRank_;
 };
 
 FormatStream & operator<<(FormatStream & out, const SpCandidate & sp);

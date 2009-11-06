@@ -27,6 +27,9 @@ namespace tart {
 
 using namespace llvm;
 
+extern BuiltinMemberRef<FunctionDefn> functionType_invokeFn;
+extern BuiltinMemberRef<FunctionDefn> method_checkArgs;
+
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
   Type * type = tdef->typeValue();
@@ -42,7 +45,7 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
     case Type::Enum:
       return genEnumType(static_cast<EnumType *>(type));
 
-    //case Defn::NativeArray:
+    //case Defn::NArray:
     //case Defn::NativePointer:
 
     case Type::Alias:
@@ -272,7 +275,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
     // Return the specified method
     builder_.SetInsertPoint(ret);
-    Value * method = builder_.CreateLoad(builder_.CreateGEP(itable,
+    Value * method = builder_.CreateLoad(builder_.CreateInBoundsGEP(itable,
         indices.begin(), indices.end()), "method");
     builder_.CreateRet(method);
 
@@ -349,7 +352,7 @@ void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instanc
     base = base->super();
   }
 
-  Value * vtablePtrPtr = builder_.CreateGEP(instance, indices.begin(), indices.end());
+  Value * vtablePtrPtr = builder_.CreateInBoundsGEP(instance, indices.begin(), indices.end());
   Value * typeInfoPtr = getTypeInfoBlockPtr(type);
   builder_.CreateStore(typeInfoPtr, vtablePtrPtr);
 }
@@ -371,5 +374,102 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   //diag.fatal(type->typeDefn()) << "Implement " << type;
   //DFAIL("Implement");
 }
+
+llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
+  const std::string & invokeName = fnType->invokeName();
+  llvm::Function * invokeFn = irModule_->getFunction(invokeName);
+  if (invokeFn != NULL) {
+    return invokeFn;
+  }
+
+  diag.debug() << Format_Type << "Generating invoke function for type " << fnType;
+
+  DASSERT(currentFn_ == NULL);
+
+  size_t numParams = fnType->params().size();
+  const llvm::FunctionType * invokeFnType = getInvokeFnType();
+  invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
+  BasicBlock * blk = BasicBlock::Create(context_, "entry", invokeFn);
+  currentFn_ = invokeFn;
+  builder_.SetInsertPoint(blk);
+
+  Function::arg_iterator it = invokeFn->arg_begin();
+  Value * fnPtr = it++;
+  Value * objPtr = it++;
+  Value * argsArray = it++;
+
+  // Check the length of the args array.
+  builder_.CreateCall2(genFunctionValue(method_checkArgs.get()), argsArray, getInt32Val(numParams));
+
+  ValueList args;
+  const llvm::FunctionType * callType;
+  if (fnType->selfParam() != NULL && !fnType->isStatic()) {
+    // Push the 'self' argument.
+    args.push_back(objPtr);
+
+    callType = fnType->createIRFunctionType(Builtins::typeObject,
+        fnType->params(), fnType->returnType());
+  } else {
+    // Use the real function type.
+    callType = cast<llvm::FunctionType>(fnType->irType());
+  }
+
+  // Typecast all of the arguments.
+  for (size_t i = 0; i < numParams; ++i) {
+    const Type * paramType = fnType->param(i)->type().type();
+    Value * indices[3];
+    indices[0] = getInt32Val(0);
+    indices[1] = getInt32Val(2);
+    indices[2] = getInt32Val(i);
+    Value * argVal = builder_.CreateLoad(
+        builder_.CreateInBoundsGEP(argsArray, &indices[0], &indices[3]));
+    argVal = genCast(argVal, Builtins::typeObject, paramType);
+    if (argVal == NULL) {
+      currentFn_ = NULL;
+      return NULL;
+    }
+
+    args.push_back(argVal);
+  }
+
+  fnPtr = builder_.CreatePointerCast(fnPtr, llvm::PointerType::get(callType, 0));
+  Value * returnVal = builder_.CreateCall(fnPtr, args.begin(), args.end(), "invoke");
+
+  if (fnType->returnType().isNonVoidType()) {
+    const Type * returnType = fnType->returnType().type();
+    returnVal = genCast(returnVal, returnType, Builtins::typeObject);
+    if (returnVal == NULL) {
+      currentFn_ = NULL;
+      return NULL;
+    }
+
+    builder_.CreateRet(returnVal);
+  } else {
+    invokeFnType->dump();
+    builder_.CreateRet(ConstantPointerNull::get(
+        cast<llvm::PointerType>(invokeFnType->getReturnType())));
+  }
+
+  currentFn_ = NULL;
+  return invokeFn;
+}
+
+llvm::FunctionType * CodeGenerator::getInvokeFnType() {
+  if (invokeFnType_ == NULL) {
+    FunctionType * fnType = functionType_invokeFn->functionType();
+
+    // Types of the function parameters.
+    std::vector<const llvm::Type *> paramTypes;
+    paramTypes.push_back(fnType->params()[0]->type().irParameterType());
+    paramTypes.push_back(fnType->params()[1]->type().irParameterType());
+    paramTypes.push_back(fnType->params()[2]->type().irParameterType());
+
+    invokeFnType_ = llvm::FunctionType::get(
+        fnType->returnType().irParameterType(), paramTypes, false);
+  }
+
+  return invokeFnType_;
+}
+
 
 } // namespace tart

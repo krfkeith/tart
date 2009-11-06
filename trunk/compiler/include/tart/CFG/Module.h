@@ -22,6 +22,7 @@
 #endif
 
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/DenseMap.h"
 
 namespace llvm {
 class Module;
@@ -34,28 +35,17 @@ class Module;
 
 typedef llvm::SetVector<Module *> ModuleSet;
 typedef llvm::SetVector<Defn *> DefnSet;
+typedef llvm::DenseMap<TypeRefPair, FunctionDefn *, TypeRefPair::KeyInfo> ConverterMap;
 
 /// -------------------------------------------------------------------
 /// A translation unit.
 class Module : public Defn, public IterableScope {
-private:
-  friend class tart::PackageMgr;
-
-  ProgramSource * moduleSource_;
-  ASTNodeList imports_;
-  ModuleSet importModules_;
-  ASTDeclList decls_;
-  DefnList primaryDefs_;
-  DefnSet exportDefs_;
-  DefnSet importDefs_;
-  Agenda<Defn> defsToAnalyze_;
-  FunctionDefn * entryPoint_;
-  bool debug_;
-
-  // The LLVM module
-  llvm::Module * irModule_;
-
 public:
+  enum ModuleFlags {
+    Module_Debug = (1<<0),      // Print debug options
+    Module_Reflect = (1<<1),    // Generate reflection metadata
+  };
+
   /** Construct a new module at the top level. */
   Module(ProgramSource * src, const std::string & qual, Scope * builtinScope);
 
@@ -99,6 +89,10 @@ public:
   /** Return the next xref that has not been analyzed. */
   Defn * nextDefToAnalyze();
 
+  /** Return the map of functions that perform type conversions. */
+  const ConverterMap & converters() const { return converters_; }
+  ConverterMap & converters() { return converters_; }
+
   /** Attempt to import a module by name. Returns the set of primary definitions for that module. */
   bool import(const char * qname, DefnList & defs, bool absPath);
 
@@ -116,6 +110,9 @@ public:
     finished_.remove(Pass_ResolveModuleMembers);
   }
 
+  bool isDebug() const { return (flags_ & Module_Debug) != 0; }
+  bool isReflectionEnabled() const { return (flags_ & Module_Reflect) != 0; }
+
   llvm::Module * irModule();
 
   // Overrides
@@ -130,6 +127,24 @@ public:
   static inline bool classof(const Defn * de) {
     return de->defnType() == Mod;
   }
+
+private:
+  friend class tart::PackageMgr;
+
+  ProgramSource * moduleSource_;
+  ASTNodeList imports_;
+  ModuleSet importModules_;
+  ASTDeclList decls_;
+  DefnList primaryDefs_;
+  DefnSet exportDefs_;
+  DefnSet importDefs_;
+  Agenda<Defn> defsToAnalyze_;
+  FunctionDefn * entryPoint_;
+  ConverterMap converters_;
+  short flags_;
+
+  // The LLVM module
+  llvm::Module * irModule_;
 };
 
 }

@@ -62,7 +62,6 @@ namespace {
 
         case 'd':
           if (strcmp(kw, "def") == 0) return Token_Def;
-          //if (strcmp(kw, "defover") == 0) return Token_Def;
           if (strcmp(kw, "double") == 0) return Token_DoubleType;
           break;
 
@@ -116,6 +115,7 @@ namespace {
 
         case 'o':
           if (strcmp(kw, "or") == 0) return Token_LogicalOr;
+          if (strcmp(kw, "override") == 0) return Token_Override;
           break;
 
         case 'p':
@@ -147,7 +147,6 @@ namespace {
           if (strcmp(kw, "throw") == 0) return Token_Throw;
           if (strcmp(kw, "true") == 0) return Token_True;
           if (strcmp(kw, "typealias") == 0) return Token_Typealias;
-          if (strcmp(kw, "typecast") == 0) return Token_Typecast;
           break;
 
         case 'u':

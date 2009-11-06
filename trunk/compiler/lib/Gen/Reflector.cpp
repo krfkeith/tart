@@ -58,6 +58,7 @@ BuiltinMemberRef<VariableDefn> functionType_returnType(Builtins::typeFunctionTyp
 BuiltinMemberRef<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
 BuiltinMemberRef<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
 BuiltinMemberRef<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
+BuiltinMemberRef<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
 
 // Members of tart.core.reflect.TypeRef.
 BuiltinMemberRef<VariableDefn> typeRef_type(Builtins::typeTypeRef, "type");
@@ -81,6 +82,7 @@ BuiltinMemberRef<VariableDefn> method_typeParams(Builtins::typeMethod, "_typePar
 //BuiltinMemberRef<VariableDefn> method_functionType(Builtins::typeMethod, "_functionType");
 BuiltinMemberRef<VariableDefn> method_params(Builtins::typeMethod, "_params");
 BuiltinMemberRef<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
+BuiltinMemberRef<FunctionDefn> method_checkArgs(Builtins::typeMethod, "checkArgCount");
 
 // Members of tart.core.reflect.Module.
 BuiltinMemberRef<VariableDefn> module_name(Builtins::typeModule, "_name");
@@ -345,9 +347,9 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
 
     case Type::Tuple:
     case Type::Union:
-    case Type::Address:
-    case Type::Pointer:
-    case Type::NativeArray:
+    case Type::NAddress:
+    case Type::NPointer:
+    case Type::NArray:
       return Builtins::typeDerivedType->irType();
 
     default:
@@ -378,9 +380,9 @@ llvm::Constant * Reflector::emitType(const Type * type) {
 
     case Type::Tuple:
     case Type::Union:
-    case Type::Address:
-    case Type::Pointer:
-    case Type::NativeArray:
+    case Type::NAddress:
+    case Type::NPointer:
+    case Type::NArray:
       return emitDerivedType(type);
 
     default:
@@ -420,13 +422,31 @@ llvm::Constant * Reflector::emitEnumType(const EnumType * type) {
 }
 
 llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
-  // TODO: Merge with same type.
+  // TODO: Merge with same type. (unless its already doing that...)
   StructBuilder sb(cg_);
   sb.addField(emitTypeBase(Builtins::typeFunctionType, FUNCTION));
   sb.addField(emitTypeReference(type->returnType()));
-  sb.addNullField(functionType_selfType.type());
+  if (type->selfParam() != NULL) {
+    sb.addField(getTypePtr(type->selfParam()->type().type()));
+  } else {
+    sb.addNullField(functionType_selfType.type());
+  }
   sb.addField(emitTypeVector(type->paramTypes()));
-  sb.addNullField(functionType_invoke.type());
+
+  if (type->selfParam() != NULL) {
+    Type * selfType = type->selfParam()->type().type();
+    if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
+      // For now, we only support reflection of classes.
+      sb.addNullField(functionType_invoke.type());
+      //sb.addField(cg_.genInvokeFn(type));
+    } else {
+      sb.addNullField(functionType_invoke.type());
+    }
+  } else {
+    //sb.addField(cg_.genInvokeFn(type));
+    sb.addNullField(functionType_invoke.type());
+  }
+
   return sb.build(Builtins::typeFunctionType->irType());
 }
 
@@ -439,9 +459,9 @@ llvm::Constant * Reflector::emitDerivedType(const Type * type) {
   TypeKind kind;
   switch (type->typeClass()) {
     case Type::Union: kind = UNION; break;
-    case Type::Address: kind = ADDRESS; break;
-    case Type::Pointer: kind = POINTER; break;
-    case Type::NativeArray: kind = NATIVE_ARRAY; break;
+    case Type::NAddress: kind = ADDRESS; break;
+    case Type::NPointer: kind = POINTER; break;
+    case Type::NArray: kind = NATIVE_ARRAY; break;
     case Type::Tuple: kind = TUPLE; break;
     default:
       DFAIL("Invalid subtype");
@@ -577,7 +597,7 @@ Reflector::MemberKind Reflector::memberKind(const Defn * member) {
       break;
 
     case Defn::Function:
-      return member->isCtor() ? CONSTRUCTOR : METHOD;
+      return static_cast<const FunctionDefn *>(member)->isCtor() ? CONSTRUCTOR : METHOD;
       break;
 
     default:

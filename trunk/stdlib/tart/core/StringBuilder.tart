@@ -162,7 +162,7 @@ public final class StringBuilder {
   }
   
   /** Return the character buffer as a String. */  
-  def toString() -> String {
+  override toString() -> String {
     return String(value, 0, self.len);
   }  
 }

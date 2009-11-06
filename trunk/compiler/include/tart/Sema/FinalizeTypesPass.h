@@ -48,6 +48,7 @@ private:
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
   Expr * visitIndirectCall(CallExpr * in);
   Defn * doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env);
+  Expr * handleUnboxCast(CastExpr * in);
 };
 
 } // namespace tart

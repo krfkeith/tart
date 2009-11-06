@@ -76,8 +76,8 @@ public:
 StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   : ExprAnalyzer(func->module(), &func->parameterScope(), func)
   , function(func)
-  , returnType_(NULL)
-  , yieldType_(NULL)
+  //, returnType_(NULL)
+  //, yieldType_(NULL)
   , blocks(func->blocks())
   , currentBlock_(NULL)
   , continueTarget_(NULL)
@@ -532,16 +532,16 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   UnionType * utype = dyn_cast<UnionType>(nextVal->type());
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
-  Type * iterVarType = NULL;
-  for (TypeRefList::iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
-    Type * ty = it->dealias();
-    if (!ty->isVoidType()) {
+  TypeRef iterVarType;
+  for (TypeVector::iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    TypeRef ty = *it;
+    if (ty.isNonVoidType()) {
       iterVarType = ty;
     }
   }
 
   Expr * testExpr = new InstanceOfExpr(st->location(), nextVal, &VoidType::instance);
-  Expr * iterValue = new CastExpr(Expr::UnionMemberCast, st->location(), iterVarType, nextVal);
+  Expr * iterValue = new CastExpr(Expr::UnionMemberCast, st->location(), iterVarType.type(), nextVal);
 
   // Generate the 'body' block.
   Block * blkBody = createBlock("loopbody");

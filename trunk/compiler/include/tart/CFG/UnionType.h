@@ -27,14 +27,13 @@ public:
   static UnionType * create(const SourceLocation & loc, const TypeRefList & members);
 
   /** Return the list of possible types for this union. */
-  const TypeRefList & members() const { return members_; }
-  TypeRefList & members() { return members_; }
+  const TypeVector & members() const { return *members_; }
 
   /** Return the number of type parameters of this type. */
-  size_t numTypeParams() const { return members_.size(); }
+  size_t numTypeParams() const { return members_->size(); }
 
   /** Return the Nth type parameter. */
-  TypeRef typeParam(int index) const { return members_[index]; }
+  TypeRef typeParam(int index) const { return (*members_)[index]; }
 
   /** Where in the source file this expression comes from. */
   const SourceLocation & location() const { return loc_; }
@@ -76,7 +75,7 @@ protected:
   static size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize);
 
   SourceLocation loc_;
-  TypeRefList members_;
+  TypeVector * members_;
   size_t numValueTypes_;
   size_t numReferenceTypes_;
   bool hasVoidType_;

@@ -1,7 +1,11 @@
 /** Base class of exceptions.
  */
 public class Exception : Throwable {
-  private var msg:String;
+  private {
+    var _message:String;
+    var _cause:Exception;
+  }
+
   // TODO: Add location
   // TODO: Add cause
   // private var cause:Exception
@@ -10,19 +14,30 @@ public class Exception : Throwable {
   def construct() {
     // TODO: Make call to super() implicit.
     super();
-    self.msg = "--";
+    // TODO: Allow to test for NULL.
+    self._message = "--";
   }
 
   /** Message constructor. */
   def construct(msg:String) {
     super();
-    self.msg = msg;
+    self._message = _message;
   }
 
   /** The error message for this exception. */
   final def message:String {
-    get { return self.msg; }
+    get { return self._message; }
   }
+
+  /** The lower-level exception that caused this one, if any. */ 
+  final def cause:Exception {
+    get { return self._cause; }
+  }
+
+  /*override toString() -> String {
+    // TODO: Test message pointer for non-null.
+    return super();
+  }*/
 
   /** Throw an exception if 'test' is true. */
   /*public classmacro when(test:bool) {

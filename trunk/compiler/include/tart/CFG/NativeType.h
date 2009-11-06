@@ -46,7 +46,7 @@ public:
 
   static inline bool classof(const AddressType *) { return true; }
   static inline bool classof(const Type * t) {
-    return t->typeClass() == Address;
+    return t->typeClass() == NAddress;
   }
 
   /** Singleton instance. */
@@ -89,7 +89,7 @@ public:
 
   static inline bool classof(const PointerType *) { return true; }
   static inline bool classof(const Type * t) {
-    return t->typeClass() == Pointer;
+    return t->typeClass() == NPointer;
   }
 
   /** Singleton instance. */
@@ -143,7 +143,7 @@ public:
 
   static inline bool classof(const NativeArrayType *) { return true; }
   static inline bool classof(const Type * t) {
-    return t->typeClass() == NativeArray;
+    return t->typeClass() == NArray;
   }
 
   /** Singleton instance. */

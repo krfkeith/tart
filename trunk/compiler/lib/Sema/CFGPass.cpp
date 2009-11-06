@@ -110,6 +110,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::UpCast:
     case Expr::TryCast:
     case Expr::DynamicCast:
+    case Expr::UnboxCast:
     case Expr::Truncate:
     case Expr::SignExtend:
     case Expr::ZeroExtend:

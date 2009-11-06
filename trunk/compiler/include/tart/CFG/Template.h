@@ -114,11 +114,14 @@ public:
   /** Add a parameter which consists of a single expression pattern variable. */
   void addParameter(const SourceLocation & loc, const char * name, Type * type = NULL);
 
+  /** Find a specialization with the specified type arguments. */
+  Defn * TemplateSignature::findSpecialization(TypeVector * tv) const;
+
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
 
   /** Special version of instantiate for types. */
-  Type * instantiateType(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
+  Type * instantiateType(const SourceLocation & loc, const BindingEnv & env);
 
   /** Print the template param list */
   void format(FormatStream & out) const;
@@ -135,7 +138,8 @@ private:
   ExprList requirements_;
   PatternVarList vars_;
 
-  DefnList specializations;
+  typedef llvm::DenseMap<TypeVector *, Defn *, TypeVector::KeyInfo> SpecializationMap;
+  SpecializationMap specializations_;
   IterableScope paramScope_;
 };
 

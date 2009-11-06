@@ -326,6 +326,7 @@ void CodeGenerator::genCatch(Block * blk) {
       builder_.getInt32Ty());
 
   // Subtract the offset to get the address of the throwable.
+  // Note that we do *not* want to call InBoundsGEP here.
   Value * offsetIndices[2];
   offsetIndices[0] = getInt32Val(0);
   offsetIndices[1] = llvm::ConstantExpr::getNeg(unwindInfoOffset);

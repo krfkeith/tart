@@ -1,8 +1,16 @@
 /** Exception thrown when an attempt to cast an object reference to a type that is not
     a subclass of the instance. */
 public final class TypecastException : Exception {
-  def construct() {}
-  def construct(msg:String) {}
-  def construct[%T](expr:Object, to:TypeLiteral[T]) {}
-  def construct[%S, %T](from:TypeLiteral[T], to:TypeLiteral[T]) {}
+  def construct() {
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+
+  def construct[%T](expr:Object, to:TypeLiteral[T]) {
+  }
+
+  def construct[%S, %T](from:TypeLiteral[T], to:TypeLiteral[T]) {
+  }
 }

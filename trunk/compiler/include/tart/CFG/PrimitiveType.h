@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_PRIMITIVETYPE_H
 #define TART_CFG_PRIMITIVETYPE_H
 
@@ -31,9 +31,11 @@ protected:
 
   ConversionRank convertToBool(const Conversion & cn) const;
   ConversionRank convertConstantToBool(const Conversion & cn) const;
-  
+
+  ConversionRank convertFromObject(const Conversion & cn) const;
+
   PrimitiveType * nextType_;
-  
+
 public:
 
   /** Construct a primitive type */
@@ -54,14 +56,14 @@ public:
   // Overrides
   const llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
-  
+
   static inline bool classof(const PrimitiveType *) { return true; }
   static inline bool classof(const Type * t) {
     return t->typeClass() == Type::Primitive;
   }
-  
+
   PrimitiveType * nextType() const { return nextType_; }
-  
+
   // Return an integer type that fits the given number of bits.
   static PrimitiveType * fitIntegerType(size_t nBits, bool isUnsigned);
 
@@ -77,7 +79,7 @@ public:
 template<TypeId kTypeId>
 class PrimitiveTypeImpl : public PrimitiveType {
 public:
-  
+
   /** Construct a primitive type */
   PrimitiveTypeImpl() : PrimitiveType(&typedefn) {}
 
@@ -86,8 +88,8 @@ public:
 
   Expr * nullInitValue() const;
   bool isReferenceType() const { return kTypeId == TypeId_Null; }
-  
-  // Overrides 
+
+  // Overrides
 
   TypeId typeId() const { return kTypeId; }
   uint32_t numBits() const;
@@ -121,7 +123,7 @@ template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtype(const Type *
 
   return false;
 }
-  
+
 template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::includes(const Type * other) const {
   other = derefEnumType(other);
   if (other == this) {
@@ -160,6 +162,7 @@ typedef PrimitiveTypeImpl<TypeId_UInt64>  ULongType;
 typedef PrimitiveTypeImpl<TypeId_Float>   FloatType;
 typedef PrimitiveTypeImpl<TypeId_Double>  DoubleType;
 typedef PrimitiveTypeImpl<TypeId_Null>    NullType;
+typedef PrimitiveTypeImpl<TypeId_Any>     AnyType;
 typedef PrimitiveTypeImpl<TypeId_UnsizedInt> UnsizedIntType;
 typedef PrimitiveTypeImpl<TypeId_Bad>     BadType;
 

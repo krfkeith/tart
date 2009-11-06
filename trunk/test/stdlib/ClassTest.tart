@@ -68,7 +68,7 @@ class SubClass : TestClass {
   private var m2:int;
   //private var m1:int[];
   
-  public def testMethod() -> int {
+  public override testMethod() -> int {
     return 13;
   }
   
@@ -76,7 +76,7 @@ class SubClass : TestClass {
     self.m2 = 20;
   }
   
-  public def test4() -> byte {
+  public override test4() -> byte {
     return super() + 1;
   }
 }

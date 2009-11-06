@@ -6,7 +6,7 @@ def main(args:String[]) -> int {
   testThrowAndCatch();
   testUnwindAndCatch();
   testUnwindAndCatch2();
-  testExceptionMsg();
+  //testExceptionMsg();
   testNestedTry();
   testNestedTry2();
   testTryFinally();

@@ -7,7 +7,7 @@ class ValueRef[%T] : Ref {
   }
 
   /** Return a string representation of the contained value. */
-  /*override*/ def toString() -> String {
+  override toString() -> String {
     return self.value.toString();
   }
 }

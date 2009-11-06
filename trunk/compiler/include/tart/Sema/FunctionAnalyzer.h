@@ -33,6 +33,7 @@ public:
   bool resolveParameterTypes();
   bool resolveModifiers();
   bool createCFG();
+  bool createReflectionData();
   bool analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass);
   void warnConflict(
       const SourceLocation & prevLoc, const Type * prevType,

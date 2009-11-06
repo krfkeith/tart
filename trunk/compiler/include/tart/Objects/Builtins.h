@@ -19,6 +19,7 @@ class Module;
 class Defn;
 class TypeDefn;
 class ValueDefn;
+class SystemClass;
 
 /// -------------------------------------------------------------------
 /// Class to hold references to all builtin types and methods.
@@ -26,7 +27,6 @@ class Builtins {
 private:
   static Module * loadSystemModule(const char * name);
   static Defn * loadSystemDef(const char * name);
-  static Type * loadSystemType(const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
 
   static bool compileBuiltins(ProgramSource & source);
@@ -41,7 +41,7 @@ public:
 
   // System types - core
   static Type * typeTypeInfoBlock;
-  static Type * typeObject;
+  static SystemClass typeObject;
   static Type * typeString;
   static Type * typeArray;
   static Type * typeRange;
@@ -71,6 +71,13 @@ public:
   static Type * typeAttribute;
   static Type * typeIntrinsicAttribute;
 
+  // System types - lazily loaded
+  static SystemClass typeRef;
+  static SystemClass typeValueRef;
+
+  //static SystemTypeRef typeComplexType;
+  //static SystemTypeRef typeEnumType;
+
   // Global aliases - used to create static references to types that are dynamically loaded.
   static TypeAlias typeAliasString;
 
@@ -80,6 +87,9 @@ public:
 
   /** Initialization function for builtins. */
   static void init();
+
+  /** Load a system type. */
+  static Type * loadSystemType(const char * name);
 
   /** Load classes known to the compiler. */
   static void loadSystemClasses();
@@ -92,6 +102,10 @@ public:
 
   /** Register an annex type. */
   static void registerEssentialType(Type * type);
+
+  /** Return the 'coerce' function of class Object. Needs to be handled specially
+      because there are multiple overloads, and we want the one that is a template. */
+  static FunctionDefn * Builtins::objectCoerceFn();
 };
 
 template<class T> T * Builtins::getMember(Type * tdef, const char * name) {
@@ -99,7 +113,31 @@ template<class T> T * Builtins::getMember(Type * tdef, const char * name) {
 }
 
 /// -------------------------------------------------------------------
-/// Contains a lazy reference to a member of a builtin type
+/// Contains a lazy reference to a system class
+class SystemClass {
+public:
+  SystemClass(const char * typeName)
+    : typeName_(typeName)
+    , type_(NULL)
+    {}
+
+  CompositeType * get() const;
+
+  CompositeType * operator->() const {
+    return get();
+  }
+
+  operator CompositeType *() const {
+    return get();
+  }
+
+private:
+  const char * typeName_;
+  mutable CompositeType * type_;
+};
+
+/// -------------------------------------------------------------------
+/// Contains a lazy reference to a member of a system type
 template <class T>
 class BuiltinMemberRef {
 public:

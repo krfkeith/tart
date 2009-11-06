@@ -141,6 +141,9 @@ void typeLinkageName(std::string & out, const Type * ty) {
         }
 
         typeLinkageName(out, (*it)->type());
+        if ((*it)->isVariadic()) {
+          out.append("...");
+        }
       }
       out.append(")");
     }
@@ -197,11 +200,11 @@ Conversion::Conversion(Expr * from)
   , options(0)
 {}
 
-Conversion::Conversion(Expr * from, Expr ** to)
+Conversion::Conversion(Expr * from, Expr ** to, int opts)
   : fromType(from->type())
   , fromValue(from)
   , resultValue(to)
-  , options(0)
+  , options(opts)
 {}
 
 const Type * Conversion::getFromType() const {
@@ -285,17 +288,17 @@ ConversionRank Type::canConvert(const Type * fromType, int options) const {
   return convert(Conversion(fromType).setOption(options));
 }
 
-Expr * Type::implicitCast(const SourceLocation & loc, Expr * from) const {
+Expr * Type::implicitCast(const SourceLocation & loc, Expr * from, int options) const {
   Expr * result = NULL;
-  ConversionRank tc = convert(Conversion(from, &result));
+  ConversionRank tc = convert(Conversion(from, &result, options));
   compatibilityWarning(loc, tc, from, this);
   DASSERT(tc == Incompatible || result != NULL);
   return result;
 }
 
-Expr * Type::explicitCast(const SourceLocation & loc, Expr * from) const {
+Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) const {
   Expr * result = NULL;
-  ConversionRank tc = convert(Conversion(from, &result));
+  ConversionRank tc = convert(Conversion(from, &result, options));
   if (tc == Incompatible) {
     compatibilityWarning(loc, tc, from, this);
   }
@@ -477,7 +480,7 @@ void DeclaredType::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// NonTypeConstant
+// SingleValueConstant
 
 SingleValueType * SingleValueType::get(ConstantExpr * value) {
   // TODO: Fold unique values.
@@ -523,12 +526,22 @@ Type * TypeRef::dealias() {
   return tart::dealias(type_);
 }
 
-Expr * TypeRef::implicitCast(const SourceLocation & loc, Expr * from) const {
-  return type_->implicitCast(loc, from);
+bool TypeRef::isSubtype(const TypeRef & other) const {
+  if (type_ != NULL && other.type_ != NULL && type_->isSubtype(other.type_)) {
+    // If the other type has any modifier bits that this one does not have, then
+    // it's not a subtype.
+    return (~modifiers_ & other.modifiers_) == 0;
+  }
+
+  return false;
 }
 
-Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from) const {
-  return type_->explicitCast(loc, from);
+Expr * TypeRef::implicitCast(const SourceLocation & loc, Expr * from, int options) const {
+  return type_->implicitCast(loc, from, options);
+}
+
+Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from, int options) const {
+  return type_->explicitCast(loc, from, options);
 }
 
 ConversionRank TypeRef::convert(const Conversion & conversion) const {
@@ -580,12 +593,20 @@ TypeVector::~TypeVector() {
   }
 }
 
+bool TypeVector::isSingular() const {
+  for (TypeVector::iterator it = begin(); it != end(); ++it) {
+    if (!it->isSingular()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void TypeVector::format(FormatStream & out) const {
-  out << "(";
   for (TypeVector::iterator it = begin(); it != end(); ++it) {
     out << *it;
   }
-  out << ")";
 }
 
 // -------------------------------------------------------------------
@@ -697,9 +718,9 @@ bool TypeLess::operator()(const Type * t0, const Type * t1) {
     case Type::Function:
     case Type::Tuple:
     case Type::Union:
-    case Type::Address:
-    case Type::Pointer:
-    case Type::NativeArray: {
+    case Type::NAddress:
+    case Type::NPointer:
+    case Type::NArray: {
       DFAIL("Implement");
     }
 

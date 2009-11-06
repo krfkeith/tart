@@ -28,12 +28,21 @@ bool EnumType::includes(const Type * other) const {
 }
 
 ConversionRank EnumType::convertImpl(const Conversion & cn) const {
-  if (cn.fromType == this) {
+  if (cn.getFromType() == this) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
     }
 
     return IdenticalTypes;
+  }
+
+  if ((cn.options & Conversion::Dynamic) && cn.getFromType()->isReferenceType()) {
+    if (cn.resultValue != NULL) {
+      *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
+          const_cast<EnumType *>(this), cn.fromValue);
+    }
+
+    return NonPreferred;
   }
 
   return Incompatible;

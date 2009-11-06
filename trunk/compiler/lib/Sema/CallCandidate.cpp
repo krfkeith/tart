@@ -39,7 +39,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     bindingEnv_.setSubstitutions(spCandidate->env().substitutions());
   }
 
-  ParameterList & methodParams = m->functionType()->params();
+  ParameterList & methodParams = m->params();
   for (ParameterList::iterator p = methodParams.begin(); p != methodParams.end(); ++p) {
     paramTypes_.push_back((*p)->type());
   }
@@ -60,7 +60,6 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
           if (value == NULL) {
             bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
           }
-
         }
       }
     }
@@ -68,18 +67,18 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     if (spCandidate_ != NULL) {
       TemplateSignature * ts = m->templateSignature();
       for (TypeList::const_iterator it = ts->params().begin(); it != ts->params().end(); ++it) {
-        templateParams_.push_back(bindingEnv_.relabel(*it));
+        templateParams_.push_back(bindingEnv_.subst(*it));
       }
     }
 
     // Substitute all occurrences of pattern vars in the result type
     // the corresponding pattern value.
-    resultType_ = bindingEnv_.relabel(resultType_);
+    resultType_ = bindingEnv_.subst(resultType_);
     AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
 
     // Same with function parameter types.
     for (TypeRefList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
-      *pt = bindingEnv_.relabel(*pt);
+      *pt = bindingEnv_.subst(*pt);
       AnalyzerBase::analyzeType(pt->type(), Task_PrepTypeComparison);
     }
 

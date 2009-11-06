@@ -390,7 +390,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   if (primaryBase != NULL) {
     // Move the primary base to be first in the list.
     type->bases().insert(type->bases().begin(), primaryBase);
-    target->copyTrait(primaryBase->typeDefn(), Defn::Nonreflective);
+    propagateSubtypeAttributes(primaryBase->typeDefn(), target);
   }
 
   if (dtype == Type::Interface) {
@@ -415,7 +415,7 @@ bool ClassAnalyzer::analyzeConverters() {
             if (FunctionAnalyzer(fn).analyze(Task_PrepTypeComparison) &&
                 fn->returnType().isNonVoidType() &&
                 fn->storageClass() == Storage_Static &&
-                fn->functionType()->params().size() == 1) {
+                fn->params().size() == 1) {
 
               // Mark the constructor as singular if in fact it is.
               if (!fn->hasUnboundTypeParams() && type->isSingular()) {
@@ -890,10 +890,12 @@ void ClassAnalyzer::addNewMethods() {
       if (dt == Defn::Function) {
         FunctionDefn * fn = static_cast<FunctionDefn *>(de);
         if (fn->isUndefined() && fn->overriddenMethods().empty()) {
-          if (!fn->isCtor() || !fn->functionType()->params().empty()) {
+          if (!fn->isCtor() || !fn->params().empty()) {
             diag.error(fn) << "Method '" << fn->name() <<
                 "' defined with 'undef' but does not override a base class method.";
           }
+        } else if (fn->isOverride()) {
+          // TODO: Implement
         }
 
         if (!fn->isCtor() && !fn->isFinal() && fn->dispatchIndex() < 0) {
@@ -994,6 +996,12 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
         table[i] = newMethod;
         if (canHide && newMethod->dispatchIndex() < 0) {
           newMethod->setDispatchIndex(i);
+        }
+
+        if (m->hasBody() && !newMethod->isOverride()) {
+          diag.error(newMethod) << "Method '" << newMethod->name() <<
+              "' which overrides method in base class '" << m->parentDefn()->qualifiedName() <<
+              "' should be declared with 'override'";
         }
         newMethod->overriddenMethods().insert(m);
       } else if (canHide) {
@@ -1194,7 +1202,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         }
 
         Expr * initVal;
-        if (memberType.typeClass() == Type::NativeArray) {
+        if (memberType.typeClass() == Type::NArray) {
           // TODO: If this array is non-zero size, we have a problem I think.
           // Native arrays must be initialized in the constructor.
           continue;
