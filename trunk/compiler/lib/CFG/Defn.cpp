@@ -3,16 +3,12 @@
  * ================================================================ */
 
 #include "tart/CFG/Defn.h"
-#include "tart/CFG/Scope.h"
-#include "tart/CFG/Type.h"
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/FunctionType.h"
-#include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
-#include "tart/AST/ASTDecl.h"
+#include "tart/CFG/FunctionDefn.h"
+
 #include "tart/Objects/Builtins.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -254,122 +250,9 @@ void Defn::trace() const {
 }
 
 // -------------------------------------------------------------------
-// NamespaceDefn
-NamespaceDefn::NamespaceDefn(Module * m, const char * name)
-  : Defn(Namespace, m, name)
-{
-  members.setScopeName(name);
-}
-
-NamespaceDefn::NamespaceDefn(Module * m, const ASTDecl * de)
-  : Defn(Namespace, m, de)
-{
-  members.setScopeName(name());
-}
-
-void NamespaceDefn::format(FormatStream & out) const {
-  out << "namespace " << name_;
-}
-
-void NamespaceDefn::trace() const {
-  Defn::trace();
-  members.trace();
-}
-
-// -------------------------------------------------------------------
 // ValueDefn
 void ValueDefn::trace() const {
   Defn::trace();
-}
-
-// -------------------------------------------------------------------
-// VariableDefn
-void VariableDefn::trace() const {
-  ValueDefn::trace();
-  type_.trace();
-  safeMark(initValue_);
-}
-
-void VariableDefn::format(FormatStream & out) const {
-  /*if (out.isVerbose()) {
-    switch (defnType()) {
-      case Defn::Let: out << "let "; break;
-      case Defn::Var: out << "var "; break;
-      default:
-        break;
-    }
-  }*/
-
-  if (out.getShowQualifiedName() && storageClass() != Storage_Local) {
-    if (out.getShowType() && enclosingClassDefn()) {
-      out << enclosingClassDefn() << "." << name_;
-    } else {
-      out << qname_;
-    }
-  } else {
-    out << name_;
-  }
-
-  if (out.getShowType() && type_.isDefined()) {
-    out << ":" << type_;
-  }
-
-  if (out.getShowInitializer() && initValue_) {
-    out << "=" << initValue_;
-  }
-}
-
-// -------------------------------------------------------------------
-// PropertyDefn
-void PropertyDefn::trace() const {
-  ValueDefn::trace();
-  type_.trace();
-  safeMark(getter_);
-  safeMark(setter_);
-}
-
-void PropertyDefn::format(FormatStream & out) const {
-  if (out.getShowQualifiedName()) {
-    if (out.getShowType() && enclosingClassDefn()) {
-      out << enclosingClassDefn() << "." << name_;
-    } else {
-      out << qname_;
-    }
-  } else {
-    out << name_;
-  }
-}
-
-// -------------------------------------------------------------------
-// IndexerDefn
-void IndexerDefn::trace() const {
-  PropertyDefn::trace();
-}
-
-void IndexerDefn::format(FormatStream & out) const {
-  if (out.isVerbose()) {
-    out << "def ";
-  }
-
-  if (out.getShowQualifiedName() && !qname_.empty()) {
-    if (out.getShowType() && parentDefn()) {
-      out << parentDefn() << "[]";
-    } else {
-      out << qname_;
-    }
-  } else {
-    out << "[]";
-  }
-
-  const FunctionType * ftype = dyn_cast_or_null<FunctionType>(type().type());
-  if (out.getShowType() && ftype != NULL) {
-    out << "(";
-    formatParameterList(out, ftype->params());
-    out << ")";
-    if (ftype->returnType().isNonVoidType()) {
-      out << ":" << ftype->returnType();
-    }
-  }
 }
 
 /// -------------------------------------------------------------------
@@ -416,9 +299,6 @@ const char * getPassName(DefnPass pass) {
 
     case Pass_ResolveAttributes:
       return "ResolveAttributes";
-
-    case Pass_ResolveImport:
-      return "ResolveImport";
 
     case DefnPassCount:
       DFAIL("Invalid pass");

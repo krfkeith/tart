@@ -32,7 +32,7 @@ Implementation TODOS:
   * Some means to cache relabeled specializations?
   * Fill out TypeOrderings.h
   * Finish up override keyword, with failure tests.
-  * See if we can make Expr::type() a constant, and a TypeRef. (But template first)
+  * See if we can make Expr::type() a constant, and a TypeRef.
 * TypeRef
   * Expressions
   * Template arguments
@@ -154,8 +154,7 @@ Error TODOS: (things that should be an error)
 
 * Module with multiple public names at top level.
 * Assignment to a non-lvalue.
-* Multiple catch statements with the same exception.
-* Template functions cannot be extern.
+* Multiple catch statements with the same exception.* Template functions cannot be extern.
 * Enforce 'readonly'
 * LValueExpr.isSideEffectFree may not be true for property
   // Check for hiding similarly-named variable.
@@ -190,6 +189,8 @@ Command to create Makefile project:
 cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
 
 cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
+
+cmake -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
 
 // ------------------------------------------------------------------------
 
@@ -428,7 +429,28 @@ class WeakReference[%T:Object] {
 
 // ------------------------------------------------------------------------
 
-Unboxing as generic funtions:
+typealias MachineAddress:Address[ubyte];
+typealias AllocBlkPtr:Address[ubyte];
+
+abstract class AbstractSpace {
+  abstract def isAllocated(ptr:ObjectPtr);
+  abstract def trace(ptr:ObjectPtr);
+}
+
+var heapMap:Address[Address[AbstractSpace]];
+var heapMapSize:int;
+var heapMapOffset:int;
+let heapPageSize:long = 128Kb;
+let heapPageShift:int = ??;
+
+abstract class Arena {
+  abstract def ??;
+}
+
+// ------------------------------------------------------------------------
+
+Unboxing as generic functions:
 
 def valueOf[int](dispatched obj:Object) -> int;
 override valueOf[int](v:ValueRef[int]) -> int { return v.value; }
+

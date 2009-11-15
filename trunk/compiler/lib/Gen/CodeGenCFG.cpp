@@ -69,11 +69,11 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 
     ExprList & exprs = blk->exprs();
     for (ExprList::iterator it = exprs.begin(); it != exprs.end(); ++it) {
-      genStopPoint((*it)->location());
+      setDebugLocation((*it)->location());
       genStmt(*it);
     }
 
-    genStopPoint(blk->termLocation());
+    setDebugLocation(blk->termLocation());
     genBlockTerminator(blk);
   }
 
@@ -90,17 +90,14 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
   unwindTarget_ = NULL;
 }
 
-void CodeGenerator::genStopPoint(const SourceLocation & loc) {
+void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ &&
       loc.file == module_->moduleSource() &&
-      !dbgFunction_.isNull() &&
-      loc != dbgLocation_) {
+      !dbgFunction_.isNull()) {
     TokenPosition pos = tokenPosition(loc);
-    dbgFactory_.InsertStopPoint(
-        dbgCompileUnit_,
-        pos.endLine, pos.endCol,
-        builder_.GetInsertBlock());
-    dbgLocation_ = loc;
+    builder_.SetCurrentDebugLocation(
+        dbgFactory_.CreateLocation(pos.beginLine, pos.beginCol, dbgFunction_, DILocation(NULL))
+            .getNode());
   }
 }
 
@@ -181,7 +178,7 @@ void CodeGenerator::genDoFinally(Block * blk) {
 bool CodeGenerator::genTestExpr(const Expr * test, BasicBlock * blkTrue, BasicBlock * blkFalse) {
   switch (test->exprType()) {
     case Expr::And: {
-      BinaryExpr * op = static_cast<const BinaryExpr *>(test);
+      const BinaryExpr * op = static_cast<const BinaryExpr *>(test);
       BasicBlock * blkSecond = BasicBlock::Create(context_, "and", currentFn_, blkTrue);
       genTestExpr(op->first(), blkSecond, blkFalse);
       builder_.SetInsertPoint(blkSecond);
@@ -190,7 +187,7 @@ bool CodeGenerator::genTestExpr(const Expr * test, BasicBlock * blkTrue, BasicBl
     }
 
     case Expr::Or: {
-      BinaryExpr * op = static_cast<const BinaryExpr *>(test);
+      const BinaryExpr * op = static_cast<const BinaryExpr *>(test);
       BasicBlock * blkSecond = BasicBlock::Create(context_, "or", currentFn_, blkFalse);
       genTestExpr(op->first(), blkTrue, blkSecond);
       builder_.SetInsertPoint(blkSecond);
@@ -200,7 +197,7 @@ bool CodeGenerator::genTestExpr(const Expr * test, BasicBlock * blkTrue, BasicBl
 
     case Expr::Not: {
       // For logical negation, flip the true and false blocks.
-      UnaryExpr * op = static_cast<const UnaryExpr *>(test);
+      const UnaryExpr * op = static_cast<const UnaryExpr *>(test);
       return genTestExpr(op->arg(), blkFalse, blkTrue);
     }
 

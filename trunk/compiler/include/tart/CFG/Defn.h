@@ -41,6 +41,7 @@ class FunctionType;
 class TemplateSignature;
 class TemplateInstance;
 class Intrinsic;
+class PropertyDefn;
 
 /// -------------------------------------------------------------------
 /// The various passes of analysis for a definition.
@@ -51,12 +52,6 @@ enum DefnPass {
 
   /** For all defn types - resolve attribute references. */
   Pass_ResolveAttributes,
-
-  /** Handle initialization of static members. */
-  Pass_ResolveStaticInitializers,
-
-  /** Determine variable type. */
-  Pass_ResolveVarType,
 
   /** Resolve an import statement. */
   Pass_ResolveImport,
@@ -328,36 +323,6 @@ static const DefnTypeSet METHOD_DEFS = DefnTypeSet::of(
     Defn::Function, Defn::Macro, Defn::Indexer);
 
 /// -------------------------------------------------------------------
-/// A definition of a namespace
-class NamespaceDefn : public Defn {
-private:
-  IterableScope members;
-
-public:
-  /** Constructor that takes a name */
-  NamespaceDefn(Module * m, const char * name);
-
-  /** Constructor that takes an AST declaration. */
-  NamespaceDefn(Module * m, const ASTDecl * de);
-
-  /** Get the scope containing the members of this namespace. */
-  const IterableScope & memberScope() const { return members; }
-  IterableScope & memberScope() { return members; }
-
-  // Overrides
-
-  Scope * definingScope() const { return members.parentScope(); }
-  void setDefiningScope(Scope * scope) { members.setParentScope(scope); }
-  void format(FormatStream & out) const;
-  void trace() const;
-
-  static inline bool classof(const NamespaceDefn *) { return true; }
-  static inline bool classof(const Defn * de) {
-    return de->defnType() == Namespace;
-  }
-};
-
-/// -------------------------------------------------------------------
 /// A definition that has a type - variable, function, etc.
 class ValueDefn : public Defn {
 public:
@@ -389,158 +354,6 @@ public:
 
 protected:
   Scope * definingScope_;
-};
-
-/// -------------------------------------------------------------------
-/// A definition of a variable
-class VariableDefn : public ValueDefn {
-public:
-  enum AnalysisPass {
-    AttributePass,
-    VariableTypePass,
-    InitializerPass,
-    CompletionPass,
-    PassCount
-  };
-
-  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
-  typedef PassMgr::PassSet PassSet;
-
-  /** Constructor that takes a name */
-  VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL)
-    : ValueDefn(dtype, m, name)
-    , type_(value ? value->type() : NULL)
-    , initValue_(value)
-    , irValue_(NULL)
-    , memberIndex_(0)
-    , memberIndexRecursive_(0)
-    , isConstant_(dtype == Defn::Let)
-  {}
-
-  /** Constructor that takes an AST declaration. */
-  VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
-    : ValueDefn(dtype, m, de)
-    , initValue_(NULL)
-    , irValue_(NULL)
-    , memberIndex_(0)
-    , memberIndexRecursive_(0)
-    , isConstant_(dtype == Defn::Let)
-  {}
-
-  /** Initial value for this variable. */
-  const Expr * initValue() const { return initValue_; }
-  Expr * initValue() { return initValue_; }
-  void setInitValue(Expr * e) { initValue_ = e; }
-
-  /** IR representation of this function. */
-  llvm::Value * irValue() const { return irValue_; }
-  void setIRValue(llvm::Value * ir) const { irValue_ = ir; }
-
-  /** For member variables, the index of this field within the class. */
-  int memberIndex() const { return memberIndex_; }
-  void setMemberIndex(int index) { memberIndex_ = index; }
-
-  /** For member variables, the index of this field within the class. */
-  int memberIndexRecursive() const { return memberIndexRecursive_; }
-  void setMemberIndexRecursive(int index) { memberIndexRecursive_ = index; }
-
-  /** Set the type of this variable. */
-  void setType(const TypeRef & ty) { type_= ty; }
-
-  /** True if the value of this variable is always the initializer. This will always be
-      true for 'let' variables except in the special case of 'let' variables that
-      are of instance scope and which are initialized in the constructor. */
-  bool isConstant() const { return isConstant_; }
-  void setIsConstant(bool isConstant) { isConstant_ = isConstant; }
-
-  /** The current passes state. */
-  const PassMgr & passes() const { return passes_; }
-  PassMgr & passes() { return passes_; }
-
-  // Overrides
-
-  TypeRef type() const { return type_; }
-  void trace() const;
-  void format(FormatStream & out) const;
-  static inline bool classof(const VariableDefn *) { return true; }
-  static inline bool classof(const Defn * de) {
-    return de->defnType() == Let || de->defnType() == Var;
-  }
-
-private:
-  TypeRef type_;
-  Expr * initValue_;
-  mutable llvm::Value * irValue_;
-  int memberIndex_;
-  int memberIndexRecursive_;
-  bool isConstant_;
-  PassMgr passes_;
-};
-
-/// -------------------------------------------------------------------
-/// A definition of a property
-class PropertyDefn : public ValueDefn {
-private:
-  TypeRef type_;
-  IterableScope accessorScope_;  // Scope in which getter/setter are defined.
-  FunctionDefn * getter_;    // The getter method
-  FunctionDefn * setter_;    // The setter method
-
-public:
-  /** Constructor that takes an AST */
-  PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
-    : ValueDefn(dtype, m, ast)
-    , getter_(NULL)
-    , setter_(NULL)
-  {
-    accessorScope_.setScopeName(ast_->name());
-  }
-
-  FunctionDefn * getter() const { return getter_; }
-  void setGetter(FunctionDefn * f) { getter_ = f; }
-
-  FunctionDefn * setter() const { return setter_; }
-  void setSetter(FunctionDefn * f) { setter_ = f; }
-
-  const Scope & accessorScope() const { return accessorScope_; }
-  Scope & accessorScope() { return accessorScope_; }
-
-  void setType(const TypeRef & t) { type_ = t; }
-
-  // Overrides
-
-  TypeRef type() const { return type_; }
-  void trace() const;
-  void format(FormatStream & out) const;
-  void setDefiningScope(Scope * scope) {
-    accessorScope_.setParentScope(scope);
-    ValueDefn::setDefiningScope(scope);
-  }
-
-  static inline bool classof(const PropertyDefn *) { return true; }
-  static inline bool classof(const Defn * de) {
-    return de->defnType() == Property || de->defnType() == Indexer;
-  }
-};
-
-/// -------------------------------------------------------------------
-/// A definition of an indexer
-class IndexerDefn : public PropertyDefn {
-public:
-  /** Constructor that takes an AST */
-  IndexerDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
-    : PropertyDefn(dtype, m, ast)
-  {}
-
-  // Overrides
-
-  void trace() const;
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const IndexerDefn *) { return true; }
-  static inline bool classof(const Defn * de) {
-    return de->defnType() == Indexer;
-  }
 };
 
 /// -------------------------------------------------------------------
@@ -588,4 +401,4 @@ FormatStream & operator<<(FormatStream & out, DefnPass pass);
 
 } // namespace tart
 
-#endif
+#endif // TART_CFG_DEFN_H

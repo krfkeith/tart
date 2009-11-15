@@ -480,42 +480,6 @@ void DeclaredType::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// SingleValueConstant
-
-SingleValueType * SingleValueType::get(ConstantExpr * value) {
-  // TODO: Fold unique values.
-  return new SingleValueType(value);
-}
-
-bool SingleValueType::isEqual(const Type * other) const {
-  if (const SingleValueType * ntc = dyn_cast<SingleValueType>(other)) {
-    return value_->isEqual(ntc->value());
-  }
-
-  return false;
-}
-
-const llvm::Type * SingleValueType::irType() const {
-  DFAIL("IllegalState");
-}
-
-ConversionRank SingleValueType::convertImpl(const Conversion & conversion) const {
-  DFAIL("IllegalState");
-}
-
-Expr * SingleValueType::nullInitValue() const {
-  DFAIL("IllegalState");
-}
-
-void SingleValueType::trace() const {
-  value_->mark();
-}
-
-void SingleValueType::format(FormatStream & out) const {
-  out << value_;
-}
-
-// -------------------------------------------------------------------
 // TypeRef
 
 const Type * TypeRef::dealias() const {
@@ -565,32 +529,33 @@ FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
 }
 
 // -------------------------------------------------------------------
+// TypeRefIterPairKeyInfo
+
+TypeRef TypeRefIterPairKeyInfo ::emptyKey(NULL, uint32_t(-1));
+TypeRef TypeRefIterPairKeyInfo ::tombstoneKey(NULL, uint32_t(-2));
+
+// -------------------------------------------------------------------
 // TypeVector
 
 TypeVector::TypeVectorMap TypeVector::uniqueValues_;
-TypeVector TypeVector::emptyValue_(uint32_t(-1));
-TypeVector TypeVector::tombstoneValue_(uint32_t(-2));
 
 TypeVector * TypeVector::get(const TypeRef typeArg) {
   return get(&typeArg, &typeArg + 1);
 }
 
 TypeVector * TypeVector::get(const TypeRef * first, const TypeRef * last) {
-  TypeVector key(first, last);
-  TypeVectorMap::iterator it = uniqueValues_.find(&key);
+  TypeVectorMap::iterator it = uniqueValues_.find(TypeRefIterPair(first, last));
   if (it != uniqueValues_.end()) {
-    return it->first;
+    return it->second;
   }
 
   TypeVector * newEntry = new TypeVector(first, last);
-  uniqueValues_[newEntry] = 0;
+  uniqueValues_[newEntry->iterPair()] = newEntry;
   return newEntry;
 }
 
 TypeVector::~TypeVector() {
-  if (this != &emptyValue_ && this != &tombstoneValue_) {
-    uniqueValues_.erase(this);
-  }
+  uniqueValues_.erase(iterPair());
 }
 
 bool TypeVector::isSingular() const {

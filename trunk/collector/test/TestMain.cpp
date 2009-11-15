@@ -11,8 +11,8 @@ int main() {
   fprintf(stderr, "Running Unit Tests\n");
   fprintf(stderr, "------------------\n");
   TestAllocator();
-  TestWorkQueue();
-  TestCollector();
+  //TestWorkQueue();
+  //TestCollector();
   fprintf(stderr, "------------------\n");
   int32_t failCount = TestRunner::GetFailureCount();
   if (failCount) {

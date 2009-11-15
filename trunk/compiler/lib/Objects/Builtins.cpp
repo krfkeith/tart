@@ -31,8 +31,8 @@ namespace {
   };
 }
 
-Module Builtins::module(&builtinSource, "$builtin", NULL);
-Module Builtins::syntheticModule(&builtinSource, "$synthetic", NULL);
+Module Builtins::module(&builtinSource, "$builtin");
+Module Builtins::syntheticModule(&builtinSource, "$synthetic");
 
 Type * Builtins::typeTypeInfoBlock;
 SystemClass Builtins::typeObject("tart.core.Object");
@@ -75,17 +75,8 @@ FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
 
 void Builtins::init() {
-  // Initialize primitive types.
-  for (PrimitiveType * ptype = PrimitiveType::primitiveTypeList; ptype != NULL;
-      ptype = ptype->nextType()) {
-    ptype->init();
-    TypeDefn * de = ptype->typeDefn();
-    de->setQualifiedName(de->name());
-    if (!ptype->isUnsizedIntType()) {
-      de->addTrait(Defn::Singular);
-    }
-    module.addMember(de);
-  }
+  // Initialize primitive types
+  PrimitiveType::initPrimitiveTypes(&module);
 
   // Initialize all intrinsic operators and functions.
   initOperators();
@@ -231,6 +222,5 @@ CompositeType * SystemClass::get() const {
 
   return type_;
 }
-
 
 }

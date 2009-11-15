@@ -49,6 +49,9 @@ public:
   /** Construct a new module at the top level. */
   Module(ProgramSource * src, const std::string & qual, Scope * builtinScope);
 
+  /** Construct a builtin module. */
+  Module(ProgramSource * src, const std::string & qual);
+
   /** List of import statements. */
   const ASTNodeList & imports() const { return imports_; }
   ASTNodeList & imports() { return imports_; }

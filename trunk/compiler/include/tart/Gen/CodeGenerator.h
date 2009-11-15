@@ -128,24 +128,25 @@ public:
   /** Generate an expression (an RValue). */
   llvm::Value * genExpr(const Expr * expr);
   llvm::Constant * genConstExpr(const Expr * expr);
-  llvm::Value * genInitVar(InitVarExpr * in);
-  llvm::Value * genBinaryOpcode(BinaryOpcodeExpr * expr);
-  llvm::Value * genCompare(CompareExpr * in);
+  llvm::GlobalVariable * genConstRef(const Expr * in, llvm::StringRef name);
+  llvm::Value * genInitVar(const InitVarExpr * in);
+  llvm::Value * genBinaryOpcode(const BinaryOpcodeExpr * expr);
+  llvm::Value * genCompare(const CompareExpr * in);
   llvm::Value * genCast(llvm::Value * in, const Type * fromType, const Type * toType);
-  llvm::Value * genNumericCast(CastExpr * in);
-  llvm::Value * genUpCast(CastExpr * in);
-  llvm::Value * genBitCast(CastExpr * in);
-  llvm::Value * genUnionCtorCast(CastExpr * in);
-  llvm::Value * genUnionMemberCast(CastExpr * in);
-  llvm::Value * genAssignment(AssignmentExpr * in);
-  llvm::Value * genInstanceOf(InstanceOfExpr * in);
+  llvm::Value * genNumericCast(const CastExpr * in);
+  llvm::Value * genUpCast(const CastExpr * in);
+  llvm::Value * genBitCast(const CastExpr * in);
+  llvm::Value * genUnionCtorCast(const CastExpr * in);
+  llvm::Value * genUnionMemberCast(const CastExpr * in);
+  llvm::Value * genAssignment(const AssignmentExpr * in);
+  llvm::Value * genInstanceOf(const InstanceOfExpr * in);
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
   llvm::Value * genPtrDeref(const UnaryExpr * in);
   llvm::Value * genNot(const UnaryExpr * in);
   llvm::Value * genLogicalOper(const BinaryExpr * in);
-  llvm::Value * genCall(FnCallExpr * in);
-  llvm::Value * genIndirectCall(IndirectCallExpr * in);
-  llvm::Value * genNew(NewExpr * in);
+  llvm::Value * genCall(const FnCallExpr * in);
+  llvm::Value * genIndirectCall(const IndirectCallExpr * in);
+  llvm::Value * genNew(const NewExpr * in);
 
   /** Load an expression */
   llvm::Value * genLoadLValue(const LValueExpr * lval);
@@ -199,7 +200,8 @@ public:
       const CompositeType * toType);
 
   /** Generate an 'isInstance' test for union types. */
-  llvm::Value * genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType);
+  llvm::Value * genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
+      const Type * toType);
 
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
@@ -254,7 +256,7 @@ public:
   llvm::Function * getExceptionPersonality();
 
   /** return a reference to the global allocator function. */
-  llvm::Function * CodeGenerator::getGlobalAlloc();
+  llvm::Function * getGlobalAlloc();
 
   /** Generate data structures for a string literal. */
   llvm::Constant * genStringLiteral(const std::string & strval);
@@ -267,7 +269,7 @@ public:
       const Expr * sizeExpr);
 
   /** Generate a constant object. */
-  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj);
+  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name);
   llvm::Constant * genConstantObject(const ConstantObjectRef * obj);
 
   /** Generate a structure from the fields of a constant object. */
@@ -292,7 +294,7 @@ public:
   void genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
-  void genStopPoint(const SourceLocation & loc);
+  void setDebugLocation(const SourceLocation & loc);
 
   /** Generate debugging information for types. */
   llvm::DIType genDIType(const TypeRef & ref);
@@ -308,7 +310,7 @@ public:
   llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
   llvm::DIDerivedType genDITypeBase(const CompositeType * type);
   llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
-  llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * type,
+  llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * irtype,
       llvm::StringRef name, int index);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIEmbeddedType(const TypeRef & type);
@@ -353,8 +355,6 @@ private:
   Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
-  //llvm::GlobalVariable * moduleObject_;
-  //llvm::GlobalVariable * moduleTable_;
   llvm::FunctionType * invokeFnType_;
 
 #if 0

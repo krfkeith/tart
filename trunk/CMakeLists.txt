@@ -1,6 +1,6 @@
 # CMake build file for Tart
 
-cmake_minimum_required(VERSION 2.6) 
+cmake_minimum_required(VERSION 2.6)
 project(TART)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
@@ -9,6 +9,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
+include(CheckCXXSourceCompiles)
+include(FindThreads)
 
 # Check for the existence of include files.
 check_include_file(stdio.h HAVE_STDIO_H)
@@ -28,11 +30,27 @@ check_include_file_cxx(ctime HAVE_CTIME)
 check_include_file_cxx(cxxabi.h HAVE_CXXABI_H)
 check_include_file_cxx(unwind.h HAVE_UNWIND_H)
 
+if (CMAKE_USE_PTHREADS_INIT)
+    set (HAVE_PTHREADS ON)
+endif (CMAKE_USE_PTHREADS_INIT)
+
 # Check for library functions we need.
 check_function_exists(backtrace HAVE_BACKTRACE)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
+
+# Check for GCC atomics
+check_cxx_source_compiles(
+    "int main() {
+        int f;
+        __sync_fetch_and_add(&f, 1);
+        __sync_fetch_and_sub(&f, 1);
+        __sync_add_and_fetch(&f, 1);
+        __sync_sub_and_fetch(&f, 1);
+        __sync_bool_compare_and_swap(&f, 1, 0);
+    }"
+    HAVE_GCC_ATOMICS)
 
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)
@@ -59,7 +77,7 @@ add_definitions(
     -D__STDC_CONSTANT_MACROS
     -D_GNU_SOURCE)
 
-# Extra flags for GCC (C++ only)  
+# Extra flags for GCC (C++ only)
 if (CMAKE_COMPILER_IS_GNUCXX)
   set(GCC_CXX_FLAGS
       -pipe
@@ -68,14 +86,15 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Woverloaded-virtual
       -fno-operator-names -ffor-scope
       -fconst-strings
-      -fmessage-length=0)
+      -fmessage-length=0
+      )
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 # Add the check-build target
 add_custom_target(check)
 
 # Subdirs to compile
-add_subdirectory(collector)
+#add_subdirectory(collector)
 add_subdirectory(compiler)
 add_subdirectory(tools)
 add_subdirectory(runtime)

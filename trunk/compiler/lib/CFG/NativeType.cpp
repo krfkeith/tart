@@ -4,6 +4,7 @@
 
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/StaticType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"
@@ -50,7 +51,7 @@ AddressType::AddressType(const TypeRef & elemType)
   : TypeImpl(Type::NAddress)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<UnitType>(elemType.type()), elemType);
 }
 
 AddressType::AddressType() : TypeImpl(Type::NAddress) {}
@@ -161,7 +162,7 @@ PointerType::PointerType(const TypeRef & elemType)
   : TypeImpl(Type::NPointer)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<SingleValueType>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<UnitType>(elemType.type()), elemType);
 }
 
 PointerType::PointerType() : TypeImpl(Type::NPointer) {}
@@ -270,7 +271,7 @@ NativeArrayType::NativeArrayType(Type * elemType, uint64_t sz, TypeDefn * defn,
   , size_(sz)
 {
   if (elemType) {
-    DASSERT_OBJ(!isa<SingleValueType>(elemType), elemType);
+    DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
   }
 }
 

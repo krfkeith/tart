@@ -52,4 +52,51 @@ namespace tart {
     node->format(stream);
     return out;
   }
+
+  // Make conversion ranks streamable
+  inline std::ostream & operator<<(std::ostream & out, const ConversionRank rank) {
+    switch (rank) {
+      case Incompatible: {
+        out << "Incompatible";
+        break;
+      }
+
+      case Truncation: {
+        out << "Truncation";
+        break;
+      }
+
+      case IntegerToBool: {
+        out << "IntegerToBool";
+        break;
+      }
+
+      case SignedUnsigned: {
+        out << "SignedUnsigned";
+        break;
+      }
+
+      case PrecisionLoss: {
+        out << "PrecisionLoss";
+        break;
+      }
+
+      case NonPreferred: {
+        out << "NonPreferred";
+        break;
+      }
+
+      case ExactConversion: {
+        out << "ExactConversion";
+        break;
+      }
+
+      case IdenticalTypes: {
+        out << "IdenticalTypes";
+        break;
+      }
+    }
+
+    return out;
+  }
 }

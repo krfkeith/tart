@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Sema/AnalyzerBase.h"
+#include "tart/Sema/NamespaceAnalyzer.h"
 #include "tart/Sema/ClassAnalyzer.h"
 #include "tart/Sema/EnumAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
@@ -15,11 +16,13 @@
 #include "tart/Sema/SpCandidate.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/NamespaceDefn.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/PackageMgr.h"
@@ -280,7 +283,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     }
 
     if (typeArg == NULL) {
-      typeArg = SingleValueType::get(cb);
+      typeArg = UnitType::get(cb);
     }
 
     if (!cb->isSingular()) {
@@ -549,7 +552,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
       return analyzeTypeDefn(static_cast<TypeDefn *>(in), task);
 
     case Defn::Namespace:
-      return analyzeNamespace(static_cast<NamespaceDefn *>(in), task);
+      return NamespaceAnalyzer(static_cast<NamespaceDefn *>(in)).analyze(task);
 
     case Defn::Var:
     case Defn::Let:
@@ -621,61 +624,6 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
 
 bool AnalyzerBase::analyzeValueDefn(ValueDefn * in, AnalysisTask task) {
   return analyzeDefn(in, task);
-}
-
-bool AnalyzerBase::analyzeNamespace(NamespaceDefn * in, AnalysisTask task) {
-  // Analyze namespace imports.
-
-  DefnPasses passesToRun;
-  switch (task) {
-    case Task_PrepMemberLookup:
-    //case Task_PrepCallOrUse:
-      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
-      DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
-      break;
-
-    case Task_PrepTypeGeneration:
-    case Task_PrepCodeGeneration:
-    case Task_PrepEvaluation:
-      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveImport);
-      DefnAnalyzer::addPass(in, passesToRun, Pass_CreateMembers);
-      DefnAnalyzer::addPass(in, passesToRun, Pass_ResolveStaticInitializers);
-      break;
-  }
-
-  if (in->beginPass(Pass_ResolveImport)) {
-    if (in->ast() != NULL) {
-      DefnAnalyzer da(in->module(), &in->memberScope(), in);
-      const ASTNodeList & imports = in->ast()->imports();
-      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
-        da.importIntoScope(cast<ASTImport>(*it), &in->memberScope());
-      }
-    }
-
-    in->finishPass(Pass_ResolveImport);
-  }
-
-  if (in->beginPass(Pass_CreateMembers)) {
-    if (in->ast() != NULL) {
-      ScopeBuilder::createScopeMembers(in);
-    }
-
-    in->finishPass(Pass_CreateMembers);
-  }
-
-  if (in->beginPass(Pass_ResolveStaticInitializers)) {
-    for (Defn * m = in->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
-      DefnAnalyzer da(in->module(), &in->memberScope(), in);
-      da.analyzeDefn(m, Task_PrepCodeGeneration);
-      if (m->isSingular()) {
-        in->module()->addSymbol(m);
-      }
-    }
-
-    in->finishPass(Pass_ResolveStaticInitializers);
-  }
-
-  return true;
 }
 
 CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {

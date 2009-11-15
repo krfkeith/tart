@@ -679,7 +679,7 @@ Type * BindingEnv::subst(Type * in) const {
     }
 
     case Type::Function:
-    case Type::SingleValue:
+    case Type::Unit:
       //DASSERT(in->isSingular());
       return in;
 
@@ -834,7 +834,7 @@ Type * BindingEnv::relabel(Type * in) {
     }
 
     case Type::Function:
-    case Type::SingleValue:
+    case Type::Unit:
       //DASSERT(in->isSingular());
       return in;
 

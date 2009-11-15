@@ -105,7 +105,7 @@ public:
 
   /** Return the 'coerce' function of class Object. Needs to be handled specially
       because there are multiple overloads, and we want the one that is a template. */
-  static FunctionDefn * Builtins::objectCoerceFn();
+  static FunctionDefn * objectCoerceFn();
 };
 
 template<class T> T * Builtins::getMember(Type * tdef, const char * name) {

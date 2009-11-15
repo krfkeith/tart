@@ -8,6 +8,7 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"
@@ -373,7 +374,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         if (TypeLiteralExpr * type = dyn_cast<TypeLiteralExpr>(param)) {
           params.push_back(type->value());
         } else if (ConstantExpr * cexp = dyn_cast<ConstantExpr>(param)) {
-          params.push_back(SingleValueType::get(cexp));
+          params.push_back(UnitType::get(cexp));
         }
       }
     }

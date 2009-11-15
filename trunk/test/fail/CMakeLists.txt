@@ -8,15 +8,17 @@ set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/l
 add_executable(testrunner testrunner.cpp)
 add_dependencies(testrunner collector compiler unittest.run)
 target_link_libraries(testrunner
-    compiler collector
+    compiler
     ${LLVM_BIT_READER}
     ${LLVM_BIT_WRITER}
     ${LLVM_SELECTION_DAG}
-    ${LLVM_ANALYSIS} 
+    ${LLVM_ANALYSIS}
     ${LLVM_TARGET}
+    ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-    ${LLVM_CORE})
+    )
+set_target_properties(testrunner PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
 
 # Now run the tests on these files.
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)

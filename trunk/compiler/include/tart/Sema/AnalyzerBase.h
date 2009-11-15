@@ -111,9 +111,6 @@ public:
   /** Do the requested analysis passes on the type definition. */
   static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
 
-    /** Do the requested analysis pass on the namesapce. */
-  static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask pass);
-
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */
   static CompositeType * getArrayTypeForElement(Type * elementType);

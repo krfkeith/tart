@@ -25,7 +25,7 @@ namespace tart {
 Diagnostics::StdErrWriter Diagnostics::StdErrWriter::instance;
 
 namespace {
-  char * severityNames[Diagnostics::Severity_Levels] = {
+  const char * severityNames[Diagnostics::Severity_Levels] = {
     "",
     "info: ",
     "warning: ",
@@ -33,7 +33,7 @@ namespace {
     "error: ",
   };
 
-  static char * INDENTATION = "                                ";
+  static const char * INDENTATION = "                                ";
   static int MAX_INDENT = 16;
 
   void writeIndent(int level) {
@@ -140,12 +140,12 @@ void Diagnostics::writeLnIndent(const std::string & str) {
   fprintf(stderr, "%s\n", str.c_str());
 }
 
-void Diagnostics::writeLnIndent(char * msg, ...) {
+void Diagnostics::writeLnIndent(const char * msg, ...) {
   va_list ap;
   va_start(ap, msg);
   writeIndent(indentLevel);
-  vfprintf(stderr, msg, ap);
   fprintf(stderr, "\n");
+  vfprintf(stderr, msg, ap);
   va_end(ap);
 }
 

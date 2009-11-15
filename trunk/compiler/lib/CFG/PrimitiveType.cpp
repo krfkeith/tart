@@ -24,6 +24,19 @@ using llvm::APInt;
 
 PrimitiveType * PrimitiveType::primitiveTypeList;
 
+void PrimitiveType::initPrimitiveTypes(Module * module) {
+  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
+    ptype->init();
+    TypeDefn * de = ptype->typeDefn();
+    de->setQualifiedName(de->name());
+    if (!ptype->isUnsizedIntType()) {
+      de->addTrait(Defn::Singular);
+    }
+
+    module->addMember(de);
+  }
+}
+
 /// -------------------------------------------------------------------
 /// Primitive types
 PrimitiveType::PrimitiveType(TypeDefn * de) :

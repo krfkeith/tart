@@ -17,27 +17,29 @@ namespace tart {
 
 class ASTBuiltIn;
 
+/// -------------------------------------------------------------------
+/// Predicate functions for type ids.
+
+inline bool isIntegerType(TypeId id) {
+  return id >= TypeId_Char && id <= TypeId_UInt64;
+}
+
+inline bool isUnsignedIntegerType(TypeId id) {
+  return (id >= TypeId_UInt8 && id <= TypeId_UInt64) || id == TypeId_Char;
+}
+
+inline bool isSignedIntegerType(TypeId id) {
+  return id >= TypeId_SInt8 && id <= TypeId_SInt64;
+}
+
+inline static bool isFloatingType(TypeId id) {
+  return id >= TypeId_Float && id <= TypeId_LongDouble;
+}
+
 // -------------------------------------------------------------------
 // Base class for primitive types
 class PrimitiveType : public DeclaredType {
-protected:
-  ConversionRank convertToInteger(const Conversion & cn) const;
-  ConversionRank convertConstantToInteger(const Conversion & cn) const;
-  ConversionRank fromUnsizedIntToInt(const ConstantInteger * cint, Expr ** out) const;
-
-  ConversionRank convertToFloat(const Conversion & cn) const;
-  ConversionRank convertConstantToFloat(const Conversion & cn) const;
-  ConversionRank fromUnsizedIntToFloat(const ConstantInteger * cint, Expr ** out) const;
-
-  ConversionRank convertToBool(const Conversion & cn) const;
-  ConversionRank convertConstantToBool(const Conversion & cn) const;
-
-  ConversionRank convertFromObject(const Conversion & cn) const;
-
-  PrimitiveType * nextType_;
-
 public:
-
   /** Construct a primitive type */
   PrimitiveType(TypeDefn * de);
 
@@ -67,11 +69,29 @@ public:
   // Return an integer type that fits the given number of bits.
   static PrimitiveType * fitIntegerType(size_t nBits, bool isUnsigned);
 
-  // Static list of all primitive types.
-  static PrimitiveType * primitiveTypeList;
-
   // If 'in' is an enum type, return its base type, otherwise just return 'in'.
   static const Type * derefEnumType(const Type * in);
+
+  static void initPrimitiveTypes(Module * module);
+
+protected:
+  ConversionRank convertToInteger(const Conversion & cn) const;
+  ConversionRank convertConstantToInteger(const Conversion & cn) const;
+  ConversionRank fromUnsizedIntToInt(const ConstantInteger * cint, Expr ** out) const;
+
+  ConversionRank convertToFloat(const Conversion & cn) const;
+  ConversionRank convertConstantToFloat(const Conversion & cn) const;
+  ConversionRank fromUnsizedIntToFloat(const ConstantInteger * cint, Expr ** out) const;
+
+  ConversionRank convertToBool(const Conversion & cn) const;
+  ConversionRank convertConstantToBool(const Conversion & cn) const;
+
+  ConversionRank convertFromObject(const Conversion & cn) const;
+
+  PrimitiveType * nextType_;
+
+  // Static list of all primitive types.
+  static PrimitiveType * primitiveTypeList;
 };
 
 // -------------------------------------------------------------------

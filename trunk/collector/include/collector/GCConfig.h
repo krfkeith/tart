@@ -92,6 +92,18 @@ extern "C" {
         (int32_t)oldValue, (int32_t)newValue, (int32_t *)theValue);
   }
   #endif
+#elif HAVE_GCC_ATOMICS
+  #if SIZEOF_CHAR_P == 8
+  static inline bool gc_compare_and_swap_ptr(
+      void * oldValue, void * newValue, void ** theValue) {
+    return __sync_bool_compare_and_swap(theValue, oldValue, newValue);
+  }
+  #else
+  static inline bool gc_compare_and_swap_ptr(
+      void * oldValue, void * newValue, void ** theValue) {
+    return __sync_bool_compare_and_swap(theValue, oldValue, newValue);
+  }
+  #endif
 #else
   #error "gc_compare_and_swap_ptr not defined!"
 #endif

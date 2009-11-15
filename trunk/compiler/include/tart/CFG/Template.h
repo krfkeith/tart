@@ -115,7 +115,7 @@ public:
   void addParameter(const SourceLocation & loc, const char * name, Type * type = NULL);
 
   /** Find a specialization with the specified type arguments. */
-  Defn * TemplateSignature::findSpecialization(TypeVector * tv) const;
+  Defn * findSpecialization(TypeVector * tv) const;
 
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);

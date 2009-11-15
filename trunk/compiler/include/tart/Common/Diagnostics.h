@@ -6,11 +6,11 @@
 #define TART_COMMON_DIAGNOSTICS_H
 
 #ifndef TART_COMMON_FORMATTABLE_H
-#include "Tart/Common/Formattable.h"
+#include "tart/Common/Formattable.h"
 #endif
 
 #ifndef TART_COMMON_SOURCELOCATION_H
-#include "Tart/Common/SourceLocation.h"
+#include "tart/Common/SourceLocation.h"
 #endif
 
 #include <stdarg.h>
@@ -279,7 +279,7 @@ public:
   void writeLnIndent(const std::string & str);
 
   /** write an indented line, formatted. */
-  void writeLnIndent(char * msg, ...);
+  void writeLnIndent(const char * msg, ...);
 
   /** Assertion failure. */
   void NORETURN(assertionFailed(const char * expr, const char * fname, unsigned lineno));

@@ -21,3 +21,6 @@
 
 /** Whether the backtrace() function is available. */
 #cmakedefine HAVE_BACKTRACE 1
+
+/** Whether GCC builtin atomic functions are available. */
+#cmakedefine HAVE_GCC_ATOMICS 1

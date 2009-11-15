@@ -14,9 +14,9 @@ import tart.annex.Nonreflective;
     TUPLE,
     UNION,
     ADDRESS,
-    NATIVE_POINTER,
+    POINTER,
     NATIVE_ARRAY,
-    SINGLETON,
+    UNIT,
   }
 
   private {

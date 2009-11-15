@@ -5,32 +5,26 @@
 #ifndef TART_COMMON_GC_H
 #define TART_COMMON_GC_H
 
-#include "collector/Allocator.h"
+#include <stddef.h>
+
+//#include "collector/Allocator.h"
 
 namespace tart {
 
 /// -------------------------------------------------------------------
 /// Base class of garbage-collectable objects
 class GC {
-private:
-  mutable bool marked;
-
-  static size_t reclaimed;
-  static size_t total;
-  static int debugLevel;
-
-  static bool sweepCallback(void * alloc, void * ctx);
 public:
   void * operator new(size_t size);
   void operator delete(void * mem);
 
   /** Construct a new GC object. */
-  GC() : marked(false) {}
+  GC() : marked_(false) {}
 
   /** Mark an object as in-use. */
   void mark() const {
-    if (!marked) {
-      marked = true;
+    if (!marked_) {
+      marked_ = true;
       trace();
     }
   }
@@ -78,6 +72,17 @@ public:
       first++;
     }
   }
+
+private:
+  mutable bool marked_;
+  GC * next_;
+
+  static size_t reclaimed;
+  static size_t total;
+  static int debugLevel;
+  static GC * allocList_;
+
+  static bool sweepCallback(void * alloc, void * ctx);
 };
 
 }

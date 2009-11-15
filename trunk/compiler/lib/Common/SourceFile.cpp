@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Common/SourceFile.h"
+#include "tart/Common/Diagnostics.h"
 #include <ostream>
 #include <iostream>
 #include <fstream>
@@ -23,7 +24,7 @@ void SourceLocation::dump() const {
 }
 
 TokenPosition ProgramSource::tokenPosition(const SourceLocation & loc) {
-  assert(loc.end >= loc.begin);
+  DASSERT(loc.end >= loc.begin);
   std::vector<uint32_t>::const_iterator itBegin =
     std::upper_bound(lineOffsets.begin(), lineOffsets.end(), loc.begin) - 1;
   std::vector<uint32_t>::const_iterator itEnd =

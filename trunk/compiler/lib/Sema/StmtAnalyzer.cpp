@@ -631,7 +631,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
     if (s->nodeType() == ASTNode::Case) {
-      CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
+      const CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
       ASTNode * caseValAst = caseSt->caseExpr();
       ConstantExprList caseValList;
       Scope * saveCaseScope = setActiveScope(caseValScope);

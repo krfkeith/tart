@@ -7,6 +7,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/EnumType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/TypeAlias.h"
 #include "tart/CFG/TypeConstraint.h"
@@ -84,8 +85,8 @@ Type * TypeTransform::visit(Type * in) {
     case Type::NArray:
       return visitNativeArrayType(static_cast<NativeArrayType *>(in));
 
-    case Type::SingleValue:
-      return visitSingleValueType(static_cast<SingleValueType *>(in));
+    case Type::Unit:
+      return visitUnitType(static_cast<UnitType *>(in));
 
     case Type::Alias:
       return visitTypeAlias(static_cast<TypeAlias *>(in));
@@ -176,7 +177,7 @@ Type * TypeTransform::visitNativeArrayType(NativeArrayType * in) {
   return NativeArrayType::get(elemType, in->size());
 }
 
-Type * TypeTransform::visitSingleValueType(SingleValueType * in) {
+Type * TypeTransform::visitUnitType(UnitType * in) {
   return in;
 }
 

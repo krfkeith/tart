@@ -13,6 +13,7 @@ add_executable(unittest
   ParserTest.cpp
   ScopeTest.cpp
   TypeTest.cpp
+  PrimitiveTypeTest.cpp
   DefnTest.cpp
   ScopeBuilderTest.cpp
   DeclAnalyzerTest.cpp
@@ -20,13 +21,15 @@ add_executable(unittest
   TypeInferenceTest.cpp
   UnifyTest.cpp)
 target_link_libraries(unittest
-    gtest gmock compiler collector
+    gtest gmock compiler
     ${LLVM_BIT_WRITER}
     ${LLVM_ANALYSIS} 
     ${LLVM_TARGET}
+    ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-    ${LLVM_CORE})
+    )
+set_target_properties(unittest PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
 
 add_custom_target(unittest.run DEPENDS unittest COMMAND unittest)
 add_dependencies(check unittest.run)

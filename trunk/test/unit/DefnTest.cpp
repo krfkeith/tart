@@ -1,10 +1,11 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
-#include "tart/CFG/Defn.h"
+#include "tart/CFG/NamespaceDefn.h"
+#include "tart/CFG/VariableDefn.h"
 
 using namespace tart;
 using llvm::isa;

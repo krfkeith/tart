@@ -2,7 +2,7 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Type.h"
+#include "tart/CFG/TypeOrdering.h"
 //#include "tart/CFG/TypeAlias.h"
 //#include "tart/CFG/TypeConstraint.h"
 //#include "tart/CFG/PrimitiveType.h"
@@ -14,7 +14,7 @@
 //#include "tart/CFG/Defn.h"
 //#include "tart/CFG/Template.h"
 //#include "tart/Sema/BindingEnv.h"
-//#include "tart/Common/Diagnostics.h"
+#include "tart/Common/Diagnostics.h"
 
 namespace tart {
 
@@ -41,8 +41,8 @@ ComparisonResult compareSpecificity(const TypeVector * t1, const TypeVector * t2
 
   ComparisonResult result = EQUAL;
   size_t numElements = t1->size();
-  for (size_t i = 0; i < numElements && result != UNORDERED; ++it) {
-    result = combineResults(compareSpecificity((*t1)[i], (*t2)[i]));
+  for (size_t i = 0; i < numElements && result != UNORDERED; ++i) {
+    result = combineResults(result, compareSpecificity((*t1)[i], (*t2)[i]));
   }
 
   return result;
@@ -84,7 +84,7 @@ ComparisonResult compareSpecificity(const Type * t1, const Type * t2) {
     case Type::NAddress:
     case Type::NPointer:
     case Type::NArray:
-    case Type::SingleValue:
+    case Type::Unit:
     case Type::Alias:
     case Type::Pattern:
     case Type::PatternVal:
