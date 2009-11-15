@@ -14,9 +14,19 @@
 
 namespace tart {
 
-static const DefnPasses PASS_SET_RESOLVETYPE = DefnPasses::of(
-  Pass_CreateMembers,
-  Pass_ResolveVarType
+static const PropertyDefn::PassSet PASS_SET_RESOLVETYPE = PropertyDefn::PassSet::of(
+  PropertyDefn::AttributePass,
+  PropertyDefn::AccessorCreationPass,
+  PropertyDefn::PropertyTypePass,
+  PropertyDefn::AccessorAnalysisPass
+);
+
+static const PropertyDefn::PassSet PASS_SET_COMPLETE = PropertyDefn::PassSet::of(
+  PropertyDefn::AttributePass,
+  PropertyDefn::AccessorCreationPass,
+  PropertyDefn::PropertyTypePass,
+  PropertyDefn::AccessorAnalysisPass,
+  PropertyDefn::CompletionPass
 );
 
 PropertyAnalyzer::PropertyAnalyzer(PropertyDefn * prop)
@@ -30,39 +40,77 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
     return true;
   }
 
-  // Work out what passes need to be run.
-  DefnPasses passesToRun;
-  addPasses(target, passesToRun, PASS_SET_RESOLVETYPE);
+  switch (task) {
+    default:
+      return runPasses(PASS_SET_RESOLVETYPE);
 
-  // Run passes
+    case Task_PrepCodeGeneration:
+      return runPasses(PASS_SET_COMPLETE);
+  }
+}
 
+bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
+  passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
+    if (!target->type().isDefined()) {
+      return false;
+    }
+
     return true;
   }
 
-  DefnAnalyzer::analyze(target, passesToRun);
+  if (passesToRun.contains(PropertyDefn::AttributePass) &&
+      target->passes().begin(PropertyDefn::AttributePass)) {
+    if (!resolveAttributes(target)) {
+      return false;
+    }
 
-  if (passesToRun.contains(Pass_ResolveVarType)) {
+    target->passes().finish(PropertyDefn::AttributePass);
+  }
+
+  if (passesToRun.contains(PropertyDefn::AccessorCreationPass) &&
+      target->passes().begin(PropertyDefn::AccessorCreationPass)) {
+    if (!createMembersFromAST(target)) {
+      return false;
+    }
+
+    target->passes().finish(PropertyDefn::AccessorCreationPass);
+  }
+
+  if (passesToRun.contains(PropertyDefn::PropertyTypePass)) {
     if (!resolvePropertyType()) {
       return false;
     }
   }
 
-  if (task == Task_PrepCodeGeneration || task == Task_PrepEvaluation) {
+  if (passesToRun.contains(PropertyDefn::AccessorAnalysisPass)) {
     if (target->getter() != NULL) {
-      analyzeDefn(target->getter(), task);
+      analyzeDefn(target->getter(), Task_PrepTypeComparison);
     }
 
     if (target->setter() != NULL) {
-      analyzeDefn(target->setter(), task);
+      analyzeDefn(target->setter(), Task_PrepTypeComparison);
     }
+
+    target->passes().finish(PropertyDefn::AccessorAnalysisPass);
+  }
+
+  if (passesToRun.contains(PropertyDefn::CompletionPass)) {
+    if (target->getter() != NULL) {
+      analyzeDefn(target->getter(), Task_PrepCodeGeneration);
+    }
+
+    if (target->setter() != NULL) {
+      analyzeDefn(target->setter(), Task_PrepCodeGeneration);
+    }
+    return false;
   }
 
   return true;
 }
 
 bool PropertyAnalyzer::resolvePropertyType() {
-  if (target->beginPass(Pass_ResolveVarType)) {
+  if (target->passes().begin(PropertyDefn::PropertyTypePass)) {
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
@@ -156,7 +204,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       module->addSymbol(setter);
     }
 
-    target->finishPass(Pass_ResolveVarType);
+    target->passes().finish(PropertyDefn::PropertyTypePass);
   }
 
   return true;

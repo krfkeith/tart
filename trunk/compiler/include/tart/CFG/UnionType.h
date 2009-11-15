@@ -72,7 +72,7 @@ protected:
   UnionType(const SourceLocation & loc, const TypeRefList & members);
 
   // Given an IR type, return an estimate of the size of this type.
-  static size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize);
+  static size_t estimateTypeSize(const llvm::Type * type, size_t ptrSize);
 
   SourceLocation loc_;
   TypeVector * members_;

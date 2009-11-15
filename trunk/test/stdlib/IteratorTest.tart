@@ -1,4 +1,4 @@
-import tart.Collections.Iterators;
+import tart.collections.Iterators;
 
 @EntryPoint
 def main(args: String[]) -> int {

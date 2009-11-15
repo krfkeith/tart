@@ -445,20 +445,14 @@ void CodeGenerator::addModuleDependencies() {
   using namespace llvm;
   const ModuleSet & modules = module_->importModules();
   if (!modules.empty()) {
-    ConstantList deps;
-    llvm::PointerType * charPtrType = llvm::PointerType::get(builder_.getInt8Ty(), 0);
+    ValueList deps;
     for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
       Module * m = *it;
-      llvm::Constant * depName = ConstantArray::get(context_, m->qualifiedName(), false);
-      GlobalVariable * depNamePtr = new GlobalVariable(context_, depName->getType(), true,
-          GlobalValue::InternalLinkage, depName, ".module_dep." + m->qualifiedName());
-      deps.push_back(llvm::ConstantExpr::getPointerCast(depNamePtr, charPtrType));
+      deps.push_back(MDString::get(context_, m->qualifiedName()));
     }
 
-    llvm::Constant * depList =
-        llvm::ConstantArray::get(llvm::ArrayType::get(charPtrType, deps.size()), deps);
-    llvm::GlobalVariable * dep = new llvm::GlobalVariable(context_, depList->getType(), true,
-        llvm::GlobalValue::InternalLinkage, depList, ".module_dep_list");
+    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
+        MDNode::get(context_, deps.data(), deps.size()));
   }
 }
 

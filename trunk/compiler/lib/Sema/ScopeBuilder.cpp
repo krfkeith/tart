@@ -7,6 +7,8 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/NamespaceDefn.h"
+#include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"

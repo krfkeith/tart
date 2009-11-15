@@ -165,6 +165,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       assert(false);
     } else {
 #endif
+      setDebugLocation(fdef->location());
       genLocalStorage(fdef->blocks(), fdef->localScopes());
       genDISubprogramStart(fdef);
       genBlocks(fdef->blocks());
@@ -188,8 +189,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   return true;
 }
 
-//llvm::Function * CodeGenerator::genFunctionValue(FunctionDefn * fdef) {
-
 Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   // Don't generate the IR if we've already done so
   if (let->irValue() != NULL) {
@@ -211,7 +210,17 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   // Generate the value
   Value * value = NULL;
   if (let->initValue() != NULL) {
-    value = genExpr(let->initValue());
+    if (let->hasStorage()) {
+      if (let->module() != module_) {
+        value = new GlobalVariable(
+            *irModule_, irType, true, GlobalValue::ExternalLinkage, NULL, let->linkageName());
+      } else {
+        value = genConstRef(let->initValue(), let->linkageName());
+      }
+    } else {
+      value = genExpr(let->initValue());
+    }
+
     if (value == NULL) {
       return false;
     }
@@ -225,7 +234,9 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
     // See if it's a constant.
     letValue = constantValue;
   } else {
-    assert(false && "let value not a constant");
+    diag.error(let->location()) << "Non-constant let value " << let;
+    DASSERT(let->passes().isFinished(VariableDefn::InitializerPass));
+    DFAIL("let value not a constant");
   }
 
   DIType dbgType;

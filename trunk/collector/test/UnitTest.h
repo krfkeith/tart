@@ -1,4 +1,4 @@
-#include <llvm/Support/DataTypes.h>
+//#include <llvm/Support/DataTypes.h>
 #include <llvm/ADT/StringExtras.h>
 #include <stdio.h>
 #include <string>
@@ -23,9 +23,9 @@ inline std::string ToString(uint64_t v) {
   return llvm::itostr(v);
 }
 
-inline std::string ToString(size_t v) {
-  return llvm::itostr(v);
-}
+//inline std::string ToString(size_t v) {
+//  return llvm::itostr(v);
+//}
 
 inline std::string ToString(double v) {
   return llvm::ftostr(v);

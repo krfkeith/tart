@@ -1,15 +1,17 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Common/GC.h"
-#include <gtest/gtest.h>
+#include "tart/Objects/Builtins.h"
+#include "gtest/gtest.h"
 
 int main(int argc, char **argv) {
   using namespace tart;
-  
+
   // Initialize the garbage collector.
   GC::init();
+  Builtins::init();
 
   // Initialize and run tests.
   testing::InitGoogleTest(&argc, argv);

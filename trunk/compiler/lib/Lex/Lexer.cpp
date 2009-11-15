@@ -748,7 +748,7 @@ TokenType Lexer::next() {
                   } else {
                     // For character literals, since the token value is a string, then just
                     // encode it as a hex number.
-                    len = snprintf(charbuf, 9, "%0.8x", charVal);
+                    len = snprintf(charbuf, 9, "%0.8lx", charVal);
                     tokenValue_.append(charbuf, len);
                   }
 

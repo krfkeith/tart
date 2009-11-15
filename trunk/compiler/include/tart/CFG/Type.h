@@ -21,6 +21,10 @@
 #include "tart/CFG/Scope.h"
 #endif
 
+#ifndef TART_CFG_TYPECONVERSION_H
+#include "tart/CFG/TypeConversion.h"
+#endif
+
 #include "llvm/ADT/DenseMap.h"
 
 namespace llvm {
@@ -65,70 +69,6 @@ enum TypeId {
 /// -------------------------------------------------------------------
 /// EnumSet of defn states.
 typedef SmallEnumSet<TypeId, TypeId_Count> TypeIdSet;
-
-/// -------------------------------------------------------------------
-/// Represents the degrees of compatibility between two types. Higher
-/// numerical values are considered 'more compatible' than lower ones.
-/// Compatibility values within the same 'rank' are considered to be
-/// equally good (or bad). So for example, PrecisionLoss is considered
-/// as 'bad' as SignedUnsigned.
-enum ConversionRank {
-  // Rank 0: Impossible conversions
-  Incompatible,      // let x:String = 1     No conversion possible
-
-  // Rank 1: Lossy conversions (cause warning message to be emitted.)
-  Truncation,        // let x:ubyte = 256    Value will be truncated
-  SignedUnsigned,    // let x:uint = -1      Signed / unsigned mismatch
-  PrecisionLoss,     // let x:int = 1.2      Loss of decimal precision
-  IntegerToBool,     // let x:bool = 256     Compare with 0
-
-  // Rank 2: Non-lossy conversions
-  NonPreferred,      // let x:int = 1.0      Requires transformation
-
-  // Rank 3-4: Trivial conversions
-  ExactConversion,   // let x:byte = int(1)  Lossless conversion
-
-  // Rank 5: Identity conversions
-  IdenticalTypes,     // let x:int = int(1)   No conversion, same type
-};
-
-inline bool isConversionWarning(ConversionRank rank) {
-  return rank < NonPreferred;
-}
-
-FormatStream & operator<<(FormatStream & out, ConversionRank tc);
-
-/// -------------------------------------------------------------------
-/// Input parameters for a type conversion operation.
-struct Conversion {
-  enum Options {
-    Coerce = (1<<0),        // Allow coercive casts
-    Dynamic = (1<<1),       // Allow dynamic casts
-  };
-
-  const Type * fromType;
-  Expr * fromValue;
-  Expr ** resultValue;
-  int options;
-
-  /** Test conversion from type to type. */
-  Conversion(const Type * from);
-
-  /** Test conversion from expression to type. */
-  Conversion(Expr * from);
-
-  /** Convert expression. */
-  Conversion(Expr * from, Expr ** to, int options = 0);
-
-  /** Returns the 'from' type, with aliases and type parameters resolved. */
-  const Type * getFromType() const;
-
-  /** Set conversion option. */
-  Conversion & setOption(int option) {
-    options |= option;
-    return *this;
-  }
-};
 
 /// -------------------------------------------------------------------
 /// Interface for types.
@@ -188,8 +128,6 @@ public:
     */
   virtual bool includes(const Type * other) const { return isEqual(other); }
 
-  //virtual bool is
-
   /** Return whether this type is passed by value or by reference. */
   virtual bool isReferenceType() const = 0;
 
@@ -247,7 +185,7 @@ public:
       T is a pattern variable bound to S. */
   static bool equivalent(const Type * type1, const Type * type2);
 
-  // Structure used when using type as a key.
+  // Structure used when using type pointers as a key.
   struct KeyInfo {
     static inline Type * getEmptyKey() { return reinterpret_cast<Type *>(0); }
     static inline Type * getTombstoneKey() { return reinterpret_cast<Type *>(-1); }
@@ -336,44 +274,6 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// A type which consists of a single value, used for value template
-/// arguments.
-class SingleValueType : public Type {
-public:
-  // Static factory function.
-  static SingleValueType * get(ConstantExpr * value);
-
-  // The constant value.
-  ConstantExpr * value() const { return value_; }
-
-  // Overrides
-
-  bool isSingular() const { return value_->isSingular(); }
-  bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const { return isEqual(other); }
-  bool isReferenceType() const { return false; }
-  const llvm::Type * irType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  Expr * nullInitValue() const;
-  void trace() const;
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const SingleValueType *) { return true; }
-  static inline bool classof(const Type * ty) {
-    return ty->typeClass() == SingleValue;
-  }
-
-private:
-  ConstantExpr * value_;
-
-  /** Construct a new typealias. */
-  SingleValueType(ConstantExpr * value)
-    : Type(SingleValue)
-    , value_(value)
-  {}
-};
-
-/// -------------------------------------------------------------------
 /// A reference to a type, and the type modifiers.
 
 class TypeRef {
@@ -448,7 +348,7 @@ public:
     static inline TypeRef getTombstoneKey() { return TypeRef(NULL, uint32_t(-2)); }
 
     static unsigned getHashValue(const TypeRef & val) {
-      return Type::KeyInfo::getHashValue(val.type_) ^ val.modifiers_;
+      return (Type::KeyInfo::getHashValue(val.type_) * 0x5bd1e995) ^ val.modifiers_;
     }
 
     static bool isEqual(const TypeRef & lhs, const TypeRef & rhs) {
@@ -520,6 +420,51 @@ private:
 };
 
 /// -------------------------------------------------------------------
+/// Represents a sub-range of a list of type references.
+
+typedef std::pair<TypeRefList::const_iterator, TypeRefList::const_iterator> TypeRefIterPair;
+
+struct TypeRefIterPairKeyInfo {
+  static inline TypeRefIterPair getEmptyKey() { return TypeRefIterPair(&emptyKey, &emptyKey + 1); }
+  static inline TypeRefIterPair getTombstoneKey() {
+    return TypeRefIterPair(&tombstoneKey, &tombstoneKey + 1);
+  }
+
+  static unsigned getHashValue(const TypeRefIterPair & key) {
+    unsigned result = 0;
+    for (TypeRefList::const_iterator it = key.first; it != key.second; ++it) {
+      result *= 0x5bd1e995;
+      result ^= result >> 24;
+      result ^= TypeRef::KeyInfo::getHashValue(*it);
+    }
+
+    return result;
+  }
+
+  static bool isEqual(const TypeRefIterPair & lhs, const TypeRefIterPair & rhs) {
+    size_t lhsBytes = (uint8_t *)lhs.second - (uint8_t *)lhs.first;
+    size_t rhsBytes = (uint8_t *)rhs.second - (uint8_t *)rhs.first;
+    if (lhsBytes == rhsBytes) {
+      TypeRefList::const_iterator li = lhs.first;
+      TypeRefList::const_iterator ri = rhs.first;
+      for (; li != lhs.second; ++li, ++ri) {
+        if (!TypeRef::KeyInfo::isEqual(*li, *ri)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  static bool isPod() { return false; }
+  static TypeRef emptyKey;
+  static TypeRef tombstoneKey;
+};
+
+/// -------------------------------------------------------------------
 /// An immutable vector of type references. Can be used as a map key.
 
 class TypeVector : public GC, public Formattable {
@@ -528,7 +473,7 @@ public:
   typedef TypeRefList::const_iterator const_iterator;
 
   static TypeVector * get(const TypeRef singleTypeArg);
-  static TypeVector * get(const TypeRef * first, const TypeRef * last);
+  static TypeVector * get(TypeRefList::const_iterator first, TypeRefList::const_iterator last);
   static TypeVector * get(const TypeRefList & trefs) {
     return get(&*trefs.begin(), &*trefs.end());
   }
@@ -551,70 +496,38 @@ public:
 
   // Structure used when using type vector as a map key.
   struct KeyInfo {
-    static inline TypeVector * getEmptyKey() { return &emptyValue_; }
-    static inline TypeVector * getTombstoneKey() { return &tombstoneValue_; }
+    static inline TypeVector * getEmptyKey() { return NULL; }
+    static inline TypeVector * getTombstoneKey() { return (TypeVector *)(-1); }
 
     static unsigned getHashValue(TypeVector * val) {
-      return val->hashVal_;
+      return static_cast<unsigned>(reinterpret_cast<uintptr_t>(val) * 0x5bd1e995);
     }
 
     static bool isEqual(TypeVector * lhs, TypeVector * rhs) {
-      if (lhs->size() == rhs->size() && lhs->hashVal_ == rhs->hashVal_) {
-        return std::equal(lhs->data_.begin(), lhs->data_.end(), rhs->data_.begin());
-      }
-
-      return false;
+      return (void *)lhs == (void *)rhs;
     }
 
     static bool isPod() { return false; }
   };
 
-private:
-  typedef llvm::DenseMap<TypeVector *, char, TypeVector::KeyInfo> TypeVectorMap;
-
-  TypeVector(const TypeRef * first, const TypeRef * last) : data_(first, last) {
-    hashVal_ = hashBytes(first, (char *)last - (char *)first);
+  /** Return the type ref values as an iterator pair. */
+  TypeRefIterPair iterPair() const {
+    return TypeRefIterPair(data_.begin(), data_.end());
   }
 
-  // Special constructor for empty and tombstone values.
-  TypeVector(uint32_t hashVal) : hashVal_(hashVal) {}
+private:
+  typedef llvm::DenseMap<TypeRefIterPair, TypeVector *, TypeRefIterPairKeyInfo> TypeVectorMap;
+
+  TypeVector(TypeRefList::const_iterator first, TypeRefList::const_iterator last)
+    : data_(first, last) {}
 
   // Destructor removes this from the uniqueValues_ map.
   ~TypeVector();
 
-  void calcHash() {
-    hashVal_ = 0;
-    for (iterator it = begin(); it != end(); ++it) {
-      hashVal_ = (hashVal_ << 1) ^ TypeRef::KeyInfo::getHashValue(*it);
-    }
-  }
-
-  uint32_t hashVal_;
   TypeRefList data_;
 
   static TypeVectorMap uniqueValues_;
-  static TypeVector emptyValue_;
-  static TypeVector tombstoneValue_;
 };
-
-/// -------------------------------------------------------------------
-/// Predicate functions for type ids.
-
-inline bool isIntegerType(TypeId id) {
-  return id >= TypeId_Char && id <= TypeId_UInt64;
-}
-
-inline bool isUnsignedIntegerType(TypeId id) {
-  return (id >= TypeId_UInt8 && id <= TypeId_UInt64) || id == TypeId_Char;
-}
-
-inline bool isSignedIntegerType(TypeId id) {
-  return id >= TypeId_SInt8 && id <= TypeId_SInt64;
-}
-
-inline static bool isFloatingType(TypeId id) {
-  return id >= TypeId_Float && id <= TypeId_LongDouble;
-}
 
 // -------------------------------------------------------------------
 // Utility functions
@@ -643,7 +556,7 @@ const Type * dealias(const Type * t);
 Type * dealias(Type * t);
 TypeRef dealias(const TypeRef & tr);
 
-/** Stream operator for pass names. */
+/** Stream operator for type class names. */
 inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {
   return out << Type::typeClassName(tc);
 }
@@ -667,6 +580,6 @@ public:
   bool operator()(const TypeRef & t0, const TypeRef & t1);
 };
 
-}
+} // namespace tart
 
-#endif
+#endif // TART_CFG_TYPE_H

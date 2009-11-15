@@ -6,6 +6,8 @@
 #define TART_COMMON_SOURCELOCATION_H
 
 #include <string>
+#include <stdint.h>
+#include <sys/types.h>
 
 namespace tart {
 

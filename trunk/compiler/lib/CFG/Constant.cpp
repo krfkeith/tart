@@ -3,7 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Constant.h"
-#include "tart/CFG/Defn.h"
+#include "tart/CFG/VariableDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"

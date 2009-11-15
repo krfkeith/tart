@@ -13,7 +13,7 @@
 /* ==================================================================
    Free blocks.
    ================================================================== */
-   
+
 /** For the general heap, the structure of a free block. Note that for
     free blocks of 8 bytes, this entire structure will not fit, but
     that's OK because we don't use this structure in that case.
@@ -701,7 +701,7 @@ gcfreeblk_t * gc_get_free_blk_aligned(gcsize_t size, gcsize_t alignment, gcsize_
       if (blk->size < size) {
         continue;
       }
-      
+
       /* If block is large enough, it still might not fit because
          of padding. Check all linked blocks to see if we can find
          one that we can fit into. We start by checking the first
@@ -778,7 +778,7 @@ void gc_remove_free_blk(gcfreeblk_t * blk) {
            means that this block is a head block of a same-size
            list. This block is both a node in a large-bin list,
            and it also contains a list of same-size blocks.
-            
+
            We need to take one of our same-size siblings, and
            make it the new head of the same-size list, adding
            it to the large-bin list in this block's place.
@@ -1078,7 +1078,7 @@ void gc_heap_free_if(
         block will disrupt iteration, we don't free the block
         immediately, but instead wait until we have iterated past it.
         This is done by storing the address to be freed in 'to_free'.
-        
+
         In a future version of this function, we can even release
         the free list lock momentarily during iteration to allow
         other threads to run. 'to_free' should not be disturbed by
@@ -1514,7 +1514,7 @@ bool gc_heap_dump() {
     for (blk = bin->next; blk != bin; blk = blk->next) {
       count += 1;
     }
-    
+
     if (count != 0) {
       fprintf(stderr, "Bin %d: %d blocks of size %d\n",
           i, count, i * GC_ALIGN_SIZE);

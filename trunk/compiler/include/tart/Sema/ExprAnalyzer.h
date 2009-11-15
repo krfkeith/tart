@@ -145,7 +145,7 @@ public:
 
   /** Version of overload which works with pre-analyzed arguments. No keyword mapping
    is done, args are simply mapped 1:1 to parameters. */
-  bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
+  bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ExprList & args);
 
   Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);

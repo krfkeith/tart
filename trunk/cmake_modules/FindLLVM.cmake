@@ -7,6 +7,11 @@
 #  LLVM_<libname> path to each LLVM static library.
 #  LLVM_<target>_O path to each LLVM object module.
 
+include(FindPerl)
+if( PERL_FOUND )
+  set(PERL ${PERL_EXECUTABLE})
+endif( PERL_FOUND )
+
 # Look for the include dir
 if (NOT LLVM_INCLUDE_DIR)
   find_path(LLVM_INCLUDE_DIR llvm/LinkAllVMCore.h DOC "Path to LLVM headers")
@@ -24,7 +29,28 @@ else (NOT LLVM_LIBRARY_DIR)
   set(LLVM_LIBRARY_DIR ${LLVM_LIBRARY_DIR} CACHE PATH "Path to LLVM Libraries")
 endif (NOT LLVM_LIBRARY_DIR)
 
-# Find an LLVM libraries
+# Look for the LLVM bin dir and llvm-config
+if (NOT LLVM_BIN_DIR)
+  get_filename_component(LLVM_BASE_DIR ${LLVM_LIBRARY_DIR} PATH)
+  find_path(LLVM_BIN_DIR "llvm-config" PATHS "${LLVM_BASE_DIR}/bin" NO_DEFAULT_PATH)
+  set(LLVM_TOOLS_BIN_DIR ${LLVM_BIN_DIR} CACHE PATH "Path to LLVM binary tools")
+  set(LLVM_CONFIG "${LLVM_BIN_DIR}/llvm-config" CACHE PATH "Path to llvm-config")
+endif (NOT LLVM_BIN_DIR)
+
+# Get the LLVM libraries we need
+if (LLVM_CONFIG AND PERL_FOUND)
+  execute_process(
+    COMMAND sh -c "${PERL} ${LLVM_CONFIG} --ldflags"
+#    RESULT_VARIABLE rv
+    OUTPUT_VARIABLE LLVM_LD_FLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(
+    COMMAND sh -c "${PERL} ${LLVM_CONFIG} --libs backend"
+#    RESULT_VARIABLE rv
+    OUTPUT_VARIABLE LLVM_BACKEND_LIBS)
+endif (LLVM_CONFIG AND PERL_FOUND)
+
+# Find a LLVM libraries
 macro(find_llvm_library Name LibName)
   find_library(LLVM_${Name} ${LibName} PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
   mark_as_advanced(LLVM_${Name})

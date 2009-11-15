@@ -6,6 +6,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
@@ -823,7 +824,7 @@ void ClassAnalyzer::overrideMembers() {
       } else if ((*it)->defnType() == Defn::Property || (*it)->defnType() == Defn::Indexer) {
         prop = cast<PropertyDefn>(*it);
         if (prop->storageClass() == Storage_Instance && prop->isSingular()) {
-          DASSERT_OBJ(prop->isPassFinished(Pass_ResolveVarType), prop);
+          DASSERT_OBJ(prop->passes().isFinished(PropertyDefn::PropertyTypePass), prop);
           if (prop->getter() != NULL) {
             analyzeValueDefn(prop->getter(), Task_PrepCodeGeneration);
             getters.push_back(prop->getter());
@@ -1347,4 +1348,4 @@ bool ClassAnalyzer::analyzeCompletely() {
   return true;
 }
 
-}
+} // namespace tart

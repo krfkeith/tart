@@ -5,6 +5,9 @@
 #ifndef TART_COMMON_SMALLENUMSET_H
 #define TART_COMMON_SMALLENUMSET_H
 
+#include <stdint.h>
+#include <sys/types.h>
+
 /// -------------------------------------------------------------------
 /// A type that represents a set of enumerated values as a bit vector.
 /// The size of the bit vector is fixed, so operations are very fast.

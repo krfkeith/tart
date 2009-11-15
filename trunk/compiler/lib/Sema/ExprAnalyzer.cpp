@@ -7,6 +7,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/Template.h"

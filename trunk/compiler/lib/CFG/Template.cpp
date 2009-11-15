@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Common/Diagnostics.h"
@@ -55,7 +56,7 @@ const Defn * PatternVar::templateDefn() const {
 }
 
 bool PatternVar::canBindTo(const Type * value) const {
-  if (const SingleValueType * nt = dyn_cast<SingleValueType>(value)) {
+  if (const UnitType * nt = dyn_cast<UnitType>(value)) {
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
   } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeTypeDescriptor)) {
@@ -277,20 +278,13 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     if (isPartial) {
       result->addTrait(Defn::PartialInstantiation);
     }
+
   } else if (value_->defnType() == Defn::Typedef) {
     TypeDefn * tdef = static_cast<TypeDefn *>(value_);
-
-    if (tdef == &AddressType::typedefn) {
-      DFAIL("Implement");
-    } else if (tdef == &PointerType::typedefn) {
-      DFAIL("Implement");
-    }
-
     TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
-
     switch (tdef->typeValue()->typeClass()) {
       case Type::NArray: {
-        SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
+        UnitType * ntc = cast<UnitType>(paramValues[1]);
         ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
         uint64_t size = intVal->value()->getZExtValue();
         NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);
@@ -327,7 +321,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     Type * value = paramValues[i];
 
     Defn * argDefn;
-    if (SingleValueType * ntc = dyn_cast<SingleValueType>(value)) {
+    if (UnitType * ntc = dyn_cast<UnitType>(value)) {
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
     } else {
       argDefn = new TypeDefn(result->module(), var->name(), value);
@@ -363,6 +357,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     DFAIL("Non-singular");
   }
 
+  //diag.info(loc) << "Creating template " << result;
   return result;
 }
 
@@ -417,7 +412,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 
 #if 0
     case Type::NArray: {
-      SingleValueType * ntc = cast<SingleValueType>(paramValues[1]);
+      UnitType * ntc = cast<UnitType>(paramValues[1]);
       ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
       uint64_t size = intVal->value()->getZExtValue();
       NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);

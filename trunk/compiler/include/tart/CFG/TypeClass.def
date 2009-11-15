@@ -13,7 +13,7 @@ TYPE_CLASS(Union)         // A disjoint type
 TYPE_CLASS(NAddress)      // A machine address
 TYPE_CLASS(NPointer)      // A machine pointer
 TYPE_CLASS(NArray)        // A primitive array of values
-TYPE_CLASS(SingleValue)   // A type which consists of a single constant value
+TYPE_CLASS(Unit)          // A type which consists of a single constant value
 
 // Non-type placeholders for types.
 TYPE_CLASS(Alias)         // A named alias for a type expression

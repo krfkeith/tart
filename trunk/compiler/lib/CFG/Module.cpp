@@ -41,6 +41,20 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   }
 }
 
+Module::Module(ProgramSource * src, const std::string & qual)
+  : Defn(Mod, this, "<module>")
+  , IterableScope(NULL)
+  , moduleSource_(src)
+  , irModule_(NULL)
+  , entryPoint_(NULL)
+  , flags_(Module_Reflect)
+{
+  loc.file = src;
+  qname_.assign(qual);
+  addTrait(Singular);
+  setScopeName(istrings.intern(qual));
+}
+
 const std::string Module::packageName() const {
   std::string result(qname_);
   size_t dot = result.rfind('.');

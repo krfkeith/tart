@@ -6,6 +6,7 @@
 #include "tart/Gen/CodeGenerator.h"
 
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/VariableDefn.h"
 #include "tart/CFG/CompositeType.h"
 
 #include "tart/Objects/Builtins.h"

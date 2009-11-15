@@ -5,8 +5,8 @@
 #ifndef TART_CFG_FUNCTIONDEFN_H
 #define TART_CFG_FUNCTIONDEFN_H
 
-#ifndef TART_CFG_DEFN_H
-#include "tart/CFG/Defn.h"
+#ifndef TART_CFG_VARIABLEDEFN_H
+#include "tart/CFG/VariableDefn.h"
 #endif
 
 #ifndef TART_CFG_FUNCTIONTYPE_H

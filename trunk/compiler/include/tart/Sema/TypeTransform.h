@@ -17,6 +17,7 @@ namespace tart {
 
 class EnumType;
 class UnionType;
+class UnitType;
 class PatternVar;
 class PatternValue;
 class TypeConstraint;
@@ -41,7 +42,7 @@ public:
   virtual Type * visitAddressType(AddressType * in);
   virtual Type * visitPointerType(PointerType * in);
   virtual Type * visitNativeArrayType(NativeArrayType * in);
-  virtual Type * visitSingleValueType(SingleValueType * in);
+  virtual Type * visitUnitType(UnitType * in);
   virtual Type * visitPatternVar(PatternVar * in);
   virtual Type * visitPatternValue(PatternValue * in);
   virtual Type * visitTypeConstraint(TypeConstraint * in);

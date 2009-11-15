@@ -21,6 +21,7 @@
 #include "tart/Objects/Intrinsic.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Module.h"
 
 namespace tart {
 
@@ -101,7 +102,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     }
 
     case Expr::ConstObjRef:
-      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in));
+      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "");
 
     case Expr::LValue: {
       return genLoadLValue(static_cast<const LValueExpr *>(in));
@@ -120,7 +121,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genInitVar(static_cast<const InitVarExpr *>(in));
 
     case Expr::BinaryOpcode:
-    return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
+      return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
 
     case Expr::Truncate:
     case Expr::SignExtend:
@@ -219,7 +220,21 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   }
 }
 
-Value * CodeGenerator::genInitVar(InitVarExpr * in) {
+llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef name) {
+  switch (in->exprType()) {
+    case Expr::ConstObjRef:
+      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), name);
+
+    //case Expr::ConstNArray:
+      //return genConstantArrayPtr(static_cast<const ConstantNativeArray *>(in));
+
+    default:
+      diag.fatal(in) << "Not a constant reference: " <<
+      exprTypeName(in->exprType()) << " [" << in << "]";
+  }
+}
+
+Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
@@ -235,7 +250,7 @@ Value * CodeGenerator::genInitVar(InitVarExpr * in) {
   return initValue;
 }
 
-Value * CodeGenerator::genAssignment(AssignmentExpr * in) {
+Value * CodeGenerator::genAssignment(const AssignmentExpr * in) {
   Value * rvalue = genExpr(in->fromExpr());
   Value * lvalue = genLValueAddress(in->toExpr());
 
@@ -252,13 +267,13 @@ Value * CodeGenerator::genAssignment(AssignmentExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genBinaryOpcode(BinaryOpcodeExpr * in) {
+Value * CodeGenerator::genBinaryOpcode(const BinaryOpcodeExpr * in) {
   Value * lOperand = genExpr(in->first());
   Value * rOperand = genExpr(in->second());
   return builder_.CreateBinOp(in->opCode(), lOperand, rOperand);
 }
 
-llvm::Value * CodeGenerator::genCompare(CompareExpr * in) {
+llvm::Value * CodeGenerator::genCompare(const tart::CompareExpr* in) {
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
   CmpInst::Predicate pred = in->getPredicate();
@@ -272,19 +287,19 @@ llvm::Value * CodeGenerator::genCompare(CompareExpr * in) {
   }
 }
 
-Value * CodeGenerator::genInstanceOf(InstanceOfExpr * in) {
+Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
   DASSERT_OBJ(in->value()->type() != NULL, in);
   Value * val = genExpr(in->value());
   if (val == NULL) {
     return NULL;
   }
 
-  if (UnionType * utype = dyn_cast<UnionType>(in->value()->type())) {
+  if (const UnionType * utype = dyn_cast<UnionType>(in->value()->type())) {
     return genUnionTypeTest(val, utype, in->toType());
   }
 
-  CompositeType * fromType = cast<CompositeType>(in->value()->type());
-  CompositeType * toType = cast<CompositeType>(in->toType());
+  const CompositeType * fromType = cast<CompositeType>(in->value()->type());
+  const CompositeType * toType = cast<CompositeType>(in->toType());
   return genCompositeTypeTest(val, fromType, toType);
 }
 
@@ -365,7 +380,13 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
 
   // It's a global, static, or parameter
   if (var->defnType() == Defn::Let) {
-    return genLetValue(static_cast<const VariableDefn *>(var));
+    const VariableDefn * let = static_cast<const VariableDefn *>(var);
+    Value * letValue = genLetValue(let);
+    if (let->hasStorage()) {
+      letValue = builder_.CreateLoad(letValue, var->name());
+    }
+
+    return letValue;
   } else if (var->defnType() == Defn::Var) {
     Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
     return builder_.CreateLoad(varValue, var->name());
@@ -661,7 +682,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
   DFAIL("Implement");
 }
 
-Value * CodeGenerator::genNumericCast(CastExpr * in) {
+Value * CodeGenerator::genNumericCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
   TypeId fromTypeId = TypeId_Void;
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->arg()->type())) {
@@ -709,10 +730,10 @@ Value * CodeGenerator::genNumericCast(CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genUpCast(CastExpr * in) {
+Value * CodeGenerator::genUpCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
   Type * fromType = in->arg()->type();
-  Type * toType = in->type();
+  const Type * toType = in->type();
 
   if (value != NULL && fromType != NULL && toType != NULL) {
     return genUpCastInstr(value, fromType, toType);
@@ -721,9 +742,9 @@ Value * CodeGenerator::genUpCast(CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genBitCast(CastExpr * in) {
+Value * CodeGenerator::genBitCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
-  Type * toType = in->type();
+  const Type * toType = in->type();
 
   if (value != NULL && toType != NULL) {
     return builder_.CreateBitCast(value, toType->irEmbeddedType(), "bitcast");
@@ -732,9 +753,9 @@ Value * CodeGenerator::genBitCast(CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
+Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
   Type * fromType = in->arg()->type();
-  Type * toType = in->type();
+  const Type * toType = in->type();
   Value * value = NULL;
 
   if (!fromType->isVoidType()) {
@@ -745,7 +766,7 @@ Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
   }
 
   if (toType != NULL) {
-    UnionType * utype = cast<UnionType>(toType);
+    const UnionType * utype = cast<UnionType>(toType);
 
     if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
       int index = utype->getTypeIndex(fromType);
@@ -785,10 +806,10 @@ Value * CodeGenerator::genUnionCtorCast(CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
+Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   // Retrieve a value from a union. Presumes that the type-test has already been done.
   Type * fromType = in->arg()->type();
-  Type * toType = in->type();
+  const Type * toType = in->type();
   Value * value = genLValueAddress(in->arg());
 
   if (value == NULL) {
@@ -817,8 +838,8 @@ Value * CodeGenerator::genUnionMemberCast(CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genCall(FnCallExpr * in) {
-  FunctionDefn * fn = in->function();
+Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
+  const FunctionDefn * fn = in->function();
 
   if (fn->isIntrinsic()) {
     return fn->intrinsic()->generate(*this, in);
@@ -841,8 +862,8 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
     }
   }
 
-  ExprList & inArgs = in->args();
-  for (ExprList::iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
+  const ExprList & inArgs = in->args();
+  for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     Value * argVal = genExpr(*it);
     if (argVal == NULL) {
       return NULL;
@@ -877,9 +898,9 @@ Value * CodeGenerator::genCall(FnCallExpr * in) {
   }
 }
 
-Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
-  Expr * fn = in->function();
-  Type * fnType = fn->type();
+Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
+  const Expr * fn = in->function();
+  const Type * fnType = fn->type();
 
   Value * fnValue;
   ValueList args;
@@ -893,7 +914,7 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
         DFAIL("Implement");
       }
     }
-  } else if (BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
+  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
     Value * fnref = genExpr(fn);
     if (fnref == NULL) {
       return NULL;
@@ -921,8 +942,8 @@ Value * CodeGenerator::genIndirectCall(IndirectCallExpr * in) {
   }
 #endif
 
-  ExprList & inArgs = in->args();
-  for (ExprList::iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
+  const ExprList & inArgs = in->args();
+  for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     Value * argVal = genExpr(*it);
     if (argVal == NULL) {
       return NULL;
@@ -1062,8 +1083,8 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   return result;
 }
 
-Value * CodeGenerator::genNew(NewExpr * in) {
-  if (CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
+Value * CodeGenerator::genNew(const tart::NewExpr* in) {
+  if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
     const llvm::Type * type = ctdef->irType();
     if (ctdef->typeClass() == Type::Struct) {
       return builder_.CreateAlloca(type, 0, ctdef->typeDefn()->name());
@@ -1251,7 +1272,8 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
   return result;
 }
 
-Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType, Type * toType) {
+Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
+    const Type * toType) {
   DASSERT(fromType != NULL);
   DASSERT(toType != NULL);
 
@@ -1262,7 +1284,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, UnionType * fromType,
     int testIndex = fromType->getTypeIndex(toType);
     Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
 
-    if (index == 0 && fromType->numRefTypes() != 0) {
+    if (testIndex == 0 && fromType->numRefTypes() > 1) {
       DFAIL("Add special handling for reference types.");
     }
 
@@ -1371,10 +1393,18 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   return instance;
 }
 
-GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj) {
+GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj,
+    llvm::StringRef name) {
   Constant * constObject = genConstantObject(obj);
+  if (name != "") {
+    GlobalVariable * gv = irModule_->getGlobalVariable(name, true);
+    if (gv != NULL) {
+      return gv;
+    }
+  }
+
   return new GlobalVariable(
-      *irModule_, constObject->getType(), true, GlobalValue::InternalLinkage, constObject, "");
+      *irModule_, constObject->getType(), true, GlobalValue::ExternalLinkage, constObject, name);
 }
 
 Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {

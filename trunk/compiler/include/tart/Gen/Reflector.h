@@ -139,7 +139,7 @@ public:
   llvm::Constant * emitTypeReference(const TypeRef & type);
 
   /** Return the LLVM type of the reflection infor for this type. */
-  const llvm::Type * Reflector::reflectedTypeOf(const Type * type);
+  const llvm::Type * reflectedTypeOf(const Type * type);
 
   /** Generate a Type object and return a pointer to it. */
   llvm::Constant * emitType(const Type * type);

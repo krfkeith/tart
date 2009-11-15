@@ -1,48 +1,27 @@
 # CMake build file for Tart/tools
 
 cmake_policy(SET CMP0008 NEW)
- 
+
 # Create a command for each source file
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
 
 add_executable(tartc tartc/tartc.cpp)
-add_dependencies(tartc collector compiler)
+add_dependencies(tartc compiler)
 target_link_libraries(tartc
-    compiler collector
+    compiler
     ${LLVM_BIT_READER}
     ${LLVM_BIT_WRITER}
     ${LLVM_SELECTION_DAG}
-    ${LLVM_ANALYSIS} 
+    ${LLVM_ANALYSIS}
     ${LLVM_TARGET}
+    ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-    ${LLVM_CORE})
+    )
+set_target_properties(tartc PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
 
 add_executable(tartln tartln/tartln.cpp)
 target_link_libraries(tartln
-    ${LLVM_ANALYSIS}
-    ${LLVM_ARCHIVE}
-    ${LLVM_ASM_PARSER}
-    ${LLVM_ASM_PRINTER}
-    ${LLVM_BIT_READER}
-    ${LLVM_BIT_WRITER}
-    ${LLVM_CODE_GEN}
-    ${LLVM_CORE}
-    ${LLVM_EXECUTION_ENGINE}
-    ${LLVM_HELLO}
-    ${LLVM_INSTRUMENTATION}
-    ${LLVM_INTERPRETER}
-    ${LLVM_IPA}
-    ${LLVM_IPO}
-    ${LLVM_JIT}
-    ${LLVM_LINKER}
-    ${LLVM_MC}
-    ${LLVM_SCALAR_OPTS}
-    ${LLVM_SELECTION_DAG}
-    ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
-    ${LLVM_TARGET}
-    ${LLVM_TRANSFORM_UTILS}
     ${LLVM_ALPHA_ASM_PRINTER}
     ${LLVM_ALPHA_CODE_GEN}
     ${LLVM_ALPHA_INFO}
@@ -67,8 +46,8 @@ target_link_libraries(tartln
     ${LLVM_MSP430_ASM_PRINTER}
     ${LLVM_MSP430_CODE_GEN}
     ${LLVM_MSP430_INFO}
-    ${LLVM_PIC16}
     ${LLVM_PIC16_ASM_PRINTER}
+    ${LLVM_PIC16}
     ${LLVM_PIC16_INFO}
     ${LLVM_POWERPC_ASM_PRINTER}
     ${LLVM_POWERPC_CODE_GEN}
@@ -86,17 +65,23 @@ target_link_libraries(tartln
     ${LLVM_XCORE}
     ${LLVM_XCORE_ASM_PRINTER}
     ${LLVM_XCORE_INFO}
-    )
-
-add_executable(tartdoc tartc/tartc.cpp)
-add_dependencies(tartdoc collector compiler)
-target_link_libraries(tartdoc
-    compiler collector
+    ${LLVM_IPO}
+    ${LLVM_LINKER}
+    ${LLVM_SELECTION_DAG}
+    ${LLVM_ARCHIVE}
     ${LLVM_BIT_READER}
     ${LLVM_BIT_WRITER}
-    ${LLVM_SELECTION_DAG}
-    ${LLVM_ANALYSIS} 
+    ${LLVM_ASM_PARSER}
+    ${LLVM_ASM_PRINTER}
+    ${LLVM_CODE_GEN}
+    ${LLVM_SCALAR_OPTS}
+    ${LLVM_IPA}
+    ${LLVM_TRANSFORM_UTILS}
+    ${LLVM_ANALYSIS}
     ${LLVM_TARGET}
+    ${LLVM_MC}
+    ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-    ${LLVM_CORE})
+    )
+set_target_properties(tartln PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})

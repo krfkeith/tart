@@ -9,6 +9,10 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
+#ifndef TART_CFG_PROPERTYDEFN_H
+#include "tart/CFG/PropertyDefn.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -23,6 +27,7 @@ public:
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);
+  bool runPasses(PropertyDefn::PassSet passesToRun);
   bool resolvePropertyType();
 };
 
