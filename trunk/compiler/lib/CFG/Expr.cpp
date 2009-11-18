@@ -11,6 +11,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Common/Diagnostics.h"

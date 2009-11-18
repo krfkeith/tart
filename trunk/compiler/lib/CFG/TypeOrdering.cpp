@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/TypeOrdering.h"
+#include "tart/CFG/TupleType.h"
 //#include "tart/CFG/TypeAlias.h"
 //#include "tart/CFG/TypeConstraint.h"
 //#include "tart/CFG/PrimitiveType.h"
@@ -34,7 +35,7 @@ ComparisonResult combineResults(ComparisonResult r1, ComparisonResult r2) {
   }
 }
 
-ComparisonResult compareSpecificity(const TypeVector * t1, const TypeVector * t2) {
+ComparisonResult compareSpecificity(const TupleType * t1, const TupleType * t2) {
   if (t1->size() != t2->size()) {
     return UNORDERED;
   }

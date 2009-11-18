@@ -31,11 +31,11 @@ enum ComparisonResult {
 ///  A result of LEFT_FIRST means that the left-side argument is the
 ///  more specific type.
 
-ComparisonResult compareSpecificity(const TypeVector * t1, const TypeVector * t2);
+ComparisonResult compareSpecificity(const TupleType * t1, const TupleType * t2);
 ComparisonResult compareSpecificity(const TypeRef & t1, const TypeRef & t2);
 ComparisonResult compareSpecificity(const Type * t1, const Type * t2);
 
-ComparisonResult compareLexical(const TypeVector * t1, const TypeVector * t2);
+ComparisonResult compareLexical(const TupleType * t1, const TupleType * t2);
 ComparisonResult compareLexical(const TypeRef & t1, const TypeRef & t2);
 ComparisonResult compareLexical(const Type * t1, const Type * t2);
 

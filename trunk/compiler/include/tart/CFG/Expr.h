@@ -30,8 +30,8 @@ class Scope;
 class ErrorExpr;
 class VariableDefn;
 class CompositeType;
+class TupleType;
 class TypeRef;
-class TypeVector;
 
 typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
 typedef llvm::SmallVector<SpCandidate *, 8> SpCandidateList;
@@ -430,10 +430,10 @@ public:
 class SpecializeExpr : public Expr {
 private:
   SpCandidateList candidates_;
-  TypeVector * args_;
+  TupleType * args_;
 
 public:
-  SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, TypeVector * args)
+  SpecializeExpr(SLC & loc, const SpCandidateSet & candidates, TupleType * args)
     : Expr(Specialize, loc, NULL)
     , candidates_(candidates.begin(), candidates.end())
     , args_(args)
@@ -443,7 +443,7 @@ public:
   const SpCandidateList & candidates() const { return candidates_; }
   SpCandidateList & candidates() { return candidates_; }
 
-  TypeVector * args() const { return args_; }
+  TupleType * args() const { return args_; }
 
   /** Return true if there is at least one non-culled candidate. */
   bool hasAnyCandidates() const;

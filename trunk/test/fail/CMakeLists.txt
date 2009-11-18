@@ -6,7 +6,7 @@
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
 
 add_executable(testrunner testrunner.cpp)
-add_dependencies(testrunner collector compiler unittest.run)
+add_dependencies(testrunner compiler unittest.run)
 target_link_libraries(testrunner
     compiler
     ${LLVM_BIT_READER}

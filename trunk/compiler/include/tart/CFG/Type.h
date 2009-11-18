@@ -35,6 +35,7 @@ namespace tart {
 
 class BindingEnv;
 class TypeRef;
+class TupleType;
 
 /// -------------------------------------------------------------------
 /// An enumeration of all of the fundamental types known to the compiler.
@@ -184,6 +185,7 @@ public:
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */
   static bool equivalent(const Type * type1, const Type * type2);
+  static bool equivalent(const TypeRef & type1, const TypeRef & type2);
 
   // Structure used when using type pointers as a key.
   struct KeyInfo {
@@ -419,116 +421,6 @@ private:
   TypeRef second_;
 };
 
-/// -------------------------------------------------------------------
-/// Represents a sub-range of a list of type references.
-
-typedef std::pair<TypeRefList::const_iterator, TypeRefList::const_iterator> TypeRefIterPair;
-
-struct TypeRefIterPairKeyInfo {
-  static inline TypeRefIterPair getEmptyKey() { return TypeRefIterPair(&emptyKey, &emptyKey + 1); }
-  static inline TypeRefIterPair getTombstoneKey() {
-    return TypeRefIterPair(&tombstoneKey, &tombstoneKey + 1);
-  }
-
-  static unsigned getHashValue(const TypeRefIterPair & key) {
-    unsigned result = 0;
-    for (TypeRefList::const_iterator it = key.first; it != key.second; ++it) {
-      result *= 0x5bd1e995;
-      result ^= result >> 24;
-      result ^= TypeRef::KeyInfo::getHashValue(*it);
-    }
-
-    return result;
-  }
-
-  static bool isEqual(const TypeRefIterPair & lhs, const TypeRefIterPair & rhs) {
-    size_t lhsBytes = (uint8_t *)lhs.second - (uint8_t *)lhs.first;
-    size_t rhsBytes = (uint8_t *)rhs.second - (uint8_t *)rhs.first;
-    if (lhsBytes == rhsBytes) {
-      TypeRefList::const_iterator li = lhs.first;
-      TypeRefList::const_iterator ri = rhs.first;
-      for (; li != lhs.second; ++li, ++ri) {
-        if (!TypeRef::KeyInfo::isEqual(*li, *ri)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    return false;
-  }
-
-  static bool isPod() { return false; }
-  static TypeRef emptyKey;
-  static TypeRef tombstoneKey;
-};
-
-/// -------------------------------------------------------------------
-/// An immutable vector of type references. Can be used as a map key.
-
-class TypeVector : public GC, public Formattable {
-public:
-  typedef TypeRefList::const_iterator iterator;
-  typedef TypeRefList::const_iterator const_iterator;
-
-  static TypeVector * get(const TypeRef singleTypeArg);
-  static TypeVector * get(TypeRefList::const_iterator first, TypeRefList::const_iterator last);
-  static TypeVector * get(const TypeRefList & trefs) {
-    return get(&*trefs.begin(), &*trefs.end());
-  }
-
-  iterator begin() const { return data_.begin(); }
-  iterator end() const { return data_.end(); }
-  size_t size() const { return data_.size(); }
-
-  const TypeRef & operator[](int index) const { return data_[index]; }
-
-  bool isSingular() const;
-
-  void trace() const {
-    for (iterator it = begin(); it != end(); ++it) {
-      it->trace();
-    }
-  }
-
-  void format(FormatStream & out) const;
-
-  // Structure used when using type vector as a map key.
-  struct KeyInfo {
-    static inline TypeVector * getEmptyKey() { return NULL; }
-    static inline TypeVector * getTombstoneKey() { return (TypeVector *)(-1); }
-
-    static unsigned getHashValue(TypeVector * val) {
-      return static_cast<unsigned>(reinterpret_cast<uintptr_t>(val) * 0x5bd1e995);
-    }
-
-    static bool isEqual(TypeVector * lhs, TypeVector * rhs) {
-      return (void *)lhs == (void *)rhs;
-    }
-
-    static bool isPod() { return false; }
-  };
-
-  /** Return the type ref values as an iterator pair. */
-  TypeRefIterPair iterPair() const {
-    return TypeRefIterPair(data_.begin(), data_.end());
-  }
-
-private:
-  typedef llvm::DenseMap<TypeRefIterPair, TypeVector *, TypeRefIterPairKeyInfo> TypeVectorMap;
-
-  TypeVector(TypeRefList::const_iterator first, TypeRefList::const_iterator last)
-    : data_(first, last) {}
-
-  // Destructor removes this from the uniqueValues_ map.
-  ~TypeVector();
-
-  TypeRefList data_;
-
-  static TypeVectorMap uniqueValues_;
-};
-
 // -------------------------------------------------------------------
 // Utility functions
 
@@ -543,7 +435,6 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(std::string & out, const TypeRef & ty);
 void typeLinkageName(std::string & out, const Type * ty);
-void typeLinkageName(std::string & out, TypeVector * tv);
 
 /** Given two types, try and find the narrowest type that both
     can be converted to.

@@ -9,6 +9,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnitType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"
@@ -364,7 +365,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   if (tsig->ast() != NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tsig->ast()->params();
-    TypeList & params = tsig->params();
+    TypeRefList params;
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
       ExprAnalyzer ea(de->module(), de->definingScope(), de);
@@ -378,6 +379,8 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         }
       }
     }
+
+    tsig->setTypeParams(TupleType::get(params));
 
     if (!de->hasUnboundTypeParams()) {
       de->addTrait(Defn::Singular);

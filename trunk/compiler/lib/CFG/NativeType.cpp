@@ -5,6 +5,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/StaticType.h"
 #include "tart/CFG/UnitType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"
@@ -22,9 +23,12 @@ TypeDefn AddressType::typedefn(&Builtins::module, "__Address", NULL);
 AddressType::TypeMap AddressType::uniqueTypes_;
 
 void AddressType::initBuiltin() {
+  TypeRefList typeParams;
+  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->addParameter(SourceLocation(), "Target");
+  tsig->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
@@ -32,7 +36,7 @@ void AddressType::initBuiltin() {
   typedefn.setTypeValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
-  prototype.elementType_ = tsig->params()[0];
+  prototype.elementType_ = tsig->typeParam(0);
 }
 
 AddressType * AddressType::get(TypeRef elemType) {
@@ -133,9 +137,12 @@ TypeDefn PointerType::typedefn(&Builtins::module, "__Pointer", NULL);
 PointerType::TypeMap PointerType::uniqueTypes_;
 
 void PointerType::initBuiltin() {
+  TypeRefList typeParams;
+  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->addParameter(SourceLocation(), "Target");
+  tsig->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
@@ -143,7 +150,7 @@ void PointerType::initBuiltin() {
   typedefn.setTypeValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
-  prototype.elementType_ = tsig->params()[0];
+  prototype.elementType_ = tsig->typeParam(0);
 }
 
 PointerType * PointerType::get(TypeRef elemType) {
@@ -240,75 +247,80 @@ void PointerType::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // NativeArrayType
 
-NativeArrayType NativeArrayType::instance(NULL, 0, &NativeArrayType::typedefn, &Builtins::module);
-TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", &instance);
-
-NativeArrayType * NativeArrayType::get(const TypeRef & elemType, uint64_t sz) {
-  return create(elemType.type(), sz);
-}
-
-NativeArrayType * NativeArrayType::create(Type * elemType, uint64_t sz) {
-  // Create the template instance
-  TypeRef elemTypeRef(elemType);
-  TemplateInstance * tinst = new TemplateInstance(&typedefn, TypeVector::get(elemTypeRef));
-  tinst->paramValues().push_back(elemType);
-  //tinst->templateArgs().push_back(elemType);
-
-  TypeDefn * tdef = new TypeDefn(&Builtins::module, typedefn.name());
-  NativeArrayType * np = new NativeArrayType(elemType, sz, tdef, tinst);
-  tdef->setTypeValue(np);
-  tdef->addTrait(Defn::Unsafe);
-  tdef->setSingular(elemType->isSingular());
-  tdef->setTemplateInstance(tinst);
-  tdef->createQualifiedName(NULL);
-  return np;
-}
-
-NativeArrayType::NativeArrayType(Type * elemType, uint64_t sz, TypeDefn * defn,
-    Scope * parentScope)
-  : DeclaredType(Type::NArray, defn, parentScope)
-  , elementType_(elemType)
-  , size_(sz)
-{
-  if (elemType) {
-    DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
-  }
-}
+NativeArrayType NativeArrayType::prototype;
+TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", NULL);
+NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 
 void NativeArrayType::initBuiltin() {
+  TypeRefList typeParams;
+  typeParams.push_back(new PatternVar(SourceLocation(), "ElementType"));
+  typeParams.push_back(new PatternVar(SourceLocation(), "Length", &IntType::instance));
+
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->addParameter(SourceLocation(), "T");
-
-  // Length
-  tsig->addParameter(SourceLocation(), "N", &IntType::instance);
+  tsig->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
+  typedefn.setTypeValue(&prototype);
+  typedefn.addTrait(Defn::Unsafe);
+
+  prototype.typeArgs_ = tsig->typeParams();
+}
+
+NativeArrayType * NativeArrayType::get(const TupleType * typeArgs) {
+  TypeMap::iterator it = uniqueTypes_.find(typeArgs);
+  if (it != uniqueTypes_.end()) {
+    return it->second;
+  }
+
+  NativeArrayType * arrayType = new NativeArrayType(typeArgs);
+  uniqueTypes_[typeArgs] = arrayType;
+  return arrayType;
+}
+
+NativeArrayType::NativeArrayType(const TupleType * typeArgs)
+  : TypeImpl(Type::NArray)
+  , typeArgs_(typeArgs)
+//  , size_(sz)
+{
+  DASSERT(!isa<UnitType>((*typeArgs)[0].type()));
+  size_ = cast<ConstantInteger>(cast<UnitType>((*typeArgs)[1].type())->value())->value()->getZExtValue();
+  //DFAIL("Implement sz");
+}
+
+NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray) {}
+
+TypeRef NativeArrayType::typeParam(int index) const {
+  return (*typeArgs_)[index];
+}
+
+const TypeRef & NativeArrayType::elementType() const {
+  return (*typeArgs_)[0];
 }
 
 const llvm::Type * NativeArrayType::createIRType() const {
-  DASSERT_OBJ(elementType_ != NULL, this);
-  return llvm::ArrayType::get(elementType_->irEmbeddedType(), size_);
+  DASSERT_OBJ(elementType().isNonVoidType(), this);
+  return llvm::ArrayType::get(elementType().irEmbeddedType(), size());
 }
 
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const NativeArrayType * naFrom =
       dyn_cast<NativeArrayType>(fromType)) {
-    Type * fromElementType = naFrom->typeParam(0).type();
+    const Type * fromElementType = naFrom->elementType().type();
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
 
-    if (size_ != naFrom->size() && size_ != 0) {
+    if (size() != naFrom->size() && size() != 0) {
       return Incompatible;
     }
 
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
-    if (elementType_->convert(elementConversion) == IdenticalTypes) {
+    if (elementType().convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
       }
@@ -325,7 +337,7 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
 }
 
 bool NativeArrayType::isSingular() const {
-  return elementType_->isSingular();
+  return typeArgs_->isSingular();
 }
 
 bool NativeArrayType::isSubtype(const Type * other) const {
@@ -335,16 +347,14 @@ bool NativeArrayType::isSubtype(const Type * other) const {
 
 bool NativeArrayType::isEqual(const Type * other) const {
   if (const NativeArrayType * na = dyn_cast<NativeArrayType>(other)) {
-    if (elementType_->isEqual(na->elementType_)) {
-      return size() == na->size();
-    }
+    return typeArgs_ == na->typeArgs_;
   }
 
   return false;
 }
 
 void NativeArrayType::format(FormatStream & out) const {
-  out << "NativeArray[" << elementType_ << ", " << size_ << "]";
+  out << "NativeArray[" << elementType() << ", " << size() << "]";
 }
 
 } // namespace tart

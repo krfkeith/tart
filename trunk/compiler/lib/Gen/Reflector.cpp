@@ -11,6 +11,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/EnumType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 
@@ -431,7 +432,7 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
   } else {
     sb.addNullField(functionType_selfType.type());
   }
-  sb.addField(emitTypeVector(type->paramTypes()));
+  sb.addField(emitTupleType(type->paramTypes()));
 
   if (type->selfParam() != NULL) {
     Type * selfType = type->selfParam()->type().type();
@@ -540,19 +541,19 @@ llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, TypeKind kind
   return sb.build(Builtins::typeType->irType());
 }
 
-llvm::Constant * Reflector::emitTypeVector(TypeVector * types) {
+llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
   // Get cached version if already generated.
-  std::string typeVectorName(".typetuple(");
-  typeLinkageName(typeVectorName, types);
-  typeVectorName.append(")");
-  GlobalVarMap::iterator it = globals_.find(typeVectorName);
+  std::string typeTupleName(".TupleType(");
+  typeLinkageName(typeTupleName, types);
+  typeTupleName.append(")");
+  GlobalVarMap::iterator it = globals_.find(typeTupleName);
   if (it != globals_.end()) {
     return it->second;
   }
 
   // Generate the list of values.
   ConstantList values;
-  for (TypeVector::iterator it = types->begin(); it != types->end(); ++it) {
+  for (TupleType::const_iterator it = types->begin(); it != types->end(); ++it) {
     values.push_back(emitTypeReference(*it));
   }
 
@@ -571,7 +572,7 @@ llvm::Constant * Reflector::emitTypeVector(TypeVector * types) {
 
   llvm::Constant * arrayStruct = sb.build();
   GlobalVariable * array = new GlobalVariable(*irModule_, arrayStruct->getType(),
-      true, GlobalValue::LinkOnceODRLinkage, arrayStruct, typeVectorName);
+      true, GlobalValue::LinkOnceODRLinkage, arrayStruct, typeTupleName);
   return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
 }
 
@@ -623,56 +624,3 @@ Reflector::Traits Reflector::memberTraits(const Defn * member) {
 }
 
 } // namespace tart
-
-#if 0
-class EnumConstantRef {
-public:
-  EnumConstantRef(BuiltinMemberRef<TypeDefn> & enumType, const char * name)
-    : enumType_(enumType)
-    , name_(name)
-    , value_(NULL)
-    {}
-
-  ConstantInteger * get() const {
-    if (value_ == NULL) {
-      TypeDefn * tdef = enumType_.get();
-      EnumType * etype = cast<EnumType>(tdef->typeValue());
-      VariableDefn * letDef = Builtins::getMember<VariableDefn>(etype, name_);
-      value_ = cast<ConstantInteger>(letDef->initValue());
-    }
-
-    return value_;
-  }
-
-  ConstantInteger * operator->() const {
-    return get();
-  }
-
-  operator ConstantInteger *() const {
-    return get();
-  }
-
-private:
-  BuiltinMemberRef<TypeDefn> & enumType_;
-  const char * name_;
-  mutable ConstantInteger * value_;
-};
-#endif
-
-//EnumConstantRef typeRef_enumModifiers_CONST(typeRef_enumModifiers, "CONST");
-//EnumConstantRef typeRef_enumModifiers_VOLATILE(typeRef_enumModifiers, "VOLATILE");
-//EnumConstantRef member_enumAccess_PUBLIC(member_enumAccess, "PUBLIC");
-//EnumConstantRef member_enumAccess_PROTECTED(member_enumAccess, "PROTECTED");
-//EnumConstantRef member_enumAccess_PRIVATE(member_enumAccess, "PRIVATE");
-//EnumConstantRef member_enumKind_FIELD(member_enumMemberKind, "FIELD");
-//EnumConstantRef member_enumKind_PROPERTY(member_enumMemberKind, "PROPERTY");
-//EnumConstantRef member_enumKind_METHOD(member_enumMemberKind, "METHOD");
-//EnumConstantRef member_enumKind_CONSTRUCTOR(member_enumMemberKind, "CONSTRUCTOR");
-//EnumConstantRef member_enumTraits_FINAL(member_enumTraits, "FINAL");
-//EnumConstantRef member_enumTraits_ABSTRACT(member_enumTraits, "ABSTRACT");
-//EnumConstantRef member_enumTraits_STATIC(member_enumTraits, "STATIC");
-//EnumConstantRef member_enumTraits_UNSAFE(member_enumTraits, "UNSAFE");
-//BuiltinMemberRef<TypeDefn> member_enumAccess(Builtins::typeMember, "Access");
-//BuiltinMemberRef<TypeDefn> member_enumMemberKind(Builtins::typeMember, "MemberKind");
-//BuiltinMemberRef<TypeDefn> member_enumTraits(Builtins::typeMember, "Traits");
-//BuiltinMemberRef<TypeDefn> type_enumTypeKind(Builtins::typeTypeRef, "TypeKind");

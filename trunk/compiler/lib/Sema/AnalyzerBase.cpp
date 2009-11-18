@@ -22,6 +22,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
@@ -293,10 +294,10 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     argList.push_back(typeArg);
   }
 
-  return specialize(loc, exprs, TypeVector::get(argList));
+  return specialize(loc, exprs, TupleType::get(argList));
 }
 
-Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TypeVector * tv) {
+Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * tv) {
   // Examine all of the possible candidates for specialization.
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
@@ -355,11 +356,11 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TypeVector * 
 }
 
 void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
-    TypeVector * args) {
+    TupleType * args) {
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();
-    if (tsig->params().size() == args->size()) {
+    if (tsig->typeParams()->size() == args->size()) {
       // Attempt unification of pattern variables with template args.
       SpCandidate * spc = new SpCandidate(base, defn, args);
       SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
@@ -639,7 +640,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
   DASSERT_OBJ(arrayTemplate->paramScope().count() == 1, elementType);
 
   // Special case for when the elementType is Array.ElementType
-  if (elementType == arrayTemplate->params()[0]) {
+  if (elementType == arrayTemplate->typeParam(0).type()) {
     return cast<CompositeType>(Builtins::typeArray);
   }
 

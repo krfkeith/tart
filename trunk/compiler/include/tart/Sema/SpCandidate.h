@@ -27,13 +27,13 @@ namespace tart {
 /// A candidate for template specialization
 class SpCandidate : public GC {
 public:
-  SpCandidate(Expr *base, Defn * tdef, TypeVector * args);
+  SpCandidate(Expr *base, Defn * tdef, TupleType * args);
 
   /** The definition that has type arguments. */
   Defn * def() const { return def_; }
 
   /** The type arguments. */
-  TypeVector * args() const { return args_; }
+  TupleType * args() const { return args_; }
 
   /** Base expression used, if any. */
   Expr * base() const { return base_; }
@@ -64,8 +64,8 @@ public:
 private:
   Defn * def_;
   Expr * base_;
-  TypeVector * args_;
-  TypeVector * params_;
+  TupleType * args_;
+  const TupleType * params_;
   BindingEnv env_;
   ConversionRank conversionRank_;
 };

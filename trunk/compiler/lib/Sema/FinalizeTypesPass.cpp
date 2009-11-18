@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
 
@@ -535,7 +536,7 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, Unio
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
-  for (TypeVector::iterator it = from->members().begin(); it != from->members().end(); ++it) {
+  for (TupleType::const_iterator it = from->members().begin(); it != from->members().end(); ++it) {
     Type * memberType = const_cast<Type *>(it->dealias());
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = to->canConvert(memberType);

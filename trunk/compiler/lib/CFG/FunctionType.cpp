@@ -5,10 +5,15 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/TupleType.h"
+
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Sema/TypeAnalyzer.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Objects/Builtins.h"
+
 #include <llvm/DerivedTypes.h>
 
 namespace tart {
@@ -92,7 +97,7 @@ TypeRef FunctionType::paramType(int index) const {
   return params_[index]->type();
 }
 
-TypeVector * FunctionType::paramTypes() const {
+TupleType * FunctionType::paramTypes() const {
   if (paramTypes_ == NULL) {
     TypeRefList typeRefs;
     for (size_t i = 0; i < params_.size(); i++) {
@@ -100,7 +105,7 @@ TypeVector * FunctionType::paramTypes() const {
       typeRefs.push_back(param->internalType());
     }
 
-    paramTypes_ = TypeVector::get(typeRefs);
+    paramTypes_ = TupleType::get(typeRefs);
   }
 
   return paramTypes_;

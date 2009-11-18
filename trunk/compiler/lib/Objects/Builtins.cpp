@@ -84,7 +84,7 @@ void Builtins::init() {
   // Other built-in types
   AddressType::initBuiltin();
   PointerType::initBuiltin();
-  NativeArrayType::instance.initBuiltin();
+  NativeArrayType::initBuiltin();
 
   DASSERT(module.module() != NULL);
   ScopeBuilder::createScopeMembers(&module);

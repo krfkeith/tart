@@ -14,6 +14,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
@@ -74,9 +75,9 @@ TypecastIntrinsic TypecastIntrinsic::instance;
 
 Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
     Expr * self, const ExprList & args, Type * expectedReturn) const {
-  DASSERT(args.size() == 1)
-;  DASSERT(method->isTemplateInstance());
-  DASSERT(method->templateInstance()->paramValues().size() == 1);
+  DASSERT(args.size() == 1);
+  DASSERT(method->isTemplateInstance());
+  DASSERT(method->templateInstance()->typeArgs()->size() == 1);
   Expr * fromExpr = args[0];
   Type * fromType = dealias(fromExpr->type());
   TypeRef toType = method->templateInstance()->paramValues()[0];

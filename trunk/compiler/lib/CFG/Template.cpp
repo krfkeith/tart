@@ -8,9 +8,11 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/ScopeBuilder.h"
+#include "tart/Sema/TypeTransform.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 
@@ -27,14 +29,29 @@ static const Defn::Traits INSTANTIABLE_TRAITS = Defn::Traits::of(
 );
 
 // -------------------------------------------------------------------
+// Class to discover all pattern variables in a type parameter list.
+
+class FindPatternVars : public TypeTransform {
+public:
+  FindPatternVars(PatternVarList & vars) : vars_(vars) {}
+
+  const Type * visitPatternVar(const PatternVar * in) {
+    vars_.push_back(const_cast<PatternVar *>(in));
+    return in;
+  }
+
+private:
+  PatternVarList & vars_;
+};
+
+// -------------------------------------------------------------------
 // PatternVar
 
-PatternVar::PatternVar(const SourceLocation & location,
-    TypeDefn * defn, Scope * parentScope, TemplateSignature * temp)
-  : DeclaredType(Pattern, defn, parentScope)
+PatternVar::PatternVar(const SourceLocation & location, const char * name, const Type * valueType)
+  : TypeImpl(Pattern)
   , location_(location)
-  , valueType_(Builtins::typeTypeDescriptor)
-  , template_(temp)
+  , valueType_(valueType ? valueType : Builtins::typeTypeDescriptor)
+  , name_(name)
 {}
 
 const llvm::Type * PatternVar::createIRType() const {
@@ -49,10 +66,6 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
   }
 
   return NonPreferred;
-}
-
-const Defn * PatternVar::templateDefn() const {
-  return template_->value();
 }
 
 bool PatternVar::canBindTo(const Type * value) const {
@@ -79,13 +92,13 @@ bool PatternVar::isSingular() const {
 }
 
 void PatternVar::trace() const {
-  DeclaredType::trace();
+  TypeImpl::trace();
   location_.trace();
 }
 
 void PatternVar::format(FormatStream & out) const {
   if (out.getShowQualifiedName()) {
-    out << template_->value()->name() << "%" << name();
+    out << name_ << "%" << name();
   } else {
     out << "%" << name();
   }
@@ -106,27 +119,25 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
   : value_(v)
   , ast_(NULL)
   , paramScope_(parentScope)
+  , typeParams_(NULL)
 {
   paramScope_.setScopeName("template-params");
 }
 
-PatternVar * TemplateSignature::addPatternVar(const SourceLocation & loc,
-    const char * name, Type * type) {
-  TypeDefn * tdef = new TypeDefn(value_->module(), name, NULL);
-  PatternVar * var = new PatternVar(loc, tdef, &paramScope_, this);
-  if (type != NULL) {
-    var->setValueType(type);
+void TemplateSignature::setTypeParams(const TupleType * typeParams) {
+  DASSERT(typeParams_ == NULL);
+  typeParams_ = typeParams;
+  FindPatternVars(vars_).transform(typeParams_);
+  for (PatternVarList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
+    PatternVar * var = *it;
+    DASSERT(paramScope_.lookupSingleMember(var->name()) == NULL);
+    TypeDefn * tdef = new TypeDefn(value_->module(), var->name(), var);
+    paramScope_.addMember(tdef);
   }
-  tdef->setTypeValue(var);
-  vars_.push_back(var);
-  DASSERT_OBJ(paramScope_.lookupSingleMember(name) == NULL, tdef);
-  paramScope_.addMember(tdef);
-  return var;
 }
 
-void TemplateSignature::addParameter(const SourceLocation & loc, const char * name, Type * type) {
-  PatternVar * var = addPatternVar(loc, name, type);
-  params_.push_back(var);
+const TypeRef & TemplateSignature::typeParam(int index) const {
+  return (*typeParams_)[index];
 }
 
 PatternVar * TemplateSignature::patternVar(const char * name) const {
@@ -158,23 +169,22 @@ size_t TemplateSignature::patternVarCount() const {
 
 void TemplateSignature::trace() const {
   safeMark(ast_);
-  markList(params_.begin(), params_.end());
+  safeMark(typeParams_);
   markList(requirements_.begin(), requirements_.end());
   for (SpecializationMap::const_iterator it = specializations_.begin();
       it != specializations_.end(); ++it) {
     it->first->mark();
     it->second->mark();
   }
+
   paramScope_.trace();
 }
 
 void TemplateSignature::format(FormatStream & out) const {
-  out << "[";
-  formatTypeList(out, params_);
-  out << "]";
+  out << "[" << typeParams_ << "]";
 }
 
-Defn * TemplateSignature::findSpecialization(TypeVector * tv) const {
+Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
   SpecializationMap::iterator it = specializations_.find(tv);
   if (it != specializations_.end()) {
     return it->second;
@@ -188,7 +198,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   bool isPartial = false;
 
   // Check to make sure that the parameters are of the correct type.
-  TypeList paramValues;
+  TypeRefList paramValues;
   bool noCache = false;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
@@ -199,7 +209,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
       var->setValueType(Builtins::typeTypeDescriptor);
     }
 
-    Type * value = env.subst(var);
+    const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
@@ -215,54 +225,27 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     paramValues.push_back(value);
   }
 
-  TypeRefList typeArgs;
-  // Substitute into the template args to create the arg list
-  for (TypeList::iterator it = params_.begin(); it != params_.end(); ++it) {
-    typeArgs.push_back(env.subst(*it));
-  }
-
-  TypeVector * typeArgVector = TypeVector::get(typeArgs);
-
-  if (!typeArgVector->isSingular()) {
+  const TupleType * typeArgs = cast<TupleType>(env.subst(typeParams_));
+  if (!typeArgs->isSingular()) {
     if (singular) {
-      diag.fatal(loc) << "Non-singular parameters [" << typeArgVector << "]";
+      diag.fatal(loc) << "Non-singular parameters [" << typeArgs << "]";
     }
 
     isPartial = true;
   }
 
-  //TypeVector * tv = TypeVector::get(paramValues);
-
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
   if (!noCache) {
-    Defn * sp = findSpecialization(typeArgVector);
+    Defn * sp = findSpecialization(typeArgs);
     if (sp != NULL) {
       return sp;
     }
-
-    /*for (DefnList::const_iterator it = specializations.begin(); it != specializations.end(); ++it) {
-      Defn * spec = *it;
-      TemplateInstance * ti = spec->templateInstance();
-      DASSERT_OBJ(ti != NULL, value_);
-      DASSERT_OBJ(ti->paramValues().size() == paramValues.size(), value_);
-      if (std::equal(paramValues.begin(), paramValues.end(), ti->paramValues().begin(),
-          TypeEquals())) {
-
-        if (singular && !ti->value()->isSingular()) {
-          diag.fatal(loc) << Format_Verbose << "Expected " << ti->value() << " to be singular, why isn't it?";
-          DFAIL("Non-singular");
-        }
-
-        return ti->value();
-      }
-    }*/
   }
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_, typeArgVector);
-  tinst->paramValues().append(paramValues.begin(), paramValues.end());
+  TemplateInstance * tinst = new TemplateInstance(value_, typeArgs, paramValues);
   tinst->instantiatedFrom() = loc;
 
   // Create the definition
@@ -278,28 +261,6 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     if (isPartial) {
       result->addTrait(Defn::PartialInstantiation);
     }
-
-  } else if (value_->defnType() == Defn::Typedef) {
-    TypeDefn * tdef = static_cast<TypeDefn *>(value_);
-    TypeDefn * newDef = new TypeDefn(value_->module(), tdef->name());
-    switch (tdef->typeValue()->typeClass()) {
-      case Type::NArray: {
-        UnitType * ntc = cast<UnitType>(paramValues[1]);
-        ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
-        uint64_t size = intVal->value()->getZExtValue();
-        NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);
-        newDef->setTypeValue(na);
-        newDef->createQualifiedName(NULL);
-        break;
-      }
-
-      default:
-        DFAIL("Invalid template type");
-        break;
-    }
-
-    result = newDef;
-    tinst->setValue(result);
   } else {
     DFAIL("Invalid template type");
   }
@@ -310,7 +271,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   }
 
   if (!noCache) {
-    specializations_[typeArgVector] = result;
+    specializations_[typeArgs] = result;
   }
 
   // Create a symbol for each template parameter.
@@ -318,17 +279,17 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   for (int i = 0; i < vars_.size(); ++i) {
     PatternVar * var = vars_[i];
-    Type * value = paramValues[i];
+    TypeRef & value = paramValues[i];
 
     Defn * argDefn;
-    if (UnitType * ntc = dyn_cast<UnitType>(value)) {
+    if (UnitType * ntc = dyn_cast<UnitType>(value.type())) {
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
     } else {
-      argDefn = new TypeDefn(result->module(), var->name(), value);
+      argDefn = new TypeDefn(result->module(), var->name(), value.type());
     }
 
-    argDefn->setSingular(value->isSingular());
-    isSingular &= value->isSingular();
+    argDefn->setSingular(value.isSingular());
+    isSingular &= value.isSingular();
     argDefn->addTrait(Defn::Synthetic);
     tinst->addMember(argDefn);
   }
@@ -371,17 +332,19 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   // Create the definition
   TypeDefn * tdef = static_cast<TypeDefn *>(value_);
   Type * proto = tdef->typeValue();
-  if (proto->typeClass() != Type::NAddress && proto->typeClass() != Type::NPointer) {
+  if (proto->typeClass() != Type::NAddress &&
+      proto->typeClass() != Type::NPointer &&
+      proto->typeClass() != Type::NArray) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
     return tdef->typeValue();
   }
 
-  // TODO: This needs major refactoring.
+  // TODO: Can TypeTransform do this?
   // Check to make sure that the parameters are of the correct type.
-  TypeList paramValues;
+  TypeRefList paramValues;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
-    Type * value = env.subst(var);
+    const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
@@ -400,27 +363,15 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   }
 
   switch (tdef->typeValue()->typeClass()) {
-    case Type::NAddress: {
+    case Type::NAddress:
       return AddressType::get(paramValues[0]);
-      break;
-    }
 
-    case Type::NPointer: {
+    case Type::NPointer:
       return PointerType::get(paramValues[0]);
-      break;
-    }
 
-#if 0
     case Type::NArray: {
-      UnitType * ntc = cast<UnitType>(paramValues[1]);
-      ConstantInteger * intVal = cast<ConstantInteger>(ntc->value());
-      uint64_t size = intVal->value()->getZExtValue();
-      NativeArrayType * na = new NativeArrayType(paramValues[0], size, newDef, tinst);
-      newDef->setTypeValue(na);
-      newDef->createQualifiedName(NULL);
-      break;
+      return NativeArrayType::get(TupleType::get(paramValues));
     }
-#endif
 
     default:
       DFAIL("Invalid template type");
@@ -433,10 +384,12 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Defn * templateDefn, TypeVector * templateArgs)
+TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templateArgs,
+    TypeRefList & paramValues)
   : value_(NULL)
   , templateDefn_(templateDefn)
-  , templateArgs_(templateArgs)
+  , paramValues_(paramValues)
+  , typeArgs_(templateArgs)
   , parentScope_(templateDefn->definingScope())
 {
 }
@@ -467,8 +420,8 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 
 void TemplateInstance::format(FormatStream & out) const {
   out << "[";
-  for (TypeVector::iterator it = templateArgs_->begin(); it != templateArgs_->end(); ++it) {
-    if (it != templateArgs_->begin()) {
+  for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it) {
+    if (it != typeArgs_->begin()) {
       out << ", ";
     }
 
@@ -481,8 +434,10 @@ void TemplateInstance::format(FormatStream & out) const {
 void TemplateInstance::trace() const {
   paramDefns_.trace();
   safeMark(value_);
-  safeMark(templateArgs_);
-  markList(paramValues_.begin(), paramValues_.end());
+  safeMark(typeArgs_);
+  for (TypeRefList::const_iterator it = paramValues_.begin(); it != paramValues_.end(); ++it) {
+    it->trace();
+  }
 }
 
 } // namespace Tart

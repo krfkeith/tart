@@ -28,7 +28,7 @@ class FunctionType;
 class IterableScope;
 class TypeDefn;
 class TypeRef;
-class TypeVector;
+class TupleType;
 
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::StringMap<llvm::Constant *> SymbolNameMap;
@@ -151,7 +151,7 @@ public:
   llvm::Constant * emitOpaqueType(const Type * type);
   llvm::Constant * emitSimpleType(const Type * reflectType, const Type * type);
   llvm::Constant * emitTypeBase(const Type * reflectType, TypeKind kind);
-  llvm::Constant * emitTypeVector(TypeVector * types);
+  llvm::Constant * emitTupleType(const TupleType * types);
 
   /** Return the type of the 'invoke' function for a function type. */
   llvm::FunctionType * getInvokeFnType();
