@@ -1644,31 +1644,6 @@ Stmt * Parser::declStmt() {
     return NULL;
   }
 
-  // Rule for block scopes:
-  // -- overloading not allowed.
-  // -- variable hiding gives a warning.
-
-  // Check for hiding similarly-named variable.
-  // TODO: This is the only place in the code that uses scopeType,
-  // if we can get rid of this then we can get rid of scopeType.
-  // TODO: This no longer works since outerScope isn't set yet. We need
-  // to move this.
-#if 0
-  for (Scope * s = scope->getOuterScope(); s != NULL; s = s->getOuterScope()) {
-    if (s->getScopeType() != Scope::Block && s->getScopeType() != Scope::Params) {
-      break;
-    }
-
-    if (s->find(decl->name())) {
-      diag.warn(decl->location(),
-          "'%s' hides definition in outer scope", decl->name());
-      break;
-    }
-  }
-#endif
-
-  //scope->addMember(decl);
-
   return new DeclStmt(decl->location(), decl);
 }
 

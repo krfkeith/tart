@@ -108,29 +108,28 @@ protected:
 
 // -------------------------------------------------------------------
 // Generic template for native arrays
-class NativeArrayType : public DeclaredType {
-protected:
-  Type * elementType_;
-  uint64_t size_;
-
+class NativeArrayType : public TypeImpl {
 public:
 
   /** Construct a native array for the specified element type. */
-  static NativeArrayType * create(Type * elemType, uint64_t sz);
-  static NativeArrayType * get(const TypeRef & elemType, uint64_t sz);
-
-  /** Construct a native array type */
-  NativeArrayType(Type * elementType, uint64_t sz, TypeDefn * defn,
-      Scope * parentScope);
+  static NativeArrayType * get(const TupleType * typeArgs);
 
   /** Initialize the built-in template for this type. */
-  void initBuiltin();
+  static void initBuiltin();
+
+  /** The element type of the array. */
+  const TypeRef & elementType() const;
 
   /** The fixed length of the array. */
   uint64_t size() const { return size_; }
   void setSize(uint64_t sz) { size_ = sz; }
 
+  const TupleType * typeArgs() const { return typeArgs_; }
+
   // Overrides
+
+  size_t numTypeParams() const { return 2; }
+  virtual TypeRef typeParam(int index) const;
 
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
@@ -146,9 +145,19 @@ public:
     return t->typeClass() == NArray;
   }
 
-  /** Singleton instance. */
-  static NativeArrayType instance;
+  static NativeArrayType prototype;
   static TypeDefn typedefn;
+
+protected:
+  typedef llvm::DenseMap<const Type *, NativeArrayType *, Type::KeyInfo> TypeMap;
+  static TypeMap uniqueTypes_;
+
+  /** Construct a native array type */
+  NativeArrayType(const TupleType * typeArgs);
+  NativeArrayType();
+
+  const TupleType * typeArgs_;
+  uint64_t size_;
 };
 
 }

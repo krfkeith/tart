@@ -14,6 +14,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/Objects/Builtins.h"
 
@@ -431,7 +432,7 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
 
   // Collect union members
   int memberIndex = 0;
-  for (TypeRefList::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
+  for (TupleType::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
     TypeRef memberType = *it;
     if (memberType.isNonVoidType()) {
       char name[16];

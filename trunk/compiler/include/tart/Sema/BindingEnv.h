@@ -87,14 +87,14 @@ private:
 /// specific environment.
 class PatternValue : public Type {
 public:
-  PatternValue(BindingEnv * env, PatternVar * var)
+  PatternValue(BindingEnv * env, const PatternVar * var)
     : Type(PatternVal)
     , env_(env)
     , var_(var)
   {}
 
   const BindingEnv * env() const { return env_; }
-  PatternVar * var() const { return var_; }
+  const PatternVar * var() const { return var_; }
 
   // The value that is currently bound to var in env. Can return null if there's no value
   // bound to var.
@@ -120,7 +120,7 @@ public:
 
 private:
   BindingEnv * env_;
-  PatternVar * var_;
+  const PatternVar * var_;
 };
 
 /// -------------------------------------------------------------------
@@ -161,14 +161,12 @@ public:
       This function attempts to avoid creating new type objects when
       the input expression contains no type variables.
    */
-  Type * subst(Type * in) const;
+  const Type * subst(const Type * in) const;
   TypeRef subst(const TypeRef & in) const;
 
   /** Given a type expression, replace all pattern variables with pattern values that
       are local to this specific environment. */
-  //Type * relabel(Type * in);
-  //TypeRef relabel(const TypeRef & in);
-  TypeVector * relabel(TypeVector * in);
+  const Type * relabel(const Type * in);
 
     /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {
@@ -208,7 +206,8 @@ private:
 
   Substitution * substitutions_;
 
-  bool unifyPattern(SourceContext * source, PatternVar * pattern, Type * value, Variance variance);
+  bool unifyPattern(SourceContext * source, const PatternVar * pattern, Type * value,
+      Variance variance);
   bool unifyAddressType(SourceContext * source, AddressType * pattern, Type * value);
   bool unifyPointerType(SourceContext * source, PointerType * pattern, Type * value);
   bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);

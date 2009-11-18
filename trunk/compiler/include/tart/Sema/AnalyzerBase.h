@@ -160,11 +160,10 @@ protected:
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
-  Expr * specialize(SLC & loc, const ExprList & exprs, TypeVector * tv);
+  Expr * specialize(SLC & loc, const ExprList & exprs, TupleType * tv);
 
   // Add a candidate to the list of specializations being considered.
-  void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de,
-      TypeVector * args);
+  void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de, TupleType * args);
 
     // Lookup helper function that attempts to load a module from 'path'.
   bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);

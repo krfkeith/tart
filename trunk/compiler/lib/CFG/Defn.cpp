@@ -6,6 +6,7 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/TupleType.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -104,7 +105,7 @@ const std::string & Defn::linkageName() const {
   if (lnkName.empty()) {
     if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray->typeDefn()) {
       // Handle arrays specially.
-      typeLinkageName(lnkName, tinst_->paramValues()[0]);
+      typeLinkageName(lnkName, (*tinst_->typeArgs())[0]);
       lnkName.append("[]");
       return lnkName;
     }
@@ -120,9 +121,9 @@ const std::string & Defn::linkageName() const {
     // Template instance parameters.
     if (tinst_ != NULL) {
       lnkName.append("[");
-      const TypeList & typeArgs = tinst_->paramValues();
-      for (TypeList::const_iterator it = typeArgs.begin(); it != typeArgs.end(); ++it) {
-        if (it != typeArgs.begin()) {
+      const TupleType * typeArgs = tinst_->typeArgs();
+      for (TupleType::const_iterator it = typeArgs->begin(); it != typeArgs->end(); ++it) {
+        if (it != typeArgs->begin()) {
           lnkName.append(",");
         }
 
@@ -132,15 +133,7 @@ const std::string & Defn::linkageName() const {
       lnkName.append("]");
     } else if (tsig_ != NULL) {
       lnkName.append("[");
-      const TypeList & typeParams = tsig_->params();
-      for (TypeList::const_iterator it = typeParams.begin(); it != typeParams.end(); ++it) {
-        if (it != typeParams.begin()) {
-          lnkName.append(",");
-        }
-
-        typeLinkageName(lnkName, *it);
-      }
-
+      typeLinkageName(lnkName, tsig_->typeParams());
       lnkName.append("]");
     }
   }

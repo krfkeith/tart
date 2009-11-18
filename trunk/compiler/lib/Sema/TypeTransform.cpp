@@ -6,6 +6,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/CFG/NativeType.h"
@@ -23,24 +24,6 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeTransform
 
-TypeVector * TypeTransform::visit(TypeVector * in) {
-  bool isSame = true;
-  TypeRefList typeRefs;
-  for (TypeVector::iterator it = in->begin(); it != in->end(); ++it) {
-    TypeRef ref = visit(*it);
-    typeRefs.push_back(ref);
-    if (ref != *it) {
-      isSame = false;
-    }
-  }
-
-  if (isSame) {
-    return in;
-  } else {
-    return TypeVector::get(typeRefs);
-  }
-}
-
 TypeRef TypeTransform::visit(const TypeRef & in) {
   TypeRef result(in);
   // TODO: Handle preservation of modifiers.
@@ -48,57 +31,60 @@ TypeRef TypeTransform::visit(const TypeRef & in) {
     return visit(static_cast<TypeAlias *>(in.type())->value());
   }
 
-  result.setType(transform(in.type()));
+  result.setType(const_cast<Type *>(transform(in.type())));
   return result;
 }
 
-Type * TypeTransform::visit(Type * in) {
+const Type * TypeTransform::visit(const Type * in) {
   if (isErrorResult(in)) {
     return in;
   }
 
   switch (in->typeClass()) {
     case Type::Primitive:
-      return visitPrimitiveType(static_cast<PrimitiveType *>(in));
+      return visitPrimitiveType(static_cast<const PrimitiveType *>(in));
 
     case Type::Struct:
     case Type::Class:
     case Type::Interface:
     case Type::Protocol:
-      return visitCompositeType(static_cast<CompositeType *>(in));
+      return visitCompositeType(static_cast<const CompositeType *>(in));
 
     case Type::Enum:
-      return visitEnumType(static_cast<EnumType *>(in));
+      return visitEnumType(static_cast<const EnumType *>(in));
 
     case Type::Function:
-      return visitFunctionType(static_cast<FunctionType *>(in));
+      return visitFunctionType(static_cast<const FunctionType *>(in));
 
     case Type::Union:
-      return visitUnionType(static_cast<UnionType *>(in));
+      return visitUnionType(static_cast<const UnionType *>(in));
+
+    case Type::Tuple:
+      return visitTupleType(static_cast<const TupleType *>(in));
 
     case Type::NAddress:
-      return visitAddressType(static_cast<AddressType *>(in));
+      return visitAddressType(static_cast<const AddressType *>(in));
 
     case Type::NPointer:
-      return visitPointerType(static_cast<PointerType *>(in));
+      return visitPointerType(static_cast<const PointerType *>(in));
 
     case Type::NArray:
-      return visitNativeArrayType(static_cast<NativeArrayType *>(in));
+      return visitNativeArrayType(static_cast<const NativeArrayType *>(in));
 
     case Type::Unit:
-      return visitUnitType(static_cast<UnitType *>(in));
+      return visitUnitType(static_cast<const UnitType *>(in));
 
     case Type::Alias:
-      return visitTypeAlias(static_cast<TypeAlias *>(in));
+      return visitTypeAlias(static_cast<const TypeAlias *>(in));
 
     case Type::Pattern:
-      return visitPatternVar(static_cast<PatternVar *>(in));
+      return visitPatternVar(static_cast<const PatternVar *>(in));
 
     case Type::PatternVal:
-      return visitPatternValue(static_cast<PatternValue *>(in));
+      return visitPatternValue(static_cast<const PatternValue *>(in));
 
     case Type::Constraint:
-      return visitTypeConstraint(static_cast<TypeConstraint *>(in));
+      return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
     default:
       diag.fatal() << "Type class not handled: " << in->typeClass();
@@ -106,38 +92,51 @@ Type * TypeTransform::visit(Type * in) {
   }
 }
 
-Type * TypeTransform::visitPrimitiveType(PrimitiveType * in) {
+const Type * TypeTransform::visitPrimitiveType(const PrimitiveType * in) {
   return in;
 }
 
-Type * TypeTransform::visitCompositeType(CompositeType * in) {
+const Type * TypeTransform::visitCompositeType(const CompositeType * in) {
   return in;
 }
 
-Type * TypeTransform::visitEnumType(EnumType * in) {
+const Type * TypeTransform::visitEnumType(const EnumType * in) {
   return in;
 }
 
-Type * TypeTransform::visitFunctionType(FunctionType * in) {
+const Type * TypeTransform::visitFunctionType(const FunctionType * in) {
   return in;
 }
 
-Type * TypeTransform::visitUnionType(UnionType * in) {
+const Type * TypeTransform::visitUnionType(const UnionType * in) {
+  const TupleType * members = cast<TupleType>(visit(&in->members()));
+  if (members != &in->members()) {
+    // TODO: Need to sort the members.
+    return UnionType::get(in->location(), members->members());
+  }
+
+  return in;
+}
+
+const Type * TypeTransform::visitTupleType(const TupleType * in) {
   TypeRefList members;
-  for (TypeVector::iterator it = in->members().begin(); it != in->members().end(); ++it) {
-    members.push_back(visit(*it));
+  bool isSame = true;
+  for (TupleType::const_iterator it = in->members().begin(); it != in->members().end(); ++it) {
+    TypeRef ref = visit(*it);
+    members.push_back(ref);
+    if (ref != *it) {
+      isSame = false;
+    }
   }
 
-  // TODO: Need to sort the members.
-  TypeVector * tv = TypeVector::get(members);
-  if (tv != &in->members()) {
-    return UnionType::create(in->location(), members);
+  if (isSame) {
+    return in;
   }
 
-  return in;
+  return TupleType::get(members);
 }
 
-Type * TypeTransform::visitAddressType(AddressType * in) {
+const Type * TypeTransform::visitAddressType(const AddressType * in) {
   const AddressType * np = static_cast<const AddressType *>(in);
   if (!np->typeParam(0).isDefined()) {
     return in;
@@ -151,7 +150,7 @@ Type * TypeTransform::visitAddressType(AddressType * in) {
   return AddressType::get(elemType);
 }
 
-Type * TypeTransform::visitPointerType(PointerType * in) {
+const Type * TypeTransform::visitPointerType(const PointerType * in) {
   if (!in->typeParam(0).isDefined()) {
     return in;
   }
@@ -164,54 +163,50 @@ Type * TypeTransform::visitPointerType(PointerType * in) {
   return PointerType::get(elemType);
 }
 
-Type * TypeTransform::visitNativeArrayType(NativeArrayType * in) {
-  if (!in->typeParam(0).isDefined()) {
-    return in;
+const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {
+  const TupleType * typeArgs = cast<TupleType>(visit(in->typeArgs()));
+  if (typeArgs != in->typeArgs()) {
+    return NativeArrayType::get(typeArgs);
   }
 
-  TypeRef elemType = visit(in->typeParam(0));
-  if (elemType == in->typeParam(0)) {
-    return in;
-  }
-
-  return NativeArrayType::get(elemType, in->size());
-}
-
-Type * TypeTransform::visitUnitType(UnitType * in) {
   return in;
 }
 
-Type * TypeTransform::visitPatternVar(PatternVar * in) {
+const Type * TypeTransform::visitUnitType(const UnitType * in) {
   return in;
 }
 
-Type * TypeTransform::visitPatternValue(PatternValue * in) {
+const Type * TypeTransform::visitPatternVar(const PatternVar * in) {
   return in;
 }
 
-Type * TypeTransform::visitTypeConstraint(TypeConstraint * in) {
+const Type * TypeTransform::visitPatternValue(const PatternValue * in) {
   return in;
 }
 
-Type * TypeTransform::visitTypeAlias(TypeAlias * in) {
+const Type * TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
+  return in;
+}
+
+const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
   // TODO: This strips type modifiers.
-  return visit(static_cast<TypeAlias *>(in)->value().type());
+  return visit(static_cast<const TypeAlias *>(in)->value().type());
 }
 
 // -------------------------------------------------------------------
 // SubstitutionTransform
 
-Type * SubstitutionTransform::visitPatternVar(PatternVar * in) {
+const Type * SubstitutionTransform::visitPatternVar(const PatternVar * in) {
   Type * value = env_.get(in);
   return value != NULL ? visit(value) : in;
 }
 
-Type * SubstitutionTransform::visitPatternValue(PatternValue * in) {
+const Type * SubstitutionTransform::visitPatternValue(const PatternValue * in) {
   Type * result = in->value();
   return result != NULL ? result : in;
 }
 
-Type * SubstitutionTransform::visitCompositeType(CompositeType * in) {
+const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in) {
   if (in->typeDefn() == NULL) {
     return in;
   } else if (in->typeDefn()->isTemplate()) {
@@ -231,10 +226,10 @@ Type * SubstitutionTransform::visitCompositeType(CompositeType * in) {
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       PatternVar * param = tsig->patternVar(i);
-      Type * value = tinst->paramValues()[i];
-      Type * svalue = visit(value);
-      if (svalue != NULL) {
-        partialEnv.addSubstitution(param, svalue);
+      TypeRef value = tinst->paramValues()[i];
+      TypeRef svalue = visit(value);
+      if (svalue.isDefined()) {
+        partialEnv.addSubstitution(param, svalue.type());
       }
     }
 
@@ -270,8 +265,8 @@ Type * SubstitutionTransform::visitCompositeType(CompositeType * in) {
   return in;
 }
 
-Type * SubstitutionTransform::visitTypeConstraint(TypeConstraint * in) {
-  TypeConstraint * constraint = static_cast<TypeConstraint *>(in);
+const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * in) {
+  const TypeConstraint * constraint = static_cast<const TypeConstraint *>(in);
   if (constraint->isSingular()) {
     return constraint->singularValue().type();
   }
@@ -280,7 +275,7 @@ Type * SubstitutionTransform::visitTypeConstraint(TypeConstraint * in) {
   return in;
 }
 
-Type * RelabelTransform::visitPatternVar(PatternVar * in) {
+const Type * RelabelTransform::visitPatternVar(const PatternVar * in) {
   Type * value = env_.get(in);
   if (value != NULL) {
     return value;

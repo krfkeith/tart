@@ -91,7 +91,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         unionTypes.push_back(TypeRef(elementType));
       }
 
-      return UnionType::create(ast->location(), unionTypes);
+      return UnionType::get(ast->location(), unionTypes);
     }
 
     case ASTNode::AnonFn: {

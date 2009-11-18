@@ -10,6 +10,7 @@
 #include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
@@ -310,7 +311,8 @@ Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
     return new TypeLiteralExpr(ast->location(), pvar);
   } else {
     return new TypeLiteralExpr(ast->location(),
-        tsig_->addPatternVar(ast->location(), ast->name(), type));
+        new PatternVar(ast->location(), ast->name(), type));
+        //tsig_->addPatternVar(ast->location(), ast->name(), type));
   }
 }
 
@@ -1276,7 +1278,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, Type * toType) {
   analyzeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc);
   DASSERT(!methods.empty());
-  Expr * valueOf = specialize(loc, methods, TypeVector::get(toType));
+  Expr * valueOf = specialize(loc, methods, TupleType::get(toType));
   FunctionDefn * valueOfMethod;
   if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(valueOf)) {
     valueOfMethod = cast_or_null<FunctionDefn>(findBestSpecialization(spe));

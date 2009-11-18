@@ -11,6 +11,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
@@ -152,6 +153,14 @@ void typeLinkageName(std::string & out, const Type * ty) {
       out.append("->");
       typeLinkageName(out, ftype->returnType());
     }
+  } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
+    for (TypeRefList::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
+      if (it != ttype->begin()) {
+        out.append(",");
+      }
+
+      typeLinkageName(out, *it);
+    }
   } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
     for (TypeRefList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
       if (it != utype->members().begin()) {
@@ -174,15 +183,15 @@ void typeLinkageName(std::string & out, const Type * ty) {
   }
 }
 
-void typeLinkageName(std::string & out, TypeVector * tv) {
-  for (TypeVector::iterator it = tv->begin(); it != tv->end(); ++it) {
+/*void typeLinkageName(std::string & out, TupleType * tv) {
+  for (TupleType::iterator it = tv->begin(); it != tv->end(); ++it) {
     if (it != tv->begin()) {
       out.append(",");
     }
 
     typeLinkageName(out, *it);
   }
-}
+}*/
 
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
@@ -391,19 +400,19 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
     // Now test the type parameters to see if they are also equivalent.
     const TypeDefn * d1 = type1->typeDefn();
     const TypeDefn * d2 = type2->typeDefn();
-    const TypeList * type1Params = NULL;
-    const TypeList * type2Params = NULL;
+    const TypeRefList * type1Params = NULL;
+    const TypeRefList * type2Params = NULL;
 
     if (d1->isTemplate()) {
-      type1Params = &d1->templateSignature()->params();
+      type1Params = &d1->templateSignature()->typeParams()->members();
     } else if (d1->isTemplateInstance()) {
-      type1Params = &d1->templateInstance()->paramValues();
+      type1Params = &d1->templateInstance()->typeArgs()->members();
     }
 
     if (d2->isTemplate()) {
-      type2Params = &d2->templateSignature()->params();
+      type2Params = &d2->templateSignature()->typeParams()->members();
     } else if (d2->isTemplateInstance()) {
-      type2Params = &d2->templateInstance()->paramValues();
+      type2Params = &d2->templateInstance()->typeArgs()->members();
     }
 
     if (type1Params == type2Params) {
@@ -428,6 +437,11 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
 
   return false;
 }
+
+bool Type::equivalent(const TypeRef & type1, const TypeRef & type2) {
+  return type1.modifiers() == type2.modifiers() && equivalent(type1.type(), type2.type());
+}
+
 
 // -------------------------------------------------------------------
 // DeclaredType
@@ -526,52 +540,6 @@ ConversionRank TypeRef::canConvert(const TypeRef & fromType, int options) const 
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
   out << ref.type();
-}
-
-// -------------------------------------------------------------------
-// TypeRefIterPairKeyInfo
-
-TypeRef TypeRefIterPairKeyInfo ::emptyKey(NULL, uint32_t(-1));
-TypeRef TypeRefIterPairKeyInfo ::tombstoneKey(NULL, uint32_t(-2));
-
-// -------------------------------------------------------------------
-// TypeVector
-
-TypeVector::TypeVectorMap TypeVector::uniqueValues_;
-
-TypeVector * TypeVector::get(const TypeRef typeArg) {
-  return get(&typeArg, &typeArg + 1);
-}
-
-TypeVector * TypeVector::get(const TypeRef * first, const TypeRef * last) {
-  TypeVectorMap::iterator it = uniqueValues_.find(TypeRefIterPair(first, last));
-  if (it != uniqueValues_.end()) {
-    return it->second;
-  }
-
-  TypeVector * newEntry = new TypeVector(first, last);
-  uniqueValues_[newEntry->iterPair()] = newEntry;
-  return newEntry;
-}
-
-TypeVector::~TypeVector() {
-  uniqueValues_.erase(iterPair());
-}
-
-bool TypeVector::isSingular() const {
-  for (TypeVector::iterator it = begin(); it != end(); ++it) {
-    if (!it->isSingular()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void TypeVector::format(FormatStream & out) const {
-  for (TypeVector::iterator it = begin(); it != end(); ++it) {
-    out << *it;
-  }
 }
 
 // -------------------------------------------------------------------

@@ -257,24 +257,6 @@ void CodeGenerator::outputModule() {
   }
 
   llvm::WriteBitcodeToFile(irModule_, *binOut);
-
-#if 0
-  // Generate the module metadata
-  llvm::sys::Path metaPath(binPath);
-  metaPath.eraseSuffix();
-  metaPath.appendSuffix("md");
-  std::ofstream metaOut(metaPath.c_str());
-  genModuleMetadata(metaOut);
-  metaOut.close();
-#endif
-}
-
-void CodeGenerator::genModuleMetadata(std::ostream & strm) {
-  const ModuleSet & modules = module_->importModules();
-  for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
-    Module * m = *it;
-    strm << "import " << m->qualifiedName() << " as %0;" << std::endl;
-  }
 }
 
 void CodeGenerator::genEntryPoint() {

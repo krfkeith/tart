@@ -11,37 +11,27 @@
 
 namespace tart {
 
-class Template;
 class BindingEnv;
 
 /// -------------------------------------------------------------------
 /// Used to represent a pattern variable used within a type expressions.
-class PatternVar : public DeclaredType, public Locatable {
+class PatternVar : public TypeImpl, public Locatable {
 public:
 
   /** Construct a type pattern variable. */
-  PatternVar(const SourceLocation & loc, TypeDefn * defn,
-    Scope * parentScope, TemplateSignature * temp);
+  PatternVar(const SourceLocation & loc, const char * name, const Type * valueType = NULL);
 
+  /** Location where this variable was defined. */
   const SourceLocation & location() const { return location_; }
 
-  /** Return the pattern variable */
-  const char * name() const { return typeDefn()->name(); }
+  /** The variable name. */
+  const char * name() const { return name_; }
 
   /** Return the type of this variable, which will usually be 'Type' */
   const Type * valueType() const { return valueType_; }
 
   /** Set the type of values which can be bound to this variable. */
   void setValueType(Type * type) { valueType_ = type; }
-
-  /** Return the definition in which this pattern variable is defined. */
-  const Defn * templateDefn() const;
-
-  /** Return the template in which this pattern variable is defined. */
-  const TemplateSignature * getTemplate() const { return template_; }
-
-  /** Return true if this is a type variable. */
-  bool isTypeVar() const;
 
   /** Return true if the specified type value can be bound to this type. */
   bool canBindTo(const Type * value) const;
@@ -64,7 +54,7 @@ public:
 private:
   const SourceLocation location_;
   const Type * valueType_;
-  const TemplateSignature * template_;
+  const char * name_;
 };
 
 typedef llvm::SmallVector<PatternVar *, 4> PatternVarList;
@@ -83,9 +73,12 @@ public:
   const ASTTemplate * ast() const { return ast_; }
   void setAST(const ASTTemplate * a) { ast_ = a; }
 
-  /** Return the list of template pattern parameters. */
-  const TypeList & params() const { return params_; }
-  TypeList & params() { return params_; }
+  /** Return the list of formal template type parameters. */
+  const TupleType * typeParams() const { return typeParams_; }
+  void setTypeParams(const TupleType * typeParams);
+
+  /** Return the Nth type param. */
+  const TypeRef & typeParam(int index) const;
 
   /** Return the list of requirements. */
   const ExprList & requirements() const { return requirements_; }
@@ -108,14 +101,8 @@ public:
   const IterableScope & paramScope() const { return paramScope_; }
   IterableScope & paramScope() { return paramScope_; }
 
-  /** Add a pattern variable. */
-  PatternVar * addPatternVar(const SourceLocation & loc, const char * name, Type * type = NULL);
-
-  /** Add a parameter which consists of a single expression pattern variable. */
-  void addParameter(const SourceLocation & loc, const char * name, Type * type = NULL);
-
   /** Find a specialization with the specified type arguments. */
-  Defn * findSpecialization(TypeVector * tv) const;
+  Defn * findSpecialization(const TupleType * tv) const;
 
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
@@ -134,11 +121,11 @@ private:
   Defn * value_;
   const ASTTemplate * ast_;
 
-  TypeList params_;
+  const TupleType * typeParams_;
   ExprList requirements_;
   PatternVarList vars_;
 
-  typedef llvm::DenseMap<TypeVector *, Defn *, TypeVector::KeyInfo> SpecializationMap;
+  typedef llvm::DenseMap<const Type *, Defn *, Type::KeyInfo> SpecializationMap;
   SpecializationMap specializations_;
   IterableScope paramScope_;
 };
@@ -148,7 +135,7 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Defn * templateDefn, TypeVector * templateArgs);
+  TemplateInstance(Defn * templateDefn, const TupleType * templateArgs, TypeRefList & paramValues);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
@@ -158,11 +145,10 @@ public:
   Defn * templateDefn() const { return templateDefn_; }
 
   /** The values that are bound to pattern variables. */
-  const TypeList & paramValues() const { return paramValues_; }
-  TypeList & paramValues() { return paramValues_; }
+  const TypeRefList & paramValues() const { return paramValues_; }
 
   /** The template arguments for this template. */
-  TypeVector * templateArgs() const { return templateArgs_; }
+  const TupleType * typeArgs() const { return typeArgs_; }
 
   /** The module where this template was originally defined; Used for implicit imports
       within the template body. */
@@ -186,37 +172,11 @@ public:
 private:
   Defn * value_;                    // The instantiated definition
   Defn * templateDefn_;             // The template definition from whence this came.
-  TypeList paramValues_;            // The list of parameter values.
+  TypeRefList paramValues_;         // The list of parameter values.
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
-  TypeVector * templateArgs_;       // Template arguments with substitutions
+  const TupleType * typeArgs_;  // Template arguments with substitutions
   Scope * parentScope_;             // Parent scope of this definition.
   SourceLocation instantiatedFrom_; // Location which produced this instance.
-};
-
-/// -------------------------------------------------------------------
-/// A list of type parameters for a type.
-/// TODO: Refactor templates to use this.
-class TypeParams {
-public:
-  TypeParams(Defn * source) : source_(source ) {}
-
-  /** A pointer to the originating template. */
-  const Defn * source() const { return source_; }
-  Defn * source() { return source_; }
-
-  /** The list of argument types that match the template signature parameters. */
-  const TypeList & params() const { return params_; }
-  TypeList & params() { return params_; }
-
-  /** The type values bound to the pattern variables in the template signature. */
-  //const TypeList & captures() const { return captures_; }
-  //TypeList & captures() { return captures_; }
-
-private:
-  Defn * source_;                   // The originating template.
-  TypeList params_;                 // The values for each template parameter.
-  //TypeList captures_;               // Values captures by the pattern variables in the template.
-  //OrderedSymbolTable _;   // Symbol definitions for parameter values.
 };
 
 } // namespace tart

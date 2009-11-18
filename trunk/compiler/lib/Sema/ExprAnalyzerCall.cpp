@@ -415,16 +415,6 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
 
   call->setType(reduceReturnType(call));
   return call;
-
-#if 0
-    // Do compile-time evaluation of the constructor if possible.
-    //coercedArgs.insert(coercedArgs.begin(), newInst);
-    FunctionDef * constructorFunc = cast<FunctionDef>(const_cast<Declaration *>(constructor));
-    const Expr * ctObj = evalCallable(loc, constructorFunc, coercedArgs, NULL);
-    if (ctObj != NULL) {
-      return ctObj;
-    }
-#endif
 }
 
 /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert

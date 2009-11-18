@@ -6,16 +6,16 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
-//#include <llvm/DerivedTypes.h>
 
 namespace tart {
 
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::create(const SourceLocation & loc, const TypeRefList & members) {
+UnionType * UnionType::get(const SourceLocation & loc, const TypeRefList & members) {
   return new UnionType(loc, members);
 }
 
@@ -62,7 +62,15 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
     }
   }
 
-  members_ = TypeVector::get(combined);
+  members_ = TupleType::get(combined);
+}
+
+size_t UnionType::numTypeParams() const {
+  return members_->size();
+}
+
+TypeRef UnionType::typeParam(int index) const {
+  return (*members_)[index];
 }
 
 const llvm::Type * UnionType::createIRType() const {

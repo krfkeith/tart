@@ -6,6 +6,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -313,19 +314,19 @@ bool BindingEnv::unifyCompositeType(
   // Compare the ASTs to see if they derive from the same original symbol.
   if (patternDefn->ast() == valueDefn->ast()) {
     // Now we have to see if we can bind the type variables.
-    TypeList * patternTypeParams = NULL;
-    TypeList * valueTypeParams = NULL;
+    const TupleType * patternTypeParams = NULL;
+    const TupleType * valueTypeParams = NULL;
 
     if (patternDefn->isTemplate()) {
-      patternTypeParams = &patternDefn->templateSignature()->params();
+      patternTypeParams = patternDefn->templateSignature()->typeParams();
     } else if (patternDefn->isTemplateInstance()) {
-      patternTypeParams = &patternDefn->templateInstance()->paramValues();
+      patternTypeParams = patternDefn->templateInstance()->typeArgs();
     }
 
     if (valueDefn->isTemplate()) {
-      valueTypeParams = &valueDefn->templateSignature()->params();
+      valueTypeParams = valueDefn->templateSignature()->typeParams();
     } else if (valueDefn->isTemplateInstance()) {
-      valueTypeParams = &valueDefn->templateInstance()->paramValues();
+      valueTypeParams = valueDefn->templateInstance()->typeArgs();
     }
 
     if (patternTypeParams == valueTypeParams) {
@@ -378,7 +379,7 @@ bool BindingEnv::unifyCompositeType(
 }
 
 bool BindingEnv::unifyPattern(
-    SourceContext * source, PatternVar * pattern, Type * value, Variance variance) {
+    SourceContext * source, const PatternVar * pattern, Type * value, Variance variance) {
 
   if (pattern == value) {
     // Don't bind a pattern to itself.
@@ -564,289 +565,19 @@ TypeRef BindingEnv::subst(const TypeRef & in) const {
   }
 
   return SubstitutionTransform(*this).transform(in);
-  /*TypeRef result(in);
-  result.setType(subst(in.type()));
-  return result;*/
 }
 
-Type * BindingEnv::subst(Type * in) const {
+const Type * BindingEnv::subst(const Type * in) const {
   if (substitutions_ == NULL || isErrorResult(in)) {
     return in;
   }
 
   return SubstitutionTransform(*this).transform(in);
-#if 0
-  in = dealias(in);
-
-  switch (in->typeClass()) {
-    case Type::Pattern: {
-      PatternVar * var = static_cast<const PatternVar *>(in);
-      Type * value = get(var);
-      if (value != NULL) {
-        return subst(value);
-      }
-
-      return in;
-    }
-
-    case Type::PatternVal: {
-      PatternValue * value = static_cast<const PatternValue *>(in);
-      Type * result = value->value();
-      if (result != NULL) {
-        return result;
-      }
-
-      return in;
-    }
-
-    case Type::NAddress: {
-      const AddressType * np = static_cast<const AddressType *>(in);
-      if (!np->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = subst(np->typeParam(0));
-      if (elemType == np->typeParam(0)) {
-        return in;
-      }
-
-      return AddressType::get(elemType);
-    }
-
-    case Type::NPointer: {
-      const PointerType * np = static_cast<const PointerType *>(in);
-      if (!np->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = subst(np->typeParam(0));
-      if (elemType == np->typeParam(0)) {
-        return in;
-      }
-
-      return PointerType::get(elemType);
-    }
-
-    case Type::NArray: {
-      const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
-      if (!nt->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = subst(nt->typeParam(0));
-      if (elemType == nt->typeParam(0)) {
-        return in;
-      }
-
-      return NativeArrayType::get(elemType, nt->size());
-    }
-
-    case Type::Struct:
-    case Type::Class:
-    case Type::Interface:
-    case Type::Protocol: {
-      if (in->typeDefn() == NULL) {
-        return in;
-      } else if (in->typeDefn()->isTemplate()) {
-        Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
-        if (def != NULL) {
-          return cast<TypeDefn>(def)->typeValue();
-        } else {
-          return NULL;
-        }
-      } else if (in->typeDefn()->isTemplateMember()) {
-        DFAIL("Implement");
-      } else if (in->typeDefn()->isPartialInstantiation()) {
-        DFAIL("Implement");
-      }
-
-      return in;
-    }
-
-    case Type::Union: {
-      TypeRefList members;
-      UnionType * ut = static_cast<UnionType *>(in);
-      for (TypeVector::iterator it = ut->members().begin(); it != ut->members().end(); ++it) {
-        members.push_back(subst(*it));
-      }
-
-      TypeVector * tv = TypeVector::get(members);
-      if (tv != &ut->members()) {
-        return UnionType::create(ut->location(), members);
-      }
-
-      return in;
-    }
-
-    case Type::Function:
-    case Type::Unit:
-      //DASSERT(in->isSingular());
-      return in;
-
-    case Type::Primitive:
-      return in;
-
-    case Type::Constraint: {
-      TypeConstraint * constraint = static_cast<TypeConstraint *>(in);
-      if (constraint->isSingular()) {
-        return constraint->singularValue().type();
-      }
-
-      DFAIL("Type constraint not handled");
-      break;
-    }
-
-    default:
-      diag.fatal() << "Type class not handled: " << in->typeClass();
-      return NULL;
-  }
-#endif
 }
 
-TypeVector * BindingEnv::relabel(TypeVector * in) {
+const Type * BindingEnv::relabel(const Type * in) {
   return RelabelTransform(*this).transform(in);
 }
-
-#if 0
-TypeRef BindingEnv::relabel(const TypeRef & in) {
-  TypeRef result(in);
-  result.setType(relabel(in.type()));
-  return result;
-}
-
-Type * BindingEnv::relabel(Type * in) {
-  if (substitutions_ == NULL) {
-    return in;
-  }
-
-  in = dealias(in);
-
-  switch (in->typeClass()) {
-    case Type::Pattern: {
-      PatternVar * var = static_cast<const PatternVar *>(in);
-      Type * value = get(var);
-      if (value != NULL) {
-        return relabel(value);
-      }
-
-      diag.debug() << "Pattern variable " << var << " not found in environment " << *this;
-      DFAIL("Missing substitution");
-
-      return in;
-    }
-
-    case Type::PatternVal: {
-      PatternValue * value = static_cast<const PatternValue *>(in);
-      DASSERT(value->env() == this);
-      Type * result = value->value();
-      if (result != NULL) {
-        return result;
-      }
-
-      return in;
-    }
-
-    case Type::NAddress: {
-      const AddressType * np = static_cast<const AddressType *>(in);
-      if (!np->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = relabel(np->typeParam(0));
-      if (elemType == np->typeParam(0)) {
-        return in;
-      }
-
-      return AddressType::get(elemType);
-    }
-
-    case Type::NPointer: {
-      const PointerType * np = static_cast<const PointerType *>(in);
-      if (!np->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = relabel(np->typeParam(0));
-      if (elemType == np->typeParam(0)) {
-        return in;
-      }
-
-      return PointerType::get(elemType);
-    }
-
-    case Type::NArray: {
-      const NativeArrayType * nt = static_cast<const NativeArrayType *>(in);
-      if (!nt->typeParam(0).isDefined()) {
-        return in;
-      }
-
-      TypeRef elemType = relabel(nt->typeParam(0));
-      if (elemType == nt->typeParam(0)) {
-        return in;
-      }
-
-      return NativeArrayType::get(elemType, nt->size());
-    }
-
-    case Type::Struct:
-    case Type::Class:
-    case Type::Interface:
-    case Type::Protocol: {
-      if (in->typeDefn() == NULL) {
-        return in;
-      } else if (in->typeDefn()->isTemplate()) {
-        Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
-        if (def != NULL) {
-          assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
-          return cast<TypeDefn>(def)->typeValue();
-        } else {
-          return NULL;
-        }
-      } else if (in->typeDefn()->isTemplateMember()) {
-        DFAIL("Implement");
-      } else if (in->typeDefn()->isPartialInstantiation()) {
-        TemplateInstance * tinst = in->typeDefn()->templateInstance();
-        TemplateSignature * tsig = tinst->templateDefn()->templateSignature();
-        Substitution * savedState = substitutions_;
-        // Add type param mappings.
-        size_t numParams = tsig->patternVarCount();
-        for (size_t i = 0; i < numParams; ++i) {
-          PatternVar * param = tsig->patternVar(i);
-          Type * value = tinst->paramValues()[i];
-          Type * svalue = relabel(value);
-          if (svalue != NULL) {
-            addSubstitution(param, svalue);
-          }
-        }
-
-        Defn * def = tsig->instantiate(SourceLocation(), *this);
-        substitutions_ = savedState;
-        if (def != NULL) {
-          assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
-          return cast<TypeDefn>(def)->typeValue();
-        } else {
-          return NULL;
-        }
-      }
-
-      assureNoPatternVars(in);
-      return in;
-    }
-
-    case Type::Function:
-    case Type::Unit:
-      //DASSERT(in->isSingular());
-      return in;
-
-    case Type::Primitive:
-      return in;
-
-    default:
-      diag.fatal() << "Type class not handled: " << in->typeClass();
-      return NULL;
-  }
-}
-#endif
 
 void BindingEnv::trace() const {
   GC::safeMark(substitutions_);

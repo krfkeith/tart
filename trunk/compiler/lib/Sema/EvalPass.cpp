@@ -7,7 +7,9 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/UnitType.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Block.h"
 #include "tart/Sema/EvalPass.h"
@@ -370,13 +372,17 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
     return NULL;
   }
 
-  Type * elementType = arrayType->typeParam(0).type();
+  TypeRef elementType = arrayType->typeParam(0);
+  TypeRefList naTypeArgs;
+  naTypeArgs.push_back(elementType);
+  naTypeArgs.push_back(UnitType::get(
+      ConstantInteger::get(in->location(), &ULongType::instance, in->args().size())));
   ConstantNativeArray * arrayData =
       new ConstantNativeArray(
           in->location(),
-          NativeArrayType::create(elementType, in->args().size()));
+          NativeArrayType::get(TupleType::get(naTypeArgs)));
   for (ExprList::iterator it = in->args().begin(); it != in->args().end(); ++it) {
-    Expr * element = elementType->implicitCast((*it)->location(), evalExpr(*it));
+    Expr * element = elementType.implicitCast((*it)->location(), evalExpr(*it));
     if (element == NULL) {
       return NULL;
     }

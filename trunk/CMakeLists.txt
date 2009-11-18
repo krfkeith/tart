@@ -67,7 +67,6 @@ configure_file(
 
 # Include directory paths
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${TART_SOURCE_DIR}/collector/include)
 include_directories(${TART_SOURCE_DIR}/compiler/include)
 include_directories(${LLVM_INCLUDE_DIR})
 
@@ -94,7 +93,6 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 add_custom_target(check)
 
 # Subdirs to compile
-#add_subdirectory(collector)
 add_subdirectory(compiler)
 add_subdirectory(tools)
 add_subdirectory(runtime)

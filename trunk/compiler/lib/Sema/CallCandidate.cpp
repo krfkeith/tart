@@ -7,6 +7,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
@@ -52,7 +53,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       TemplateSignature * ts = def->templateSignature();
       if (ts != NULL) {
         isTemplate_ = true;
-        size_t numParams = ts->params().size();
+        size_t numParams = ts->typeParams()->size();
         // For each template parameter, create a PatternValue instance.
         for (size_t i = 0; i < numParams; ++i) {
           PatternVar * var = ts->patternVar(i);
@@ -66,7 +67,8 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
 
     if (spCandidate_ != NULL) {
       TemplateSignature * ts = m->templateSignature();
-      for (TypeList::const_iterator it = ts->params().begin(); it != ts->params().end(); ++it) {
+      for (TupleType::const_iterator it = ts->typeParams()->begin(); it != ts->typeParams()->end();
+          ++it) {
         templateParams_.push_back(bindingEnv_.subst(*it));
       }
     }
@@ -212,7 +214,7 @@ ConversionRank CallCandidate::updateConversionRank() {
   // If there are explicit specializations, then check those too.
   // Note that these must be an exact match.
   if (spCandidate_ != NULL) {
-    TypeVector * spArgs = spCandidate_->args();
+    TupleType * spArgs = spCandidate_->args();
     size_t typeArgCount = spArgs->size();
     for (size_t i = 0; i < typeArgCount; ++i) {
       const TypeRef & typeArg = (*spArgs)[i];
@@ -325,7 +327,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   for (Defn * def = method_; def != NULL && !def->isSingular(); def = def->parentDefn()) {
     TemplateSignature * ts = def->templateSignature();
     if (ts != NULL) {
-      size_t numParams = ts->params().size();
+      size_t numParams = ts->typeParams()->size();
       // For each template parameter, create a PatternValue instance.
       for (size_t i = 0; i < numParams; ++i) {
         PatternVar * var = ts->patternVar(i);

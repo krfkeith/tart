@@ -11,6 +11,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
 
@@ -533,7 +534,8 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
   TypeRef iterVarType;
-  for (TypeVector::iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+  for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
+      ++it) {
     TypeRef ty = *it;
     if (ty.isNonVoidType()) {
       iterVarType = ty;

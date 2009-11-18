@@ -14,6 +14,7 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
@@ -659,7 +660,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     } else if (toType == Builtins::typeObject) {
       const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
       const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
-          tsig->findSpecialization(TypeVector::get(TypeRef(const_cast<Type *>(fromType)))));
+          tsig->findSpecialization(TupleType::get(TypeRef(const_cast<Type *>(fromType)))));
       if (coerceFn == NULL) {
         diag.error() << "Missing function Object.coerce[" << fromType << "]";
         DFAIL("Missing Object.coerce fn");
@@ -1206,10 +1207,10 @@ llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
 
 Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const CompositeType * arrayType = cast<CompositeType>(in->type());
-  const Type * elementType = arrayType->typeDefn()->templateInstance()->paramValues()[0];
+  TypeRef elementType = arrayType->typeDefn()->templateInstance()->paramValues()[0];
   size_t arrayLength = in->args().size();
 
-  const llvm::Type * etype = elementType->irEmbeddedType();
+  const llvm::Type * etype = elementType.irEmbeddedType();
 
   // Arguments to the array-creation function
   ValueList args;

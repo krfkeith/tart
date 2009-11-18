@@ -50,7 +50,7 @@ public:
   ParameterDefn * addParam(const char * name, Type * type);
 
   /** Return the parameter types as a type vector. */
-  TypeVector * paramTypes() const;
+  TupleType * paramTypes() const;
 
   /** Given the name of a parameter, return the index of that parameter,
       or -1 if there is no such parameter. */
@@ -88,7 +88,7 @@ private:
   TypeRef returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
-  mutable TypeVector * paramTypes_;
+  mutable TupleType * paramTypes_;
   mutable llvm::PATypeHolder irType_;
   mutable bool isCreatingType;
   mutable std::string invokeName_;

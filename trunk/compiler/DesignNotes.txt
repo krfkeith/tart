@@ -15,9 +15,9 @@ Implementation TODOS:
 * Get -internalize link pass working
 * Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
-  * See if we can move template stuff into the type (CompositeType and FunctionType)
   * See if we can make UnionType and TupleType have type params like templates.
-  * Convert templates, unions to use TypeVector.
+  * See if we can move template stuff into the type (CompositeType and FunctionType)
+  * Convert templates to use TypeVector.
   * And native types.
   * And then make native types not require TypeDefns. (Done for Address and Pointer)
   * Separate the Type from the type members, so that Type can be a true constant.

@@ -27,27 +27,26 @@ class TypeAlias;
 /// A framework for general transformations on type expressions.
 class TypeTransform {
 public:
-  TypeVector * transform(TypeVector * in) { return visit(in); }
   TypeRef transform(const TypeRef & in) { return visit(in); }
-  Type * transform(Type * in) { return visit(in); }
+  const Type * transform(const Type * in) { return visit(in); }
 
-  TypeVector * visit(TypeVector * in);
   TypeRef visit(const TypeRef & in);
-  Type * visit(Type * in);
-  virtual Type * visitPrimitiveType(PrimitiveType * in);
-  virtual Type * visitCompositeType(CompositeType * in);
-  virtual Type * visitEnumType(EnumType * in);
-  virtual Type * visitFunctionType(FunctionType * in);
-  virtual Type * visitUnionType(UnionType * in);
-  virtual Type * visitAddressType(AddressType * in);
-  virtual Type * visitPointerType(PointerType * in);
-  virtual Type * visitNativeArrayType(NativeArrayType * in);
-  virtual Type * visitUnitType(UnitType * in);
-  virtual Type * visitPatternVar(PatternVar * in);
-  virtual Type * visitPatternValue(PatternValue * in);
-  virtual Type * visitTypeConstraint(TypeConstraint * in);
+  const Type * visit(const Type * in);
+  virtual const Type * visitPrimitiveType(const PrimitiveType * in);
+  virtual const Type * visitCompositeType(const CompositeType * in);
+  virtual const Type * visitEnumType(const EnumType * in);
+  virtual const Type * visitFunctionType(const FunctionType * in);
+  virtual const Type * visitUnionType(const UnionType * in);
+  virtual const Type * visitTupleType(const TupleType * in);
+  virtual const Type * visitAddressType(const AddressType * in);
+  virtual const Type * visitPointerType(const PointerType * in);
+  virtual const Type * visitNativeArrayType(const NativeArrayType * in);
+  virtual const Type * visitUnitType(const UnitType * in);
+  virtual const Type * visitPatternVar(const PatternVar * in);
+  virtual const Type * visitPatternValue(const PatternValue * in);
+  virtual const Type * visitTypeConstraint(const TypeConstraint * in);
 
-  virtual Type * visitTypeAlias(TypeAlias * in);
+  virtual const Type * visitTypeAlias(const TypeAlias * in);
 };
 
 /// -------------------------------------------------------------------
@@ -56,10 +55,10 @@ class SubstitutionTransform : public TypeTransform {
 public:
   SubstitutionTransform(const BindingEnv & env) : env_(env) {}
 
-  Type * visitPatternVar(PatternVar * in);
-  Type * visitPatternValue(PatternValue * in);
-  Type * visitCompositeType(CompositeType * in);
-  Type * visitTypeConstraint(TypeConstraint * in);
+  const Type * visitPatternVar(const PatternVar * in);
+  const Type * visitPatternValue(const PatternValue * in);
+  const Type * visitCompositeType(const CompositeType * in);
+  const Type * visitTypeConstraint(const TypeConstraint * in);
 
 protected:
   const BindingEnv & env_;
@@ -71,7 +70,7 @@ class RelabelTransform : public SubstitutionTransform {
 public:
   RelabelTransform(const BindingEnv & env) : SubstitutionTransform(env) {}
 
-  Type * visitPatternVar(PatternVar * in);
+  const Type * visitPatternVar(const PatternVar * in);
 
 private:
   BindingEnv vars_;

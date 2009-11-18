@@ -6,6 +6,7 @@
 #include "tart/CFG/Type.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
@@ -25,39 +26,41 @@ TEST(TypeTest, FindCommonType) {
 TEST(TypeTest, TypeAttributes) {
 }
 
+#if 0
 TEST(TypeTest, TypeRefIterPairTest) {
-  typedef TypeRefIterPairKeyInfo TRIPKI;
+  typedef TypeTupleKeyInfo TRIPKI;
 
   TypeRef t0(&IntType::instance);
   TypeRef t1(&IntType::instance);
   TypeRef t2(&ShortType::instance);
 
-  TypeRefIterPair p0(&t0, &t0 + 1);
-  TypeRefIterPair p1(&t1, &t1 + 1);
-  TypeRefIterPair p2(&t2, &t2 + 1);
+  TypeTupleKey p0(&t0, &t0 + 1);
+  TypeTupleKey p1(&t1, &t1 + 1);
+  TypeTupleKey p2(&t2, &t2 + 1);
 
   ASSERT_TRUE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p1));
   ASSERT_FALSE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p2));
   ASSERT_TRUE(TRIPKI::isEqual(p0, p1));
   ASSERT_FALSE(TRIPKI::isEqual(p0, p2));
 }
+#endif
 
-TEST(TypeTest, TypeVectorTest) {
-  typedef TypeRefIterPairKeyInfo TRIPKI;
+TEST(TypeTest, TupleTypeTest) {
+  //typedef TypeRefIterPairKeyInfo TRIPKI;
 
-  TypeVector * t0 = TypeVector::get(&IntType::instance);
-  TypeVector * t1 = TypeVector::get(&IntType::instance);
-  TypeVector * t2 = TypeVector::get(&ShortType::instance);
+  TupleType * t0 = TupleType::get(&IntType::instance);
+  TupleType * t1 = TupleType::get(&IntType::instance);
+  TupleType * t2 = TupleType::get(&ShortType::instance);
 
-  ASSERT_TRUE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t1->iterPair()));
-  ASSERT_FALSE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t2->iterPair()));
-  ASSERT_TRUE(TRIPKI::isEqual(t0->iterPair(), t1->iterPair()));
-  ASSERT_FALSE(TRIPKI::isEqual(t0->iterPair(), t2->iterPair()));
+  //ASSERT_TRUE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t1->iterPair()));
+  //ASSERT_FALSE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t2->iterPair()));
+  //ASSERT_TRUE(TRIPKI::isEqual(t0->iterPair(), t1->iterPair()));
+  //ASSERT_FALSE(TRIPKI::isEqual(t0->iterPair(), t2->iterPair()));
 
-  ASSERT_TRUE(TypeVector::KeyInfo::getHashValue(t0) == TypeVector::KeyInfo::getHashValue(t1));
-  ASSERT_FALSE(TypeVector::KeyInfo::getHashValue(t0) == TypeVector::KeyInfo::getHashValue(t2));
-  ASSERT_TRUE(TypeVector::KeyInfo::isEqual(t0, t1));
-  ASSERT_FALSE(TypeVector::KeyInfo::isEqual(t0, t2));
+  ASSERT_TRUE(TupleType::KeyInfo::getHashValue(t0) == TupleType::KeyInfo::getHashValue(t1));
+  ASSERT_FALSE(TupleType::KeyInfo::getHashValue(t0) == TupleType::KeyInfo::getHashValue(t2));
+  ASSERT_TRUE(TupleType::KeyInfo::isEqual(t0, t1));
+  ASSERT_FALSE(TupleType::KeyInfo::isEqual(t0, t2));
 
   ASSERT_TRUE((void *)t0 == (void *)t1);
   ASSERT_TRUE(t0 == t1);
@@ -71,11 +74,11 @@ TEST(TypeTest, TypeVectorTest) {
   ASSERT_TRUE((*t0)[0].isEqual(&IntType::instance));
 
   ASSERT_TRUE(t0->isSingular());
-  //static TypeVector * get(const TypeRefList & trefs) {
+  //static TupleType * get(const TypeRefList & trefs) {
   //  return get(&*trefs.begin(), &*trefs.end());
 }
 
-TEST(TypeTest, TypeVectorTest2) {
+TEST(TypeTest, TupleTypeTest2) {
   SourceFile testSource("");
   Module testModule(&testSource, "test");
   TypeDefn * de = new TypeDefn(&testModule, "test");
@@ -84,11 +87,11 @@ TEST(TypeTest, TypeVectorTest2) {
   de->setTypeValue(testType);
   TypeRef objectTypeRef(testType);
 
-  TypeVector * t0 = TypeVector::get(&objectTypeRef, &objectTypeRef + 1);
-  TypeVector * t1 = TypeVector::get(&objectTypeRef, &objectTypeRef + 1);
+  TupleType * t0 = TupleType::get(&objectTypeRef, &objectTypeRef + 1);
+  TupleType * t1 = TupleType::get(&objectTypeRef, &objectTypeRef + 1);
 
-  ASSERT_TRUE(TypeVector::KeyInfo::getHashValue(t0) == TypeVector::KeyInfo::getHashValue(t1));
-  ASSERT_TRUE(TypeVector::KeyInfo::isEqual(t0, t1));
+  ASSERT_TRUE(TupleType::KeyInfo::getHashValue(t0) == TupleType::KeyInfo::getHashValue(t1));
+  ASSERT_TRUE(TupleType::KeyInfo::isEqual(t0, t1));
 
   ASSERT_TRUE((void *)t0 == (void *)t1);
   ASSERT_TRUE(t0 == t1);
@@ -311,7 +314,7 @@ public:
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(std::string & out, const TypeRef & ty);
 void typeLinkageName(std::string & out, const Type * ty);
-void typeLinkageName(std::string & out, TypeVector * tv);
+void typeLinkageName(std::string & out, TupleType * tv);
 
 /** Given two types, try and find the narrowest type that both
     can be converted to.
