@@ -204,6 +204,8 @@ void Diagnostics::printStackTrace(int skipFrames) {
 
           // Result may be a realloc of input buffer.
           buffer = demangled_name;
+        } else if (begin != NULL){
+          fprintf(stderr, "    %s\n", begin);
         }
       }
     }

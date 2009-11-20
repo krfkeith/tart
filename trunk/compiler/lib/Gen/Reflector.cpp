@@ -114,6 +114,10 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
   return rfModule;
 }
 
+llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
+  llvm::Constant * strVal = cg_.genStringLiteral(Key, Key);
+}
+
 void Reflector::emitModule(Module * module) {
   if (Builtins::typeModule != NULL) {
     GlobalVariable * modulePtr = getModulePtr(module);
@@ -127,7 +131,7 @@ void Reflector::emitModule(Module * module) {
 
       StructBuilder sb(cg_);
       sb.createObjectHeader(Builtins::typeModule);
-      sb.addStringField(module->qualifiedName());
+      sb.addField(internSymbol(module->qualifiedName()));
       sb.addField(emitArray("tart.reflect.Module.", module_types.get(), rfMembers.types));
       sb.addField(emitArray("tart.reflect.Module.", module_methods.get(), rfMembers.methods));
       modulePtr->setInitializer(sb.build());
@@ -304,8 +308,8 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   Module * module = def->module();
   StructBuilder sb(cg_);
   sb.createObjectHeader(structType);
-  sb.addStringField(def->name());
-  sb.addStringField(def->qualifiedName());
+  sb.addField(internSymbol(def->name()));
+  sb.addField(internSymbol(def->qualifiedName()));
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));
   sb.addIntegerField(member_traits, memberTraits(def));
@@ -479,7 +483,7 @@ llvm::Constant * Reflector::emitOpaqueType(const Type * type) {
   DASSERT_OBJ(type->typeDefn() != NULL, type);
   sb.addField(emitTypeBase(Builtins::typeSimpleType, OPAQUE));
   sb.addIntegerField(type_typeKind.get(), NONE);
-  sb.addStringField(type->typeDefn()->qualifiedName());
+  sb.addField(internSymbol(type->typeDefn()->qualifiedName()));
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
   return sb.build(Builtins::typeSimpleType->irType());
@@ -528,7 +532,7 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
   DASSERT_OBJ(type->typeDefn() != NULL, type);
   sb.addField(emitTypeBase(reflectType, kind));
   sb.addIntegerField(type_typeKind.get(), subtype);
-  sb.addStringField(type->typeDefn()->qualifiedName());
+  sb.addField(internSymbol(type->typeDefn()->qualifiedName()));
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
   return sb.build(Builtins::typeSimpleType->irType());

@@ -13,6 +13,7 @@ def main(args:String[]) -> int {
   testTryCatchFinally();
   //testTryReturnFinally();
   testStackTrace();
+  testExceptionToString();
   return 0;
 }
 
@@ -166,7 +167,7 @@ def testTryCatchFinally() {
   Debug.assertTrue(visitedFinally);
 }
 
-/*def testTryReturnFinally() {
+/*def testTryReturnFinaFlly() {
   var visitedFinally = false;
   try {
     return;
@@ -184,4 +185,10 @@ def testStackTrace() {
     throwSomething();
   } catch @tart.annex.GenerateStackTrace t:Exception {
   }
+}
+
+def testExceptionToString() {
+  Debug.assertEq("tart.core.InvalidArgumentException", InvalidArgumentException().toString());
+  Debug.assertEq("tart.core.InvalidArgumentException: out of range",
+      InvalidArgumentException("out of range").toString());
 }

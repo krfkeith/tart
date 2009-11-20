@@ -24,6 +24,7 @@ struct Type;
 // list of type pointers.
 struct TypeInfoBlock {
   const struct Type * type;
+  const void * name;
   const struct TypeInfoBlock * const * bases;
   void ** methodTable;
 };

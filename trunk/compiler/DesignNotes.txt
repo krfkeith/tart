@@ -12,7 +12,7 @@ Design TODOS:
 
 Implementation TODOS:
 
-* Get -internalize link pass working
+* Get -internalize link pass working (works on Linux)
 * Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
   * See if we can move template stuff into the type (CompositeType and FunctionType)
@@ -22,11 +22,13 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Find a better name for PatternVar.
+  * Find a better name for PatternVar. (TypeVariable?)
   * Some means to cache relabeled specializations?
   * Fill out TypeOrderings.h
   * Finish up override keyword, with failure tests.
-  * See if we can make Expr::type() a constant, and a TypeRef.
+  * See if we can make Expr::type() a TypeRef.
+  * See if we can make Substitution->right a const, and a TypeRef.
+  * Replace TypeList with TypeRefList.
 * TypeRef
   * Expressions
   * Template arguments

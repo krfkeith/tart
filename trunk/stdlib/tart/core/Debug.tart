@@ -28,7 +28,7 @@ namespace Debug {
   def fail(msgs:String...) {
     fail(String.concat(msgs));
   }
-
+  
   macro assertTrue(cond:bool) {
     if not cond {
       fail(locationOf(cond), " Assertion failed: ", stringify(cond));

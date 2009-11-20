@@ -63,8 +63,8 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
 Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, const Type * expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
-    DASSERT(result->exprType() < Expr::TypeCount)
-;    if (result->type() == NULL) {
+    DASSERT(result->exprType() < Expr::TypeCount);
+    if (result->type() == NULL) {
       diag.fatal() << "Expression '" << result << "' has no type.";
       DFAIL("MissingType");
     }
@@ -1097,8 +1097,8 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     case Storage_Global:
     case Storage_Static:
     case Storage_Local:
-    lvalue->setBase(NULL);
-    break;
+      lvalue->setBase(NULL);
+      break;
 
     case Storage_Instance: {
       Expr * base = lvalueBase(lvalue);
@@ -1117,7 +1117,12 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     case Storage_Param:
     case Storage_Closure:
     default:
-    DFAIL("Invalid storage class");
+      DFAIL("Invalid storage class");
+  }
+
+  if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NPointer) {
+    lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
+        lvalue->base()->type()->typeParam(0), lvalue->base()));
   }
 
   // If it's not a store, and it's a property access, then dereference into getter calls.
