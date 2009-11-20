@@ -204,7 +204,7 @@ ConversionRank CallCandidate::updateConversionRank() {
     conversionRank_ = std::min(conversionRank_, paramType.canConvert(argExpr, Conversion::Coerce));
   }
 
-  Type * expectedReturnType = callExpr_->expectedReturnType();
+  const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
     conversionRank_ = std::min(
         conversionRank_,
@@ -249,7 +249,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   bool hasUnsizedArgs = false;
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    Type * argType = argExpr->type();
+    const Type * argType = argExpr->type();
     TypeRef paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
@@ -261,7 +261,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   }
 
   // Unify the return type (Pass 1)
-  Type * expectedReturnType = callExpr_->expectedReturnType();
+  const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL) {
     if (resultType_.isUnsizedIntType()) {
       hasUnsizedArgs = true;
@@ -276,7 +276,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   if (hasUnsizedArgs) {
     for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
       Expr * argExpr = callExpr_->arg(argIndex);
-      Type * argType = argExpr->type();
+      const Type * argType = argExpr->type();
       TypeRef paramType = this->paramType(argIndex);
 
       // Do the unsized types - use the information about previously bound types to determine

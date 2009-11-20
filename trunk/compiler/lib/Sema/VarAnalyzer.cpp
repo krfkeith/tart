@@ -166,7 +166,7 @@ bool VarAnalyzer::resolveVarType() {
         target->passes().finish(VariableDefn::VariableTypePass);
         return false;
       } else {
-        Type * initType = initExpr->type();
+        const Type * initType = initExpr->type();
         DASSERT_OBJ(initType != NULL, target);
 
         if (initType->isEqual(&UnsizedIntType::instance)) {
@@ -198,7 +198,7 @@ bool VarAnalyzer::resolveVarType() {
   return true;
 }
 
-void VarAnalyzer::setTargetType(Type * type) {
+void VarAnalyzer::setTargetType(const Type * type) {
   target->setType(type);
   if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
     pdef->setType(type);

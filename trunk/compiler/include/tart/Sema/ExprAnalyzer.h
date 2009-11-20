@@ -20,16 +20,16 @@ public:
   ExprAnalyzer(Module * mod, Scope * parent, Defn * subject);
 
   /** Build expression tree from AST and do all type inferencing. */
-  Expr * analyze(const ASTNode * ast, Type * expected) {
+  Expr * analyze(const ASTNode * ast, const Type * expected) {
     return inferTypes(subject(), reduceExpr(ast, expected), expected);
   }
 
   /** Take a reduced expression and do type inferencing. */
-  static Expr * inferTypes(Defn * source, Expr * expr, Type * expected);
+  static Expr * inferTypes(Defn * source, Expr * expr, const Type * expected);
 
   /** Build expression tree from AST. */
-  Expr * reduceExpr(const ASTNode * ast, Type * expected);
-  Expr * reduceExprImpl(const ASTNode * ast, Type * expected);
+  Expr * reduceExpr(const ASTNode * ast, const Type * expected);
+  Expr * reduceExprImpl(const ASTNode * ast, const Type * expected);
 
   /** Similar to reduceExpr, but applies the special name lookup rules for
    attributes. */
@@ -41,9 +41,9 @@ public:
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
    Report an error if the cast is not possible. */
-  Expr * doImplicitCast(Expr * in, Type * toType);
+  Expr * doImplicitCast(Expr * in, const Type * toType);
   Expr * doImplicitCast(Expr * in, const TypeRef & toType);
-  Expr * doUnboxCast(Expr * in, Type * toType);
+  Expr * doUnboxCast(Expr * in, const Type * toType);
 
   // Literals
 
@@ -82,34 +82,35 @@ public:
   Expr * reduceTypeTest(const ASTOper * ast);
   Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
-  Expr * reduceArrayLiteral(const ASTOper * ast, Type * expected);
+  Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
 
   // Calls
 
   /** Transform an expression to a callable object. The 'expected'
    parameter is only used in overload selection, the actual result type
    may not actually be that type. */
-  Expr * reduceCall(const ASTCall * call, Type * expected);
+  Expr * reduceCall(const ASTCall * call, const Type * expected);
 
   /** Reduce a call to an identifier to an actual call. */
   Expr * callName(const SourceLocation & loc, const ASTNode * callable, const ASTNodeList & args,
-      Type * expected, bool isOptional = false);
+      const Type * expected, bool isOptional = false);
 
   /** Handle Argument-dependent lookup (ADL) */
   void lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args);
 
   /** Handle expressions of the form "super(args)" */
-  Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, Type * expected);
+  Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, const Type * expected);
 
   /** Select an overload and build the call expression node. */
-  Expr * callExpr(const SourceLocation & loc, Expr * fun, const ASTNodeList & args, Type * expected);
+  Expr * callExpr(const SourceLocation & loc, Expr * fun, const ASTNodeList & args,
+      const Type * expected);
 
   /** Evaluate a call to a constructor. */
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef, const ASTNodeList & args);
 
   /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
    to 'toType'. */
-  CallExpr * tryCoerciveCast(Expr * in, Type * toType);
+  CallExpr * tryCoerciveCast(Expr * in, const Type * toType);
 
   /** Evaluate the argument list. */
   bool reduceArgList(const ASTNodeList & in, CallExpr * call);
@@ -148,7 +149,7 @@ public:
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ExprList & args);
 
-  Expr * reduceSpecialize(const ASTSpecialize * call, Type * expected);
+  Expr * reduceSpecialize(const ASTSpecialize * call, const Type * expected);
 
   /** Return either the single best specialization candidate, or NULL. */
   Defn * findBestSpecialization(SpecializeExpr * spe);
@@ -157,7 +158,7 @@ public:
   Expr * lvalueBase(LValueExpr * lval);
 
   /** Return the function to unbox the specified type. */
-  FunctionDefn * getUnboxFn(const SourceLocation & loc, Type * toType);
+  FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);
 
 private:
   TemplateSignature * tsig_;

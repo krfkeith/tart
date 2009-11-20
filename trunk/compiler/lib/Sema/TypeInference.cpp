@@ -171,7 +171,7 @@ Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
 /// -------------------------------------------------------------------
 /// TypeInference
 
-Expr * TypeInferencePass::run(Expr * in, Type * expected, bool strict) {
+Expr * TypeInferencePass::run(Expr * in, const Type * expected, bool strict) {
   TypeInferencePass instance(in, expected, strict);
   return instance.runImpl();
 }

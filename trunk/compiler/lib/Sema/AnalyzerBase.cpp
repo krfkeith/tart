@@ -176,10 +176,10 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
       }
     }
   } else if (context->type() != NULL) {
-    Type * contextType = dealias(context->type());
+    const Type * contextType = dealias(context->type());
 
     // If it's a native pointer, then do an implicit dereference.
-    if (PointerType * nptype = dyn_cast<PointerType>(contextType)) {
+    if (const PointerType * nptype = dyn_cast<PointerType>(contextType)) {
       contextType = nptype->typeParam(0).type();
     }
 
@@ -201,8 +201,8 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
   return false;
 }
 
-bool AnalyzerBase::findInScope(ExprList & out, const char * name, Scope * scope, Expr * context,
-    SLC & loc) {
+bool AnalyzerBase::findInScope(ExprList & out, const char * name, const Scope * scope,
+    Expr * context, SLC & loc) {
   DefnList defns;
   if (scope->lookupMember(name, defns, true)) {
     return getDefnListAsExprList(loc, defns, context, out);
@@ -627,7 +627,7 @@ bool AnalyzerBase::analyzeValueDefn(ValueDefn * in, AnalysisTask task) {
   return analyzeDefn(in, task);
 }
 
-CompositeType * AnalyzerBase::getArrayTypeForElement(Type * elementType) {
+CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
   // Look up the array class
   TemplateSignature * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
 

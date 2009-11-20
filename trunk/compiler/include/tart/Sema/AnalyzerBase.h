@@ -113,7 +113,7 @@ public:
 
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */
-  static CompositeType * getArrayTypeForElement(Type * elementType);
+  static CompositeType * getArrayTypeForElement(const Type * elementType);
 
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
@@ -146,7 +146,8 @@ protected:
   bool findMemberOf(ExprList & out, Expr * context, const char * name, SLC & loc);
 
   // Find a name in a scope and return a list of matching expressions.
-  bool findInScope(ExprList & out, const char * name, Scope * scope, Expr * context, SLC & loc);
+  bool findInScope(ExprList & out, const char * name, const Scope * scope, Expr * context,
+      SLC & loc);
 
   // Special lookup function for static members of templated types.
   bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);

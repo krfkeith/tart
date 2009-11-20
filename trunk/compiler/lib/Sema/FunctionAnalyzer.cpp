@@ -489,7 +489,7 @@ bool FunctionAnalyzer::resolveReturnType() {
             break;
           }
 
-          Type * type = returnExpr->type();
+          const Type * type = returnExpr->type();
           if (!returnType.isEqual(type)) {
             AnalyzerBase(module, activeScope, subject())
                 .analyzeType(returnType, Task_PrepTypeComparison);

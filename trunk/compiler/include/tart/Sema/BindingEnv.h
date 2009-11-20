@@ -32,7 +32,7 @@ class NativeArrayType;
 // within a given context.
 class Substitution : public GC {
 public:
-  Substitution(const Type * left, Type * right, Substitution * prev = NULL)
+  Substitution(const Type * left, const Type * right, Substitution * prev = NULL)
     : left_(left)
     , right_(right)
     , upperBound_(right)
@@ -41,7 +41,8 @@ public:
   {
   }
 
-  Substitution(const Type * left, Type * upper, Type * lower, Substitution * prev = NULL)
+  Substitution(const Type * left, const Type * upper, const Type * lower,
+      Substitution * prev = NULL)
     : left_(left)
     , right_(lower)
     , upperBound_(upper)
@@ -55,15 +56,15 @@ public:
   void setLeft(const Type * value) { left_ = value; }
 
   /** The right side of the substitution. */
-  Type * right() const { return right_; }
+  const Type * right() const { return right_; }
   void setRight(Type * value) { right_ = value; }
 
   /** The upper bound of the right side. */
-  Type * upperBound() const { return upperBound_; }
+  const Type * upperBound() const { return upperBound_; }
   void setUpperBound(Type * value) { upperBound_ = value; }
 
   /** The lower bound of the right side. */
-  Type * lowerBound() const { return lowerBound_; }
+  const Type * lowerBound() const { return lowerBound_; }
   void setLowerBound(Type * value) { lowerBound_ = value; }
 
   /** Previous substitution in the environment. */
@@ -75,9 +76,9 @@ public:
 
 private:
   const Type * left_;
-  Type * right_;
-  Type * lowerBound_;
-  Type * upperBound_;
+  const Type * right_;
+  const Type * lowerBound_;
+  const Type * upperBound_;
 
   Substitution * prev_;
 };
@@ -179,10 +180,10 @@ public:
   }
 
   /** Add a new substitution into this environment. */
-  Substitution * addSubstitution(const Type * left, Type * right);
+  Substitution * addSubstitution(const Type * left, const Type * right);
 
   /** Add a new substitution into this environment (upper and lower bounds). */
-  Substitution * addSubstitution(const Type * left, Type * upper, Type * lower);
+  Substitution * addSubstitution(const Type * left, const Type * upper, const Type * lower);
 
   /** Given the left-hand side of a substutition, return the substitution. */
   Substitution * getSubstitutionFor(const Type * left) const {

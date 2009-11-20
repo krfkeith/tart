@@ -660,7 +660,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     } else if (toType == Builtins::typeObject) {
       const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
       const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
-          tsig->findSpecialization(TupleType::get(TypeRef(const_cast<Type *>(fromType)))));
+          tsig->findSpecialization(TupleType::get(TypeRef(fromType))));
       if (coerceFn == NULL) {
         diag.error() << "Missing function Object.coerce[" << fromType << "]";
         DFAIL("Missing Object.coerce fn");
@@ -733,7 +733,7 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
 
 Value * CodeGenerator::genUpCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
-  Type * fromType = in->arg()->type();
+  const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
 
   if (value != NULL && fromType != NULL && toType != NULL) {
@@ -755,7 +755,7 @@ Value * CodeGenerator::genBitCast(const CastExpr * in) {
 }
 
 Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
-  Type * fromType = in->arg()->type();
+  const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
   Value * value = NULL;
 
@@ -809,7 +809,7 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
 
 Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   // Retrieve a value from a union. Presumes that the type-test has already been done.
-  Type * fromType = in->arg()->type();
+  const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
   Value * value = genLValueAddress(in->arg());
 
@@ -818,7 +818,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   }
 
   if (fromType != NULL) {
-    UnionType * utype = cast<UnionType>(fromType);
+    const UnionType * utype = cast<UnionType>(fromType);
     if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
       int index = utype->getTypeIndex(toType);
       const llvm::Type * fieldType = toType->irEmbeddedType();

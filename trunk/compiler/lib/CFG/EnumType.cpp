@@ -39,7 +39,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   if ((cn.options & Conversion::Dynamic) && cn.getFromType()->isReferenceType()) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
-          const_cast<EnumType *>(this), cn.fromValue);
+          this, cn.fromValue);
     }
 
     return NonPreferred;

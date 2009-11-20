@@ -75,7 +75,7 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
   Expr * second = visitExpr(in->second());
   if (!isErrorResult(first) && !isErrorResult(second)) {
     bool isAlreadyInt = false;
-    if (PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(second->type())) {
+    if (const PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(second->type())) {
       isAlreadyInt = isIntegerType(ptype->typeId());
     }
 
@@ -269,13 +269,13 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  if (FunctionType * fnType = dyn_cast<FunctionType>(fnValue->type())) {
+  if (const FunctionType * fnType = dyn_cast<FunctionType>(fnValue->type())) {
     if (!fnType->isStatic()) {
       diag.error(in) << "Attempt to call function expression '" << fnValue << "'" <<
           " with no object";
       return &Expr::ErrorVal;
     }
-  } else if (BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnValue->type())) {
+  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnValue->type())) {
     // TODO: Extra checks needed?
   } else {
     diag.error(in) << "Non-callable type '" << fnValue->type() << "'";
@@ -442,8 +442,8 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
 
 Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   Expr * value = visitExpr(in->value());
-  Type * tyFrom = dealias(value->type());
-  Type * tyTo = dealias(in->toType());
+  const Type * tyFrom = dealias(value->type());
+  const Type * tyTo = dealias(in->toType());
 
   if (tyFrom == NULL || tyTo == NULL) {
     return NULL;
@@ -457,13 +457,13 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
         ConstantInteger::getConstantBool(in->location(), true));
   }
 
-  if (UnionType * ut = dyn_cast<UnionType>(tyFrom)) {
+  if (const UnionType * ut = dyn_cast<UnionType>(tyFrom)) {
     in->setValue(value);
     return visitUnionTest(in, value, ut, tyTo);
   }
 
-  CompositeType * ctTo = dyn_cast<CompositeType>(tyTo);
-  CompositeType * ctFrom = dyn_cast<CompositeType>(tyFrom);
+  const CompositeType * ctTo = dyn_cast<CompositeType>(tyTo);
+  const CompositeType * ctFrom = dyn_cast<CompositeType>(tyFrom);
 
   bool isConstTrue = false; // Test always succeeds
   bool isConstFalse = false; // Test always fails
@@ -531,8 +531,8 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   }
 }
 
-Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, UnionType * from,
-    Type * to) {
+Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from,
+    const Type * to) {
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
@@ -589,8 +589,8 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
 
   in->setFirst(v1);
   in->setSecond(v2);
-  Type * t1 = in->first()->type();
-  Type * t2 = in->second()->type();
+  const Type * t1 = in->first()->type();
+  const Type * t2 = in->second()->type();
   DASSERT_OBJ(t1 != NULL, in->first());
   DASSERT_OBJ(t2 != NULL, in->second());
 
@@ -601,7 +601,7 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
       return in;
     }
 
-    Type * tr = findCommonType(t1, t2);
+    const Type * tr = findCommonType(t1, t2);
     if (tr == NULL) {
       diag.fatal(in) << "Can't compare incompatible types '" << t1 <<
       "' and '" << t2 << "'";
@@ -657,13 +657,13 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
   }
 }
 
-Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, Type * toType) {
+Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
       .doImplicitCast(in, toType);
 }
 
 Expr * FinalizeTypesPass::handleUnboxCast(CastExpr * in) {
-  if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
+  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
     return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
         .doUnboxCast(in->arg(), in->type());
   }

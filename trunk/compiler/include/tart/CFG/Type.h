@@ -179,7 +179,7 @@ public:
 
   /** Given two types, return the one that is more general, the higher of the two. Returns NULL
       if neither type is a specialization of the other. */
-  static Type * selectLessSpecificType(Type * type1, Type * type2);
+  static const Type * selectLessSpecificType(const Type * type1, const Type * type2);
 
   /** Return true if type1 and type2 are type expressions that, when finalized, will
       reduce to the same type. For example, List[T] is equivalent to List[S] if
@@ -189,8 +189,8 @@ public:
 
   // Structure used when using type pointers as a key.
   struct KeyInfo {
-    static inline Type * getEmptyKey() { return reinterpret_cast<Type *>(0); }
-    static inline Type * getTombstoneKey() { return reinterpret_cast<Type *>(-1); }
+    static inline const Type * getEmptyKey() { return reinterpret_cast<const Type *>(0); }
+    static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
 
     static unsigned getHashValue(const Type * val) {
       // TODO: Replace with hash of canonical type.
@@ -439,7 +439,7 @@ void typeLinkageName(std::string & out, const Type * ty);
 /** Given two types, try and find the narrowest type that both
     can be converted to.
   */
-Type * findCommonType(Type * t0, Type * t1);
+const Type * findCommonType(const Type * t0, const Type * t1);
 
 /** Given a pointer to a type, dereference any aliases and return the
     real underlying type. */

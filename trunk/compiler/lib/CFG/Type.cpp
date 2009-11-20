@@ -314,7 +314,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   return result;
 }
 
-Type * Type::selectLessSpecificType(Type * type1, Type * type2) {
+const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2) {
   if (type2->includes(type1)) {
     return type2;
   } else if (type1->includes(type2)) {
@@ -545,7 +545,7 @@ FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
 // -------------------------------------------------------------------
 // Utility functions
 
-Type * findCommonType(Type * t0, Type * t1) {
+const Type * findCommonType(const Type * t0, const Type * t1) {
   DASSERT(t0 != NULL);
   DASSERT(t1 != NULL);
 

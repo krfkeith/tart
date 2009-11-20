@@ -137,11 +137,11 @@ private:
 class TypeInferencePass {
 public:
   /** Run this pass on the specified expression. */
-  static Expr * run(Expr * in, Type * expected, bool strict = true);
+  static Expr * run(Expr * in, const Type * expected, bool strict = true);
 
 private:
   Expr * rootExpr_;
-  Type * expectedType_;
+  const Type * expectedType_;
   CallSiteList callSites_;
   ConstraintSiteList cstrSites_;
   ConversionRank lowestRank_;
@@ -156,7 +156,7 @@ private:
   // Map of template parameter substitutions
   //BindingMap substitutions_;
 
-  TypeInferencePass(Expr * root, Type * expected, bool strict = true)
+  TypeInferencePass(Expr * root, const Type * expected, bool strict = true)
     : rootExpr_(root)
     , expectedType_(expected)
     , searchDepth_(0)

@@ -50,12 +50,12 @@ public:
 private:
   const ExprType    exprType_;
   SourceLocation    loc_;
-  Type            * type_;
+  const Type      * type_;
 
   static const ExprList emptyList;
 
 public:
-  Expr(ExprType k, const SourceLocation & l, Type * type)
+  Expr(ExprType k, const SourceLocation & l, const Type * type)
     : exprType_(k)
     , loc_(l)
     , type_(type)
@@ -70,8 +70,7 @@ public:
 
   /** The type of this expression. */
   const Type * type() const { return type_; }
-  Type * type() { return type_; }
-  void setType(Type * type) { type_ = type; }
+  void setType(const Type * type) { type_ = type; }
   void setType(const TypeRef & type);
 
   /** Return true if this expression is a constant. */
@@ -124,7 +123,7 @@ private:
 
 public:
   /** Constructor. */
-  UnaryExpr(ExprType k, const SourceLocation & loc, Type * type, Expr * a)
+  UnaryExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
     : Expr(k, loc, type)
     , arg_(a)
   {}
@@ -157,14 +156,14 @@ private:
 
 public:
   /** Constructor. */
-  BinaryExpr(ExprType k, const SourceLocation & loc, Type * type)
+  BinaryExpr(ExprType k, const SourceLocation & loc, const Type * type)
     : Expr(k, loc, type)
     , first_(NULL)
     , second_(NULL)
   {}
 
   /** Constructor. */
-  BinaryExpr(ExprType k, const SourceLocation & loc, Type * type,
+  BinaryExpr(ExprType k, const SourceLocation & loc, const Type * type,
       Expr * f, Expr * s)
     : Expr(k, loc, type)
     , first_(f)
@@ -378,7 +377,7 @@ class CallExpr : public ArglistExpr {
 private:
   Expr * function_;
   Candidates candidates_;
-  Type * expectedReturnType_;
+  const Type * expectedReturnType_;
 
 public:
   CallExpr(ExprType k, const SourceLocation & loc, Expr * f)
@@ -395,8 +394,8 @@ public:
   Candidates & candidates() { return candidates_; }
 
   /** The function expression being called. */
-  Type * expectedReturnType() { return expectedReturnType_; }
-  void setExpectedReturnType(Type * t) { expectedReturnType_ = t; }
+  const Type * expectedReturnType() const { return expectedReturnType_; }
+  void setExpectedReturnType(const Type * t) { expectedReturnType_ = t; }
 
   /** If all of the overload candidates have the same type for the Nth
       parameter slot, then return that type, otherwise return NULL. */
@@ -589,7 +588,7 @@ public:
 class CastExpr : public UnaryExpr {
 public:
   /** Constructor. */
-  CastExpr(ExprType k, const SourceLocation & loc, Type * type, Expr * a)
+  CastExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
     : UnaryExpr(k, loc, type, a)
     , typeIndex_(0)
   {
@@ -626,7 +625,7 @@ public:
   /** Constructor. */
   BinaryOpcodeExpr(
       llvm::Instruction::BinaryOps op,
-      const SourceLocation & loc, Type * type)
+      const SourceLocation & loc, const Type * type)
     : BinaryExpr(BinaryOpcode, loc, type)
     , opCode_(op)
   {}
@@ -634,7 +633,7 @@ public:
   /** Constructor. */
   BinaryOpcodeExpr(
       llvm::Instruction::BinaryOps op,
-      const SourceLocation & loc, Type * type,
+      const SourceLocation & loc, const Type * type,
       Expr * a0, Expr * a1)
     : BinaryExpr(BinaryOpcode, loc, type, a0, a1)
     , opCode_(op)
@@ -678,7 +677,7 @@ public:
 class InstanceOfExpr : public Expr {
 private:
   Expr * value_;
-  Type * toType_;
+  const Type * toType_;
 
 public:
   /** Constructor. */
@@ -692,8 +691,7 @@ public:
 
   /* The type we are testing against. */
   const Type * toType() const { return toType_; }
-  Type * toType() { return toType_; }
-  void setToType(Type * ty) { toType_ = ty; }
+  void setToType(const Type * ty) { toType_ = ty; }
 
   // Overrides
 
