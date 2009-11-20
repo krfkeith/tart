@@ -147,21 +147,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
     }
   }
 
-  if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
-    Type * type = inferType(lvalue->value());
-    if (type == NULL) {
-      return false;
-    }
-
-    TypeDefn * typeDef = dealias(type)->typeDefn();
-    if (typeDef != NULL && type->memberScope() != NULL) {
-      DASSERT_OBJ(typeDef->isSingular(), typeDef);
-      AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, type->memberScope(), context, loc)) {
-        return true;
-      }
-    }
-  } else if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
+  if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
     Type * type = dealias(typeNameExpr->value());
     TypeDefn * typeDef = type->typeDefn();
     if (typeDef != NULL && type->memberScope() != NULL) {
@@ -177,6 +163,14 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
     }
   } else if (context->type() != NULL) {
     const Type * contextType = dealias(context->type());
+    if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
+      const Type * type = inferType(lvalue->value());
+      if (type == NULL) {
+        return false;
+      }
+
+      contextType = type;
+    }
 
     // If it's a native pointer, then do an implicit dereference.
     if (const PointerType * nptype = dyn_cast<PointerType>(contextType)) {

@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/Expr.h"
@@ -990,7 +990,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
 
   indices.clear();
   indices.push_back(getInt32Val(0));
-  indices.push_back(getInt32Val(3));
+  indices.push_back(getInt32Val(TIB_METHOD_TABLE));
   indices.push_back(getInt32Val(methodIndex));
   Value * fptr = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
@@ -1021,7 +1021,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
 
   // Load the pointer to the dispatcher function.
   Value * dispatcher = builder_.CreateLoad(
-      builder_.CreateConstInBoundsGEP2_32(tib, 0, 2, "idispatch_ptr"), "idispatch");
+      builder_.CreateConstInBoundsGEP2_32(tib, 0, TIB_IDISPATCH, "idispatch_ptr"), "idispatch");
 
   // Construct the call to the dispatcher
   ValueList args;
@@ -1158,7 +1158,8 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
   return builder_.CreateInBoundsGEP(val, indices.begin(), indices.end(), "upcast");
 }
 
-llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
+llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
+    const llvm::StringRef & symName) {
   StringLiteralMap::iterator it = stringLiteralMap_.find(strval);
   if (it != stringLiteralMap_.end()) {
     return it->second;
@@ -1186,12 +1187,22 @@ llvm::Constant * CodeGenerator::genStringLiteral(const std::string & strval) {
   members.push_back(strDataStart);
   members.push_back(ConstantArray::get(context_, strval, false));
 
+  // If the name is blank, then the string is internal only.
+  // If the name is non-blank, then it's assumed that this name is a globally unique
+  // identifier of the string.
+  Twine name;
+  GlobalValue::LinkageTypes linkage = GlobalValue::LinkOnceODRLinkage;
+  if (symName.empty()) {
+    name = "string";
+    linkage = GlobalValue::InternalLinkage;
+  } else {
+    name = "string." + symName;
+  }
+
   Constant * strStruct = ConstantStruct::get(context_, members, false);
   Constant * strConstant = llvm::ConstantExpr::getPointerCast(
       new GlobalVariable(*irModule_,
-          strStruct->getType(), true,
-          GlobalValue::InternalLinkage,
-          strStruct, "string"),
+          strStruct->getType(), true, linkage, strStruct, name),
       llvm::PointerType::getUnqual(irType));
 
   Constant * indices[2];

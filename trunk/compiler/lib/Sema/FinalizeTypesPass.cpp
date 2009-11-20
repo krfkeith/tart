@@ -12,7 +12,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
 
-#include "tart/Sema/FinalizeTypesPass.h"
+#include "tart/Sema/FinalizeTypesPassImpl.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
@@ -22,15 +22,10 @@
 namespace tart {
 
 /// -------------------------------------------------------------------
-/// FinalizeTypesPass
-
-/*Expr * FinalizeTypesPass::run(Expr * in) {
-  FinalizeTypesPass instance(NULL);
-  return instance.runImpl(in);
-}*/
+/// FinalizeTypesPassImpl
 
 Expr * FinalizeTypesPass::run(Defn * source, Expr * in) {
-  FinalizeTypesPass instance(source);
+  FinalizeTypesPassImpl instance(source);
   return instance.runImpl(in);
 }
 
@@ -40,7 +35,7 @@ Expr * FinalizeTypesPass::runImpl(Expr * in) {
   return result;
 }
 
-Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
+Expr * FinalizeTypesPassImpl::visitLValue(LValueExpr * in) {
   if (in->type() == NULL) {
     in->setType(in->value()->type());
   }
@@ -54,7 +49,7 @@ Expr * FinalizeTypesPass::visitLValue(LValueExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPass::visitBoundMethod(BoundMethodExpr * in) {
+Expr * FinalizeTypesPassImpl::visitBoundMethod(BoundMethodExpr * in) {
   DASSERT_OBJ(in->type() != NULL, in);
   DASSERT_OBJ(in->type()->isSingular(), in);
   if (in->selfArg() != NULL) {
@@ -64,11 +59,11 @@ Expr * FinalizeTypesPass::visitBoundMethod(BoundMethodExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPass::visitScopeName(ScopeNameExpr * in) {
+Expr * FinalizeTypesPassImpl::visitScopeName(ScopeNameExpr * in) {
   DFAIL("Implement");
 }
 
-Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
+Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
   // Cast array index to integer type.
   // TODO: Check if it's long first.
   Expr * first = visitExpr(in->first());
@@ -93,15 +88,15 @@ Expr * FinalizeTypesPass::visitElementRef(BinaryExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPass::visitAssign(AssignmentExpr * in) {
+Expr * FinalizeTypesPassImpl::visitAssign(AssignmentExpr * in) {
   return visitAssignImpl(in);
 }
 
-Expr * FinalizeTypesPass::visitPostAssign(AssignmentExpr * in) {
+Expr * FinalizeTypesPassImpl::visitPostAssign(AssignmentExpr * in) {
   return visitAssignImpl(in);
 }
 
-Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
+Expr * FinalizeTypesPassImpl::visitAssignImpl(AssignmentExpr * in) {
   DASSERT_OBJ(in->toExpr()->type() != NULL, in);
   Expr * from = visitExpr(in->fromExpr());
   Expr * to = visitExpr(in->toExpr());
@@ -130,7 +125,7 @@ Expr * FinalizeTypesPass::visitAssignImpl(AssignmentExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
+Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
   if (in->candidates().size() == 1) {
     CallCandidate * cd = in->candidates().front();
     FunctionDefn * method = cd->method();
@@ -244,7 +239,7 @@ Expr * FinalizeTypesPass::visitCall(CallExpr * in) {
   return &Expr::ErrorVal;
 }
 
-Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
+Expr * FinalizeTypesPassImpl::visitIndirectCall(CallExpr * in) {
   CallCandidate * cd = in->candidates().front();
   DASSERT(cd->base() != NULL);
   DASSERT(in->exprType() != Expr::Construct);
@@ -295,7 +290,7 @@ Expr * FinalizeTypesPass::visitIndirectCall(CallExpr * in) {
   return result;
 }
 
-bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
+bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
 
   const FunctionType * fnType = cd->functionType();
   size_t paramCount = fnType->params().size();
@@ -357,7 +352,7 @@ bool FinalizeTypesPass::coerceArgs(CallCandidate * cd, const ExprList & args, Ex
   return true;
 }
 
-Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
+Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
   // First perform pattern substitutions on the parent definition.
   Defn * parent = def->parentDefn();
   if (parent != NULL && (parent->isTemplate() || parent->isTemplateMember())) {
@@ -419,11 +414,11 @@ Defn * FinalizeTypesPass::doPatternSubstitutions(SLC & loc, Defn * def, BindingE
   return def;
 }
 
-Expr * FinalizeTypesPass::visitInstantiate(InstantiateExpr * in) {
+Expr * FinalizeTypesPassImpl::visitInstantiate(InstantiateExpr * in) {
   DFAIL("Implement");
 }
 
-Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
+Expr * FinalizeTypesPassImpl::visitCast(CastExpr * in) {
   Expr * arg = visitExpr(in->arg());
 
   // Eliminate redundant cast if not needed.
@@ -440,7 +435,7 @@ Expr * FinalizeTypesPass::visitCast(CastExpr * in) {
   return arg ? arg : &Expr::ErrorVal;
 }
 
-Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
+Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
   Expr * value = visitExpr(in->value());
   const Type * tyFrom = dealias(value->type());
   const Type * tyTo = dealias(in->toType());
@@ -531,7 +526,7 @@ Expr * FinalizeTypesPass::visitInstanceOf(InstanceOfExpr * in) {
   }
 }
 
-Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from,
+Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from,
     const Type * to) {
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
@@ -579,7 +574,7 @@ Expr * FinalizeTypesPass::visitUnionTest(InstanceOfExpr * in, Expr * value, cons
   DFAIL("Implement");
 }
 
-Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
+Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   Expr * v1 = visitExpr(in->first());
   Expr * v2 = visitExpr(in->second());
 
@@ -657,12 +652,12 @@ Expr * FinalizeTypesPass::visitRefEq(BinaryExpr * in) {
   }
 }
 
-Expr * FinalizeTypesPass::addCastIfNeeded(Expr * in, const Type * toType) {
+Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
       .doImplicitCast(in, toType);
 }
 
-Expr * FinalizeTypesPass::handleUnboxCast(CastExpr * in) {
+Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
     return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
         .doUnboxCast(in->arg(), in->type());

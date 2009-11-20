@@ -181,6 +181,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   ConstantList tibMembers;
   tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
       reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
+  tibMembers.push_back(reflector_.internSymbol(type->typeDefn()->linkageName()));
   tibMembers.push_back(baseClassArrayPtr);
   tibMembers.push_back(idispatch);
   tibMembers.push_back(genMethodArray(type->instanceMethods_));

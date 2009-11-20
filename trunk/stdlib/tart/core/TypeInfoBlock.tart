@@ -8,6 +8,9 @@ import tart.annex.Nonreflective;
   /** Reference to the type object for this type. */
   readonly var type:Type;
 
+  /** The fully-qualified name of this type. */
+  readonly var name:String;
+
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
   readonly var bases:__Address[__Pointer[TypeInfoBlock]];

@@ -49,10 +49,16 @@ public class Object {
   /** Set a finalization callback to be called when this object has been deleted.
       Note that the finalizer must *not* hold a reference to the object or it
       will never be deleted. */
-  // @Intrinsic setFinalizer(finalizer:fn);
+  //final def addFinalizer(finalizer:fn) {}
+
+  /** Remove a finalizer that was registered via addFinalizer. */
+  //final def removeFinalizer(finalizer:fn) {}
   
   /** Return a string representation of this object. */
   def toString() -> String {
-    return "<Object>";
+    return String.concat("<", __tib.name, ">");
   }
+
+  /** Return the fully-qualified name of this object's class. */
+  final def __typeName:String { get { return __tib.name; } }
 }

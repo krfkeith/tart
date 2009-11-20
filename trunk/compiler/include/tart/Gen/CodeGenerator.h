@@ -77,6 +77,15 @@ typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
 /// Code generator class.
 class CodeGenerator {
 public:
+  // Field indices for TypeInfoBlock
+  enum TIBFields {
+    TIB_TYPE = 0,
+    TIN_NAME,
+    TIB_BASES,
+    TIB_IDISPATCH,
+    TIB_METHOD_TABLE,
+  };
+
   CodeGenerator(Module * mod);
 
   /** Return the builder object. */
@@ -259,7 +268,8 @@ public:
   llvm::Function * getGlobalAlloc();
 
   /** Generate data structures for a string literal. */
-  llvm::Constant * genStringLiteral(const std::string & strval);
+  llvm::Constant * genStringLiteral(const llvm::StringRef & strval,
+      const llvm::StringRef & symName = "");
 
   /** Generate an array literal. */
   llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);

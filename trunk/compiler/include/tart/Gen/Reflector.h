@@ -31,7 +31,6 @@ class TypeRef;
 class TupleType;
 
 typedef std::vector<llvm::Constant *> ConstantList;
-typedef llvm::StringMap<llvm::Constant *> SymbolNameMap;
 typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
 typedef llvm::SetVector<Defn *> DefnSet;
 
@@ -171,7 +170,6 @@ private:
   llvm::Module * irModule_;
   llvm::GlobalVariable * moduleTable_;
 
-  SymbolNameMap symbols_;
   GlobalVarMap globals_;
   DefnSet synthetics_;
   size_t syntheticIndex_;

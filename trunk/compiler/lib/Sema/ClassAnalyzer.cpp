@@ -826,12 +826,12 @@ void ClassAnalyzer::overrideMembers() {
         if (prop->storageClass() == Storage_Instance && prop->isSingular()) {
           DASSERT_OBJ(prop->passes().isFinished(PropertyDefn::PropertyTypePass), prop);
           if (prop->getter() != NULL) {
-            analyzeValueDefn(prop->getter(), Task_PrepCodeGeneration);
+            analyzeValueDefn(prop->getter(), Task_PrepTypeGeneration);
             getters.push_back(prop->getter());
           }
 
           if (prop->setter() != NULL) {
-            analyzeValueDefn(prop->setter(), Task_PrepCodeGeneration);
+            analyzeValueDefn(prop->setter(), Task_PrepTypeGeneration);
             setters.push_back(prop->setter());
           }
         }
