@@ -45,7 +45,7 @@ public:
     Expr * arg0 = args[0];
     Expr * arg1 = args[1];
     Expr * result;
-    Type * baseType = const_cast<Type *>(type_->baseType());
+    const Type * baseType = type_->baseType();
 
     if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
       ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);

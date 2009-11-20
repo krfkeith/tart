@@ -23,7 +23,7 @@ public:
   //static Expr * run(Expr * in);
   static Expr * run(Defn * source, Expr * in);
 
-  Expr * addCastIfNeeded(Expr * in, Type * toType);
+  Expr * addCastIfNeeded(Expr * in, const Type * toType);
 
   Expr * visitLValue(LValueExpr * in);
   Expr * visitBoundMethod(BoundMethodExpr * in);
@@ -43,7 +43,7 @@ private:
 
   FinalizeTypesPass(Defn * subject) : subject_(subject) {}
   Expr * runImpl(Expr * in);
-  Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, UnionType * from, Type * to);
+  Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from, const Type * to);
   Expr * visitAssignImpl(AssignmentExpr * in);
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
   Expr * visitIndirectCall(CallExpr * in);

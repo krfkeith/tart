@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/ExprAnalyzer.h"
@@ -11,7 +11,7 @@
 namespace tart {
 
 Expr * ExprAnalyzer::reduceSpecialize(const ASTSpecialize * ast,
-    Type * expected) {
+    const Type * expected) {
   DFAIL("Obsolete, to be deleted");
 }
 

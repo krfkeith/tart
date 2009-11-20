@@ -206,8 +206,7 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
 
     if (rank != Incompatible && cn.resultValue) {
       if (rank == ExactConversion) {
-        fromValue = new CastExpr(
-            Expr::BitCast, SourceLocation(), const_cast<PointerType *>(this), fromValue);
+        fromValue = new CastExpr(Expr::BitCast, SourceLocation(), this, fromValue);
       }
 
       *cn.resultValue = fromValue;

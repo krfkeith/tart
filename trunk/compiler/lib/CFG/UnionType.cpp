@@ -213,10 +213,7 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
     if (*cn.resultValue != NULL) {
       int typeIndex = getTypeIndex(bestType);
       CastExpr * result = new CastExpr(
-          Expr::UnionCtorCast,
-          cn.fromValue->location(),
-          const_cast<UnionType *>(this),
-          *cn.resultValue);
+          Expr::UnionCtorCast, cn.fromValue->location(), this, *cn.resultValue);
       result->setTypeIndex(typeIndex);
       *cn.resultValue = result;
     }

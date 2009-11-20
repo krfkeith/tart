@@ -223,9 +223,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       return IdenticalTypes;
     } else if (typeClass() != Type::Struct && fromClass->isSubclassOf(this)) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new CastExpr(Expr::UpCast,
-            cn.fromValue->location(), const_cast<CompositeType *>(this),
-            cn.fromValue);
+        *cn.resultValue = new CastExpr(Expr::UpCast, cn.fromValue->location(), this, cn.fromValue);
       }
 
       return ExactConversion;
@@ -235,7 +233,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     if (this->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = new ConstantNull(
-            cn.fromValue->location(), const_cast<CompositeType *>(this));
+            cn.fromValue->location(), this);
       }
 
       return ExactConversion;
@@ -246,7 +244,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     if ((cn.options & Conversion::Dynamic) && isReferenceType() && fromClass->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = new CastExpr(Expr::DynamicCast, cn.fromValue->location(),
-            const_cast<CompositeType *>(this), cn.fromValue);
+            this, cn.fromValue);
       }
 
       return NonPreferred;

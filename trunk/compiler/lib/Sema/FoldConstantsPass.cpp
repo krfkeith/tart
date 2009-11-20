@@ -23,7 +23,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
   bool hasConstIntArgs = true;
   for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
     if ((*it)->isConstant()) {
-      Type * ty = (*it)->type();
+      const Type * ty = (*it)->type();
       if (!ty->isEqual(&UnsizedIntType::instance)) {
         hasConstIntArgs = false;
       }

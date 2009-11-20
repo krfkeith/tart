@@ -249,14 +249,14 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     *it = attrExpr;
 
     // Handle @Intrinsic as a special case.
-    Type * attrType = attrExpr->type();
+    const Type * attrType = attrExpr->type();
     if (attrType == Builtins::typeIntrinsicAttribute) {
       handleIntrinsicAttribute(in, attrExpr);
       continue;
     }
 
     if (attrExpr->exprType() == Expr::CtorCall) {
-      CompositeType * attrClass = cast<CompositeType>(attrType);
+      const CompositeType * attrClass = cast<CompositeType>(attrType);
       if (!attrClass->isAttribute()) {
         diag.error(*it) << "Invalid attribute expression @" << *it;
         continue;

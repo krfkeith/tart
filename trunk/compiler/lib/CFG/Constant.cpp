@@ -59,7 +59,7 @@ ConstantInteger * ConstantInteger::getConstantBool(const SourceLocation & loc, b
       : llvm::ConstantInt::getFalse(llvm::getGlobalContext()));
 }
 
-ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type, int32_t value) {
+ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * type, int32_t value) {
   const llvm::Type * intType = type->irType();
   return new ConstantInteger(loc, type,
       cast<llvm::ConstantInt>(
@@ -67,18 +67,20 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type, 
               llvm::APInt(intType->getPrimitiveSizeInBits(), value, true))));
 }
 
-ConstantInteger * ConstantInteger::get(const SourceLocation & loc, Type * type,
+ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * type,
     llvm::ConstantInt * value) {
   return new ConstantInteger(loc, type, value);
 }
 
-ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value, PrimitiveType * type) {
+ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value,
+    const PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
   return new ConstantInteger(SourceLocation(), type,
       cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->irType(), value)));
 }
 
-ConstantInteger * ConstantInteger::getUnsigned(const llvm::APInt & value, PrimitiveType * type) {
+ConstantInteger * ConstantInteger::getUnsigned(const llvm::APInt & value,
+    const PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());
   return new ConstantInteger(SourceLocation(), type,
       cast<llvm::ConstantInt>(llvm::ConstantInt::get(type->irType(), value)));
@@ -124,7 +126,7 @@ ConstantNull::ConstantNull(SourceLocation l)
   : ConstantExpr(ConstNull, l, &NullType::instance)
 {}
 
-ConstantNull::ConstantNull(SourceLocation l, Type * t)
+ConstantNull::ConstantNull(SourceLocation l, const Type * t)
   : ConstantExpr(ConstNull, l, t)
 {}
 
@@ -169,10 +171,10 @@ void TypeLiteralExpr::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // ConstantObjectRef
 
-ConstantObjectRef::ConstantObjectRef(SourceLocation l, CompositeType * type)
+ConstantObjectRef::ConstantObjectRef(SourceLocation l, const CompositeType * type)
   : Expr(ConstObjRef, l, type)
 {
-  CompositeType * ctype = cast<CompositeType>(type);
+  const CompositeType * ctype = cast<CompositeType>(type);
   DASSERT_OBJ(ctype->passes().isFinished(CompositeType::FieldPass), ctype);
   members_.resize(ctype->instanceFieldCountRecursive());
   std::fill(members_.begin(), members_.end(), (Expr *)NULL);

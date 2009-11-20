@@ -103,20 +103,18 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         if (cn.fromValue && cn.resultValue) {
           // Either truncate or z-extend
-          Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::ZeroExtend,
-              cn.fromValue->location(), resultType, cn.fromValue);
+              cn.fromValue->location(), this, cn.fromValue);
         }
 
         return result;
       } else if (isSignedIntegerType(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           // Either truncate or s-extend
-          Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
-              cn.fromValue->location(), resultType, cn.fromValue);
+              cn.fromValue->location(), this, cn.fromValue);
         }
 
         return SignedUnsigned;
@@ -145,10 +143,9 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         if (cn.fromValue && cn.resultValue) {
           // Either truncate or s-extend
-          Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
-              cn.fromValue->location(), resultType, cn.fromValue);
+              cn.fromValue->location(), this, cn.fromValue);
         }
 
         return result;
@@ -162,10 +159,9 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         if (cn.fromValue && cn.resultValue) {
           // Either truncate or z-extend
-          Type * resultType = const_cast<PrimitiveType *>(this);
           *cn.resultValue = new CastExpr(
               srcBits > dstBits ? Expr::Truncate : Expr::ZeroExtend,
-              cn.fromValue->location(), resultType, cn.fromValue);
+              cn.fromValue->location(), this, cn.fromValue);
         }
 
         return result;
@@ -238,7 +234,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
       if (cn.resultValue) {
         *cn.resultValue = new ConstantInteger(
             cint->location(),
-            const_cast<PrimitiveType *>(this),
+            this,
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
                     cint->value(), this->irType(), false)));
       }
@@ -262,7 +258,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
       if (cn.resultValue) {
         *cn.resultValue = new ConstantInteger(
             cint->location(),
-            const_cast<PrimitiveType *>(this),
+            this,
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getIntegerCast(
                     cint->value(), this->irType(), true)));
       }
@@ -280,8 +276,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
     } else if (srcId == TypeId_Bool) {
       // Convert to 0 or 1
       if (cn.resultValue) {
-        *cn.resultValue = new ConstantInteger(cint->location(),
-            const_cast<PrimitiveType *>(this), cint->value());
+        *cn.resultValue = new ConstantInteger(cint->location(), this, cint->value());
       }
 
       return ExactConversion;
@@ -342,8 +337,7 @@ ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, 
   if (out != NULL) {
     llvm::Constant * castVal = llvm::ConstantExpr::getCast(castOp, cint->value(), irType_);
     *out = new ConstantInteger(
-        cint->location(),
-        const_cast<PrimitiveType *>(this),
+        cint->location(), this,
         cast<llvm::ConstantInt>(castVal));
   }
 
@@ -378,10 +372,9 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
     if (isFloatingType(srcId)) {
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        Type * resultType = const_cast<PrimitiveType *>(this);
         *cn.resultValue = new CastExpr(
             srcBits > dstBits ? Expr::Truncate : Expr::SignExtend,
-            cn.fromValue->location(), resultType, cn.fromValue);
+            cn.fromValue->location(), this, cn.fromValue);
       }
 
       DASSERT(srcBits != dstBits);
@@ -394,9 +387,8 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        Type * resultType = const_cast<PrimitiveType *>(this);
         *cn.resultValue = new CastExpr(Expr::IntToFloat,
-            cn.fromValue->location(), resultType, cn.fromValue);
+            cn.fromValue->location(), this, cn.fromValue);
       }
 
       return result;
@@ -408,9 +400,8 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       if (cn.fromValue && cn.resultValue) {
         // float convert
-        Type * resultType = const_cast<PrimitiveType *>(this);
         *cn.resultValue = new CastExpr(Expr::IntToFloat,
-            cn.fromValue->location(), resultType, cn.fromValue);
+            cn.fromValue->location(), this, cn.fromValue);
       }
 
       return result;
@@ -448,7 +439,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
 
       if (cn.resultValue) {
         *cn.resultValue = new ConstantFloat(
-            cint->location(), const_cast<PrimitiveType *>(this),
+            cint->location(), this,
             cast<llvm::ConstantFP>(llvm::ConstantExpr::getUIToFP(cint->value(), irType())));
       }
 
@@ -464,7 +455,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
 
       if (cn.resultValue) {
         *cn.resultValue = new ConstantFloat(
-            cint->location(), const_cast<PrimitiveType *>(this),
+            cint->location(), this,
             cast<llvm::ConstantFP>(llvm::ConstantExpr::getSIToFP(cint->value(), irType())));
       }
 
@@ -482,7 +473,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
 
     if (cn.resultValue) {
       *cn.resultValue = new ConstantFloat(
-          cfloat->location(), const_cast<PrimitiveType *>(this),
+          cfloat->location(), this,
           cast<llvm::ConstantFP>(llvm::ConstantExpr::getFPCast(cfloat->value(), irType())));
     }
 
@@ -589,7 +580,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
 ConversionRank PrimitiveType::convertFromObject(const Conversion & cn) const {
   if (cn.resultValue != NULL) {
     *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
-        const_cast<PrimitiveType *>(this), cn.fromValue);
+        this, cn.fromValue);
   }
 
   return NonPreferred;

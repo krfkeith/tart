@@ -36,7 +36,7 @@ ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject) :
   AnalyzerBase(mod, parent, subject), tsig_(NULL), currentFunction_(NULL) {
 }
 
-Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
+Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected) {
   if (isErrorResult(expr)) {
     return NULL;
   }
@@ -60,7 +60,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, Type * expected) {
   return expr;
 }
 
-Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
+Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, const Type * expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
     DASSERT(result->exprType() < Expr::TypeCount)
@@ -73,45 +73,45 @@ Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, Type * expected) {
   return result;
 }
 
-Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
+Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) {
   switch (ast->nodeType()) {
     case ASTNode::Null:
-    return reduceNull(ast);
+      return reduceNull(ast);
 
     case ASTNode::LitInt:
-    return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *> (ast));
+      return reduceIntegerLiteral(static_cast<const ASTIntegerLiteral *> (ast));
 
     case ASTNode::LitFloat:
-    return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
+      return reduceFloatLiteral(static_cast<const ASTFloatLiteral *> (ast));
 
     case ASTNode::LitDouble:
-    return reduceDoubleLiteral(static_cast<const ASTDoubleLiteral *> (ast));
+      return reduceDoubleLiteral(static_cast<const ASTDoubleLiteral *> (ast));
 
     case ASTNode::LitString:
-    return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
+      return reduceStringLiteral(static_cast<const ASTStringLiteral *> (ast));
 
     case ASTNode::LitChar:
-    return reduceCharLiteral(static_cast<const ASTCharLiteral *> (ast));
+      return reduceCharLiteral(static_cast<const ASTCharLiteral *> (ast));
 
     case ASTNode::LitBool:
-    return reduceBoolLiteral(static_cast<const ASTBoolLiteral *> (ast));
+      return reduceBoolLiteral(static_cast<const ASTBoolLiteral *> (ast));
 
     case ASTNode::BuiltIn:
-    return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
+      return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
 
     case ASTNode::Id:
     case ASTNode::Member:
     case ASTNode::GetElement:
     case ASTNode::Specialize:
-    // Specialize works here because lookupName() does explicit specialization
-    // for us.
-    return reduceLoadValue(ast);
+      // Specialize works here because lookupName() does explicit specialization
+      // for us.
+      return reduceLoadValue(ast);
 
     case ASTNode::Call:
-    return reduceCall(static_cast<const ASTCall *> (ast), expected);
+      return reduceCall(static_cast<const ASTCall *> (ast), expected);
 
     case ASTNode::Assign:
-    return reduceAssign(static_cast<const ASTOper *> (ast));
+      return reduceAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::AssignAdd:
     case ASTNode::AssignSub:
@@ -123,41 +123,41 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, Type * expected) {
     case ASTNode::AssignBitXor:
     case ASTNode::AssignRSh:
     case ASTNode::AssignLSh:
-    return reduceAugmentedAssign(static_cast<const ASTOper *> (ast));
+      return reduceAugmentedAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::PostAssign:
-    return reducePostAssign(static_cast<const ASTOper *> (ast));
+      return reducePostAssign(static_cast<const ASTOper *> (ast));
 
     case ASTNode::Is:
     case ASTNode::IsNot:
-    return reduceRefEqualityTest(static_cast<const ASTOper *> (ast));
+      return reduceRefEqualityTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::In:
     case ASTNode::NotIn:
-    return reduceContainsTest(static_cast<const ASTOper *> (ast));
+      return reduceContainsTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::IsInstanceOf:
-    return reduceTypeTest(static_cast<const ASTOper *> (ast));
+      return reduceTypeTest(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalAnd:
     case ASTNode::LogicalOr:
-    return reduceLogicalOper(static_cast<const ASTOper *> (ast));
+      return reduceLogicalOper(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalNot:
     return reduceLogicalNot(static_cast<const ASTOper *> (ast));
 
     case ASTNode::ArrayLiteral:
-    return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
+      return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
 
     case ASTNode::AnonFn:
-    return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
+      return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
     case ASTNode::PatternVar:
-    return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
+      return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
 
     default:
-    diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
-    DFAIL("Unimplemented");
+      diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
+      DFAIL("Unimplemented");
   }
 }
 
@@ -559,7 +559,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   }
 
   // See if the value is a union.
-  if (UnionType * ut = dyn_cast<UnionType>(value->type())) {
+  if (const UnionType * ut = dyn_cast<UnionType>(value->type())) {
     return new InstanceOfExpr(ast->location(), value, type);
   }
 
@@ -605,7 +605,7 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
       Expr::Not, ast->location(), &BoolType::instance, value);
 }
 
-Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, Type * expected) {
+Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
   DefnList fnlist;
   if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", ast->location())) {
     DASSERT(fnlist.size() == 1);
@@ -737,7 +737,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // What we want is to determine whether or not the expression is a template. Or even a type.
 
-  Type * arrayType = dealias(arrayExpr->type());
+  const Type * arrayType = dealias(arrayExpr->type());
   DASSERT_OBJ(arrayType != NULL, arrayExpr);
 
   // Reduce all of the arguments
@@ -757,7 +757,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // Memory address type
-  if (AddressType * maType = dyn_cast<AddressType>(arrayType)) {
+  if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
     TypeRef elemType = maType->typeParam(0);
     if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
@@ -787,7 +787,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
    }*/
 
   // Handle native arrays.
-  if (NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
+  if (const NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
     if (!AnalyzerBase::analyzeType(naType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
@@ -1146,7 +1146,7 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const TypeRef & toType) {
   return doImplicitCast(in, toType.type());
 }
 
-Expr * ExprAnalyzer::doImplicitCast(Expr * in, Type * toType) {
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType) {
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
     return in;
@@ -1255,7 +1255,7 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   return spBest->def();
 }
 
-Expr * ExprAnalyzer::doUnboxCast(Expr * in, Type * toType) {
+Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
   FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType);
   if (valueOfMethod == NULL) {
     return NULL;
@@ -1267,7 +1267,7 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, Type * toType) {
   return call;
 }
 
-FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, Type * toType) {
+FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   ExprList methods;
   TypeRefPair conversionKey(Builtins::typeObject.get(), toType);
   ConverterMap::iterator it = module->converters().find(conversionKey);

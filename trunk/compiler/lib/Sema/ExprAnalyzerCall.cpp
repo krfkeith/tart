@@ -21,7 +21,7 @@
 
 namespace tart {
 
-Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
+Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
   const ASTNode * callable = call->func();
   const ASTNodeList & args = call->args();
 
@@ -45,7 +45,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, Type * expected) {
 }
 
 Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNodeList & args,
-    Type * expected, bool isOptional) {
+    const Type * expected, bool isOptional) {
 
   // Specialize works here because lookupName handles explicit specializations.
   DASSERT(callable->nodeType() == ASTNode::Id ||
@@ -165,13 +165,13 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
 void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args) {
   //diag.debug(call) << "ADL: " << name;
   DefnList defns;
-  llvm::SmallPtrSet<Type *, 16> typesSearched;
+  llvm::SmallPtrSet<const Type *, 16> typesSearched;
 
   const ExprList & callArgs = call->args();
   for (ExprList::const_iterator it = callArgs.begin(); it != callArgs.end(); ++it) {
     Expr * arg = *it;
     if (arg->type() != NULL && arg->type()->isSingular()) {
-      Type * argType = dealias(arg->type());
+      const Type * argType = dealias(arg->type());
       if (argType != NULL && typesSearched.insert(argType)) {
         AnalyzerBase::analyzeType(argType, Task_PrepMemberLookup);
 
@@ -206,7 +206,8 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
   }
 }
 
-Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, Type * expected) {
+Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args,
+    const Type * expected) {
   if (isErrorResult(func)) {
     return func;
   } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(func)) {
@@ -254,7 +255,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args, 
   }
 }
 
-Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, Type * expected) {
+Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type * expected) {
   if (currentFunction_ == NULL || currentFunction_->storageClass() != Storage_Instance) {
     diag.fatal(loc) << "'super' only callable from instance methods";
     return &Expr::ErrorVal;
@@ -419,8 +420,8 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
 
 /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
     to 'toType'. */
-CallExpr * ExprAnalyzer::tryCoerciveCast(Expr * in, Type * toType) {
-  if (CompositeType * ctype = dyn_cast<CompositeType>(toType)) {
+CallExpr * ExprAnalyzer::tryCoerciveCast(Expr * in, const Type * toType) {
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(toType)) {
     if (!ctype->coercers().empty()) {
       if (!analyzeType(ctype, Task_PrepConversion)) {
         return NULL;

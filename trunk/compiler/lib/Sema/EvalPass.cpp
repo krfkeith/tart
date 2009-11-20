@@ -289,7 +289,7 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
 }
 
 Expr * EvalPass::evalNew(NewExpr * in) {
-  CompositeType * type = cast<CompositeType>(in->type());
+  const CompositeType * type = cast<CompositeType>(in->type());
   if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepEvaluation)) {
     return NULL;
   }
@@ -367,7 +367,7 @@ void EvalPass::store(Expr * value, Expr * dest) {
 }
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
-  CompositeType * arrayType = cast<CompositeType>(in->type());
+  const CompositeType * arrayType = cast<CompositeType>(in->type());
   if (!AnalyzerBase::analyzeType(arrayType, Task_PrepEvaluation)) {
     return NULL;
   }

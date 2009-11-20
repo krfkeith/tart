@@ -23,7 +23,7 @@ class NativeArrayType;
 /// Base class for constant expressions.
 class ConstantExpr : public Expr {
 public:
-  ConstantExpr(ExprType k, SourceLocation l, Type * t)
+  ConstantExpr(ExprType k, SourceLocation l, const Type * t)
     : Expr(k, l, t)
   {}
 
@@ -54,7 +54,7 @@ private:
   llvm::ConstantInt * value_;
 
 public:
-  ConstantInteger(SourceLocation l, Type * t, llvm::ConstantInt * val)
+  ConstantInteger(SourceLocation l, const Type * t, llvm::ConstantInt * val)
     : ConstantExpr(ConstInt, l, t)
     , value_(val)
   {}
@@ -66,10 +66,11 @@ public:
   const PrimitiveType * primitiveType() const;
 
   static ConstantInteger * getConstantBool(const SourceLocation & loc, bool value);
-  static ConstantInteger * get(const SourceLocation & loc, Type * type, int32_t value);
-  static ConstantInteger * get(const SourceLocation & loc, Type * type, llvm::ConstantInt * value);
-  static ConstantInteger * getSigned(const llvm::APInt & value, PrimitiveType * type);
-  static ConstantInteger * getUnsigned(const llvm::APInt & value, PrimitiveType * type);
+  static ConstantInteger * get(const SourceLocation & loc, const Type * type, int32_t value);
+  static ConstantInteger * get(const SourceLocation & loc, const Type * type,
+      llvm::ConstantInt * value);
+  static ConstantInteger * getSigned(const llvm::APInt & value, const PrimitiveType * type);
+  static ConstantInteger * getUnsigned(const llvm::APInt & value, const PrimitiveType * type);
 
   // Overrides
 
@@ -89,7 +90,7 @@ private:
   llvm::ConstantFP * value_;
 
 public:
-  ConstantFloat(SourceLocation l, Type * t, llvm::ConstantFP * val)
+  ConstantFloat(SourceLocation l, const Type * t, llvm::ConstantFP * val)
     : ConstantExpr(ConstFloat, l, t)
     , value_(val)
   {}
@@ -132,9 +133,9 @@ private:
 class ConstantNull : public ConstantExpr {
 public:
   ConstantNull(SourceLocation l);
-  ConstantNull(SourceLocation l, Type * t);
+  ConstantNull(SourceLocation l, const Type * t);
 
-  static ConstantNull * get(const SourceLocation & l, Type * t) {
+  static ConstantNull * get(const SourceLocation & l, const Type * t) {
     return new ConstantNull(l, t);
   }
 
@@ -180,7 +181,7 @@ private:
   ExprList members_;
 
 public:
-  ConstantObjectRef(SourceLocation l, CompositeType * val);
+  ConstantObjectRef(SourceLocation l, const CompositeType * val);
 
   const ExprList & members() const { return members_; }
   ExprList & members() { return members_; }

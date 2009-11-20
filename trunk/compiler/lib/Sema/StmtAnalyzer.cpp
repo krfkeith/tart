@@ -485,7 +485,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     return false;
   }
 
-  CompositeType * iterType = static_cast<CompositeType *>(iterExpr->type());
+  const CompositeType * iterType = static_cast<const CompositeType *>(iterExpr->type());
   AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
   FunctionDefn * next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
   if (next == NULL) {
@@ -507,7 +507,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
       return false;
     }
 
-    iterType = static_cast<CompositeType *>(iterExpr->type());
+    iterType = static_cast<const CompositeType *>(iterExpr->type());
     AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
     next = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
     if (next == NULL) {
@@ -530,7 +530,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
 
   LValueExpr * nextVal = createTempVar(".iterval", nextCall, true);
 
-  UnionType * utype = dyn_cast<UnionType>(nextVal->type());
+  const UnionType * utype = dyn_cast<UnionType>(nextVal->type());
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
   TypeRef iterVarType;
@@ -602,17 +602,17 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     // Check for bool and int types, not floats.
   }
 
-  Type * testType = testExpr->type();
+  const Type * testType = testExpr->type();
 
-  if (PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
+  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
     if (isIntegerType(ptype->typeId())) {
       // TODO: Implement
     } else {
       diag.error(st) << "Invalid expression type for switch statement: " << testType;
     }
-  } else if (EnumType * etype = dyn_cast<EnumType>(testType)) {
+  } else if (const EnumType * etype = dyn_cast<EnumType>(testType)) {
     // If it's an enum, allow unqualified enum constants to be used.
-    caseValScope = new DelegatingScope(etype->memberScope(), activeScope);
+    caseValScope = new DelegatingScope(const_cast<IterableScope *>(etype->memberScope()), activeScope);
     // TODO: Implement
   } else if (testType == Builtins::typeString) {
     // TODO: Implement
@@ -729,7 +729,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   return true;
 }
 
-ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, Type * testType) {
+ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type * testType) {
   Expr * caseVal = astToExpr(ast, testType);
   Expr * result = NULL;
   Conversion cn(caseVal, &result);
@@ -764,10 +764,10 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   }
 
   // TODO: There are lots of optimizations that could be done here.
-  Type * fromType = testExpr->type();
+  const Type * fromType = testExpr->type();
   Expr::ExprType castType = Expr::BitCast;
   if (fromType->isReferenceType()) {
-  } else if (UnionType * utype = dyn_cast<UnionType>(fromType)) {
+  } else if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
     castType = Expr::UnionMemberCast;
   } else {
     diag.warn(testExpr) << "Classify expression's type is already known: " << fromType;
@@ -1150,7 +1150,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
 
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
-    Type * exprType = resultVal->type();
+    const Type * exprType = resultVal->type();
     if (exprType->isUnsizedIntType() && !returnType_.isDefined()) {
       if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&IntType::instance);
@@ -1349,11 +1349,11 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
-  } else if (PointerType * np = dyn_cast<PointerType>(testExpr->type())) {
+  } else if (const PointerType * np = dyn_cast<PointerType>(testExpr->type())) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
-  } else if (AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
+  } else if (const AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
@@ -1363,7 +1363,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
   return BoolType::instance.implicitCast(test->location(), testExpr);
 }
 
-Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, Type * expectedType) {
+Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, const Type * expectedType) {
   return reduceExpr(ast, expectedType);
 }
 
@@ -1461,7 +1461,7 @@ int StmtAnalyzer::LocalProcedure::addFollowingBlock(Block * b) {
   return followingBlocks.size() - 1;
 }
 
-FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * interface,
+FunctionDefn * StmtAnalyzer::findInterfaceMethod(const CompositeType * type, const Type * interface,
     const char * method) {
 
   // Analyze the type.
@@ -1480,7 +1480,7 @@ FunctionDefn * StmtAnalyzer::findInterfaceMethod(CompositeType * type, Type * in
     return NULL;
   }
 
-  CompositeType * interfaceClass = cast<CompositeType>(interface);
+  const CompositeType * interfaceClass = cast<CompositeType>(interface);
   if (!type->implements(interfaceClass)) {
     return NULL;
   }

@@ -94,13 +94,13 @@ public:
   Expr * astToTestExpr(const ASTNode * test, bool castToBool = true);
 
   /** Build expression tree from AST. Don't do any type inferencing yet. */
-  Expr * astToExpr(const ASTNode * ast, Type * expectedType);
+  Expr * astToExpr(const ASTNode * ast, const Type * expectedType);
 
   /** Build defn from AST. Don't do any type inferencing yet. */
   Defn * astToDefn(const ASTDecl * ast);
 
   /** Convert an AST into an switch case value. */
-  ConstantExpr * astToCaseValueExpr(const ASTNode * ast, Type * testType);
+  ConstantExpr * astToCaseValueExpr(const ASTNode * ast, const Type * testType);
 
   /** Set the unwind target - the block that will be executed when an exception is thrown. */
   Block * setUnwindTarget(Block * target) {
@@ -194,7 +194,8 @@ private:
 
   /** Given an interface (which may be a template), and a concrete type, first locate the method
       in the interface, and then find the overloaded version of that method in the concrete type. */
-  FunctionDefn * findInterfaceMethod(CompositeType * type, Type * interface, const char * method);
+  FunctionDefn * findInterfaceMethod(const CompositeType * type, const Type * interface,
+      const char * method);
 
   /** Create a temporary variable. */
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);

@@ -109,13 +109,13 @@ Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
-  CompositeType * ctype = cast<CompositeType>(in->type());
+  const CompositeType * ctype = cast<CompositeType>(in->type());
   module->addSymbol(ctype->typeDefn());
   return CFGPass::visitConstantObjectRef(in);
 }
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
-  CompositeType * arrayType = cast<CompositeType>(in->type());
+  const CompositeType * arrayType = cast<CompositeType>(in->type());
   DASSERT(arrayType->passes().isFinished(CompositeType::ScopeCreationPass));
   Defn * allocFunc = arrayType->lookupSingleMember("alloc");
   DASSERT(allocFunc != NULL);
@@ -125,7 +125,7 @@ Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitInstanceOf(InstanceOfExpr * in) {
-  if (CompositeType * cls = dyn_cast<CompositeType>(in->toType())) {
+  if (const CompositeType * cls = dyn_cast<CompositeType>(in->toType())) {
     addSymbol(cls->typeDefn());
   }
 

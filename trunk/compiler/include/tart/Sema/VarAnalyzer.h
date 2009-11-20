@@ -17,7 +17,7 @@ class VarAnalyzer : public DefnAnalyzer {
 private:
   VariableDefn * target;
 
-  void setTargetType(Type * type);
+  void setTargetType(const Type * type);
 
 public:
   /** Constructor. */

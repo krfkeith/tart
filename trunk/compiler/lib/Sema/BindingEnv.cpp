@@ -404,7 +404,7 @@ bool BindingEnv::unifyPattern(
       return true;
     }
 
-    if (PatternValue * pval = dyn_cast<PatternValue>(s->right())) {
+    if (const PatternValue * pval = dyn_cast<PatternValue>(s->right())) {
       // If the value that is already bound is a pattern variable from some other
       // environment (it should never be from this one), then bind it to
       // this variable.
@@ -428,7 +428,7 @@ bool BindingEnv::unifyPattern(
       return false;
     }
 
-    if (PatternVar * svar = dyn_cast<PatternVar>(s->right())) {
+    if (const PatternVar * svar = dyn_cast<PatternVar>(s->right())) {
       //DFAIL("Should not happen");
       // If 'pattern' is bound to another pattern variable, then go ahead and override
       // that binding.
@@ -447,7 +447,7 @@ bool BindingEnv::unifyPattern(
       //upperBound =
     }
 
-    Type * commonType = Type::selectLessSpecificType(s->right(), value);
+    const Type * commonType = Type::selectLessSpecificType(s->right(), value);
     if (commonType == s->right()) {
       return true;
     }
@@ -508,7 +508,7 @@ bool BindingEnv::unifyPattern(
   }
 }
 
-Substitution * BindingEnv::addSubstitution(const Type * left, Type * right) {
+Substitution * BindingEnv::addSubstitution(const Type * left, const Type * right) {
   for (Substitution * s = substitutions_; s != NULL; s = s->prev()) {
     if (s->left() == left && s->right() == right) {
       diag.error() << "Redundant substitution: " << s->left() << " -> " << s->right();
@@ -521,7 +521,8 @@ Substitution * BindingEnv::addSubstitution(const Type * left, Type * right) {
   return substitutions_;
 }
 
-Substitution * BindingEnv::addSubstitution(const Type * left, Type * upper, Type * lower) {
+Substitution * BindingEnv::addSubstitution(
+    const Type * left, const Type * upper, const Type * lower) {
   DASSERT(left != upper);
   DASSERT(left != lower);
   substitutions_ = new Substitution(left, upper, lower, substitutions_);
@@ -531,7 +532,7 @@ Substitution * BindingEnv::addSubstitution(const Type * left, Type * upper, Type
 Type * BindingEnv::get(const PatternVar * type) const {
   Substitution * s = getSubstitutionFor(type);
   if (s != NULL) {
-    return s->right();
+    return const_cast<Type *>(s->right());
   }
 
   return NULL;
@@ -542,7 +543,7 @@ Type * BindingEnv::dereference(Type * type) const {
     if (PatternVar * var = dyn_cast<PatternVar>(type)) {
       Substitution * s = getSubstitutionFor(type);
       if (s != NULL) {
-        type = s->right();
+        type = const_cast<Type *>(s->right());
       } else {
         return NULL;
       }
