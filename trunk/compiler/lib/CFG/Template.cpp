@@ -175,7 +175,7 @@ void TemplateSignature::format(FormatStream & out) const {
 }
 
 Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
-  SpecializationMap::iterator it = specializations_.find(tv);
+  SpecializationMap::const_iterator it = specializations_.find(tv);
   if (it != specializations_.end()) {
     return it->second;
   }

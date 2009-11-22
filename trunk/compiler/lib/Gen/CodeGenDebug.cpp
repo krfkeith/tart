@@ -54,8 +54,8 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
         DASSERT(srcPath.isAbsolute());
         compileUnit = dbgFactory_.CreateCompileUnit(
           0xABBA, // Take a chance on me...
-          srcPath.getLast(),
-          srcPath.getDirname(),
+          srcPath.getLast().c_str(),
+          srcPath.getDirname().c_str(),
           "0.1 tartc",
           module_->entryPoint() != NULL);
       }
@@ -80,8 +80,8 @@ void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     dbgFunction_ = dbgFactory_.CreateSubprogram(
         dbgCompileUnit_, // TODO: Replace for functions within a scope.
         fn->name(),
-        fn->qualifiedName(),
-        fn->linkageName(),
+        fn->qualifiedName().c_str(),
+        fn->linkageName().c_str(),
         dbgCompileUnit_,
         getSourceLineNumber(fn->location()),
         dbgFuncType,
@@ -97,8 +97,7 @@ void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
 void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   // Generate debugging information (this has to be done after local variable allocas.)
   if (debug_ && !dbgFunction_.isNull()) {
-    dbgFactory_.InsertSubprogramStart(dbgFunction_, builder_.GetInsertBlock());
-    dbgLocation_ = SourceLocation();
+    setDebugLocation(fn->location());
 
 #if 0
     const FunctionType * ftype = fn->functionType();
@@ -135,6 +134,7 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
           DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgFunction_,
               var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
               genDIEmbeddedType(var->type()));
+          setDebugLocation(var->location());
           dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
         }
       }
@@ -214,7 +214,7 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   const llvm::Type * irType = type->irType();
   return dbgFactory_.CreateBasicTypeEx(
       dbgCompileUnit_,
-      type->typeDefn()->qualifiedName(),
+      type->typeDefn()->qualifiedName().c_str(),
       DICompileUnit(), 0,
       getSizeOfInBits(irType),
       getAlignOfInBits(irType),
@@ -312,7 +312,7 @@ DIDerivedType CodeGenerator::genDITypeMember(const Type * type, const StructType
   return dbgFactory_.CreateDerivedTypeEx(
       dwarf::DW_TAG_member,
       dbgCompileUnit_,
-      name,
+      name.str().c_str(),
       dbgCompileUnit_,
       0,
       getSizeOfInBits(memberType),
@@ -325,7 +325,7 @@ DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
   DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
-      type->typeDefn()->linkageName(),
+      type->typeDefn()->linkageName().c_str(),
       genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
       getSizeOfInBits(type->irType()),
@@ -355,7 +355,7 @@ DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
   DICompositeType di = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
-      type->typeDefn()->linkageName(),
+      type->typeDefn()->linkageName().c_str(),
       genDICompileUnit(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
       getSizeOfInBits(type->irType()),
@@ -580,7 +580,7 @@ DICompositeType CodeGenerator::genDIBoundMethodType(const BoundMethodType * type
   DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
-      typeName,
+      typeName.c_str(),
       DICompileUnit(),
       0,
       getSizeOfInBits(type->irType()),
@@ -599,7 +599,7 @@ DICompositeType CodeGenerator::genDIBoundMethodType(const BoundMethodType * type
   DICompositeType di = dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_structure_type,
       dbgCompileUnit_,
-      typeName,
+      typeName.c_str(),
       DICompileUnit(),
       0,
       getSizeOfInBits(type->irType()),
