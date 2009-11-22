@@ -80,7 +80,7 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * 
   DASSERT(method->templateInstance()->typeArgs()->size() == 1);
   Expr * fromExpr = args[0];
   const Type * fromType = dealias(fromExpr->type());
-  TypeRef toType = method->templateInstance()->paramValues()[0];
+  TypeRef toType = method->templateInstance()->typeArg(0);
   return toType.explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
 }
 

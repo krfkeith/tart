@@ -12,7 +12,6 @@ Design TODOS:
 
 Implementation TODOS:
 
-* Get -internalize link pass working (works on Linux)
 * Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
   * See if we can move template stuff into the type (CompositeType and FunctionType)
@@ -22,13 +21,15 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Find a better name for PatternVar. (TypeVariable?)
+  * Find a better name for PatternVar. (TypeVariable? What about PatternValue?)
   * Some means to cache relabeled specializations?
   * Fill out TypeOrderings.h
+  * Hook up TypeLess(Than).
   * Finish up override keyword, with failure tests.
   * See if we can make Expr::type() a TypeRef.
   * See if we can make Substitution->right a const, and a TypeRef.
   * Replace TypeList with TypeRefList.
+* Coalescing
 * TypeRef
   * Expressions
   * Template arguments
@@ -38,7 +39,6 @@ Implementation TODOS:
 * Boxed values:
   * Closure Cells
 * Reflection
-  * Object.toString() prints class name.
   * Iterate functions, properties, find by name
   * PropertyHolder / PropertyDescriptor / CustomType
   * Attributes
@@ -46,8 +46,9 @@ Implementation TODOS:
   * Generate trampoline functions.
   * _scopeName + _name;
   * auto TypeLiteral
+* Local functions
+  * Anonymous functions
 * Stack dumps / trace
-* Hook up TypeLess(Than).
 * Why is linking so slow? (because internalize doesn't work).
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
@@ -107,10 +108,8 @@ Implementation TODOS:
 * Generator functions.
   * Yield statement.
   * State machine.
-* Object.toString.
-  * Need a base implementation for Object.
-  * Define toStringFmt
 * String formatting
+  * Define toStringFmt
 * Let with instance scope.
 * SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
@@ -119,7 +118,7 @@ Implementation TODOS:
 * Class "extension"
 * Finish writing out and parsing metadata so that we don't have to compile everything
   multiple times.
-* Call gc_alloc instead of malloc. Integrate Scarcity.
+* Call gc_alloc instead of malloc.
 * Statements:
   * for (need unpacking assignment.)
   * for/in
@@ -134,6 +133,7 @@ Implementation TODOS:
 * Tartdoc
   * Requires command-line parsing lib.
 * 'get' and 'set' should not be keywords. Properties can do just fine.
+* Get -internalize link pass working (works on Linux)
 
 Doc errors:
 
@@ -169,8 +169,6 @@ o  'virtual' arguments. (Or 'dispatched')
   o  dynamic convert
 o  Implement overriding struct assignment.
 o  GC Trace functions. (Auto-generated and explicit. Also don't take the name 'trace')
-o  Add padding before static objects to make GC happy. (Maybe not.)
-o  Call gc_alloc instead of malloc.
 
 o  Type conversions of non-constants.
 

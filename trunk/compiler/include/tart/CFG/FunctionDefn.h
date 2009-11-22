@@ -95,7 +95,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const ParameterDefn *) { return true; }
   static inline bool classof(const Defn * de) {
-    return de->defnType() == Parameter || de->defnType() == TemplateParam;
+    return de->defnType() == Parameter;
   }
 
 private:

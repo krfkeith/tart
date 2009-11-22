@@ -9,6 +9,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
+#include "tart/CFG/TypeOrdering.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -29,6 +30,8 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , paramAssignments_(params)
   , fnType_(m->functionType())
   , resultType_(m->functionType()->returnType())
+  , typeParams_(NULL)
+  , typeArgs_(NULL)
   , spCandidate_(spCandidate)
   , isTemplate_(false)
 {
@@ -66,10 +69,21 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
     }
 
     if (spCandidate_ != NULL) {
-      TemplateSignature * ts = m->templateSignature();
-      for (TupleType::const_iterator it = ts->typeParams()->begin(); it != ts->typeParams()->end();
-          ++it) {
-        templateParams_.push_back(bindingEnv_.subst(*it));
+      typeArgs_ = spCandidate_->args();
+//      for (TupleType::const_iterator it = ts->typeParams()->begin(); it != ts->typeParams()->end();
+//          ++it) {
+//        templateParams_.push_back(bindingEnv_.subst(*it));
+//      }
+    }
+
+    // If there are any explicit type arguments, then we want to relabel the template
+    // parameters themselves so that we can unify the type arguments with them.
+    TemplateSignature * ts = m->templateSignature();
+    if (ts != NULL) {
+      if (typeArgs_ != NULL) {
+        typeParams_ = cast<TupleType>(bindingEnv_.subst(ts->typeParams()));
+      } else {
+        typeParams_ = ts->typeParams();
       }
     }
 
@@ -98,6 +112,8 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType 
   , paramAssignments_(params)
   , fnType_(fnType)
   , resultType_(fnType->returnType())
+  , typeParams_(NULL)
+  , typeArgs_(NULL)
   , spCandidate_(NULL)
   , isTemplate_(false)
 {
@@ -113,7 +129,7 @@ TypeRef CallCandidate::paramType(int argIndex) const {
   return paramTypes_[parameterIndex(argIndex)];
 }
 
-bool CallCandidate::isEqual(const CallCandidate * other) const {
+/*bool CallCandidate::isEqual(const CallCandidate * other) const {
   if (paramAssignments_.size() != other->paramAssignments_.size()) {
     return false;
   }
@@ -133,7 +149,7 @@ bool CallCandidate::isEqual(const CallCandidate * other) const {
   }
 
   return true;
-}
+}*/
 
 bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   bool same = true;
@@ -181,6 +197,13 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
     }
   }
 
+//  if (same) {
+//    if (typeParams_ != NULL && other->typeParams_ != NULL) {
+//      ComparisonResult result = compareSpecificity(typeParams_, other->typeParams_);
+//      diag.info() << "Comparison result " << result;
+//    }
+//  }
+
   if (same) {
     // If one is a template, than it is less specific than the other.
     // TODO: If they are both templates, choose the one with the smaller number
@@ -188,6 +211,19 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
     // deduced parameters.
     if (!method_->isTemplate() && other->method()->isTemplate()) {
       return true;
+    }
+
+    // TODO: This is a temporary kludge - should really compare the two template parameter
+    // lists and see which one is more tightly bound.
+    if (!method_->hasUnboundTypeParams() && other->method()->hasUnboundTypeParams()) {
+      return true;
+    }
+
+    if (typeParams_ == NULL && other->typeParams_ != NULL) {
+      return true;
+    }
+
+    if (typeParams_ != NULL && other->typeParams_ != NULL) {
     }
   }
 
@@ -213,12 +249,11 @@ ConversionRank CallCandidate::updateConversionRank() {
 
   // If there are explicit specializations, then check those too.
   // Note that these must be an exact match.
-  if (spCandidate_ != NULL) {
-    TupleType * spArgs = spCandidate_->args();
-    size_t typeArgCount = spArgs->size();
+  if (typeArgs_ != NULL) {
+    size_t typeArgCount = typeArgs_->size();
     for (size_t i = 0; i < typeArgCount; ++i) {
-      const TypeRef & typeArg = (*spArgs)[i];
-      const TypeRef & typeParam = templateParams_[i];
+      const TypeRef & typeArg = (*typeArgs_)[i];
+      const TypeRef & typeParam = (*typeParams_)[i];
       ConversionRank rank = typeParam.canConvert(typeArg);
       if (rank < IdenticalTypes) {
         conversionRank_ = Incompatible;
@@ -237,10 +272,21 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
   DASSERT(method_ != NULL);
   if (spCandidate_ != NULL) {
+    // TODO: This could equally well be achieved by unifying typeArgs_ with typeParams_.
     bindingEnv_.setSubstitutions(spCandidate_->env().substitutions());
   } else {
     bindingEnv_.setSubstitutions(NULL);
   }
+
+#if 0
+  // TODO: An alternate way to do the above
+  bindingEnv_.setSubstitutions(NULL);
+
+  // If there are explicit type arguments, then unify them with the template's type parameters.
+  if (typeArgs_ != NULL && !bindingEnv_.unify(&candidateSite, typeParams_, typeArgs_, Invariant)) {
+    return false;
+  }
+#endif
 
   // Now, for each parameter attempt unification.
   SourceContext callSite(callExpr, NULL, callExpr);

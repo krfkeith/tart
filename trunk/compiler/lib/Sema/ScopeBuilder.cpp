@@ -78,7 +78,6 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
     }
 
     case Defn::Parameter:
-    case Defn::TemplateParam:
     case Defn::Var:
     case Defn::Let:
     case Defn::Function:
@@ -236,7 +235,6 @@ void ScopeBuilder::checkNameConflicts(IterableScope * scope) {
           case Defn::Let:
           case Defn::Var:
           case Defn::Parameter:
-          case Defn::TemplateParam:
           case Defn::Mod:
           default:
             conflictingDefn = prevDef;

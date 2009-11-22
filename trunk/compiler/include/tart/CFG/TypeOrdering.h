@@ -5,17 +5,75 @@
 #ifndef TART_CFG_TYPEORDERING_H
 #define TART_CFG_TYPEORDERING_H
 
-#ifndef TART_CFG_TYPE_H
-#include "tart/CFG/Type.h"
+#ifndef TART_COMMON_FORMATTABLE_H
+#include "tart/Common/Formattable.h"
 #endif
 
 namespace tart {
+
+class Type;
+class TypeRef;
+class PrimitiveType;
+class CompositeType;
+class EnumType;
+class FunctionType;
+class BoundMethodType;
+class UnionType;
+class TupleType;
+class AddressType;
+class PointerType;
+class NativeArrayType;
+class UnitType;
+class PatternVar;
+class PatternValue;
+class TypeConstraint;
 
 enum ComparisonResult {
   EQUAL,        // Types are identical.
   LEFT_FIRST,   // The left side precedes the right side.
   RIGHT_FIRST,  // The left side succedes the right side.
   UNORDERED,    // Types have no unambiguous ordering.
+};
+
+ComparisonResult operator+(ComparisonResult r0, ComparisonResult r1);
+
+// Flip the order from left to right and right to left.
+ComparisonResult operator-(ComparisonResult cr);
+
+/// -------------------------------------------------------------------
+/// Abstract class that defines a comparison order between type
+/// expressions.
+
+class TypeOrdering {
+  virtual ComparisonResult compare(const TypeRef & t1, const TypeRef & t2);
+  virtual ComparisonResult compare(const Type * t1, const Type * t2);
+  virtual ComparisonResult compare(const PrimitiveType * t1, const PrimitiveType * t2);
+  virtual ComparisonResult compare(const CompositeType * t1, const CompositeType * t2);
+  virtual ComparisonResult compare(const EnumType * t1, const EnumType * t2);
+  virtual ComparisonResult compare(const FunctionType * t1, const FunctionType * t2);
+  virtual ComparisonResult compare(const BoundMethodType * t1, const BoundMethodType * t2);
+  virtual ComparisonResult compare(const UnionType * t1, const UnionType * t2);
+  virtual ComparisonResult compare(const TupleType * t1, const TupleType * t2);
+  virtual ComparisonResult compare(const AddressType * t1, const AddressType * t2);
+  virtual ComparisonResult compare(const PointerType * t1, const PointerType * t2);
+  virtual ComparisonResult compare(const NativeArrayType * t1, const NativeArrayType * t2);
+  virtual ComparisonResult compare(const UnitType * t1, const UnitType * t2);
+
+  virtual ComparisonResult compareDissimilar(const Type * t1, const Type * t2);
+  virtual ComparisonResult compareWithPattern(const PatternVar * t1, const Type * t2);
+  virtual ComparisonResult compareWithPatternValue(const PatternValue * t1, const Type * t2);
+  virtual ComparisonResult compareWithConstraint(const TypeConstraint * t1, const Type * t2);
+
+  //    case Type::Alias:
+};
+
+/// -------------------------------------------------------------------
+/// Defines a total ordering of all unique types. The ordering is
+/// somewhat arbitrary, but it's enough to sort type expressions
+/// in a deterministic way.
+
+class LexicalTypeOrder : public TypeOrdering {
+
 };
 
 /// -------------------------------------------------------------------
@@ -31,14 +89,13 @@ enum ComparisonResult {
 ///  A result of LEFT_FIRST means that the left-side argument is the
 ///  more specific type.
 
-ComparisonResult compareSpecificity(const TupleType * t1, const TupleType * t2);
-ComparisonResult compareSpecificity(const TypeRef & t1, const TypeRef & t2);
-ComparisonResult compareSpecificity(const Type * t1, const Type * t2);
+class SpecificityTypeOrder : public TypeOrdering {
 
-ComparisonResult compareLexical(const TupleType * t1, const TupleType * t2);
-ComparisonResult compareLexical(const TypeRef & t1, const TypeRef & t2);
-ComparisonResult compareLexical(const Type * t1, const Type * t2);
+};
 
-}
+/** Stream operator for type comparison result. */
+FormatStream & operator<<(FormatStream & out, ComparisonResult cr);
+
+} // namespace tart
 
 #endif // TART_CFG_TYPEORDERING_H

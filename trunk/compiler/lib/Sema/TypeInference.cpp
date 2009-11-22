@@ -98,6 +98,7 @@ void CallSite::reportErrors(const char * msg) {
   FormatStream fs(callsig);
   fs << Format_Dealias;
   formatCallSignature(fs);
+  fs.flush();
   diag.error(callExpr->location()) << msg << callsig.str() << ".";
   diag.info(callExpr->location()) << "Candidates are:";
   Candidates & cd = callExpr->candidates();

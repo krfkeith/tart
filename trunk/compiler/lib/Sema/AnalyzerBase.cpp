@@ -551,8 +551,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 
     case Defn::Var:
     case Defn::Let:
-    case Defn::Parameter:
-    case Defn::TemplateParam: {
+    case Defn::Parameter: {
       return VarAnalyzer(static_cast<VariableDefn *>(in)).analyze(task);
     }
 

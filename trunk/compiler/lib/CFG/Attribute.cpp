@@ -57,7 +57,6 @@ bool AttributeInfo::canAttachTo(const Defn * de) const {
     case Defn::Parameter:
       return (target_ & PARAMETER) != 0;
 
-    case Defn::TemplateParam:
     case Defn::Mod:
     case Defn::ExplicitImport:
       return false;

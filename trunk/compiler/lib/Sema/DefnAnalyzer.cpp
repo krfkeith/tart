@@ -403,7 +403,7 @@ void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & r
 
 Module * DefnAnalyzer::moduleForDefn(const Defn * def) {
   if (def->isTemplateInstance()) {
-    return def->templateInstance()->srcModule();
+    return def->templateInstance()->templateDefn()->module();
   } else {
     return def->module();
   }
