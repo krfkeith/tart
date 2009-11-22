@@ -5,6 +5,7 @@
 #include "tart/Common/GC.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceLocation.h"
+#include <malloc.h>
 
 namespace tart {
 

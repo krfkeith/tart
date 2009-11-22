@@ -383,7 +383,6 @@ private:
   llvm::DICompileUnit dbgCompileUnit_;
   llvm::DISubprogram dbgFunction_;
   DITypeMap dbgTypeMap_;
-  SourceLocation dbgLocation_;
 
   llvm::BasicBlock * unwindTarget_;
   llvm::Function * unwindRaiseException_;

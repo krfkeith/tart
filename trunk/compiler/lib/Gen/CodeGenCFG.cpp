@@ -77,16 +77,6 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
     genBlockTerminator(blk);
   }
 
-  // If this is the last block, generate debugging info before the terminator.
-  if (debug_ && !dbgFunction_.isNull()) {
-    BasicBlock & lastBlock = currentFn_->getBasicBlockList().back();
-    builder_.SetInsertPoint(&lastBlock);
-    TerminatorInst * term = lastBlock.getTerminator();
-    term->removeFromParent();
-    dbgFactory_.InsertRegionEnd(dbgFunction_, &lastBlock);
-    builder_.Insert(term);
-  }
-
   unwindTarget_ = NULL;
 }
 

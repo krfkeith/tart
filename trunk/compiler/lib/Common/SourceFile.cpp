@@ -7,6 +7,7 @@
 #include <ostream>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 namespace tart {
 
