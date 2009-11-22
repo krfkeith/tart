@@ -80,7 +80,6 @@ public:
     Function,
     Macro,
     Parameter,
-    TemplateParam,
     Mod,
     ExplicitImport,
 
@@ -316,7 +315,7 @@ static const DefnTypeSet LVALUE_DEFS = DefnTypeSet::of(
 /** DefnTypeSet of defn types that have types. */
 static const DefnTypeSet TYPED_DEFNS = DefnTypeSet::of(
     Defn::Var, Defn::Let, Defn::Property, Defn::Function, Defn::Macro,
-    Defn::Indexer, Defn::Parameter, Defn::TemplateParam);
+    Defn::Indexer, Defn::Parameter);
 
 /** DefnTypeSet of defn types that are methods. */
 static const DefnTypeSet METHOD_DEFS = DefnTypeSet::of(

@@ -149,16 +149,6 @@ PatternVar * TemplateSignature::patternVar(const char * name) const {
   return NULL;
 }
 
-size_t TemplateSignature::getVarIndex(const PatternVar * var) const {
-  for (PatternVarList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
-    if (var == *it) {
-      return it - vars_.begin();
-    }
-  }
-
-  return size_t(-1);
-}
-
 PatternVar * TemplateSignature::patternVar(int index) const {
   return vars_[index];
 }
@@ -245,7 +235,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_, typeArgs, paramValues);
+  TemplateInstance * tinst = new TemplateInstance(value_, typeArgs);
   tinst->instantiatedFrom() = loc;
 
   // Create the definition
@@ -384,14 +374,16 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templateArgs,
-    TypeRefList & paramValues)
+TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templateArgs)
   : value_(NULL)
   , templateDefn_(templateDefn)
-  , paramValues_(paramValues)
   , typeArgs_(templateArgs)
   , parentScope_(templateDefn->definingScope())
 {
+}
+
+const TypeRef & TemplateInstance::typeArg(int index) const {
+  return typeArgs_->member(index);
 }
 
 void TemplateInstance::addMember(Defn * d) {
@@ -435,9 +427,6 @@ void TemplateInstance::trace() const {
   paramDefns_.trace();
   safeMark(value_);
   safeMark(typeArgs_);
-  for (TypeRefList::const_iterator it = paramValues_.begin(); it != paramValues_.end(); ++it) {
-    it->trace();
-  }
 }
 
 } // namespace Tart

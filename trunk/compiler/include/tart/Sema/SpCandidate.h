@@ -33,7 +33,7 @@ public:
   Defn * def() const { return def_; }
 
   /** The type arguments. */
-  TupleType * args() const { return args_; }
+  const TupleType * args() const { return args_; }
 
   /** Base expression used, if any. */
   Expr * base() const { return base_; }
@@ -64,7 +64,7 @@ public:
 private:
   Defn * def_;
   Expr * base_;
-  TupleType * args_;
+  const TupleType * args_;
   const TupleType * params_;
   BindingEnv env_;
   ConversionRank conversionRank_;

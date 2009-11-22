@@ -464,7 +464,7 @@ size_t DeclaredType::numTypeParams() const {
 
   TemplateInstance * tinst = defn_->templateInstance();
   if (tinst != NULL) {
-    return tinst->paramValues().size();
+    return tinst->typeArgs()->size();
   }
 
   return 0;
@@ -473,12 +473,12 @@ size_t DeclaredType::numTypeParams() const {
 TypeRef DeclaredType::typeParam(int index) const {
   TemplateSignature * tsig = defn_->templateSignature();
   if (tsig != NULL) {
-    return tsig->patternVar(index);
+    return tsig->typeParam(index);
   }
 
   TemplateInstance * tinst = defn_->templateInstance();
   if (tinst != NULL) {
-    return tinst->paramValues()[index];
+    return tinst->typeArg(index);
   }
 
   DFAIL("Illegal State");

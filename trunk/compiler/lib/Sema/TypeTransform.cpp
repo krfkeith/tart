@@ -226,7 +226,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       PatternVar * param = tsig->patternVar(i);
-      TypeRef value = tinst->paramValues()[i];
+      TypeRef value = tinst->typeArg(i);
       TypeRef svalue = visit(value);
       if (svalue.isDefined()) {
         partialEnv.addSubstitution(param, svalue.type());

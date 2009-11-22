@@ -84,10 +84,6 @@ public:
   const ExprList & requirements() const { return requirements_; }
   ExprList & requirements() { return requirements_; }
 
-  /** Return the index of the specified pattern variable, or -1 if
-      the variable is not defined for this template. */
-  size_t getVarIndex(const PatternVar * var) const;
-
   /** Return the number of pattern vars. */
   size_t patternVarCount() const;
 
@@ -135,7 +131,7 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Defn * templateDefn, const TupleType * templateArgs, TypeRefList & paramValues);
+  TemplateInstance(Defn * templateDefn, const TupleType * templateArgs);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
@@ -144,15 +140,9 @@ public:
   /** The original template defn for this instance. */
   Defn * templateDefn() const { return templateDefn_; }
 
-  /** The values that are bound to pattern variables. */
-  const TypeRefList & paramValues() const { return paramValues_; }
-
   /** The template arguments for this template. */
   const TupleType * typeArgs() const { return typeArgs_; }
-
-  /** The module where this template was originally defined; Used for implicit imports
-      within the template body. */
-  Module * srcModule() const { return templateDefn_->module(); }
+  const TypeRef & typeArg(int index) const;
 
   /** The location from which this template was instantiated. */
   const SourceLocation & instantiatedFrom() const { return instantiatedFrom_; }
@@ -162,7 +152,6 @@ public:
 
   bool allowOverloads() { return false; }
   Scope * parentScope() const { return parentScope_; }
-  Defn * firstParamDefn() const { return paramDefns_.first(); }
   void addMember(Defn * d);
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full = true) const;
@@ -172,7 +161,6 @@ public:
 private:
   Defn * value_;                    // The instantiated definition
   Defn * templateDefn_;             // The template definition from whence this came.
-  TypeRefList paramValues_;         // The list of parameter values.
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
   const TupleType * typeArgs_;  // Template arguments with substitutions
   Scope * parentScope_;             // Parent scope of this definition.

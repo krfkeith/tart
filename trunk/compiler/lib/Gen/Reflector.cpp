@@ -246,7 +246,6 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
 
     case Defn::Macro:
     case Defn::Parameter:
-    case Defn::TemplateParam:
     case Defn::Mod:
     case Defn::ExplicitImport:
       break;

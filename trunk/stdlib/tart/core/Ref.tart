@@ -288,12 +288,12 @@ import tart.annex.Nonreflective;
     }
   }
 
-  /*static def valueOf[%T](ref:Object) -> T {
+  static def valueOf[%T](ref:Object) -> T {
     classify ref {
       as v:ValueRef[T]   { return v.value; }
       else {
         throw TypecastException();
       }
     }
-  }*/
+  }
 }

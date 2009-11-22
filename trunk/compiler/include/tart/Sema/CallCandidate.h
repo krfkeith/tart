@@ -85,7 +85,7 @@ public:
 
   /** Return true if this specified call candidate has the same type
       as this one. */
-  bool isEqual(const CallCandidate * other) const;
+  //bool isEqual(const CallCandidate * other) const;
 
   /** Return true if *this* candidate is more specific than the one given. */
   bool isMoreSpecific(const CallCandidate * other) const;
@@ -142,7 +142,9 @@ private:
   const FunctionType * fnType_;
   TypeRef resultType_;
   TypeRefList paramTypes_;
-  TypeRefList templateParams_;
+  const TupleType * typeParams_;
+  const TupleType * typeArgs_;
+  //TypeRefList templateParams_;
   SpCandidate * spCandidate_;
   bool isTemplate_;
 };

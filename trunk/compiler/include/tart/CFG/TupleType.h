@@ -41,6 +41,7 @@ public:
   size_t size() const { return members_.size(); }
 
   const TypeRef & operator[](int index) const { return members_[index]; }
+  const TypeRef & member(int index) const { return members_[index]; }
 
   // Overrides
 
