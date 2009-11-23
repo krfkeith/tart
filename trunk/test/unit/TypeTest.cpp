@@ -270,38 +270,38 @@ public:
 
 /// -------------------------------------------------------------------
 /// A pair of type refs - used as a map key.
-class TypeRefPair {
+class TypePair {
 public:
-  TypeRefPair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
-  TypeRefPair(const TypeRefPair & src) : first_(src.first_), second_(src.second_) {}
+  TypePair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
 
   const TypeRef & first() { return first_; }
   const TypeRef & second() { return second_; }
 
-  bool operator==(const TypeRefPair & other) const {
+  bool operator==(const TypePair & other) const {
     return first_ == other.first_ && second_ == other.second_;
   }
 
-  bool operator!=(const TypeRefPair & other) const {
+  bool operator!=(const TypePair & other) const {
     return !(*this == other);
   }
 
   // Structure used when using type ref as a key.
   struct KeyInfo {
-    static inline TypeRefPair getEmptyKey() {
-      return TypeRefPair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+    static inline TypePair getEmptyKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
     }
 
-    static inline TypeRefPair getTombstoneKey() {
-      return TypeRefPair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+    static inline TypePair getTombstoneKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
     }
 
-    static unsigned getHashValue(const TypeRefPair & val) {
+    static unsigned getHashValue(const TypePair & val) {
       return TypeRef::KeyInfo::getHashValue(val.first_) ^
           (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
     }
 
-    static bool isEqual(const TypeRefPair & lhs, const TypeRefPair & rhs) {
+    static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
       return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
           TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
     }

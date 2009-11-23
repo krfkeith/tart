@@ -749,4 +749,33 @@ void AnalyzerBase::dumpScopeHierarchy() {
   diag.recovered();
 }
 
+
+TaskInProgress * TaskInProgress::tasks_ = NULL;
+
+void TaskInProgress::report() {
+  diag.debug() << "Current analysis tasks in progress:";
+  for (TaskInProgress * task = tasks_; task != NULL; task = task->next_) {
+    const char * taskName = "Unknown";
+    switch (task->task_) {
+      case Task_PrepTypeComparison: taskName = "Task_PrepTypeComparison"; break;
+      case Task_PrepMemberLookup: taskName = "Task_PrepMemberLookup"; break;
+      case Task_PrepConstruction: taskName = "Task_PrepConstruction"; break;
+      case Task_PrepConversion: taskName = "Task_PrepConversion"; break;
+      case Task_PrepEvaluation: taskName = "Task_PrepEvaluation"; break;
+      case Task_PrepTypeGeneration: taskName = "Task_PrepTypeGeneration"; break;
+      case Task_PrepCodeGeneration: taskName = "Task_PrepCodeGeneration"; break;
+      case Task_PrepReflection: taskName = "Task_PrepReflection"; break;
+    }
+
+    diag.debug() << Format_QualifiedName << "  " << taskName << ": " << task->defn_;
+  }
+}
+
+//diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
+void reportAnalysisCycle() {
+  diag.fatal() << "Infinite recursion during analysis";
+  TaskInProgress::report();
+  DFAIL("ABORT");
+}
+
 } // namespace tart

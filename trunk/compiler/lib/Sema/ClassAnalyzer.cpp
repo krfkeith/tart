@@ -98,6 +98,8 @@ CompositeType * ClassAnalyzer::targetType() const {
 }
 
 bool ClassAnalyzer::analyze(AnalysisTask task) {
+  TaskInProgress tip(target, task);
+
   switch (task) {
     case Task_PrepTypeComparison:
       return runPasses(PASS_SET_RESOLVE_TYPE);

@@ -144,7 +144,7 @@ private:
   TypeRefList paramTypes_;
   const TupleType * typeParams_;
   const TupleType * typeArgs_;
-  //TypeRefList templateParams_;
+  TemplateConditionList conditions_;
   SpCandidate * spCandidate_;
   bool isTemplate_;
 };

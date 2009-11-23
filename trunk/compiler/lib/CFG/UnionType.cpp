@@ -7,6 +7,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/TypeOrdering.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 
@@ -50,6 +51,7 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
   }
 
   // TODO: Sort members, and uniqueify
+  std::sort(combined.begin(), combined.end(), LexicalTypeOrdering());
 
   for (TypeRefList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
     const Type * memberType = it->dealias();
@@ -181,8 +183,9 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
   if (isEqual(cn.fromType)) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
-      return IdenticalTypes;
     }
+
+    return IdenticalTypes;
   }
 
   ConversionRank bestRank = Incompatible;
@@ -249,7 +252,9 @@ bool UnionType::isSingular() const {
 }
 
 bool UnionType::isSubtype(const Type * other) const {
-  DFAIL("Implement");
+  // TODO: Is this meaningful with unions?
+  return isEqual(other);
+  //DFAIL("Implement");
 }
 
 bool UnionType::includes(const Type * other) const {

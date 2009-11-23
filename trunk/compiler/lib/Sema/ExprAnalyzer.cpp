@@ -29,14 +29,15 @@ namespace tart {
 /// ExprAnalyzer
 
 ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction) :
-  AnalyzerBase(mod, parent, currentFunction), tsig_(NULL), currentFunction_(currentFunction) {
+  AnalyzerBase(mod, parent, currentFunction), currentFunction_(currentFunction) {
 }
 
 ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject) :
-  AnalyzerBase(mod, parent, subject), tsig_(NULL), currentFunction_(NULL) {
+  AnalyzerBase(mod, parent, subject), currentFunction_(NULL) {
 }
 
-Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected) {
+Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected,
+    bool tryCoerciveCasts) {
   if (isErrorResult(expr)) {
     return NULL;
   }
@@ -51,7 +52,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
     expr = TypeInferencePass::run(expr, expected);
   }
 
-  expr = FinalizeTypesPass::run(subject, expr);
+  expr = FinalizeTypesPass::run(subject, expr, tryCoerciveCasts);
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;
@@ -153,7 +154,8 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
       return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
     case ASTNode::PatternVar:
-      return reducePatternVar(static_cast<const ASTPatternVar *> (ast));
+      diag.error(ast) << "Pattern variable used outside of pattern.";
+      return &Expr::ErrorVal;
 
     default:
       diag.fatal(ast) << "Unimplemented expression type: '" << nodeTypeName(ast->nodeType()) << "'";
@@ -202,19 +204,6 @@ ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expe
   }
 
   return cast<ConstantExpr> (expr);
-}
-
-Expr * ExprAnalyzer::reducePattern(const ASTNode * ast, TemplateSignature * ts) {
-  DASSERT(tsig_ == NULL);
-  tsig_ = ts;
-
-  Expr * expr = reduceExprImpl(ast, NULL);
-  if (isErrorResult(expr)) {
-    return NULL;
-  }
-
-  tsig_ = NULL;
-  return expr;
 }
 
 Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
@@ -283,37 +272,6 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
   }
 
   return &Expr::ErrorVal;
-}
-
-Expr * ExprAnalyzer::reducePatternVar(const ASTPatternVar * ast) {
-  if (tsig_ == NULL) {
-    diag.error(ast) << "Pattern variable used outside of pattern.";
-    return &Expr::ErrorVal;
-  }
-
-  // See if the pattern var wants a type:
-  Type * type = NULL; // Builtins::typeTypeD;
-  if (ast->type() != NULL) {
-    DFAIL("Implement");
-  }
-
-  PatternVar * pvar = tsig_->patternVar(ast->name());
-  if (pvar != NULL) {
-    if (type != NULL) {
-      if (pvar->valueType() == NULL) {
-        pvar->setValueType(type);
-      } else if (!pvar->valueType()->isEqual(type)) {
-        diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
-        ast->name() << "'";
-      }
-    }
-
-    return new TypeLiteralExpr(ast->location(), pvar);
-  } else {
-    return new TypeLiteralExpr(ast->location(),
-        new PatternVar(ast->location(), ast->name(), type));
-        //tsig_->addPatternVar(ast->location(), ast->name(), type));
-  }
 }
 
 Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
@@ -1151,7 +1109,7 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const TypeRef & toType) {
   return doImplicitCast(in, toType.type());
 }
 
-Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType) {
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoerce) {
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
     return in;
@@ -1166,12 +1124,13 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType) {
   ConversionRank rank = toType->convert(Conversion(in, &castExpr));
   DASSERT(rank == Incompatible || castExpr != NULL);
 
-  if (rank == Incompatible) {
+  if (rank == Incompatible && tryCoerce) {
     // Try a coercive cast. Note that we don't do this in 'convert' because it
     // can't handle building the actual call expression.
     castExpr = tryCoerciveCast(in, toType);
     if (castExpr != NULL) {
-      return inferTypes(subject_, castExpr, toType);
+      Expr * result = inferTypes(subject_, castExpr, toType, false);
+      return result;
     }
   }
 
@@ -1198,6 +1157,7 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
     diag.info(spe) << "Candidates are:";
     for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
       SpCandidate * sp = *it;
+      sp->updateConversionRank(); // Helps with debugging.
       diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
     }
     return NULL;
@@ -1274,12 +1234,13 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
 
 FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   ExprList methods;
-  TypeRefPair conversionKey(Builtins::typeObject.get(), toType);
+  TypePair conversionKey(Builtins::typeObject.get(), toType);
   ConverterMap::iterator it = module->converters().find(conversionKey);
   if (it != module->converters().end()) {
     return it->second;
   }
 
+  //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
   analyzeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc);
   DASSERT(!methods.empty());
@@ -1299,7 +1260,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
   analyzeDefn(valueOfMethod, Task_PrepTypeComparison);
   module->converters()[conversionKey] = valueOfMethod;
-  diag.debug(loc) << Format_Type << "Defining unbox function: " << valueOfMethod;
+  //diag.debug(loc) << Format_Type << "Defining unbox function: " << valueOfMethod;
   return valueOfMethod;
 }
 

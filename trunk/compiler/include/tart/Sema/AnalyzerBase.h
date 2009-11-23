@@ -179,6 +179,31 @@ protected:
 
 };
 
+/** Class used to report what analysis tasks are in progress. */
+class TaskInProgress {
+public:
+  TaskInProgress(Defn * defn, AnalysisTask task)
+    : next_(tasks_)
+    , defn_(defn)
+    , task_(task)
+  {
+    tasks_ = this;
+  }
+
+  ~TaskInProgress() {
+    tasks_ = next_;
+  }
+
+  static void report();
+
+private:
+  TaskInProgress * next_;
+  Defn * defn_;
+  AnalysisTask task_;
+
+  static TaskInProgress * tasks_;
+};
+
 } // namespace tart
 
 #endif

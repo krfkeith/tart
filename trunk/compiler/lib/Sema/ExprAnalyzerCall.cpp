@@ -67,8 +67,17 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     }
 
     diag.error(loc) << "Undefined method " << callable;
-    diag.writeLnIndent("Scopes searched:");
-    dumpScopeHierarchy();
+    // See if we can give a better idea of the scope being searched:
+    if (callable->nodeType() == ASTNode::Member) {
+      lookupName(results, static_cast<const ASTMemberRef *>(callable)->qualifier());
+      if (!results.empty()) {
+        diag.info() << "Scopes searched:";
+        for (ExprList::const_iterator it = results.begin(); it != results.end(); ++it) {
+          diag.info(*it) << Format_Type << Format_QualifiedName << *it;
+        }
+      }
+    }
+
     return &Expr::ErrorVal;
   }
 

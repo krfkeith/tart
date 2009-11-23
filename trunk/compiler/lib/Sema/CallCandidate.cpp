@@ -9,9 +9,11 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
+#include "tart/CFG/TemplateConditions.h"
 #include "tart/CFG/TypeOrdering.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
+#include "tart/Sema/TypeTransform.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
 #include "llvm/Support/CommandLine.h"
@@ -98,6 +100,15 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       AnalyzerBase::analyzeType(pt->type(), Task_PrepTypeComparison);
     }
 
+    if (ts != NULL) {
+      for (TemplateConditionList::const_iterator it = ts->conditions().begin();
+          it != ts->conditions().end(); ++it) {
+        TemplateCondition * condition = *it;
+        SubstitutionTransform subst(bindingEnv_);
+        conditions_.push_back(condition->transform(subst));
+      }
+    }
+
     // Clear all definitions in the environment.
     bindingEnv_.reset();
   }
@@ -128,28 +139,6 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType 
 TypeRef CallCandidate::paramType(int argIndex) const {
   return paramTypes_[parameterIndex(argIndex)];
 }
-
-/*bool CallCandidate::isEqual(const CallCandidate * other) const {
-  if (paramAssignments_.size() != other->paramAssignments_.size()) {
-    return false;
-  }
-
-  if (resultType().isEqual(other->resultType())) {
-    return false;
-  }
-
-  size_t argCount = paramAssignments_.size();
-  for (size_t i = 0; i < argCount; ++i) {
-    TypeRef t0 = paramType(i);
-    TypeRef t1 = paramType(i);
-
-    if (!t0.isEqual(t1)) {
-      return false;
-    }
-  }
-
-  return true;
-}*/
 
 bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   bool same = true;
@@ -223,6 +212,10 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       return true;
     }
 
+    if (conditions_.size() < other->conditions_.size()) {
+      return true;
+    }
+
     if (typeParams_ != NULL && other->typeParams_ != NULL) {
     }
   }
@@ -233,6 +226,15 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 
 ConversionRank CallCandidate::updateConversionRank() {
   conversionRank_ = IdenticalTypes;
+
+  for (TemplateConditionList::const_iterator it = conditions_.begin();
+      it != conditions_.end(); ++it) {
+    if (!(*it)->eval()) {
+      conversionRank_ = Incompatible;
+      return Incompatible;
+    }
+  }
+
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);

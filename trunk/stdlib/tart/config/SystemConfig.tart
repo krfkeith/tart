@@ -1,0 +1,19 @@
+/** Information about the host platform. */
+namespace SystemConfig {
+  /** Operating system type. */
+  @Flags enum OS {
+    LINUX,
+    MACOSX,
+    WINDOWS,
+    WIN32,
+    WIN64,
+  }
+
+  /** Operating system type of the target platform. */  
+  let os:OS = osType();
+
+  // Functions to produce the system configuration variables at compile-time.
+  private {
+    @Intrinsic static def osType() -> OS;
+  }
+}

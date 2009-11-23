@@ -36,6 +36,8 @@ PropertyAnalyzer::PropertyAnalyzer(PropertyDefn * prop)
 }
 
 bool PropertyAnalyzer::analyze(AnalysisTask task) {
+  TaskInProgress tip(target, task);
+
   if (target->isTemplate()) {
     return true;
   }

@@ -25,7 +25,8 @@ public:
   }
 
   /** Take a reduced expression and do type inferencing. */
-  static Expr * inferTypes(Defn * source, Expr * expr, const Type * expected);
+  static Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
+      bool tryCoerciveCasts = true);
 
   /** Build expression tree from AST. */
   Expr * reduceExpr(const ASTNode * ast, const Type * expected);
@@ -37,11 +38,10 @@ public:
 
   /** Similar to reduceExpr, but returns a constant. */
   ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected);
-  Expr * reducePattern(const ASTNode * ast, TemplateSignature * tsig);
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
    Report an error if the cast is not possible. */
-  Expr * doImplicitCast(Expr * in, const Type * toType);
+  Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
   Expr * doImplicitCast(Expr * in, const TypeRef & toType);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 
@@ -68,7 +68,6 @@ public:
       Expr * value);
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
-  Expr * reducePatternVar(const ASTPatternVar * ast);
 
   // Operators
 
@@ -109,7 +108,7 @@ public:
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef, const ASTNodeList & args);
 
   /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
-   to 'toType'. */
+      to 'toType'. */
   CallExpr * tryCoerciveCast(Expr * in, const Type * toType);
 
   /** Evaluate the argument list. */
@@ -119,23 +118,23 @@ public:
   Type * reduceReturnType(CallExpr * call);
 
   /** Given the index of an input argument, determine for each candidate
-   which parameter that argument maps to, and return a set containing
-   the types of those parameters. */
+      which parameter that argument maps to, and return a set containing
+      the types of those parameters. */
   Type * getMappedParameterType(CallExpr * call, int index);
 
   /** Add an overload to a call expression.
 
-   Parameters:
-   'base' - the base expression (i.e. the 'self' argument) for each method.
-   'methods' - the list of methods.
-   'args' - the list of argument AST nodes (for computing keyword
-   assignment.)
+      Parameters:
+        'base' - the base expression (i.e. the 'self' argument) for each method.
+        'methods' - the list of methods.
+        'args' - the list of argument AST nodes (for computing keyword
+                 assignment.)
    */
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args);
 
   /** Version of addOverload which accepts an environment containing explicit specialization
-   bindings. */
+      bindings. */
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args, SpCandidate * sp);
 
@@ -145,7 +144,7 @@ public:
   // Templates
 
   /** Version of overload which works with pre-analyzed arguments. No keyword mapping
-   is done, args are simply mapped 1:1 to parameters. */
+      is done, args are simply mapped 1:1 to parameters. */
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ExprList & args);
 
@@ -161,7 +160,6 @@ public:
   FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);
 
 private:
-  TemplateSignature * tsig_;
   FunctionDefn * currentFunction_;
 };
 

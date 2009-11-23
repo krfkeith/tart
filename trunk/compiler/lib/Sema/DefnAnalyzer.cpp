@@ -12,6 +12,7 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
+#include "tart/CFG/TemplateConditions.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Common/PackageMgr.h"
@@ -31,6 +32,61 @@ namespace tart {
 extern BuiltinMemberRef<VariableDefn> module_types;
 extern BuiltinMemberRef<VariableDefn> module_methods;
 extern BuiltinMemberRef<VariableDefn> method_typeParams;
+
+class TemplateParamAnalyzer : public TypeAnalyzer {
+public:
+  TemplateParamAnalyzer(Defn * de)
+    : TypeAnalyzer(de->module(), de->definingScope())
+    , tsig_(de->templateSignature())
+  {}
+
+  Type * reduceTypeVariable(const ASTPatternVar * ast);
+
+private:
+  llvm::StringMap<TypeVariable *> vars_;
+  TemplateSignature * tsig_;
+};
+
+Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
+  llvm::StringMap<TypeVariable *>::iterator it = vars_.find(ast->name());
+  TypeVariable * tvar = NULL;
+  if (it != vars_.end()) {
+    tvar = it->second;
+  }
+
+  // TODO: Actually we should make this a proper scope so that we can refer to the
+  // same pattern variable without the % in the template parameter list.
+  if (tvar == NULL) {
+    tvar = new TypeVariable(ast->location(), ast->name(), NULL);
+    vars_[ast->name()] = tvar;
+  }
+
+  // See if the type variable has constraints
+  Type * type = NULL;
+  if (ast->type() != NULL) {
+    Type * type = typeFromAST(ast->type());
+    if (type != NULL) {
+      if (ast->constraint() == ASTPatternVar::IS_SUBTYPE) {
+        // Add a subclass test
+        TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
+        tsig_->conditions().push_back(condition);
+      } else if (ast->constraint() == ASTPatternVar::IS_SUPERTYPE) {
+        // Add a subclass test - reversed.
+        TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
+        tsig_->conditions().push_back(condition);
+      } else {
+        if (tvar->valueType() == NULL) {
+          tvar->setValueType(type);
+        } else if (!tvar->valueType()->isEqual(type)) {
+          diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
+              ast->name() << "'";
+        }
+      }
+    }
+  }
+
+  return tvar;
+}
 
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
@@ -368,15 +424,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     TypeRefList params;
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
-      ExprAnalyzer ea(de->module(), de->definingScope(), de);
-      Expr * param = ea.reducePattern(*it, tsig);
+      Type * param = TemplateParamAnalyzer(de).typeFromAST(*it);
       if (param != NULL) {
-        // Now, add a definition to the parameter scope for this param.
-        if (TypeLiteralExpr * type = dyn_cast<TypeLiteralExpr>(param)) {
-          params.push_back(type->value());
-        } else if (ConstantExpr * cexp = dyn_cast<ConstantExpr>(param)) {
-          params.push_back(UnitType::get(cexp));
-        }
+        params.push_back(param);
       }
     }
 

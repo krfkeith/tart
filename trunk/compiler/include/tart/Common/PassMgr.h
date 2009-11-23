@@ -15,6 +15,8 @@
 
 namespace tart {
 
+void reportAnalysisCycle();
+
 /// -------------------------------------------------------------------
 /// Tracks the state of analysis of a definition.
 
@@ -45,8 +47,7 @@ public:
 
     if (running_.contains(pass)) {
       if (!quiet) {
-        //diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
-        diag.fatal() << "Infinite recursion during analysis";
+        void reportAnalysisCycle();
       }
 
       return false;

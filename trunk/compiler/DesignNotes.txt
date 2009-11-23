@@ -2,9 +2,6 @@
 
 Design TODOS:
 
-* Type casting via operations on type objects? (for dynamic casting of reference types)
-  * Something like 'object.asType(Type)' (Can't use 'as' because it's a keyword.)
-  * Scala uses object.asInstanceOf[type]
 * Const-ness "const" and "const? / constable"
 * Protocols
 * Null vs. Void, and nullable types.
@@ -14,6 +11,7 @@ Implementation TODOS:
 
 * Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
+  * Get rid of TypeRef - use CVQualifiedType to represent const/volatile.
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * Separate the Type from the type members, so that Type can be a true constant.
   * And then make a new kind of object that represents an exported module symbol, that can
@@ -21,19 +19,13 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Find a better name for PatternVar. (TypeVariable? What about PatternValue?)
+  * Finish renaming PatternVar. (What about PatternValue?)
   * Some means to cache relabeled specializations?
-  * Fill out TypeOrderings.h
-  * Hook up TypeLess(Than).
   * Finish up override keyword, with failure tests.
-  * See if we can make Expr::type() a TypeRef.
-  * See if we can make Substitution->right a const, and a TypeRef.
-  * Replace TypeList with TypeRefList.
+  * See if we can make Substitution->right a const.
+  * Fill out TypeOrderings.h
+  * Unit tests for lexical type ordering.
 * Coalescing
-* TypeRef
-  * Expressions
-  * Template arguments
-  * Conversions
 * typecast[type](in);
   * More tests
 * Boxed values:

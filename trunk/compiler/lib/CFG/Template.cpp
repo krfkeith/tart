@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Template.h"
+#include "tart/CFG/TemplateConditions.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -160,7 +161,7 @@ size_t TemplateSignature::patternVarCount() const {
 void TemplateSignature::trace() const {
   safeMark(ast_);
   safeMark(typeParams_);
-  markList(requirements_.begin(), requirements_.end());
+  markList(conditions_.begin(), conditions_.end());
   for (SpecializationMap::const_iterator it = specializations_.begin();
       it != specializations_.end(); ++it) {
     it->first->mark();

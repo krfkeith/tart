@@ -1,0 +1,13 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  return 0;
+}
+
+def testValue[%T](t:T) -> String { return "T"; }
+def testValue[%T <: Exception](t:T) -> String { return "E"; }
+
+def testTemplateConditions() {
+  Debug.assertEq("T", testValue("X"));
+  Debug.assertEq("E", testValue(Exception()));
+  Debug.assertEq("E", testValue(IndexOutOfRangeException()));
+}

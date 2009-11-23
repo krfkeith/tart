@@ -621,7 +621,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     return in;
   }
 
-  TypeRefPair conversionKey(fromType, toType);
+  TypePair conversionKey(fromType, toType);
   ConverterMap::iterator it = module_->converters().find(conversionKey);
   if (it != module_->converters().end()) {
     const FunctionDefn * converter = it->second;

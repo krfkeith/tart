@@ -24,8 +24,9 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// FinalizeTypesPassImpl
 
-Expr * FinalizeTypesPass::run(Defn * source, Expr * in) {
+Expr * FinalizeTypesPass::run(Defn * source, Expr * in, bool tryCoerciveCasts) {
   FinalizeTypesPassImpl instance(source);
+  instance.tryCoerciveCasts_ = tryCoerciveCasts;
   return instance.runImpl(in);
 }
 
@@ -654,7 +655,7 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 
 Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
-      .doImplicitCast(in, toType);
+        .doImplicitCast(in, toType, tryCoerciveCasts_);
 }
 
 Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {

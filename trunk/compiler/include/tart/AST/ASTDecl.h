@@ -358,15 +358,19 @@ public:
 /// ---------------------------------------------------------------
 /// A template pattern variable
 class ASTPatternVar : public ASTVarDecl {
-private:
-  int flags;
-
 public:
-  ASTPatternVar(const SourceLocation & loc, const char * name,
-      ASTNode * typ, int flgs = 0)
+  enum ConstraintType {
+    IS_INSTANCE,
+    IS_SUBTYPE,
+    IS_SUPERTYPE,
+  };
+
+  ASTPatternVar(const SourceLocation & loc, const char * name, ASTNode * typ, int constraint)
     : ASTVarDecl(PatternVar, loc, name, typ, NULL, DeclModifiers())
-    , flags(flgs)
+    , constraint_(constraint)
   {}
+
+  int constraint() const { return constraint_; }
 
   // Overrides
 
@@ -376,6 +380,9 @@ public:
   static inline bool classof(const ASTNode * e) {
       return e->nodeType() == ASTNode::PatternVar;
   }
+
+private:
+  int constraint_;
 };
 
 /// ---------------------------------------------------------------
