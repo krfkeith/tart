@@ -22,13 +22,16 @@
 namespace tart {
 
 class TemplateSignature;
+class TemplateCondition;
 class PatternVar;
 class AddressType;
 class PointerType;
 class NativeArrayType;
 
+typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
+
 // -------------------------------------------------------------------
-// A Subsitution is a proposal that two type expressions are equivalent
+// A Substitution is a proposal that two type expressions are equivalent
 // within a given context.
 class Substitution : public GC {
 public:
@@ -141,7 +144,7 @@ public:
   /** If the given variable does not already have a definition in this environment,
       then bind it to a PatternValue instance
    */
-  void defineVar(PatternVar * var);
+  //void defineVar(PatternVar * var);
 
   /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
@@ -167,7 +170,7 @@ public:
 
   /** Given a type expression, replace all pattern variables with pattern values that
       are local to this specific environment. */
-  const Type * relabel(const Type * in);
+  //const Type * relabel(const Type * in);
 
     /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {

@@ -555,6 +555,7 @@ TokenType Lexer::next() {
         return Token_RShift;
       }
       if (ch_ == ':') {
+        readCh();
         return Token_IsSuperclass;
       }
       return Token_Greater;
@@ -582,6 +583,7 @@ TokenType Lexer::next() {
         return Token_LShift;
       }
       if (ch_ == ':') {
+        readCh();
         return Token_IsSubclass;
       }
       return Token_Less;

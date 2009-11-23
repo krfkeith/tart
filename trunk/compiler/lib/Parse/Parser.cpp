@@ -1044,11 +1044,27 @@ ASTNode * Parser::typeExprPrimary() {
       return NULL;
     }
 
+    int constraint = ASTPatternVar::IS_INSTANCE;
     if (match(Token_Colon)) {
       declType = typeExpression();
+      if (declType == NULL) {
+        expected("type expression after ':'");
+      }
+    } else if (match(Token_IsSubclass)) {
+      constraint = ASTPatternVar::IS_SUBTYPE;
+      declType = typeExpression();
+      if (declType == NULL) {
+        expected("type expression after '<:'");
+      }
+    } else if (match(Token_IsSuperclass)) {
+      constraint = ASTPatternVar::IS_SUPERTYPE;
+      declType = typeExpression();
+      if (declType == NULL) {
+        expected("type expression after '>:'");
+      }
     }
 
-    result = new ASTPatternVar(matchLoc, pvarName, declType);
+    result = new ASTPatternVar(matchLoc, pvarName, declType, constraint);
   } else if (match(Token_Static)) {
     if (match(Token_Function)) {
       // Function type.

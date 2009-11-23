@@ -39,6 +39,8 @@ public:
 
   /** Construct a function type from an AST. */
   FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
+
+  virtual Type * reduceTypeVariable(const ASTPatternVar * ast);
 };
 
 }

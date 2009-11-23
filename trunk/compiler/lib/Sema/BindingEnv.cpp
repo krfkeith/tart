@@ -576,9 +576,9 @@ const Type * BindingEnv::subst(const Type * in) const {
   return SubstitutionTransform(*this).transform(in);
 }
 
-const Type * BindingEnv::relabel(const Type * in) {
+/*const Type * BindingEnv::relabel(const Type * in) {
   return RelabelTransform(*this).transform(in);
-}
+}*/
 
 void BindingEnv::trace() const {
   GC::safeMark(substitutions_);

@@ -377,38 +377,38 @@ inline void traceTypeRefList(const TypeRefList & refs) {
 
 /// -------------------------------------------------------------------
 /// A pair of type refs - used as a map key.
-class TypeRefPair {
+class TypePair {
 public:
-  TypeRefPair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
-  TypeRefPair(const TypeRefPair & src) : first_(src.first_), second_(src.second_) {}
+  TypePair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
 
   const TypeRef & first() { return first_; }
   const TypeRef & second() { return second_; }
 
-  bool operator==(const TypeRefPair & other) const {
+  bool operator==(const TypePair & other) const {
     return first_ == other.first_ && second_ == other.second_;
   }
 
-  bool operator!=(const TypeRefPair & other) const {
+  bool operator!=(const TypePair & other) const {
     return !(*this == other);
   }
 
   // Structure used when using type ref as a key.
   struct KeyInfo {
-    static inline TypeRefPair getEmptyKey() {
-      return TypeRefPair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+    static inline TypePair getEmptyKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
     }
 
-    static inline TypeRefPair getTombstoneKey() {
-      return TypeRefPair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+    static inline TypePair getTombstoneKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
     }
 
-    static unsigned getHashValue(const TypeRefPair & val) {
+    static unsigned getHashValue(const TypePair & val) {
       return TypeRef::KeyInfo::getHashValue(val.first_) ^
           (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
     }
 
-    static bool isEqual(const TypeRefPair & lhs, const TypeRefPair & rhs) {
+    static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
       return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
           TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
     }
@@ -419,6 +419,48 @@ public:
 private:
   TypeRef first_;
   TypeRef second_;
+};
+
+/// -------------------------------------------------------------------
+/// A const/volatile qualifier on a type.
+class CVQualifiedType : public Type {
+public:
+  enum Qualifier {
+    CONST = (1<<0),
+    VOLATILE = (1<<1),
+  };
+
+  /** Derive a CVQualified type from a base type. */
+  static CVQualifiedType * get(const Type * baseType, int qualifiers);
+
+  ~CVQualifiedType();
+
+  // Overrides
+
+  size_t numTypeParams() const { return 0; }
+  //virtual TypeRef typeParam(int index) const { return elementType_; }
+  const llvm::Type * irType() const { return baseType_.irType(); }
+  //const llvm::Type * createIRType() const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isSingular() const { return baseType_.isSingular(); }
+  bool isEqual(const Type * other) const;
+  bool isSubtype(const Type * other) const;
+  bool isReferenceType() const { return baseType_.isReferenceType(); }
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const CVQualifiedType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == CVQual;
+  }
+
+private:
+  typedef llvm::DenseMap<TypeRef, CVQualifiedType *, TypeRef::KeyInfo> TypeMap;
+  static TypeMap uniqueTypes_;
+
+  CVQualifiedType(const TypeRef & elemType, int qualifiers);
+
+  TypeRef baseType_;
+  int qualifiers_;
 };
 
 // -------------------------------------------------------------------
@@ -462,13 +504,6 @@ public:
   bool operator()(const TypeRef & t0, const TypeRef & t1) {
     return t0.isEqual(t1);
   }
-};
-
-/** Type 'less than' operator for sorting lists of types. */
-class TypeLess {
-public:
-  bool operator()(const Type * t0, const Type * t1);
-  bool operator()(const TypeRef & t0, const TypeRef & t1);
 };
 
 } // namespace tart

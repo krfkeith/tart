@@ -31,8 +31,8 @@ bool SpCandidate::unify(SourceContext * source) {
     }
   }
 
-  const ExprList & reqs = tsig->requirements();
-  for (ExprList::const_iterator it = reqs.begin(); it != reqs.end(); ++it) {
+  const TemplateConditionList & reqs = tsig->conditions();
+  for (TemplateConditionList::const_iterator it = reqs.begin(); it != reqs.end(); ++it) {
     DFAIL("Implement");
   }
 
@@ -75,11 +75,23 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
     TypeRef param = tsig->typeParam(i);
     TypeRef oparam = otsig->typeParam(i);
 
+
     if (!param.isEqual(oparam)) {
       same = false;
       if (!param.isSubtype(oparam)) {
-        return false;
+        if (oparam.type()->typeClass() != Type::Pattern) {
+          return false;
+        }
+
+        // TODO: CanBind check here...
       }
+    }
+  }
+
+  if (same) {
+    // TODO A temporary kludge.
+    if (!def_->hasUnboundTypeParams() && other->def_->hasUnboundTypeParams()) {
+      return true;
     }
   }
 

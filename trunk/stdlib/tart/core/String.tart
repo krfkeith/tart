@@ -82,6 +82,11 @@ public final class String {
     return self;
   }
 
+  /** Implicitly convert values to String types. */
+  static def create[%T] (value:T) -> String { return "<??>"; }
+  static def create[%T <: HasToString] (value:T) -> String { return value.toString(); }
+  static def create(value:Object) -> String { return value.toString(); }
+
   /** 'true' if this is an empty string. */
   def isEmpty:bool {
     get { return self.len == 0; }
@@ -188,6 +193,16 @@ public final class String {
 
     return result;
   }
+
+  /** A protocol for types that have a 'toString' method. */
+  protocol HasToString {
+    def toString() -> String;
+  }
+
+  /** Implicitly convert values to String types. */
+//  static def coerce[%T] (value:T) -> String { return "<??>"; }
+//  static def coerce[%T <: HasToString] (value:T) -> String { return value.toString(); }
+//  static def coerce(value:Object) -> String { return value.toString(); }
 }
 
 /** Equality comparison operator for strings. */

@@ -111,6 +111,50 @@ private:
   llvm::Instruction::BinaryOps opCode_;
 };
 
+#if 0
+class EnumToStringMethod : public FunctionDefn {
+public:
+  EnumToStringMethod(Module * m, EnumType * type, ASTIdent * id)
+    : FunctionDefn(m, id->value(), createFunctionType(m, type))
+    , type_(type)
+    , opCode_(opCode)
+  {
+    addTrait(Defn::Synthetic);
+    addTrait(Defn::Final);
+    addTrait(Defn::Singular);
+    addTrait(Defn::Nonreflective);
+    setStorageClass(Storage_Global);
+    createQualifiedName(m);
+  }
+
+  static FunctionType * createFunctionType(Module * m, EnumType * type) {
+    FunctionType * ftype = new FunctionType(type, ParameterList());
+    ftype->setSelfParam(new ParameterDefn(m, "self", type, 0));
+    return ftype;
+  }
+
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+    assert(args.size() == 2);
+    Expr * arg0 = args[0];
+    Expr * arg1 = args[1];
+    if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
+      ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
+      ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
+      DASSERT(c0->type() == c1->type());
+      return new ConstantInteger(
+            c0->location() | c1->location(),
+            type_,
+            cast<llvm::ConstantInt>(llvm::ConstantExpr::get(opCode_, c0->value(), c1->value())));
+    } else {
+      return new BinaryOpcodeExpr(opCode_, loc, type_, arg0, arg1);
+    }
+  }
+
+private:
+  EnumType * type_;
+};
+#endif
+
 EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
   : DefnAnalyzer(de->module(), de->definingScope(), de)
   , target_(de)

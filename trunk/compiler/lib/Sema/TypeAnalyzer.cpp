@@ -135,6 +135,9 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       }
     }
 
+    case ASTNode::PatternVar:
+      return reduceTypeVariable(static_cast<const ASTPatternVar *>(ast));
+
     default:
       diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
       DFAIL("Unsupported node type");
@@ -192,6 +195,11 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
   }
 
   return new FunctionType(returnType, params);
+}
+
+Type * TypeAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
+  diag.error(ast) << "Type variable used outside of pattern.";
+  return &BadType::instance;
 }
 
 } // namespace tart

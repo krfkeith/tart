@@ -12,6 +12,9 @@
 namespace tart {
 
 class BindingEnv;
+class TemplateCondition;
+
+typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
 
 /// -------------------------------------------------------------------
 /// Used to represent a pattern variable used within a type expressions.
@@ -59,6 +62,9 @@ private:
 
 typedef llvm::SmallVector<PatternVar *, 4> PatternVarList;
 
+typedef PatternVar TypeVariable;
+typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
+
 /// -------------------------------------------------------------------
 /// Defines the parameters of a template. Also used as a record of
 /// specializations of this template.
@@ -81,17 +87,17 @@ public:
   const TypeRef & typeParam(int index) const;
 
   /** Return the list of requirements. */
-  const ExprList & requirements() const { return requirements_; }
-  ExprList & requirements() { return requirements_; }
+  const TemplateConditionList & conditions() const { return conditions_; }
+  TemplateConditionList & conditions() { return conditions_; }
 
   /** Return the number of pattern vars. */
   size_t patternVarCount() const;
 
   /** Look up the specified pattern variable by name. */
-  PatternVar * patternVar(const char * name) const;
+  TypeVariable * patternVar(const char * name) const;
 
   /** Look up the specified pattern variable by index. */
-  PatternVar * patternVar(int index) const;
+  TypeVariable * patternVar(int index) const;
 
   /** Get the parameter scope. */
   const IterableScope & paramScope() const { return paramScope_; }
@@ -118,8 +124,8 @@ private:
   const ASTTemplate * ast_;
 
   const TupleType * typeParams_;
-  ExprList requirements_;
-  PatternVarList vars_;
+  TemplateConditionList conditions_;
+  TypeVariableList vars_;
 
   typedef llvm::DenseMap<const Type *, Defn *, Type::KeyInfo> SpecializationMap;
   SpecializationMap specializations_;

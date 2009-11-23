@@ -52,6 +52,8 @@ VarAnalyzer::VarAnalyzer(VariableDefn * var, Module * module, Defn * subject)
 }
 
 bool VarAnalyzer::analyze(AnalysisTask task) {
+  TaskInProgress tip(target, task);
+
   if (target->isTemplate()) {
     return true;
   }

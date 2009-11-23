@@ -35,7 +35,7 @@ class Module;
 
 typedef llvm::SetVector<Module *> ModuleSet;
 typedef llvm::SetVector<Defn *> DefnSet;
-typedef llvm::DenseMap<TypeRefPair, FunctionDefn *, TypeRefPair::KeyInfo> ConverterMap;
+typedef llvm::DenseMap<TypePair, FunctionDefn *, TypePair::KeyInfo> ConverterMap;
 
 /// -------------------------------------------------------------------
 /// A translation unit.

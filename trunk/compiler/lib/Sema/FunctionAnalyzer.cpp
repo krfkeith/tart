@@ -68,6 +68,7 @@ FunctionAnalyzer::FunctionAnalyzer(FunctionDefn * func)
 }
 
 bool FunctionAnalyzer::analyze(AnalysisTask task) {
+  TaskInProgress tip(target, task);
   switch (task) {
     case Task_PrepMemberLookup:
     case Task_PrepTypeComparison:
@@ -561,7 +562,7 @@ bool FunctionAnalyzer::createReflectionData() {
       }
     }
 
-    if (doReflect && false) {
+    if (doReflect) {
       //FunctionType * ftype = target->functionType();
       //diag.debug(target) << Format_Type << "Generating reflection info for type: " << ftype;
 
@@ -579,7 +580,7 @@ bool FunctionAnalyzer::createReflectionData() {
           case Type::Union: {
             FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_)
                 .getUnboxFn((*it)->location(), paramType);
-            if (unboxFn->isSingular()) {
+            if (unboxFn && unboxFn->isSingular()) {
               module->addSymbol(unboxFn);
             }
             break;

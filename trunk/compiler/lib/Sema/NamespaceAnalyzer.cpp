@@ -27,6 +27,7 @@ NamespaceAnalyzer::NamespaceAnalyzer(NamespaceDefn * de)
 }
 
 bool NamespaceAnalyzer::analyze(AnalysisTask task) {
+  TaskInProgress tip(target, task);
   switch (task) {
     case Task_PrepMemberLookup:
     //case Task_PrepCallOrUse:

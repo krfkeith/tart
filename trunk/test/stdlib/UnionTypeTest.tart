@@ -44,3 +44,9 @@ def testRefOrNoneTypeUnion() {
 def testRefOrValueTypeUnion() {
   var x:String or int;
 }
+
+def testOrderIndepdenent() {
+  var x:String or int = 1;
+  var y:int or String = x;
+  Debug.assertTrue(y isa int);
+}
