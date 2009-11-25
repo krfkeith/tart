@@ -696,7 +696,7 @@ bool ClassAnalyzer::analyzeMethods() {
             } else {
               FunctionDefn * f1 = cast<FunctionDefn>(val);
               FunctionDefn * f2 = cast<FunctionDefn>(prevVal);
-              if (hasSameSignature(f1, f2)) {
+              if (f1->hasSameSignature(f2)) {
                 diag.error(f2) << "Member type signature conflict";
                 diag.info(f1) << "From here";
               }
@@ -874,7 +874,7 @@ void ClassAnalyzer::overrideMembers() {
 void ClassAnalyzer::ensureUniqueSignatures(MethodList & methods) {
   for (size_t i = 0; i < methods.size(); ++i) {
     for (size_t j = i + 1; j < methods.size(); ++j) {
-      if (hasSameSignature(methods[i], methods[j])) {
+      if (methods[i]->hasSameSignature(methods[j])) {
         diag.error(methods[j]) << "Member type signature conflict";
         diag.info(methods[i]) << "From here";
       }
@@ -1046,104 +1046,14 @@ void ClassAnalyzer::overridePropertyAccessors(MethodList & table, PropertyDefn *
   }
 }
 
-bool ClassAnalyzer::hasSameSignature(FunctionDefn * f0, FunctionDefn * f1) {
-  FunctionType * ft0 = f0->functionType();
-  FunctionType * ft1 = f1->functionType();
-
-  DASSERT_OBJ(ft0->returnType().isDefined(), f0);
-  DASSERT_OBJ(ft1->returnType().isDefined(), f1);
-  if (!ft0->returnType().isEqual(ft1->returnType())) {
-    return false;
-  }
-
-  if (ft0->params().size() != ft1->params().size()) {
-    return false;
-  }
-
-  for (size_t i = 0; i < ft0->params().size(); ++i) {
-    ParameterDefn * p0 = ft0->params()[i];
-    ParameterDefn * p1 = ft1->params()[i];
-
-    DASSERT_OBJ(p0->type().isDefined(), p0);
-    DASSERT_OBJ(p1->type().isDefined(), p1);
-
-    if (!p0->type().isEqual(p1->type())) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 FunctionDefn * ClassAnalyzer::findOverride(const FunctionDefn * f, const MethodList & overrides) {
   for (MethodList::const_iterator it = overrides.begin(); it != overrides.end(); ++it) {
-    if (canOverride(f, *it)) {
+    if ((*it)->canOverride(f)) {
       return *it;
     }
   }
 
   return NULL;
-}
-
-bool ClassAnalyzer::canOverride(const FunctionDefn * base, const FunctionDefn * func) {
-  DASSERT_OBJ(base->type().isDefined(), base);
-  DASSERT_OBJ(func->type().isDefined(), func);
-
-  const FunctionType * baseType = base->functionType();
-  const FunctionType * funcType = func->functionType();
-
-  const TypeRef baseReturn = baseType->returnType();
-  const TypeRef funcReturn = funcType->returnType();
-
-  if (!baseReturn.isEqual(funcReturn)) {
-    // TODO: Variance test.
-    return false;
-  }
-
-  size_t paramCount = baseType->params().size();
-  if (paramCount != funcType->params().size()) {
-    // Different number of parameters.
-    return false;
-  }
-
-  for (size_t i = 0; i < paramCount; ++i) {
-    const ParameterDefn * baseArg = baseType->params()[i];
-    const ParameterDefn * funcArg = funcType->params()[i];
-
-    if (baseArg->isVariadic() != funcArg->isVariadic())
-      return false;
-
-    TypeRef baseArgType = baseArg->type();
-    TypeRef funcArgType = funcArg->type();
-
-    if (!baseArgType.isEqual(funcArgType)) {
-      switch (baseArg->variance()) {
-        case Invariant:
-          // funcArgType must be equal to base type
-          return false;
-
-        case Covariant:
-          // funcArgType is narrower than base type
-          // TODO: 'isSubtype' is the wrong test here.
-          //if (!funcArgType->isSubtype(baseArgType)) {
-          //  return false;
-          //}
-          return false;
-          break;
-
-        case Contravariant:
-          // funcArgType is broader than base type
-          // TODO: 'isSubtype' is the wrong test here.
-          //if (!baseArgType->isSubtype(funcArgType)) {
-          //  return false;
-          //}
-          return false;
-          break;
-      }
-    }
-  }
-
-  return true;
 }
 
 bool ClassAnalyzer::createDefaultConstructor() {

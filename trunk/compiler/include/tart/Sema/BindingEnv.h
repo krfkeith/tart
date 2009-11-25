@@ -17,8 +17,6 @@
 #include "tart/CFG/TypeConstraint.h"
 #endif
 
-#include <llvm/ADT/DenseMap.h>
-
 namespace tart {
 
 class TemplateSignature;
@@ -147,9 +145,7 @@ public:
   //void defineVar(PatternVar * var);
 
   /** Perform unification from a pattern type to a value type. */
-  bool unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
-      Variance variance);
-  bool unify(SourceContext * source, Type * pattern, Type * value, Variance variance);
+  bool unify(SourceContext * source, const Type * pattern, const Type * value, Variance variance);
 
   /** Get the value for the specified pattern variable. */
   Type * get(const PatternVar * type) const;
@@ -168,11 +164,7 @@ public:
   const Type * subst(const Type * in) const;
   TypeRef subst(const TypeRef & in) const;
 
-  /** Given a type expression, replace all pattern variables with pattern values that
-      are local to this specific environment. */
-  //const Type * relabel(const Type * in);
-
-    /** Return a list of substitutions for this environment. */
+  /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {
     return substitutions_;
   }
@@ -188,7 +180,7 @@ public:
   /** Add a new substitution into this environment (upper and lower bounds). */
   Substitution * addSubstitution(const Type * left, const Type * upper, const Type * lower);
 
-  /** Given the left-hand side of a substutition, return the substitution. */
+  /** Given the left-hand side of a substitition, return the substitution. */
   Substitution * getSubstitutionFor(const Type * left) const {
     for (Substitution * s = substitutions_; s != NULL; s = s->prev()) {
       if (s->left() == left) {
@@ -210,14 +202,17 @@ private:
 
   Substitution * substitutions_;
 
-  bool unifyPattern(SourceContext * source, const PatternVar * pattern, Type * value,
+  bool unifyPattern(SourceContext * source, const PatternVar * pattern, const Type * value,
       Variance variance);
-  bool unifyAddressType(SourceContext * source, AddressType * pattern, Type * value);
-  bool unifyPointerType(SourceContext * source, PointerType * pattern, Type * value);
-  bool unifyNativeArrayType(SourceContext * source, NativeArrayType * pattern, Type * value);
-  bool unifyCompositeType(SourceContext * source, CompositeType * pattern, CompositeType * value,
+  bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
+  bool unifyPointerType(SourceContext * source, const PointerType * pattern, const Type * value);
+  bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * pattern,
+      const Type * value);
+  bool unifyCompositeType(SourceContext * source, const CompositeType * pattern,
+      const CompositeType * value,
       Variance variance);
-  bool unifyImpl(SourceContext * source, Type * pattern, Type * value, Variance variance);
+  bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
+      Variance variance);
 
   bool hasVar(const PatternVar * var) const;
 };

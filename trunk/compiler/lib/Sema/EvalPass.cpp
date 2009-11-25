@@ -372,9 +372,9 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
     return NULL;
   }
 
-  TypeRef elementType = arrayType->typeParam(0);
-  TypeRefList naTypeArgs;
-  naTypeArgs.push_back(elementType);
+  const Type * elementType = arrayType->typeParam(0);
+  TypeList naTypeArgs;
+  naTypeArgs.push_back(const_cast<Type *>(elementType));
   naTypeArgs.push_back(UnitType::get(
       ConstantInteger::get(in->location(), &ULongType::instance, in->args().size())));
   ConstantNativeArray * arrayData =
@@ -382,7 +382,7 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
           in->location(),
           NativeArrayType::get(TupleType::get(naTypeArgs)));
   for (ExprList::iterator it = in->args().begin(); it != in->args().end(); ++it) {
-    Expr * element = elementType.implicitCast((*it)->location(), evalExpr(*it));
+    Expr * element = elementType->implicitCast((*it)->location(), evalExpr(*it));
     if (element == NULL) {
       return NULL;
     }

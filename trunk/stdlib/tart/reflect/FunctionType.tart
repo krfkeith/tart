@@ -5,23 +5,23 @@ import tart.core.Memory.Pointer;
   */
 class FunctionType : Type {
   private {
-    var _returnType:TypeRef;
+    var _returnType:Type;
     var _selfType:Type;
-    var _paramTypes:TypeRef[];
+    var _paramTypes:Type[];
     var _invoke:static fn (func:Pointer[void], obj:Object, args:Object[]) -> Object;
   }
 
   undef construct();
 
   /** The return type of the method. */
-  final def returnType:TypeRef { get { return _returnType; } }
+  final def returnType:Type { get { return _returnType; } }
 
   /** The type of object that this a member of, or null if this is a static or
       global function. */
   final def selfType:Type { get { return _selfType; } }
 
   /** The array of parameter types. */
-  final def paramTypes:TypeRef[] { get { return _paramTypes; } }
+  final def paramTypes:Type[] { get { return _paramTypes; } }
 
   /** Trampoline function to invoke a method of this type. */
   final def invoke(func:Pointer[void], obj:Object, args:Object[]) -> Object {

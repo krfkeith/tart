@@ -70,8 +70,8 @@ TEST(TypeTest, TupleTypeTest) {
   ASSERT_TRUE(t0 != t2);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE(t0->begin()->isEqual(&IntType::instance));
-  ASSERT_TRUE((*t0)[0].isEqual(&IntType::instance));
+  ASSERT_TRUE((*t0->begin())->isEqual(&IntType::instance));
+  ASSERT_TRUE((*t0)[0]->isEqual(&IntType::instance));
 
   ASSERT_TRUE(t0->isSingular());
   //static TupleType * get(const TypeRefList & trefs) {
@@ -82,13 +82,12 @@ TEST(TypeTest, TupleTypeTest2) {
   SourceFile testSource("");
   Module testModule(&testSource, "test");
   TypeDefn * de = new TypeDefn(&testModule, "test");
-  CompositeType * testType = new CompositeType(Type::Class, de, &testModule);
+  Type * testType = new CompositeType(Type::Class, de, &testModule);
   de->addTrait(Defn::Singular);
   de->setTypeValue(testType);
-  TypeRef objectTypeRef(testType);
 
-  TupleType * t0 = TupleType::get(&objectTypeRef, &objectTypeRef + 1);
-  TupleType * t1 = TupleType::get(&objectTypeRef, &objectTypeRef + 1);
+  TupleType * t0 = TupleType::get(&testType, &testType + 1);
+  TupleType * t1 = TupleType::get(&testType, &testType + 1);
 
   ASSERT_TRUE(TupleType::KeyInfo::getHashValue(t0) == TupleType::KeyInfo::getHashValue(t1));
   ASSERT_TRUE(TupleType::KeyInfo::isEqual(t0, t1));
@@ -99,7 +98,7 @@ TEST(TypeTest, TupleTypeTest2) {
   ASSERT_TRUE((void *)t0 == (void *)t1);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE(t0->begin()->isEqual(testType));
+  ASSERT_TRUE((*t0->begin())->isEqual(testType));
   ASSERT_TRUE(t0->isSingular());
 }
 

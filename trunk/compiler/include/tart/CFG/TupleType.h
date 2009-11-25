@@ -23,25 +23,25 @@ typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 /// Represents a tuple of values which may have different types.
 class TupleType : public TypeImpl {
 public:
-  typedef TypeRefList::iterator iterator;
-  typedef TypeRefList::const_iterator const_iterator;
+  typedef TypeList::iterator iterator;
+  typedef TypeList::const_iterator const_iterator;
 
   /** Construct a tuple of the given member types. */
-  static TupleType * get(const TypeRef singleTypeArg);
+  static TupleType * get(const Type * singleTypeArg);
   static TupleType * get(const_iterator first, const_iterator last);
-  static TupleType * get(const TypeRefList & members) {
+  static TupleType * get(const TypeList & members) {
     return get(members.begin(), members.end());
   }
 
   /** Return the list of possible types for this union. */
-  const TypeRefList & members() const { return members_; }
+  const TypeList & members() const { return members_; }
 
   const_iterator begin() const { return members_.begin(); }
   const_iterator end() const { return members_.end(); }
   size_t size() const { return members_.size(); }
 
-  const TypeRef & operator[](int index) const { return members_[index]; }
-  const TypeRef & member(int index) const { return members_[index]; }
+  const Type * operator[](int index) const { return members_[index]; }
+  const Type * member(int index) const { return members_[index]; }
 
   // Overrides
 
@@ -62,9 +62,9 @@ public:
 
 protected:
   /** Construct a tuple type */
-  TupleType(TypeRefList::const_iterator first, TypeRefList::const_iterator last);
+  TupleType(TypeList::const_iterator first, TypeList::const_iterator last);
 
-  TypeRefList members_;
+  TypeList members_;
 };
 
 } // namespace tart

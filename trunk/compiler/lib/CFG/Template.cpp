@@ -71,6 +71,10 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
 
 bool PatternVar::canBindTo(const Type * value) const {
   if (const UnitType * nt = dyn_cast<UnitType>(value)) {
+    if (valueType_ == NULL) {
+      return false;
+    }
+
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
   } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeTypeDescriptor)) {
@@ -137,7 +141,7 @@ void TemplateSignature::setTypeParams(const TupleType * typeParams) {
   }
 }
 
-const TypeRef & TemplateSignature::typeParam(int index) const {
+const Type * TemplateSignature::typeParam(int index) const {
   return (*typeParams_)[index];
 }
 
@@ -332,7 +336,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 
   // TODO: Can TypeTransform do this?
   // Check to make sure that the parameters are of the correct type.
-  TypeRefList paramValues;
+  TypeList paramValues;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
     const Type * value = env.subst(var);
@@ -350,7 +354,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
     }
 
     // We might need to do some coercion here...
-    paramValues.push_back(value);
+    paramValues.push_back(const_cast<Type *>(value));
   }
 
   switch (tdef->typeValue()->typeClass()) {
@@ -383,7 +387,7 @@ TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templa
 {
 }
 
-const TypeRef & TemplateInstance::typeArg(int index) const {
+const Type * TemplateInstance::typeArg(int index) const {
   return typeArgs_->member(index);
 }
 

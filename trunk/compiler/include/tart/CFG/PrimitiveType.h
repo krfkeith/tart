@@ -21,15 +21,15 @@ class ASTBuiltIn;
 /// Predicate functions for type ids.
 
 inline bool isIntegerType(TypeId id) {
-  return id >= TypeId_Char && id <= TypeId_UInt64;
+  return id >= TypeId_Char && id <= TypeId_UIntPtr;
 }
 
 inline bool isUnsignedIntegerType(TypeId id) {
-  return (id >= TypeId_UInt8 && id <= TypeId_UInt64) || id == TypeId_Char;
+  return (id >= TypeId_UInt8 && id <= TypeId_UIntPtr) || id == TypeId_Char;
 }
 
 inline bool isSignedIntegerType(TypeId id) {
-  return id >= TypeId_SInt8 && id <= TypeId_SInt64;
+  return id >= TypeId_SInt8 && id <= TypeId_SIntPtr;
 }
 
 inline static bool isFloatingType(TypeId id) {
@@ -141,6 +141,10 @@ template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtype(const Type *
     return MORE_GENERAL.contains(ptype->typeId());
   }
 
+  if (other->typeClass() == Type::Protocol && supports(other)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -175,10 +179,12 @@ typedef PrimitiveTypeImpl<TypeId_SInt8>   ByteType;
 typedef PrimitiveTypeImpl<TypeId_SInt16>  ShortType;
 typedef PrimitiveTypeImpl<TypeId_SInt32>  IntType;
 typedef PrimitiveTypeImpl<TypeId_SInt64>  LongType;
+typedef PrimitiveTypeImpl<TypeId_SIntPtr> IntPtrType;
 typedef PrimitiveTypeImpl<TypeId_UInt8>   UByteType;
 typedef PrimitiveTypeImpl<TypeId_UInt16>  UShortType;
 typedef PrimitiveTypeImpl<TypeId_UInt32>  UIntType;
 typedef PrimitiveTypeImpl<TypeId_UInt64>  ULongType;
+typedef PrimitiveTypeImpl<TypeId_UIntPtr> UIntPtrType;
 typedef PrimitiveTypeImpl<TypeId_Float>   FloatType;
 typedef PrimitiveTypeImpl<TypeId_Double>  DoubleType;
 typedef PrimitiveTypeImpl<TypeId_Null>    NullType;

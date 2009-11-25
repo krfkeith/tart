@@ -272,7 +272,7 @@ llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
   const CompositeType * arrayType = cast<CompositeType>(var->type().type());
-  const Type * elementType = arrayType->typeParam(0).type();
+  const Type * elementType = arrayType->typeParam(0);
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), var);
 
@@ -321,11 +321,8 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
 }
 
 llvm::Constant * Reflector::emitTypeReference(const TypeRef & type) {
-  StructBuilder sb(cg_);
-  sb.addField(llvm::ConstantExpr::getPointerCast(
-      getTypePtr(type.type()), Builtins::typeType->irEmbeddedType()));
-  //sb.addIntegerField(typeRef_modifiers, 0);
-  return sb.build(Builtins::typeTypeRef->irType());
+  return llvm::ConstantExpr::getPointerCast(
+      getTypePtr(type.type()), Builtins::typeType->irEmbeddedType());
 }
 
 const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
@@ -503,10 +500,12 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
         case TypeId_SInt16: subtype = SHORT; break;
         case TypeId_SInt32: subtype = INT; break;
         case TypeId_SInt64: subtype = LONG; break;
+        case TypeId_SIntPtr: subtype = INTPTR; break;
         case TypeId_UInt8: subtype = UBYTE; break;
         case TypeId_UInt16: subtype = USHORT; break;
         case TypeId_UInt32: subtype = UINT; break;
         case TypeId_UInt64: subtype = ULONG; break;
+        case TypeId_UIntPtr: subtype = UINTPTR; break;
         case TypeId_Float: subtype = FLOAT; break;
         case TypeId_Double: subtype = DOUBLE; break;
         //case TypeId_LongDouble: subtype = VOID; break;
@@ -561,7 +560,7 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
   }
 
   const CompositeType * arrayType = cast<CompositeType>(derivedType_typeParams->type().type());
-  const Type * elementType = arrayType->typeParam(0).type();
+  const Type * elementType = arrayType->typeParam(0);
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), derivedType_typeParams);
 
   if (values.empty()) {

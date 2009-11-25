@@ -26,7 +26,7 @@ bool SpCandidate::unify(SourceContext * source) {
   for (size_t i = 0; i < args_->size(); ++i) {
     TypeRef pattern = tsig->typeParam(i);
     TypeRef value = (*args_)[i];
-    if (!env_.unify(source, pattern, value, Invariant)) {
+    if (!env_.unify(source, pattern.type(), value.type(), Invariant)) {
       return false;
     }
   }
@@ -53,9 +53,9 @@ ConversionRank SpCandidate::updateConversionRank() {
 
   conversionRank_ = IdenticalTypes;
   for (size_t i = 0; i < args_->size(); ++i) {
-    Type * pattern = (*params_)[i].type();
-    TypeRef value = (*args_)[i];
-    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value.type()));
+    const Type * pattern = (*params_)[i];
+    const Type * value = (*args_)[i];
+    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value));
   }
 
   return conversionRank_;
@@ -74,7 +74,6 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
   for (size_t i = 0; i < numParams; ++i) {
     TypeRef param = tsig->typeParam(i);
     TypeRef oparam = otsig->typeParam(i);
-
 
     if (!param.isEqual(oparam)) {
       same = false;

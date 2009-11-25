@@ -24,7 +24,7 @@ typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 class UnionType : public TypeImpl, public Locatable {
 public:
   /** Return a union of the given element types. */
-  static UnionType * get(const SourceLocation & loc, const TypeRefList & members);
+  static UnionType * get(const SourceLocation & loc, const TypeList & members);
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }
@@ -36,7 +36,7 @@ public:
   size_t numTypeParams() const;
 
   /** Return the Nth type parameter. */
-  TypeRef typeParam(int index) const;
+  const Type * typeParam(int index) const;
 
   /** Where in the source file this expression comes from. */
   const SourceLocation & location() const { return loc_; }
@@ -72,7 +72,7 @@ public:
 
 protected:
   /** Construct a disjoint union type */
-  UnionType(const SourceLocation & loc, const TypeRefList & members);
+  UnionType(const SourceLocation & loc, const TypeList & members);
 
   // Given an IR type, return an estimate of the size of this type.
   static size_t estimateTypeSize(const llvm::Type * type, size_t ptrSize);

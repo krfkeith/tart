@@ -36,6 +36,7 @@ namespace tart {
 class BindingEnv;
 class TypeRef;
 class TupleType;
+class CompositeType;
 
 /// -------------------------------------------------------------------
 /// An enumeration of all of the fundamental types known to the compiler.
@@ -51,10 +52,12 @@ enum TypeId {
   TypeId_SInt16,
   TypeId_SInt32,
   TypeId_SInt64,
+  TypeId_SIntPtr,
   TypeId_UInt8,
   TypeId_UInt16,
   TypeId_UInt32,
   TypeId_UInt64,
+  TypeId_UIntPtr,
   TypeId_Float,
   TypeId_Double,
   TypeId_LongDouble,
@@ -113,7 +116,7 @@ public:
   virtual size_t numTypeParams() const { return 0; }
 
   /** Return the Nth type parameter. */
-  virtual TypeRef typeParam(int index) const;
+  virtual const Type * typeParam(int index) const;
 
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
@@ -128,6 +131,9 @@ public:
       members are not considered subtypes in the normal fashion.
     */
   virtual bool includes(const Type * other) const { return isEqual(other); }
+
+  /** Return true if this type supports the specified protocol. */
+  bool supports(const Type * protocol) const;
 
   /** Return whether this type is passed by value or by reference. */
   virtual bool isReferenceType() const = 0;
@@ -258,7 +264,7 @@ public:
   size_t numTypeParams() const;
 
   /** Return the Nth type parameter. */
-  TypeRef typeParam(int index) const;
+  const Type * typeParam(int index) const;
 
   // Overrides
 

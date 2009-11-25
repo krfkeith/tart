@@ -15,7 +15,16 @@ const llvm::Type * EnumType::createIRType() const {
 }
 
 bool EnumType::isSubtype(const Type * other) const {
-  return this == other /*|| baseType_->isSubtype(other)*/;
+  if (this == other) {
+    return true;
+  }
+
+  if (other->typeClass() == Type::Protocol && supports(other)) {
+    return true;
+  }
+
+  //return this == other /*|| baseType_->isSubtype(other)*/;
+  return false;
 }
 
 bool EnumType::includes(const Type * other) const {

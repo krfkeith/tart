@@ -119,11 +119,11 @@ const Type * TypeTransform::visitUnionType(const UnionType * in) {
 }
 
 const Type * TypeTransform::visitTupleType(const TupleType * in) {
-  TypeRefList members;
+  TypeList members;
   bool isSame = true;
   for (TupleType::const_iterator it = in->members().begin(); it != in->members().end(); ++it) {
-    TypeRef ref = visit(*it);
-    members.push_back(ref);
+    const Type * ref = visit(*it);
+    members.push_back(const_cast<Type *>(ref));
     if (ref != *it) {
       isSame = false;
     }
@@ -138,11 +138,11 @@ const Type * TypeTransform::visitTupleType(const TupleType * in) {
 
 const Type * TypeTransform::visitAddressType(const AddressType * in) {
   const AddressType * np = static_cast<const AddressType *>(in);
-  if (!np->typeParam(0).isDefined()) {
+  if (np->typeParam(0) == NULL) {
     return in;
   }
 
-  TypeRef elemType = visit(np->typeParam(0));
+  const Type * elemType = visit(np->typeParam(0));
   if (elemType == np->typeParam(0)) {
     return in;
   }
@@ -151,11 +151,11 @@ const Type * TypeTransform::visitAddressType(const AddressType * in) {
 }
 
 const Type * TypeTransform::visitPointerType(const PointerType * in) {
-  if (!in->typeParam(0).isDefined()) {
+  if (in->typeParam(0) == NULL) {
     return in;
   }
 
-  TypeRef elemType = visit(in->typeParam(0));
+  const Type * elemType = visit(in->typeParam(0));
   if (elemType == in->typeParam(0)) {
     return in;
   }

@@ -174,7 +174,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
 
     // If it's a native pointer, then do an implicit dereference.
     if (const PointerType * nptype = dyn_cast<PointerType>(contextType)) {
-      contextType = nptype->typeParam(0).type();
+      contextType = nptype->typeParam(0);
     }
 
     TypeDefn * typeDef = contextType->typeDefn();
@@ -256,8 +256,7 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
 }
 
 Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args) {
-  //TypeList argList; // Template args, not function args.
-  TypeRefList argList; // Template args, not function args.
+  TypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
@@ -633,7 +632,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
   DASSERT_OBJ(arrayTemplate->paramScope().count() == 1, elementType);
 
   // Special case for when the elementType is Array.ElementType
-  if (elementType == arrayTemplate->typeParam(0).type()) {
+  if (elementType == arrayTemplate->typeParam(0)) {
     return cast<CompositeType>(Builtins::typeArray);
   }
 

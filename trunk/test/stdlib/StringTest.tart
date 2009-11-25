@@ -7,6 +7,7 @@ def main(args:String[]) -> int {
   stringConcatenationTest();
   testUnicode();
   testToCharArray();
+  testStringConversion();
   return 0;
 }
 
@@ -90,4 +91,8 @@ def testToCharArray() {
   let a2 = s2.toCharArray();
   Debug.assertEq(1, a2.length);
   Debug.assertEq('\u2100', a2[0]);
+}
+
+def testStringConversion() {
+  Debug.assertEq("1", String(1));
 }

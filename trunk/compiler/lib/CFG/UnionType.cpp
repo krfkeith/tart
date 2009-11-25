@@ -16,11 +16,11 @@ namespace tart {
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::get(const SourceLocation & loc, const TypeRefList & members) {
+UnionType * UnionType::get(const SourceLocation & loc, const TypeList & members) {
   return new UnionType(loc, members);
 }
 
-UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
+UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
   : TypeImpl(Union)
   , loc_(loc)
   , numValueTypes_(0)
@@ -29,15 +29,15 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
 {
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
-  TypeRefList combined;
-  for (TypeRefList::const_iterator it = members.begin(); it != members.end(); ++it) {
-    const Type * type = it->dealias();
+  TypeList combined;
+  for (TypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
+    const Type * type = dealias(*it);
 
     bool addNew = true;
-    for (TypeRefList::iterator m = combined.begin(); m != combined.end();) {
-      if (m->type()->isEqual(type) || type->isSubtype(m->type())) {
+    for (TypeList::iterator m = combined.begin(); m != combined.end();) {
+      if ((*m)->isEqual(type) || type->isSubtype(*m)) {
         addNew = false;
-      } else if (m->type()->isSubtype(type)) { // TODO: Is isSubtype the right test for this?
+      } else if ((*m)->isSubtype(type)) { // TODO: Is isSubtype the right test for this?
         m = combined.erase(m);
         continue;
       }
@@ -46,15 +46,15 @@ UnionType::UnionType(const SourceLocation & loc, const TypeRefList & members)
     }
 
     if (addNew) {
-      combined.push_back(*it);
+      combined.push_back(const_cast<Type *>(type));
     }
   }
 
   // TODO: Sort members, and uniqueify
   std::sort(combined.begin(), combined.end(), LexicalTypeOrdering());
 
-  for (TypeRefList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
-    const Type * memberType = it->dealias();
+  for (TypeList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
+    const Type * memberType = dealias(*it);
     if (memberType == &NullType::instance || memberType == &VoidType::instance) {
       hasVoidType_ = true;
     } else if (memberType->isReferenceType()) {
@@ -71,7 +71,7 @@ size_t UnionType::numTypeParams() const {
   return members_->size();
 }
 
-TypeRef UnionType::typeParam(int index) const {
+const Type * UnionType::typeParam(int index) const {
   return (*members_)[index];
 }
 
@@ -89,8 +89,8 @@ const llvm::Type * UnionType::createIRType() const {
   const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
 
   // Create an array representing all of the IR types that correspond to the Tart types.
-  for (TypeRefList::const_iterator it = members().begin(); it != members().end(); ++it) {
-    const Type * type = it->dealias();
+  for (TypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+    const Type * type = dealias(*it);
 
     const llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
@@ -194,11 +194,11 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
   // Create a temporary cn with no result value.
   Conversion ccTemp(cn);
   ccTemp.resultValue = NULL;
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    ConversionRank rank = it->type()->convert(ccTemp);
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    ConversionRank rank = (*it)->convert(ccTemp);
     if (rank > bestRank) {
       bestRank = rank;
-      bestType = it->type();
+      bestType = (*it);
     }
   }
 
@@ -242,8 +242,8 @@ bool UnionType::isEqual(const Type * other) const {
 }
 
 bool UnionType::isSingular() const {
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (!it->isSingular()) {
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (!(*it)->isSingular()) {
       return false;
     }
   }
@@ -258,8 +258,8 @@ bool UnionType::isSubtype(const Type * other) const {
 }
 
 bool UnionType::includes(const Type * other) const {
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (!it->type()->includes(other)) {
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (!(*it)->includes(other)) {
       return true;
     }
   }
@@ -278,12 +278,12 @@ int UnionType::getTypeIndex(const Type * type) const {
     index += 1;
   }
 
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (type->isEqual(it->type())) {
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (type->isEqual(*it)) {
       return index;
     }
 
-    if (!it->isReferenceType()) {
+    if (!(*it)->isReferenceType()) {
       ++index;
     }
   }
@@ -294,7 +294,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 }
 
 void UnionType::format(FormatStream & out) const {
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (it != members_->begin()) {
       out << " or ";
     }

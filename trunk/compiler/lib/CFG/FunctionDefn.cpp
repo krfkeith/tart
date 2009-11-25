@@ -96,6 +96,100 @@ bool FunctionDefn::isOverrideOf(const FunctionDefn * baseFunction) {
   return false;
 }
 
+bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
+  const FunctionType * ft0 = functionType();
+  const FunctionType * ft1 = otherFn->functionType();
+
+  DASSERT_OBJ(returnType().isDefined(), this);
+  DASSERT_OBJ(ft1->returnType().isDefined(), otherFn);
+  if (!ft0->returnType().isEqual(ft1->returnType())) {
+    return false;
+  }
+
+  if (ft0->params().size() != ft1->params().size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < ft0->params().size(); ++i) {
+    ParameterDefn * p0 = ft0->params()[i];
+    ParameterDefn * p1 = ft1->params()[i];
+
+    DASSERT_OBJ(p0->type().isDefined(), p0);
+    DASSERT_OBJ(p1->type().isDefined(), p1);
+
+    if (!p0->type().isEqual(p1->type())) {
+      return false;
+    }
+
+    if (p0->isVariadic() != p1->isVariadic()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool FunctionDefn::canOverride(const FunctionDefn * base) const {
+  DASSERT_OBJ(base->type().isDefined(), base);
+  DASSERT_OBJ(type().isDefined(), this);
+
+  const FunctionType * funcType = functionType();
+  const FunctionType * baseType = base->functionType();
+
+  const TypeRef baseReturn = baseType->returnType();
+  const TypeRef funcReturn = funcType->returnType();
+
+  if (!baseReturn.isEqual(funcReturn)) {
+    // TODO: Variance test.
+    return false;
+  }
+
+  size_t paramCount = baseType->params().size();
+  if (paramCount != funcType->params().size()) {
+    // Different number of parameters.
+    return false;
+  }
+
+  for (size_t i = 0; i < paramCount; ++i) {
+    const ParameterDefn * baseArg = baseType->params()[i];
+    const ParameterDefn * funcArg = funcType->params()[i];
+
+    if (baseArg->isVariadic() != funcArg->isVariadic())
+      return false;
+
+    TypeRef baseArgType = baseArg->type();
+    TypeRef funcArgType = funcArg->type();
+
+    if (!baseArgType.isEqual(funcArgType)) {
+      switch (baseArg->variance()) {
+        case Invariant:
+          // funcArgType must be equal to base type
+          return false;
+
+        case Covariant:
+          // funcArgType is narrower than base type
+          // TODO: 'isSubtype' is the wrong test here.
+          //if (!funcArgType->isSubtype(baseArgType)) {
+          //  return false;
+          //}
+          return false;
+          break;
+
+        case Contravariant:
+          // funcArgType is broader than base type
+          // TODO: 'isSubtype' is the wrong test here.
+          //if (!baseArgType->isSubtype(funcArgType)) {
+          //  return false;
+          //}
+          return false;
+          break;
+      }
+    }
+  }
+
+  return true;
+}
+
 const std::string & FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
     Defn::linkageName();

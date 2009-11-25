@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-const String * bool_toString(bool value, const String * format) {
+const String * bool_toString(bool value) {
   if (value) {
     return String_create("True", 4);
   } else {
@@ -17,120 +17,76 @@ const String * bool_toString(bool value, const String * format) {
   return NULL;
 }
 
-const String * char_toString(uint32_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length;
-    if (value == 0) {
-      length = snprintf(data, sizeof(data), "\\0");
-    } else if (value < 0x32) {
-      length = snprintf(data, sizeof(data), "\\x%x", value);
-    } else {
-      length = snprintf(data, sizeof(data), "%lc", value);
-    }
-
-    return String_create(data, length);
+const String * char_toString(uint32_t value) {
+  char data[16];
+  int length;
+  if (value == 0) {
+    length = snprintf(data, sizeof(data), "\\0");
+  } else if (value < 0x32) {
+    length = snprintf(data, sizeof(data), "\\x%x", value);
+  } else {
+    length = snprintf(data, sizeof(data), "%lc", value);
   }
 
-  exit(-1);
+  return String_create(data, length);
 }
 
-const String * byte_toString(int8_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%d", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * byte_toString(int8_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%d", value);
+  return String_create(data, length);
 }
 
-const String * short_toString(int16_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%d", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * short_toString(int16_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%d", value);
+  return String_create(data, length);
 }
 
-const String * int_toString(int32_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%d", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * int_toString(int32_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%d", value);
+  return String_create(data, length);
 }
 
-const String * long_toString(int64_t value, const String * format) {
-  if (format == NULL) {
-    char data[32];
-    int length = snprintf(data, sizeof(data), "%lld", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * long_toString(int64_t value) {
+  char data[32];
+  int length = snprintf(data, sizeof(data), "%lld", value);
+  return String_create(data, length);
 }
 
-const String * ubyte_toString(uint8_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%u", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * ubyte_toString(uint8_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%u", value);
+  return String_create(data, length);
 }
 
-const String * ushort_toString(uint16_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%u", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * ushort_toString(uint16_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%u", value);
+  return String_create(data, length);
 }
 
-const String * uint_toString(uint32_t value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%u", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * uint_toString(uint32_t value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%u", value);
+  return String_create(data, length);
 }
 
-const String * ulong_toString(uint64_t value, const String * format) {
-  if (format == NULL) {
-    char data[32];
-    int length = snprintf(data, sizeof(data), "%llu", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * ulong_toString(uint64_t value) {
+  char data[32];
+  int length = snprintf(data, sizeof(data), "%llu", value);
+  return String_create(data, length);
 }
 
-const String * float_toString(float value, const String * format) {
-  if (format == NULL) {
-    char data[16];
-    int length = snprintf(data, sizeof(data), "%f", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * float_toString(float value) {
+  char data[16];
+  int length = snprintf(data, sizeof(data), "%f", value);
+  return String_create(data, length);
 }
 
-const String * double_toString(double value, const String * format) {
-  if (format == NULL) {
-    char data[32];
-    int length = snprintf(data, sizeof(data), "%lf", value);
-    return String_create(data, length);
-  }
-
-  exit(-1);
+const String * double_toString(double value) {
+  char data[32];
+  int length = snprintf(data, sizeof(data), "%lf", value);
+  return String_create(data, length);
 }

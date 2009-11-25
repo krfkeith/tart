@@ -23,7 +23,7 @@ TypeDefn AddressType::typedefn(&Builtins::module, "__Address", NULL);
 AddressType::TypeMap AddressType::uniqueTypes_;
 
 void AddressType::initBuiltin() {
-  TypeRefList typeParams;
+  TypeList typeParams;
   typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
 
   // Create type parameters
@@ -39,7 +39,7 @@ void AddressType::initBuiltin() {
   prototype.elementType_ = tsig->typeParam(0);
 }
 
-AddressType * AddressType::get(TypeRef elemType) {
+AddressType * AddressType::get(const Type * elemType) {
   elemType = dealias(elemType);
   TypeMap::iterator it = uniqueTypes_.find(elemType);
   if (it != uniqueTypes_.end()) {
@@ -51,11 +51,11 @@ AddressType * AddressType::get(TypeRef elemType) {
   return addrType;
 }
 
-AddressType::AddressType(const TypeRef & elemType)
+AddressType::AddressType(const Type * elemType)
   : TypeImpl(Type::NAddress)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<UnitType>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
 AddressType::AddressType() : TypeImpl(Type::NAddress) {}
@@ -68,16 +68,16 @@ AddressType::~AddressType() {
 }
 
 const llvm::Type * AddressType::createIRType() const {
-  DASSERT_OBJ(elementType_.isDefined(), this);
-  const llvm::Type * type = elementType_.irEmbeddedType();
+  DASSERT_OBJ(elementType_ != NULL, this);
+  const llvm::Type * type = elementType_->irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
 ConversionRank AddressType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   if (isa<AddressType>(fromType)) {
-    TypeRef fromElementType = fromType->typeParam(0);
-    if (fromElementType.isUndefined()) {
+    const Type * fromElementType = fromType->typeParam(0);
+    if (fromElementType == NULL) {
       DFAIL("No element type");
     }
 
@@ -86,11 +86,11 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
 
     Expr * fromValue = cn.fromValue;
     ConversionRank rank = Incompatible;
-    if (elementType_.isEqual(fromElementType)) {
+    if (elementType_->isEqual(fromElementType)) {
       rank = IdenticalTypes;
     } else {
       // Check conversion on element types
-      if (elementType_.canConvert(fromElementType.type()) == IdenticalTypes) {
+      if (elementType_->canConvert(fromElementType) == IdenticalTypes) {
         rank = IdenticalTypes;
       }
     }
@@ -106,12 +106,12 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
 }
 
 bool AddressType::isSingular() const {
-  return elementType_.isSingular();
+  return elementType_->isSingular();
 }
 
 bool AddressType::isEqual(const Type * other) const {
   if (const AddressType * np = dyn_cast<AddressType>(other)) {
-    return elementType_.isEqual(np->elementType_);
+    return elementType_->isEqual(np->elementType_);
   }
 
   return false;
@@ -137,7 +137,7 @@ TypeDefn PointerType::typedefn(&Builtins::module, "__Pointer", NULL);
 PointerType::TypeMap PointerType::uniqueTypes_;
 
 void PointerType::initBuiltin() {
-  TypeRefList typeParams;
+  TypeList typeParams;
   typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
 
   // Create type parameters
@@ -153,7 +153,7 @@ void PointerType::initBuiltin() {
   prototype.elementType_ = tsig->typeParam(0);
 }
 
-PointerType * PointerType::get(TypeRef elemType) {
+PointerType * PointerType::get(const Type * elemType) {
   elemType = dealias(elemType);
   TypeMap::iterator it = uniqueTypes_.find(elemType);
   if (it != uniqueTypes_.end()) {
@@ -165,18 +165,17 @@ PointerType * PointerType::get(TypeRef elemType) {
   return addrType;
 }
 
-PointerType::PointerType(const TypeRef & elemType)
+PointerType::PointerType(const Type * elemType)
   : TypeImpl(Type::NPointer)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<UnitType>(elemType.type()), elemType);
+  DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
 PointerType::PointerType() : TypeImpl(Type::NPointer) {}
 
 const llvm::Type * PointerType::createIRType() const {
-  DASSERT_OBJ(elementType_.isDefined(), this);
-  const llvm::Type * type = elementType_.irEmbeddedType();
+  const llvm::Type * type = elementType_->irEmbeddedType();
   return llvm::PointerType::getUnqual(type);
 }
 
@@ -184,8 +183,8 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
   const Type * fromType = dealias(cn.getFromType());
   // Memory addresses can be silently converted to native pointers, but not vice-versa.
   if (isa<AddressType>(fromType) || isa<PointerType>(fromType)) {
-    TypeRef fromElementType = fromType->typeParam(0);
-    if (fromElementType.isUndefined()) {
+    const Type * fromElementType = fromType->typeParam(0);
+    if (fromElementType == NULL) {
       DFAIL("No element type");
     }
 
@@ -195,11 +194,11 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
     Expr * fromValue = cn.fromValue;
     ConversionRank bestRank = isa<AddressType>(fromType) ? ExactConversion : IdenticalTypes;
     ConversionRank rank = Incompatible;
-    if (elementType_.isEqual(fromElementType)) {
+    if (elementType_->isEqual(fromElementType)) {
       rank = bestRank;
     } else {
       // Check conversion on element types
-      if (elementType_.canConvert(fromElementType.type()) == IdenticalTypes) {
+      if (elementType_->canConvert(fromElementType) == IdenticalTypes) {
         rank = bestRank;
       }
     }
@@ -220,12 +219,12 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
 }
 
 bool PointerType::isSingular() const {
-  return elementType_.isSingular();
+  return elementType_->isSingular();
 }
 
 bool PointerType::isEqual(const Type * other) const {
   if (const PointerType * np = dyn_cast<PointerType>(other)) {
-    return elementType_.isEqual(np->elementType_);
+    return elementType_->isEqual(np->elementType_);
   }
 
   return false;
@@ -251,7 +250,7 @@ TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", NULL);
 NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 
 void NativeArrayType::initBuiltin() {
-  TypeRefList typeParams;
+  TypeList typeParams;
   typeParams.push_back(new PatternVar(SourceLocation(), "ElementType"));
   typeParams.push_back(new PatternVar(SourceLocation(), "Length", &IntType::instance));
 
@@ -284,31 +283,31 @@ NativeArrayType::NativeArrayType(const TupleType * typeArgs)
   , typeArgs_(typeArgs)
 //  , size_(sz)
 {
-  DASSERT(!isa<UnitType>((*typeArgs)[0].type()));
-  size_ = cast<ConstantInteger>(cast<UnitType>((*typeArgs)[1].type())->value())->value()->getZExtValue();
+  DASSERT(!isa<UnitType>((*typeArgs)[0]));
+  size_ = cast<ConstantInteger>(cast<UnitType>((*typeArgs)[1])->value())->value()->getZExtValue();
   //DFAIL("Implement sz");
 }
 
 NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray) {}
 
-TypeRef NativeArrayType::typeParam(int index) const {
+const Type * NativeArrayType::typeParam(int index) const {
   return (*typeArgs_)[index];
 }
 
-const TypeRef & NativeArrayType::elementType() const {
+const Type * NativeArrayType::elementType() const {
   return (*typeArgs_)[0];
 }
 
 const llvm::Type * NativeArrayType::createIRType() const {
-  DASSERT_OBJ(elementType().isNonVoidType(), this);
-  return llvm::ArrayType::get(elementType().irEmbeddedType(), size());
+  //DASSERT_OBJ(elementType().isNonVoidType(), this);
+  return llvm::ArrayType::get(elementType()->irEmbeddedType(), size());
 }
 
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const NativeArrayType * naFrom =
       dyn_cast<NativeArrayType>(fromType)) {
-    const Type * fromElementType = naFrom->elementType().type();
+    const Type * fromElementType = naFrom->elementType();
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -319,7 +318,7 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
 
     // Check conversion on element types
     Conversion elementConversion(dealias(fromElementType));
-    if (elementType().convert(elementConversion) == IdenticalTypes) {
+    if (elementType()->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
       }

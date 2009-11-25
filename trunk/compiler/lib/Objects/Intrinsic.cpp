@@ -107,10 +107,10 @@ PrimitiveToStringIntrinsic PrimitiveToStringIntrinsic::instance;
 Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const FunctionDefn * fn = call->function();
   const Expr * self = call->selfArg();
-  const Expr * formatString = call->arg(0);
+  //const Expr * formatString = call->arg(0);
 
   Value * selfArg = cg.genExpr(self);
-  Value * formatStringArg = cg.genExpr(formatString);
+  //Value * formatStringArg = cg.genExpr(formatString);
 
   const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->type()));
   TypeId id = ptype->typeId();
@@ -125,7 +125,7 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
         Function::ExternalLinkage, funcName, cg.irModule());
   }
 
-  return cg.builder().CreateCall2(functions_[id], selfArg, formatStringArg);
+  return cg.builder().CreateCall(functions_[id], selfArg /*, formatStringArg*/);
 }
 
 // -------------------------------------------------------------------
@@ -212,7 +212,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Should use uintptr_t instead of int32.
 
   DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
-  Type * elemType = firstPtr->type()->typeParam(0).type();
+  const Type * elemType = firstPtr->type()->typeParam(0);
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
@@ -322,7 +322,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * count = call->arg(2);
 
   DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
-  Type * elemType = srcArray->type()->typeParam(0).type();
+  const Type * elemType = srcArray->type()->typeParam(0);
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);
   Value * length = cg.genExpr(count);

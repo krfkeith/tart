@@ -40,6 +40,7 @@ class SpCandidate;
 typedef llvm::SmallVector<Expr *, 4> ExprList;
 typedef llvm::SmallVector<Defn *, 8> DefnList;
 typedef llvm::SmallVector<Type *, 8> TypeList;
+typedef llvm::SmallVector<const Type *, 8> ConstTypeList;
 typedef llvm::SmallVector<ParameterDefn *, 8> ParameterList;
 typedef llvm::SmallVector<ConstantExpr *, 8> ConstantExprList;
 typedef llvm::SmallVector<Block *, 16> BlockList;

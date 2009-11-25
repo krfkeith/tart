@@ -660,7 +660,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     } else if (toType == Builtins::typeObject) {
       const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
       const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
-          tsig->findSpecialization(TupleType::get(TypeRef(fromType))));
+          tsig->findSpecialization(TupleType::get(fromType)));
       if (coerceFn == NULL) {
         diag.error() << "Missing function Object.coerce[" << fromType << "]";
         DFAIL("Missing Object.coerce fn");

@@ -84,7 +84,7 @@ public:
   void setTypeParams(const TupleType * typeParams);
 
   /** Return the Nth type param. */
-  const TypeRef & typeParam(int index) const;
+  const Type * typeParam(int index) const;
 
   /** Return the list of requirements. */
   const TemplateConditionList & conditions() const { return conditions_; }
@@ -148,7 +148,7 @@ public:
 
   /** The template arguments for this template. */
   const TupleType * typeArgs() const { return typeArgs_; }
-  const TypeRef & typeArg(int index) const;
+  const Type * typeArg(int index) const;
 
   /** The location from which this template was instantiated. */
   const SourceLocation & instantiatedFrom() const { return instantiatedFrom_; }

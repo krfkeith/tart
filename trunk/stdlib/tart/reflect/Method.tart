@@ -3,7 +3,7 @@ import tart.core.Memory.Pointer;
 /** Description of a callable method. */
 final class Method : Member {
   private {
-	  var _typeParams:TypeRef[];
+	  var _typeParams:Type[];
     //var _fnType:FunctionType;
 	  var _params:Parameter[];
     var _methodPointer:Pointer[void];
@@ -19,16 +19,16 @@ final class Method : Member {
   undef construct();
 
   /** Array of type parameters. */
-  final def typeParams:TypeRef[] { get { return _typeParams; } }
+  final def typeParams:Type[] { get { return _typeParams; } }
 
   /** The type of the method. */
   final def functionType:FunctionType { get { var f:FunctionType; return f; } }
 
   /** The return type of the method. */
-  final def returnType:TypeRef { get { return functionType.returnType; } }
+  final def returnType:Type { get { return functionType.returnType; } }
 
   /** The array of function parameter types. */
-  final def paramTypes:TypeRef[] { get { return functionType.paramTypes; } }
+  final def paramTypes:Type[] { get { return functionType.paramTypes; } }
 
   /** The parameters of this method. */
   final def params:Parameter[] { get { return _params; } }

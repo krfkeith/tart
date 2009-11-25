@@ -62,8 +62,8 @@ void compatibilityWarning(const SourceLocation & loc,
   ConversionRank rank, const Type * from, const Type * to) {
   DASSERT(!isErrorResult(from));
   if (isConversionWarning(rank)) {
-    diag.error(loc) << Format_Verbose << compatibilityError(rank) <<
-        " converting from " << from << " to " << to;
+    diag.error(loc) << Format_QualifiedName << compatibilityError(rank) <<
+        " converting from '" << Format_Type << from << "' to '" << to << "'";
   }
 }
 
@@ -71,8 +71,8 @@ void compatibilityWarning(const SourceLocation & loc,
   ConversionRank rank, const Expr * from, const Type * to) {
   DASSERT(!isErrorResult(from));
   if (isConversionWarning(rank)) {
-    diag.error(loc) << Format_Verbose << compatibilityError(rank) <<
-        " converting " << from << " from " << from->type() << " to " << to;
+    diag.error(loc) << Format_QualifiedName << compatibilityError(rank) <<
+        " converting " << from << " from '" << Format_Type << from->type() << "' to '" << to << "'";
   }
 }
 
@@ -154,7 +154,7 @@ void typeLinkageName(std::string & out, const Type * ty) {
       typeLinkageName(out, ftype->returnType());
     }
   } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
-    for (TypeRefList::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
+    for (TypeList::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
       if (it != ttype->begin()) {
         out.append(",");
       }
@@ -162,7 +162,7 @@ void typeLinkageName(std::string & out, const Type * ty) {
       typeLinkageName(out, *it);
     }
   } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
-    for (TypeRefList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
       if (it != utype->members().begin()) {
         out.append("|");
       }
@@ -237,6 +237,12 @@ bool Type::isEqual(const Type * other) const {
   return this == dealias(other);
 }
 
+/** Return true if this type supports the specified protocol. */
+bool Type::supports(const Type * protocol) const {
+  return protocol->typeClass() == Protocol &&
+      static_cast<const CompositeType *>(protocol)->isSupportedBy(this);
+}
+
 bool Type::isVoidType() const {
   return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Void;
 }
@@ -246,7 +252,7 @@ bool Type::isUnsizedIntType() const {
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
 }
 
-TypeRef Type::typeParam(int index) const {
+const Type * Type::typeParam(int index) const {
   diag.debug() << "Type " << this << " does not have type parameters.";
   DFAIL("No type params");
 }
@@ -400,8 +406,8 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
     // Now test the type parameters to see if they are also equivalent.
     const TypeDefn * d1 = type1->typeDefn();
     const TypeDefn * d2 = type2->typeDefn();
-    const TypeRefList * type1Params = NULL;
-    const TypeRefList * type2Params = NULL;
+    const TypeList * type1Params = NULL;
+    const TypeList * type2Params = NULL;
 
     if (d1->isTemplate()) {
       type1Params = &d1->templateSignature()->typeParams()->members();
@@ -470,7 +476,7 @@ size_t DeclaredType::numTypeParams() const {
   return 0;
 }
 
-TypeRef DeclaredType::typeParam(int index) const {
+const Type * DeclaredType::typeParam(int index) const {
   TemplateSignature * tsig = defn_->templateSignature();
   if (tsig != NULL) {
     return tsig->typeParam(index);

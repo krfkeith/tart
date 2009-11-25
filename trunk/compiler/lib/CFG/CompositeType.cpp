@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/CompositeType.h"
@@ -17,6 +17,36 @@
 #include "llvm/DerivedTypes.h"
 
 namespace tart {
+
+// Given a definition from some base class, find a method in this class that can override it.
+namespace {
+  const Defn * findOverride(const Type * searchContext, const Defn * baseDef, bool inherit) {
+    if (searchContext->memberScope() == NULL) {
+      return NULL;
+    }
+
+    DefnList defs;
+    if (!searchContext->memberScope()->lookupMember(baseDef->name(), defs, inherit)) {
+      return NULL;
+    }
+
+    for (DefnList::const_iterator it = defs.begin(); it != defs.end(); ++it) {
+      Defn * de = *it;
+      if (de->defnType() == baseDef->defnType() && de != baseDef) {
+        AnalyzerBase::analyzeDefn(de, Task_PrepTypeComparison);
+        if (const FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
+          if (fn->canOverride(static_cast<const FunctionDefn *>(baseDef))) {
+            return fn;
+          }
+        } else {
+          // TODO: Implement overrides of properties.
+        }
+      }
+    }
+
+    return NULL;
+  }
+}
 
 /// -------------------------------------------------------------------
 /// CompositeType
@@ -206,6 +236,59 @@ bool CompositeType::implementsImpl(const CompositeType * interface) const {
   return false;
 }
 
+/** The implicit protocol test - returns true if 'type' fulfills all of the
+    requirements of this protocol. */
+bool CompositeType::isSupportedBy(const Type * type) const {
+  DASSERT(typeClass() == Protocol);
+
+  if (type->typeDefn() == NULL) {
+    return false;
+  }
+
+  // First do a direct subclass test.
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
+    if (ctype->isSubclassOf(this)) {
+      return true;
+    }
+  }
+
+  // See if the answer has been cached.
+  ProtocolCache::const_iterator it = fulfillments_.find(type);
+  if (it != fulfillments_.end()) {
+    return it->second;
+  }
+
+  //DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
+  AnalyzerBase::analyzeType(this, Task_PrepMemberLookup);
+  AnalyzerBase::analyzeType(type, Task_PrepMemberLookup);
+  for (Defn * pm = firstMember(); pm != NULL; pm = pm->nextInScope()) {
+    if (pm->isSingular()) {
+      switch (pm->defnType()) {
+        // case Defn::Indexer:
+        case Defn::Function:
+        case Defn::Property: {
+          AnalyzerBase::analyzeDefn(pm, Task_PrepTypeComparison);
+          const Defn * de = findOverride(type, pm, true);
+          if (de != NULL && de->visibility() == Public) {
+            return true;
+          }
+
+          return false;
+        }
+      }
+    }
+  }
+
+  // Check inherited protocols as well.
+  for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    if (!(*it)->isSupportedBy(type)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const CompositeType * fromClass = dyn_cast_or_null<CompositeType>(fromType)) {
@@ -265,7 +348,8 @@ bool CompositeType::isReferenceType() const {
 
 bool CompositeType::isSubtype(const Type * other) const {
   if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
-    return otherCls == this || otherCls->isSubclassOf(this);
+    return otherCls == this || isSubclassOf(otherCls) ||
+        (otherCls->typeClass() == Type::Protocol && otherCls->isSupportedBy(this));
   }
 
   return false;
@@ -273,7 +357,7 @@ bool CompositeType::isSubtype(const Type * other) const {
 
 bool CompositeType::includes(const Type * other) const {
   if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
-    return otherCls == this || isSubclassOf(otherCls);
+    return isSubclassOf(otherCls);
   }
 
   return false;
@@ -340,6 +424,9 @@ void CompositeType::trace() const {
   DeclaredType::trace();
   markList(bases_.begin(), bases_.end());
   safeMark(super_);
+  for (ProtocolCache::const_iterator it = fulfillments_.begin(); it != fulfillments_.end(); ++it) {
+    it->first->mark();
+  }
 }
 
 } // namespace tart
