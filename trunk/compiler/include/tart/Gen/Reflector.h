@@ -94,10 +94,12 @@ public:
     SHORT,
     INT,
     LONG,
+    INTPTR,
     UBYTE,
     USHORT,
     UINT,
     ULONG,
+    UINTPTR,
     FLOAT,
     DOUBLE,
   };

@@ -206,6 +206,12 @@ public:
   /** True if this function is an override of 'baseFunction' */
   bool isOverrideOf(const FunctionDefn * baseFunction);
 
+  /** True if both methods have the same signature. */
+  bool hasSameSignature(const FunctionDefn * other) const;
+
+  /** Return true if this function can override the function 'base'. */
+  bool canOverride(const FunctionDefn * base) const;
+
   /** The current passes state. */
   const PassMgr & passes() const { return passes_; }
   PassMgr & passes() { return passes_; }

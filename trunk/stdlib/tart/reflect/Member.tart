@@ -28,7 +28,7 @@ import tart.annex.Nonreflective;
     var _kind:MemberKind;
     var _access:Access;
     var _traits:Traits;
-    var _type:TypeRef;
+    var _type:Type;
     var _attributes:Attribute[];
   }
 
@@ -53,7 +53,7 @@ import tart.annex.Nonreflective;
   final def traits:Traits { get { return _traits; } }
 
   /** The type of this member. */
-  final def type:TypeRef { get { return _type; } }
+  final def type:Type { get { return _type; } }
   
   /** Array of attributes for this member. */
   final def attributes:Attribute[] { get { return _attributes; } }

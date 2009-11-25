@@ -99,10 +99,10 @@ TypeRef FunctionType::paramType(int index) const {
 
 TupleType * FunctionType::paramTypes() const {
   if (paramTypes_ == NULL) {
-    TypeRefList typeRefs;
+    TypeList typeRefs;
     for (size_t i = 0; i < params_.size(); i++) {
       ParameterDefn * param = params_[i];
-      typeRefs.push_back(param->internalType());
+      typeRefs.push_back(param->internalType().type());
     }
 
     paramTypes_ = TupleType::get(typeRefs);

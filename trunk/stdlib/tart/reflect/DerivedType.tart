@@ -1,11 +1,11 @@
 /** Reflection type class for pointers, unions, tuples, and so on. */
 class DerivedType : Type {
   private {
-    var _typeParams:TypeRef[];
+    var _typeParams:Type[];
   }
 
   undef construct();
 
   /** The list of type parameters for this type. */
-  final def typeParams:TypeRef[] { get { return _typeParams; } }
+  final def typeParams:Type[] { get { return _typeParams; } }
 }

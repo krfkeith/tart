@@ -421,7 +421,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   if (tsig->ast() != NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tsig->ast()->params();
-    TypeRefList params;
+    TypeList params;
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
       Type * param = TemplateParamAnalyzer(de).typeFromAST(*it);

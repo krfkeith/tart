@@ -147,6 +147,10 @@ public:
       implicit protocol implementations. */
   bool implements(const CompositeType * interface) const;
 
+  /** The implicit protocol test - returns true if 'type' fulfills all of the
+      requirements of this protocol. */
+  bool isSupportedBy(const Type * type) const;
+
   /** Return the default (no-arg) constructor for this type. */
   FunctionDefn * defaultConstructor();
 
@@ -216,6 +220,10 @@ private:
 
   // For classes which are attributes
   AttributeInfo attributeInfo_;
+
+  // Cache of types that fulfill the requirements of this protocol.
+  typedef llvm::DenseMap<const Type *, bool, Type::KeyInfo> ProtocolCache;
+  ProtocolCache fulfillments_;
 
   bool implementsImpl(const CompositeType * interface) const;
 };

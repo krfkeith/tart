@@ -282,9 +282,9 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
   //t0 = dealias(t0);
   //t0 = dealias(t0);
 
-  if (t0->typeClass() != t1->typeClass()) {
+  if (t0->typeClass() > t1->typeClass()) {
     return -1;
-  } else if (t1->typeClass() < t0->typeClass()) {
+  } else if (t1->typeClass() > t0->typeClass()) {
     return 1;
   }
 

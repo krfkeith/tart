@@ -46,9 +46,7 @@ public:
   void ensureUniqueSignatures(MethodList & methods);
   void addNewMethods();
   void checkForRequiredMethods();
-  bool hasSameSignature(FunctionDefn * f0, FunctionDefn * f1);
   FunctionDefn * findOverride(const FunctionDefn * f, const MethodList & overrides);
-  bool canOverride(const FunctionDefn * base, const FunctionDefn * func);
 
   bool createDefaultConstructor();
 

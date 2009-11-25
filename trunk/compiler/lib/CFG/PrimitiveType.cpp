@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "tart/CFG/PrimitiveType.h"
@@ -647,16 +647,10 @@ public:
   }
 
   static ParameterDefn selfParam;
-  static ParameterDefn formatParam;
-  static ConstantNull formatParamDefault;
   static ParameterDefn * params[];
   static FunctionType type;
   static PrimitiveToString value;
 };
-
-template<int kTypeId>
-ConstantNull PrimitiveToString<kTypeId>::formatParamDefault(
-    SourceLocation(), &StaticType<TypeId_String>::value);
 
 template<int kTypeId>
 ParameterDefn PrimitiveToString<kTypeId>::selfParam(
@@ -665,19 +659,8 @@ ParameterDefn PrimitiveToString<kTypeId>::selfParam(
     &StaticType<kTypeId>::value, NULL);
 
 template<int kTypeId>
-ParameterDefn PrimitiveToString<kTypeId>::formatParam(
-    NULL,
-    "format",
-    &StaticType<TypeId_String>::value,
-    0,
-    &formatParamDefault);
-
-template<int kTypeId>
-ParameterDefn * PrimitiveToString<kTypeId>::params[] = {&formatParam};
-
-template<int kTypeId>
 FunctionType PrimitiveToString<kTypeId>::type(
-    &StaticType<TypeId_String>::value, &selfParam, params, 1);
+    &StaticType<TypeId_String>::value, &selfParam, NULL, 0);
 
 template<int kTypeId>
 PrimitiveToString<kTypeId> PrimitiveToString<kTypeId>::value;
@@ -969,6 +952,48 @@ template<> Expr * LongType::nullInitValue() const {
 }
 
 /// -------------------------------------------------------------------
+/// Primitive type: Long
+
+template<> TypeDefn IntPtrType::typedefn(&Builtins::module, "intptr", &IntPtrType::instance);
+template<> TypeIdSet IntPtrType::MORE_GENERAL = TypeIdSet::noneOf();
+template<> TypeIdSet IntPtrType::INCLUDES = TypeIdSet::noneOf();
+//TypeIdSet::of(
+//    TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
+
+template<> void IntPtrType::init() {
+  irType_ = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+/*  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UnsizedInt>::value);
+  addMember(&PrimitiveToString<TypeId_SInt64>::value);
+
+  defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(64), this));
+  defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(64), this));*/
+
+  PrimitiveToString<TypeId_SIntPtr>::value.init();
+}
+
+template<> uint32_t IntPtrType::numBits() const {
+  return 64;
+}
+
+template<> ConversionRank IntPtrType::convertImpl(const Conversion & cn) const {
+  return convertToInteger(cn);
+}
+
+template<> Expr * IntPtrType::nullInitValue() const {
+  return new ConstantInteger(SourceLocation(), &instance,
+      cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
+}
+
+/// -------------------------------------------------------------------
 /// Primitive type: UByte
 
 template<> TypeDefn UByteType::typedefn(&Builtins::module, "ubyte", &UByteType::instance);
@@ -1130,6 +1155,48 @@ ULongType::convertImpl(const Conversion & cn) const {
 }
 
 template<> Expr * ULongType::nullInitValue() const {
+  return new ConstantInteger(SourceLocation(), &instance,
+      cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
+}
+
+/// -------------------------------------------------------------------
+/// Primitive type: UIntPtr
+
+template<> TypeDefn UIntPtrType::typedefn(&Builtins::module, "uintptr", &UIntPtrType::instance);
+template<> TypeIdSet UIntPtrType::MORE_GENERAL = TypeIdSet::noneOf();
+template<> TypeIdSet UIntPtrType::INCLUDES = TypeIdSet::noneOf();
+//TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
+
+template<> void UIntPtrType::init() {
+  irType_ = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+  /*addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UnsizedInt>::value);
+  addMember(&PrimitiveToString<TypeId_UInt64>::value);
+
+  defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(64), this));
+  defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(64), this));*/
+
+  PrimitiveToString<TypeId_UIntPtr>::value.init();
+}
+
+template<> uint32_t UIntPtrType::numBits() const {
+  return 64;
+}
+
+template<> ConversionRank
+UIntPtrType::convertImpl(const Conversion & cn) const {
+  return convertToInteger(cn);
+}
+
+template<> Expr * UIntPtrType::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }

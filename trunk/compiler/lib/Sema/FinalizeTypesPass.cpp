@@ -533,7 +533,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, 
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
   for (TupleType::const_iterator it = from->members().begin(); it != from->members().end(); ++it) {
-    Type * memberType = const_cast<Type *>(it->dealias());
+    Type * memberType = const_cast<Type *>(dealias(*it));
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = to->canConvert(memberType);
     if (rank != Incompatible) {
@@ -608,9 +608,9 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
   } else if (isa<PointerType>(t1) || isa<AddressType>(t1)) {
-    Type * e0 = t1->typeParam(0).type();
+    const Type * e0 = t1->typeParam(0);
     if (isa<PointerType>(t2) || isa<AddressType>(t2)) {
-      if (e0->isEqual(t2->typeParam(0).type())) {
+      if (e0->isEqual(t2->typeParam(0))) {
         if (isa<PointerType>(t2)) {
           in->setFirst(addCastIfNeeded(in->first(), t2));
         } else {

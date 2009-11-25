@@ -160,18 +160,18 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 
   size_t argCount = paramAssignments_.size();
   for (size_t i = 0; i < argCount; ++i) {
-    TypeRef t0 = paramType(i);
-    TypeRef t1 = other->paramType(i);
+    const Type * t0 = paramType(i).type();
+    const Type * t1 = other->paramType(i).type();
 
-    if (!t0.isEqual(t1)) {
-      if (!t0.type()->isSubtype(t1.type())) {
+    if (!t0->isEqual(t1)) {
+      if (!t0->isSubtype(t1)) {
         return false;
       }
 
       same = false;
     } else {
       // Ensure that equality is symmetrical.
-      DASSERT(t1.isEqual(t0));
+      DASSERT(t1->isEqual(t0));
 
       // Variadic parameters are less specific than non-variadic parameters.
       const ParameterDefn * p0 = fnType_->param(parameterIndex(i));
@@ -202,21 +202,25 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       return true;
     }
 
-    // TODO: This is a temporary kludge - should really compare the two template parameter
-    // lists and see which one is more tightly bound.
-    if (!method_->hasUnboundTypeParams() && other->method()->hasUnboundTypeParams()) {
-      return true;
+    if (method_->isTemplate() && !other->method()->isTemplate()) {
+      return false;
     }
 
     if (typeParams_ == NULL && other->typeParams_ != NULL) {
       return true;
     }
 
-    if (conditions_.size() < other->conditions_.size()) {
+    if (typeParams_ != NULL && other->typeParams_ != NULL) {
+    }
+
+    // TODO: This is a temporary kludge - should really compare the two template parameter
+    // lists and see which one is more tightly bound.
+    if (!method_->hasUnboundTypeParams() && other->method()->hasUnboundTypeParams()) {
       return true;
     }
 
-    if (typeParams_ != NULL && other->typeParams_ != NULL) {
+    if (conditions_.size() > other->conditions_.size()) {
+      return true;
     }
   }
 

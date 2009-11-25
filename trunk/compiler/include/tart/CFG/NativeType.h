@@ -24,7 +24,7 @@ class AddressType : public TypeImpl {
 public:
 
   /** Construct a native pointer type for the specified element type. */
-  static AddressType * get(TypeRef elemType);
+  static AddressType * get(const Type * elemType);
 
   ~AddressType();
 
@@ -34,7 +34,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual TypeRef typeParam(int index) const { return elementType_; }
+  virtual const Type * typeParam(int index) const { return elementType_; }
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -54,13 +54,13 @@ public:
   static AddressType prototype;
 
 private:
-  typedef llvm::DenseMap<TypeRef, AddressType *, TypeRef::KeyInfo> TypeMap;
+  typedef llvm::DenseMap<const Type * , AddressType *, Type::KeyInfo> TypeMap;
   static TypeMap uniqueTypes_;
 
-  AddressType(const TypeRef & elemType);
+  AddressType(const Type * elemType);
   AddressType();
 
-  TypeRef elementType_;
+  const Type* elementType_;
 };
 
 // -------------------------------------------------------------------
@@ -69,7 +69,7 @@ class PointerType : public TypeImpl {
 public:
 
   /** Construct a native pointer type for the specified element type. */
-  static PointerType * get(TypeRef elemType);
+  static PointerType * get(const Type * elemType);
 
   /** Initialize the built-in template for this type. */
   static void initBuiltin();
@@ -77,7 +77,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual TypeRef typeParam(int index) const { return elementType_; }
+  virtual const Type * typeParam(int index) const { return elementType_; }
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -97,13 +97,13 @@ public:
   static TypeDefn typedefn;
 
 protected:
-  typedef llvm::DenseMap<TypeRef, PointerType *, TypeRef::KeyInfo> TypeMap;
+  typedef llvm::DenseMap<const Type *, PointerType *, Type::KeyInfo> TypeMap;
   static TypeMap uniqueTypes_;
 
-  PointerType(const TypeRef & elemType);
+  PointerType(const Type * elemType);
   PointerType();
 
-  TypeRef elementType_;
+  const Type * elementType_;
 };
 
 // -------------------------------------------------------------------
@@ -118,7 +118,7 @@ public:
   static void initBuiltin();
 
   /** The element type of the array. */
-  const TypeRef & elementType() const;
+  const Type * elementType() const;
 
   /** The fixed length of the array. */
   uint64_t size() const { return size_; }
@@ -129,7 +129,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 2; }
-  virtual TypeRef typeParam(int index) const;
+  virtual const Type * typeParam(int index) const;
 
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;

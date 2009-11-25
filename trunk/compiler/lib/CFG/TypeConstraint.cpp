@@ -63,7 +63,7 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
   return best;
 }
 
-bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
+bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
   Substitution * saveSub = env.substitutions();
   Candidates & cd = callExpr->candidates();
   SourceContext callSite(callExpr, NULL, callExpr);
@@ -244,7 +244,7 @@ TypeRef ParameterOfConstraint::singularValue() const {
   return result;
 }
 
-bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, Type * pattern) {
+bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
   Candidates & cd = callExpr->candidates();
   Substitution * saveSub = env.substitutions();
   SourceContext callSite(callExpr, NULL, callExpr);

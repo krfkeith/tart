@@ -502,17 +502,14 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
     return ConstantInteger::getConstantBool(ast->location(), true);
   }
 
-#if 0
-  // TODO: Might not want to do this for primitive types.
-  if (value->type()->isSubtype(type)) {
-    DFAIL("Implement");
-    return new ConstantInteger(ast->location(), &BoolType::instance,
-        llvm::ConstantInt::getTrue());
-  }
-#endif
-
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
     DASSERT_OBJ(value->type() != NULL, value);
+    if (const CompositeType * valueClass = static_cast<const CompositeType *>(value->type())) {
+      if (valueClass->isSubtype(ctd)) {
+        return ConstantInteger::getConstantBool(ast->location(), true);
+      }
+    }
+
     return new InstanceOfExpr(ast->location(), value, ctd);
   }
 

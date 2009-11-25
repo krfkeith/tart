@@ -23,7 +23,7 @@ namespace tart {
 
 static void assureNoPatternVars(Type * t) {
   for (int i = 0; i < t->numTypeParams(); ++i) {
-    if (isa<PatternVar>(t->typeParam(i).type())) {
+    if (isa<PatternVar>(t->typeParam(i))) {
       diag.fatal() << "What's a type param doing here?" << t;
       DFAIL("Unexpected pattern var");
     }
@@ -139,15 +139,11 @@ void BindingEnv::reset() {
   substitutions_ = NULL;
 }
 
-bool BindingEnv::unify(SourceContext * source, const TypeRef & pattern, const TypeRef & value,
+bool BindingEnv::unify(SourceContext * source, const Type * pattern, const Type * value,
     Variance variance) {
-  return unify(source, pattern.type(), value.type(), variance);
-}
-
-bool BindingEnv::unify(SourceContext * source, Type * pattern, Type * value, Variance variance) {
   // Dealias but don't depattern pattern
   while (pattern->typeClass() == Type::Alias) {
-    if (TypeAlias * alias = dyn_cast<TypeAlias>(pattern)) {
+    if (const TypeAlias * alias = dyn_cast<TypeAlias>(pattern)) {
       pattern = alias->value().type();
       DASSERT_OBJ(pattern != NULL, alias);
     } else {
@@ -178,14 +174,15 @@ bool BindingEnv::unify(SourceContext * source, Type * pattern, Type * value, Var
   return result;
 }
 
-bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value, Variance variance) {
+bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
+    Variance variance) {
   if (pattern == value) {
     return true;
   } else if (isErrorResult(pattern)) {
     return false;
-  } else if (PatternVar * pv = dyn_cast<PatternVar>(pattern)) {
+  } else if (const PatternVar * pv = dyn_cast<PatternVar>(pattern)) {
     return unifyPattern(source, pv, value, variance);
-  } else if (PatternValue * pval = dyn_cast<PatternValue>(pattern)) {
+  } else if (const PatternValue * pval = dyn_cast<PatternValue>(pattern)) {
     if (pval->env() == this) {
       return unifyPattern(source, pval->var(), value, variance);
     } else if (pval->value() != NULL) {
@@ -197,18 +194,18 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
       //return false;
       return true;
     }
-  } else if (PointerType * npp = dyn_cast<PointerType>(pattern)) {
+  } else if (const PointerType * npp = dyn_cast<PointerType>(pattern)) {
     return unifyPointerType(source, npp, value);
-  } else if (AddressType * npp = dyn_cast<AddressType>(pattern)) {
+  } else if (const AddressType * npp = dyn_cast<AddressType>(pattern)) {
     return unifyAddressType(source, npp, value);
-  } else if (NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
+  } else if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
     return unifyNativeArrayType(source, nap, value);
-  } else if (PatternVar * pv = dyn_cast<PatternVar>(value)) {
+  } else if (const PatternVar * pv = dyn_cast<PatternVar>(value)) {
     diag.debug(source) << "Unify error: " << pattern << " : " << pv;
     DFAIL("Should not be unifying with a value that is a pattern var.");
-  } else if (TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pattern);
-  } else if (PatternValue * pval = dyn_cast<PatternValue>(value)) {
+  } else if (const PatternValue * pval = dyn_cast<PatternValue>(value)) {
     Type * boundValue = pval->value();
     if (boundValue != NULL) {
       return unify(source, pattern, boundValue, variance);
@@ -218,13 +215,13 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
         " for pattern " << pattern;
     addSubstitution(pval, value);
     return true;
-  } else if (CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
-    if (CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
+  } else if (const CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
+    if (const CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
       return unifyCompositeType(source, ctPattern, ctValue, variance);
     }
 
     return false;
-  } else if (PrimitiveType * pval = dyn_cast<PrimitiveType>(pattern)) {
+  } else if (const PrimitiveType * pval = dyn_cast<PrimitiveType>(pattern)) {
     // Go ahead and unify - type inference will see if it can convert.
     return true;
   } else {
@@ -235,18 +232,18 @@ bool BindingEnv::unifyImpl(SourceContext * source, Type * pattern, Type * value,
 }
 
 bool BindingEnv::unifyPointerType(
-    SourceContext * source, PointerType * pat, Type * value) {
+    SourceContext * source, const PointerType * pat, const Type * value) {
   if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (PointerType * npv = dyn_cast<PointerType>(value)) {
+  if (const PointerType * npv = dyn_cast<PointerType>(value)) {
     if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
       return false;
     }
 
     return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
-  } else if (TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pat);
   } else {
     return false;
@@ -254,30 +251,31 @@ bool BindingEnv::unifyPointerType(
 }
 
 bool BindingEnv::unifyAddressType(
-    SourceContext * source, AddressType * pat, Type * value) {
+    SourceContext * source, const AddressType * pat, const Type * value) {
   if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (AddressType * npv = dyn_cast<AddressType>(value)) {
+  if (const AddressType * npv = dyn_cast<AddressType>(value)) {
     if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
       return false;
     }
 
     return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
-  } else if (TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pat);
   } else {
     return false;
   }
 }
 
-bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * pat, Type * value) {
+bool BindingEnv::unifyNativeArrayType(SourceContext * source, const NativeArrayType * pat,
+    const Type * value) {
   if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (NativeArrayType * nav = dyn_cast<NativeArrayType>(value)) {
+  if (const NativeArrayType * nav = dyn_cast<NativeArrayType>(value)) {
     if (!AnalyzerBase::analyzeType(nav, Task_PrepTypeComparison)) {
       return false;
     }
@@ -287,7 +285,7 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * 
     }
 
     return unify(source, pat->typeParam(0), nav->typeParam(0), Invariant);
-  } else if (TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pat);
   } else {
     return false;
@@ -295,7 +293,8 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, NativeArrayType * 
 }
 
 bool BindingEnv::unifyCompositeType(
-    SourceContext * source, CompositeType * pattern, CompositeType * value, Variance variance) {
+    SourceContext * source, const CompositeType * pattern, const CompositeType * value,
+    Variance variance) {
   if (pattern->isEqual(value)) {
     return true;
   }
@@ -353,7 +352,7 @@ bool BindingEnv::unifyCompositeType(
 
   if (variance == Contravariant) {
     Substitution * savedState = substitutions();
-    for (ClassList::iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
+    for (ClassList::const_iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
       if (unifyCompositeType(source, pattern, *it, Invariant)) {
         return true;
       }
@@ -364,7 +363,7 @@ bool BindingEnv::unifyCompositeType(
     return false;
   } else if (variance == Covariant) {
     Substitution * savedState = substitutions();
-    for (ClassList::iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
+    for (ClassList::const_iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
       if (unifyCompositeType(source, *it, value, Invariant)) {
         return true;
       }
@@ -379,7 +378,7 @@ bool BindingEnv::unifyCompositeType(
 }
 
 bool BindingEnv::unifyPattern(
-    SourceContext * source, const PatternVar * pattern, Type * value, Variance variance) {
+    SourceContext * source, const PatternVar * pattern, const Type * value, Variance variance) {
 
   if (pattern == value) {
     // Don't bind a pattern to itself.
@@ -440,8 +439,8 @@ bool BindingEnv::unifyPattern(
       return true;
     }
 
-    Type * upperBound = value;
-    Type * lowerBound = value;
+    const Type * upperBound = value;
+    const Type * lowerBound = value;
 
     if (value->isEqual(&UnsizedIntType::instance)) {
       //upperBound =
@@ -490,7 +489,7 @@ bool BindingEnv::unifyPattern(
     return false;
   } else if (pattern->canBindTo(value)) {
     // Don't bother binding a pattern value to its own variable.
-    if (PatternValue * pval = dyn_cast<PatternValue>(value)) {
+    if (const PatternValue * pval = dyn_cast<PatternValue>(value)) {
       if (pval->var() == pattern) {
         return true;
       }
