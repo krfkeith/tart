@@ -30,6 +30,7 @@ public:
   /** Constructor that takes an AST */
   PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
     : ValueDefn(dtype, m, ast)
+    , type_(NULL)
     , getter_(NULL)
     , setter_(NULL)
   {
@@ -45,7 +46,7 @@ public:
   const Scope & accessorScope() const { return accessorScope_; }
   Scope & accessorScope() { return accessorScope_; }
 
-  void setType(const TypeRef & t) { type_ = t; }
+  void setType(const Type * t) { type_ = t; }
 
   /** Which analysis passes are running / have run. */
   const PassMgr & passes() const { return passes_; }
@@ -53,7 +54,7 @@ public:
 
   // Overrides
 
-  TypeRef type() const { return type_; }
+  const Type * type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   void setDefiningScope(Scope * scope) {
@@ -67,7 +68,7 @@ public:
   }
 
 private:
-  TypeRef type_;
+  const Type * type_;
   IterableScope accessorScope_;  // Scope in which getter/setter are defined.
   FunctionDefn * getter_;    // The getter method
   FunctionDefn * setter_;    // The setter method

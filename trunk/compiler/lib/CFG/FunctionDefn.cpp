@@ -29,7 +29,7 @@ namespace {
 
 void ParameterDefn::trace() const {
   VariableDefn::trace();
-  internalType_.trace();
+  safeMark(internalType_);
 }
 
 void ParameterDefn::format(FormatStream & out) const {
@@ -38,7 +38,7 @@ void ParameterDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type().isDefined()) {
+  if (out.getShowType() && type() != NULL) {
     out << ":" << type();
   }
 
@@ -49,15 +49,11 @@ void ParameterDefn::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // FunctionDefn
-TypeRef FunctionDefn::type() const {
+const Type * FunctionDefn::type() const {
   return type_;
 }
 
-const TypeRef & FunctionDefn::returnType() const {
-  return type_->returnType();
-}
-
-TypeRef & FunctionDefn::returnType() {
+const Type * FunctionDefn::returnType() const {
   return type_->returnType();
 }
 
@@ -100,9 +96,9 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
   const FunctionType * ft0 = functionType();
   const FunctionType * ft1 = otherFn->functionType();
 
-  DASSERT_OBJ(returnType().isDefined(), this);
-  DASSERT_OBJ(ft1->returnType().isDefined(), otherFn);
-  if (!ft0->returnType().isEqual(ft1->returnType())) {
+  DASSERT_OBJ(returnType() != NULL, this);
+  DASSERT_OBJ(ft1->returnType() != NULL, otherFn);
+  if (!ft0->returnType()->isEqual(ft1->returnType())) {
     return false;
   }
 
@@ -114,10 +110,10 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
     ParameterDefn * p0 = ft0->params()[i];
     ParameterDefn * p1 = ft1->params()[i];
 
-    DASSERT_OBJ(p0->type().isDefined(), p0);
-    DASSERT_OBJ(p1->type().isDefined(), p1);
+    DASSERT_OBJ(p0->type() != NULL, p0);
+    DASSERT_OBJ(p1->type() != NULL, p1);
 
-    if (!p0->type().isEqual(p1->type())) {
+    if (!p0->type()->isEqual(p1->type())) {
       return false;
     }
 
@@ -130,8 +126,8 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
 }
 
 bool FunctionDefn::canOverride(const FunctionDefn * base) const {
-  DASSERT_OBJ(base->type().isDefined(), base);
-  DASSERT_OBJ(type().isDefined(), this);
+  DASSERT_OBJ(base->type() != NULL, base);
+  DASSERT_OBJ(type() != NULL, this);
 
   const FunctionType * funcType = functionType();
   const FunctionType * baseType = base->functionType();
@@ -209,7 +205,7 @@ const std::string & FunctionDefn::linkageName() const {
         lnkName.append(")");
       }
 
-      if (type_->returnType().isNonVoidType()) {
+      if (!type_->returnType()->isVoidType()) {
         lnkName.append("->");
         typeLinkageName(lnkName, type_->returnType());
       }
@@ -244,7 +240,7 @@ void FunctionDefn::format(FormatStream & out) const {
       out << "(";
       formatParameterList(out, params());
       out << ")";
-      if (type_->returnType().isNonVoidType()) {
+      if (!type_->returnType()->isVoidType()) {
         out << " -> " << type_->returnType();
       }
     }

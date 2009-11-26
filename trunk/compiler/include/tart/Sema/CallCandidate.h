@@ -73,19 +73,14 @@ public:
   TypeRef paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */
-  const TypeRef & resultType() const { return resultType_; }
-  TypeRef & resultType() { return resultType_; }
-  void setResultType(Type * type) { resultType_.setType(type); }
+  const Type * resultType() const { return resultType_; }
+  void setResultType(Type * type) { resultType_ = type; }
 
   /** The compatibility rank for the least compatible argument. */
   ConversionRank conversionRank() const { return conversionRank_; }
 
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
-
-  /** Return true if this specified call candidate has the same type
-      as this one. */
-  //bool isEqual(const CallCandidate * other) const;
 
   /** Return true if *this* candidate is more specific than the one given. */
   bool isMoreSpecific(const CallCandidate * other) const;
@@ -140,7 +135,7 @@ private:
   ParameterAssignments paramAssignments_;
   BindingEnv bindingEnv_;
   const FunctionType * fnType_;
-  TypeRef resultType_;
+  const Type * resultType_;
   TypeRefList paramTypes_;
   const TupleType * typeParams_;
   const TupleType * typeArgs_;

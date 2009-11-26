@@ -28,10 +28,8 @@ public:
   void setIsStatic(bool value) { isStatic_ = value; }
 
   // Return type
-  const TypeRef & returnType() const { return returnType_; }
-  TypeRef & returnType() { return returnType_; }
-  void setReturnType(Type * type) { returnType_.setType(type); }
-  void setReturnType(const TypeRef & type) { returnType_ = type; }
+  const Type * returnType() const { return returnType_; }
+  void setReturnType(const Type * type) { returnType_ = type; }
 
   const llvm::Type * irType() const;
 
@@ -45,7 +43,7 @@ public:
   const ParameterList & params() const { return params_; }
   const ParameterDefn * param(int index) const { return params_[index]; }
   ParameterDefn * param(int index) { return params_[index]; }
-  TypeRef paramType(int index) const;
+  const Type * paramType(int index) const;
   void addParam(ParameterDefn * param);
   ParameterDefn * addParam(const char * name, Type * type);
 
@@ -68,7 +66,7 @@ public:
 
   const llvm::Type * createIRType() const;
   const llvm::FunctionType * createIRFunctionType(
-      const Type * selfType, const ParameterList & params, const TypeRef & returnType) const;
+      const Type * selfType, const ParameterList & params, const Type * returnType) const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
@@ -85,7 +83,7 @@ public:
 
 private:
   bool isStatic_;
-  TypeRef returnType_;
+  const Type * returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
   mutable TupleType * paramTypes_;

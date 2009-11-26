@@ -40,6 +40,7 @@ public:
   /** Constructor that takes an AST declaration. */
   VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
     : ValueDefn(dtype, m, de)
+    , type_(NULL)
     , initValue_(NULL)
     , irValue_(NULL)
     , memberIndex_(0)
@@ -65,7 +66,7 @@ public:
   void setMemberIndexRecursive(int index) { memberIndexRecursive_ = index; }
 
   /** Set the type of this variable. */
-  void setType(const TypeRef & ty) { type_= ty; }
+  void setType(const Type * ty) { type_= ty; }
 
   /** True if the value of this variable is always the initializer. This will always be
       true for 'let' variables except in the special case of 'let' variables that
@@ -83,7 +84,7 @@ public:
 
   // Overrides
 
-  TypeRef type() const { return type_; }
+  const Type * type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
@@ -92,7 +93,7 @@ public:
   }
 
 private:
-  TypeRef type_;
+  const Type * type_;
   Expr * initValue_;
   mutable llvm::Value * irValue_;
   int memberIndex_;

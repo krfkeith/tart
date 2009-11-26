@@ -300,8 +300,8 @@ DIDerivedType CodeGenerator::genDITypeMember(const VariableDefn * var, Constant 
       var->name(),
       genDICompileUnit(var),
       getSourceLineNumber(var->location()),
-      getSizeOfInBits(var->type().irEmbeddedType()),
-      getAlignOfInBits(var->type().irEmbeddedType()),
+      getSizeOfInBits(var->type()->irEmbeddedType()),
+      getAlignOfInBits(var->type()->irEmbeddedType()),
       offset, 0,
       genDIEmbeddedType(var->type()));
 }
@@ -533,7 +533,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         "self",
         genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->type().irParameterType()),
+        getSizeOfInBits(param->type()->irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);
@@ -550,7 +550,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         param->name() != NULL ? param->name() : "",
         genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->internalType().irParameterType()),
+        getSizeOfInBits(param->internalType()->irParameterType()),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);

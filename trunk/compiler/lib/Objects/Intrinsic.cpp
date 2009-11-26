@@ -120,7 +120,7 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
     DASSERT(ptype != &UnsizedIntType::instance);
     snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
 
-    const llvm::Type * funcType = fn->type().irType();
+    const llvm::Type * funcType = fn->type()->irType();
     functions_[id] = llvm::Function::Create(cast<llvm::FunctionType>(funcType),
         Function::ExternalLinkage, funcName, cg.irModule());
   }
@@ -395,7 +395,7 @@ Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn 
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
-  EnumType * enumType = cast<EnumType>(ctype->value());
+  EnumType * enumType = cast<EnumType>(const_cast<Type *>(ctype->value()));
   enumType->setIsFlags(true);
   return args[0];
 }

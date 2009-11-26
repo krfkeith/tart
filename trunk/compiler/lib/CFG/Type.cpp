@@ -149,7 +149,7 @@ void typeLinkageName(std::string & out, const Type * ty) {
       out.append(")");
     }
 
-    if (ftype->returnType().isNonVoidType()) {
+    if (!ftype->isVoidType()) {
       out.append("->");
       typeLinkageName(out, ftype->returnType());
     }
@@ -282,8 +282,8 @@ ConversionRank Type::convert(const Conversion & cn) const {
         for (MethodList::const_iterator it = coercers.begin(); it != coercers.end(); ++it) {
           const FunctionType * fnType = (*it)->functionType();
           rank = std::min(
-              fnType->param(0)->type().canConvert(cn.fromType),
-              canConvert(fnType->returnType().type()));
+              fnType->param(0)->type()->canConvert(cn.fromType),
+              canConvert(fnType->returnType()));
           bestRank = std::max(bestRank, rank);
         }
 

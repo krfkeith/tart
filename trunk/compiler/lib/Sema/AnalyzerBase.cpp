@@ -148,7 +148,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
   }
 
   if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
-    Type * type = dealias(typeNameExpr->value());
+    const Type * type = dealias(typeNameExpr->value());
     TypeDefn * typeDef = type->typeDefn();
     if (typeDef != NULL && type->memberScope() != NULL) {
       if (typeDef->isTemplate()) {
@@ -268,7 +268,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
       return NULL;
     }
 
-    Type * typeArg = NULL;
+    const Type * typeArg = NULL;
     if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
       typeArg = dealias(ctype->value());
       if (TypeDefn * tdef = typeArg->typeDefn()) {
@@ -284,7 +284,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
       isSingularArgList = false;
     }
 
-    argList.push_back(typeArg);
+    argList.push_back(const_cast<Type *>(typeArg));
   }
 
   return specialize(loc, exprs, TupleType::get(argList));
@@ -295,17 +295,17 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
     if (TypeLiteralExpr * tref = dyn_cast<TypeLiteralExpr>(*it)) {
-      Type * type = dealias(tref->value());
+      const Type * type = dealias(tref->value());
       TypeDefn * typeDefn = type->typeDefn();
       if (typeDefn != NULL) {
         if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
           addSpecCandidate(loc, candidates, NULL, typeDefn, tv);
         }
-      } else if (AddressType * np = dyn_cast<AddressType>(type)) {
+      } else if (const AddressType * np = dyn_cast<AddressType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, tv);
-      } else if (PointerType * np = dyn_cast<PointerType>(type)) {
+      } else if (const PointerType * np = dyn_cast<PointerType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, tv);
-      } else if (NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
+      } else if (const NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, tv);
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
@@ -422,7 +422,7 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
 
     // If it's a variadic parameter, then the actual type is an array of the declared type.
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
-      DASSERT_OBJ(param->internalType().isDefined(), param);
+      DASSERT_OBJ(param->internalType() != NULL, param);
       result->setType(param->internalType());
     }
 
@@ -441,7 +441,7 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   int numNonTypes = 0;
   for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
     if (TypeLiteralExpr * tle = dyn_cast<TypeLiteralExpr>(*it)) {
-      out.push_back(tle->value());
+      out.push_back(const_cast<Type *>(tle->value()));
     } else {
       numNonTypes++;
     }
@@ -461,22 +461,22 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   return true;
 }
 
-Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
-  if (!valueDef->type().isDefined()) {
+const Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
+  if (valueDef->type() == NULL) {
     if (!analyzeDefn(valueDef, Task_PrepTypeComparison)) {
       return NULL;
     }
   }
 
-  if (valueDef->type().isDefined() && valueDef->type().isSingular()) {
+  if (valueDef->type() != NULL && valueDef->type()->isSingular()) {
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
-      return param->internalType().type();
+      return param->internalType();
     }
 
-    return valueDef->type().type();
+    return valueDef->type();
   }
 
-  if (valueDef->type().isDefined()) {
+  if (valueDef->type() != NULL) {
     diag.info(valueDef) << valueDef << ":" << valueDef->type();
   } else {
     diag.info(valueDef) << valueDef;
@@ -485,7 +485,7 @@ Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   DFAIL("Failed to determine type of value.");
 }
 
-bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
+bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
   if (in != NULL) {
     TypeDefn * de = in->typeDefn();
     if (de != NULL) {
@@ -494,8 +494,8 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
 
     switch (in->typeClass()) {
       case Type::Function: {
-        FunctionType * ftype = static_cast<FunctionType *>(in);
-        ParameterList & params = ftype->params();
+        const FunctionType * ftype = static_cast<const FunctionType *>(in);
+        const ParameterList & params = ftype->params();
         for(ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
           analyzeType((*it)->type(), task);
         }
@@ -504,7 +504,7 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
           analyzeType(ftype->selfParam()->type(), task);
         }
 
-        if (ftype->returnType().isNonVoidType()) {
+        if (!ftype->returnType()->isVoidType()) {
           analyzeType(ftype->returnType(), task);
         }
 
@@ -529,10 +529,6 @@ bool AnalyzerBase::analyzeType(Type * in, AnalysisTask task) {
   }
 
   return true;
-}
-
-bool AnalyzerBase::analyzeType(const TypeRef & in, AnalysisTask task) {
-  return analyzeType(in.type(), task);
 }
 
 bool AnalyzerBase::analyzeModule(Module * mod) {
@@ -651,7 +647,7 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & e
 }
 
 /** Given a type, return the coercion function to convert it to a reference type. */
-FunctionDefn * AnalyzerBase::coerceToObjectFn(Type * type) {
+FunctionDefn * AnalyzerBase::coerceToObjectFn(const Type * type) {
   DASSERT(!type->isReferenceType());
   DASSERT(type->typeClass() != Type::NPointer);
   DASSERT(type->typeClass() != Type::NAddress);

@@ -90,8 +90,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   }
 
   DASSERT_OBJ(fdef->isSingular(), fdef);
-  DASSERT_OBJ(fdef->type().isDefined(), fdef);
-  DASSERT_OBJ(fdef->type().isSingular(), fdef);
+  DASSERT_OBJ(fdef->type() != NULL, fdef);
+  DASSERT_OBJ(fdef->type()->isSingular(), fdef);
 
   // Don't generate intrinsic functions.
   if (fdef->isIntrinsic()) {
@@ -204,8 +204,8 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 #endif
 
   // Calculate the type.
-  DASSERT(let->type().isDefined());
-  const llvm::Type * irType = let->type().irEmbeddedType();
+  DASSERT(let->type() != NULL);
+  const llvm::Type * irType = let->type()->irEmbeddedType();
 
   // Generate the value
   Value * value = NULL;

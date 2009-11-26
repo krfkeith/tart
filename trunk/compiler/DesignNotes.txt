@@ -3,7 +3,6 @@
 Design TODOS:
 
 * Const-ness "const" and "const? / constable"
-* Protocols
 * Null vs. Void, and nullable types.
 * Need a way to collect all declarations that a given attribute is assigned to.
 
@@ -75,7 +74,6 @@ Implementation TODOS:
     * Need type uniquing
   * Make sure conversion works for all member types.
   * Nullable types
-  * Canonical sorting order
   * Equality comparison (with member types, and with other disjoint types.)
   * dynamic casting syntax
 * Multiple Return Values (requires Tuples)
@@ -89,9 +87,6 @@ Implementation TODOS:
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
 * Import-as, import-namespace tests.
-* Templates
-  * "requires" or "where" clauses.
-  * Parameter constraints. <: and >:
 * Runtime
   * Compile runtime with clang so as to allow optimization.
 * Source-level debug info.

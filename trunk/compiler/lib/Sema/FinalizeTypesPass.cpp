@@ -209,12 +209,12 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
 
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
-      DASSERT_OBJ(method->functionType()->selfParam()->type().isDefined(), method);
-      DASSERT_OBJ(!method->functionType()->selfParam()->type().isEqual(&VoidType::instance), method);
+      DASSERT_OBJ(method->functionType()->selfParam()->type() != NULL, method);
+      DASSERT_OBJ(!method->functionType()->selfParam()->type()->isVoidType(), method);
       result->setType(method->functionType()->selfParam()->type());
     } else {
       //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
-      DASSERT_OBJ(method->returnType().isDefined(), method);
+      DASSERT_OBJ(method->returnType() != NULL, method);
       result->setType(method->returnType());
       if (method->storageClass() != Storage_Instance) {
         result->setSelfArg(NULL);

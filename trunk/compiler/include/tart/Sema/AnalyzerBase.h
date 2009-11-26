@@ -91,13 +91,10 @@ public:
   static bool getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out);
 
   /** Given a value definition, infer its type. */
-  Type * inferType(ValueDefn * valueDef);
+  const Type * inferType(ValueDefn * valueDef);
 
   /** Do the requested analysis passes on the type. */
-  static bool analyzeType(Type * in, AnalysisTask pass);
-
-  /** Do the requested analysis passes on the type. */
-  static bool analyzeType(const TypeRef & in, AnalysisTask pass);
+  static bool analyzeType(const Type * in, AnalysisTask pass);
 
   /** Do the a complete analysis of the module. */
   static bool analyzeModule(Module * mod);
@@ -121,7 +118,7 @@ public:
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const TypeRef & elementType);
 
   /** Given a type, return the coercion function to convert it to a reference type. */
-  static FunctionDefn * coerceToObjectFn(Type * type);
+  static FunctionDefn * coerceToObjectFn(const Type * type);
 
   /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);

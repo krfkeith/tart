@@ -116,7 +116,7 @@ bool ResultOfConstraint::isSubtype(const Type * other) const {
       continue;
     }
 
-    Type * resultType = (*it)->resultType().type();
+    const Type * resultType = (*it)->resultType();
     if (!resultType->isSubtype(other)) {
       return false;
     }

@@ -93,7 +93,7 @@ bool FunctionType::isSubtype(const Type * other) const {
   return false;
 }
 
-TypeRef FunctionType::paramType(int index) const {
+const Type * FunctionType::paramType(int index) const {
   return params_[index]->type();
 }
 
@@ -102,7 +102,7 @@ TupleType * FunctionType::paramTypes() const {
     TypeList typeRefs;
     for (size_t i = 0; i < params_.size(); i++) {
       ParameterDefn * param = params_[i];
-      typeRefs.push_back(param->internalType().type());
+      typeRefs.push_back(const_cast<Type *>(param->internalType()));
     }
 
     paramTypes_ = TupleType::get(typeRefs);
@@ -129,15 +129,15 @@ const llvm::Type * FunctionType::createIRType() const {
   isCreatingType = true;
 
   // Insert the 'self' parameter if it's an instance method
-  Type * selfType = NULL;
+  const Type * selfType = NULL;
   if (selfParam_ != NULL) {
-    selfType = selfParam_->type().type();
+    selfType = selfParam_->type();
   }
 
   // Get the return type
-  TypeRef retType = returnType_;
-  if (!retType.isDefined()) {
-    retType.setType(&VoidType::instance);
+  const Type * retType = returnType_;
+  if (retType == NULL) {
+    retType = &VoidType::instance;
   }
 
   // Create the function type
@@ -145,7 +145,7 @@ const llvm::Type * FunctionType::createIRType() const {
 }
 
 const llvm::FunctionType * FunctionType::createIRFunctionType(
-    const Type * selfType, const ParameterList & params, const TypeRef & returnType) const {
+    const Type * selfType, const ParameterList & params, const Type * returnType) const {
   using namespace llvm;
 
   // Types of the function parameters.
@@ -176,14 +176,14 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
     parameterTypes.push_back(argType);
   }
 
-  const llvm::Type * rType = returnType.irParameterType();
+  const llvm::Type * rType = returnType->irParameterType();
 
   // Create the function type
   return llvm::FunctionType::get(rType, parameterTypes, false);
 }
 
 void FunctionType::trace() const {
-  returnType_.trace();
+  safeMark(returnType_);
   markList(params_.begin(), params_.end());
   safeMark(paramTypes_);
 }
@@ -218,14 +218,14 @@ bool FunctionType::isEqual(const Type * other) const {
       return false;
     }
 
-    DASSERT(ft->returnType().isDefined());
-    if (!ft->returnType().isEqual(returnType())) {
+    DASSERT(ft->returnType() != NULL);
+    if (!ft->returnType()->isEqual(returnType())) {
       return false;
     }
 
     size_t numParams = params_.size();
     for (size_t i = 0; i < numParams; ++i) {
-      if (!params_[i]->type().isEqual(ft->params_[i]->type())) {
+      if (!params_[i]->type()->isEqual(ft->params_[i]->type())) {
         return false;
       }
     }
@@ -244,23 +244,23 @@ void FunctionType::format(FormatStream & out) const {
   out << "fn (";
   formatParameterList(out, params_);
   out << ")";
-  if (returnType_.isDefined()) {
+  if (returnType_ != NULL && !returnType_->isVoidType()) {
     out << " -> " << returnType_;
   }
 }
 
 bool FunctionType::isSingular() const {
-  if (!returnType_.isDefined() || !returnType_.isSingular()) {
+  if (returnType_ == NULL || !returnType_->isSingular()) {
     return false;
   }
 
-  if (selfParam_ != NULL && (!selfParam_->type().isDefined() || !selfParam_->type().isSingular())) {
+  if (selfParam_ != NULL && (selfParam_->type() == NULL || !selfParam_->type()->isSingular())) {
     return false;
   }
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (!param->type().isDefined() || !param->type().isSingular()) {
+    if (param->type() == NULL || !param->type()->isSingular()) {
       return false;
     }
   }
@@ -269,25 +269,25 @@ bool FunctionType::isSingular() const {
 }
 
 void FunctionType::whyNotSingular() const {
-  if (!returnType_.isDefined()) {
+  if (returnType_ == NULL) {
     diag.info() << "Function has unspecified return type.";
-  } else if (!returnType_.isSingular()) {
+  } else if (!returnType_->isSingular()) {
     diag.info() << "Function has non-singular return type.";
   }
 
   if (selfParam_ != NULL) {
-    if (!selfParam_->type().isDefined()) {
+    if (selfParam_->type() == NULL) {
       diag.info() << "Parameter 'self' has unspecified type.";
-    } else if (!selfParam_->type().isSingular()) {
+    } else if (!selfParam_->type()->isSingular()) {
       diag.info() << "Parameter 'self' has non-singular type.";
     }
   }
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (!param->type().isDefined()) {
+    if (param->type() == NULL) {
       diag.info() << "Parameter '" << param->name() << "' parameter has unspecified type.";
-    } else if (!param->type().isSingular()) {
+    } else if (!param->type()->isSingular()) {
       diag.info() << "Parameter '" << param->name() << "' parameter has non-singular type.";
     }
   }
@@ -306,7 +306,7 @@ const std::string & FunctionType::invokeName() const {
     }
     typeLinkageName(invokeName_, paramTypes());
     invokeName_.append(")");
-    if (returnType_.isNonVoidType()) {
+    if (!returnType_->isVoidType()) {
       invokeName_.append("->");
       typeLinkageName(invokeName_, returnType_);
     }

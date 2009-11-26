@@ -417,7 +417,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   // Typecast all of the arguments.
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * paramType = fnType->param(i)->type().type();
+    const Type * paramType = fnType->param(i)->type();
     Value * indices[3];
     indices[0] = getInt32Val(0);
     indices[1] = getInt32Val(2);
@@ -436,8 +436,8 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   fnPtr = builder_.CreatePointerCast(fnPtr, llvm::PointerType::get(callType, 0));
   Value * returnVal = builder_.CreateCall(fnPtr, args.begin(), args.end(), "invoke");
 
-  if (fnType->returnType().isNonVoidType()) {
-    const Type * returnType = fnType->returnType().type();
+  if (!fnType->returnType()->isVoidType()) {
+    const Type * returnType = fnType->returnType();
     returnVal = genCast(returnVal, returnType, Builtins::typeObject);
     if (returnVal == NULL) {
       currentFn_ = NULL;
@@ -461,12 +461,12 @@ llvm::FunctionType * CodeGenerator::getInvokeFnType() {
 
     // Types of the function parameters.
     std::vector<const llvm::Type *> paramTypes;
-    paramTypes.push_back(fnType->params()[0]->type().irParameterType());
-    paramTypes.push_back(fnType->params()[1]->type().irParameterType());
-    paramTypes.push_back(fnType->params()[2]->type().irParameterType());
+    paramTypes.push_back(fnType->params()[0]->type()->irParameterType());
+    paramTypes.push_back(fnType->params()[1]->type()->irParameterType());
+    paramTypes.push_back(fnType->params()[2]->type()->irParameterType());
 
     invokeFnType_ = llvm::FunctionType::get(
-        fnType->returnType().irParameterType(), paramTypes, false);
+        fnType->returnType()->irParameterType(), paramTypes, false);
   }
 
   return invokeFnType_;

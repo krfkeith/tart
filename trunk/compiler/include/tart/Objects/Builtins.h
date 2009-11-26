@@ -101,7 +101,7 @@ public:
   static void initOperators();
 
   /** Register an annex type. */
-  static void registerEssentialType(Type * type);
+  static void registerEssentialType(const Type * type);
 
   /** Return the 'coerce' function of class Object. Needs to be handled specially
       because there are multiple overloads, and we want the one that is a template. */

@@ -154,13 +154,12 @@ public:
 /// arguments and reflection.
 class TypeLiteralExpr : public ConstantExpr {
 private:
-  Type * value_;
+  const Type * value_;
 
 public:
-  TypeLiteralExpr(SourceLocation l, Type * val);
+  TypeLiteralExpr(SourceLocation l, const Type * val);
 
   const Type * value() const { return value_; }
-  Type * value() { return value_; }
 
   // Overrides
 
