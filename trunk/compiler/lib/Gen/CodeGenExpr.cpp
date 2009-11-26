@@ -422,7 +422,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         return genVarValue(static_cast<const VariableDefn *>(var));
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
-        if (param->type().typeClass() == Type::Struct) {
+        if (param->type()->typeClass() == Type::Struct) {
           return param->irValue();
         }
 
@@ -554,9 +554,9 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   const Expr * base = in;
   if (const LValueExpr * lval = dyn_cast<LValueExpr>(base)) {
     const ValueDefn * field = lval->value();
-    const Type * fieldType = field->type().dealias();
+    const Type * fieldType = dealias(field->type());
     if (const ParameterDefn * param = dyn_cast<ParameterDefn>(field)) {
-      fieldType = param->internalType().dealias();
+      fieldType = dealias(param->internalType());
       if (param->getFlag(ParameterDefn::Reference)) {
         needsDeref = true;
       }
@@ -854,7 +854,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
     // Upcast the self argument type.
     if (fn->functionType()->selfParam() != NULL) {
-      Type * selfType = fn->functionType()->selfParam()->type().dealias();
+      const Type * selfType = dealias(fn->functionType()->selfParam()->type());
       selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
     }
 
@@ -877,7 +877,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   Value * fnVal;
   if (in->exprType() == Expr::VTableCall) {
     DASSERT_OBJ(selfArg != NULL, in);
-    const Type * classType = fn->functionType()->selfParam()->type().dealias();
+    const Type * classType = dealias(fn->functionType()->selfParam()->type());
     if (classType->typeClass() == Type::Class) {
       fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else if (classType->typeClass() == Type::Interface) {
@@ -994,7 +994,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   indices.push_back(getInt32Val(methodIndex));
   Value * fptr = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
-  return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type().irType()));
+  return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type()->irType()));
 }
 
 Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -1029,7 +1029,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   args.push_back(getInt32Val(methodIndex));
   Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
   return builder_.CreateBitCast(
-      methodPtr, llvm::PointerType::getUnqual(method->type().irType()), "method");
+      methodPtr, llvm::PointerType::getUnqual(method->type()->irType()), "method");
 }
 
 /** Get the address of a value. */
@@ -1050,7 +1050,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
 
     // Upcast the self argument type.
     if (fn->functionType()->selfParam() != NULL) {
-      Type * selfType = fn->functionType()->selfParam()->type().dealias();
+      const Type * selfType = dealias(fn->functionType()->selfParam()->type());
       selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
     }
   }
@@ -1059,7 +1059,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   Value * fnVal;
   if (in->exprType() == Expr::VTableCall) {
     DASSERT_OBJ(selfArg != NULL, in);
-    const Type * classType = fn->functionType()->selfParam()->type().dealias();
+    const Type * classType = dealias(fn->functionType()->selfParam()->type());
     if (classType->typeClass() == Type::Class) {
       fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else if (classType->typeClass() == Type::Interface) {

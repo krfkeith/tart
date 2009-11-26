@@ -271,7 +271,7 @@ llvm::GlobalVariable * Reflector::emitTypeDefn(const TypeDefn * td) {
 llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
-  const CompositeType * arrayType = cast<CompositeType>(var->type().type());
+  const CompositeType * arrayType = cast<CompositeType>(var->type());
   const Type * elementType = arrayType->typeParam(0);
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), var);
@@ -428,14 +428,14 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
   sb.addField(emitTypeBase(Builtins::typeFunctionType, FUNCTION));
   sb.addField(emitTypeReference(type->returnType()));
   if (type->selfParam() != NULL) {
-    sb.addField(getTypePtr(type->selfParam()->type().type()));
+    sb.addField(getTypePtr(type->selfParam()->type()));
   } else {
     sb.addNullField(functionType_selfType.type());
   }
   sb.addField(emitTupleType(type->paramTypes()));
 
   if (type->selfParam() != NULL) {
-    Type * selfType = type->selfParam()->type().type();
+    const Type * selfType = type->selfParam()->type();
     if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
       // For now, we only support reflection of classes.
       sb.addNullField(functionType_invoke.type());
@@ -559,7 +559,7 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
     values.push_back(emitTypeReference(*it));
   }
 
-  const CompositeType * arrayType = cast<CompositeType>(derivedType_typeParams->type().type());
+  const CompositeType * arrayType = cast<CompositeType>(derivedType_typeParams->type());
   const Type * elementType = arrayType->typeParam(0);
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), derivedType_typeParams);
 

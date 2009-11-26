@@ -338,7 +338,7 @@ public:
   {}
 
   /** Type of this variable. */
-  virtual TypeRef type() const = 0;
+  virtual const Type * type() const = 0;
 
   // Overrides
 

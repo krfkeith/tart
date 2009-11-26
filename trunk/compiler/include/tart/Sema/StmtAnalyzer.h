@@ -81,7 +81,7 @@ public:
     const SourceLocation & nextLoc, const Type * nextType) const;
 
   /** Do type inference on the expression if it is non-singular. */
-  Expr * inferTypes(Expr * expr, Type * expectedType);
+  Expr * inferTypes(Expr * expr, const Type * expectedType);
 
   /** Convert an AST to an expression, which might include a
       assignment. */
@@ -117,7 +117,7 @@ public:
   Block * setMacroReturnTarget(Block * blk);
 
   /** Set the return type - used when doing macro expansion. */
-  TypeRef setReturnType(const TypeRef & returnType);
+  const Type * setReturnType(const Type * returnType);
 
   /** Create a new local scope and make it's parent the current scope.
       Do not yet set it as the current active scope. */
@@ -139,7 +139,7 @@ public:
   Block * createBlock(const char * prefix, const std::string & suffix);
 
   /** True if any catch target can catch the specified exception type */
-  static bool canCatch(TypeList & catchTypes, CompositeType * exceptionType);
+  static bool canCatch(TypeList & catchTypes, const CompositeType * exceptionType);
 
   /** Define a 'local procedure' - a sequence of blocks within a function that can be invoked
       like a subroutine. This doesn't actually get compiled into a subroutine, however - it
@@ -201,7 +201,7 @@ private:
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
   FunctionDefn * function;
-  TypeRef returnType_;
+  const Type * returnType_;
   Type * yieldType_;
   BlockList & blocks;
   BlockList::iterator insertPos_;

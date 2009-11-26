@@ -106,8 +106,8 @@ bool StmtAnalyzer::buildCFG() {
     if (function->storageClass() == Storage_Instance) {
       ParameterDefn * selfParam = function->functionType()->selfParam();
       DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->type().isDefined(), function);
-      TypeDefn * selfType = selfParam->type().defn();
+      DASSERT_OBJ(selfParam->type() != NULL, function);
+      TypeDefn * selfType = selfParam->type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, function);
 
 #if IMPLICIT_SELF
@@ -135,7 +135,7 @@ bool StmtAnalyzer::buildCFG() {
     // Note that this may be removed during dead code deletion if there is no way to
     // get to the block.
     if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-      if (returnType_.isNonVoidType()) {
+      if (returnType_ != NULL && !returnType_->isVoidType()) {
         diag.error(body->finalLocation()) <<
             "Missing return statement at end of non-void function.";
       }
@@ -533,17 +533,17 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   const UnionType * utype = dyn_cast<UnionType>(nextVal->type());
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
-  TypeRef iterVarType;
+  const Type * iterVarType;
   for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
       ++it) {
-    TypeRef ty = *it;
-    if (ty.isNonVoidType()) {
+    const Type * ty = *it;
+    if (!ty->isVoidType()) {
       iterVarType = ty;
     }
   }
 
   Expr * testExpr = new InstanceOfExpr(st->location(), nextVal, &VoidType::instance);
-  Expr * iterValue = new CastExpr(Expr::UnionMemberCast, st->location(), iterVarType.type(), nextVal);
+  Expr * iterValue = new CastExpr(Expr::UnionMemberCast, st->location(), iterVarType, nextVal);
 
   // Generate the 'body' block.
   Block * blkBody = createBlock("loopbody");
@@ -787,7 +787,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   Block * prevTestBlock = currentBlock_;
   prevTestBlock->setTerminator(st->location(), BlockTerm_Branch);
 
-  llvm::SmallSet<Type *, 16> typesSeen;
+  llvm::SmallSet<const Type *, 16> typesSeen;
   const Stmt * elseSt = NULL;
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
@@ -805,24 +805,24 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         }
 
         VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
-        TypeRef toType = asValueDefn->type();
+        const Type * toType = asValueDefn->type();
         if (!analyzeType(toType, Task_PrepTypeComparison)) {
           return NULL;
         }
 
-        if (typesSeen.count(toType.type())) {
+        if (typesSeen.count(toType)) {
           diag.error(asDecl) << "Duplicate type test '" << toType << "'.";
           setActiveScope(prevScope);
           continue;
         }
 
-        typesSeen.insert(toType.type());
+        typesSeen.insert(toType);
 
         // Create the block containing the type test
-        Block * testBlock = createBlock("as-test-", toType.defn()->name());
+        Block * testBlock = createBlock("as-test-", toType->typeDefn()->name());
 
         // Create the block containing the case body.
-        Block * caseBlock = createBlock("as-", toType.defn()->name());
+        Block * caseBlock = createBlock("as-", toType->typeDefn()->name());
 
         // The previous test's failure target should jump to the test.
         prevTestBlock->succs().push_back(testBlock);
@@ -925,7 +925,7 @@ bool StmtAnalyzer::buildThrowStmtCFG(const ThrowStmt * st) {
   return true;
 }
 
-bool StmtAnalyzer::canCatch(TypeList & catchTypes, CompositeType * exceptionType) {
+bool StmtAnalyzer::canCatch(TypeList & catchTypes, const CompositeType * exceptionType) {
   for (TypeList::iterator it = catchTypes.begin(); it != catchTypes.end(); ++it) {
     if (exceptionType->isSubclassOf(cast<CompositeType>(*it))) {
       return true;
@@ -993,7 +993,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // Get the exception type and determine if it is valid.
-      CompositeType * exceptType = dyn_cast<CompositeType>(exceptDefn->type().dealias());
+      const CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->type()));
       if (isErrorResult(exceptType)) {
         continue;
       }
@@ -1020,7 +1020,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       exceptDefn->setType(exceptType);
       module->addSymbol(exceptDefn);
 
-      catchTypes.push_back(exceptType);
+      catchTypes.push_back(const_cast<CompositeType *>(exceptType));
 
       // Create the catch block.
       Block * catchBody = createBlock("catch-", exceptType->typeDefn()->name());
@@ -1143,7 +1143,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     //}
 
     analyzeType(returnType_, Task_PrepTypeComparison);
-    resultVal = inferTypes(astToExpr(st->value(), returnType_.type()), returnType_.type());
+    resultVal = inferTypes(astToExpr(st->value(), returnType_), returnType_);
     if (isErrorResult(resultVal)) {
       return false;
     }
@@ -1151,7 +1151,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // If the return type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
     const Type * exprType = resultVal->type();
-    if (exprType->isUnsizedIntType() && !returnType_.isDefined()) {
+    if (exprType->isUnsizedIntType() && returnType_ == NULL) {
       if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
         resultVal->setType(&IntType::instance);
       } else if (LongType::instance.canConvert(resultVal) >= ExactConversion) {
@@ -1159,13 +1159,13 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
       }
     }
 
-    if (returnType_.isDefined()) {
+    if (returnType_ != NULL) {
       analyzeType(exprType, Task_PrepTypeComparison);
       resultVal = doImplicitCast(resultVal, returnType_);
     }
-  } else if (returnType_.type()->typeClass() == Type::Union) {
+  } else if (returnType_->typeClass() == Type::Union) {
     // Converting a void to a union.
-    UnionType * utype = static_cast<UnionType *>(returnType_.type());
+    const UnionType * utype = static_cast<const UnionType *>(returnType_);
     if (utype->hasVoidType()) {
       int typeIndex = utype->getTypeIndex(&VoidType::instance);
       CastExpr * voidValue = new CastExpr(
@@ -1178,7 +1178,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     } else {
       diag.error(st) << "Return value required for non-void function";
     }
-  } else if (returnType_.isNonVoidType()) {
+  } else if (!returnType_->isVoidType()) {
     diag.error(st) << "Return value required for non-void function";
   }
 
@@ -1188,7 +1188,7 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // actually return, it assigns to the macro result and then branches.
 
     // TODO: Skip this assignment if it's void.
-    DASSERT(returnType_.isEqual(macroReturnVal_->type()));
+    DASSERT(returnType_->isEqual(macroReturnVal_->type()));
     Expr * exp = new AssignmentExpr(st->location(), macroReturnVal_, resultVal);
     currentBlock_->append(exp);
 
@@ -1273,7 +1273,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
   return true;
 }
 
-Expr * StmtAnalyzer::inferTypes(Expr * expr, Type * expectedType) {
+Expr * StmtAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
   expr = ExprAnalyzer::inferTypes(function, expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
@@ -1384,8 +1384,8 @@ Block * StmtAnalyzer::setMacroReturnTarget(Block * blk) {
 }
 
 /** Set the return type - used when doing macro expansion. */
-TypeRef StmtAnalyzer::setReturnType(const TypeRef & returnType) {
-  TypeRef oldType = returnType_;
+const Type * StmtAnalyzer::setReturnType(const Type * returnType) {
+  const Type * oldType = returnType_;
   returnType_ = returnType;
   return oldType;
 }
@@ -1609,7 +1609,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
           blk->exprs().erase(ei);
         } else {
           // Replace the local call with a load of the state variable.
-          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->type().type(),
+          Expr * stateValue = ConstantInteger::get(SourceLocation(), proc.stateVar->type(),
               localCall->returnState());
           *ei = new AssignmentExpr(SourceLocation(), proc.stateExpr, stateValue);
         }

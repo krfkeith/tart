@@ -191,13 +191,13 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         ParameterDefn * param = *it;
         VarAnalyzer(param, module, target).analyze(Task_PrepTypeComparison);
 
-        if (!param->type().isDefined()) {
+        if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
         //} else if (param->type()->typeClass() == Type::NArray) {
         //  diag.error(param) << "Invalid parameter type (native array)";
         } else if (param->getFlag(ParameterDefn::Variadic)) {
-          if (param->internalType().isSingular()) {
-            module->addSymbol(param->internalType().defn());
+          if (param->internalType()->isSingular()) {
+            module->addSymbol(param->internalType()->typeDefn());
           }
         }
 
@@ -381,9 +381,9 @@ bool FunctionAnalyzer::resolveReturnType() {
   bool success = true;
 
   FunctionType * funcType = target->functionType();
-  TypeRef returnType = funcType->returnType();
+  const Type * returnType = funcType->returnType();
 
-  if (!returnType.isDefined() && target->passes().isRunning(FunctionDefn::ReturnTypePass)) {
+  if (returnType == NULL && target->passes().isRunning(FunctionDefn::ReturnTypePass)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
   }
@@ -393,7 +393,7 @@ bool FunctionAnalyzer::resolveReturnType() {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).
       // Templates that don't have an explicit return type are assumed void.
-      if (!returnType.isDefined()) {
+      if (returnType == NULL) {
         funcType->setReturnType(&VoidType::instance);
       }
 
@@ -406,7 +406,7 @@ bool FunctionAnalyzer::resolveReturnType() {
   if (target->passes().begin(FunctionDefn::ReturnTypePass)) {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
-    if (!returnType.isDefined()) {
+    if (returnType == NULL) {
       returnType = &VoidType::instance;
 #if INFER_RETURN_TYPE
       BlockList & blocks = target->blocks();
@@ -473,11 +473,11 @@ bool FunctionAnalyzer::resolveReturnType() {
       funcType->setReturnType(returnType);
     }
 
-    DASSERT_OBJ(returnType.type() != &NullType::instance, returnType);
+    DASSERT_OBJ(returnType != &NullType::instance, returnType);
 
     // Add implicit casts to return statements if needed.
     BlockList & blocks = target->blocks();
-    bool isVoidFunc = returnType.isVoidType();
+    bool isVoidFunc = returnType->isVoidType();
     for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
       Block * bk = *it;
       if (bk->terminator() == BlockTerm_Return) {
@@ -491,10 +491,10 @@ bool FunctionAnalyzer::resolveReturnType() {
           }
 
           const Type * type = returnExpr->type();
-          if (!returnType.isEqual(type)) {
+          if (!returnType->isEqual(type)) {
             AnalyzerBase(module, activeScope, subject())
                 .analyzeType(returnType, Task_PrepTypeComparison);
-            returnExpr = returnType.implicitCast(loc, returnExpr);
+            returnExpr = returnType->implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
               bk->exitReturn(loc, returnExpr);
             }
@@ -506,7 +506,7 @@ bool FunctionAnalyzer::resolveReturnType() {
         } else if (!isVoidFunc) {
           // See if we can convert a void expression to the return type.
           Expr * voidExpr = ConstantNull::get(loc, &VoidType::instance);
-          returnExpr = returnType.implicitCast(loc, voidExpr);
+          returnExpr = returnType->implicitCast(loc, voidExpr);
           if (returnExpr != NULL) {
             bk->exitReturn(loc, returnExpr);
           } else {
@@ -546,7 +546,7 @@ bool FunctionAnalyzer::createReflectionData() {
       if (doReflect) {
         FunctionType * ftype = target->functionType();
         if (ftype->selfParam() != NULL) {
-          const Type * selfType = ftype->selfParam()->type().type();
+          const Type * selfType = ftype->selfParam()->type();
           if (const CompositeType * cself = dyn_cast<CompositeType>(selfType)) {
             // Don't reflect structs (for now) or protocols.
             if (cself->typeClass() == Type::Struct || cself->typeClass() == Type::Protocol) {
@@ -569,7 +569,7 @@ bool FunctionAnalyzer::createReflectionData() {
       //CallExpr * call = new CallExpr()
       for (ParameterList::const_iterator it = target->params().begin();
           it != target->params().end(); ++it) {
-        Type * paramType = dealias((*it)->type().type());
+        const Type * paramType = dealias((*it)->type());
         switch (paramType->typeClass()) {
           // Types that need to be boxed.
           case Type::Primitive:
@@ -605,8 +605,8 @@ bool FunctionAnalyzer::createReflectionData() {
         }
       }
 
-      if (target->returnType().isNonVoidType()) {
-        Type * returnType = target->returnType().type();
+      if (!target->returnType()->isVoidType()) {
+        const Type * returnType = target->returnType();
         switch (returnType->typeClass()) {
           // Types that need to be unboxed.
           case Type::Primitive:

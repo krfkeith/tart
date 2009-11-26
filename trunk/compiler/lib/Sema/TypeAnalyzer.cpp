@@ -101,7 +101,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         return ftype;
       }
 
-      if (!ftype->returnType().isDefined()) {
+      if (ftype->returnType() == NULL) {
         ftype->setReturnType(&VoidType::instance);
       }
 
@@ -128,7 +128,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       if (isErrorResult(typeExpr)) {
         return &BadType::instance;
       } else if (TypeLiteralExpr * type = dyn_cast_or_null<TypeLiteralExpr>(typeExpr)) {
-        return type->value();
+        return const_cast<Type *>(type->value());
       } else {
         diag.error(ast) << "Type name expected";
         return &BadType::instance;

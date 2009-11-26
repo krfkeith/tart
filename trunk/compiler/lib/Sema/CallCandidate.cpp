@@ -38,7 +38,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , isTemplate_(false)
 {
   if (m->isCtor()) {
-    resultType_ = TypeRef(m->functionType()->selfParam()->type());
+    resultType_ = m->functionType()->selfParam()->type();
   }
 
   if (spCandidate != NULL) {
@@ -250,7 +250,7 @@ ConversionRank CallCandidate::updateConversionRank() {
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
     conversionRank_ = std::min(
         conversionRank_,
-        expectedReturnType->canConvert(resultType_.type(), Conversion::Coerce));
+        expectedReturnType->canConvert(resultType_, Conversion::Coerce));
   }
 
   // If there are explicit specializations, then check those too.
@@ -315,9 +315,9 @@ bool CallCandidate::unify(CallExpr * callExpr) {
   // Unify the return type (Pass 1)
   const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL) {
-    if (resultType_.isUnsizedIntType()) {
+    if (resultType_->isUnsizedIntType()) {
       hasUnsizedArgs = true;
-    } else if (!bindingEnv_.unify(&candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
+    } else if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
       return false;
     }
   }
@@ -366,10 +366,10 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     }
 
     // Unify the return type (Pass 2, for unsized integer types.)
-    if (expectedReturnType != NULL && resultType_.isUnsizedIntType()) {
+    if (expectedReturnType != NULL && resultType_->isUnsizedIntType()) {
       // TODO: Determine the size of the constant integer here.
       if (!bindingEnv_.unify(
-          &candidateSite, resultType_.type(), expectedReturnType, Covariant)) {
+          &candidateSite, resultType_, expectedReturnType, Covariant)) {
         return false;
       }
     }

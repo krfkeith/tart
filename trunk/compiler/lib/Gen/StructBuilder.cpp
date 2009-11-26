@@ -46,7 +46,7 @@ StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value)
 }
 
 StructBuilder & StructBuilder::addIntegerField(VariableDefn * var, int32_t value) {
-  return addIntegerField(var->type().type(), value);
+  return addIntegerField(var->type(), value);
 }
 
 StructBuilder & StructBuilder::addStringField(const std::string & strval) {
@@ -61,7 +61,7 @@ StructBuilder & StructBuilder::addArrayField(
 
 StructBuilder & StructBuilder::addArrayField(
     const VariableDefn * arrayVar, const ConstantList & values) {
-  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type().type())) {
+  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type())) {
     addArrayField(arrayType->typeParam(0), values);
   } else {
     DFAIL("Not an array type");

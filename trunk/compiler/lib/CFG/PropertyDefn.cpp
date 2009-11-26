@@ -13,7 +13,7 @@ namespace tart {
 // PropertyDefn
 void PropertyDefn::trace() const {
   ValueDefn::trace();
-  type_.trace();
+  safeMark(type_);
   safeMark(getter_);
   safeMark(setter_);
 }
@@ -51,12 +51,12 @@ void IndexerDefn::format(FormatStream & out) const {
     out << "[]";
   }
 
-  const FunctionType * ftype = dyn_cast_or_null<FunctionType>(type().type());
+  const FunctionType * ftype = dyn_cast_or_null<FunctionType>(type());
   if (out.getShowType() && ftype != NULL) {
     out << "(";
     formatParameterList(out, ftype->params());
     out << ")";
-    if (ftype->returnType().isNonVoidType()) {
+    if (!ftype->isVoidType()) {
       out << ":" << ftype->returnType();
     }
   }

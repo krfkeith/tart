@@ -416,7 +416,7 @@ bool ClassAnalyzer::analyzeConverters() {
             diag.recovered();
 
             if (FunctionAnalyzer(fn).analyze(Task_PrepTypeComparison) &&
-                fn->returnType().isNonVoidType() &&
+                !fn->returnType()->isVoidType() &&
                 fn->storageClass() == Storage_Static &&
                 fn->params().size() == 1) {
 
@@ -482,7 +482,7 @@ bool ClassAnalyzer::analyzeFields() {
           field->copyTrait(target, Defn::Final);
 
           analyzeValueDefn(field, Task_PrepTypeComparison);
-          DASSERT(field->type().isDefined());
+          DASSERT(field->type() != NULL);
 
           bool isStorageRequired = true;
           if (field->defnType() == Defn::Let) {
@@ -561,11 +561,11 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
-            if (!ctor->returnType().isDefined()) {
+            if (ctor->returnType() == NULL) {
               ctor->functionType()->setReturnType(&VoidType::instance);
             }
 
-            if (ctor->returnType().isNonVoidType()) {
+            if (!ctor->returnType()->isVoidType()) {
               diag.fatal(ctor) << "Constructor cannot declare a return type.";
               break;
             }
@@ -685,7 +685,7 @@ bool ClassAnalyzer::analyzeMethods() {
             if (dtype == Defn::Property) {
               PropertyDefn * p1 = cast<PropertyDefn>(val);
               PropertyDefn * p2 = cast<PropertyDefn>(prevVal);
-              if (p1->type().isEqual(p2->type())) {
+              if (p1->type()->isEqual(p2->type())) {
                 diag.error(p2) << "Definition of property << '" << p2 <<
                     "' conflicts with earlier definition:";
                 diag.info(p1) << p1;
@@ -1103,11 +1103,11 @@ bool ClassAnalyzer::createDefaultConstructor() {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
         analyzeValueDefn(memberVar, Task_PrepConstruction);
         Expr * defaultValue = memberVar->initValue();
-        TypeRef memberType = memberVar->type().type();
+        const Type * memberType = memberVar->type();
         if (defaultValue == NULL) {
           // TODO: If this is 'final' it must be initialized here or in
           // the constructor.
-          defaultValue = memberType.type()->nullInitValue();
+          defaultValue = memberType->nullInitValue();
           // TODO: Must be a constant...?
           if (defaultValue && !defaultValue->isConstant()) {
             defaultValue = NULL;
@@ -1115,7 +1115,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         }
 
         Expr * initVal;
-        if (memberType.typeClass() == Type::NArray) {
+        if (memberType->typeClass() == Type::NArray) {
           // TODO: If this array is non-zero size, we have a problem I think.
           // Native arrays must be initialized in the constructor.
           continue;

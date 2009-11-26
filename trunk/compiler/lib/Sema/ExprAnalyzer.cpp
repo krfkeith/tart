@@ -264,7 +264,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
     TypeAnalyzer ta(module, activeScope);
     FunctionType * ftype = ta.typeFromFunctionAST(ast);
     if (ftype != NULL) {
-      if (!ftype->returnType().isDefined()) {
+      if (ftype->returnType() != NULL) {
         ftype->setReturnType(&VoidType::instance);
       }
       return new TypeLiteralExpr(ast->location(), ftype);
@@ -713,12 +713,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   // Memory address type
   if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
-    TypeRef elemType = maType->typeParam(0);
+    const Type * elemType = maType->typeParam(0);
     if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
-    DASSERT_OBJ(elemType.isDefined(), maType);
+    DASSERT_OBJ(elemType != NULL, maType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array index dimensions";
@@ -727,8 +727,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     // TODO: Attempt to cast arg to an integer type of known size.
 
     // First dereference the pointer and then get the element.
-    //arrayExpr = new UnaryExpr(Expr::PtrDeref, arrayExpr->location(), elemType, arrayExpr);
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType.type(), arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
   }
 
   // Do automatic pointer dereferencing
@@ -900,8 +899,8 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(getter->returnType().isEqual(prop->type()), getter);
-  DASSERT_OBJ(getter->returnType().isNonVoidType(), getter);
+  DASSERT_OBJ(getter->returnType()->isEqual(prop->type()), getter);
+  DASSERT_OBJ(!getter->returnType()->isVoidType(), getter);
 
 #if 0
 
@@ -1002,7 +1001,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   size_t argCount = call->args().size();
   for (size_t i = 0; i < argCount; ++i) {
     Expr * arg = call->arg(i);
-    Expr * castArg = setter->functionType()->param(i)->type().implicitCast(arg->location(), arg);
+    Expr * castArg = setter->functionType()->param(i)->type()->implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
     }
@@ -1023,13 +1022,13 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   setterCall->args().append(castArgs.begin(), castArgs.end());
   // TODO: Remove this cast when we do the above.
   if (!value->isSingular()) {
-    value = inferTypes(subject(), value, prop->type().type());
+    value = inferTypes(subject(), value, prop->type());
     if (isErrorResult(value)) {
       return value;
     }
   }
 
-  value = prop->type().implicitCast(loc, value);
+  value = prop->type()->implicitCast(loc, value);
   if (value != NULL) {
     setterCall->appendArg(value);
   }
@@ -1041,7 +1040,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
   analyzeValueDefn(lvalue->value(), Task_PrepTypeComparison);
-  DASSERT(lvalue->value()->type().isDefined());
+  DASSERT(lvalue->value()->type() != NULL);
   lvalue->setType(lvalue->value()->type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
     lvalue->setType(param->internalType());

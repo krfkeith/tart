@@ -140,7 +140,7 @@ void ConstantNull::format(FormatStream & out) const {
 
 /// -------------------------------------------------------------------
 /// TypeLiteralExpr
-TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, Type * val)
+TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, const Type * val)
   : ConstantExpr(TypeLiteral, l, Builtins::typeTypeDescriptor)
   , value_(val)
 {

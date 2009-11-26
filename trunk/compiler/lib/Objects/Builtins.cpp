@@ -187,11 +187,11 @@ bool Builtins::compileBuiltins(ProgramSource & source) {
 
 #define elementsof(x)   (sizeof(x)/sizeof(x[0]))
 
-void Builtins::registerEssentialType(Type * type) {
+void Builtins::registerEssentialType(const Type * type) {
   for (int i = 0; i < elementsof(annexTypes); ++i) {
     EssentialType * atype = &annexTypes[i];
     if (type->typeDefn()->qualifiedName() == atype->name) {
-      *atype->type = type;
+      *atype->type = const_cast<Type *>(type);
       break;
     }
   }

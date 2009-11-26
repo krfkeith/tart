@@ -36,7 +36,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   // Don't generate the IR if we've already done so
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
   DASSERT_OBJ(var->irValue() == NULL, var);
-  DASSERT_OBJ(var->type().isDefined(), var);
+  DASSERT_OBJ(var->type() != NULL, var);
 
   // Generate the variable type
   TypeRef varType = var->type();
@@ -290,7 +290,7 @@ void CodeGenerator::genCatch(Block * blk) {
     TypeLiteralExpr * catchExpr = cast_or_null<TypeLiteralExpr>(blk->termExprs()[i + 1]);
     if (catchExpr != NULL) {
       // Catch handler
-      CompositeType * exceptType = cast<CompositeType>(catchExpr->value());
+      const CompositeType * exceptType = cast<CompositeType>(catchExpr->value());
       args.push_back(getTypeInfoBlockPtr(exceptType));
     } else {
       // Finally handler

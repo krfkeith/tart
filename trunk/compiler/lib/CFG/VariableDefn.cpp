@@ -12,7 +12,7 @@ namespace tart {
 // VariableDefn
 void VariableDefn::trace() const {
   ValueDefn::trace();
-  type_.trace();
+  safeMark(type_);
   safeMark(initValue_);
 }
 
@@ -59,7 +59,7 @@ void VariableDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_.isDefined()) {
+  if (out.getShowType() && type_ != NULL) {
     out << ":" << type_;
   }
 

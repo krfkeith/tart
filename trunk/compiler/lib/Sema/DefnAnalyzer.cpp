@@ -129,9 +129,9 @@ bool DefnAnalyzer::analyzeModule() {
     analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
     if (requireReflection) {
       module->addSymbol(Builtins::typeModule->typeDefn());
-      module->addSymbol(module_types.get()->type().defn());
-      module->addSymbol(module_methods.get()->type().defn());
-      module->addSymbol(method_typeParams.get()->type().defn());
+      module->addSymbol(module_types.get()->type()->typeDefn());
+      module->addSymbol(module_methods.get()->type()->typeDefn());
+      module->addSymbol(method_typeParams.get()->type()->typeDefn());
     }
   }
 

@@ -29,6 +29,7 @@ public:
   /** Constructor that takes a name */
   ParameterDefn(Module * m, const char * name)
     : VariableDefn(Parameter, m, name)
+    , internalType_(NULL)
     , variance_(Contravariant)
     , flags_(0)
   {}
@@ -36,6 +37,7 @@ public:
   /** Constructor that takes a name and a defn type */
   ParameterDefn(DefnType dt, Module * m, const char * name)
     : VariableDefn(dt, m, name)
+    , internalType_(NULL)
     , variance_(Contravariant)
     , flags_(0)
   {}
@@ -67,8 +69,8 @@ public:
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
       which may not be the same as it appears externally. */
-  TypeRef internalType() const { return internalType_; }
-  void setInternalType(const TypeRef & type) { internalType_ = type; }
+  const Type * internalType() const { return internalType_; }
+  void setInternalType(const Type * type) { internalType_ = type; }
 
   /** Whether this parameter is covariant, contravariant, or invariant. */
   Variance variance() const { return variance_; }
@@ -99,7 +101,7 @@ public:
   }
 
 private:
-  TypeRef internalType_;
+  const Type * internalType_;
   Variance variance_;
   uint32_t flags_;
 };
@@ -159,8 +161,7 @@ public:
   ParameterList & params() { return type_->params(); }
 
   /** Return type. */
-  const TypeRef & returnType() const;
-  TypeRef & returnType();
+  const Type * returnType() const;
 
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }
@@ -222,7 +223,7 @@ public:
   // Overrides
 
   const std::string & linkageName() const;
-  TypeRef type() const;
+  const Type * type() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionDefn *) { return true; }

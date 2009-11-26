@@ -54,7 +54,7 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
 bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
   passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
-    if (!target->type().isDefined()) {
+    if (target->type() == NULL) {
       return false;
     }
 
@@ -116,20 +116,20 @@ bool PropertyAnalyzer::resolvePropertyType() {
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
-    TypeRef type = target->type();
-    if (!type.isDefined()) {
+    const Type * type = target->type();
+    if (type == NULL) {
       DASSERT_OBJ(ast != NULL, target);
       DASSERT_OBJ(ast->type() != NULL, target);
       TypeAnalyzer ta(module, target->definingScope());
       type = ta.typeFromAST(ast->type());
-      if (!type.isDefined()) {
+      if (type == NULL) {
         return false;
       }
 
       target->setType(type);
     }
 
-    if (target->type().isSingular()) {
+    if (target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
@@ -140,7 +140,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       FunctionDefn * getter = target->getter();
       DASSERT_OBJ(getter->functionType() == NULL, getter);
       FunctionType * getterType = ta.typeFromFunctionAST(getter->functionDecl());
-      DASSERT_OBJ(!getterType->returnType().isDefined(), getter);
+      DASSERT_OBJ(getterType->returnType() == NULL, getter);
       getterType->setReturnType(type);
 
       // Add the property parameters
@@ -182,10 +182,10 @@ bool PropertyAnalyzer::resolvePropertyType() {
       if (valueParam != NULL) {
         // Re-add the value param.
         setterType->params().push_back(valueParam);
-        if (!valueParam->type().isDefined()) {
+        if (valueParam->type() == NULL) {
           valueParam->setType(type);
           valueParam->setInternalType(type);
-        } else if (!valueParam->type().isEqual(type)) {
+        } else if (!valueParam->type()->isEqual(type)) {
           diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
               "' must be of type '" << type << "' but is instead type '" <<
               valueParam->type() << "'";
@@ -199,7 +199,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
         setterType->addParam(valueParam);
       }
 
-      DASSERT_OBJ(!setterType->returnType().isDefined(), setter);
+      DASSERT_OBJ(setterType->returnType() == NULL, setter);
       setterType->setReturnType(&VoidType::instance);
 
       setter->setFunctionType(setterType);
