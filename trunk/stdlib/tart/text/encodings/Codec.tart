@@ -1,0 +1,57 @@
+/** Interface used to encode and decode characters in a particular text format. */
+interface Codec {
+
+  /** Specifies what to do if erroneous input is encountered. */
+  enum ErrorAction {
+    SKIP,   /** Skip over erroneous characters. */
+    REPLACE,/** Replace bad characters with the encoder's replacement character. */
+    ABORT,  /** Throw an exception. TODO: What kind? */
+  }
+  
+  struct CodecState {
+    var dstIndex:int;     /** Next available position in the destination array. */
+    var srcIndex:int;     /** Next position to read in the source array. */
+    var errorState:int;   /** The current error state. */
+    var partial:int;      /** Used to save the state of a partially-decoded character. */
+  }
+  
+  /** Return the length, in bytes, of the character array when encoded.
+      Parameters:
+        src: The characters to be encoded.
+        srcOffset: The starting position within the character array.
+        count: The number of characters to encode.
+      Returns: The number of bytes required to encode the specified character range.
+    */
+  def encodedLength(src:char[], srcOffset:int, count:int) -> int;
+
+  /** Return the length, in characters, of the byte array when decoded.
+      Parameters:
+        src: The bytes to be decoded.
+        srcOffset: The starting position within the byte array.
+        count: The number of bytes to decode.
+      Returns: The number of encoded characters.
+    */
+  def decodedLength(src:ubyte[], srcOffset:int, count:int) -> int;
+
+  /** Encode the characters in 'src'.
+      Parameters:
+        dst: The destination byte array.
+        dstOffset: The start position in the destination array to write to. 
+        src: The characters to be encoded.
+        srcOffset: The starting position within the character array.
+        count: The number of characters to encode.
+      Returns: The number of bytes written to 'dst'.
+    */
+  def encode(dst:ubyte[], dstOffset:int, src:char[], srcOffset:int, count:int) -> int;
+
+  /** Decode the characters in 'src'.
+      Parameters:
+        dst: The destination character array.
+        dstOffset: The start position in the destination array to write to. 
+        src: The bytes to be decoded.
+        srcOffset: The starting position within the byte array.
+        count: The number of bytes to decode.
+      Returns: The number of characters written to 'dst'.
+    */
+  def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int;
+}

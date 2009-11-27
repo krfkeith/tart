@@ -1,0 +1,8 @@
+/** Attribute that indicates that the associated definition is treated specially by the compiler.
+    The evaluation of this attribute causes the associated definition to be registered by the
+    compiler into a table of definitions that require special treatment.
+*/
+@Attribute(Attribute.Target.TYPE)
+class Essential {
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+}

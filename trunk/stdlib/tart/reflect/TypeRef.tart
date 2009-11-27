@@ -1,0 +1,14 @@
+import tart.annex.Nonreflective;
+
+/** A reference to a type, including any modifier flags (const, volatile, etc.) */
+@Nonreflective struct TypeRef {
+  @Flags enum Modifiers : int8 {
+    CONST,
+    VOLATILE,
+  }
+
+  let type:Type;
+
+  // TODO: re-enable when we can handle structs larger than 8 bytes.
+  //let modifiers:Modifiers;
+}

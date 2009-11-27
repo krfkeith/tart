@@ -1,0 +1,16 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  var t = TestClass();
+  
+  var i = 0;
+  t.items[i++] = 0;
+  t.items[i++] = 0;
+  
+  return t.items[0];
+}
+
+class TestClass {
+  public var items:NativeArray[int, 5];
+  
+  def construct() {}
+}

@@ -1,0 +1,22 @@
+@EntryPoint
+def main(args: String[]) -> int {
+  defaultArgsTest();
+  functionVarTest();
+  return 0;
+}
+
+def testFunc(a:int, b="Hello") -> int {
+  return a;
+}
+
+def defaultArgsTest() {
+  Debug.assertEq(1, testFunc(1, "Hello"));
+  Debug.assertEq(1, testFunc(1));
+}
+
+def functionVarTest {
+  var streq:fn s:String -> bool;
+  streq = "Hello".equals;
+  Debug.assertTrue(streq("Hello"));
+  Debug.assertFalse(streq("Yello"));
+}

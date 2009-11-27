@@ -1,0 +1,45 @@
+@EntryPoint
+def main() -> int {
+  Debug.assertTrue(Test.Rock == 1);
+  Debug.assertEq(Test.Paper, 2);
+  Debug.assertEq(Test.Scissors, 2);
+  Debug.assertEq(Test.minVal, 2);
+  Debug.assertEq(Test.maxVal, 2);
+
+  let a = Test.Rock;
+  Debug.assertEq(a, 1);
+
+  Debug.assertEq(FlagTest.Waving, 1);
+  Debug.assertEq(FlagTest.Fluttering, 2);
+  Debug.assertEq(FlagTest.GallantlyStreaming, 4);
+  Debug.assertEq(FlagTest.All, 7);
+
+  // TODO: Add tests for bitwise combinations of flags.
+
+  // Implicit scoping
+  let b:Test = Rock;
+  Debug.assertEq(b, 1);
+  
+  testContainsOperator();
+  return 0;
+}
+
+def testContainsOperator {
+  let v = FlagTest.Waving;
+  Debug.assertTrue(FlagTest.Waving in v);
+  Debug.assertTrue(FlagTest.Fluttering not in v);
+}
+
+enum Test {
+  Rock = 1,
+  Paper,
+  Scissors = Rock + 1
+}
+
+@Flags
+enum FlagTest {
+  Waving,
+  Fluttering,
+  GallantlyStreaming,
+  All = Waving | Fluttering | GallantlyStreaming
+}

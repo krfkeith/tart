@@ -1,0 +1,5 @@
+import tart.annex.Nonreflective;
+
+/** A compile-time reference to a type object. */
+@Nonreflective public class TypeLiteral[%T] {
+}

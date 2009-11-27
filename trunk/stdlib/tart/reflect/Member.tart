@@ -1,0 +1,72 @@
+import tart.annex.Nonreflective;
+
+/** A member of a type */
+@Nonreflective class Member {
+  enum Access : ubyte {
+    PUBLIC,
+    PROTECTED,
+    PRIVATE,
+  }
+  
+  enum MemberKind : ubyte {
+    FIELD,
+    PROPERTY,
+    METHOD,
+    CONSTRUCTOR,
+  }
+  
+  @Flags enum Traits : ubyte {
+    FINAL,
+    ABSTRACT,
+    STATIC,
+    UNSAFE,
+  }
+
+  private {
+    var _name:String;
+    var _scopeName:String;
+    var _kind:MemberKind;
+    var _access:Access;
+    var _traits:Traits;
+    var _type:Type;
+    var _attributes:Attribute[];
+  }
+
+  private def construct() {}
+
+  /** The unqualified member name. */
+  final def name:String { get { return _name; } }
+  
+  /** The name of the scope in which this is defined. */
+  final def scopeName:String { get { return _scopeName; } }
+  
+  /** The qualified member name. */
+  //final def fullName:String { get { return _fullName; } }
+  
+  /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
+  final def kind:MemberKind { get { return _kind; } }
+  
+  /** Accessibility of this member. */
+  final def access:Access { get { return _access; } }
+  
+  /** Various member flags. */
+  final def traits:Traits { get { return _traits; } }
+
+  /** The type of this member. */
+  final def type:Type { get { return _type; } }
+  
+  /** Array of attributes for this member. */
+  final def attributes:Attribute[] { get { return _attributes; } }
+
+  /** The class that declared this member, or null if it's a global function. */
+  //let definingScope:TypeDescriptor;
+
+  /** True if this member has static or global storage class. */  
+  //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }
+
+  /** True if this member was declared 'final'. */  
+  //def isFinal:bool { get { return (Traits.FINAL in _traits) != 0; } }
+
+  /** True if this member is abstract. */  
+  //def isAbstract:bool { get { return (Traits.ABSTRACT in _traits) != 0; } }
+}

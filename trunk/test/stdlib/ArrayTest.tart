@@ -1,0 +1,130 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  testZeroLengthArray();
+  testSimpleArray();
+  testArrayOf();
+  testArrayLiteral();
+  testArrayCopy();
+  return 0;
+}
+
+def testZeroLengthArray() {
+  let a = int[](0);
+  Debug.assertTrue(a.isEmpty);
+  Debug.assertTrue(a.length == 0);
+}
+
+def testSimpleArray() {
+  let a = int[](5);
+  Debug.assertFalse(a.isEmpty);
+  Debug.assertEq(5, a.length);
+
+  a[0] = 22;
+  Debug.assertEq(22, a[0]);
+
+  let b = Array[int](5);
+  Debug.assertFalse(b.isEmpty);
+  Debug.assertEq(5, b.length);
+
+  //let c:Array[int] = Array(5);
+  //Debug.assertFalse(c.isEmpty);
+  //Debug.assertTrue(c.length == 5);
+
+  let d = Array[String](5);
+  Debug.assertFalse(d.isEmpty);
+  Debug.assertEq(5, d.length);
+}
+
+def testArrayOf() {
+  let a = Array.of(1, 2, 3);
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+}
+
+def testArrayLiteral() {
+  let a = [1, 2, 3];
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+}
+
+def testArrayCopy() {
+  let a = [1, 2, 3];
+  let b = a.copy();
+  Debug.assertFalse(a is b);
+  Debug.assertEq(1, b[0]);
+  Debug.assertEq(2, b[1]);
+  Debug.assertEq(3, b[2]);
+}
+
+// TODO: Check for out of bounds exceptions, once exceptions are actually working.
+/*
+@EntryPoint
+def main() {
+  var a:Array<int> = Array.<int>(4);
+  assert(a.length == 4);
+  
+  var aa:Array<byte> = byte[4];
+  assert(aa.length == 4);
+  
+  a[0] = 22;
+  assert(a[0] == 22);
+
+  var b = Array.<int>(a);
+  assert(b[0] == 22);
+
+  // Array mutation
+  b[0] = 13;
+  assert(b[0] == 13);
+  assert(a[0] == 22);
+
+  // Array literal
+/*  let c = [5, 6, 7];
+  assert(c[0] == 5);
+  assert(c[1] == 6);
+  assert(c[2] == 7);
+  assert(c.length == 3);
+
+  // Array literal with explicit type
+  let d:int[] = [5, 6, 7];
+  assert(d.length == 3);
+
+  // Array of strings
+  let e = ["abc", "def", "zzz"];
+  assert(e.length == 3);
+  assert(e[0][0] == 'a');
+
+  // Array of mixed types
+  let f = [long(1), uint(2), 3];
+  assert(f[0] == long(1));
+  assert(f[1] == long(2));
+  assert(f[2] == long(3));
+  assert(f.length == 3);
+
+  // Array of arrays
+  let g = [[1, 2, 3], [4, 5, 6]];
+
+  assert(g.length == 2);
+  assert(g[0].length == 3);
+  assert(g[1].length == 3);
+  assert(g[0][0] == 1);
+  assert(g[0][1] == 2);
+  assert(g[0][2] == 3);
+  assert(g[1][0] == 4);
+  assert(g[1][1] == 5);
+  assert(g[1][2] == 6);
+
+  // Zero-length array
+  let h:int[] = [];
+  assert(h.length == 0);
+  
+  let i:float[] = [];
+  assert(i.length == 0);
+  
+  // Array copy test
+  let j:int[] = int[3];
+  Array.copy(c, 0, j, 0, 3);
+  assert(j[0] == 5);
+  assert(j[1] == 6);
+  assert(j[2] == 7);*/

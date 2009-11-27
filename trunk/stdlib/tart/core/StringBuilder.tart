@@ -1,0 +1,168 @@
+/** A mutable, extensible string. */
+ /* : public Iterable[char] */
+public final class StringBuilder {
+  private {
+    var value:char[];
+    var len:int;
+
+    def grow(amount:int) {
+      let newSize = self.len + amount;
+      if value.length < newSize {
+        let newValue = char[](newSize + newSize / 2 + 16);
+        char[].copyElements(newValue, 0, value, 0, self.len);
+        value = newValue;
+      }
+
+      self.len = newSize;
+    }
+  }
+
+  /** Construct an empty StringBuilder. */
+  def construct() {
+    value = char[](0);
+    self.len = 0;
+  }
+
+  /** Construct a StringBuilder from an existing String. */
+  def construct(str:String, start:int = 0, count:int = int.maxVal) {
+    value = str.toCharArray(start, count);
+    self.len = value.length;
+  }
+
+  /** Construct a StringBuilder from a character array. */
+  def construct(chars:char[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkIndex(count >= 0);
+    start = Math.min(start, chars.length);
+    count = Math.min(count, chars.length - start);
+    value = char[](count);
+    char[].copyElements(value, 0, chars, start, count);
+    self.len = count;
+  }
+  
+  /** The number of characters in the buffer. */
+  def length:int {
+    get { return self.len; }
+  }
+
+  /** Append a single character to the buffer.
+      Parameters:
+        c: The character to append.
+    */
+  def append(c:char) {
+    let n = self.len;
+    grow(1);
+    value[n] = c;
+  }
+  
+  /** Append all or part of a character array to the buffer. */
+  def append(c:char[], start:int = 0, count:int = int.maxVal) {
+    insert(self.len, c, start, count);
+  }
+  
+  /** Append all or part of a String to the buffer. */
+  def append(s:String, start:int = 0, count:int = int.maxVal) {
+    append(s.toCharArray(), start, count);
+  }
+  
+  def append(s:Iterator[char]) {
+    insert(self.len, s);
+  }
+  
+  def insert(insertPos:int, c:char) {
+  }
+  
+  /** Insert all or part of a character array to the buffer at position 'insertPos'. */
+  def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(insertPos >= 0 and insertPos <= self.len);
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(start >= 0);
+    if start < chars.length {
+      count = Math.min(count, chars.length - start);
+      if count > 0 {
+        let remaining = self.len - insertPos;
+        grow(count);
+        char[].copyElements(value, insertPos + count, value, insertPos, remaining);
+        char[].copyElements(value, insertPos, chars, start, count);
+      }
+    }
+  }
+  
+  /** Append all or part of a String to the buffer at position 'insertPos'.
+      
+      Parameters:
+        insertPos: Where to insert the characters.
+        src: The source String.
+        start: The start position within the source String. This will be clamped to
+          the end of the source string.
+        count: The number of characters to insert. This will be clamped to the number
+          of characters actually available.
+          
+      Exceptions:
+        IndexOutOfRangeException: If 'count' or 'start' are less than zero, or if the
+          insertPos is outside of the range of the buffer.
+   */
+  def insert(insertPos:int, src:String, start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(insertPos >= 0 and insertPos <= self.len);
+    let chars = src.toCharArray(start, count);
+    if chars.length > 0 {
+      let remaining = self.len - insertPos;
+      grow(chars.length);
+      char[].copyElements(value, insertPos + chars.length, value, insertPos, remaining);
+      char[].copyElements(value, insertPos, chars, 0, chars.length);
+    }
+  }
+  
+  def insert(insertPos:int, s:Iterator[char]) {
+    classify s {
+      as sequence:HasLength {
+        grow(int(sequence.length));
+        for c in s {
+          value[self.len++] = c;
+        }
+      } else {
+      }
+    }
+
+    //let n = self.len;
+    //resize(n + s.length);
+    //value[n] = c;
+  }
+
+  /** Remove the character at position 'n'.
+      Parameters:
+        n: The index of the character to remove.
+   */
+  def remove(n:int) {
+    remove(n, 1);
+  }
+
+  /** Remove 'count' characters starting at position 'start'. If there are fewer than 'count'
+      elements following 'start', then all characters following 'start' will be removed.
+
+      Parameters:
+        start: The starting index of the range of characters to be removed.
+        count: The number of characters to remove.
+
+      Exceptions:
+        IndexOutOfRangeException: If 'count' or 'start' are less than zero.
+    */
+  def remove(start:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(start >= 0);
+    start = Math.min(start, self.len);
+    count = Math.min(count, self.len - start);
+    char[].copyElements(value, start, value, start + count, self.len - start - count);
+    len -= count;
+  }
+
+  /** Remove all characters from the buffer. */  
+  def clear() {
+    self.len = 0;
+  }
+  
+  /** Return the character buffer as a String. */  
+  override toString() -> String {
+    return String(value, 0, self.len);
+  }  
+}

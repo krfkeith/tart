@@ -1,0 +1,509 @@
+/* ================================================================ *
+    TART - A Sweet Programming Language.
+ * ================================================================ */
+
+#ifndef TART_CFG_TYPE_H
+#define TART_CFG_TYPE_H
+
+#ifndef TART_CFG_CONSTANT_H
+#include "tart/CFG/Constant.h"
+#endif
+
+#ifndef TART_COMMON_SMALLENUMSET_H
+#include "tart/Common/SmallEnumSet.h"
+#endif
+
+#ifndef TART_COMMON_HASH_H
+#include "tart/Common/Hash.h"
+#endif
+
+#ifndef TART_CFG_SCOPE_H
+#include "tart/CFG/Scope.h"
+#endif
+
+#ifndef TART_CFG_TYPECONVERSION_H
+#include "tart/CFG/TypeConversion.h"
+#endif
+
+#include "llvm/ADT/DenseMap.h"
+
+namespace llvm {
+  class Type;
+}
+
+namespace tart {
+
+class BindingEnv;
+class TypeRef;
+class TupleType;
+class CompositeType;
+
+/// -------------------------------------------------------------------
+/// An enumeration of all of the fundamental types known to the compiler.
+enum TypeId {
+  TypeId_Void,
+  TypeId_Bad,      // Used to signal errors
+
+  // Scalar types
+  TypeId_Bool,
+  TypeId_Char,
+  TypeId_UnsizedInt,
+  TypeId_SInt8,
+  TypeId_SInt16,
+  TypeId_SInt32,
+  TypeId_SInt64,
+  TypeId_SIntPtr,
+  TypeId_UInt8,
+  TypeId_UInt16,
+  TypeId_UInt32,
+  TypeId_UInt64,
+  TypeId_UIntPtr,
+  TypeId_Float,
+  TypeId_Double,
+  TypeId_LongDouble,
+  TypeId_Null,
+  TypeId_Any,
+
+  // Aggregate types - used only for static type declarations.
+  TypeId_String,
+
+  TypeId_Count,
+};
+
+/// -------------------------------------------------------------------
+/// EnumSet of defn states.
+typedef SmallEnumSet<TypeId, TypeId_Count> TypeIdSet;
+
+/// -------------------------------------------------------------------
+/// Interface for types.
+class Type : public GC, public Formattable {
+public:
+
+  enum TypeClass {
+    #define TYPE_CLASS(x) x,
+    #include "TypeClass.def"
+    #undef TYPE_CLASS
+
+    KindCount,
+  };
+
+  static const char * typeClassName(TypeClass tc);
+
+  /** Get the kind of type that this is. */
+  virtual TypeClass typeClass() const { return cls; }
+
+  /** Get the LLVM IR type corresponding to this type. */
+  virtual const llvm::Type * irType() const = 0;
+
+  /** Get the LLVM IR type corresponding to this type when embedded as a member within a
+      larger type. */
+  virtual const llvm::Type * irEmbeddedType() const { return irType(); }
+
+  /** Get the LLVM IR type corresponding to this type when passed as a parameter. */
+  virtual const llvm::Type * irParameterType() const { return irType(); }
+
+  /** Get the type of this type. */
+  virtual Type * metaType() const { return NULL; }
+
+  /** Get the TypeDefn for this type, if any. */
+  virtual TypeDefn * typeDefn() const { return NULL; }
+
+  /** Return the scope containing the members of this type. */
+  virtual const IterableScope * memberScope() const { return NULL; }
+  virtual IterableScope * memberScope() { return NULL; }
+
+  /** Return the number of type parameters of this type. */
+  virtual size_t numTypeParams() const { return 0; }
+
+  /** Return the Nth type parameter. */
+  virtual const Type * typeParam(int index) const;
+
+  /** Return true if two types are identical. */
+  virtual bool isEqual(const Type * other) const;
+
+  /** Return true if the specified type is more specific than 'other'. */
+  virtual bool isSubtype(const Type * other) const = 0;
+
+  /** A type is said to "include" another type if it can represent all possible values
+      of that other type. So for example, 'int' includes 'short', since an int can
+      contain all possible shorts. Note that the include relationship encompasses
+      more than subtyping - a union type includes all its members, even though the
+      members are not considered subtypes in the normal fashion.
+    */
+  virtual bool includes(const Type * other) const { return isEqual(other); }
+
+  /** Return true if this type supports the specified protocol. */
+  bool supports(const Type * protocol) const;
+
+  /** Return whether this type is passed by value or by reference. */
+  virtual bool isReferenceType() const = 0;
+
+  /** A fully specified type is one in which there are no unbound type variables. */
+  virtual bool isSingular() const = 0;
+
+  /** True if this type is the 'void' type. */
+  bool isVoidType() const;
+
+  /** True if this type is the 'unsized int' type. */
+  bool isUnsizedIntType() const;
+
+  /** Determine if the specified 'fromType' can be converted to this
+      type. Returns the degree of compatibility. */
+  ConversionRank convert(const Conversion & conversion) const;
+
+  /** Type-specific implementation of convert. */
+  virtual ConversionRank convertImpl(const Conversion & conversion) const = 0;
+
+  /** Some convenient wrappers around 'convert'. */
+  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
+  ConversionRank canConvert(const Type * fromType, int options = 0) const;
+
+  /** Reverse conversion function, used when the source is a constraint. */
+  virtual ConversionRank convertTo(const Type * toType) const {
+    return Incompatible;
+  }
+
+  /** Add an implicit cast. If no cast is needed, then simply return 'from'.
+      As a side effect, emit appropriate warning messages if the cast wasn't
+      possible or had problems. */
+  Expr * implicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
+
+  /** Add an explicit cast. If no cast is needed, then simply return 'from'.
+      This suppresses warnings unless the cast is impossible. */
+  Expr * explicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
+
+  /** Get the default initialization value for this type, or NULL if
+      this type cannot be null-initialized. */
+  virtual Expr * nullInitValue() const { return NULL; }
+
+  // Overrides
+
+  void trace() const;
+  static inline bool classof(const Type *) { return true; }
+
+  // Static utility functions
+
+  /** Given two types, return the one that is more general, the higher of the two. Returns NULL
+      if neither type is a specialization of the other. */
+  static const Type * selectLessSpecificType(const Type * type1, const Type * type2);
+
+  /** Return true if type1 and type2 are type expressions that, when finalized, will
+      reduce to the same type. For example, List[T] is equivalent to List[S] if
+      T is a pattern variable bound to S. */
+  static bool equivalent(const Type * type1, const Type * type2);
+  static bool equivalent(const TypeRef & type1, const TypeRef & type2);
+
+  // Structure used when using type pointers as a key.
+  struct KeyInfo {
+    static inline const Type * getEmptyKey() { return reinterpret_cast<const Type *>(0); }
+    static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
+
+    static unsigned getHashValue(const Type * val) {
+      // TODO: Replace with hash of canonical type.
+      return (uintptr_t(val) >> 4) ^ (uintptr_t(val) >> 9);
+    }
+
+    static bool isEqual(const Type * lhs, const Type * rhs) {
+      // TODO: Replace with canonical comparison
+      return lhs == rhs;
+    }
+
+    static bool isPod() { return true; }
+  };
+
+protected:
+  const TypeClass cls;
+
+  // Protected constructor
+  Type(TypeClass tc) : cls(tc) {}
+
+  // Protected destructor
+  virtual ~Type() {}
+};
+
+/// -------------------------------------------------------------------
+/// Base class for most types.
+class TypeImpl : public Type {
+protected:
+  mutable const llvm::Type * irType_;
+
+  TypeImpl(TypeClass cls)
+    : Type(cls)
+    , irType_(NULL)
+  {}
+
+  virtual const llvm::Type * createIRType() const = 0;
+
+public:
+
+  const llvm::Type * irType() const {
+    if (irType_ == NULL) {
+      irType_ = createIRType();
+    }
+
+    return irType_;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A type that can be declared. This can be a composite type,
+/// an enum, or a primitive type.
+///
+/// A Nameable type is one that has the following characteristics:
+///  -- It defines a scope containing members of the type.
+///  -- It has a unique name.
+class DeclaredType : public TypeImpl, public IterableScope {
+protected:
+  TypeDefn * defn_;
+
+  DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope);
+
+public:
+
+  /** Return the number of type parameters of this type. */
+  size_t numTypeParams() const;
+
+  /** Return the Nth type parameter. */
+  const Type * typeParam(int index) const;
+
+  // Overrides
+
+  const IterableScope * memberScope() const { return this; }
+  IterableScope * memberScope() { return this; }
+  TypeDefn * typeDefn() const { return defn_; }
+
+  void trace() const;
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const DeclaredType *) { return true; }
+  static inline bool classof(const Type * ty) {
+    return ty->typeClass() <= Enum;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A reference to a type, and the type modifiers.
+
+class TypeRef {
+public:
+  enum Modifiers {
+    Const = 1 << 0,
+  };
+
+  TypeRef() : type_(NULL), modifiers_(0) {}
+  TypeRef(Type * type) : type_(type), modifiers_(0) {}
+  TypeRef(const Type * type) : type_(const_cast<Type *>(type)), modifiers_(0) {}
+  TypeRef(Type * type, uint32_t modifiers) : type_(type), modifiers_(modifiers) {}
+  TypeRef(const TypeRef & ref) : type_(ref.type_), modifiers_(ref.modifiers_) {}
+
+  Type * type() const { return type_; }
+  void setType(Type * type) { type_ = type; }
+
+  /** Return the canonicalized version of the type. */
+  const Type * dealias() const;
+  Type * dealias();
+
+  uint32_t modifiers() const { return modifiers_; }
+  void setModifiers(uint32_t modifiers) { modifiers_ = modifiers; }
+
+  TypeRef & operator=(const TypeRef & ref) {
+    type_ = ref.type_;
+    modifiers_ = ref.modifiers_;
+  }
+
+  bool operator==(const TypeRef & other) const {
+    return type_ == other.type_ && modifiers_ == other.modifiers_;
+  }
+
+  bool operator!=(const TypeRef & other) const {
+    return !(*this == other);
+  }
+
+  Type::TypeClass typeClass() const { return type_->typeClass(); }
+
+  bool isDefined() const { return type_ != NULL; }
+  bool isUndefined() const { return type_ == NULL; }
+  bool isVoidType() const { return isDefined() && type_->isVoidType(); }
+  bool isNonVoidType() const { return isDefined() && !type_->isVoidType(); }
+  bool isReferenceType() const { return isDefined() && type_->isReferenceType(); }
+  bool isUnsizedIntType() const { return isDefined() && type_->isUnsizedIntType(); }
+  bool isSingular() const { return isDefined() && type_->isSingular(); }
+  bool isSubtype(const TypeRef & other) const;
+
+  bool isEqual(const TypeRef & other) const {
+    return type_->isEqual(other.type_) && modifiers_ == other.modifiers_;
+  }
+
+  Expr * implicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
+  Expr * explicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
+  ConversionRank convert(const Conversion & conversion) const;
+  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
+  ConversionRank canConvert(const Type * fromType, int options = 0) const;
+  ConversionRank canConvert(const TypeRef & fromType, int options = 0) const;
+
+  TypeDefn * defn() const { return type_->typeDefn(); }
+  const llvm::Type * irType() const { return type_->irType(); }
+  const llvm::Type * irEmbeddedType() const { return type_->irEmbeddedType(); }
+  const llvm::Type * irParameterType() const { return type_->irParameterType(); }
+
+  void trace() const {
+    if (type_) { type_->mark(); }
+  }
+
+  // Structure used when using type ref as a key.
+  struct KeyInfo {
+    static inline TypeRef getEmptyKey() { return TypeRef(NULL, uint32_t(-1)); }
+    static inline TypeRef getTombstoneKey() { return TypeRef(NULL, uint32_t(-2)); }
+
+    static unsigned getHashValue(const TypeRef & val) {
+      return (Type::KeyInfo::getHashValue(val.type_) * 0x5bd1e995) ^ val.modifiers_;
+    }
+
+    static bool isEqual(const TypeRef & lhs, const TypeRef & rhs) {
+      return Type::KeyInfo::isEqual(lhs.type_, rhs.type_) && lhs.modifiers_ == rhs.modifiers_;
+    }
+
+    static bool isPod() { return true; }
+  };
+
+private:
+  Type * type_;
+  uint32_t modifiers_;
+};
+
+FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
+
+/// -------------------------------------------------------------------
+/// A pair of type refs - used as a map key.
+class TypePair {
+public:
+  TypePair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
+
+  const TypeRef & first() { return first_; }
+  const TypeRef & second() { return second_; }
+
+  bool operator==(const TypePair & other) const {
+    return first_ == other.first_ && second_ == other.second_;
+  }
+
+  bool operator!=(const TypePair & other) const {
+    return !(*this == other);
+  }
+
+  // Structure used when using type ref as a key.
+  struct KeyInfo {
+    static inline TypePair getEmptyKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+    }
+
+    static inline TypePair getTombstoneKey() {
+      return TypePair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+    }
+
+    static unsigned getHashValue(const TypePair & val) {
+      return TypeRef::KeyInfo::getHashValue(val.first_) ^
+          (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
+    }
+
+    static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
+      return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
+          TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
+    }
+
+    static bool isPod() { return true; }
+  };
+
+private:
+  TypeRef first_;
+  TypeRef second_;
+};
+
+/// -------------------------------------------------------------------
+/// A const/volatile qualifier on a type.
+class CVQualifiedType : public Type {
+public:
+  enum Qualifier {
+    CONST = (1<<0),
+    VOLATILE = (1<<1),
+  };
+
+  /** Derive a CVQualified type from a base type. */
+  static CVQualifiedType * get(const Type * baseType, int qualifiers);
+
+  ~CVQualifiedType();
+
+  // Overrides
+
+  size_t numTypeParams() const { return 0; }
+  //virtual TypeRef typeParam(int index) const { return elementType_; }
+  const llvm::Type * irType() const { return baseType_.irType(); }
+  //const llvm::Type * createIRType() const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool isSingular() const { return baseType_.isSingular(); }
+  bool isEqual(const Type * other) const;
+  bool isSubtype(const Type * other) const;
+  bool isReferenceType() const { return baseType_.isReferenceType(); }
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const CVQualifiedType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == CVQual;
+  }
+
+private:
+  typedef llvm::DenseMap<TypeRef, CVQualifiedType *, TypeRef::KeyInfo> TypeMap;
+  static TypeMap uniqueTypes_;
+
+  CVQualifiedType(const TypeRef & elemType, int qualifiers);
+
+  TypeRef baseType_;
+  int qualifiers_;
+};
+
+// -------------------------------------------------------------------
+// Utility functions
+
+const char * compatibilityError(ConversionRank tc);
+
+void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
+    const Type * from, const Type * to);
+
+void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
+    const Expr * from, const Type * to);
+
+// Given a type, append the linkage name of that type to the output buffer.
+void typeLinkageName(std::string & out, const TypeRef & ty);
+void typeLinkageName(std::string & out, const Type * ty);
+
+/** Given two types, try and find the narrowest type that both
+    can be converted to.
+  */
+const Type * findCommonType(const Type * t0, const Type * t1);
+
+/** Given a pointer to a type, dereference any aliases and return the
+    real underlying type. */
+const Type * dealias(const Type * t);
+Type * dealias(Type * t);
+TypeRef dealias(const TypeRef & tr);
+
+/** Stream operator for type class names. */
+inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {
+  return out << Type::typeClassName(tc);
+}
+
+/** Type equality functor. */
+class TypeEquals {
+public:
+  bool operator()(const Type * t0, const Type * t1) {
+    return t0->isEqual(t1);
+  }
+
+  bool operator()(const TypeRef & t0, const TypeRef & t1) {
+    return t0.isEqual(t1);
+  }
+};
+
+} // namespace tart
+
+#endif // TART_CFG_TYPE_H

@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Declaring variables and functions &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Function Type Expressions" href="functions.html" />
+    <link rel="prev" title="Type Expressions" href="types.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Function Type Expressions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Type Expressions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="declaring-variables-and-functions">
+<span id="index-12"></span><h1>Declaring variables and functions<a class="headerlink" href="#declaring-variables-and-functions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="variable-declarations">
+<h2>Variable Declarations<a class="headerlink" href="#variable-declarations" title="Permalink to this headline">¶</a></h2>
+<p>In Tart, there are three keywords that are most often used to declare a named value:
+<tt class="xref docutils literal"><span class="pre">var</span></tt>, <tt class="xref docutils literal"><span class="pre">let</span></tt>, and <tt class="xref docutils literal"><span class="pre">def</span></tt>.</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="xref docutils literal"><span class="pre">var</span></tt> defines a mutable variable.</li>
+<li><tt class="xref docutils literal"><span class="pre">let</span></tt> defines an immutable variable.</li>
+<li><tt class="xref docutils literal"><span class="pre">def</span></tt> defines a function or property.</li>
+</ul>
+</blockquote>
+<p>Let&#8217;s start by looking at <tt class="xref docutils literal"><span class="pre">let</span></tt> and <tt class="xref docutils literal"><span class="pre">var</span></tt>. Both allow the
+type of a declaration to be deduced from its initialization expression:</p>
+<div class="highlight-python"><pre>// Type can be explicitly specified.
+let a1:int = 1;
+var a2:String = "Hello, World";
+
+// Or it can be automatically deduced from the initialization expression.
+let a1 = 1;
+var a2 = "Hello, World";
+
+// For a 'var', you don't have to specify a value, but for 'let' you do.
+var c1:int;
+let c2:int; // ERROR -- no value specified.
+var c2;     // ERROR -- no type and no way to infer it.</pre>
+</div>
+<p>As you can see, you don&#8217;t have to include the type if it can be inferred by
+the compiler.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In the case of <tt class="xref docutils literal"><span class="pre">let</span></tt>, the compiler may or may not allocate
+storage for the variable, depending on the circumstance.</p>
+</div>
+<p id="index-13">The type of a variable can be a complex type expression. For example, array
+variables are declared using square brackets after the type name:</p>
+<div class="highlight-python"><pre>// Allocate an array of 10 integers
+var a1:int[] = int[10];</pre>
+</div>
+<p>Another example of a type expression is a <em>disjoint</em> or <em>union</em> type:</p>
+<div class="highlight-python"><pre>// Variable can be either an integer or a String
+var value:int or String;</pre>
+</div>
+<p>The <tt class="xref docutils literal"><span class="pre">let</span></tt> and <tt class="xref docutils literal"><span class="pre">var</span></tt> keywords can be used almost anywhere.
+For example, they can be used inside a class to declare a class or struct
+member, as we saw before. They can also be used to declare local variables:</p>
+<div class="highlight-python"><pre>def square(x:int) {
+  let x2 = x * x;
+  return x2;
+}</pre>
+</div>
+<p>Note that even though <tt class="xref docutils literal"><span class="pre">let</span></tt> declares an immutable value, it does not
+have to be a compile-time constant. What <tt class="xref docutils literal"><span class="pre">let</span></tt> really means is &#8220;bind
+this name to this value in this scope&#8221;. Once bound, the binding cannot be
+changed. (In fact, if you only use <tt class="xref docutils literal"><span class="pre">let</span></tt> and never use
+<tt class="xref docutils literal"><span class="pre">var</span></tt>, you are essentially doing pure functional programming.)</p>
+<p>Like many programming languages, you aren&#8217;t allowed to put an assignment in
+a conditional expression:</p>
+<div class="highlight-python"><pre>var m:Match;
+if m = re_ident.match(s) { // ERROR - assignment not allowed here
+  return m.group();
+}</pre>
+</div>
+<p>You can, however, introduce a new variable inside a conditional expression
+using <tt class="xref docutils literal"><span class="pre">let</span></tt> or <tt class="xref docutils literal"><span class="pre">var</span></tt> and assign to it. The scope of the
+variable includes the body of the <tt class="xref docutils literal"><span class="pre">if</span></tt>-statement:</p>
+<div class="highlight-python"><pre>if let m = re_ident.match(s) {
+   return m.group();
+}</pre>
+</div>
+<p>In the case of the &#8216;for...in&#8217; statement, there&#8217;s an implicit <tt class="xref docutils literal"><span class="pre">let</span></tt>
+for the iteration variable:</p>
+<div class="highlight-python"><pre>for a in 1..10 {
+  // do something
+}</pre>
+</div>
+</div>
+<div class="section" id="function-declarations">
+<h2>Function Declarations<a class="headerlink" href="#function-declarations" title="Permalink to this headline">¶</a></h2>
+<p>You can declare variables of function type using the <tt class="xref docutils literal"><span class="pre">fn</span></tt> keyword, which introduces an
+anonymous function type declaration. Here&#8217;s how you might combine <tt class="xref docutils literal"><span class="pre">let</span></tt> and <tt class="xref docutils literal"><span class="pre">fn</span></tt>
+to declare a function:</p>
+<div class="highlight-python"><pre>let f1 = fn (x:int, x:int) -&gt; int {
+  sys.stdout.println("Hello, World!");
+  return 1;
+}</pre>
+</div>
+<p>The symbol <tt class="docutils literal"><span class="pre">-&gt;</span></tt> means &#8220;returns type&#8221;. It&#8217;s used to indicate the return type
+of a function. So <tt class="docutils literal"><span class="pre">fn</span> <span class="pre">(x:int,</span> <span class="pre">y:int)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></tt> is actually the complete
+type of the function.</p>
+<p>Using the <tt class="xref docutils literal"><span class="pre">let</span></tt> keyword to define functions is kind of cumbersome though, so we
+have <tt class="xref docutils literal"><span class="pre">def</span></tt> which is a shortcut:</p>
+<div class="highlight-python"><pre>def f1(x:int, y:int) -&gt; int {
+  sys.stdout.println("Hello, World!");
+  return 1;
+}</pre>
+</div>
+<p>Of course, you can just leave off the return type, since its inferable
+from the <tt class="xref docutils literal"><span class="pre">return</span></tt> statement:</p>
+<div class="highlight-python"><pre>def f1(x:int, y:int) {
+  sys.stdout.println("Hello, World!");
+  return 1;
+}</pre>
+</div>
+</div>
+<div class="section" id="property-declarations">
+<h2>Property Declarations<a class="headerlink" href="#property-declarations" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="xref docutils literal"><span class="pre">def</span></tt> keyword can also be used to define a <em>property</em>. Properties
+are like variables, except that they are implemented using functions. Whenever
+you attempt to read from the property, the property&#8217;s <tt class="docutils literal"><span class="pre">get</span></tt> function will be
+invoked, and when you attempt to modify the value, the <tt class="docutils literal"><span class="pre">set</span></tt> function
+will be called.:</p>
+<div class="highlight-python"><pre>def myProp:int {
+  get { return p; }
+  set (value) { p = value; }
+}
+
+myProp = 1;   // Calls "myProp.set(1)"</pre>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>At this point, you may be wondering why have three keywords - <tt class="xref docutils literal"><span class="pre">let</span></tt>,
+<tt class="xref docutils literal"><span class="pre">var</span></tt> and <tt class="xref docutils literal"><span class="pre">def</span></tt> - when in fact with a smart compiler, one
+keyword could do the job. Indeed, an earlier version of Tart didn&#8217;t use any
+keyword at all, just a punctuation symbol to introduce a new name. The problem
+with this earlier syntax is that the syntax was <em>too</em> regular - it was hard to
+tell one part of the program from another.</p>
+<p>Tart&#8217;s syntax is designed for humans as well as machines. One consequence of
+this is that the grammar is deliberately inconsistent - not <em>greatly</em>
+inconsistent, but just enough to provide a certain amount of variety to make
+common coding idioms pop out visually. Similarly, punctuation characters are
+used judiciously, just enough so as to support quick visual recognition of the
+structure of the code.</p>
+<p>Lots of things can be omitted if they aren&#8217;t needed. The goal is to have
+a syntax that allows the programmer to express their intent clearly, without
+a lot of clutter getting in the way. But not so terse and compressed as
+to look like line noise.</p>
+<p class="last">In other words, the goal is to have something like &#8220;executable pseudo-code&#8221;.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference" href="">Declaring variables and functions</a><ul>
+<li><a class="reference" href="#variable-declarations">Variable Declarations</a></li>
+<li><a class="reference" href="#function-declarations">Function Declarations</a></li>
+<li><a class="reference" href="#property-declarations">Property Declarations</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="types.html"
+                                  title="previous chapter">Type Expressions</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="functions.html"
+                                  title="next chapter">Function Type Expressions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/declarations.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Function Type Expressions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="Type Expressions"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

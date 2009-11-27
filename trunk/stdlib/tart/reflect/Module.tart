@@ -1,0 +1,40 @@
+import tart.annex.Intrinsic;
+import tart.annex.Essential;
+import tart.annex.Nonreflective;
+import tart.core.Memory.Address;
+
+/** Description of a compiled module. */
+@Nonreflective final class Module {
+  private {
+    var _name:String;
+    var _types:Type[];
+    var _methods:Method[];
+    
+    def construct() {}
+  }
+  
+  /** Fully-qualified name of the module. */
+  final def name:String { get { return self._name; } }
+
+  /** Array of types defined in this module. */
+  final def types:Type[] { get { return self._types; } }
+
+  /** Array of types defined in this module. */
+  final def methods:Method[] { get { return self._methods; } }
+  
+  /** Returns a reference to the caller's module. */  
+  @Intrinsic static def thisModule() -> Module;
+
+  /** Returns a reference to module that contains the specified type. */
+  @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
+
+  def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }
+}

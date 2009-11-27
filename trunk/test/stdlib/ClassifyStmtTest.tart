@@ -1,0 +1,87 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  classifyTest1();
+  classifyTest2();
+  classifyTest3();
+  classifyTest4();
+  classifyTest5();
+  classifyTest6();
+  return 0;
+}
+
+def classifyTest1 {
+  let e:Object = "H";
+  classify e as s:String {
+    return;
+  }
+  
+  Debug.fail("Invalid classification");
+}
+
+def classifyTest2 {
+  let e:Object = "H";
+  classify e as s:Exception {
+    Debug.fail("Invalid classification");
+  }
+}
+
+def classifyTest3 {
+  let e:Object = "H";
+  classify e as s:Exception {
+    Debug.fail("Invalid classification");
+  } else {
+    return;
+  }
+
+  Debug.fail("Invalid control flow");
+}
+
+def classifyTest4 {
+  let e:Object = "H";
+  classify e {
+    as s:Exception {
+      Debug.fail("Invalid classification");
+    }
+    
+    as a:int[] {
+      Debug.fail("Invalid classification");
+    }
+    
+    else {
+      return;
+    }
+  }
+
+  Debug.fail("Invalid control flow");
+}
+
+// These test requires union support in LLVM.
+def classifyTest5 {
+  var n:int or float = 1;
+  classify n {
+    as i:int {
+      return;
+    }
+    
+    as f:float {
+      Debug.fail("Invalid classification");
+    }
+  }
+
+  Debug.fail("Invalid control flow");
+}
+
+def classifyTest6 {
+  let n:int or float = 1.0;
+  classify n {
+    as i:int {
+      Debug.fail("Invalid classification");
+    }
+    
+    as f:float {
+      return;
+    }
+  }
+
+  Debug.fail("Invalid control flow");
+}

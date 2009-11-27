@@ -1,0 +1,81 @@
+import tart.collections.Iterators;
+
+@EntryPoint
+def main(args: String[]) -> int {
+  testManualIteration();
+  testManualIteration2();
+  testForeach();
+  testForeach2();
+  testIteratorEqual();
+  return 0;
+}
+
+class Counter : Iterator[int] {
+  private var value:int;
+  private var end:int;
+  
+  def construct(end:int) {
+    self.value = 0;
+    self.end = end;
+  }
+  
+  def next -> int or void {
+    if (self.value < self.end) {
+      return self.value++;
+    } else {
+      return;
+    }
+  }
+}
+
+def testManualIteration() {
+  let ctr = Counter(5);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertFalse(ctr.next() isa int);
+}
+
+def testManualIteration2() {
+  expect2(1, 2);
+}
+
+def expect2(values:int...) {
+  let ctr = values.iterate();
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int);
+  Debug.assertFalse(ctr.next() isa int);
+}
+
+def testForeach() {
+  var sum = 0;
+  for i in Counter(5) {
+    sum += 1;
+    Debug.assertTrue(sum < 6);
+  }
+
+  Debug.assertEq(5, sum);
+}
+
+def testIteratorEqual() {
+  Debug.assertTrue(Iterators.equal([1, 2, 3], [1, 2, 3]));
+  Debug.assertFalse(Iterators.equal([1, 2, 3], [1, 2, 4]));
+  Debug.assertFalse(Iterators.equal([1, 2, 3], [1, 2, 3, 4]));
+  Debug.assertFalse(Iterators.equal([1, 2, 3], [1, 2]));
+}
+
+def testForeach2() {
+  Debug.assertEq(5, sum(1,2,2));
+  Debug.assertEq(10, sum(1,5,4));
+}
+
+def sum(nums:int...) -> int {
+  var sum = 0;
+  for i in nums {
+    sum += i;
+  }
+  
+  return sum;
+}

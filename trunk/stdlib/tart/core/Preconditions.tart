@@ -1,0 +1,23 @@
+/** Namespace of convenience macros that support design-by-contract programming.
+*/
+namespace Preconditions {
+  /** Ensure that the given expression is true, otherwise throw an IllegalArgumentException. */
+  macro checkArgument(expr:bool) {
+    if not expr {
+      throw InvalidArgumentException(Debug.stringify(expr));
+    }
+  }
+
+  /** Ensure that the given expression is true, otherwise throw an IndexOutOfRangeException. */
+  macro checkIndex(expr:bool) {
+    if not expr {
+      throw IndexOutOfRangeException(Debug.stringify(expr));
+    }
+  }
+
+  macro checkIndex[%T](index:int, begin:__Pointer[T], end:__Pointer[T]) {
+    if not Memory.between(index, begin, end) {
+      throw IndexOutOfRangeException(Debug.stringify(expr));
+    }
+  }
+}

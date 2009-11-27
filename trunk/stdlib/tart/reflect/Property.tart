@@ -1,0 +1,13 @@
+class Property : Member {
+  var getter:int;
+  /*
+  private var getter = static fn (obj:Object) -> Object;
+  private var setter = static fn (obj:Object, value:Object);
+  
+  def isReadable:bool;
+  def isWriteable:bool;
+  
+  def getValue(obj:Object) -> Object;
+  def setValue(obj:Object, value:Object);
+  */
+}

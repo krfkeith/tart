@@ -1,0 +1,28 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that the associated function is where
+    execution of the application should start. */
+@Attribute(Attribute.Target.FUNCTION)
+class EntryPoint {
+  public def construct() {}
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+  
+  static def entry(
+      argc:int,
+      argv:__Address[__Address[ubyte]],
+      func:static fn :String[] -> int) -> int {
+    return 0;
+    try {
+      let args = String[](argc);
+      for i:int = 0; i < argc; ++i {
+        args[i] = String(argv[i], strlen(argv[i]));
+      }
+      return func(args);
+    } catch t:Throwable {
+      Debug.writeLn("Exception: ", t.toString());
+      return 1;
+    }
+  }
+
+  @Extern("strlen") static def strlen(str:__Address[ubyte]) -> int;
+}

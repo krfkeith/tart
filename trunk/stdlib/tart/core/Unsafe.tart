@@ -1,0 +1,9 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that the associated function or type cannot be used without
+    the 'unsafe' option to the compiler. */
+@Attribute(Attribute.Target.ANY)
+class Unsafe {
+  public def construct() {}
+  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+}

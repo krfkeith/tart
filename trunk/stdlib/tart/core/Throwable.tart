@@ -1,0 +1,25 @@
+/** The base class for all throwable objects. */
+class Throwable {
+  private {
+    // Exception structure needed by libunwind.
+    final struct UnwindException {
+      var exceptionClass:ulong;
+      var exceptionCleanup:static fn(:int, :int);
+      var private1:ulong;
+      var private2:ulong;
+    }
+    
+    // Padding needed to align the exceptInfo
+    var padding:__Pointer[void];
+
+    // Exception structure instance.
+    var exceptInfo:UnwindException;
+  }
+
+  protected def construct() {
+    // TODO: It doesn't call the constructor for struct member types.
+    self.exceptInfo.exceptionClass = 0;
+    self.exceptInfo.private1 = 0;
+    self.exceptInfo.private2 = 0;
+  }
+}
