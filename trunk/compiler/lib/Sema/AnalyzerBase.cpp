@@ -638,8 +638,8 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
       arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }
 
-ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const TypeRef & elementType) {
-  CompositeType * arrayType = getArrayTypeForElement(elementType.type());
+ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elementType) {
+  CompositeType * arrayType = getArrayTypeForElement(elementType);
   ArrayLiteralExpr * array = new ArrayLiteralExpr(loc);
   array->setType(arrayType);
 

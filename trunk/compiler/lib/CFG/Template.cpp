@@ -193,7 +193,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   bool isPartial = false;
 
   // Check to make sure that the parameters are of the correct type.
-  TypeRefList paramValues;
+  ConstTypeList paramValues;
   bool noCache = false;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
@@ -274,17 +274,17 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   for (int i = 0; i < vars_.size(); ++i) {
     PatternVar * var = vars_[i];
-    TypeRef & value = paramValues[i];
+    const Type * value = paramValues[i];
 
     Defn * argDefn;
-    if (UnitType * ntc = dyn_cast<UnitType>(value.type())) {
+    if (const UnitType * ntc = dyn_cast<UnitType>(value)) {
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
     } else {
-      argDefn = new TypeDefn(result->module(), var->name(), value.type());
+      argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value));
     }
 
-    argDefn->setSingular(value.isSingular());
-    isSingular &= value.isSingular();
+    argDefn->setSingular(value->isSingular());
+    isSingular &= value->isSingular();
     argDefn->addTrait(Defn::Synthetic);
     tinst->addMember(argDefn);
   }

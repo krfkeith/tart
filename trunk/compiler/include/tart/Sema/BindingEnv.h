@@ -162,7 +162,6 @@ public:
       the input expression contains no type variables.
    */
   const Type * subst(const Type * in) const;
-  TypeRef subst(const TypeRef & in) const;
 
   /** Return a list of substitutions for this environment. */
   Substitution * substitutions() const {

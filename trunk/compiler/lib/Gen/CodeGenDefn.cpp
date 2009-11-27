@@ -279,8 +279,8 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
     return gv;
   }
 
-  TypeRef varType = var->type();
-  DASSERT(varType.isDefined());
+  const Type * varType = var->type();
+  DASSERT(varType != NULL);
 
   // Create the global variable
   GlobalValue::LinkageTypes linkType = Function::ExternalLinkage;
@@ -299,7 +299,7 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
   // the type of a global variable into a pointer anyway.
-  const llvm::Type * irType = varType.irEmbeddedType();
+  const llvm::Type * irType = varType->irEmbeddedType();
   gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL, var->linkageName());
 
   // Only supply an initialization expression if the variable was
@@ -319,10 +319,10 @@ Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
           return NULL;
         }
 
-        if (varType.isReferenceType()) {
+        if (varType->isReferenceType()) {
           initValue = new GlobalVariable(
               *irModule_, initValue->getType(), false, linkType, initValue, "");
-          initValue = llvm::ConstantExpr::getPointerCast(initValue, varType.irEmbeddedType());
+          initValue = llvm::ConstantExpr::getPointerCast(initValue, varType->irEmbeddedType());
         }
 
         gv->setInitializer(initValue);

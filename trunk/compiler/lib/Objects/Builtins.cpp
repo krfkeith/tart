@@ -47,7 +47,6 @@ Type * Builtins::typeUnsupportedOperationException;
 
 Type * Builtins::typeTypeDescriptor;
 Type * Builtins::typeType;
-Type * Builtins::typeTypeRef;
 Type * Builtins::typeTypeLiteral;
 Type * Builtins::typeSimpleType;
 Type * Builtins::typeComplexType;
@@ -159,7 +158,6 @@ void Builtins::loadSystemClasses() {
 
 void Builtins::loadReflectionClasses() {
   if (typeModule == NULL) {
-    typeTypeRef = loadSystemType("tart.reflect.TypeRef");
     typeSimpleType = loadSystemType("tart.reflect.SimpleType");
     typeComplexType = loadSystemType("tart.reflect.ComplexType");
     typeEnumType = loadSystemType("tart.reflect.EnumType");

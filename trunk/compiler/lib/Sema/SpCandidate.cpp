@@ -42,7 +42,7 @@ bool SpCandidate::unify(SourceContext * source) {
 ConversionRank SpCandidate::updateConversionRank() {
   const TemplateSignature * tsig = def_->templateSignature();
   if (params_ == NULL) {
-    TypeRefList typeParams;
+    TypeList typeParams;
     if (def_->hasUnboundTypeParams()) {
       RelabelTransform rt(env_);
       params_ = cast<TupleType>(rt.transform(tsig->typeParams()));

@@ -24,7 +24,7 @@ Implementation TODOS:
   * See if we can make Substitution->right a const.
   * Fill out TypeOrderings.h
   * Unit tests for lexical type ordering.
-* Coalescing
+* Link-time coalescing
 * typecast[type](in);
   * More tests
 * Boxed values:
@@ -39,16 +39,15 @@ Implementation TODOS:
   * auto TypeLiteral
 * Local functions
   * Anonymous functions
+* intptr and uintptr
 * Stack dumps / trace
 * Why is linking so slow? (because internalize doesn't work).
 * Test overloading of augmented assignment operators.
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
-* Override and redef syntax. refine toString -> String {} "defover"?
+* Override and redef syntax.
   * How does that affect properties?
-  * +def
-  * Template syntax.
 * Typename.type
   * Proxy
 * Preconditions.verify[%T]

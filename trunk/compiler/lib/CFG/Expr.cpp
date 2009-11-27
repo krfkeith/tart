@@ -82,22 +82,12 @@ ErrorExpr Expr::ErrorVal;
 
 const ExprList Expr::emptyList;
 
-Expr::Expr(ExprType k, const SourceLocation & l, const TypeRef & type)
-  : exprType_(k)
-  , loc_(l)
-  , type_(type.type())
-{}
-
 void Expr::format(FormatStream & out) const {
   out << exprTypeName(exprType_);
 }
 
 void Expr::trace() const {
   safeMark(type_);
-}
-
-void Expr::setType(const TypeRef & type) {
-  type_ = type.type();
 }
 
 // -------------------------------------------------------------------
@@ -370,45 +360,45 @@ bool CallExpr::isSingular() const {
   return function_ != NULL && function_->isSingular();
 }
 
-Type * CallExpr::singularParamType(int index) {
-  TypeRef singularType;
+const Type * CallExpr::singularParamType(int index) {
+  const Type * singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    TypeRef ty = (*it)->paramType(index);
-    if (!singularType.isDefined()) {
+    const Type *  ty = (*it)->paramType(index);
+    if (singularType == NULL) {
       singularType = ty;
-    } else if (!ty.isEqual(singularType)) {
+    } else if (!ty->isEqual(singularType)) {
       return NULL;
     }
   }
 
-  return singularType.type();
+  return singularType;
 }
 
-Type * CallExpr::singularResultType() {
-  TypeRef singularType;
+const Type * CallExpr::singularResultType() {
+  const Type * singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     CallCandidate * cc = *it;
     if (cc->isCulled()) {
       continue;
     }
 
-    TypeRef ty = cc->resultType();
+    const Type * ty = cc->resultType();
     if (cc->method() != NULL && cc->method()->isCtor()) {
       ty = cc->functionType()->selfParam()->type();
     }
 
-    if (!singularType.isDefined()) {
+    if (singularType == NULL) {
       singularType = ty;
-    } else if (!ty.isEqual(singularType)) {
+    } else if (!ty->isEqual(singularType)) {
       return NULL;
     }
   }
 
-  return singularType.type();
+  return singularType;
 }
 
 CallCandidate * CallExpr::singularCandidate() {
@@ -711,16 +701,10 @@ void LocalCallExpr::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // InstanceOfExpr
-InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, Type * ty)
+InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, const Type * ty)
   : Expr(InstanceOf, loc, &BoolType::instance)
   , value_(value)
   , toType_(ty)
-{}
-
-InstanceOfExpr::InstanceOfExpr(const SourceLocation & loc, Expr * value, const TypeRef & ty)
-  : Expr(InstanceOf, loc, &BoolType::instance)
-  , value_(value)
-  , toType_(ty.type())
 {}
 
 void InstanceOfExpr::format(FormatStream & out) const {

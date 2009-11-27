@@ -70,7 +70,7 @@ public:
       that this argument will be assigned to. This may not be the same
       as the formally declared parameter type, as pattern variable
       substitutions may have occurred. */
-  TypeRef paramType(int argIndex) const;
+  const Type * paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */
   const Type * resultType() const { return resultType_; }
@@ -136,7 +136,7 @@ private:
   BindingEnv bindingEnv_;
   const FunctionType * fnType_;
   const Type * resultType_;
-  TypeRefList paramTypes_;
+  ConstTypeList paramTypes_;
   const TupleType * typeParams_;
   const TupleType * typeArgs_;
   TemplateConditionList conditions_;

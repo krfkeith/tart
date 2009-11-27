@@ -61,11 +61,6 @@ BuiltinMemberRef<VariableDefn> functionType_paramTypes(Builtins::typeFunctionTyp
 BuiltinMemberRef<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
 BuiltinMemberRef<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
 
-// Members of tart.core.reflect.TypeRef.
-BuiltinMemberRef<VariableDefn> typeRef_type(Builtins::typeTypeRef, "type");
-BuiltinMemberRef<VariableDefn> typeRef_modifiers(Builtins::typeTypeRef, "modifiers");
-BuiltinMemberRef<TypeDefn> typeRef_enumModifiers(Builtins::typeTypeRef, "Modifiers");
-
 // Members of tart.core.reflect.TypeDescriptor.
 BuiltinMemberRef<VariableDefn> typeDescriptor_typeInfo(Builtins::typeTypeDescriptor, "_typeInfo");
 BuiltinMemberRef<VariableDefn> typeDescriptor_typeKind(Builtins::typeTypeDescriptor, "_typeKind");

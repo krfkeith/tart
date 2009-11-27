@@ -1218,10 +1218,10 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
 
 Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const CompositeType * arrayType = cast<CompositeType>(in->type());
-  TypeRef elementType = arrayType->typeDefn()->templateInstance()->typeArg(0);
+  const Type * elementType = arrayType->typeDefn()->templateInstance()->typeArg(0);
   size_t arrayLength = in->args().size();
 
-  const llvm::Type * etype = elementType.irEmbeddedType();
+  const llvm::Type * etype = elementType->irEmbeddedType();
 
   // Arguments to the array-creation function
   ValueList args;

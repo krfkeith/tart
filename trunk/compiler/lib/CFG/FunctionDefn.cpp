@@ -132,10 +132,10 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   const FunctionType * funcType = functionType();
   const FunctionType * baseType = base->functionType();
 
-  const TypeRef baseReturn = baseType->returnType();
-  const TypeRef funcReturn = funcType->returnType();
+  const Type * baseReturn = baseType->returnType();
+  const Type * funcReturn = funcType->returnType();
 
-  if (!baseReturn.isEqual(funcReturn)) {
+  if (!baseReturn->isEqual(funcReturn)) {
     // TODO: Variance test.
     return false;
   }
@@ -153,10 +153,10 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
     if (baseArg->isVariadic() != funcArg->isVariadic())
       return false;
 
-    TypeRef baseArgType = baseArg->type();
-    TypeRef funcArgType = funcArg->type();
+    const Type * baseArgType = baseArg->type();
+    const Type * funcArgType = funcArg->type();
 
-    if (!baseArgType.isEqual(funcArgType)) {
+    if (!baseArgType->isEqual(funcArgType)) {
       switch (baseArg->variance()) {
         case Invariant:
           // funcArgType must be equal to base type

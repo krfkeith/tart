@@ -971,10 +971,10 @@ template<> void IntPtrType::init() {
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SInt64>::value);
+*/  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UnsizedInt>::value);
+  addMember(&PrimitiveToString<TypeId_SIntPtr>::value);
 
-  defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(64), this));
+/*  defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(64), this));
   defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(64), this));*/
 
   PrimitiveToString<TypeId_SIntPtr>::value.init();
@@ -1177,11 +1177,11 @@ template<> void UIntPtrType::init() {
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt16>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt32>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UInt64>::value);
+  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt64>::value); */
+  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UnsizedInt>::value);
+  addMember(&PrimitiveToString<TypeId_UIntPtr>::value);
 
-  defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(64), this));
+/*  defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(64), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(64), this));*/
 
   PrimitiveToString<TypeId_UIntPtr>::value.init();

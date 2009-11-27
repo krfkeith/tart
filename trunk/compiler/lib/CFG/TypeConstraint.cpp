@@ -29,8 +29,8 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
       continue;
     }
 
-    TypeRef resultType = (*it)->resultType();
-    ConversionRank rank = toType->canConvert(resultType.type());
+    const Type * resultType = (*it)->resultType();
+    ConversionRank rank = toType->canConvert(resultType);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -50,8 +50,8 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
       continue;
     }
 
-    TypeRef resultType = (*it)->resultType();
-    ConversionRank rank = resultType.convert(conversion);
+    const Type * resultType = (*it)->resultType();
+    ConversionRank rank = resultType->convert(conversion);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -73,9 +73,9 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
       continue;
     }
 
-    TypeRef resultType = (*it)->resultType();
+    const Type * resultType = (*it)->resultType();
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, resultType.type(), Invariant)) {
+    if (env.unify(&candidateSite, pattern, resultType, Invariant)) {
       if (match) {
         env.setSubstitutions(saveSub);
         return false;
@@ -132,8 +132,8 @@ bool ResultOfConstraint::includes(const Type * other) const {
       continue;
     }
 
-    TypeRef resultType = (*it)->resultType();
-    if (resultType.type()->includes(other)) {
+    const Type * resultType = (*it)->resultType();
+    if (resultType->includes(other)) {
       return true;
     }
   }
@@ -155,7 +155,7 @@ void ResultOfConstraint::trace() const {
 }
 
 void ResultOfConstraint::format(FormatStream & out) const {
-  Type * singularType = callExpr->singularResultType();
+  const Type * singularType = callExpr->singularResultType();
   if (singularType != NULL) {
     out << singularType;
     return;
@@ -169,7 +169,7 @@ void ResultOfConstraint::format(FormatStream & out) const {
       continue;
     }
 
-    TypeRef resultType = (*it)->resultType();
+    const Type * resultType = (*it)->resultType();
     if (!first) {
       out << "|";
     }

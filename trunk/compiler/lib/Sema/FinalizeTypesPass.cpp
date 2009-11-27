@@ -302,14 +302,14 @@ bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     int paramIndex = cd->parameterIndex(argIndex);
     ParameterDefn * param = fnType->params()[paramIndex];
-    TypeRef paramType = param->type();
-    DASSERT(paramType.isSingular());
+    const Type * paramType = param->type();
+    DASSERT(paramType->isSingular());
     Expr * argVal = visitExpr(args[argIndex]);
     if (isErrorResult(argVal)) {
       return false;
     }
 
-    Expr * castArgVal = addCastIfNeeded(argVal, paramType.type());
+    Expr * castArgVal = addCastIfNeeded(argVal, paramType);
     if (castArgVal == NULL) {
       diag.error(argVal) << "Unable to convert argument of type " << argVal->type() << " to " <<
           paramType;

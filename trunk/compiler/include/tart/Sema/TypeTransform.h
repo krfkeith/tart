@@ -27,10 +27,8 @@ class TypeAlias;
 /// A framework for general transformations on type expressions.
 class TypeTransform {
 public:
-  TypeRef transform(const TypeRef & in) { return visit(in); }
   const Type * transform(const Type * in) { return visit(in); }
 
-  TypeRef visit(const TypeRef & in);
   const Type * visit(const Type * in);
   virtual const Type * visitPrimitiveType(const PrimitiveType * in);
   virtual const Type * visitCompositeType(const CompositeType * in);

@@ -465,7 +465,7 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
       arg = static_cast<const ASTKeywordArg *>(arg)->arg();
     }
 
-    Type * paramType = getMappedParameterType(call, i);
+    const Type * paramType = getMappedParameterType(call, i);
     if (paramType == NULL) {
       return false;
     }
@@ -481,8 +481,8 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
   return true;
 }
 
-Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
-  Type * ty = call->singularResultType();
+const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
+  const Type * ty = call->singularResultType();
   if (ty != NULL) {
     if (call->isSingular()) {
       DASSERT_OBJ(ty->isSingular(), call);
@@ -494,8 +494,8 @@ Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
   return new ResultOfConstraint(call);
 }
 
-Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
-  Type * ty = call->singularParamType(index);
+const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
+  const Type * ty = call->singularParamType(index);
   if (ty != NULL) {
     return ty;
   }

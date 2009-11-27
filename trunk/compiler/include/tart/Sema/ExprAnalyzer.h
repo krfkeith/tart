@@ -42,7 +42,6 @@ public:
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
    Report an error if the cast is not possible. */
   Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
-  Expr * doImplicitCast(Expr * in, const TypeRef & toType);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 
   // Literals
@@ -115,12 +114,12 @@ public:
   bool reduceArgList(const ASTNodeList & in, CallExpr * call);
 
   /** Evaluate the function return type. */
-  Type * reduceReturnType(CallExpr * call);
+  const Type * reduceReturnType(CallExpr * call);
 
   /** Given the index of an input argument, determine for each candidate
       which parameter that argument maps to, and return a set containing
       the types of those parameters. */
-  Type * getMappedParameterType(CallExpr * call, int index);
+  const Type * getMappedParameterType(CallExpr * call, int index);
 
   /** Add an overload to a call expression.
 

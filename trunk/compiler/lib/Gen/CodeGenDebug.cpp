@@ -142,10 +142,6 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   }
 }
 
-DIType CodeGenerator::genDIType(const TypeRef & ref) {
-  return genDIType(ref.type());
-}
-
 DIType CodeGenerator::genDIType(const Type * type) {
   DIType & result = dbgTypeMap_[type];
   if (!result.isNull()) {
@@ -197,7 +193,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
     case Type::Alias: {
       const TypeAlias * alias = static_cast<const TypeAlias *>(type);
-      result = genDIType(alias->value());
+      result = genDIType(alias->value().type());
     }
 
     default:
@@ -223,25 +219,6 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
       typeEncoding(type->typeId()));
 }
 
-DIType CodeGenerator::genDIEmbeddedType(const TypeRef & type) {
-  DIType di = genDIType(type);
-  if (type.typeClass() == Type::Class) {
-    di = dbgFactory_.CreateDerivedTypeEx(
-        dwarf::DW_TAG_pointer_type,
-        dbgCompileUnit_,
-        "",
-        genDICompileUnit(type.type()->typeDefn()),
-        0,
-        getSizeOfInBits(type.irEmbeddedType()),
-        getAlignOfInBits(type.irEmbeddedType()),
-        getInt64Val(0), 0,
-        di);
-  }
-
-  di.Verify();
-  return di;
-}
-
 DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class) {
@@ -261,17 +238,17 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   return di;
 }
 
-DIType CodeGenerator::genDIParameterType(const TypeRef & type) {
+DIType CodeGenerator::genDIParameterType(const Type * type) {
   DIType di = genDIType(type);
-  if (type.typeClass() == Type::Class) {
+  if (type->typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
         "",
-        genDICompileUnit(type.type()->typeDefn()),
+        genDICompileUnit(type->typeDefn()),
         0,
-        getSizeOfInBits(type.irEmbeddedType()),
-        getAlignOfInBits(type.irEmbeddedType()),
+        getSizeOfInBits(type->irEmbeddedType()),
+        getAlignOfInBits(type->irEmbeddedType()),
         getInt64Val(0), 0,
         di);
   }
@@ -433,8 +410,8 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   // Collect union members
   int memberIndex = 0;
   for (TupleType::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
-    TypeRef memberType = *it;
-    if (memberType.isNonVoidType()) {
+    const Type * memberType = *it;
+    if (!memberType->isVoidType()) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
       DIType memberDbgType = genDIEmbeddedType(memberType);
@@ -444,8 +421,8 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
           name,
           DICompileUnit(),
           0,
-          getSizeOfInBits(memberType.irEmbeddedType()),
-          getAlignOfInBits(memberType.irEmbeddedType()),
+          getSizeOfInBits(memberType->irEmbeddedType()),
+          getAlignOfInBits(memberType->irEmbeddedType()),
           getInt64Val(0), 0,
           memberDbgType));
     }

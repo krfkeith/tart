@@ -24,20 +24,13 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeTransform
 
-TypeRef TypeTransform::visit(const TypeRef & in) {
-  TypeRef result(in);
-  // TODO: Handle preservation of modifiers.
-  if (in.type()->typeClass() == Type::Alias) {
-    return visit(static_cast<TypeAlias *>(in.type())->value());
-  }
-
-  result.setType(const_cast<Type *>(transform(in.type())));
-  return result;
-}
-
 const Type * TypeTransform::visit(const Type * in) {
   if (isErrorResult(in)) {
     return in;
+  }
+
+  if (in->typeClass() == Type::Alias) {
+    return visit(static_cast<const TypeAlias *>(in)->value().type());
   }
 
   switch (in->typeClass()) {
@@ -226,10 +219,10 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       PatternVar * param = tsig->patternVar(i);
-      TypeRef value = tinst->typeArg(i);
-      TypeRef svalue = visit(value);
-      if (svalue.isDefined()) {
-        partialEnv.addSubstitution(param, svalue.type());
+      const Type * value = tinst->typeArg(i);
+      const Type * svalue = visit(value);
+      if (svalue != NULL) {
+        partialEnv.addSubstitution(param, svalue);
       }
     }
 

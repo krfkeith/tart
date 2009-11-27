@@ -373,14 +373,6 @@ private:
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
 
-typedef llvm::SmallVector<TypeRef, 4> TypeRefList;
-
-inline void traceTypeRefList(const TypeRefList & refs) {
-  for (TypeRefList::const_iterator it = refs.begin(); it != refs.end(); ++it) {
-    it->trace();
-  }
-}
-
 /// -------------------------------------------------------------------
 /// A pair of type refs - used as a map key.
 class TypePair {

@@ -54,7 +54,6 @@ public:
   // System types - reflection
   static Type * typeTypeDescriptor;
   static Type * typeType;
-  static Type * typeTypeRef;
   static Type * typeTypeLiteral;
   static Type * typeSimpleType;
   static Type * typeComplexType;

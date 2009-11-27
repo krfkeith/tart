@@ -115,7 +115,7 @@ public:
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
       construction of the array. */
-  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const TypeRef & elementType);
+  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const Type * elementType);
 
   /** Given a type, return the coercion function to convert it to a reference type. */
   static FunctionDefn * coerceToObjectFn(const Type * type);

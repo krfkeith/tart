@@ -43,8 +43,8 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
       DASSERT_OBJ(cc->method()->passes().isFinished(FunctionDefn::ParameterTypePass), cc->method());
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-        TypeRef paramType = cc->paramType(argIndex);
-        if (!paramType.isEqual(&UnsizedIntType::instance)) {
+        const Type * paramType = cc->paramType(argIndex);
+        if (!paramType->isEqual(&UnsizedIntType::instance)) {
           exactMatch = false;
         }
       }

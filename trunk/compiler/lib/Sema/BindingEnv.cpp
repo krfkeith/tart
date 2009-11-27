@@ -559,14 +559,6 @@ Type * BindingEnv::dereference(Type * type) const {
   return type;
 }
 
-TypeRef BindingEnv::subst(const TypeRef & in) const {
-  if (substitutions_ == NULL) {
-    return in;
-  }
-
-  return SubstitutionTransform(*this).transform(in);
-}
-
 const Type * BindingEnv::subst(const Type * in) const {
   if (substitutions_ == NULL || isErrorResult(in)) {
     return in;

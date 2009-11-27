@@ -307,7 +307,6 @@ public:
   void setDebugLocation(const SourceLocation & loc);
 
   /** Generate debugging information for types. */
-  llvm::DIType genDIType(const TypeRef & ref);
   llvm::DIType genDIType(const Type * type);
   llvm::DIBasicType genDIPrimitiveType(const PrimitiveType * type);
   llvm::DICompositeType genDICompositeType(const CompositeType * type);
@@ -323,8 +322,7 @@ public:
   llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * irtype,
       llvm::StringRef name, int index);
   llvm::DIType genDIEmbeddedType(const Type * type);
-  llvm::DIType genDIEmbeddedType(const TypeRef & type);
-  llvm::DIType genDIParameterType(const TypeRef & type);
+  llvm::DIType genDIParameterType(const Type * type);
 
   // Return the pointer to the reflection data for this module.
   llvm::GlobalVariable * createModuleObjectPtr();

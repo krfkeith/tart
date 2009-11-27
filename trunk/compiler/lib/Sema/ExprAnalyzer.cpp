@@ -746,15 +746,15 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       return &Expr::ErrorVal;
     }
 
-    TypeRef elemType = naType->typeParam(0);
-    DASSERT_OBJ(elemType.isDefined(), naType);
+    const Type * elemType = naType->typeParam(0);
+    DASSERT_OBJ(elemType != NULL, naType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array index dimensions";
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType.type(), arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
   }
 
   // See if the type has any indexers defined.
@@ -946,10 +946,10 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   ExprList castArgs;
   size_t argCount = call->args().size();
   for (size_t i = 0; i < argCount; ++i) {
-    TypeRef paramType = getter->functionType()->param(i)->type();
+    const Type * paramType = getter->functionType()->param(i)->type();
     Expr * arg = call->arg(i);
-    arg = inferTypes(subject(), arg, paramType.type());
-    Expr * castArg = paramType.implicitCast(arg->location(), arg);
+    arg = inferTypes(subject(), arg, paramType);
+    Expr * castArg = paramType->implicitCast(arg->location(), arg);
     if (isErrorResult(castArg)) {
       return &Expr::ErrorVal;
     }
@@ -1099,10 +1099,6 @@ Expr * ExprAnalyzer::lvalueBase(LValueExpr * lval) {
   }
 
   return base;
-}
-
-Expr * ExprAnalyzer::doImplicitCast(Expr * in, const TypeRef & toType) {
-  return doImplicitCast(in, toType.type());
 }
 
 Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoerce) {

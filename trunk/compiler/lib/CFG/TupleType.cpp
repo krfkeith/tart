@@ -115,7 +115,7 @@ ConversionRank TupleType::convertImpl(const Conversion & cn) const {
   // Create a temporary cn with no result value.
   Conversion ccTemp(cn);
   ccTemp.resultValue = NULL;
-  for (TypeRefList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     ConversionRank rank = it->type()->convert(ccTemp);
     if (rank > bestRank) {
       bestRank = rank;
