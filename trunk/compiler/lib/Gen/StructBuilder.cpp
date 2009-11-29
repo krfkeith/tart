@@ -36,10 +36,6 @@ StructBuilder & StructBuilder::addNullField(const Type * type) {
   return addField(ConstantPointerNull::get(irType));
 }
 
-StructBuilder & StructBuilder::addNullField(const TypeRef & type) {
-  return addNullField(type.type());
-}
-
 StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value) {
   members_.push_back(ConstantInt::get(cast<IntegerType>(type->irType()), value, true));
   return *this;

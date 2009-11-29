@@ -27,16 +27,12 @@ TEST(TypeTest, TypeAttributes) {
 }
 
 #if 0
-TEST(TypeTest, TypeRefIterPairTest) {
+TEST(TypeTest, TypePairTest) {
   typedef TypeTupleKeyInfo TRIPKI;
 
-  TypeRef t0(&IntType::instance);
-  TypeRef t1(&IntType::instance);
-  TypeRef t2(&ShortType::instance);
-
-  TypeTupleKey p0(&t0, &t0 + 1);
-  TypeTupleKey p1(&t1, &t1 + 1);
-  TypeTupleKey p2(&t2, &t2 + 1);
+  TypeTupleKey p0(&IntType::instance, &IntType::instance + 1);
+  TypeTupleKey p1(&IntType::instance, &IntType::instance + 1);
+  TypeTupleKey p2(&ShortType::instance, &ShortType::instance + 1);
 
   ASSERT_TRUE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p1));
   ASSERT_FALSE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p2));
@@ -183,11 +179,11 @@ public:
 /// A pair of type refs - used as a map key.
 class TypePair {
 public:
-  TypePair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypePair(const Type * first, const Type * second) : first_(first), second_(second) {}
   TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
 
-  const TypeRef & first() { return first_; }
-  const TypeRef & second() { return second_; }
+  const Type * first() { return first_; }
+  const Type * second() { return second_; }
 
   bool operator==(const TypePair & other) const {
     return first_ == other.first_ && second_ == other.second_;
@@ -200,23 +196,29 @@ public:
   // Structure used when using type ref as a key.
   struct KeyInfo {
     static inline TypePair getEmptyKey() {
-      return TypePair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+      return TypePair(Type::KeyInfo::getEmptyKey(), Type::KeyInfo::getEmptyKey());
     }
 
     static inline TypePair getTombstoneKey() {
-      return TypePair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+      return TypePair(Type::KeyInfo::getTombstoneKey(), Type::KeyInfo::getTombstoneKey());
     }
 
     static unsigned getHashValue(const TypePair & val) {
-      return TypeRef::KeyInfo::getHashValue(val.first_) ^
-          (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
+      return Type::KeyInfo::getHashValue(val.first_) ^
+          (Type::KeyInfo::getHashValue(val.second_) << 1);
     }
 
     static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
-      return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
-          TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
+      return Type::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
+          Type::KeyInfo::isEqual(lhs.second_, rhs.second_);
     }
+
+    static bool isPod() { return true; }
   };
+
+private:
+  const Type * first_;
+  const Type * second_;
 };
 
 // -------------------------------------------------------------------

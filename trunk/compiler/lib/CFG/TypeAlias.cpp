@@ -10,37 +10,37 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeAlias
 
-TypeAlias::TypeAlias(const TypeRef & val)
+TypeAlias::TypeAlias(const Type * val)
   : Type(Alias)
   , value_(val)
 {
 }
 
 const llvm::Type * TypeAlias::irType() const {
-  DASSERT(value_.isDefined());
-  return value_.irType();
+  DASSERT(value_ != NULL);
+  return value_->irType();
 }
 
 const llvm::Type * TypeAlias::irEmbeddedType() const {
-  return value_.irEmbeddedType();
+  return value_->irEmbeddedType();
 }
 
 const llvm::Type * TypeAlias::irParameterType() const {
-  return value_.irParameterType();
+  return value_->irParameterType();
 }
 
 ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
-  DASSERT(value_.isDefined());
-  return value_.type()->convertImpl(conversion);
+  DASSERT(value_ != NULL);
+  return value_->convertImpl(conversion);
 }
 
 void TypeAlias::format(FormatStream & out) const {
-  DASSERT(value_.isDefined());
-  return value_.type()->format(out);
+  DASSERT(value_ != NULL);
+  return value_->format(out);
 }
 
 void TypeAlias::trace() const {
-  value_.trace();
+  value_->mark();
 }
 
 } // namespace tart

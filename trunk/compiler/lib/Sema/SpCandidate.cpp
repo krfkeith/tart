@@ -24,9 +24,9 @@ bool SpCandidate::unify(SourceContext * source) {
   const TemplateSignature * tsig = def_->templateSignature();
   DASSERT(tsig->typeParams()->size() == args_->size());
   for (size_t i = 0; i < args_->size(); ++i) {
-    TypeRef pattern = tsig->typeParam(i);
-    TypeRef value = (*args_)[i];
-    if (!env_.unify(source, pattern.type(), value.type(), Invariant)) {
+    const Type * pattern = tsig->typeParam(i);
+    const Type * value = (*args_)[i];
+    if (!env_.unify(source, pattern, value, Invariant)) {
       return false;
     }
   }
@@ -72,13 +72,13 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
   bool same = true;
   size_t numParams = tsig->typeParams()->size();
   for (size_t i = 0; i < numParams; ++i) {
-    TypeRef param = tsig->typeParam(i);
-    TypeRef oparam = otsig->typeParam(i);
+    const Type * param = tsig->typeParam(i);
+    const Type * oparam = otsig->typeParam(i);
 
-    if (!param.isEqual(oparam)) {
+    if (!param->isEqual(oparam)) {
       same = false;
-      if (!param.isSubtype(oparam)) {
-        if (oparam.type()->typeClass() != Type::Pattern) {
+      if (!param->isSubtype(oparam)) {
+        if (oparam->typeClass() != Type::Pattern) {
           return false;
         }
 

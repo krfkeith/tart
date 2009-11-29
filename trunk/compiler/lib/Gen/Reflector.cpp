@@ -296,7 +296,7 @@ llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
   sb.addNullField(method_params.type());
 
   llvm::Constant * fnVal = cg_.genFunctionValue(func);
-  sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type().irType()));
+  sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type()->irType()));
   return sb.build(Builtins::typeMethod->irType());
 }
 
@@ -318,9 +318,9 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   return sb.build(Builtins::typeMember->irType());
 }
 
-llvm::Constant * Reflector::emitTypeReference(const TypeRef & type) {
+llvm::Constant * Reflector::emitTypeReference(const Type * type) {
   return llvm::ConstantExpr::getPointerCast(
-      getTypePtr(type.type()), Builtins::typeType->irEmbeddedType());
+      getTypePtr(type), Builtins::typeType->irEmbeddedType());
 }
 
 const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {

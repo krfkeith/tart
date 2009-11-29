@@ -159,21 +159,6 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
   }
 }
 
-ComparisonResult TypeOrdering::compare(const TypeRef & t1, const TypeRef & t2) {
-  ComparisonResult result = EQUAL;
-  if (t1.modifiers() != t2.modifiers()) {
-    if (t1.modifiers() & ~t2.modifiers() == 0) {
-      result = RIGHT_FIRST;
-    } else if (t2.modifiers() & ~t1.modifiers() == 0) {
-      result = LEFT_FIRST;
-    } else {
-      return UNORDERED;
-    }
-  }
-
-  return result + compare(t1.type(), t2.type());
-}
-
 ComparisonResult TypeOrdering::compare(const PrimitiveType * t1, const PrimitiveType * t2) {
   return t1 == t2 ? EQUAL : UNORDERED;
 }
@@ -245,37 +230,11 @@ ComparisonResult TypeOrdering::compareWithConstraint(const TypeConstraint * t1, 
   return t1 == t2 ? EQUAL : UNORDERED;
 }
 
-#if 0
-ComparisonResult compareSpecificity(const TypeRef & t1, const TypeRef & t2) {
-  ComparisonResult result = EQUAL;
-  if (t1.modifiers() != t2.modifiers()) {
-    if (t1.modifiers() & ~t2.modifiers() == 0) {
-      result = RIGHT_FIRST;
-    } else if (t2.modifiers() & ~t1.modifiers() == 0) {
-      result = LEFT_FIRST;
-    } else {
-      return UNORDERED;
-    }
-  }
-
-  return combineResults(result, compareSpecificity(t1.type(), t2.type()));
-}
-
-#endif
-
 // -------------------------------------------------------------------
 // LexicalTypeLess
 
-bool LexicalTypeOrdering::operator()(const TypeRef & t0, const TypeRef & t1) const {
-  return compare(t0.type(), t1.type()) < 0;
-}
-
 bool LexicalTypeOrdering::operator()(const Type * t0, const Type * t1) const {
   return compare(t0, t1) < 0;
-}
-
-int LexicalTypeOrdering::compare(const TypeRef & t0, const TypeRef & t1) {
-  return compare(t0.type(), t1.type());
 }
 
 int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {

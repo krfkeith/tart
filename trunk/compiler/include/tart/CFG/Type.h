@@ -34,7 +34,6 @@ namespace llvm {
 namespace tart {
 
 class BindingEnv;
-class TypeRef;
 class TupleType;
 class CompositeType;
 
@@ -191,7 +190,6 @@ public:
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */
   static bool equivalent(const Type * type1, const Type * type2);
-  static bool equivalent(const TypeRef & type1, const TypeRef & type2);
 
   // Structure used when using type pointers as a key.
   struct KeyInfo {
@@ -282,106 +280,14 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// A reference to a type, and the type modifiers.
-
-class TypeRef {
-public:
-  enum Modifiers {
-    Const = 1 << 0,
-  };
-
-  TypeRef() : type_(NULL), modifiers_(0) {}
-  TypeRef(Type * type) : type_(type), modifiers_(0) {}
-  TypeRef(const Type * type) : type_(const_cast<Type *>(type)), modifiers_(0) {}
-  TypeRef(Type * type, uint32_t modifiers) : type_(type), modifiers_(modifiers) {}
-  TypeRef(const TypeRef & ref) : type_(ref.type_), modifiers_(ref.modifiers_) {}
-
-  Type * type() const { return type_; }
-  void setType(Type * type) { type_ = type; }
-
-  /** Return the canonicalized version of the type. */
-  const Type * dealias() const;
-  Type * dealias();
-
-  uint32_t modifiers() const { return modifiers_; }
-  void setModifiers(uint32_t modifiers) { modifiers_ = modifiers; }
-
-  TypeRef & operator=(const TypeRef & ref) {
-    type_ = ref.type_;
-    modifiers_ = ref.modifiers_;
-  }
-
-  bool operator==(const TypeRef & other) const {
-    return type_ == other.type_ && modifiers_ == other.modifiers_;
-  }
-
-  bool operator!=(const TypeRef & other) const {
-    return !(*this == other);
-  }
-
-  Type::TypeClass typeClass() const { return type_->typeClass(); }
-
-  bool isDefined() const { return type_ != NULL; }
-  bool isUndefined() const { return type_ == NULL; }
-  bool isVoidType() const { return isDefined() && type_->isVoidType(); }
-  bool isNonVoidType() const { return isDefined() && !type_->isVoidType(); }
-  bool isReferenceType() const { return isDefined() && type_->isReferenceType(); }
-  bool isUnsizedIntType() const { return isDefined() && type_->isUnsizedIntType(); }
-  bool isSingular() const { return isDefined() && type_->isSingular(); }
-  bool isSubtype(const TypeRef & other) const;
-
-  bool isEqual(const TypeRef & other) const {
-    return type_->isEqual(other.type_) && modifiers_ == other.modifiers_;
-  }
-
-  Expr * implicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
-  Expr * explicitCast(const SourceLocation & loc, Expr * from, int options = 0) const;
-  ConversionRank convert(const Conversion & conversion) const;
-  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
-  ConversionRank canConvert(const Type * fromType, int options = 0) const;
-  ConversionRank canConvert(const TypeRef & fromType, int options = 0) const;
-
-  TypeDefn * defn() const { return type_->typeDefn(); }
-  const llvm::Type * irType() const { return type_->irType(); }
-  const llvm::Type * irEmbeddedType() const { return type_->irEmbeddedType(); }
-  const llvm::Type * irParameterType() const { return type_->irParameterType(); }
-
-  void trace() const {
-    if (type_) { type_->mark(); }
-  }
-
-  // Structure used when using type ref as a key.
-  struct KeyInfo {
-    static inline TypeRef getEmptyKey() { return TypeRef(NULL, uint32_t(-1)); }
-    static inline TypeRef getTombstoneKey() { return TypeRef(NULL, uint32_t(-2)); }
-
-    static unsigned getHashValue(const TypeRef & val) {
-      return (Type::KeyInfo::getHashValue(val.type_) * 0x5bd1e995) ^ val.modifiers_;
-    }
-
-    static bool isEqual(const TypeRef & lhs, const TypeRef & rhs) {
-      return Type::KeyInfo::isEqual(lhs.type_, rhs.type_) && lhs.modifiers_ == rhs.modifiers_;
-    }
-
-    static bool isPod() { return true; }
-  };
-
-private:
-  Type * type_;
-  uint32_t modifiers_;
-};
-
-FormatStream & operator<<(FormatStream & out, const TypeRef & ref);
-
-/// -------------------------------------------------------------------
 /// A pair of type refs - used as a map key.
 class TypePair {
 public:
-  TypePair(const TypeRef & first, const TypeRef & second) : first_(first), second_(second) {}
+  TypePair(const Type * first, const Type * second) : first_(first), second_(second) {}
   TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
 
-  const TypeRef & first() { return first_; }
-  const TypeRef & second() { return second_; }
+  const Type * first() { return first_; }
+  const Type * second() { return second_; }
 
   bool operator==(const TypePair & other) const {
     return first_ == other.first_ && second_ == other.second_;
@@ -394,29 +300,29 @@ public:
   // Structure used when using type ref as a key.
   struct KeyInfo {
     static inline TypePair getEmptyKey() {
-      return TypePair(TypeRef(NULL, uint32_t(-1)), TypeRef(NULL, uint32_t(-1)));
+      return TypePair(Type::KeyInfo::getEmptyKey(), Type::KeyInfo::getEmptyKey());
     }
 
     static inline TypePair getTombstoneKey() {
-      return TypePair(TypeRef(NULL, uint32_t(-2)), TypeRef(NULL, uint32_t(-2)));
+      return TypePair(Type::KeyInfo::getTombstoneKey(), Type::KeyInfo::getTombstoneKey());
     }
 
     static unsigned getHashValue(const TypePair & val) {
-      return TypeRef::KeyInfo::getHashValue(val.first_) ^
-          (TypeRef::KeyInfo::getHashValue(val.second_) << 1);
+      return Type::KeyInfo::getHashValue(val.first_) ^
+          (Type::KeyInfo::getHashValue(val.second_) << 1);
     }
 
     static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
-      return TypeRef::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
-          TypeRef::KeyInfo::isEqual(lhs.second_, rhs.second_);
+      return Type::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
+          Type::KeyInfo::isEqual(lhs.second_, rhs.second_);
     }
 
     static bool isPod() { return true; }
   };
 
 private:
-  TypeRef first_;
-  TypeRef second_;
+  const Type * first_;
+  const Type * second_;
 };
 
 /// -------------------------------------------------------------------
@@ -436,14 +342,13 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 0; }
-  //virtual TypeRef typeParam(int index) const { return elementType_; }
-  const llvm::Type * irType() const { return baseType_.irType(); }
+  const llvm::Type * irType() const { return baseType_->irType(); }
   //const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSingular() const { return baseType_.isSingular(); }
+  bool isSingular() const { return baseType_->isSingular(); }
   bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
-  bool isReferenceType() const { return baseType_.isReferenceType(); }
+  bool isReferenceType() const { return baseType_->isReferenceType(); }
   void format(FormatStream & out) const;
 
   static inline bool classof(const CVQualifiedType *) { return true; }
@@ -452,12 +357,12 @@ public:
   }
 
 private:
-  typedef llvm::DenseMap<TypeRef, CVQualifiedType *, TypeRef::KeyInfo> TypeMap;
+  typedef llvm::DenseMap<const Type *, CVQualifiedType *, Type::KeyInfo> TypeMap;
   static TypeMap uniqueTypes_;
 
-  CVQualifiedType(const TypeRef & elemType, int qualifiers);
+  CVQualifiedType(const Type * elemType, int qualifiers);
 
-  TypeRef baseType_;
+  const Type * baseType_;
   int qualifiers_;
 };
 
@@ -473,7 +378,6 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
     const Expr * from, const Type * to);
 
 // Given a type, append the linkage name of that type to the output buffer.
-void typeLinkageName(std::string & out, const TypeRef & ty);
 void typeLinkageName(std::string & out, const Type * ty);
 
 /** Given two types, try and find the narrowest type that both
@@ -485,7 +389,6 @@ const Type * findCommonType(const Type * t0, const Type * t1);
     real underlying type. */
 const Type * dealias(const Type * t);
 Type * dealias(Type * t);
-TypeRef dealias(const TypeRef & tr);
 
 /** Stream operator for type class names. */
 inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {
@@ -497,10 +400,6 @@ class TypeEquals {
 public:
   bool operator()(const Type * t0, const Type * t1) {
     return t0->isEqual(t1);
-  }
-
-  bool operator()(const TypeRef & t0, const TypeRef & t1) {
-    return t0.isEqual(t1);
   }
 };
 

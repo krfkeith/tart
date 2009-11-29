@@ -57,7 +57,6 @@ class ConstantString;
 class ConstantObjectRef;
 class ConstantNativeArray;
 class ProgramSource;
-class TypeRef;
 
 typedef llvm::SmallVector<Expr *, 4> ExprList;
 typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
