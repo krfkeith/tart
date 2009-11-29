@@ -140,6 +140,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genUnionCtorCast(static_cast<const CastExpr *>(in));
 
     case Expr::UnionMemberCast:
+    case Expr::CheckedUnionMemberCast:
       return genUnionMemberCast(static_cast<const CastExpr *>(in));
 
     case Expr::Assign:
@@ -296,7 +297,7 @@ Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
   }
 
   if (const UnionType * utype = dyn_cast<UnionType>(in->value()->type())) {
-    return genUnionTypeTest(val, utype, in->toType());
+    return genUnionTypeTest(val, utype, in->toType(), false);
   }
 
   const CompositeType * fromType = cast<CompositeType>(in->value()->type());
@@ -548,7 +549,7 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
    1) The expression is an explicit pointer dereference.
    2) The expression is a variable or parameter containing a reference type.
    3) The expression is a parameter to a value type, but has the reference
-   flag set (which should only be true for the self parameter.)
+      flag set (which should only be true for the self parameter.)
    */
 
   const Expr * base = in;
@@ -625,8 +626,10 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
   ConverterMap::iterator it = module_->converters().find(conversionKey);
   if (it != module_->converters().end()) {
     const FunctionDefn * converter = it->second;
-    diag.debug(converter) << Format_Type << converter;
-    DFAIL("Implement");
+    ValueList args;
+    Value * fnVal = genFunctionValue(converter);
+    args.push_back(in);
+    return genCallInstr(fnVal, args.begin(), args.end(), "convert");
   }
 
   if (const CompositeType * cfrom = dyn_cast<CompositeType>(fromType)) {
@@ -640,15 +643,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
 
         // Composite to composite.
         Value * typeTest = genCompositeTypeTest(in, cfrom, cto);
-        BasicBlock * blkCastFail = BasicBlock::Create(context_, "typecast_fail", currentFn_);
-        BasicBlock * blkCastSucc = BasicBlock::Create(context_, "typecast_succ", currentFn_);
-        builder_.CreateCondBr(typeTest, blkCastSucc, blkCastFail);
-        builder_.SetInsertPoint(blkCastFail);
-        Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
-        typecastFailure->setDoesNotReturn(true);
-        builder_.CreateCall(typecastFailure);
-        builder_.CreateUnreachable();
-        builder_.SetInsertPoint(blkCastSucc);
+        throwCondTypecastError(typeTest);
         return builder_.CreatePointerCast(in, cto->irEmbeddedType(), "typecast");
       }
     } else if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
@@ -768,18 +763,21 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
 
   if (toType != NULL) {
     const UnionType * utype = cast<UnionType>(toType);
-
     if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
       int index = utype->getTypeIndex(fromType);
+      if (index < 0) {
+        diag.error() << "Can't convert " << fromType << " to " << utype;
+      }
+      DASSERT(index >= 0);
       Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
 
       Value * uvalue = builder_.CreateAlloca(utype->irType());
-      builder_.CreateStore(indexVal, builder_.CreateConstGEP2_32(uvalue, 0, 0));
+      builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
       if (value != NULL) {
         const llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(
-                builder_.CreateConstGEP2_32(uvalue, 0, 1),
+                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
                 llvm::PointerType::get(fieldType, 0)));
       }
 
@@ -793,10 +791,6 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
       uvalue = builder_.CreateInsertValue(uvalue, value, 1);
       return uvalue;
 #endif
-    } else if (fromType->isVoidType()) {
-      // If there are no value types, but there is a void type, then represent void
-      // as a null pointer.
-      return llvm::ConstantPointerNull::getNullValue(utype->irType());
     } else {
       // The type returned from irType() is a pointer type.
       //Value * uvalue = builder_.CreateBitCast(utype->irType());
@@ -809,30 +803,56 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
 
 Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   // Retrieve a value from a union. Presumes that the type-test has already been done.
+  bool checked = in->exprType() == Expr::CheckedUnionMemberCast;
   const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
-  Value * value = genLValueAddress(in->arg());
+  Value * value;
+  // Our current process for handling unions requires that the union be an LValue,
+  // so that we can bitcast the pointer to the data.
+  if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef) {
+    value = genLValueAddress(in->arg());
+    if (value == NULL) {
+      return NULL;
+    }
+  } else {
+    // Create a temp var.
+    value = genExpr(in->arg());
+    if (value == NULL) {
+      return NULL;
+    }
 
-  if (value == NULL) {
-    return NULL;
+    Value * var = builder_.CreateAlloca(value->getType());
+    builder_.CreateStore(value, var);
+    value = var;
   }
 
   if (fromType != NULL) {
     const UnionType * utype = cast<UnionType>(fromType);
+
     if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
-      int index = utype->getTypeIndex(toType);
+      if (checked) {
+        Value * test = genUnionTypeTest(value, utype, toType, true);
+        throwCondTypecastError(test);
+      }
+
       const llvm::Type * fieldType = toType->irEmbeddedType();
       return builder_.CreateLoad(
           builder_.CreateBitCast(
-              builder_.CreateConstGEP2_32(value, 0, 1),
+              builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
               llvm::PointerType::get(fieldType, 0)));
-    //} else if (toType->isVoidType()) {
-    //  // If the union's representation if a pointer then a 'void' type gets turned into null.
-    //  return ConstantPointerNull::getNullValue(PointerType::get(toType->irType(), 0));
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.
-      return builder_.CreateBitCast(value, llvm::PointerType::get(toType->irType(), 0));
+      Value * refTypeVal = builder_.CreateLoad(
+          builder_.CreateBitCast(value, llvm::PointerType::get(toType->irEmbeddedType(), 0)));
+
+      if (checked) {
+        const CompositeType * cto = cast<CompositeType>(toType);
+        Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+        throwCondTypecastError(test);
+      }
+
+      return refTypeVal;
     }
   }
 
@@ -933,16 +953,6 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
     DFAIL("Invalid function type");
   }
 
-#if 0
-  Value * selfArg = NULL;
-  if (in->selfArg() != NULL) {
-    selfArg = genExpr(in->selfArg());
-    if (fn->storageClass() == Storage_Instance) {
-      args.push_back(selfArg);
-    }
-  }
-#endif
-
   const ExprList & inArgs = in->args();
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     Value * argVal = genExpr(*it);
@@ -952,11 +962,6 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
 
     args.push_back(argVal);
   }
-
-  // TODO: VCalls and ICalls.
-
-  // Generate the function to call.
-    //fnVal = genFunctionValue(fn);
 
   return genCallInstr(fnValue, args.begin(), args.end(), "indirect");
 }
@@ -1221,6 +1226,8 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const Type * elementType = arrayType->typeDefn()->templateInstance()->typeArg(0);
   size_t arrayLength = in->args().size();
 
+  //diag.debug() << "Generating array literal of type " << elementType << ", length " << arrayLength;
+
   const llvm::Type * etype = elementType->irEmbeddedType();
 
   // Arguments to the array-creation function
@@ -1284,64 +1291,72 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
   return result;
 }
 
-Value * CodeGenerator::genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
-    const Type * toType) {
-  DASSERT(fromType != NULL);
+Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unionType,
+    const Type * toType, bool valIsLVal) {
+  DASSERT(unionType != NULL);
   DASSERT(toType != NULL);
 
-  if (fromType->numValueTypes() > 0 || fromType->hasVoidType()) {
+  if (unionType->numValueTypes() > 0 || unionType->hasVoidType()) {
     // The index of the actual type.
-    Value * actualTypeIndex = builder_.CreateExtractValue(val, 0);
-
-    int testIndex = fromType->getTypeIndex(toType);
-    Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
-
-    if (testIndex == 0 && fromType->numRefTypes() > 1) {
-      DFAIL("Add special handling for reference types.");
-    }
-
-    return builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
-  } /*else if (fromType->hasVoidType()) {
-    if (toType->isVoidType()) {
-      // If we're testing vs. void, then just compare to a null pointer.
-      return builder_.CreateICmp(CmpInst::ICMP_EQ, val,
-          ConstantPointerNull::getNullValue(val->getType()));
-    }
-
-    // Otherwise, we have to do both a null test and a type test.
-    BasicBlock * start = builder_.GetInsertBlock();
-    BasicBlock * blkIsNotNull = BasicBlock::Create(context_, "is_not_null", currentFn_);
-    BasicBlock * blkIsNull = BasicBlock::Create(context_, "is_null", currentFn_);
-    blkIsNotNull->moveAfter(builder_.GetInsertBlock());
-    blkIsNull->moveAfter(blkIsNotNull);
-
-    // Do the test for null, and branch to the end if it is null.
-    Value * isNullTest = builder_.CreateICmp(
-        CmpInst::ICMP_NE, val, ConstantPointerNull::getNullValue(val->getType()));
-    builder_.CreateCondBr(isNullTest, blkIsNotNull, blkIsNull);
-    builder_.SetInsertPoint(blkIsNotNull);
-
-    Value * testResult;
-    if (fromType->numRefTypes() > 1) {
-      // More than one reference type means we have to do a type test.
-      int testIndex = fromType->getTypeIndex(toType);
-      CompositeType * elementType = cast<CompositeType>(fromType->typeParam(testIndex).type());
-      testResult = genCompositeTypeTest(val, elementType, cast<CompositeType>(toType));
+    Value * actualTypeIndex;
+    if (valIsLVal) {
+      // Load the type index field.
+      actualTypeIndex = builder_.CreateLoad(builder_.CreateConstInBoundsGEP2_32(in, 0, 0));
     } else {
-      // Only one reference type means that the null pointer check is enough.
-      testResult = ConstantInt::getTrue(context_);
+      // Extract the type index field.
+      actualTypeIndex = builder_.CreateExtractValue(in, 0);
     }
 
-    builder_.CreateBr(blkIsNull);
+    int testIndex = unionType->getTypeIndex(toType);
+    if (testIndex < 0) {
+      return ConstantInt::getFalse(context_);
+    }
 
-    builder_.SetInsertPoint(blkIsNull);
-    PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
-    phi->addIncoming(testResult, blkIsNotNull);
-    phi->addIncoming(ConstantInt::getFalse(context_), start);
-    return phi;
+    Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
+    Value * testResult = builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
 
-  } */else {
-    DFAIL("Implement");
+#if 0
+    // This section of code was based on a hybrid formula where all reference types
+    // shared the same testIndex.
+    if (testIndex == 0 && unionType->numRefTypes() > 1) {
+      BasicBlock * blkIsRefType = BasicBlock::Create(context_, "is_ref_type", currentFn_);
+      BasicBlock * blkEndTest = BasicBlock::Create(context_, "utest_end", currentFn_);
+
+      // If it isn't a reference type, branch to the end (fail).
+      BasicBlock * blkInitial = builder_.GetInsertBlock();
+      builder_.CreateCondBr(testResult, blkIsRefType, blkEndTest);
+
+      // If it is a reference type, then test if it's the right kind of reference type.
+      builder_.SetInsertPoint(blkIsRefType);
+      const CompositeType * cto = cast<CompositeType>(toType);
+      if (valIsLVal) {
+        in = builder_.CreateLoad(in);
+      }
+
+      Value * refTypeVal = builder_.CreateBitCast(in, toType->irEmbeddedType());
+      Value * subclassTest = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+      blkIsRefType = builder_.GetInsertBlock();
+      builder_.CreateBr(blkEndTest);
+
+      // Combine the two branches into one boolean test result.
+      builder_.SetInsertPoint(blkEndTest);
+      PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
+      phi->addIncoming(ConstantInt::getFalse(context_), blkInitial);
+      phi->addIncoming(subclassTest, blkIsRefType);
+      testResult = phi;
+    }
+#endif
+
+    return testResult;
+  } else {
+    // It's only reference types.
+    if (valIsLVal) {
+      in = builder_.CreateLoad(in);
+    }
+
+    const CompositeType * cto = cast<CompositeType>(toType);
+    Value * refTypeVal = builder_.CreateBitCast(in, toType->irEmbeddedType());
+    return genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
   }
 }
 
@@ -1489,6 +1504,33 @@ llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * arr
   }
 
   return ConstantArray::get(cast<ArrayType>(array->type()->irType()), elementValues);
+}
+
+void CodeGenerator::throwCondTypecastError(Value * typeTestResult) {
+  BasicBlock * blkCastFail = BasicBlock::Create(context_, "typecast_fail", currentFn_);
+  BasicBlock * blkCastSucc = BasicBlock::Create(context_, "typecast_succ", currentFn_);
+  builder_.CreateCondBr(typeTestResult, blkCastSucc, blkCastFail);
+  builder_.SetInsertPoint(blkCastFail);
+  throwTypecastError();
+  builder_.SetInsertPoint(blkCastSucc);
+}
+
+void CodeGenerator::throwTypecastError() {
+  Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
+  typecastFailure->setDoesNotReturn(true);
+  if (unwindTarget_ != NULL) {
+    Function * f = currentFn_;
+    ValueList emptyArgs;
+    BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
+    normalDest->moveAfter(builder_.GetInsertBlock());
+    builder_.CreateInvoke(typecastFailure, normalDest, unwindTarget_,
+        emptyArgs.begin(), emptyArgs.end(), "");
+    builder_.SetInsertPoint(normalDest);
+    builder_.CreateUnreachable();
+  } else {
+    builder_.CreateCall(typecastFailure);
+    builder_.CreateUnreachable();
+  }
 }
 
 } // namespace tart

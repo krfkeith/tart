@@ -103,6 +103,7 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
   }
 
   irModule_->addTypeName("tart.reflect.Module", Builtins::typeModule->irType());
+  irModule_->addTypeName("tart.reflect.Method", Builtins::typeMethod->irType());
   GlobalVariable * rfModule = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
       GlobalValue::ExternalLinkage, NULL, moduleSymbol);
   globals_[moduleSymbol] = rfModule;
@@ -228,7 +229,7 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
 
     case Defn::Function: {
       const FunctionDefn * fn = static_cast<const FunctionDefn *>(member);
-      if (!fn->isIntrinsic() && fn->isSingular()) {
+      if (!fn->isIntrinsic() && fn->isSingular() && !fn->hasTrait(Defn::Nonreflective)) {
         Constant * method = emitMethod(fn);
         if (method != NULL) {
           GlobalVariable * rMethod = new GlobalVariable(*irModule_, method->getType(), true,
@@ -291,9 +292,11 @@ llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
   StructBuilder sb(cg_);
   sb.addField(emitMember(cast<CompositeType>(Builtins::typeMethod), func));
   sb.addNullField(method_typeParams.type());
-  //sb.addField(emitFunctionType(func->functionType()));
+  sb.addField(getTypePtr(func->functionType()));
   sb.addNullField(method_params.type());
-  sb.addNullField(method_methodPointer.type());
+
+  llvm::Constant * fnVal = cg_.genFunctionValue(func);
+  sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type().irType()));
   return sb.build(Builtins::typeMethod->irType());
 }
 
@@ -333,7 +336,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
         return Builtins::typeSimpleType->irType();
       }
 
-      return Builtins::typeComplexType->irType();
+     return Builtins::typeComplexType->irType();
 
     case Type::Enum:
       return Builtins::typeEnumType->irType();
@@ -433,14 +436,14 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
     const Type * selfType = type->selfParam()->type();
     if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
       // For now, we only support reflection of classes.
-      sb.addNullField(functionType_invoke.type());
-      //sb.addField(cg_.genInvokeFn(type));
+      //sb.addNullField(functionType_invoke.type());
+      sb.addField(cg_.genInvokeFn(type));
     } else {
       sb.addNullField(functionType_invoke.type());
     }
   } else {
-    //sb.addField(cg_.genInvokeFn(type));
-    sb.addNullField(functionType_invoke.type());
+    sb.addField(cg_.genInvokeFn(type));
+    //sb.addNullField(functionType_invoke.type());
   }
 
   return sb.build(Builtins::typeFunctionType->irType());

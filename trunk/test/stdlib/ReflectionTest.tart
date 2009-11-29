@@ -42,15 +42,10 @@ def sample() {
 
 def testCallMethod() {
   let m = Module.thisModule();
-  let method = m.findMethod("sample2");
-  classify method as sample:Method {
-    savedValue = 0;
-    //Debug.writeLn("calling Sample");
-    //sample.call(77);
-    //Debug.writeLn("called Sample");
-  } else {
-    Debug.fail("Failed to find method 'sample'");
-  }
+  let method = typecast[Method](m.findMethod("sample2"));
+	savedValue = 0;
+	method.call(88, 77);
+	Debug.assertEq(77, savedValue);
 }
 
 var savedValue:int;

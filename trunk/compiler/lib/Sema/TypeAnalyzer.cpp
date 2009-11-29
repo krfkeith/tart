@@ -78,20 +78,12 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::LogicalOr: {
-      const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
-      const ASTNodeList & args = unionOp->args();
       TypeList unionTypes;
-
-      for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-        Type * elementType = typeFromAST(*it);
-        if (isErrorResult(elementType)) {
-          return elementType;
-        }
-
-        unionTypes.push_back(elementType);
+      if (getUnionTypes(ast, unionTypes)) {
+        return UnionType::get(ast->location(), unionTypes);
       }
 
-      return UnionType::get(ast->location(), unionTypes);
+      return &BadType::instance;
     }
 
     case ASTNode::AnonFn: {
@@ -200,6 +192,27 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
 Type * TypeAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
   diag.error(ast) << "Type variable used outside of pattern.";
   return &BadType::instance;
+}
+
+bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, TypeList & result) {
+  if (ast->nodeType() == ASTNode::LogicalOr) {
+    const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
+    const ASTNodeList & args = unionOp->args();
+    for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
+      if (!getUnionTypes(*it, result)) {
+        return false;
+      }
+    }
+  } else {
+    Type * elementType = typeFromAST(ast);
+    if (isErrorResult(elementType)) {
+      return false;
+    }
+
+    result.push_back(elementType);
+  }
+
+  return true;
 }
 
 } // namespace tart

@@ -341,6 +341,7 @@ bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
             param->location(), param->type());
+        //diag.debug() << "Creating default array literal of type " << param->type() << " calling method " << cd->method();
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
       } else {
@@ -527,8 +528,9 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
   }
 }
 
-Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from,
-    const Type * to) {
+Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value,
+    const UnionType * from, const Type * to) {
+
   // List of member types that are subtype of the 'to' type.
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
@@ -536,7 +538,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, 
     Type * memberType = const_cast<Type *>(dealias(*it));
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = to->canConvert(memberType);
-    if (rank != Incompatible) {
+    if (rank >= ExactConversion) {
       if (rank > bestRank) {
         bestRank = rank;
         matchingTypes.clear();
@@ -548,12 +550,12 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, 
   }
 
   if (matchingTypes.empty()) {
+    // The test can never succeed, but we still need to evaluate the side effects.
     return new BinaryExpr(Expr::Prog2, in->location(), &BoolType::instance, value,
         ConstantInteger::getConstantBool(in->location(), false));
   } else if (matchingTypes.size() == 1) {
     // Simplest case
     Type * memberType = matchingTypes.front();
-    //int index = from->getTypeIndex(memberType);
 
     // If the member type is exactly equal to the type we are testing for, then that
     // is the simplest case. Otherwise, we'll need to do additional tests on the value.
@@ -561,7 +563,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value, 
       return in;
       //in->setTypeIndex(index);
       //class InstanceOfExpr : public Expr {
-
+      //int index = from->getTypeIndex(memberType);
     }
 
     diag.info(in) << "Found " << matchingTypes.size() << " type in union: " << memberType;

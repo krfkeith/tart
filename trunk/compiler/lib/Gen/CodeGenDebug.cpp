@@ -66,11 +66,11 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
 }
 
 DICompileUnit CodeGenerator::genDICompileUnit(const Defn * defn) {
-  if (defn == NULL || defn->module() == NULL) {
+  if (defn == NULL || defn->location().file == NULL) {
     return dbgCompileUnit_;
   }
 
-  return genDICompileUnit(defn->module()->moduleSource());
+  return genDICompileUnit(defn->location().file);
 }
 
 void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {

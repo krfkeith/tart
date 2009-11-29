@@ -22,9 +22,6 @@ class FunctionType;
 /// -------------------------------------------------------------------
 /// Analyzer class for type expressions.
 class TypeAnalyzer : public AnalyzerBase {
-protected:
-  void undefinedType(const ASTNode * ast);
-
 public:
   /** Constructor. */
   TypeAnalyzer(Module * mod, Scope * parent)
@@ -41,6 +38,11 @@ public:
   FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
 
   virtual Type * reduceTypeVariable(const ASTPatternVar * ast);
+
+  bool getUnionTypes(const ASTNode * ast, TypeList & result);
+
+protected:
+  void undefinedType(const ASTNode * ast);
 };
 
 }

@@ -82,12 +82,18 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ &&
+      loc != dbgLocation_ &&
       loc.file == module_->moduleSource() &&
       !dbgFunction_.isNull()) {
+    dbgLocation_ = loc;
+    //DICompileUnit compileUnit = genDICompileUnit(loc.file);
     TokenPosition pos = tokenPosition(loc);
-    builder_.SetCurrentDebugLocation(
-        dbgFactory_.CreateLocation(pos.beginLine, pos.beginCol, dbgFunction_, DILocation(NULL))
-            .getNode());
+    DILocation diLoc = dbgFactory_.CreateLocation(
+        pos.beginLine,
+        pos.beginCol,
+        llvm::DIScope(dbgFunction_),
+        DILocation(NULL));
+    //builder_.SetCurrentDebugLocation(diLoc.getNode());
   }
 }
 

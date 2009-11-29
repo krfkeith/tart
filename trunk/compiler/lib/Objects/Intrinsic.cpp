@@ -11,6 +11,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/NativeType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
@@ -80,8 +81,15 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * 
   DASSERT(method->templateInstance()->typeArgs()->size() == 1);
   Expr * fromExpr = args[0];
   const Type * fromType = dealias(fromExpr->type());
-  TypeRef toType = method->templateInstance()->typeArg(0);
-  return toType.explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
+  const Type * toType = dealias(method->templateInstance()->typeArg(0));
+  if (const UnionType * utFrom = dyn_cast<UnionType>(fromType)) {
+    Expr * castExpr = utFrom->createDynamicCast(fromExpr, toType);
+    if (castExpr != NULL) {
+      return castExpr;
+    }
+  }
+
+  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
 }
 
 // -------------------------------------------------------------------

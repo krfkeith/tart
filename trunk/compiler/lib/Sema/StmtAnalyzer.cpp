@@ -766,7 +766,9 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   // TODO: There are lots of optimizations that could be done here.
   const Type * fromType = testExpr->type();
   Expr::ExprType castType = Expr::BitCast;
+  Defn::DefnType dt = Defn::Var;
   if (fromType->isReferenceType()) {
+    dt = Defn::Let;
   } else if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
     castType = Expr::UnionMemberCast;
   } else {
@@ -774,7 +776,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   }
 
   // Create the temporary variable which is going to hold the test expression.
-  VariableDefn * testVar = new VariableDefn(Defn::Var, module, "classify-expr", testExpr);
+  VariableDefn * testVar = new VariableDefn(dt, module, "classify-expr", testExpr);
   testVar->setStorageClass(Storage_Local);
   testVar->setType(testExpr->type());
   activeScope->addMember(testVar);
@@ -784,8 +786,8 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   LValueExpr * testLVal = new LValueExpr(testExpr->location(), NULL, testVar);
 
   Block * endBlock = NULL;
-  Block * prevTestBlock = currentBlock_;
-  prevTestBlock->setTerminator(st->location(), BlockTerm_Branch);
+  Block * prevTestBlock = NULL;
+  //prevTestBlock->setTerminator(st->location(), BlockTerm_Branch);
 
   llvm::SmallSet<const Type *, 16> typesSeen;
   const Stmt * elseSt = NULL;
@@ -819,13 +821,18 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         typesSeen.insert(toType);
 
         // Create the block containing the type test
-        Block * testBlock = createBlock("as-test-", toType->typeDefn()->name());
+        Block * testBlock = NULL;
+        if (prevTestBlock != NULL) {
+          // The previous test's failure target should jump to the test.
+          testBlock = createBlock("as-test-", toType->typeDefn()->name());
+          prevTestBlock->succs().push_back(testBlock);
+        } else {
+          testBlock = currentBlock_;
+        }
 
         // Create the block containing the case body.
         Block * caseBlock = createBlock("as-", toType->typeDefn()->name());
 
-        // The previous test's failure target should jump to the test.
-        prevTestBlock->succs().push_back(testBlock);
         prevTestBlock = testBlock;
 
         // Set up the type test.
@@ -1418,7 +1425,7 @@ Block * StmtAnalyzer::createBlock(const char * name) {
 }
 
 Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffix) {
-  const char * blockName = istrings.intern(std::string("prefix") + suffix);
+  const char * blockName = istrings.intern(std::string(prefix) + suffix);
   return createBlock(blockName);
 }
 

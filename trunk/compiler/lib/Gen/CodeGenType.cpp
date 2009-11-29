@@ -383,7 +383,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
     return invokeFn;
   }
 
-  diag.debug() << Format_Type << "Generating invoke function for type " << fnType;
+  //diag.debug() << Format_Type << "Generating invoke function for type " << fnType;
 
   DASSERT(currentFn_ == NULL);
 
@@ -417,7 +417,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   // Typecast all of the arguments.
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * paramType = fnType->param(i)->type();
+    const Type * paramType = fnType->param(i)->internalType();
     Value * indices[3];
     indices[0] = getInt32Val(0);
     indices[1] = getInt32Val(2);
@@ -446,7 +446,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
     builder_.CreateRet(returnVal);
   } else {
-    invokeFnType->dump();
+    //invokeFnType->dump();
     builder_.CreateRet(ConstantPointerNull::get(
         cast<llvm::PointerType>(invokeFnType->getReturnType())));
   }
