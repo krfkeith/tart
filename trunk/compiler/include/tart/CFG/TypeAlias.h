@@ -16,24 +16,24 @@ namespace tart {
 class TypeAlias : public Type {
 public:
   /** Construct a new typealias. */
-  TypeAlias(const TypeRef & val);
+  TypeAlias(const Type * val);
 
   /** The target of this alias. */
-  TypeRef value() const { return value_; }
-  TypeRef & setValue(const TypeRef & value) { value_ = value; }
+  const Type * value() const { return value_; }
+  void setValue(const Type * value) { value_ = value; }
 
   // Overrides
 
-  bool isSingular() const { return value_.isSingular(); }
-  bool isEqual(const Type * other) const { return value_.type()->isEqual(other); }
-  bool isSubtype(const Type * other) const { return value_.type()->isSubtype(other); }
-  bool includes(const Type * other) const { return value_.type()->includes(other); }
-  bool isReferenceType() const { return value_.isReferenceType(); }
+  bool isSingular() const { return value_->isSingular(); }
+  bool isEqual(const Type * other) const { return value_->isEqual(other); }
+  bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
+  bool includes(const Type * other) const { return value_->includes(other); }
+  bool isReferenceType() const { return value_->isReferenceType(); }
   const llvm::Type * irType() const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  Expr * nullInitValue() const { return value_.type()->nullInitValue(); }
+  Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;
   void format(FormatStream & out) const;
 
@@ -43,7 +43,7 @@ public:
   }
 
 private:
-  TypeRef value_;
+  const Type * value_;
 };
 
 }

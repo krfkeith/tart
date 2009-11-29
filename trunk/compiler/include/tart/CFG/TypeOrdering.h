@@ -12,7 +12,6 @@
 namespace tart {
 
 class Type;
-class TypeRef;
 class PrimitiveType;
 class CompositeType;
 class EnumType;
@@ -45,7 +44,6 @@ ComparisonResult operator-(ComparisonResult cr);
 /// expressions.
 
 class TypeOrdering {
-  virtual ComparisonResult compare(const TypeRef & t1, const TypeRef & t2);
   virtual ComparisonResult compare(const Type * t1, const Type * t2);
   virtual ComparisonResult compare(const PrimitiveType * t1, const PrimitiveType * t2);
   virtual ComparisonResult compare(const CompositeType * t1, const CompositeType * t2);
@@ -74,10 +72,8 @@ class TypeOrdering {
 class LexicalTypeOrdering {
 public:
   bool operator()(const Type * t0, const Type * t1) const;
-  bool operator()(const TypeRef & t0, const TypeRef & t1) const;
 
   static int compare(const Type * t0, const Type * t1);
-  static int compare(const TypeRef & t0, const TypeRef & t1);
 
   template <class T>
   static int compare(T t0, T t1) {

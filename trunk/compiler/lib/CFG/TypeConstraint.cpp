@@ -90,16 +90,16 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
   return match;
 }
 
-TypeRef ResultOfConstraint::singularValue() const {
-  TypeRef result;
+const Type * ResultOfConstraint::singularValue() const {
+  const Type* result;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    if (result.isDefined()) {
-      return TypeRef();
+    if (result != NULL) {
+      return NULL;
     }
 
     result = (*it)->resultType();
@@ -192,8 +192,8 @@ ConversionRank ParameterOfConstraint::convertTo(const Type * toType) const {
       continue;
     }
 
-    TypeRef paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = toType->canConvert(paramType.type());
+    const Type * paramType = (*it)->paramType(argIndex);
+    ConversionRank rank = toType->canConvert(paramType);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -213,8 +213,8 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
       continue;
     }
 
-    TypeRef paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = paramType.convert(conversion);
+    const Type * paramType = (*it)->paramType(argIndex);
+    ConversionRank rank = paramType->convert(conversion);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -226,16 +226,16 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
   return best;
 }
 
-TypeRef ParameterOfConstraint::singularValue() const {
-  TypeRef result;
+const Type * ParameterOfConstraint::singularValue() const {
+  const Type * result;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    if (result.isDefined()) {
-      return TypeRef();
+    if (result != NULL) {
+      return NULL;
     }
 
     result = (*it)->paramType(argIndex);
@@ -254,9 +254,9 @@ bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * patte
       continue;
     }
 
-    TypeRef paramType = (*it)->paramType(argIndex);
+    const Type * paramType = (*it)->paramType(argIndex);
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, paramType.type(), Invariant)) {
+    if (env.unify(&candidateSite, pattern, paramType, Invariant)) {
       if (match) {
         env.setSubstitutions(saveSub);
         return true;
@@ -287,8 +287,8 @@ bool ParameterOfConstraint::includes(const Type * other) const {
       continue;
     }
 
-    TypeRef paramType = (*it)->paramType(argIndex);
-    if (paramType.type()->includes(other)) {
+    const Type * paramType = (*it)->paramType(argIndex);
+    if (paramType->includes(other)) {
       return true;
     }
   }
@@ -314,7 +314,7 @@ void ParameterOfConstraint::format(FormatStream & out) const {
       continue;
     }
 
-    TypeRef paramType = (*it)->paramType(argIndex);
+    const Type * paramType = (*it)->paramType(argIndex);
     if (!first) {
       out << "|";
     }

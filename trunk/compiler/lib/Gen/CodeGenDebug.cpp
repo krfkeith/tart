@@ -193,7 +193,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
     case Type::Alias: {
       const TypeAlias * alias = static_cast<const TypeAlias *>(type);
-      result = genDIType(alias->value().type());
+      result = genDIType(alias->value());
     }
 
     default:

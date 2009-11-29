@@ -162,7 +162,7 @@ public:
     return get();
   }
 
-  TypeRef type() const {
+  const Type * type() const {
     return get()->type();
   }
 

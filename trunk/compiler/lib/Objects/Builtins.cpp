@@ -68,7 +68,7 @@ SystemClass Builtins::typeValueRef("tart.core.ValueRef");
 //SystemTypeRef Builtins::typeComplexType("tart.reflect.ComplexType");
 //SystemTypeRef Builtins::typeEnumType("tart.reflect.EnumType");
 
-TypeAlias Builtins::typeAliasString = TypeRef();
+TypeAlias Builtins::typeAliasString = NULL;
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;

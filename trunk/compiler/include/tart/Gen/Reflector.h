@@ -27,7 +27,6 @@ class PrimitiveType;
 class FunctionType;
 class IterableScope;
 class TypeDefn;
-class TypeRef;
 class TupleType;
 
 typedef std::vector<llvm::Constant *> ConstantList;
@@ -136,8 +135,9 @@ public:
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Generate a typeRef struct for the given type reference. */
-  llvm::Constant * emitTypeReference(const TypeRef & type);
+  /** Get the type pointer for the reflected type, and cast it
+      to a Type. */
+  llvm::Constant * emitTypeReference(const Type * type);
 
   /** Return the LLVM type of the reflection infor for this type. */
   const llvm::Type * reflectedTypeOf(const Type * type);

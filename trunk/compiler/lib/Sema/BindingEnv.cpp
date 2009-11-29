@@ -144,7 +144,7 @@ bool BindingEnv::unify(SourceContext * source, const Type * pattern, const Type 
   // Dealias but don't depattern pattern
   while (pattern->typeClass() == Type::Alias) {
     if (const TypeAlias * alias = dyn_cast<TypeAlias>(pattern)) {
-      pattern = alias->value().type();
+      pattern = alias->value();
       DASSERT_OBJ(pattern != NULL, alias);
     } else {
       break;

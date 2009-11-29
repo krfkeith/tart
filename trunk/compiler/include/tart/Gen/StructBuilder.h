@@ -12,7 +12,6 @@ namespace tart {
 
 class CodeGenerator;
 class Type;
-class TypeRef;
 class VariableDefn;
 
 typedef std::vector<llvm::Constant *> ConstantList;
@@ -31,9 +30,6 @@ public:
 
   /** Add a field containing a constant null pointer. */
   StructBuilder & addNullField(const Type * type);
-
-  /** Add a field containing a constant null pointer. */
-  StructBuilder & addNullField(const TypeRef & type);
 
   /** Add an integer field of the specified type. */
   StructBuilder & addIntegerField(const Type * type, int32_t value);

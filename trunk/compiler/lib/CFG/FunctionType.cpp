@@ -165,11 +165,11 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
   // Generate the argument signature
   for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
-    TypeRef paramType = param->internalType();
-    DASSERT_OBJ(paramType.isDefined(), param);
+    const Type * paramType = param->internalType();
+    DASSERT_OBJ(paramType != NULL, param);
 
-    const llvm::Type * argType = paramType.irType();
-    if (paramType.isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
+    const llvm::Type * argType = paramType->irType();
+    if (paramType->isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
       argType = PointerType::getUnqual(argType);
     }
 

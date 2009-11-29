@@ -122,10 +122,6 @@ FormatStream & operator<<(FormatStream & out, ConversionRank rank) {
   return out;
 }
 
-void typeLinkageName(std::string & out, const TypeRef & ty) {
-  typeLinkageName(out, ty.type());
-}
-
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(std::string & out, const Type * ty) {
   ty = dealias(ty);
@@ -444,11 +440,6 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
   return false;
 }
 
-bool Type::equivalent(const TypeRef & type1, const TypeRef & type2) {
-  return type1.modifiers() == type2.modifiers() && equivalent(type1.type(), type2.type());
-}
-
-
 // -------------------------------------------------------------------
 // DeclaredType
 
@@ -500,55 +491,6 @@ void DeclaredType::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// TypeRef
-
-const Type * TypeRef::dealias() const {
-  return tart::dealias(type_);
-}
-
-Type * TypeRef::dealias() {
-  return tart::dealias(type_);
-}
-
-bool TypeRef::isSubtype(const TypeRef & other) const {
-  if (type_ != NULL && other.type_ != NULL && type_->isSubtype(other.type_)) {
-    // If the other type has any modifier bits that this one does not have, then
-    // it's not a subtype.
-    return (~modifiers_ & other.modifiers_) == 0;
-  }
-
-  return false;
-}
-
-Expr * TypeRef::implicitCast(const SourceLocation & loc, Expr * from, int options) const {
-  return type_->implicitCast(loc, from, options);
-}
-
-Expr * TypeRef::explicitCast(const SourceLocation & loc, Expr * from, int options) const {
-  return type_->explicitCast(loc, from, options);
-}
-
-ConversionRank TypeRef::convert(const Conversion & conversion) const {
-  return type_->convert(conversion);
-}
-
-ConversionRank TypeRef::canConvert(Expr * fromExpr, int options) const {
-  return type()->canConvert(fromExpr, options);
-}
-
-ConversionRank TypeRef::canConvert(const Type * fromType, int options) const {
-  return type()->canConvert(fromType, options);
-}
-
-ConversionRank TypeRef::canConvert(const TypeRef & fromType, int options) const {
-  return type()->canConvert(fromType.type(), options);
-}
-
-FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
-  out << ref.type();
-}
-
-// -------------------------------------------------------------------
 // Utility functions
 
 const Type * findCommonType(const Type * t0, const Type * t1) {
@@ -573,7 +515,7 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
 Type * dealiasImpl(Type * t) {
   while (t != NULL && t->typeClass() == Type::Alias) {
     if (TypeAlias * alias = dyn_cast<TypeAlias>(t)) {
-      t = alias->value().type();
+      t = const_cast<Type *>(alias->value());
       DASSERT_OBJ(t != NULL, alias);
     } else {
       break;
@@ -598,10 +540,6 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
-}
-
-TypeRef dealias(const TypeRef & tr) {
-  return TypeRef(dealias(tr.type()), tr.modifiers());
 }
 
 } // namespace tart

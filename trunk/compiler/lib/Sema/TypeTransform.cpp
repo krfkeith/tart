@@ -30,7 +30,7 @@ const Type * TypeTransform::visit(const Type * in) {
   }
 
   if (in->typeClass() == Type::Alias) {
-    return visit(static_cast<const TypeAlias *>(in)->value().type());
+    return visit(static_cast<const TypeAlias *>(in)->value());
   }
 
   switch (in->typeClass()) {
@@ -183,7 +183,7 @@ const Type * TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
 
 const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
   // TODO: This strips type modifiers.
-  return visit(static_cast<const TypeAlias *>(in)->value().type());
+  return visit(static_cast<const TypeAlias *>(in)->value());
 }
 
 // -------------------------------------------------------------------
@@ -261,7 +261,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
 const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * in) {
   const TypeConstraint * constraint = static_cast<const TypeConstraint *>(in);
   if (constraint->isSingular()) {
-    return constraint->singularValue().type();
+    return constraint->singularValue();
   }
 
   DFAIL("Type constraint not handled");
