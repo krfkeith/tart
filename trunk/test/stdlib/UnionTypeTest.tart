@@ -1,11 +1,9 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
+
 @EntryPoint
 def main(args:String[]) -> int {
-  testValueTypeUnion();
-  testRefOrNoneTypeUnion();
-  testRefOrValueTypeUnion();
-  testRefTypeUnion();
-  testOrderIndependent();
-  return 0;
+  return TestUtils.runModuleTests(Module.thisModule());
 }
 
 def testValueTypeUnion() {

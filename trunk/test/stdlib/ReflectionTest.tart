@@ -1,13 +1,10 @@
 import tart.reflect.Module;
 import tart.reflect.Method;
+import tart.testing.TestUtils;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  testModuleReflection();
-  testModuleMethods();
-  testFindMethod();
-  testCallMethod();
-  return 0;
+  return TestUtils.runModuleTests(Module.thisModule());
 }
 
 def testModuleReflection() {
