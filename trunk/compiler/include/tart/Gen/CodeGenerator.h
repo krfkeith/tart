@@ -210,7 +210,7 @@ public:
 
   /** Generate an 'isInstance' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
-      const Type * toType);
+      const Type * toType, bool isLValValue);
 
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
@@ -341,8 +341,6 @@ private:
   void verifyModule();
   void outputModule();
 
-  void genModuleMetadata(std::ostream & strm);
-
   void addModuleDependencies();
 
   llvm::Constant * genReflectionDataArray(
@@ -352,6 +350,10 @@ private:
   bool requiresImplicitDereference(const Type * type);
 
   void addTypeName(const Type * type);
+
+  /** Generate code to throw a typecast exception at the current point. */
+  void throwCondTypecastError(llvm::Value * typeTestResult);
+  void throwTypecastError();
 
   llvm::Constant * getSizeOfInBits(const llvm::Type * ty);
   llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
@@ -381,6 +383,7 @@ private:
   llvm::DICompileUnit dbgCompileUnit_;
   llvm::DISubprogram dbgFunction_;
   DITypeMap dbgTypeMap_;
+  SourceLocation dbgLocation_;
 
   llvm::BasicBlock * unwindTarget_;
   llvm::Function * unwindRaiseException_;

@@ -29,12 +29,6 @@ public:
   /** Add a field containing a constant value. */
   StructBuilder & addField(llvm::Constant * value);
 
-  /** Add a field which contains a reference to a type descriptor for the specified type. */
-  //StructBuilder & addTypeReference(const Type * type);
-
-  /** Add a field which contains a reference to a type expression for the specified type. */
-  //StructBuilder & addTypeReference(const TypeRef & type);
-
   /** Add a field containing a constant null pointer. */
   StructBuilder & addNullField(const Type * type);
 

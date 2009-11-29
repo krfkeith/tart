@@ -108,7 +108,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       f->setLinkage(GlobalValue::LinkOnceODRLinkage);
     }
 
-    if (debug_ /*&& fdef->module() == module_*/) {
+    if (debug_) {
       genDISubprogram(fdef);
     }
 
@@ -182,8 +182,13 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       }
     }
 
-    builder_.ClearInsertionPoint();
+    if (debug_ && !dbgFunction_.isNull() && !dbgFunction_.Verify()) {
+      dbgFunction_.Verify();
+      DFAIL("BAD DBG");
+    }
+
     dbgFunction_ = DISubprogram();
+    builder_.ClearInsertionPoint();
   }
 
   return true;

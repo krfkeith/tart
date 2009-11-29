@@ -118,6 +118,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::BitCast:
     case Expr::UnionCtorCast:
     case Expr::UnionMemberCast:
+    case Expr::CheckedUnionMemberCast:
       return visitCast(static_cast<CastExpr *>(in));
 
     case Expr::BinaryOpcode:

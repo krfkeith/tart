@@ -53,6 +53,9 @@ public:
   /** Whether the 'void' type is included. */
   size_t hasVoidType() const { return hasVoidType_; }
 
+  /** Create a typecast from this type to the desired type. */
+  Expr * createDynamicCast(Expr * from, const Type * toType) const;
+
   // Overrides
 
   const llvm::Type * createIRType() const;

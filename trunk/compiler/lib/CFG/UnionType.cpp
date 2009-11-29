@@ -215,6 +215,12 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
     // And now add a cast to the union type.
     if (*cn.resultValue != NULL) {
       int typeIndex = getTypeIndex(bestType);
+      if (typeIndex < 0) {
+        //diag.error(cn.fromValue) << "Cannot convert type '" << cn.fromType << "' to '" <<
+        //    this << "'";
+        return Incompatible;
+      }
+
       CastExpr * result = new CastExpr(
           Expr::UnionCtorCast, cn.fromValue->location(), this, *cn.resultValue);
       result->setTypeIndex(typeIndex);
@@ -259,7 +265,7 @@ bool UnionType::isSubtype(const Type * other) const {
 
 bool UnionType::includes(const Type * other) const {
   for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (!(*it)->includes(other)) {
+    if ((*it)->includes(other)) {
       return true;
     }
   }
@@ -269,6 +275,25 @@ bool UnionType::includes(const Type * other) const {
 
 int UnionType::getTypeIndex(const Type * type) const {
   type = dealias(type);
+
+  // If it only has reference types, then use subclass tests instead of
+  // a discriminator field.
+  if (numValueTypes_ == 0 && !hasVoidType_) {
+    return 0;
+  }
+
+  // Otherwise, calculate the type index.
+  int index = 0;
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (type->isEqual(*it)) {
+      return index;
+    }
+
+    ++index;
+  }
+
+  #if 0
+
   if (type->isReferenceType()) {
     return 0;
   }
@@ -290,7 +315,30 @@ int UnionType::getTypeIndex(const Type * type) const {
 
   // TODO: The type passed in might have been a subtype?
   // TODO: It would be better to calculate this during the cast.
-  DFAIL("IllegalState");
+#endif
+
+  return -1;
+}
+
+Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
+  const Type * fromType = dealias(from->type());
+  if (toType->isEqual(fromType)) {
+    return from;
+  }
+
+  // Determine all of the possible member types that could represent an object of
+  // type 'toType'.
+  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    const Type * memberType = *it;
+    if (toType->canConvert(memberType)) {
+      // TODO: Add additional cast if toType is not exactly the same type as the member.
+      return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
+    }
+  }
+
+  diag.warn(from->location()) << "Union member cast from type '" << fromType << "' to '" <<
+      toType << "' can never succeed.";
+  return ConstantInteger::getConstantBool(from->location(), false);
 }
 
 void UnionType::format(FormatStream & out) const {
