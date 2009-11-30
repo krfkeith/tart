@@ -38,14 +38,15 @@ static const VariableDefn::PassSet PASS_SET_COMPLETE = VariableDefn::PassSet::of
 );
 
 VarAnalyzer::VarAnalyzer(VariableDefn * var)
-  : DefnAnalyzer(var->module(), var->definingScope(), var)
+  : DefnAnalyzer(var->module(), var->definingScope(), var, NULL)
   , target(var)
 {
   DASSERT(var != NULL);
 }
 
-VarAnalyzer::VarAnalyzer(VariableDefn * var, Module * module, Defn * subject)
-  : DefnAnalyzer(module, var->definingScope(), subject)
+VarAnalyzer::VarAnalyzer(VariableDefn * var, Module * module, Defn * subject,
+    FunctionDefn * currentFunction)
+  : DefnAnalyzer(module, var->definingScope(), subject, currentFunction)
   , target(var)
 {
   DASSERT(var != NULL);
@@ -153,7 +154,7 @@ bool VarAnalyzer::resolveVarType() {
         }
       }
 
-      ExprAnalyzer ea(module, activeScope, subject());
+      ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
       Expr * initExpr = ea.analyze(ast->value(), target->type());
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {

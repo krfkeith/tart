@@ -10,7 +10,7 @@ Implementation TODOS:
 
 * Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
-  * Get rid of TypeRef - use CVQualifiedType to represent const/volatile.
+  * Use CVQualifiedType to represent const/volatile.
   * See if we can move template stuff into the type (CompositeType and FunctionType)
   * Separate the Type from the type members, so that Type can be a true constant.
   * And then make a new kind of object that represents an exported module symbol, that can
@@ -21,7 +21,6 @@ Implementation TODOS:
   * Finish renaming PatternVar. (What about PatternValue?)
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
-  * See if we can make Substitution->right a const.
   * Fill out TypeOrderings.h
   * Unit tests for lexical type ordering.
 * Link-time coalescing
@@ -30,11 +29,10 @@ Implementation TODOS:
 * Boxed values:
   * Closure Cells
 * Reflection
-  * Iterate functions, properties, find by name
-  * PropertyHolder / PropertyDescriptor / CustomType
+  * Properties and fields.
+  * Class members.
   * Attributes
   * Find all properties/functions having some attribute
-  * Generate trampoline functions.
   * _scopeName + _name;
   * auto TypeLiteral
 * Local functions

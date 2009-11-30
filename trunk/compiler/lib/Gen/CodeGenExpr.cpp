@@ -16,6 +16,7 @@
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
+#include "tart/CFG/Closure.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
@@ -189,10 +190,11 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return irExpr->value();
     }
 
-    case Expr::ArrayLiteral: {
-      const ArrayLiteralExpr * arrayLiteral = static_cast<const ArrayLiteralExpr *>(in);
-      return genArrayLiteral(arrayLiteral);
-    }
+    case Expr::ArrayLiteral:
+      return genArrayLiteral(static_cast<const ArrayLiteralExpr *>(in));
+
+    case Expr::ClosureEnv:
+      return genClosureEnv(static_cast<const ClosureEnvExpr *>(in));
 
     case Expr::NoOp:
       return NULL;
@@ -1077,7 +1079,6 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
     fnVal = genFunctionValue(fn);
   }
 
-
   const llvm::Type * fnValType =
       StructType::get(context_, fnVal->getType(), selfArg->getType(), NULL);
 
@@ -1260,6 +1261,10 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   // TODO: Optimize array creation when most of the elements are constants.
 
   return result;
+}
+
+Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
+  return llvm::ConstantPointerNull::get(llvm::PointerType::get(in->type()->irType(), 0));
 }
 
 Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * fromType,

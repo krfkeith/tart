@@ -20,7 +20,7 @@ static const NamespaceDefn::PassSet PASS_SET_CODEGEN = NamespaceDefn::PassSet::o
 );
 
 NamespaceAnalyzer::NamespaceAnalyzer(NamespaceDefn * de)
-  : DefnAnalyzer(de->module(), de->definingScope(), de)
+  : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
   , target(de)
 {
   DASSERT(de != NULL);
@@ -71,7 +71,7 @@ bool NamespaceAnalyzer::runPasses(NamespaceDefn::PassSet passesToRun) {
 bool NamespaceAnalyzer::analyzeImports() {
   if (target->passes().begin(NamespaceDefn::ImportPass)) {
     if (target->ast() != NULL) {
-      DefnAnalyzer da(target->module(), &target->memberScope(), target);
+      DefnAnalyzer da(target->module(), &target->memberScope(), target, NULL);
       const ASTNodeList & imports = target->ast()->imports();
       for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
         da.importIntoScope(cast<ASTImport>(*it), &target->memberScope());

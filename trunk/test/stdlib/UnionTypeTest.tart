@@ -110,7 +110,7 @@ def testRefOrValueTypeUnion() {
 
   // classify  
   classify x as xi:int {
-    Debug.assertTrue(xi == 1);
+    Debug.assertEq(1, xi);
   } else {
     Debug.fail("union member test failed");
   }

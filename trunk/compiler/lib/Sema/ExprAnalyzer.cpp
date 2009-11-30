@@ -12,6 +12,7 @@
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
+#include "tart/CFG/Closure.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -28,12 +29,9 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction) :
-  AnalyzerBase(mod, parent, currentFunction), currentFunction_(currentFunction) {
-}
-
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject) :
-  AnalyzerBase(mod, parent, subject), currentFunction_(NULL) {
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject,
+    FunctionDefn * currentFunction)
+  : AnalyzerBase(mod, parent, subject, currentFunction) {
 }
 
 Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected,
@@ -257,16 +255,58 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
 }
 
 Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
-  if (ast->body() != NULL) {
-    DFAIL("Implement function literal");
-  } else {
-    // It's merely a function type declaration
-    TypeAnalyzer ta(module, activeScope);
-    FunctionType * ftype = ta.typeFromFunctionAST(ast);
-    if (ftype != NULL) {
+  TypeAnalyzer ta(module, activeScope);
+  FunctionType * ftype = ta.typeFromFunctionAST(ast);
+
+  if (ftype != NULL) {
+    if (ast->body() != NULL) {
+      ClosureEnvExpr * env = new ClosureEnvExpr(ast->location(), activeScope);
+      TypeDefn * envTypeDef = new TypeDefn(module, ".env", NULL);
+      envTypeDef->addTrait(Defn::Singular);
+      envTypeDef->addTrait(Defn::Nonreflective);
+      envTypeDef->addTrait(Defn::Synthetic);
+      envTypeDef->setStorageClass(Storage_Instance);
+      envTypeDef->createQualifiedName(currentFunction_);
+      CompositeType * envType = new CompositeType(Type::Struct, envTypeDef, activeScope);
+      envTypeDef->setTypeValue(envType);
+      env->setType(envType);
+
+      ParameterDefn * selfParam = new ParameterDefn(module, "self");
+      selfParam->setFlag(ParameterDefn::ClosureEnv, true);
+      selfParam->setFlag(ParameterDefn::Reference, true);
+      selfParam->setInitValue(env);
+      selfParam->setType(env->type());
+      selfParam->setInternalType(env->type());
+      selfParam->addTrait(Defn::Singular);
+      selfParam->addTrait(Defn::Final);
+      selfParam->setStorageClass(Storage_Instance);
+
+      ftype->setSelfParam(selfParam);
+
+      // TODO: It's possible to have an anon fn outside of a function. Deal with that later.
+      DASSERT(currentFunction_ != NULL);
+      FunctionDefn * fn =  new FunctionDefn(Defn::Function, module, ast);
+      fn->createQualifiedName(currentFunction_);
+      fn->setFunctionType(ftype);
+      fn->setStorageClass(Storage_Local);
+      fn->setParentDefn(currentFunction_);
+      fn->copyTrait(currentFunction_, Defn::Synthetic);
+      fn->addTrait(Defn::Final);
+      fn->addTrait(Defn::Singular);
+      fn->parameterScope().addMember(selfParam);
+
+      if (!analyzeDefn(fn, Task_PrepEvaluation)) {
+        return &Expr::ErrorVal;
+      }
+
+      return new BoundMethodExpr(ast->location(), env, fn,
+          new BoundMethodType(fn->functionType()));
+    } else {
+      // It's merely a function type declaration
       if (ftype->returnType() != NULL) {
         ftype->setReturnType(&VoidType::instance);
       }
+
       return new TypeLiteralExpr(ast->location(), ftype);
     }
   }

@@ -207,7 +207,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     }
 
     if (in->ast() != NULL) {
-      ExprAnalyzer ea(module, activeScope, subject());
+      ExprAnalyzer ea(module, activeScope, subject(), NULL);
       const ASTNodeList & attrs = in->ast()->attributes();
       for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
         Expr * attrExpr = ea.reduceAttribute(*it);

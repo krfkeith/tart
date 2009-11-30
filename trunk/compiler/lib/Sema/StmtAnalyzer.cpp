@@ -14,6 +14,7 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
+#include "tart/CFG/Closure.h"
 
 #include "tart/AST/Stmt.h"
 
@@ -75,7 +76,7 @@ public:
 /// StmtAnalyzer
 
 StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
-  : ExprAnalyzer(func->module(), &func->parameterScope(), func)
+  : ExprAnalyzer(func->module(), &func->parameterScope(), func, func)
   , function(func)
   //, returnType_(NULL)
   //, yieldType_(NULL)
@@ -117,6 +118,14 @@ bool StmtAnalyzer::buildCFG() {
       selfScope->setSelfParam(selfParam);
       parameterScope.setParentScope(selfScope);
 #endif
+    } else if (function->storageClass() == Storage_Local) {
+      ParameterDefn * selfParam = function->functionType()->selfParam();
+      DASSERT_OBJ(selfParam != NULL, function);
+      DASSERT_OBJ(selfParam->type() != NULL, function);
+      DASSERT_OBJ(selfParam->initValue() != NULL, function);
+      if (ClosureEnvExpr * env = dyn_cast<ClosureEnvExpr>(selfParam->initValue())) {
+        parameterScope.setParentScope(env);
+      }
     }
 
     // Create the initial block.
@@ -1255,7 +1264,7 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    VarAnalyzer va(var, module, function);
+    VarAnalyzer va(var, module, function, function);
     if (!va.analyze(Task_PrepConstruction)) {
       return false;
     }

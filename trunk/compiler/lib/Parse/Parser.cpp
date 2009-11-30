@@ -2466,7 +2466,16 @@ ASTNode * Parser::primaryExpression() {
 
     case Token_Function: {
       next();
-      result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
+      ASTFunctionDecl * fn = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
+      if (token == Token_LBrace) {
+        ASTFunctionDecl * saveFunction = function;
+        function = fn;
+        Stmt * body = bodyStmt();
+        function = saveFunction;
+        fn->setBody(body);
+      }
+
+      result = fn;
       break;
     }
 

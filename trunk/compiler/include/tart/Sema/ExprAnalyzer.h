@@ -16,8 +16,8 @@ namespace tart {
 class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction = NULL);
-  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject);
+  //ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction = NULL);
+  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction);
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {
@@ -33,14 +33,14 @@ public:
   Expr * reduceExprImpl(const ASTNode * ast, const Type * expected);
 
   /** Similar to reduceExpr, but applies the special name lookup rules for
-   attributes. */
+      attributes. */
   Expr * reduceAttribute(const ASTNode * ast);
 
   /** Similar to reduceExpr, but returns a constant. */
   ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected);
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
-   Report an error if the cast is not possible. */
+      Report an error if the cast is not possible. */
   Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 
@@ -85,8 +85,8 @@ public:
   // Calls
 
   /** Transform an expression to a callable object. The 'expected'
-   parameter is only used in overload selection, the actual result type
-   may not actually be that type. */
+      parameter is only used in overload selection, the actual result type
+      may not actually be that type. */
   Expr * reduceCall(const ASTCall * call, const Type * expected);
 
   /** Reduce a call to an identifier to an actual call. */
@@ -157,9 +157,6 @@ public:
 
   /** Return the function to unbox the specified type. */
   FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);
-
-private:
-  FunctionDefn * currentFunction_;
 };
 
 } // namespace tart

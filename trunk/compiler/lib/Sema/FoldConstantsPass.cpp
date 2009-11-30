@@ -40,7 +40,10 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
     for (Candidates::const_iterator it = clist.begin(); it != clist.end(); ++it) {
       bool exactMatch = true;
       CallCandidate * cc = *it;
-      DASSERT_OBJ(cc->method()->passes().isFinished(FunctionDefn::ParameterTypePass), cc->method());
+      if (cc->method() != NULL) {
+        DASSERT_OBJ(cc->method()->passes().isFinished(FunctionDefn::ParameterTypePass),
+            cc->method());
+      }
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
         const Type * paramType = cc->paramType(argIndex);

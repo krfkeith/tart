@@ -6,6 +6,7 @@
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Block.h"
+#include "tart/CFG/Closure.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -102,9 +103,6 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(in));
 
-    case Expr::Instantiate:
-      return visitInstantiate(static_cast<InstantiateExpr *>(in));
-
     case Expr::ImplicitCast:
     case Expr::ExplicitCast:
     case Expr::UpCast:
@@ -151,6 +149,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::ArrayLiteral:
       return visitArrayLiteral(static_cast<ArrayLiteralExpr *>(in));
+
+    case Expr::ClosureEnv:
+      return visitClosureScope(static_cast<ClosureEnvExpr *>(in));
 
     case Expr::IRValue:
       return in;
@@ -237,15 +238,6 @@ Expr * CFGPass::visitNew(NewExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitInstantiate(InstantiateExpr * in) {
-  in->setBase(visitExpr(in->base()));
-  ExprList & args = in->args();
-  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
-    *it = visitExpr(*it);
-  }
-  return in;
-}
-
 Expr * CFGPass::visitCast(CastExpr * in) {
   in->setArg(visitExpr(in->arg()));
   return in;
@@ -311,6 +303,10 @@ void CFGPass::visitExprArgs(ArglistExpr * in) {
   for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
     *it = visitExpr(*it);
   }
+}
+
+Expr * CFGPass::visitClosureScope(ClosureEnvExpr * in) {
+  return in;
 }
 
 } // namespace tart

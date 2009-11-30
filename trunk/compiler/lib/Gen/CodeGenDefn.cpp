@@ -129,7 +129,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
-      DASSERT_OBJ(fdef->storageClass() == Storage_Instance, fdef);
+      DASSERT_OBJ(
+          fdef->storageClass() == Storage_Instance || fdef->storageClass() == Storage_Local, fdef);
       DASSERT_OBJ(it != f->arg_end(), ftype);
       ftype->selfParam()->setIRValue(it);
       it->setName("self");

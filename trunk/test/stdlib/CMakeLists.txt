@@ -7,6 +7,7 @@ set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
 set(TART_OPTIONS -g -debug-errors -show-generated)
 #set(TART_OPTIONS -debug-errors -show-generated)
+set(TARTLN_OPTIONS -internalize -O0)
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
@@ -20,7 +21,7 @@ foreach(SRC_FILE ${TART_SRC})
   # Link with stdlib
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -disable-fp-elim -filetype=asm -internalize -O0 ${BC_FILE} "${TART_BINARY_DIR}/stdlib/stdlib.bc"
+      COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE} "${TART_BINARY_DIR}/stdlib/stdlib.bc"
       DEPENDS "${BC_FILE}" tartln stdlib
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 

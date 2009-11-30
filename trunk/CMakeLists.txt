@@ -40,6 +40,9 @@ check_function_exists(backtrace HAVE_BACKTRACE)
 # Check for LLVM
 find_package(LLVM REQUIRED)
 
+# Check for Electric fence
+find_library(LIB_EFENCE efence)
+
 # Check for GCC atomics
 check_cxx_source_compiles(
     "int main() {

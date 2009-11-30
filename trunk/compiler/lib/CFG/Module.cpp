@@ -139,7 +139,7 @@ bool Module::processImportStatements() {
   // If not already done so, add the list of imported symbols to the
   // module's namespace.
   if (beginPass(Pass_ResolveImport)) {
-    DefnAnalyzer da(this, this, this);
+    DefnAnalyzer da(this, this, this, NULL);
     for (ASTNodeList::const_iterator it = imports_.begin(); it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }

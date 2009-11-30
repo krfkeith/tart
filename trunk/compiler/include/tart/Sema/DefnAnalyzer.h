@@ -25,8 +25,8 @@ namespace tart {
 class DefnAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  DefnAnalyzer(Module * mod, Scope * parent, Defn * subject)
-    : AnalyzerBase(mod, parent, subject)
+  DefnAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction)
+    : AnalyzerBase(mod, parent, subject, currentFunction)
   {}
 
   /** Do a full analysis of the target module. */

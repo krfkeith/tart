@@ -30,6 +30,7 @@ class InitVarExpr;
 class FnCallExpr;
 class IndirectCallExpr;
 class ArrayLiteralExpr;
+class ClosureEnvExpr;
 class NewExpr;
 class LValueExpr;
 class BoundMethodExpr;
@@ -272,6 +273,9 @@ public:
 
   /** Generate an array literal. */
   llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
+
+  /** Generate a closure environment. */
+  llvm::Value * genClosureEnv(const ClosureEnvExpr * in);
 
   /** Generate code to allocate an object, where the object size is not a compile-time constant. */
   llvm::Value * genVarSizeAlloc(const SourceLocation & loc, const Type * objType,

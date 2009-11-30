@@ -24,6 +24,7 @@ public:
     Reference = (1<<1),   // Value passed by reference, even if value type
     LValueParam = (1<<2), // Allow taking address or mutating param
     KeywordOnly = (1<<3), // A "keyword only" argument.
+    ClosureEnv = (1<<4),  // A reference to a closure environment.
   };
 
   /** Constructor that takes a name */

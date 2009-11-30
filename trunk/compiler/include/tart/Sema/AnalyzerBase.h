@@ -22,6 +22,7 @@ class Scope;
 class Expr;
 class SourceLocation;
 class NamespaceDefn;
+class FunctionDefn;
 class ArrayLiteralExpr;
 
 /// -------------------------------------------------------------------
@@ -47,14 +48,15 @@ enum AnalysisTask {
 class AnalyzerBase {
 public:
   /** Constructor. */
-  AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL)
+  AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL,
+      FunctionDefn * currentFunction = NULL)
     : module(mod)
     , activeScope(parent)
     , subject_(subject)
+    , currentFunction_(currentFunction)
   {}
 
-  /** Replace the current active scope with a new scope. Returns the old
-      scope. */
+  /** Replace the current active scope with a new scope. Returns the old scope. */
   Scope * setActiveScope(Scope * newScope) {
     Scope * prevScope = activeScope;
     activeScope = newScope;
@@ -65,6 +67,9 @@ public:
       whether private/protected variables can be seen. */
   //void setSubject(Defn * subject) { subject_ = subject; }
   Defn * subject() const { return subject_; }
+
+  /** Represents the function currently being compiled. */
+  FunctionDefn * currentFunction() const { return currentFunction_; }
 
   /** This method accepts an AST representing either an identifier or
       a dotted path of the form 'a.b.c'. It will attempt to resolve the
@@ -132,6 +137,7 @@ protected:
   Module * module;
   Scope * activeScope;
   Defn * subject_;
+  FunctionDefn * currentFunction_;
 
   // Recursive name-lookup helper function
   bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path, bool absPath);

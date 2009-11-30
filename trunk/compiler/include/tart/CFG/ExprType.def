@@ -23,7 +23,6 @@ EXPR_TYPE(PatternVar)     // A pattern variable
 EXPR_TYPE(Assign)         // Assignment
 EXPR_TYPE(PostAssign)     // Assign, return value before assignment
 EXPR_TYPE(InitVar)        // Local variable initialization
-EXPR_TYPE(Instantiate)    // An explicit template specialization
 EXPR_TYPE(New)            // A call to allocate storage for an object
 EXPR_TYPE(BinaryOpcode)   // A binary IR opcode
 EXPR_TYPE(Compare)        // A binary comparison instruction
@@ -68,3 +67,4 @@ EXPR_TYPE(IRValue)        // An IR-level value.
 EXPR_TYPE(LocalCall)      // A jump to a local subroutine.
 EXPR_TYPE(ArrayLiteral)   // An array literal
 EXPR_TYPE(BoundMethod)    // A reference to a method and a base object
+EXPR_TYPE(ClosureEnv)     // A reference to a closure environment.

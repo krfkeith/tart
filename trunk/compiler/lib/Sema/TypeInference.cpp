@@ -77,7 +77,9 @@ void CallSite::finish() {
   // first candidate.
   removeCulled();
   CallCandidate * c = cd.front();
-  callExpr->setFunction(new LValueExpr(callExpr->location(), c->base(), c->method()));
+  if (c->method() != NULL) {
+    callExpr->setFunction(new LValueExpr(callExpr->location(), c->base(), c->method()));
+  }
 }
 
 void CallSite::formatCallSignature(FormatStream & out) {
