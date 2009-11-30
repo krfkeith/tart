@@ -61,7 +61,7 @@ static const FunctionDefn::PassSet PASS_SET_REFLECT = FunctionDefn::PassSet::of(
 );
 
 FunctionAnalyzer::FunctionAnalyzer(FunctionDefn * func)
-  : DefnAnalyzer(func->module(), func->definingScope(), func)
+  : DefnAnalyzer(func->module(), func->definingScope(), func, func)
   , target(func)
 {
   DASSERT(func != NULL);
@@ -189,7 +189,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param, module, target).analyze(Task_PrepTypeComparison);
+        VarAnalyzer(param, module, target, target).analyze(Task_PrepTypeComparison);
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
@@ -578,7 +578,7 @@ bool FunctionAnalyzer::createReflectionData() {
           case Type::BoundMethod:
           case Type::Tuple:
           case Type::Union: {
-            FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_)
+            FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_, target)
                 .getUnboxFn((*it)->location(), paramType);
             if (unboxFn && unboxFn->isSingular()) {
               module->addSymbol(unboxFn);

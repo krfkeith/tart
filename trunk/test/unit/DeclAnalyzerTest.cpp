@@ -22,7 +22,7 @@ public:
   DefnAnalyzerTest()
     : testSource("")
     , testModule(&testSource, "test", &Builtins::module)
-    , declAnalyzer(&testModule, &testModule, &testModule)
+    , declAnalyzer(&testModule, &testModule, &testModule, NULL)
   {}
 
   virtual void SetUp() {}

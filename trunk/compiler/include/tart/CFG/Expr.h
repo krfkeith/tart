@@ -31,6 +31,7 @@ class ErrorExpr;
 class VariableDefn;
 class CompositeType;
 class TupleType;
+class LocalScope;
 
 typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
 typedef llvm::SmallVector<SpCandidate *, 8> SpCandidateList;
@@ -334,7 +335,8 @@ private:
 
 public:
   /** Constructor. */
-  BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method, Type * type);
+  BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
+      const Type * type);
 
   /** Return the reference to the 'self' param */
   Expr * selfArg() const { return selfArg_; }
@@ -527,45 +529,6 @@ public:
   static inline bool classof(const NewExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == New;
-  }
-};
-
-/// -------------------------------------------------------------------
-/// An explicit template instantiation, which may be complete or
-/// partial.
-
-// TODO: Delete this class?
-class InstantiateExpr : public Expr {
-private:
-  Expr * base_;
-  ValueDefn * value_;
-  ExprList args_;
-
-public:
-  /** Constructor. */
-  InstantiateExpr(const SourceLocation & loc, Expr * base, ValueDefn * val,
-      const ExprList args);
-
-  /** Return the reference to the base (the 'self' param) */
-  Expr * base() const { return base_; }
-  void setBase(Expr * b) { base_ = b; }
-
-  /** Return the reference to the definition */
-  const ValueDefn * value() const { return value_; }
-  ValueDefn * value() { return value_; }
-
-  /** Return the arguments to the template */
-  const ExprList & args() const { return args_; }
-  ExprList & args() { return args_; }
-
-  // Overrides
-
-  void format(FormatStream & out) const;
-  void trace() const;
-
-  static inline bool classof(const InstantiateExpr *) { return true; }
-  static inline bool classof(const Expr * ex) {
-    return ex->exprType() == Instantiate;
   }
 };
 

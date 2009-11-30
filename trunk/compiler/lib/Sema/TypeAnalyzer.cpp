@@ -116,7 +116,8 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::GetElement: {
       // Easiest way to handle this is to try and evaluate it as an expression, and see if
       // the result is a type literal.
-      Expr * typeExpr = ExprAnalyzer(module, activeScope, subject()).reduceExpr(ast, NULL);
+      Expr * typeExpr = ExprAnalyzer(module, activeScope, subject(), currentFunction())
+          .reduceExpr(ast, NULL);
       if (isErrorResult(typeExpr)) {
         return &BadType::instance;
       } else if (TypeLiteralExpr * type = dyn_cast_or_null<TypeLiteralExpr>(typeExpr)) {

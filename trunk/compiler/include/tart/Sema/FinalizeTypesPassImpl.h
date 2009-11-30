@@ -38,7 +38,6 @@ private:
   Expr * visitAssign(AssignmentExpr * in);
   Expr * visitPostAssign(AssignmentExpr * in);
   Expr * visitCall(CallExpr * in);
-  Expr * visitInstantiate(InstantiateExpr * in);
   Expr * visitCast(CastExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitRefEq(BinaryExpr * in);

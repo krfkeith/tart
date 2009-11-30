@@ -12,6 +12,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/Closure.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Common/Diagnostics.h"
@@ -320,7 +321,7 @@ void InitVarExpr::format(FormatStream & out) const {
 // BoundMethodExpr
 
 BoundMethodExpr::BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
-    Type * type)
+    const Type * type)
   : Expr(BoundMethod, loc, type)
   , selfArg_(selfArg)
   , method_(method)
@@ -579,6 +580,44 @@ void CastExpr::format(FormatStream & out) const {
   } else {
     out << "cast<" << type() << ">(" << arg() << ")";
   }
+}
+
+/// -------------------------------------------------------------------
+/// ClosureScopeExpr
+
+void ClosureEnvExpr::addMember(Defn * d) {
+  DASSERT_OBJ(d->definingScope() == NULL, d);
+  SymbolTable::Entry * entry = members_.add(d);
+  d->setDefiningScope(this);
+}
+
+bool ClosureEnvExpr::lookupMember(const char * name, DefnList & defs, bool inherit) const {
+  const SymbolTable::Entry * entry = members_.findSymbol(name);
+  if (entry != NULL) {
+    defs.append(entry->begin(), entry->end());
+    return true;
+  }
+
+  if (parentScope_ != NULL) {
+    return parentScope_->lookupMember(name, defs, inherit);
+  }
+
+  return false;
+}
+
+void ClosureEnvExpr::format(FormatStream & out) const {
+  out << "<closure>";
+}
+
+void ClosureEnvExpr::trace() const {
+  safeMark(parentScope_->asLocalScope());
+}
+
+void ClosureEnvExpr::dumpHierarchy(bool full) const {
+  std::string out;
+  out.append("[closure]");
+  members_.getDebugSummary(out);
+  diag.writeLnIndent(out);
 }
 
 // -------------------------------------------------------------------

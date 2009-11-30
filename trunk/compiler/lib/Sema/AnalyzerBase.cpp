@@ -109,7 +109,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     path.clear();
 
     // See if it's an expression.
-    ExprAnalyzer ea(module, activeScope, subject());
+    ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
     //Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
@@ -261,7 +261,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
-  ExprAnalyzer ea(module, activeScope, subject());
+  ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
     if (isErrorResult(cb)) {
@@ -532,7 +532,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
 }
 
 bool AnalyzerBase::analyzeModule(Module * mod) {
-  DefnAnalyzer da(mod, mod, mod);
+  DefnAnalyzer da(mod, mod, mod, NULL);
   return da.analyzeModule();
 }
 
@@ -562,7 +562,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 
     case Defn::Mod: {
       Module * m = static_cast<Module *>(in);
-      return DefnAnalyzer(m, m, m).analyzeModule();
+      return DefnAnalyzer(m, m, m, NULL).analyzeModule();
     }
 
     case Defn::ExplicitImport:
@@ -621,7 +621,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
 
   // Do analysis on template if needed.
   if (arrayTemplate->ast() != NULL) {
-    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module);
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
     da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
   }
 
@@ -659,7 +659,7 @@ FunctionDefn * AnalyzerBase::coerceToObjectFn(const Type * type) {
   DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
   // Do analysis on template if needed.
   if (coerceTemplate->ast() != NULL) {
-    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module);
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
     da.analyzeTemplateSignature(coerceFn);
   }
 

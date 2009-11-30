@@ -1,0 +1,22 @@
+import tart.reflect.Module;
+
+namespace TestUtils {
+
+  /** Simple function to run all of the test functions in a module. */  
+  def runModuleTests(m:Module) -> int {
+    try {
+		  for method in m.methods {
+		    if method.name.startsWith("test") {
+		      Debug.writeLn("Running:  ", method.name);
+		      method.call(m);
+          Debug.writeLn("Finished: ", method.name);
+		    }
+		  } 
+    } catch t:Throwable {
+      Debug.fail("Unexpected exception: ", t.toString());
+      return 1;
+    }
+    
+    return 0;
+  }
+}

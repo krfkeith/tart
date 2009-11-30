@@ -86,7 +86,7 @@ static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::o
 );
 
 ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
-  : DefnAnalyzer(de->module(), de->definingScope(), de)
+  : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
   , target(de)
 {
   DASSERT(de != NULL);

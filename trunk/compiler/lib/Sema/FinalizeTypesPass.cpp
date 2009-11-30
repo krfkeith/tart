@@ -416,10 +416,6 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
   return def;
 }
 
-Expr * FinalizeTypesPassImpl::visitInstantiate(InstantiateExpr * in) {
-  DFAIL("Implement");
-}
-
 Expr * FinalizeTypesPassImpl::visitCast(CastExpr * in) {
   Expr * arg = visitExpr(in->arg());
 
@@ -656,13 +652,13 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
-  return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
+  return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doImplicitCast(in, toType, tryCoerciveCasts_);
 }
 
 Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
-    return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_)
+    return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doUnboxCast(in->arg(), in->type());
   }
 

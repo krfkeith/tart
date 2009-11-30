@@ -41,7 +41,7 @@ def testCallMethod() {
   let m = Module.thisModule();
   let method = typecast[Method](m.findMethod("sample2"));
 	savedValue = 0;
-	method.call(88, 77);
+	method.call(m, 77);
 	Debug.assertEq(77, savedValue);
 }
 

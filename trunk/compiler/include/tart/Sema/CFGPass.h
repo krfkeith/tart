@@ -11,6 +11,8 @@
 
 namespace tart {
 
+class ClosureEnvExpr;
+
 /// -------------------------------------------------------------------
 /// Mixin class that handles iteration over the CFG expression tree and
 /// allows for arbitrary replacements.
@@ -42,7 +44,6 @@ public:
   virtual Expr * visitCall(CallExpr * in);
   virtual Expr * visitFnCall(FnCallExpr * in);
   virtual Expr * visitIndirectCall(IndirectCallExpr * in);
-  virtual Expr * visitInstantiate(InstantiateExpr * in);
   virtual Expr * visitNew(NewExpr * in);
   virtual Expr * visitCast(CastExpr * in);
   virtual Expr * visitBinaryOpcode(BinaryOpcodeExpr * in);
@@ -55,6 +56,7 @@ public:
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  virtual Expr * visitClosureScope(ClosureEnvExpr * in);
 
 protected:
   void visitExprArgs(ArglistExpr * in);

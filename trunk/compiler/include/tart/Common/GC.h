@@ -18,6 +18,11 @@ public:
   void * operator new(size_t size);
   void operator delete(void * mem);
 
+  class Callback {
+  public:
+    virtual void call() = 0;
+  };
+
   /** Construct a new GC object. */
   GC() : marked_(false) {}
 
@@ -45,6 +50,8 @@ public:
 
   /** Set the verbosity level. */
   static void setDebugLevel(int level) { debugLevel = level; }
+
+  static void registerUninitCallback(Callback * cb);
 
   /** A version of mark which handles null pointers. */
   template <class T>

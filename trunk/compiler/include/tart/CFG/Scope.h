@@ -23,6 +23,7 @@ namespace tart {
 class ProgramSource;
 class Defn;
 class Expr;
+class LocalScope;
 
 /// -------------------------------------------------------------------
 /// Scope interface
@@ -51,6 +52,9 @@ public:
 
   /** Debugging function to dump the current hierarchy. */
   virtual void dumpHierarchy(bool full = true) const = 0;
+
+  /** Ugly hack - for now */
+  virtual LocalScope * asLocalScope() { return NULL; }
 };
 
 typedef llvm::SetVector<Scope *> ScopeSet;
@@ -127,6 +131,7 @@ public:
 
   void addMember(Defn * d);
   void trace() const;
+  LocalScope * asLocalScope() { return this; }
 };
 
 /// -------------------------------------------------------------------
@@ -137,9 +142,7 @@ class DelegatingScope : public Scope {
   Scope * parent;
 
 public:
-  DelegatingScope(Scope * s, Scope * p) : delegate(s), parent(p) {
-    p = s->parentScope();
-  }
+  DelegatingScope(Scope * s, Scope * p) : delegate(s), parent(p) {}
 
   void setDelegate(Scope * scope) { delegate = scope; }
   void setParentScope(Scope * scope) { parent = scope; }

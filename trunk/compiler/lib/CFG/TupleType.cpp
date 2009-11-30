@@ -3,12 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/TupleType.h"
-//#include "tart/CFG/Module.h"
-//#include "tart/CFG/PrimitiveType.h"
-//#include "tart/CFG/CompositeType.h"
-//#include "tart/CFG/TupleType.h"
 #include "tart/Common/Diagnostics.h"
-//#include "tart/Objects/Builtins.h"
 
 namespace tart {
 
@@ -71,6 +66,17 @@ namespace {
   typedef llvm::DenseMap<TypeTupleKey, TupleType *, TypeTupleKeyInfo> TupleTypeMap;
 
   TupleTypeMap uniqueValues_;
+  bool initFlag = false;
+
+  class CleanupHook : public GC::Callback {
+    void call() {
+      uniqueValues_.clear();
+      initFlag = false;
+    }
+  };
+
+
+  CleanupHook hook;
 }
 
 // -------------------------------------------------------------------
@@ -81,6 +87,11 @@ TupleType * TupleType::get(const Type * typeArg) {
 }
 
 TupleType * TupleType::get(TypeList::const_iterator first, TypeList::const_iterator last) {
+  if (!initFlag) {
+    initFlag = true;
+    GC::registerUninitCallback(&hook);
+  }
+
   TupleTypeMap::iterator it = uniqueValues_.find(TypeTupleKey(first, last));
   if (it != uniqueValues_.end()) {
     return it->second;

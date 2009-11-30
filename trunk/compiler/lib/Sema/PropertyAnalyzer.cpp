@@ -30,7 +30,7 @@ static const PropertyDefn::PassSet PASS_SET_COMPLETE = PropertyDefn::PassSet::of
 );
 
 PropertyAnalyzer::PropertyAnalyzer(PropertyDefn * prop)
-  : DefnAnalyzer(prop->module(), prop->definingScope(), prop)
+  : DefnAnalyzer(prop->module(), prop->definingScope(), prop, NULL)
   , target(prop)
 {
 }

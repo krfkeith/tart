@@ -1,18 +1,3 @@
-if let x:int = 1 {
-}
-
-while let x:int = b {
-}
-
-if let x:int = 1 {
-}
-
-// Wrong - y might be unassigned.
-if (let x:int = 1) or (let y:int = 2) {
-}
-
-var i:int = 0;
-var l:List:int = List();
 
 interface ContextHandler {
   def enter();

@@ -156,7 +156,7 @@ private:
 #endif
 
 EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
-  : DefnAnalyzer(de->module(), de->definingScope(), de)
+  : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
   , target_(de)
   , prevValue_(NULL)
   , minValue_(NULL)
@@ -265,7 +265,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ConstantInteger * value = NULL;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
-    ExprAnalyzer ea(module, activeScope, subject());
+    ExprAnalyzer ea(module, activeScope, subject(), NULL);
     ConstantExpr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
     if (isErrorResult(enumValue)) {
       return false;

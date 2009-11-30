@@ -6,6 +6,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceLocation.h"
 #include <malloc.h>
+#include <llvm/ADT/SmallVector.h>
 
 namespace tart {
 
@@ -13,6 +14,7 @@ size_t GC::reclaimed;
 size_t GC::total;
 int GC::debugLevel;
 GC * GC::allocList_ = NULL;
+llvm::SmallVector<GC::Callback *, 8> uninitCallbacks;
 
 static bool initialized = false;
 
@@ -21,8 +23,6 @@ void * GC::operator new(size_t size) {
   GC * gc = reinterpret_cast<GC *>(malloc(size));
   gc->next_ = allocList_;
   allocList_ = gc;
-
-  //return gc_heap_alloc(size, NULL);
 }
 
 void GC::operator delete(void * mem) {}
@@ -30,13 +30,21 @@ void GC::operator delete(void * mem) {}
 void GC::init() {
   DASSERT(!initialized);
   initialized = true;
-  //gc_heap_init();
 }
 
 void GC::uninit() {
   DASSERT(initialized);
   initialized = false;
-  //gc_heap_uninit();
+  for (llvm::SmallVector<GC::Callback *, 8>::iterator it = uninitCallbacks.begin();
+      it != uninitCallbacks.end(); ++it) {
+    (*it)->call();
+  }
+
+  uninitCallbacks.clear();
+}
+
+void GC::registerUninitCallback(Callback * cb) {
+  uninitCallbacks.push_back(cb);
 }
 
 bool GC::sweepCallback(void * alloc, void * ctx) {
