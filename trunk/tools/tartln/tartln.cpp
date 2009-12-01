@@ -258,6 +258,8 @@ void optimize(Module * module) {
     addPass(passes, createCFGSimplificationPass());
     addPass(passes, createAggressiveDCEPass());
     addPass(passes, createGlobalDCEPass());
+  } else if (optInternalize) {
+    addPass(passes, createGlobalDCEPass());
   }
 
   // Make sure everything is still good.
