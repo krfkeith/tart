@@ -35,8 +35,7 @@ Implementation TODOS:
   * Find all properties/functions having some attribute
   * _scopeName + _name;
   * auto TypeLiteral
-* Local functions
-  * Anonymous functions
+* Closures
 * intptr and uintptr
 * Stack dumps / trace
 * Why is linking so slow? (because internalize doesn't work).
