@@ -74,6 +74,7 @@ DICompileUnit CodeGenerator::genDICompileUnit(const Defn * defn) {
 }
 
 void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
+  DASSERT(fn != NULL);
   dbgCompileUnit_ = genDICompileUnit(fn);
   if (!dbgCompileUnit_.isNull()) {
     DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
@@ -143,7 +144,8 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
 }
 
 DIType CodeGenerator::genDIType(const Type * type) {
-  DIType & result = dbgTypeMap_[type];
+  DASSERT(type != NULL);
+  DIType result = dbgTypeMap_[type];
   if (!result.isNull()) {
     return result;
   }
@@ -202,6 +204,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
       break;
   }
 
+  dbgTypeMap_[type] = result;
   return result;
 }
 
