@@ -61,11 +61,15 @@ private:
   bool evalBlocks(BlockList & blocks);
 
   Expr * evalExpr(Expr * in);
+  ConstantExpr * evalConstantExpr(Expr * in);
   Expr * evalLValue(LValueExpr * in);
   Expr * evalFnCall(FnCallExpr * in);
   Expr * evalNew(NewExpr * in);
   Expr * evalAssign(AssignmentExpr * in);
   Expr * evalArrayLiteral(ArrayLiteralExpr * in);
+  Expr * evalBinaryOpcode(BinaryOpcodeExpr *in);
+
+  llvm::Constant * asConstNumber(ConstantExpr * e);
 
   void store(Expr * value, Expr * dest);
 

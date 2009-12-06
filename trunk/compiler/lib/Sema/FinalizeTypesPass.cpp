@@ -173,6 +173,17 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
       if (!AnalyzerBase::analyzeType(selfArg->type(), Task_PrepTypeComparison)) {
         return &Expr::ErrorVal;
       }
+
+      // If the self argument is a struct type, and it's a parameter of the calling
+      // function, then we need to insure that we can take the address of the struct
+      // by converting it into an LValue.
+      if (LValueExpr * lval = dyn_cast<LValueExpr>(selfArg)) {
+        if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
+          if (param->type()->typeClass() == Type::Struct) {
+            param->setFlag(ParameterDefn::LValueParam, true);
+          }
+        }
+      }
     }
 
     // See if we can evaluate the call at compile-time.

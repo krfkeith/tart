@@ -49,10 +49,12 @@ namespace Math {
   def sqrt(f:double) -> double;
 
   /** Return the first operand raised to the power of the second operand. */
-  //def pow(base:float, exponent:float) -> float = 201;
+  @Intrinsic
+  def pow(base:float, exponent:float) -> float;
 
   /** Return the first operand raised to the power of the second operand. */
-  //def pow(base:double, exponent:float) -> double = 201;
+  @Intrinsic
+  def pow(base:double, exponent:float) -> double;
 
   /** Return the sine of the given angle. */
   @Intrinsic

@@ -77,6 +77,7 @@ class StringifyIntrinsic : public Intrinsic {
   static StringifyIntrinsic instance;
   StringifyIntrinsic() : Intrinsic("tart.core.Debug.stringify") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  // TODO: Eval() for constants.
 };
 
 // -------------------------------------------------------------------
@@ -87,6 +88,7 @@ class PrimitiveToStringIntrinsic : public Intrinsic {
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 
   mutable llvm::Function * functions_[TypeId_Count];
+  // TODO: Eval() for constants.
 };
 
 // -------------------------------------------------------------------
@@ -197,6 +199,7 @@ class MathSinIntrinsic : public Intrinsic {
   static MathSinIntrinsic instance;
   MathSinIntrinsic() : Intrinsic("tart.core.Math.sin") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  // TODO: Eval() for constants.
 };
 
 // -------------------------------------------------------------------
@@ -205,21 +208,41 @@ class MathCosIntrinsic : public Intrinsic {
   static MathCosIntrinsic instance;
   MathCosIntrinsic() : Intrinsic("tart.core.Math.cos") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  // TODO: Eval() for constants.
 };
 
 // -------------------------------------------------------------------
-// Math intrinsic with 1 argument
-//class MathSqrtIntrinsic : public Intrinsic {
-//  static MathSqrtIntrinsic instance;
-//  MathSqrtIntrinsic() : Intrinsic("tart.core.Math.sqrt") {}
-//  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
-//};
+// Math intrinsic with 1 int argument
 
 template<llvm::Intrinsic::ID id>
-class MathIntrinsic1 : public Intrinsic {
-  static MathIntrinsic1 instance;
-  MathIntrinsic1(const char * name) : Intrinsic(name) {}
+class MathIntrinsic1i : public Intrinsic {
+  static MathIntrinsic1i instance;
+  MathIntrinsic1i(const char * name) : Intrinsic(name) {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Math intrinsic with 1 float argument
+
+template<llvm::Intrinsic::ID id>
+class MathIntrinsic1f : public Intrinsic {
+  static MathIntrinsic1f instance;
+  MathIntrinsic1f(const char * name) : Intrinsic(name) {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  // TODO: Eval() for constants.
+};
+
+// -------------------------------------------------------------------
+// Math intrinsic with 2 float arguments
+
+template<llvm::Intrinsic::ID id>
+class MathIntrinsic2f : public Intrinsic {
+  static MathIntrinsic2f instance;
+  MathIntrinsic2f(const char * name) : Intrinsic(name) {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  // TODO: Eval() for constants.
 };
 
 // -------------------------------------------------------------------

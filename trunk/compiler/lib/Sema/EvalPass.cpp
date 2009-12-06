@@ -105,10 +105,12 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::UnionCtorCast:
     case Expr::UnionMemberCast:
       return evalCast(static_cast<CastExpr *>(in));
+#endif
 
     case Expr::BinaryOpcode:
       return evalBinaryOpcode(static_cast<BinaryOpcodeExpr *>(in));
 
+#if 0
     case Expr::Compare:
       return evalCompare(static_cast<CompareExpr *>(in));
 
@@ -148,6 +150,19 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType()) << " : " << in;
   DFAIL("Fall through");
+}
+
+ConstantExpr * EvalPass::evalConstantExpr(Expr * in) {
+  Expr * e = evalExpr(in);
+  if (e != NULL) {
+    if (ConstantExpr * ce = dyn_cast<ConstantExpr>(e)) {
+      return ce;
+    } else if (!allowPartial_) {
+      diag.error(in) << "Not a constant: " << in;
+    }
+  }
+
+  return NULL;
 }
 
 bool EvalPass::evalBlocks(BlockList & blocks) {
@@ -398,6 +413,38 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
       ConstantInteger::get(in->location(), &UIntType::instance, arrayData->elements().size()));
   arrayObj->setMemberValue("_data", arrayData);
   return arrayObj;
+}
+
+Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
+  llvm::Constant * c0 = asConstNumber(evalConstantExpr(in->first()));
+  llvm::Constant * c1 = asConstNumber(evalConstantExpr(in->second()));
+  if (c0 == NULL || c1 == NULL) {
+    return NULL;
+  }
+
+  llvm::Constant * cresult = llvm::ConstantExpr::get(in->opCode(), c0, c1);
+
+  switch (in->opCode()) {
+    case llvm::Instruction::Add:
+      break;
+  }
+
+  DFAIL("Implement");
+}
+
+llvm::Constant * EvalPass::asConstNumber(ConstantExpr * e) {
+  if (e == NULL) {
+    return NULL;
+  } else if (ConstantInteger * ci = dyn_cast<ConstantInteger>(e)) {
+    return ci->value();
+  } else if (ConstantFloat * cf = dyn_cast<ConstantFloat>(e)) {
+    return cf->value();
+  } else if (allowPartial_) {
+    return NULL;
+  } else {
+    diag.error(e) << "Not a number " << e;
+    return NULL;
+  }
 }
 
 } // namespace tart

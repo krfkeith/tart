@@ -29,34 +29,34 @@ public:
     addTrait(Defn::Final);
     addTrait(Defn::Singular);
     addTrait(Defn::Nonreflective);
-    setStorageClass(Storage_Global);
-    createQualifiedName(m);
+    setStorageClass(Storage_Instance);
+    createQualifiedName(type->typeDefn());
   }
 
   static FunctionType * createFunctionType(Module * m, EnumType * type) {
     ParameterList params;
-    params.push_back(new ParameterDefn(m, "e1", type, 0));
-    params.push_back(new ParameterDefn(m, "e2", type, 0));
-    return new FunctionType(&BoolType::instance, params);
+    params.push_back(new ParameterDefn(m, "eval", type, 0));
+    FunctionType * ft = new FunctionType(&BoolType::instance, params);
+    ft->setSelfParam(new ParameterDefn(m, "self", type, 0));
+    return ft;
   }
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
-    assert(args.size() == 2);
+    assert(args.size() == 1);
     Expr * arg0 = args[0];
-    Expr * arg1 = args[1];
     Expr * result;
     const Type * baseType = type_->baseType();
 
-    if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
+    if (arg0->exprType() == Expr::ConstInt && self->exprType() == Expr::ConstInt) {
       ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
-      ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
+      ConstantInteger * c1 = static_cast<ConstantInteger *>(self);
       DASSERT(c0->type() == c1->type());
       result = new ConstantInteger(
             c0->location() | c1->location(),
             baseType,
             cast<llvm::ConstantInt>(llvm::ConstantExpr::getAnd(c0->value(), c1->value())));
     } else {
-      result = new BinaryOpcodeExpr(llvm::Instruction::And, loc, baseType, arg0, arg1);
+      result = new BinaryOpcodeExpr(llvm::Instruction::And, loc, baseType, arg0, self);
     }
 
     return BoolType::instance.explicitCast(loc, result);
@@ -344,7 +344,7 @@ void EnumAnalyzer::defineOperators() {
 
   if (type->isFlags()) {
     Module * m = target_->module();
-    parentScope->addMember(new EnumContainsFunction(m, type));
+    type->memberScope()->addMember(new EnumContainsFunction(m, type));
     parentScope->addMember(
         new EnumBinaryFunction(m, type, &ASTIdent::operatorBitAnd, llvm::Instruction::And));
     parentScope->addMember(

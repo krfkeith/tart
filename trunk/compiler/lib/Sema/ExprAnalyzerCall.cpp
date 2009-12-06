@@ -103,6 +103,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
   call->setExpectedReturnType(expected);
   for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
+    //success &= addOverload(call, *it, args);
     if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
         success &= addOverload(call, lvalueBase(lv), func, args);
@@ -120,6 +121,8 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
           success &= addOverload(call, lv, ft, args);
         } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(var->type())) {
           success &= addOverload(call, lv, bmt->fnType(), args);
+        } else {
+          diag.fatal(loc) << *it << " is not callable.";
         }
       }
     } else {
@@ -146,8 +149,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     return &Expr::ErrorVal;
   } else if (call->candidates().empty()) {
     // Generate the calling signature in a buffer.
-    std::stringstream callsig;
-    FormatStream fs(callsig);
+    StrFormatStream fs;
     fs << Format_Dealias << callable << "(";
     formatExprTypeList(fs, call->args());
     fs << ")";
@@ -155,7 +157,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
       fs << " -> " << expected;
     }
 
-    diag.error(loc) << "No matching method for call to " << callsig.str() << ", candidates are:";
+    diag.error(loc) << "No matching method for call to " << fs.str() << ", candidates are:";
     for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
       Expr * resultMethod = *it;
       if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
@@ -164,6 +166,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         diag.info(*it) << *it;
       }
     }
+
     return &Expr::ErrorVal;
   }
 
@@ -503,6 +506,21 @@ const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
   return new ParameterOfConstraint(call, index);
 }
 
+bool ExprAnalyzer::addOverload(CallExpr * call, Expr * callable, const ASTNodeList & args) {
+  if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(callable->type())) {
+    return addOverload(call, callable, bmt->fnType(), args);
+  }
+
+  if (LValueExpr * lv = dyn_cast<LValueExpr>(callable)) {
+    if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
+      return addOverload(call, lvalueBase(lv), func, args);
+    }
+  }
+
+  diag.fatal(call) << callable << " is not callable.";
+  return false;
+}
+
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ASTNodeList & args) {
   if (!analyzeValueDefn(method, Task_PrepConversion)) {
@@ -535,7 +553,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   return true;
 }
 
-bool ExprAnalyzer::addOverload(CallExpr * call, LValueExpr * fn, const FunctionType * ftype,
+bool ExprAnalyzer::addOverload(CallExpr * call, Expr * fn, const FunctionType * ftype,
     const ASTNodeList & args) {
   //if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
   //  return false;
@@ -570,6 +588,27 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
 
   call->candidates().push_back(new CallCandidate(call, baseExpr, method, pa));
   return true;
+}
+
+void ExprAnalyzer::noCandidatesError(CallExpr * call, const ExprList & methods) {
+  // Generate the calling signature in a buffer.
+  StrFormatStream fs;
+  //fs << Format_Dealias << callable << "(";
+  formatExprTypeList(fs, call->args());
+  fs << ")";
+  if (call->expectedReturnType() != NULL) {
+    fs << " -> " << call->expectedReturnType();
+  }
+
+  diag.error(call) << "No matching method for call to " << fs.str() << ", candidates are:";
+  for (ExprList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+    Expr * method = *it;
+    if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
+      diag.info(lval->value()) << Format_Type << lval->value();
+    } else {
+      diag.info(*it) << method;
+    }
+  }
 }
 
 } // namespace tart

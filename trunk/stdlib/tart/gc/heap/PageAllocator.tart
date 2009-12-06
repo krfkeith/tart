@@ -1,0 +1,44 @@
+import tart.core.BitTricks.leadingZeroes;
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.gc.AddressRange;
+
+/** Manages the allocation of low-level pages of memory. */
+abstract class PageAllocator {
+  static {
+    let PAGE_SIZE:int = 0x10000; /// 64K Pages.
+    let PAGE_SIZE_LOG2:int = 32 - leadingZeroes(PAGE_SIZE);
+  }
+  
+  private {
+    var _heapExtent:AddressRange;
+  }
+
+  /** Allocate the specified number of pages. */  
+  def alloc(numPages:int) -> AddressRange {
+    let result = allocImpl(PAGE_SIZE, numPages);
+    // TODO: Other processing might be needed here.
+    return AddressRange(result, addressOf(result[numPages * PAGE_SIZE]));
+  }
+
+  /** Free the specified pages. */  
+  //def free(pages:AddressRange) {
+  //  freeImpl(pages);
+  //}
+  
+  //if SystemConfig.LINUX in SystemConfig.os {
+  //} else if SystemConfig.WINDOWS in SystemConfig.os {
+  //} else if SystemConfig.MACOSX in SystemConfig.os {
+  //}
+
+  /** Allocate the specified number of pages. */  
+  @Extern("PageAllocator_allocImpl")
+  private def allocImpl(pageSize:int, numPages:int) -> Address[ubyte];
+  
+  //@Extern("PageAllocator_freeImpl")
+  //private def freeImpl(page:Address[ubyte]);
+
+  /** Deallocate the specified address range. The beginning and ending
+      address must be aligned on a page boundary. */
+  def heapExtent:AddressRange { get { return _heapExtent; } }
+}

@@ -122,6 +122,15 @@ public:
   const Type * getMappedParameterType(CallExpr * call, int index);
 
   /** Add an overload to a call expression.
+      Parameters:
+        'call' - The call expression.
+        'callable' - The callable expression (function or function-typed variable.)
+        'args' - the list of argument AST nodes (for computing keyword
+                 assignment.)
+   */
+  bool addOverload(CallExpr * call, Expr * callable, const ASTNodeList & args);
+
+  /** Add an overload to a call expression.
 
       Parameters:
         'base' - the base expression (i.e. the 'self' argument) for each method.
@@ -137,10 +146,9 @@ public:
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ASTNodeList & args, SpCandidate * sp);
 
-  /** Version of addOverload which works with variables of function type. */
-  bool addOverload(CallExpr * call, LValueExpr * fn, const FunctionType * ftype,
+  /** Version of addOverload which works with expressions of function type. */
+  bool addOverload(CallExpr * call, Expr * fn, const FunctionType * ftype,
       const ASTNodeList & args);
-  // Templates
 
   /** Version of overload which works with pre-analyzed arguments. No keyword mapping
       is done, args are simply mapped 1:1 to parameters. */
@@ -157,6 +165,9 @@ public:
 
   /** Return the function to unbox the specified type. */
   FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);
+
+  /** Report that there were no matching candidates. */
+  void noCandidatesError(CallExpr * call, const ExprList & methods);
 };
 
 } // namespace tart

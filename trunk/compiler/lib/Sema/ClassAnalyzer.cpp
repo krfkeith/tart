@@ -16,6 +16,7 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 
@@ -1079,13 +1080,6 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setFlag(ParameterDefn::Reference, true);
   LValueExpr * selfExpr = new LValueExpr(target->location(), NULL, selfParam);
 
-  //if (classType->getKind() == Type::Struct) {
-  // The 'self' param of struct methods is passed by reference instead of by
-  // value as normal.
-  //  selfParam->setParameterFlag(ParameterDef::Reference, true);
-  //}
-  //requiredParams.push_back(selfParam);
-
   Block * constructorBody = new Block("entry");
   constructorBody->exitReturn(target->location(), NULL);
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -1140,9 +1134,20 @@ bool ClassAnalyzer::createDefaultConstructor() {
             // TODO: This doesn't work because native pointer initializations
             // are the wrong type.
             initVal = defaultValue;
-            continue;
           } else if (type == Builtins::typeObject) {
+            // Don't initialize fields of type Object here - allocator will do it.
             continue;
+          } else if (memberType->typeClass() == Type::Struct) {
+            // See if the struct has a no-arg constructor.
+            ExprAnalyzer ea(module, activeScope, memberVar, NULL);
+            Expr * fieldCtorCall = ea.callConstructor(
+                memberVar->location(), memberType->typeDefn(), ASTNodeList());
+            if (fieldCtorCall != NULL) {
+              fieldCtorCall = ea.inferTypes(memberVar, fieldCtorCall, NULL, false);
+              initVal = fieldCtorCall;
+            }
+          } else if (memberType->isReferenceType()) {
+            initVal = ConstantNull::get(memberVar->location(), memberType);
           } else {
             // TODO: Write tests for this case (private instance variables
             // being initialized to default values.)

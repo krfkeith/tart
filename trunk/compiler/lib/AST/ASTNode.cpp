@@ -56,7 +56,7 @@ ASTIdent ASTIdent::operatorPLT(SourceLocation(), "infixPossiblyLT");
 ASTIdent ASTIdent::operatorPGT(SourceLocation(), "infixPossiblyGT");
 ASTIdent ASTIdent::operatorPLE(SourceLocation(), "infixPossiblyLE");
 ASTIdent ASTIdent::operatorPGE(SourceLocation(), "infixPossiblyGE");
-ASTIdent ASTIdent::operatorContains(SourceLocation(), "infixContains");
+ASTIdent ASTIdent::operatorContains(SourceLocation(), "contains");
 
 ASTIdent ASTIdent::operatorNegate(SourceLocation(), "unaryNegate");
 ASTIdent ASTIdent::operatorSucc(SourceLocation(), "successorOf");

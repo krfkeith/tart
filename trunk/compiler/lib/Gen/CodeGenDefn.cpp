@@ -26,6 +26,10 @@ namespace tart {
 using namespace llvm;
 
 bool CodeGenerator::genXDef(Defn * de) {
+  if (debug_) {
+    dbgCompileUnit_ = genDICompileUnit(de);
+  }
+
   switch (de->defnType()) {
     case Defn::Let:
       return genLetDefn(static_cast<VariableDefn *>(de));
@@ -101,7 +105,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   // Create the function
   Function * f = genFunctionValue(fdef);
 
-  if (fdef->hasBody() /*&& fdef->module() == module*/) {
+  if (fdef->hasBody()) {
     FunctionType * ftype = fdef->functionType();
 
     if (fdef->isSynthetic()) {
@@ -109,7 +113,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     if (debug_) {
-      genDISubprogram(fdef);
+      dbgContext_ = genDISubprogram(fdef);
+      setDebugLocation(fdef->location());
     }
 
     // Create the LLVM Basic Blocks corresponding to each high level BB.
@@ -119,8 +124,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
     }
 
-    //void InsertSubprogramStart(DISubprogram SP, BasicBlock *BB);
-
     builder_.SetInsertPoint(blocks.front()->irBlock());
 
     // Handle the explicit parameters
@@ -129,8 +132,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
-      DASSERT_OBJ(
-          fdef->storageClass() == Storage_Instance || fdef->storageClass() == Storage_Local, fdef);
+      DASSERT_OBJ(fdef->storageClass() == Storage_Instance ||
+          fdef->storageClass() == Storage_Local, fdef);
       DASSERT_OBJ(it != f->arg_end(), ftype);
       ftype->selfParam()->setIRValue(it);
       it->setName("self");
@@ -166,7 +169,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       assert(false);
     } else {
 #endif
-      setDebugLocation(fdef->location());
       genLocalStorage(fdef->blocks(), fdef->localScopes());
       genDISubprogramStart(fdef);
       genBlocks(fdef->blocks());
@@ -183,13 +185,14 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       }
     }
 
-    if (debug_ && !dbgFunction_.isNull() && !dbgFunction_.Verify()) {
-      dbgFunction_.Verify();
-      DFAIL("BAD DBG");
-    }
+    //if (debug_ && !dbgContext_.isNull() && !dbgContext_.Verify()) {
+    //  dbgContext_.Verify();
+    //  DFAIL("BAD DBG");
+    //}
 
-    dbgFunction_ = DISubprogram();
+    dbgContext_ = DISubprogram();
     builder_.ClearInsertionPoint();
+    builder_.SetCurrentDebugLocation(NULL);
   }
 
   return true;

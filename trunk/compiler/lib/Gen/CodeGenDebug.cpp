@@ -73,31 +73,36 @@ DICompileUnit CodeGenerator::genDICompileUnit(const Defn * defn) {
   return genDICompileUnit(defn->location().file);
 }
 
-void CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
+DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   DASSERT(fn != NULL);
-  dbgCompileUnit_ = genDICompileUnit(fn);
-  if (!dbgCompileUnit_.isNull()) {
-    DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
-    dbgFunction_ = dbgFactory_.CreateSubprogram(
-        dbgCompileUnit_, // TODO: Replace for functions within a scope.
-        fn->name(),
-        fn->qualifiedName().c_str(),
-        fn->linkageName().c_str(),
-        dbgCompileUnit_,
-        getSourceLineNumber(fn->location()),
-        dbgFuncType,
-        fn->isSynthetic() /* isLocalToUnit */,
-        true /* isDefinition */);
-    if (!dbgFunction_.Verify()) {
-      dbgFunction_.Verify();
-      DFAIL("BAD DBG");
+  DISubprogram & sp = dbgSubprograms_[fn];
+  if (sp.isNull()) {
+    DICompileUnit compileUnit = genDICompileUnit(fn);
+    if (!compileUnit.isNull()) {
+      DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
+      sp = dbgFactory_.CreateSubprogram(
+          compileUnit, // TODO: Replace for functions within a scope.
+          fn->name(),
+          fn->qualifiedName().c_str(),
+          fn->linkageName().c_str(),
+          compileUnit,
+          getSourceLineNumber(fn->location()),
+          dbgFuncType,
+          fn->isSynthetic() /* isLocalToUnit */,
+          true /* isDefinition */);
+      if (!sp.Verify()) {
+        sp.Verify();
+        DFAIL("Bad DBG");
+      }
     }
   }
+
+  return sp;
 }
 
 void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   // Generate debugging information (this has to be done after local variable allocas.)
-  if (debug_ && !dbgFunction_.isNull()) {
+  if (debug_ && !dbgContext_.isNull()) {
     setDebugLocation(fn->location());
 
 #if 0
@@ -132,7 +137,7 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
         if (de->defnType() == Defn::Var) {
           /// CreateVariable - Create a new descriptor for the specified variable.
           const VariableDefn * var = static_cast<const VariableDefn *>(de);
-          DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgFunction_,
+          DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
               var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
               genDIEmbeddedType(var->type()));
           setDebugLocation(var->location());

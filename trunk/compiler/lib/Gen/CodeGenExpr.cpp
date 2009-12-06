@@ -872,7 +872,15 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
   Value * selfArg = NULL;
   if (in->selfArg() != NULL) {
-    selfArg = genExpr(in->selfArg());
+    if (in->selfArg()->type()->typeClass() == Type::Struct) {
+      if (in->exprType() == Expr::CtorCall) {
+        selfArg = genExpr(in->selfArg());
+      } else {
+        selfArg = genLValueAddress(in->selfArg());
+      }
+    } else {
+      selfArg = genExpr(in->selfArg());
+    }
 
     // Upcast the self argument type.
     if (fn->functionType()->selfParam() != NULL) {
@@ -915,6 +923,10 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());
   if (in->exprType() == Expr::CtorCall) {
     // Constructor call returns the 'self' argument.
+    if (in->selfArg() != NULL && in->selfArg()->type()->typeClass() == Type::Struct) {
+      return builder_.CreateLoad(selfArg);
+    }
+
     return selfArg;
   } else {
     return result;

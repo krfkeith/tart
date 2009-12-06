@@ -227,6 +227,7 @@ bool VarAnalyzer::resolveInitializers() {
             if (constInitVal != NULL) {
               var->setInitValue(constInitVal);
             } else {
+              diag.debug(initVal) << "Not a constant: " << initVal;
               DFAIL("Implement");
             }
           }
