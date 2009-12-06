@@ -273,6 +273,7 @@ void CodeGenerator::genEntryPoint() {
 
   // Create the function type
   llvm::FunctionType * functype = llvm::FunctionType::get(builder_.getInt32Ty(), mainArgs, false);
+  DASSERT(dbgContext_.isNull());
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
   // Create the entry block

@@ -1,4 +1,6 @@
 import tart.core.Memory.Address;
+import tart.core.Memory.ptrDiff;
+import tart.core.Memory.zeroPtr;
 
 /** A value type representing a range of addresses. */
 struct AddressRange {
@@ -8,7 +10,7 @@ struct AddressRange {
   }
   
   def construct() {
-    //_first = _last = null;
+    //_first = _last = zeroPtr[ubyte]();
   }
   
   def construct(first:Address[ubyte], last:Address[ubyte]) {
@@ -33,16 +35,17 @@ struct AddressRange {
 
   //def first[%T]:Address[T] { get { return ???; } }
   //def last[%T]:Address[T] { get { return ???; } }
-  def size:long { get { return Memory.__ptrDiff(_first, _last); } }
+  def size:long { get { return ptrDiff(_first, _last); } }
   def contains(a:Address[ubyte]) -> bool {
     //
+    return true;
   }
   
   def toString() -> String {
     return "";
   }
-};
+}
 
-def infixEq(a0:AddressRange, a1:AddressRange) -> bool {
-  return a0._first == a1._first and a0._last == a1._last;
+def infixEQ(a0:AddressRange, a1:AddressRange) -> bool {
+  return a0.first is a1.first and a0.last is a1.last;
 }

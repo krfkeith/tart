@@ -94,10 +94,6 @@ Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
   return createTypeInfoBlockPtr(getRTTypeInfo(type));
 }
 
-bool CodeGenerator::createTypeInfoBlock(const CompositeType * type) {
-  createTypeInfoBlock(getRTTypeInfo(type));
-}
-
 Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
   return createTypeAllocator(getRTTypeInfo(type));
 }
@@ -233,6 +229,8 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   argTypes.push_back(llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
+  DASSERT(dbgContext_.isNull());
+  DASSERT(builder_.getCurrentDebugLocation() == NULL);
   Function * idispatch = Function::Create(
       functype, Function::InternalLinkage,
       type->typeDefn()->linkageName() + ".type.idispatch",
@@ -315,6 +313,8 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
 
     if (!rtype->isExternal()) {
       // Save the builder_ state and set to the new allocator function.
+      DIScope saveContext = dbgContext_;
+      dbgContext_ = DIScope();
       BasicBlock * savePoint = builder_.GetInsertBlock();
       builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", allocFunc));
 
@@ -331,6 +331,7 @@ Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
       builder_.CreateRet(instance);
 
       // Restore the builder_ state.
+      dbgContext_ = saveContext;
       if (savePoint != NULL) {
         builder_.SetInsertPoint(savePoint);
       }
@@ -389,6 +390,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   size_t numParams = fnType->params().size();
   const llvm::FunctionType * invokeFnType = getInvokeFnType();
+  DASSERT(dbgContext_.isNull());
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "entry", invokeFn);
   currentFn_ = invokeFn;
@@ -407,9 +409,8 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   if (fnType->selfParam() != NULL && !fnType->isStatic()) {
     // Push the 'self' argument.
     args.push_back(objPtr);
-
-    callType = fnType->createIRFunctionType(Builtins::typeObject,
-        fnType->params(), fnType->returnType());
+    callType = fnType->createIRFunctionType(Builtins::typeObject, fnType->params(),
+        fnType->returnType());
   } else {
     // Use the real function type.
     callType = cast<llvm::FunctionType>(fnType->irType());

@@ -594,6 +594,7 @@ bool FunctionAnalyzer::createReflectionData() {
           // Types that aren't handled via reflection
           case Type::NAddress:
           case Type::NPointer:
+            target->addTrait(Defn::Nonreflective);
             break;
 
           // Types that can't be passed as a parameter

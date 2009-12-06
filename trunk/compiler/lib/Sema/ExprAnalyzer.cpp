@@ -510,11 +510,22 @@ Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {
 }
 
 Expr * ExprAnalyzer::reduceContainsTest(const ASTOper * ast) {
+  DASSERT(ast->count() == 2);
   bool invert = (ast->nodeType() == ASTNode::NotIn);
 
   // Otherwise call the regular infix operator and assign to the same location.
-  Expr * callResult = callName(
-      ast->location(), &ASTIdent::operatorContains, ast->args(), &BoolType::instance, false);
+  Expr * base = reduceExpr(ast->arg(0), NULL);
+  if (isErrorResult(base)) {
+    return base;
+  }
+
+
+  ASTNodeList args;
+  args.push_back(const_cast<ASTNode *>(ast->arg(0)));
+  ASTNode * methodAst = new ASTMemberRef(
+      ast->location(), const_cast<ASTNode *>(ast->arg(1)), "contains");
+  Expr * callResult = callName(ast->location(), methodAst, args, &BoolType::instance, false);
+
   if (isErrorResult(callResult)) {
     return callResult;
   }
@@ -864,6 +875,12 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
   if (basePtr->type()->typeClass() == Type::Interface ||
       (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
     callType = Expr::VTableCall;
+  } else if (basePtr->type()->typeClass() == Type::Struct) {
+    if (LValueExpr * lval = dyn_cast<LValueExpr>(basePtr)) {
+      if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
+        param->setFlag(ParameterDefn::LValueParam, true);
+      }
+    }
   }
 
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);

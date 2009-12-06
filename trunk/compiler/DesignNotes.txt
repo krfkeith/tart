@@ -21,7 +21,7 @@ Implementation TODOS:
   * Finish renaming PatternVar. (What about PatternValue?)
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
-  * Fill out TypeOrderings.h
+  * Fill out TypeOrderings.h / TypeComparator.h
   * Unit tests for lexical type ordering.
 * Link-time coalescing
 * typecast[type](in);
@@ -33,7 +33,6 @@ Implementation TODOS:
   * Class members.
   * Attributes
   * Find all properties/functions having some attribute
-  * _scopeName + _name;
   * auto TypeLiteral
 * Closures
 * intptr and uintptr
@@ -43,8 +42,7 @@ Implementation TODOS:
 * Constructor inheritance.
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
-* Override and redef syntax.
-  * override for property getters and setters.
+* Override for property getters and setters.
 * Typename.type
   * Proxy
 * Preconditions.verify[%T]
@@ -66,7 +64,6 @@ Implementation TODOS:
   * Named tuple types
   * Variadic Tuple args
 * Disjoint types
-  * Make sure conversion works for all member types.
   * Nullable types
   * Equality comparison (with member types, and with other disjoint types.)
 * Multiple Return Values (requires Tuples)

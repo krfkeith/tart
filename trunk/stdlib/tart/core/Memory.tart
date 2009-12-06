@@ -35,15 +35,12 @@ namespace Memory {
   /** The integer 0, converted to a pointer of a given type. Intended to be
       used for offset calculations.
    */
-  //[tart.config.Permissions.Require("pointer-math")]
-  //@Permissions.Require(POINTER_MATH)
   @Intrinsic
   def zeroPtr[%ElemTy]() -> ElemTy;
 
   /** Take the address of a variable and return the result as a native
       pointer.
   */
-  //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
   def addressOf[%T](value:T) -> Address[T];
 
@@ -51,7 +48,6 @@ namespace Memory {
       values, and then divides by the size of 'T'. Raises an exception if
       the value is too large to be contained within a signed integer.
    */
-  //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
   def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
 
@@ -59,7 +55,6 @@ namespace Memory {
       values, and then divides by the size of 'T'. Raises an exception if
       the value is too large to be contained within a signed long.
    */
-  //[tart.config.Permissions.Require("pointer-math")]
   @Intrinsic
   def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> long;
 
@@ -74,10 +69,10 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
 
   /** [Ditto] */
-  @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:long);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:long);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
@@ -90,11 +85,9 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Intrinsic
-  def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
 
   /** [Ditto] 
    */
-  @Intrinsic
-  def arrayMove[%T](dst:Address[T], src:Address[T], length:long);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:long);
 }

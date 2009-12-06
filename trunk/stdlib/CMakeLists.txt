@@ -7,6 +7,8 @@ file(GLOB TART_STDLIB_SRC
     tart/annex/*.tart
     tart/core/*.tart
     tart/collections/*.tart
+    tart/gc/*.tart
+    tart/gc/heap/*.tart
     tart/io/*.tart
     tart/reflect/*.tart
     tart/testing/*.tart

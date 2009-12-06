@@ -364,9 +364,65 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 }
 
 // -------------------------------------------------------------------
-// MathIntrinsic1
+// MathIntrinsic1i
 template<llvm::Intrinsic::ID id>
-inline Value * MathIntrinsic1<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+Expr * MathIntrinsic1i<id>::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
+  if (const ConstantInteger * arg = dyn_cast<ConstantInteger>(args[0])) {
+    const PrimitiveType * type = arg->primitiveType();
+    llvm::APInt value = arg->value()->getValue();
+    DASSERT(value.getBitWidth() == type->numBits());
+    uint32_t result = 0;
+
+    switch (id) {
+      case llvm::Intrinsic::ctlz:
+        result = value.countLeadingZeros();
+        break;
+
+      case llvm::Intrinsic::cttz:
+        result = value.countTrailingZeros();
+        break;
+
+      default:
+        return NULL;
+    }
+
+    return ConstantInteger::get(loc, type, result);
+  }
+
+  return NULL;
+}
+
+template<llvm::Intrinsic::ID id>
+inline Value * MathIntrinsic1i<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
+  Value * argVal = cg.genExpr(arg);
+  const Type * retType = dealias(call->type());
+
+  if (argType->typeId() != TypeId_SInt32 && argType->typeId() != TypeId_SInt64) {
+    diag.fatal(arg->location()) << "Bad intrinsic type.";
+    return NULL;
+  }
+
+  const llvm::Type * types[1];
+  types[0] = argType->irType();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 1);
+  return cg.builder().CreateCall(intrinsic, argVal);
+}
+
+template<>
+MathIntrinsic1i<llvm::Intrinsic::ctlz>
+MathIntrinsic1i<llvm::Intrinsic::ctlz>::instance("tart.core.BitTricks.leadingZeroes");
+
+template<>
+MathIntrinsic1i<llvm::Intrinsic::cttz>
+MathIntrinsic1i<llvm::Intrinsic::cttz>::instance("tart.core.BitTricks.trailingZeroes");
+
+// -------------------------------------------------------------------
+// MathIntrinsic1f
+template<llvm::Intrinsic::ID id>
+inline Value * MathIntrinsic1f<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
   Value * argVal = cg.genExpr(arg);
@@ -378,22 +434,56 @@ inline Value * MathIntrinsic1<id>::generate(CodeGenerator & cg, const FnCallExpr
   }
 
   const llvm::Type * types[1];
-  types[1] = argType->irType();
+  types[0] = argType->irType();
   Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 1);
   return cg.builder().CreateCall(intrinsic, argVal);
 }
 
 template<>
-MathIntrinsic1<llvm::Intrinsic::sin>
-MathIntrinsic1<llvm::Intrinsic::sin>::instance("tart.core.Math.sin");
+MathIntrinsic1f<llvm::Intrinsic::sin>
+MathIntrinsic1f<llvm::Intrinsic::sin>::instance("tart.core.Math.sin");
 
 template<>
-MathIntrinsic1<llvm::Intrinsic::cos>
-MathIntrinsic1<llvm::Intrinsic::cos>::instance("tart.core.Math.cos");
+MathIntrinsic1f<llvm::Intrinsic::cos>
+MathIntrinsic1f<llvm::Intrinsic::cos>::instance("tart.core.Math.cos");
 
 template<>
-MathIntrinsic1<llvm::Intrinsic::sqrt>
-MathIntrinsic1<llvm::Intrinsic::sqrt>::instance("tart.core.Math.sqrt");
+MathIntrinsic1f<llvm::Intrinsic::sqrt>
+MathIntrinsic1f<llvm::Intrinsic::sqrt>::instance("tart.core.Math.sqrt");
+
+// -------------------------------------------------------------------
+// MathIntrinsic2f
+template<llvm::Intrinsic::ID id>
+inline Value * MathIntrinsic2f<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg0 = call->arg(0);
+  const Expr * arg1 = call->arg(1);
+  const PrimitiveType * arg0Type = cast<PrimitiveType>(dealias(arg0->type()));
+  const PrimitiveType * arg1Type = cast<PrimitiveType>(dealias(arg1->type()));
+  const Type * retType = dealias(call->type());
+
+  if (arg0Type->typeId() != TypeId_Float && arg0Type->typeId() != TypeId_Double) {
+    diag.fatal(arg0->location()) << "Bad intrinsic type.";
+    return NULL;
+  }
+
+  if (arg1Type->typeId() != TypeId_Float && arg1Type->typeId() != TypeId_Double) {
+    diag.fatal(arg1->location()) << "Bad intrinsic type.";
+    return NULL;
+  }
+
+  Value * arg0Val = cg.genExpr(arg0);
+  Value * arg1Val = cg.genExpr(arg1);
+
+  const llvm::Type * types[2];
+  types[0] = arg0Type->irType();
+  types[1] = arg1Type->irType();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 2);
+  return cg.builder().CreateCall(intrinsic, arg0Val, arg1Val);
+}
+
+template<>
+MathIntrinsic1f<llvm::Intrinsic::pow>
+MathIntrinsic1f<llvm::Intrinsic::pow>::instance("tart.core.Math.pow");
 
 // -------------------------------------------------------------------
 // FlagsApplyIntrinsic

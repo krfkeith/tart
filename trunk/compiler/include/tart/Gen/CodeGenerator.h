@@ -215,7 +215,6 @@ public:
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
   llvm::Constant * createTypeInfoBlockPtr(RuntimeTypeInfo * rtype);
-  bool createTypeInfoBlock(const CompositeType * ctype);
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
 
   /** Generate a reference to the allocator function for this type. */
@@ -304,7 +303,7 @@ public:
     /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
   llvm::DICompileUnit genDICompileUnit(const Defn * defn);
-  void genDISubprogram(const FunctionDefn * fn);
+  llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void setDebugLocation(const SourceLocation & loc);
@@ -335,6 +334,7 @@ public:
 
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
+  typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;
 
   /** Find a static method of the given class, and also generate an external reference
       to it from this module. If it's a template, then also instantiate it. This is used
@@ -382,9 +382,10 @@ private:
 
   // Debug information
   CompileUnitMap dbgCompileUnits_;
+  SubprogramMap dbgSubprograms_;
   llvm::DIFactory dbgFactory_;
   llvm::DICompileUnit dbgCompileUnit_;
-  llvm::DISubprogram dbgFunction_;
+  llvm::DIScope dbgContext_;
   DITypeMap dbgTypeMap_;
   SourceLocation dbgLocation_;
 

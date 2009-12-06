@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 //#include <ostream>
 
 namespace tart {
@@ -117,6 +118,15 @@ public:
 
   // Enable format option
   FormatStream & operator<<(FormatOptions f);
+};
+
+class StrFormatStream : public FormatStream {
+public:
+  StrFormatStream() : FormatStream(str_) {}
+
+  std::string str() const { return str_.str(); }
+private:
+  std::ostringstream str_;
 };
 
 }
