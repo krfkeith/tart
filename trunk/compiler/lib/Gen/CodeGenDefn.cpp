@@ -17,9 +17,9 @@
 
 #include "tart/Objects/Builtins.h"
 
-#include <llvm/Module.h>
-#include <llvm/Function.h>
-#include <llvm/Analysis/Verifier.h>
+#include "llvm/Module.h"
+#include "llvm/Function.h"
+#include "llvm/Analysis/Verifier.h"
 
 namespace tart {
 

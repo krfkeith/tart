@@ -5,5 +5,5 @@ import tart.annex.Intrinsic;
 @Attribute(Attribute.Target.ANY)
 class Unsafe {
   public def construct() {}
-  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

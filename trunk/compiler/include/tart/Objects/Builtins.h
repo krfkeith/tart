@@ -40,9 +40,9 @@ public:
   static Module syntheticModule;
 
   // System types - core
-  static Type * typeTypeInfoBlock;
+  static SystemClass typeTypeInfoBlock;
   static SystemClass typeObject;
-  static Type * typeString;
+  static SystemClass typeString;
   static Type * typeArray;
   static Type * typeRange;
   static Type * typeThrowable;
@@ -52,9 +52,7 @@ public:
   static Type * typeUnsupportedOperationException;
 
   // System types - reflection
-  static Type * typeTypeDescriptor;
   static Type * typeType;
-  static Type * typeTypeLiteral;
   static Type * typeSimpleType;
   static Type * typeComplexType;
   static Type * typeEnumType;
@@ -122,6 +120,8 @@ public:
 
   CompositeType * get() const;
 
+  CompositeType * peek() const { return type_; }
+
   CompositeType * operator->() const {
     return get();
   }
@@ -129,6 +129,8 @@ public:
   operator CompositeType *() const {
     return get();
   }
+
+  const llvm::Type * irType() const;
 
 private:
   const char * typeName_;

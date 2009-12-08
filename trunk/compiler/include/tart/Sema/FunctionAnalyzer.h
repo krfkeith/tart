@@ -35,6 +35,7 @@ public:
   bool createCFG();
   bool createReflectionData();
   bool analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass);
+  void getUnboxFnForParam(ParameterDefn * param);
   void warnConflict(
       const SourceLocation & prevLoc, const Type * prevType,
       const SourceLocation & nextLoc, const Type * nextType) const;

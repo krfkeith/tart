@@ -328,9 +328,15 @@ public:
 
   // Return the pointer to the reflection data for this module.
   llvm::GlobalVariable * createModuleObjectPtr();
+  llvm::Constant * createTypeObjectPtr(const Type * type);
 
+  // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genInvokeFn(const FunctionType * fnType);
   llvm::FunctionType * getInvokeFnType();
+
+  // Generate the function that down-casts the 'self' argument in a reflected call.
+  llvm::Function * genDcObjectFn(const Type * objType);
+  llvm::FunctionType * getDcObjectFnType();
 
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
@@ -369,6 +375,7 @@ private:
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
   llvm::FunctionType * invokeFnType_;
+  llvm::FunctionType * dcObjectFnType_;
 
 #if 0
   llvm::Function * moduleInitFunc;

@@ -154,8 +154,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
   // Insert the 'self' parameter if it's an instance method
   if (selfType != NULL) {
     const llvm::Type * argType = selfType->irType();
-    if (!isa<PrimitiveType>(selfType)) {
-      // TODO: Also don't do this for enums.
+    if (!isa<PrimitiveType>(selfType) && selfType->typeClass() != Type::Enum) {
       argType = PointerType::getUnqual(argType);
     }
 

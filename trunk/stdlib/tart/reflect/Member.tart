@@ -59,7 +59,7 @@ import tart.annex.Nonreflective;
   final def attributes:Attribute[] { get { return _attributes; } }
 
   /** The class that declared this member, or null if it's a global function. */
-  //let definingScope:TypeDescriptor;
+  //let definingScope:Type;
 
   /** True if this member has static or global storage class. */  
   //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }

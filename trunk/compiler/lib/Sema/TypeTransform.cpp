@@ -12,6 +12,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/TypeAlias.h"
 #include "tart/CFG/TypeConstraint.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Template.h"
 
 #include "tart/Sema/BindingEnv.h"
@@ -63,6 +64,9 @@ const Type * TypeTransform::visit(const Type * in) {
 
     case Type::NArray:
       return visitNativeArrayType(static_cast<const NativeArrayType *>(in));
+
+    case Type::TypeLiteral:
+      return visitTypeLiteralType(static_cast<const TypeLiteralType *>(in));
 
     case Type::Unit:
       return visitUnitType(static_cast<const UnitType *>(in));
@@ -163,6 +167,19 @@ const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {
   }
 
   return in;
+}
+
+const Type * TypeTransform::visitTypeLiteralType(const TypeLiteralType * in) {
+  if (in->typeParam(0) == NULL) {
+    return in;
+  }
+
+  const Type * elemType = visit(in->typeParam(0));
+  if (elemType == in->typeParam(0)) {
+    return in;
+  }
+
+  return TypeLiteralType::get(elemType);
 }
 
 const Type * TypeTransform::visitUnitType(const UnitType * in) {

@@ -160,7 +160,7 @@ const llvm::Type * CompositeType::createIRType() const {
   }
 
   if (typeClass() == Type::Interface) {
-    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
+    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0));
   }
 
   for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {

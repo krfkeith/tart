@@ -60,6 +60,7 @@ public:
   {}
 
   llvm::ConstantInt * value() const { return value_; }
+  const llvm::APInt & intValue() const { return value_->getValue(); }
 
   /** Return the primitive type of this constant. If the type is an enum, it
       will return an integer type that is the same size as the enum. */

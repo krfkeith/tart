@@ -11,6 +11,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/UnitType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeTransform.h"
@@ -51,7 +52,7 @@ private:
 PatternVar::PatternVar(const SourceLocation & location, const char * name, const Type * valueType)
   : TypeImpl(Pattern)
   , location_(location)
-  , valueType_(valueType ? valueType : Builtins::typeTypeDescriptor)
+  , valueType_(valueType)
   , name_(name)
 {}
 
@@ -77,7 +78,7 @@ bool PatternVar::canBindTo(const Type * value) const {
 
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
-  } else if (valueType_ == NULL || valueType_->isSubtype(Builtins::typeTypeDescriptor)) {
+  } else if (valueType_ == NULL) {
     return true;
   } else {
     return false;
@@ -197,13 +198,6 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   bool noCache = false;
   for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     PatternVar * var = *it;
-    if (var->valueType() == NULL) {
-      // TODO: This is needed because some pattern vars are created before
-      // typeTypeDescriptor is loaded. We should fix that.
-      DASSERT(Builtins::typeTypeDescriptor != NULL);
-      var->setValueType(Builtins::typeTypeDescriptor);
-    }
-
     const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
@@ -329,7 +323,8 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   Type * proto = tdef->typeValue();
   if (proto->typeClass() != Type::NAddress &&
       proto->typeClass() != Type::NPointer &&
-      proto->typeClass() != Type::NArray) {
+      proto->typeClass() != Type::NArray &&
+      proto->typeClass() != Type::TypeLiteral) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
     return tdef->typeValue();
   }
@@ -364,9 +359,11 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
     case Type::NPointer:
       return PointerType::get(paramValues[0]);
 
-    case Type::NArray: {
+    case Type::NArray:
       return NativeArrayType::get(TupleType::get(paramValues));
-    }
+
+    case Type::TypeLiteral:
+      return TypeLiteralType::get(paramValues[0]);
 
     default:
       DFAIL("Invalid template type");

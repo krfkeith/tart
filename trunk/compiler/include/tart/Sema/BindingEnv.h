@@ -23,6 +23,7 @@ class TemplateSignature;
 class TemplateCondition;
 class PatternVar;
 class AddressType;
+class TypeLiteralType;
 class PointerType;
 class NativeArrayType;
 
@@ -206,6 +207,8 @@ private:
   bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
   bool unifyPointerType(SourceContext * source, const PointerType * pattern, const Type * value);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * pattern,
+      const Type * value);
+  bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * pattern,
       const Type * value);
   bool unifyCompositeType(SourceContext * source, const CompositeType * pattern,
       const CompositeType * value,

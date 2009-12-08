@@ -13,5 +13,5 @@ public class LinkageName {
     self.name = name;
   }
 
-  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

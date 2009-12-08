@@ -453,6 +453,14 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
     return NULL;
   }
 
+  if (!AnalyzerBase::analyzeType(tyFrom, Task_PrepTypeComparison)) {
+    return NULL;
+  }
+
+  if (!AnalyzerBase::analyzeType(tyTo, Task_PrepTypeComparison)) {
+    return NULL;
+  }
+
   DASSERT_OBJ(tyFrom->isSingular(), tyFrom);
   DASSERT_OBJ(tyTo->isSingular(), tyTo);
 

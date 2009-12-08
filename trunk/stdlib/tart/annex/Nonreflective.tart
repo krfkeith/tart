@@ -4,5 +4,5 @@
 @Attribute(Attribute.Target.ANY, Attribute.Retention.NONE,
     Attribute.Propagation.SUBTYPES | Attribute.Propagation.MEMBERS)
 class Nonreflective {
-  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

@@ -59,11 +59,14 @@ BuiltinMemberRef<VariableDefn> functionType_returnType(Builtins::typeFunctionTyp
 BuiltinMemberRef<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
 BuiltinMemberRef<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
 BuiltinMemberRef<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
+BuiltinMemberRef<VariableDefn> functionType_dcObject(Builtins::typeFunctionType, "_dcObject");
 BuiltinMemberRef<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
+BuiltinMemberRef<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
+BuiltinMemberRef<FunctionDefn> functionType_ignoreObj(Builtins::typeFunctionType, "ignoreObjectPtr");
 
 // Members of tart.core.reflect.TypeDescriptor.
-BuiltinMemberRef<VariableDefn> typeDescriptor_typeInfo(Builtins::typeTypeDescriptor, "_typeInfo");
-BuiltinMemberRef<VariableDefn> typeDescriptor_typeKind(Builtins::typeTypeDescriptor, "_typeKind");
+//BuiltinMemberRef<VariableDefn> typeDescriptor_typeInfo(Builtins::typeTypeDescriptor, "_typeInfo");
+//BuiltinMemberRef<VariableDefn> typeDescriptor_typeKind(Builtins::typeTypeDescriptor, "_typeKind");
 
 // Members of tart.core.reflect.Member.
 BuiltinMemberRef<VariableDefn> member_name(Builtins::typeMember, "_name");
@@ -78,7 +81,6 @@ BuiltinMemberRef<VariableDefn> method_typeParams(Builtins::typeMethod, "_typePar
 //BuiltinMemberRef<VariableDefn> method_functionType(Builtins::typeMethod, "_functionType");
 BuiltinMemberRef<VariableDefn> method_params(Builtins::typeMethod, "_params");
 BuiltinMemberRef<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
-BuiltinMemberRef<FunctionDefn> method_checkArgs(Builtins::typeMethod, "checkArgCount");
 
 // Members of tart.core.reflect.Module.
 BuiltinMemberRef<VariableDefn> module_name(Builtins::typeModule, "_name");
@@ -434,16 +436,17 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
 
   if (type->selfParam() != NULL) {
     const Type * selfType = type->selfParam()->type();
+    // For now, we only support reflection of classes and interfaces.
     if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
-      // For now, we only support reflection of classes.
-      //sb.addNullField(functionType_invoke.type());
       sb.addField(cg_.genInvokeFn(type));
+      sb.addField(cg_.genDcObjectFn(type));
     } else {
       sb.addNullField(functionType_invoke.type());
+      sb.addNullField(functionType_dcObject.type());
     }
   } else {
     sb.addField(cg_.genInvokeFn(type));
-    //sb.addNullField(functionType_invoke.type());
+    sb.addField(cg_.genFunctionValue(functionType_ignoreObj.get()));
   }
 
   return sb.build(Builtins::typeFunctionType->irType());

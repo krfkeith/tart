@@ -1,5 +1,7 @@
 import tart.reflect.Module;
 import tart.reflect.Method;
+import tart.reflect.Type;
+import tart.reflect.ComplexType;
 import tart.testing.TestUtils;
 
 @EntryPoint
@@ -10,8 +12,8 @@ def main(args:String[]) -> int {
 def testModuleReflection() {
   let m = Module.thisModule();
   Debug.assertEq("ReflectionTest", m.name);
-  Debug.assertEq(0, m.types.length);
-  Debug.assertEq(7, m.methods.length);
+  Debug.assertEq(1, m.types.length);
+  Debug.assertEq(9, m.methods.length);
 }
 
 def testModuleMethods() {
@@ -49,4 +51,22 @@ var savedValue:int;
 
 def sample2(arg:int) {
   savedValue = arg;
+}
+
+class TestClass {
+  def square(arg:int) -> int {
+    return arg * arg;
+  }
+}
+
+def testFindClass() {
+  let ty:Type = Type.of(TestClass);
+  Debug.assertEq("tart.reflect.ComplexType", ty.__typeName);
+  Debug.assertEq(Type.TypeKind.CLASS, ty.typeKind);
+  Debug.assertTrue(ty isa tart.reflect.SimpleType);
+  Debug.assertTrue(ty isa ComplexType);
+}
+
+def testCallInstanceMethod() {
+  //let m = Module.thisModule();
 }
