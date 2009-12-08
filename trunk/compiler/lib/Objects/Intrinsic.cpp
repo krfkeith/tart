@@ -93,6 +93,16 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * 
 }
 
 // -------------------------------------------------------------------
+// TypeOfIntrinsic
+TypeOfIntrinsic TypeOfIntrinsic::instance;
+
+Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
+  return cg.createTypeObjectPtr(type->value());
+}
+
+// -------------------------------------------------------------------
 // StringifyIntrinsic
 StringifyIntrinsic StringifyIntrinsic::instance;
 

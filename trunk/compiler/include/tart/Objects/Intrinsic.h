@@ -72,6 +72,14 @@ class TypecastIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Type.of intrinsic
+class TypeOfIntrinsic : public Intrinsic {
+  static TypeOfIntrinsic instance;
+  TypeOfIntrinsic() : Intrinsic("tart.reflect.Type.of") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Debug.stringify intrinsic
 class StringifyIntrinsic : public Intrinsic {
   static StringifyIntrinsic instance;

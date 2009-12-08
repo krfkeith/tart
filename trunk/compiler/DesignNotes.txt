@@ -420,11 +420,3 @@ let heapPageShift:int = ??;
 abstract class Arena {
   abstract def ??;
 }
-
-// ------------------------------------------------------------------------
-
-Unboxing as generic functions:
-
-def valueOf[int](dispatched obj:Object) -> int;
-override valueOf[int](v:ValueRef[int]) -> int { return v.value; }
-

@@ -195,7 +195,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
-  if (passesToRun.contains(CompositeType::ConverterPass) && !analyzeConverters()) {
+  if (passesToRun.contains(CompositeType::ConverterPass) && !analyzeCoercers()) {
     return false;
   }
 
@@ -404,7 +404,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   return true;
 }
 
-bool ClassAnalyzer::analyzeConverters() {
+bool ClassAnalyzer::analyzeCoercers() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::ConverterPass)) {
     Type::TypeClass tcls = type->typeClass();
@@ -446,6 +446,14 @@ bool ClassAnalyzer::analyzeMemberTypes() {
       if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
         // TODO: Copy attributes that are inherited.
         memberType->copyTrait(target, Defn::Nonreflective);
+        switch (memberType->typeValue()->typeClass()) {
+          case Type::Class:
+          case Type::Struct:
+          case Type::Interface:
+          case Type::Enum:
+            module->addSymbol(memberType);
+            break;
+        }
       }
     }
 

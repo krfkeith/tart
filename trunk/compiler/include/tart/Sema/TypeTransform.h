@@ -22,6 +22,7 @@ class PatternVar;
 class PatternValue;
 class TypeConstraint;
 class TypeAlias;
+class TypeLiteralType;
 
 /// -------------------------------------------------------------------
 /// A framework for general transformations on type expressions.
@@ -38,6 +39,7 @@ public:
   virtual const Type * visitTupleType(const TupleType * in);
   virtual const Type * visitAddressType(const AddressType * in);
   virtual const Type * visitPointerType(const PointerType * in);
+  virtual const Type * visitTypeLiteralType(const TypeLiteralType * in);
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);
   virtual const Type * visitPatternVar(const PatternVar * in);

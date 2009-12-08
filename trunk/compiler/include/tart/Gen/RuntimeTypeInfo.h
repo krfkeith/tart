@@ -43,9 +43,9 @@ public:
   }
 
   /** The TypeDescriptor object for this type. */
-  llvm::GlobalVariable * typeDescriptor() const {
-    return typeDescriptor_;
-  }
+  //llvm::GlobalVariable * typeDescriptor() const {
+  //  return typeDescriptor_;
+  //}
 
   void setTypeDescriptor(llvm::GlobalVariable * value) {
     typeDescriptor_ = value;

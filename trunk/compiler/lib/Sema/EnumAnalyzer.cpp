@@ -111,49 +111,50 @@ private:
   llvm::Instruction::BinaryOps opCode_;
 };
 
-#if 0
 class EnumToStringMethod : public FunctionDefn {
 public:
-  EnumToStringMethod(Module * m, EnumType * type, ASTIdent * id)
-    : FunctionDefn(m, id->value(), createFunctionType(m, type))
+  EnumToStringMethod(Module * m, EnumType * type)
+    : FunctionDefn(m, "toString", createFunctionType(m, type))
     , type_(type)
-    , opCode_(opCode)
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Final);
     addTrait(Defn::Singular);
     addTrait(Defn::Nonreflective);
-    setStorageClass(Storage_Global);
-    createQualifiedName(m);
+    setStorageClass(Storage_Instance);
+    createQualifiedName(type->typeDefn());
   }
 
   static FunctionType * createFunctionType(Module * m, EnumType * type) {
-    FunctionType * ftype = new FunctionType(type, ParameterList());
-    ftype->setSelfParam(new ParameterDefn(m, "self", type, 0));
-    return ftype;
+    FunctionType * ft = new FunctionType(Builtins::typeString, NULL, 0);
+    ft->setSelfParam(new ParameterDefn(m, "self", type, 0));
+    return ft;
   }
 
   Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
-    assert(args.size() == 2);
-    Expr * arg0 = args[0];
-    Expr * arg1 = args[1];
-    if (arg0->exprType() == Expr::ConstInt && arg1->exprType() == Expr::ConstInt) {
-      ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
-      ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
-      DASSERT(c0->type() == c1->type());
-      return new ConstantInteger(
-            c0->location() | c1->location(),
-            type_,
-            cast<llvm::ConstantInt>(llvm::ConstantExpr::get(opCode_, c0->value(), c1->value())));
+    assert(args.size() == 0);
+    if (self->exprType() == Expr::ConstInt) {
+      ConstantInteger * ci = static_cast<ConstantInteger *>(self);
+      for (Defn * de = type_->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
+        if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+          if (ConstantInteger * cEnumVal = dyn_cast_or_null<ConstantInteger>(var->initValue())) {
+            if (cEnumVal->isEqual(ci)) {
+              return new ConstantString(var->location(), var->name());
+            }
+          }
+        }
+      }
+
+      diag.error(loc) << "Invalid enumeration constant: " << self;
+      return NULL;
     } else {
-      return new BinaryOpcodeExpr(opCode_, loc, type_, arg0, arg1);
+      return NULL;
     }
   }
 
 private:
   EnumType * type_;
 };
-#endif
 
 EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
   : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
@@ -325,7 +326,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
       llvm::Constant * cval = value->value();
       llvm::ConstantInt * cmin = minValue_->value();
       llvm::ConstantInt * cmax = maxValue_->value();
-      if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cval, cmin)->isNullValue()) {
+      if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cmin, cval)->isNullValue()) {
         minValue_ = value;
       }
       if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cval, cmax)->isNullValue()) {
@@ -338,12 +339,12 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
 }
 
 void EnumAnalyzer::defineOperators() {
+  Module * m = target_->module();
   EnumType * type = cast<EnumType>(target_->typeValue());
   Scope * parentScope = target_->definingScope();
   DASSERT(parentScope != NULL);
 
   if (type->isFlags()) {
-    Module * m = target_->module();
     type->memberScope()->addMember(new EnumContainsFunction(m, type));
     parentScope->addMember(
         new EnumBinaryFunction(m, type, &ASTIdent::operatorBitAnd, llvm::Instruction::And));
@@ -352,6 +353,7 @@ void EnumAnalyzer::defineOperators() {
     parentScope->addMember(
         new EnumBinaryFunction(m, type, &ASTIdent::operatorBitXor, llvm::Instruction::Xor));
   } else {
+    type->memberScope()->addMember(new EnumToStringMethod(m, type));
   }
 }
 

@@ -623,7 +623,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     // If it's an enum, allow unqualified enum constants to be used.
     caseValScope = new DelegatingScope(const_cast<IterableScope *>(etype->memberScope()), activeScope);
     // TODO: Implement
-  } else if (testType == Builtins::typeString) {
+  } else if (testType == Builtins::typeString.get()) {
     // TODO: Implement
     DFAIL("Implement");
   } else {

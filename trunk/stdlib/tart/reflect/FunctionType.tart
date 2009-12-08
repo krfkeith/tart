@@ -8,7 +8,20 @@ class FunctionType : Type {
     var _returnType:Type;
     var _selfType:Type;
     var _paramTypes:Type[];
-    var _invoke:static fn (func:Pointer[void], obj:Object, args:Object[]) -> Object;
+    var _invoke:static fn (func:Pointer[void], obj:Pointer[void], args:Object[]) -> Object;
+    var _dcObject:static fn (obj:Object) -> Pointer[void]; // Down-cast object
+
+	  /** Helper function to check the number of arguments. */
+	  static def checkArgCount(args:Object[], count:int) {
+	    if args.length != count {
+	      throw InvocationException("Incorrect number of arguments");
+	    }
+	  }
+	
+	  /** Helper function to ensure that the object pointer is null. */
+	  static def ignoreObjectPtr(obj:Object) -> Pointer[void] {
+	    return null;
+	  }
   }
 
   undef construct();
@@ -25,6 +38,6 @@ class FunctionType : Type {
 
   /** Trampoline function to invoke a method of this type. */
   final def invoke(func:Pointer[void], obj:Object, args:Object[]) -> Object {
-    return self._invoke(func, obj, args);
+    return self._invoke(func, self._dcObject(obj), args);
   }
 }

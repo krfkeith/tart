@@ -51,6 +51,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , irModule_(mod->irModule())
     , currentFn_(NULL)
     , invokeFnType_(NULL)
+    , dcObjectFnType_(NULL)
     , reflector_(*this)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -81,7 +82,7 @@ void CodeGenerator::generate() {
   }
 
   addTypeName(Builtins::typeObject);
-  addTypeName(Builtins::typeTypeInfoBlock);
+  addTypeName(Builtins::typeTypeInfoBlock.get());
   addTypeName(Builtins::typeType);
   addTypeName(Builtins::typeModule);
   addTypeName(Builtins::typeSimpleType);
@@ -422,6 +423,10 @@ bool CodeGenerator::requiresImplicitDereference(const Type * type) {
 
 llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {
   return reflector_.getModulePtr(module_);
+}
+
+llvm::Constant * CodeGenerator::createTypeObjectPtr(const Type * type) {
+  return reflector_.emitTypeReference(type);
 }
 
 void CodeGenerator::addModuleDependencies() {

@@ -22,13 +22,16 @@
 #include "llvm/Function.h"
 #include "llvm/Module.h"
 #include "llvm/DerivedTypes.h"
+#include "llvm/Analysis/Verifier.h"
 
 namespace tart {
 
 using namespace llvm;
 
+extern BuiltinMemberRef<VariableDefn> functionType_invoke;
 extern BuiltinMemberRef<FunctionDefn> functionType_invokeFn;
-extern BuiltinMemberRef<FunctionDefn> method_checkArgs;
+extern BuiltinMemberRef<VariableDefn> functionType_dcObject;
+extern BuiltinMemberRef<FunctionDefn> functionType_checkArgs;
 
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
@@ -104,7 +107,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
     const CompositeType * type = rtype->getType();
     if (type->typeClass() != Type::Class) {
       rtype->setTypeInfoPtr(ConstantPointerNull::get(
-          llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType())));
+          llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType())));
     } else {
       DASSERT(rtype->getTypeInfoBlock() == NULL);
       rtype->setTypeInfoBlock(
@@ -116,7 +119,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
       rtype->setTypeInfoPtr(
           llvm::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
-              llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0)));
+              llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0)));
     }
   }
 
@@ -140,7 +143,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   ClassSet baseClassSet;
   type->ancestorClasses(baseClassSet);
   llvm::PointerType * typePointerType =
-      llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock->irType());
+      llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType());
 
   // Concrete classes first
   ConstantList baseClassList;
@@ -226,7 +229,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0));
+  argTypes.push_back(llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
   DASSERT(dbgContext_.isNull());
@@ -372,9 +375,102 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
 
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   // TODO: Implement valueOf, asString
+  DefnList enumConstants;
+  for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+      enumConstants.push_back(var);
+    }
+  }
+
+  FunctionDefn * toString =
+      cast_or_null<FunctionDefn>(type->memberScope()->lookupSingleMember("toString"));
+
+  if (type->isFlags()) {
+  } else {
+    VariableDefn * minVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("minVal"));
+    VariableDefn * maxVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("maxVal"));
+    APInt minValInt = cast<ConstantInteger>(minVal->initValue())->intValue();
+    APInt maxValInt = cast<ConstantInteger>(maxVal->initValue())->intValue();
+
+    // TODO: What if the spread is greater than 2^63?
+    int64_t spread = (maxValInt - minValInt).getSExtValue();
+    DASSERT(spread >= 0);
+    if ((spread < 16 || spread < enumConstants.size() * 2) && spread < 0x10000) {
+      ConstantList enumConstants;
+      enumConstants.resize(spread + 1);
+      std::fill(enumConstants.begin(), enumConstants.end(), (llvm::Constant *) NULL);
+      for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
+        if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+          if (var != minVal && var != maxVal) {
+            ConstantInteger * valInt = cast<ConstantInteger>(var->initValue());
+            int64_t offset = (valInt->intValue() - minValInt).getSExtValue();
+            DASSERT(offset >= 0);
+            DASSERT(offset < enumConstants.size());
+            if (enumConstants[offset] == NULL) {
+              enumConstants[offset] = reflector_.internSymbol(var->name());
+            }
+          }
+        }
+      }
+
+      for (ConstantList::iterator it = enumConstants.begin(); it != enumConstants.end(); ++it) {
+        if (*it == NULL) {
+          *it = ConstantPointerNull::getNullValue(Builtins::typeString->irEmbeddedType());
+        }
+      }
+
+      // Create the table of strings.
+      Constant * stringArray = llvm::ConstantArray::get(
+          llvm::ArrayType::get(Builtins::typeString->irEmbeddedType(), enumConstants.size()),
+          enumConstants.data(), enumConstants.size());
+      GlobalVariable * stringTable = new GlobalVariable(*irModule_,
+          stringArray->getType(), true, GlobalValue::InternalLinkage, stringArray,
+          ".names." + type->typeDefn()->linkageName());
+
+      // Now create the toString function.
+      Function * toStringFn = cast<Function>(irModule_->getOrInsertFunction(
+          toString->linkageName(),
+          cast<llvm::FunctionType>(toString->functionType()->irType())));
+      DASSERT(toStringFn->arg_size() == 1);
+      llvm::Argument * selfArg = toStringFn->arg_begin();
+      selfArg->setName("self");
+      const IntegerType * selfType = cast<IntegerType>(selfArg->getType());
+      unsigned bitWidth = selfType->getBitWidth();
+      DASSERT(minValInt.getMinSignedBits() <= bitWidth);
+
+      BasicBlock * blk = BasicBlock::Create(context_, "entry", toStringFn);
+      DASSERT(currentFn_ == NULL);
+      currentFn_ = toStringFn;
+      builder_.SetInsertPoint(blk);
+
+      // Add the enum value to the minVal offset.
+      Constant * baseVal = llvm::ConstantExpr::getIntegerCast(
+          ConstantInt::get(context_, minValInt), selfType, true);
+      Value * index = builder_.CreateSub(toStringFn->arg_begin(), baseVal);
+
+      // Check if it's in range - unsigned less than or equal to 'spread'.
+      Value * rangeCheck = builder_.CreateICmpULE(index, ConstantInt::get(selfType, spread));
+
+      // Create a GEP into the string table and load it.
+      ValueList args;
+      args.push_back(getInt32Val(0));
+      args.push_back(index);
+      builder_.CreateRet(
+          builder_.CreateLoad(
+              builder_.CreateInBoundsGEP(stringTable, args.begin(), args.end()), "stringVal"));
+      currentFn_ = NULL;
+
+      // Verify the function
+      /*if (verifyFunction(*toStringFn, PrintMessageAction)) {
+        toStringFn->dump();
+        exit(-1);
+      }*/
+    } else {
+      DFAIL("Implement sparse enum tables");
+    }
+  }
+
   return type->irType();
-  //diag.fatal(type->typeDefn()) << "Implement " << type;
-  //DFAIL("Implement");
 }
 
 llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
@@ -402,7 +498,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   Value * argsArray = it++;
 
   // Check the length of the args array.
-  builder_.CreateCall2(genFunctionValue(method_checkArgs.get()), argsArray, getInt32Val(numParams));
+  builder_.CreateCall2(genFunctionValue(functionType_checkArgs.get()), argsArray, getInt32Val(numParams));
 
   ValueList args;
   const llvm::FunctionType * callType;
@@ -458,7 +554,8 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
 llvm::FunctionType * CodeGenerator::getInvokeFnType() {
   if (invokeFnType_ == NULL) {
-    FunctionType * fnType = functionType_invokeFn->functionType();
+    const Type * invokeType = functionType_invoke.type();
+    const FunctionType * fnType = cast<FunctionType>(invokeType);
 
     // Types of the function parameters.
     std::vector<const llvm::Type *> paramTypes;
@@ -473,5 +570,55 @@ llvm::FunctionType * CodeGenerator::getInvokeFnType() {
   return invokeFnType_;
 }
 
+llvm::Function * CodeGenerator::genDcObjectFn(const Type * objType) {
+  std::string dcObjectName = ".downcast.";
+  typeLinkageName(dcObjectName, objType);
+  llvm::Function * dcObjectFn = irModule_->getFunction(dcObjectName);
+  if (dcObjectFn != NULL) {
+    return dcObjectFn;
+  }
+
+  diag.debug() << Format_Type << "Generating downcast function for type " << objType;
+
+  DASSERT(currentFn_ == NULL);
+
+  //size_t numParams = fnType->params().size();
+  const llvm::FunctionType * dcObjectFnType = getDcObjectFnType();
+  DASSERT(dbgContext_.isNull());
+  dcObjectFn = Function::Create(
+      dcObjectFnType, Function::LinkOnceODRLinkage, dcObjectName, irModule_);
+  BasicBlock * blk = BasicBlock::Create(context_, "entry", dcObjectFn);
+  currentFn_ = dcObjectFn;
+  builder_.SetInsertPoint(blk);
+
+  Function::arg_iterator it = dcObjectFn->arg_begin();
+  Value * result = genCast(it, Builtins::typeObject, objType);
+  if (result == NULL) {
+    currentFn_ = NULL;
+    return NULL;
+  }
+
+  Value * returnVal = builder_.CreatePointerCast(
+      result, llvm::PointerType::get(builder_.getInt8Ty(), 0));
+  builder_.CreateRet(returnVal);
+  currentFn_ = NULL;
+  return dcObjectFn;
+}
+
+llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
+  if (dcObjectFnType_ == NULL) {
+    const Type * dcObjectType = functionType_dcObject.type();
+    const FunctionType * fnType = cast<FunctionType>(dcObjectType);
+
+    // Types of the function parameters.
+    std::vector<const llvm::Type *> paramTypes;
+    paramTypes.push_back(fnType->params()[0]->type()->irParameterType());
+
+    dcObjectFnType_ = llvm::FunctionType::get(
+        fnType->returnType()->irParameterType(), paramTypes, false);
+  }
+
+  return dcObjectFnType_;
+}
 
 } // namespace tart

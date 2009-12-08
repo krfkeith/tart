@@ -7,6 +7,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/PackageMgr.h"
@@ -34,9 +35,9 @@ namespace {
 Module Builtins::module(&builtinSource, "$builtin");
 Module Builtins::syntheticModule(&builtinSource, "$synthetic");
 
-Type * Builtins::typeTypeInfoBlock;
+SystemClass Builtins::typeTypeInfoBlock("tart.core.TypeInfoBlock");
 SystemClass Builtins::typeObject("tart.core.Object");
-Type * Builtins::typeString;
+SystemClass Builtins::typeString("tart.core.String");
 Type * Builtins::typeArray;
 Type * Builtins::typeRange;
 Type * Builtins::typeThrowable;
@@ -45,9 +46,7 @@ Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
 Type * Builtins::typeUnsupportedOperationException;
 
-Type * Builtins::typeTypeDescriptor;
 Type * Builtins::typeType;
-Type * Builtins::typeTypeLiteral;
 Type * Builtins::typeSimpleType;
 Type * Builtins::typeComplexType;
 Type * Builtins::typeEnumType;
@@ -84,6 +83,7 @@ void Builtins::init() {
   AddressType::initBuiltin();
   PointerType::initBuiltin();
   NativeArrayType::initBuiltin();
+  TypeLiteralType::initBuiltin();
 
   DASSERT(module.module() != NULL);
   ScopeBuilder::createScopeMembers(&module);
@@ -130,14 +130,11 @@ Defn * Builtins::getSingleDefn(Type * type, const char * name) {
 void Builtins::loadSystemClasses() {
   typeArray = loadSystemType("tart.core.Array");
   typeAttribute = loadSystemType("tart.core.Attribute");
-  typeTypeDescriptor = loadSystemType("tart.reflect.TypeDescriptor");
-  typeTypeInfoBlock = loadSystemType("tart.core.TypeInfoBlock");
+  typeTypeInfoBlock.get();
   typeType = loadSystemType("tart.reflect.Type");
   typeObject.get();
-  //typeObject = loadSystemType("tart.core.Object");
-  typeString = loadSystemType("tart.core.String");
+  typeString.get();
   typeThrowable = loadSystemType("tart.core.Throwable");
-  //typeTypeLiteral = loadSystemType("tart.core.TypeLiteral");
   typeUnsupportedOperationException = loadSystemType("tart.core.UnsupportedOperationException");
   typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
 
@@ -146,8 +143,8 @@ void Builtins::loadSystemClasses() {
   AnalyzerBase::analyzeType(typeObject, Task_PrepMemberLookup);
 
   // Get the function that tests for a type
-  funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock, "hasBase");
-  funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock, "typecastError");
+  funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "hasBase");
+  funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastError");
 
   // Get the low-level exception structure
   typeUnwindException = getMember<TypeDefn>(typeThrowable, "UnwindException")->typeValue();
@@ -219,6 +216,10 @@ CompositeType * SystemClass::get() const {
   }
 
   return type_;
+}
+
+const llvm::Type * SystemClass::irType() const {
+  return get()->irType();
 }
 
 }

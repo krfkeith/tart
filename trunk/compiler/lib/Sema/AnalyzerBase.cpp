@@ -24,14 +24,13 @@
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/UnitType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Objects/Builtins.h"
-
-#include "llvm/Support/CommandLine.h"
 
 namespace tart {
 
@@ -290,7 +289,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   return specialize(loc, exprs, TupleType::get(argList));
 }
 
-Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * tv) {
+Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * typeArgs) {
   // Examine all of the possible candidates for specialization.
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
@@ -299,25 +298,27 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
       TypeDefn * typeDefn = type->typeDefn();
       if (typeDefn != NULL) {
         if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
-          addSpecCandidate(loc, candidates, NULL, typeDefn, tv);
+          addSpecCandidate(loc, candidates, NULL, typeDefn, typeArgs);
         }
       } else if (const AddressType * np = dyn_cast<AddressType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, tv);
+        addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, typeArgs);
       } else if (const PointerType * np = dyn_cast<PointerType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, tv);
+        addSpecCandidate(loc, candidates, NULL, &PointerType::typedefn, typeArgs);
       } else if (const NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
-        addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, tv);
+        addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, typeArgs);
+      } else if (const TypeLiteralType * np = dyn_cast<TypeLiteralType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &TypeLiteralType::typedefn, typeArgs);
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
       ValueDefn * val = lv->value();
       if (val->isTemplate() || val->isTemplateInstance()) {
-        addSpecCandidate(loc, candidates, lv->base(), val, tv);
+        addSpecCandidate(loc, candidates, lv->base(), val, typeArgs);
       }
     }
   }
 
   if (candidates.empty()) {
-    diag.error(loc) << "No templates found which match template arguments [" << tv << "]";
+    diag.error(loc) << "No templates found which match template arguments [" << typeArgs << "]";
     for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
       diag.info(*it) << Format_Type << "candidate: " << *it;
     }
@@ -327,7 +328,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
   }
 
   if (candidates.size() > 1) {
-    return new SpecializeExpr(loc, candidates, tv);
+    return new SpecializeExpr(loc, candidates, typeArgs);
   }
 
   // TODO: Do template overload resolution.

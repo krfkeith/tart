@@ -4,5 +4,5 @@
 */
 @Attribute(Attribute.Target.TYPE)
 class Essential {
-  @Intrinsic def apply(t:tart.reflect.TypeDescriptor);
+  @Intrinsic def apply(t:tart.reflect.Type);
 }

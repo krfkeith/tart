@@ -563,53 +563,19 @@ bool FunctionAnalyzer::createReflectionData() {
     }
 
     if (doReflect) {
-      //FunctionType * ftype = target->functionType();
-      //diag.debug(target) << Format_Type << "Generating reflection info for type: " << ftype;
+      if (target->functionType()->selfParam() != NULL) {
+        getUnboxFnForParam(target->functionType()->selfParam());
+      }
 
-      //CallExpr * call = new CallExpr()
       for (ParameterList::const_iterator it = target->params().begin();
           it != target->params().end(); ++it) {
-        const Type * paramType = dealias((*it)->type());
-        switch (paramType->typeClass()) {
-          // Types that need to be boxed.
-          case Type::Primitive:
-          case Type::Struct:
-          case Type::Enum:
-          case Type::BoundMethod:
-          case Type::Tuple:
-          case Type::Union: {
-            FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_, target)
-                .getUnboxFn((*it)->location(), paramType);
-            if (unboxFn && unboxFn->isSingular()) {
-              module->addSymbol(unboxFn);
-            }
-            break;
-          }
-
-          // Types that need to be down-cast
-          case Type::Class:
-          case Type::Interface:
-            break;
-
-          // Types that aren't handled via reflection
-          case Type::NAddress:
-          case Type::NPointer:
-            target->addTrait(Defn::Nonreflective);
-            break;
-
-          // Types that can't be passed as a parameter
-          case Type::Protocol:
-          case Type::NArray:
-          default:
-            diag.error(target) << "Invalid parameter type: " << paramType;
-            DFAIL("Invalid parameter type");
-        }
+        getUnboxFnForParam(*it);
       }
 
       if (!target->returnType()->isVoidType()) {
         const Type * returnType = target->returnType();
         switch (returnType->typeClass()) {
-          // Types that need to be unboxed.
+          // Types that need to be boxed.
           case Type::Primitive:
           case Type::Struct:
           case Type::Enum:
@@ -645,6 +611,44 @@ bool FunctionAnalyzer::createReflectionData() {
   }
 
   return true;
+}
+
+void FunctionAnalyzer::getUnboxFnForParam(ParameterDefn * param) {
+  const Type * paramType = dealias(param->type());
+  switch (paramType->typeClass()) {
+    // Types that need to be boxed.
+    case Type::Primitive:
+    case Type::Struct:
+    case Type::Enum:
+    case Type::BoundMethod:
+    case Type::Tuple:
+    case Type::Union: {
+      FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_, target)
+          .getUnboxFn(param->location(), paramType);
+      if (unboxFn && unboxFn->isSingular()) {
+        module->addSymbol(unboxFn);
+      }
+      break;
+    }
+
+    // Types that need to be down-cast
+    case Type::Class:
+    case Type::Interface:
+      break;
+
+    // Types that aren't handled via reflection
+    case Type::NAddress:
+    case Type::NPointer:
+      target->addTrait(Defn::Nonreflective);
+      break;
+
+    // Types that can't be passed as a parameter
+    case Type::Protocol:
+    case Type::NArray:
+    default:
+      diag.error(target) << "Invalid parameter type: " << paramType;
+      DFAIL("Invalid parameter type");
+  }
 }
 
 bool FunctionAnalyzer::analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass) {

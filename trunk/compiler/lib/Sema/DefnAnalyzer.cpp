@@ -32,6 +32,7 @@ namespace tart {
 extern BuiltinMemberRef<VariableDefn> module_types;
 extern BuiltinMemberRef<VariableDefn> module_methods;
 extern BuiltinMemberRef<VariableDefn> method_typeParams;
+extern BuiltinMemberRef<VariableDefn> member_attributes;
 
 class TemplateParamAnalyzer : public TypeAnalyzer {
 public:
@@ -132,10 +133,11 @@ bool DefnAnalyzer::analyzeModule() {
       module->addSymbol(module_types.get()->type()->typeDefn());
       module->addSymbol(module_methods.get()->type()->typeDefn());
       module->addSymbol(method_typeParams.get()->type()->typeDefn());
+      module->addSymbol(member_attributes.get()->type()->typeDefn());
     }
   }
 
-  analyzeType(Builtins::typeTypeInfoBlock, Task_PrepCodeGeneration);
+  analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeDefn(Builtins::funcTypecastError, Task_PrepTypeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the

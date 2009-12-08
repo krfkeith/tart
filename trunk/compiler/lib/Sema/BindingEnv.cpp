@@ -7,6 +7,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -200,6 +201,8 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     return unifyAddressType(source, npp, value);
   } else if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
     return unifyNativeArrayType(source, nap, value);
+  } else if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(pattern)) {
+    return unifyTypeLiteralType(source, npp, value);
   } else if (const PatternVar * pv = dyn_cast<PatternVar>(value)) {
     diag.debug(source) << "Unify error: " << pattern << " : " << pv;
     DFAIL("Should not be unifying with a value that is a pattern var.");
@@ -285,6 +288,25 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, const NativeArrayT
     }
 
     return unify(source, pat->typeParam(0), nav->typeParam(0), Invariant);
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+    return tc->unifyWithPattern(*this, pat);
+  } else {
+    return false;
+  }
+}
+
+bool BindingEnv::unifyTypeLiteralType(
+    SourceContext * source, const TypeLiteralType * pat, const Type * value) {
+  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
+    return false;
+  }
+
+  if (const TypeLiteralType * npv = dyn_cast<TypeLiteralType>(value)) {
+    if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
+      return false;
+    }
+
+    return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
   } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pat);
   } else {

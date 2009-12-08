@@ -9,6 +9,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/EnumType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
 #include <llvm/ADT/StringExtras.h>
@@ -103,7 +104,7 @@ void ConstantFloat::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // ConstantString
 ConstantString::ConstantString(SourceLocation l, const std::string & val)
-  : ConstantExpr(ConstString, l, Builtins::typeString)
+  : ConstantExpr(ConstString, l, Builtins::typeString.peek())
   , value_(val)
 {
 }
@@ -141,7 +142,7 @@ void ConstantNull::format(FormatStream & out) const {
 /// -------------------------------------------------------------------
 /// TypeLiteralExpr
 TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, const Type * val)
-  : ConstantExpr(TypeLiteral, l, Builtins::typeTypeDescriptor)
+  : ConstantExpr(TypeLiteral, l, TypeLiteralType::get(val))
   , value_(val)
 {
   DASSERT(value_ != NULL);

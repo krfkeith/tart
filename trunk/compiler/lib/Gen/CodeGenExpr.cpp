@@ -882,6 +882,8 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
       selfArg = genExpr(in->selfArg());
     }
 
+    DASSERT_OBJ(selfArg != NULL, in->selfArg());
+
     // Upcast the self argument type.
     if (fn->functionType()->selfParam() != NULL) {
       const Type * selfType = dealias(fn->functionType()->selfParam()->type());
@@ -1005,7 +1007,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   // Get the TIB
   Value * tib = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
-  DASSERT_TYPE_EQ(llvm::PointerType::get(Builtins::typeTypeInfoBlock->irType(), 0), tib->getType());
+  DASSERT_TYPE_EQ(llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0), tib->getType());
 
   indices.clear();
   indices.push_back(getInt32Val(0));
@@ -1183,7 +1185,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
     return it->second;
   }
 
-  const CompositeType * strType = dyn_cast<CompositeType>(Builtins::typeString);
+  const CompositeType * strType = Builtins::typeString.get();
   const llvm::Type * irType = strType->irType();
 
   Constant * strVal = ConstantArray::get(context_, strval, false);

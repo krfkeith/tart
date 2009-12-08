@@ -545,7 +545,6 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  // TODO: Test result could be a constant.
   DASSERT_OBJ(value->type() != NULL, value);
   DASSERT_OBJ(value->isSingular(), value);
 
