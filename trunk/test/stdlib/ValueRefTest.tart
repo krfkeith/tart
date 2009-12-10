@@ -254,9 +254,9 @@ def testTypecast() {
   // types are the same, then no conversion is done at all.
   Debug.assertTrue(typecast[bool](true));
   Debug.assertFalse(typecast[bool](false));
-  //Debug.assertTrue(typecast[bool](ValueRef(true)));
-  //Debug.assertEq(1, typecast[int](ValueRef(1)));
-  //Debug.assertNe(1, typecast[int](ValueRef(2)));
+  Debug.assertTrue(typecast[bool](ValueRef(true)));
+  Debug.assertEq(1, typecast[int](ValueRef(1)));
+  Debug.assertNe(1, typecast[int](ValueRef(2)));
 }
 
 def testAutoBoxing() {
