@@ -1,0 +1,34 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.gc.AddressRange;
+
+/** Manages the global list of memory regions. */
+final class SpaceMgr {
+  private var _spaceTableExtent:AddressRange;
+  
+  // The global table of regions.
+  //private var _spaces:Address[Space] = addressOf(_initialSpaceTable[0]);
+  
+  // Number of regions in the table.
+  private var _numSpaces:int = 0;
+  
+  // Region to handle memory addresses outside of the table. */
+  private var _defaultSpace:Space;
+  
+  // The initial region table. Once the number of regions grows larger than
+  // the size of this table, the region table will be re-allocated into one
+  // of the regions.
+  private static var _initialSpaceTable:NativeArray[Space, 64];
+
+  /** Given an address, return the region containing that address. */
+  def spaceFor(address:Address[ubyte]) -> Space {
+    return _defaultSpace if address not in _spaceTableExtent;
+    var page = pageIndex(address);
+    
+    return _defaultSpace;
+  }
+  
+  static def pageIndex(address:Address[ubyte]) -> int {
+    return -1;
+  }
+}

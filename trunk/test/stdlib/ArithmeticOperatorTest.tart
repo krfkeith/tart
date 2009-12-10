@@ -1,0 +1,110 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  testBasicOperators();
+  testRelationalOperators();
+  testRelationalOperatorsNonConst();
+  testRelationalAndLogicalOperators();
+  return 0;
+}
+
+def testBasicOperators() {
+  Debug.assertEq(2, 1+1);
+  Debug.assertEq(1, 2-1);
+  Debug.assertEq(9, 3*3);
+  Debug.assertEq(1, 3/3);
+  
+  var a:int = 0;
+  a += 3;
+  Debug.assertEq(3, a);
+}
+
+def testRelationalOperators() {
+  // Equal
+  Debug.assertTrue(1 == 1);
+  Debug.assertFalse(1 == 0);
+
+  // Not equal
+  Debug.assertTrue(1 != 0);
+  Debug.assertFalse(1 != 1);
+
+  // Less
+  Debug.assertTrue(0 < 1);
+  Debug.assertFalse(1 < 0);
+  Debug.assertFalse(0 < 0);
+
+  // Less or equal
+  Debug.assertTrue(0 <= 1);
+  Debug.assertTrue(1 <= 1);
+  Debug.assertFalse(1 <= 0);
+
+  // Greater
+  Debug.assertTrue(1 > 0);
+  Debug.assertFalse(0 > 1);
+  Debug.assertFalse(0 > 0);
+  Debug.assertTrue(1 > -128);
+
+  // Greater or equal
+  Debug.assertTrue(1 >= 0);
+  Debug.assertTrue(1 >= 1);
+  Debug.assertFalse(0 >= 1);
+
+  // Unit test for a bug fix - signed integer constants not being sign extended.
+  Debug.assertTrue(int32(int8(-1)) < int32(1));
+  Debug.assertTrue(int32(int8(-128)) < int32(1));
+}
+
+def testRelationalOperatorsNonConst() {
+  var zero = 0;
+  var one = 1;
+
+  // Equal
+  Debug.assertTrue(one == one);
+  Debug.assertFalse(one == zero);
+
+  // Not equal
+  Debug.assertTrue(one != zero);
+  Debug.assertFalse(one != one);
+
+  // Less
+  Debug.assertTrue(zero < one);
+  Debug.assertFalse(one < zero);
+  Debug.assertFalse(zero < zero);
+
+  // Less or equal
+  Debug.assertTrue(zero <= one);
+  Debug.assertTrue(one <= one);
+  Debug.assertFalse(one <= zero);
+
+  // Greater
+  Debug.assertTrue(one > zero);
+  Debug.assertFalse(zero > one);
+  Debug.assertFalse(zero > zero);
+
+  // Greater or equal
+  Debug.assertTrue(one >= zero);
+  Debug.assertTrue(one >= one);
+  Debug.assertFalse(zero >= one);
+}
+
+def testRelationalAndLogicalOperators() {
+  var zero = 0;
+  var one = 1;
+  var two = 1;
+  
+  // Both true
+  Debug.assertTrue(one == one and zero == zero);
+  Debug.assertTrue(zero < one and one > zero);
+  Debug.assertTrue(one == one or zero == zero);
+  Debug.assertTrue(zero < one or one > zero);
+
+  // And with one false
+  Debug.assertFalse(zero < one and zero > one);
+  Debug.assertFalse(one < zero and one > zero);
+  
+  // Or with one false
+  Debug.assertTrue(zero < one or zero > one);
+  Debug.assertTrue(one < zero or one > zero);
+
+  Debug.assertTrue(one >= zero and one <= two);
+  Debug.assertTrue(one >= 0 and one <= 2);
+}

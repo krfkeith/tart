@@ -1,0 +1,36 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  stringArgs("Three", "String", "Args");
+  intArgs(1, 2, 3);
+  intArgs2(1, 2, 3);
+  testMakeArray();
+  return 0;
+}
+
+def stringArgs(s:String...) {
+  Debug.assertEq(3, s.length);
+  Debug.assertEq("Three", s[0]);
+}
+
+def intArgs(s:int...) {
+  Debug.assertEq(3, s.length);
+}
+
+def intArgs2(s:int...) {
+  let s2:Array[int] = s;
+  Debug.assertEq(3, s2.length);
+}
+
+def testMakeArray() {
+  Debug.assertEq(0, makeArray().length);
+  Debug.assertEq(1, makeArray(5).length);
+  Debug.assertEq(2, makeArray(5, 5).length);
+  Debug.assertEq(3, makeArray(5, 5, 5).length);
+}
+
+def makeArray(s:int...) -> int[] {
+  return s;
+}
+
+// Test keyword-only arguments
+//

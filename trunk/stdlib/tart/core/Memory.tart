@@ -1,0 +1,93 @@
+import tart.annex.Intrinsic;
+
+/** Memory utility functions */
+namespace Memory {
+  // Import built-in type definition.
+  import __Address as Address;
+  import __Pointer as Pointer;
+
+  /** Represents a sub-range of an array or list or other container that uses
+      contiguous storage of elements. */
+  struct Buffer[%T] {
+    // Reference to the container for GC purposes.
+    private var container:Object;
+    private var first:Address[T];
+    private var last:Address[T];
+    
+    def construct(container:Object, first:Address[T], last:Address[T]) {
+      self.container = container;
+      self.first = first;
+      self.last = last;
+    }
+    
+    def length:int {
+      get { return ptrDiff(first, last); }
+    }
+
+    def length:long {
+      get { return ptrDiff(first, last); }
+    }
+  }
+
+  /** Extension of Buffer to support mutatbility of elements. */
+  struct MutableBuffer[%T] : Buffer[T] {}
+
+  /** The integer 0, converted to a pointer of a given type. Intended to be
+      used for offset calculations.
+   */
+  @Intrinsic
+  def zeroPtr[%ElemTy]() -> ElemTy;
+
+  /** Take the address of a variable and return the result as a native
+      pointer.
+  */
+  @Intrinsic
+  def addressOf[%T](value:T) -> Address[T];
+
+  /** Return the difference between two pointers. Subtracts the pointer
+      values, and then divides by the size of 'T'. Raises an exception if
+      the value is too large to be contained within a signed integer.
+   */
+  @Intrinsic
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
+
+  /** Return the difference between two pointers. Subtracts the pointer
+      values, and then divides by the size of 'T'. Raises an exception if
+      the value is too large to be contained within a signed long.
+   */
+  @Intrinsic
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> long;
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Does not guarantee correct behavior if the source and destination overlap.
+      
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dst: The array containing the destination range.
+        dstOffset: The starting index of the destination range.
+        src: The array containing the source range.
+        srcOffset: The starting index of the source ranbge.
+        length: The number of elements to copy. 
+   */
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
+
+  /** [Ditto] */
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:long);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Handles the case of overlapping ranges.
+      
+      The behavior is equivalent to the CLib function memmove().
+      Parameters:
+        dst: The array containing the destination range.
+        dstOffset: The starting index of the destination range.
+        src: The array containing the source range.
+        srcOffset: The starting index of the source ranbge.
+        length: The number of elements to copy. 
+   */
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
+
+  /** [Ditto] 
+   */
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:long);
+}

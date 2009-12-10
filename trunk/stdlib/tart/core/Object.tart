@@ -1,0 +1,64 @@
+import tart.annex.Intrinsic;
+
+/** Base class of all reference types. */
+public class Object {
+  private var __tib:__Pointer[TypeInfoBlock];
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length types.
+    
+      '__valloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It returns the
+      memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+  */
+  //[tart.config.Permissions.Require("pointer-math")]
+  @Intrinsic
+  protected static def __valloc[%T](size:int) -> T;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length object types.
+    
+      '__pvalloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It then
+      returns the memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+      
+      This version is similar to '__valloc', except that 'size' is a pointer
+      which will be bitcast to int. This is used in conjunction with
+      'zeroPtr' to calculate the offset of a field within a data structure.
+  */
+  //[tart.config.Permissions.Require("pointer-math")]
+  @Intrinsic
+  protected static def __pvalloc[%T, %S](size:T) -> S;
+
+  /** Return the reflected type of this object. */
+  //def type:tart.reflect.Type { get { return self.__tib.type; } }
+  
+  /** Default constructor. */
+  def construct() {}
+
+  /** Implicitly convert non-object values to Boxed types. */
+  static def coerce[%T] (value:T) -> Object { return ValueRef[T](value); }
+  static def coerce(value:Object) -> Object { return value; }
+
+  /** Set a finalization callback to be called when this object has been deleted.
+      Note that the finalizer must *not* hold a reference to the object or it
+      will never be deleted. */
+  //final def addFinalizer(finalizer:fn) {}
+
+  /** Remove a finalizer that was registered via addFinalizer. */
+  //final def removeFinalizer(finalizer:fn) {}
+  
+  /** Return a string representation of this object. */
+  def toString() -> String {
+    return String.concat("<", __tib.name, ">");
+  }
+
+  /** Return the fully-qualified name of this object's class. */
+  final def __typeName:String { get { return __tib.name; } }
+}

@@ -1,0 +1,38 @@
+import tart.core.Memory.Pointer;
+
+/** Description of a callable method. */
+final class Method : Member {
+  private {
+	  var _typeParams:Type[];
+    var _functionType:FunctionType;
+	  var _params:Parameter[];
+    var _methodPointer:Pointer[void];
+  }
+
+  undef construct();
+
+  /** Array of type parameters. */
+  final def typeParams:Type[] { get { return _typeParams; } }
+
+  /** The type of the method. */
+  final def functionType:FunctionType { get { return _functionType; } }
+
+  /** The return type of the method. */
+  final def returnType:Type { get { return _functionType.returnType; } }
+
+  /** The array of function parameter types. */
+  final def paramTypes:Type[] { get { return _functionType.paramTypes; } }
+
+  /** The parameters of this method. */
+  final def params:Parameter[] { get { return _params; } }
+  
+  /** Invoke the method on the specified object with the given arguments. */
+  final def call(obj:Object, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return _functionType.invoke(_methodPointer, obj, args);
+  }
+
+  final def call(obj:Object, args:Object...) -> Object {
+    return _functionType.invoke(_methodPointer, obj, args);
+  }
+}

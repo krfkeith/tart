@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core Exception Hierarchy &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="tart.core - system and runtime support types" href="index.html" />
+    <link rel="next" title="Core Attributes" href="attributes.html" />
+    <link rel="prev" title="String - built-in string class" href="string.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="attributes.html" title="Core Attributes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="string.html" title="String - built-in string class"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Tart Library Reference</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U"><tt class="docutils literal docutils literal"><span class="pre">tart.core</span></tt> - system and runtime support types</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="core-exception-hierarchy">
+<span id="module-tart.core"></span><h1>Core Exception Hierarchy<a class="headerlink" href="#core-exception-hierarchy" title="Permalink to this headline">¶</a></h1>
+<dl class="exception">
+<dt id="tart.core.Throwable">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">Throwable</tt><a class="headerlink" href="#tart.core.Throwable" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">The base class for all throwable objects.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.Exception">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">Exception</tt><a class="headerlink" href="#tart.core.Exception" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Base class for all regular exceptions.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.AssertionError">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">AssertionError</tt><a class="headerlink" href="#tart.core.AssertionError" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Indicates an assertion failure.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.IndexOutOfRangeError">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">IndexOutOfRangeError</tt><a class="headerlink" href="#tart.core.IndexOutOfRangeError" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Indicates an index range check failure.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.InvalidOperationError">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">InvalidOperationError</tt><a class="headerlink" href="#tart.core.InvalidOperationError" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Signals an invalid operation.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.InvalidTypecastError">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">InvalidTypecastError</tt><a class="headerlink" href="#tart.core.InvalidTypecastError" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Signals an attempt to typecast an object reference to a type
+not supported by the object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
+<dt id="tart.core.NotImplementedError">
+<em class="property">
+exception </em><tt class="descclassname">tart.core.</tt><tt class="descname">NotImplementedError</tt><a class="headerlink" href="#tart.core.NotImplementedError" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Summary:</th><td class="field-body">Used to signal an unimplemented feature.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="string.html"
+                                  title="previous chapter"><tt class="docutils literal"><span class="pre">String</span></tt> - built-in string class</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="attributes.html"
+                                  title="next chapter">Core Attributes</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../../_sources/lib/core/exceptions.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="attributes.html" title="Core Attributes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="string.html" title="String - built-in string class"
+             >previous</a> |</li>
+        <li><a href="../../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Tart Library Reference</a> &raquo;</li>
+          <li><a href="index.html" ><tt class="docutils literal docutils literal"><span class="pre">tart.core</span></tt> - system and runtime support types</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

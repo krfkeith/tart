@@ -1,0 +1,59 @@
+import tart.core.Memory.Pointer;
+
+/** The metatype object - the class that describes a type. */
+public class TypeDescriptor {
+  enum TypeKind : ubyte {
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    NATIVE_POINTER,
+    NATIVE_ARRAY,
+    //SingleValue
+  }
+
+  @Flags  
+  enum TypeTraits {
+    ATTRIBUTE,
+  }
+
+  /** The TypeInfoBlock for this type. */  
+  let typeInfo:Pointer[TypeInfoBlock];
+  
+  /** The fully-qualified name of this type. */
+  let name:String;
+  
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  let typeKind:TypeKind;
+  
+  /** Pointer to this type's supertype, or null. */
+  let supertype:TypeDescriptor /* or void */;
+  
+  /** Array of inherited interfaces. */
+  let interfaces:TypeDescriptor[];
+  
+  /** Array of type parameters. */
+  let typeParams:TypeDescriptor[];
+  
+  /** Array of associated attributes */
+  let attributes:Attribute[];
+  
+  /** Array of field members. */
+  let fields:Field[];
+  
+  /** Array of property members. */
+  let properties:Property[];
+  
+  /** Array of constructor members. */
+  let constructors:Method[];
+  
+  /** Array of methods. */
+  let methods:Method[];
+
+  /** Private constructor - types cannot be created by applications. */
+  private def construct() {}
+}

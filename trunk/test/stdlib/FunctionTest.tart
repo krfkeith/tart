@@ -1,0 +1,32 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  return TestUtils.runModuleTests(Module.thisModule());
+}
+
+def func(a:int, b="Hello") -> int {
+  return a;
+}
+
+def testDefaultArgs() {
+  Debug.assertEq(1, func(1, "Hello"));
+  Debug.assertEq(1, func(1));
+}
+
+def testFunctionVar {
+  var streq:fn s:String -> bool;
+  streq = "Hello".equals;
+  Debug.assertTrue(streq("Hello"));
+  Debug.assertFalse(streq("Yello"));
+}
+
+def testAnonFn {
+  let f = fn (i:int) -> int {
+    return i + i;
+  };
+  
+  Debug.assertEq(2, f(1));
+  Debug.assertEq(4, f(2));
+}

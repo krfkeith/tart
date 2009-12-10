@@ -1,0 +1,16 @@
+import tart.annex.Intrinsic;
+
+/** Miscellaneous operations on primitive types. */
+namespace BitTricks {
+  /** Count the number of leading zeroes in an integer field. */
+  @Intrinsic def leadingZeroes(value:int64) -> int;
+  @Intrinsic def leadingZeroes(value:int32) -> int;
+  @Intrinsic def leadingZeroes(value:uint64) -> int;
+  @Intrinsic def leadingZeroes(value:uint64) -> int;
+
+  /** Count the number of trailing zeroes in an integer field. */
+  @Intrinsic def trailingZeroes(value:int64) -> int;
+  @Intrinsic def trailingZeroes(value:int32) -> int;
+  @Intrinsic def trailingZeroes(value:uint64) -> int;
+  @Intrinsic def trailingZeroes(value:uint64) -> int;
+}

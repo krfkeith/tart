@@ -1,0 +1,16 @@
+@EntryPoint
+def main(args:String[]) -> int {
+  let p:ITest = A();
+  Debug.assertEq("Hello", p.test());
+  return 0;
+}
+
+interface ITest {
+  def test() -> String;
+}
+
+class A : ITest {
+  def test() -> String {
+    return "Hello";
+  }
+}

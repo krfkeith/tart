@@ -1,0 +1,42 @@
+import tart.annex.Nonreflective;
+import tart.annex.Intrinsic;
+
+/** The metatype object - the class that describes a type. */
+@Nonreflective class Type {
+  enum TypeKind : ubyte {
+    OPAQUE,
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    PROTOCOL,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    ADDRESS,
+    POINTER,
+    NATIVE_ARRAY,
+    UNIT,
+  }
+
+  private {
+    var _typeKind:TypeKind;
+  }
+
+  protected def construct(typeKind:TypeKind) {
+    self._typeKind = typeKind;
+  }
+
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  final def typeKind:TypeKind { get { return _typeKind; } }
+
+  /** Given a type literal, return the reflected type object. */
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> Type;
+
+  /** True if this is an aggregate type. */
+  //final def isAggregate:bool { get { return false; } }
+  
+  /** True if this is a reference type. */
+  //final def isByReference:bool { get { return typeKind == CLASS or kind == INTERFACE; } }
+}

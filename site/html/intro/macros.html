@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Macros &mdash; Tart v0.1.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tart v0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Introduction to Tart" href="index.html" />
+    <link rel="next" title="Generic Functions" href="generics.html" />
+    <link rel="prev" title="Calling C functions" href="foreign.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="generics.html" title="Generic Functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="foreign.html" title="Calling C functions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="macros">
+<h1>Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h1>
+<p>Tart macros are functions which execute in the compiler rather than at
+runtime. They are introduced with the <tt class="xref docutils literal"><span class="pre">macro</span></tt> keyword:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">macro</span> <span class="nf">MyMacro</span><span class="p">(</span><span class="nv">t</span><span class="p">:</span><span class="nc">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nv">Type</span> <span class="k">{</span>
+  <span class="c">// ...</span>
+<span class="k">}</span>
+</pre></div>
+</div>
+<p>One thing that is interesting about macros is that the arguments are not
+evaluated before calling the macro. In other words, when you call a macro with
+an argument of &#8220;1 + 2&#8221;, it does not pass the value &#8220;3&#8221;, but rather the
+unevaluated expression &#8220;1 + 2&#8221; (technically what gets passed is an AST
+fragment.) These expressions will be substituted inline in the body of the
+macro. This means that you can control how many times (if at all) the
+expression and its associated side effects are evaluated.</p>
+<p>Take for example the <tt class="xref docutils literal"><span class="pre">cond</span></tt> macro, which is part of the Tart core
+library:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">macro</span> <span class="nf">cond</span><span class="p">&lt;[</span><span class="gr">%T]</span><span class="o">&gt;</span><span class="gr">(condition:bool, trueVal:T, falseVal:T) -</span><span class="o">&gt;</span> <span class="nc">T</span> <span class="gr">{</span>
+<span class="gr">  if condition { return trueVal; }</span>
+<span class="gr">  else { return falseVal; }</span>
+<span class="gr">}</span>
+</pre></div>
+</div>
+<p>The <tt class="xref docutils literal"><span class="pre">cond</span></tt> macro operates exactly like the ternary ? operator in C.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The name &#8220;cond&#8221; is inspired by the conceptually similar LISP macro
+of the same name.) Because it&#8217;s a macro, the side effects of <tt class="docutils literal"><span class="pre">trueVal</span></tt> will
+occur only if the condition is true, and the side effects of <tt class="docutils literal"><span class="pre">falseVal</span></tt>
+will occur only if the condition is false.</p>
+</div>
+<p>Another thing to notice is that the <tt class="xref docutils literal"><span class="pre">cond</span></tt> macro is a template as well
+as a macro. More about templates in the next section.</p>
+<p>There are a number of built-in functions that give you access to the attributes
+of the AST. For example, <tt class="xref docutils literal"><span class="pre">stringify()</span></tt> converts an AST node into its string
+representation. This is used by the <tt class="xref docutils literal"><span class="pre">assert</span></tt> macro, which is another
+part of the Tart core library:</p>
+<div class="highlight-tart"><div class="highlight"><pre><span class="k">macro</span> <span class="nf">assert</span><span class="p">&lt;[</span><span class="gr">%T]</span><span class="o">&gt;</span><span class="gr">(expression:T) {</span>
+<span class="gr">  if not expression {</span>
+<span class="gr">    throw AssertionError(stringify(expression));</span>
+<span class="gr">  }</span>
+<span class="gr">}</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="foreign.html"
+                                  title="previous chapter">Calling C functions</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="generics.html"
+                                  title="next chapter">Generic Functions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="../_sources/intro/macros.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="generics.html" title="Generic Functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="foreign.html" title="Calling C functions"
+             >previous</a> |</li>
+        <li><a href="../index.html">Tart v0.1.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Introduction to Tart</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Talin.
+      Last updated on Jul 23, 2009.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.1.
+    </div>
+  </body>
+</html>

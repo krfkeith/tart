@@ -1,0 +1,53 @@
+/** Base class for all attributes. */
+@Attribute(Attribute.Target.CLASS)
+class Attribute {
+  /** Defines what types of elements the attribute can be attached to. */
+  @Flags enum Target {
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    ENUM,
+    NAMESPACE,
+    FUNCTION,
+    CONSTRUCTOR,
+    PARAMETER,
+    VARIABLE,
+    PROPERTY,
+    MACRO,
+
+    TYPE = CLASS | STRUCT | INTERFACE | ENUM,
+    CALLABLE = CONSTRUCTOR | FUNCTION | MACRO,
+    ANY = TYPE | NAMESPACE | CALLABLE | PARAMETER | VARIABLE | PROPERTY,
+  }
+
+  /** Indicates whether the attribute is retained in the compiled binary. */
+  enum Retention {
+    NONE,
+    RUNTIME,
+    RUNTIME_ITERABLE, // Retained at runtime, and all instances iterable.
+  }
+
+  /** Indicates whether derived elements (callers, subclasses) get the attribute as well. */
+  @Flags enum Propagation {
+    NONE = 0,
+    SUBTYPES,   // Attribute propagates to subtypes
+    MEMBERS,    // Attribute propagates to members of attached type
+    CALLERS,    // Attribute propagates to callers
+  }
+
+  var target:Target;
+  var retention:Retention;
+  var propagation:Propagation;
+
+  def construct() {
+    self.target = Target.ANY;
+    self.retention = Retention.RUNTIME;
+    self.propagation = Propagation.NONE;
+  }
+
+  def construct(target:Target, retention:Retention = NONE, propagation:Propagation = NONE) {
+    self.target = target;
+    self.retention = retention;
+    self.propagation = propagation;
+  }
+}

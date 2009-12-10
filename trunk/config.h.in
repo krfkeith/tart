@@ -1,0 +1,27 @@
+/* ================================================================== *
+ * Compiler Configuration
+ * ================================================================== */
+
+#cmakedefine HAVE_NEW 1
+#cmakedefine HAVE_CTIME 1
+#cmakedefine HAVE_CLOCK_IN_STD 1
+#cmakedefine HAVE_STDIO_H 1
+#cmakedefine HAVE_STDINT_H 1
+#cmakedefine HAVE_STDDEF_H 1
+#cmakedefine HAVE_STDLIB_H 1
+#cmakedefine HAVE_STRING_H 1
+#cmakedefine HAVE_MALLOC_H 1
+#cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_ERRNO_H 1
+#cmakedefine HAVE_EXECINFO_H 1
+#cmakedefine HAVE_SYS_TIME_H 1
+#cmakedefine HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_SYS_RESOURCE_H 1
+#cmakedefine HAVE_LIBKERN_OSATOMIC_H 1
+#cmakedefine HAVE_CXXABI_H 1
+
+/** Whether the backtrace() function is available. */
+#cmakedefine HAVE_BACKTRACE 1
+
+/** Whether GCC builtin atomic functions are available. */
+#cmakedefine HAVE_GCC_ATOMICS 1

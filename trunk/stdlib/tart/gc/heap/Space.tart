@@ -1,0 +1,24 @@
+import tart.core.Memory.Address;
+import tart.gc.AddressRange;
+
+/** Manages a region of memory under a specific allocation and collection policy. */
+abstract class Space {
+  private var _extent:AddressRange;
+  private var _contiguous:bool;
+  
+  def construct() {
+  }
+  
+  /** True if the space contains the specified address. */
+  final def contains(address:Address[ubyte]) -> bool {
+    return false if address not in _extent;
+    return true if _contiguous;
+    // TODO: Check for non-contiguous space.
+    return false;
+  }
+  
+  /** The range of addresses that contain this space. */
+  final def extent:AddressRange { get { return _extent; } }
+  
+  // add page to space
+}
