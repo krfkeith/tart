@@ -171,15 +171,9 @@ cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-i
 
 cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=/Users/talin/Projects/llvm-inst/lib ../trunk/
 
+cmake -G "Visual Studio 9 2008" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
+
 cmake -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
-
-// ------------------------------------------------------------------------
-
-Permissions:
-
-  [CompilerPermissions.Require("pointer-math")]
-  
-  -allow=pointer-math
 
 // ------------------------------------------------------------------------
 Templates:
@@ -202,13 +196,6 @@ Variadic templates:
     out << t;
     func(args...);
   }
-
-// ------------------------------------------------------------------------
-
-We need assertions! Which requires:
-  -- Exceptions
-  -- Classes
-  -- isa test
 
 // ------------------------------------------------------------------------
 

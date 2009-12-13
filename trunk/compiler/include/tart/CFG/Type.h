@@ -309,6 +309,7 @@ public:
   TypeRef & operator=(const TypeRef & ref) {
     type_ = ref.type_;
     modifiers_ = ref.modifiers_;
+    return *this;
   }
 
   bool operator==(const TypeRef & other) const {

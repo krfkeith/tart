@@ -20,9 +20,9 @@ namespace tart {
 class Module;
 class Scope;
 class Expr;
-class SourceLocation;
 class NamespaceDefn;
 class ArrayLiteralExpr;
+struct SourceLocation;
 
 /// -------------------------------------------------------------------
 /// Represents the set of possible operations that are done on a definition.

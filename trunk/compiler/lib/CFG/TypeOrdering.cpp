@@ -162,9 +162,9 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
 ComparisonResult TypeOrdering::compare(const TypeRef & t1, const TypeRef & t2) {
   ComparisonResult result = EQUAL;
   if (t1.modifiers() != t2.modifiers()) {
-    if (t1.modifiers() & ~t2.modifiers() == 0) {
+    if ((t1.modifiers() & ~t2.modifiers()) == 0) {
       result = RIGHT_FIRST;
-    } else if (t2.modifiers() & ~t1.modifiers() == 0) {
+    } else if ((t2.modifiers() & ~t1.modifiers()) == 0) {
       result = LEFT_FIRST;
     } else {
       return UNORDERED;
@@ -332,7 +332,7 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
     case Type::Tuple: {
       const TupleType * tt0 = static_cast<const TupleType *>(t0);
       const TupleType * tt1 = static_cast<const TupleType *>(t1);
-      for (int i = 0; ; ++i) {
+      for (size_t i = 0; ; ++i) {
         if (i < tt0->size() && i < tt1->size()) {
           int result = compare(tt0->member(i), tt1->member(i));
           if (result != 0) {

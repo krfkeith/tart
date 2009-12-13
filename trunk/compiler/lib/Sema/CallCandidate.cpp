@@ -415,6 +415,7 @@ FormatStream & operator<<(FormatStream & out, const CallCandidate & cc) {
   }
 
   out << ") -> " << cc.resultType();
+  return out;
 }
 
 } // namespace tart

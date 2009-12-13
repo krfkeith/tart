@@ -2,6 +2,7 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "config.h"
 #include "tart/Lex/Lexer.h"
 #include "tart/Common/Diagnostics.h"
 #include <algorithm>

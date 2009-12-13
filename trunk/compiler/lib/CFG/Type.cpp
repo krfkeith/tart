@@ -546,6 +546,7 @@ ConversionRank TypeRef::canConvert(const TypeRef & fromType, int options) const 
 
 FormatStream & operator<<(FormatStream & out, const TypeRef & ref) {
   out << ref.type();
+  return out;
 }
 
 // -------------------------------------------------------------------
