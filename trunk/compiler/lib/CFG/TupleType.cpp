@@ -109,6 +109,7 @@ TupleType::TupleType(TypeList::const_iterator first, TypeList::const_iterator la
 }
 
 const llvm::Type * TupleType::createIRType() const {
+  DFAIL("Implement");
 }
 
 ConversionRank TupleType::convertImpl(const Conversion & cn) const {
@@ -159,6 +160,7 @@ ConversionRank TupleType::convertImpl(const Conversion & cn) const {
 
   return bestRank;
 #endif
+  DFAIL("Implement");
 }
 
 bool TupleType::isEqual(const Type * other) const {

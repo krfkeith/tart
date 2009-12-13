@@ -1,5 +1,6 @@
 /* Exception personality function for Tart */
 
+#if HAVE_UNWIND_H
 #include "unwind.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -318,3 +319,4 @@ _Unwind_Reason_Code __tart_eh_personality(
   // No action was found.
   return _URC_CONTINUE_UNWIND;
 }
+#endif

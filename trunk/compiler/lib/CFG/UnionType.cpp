@@ -162,7 +162,7 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
     case llvm::Type::StructTyID: {
       size_t total = 0;
       unsigned numFields = type->getNumContainedTypes();
-      for (int i = 0; i < numFields; ++i) {
+      for (unsigned i = 0; i < numFields; ++i) {
         total += estimateTypeSize(type->getContainedType(i), ptrSize);
         // TODO: Add padding?
       }

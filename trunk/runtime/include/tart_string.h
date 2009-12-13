@@ -8,8 +8,8 @@
 #ifndef TART_RUNTIME_TART_OBJECT_H
 #include "tart_object.h"
 #endif
- 
-#include <stdint.h>
+
+#include "llvm/System/DataTypes.h"
 
 /** Tart string class. */
 typedef struct TartString {

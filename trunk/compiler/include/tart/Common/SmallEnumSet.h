@@ -5,7 +5,7 @@
 #ifndef TART_COMMON_SMALLENUMSET_H
 #define TART_COMMON_SMALLENUMSET_H
 
-#include <stdint.h>
+#include "llvm/System/DataTypes.h"
 #include <sys/types.h>
 
 /// -------------------------------------------------------------------

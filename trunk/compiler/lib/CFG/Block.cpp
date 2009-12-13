@@ -73,6 +73,8 @@ FormatStream & operator<<(FormatStream & out, Block * blk) {
   } else {
     out << blk->label();
   }
+
+  return out;
 }
 
 } // namespace tart

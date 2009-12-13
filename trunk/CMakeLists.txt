@@ -18,7 +18,9 @@ check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(stddef.h HAVE_STDDEF_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(string.h HAVE_STRING_H)
+check_include_file(stdbool.h HAVE_STDBOOL_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(errno.h HAVE_ERRNO_H)
 check_include_file(execinfo.h HAVE_EXECINFO_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -91,6 +93,15 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -fmessage-length=0
       )
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+# Extra flags for MSVC (C only)
+if (MSVC)
+  add_definitions(
+      -D_CRT_SECURE_NO_WARNINGS
+      -wd4146 -wd4503 -wd4996 -wd4800 -wd4244 -wd4624
+      -wd4355 -wd4715 -wd4180 -wd4345 -wd4224
+  )
+endif (MSVC)
 
 # Add the check-build target
 add_custom_target(check)
