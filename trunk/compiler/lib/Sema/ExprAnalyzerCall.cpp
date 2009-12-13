@@ -578,7 +578,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
   DASSERT_OBJ(method->type() != NULL, method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());
-  for (int i = 0; i < args.size(); ++i) {
+  for (size_t i = 0; i < args.size(); ++i) {
     builder.addPositionalArg();
   }
 
