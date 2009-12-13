@@ -185,12 +185,12 @@ bool ConstantObjectRef::isSingular() const {
 }
 
 Expr * ConstantObjectRef::getMemberValue(VariableDefn * member) const {
-  DASSERT(member->memberIndexRecursive() < members_.size());
+  DASSERT((size_t) member->memberIndexRecursive() < members_.size());
   return members_[member->memberIndexRecursive()];
 }
 
 void ConstantObjectRef::setMemberValue(VariableDefn * member, Expr * value) {
-  DASSERT(member->memberIndexRecursive() < members_.size());
+  DASSERT((size_t) member->memberIndexRecursive() < members_.size());
   members_[member->memberIndexRecursive()] = value;
 }
 

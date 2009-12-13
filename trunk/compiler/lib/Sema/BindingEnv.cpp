@@ -22,7 +22,7 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 namespace tart {
 
 static void assureNoPatternVars(Type * t) {
-  for (int i = 0; i < t->numTypeParams(); ++i) {
+  for (size_t i = 0; i < t->numTypeParams(); ++i) {
     if (isa<PatternVar>(t->typeParam(i))) {
       diag.fatal() << "What's a type param doing here?" << t;
       DFAIL("Unexpected pattern var");

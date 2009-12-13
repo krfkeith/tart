@@ -20,7 +20,7 @@ public:
 
   /** The target of this alias. */
   TypeRef value() const { return value_; }
-  TypeRef & setValue(const TypeRef & value) { value_ = value; }
+  TypeRef & setValue(const TypeRef & value) { value_ = value; return value_; }
 
   // Overrides
 

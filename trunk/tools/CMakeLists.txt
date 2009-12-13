@@ -18,7 +18,7 @@ target_link_libraries(tartc
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
     )
-set_target_properties(tartc PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
+set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
 add_executable(tartln tartln/tartln.cpp)
 target_link_libraries(tartln
@@ -84,4 +84,4 @@ target_link_libraries(tartln
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
     )
-set_target_properties(tartln PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
+set_target_properties(tartln PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

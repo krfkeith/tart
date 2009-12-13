@@ -7,6 +7,8 @@
 #ifndef TART_RUNTIME_TART_OBJECT_H
 #define TART_RUNTIME_TART_OBJECT_H
 
+#include "config.h"
+
 struct TypeInfoBlock;
 
 typedef struct TartObject {

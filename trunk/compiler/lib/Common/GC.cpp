@@ -21,8 +21,7 @@ void * GC::operator new(size_t size) {
   GC * gc = reinterpret_cast<GC *>(malloc(size));
   gc->next_ = allocList_;
   allocList_ = gc;
-
-  //return gc_heap_alloc(size, NULL);
+  return gc;
 }
 
 void GC::operator delete(void * mem) {}

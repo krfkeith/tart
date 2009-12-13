@@ -95,7 +95,7 @@ Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
 }
 
 bool CodeGenerator::createTypeInfoBlock(const CompositeType * type) {
-  createTypeInfoBlock(getRTTypeInfo(type));
+  return createTypeInfoBlock(getRTTypeInfo(type));
 }
 
 Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {

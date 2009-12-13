@@ -272,7 +272,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   // Create a symbol for each template parameter.
   bool isSingular = true;
 
-  for (int i = 0; i < vars_.size(); ++i) {
+  for (size_t i = 0; i < vars_.size(); ++i) {
     PatternVar * var = vars_[i];
     TypeRef & value = paramValues[i];
 

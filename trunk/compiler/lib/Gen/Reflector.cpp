@@ -115,7 +115,7 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
 }
 
 llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
-  llvm::Constant * strVal = cg_.genStringLiteral(Key, Key);
+  return cg_.genStringLiteral(Key, Key);
 }
 
 void Reflector::emitModule(Module * module) {
@@ -453,7 +453,7 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
 
 llvm::Constant * Reflector::emitDerivedType(const Type * type) {
   ConstantList typeParams;
-  for (int i = 0; i < type->numTypeParams(); ++i) {
+  for (size_t i = 0; i < type->numTypeParams(); ++i) {
     typeParams.push_back(emitTypeReference(type->typeParam(i)));
   }
 

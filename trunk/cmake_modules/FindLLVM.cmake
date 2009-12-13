@@ -33,8 +33,10 @@ endif (NOT LLVM_LIBRARY_DIR)
 if (NOT LLVM_BIN_DIR)
   get_filename_component(LLVM_BASE_DIR ${LLVM_LIBRARY_DIR} PATH)
   find_path(LLVM_BIN_DIR "llvm-config" PATHS "${LLVM_BASE_DIR}/bin" NO_DEFAULT_PATH)
-  set(LLVM_TOOLS_BIN_DIR ${LLVM_BIN_DIR} CACHE PATH "Path to LLVM binary tools")
-  set(LLVM_CONFIG "${LLVM_BIN_DIR}/llvm-config" CACHE PATH "Path to llvm-config")
+  if (LLVM_BIN_DIR)
+    set(LLVM_TOOLS_BIN_DIR ${LLVM_BIN_DIR} CACHE PATH "Path to LLVM binary tools")
+    set(LLVM_CONFIG "${LLVM_BIN_DIR}/llvm-config" CACHE PATH "Path to llvm-config")
+  endif (LLVM_BIN_DIR)
 endif (NOT LLVM_BIN_DIR)
 
 # Get the LLVM libraries we need
@@ -48,6 +50,10 @@ if (LLVM_CONFIG AND PERL_FOUND)
     COMMAND sh -c "${PERL} ${LLVM_CONFIG} --libs backend"
 #    RESULT_VARIABLE rv
     OUTPUT_VARIABLE LLVM_BACKEND_LIBS)
+else (LLVM_CONFIG AND PERL_FOUND)
+  if (MSVC)
+    set(LLVM_LD_FLAGS "" CACHE STRING "Linker flags")
+  endif (MSVC)
 endif (LLVM_CONFIG AND PERL_FOUND)
 
 # Find a LLVM libraries
@@ -82,67 +88,69 @@ find_llvm_library(SYSTEM LLVMSystem)
 find_llvm_library(TARGET LLVMTarget)
 find_llvm_library(TRANSFORM_UTILS LLVMTransformUtils)
 
-# Architecture: ARM
-find_llvm_library(ARM_ASM_PRINTER LLVMARMAsmPrinter)
-find_llvm_library(ARM_CODE_GEN LLVMARMCodeGen)
-find_llvm_library(ARM_INFO LLVMARMInfo)
+if (NOT MSVC)
+  # Architecture: ARM
+  find_llvm_library(ARM_ASM_PRINTER LLVMARMAsmPrinter)
+  find_llvm_library(ARM_CODE_GEN LLVMARMCodeGen)
+  find_llvm_library(ARM_INFO LLVMARMInfo)
 
-# Architecture: Alpha
-find_llvm_library(ALPHA_ASM_PRINTER LLVMAlphaAsmPrinter)
-find_llvm_library(ALPHA_CODE_GEN LLVMAlphaCodeGen)
-find_llvm_library(ALPHA_INFO LLVMAlphaInfo)
+  # Architecture: Alpha
+  find_llvm_library(ALPHA_ASM_PRINTER LLVMAlphaAsmPrinter)
+  find_llvm_library(ALPHA_CODE_GEN LLVMAlphaCodeGen)
+  find_llvm_library(ALPHA_INFO LLVMAlphaInfo)
 
-# Architecture: Blackfin
-find_llvm_library(BLACKFIN_ASM_PRINTER LLVMBlackfinAsmPrinter)
-find_llvm_library(BLACKFIN_CODE_GEN LLVMBlackfinCodeGen)
-find_llvm_library(BLACKFIN_INFO LLVMBlackfinInfo)
+  # Architecture: Blackfin
+  find_llvm_library(BLACKFIN_ASM_PRINTER LLVMBlackfinAsmPrinter)
+  find_llvm_library(BLACKFIN_CODE_GEN LLVMBlackfinCodeGen)
+  find_llvm_library(BLACKFIN_INFO LLVMBlackfinInfo)
 
-# Architecture: CBackend
-find_llvm_library(CBACKEND LLVMCBackend)
-find_llvm_library(CBACKEND_INFO LLVMCBackendInfo)
+  # Architecture: CBackend
+  find_llvm_library(CBACKEND LLVMCBackend)
+  find_llvm_library(CBACKEND_INFO LLVMCBackendInfo)
 
-# Architecture: CellSPU
-find_llvm_library(CELLSPU_ASM_PRINTER LLVMCellSPUAsmPrinter)
-find_llvm_library(CELLSPU_CODE_GEN LLVMCellSPUCodeGen)
-find_llvm_library(CELLSPU_INFO LLVMCellSPUInfo)
+  # Architecture: CellSPU
+  find_llvm_library(CELLSPU_ASM_PRINTER LLVMCellSPUAsmPrinter)
+  find_llvm_library(CELLSPU_CODE_GEN LLVMCellSPUCodeGen)
+  find_llvm_library(CELLSPU_INFO LLVMCellSPUInfo)
 
-# Architecture: CppBackend
-find_llvm_library(CPPBACKEND LLVMCppBackend)
-find_llvm_library(CPPBACKEND_INFO LLVMCppBackendInfo)
+  # Architecture: CppBackend
+  find_llvm_library(CPPBACKEND LLVMCppBackend)
+  find_llvm_library(CPPBACKEND_INFO LLVMCppBackendInfo)
 
-# Architecture: MSIL
-find_llvm_library(MSIL LLVMMSIL)
-find_llvm_library(MSIL_INFO LLVMMSILInfo)
+  # Architecture: MSIL
+  find_llvm_library(MSIL LLVMMSIL)
+  find_llvm_library(MSIL_INFO LLVMMSILInfo)
 
-# Architecture: MSP430
-find_llvm_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
-find_llvm_library(MSP430_CODE_GEN LLVMMSP430CodeGen)
-find_llvm_library(MSP430_INFO LLVMMSP430Info)
+  # Architecture: MSP430
+  find_llvm_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
+  find_llvm_library(MSP430_CODE_GEN LLVMMSP430CodeGen)
+  find_llvm_library(MSP430_INFO LLVMMSP430Info)
 
-# Architecture: Mips
-find_llvm_library(MIPS_ASM_PRINTER LLVMMipsAsmPrinter)
-find_llvm_library(MIPS_CODE_GEN LLVMMipsCodeGen)
-find_llvm_library(MIPS_INFO LLVMMipsInfo)
+  # Architecture: Mips
+  find_llvm_library(MIPS_ASM_PRINTER LLVMMipsAsmPrinter)
+  find_llvm_library(MIPS_CODE_GEN LLVMMipsCodeGen)
+  find_llvm_library(MIPS_INFO LLVMMipsInfo)
 
-# Architecture: PIC16
-find_llvm_library(PIC16 LLVMPIC16)
-find_llvm_library(PIC16_ASM_PRINTER LLVMPIC16AsmPrinter)
-find_llvm_library(PIC16_INFO LLVMPIC16Info)
+  # Architecture: PIC16
+  find_llvm_library(PIC16 LLVMPIC16)
+  find_llvm_library(PIC16_ASM_PRINTER LLVMPIC16AsmPrinter)
+  find_llvm_library(PIC16_INFO LLVMPIC16Info)
 
-# Architecture: PowerPC
-find_llvm_library(POWERPC_ASM_PRINTER LLVMPowerPCAsmPrinter)
-find_llvm_library(POWERPC_CODE_GEN LLVMPowerPCCodeGen)
-find_llvm_library(POWERPC_INFO LLVMPowerPCInfo)
+  # Architecture: PowerPC
+  find_llvm_library(POWERPC_ASM_PRINTER LLVMPowerPCAsmPrinter)
+  find_llvm_library(POWERPC_CODE_GEN LLVMPowerPCCodeGen)
+  find_llvm_library(POWERPC_INFO LLVMPowerPCInfo)
 
-# Architecture: Sparc
-find_llvm_library(SPARC_ASM_PRINTER LLVMSparcAsmPrinter)
-find_llvm_library(SPARC_CODE_GEN LLVMSparcCodeGen)
-find_llvm_library(SPARC_INFO LLVMSparcInfo)
+  # Architecture: Sparc
+  find_llvm_library(SPARC_ASM_PRINTER LLVMSparcAsmPrinter)
+  find_llvm_library(SPARC_CODE_GEN LLVMSparcCodeGen)
+  find_llvm_library(SPARC_INFO LLVMSparcInfo)
 
-# Architecture: SystemZ
-find_llvm_library(SYSTEMZ_ASM_PRINTER LLVMSystemZAsmPrinter)
-find_llvm_library(SYSTEMZ_CODE_GEN LLVMSystemZCodeGen)
-find_llvm_library(SYSTEMZ_INFO LLVMSystemZInfo)
+  # Architecture: SystemZ
+  find_llvm_library(SYSTEMZ_ASM_PRINTER LLVMSystemZAsmPrinter)
+  find_llvm_library(SYSTEMZ_CODE_GEN LLVMSystemZCodeGen)
+  find_llvm_library(SYSTEMZ_INFO LLVMSystemZInfo)
+endif (NOT MSVC)
 
 # Architecture: X86
 find_llvm_library(X86_ASM_PARSER LLVMX86AsmParser)
@@ -150,10 +158,12 @@ find_llvm_library(X86_ASM_PRINTER LLVMX86AsmPrinter)
 find_llvm_library(X86_CODE_GEN LLVMX86CodeGen)
 find_llvm_library(X86_INFO LLVMX86Info)
 
-# Architecture: XCore
-find_llvm_library(XCORE LLVMXCore)
-find_llvm_library(XCORE_ASM_PRINTER LLVMXCoreAsmPrinter)
-find_llvm_library(XCORE_INFO LLVMXCoreInfo)
+if (NOT MSVC)
+  # Architecture: XCore
+  find_llvm_library(XCORE LLVMXCore)
+  find_llvm_library(XCORE_ASM_PRINTER LLVMXCoreAsmPrinter)
+  find_llvm_library(XCORE_INFO LLVMXCoreInfo)
+endif (NOT MSVC)
 
 # handle the QUIETLY and REQUIRED arguments and set LLVM_FOUND to TRUE if 
 # all listed variables are TRUE

@@ -14,6 +14,10 @@
 
 #include "llvm/Instructions.h"
 
+#if MSVC
+  #define snprintf _snprintf
+#endif
+
 namespace tart {
 
 namespace {
@@ -235,8 +239,8 @@ public:
     Expr * arg1 = args[1];
 
     if (areBothConstInts(arg0, arg1)) {
-      ConstantInteger * c0 = static_cast<const ConstantInteger *>(arg0);
-      ConstantInteger * c1 = static_cast<const ConstantInteger *>(arg1);
+      const ConstantInteger * c0 = static_cast<const ConstantInteger *>(arg0);
+      const ConstantInteger * c1 = static_cast<const ConstantInteger *>(arg1);
       DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
             c0->location() | c1->location(),
@@ -244,8 +248,8 @@ public:
             cast<ConstantInt>(
               llvm::ConstantExpr::getCompare(pred, c0->value(), c1->value())));
     } else if (areBothConstFloats(arg0, arg1)) {
-      ConstantFloat * c0 = static_cast<const ConstantFloat *>(arg0);
-      ConstantFloat * c1 = static_cast<const ConstantFloat *>(arg1);
+      const ConstantFloat * c0 = static_cast<const ConstantFloat *>(arg0);
+      const ConstantFloat * c1 = static_cast<const ConstantFloat *>(arg1);
       DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
             c0->location() | c1->location(),
@@ -305,13 +309,13 @@ public:
     Expr * arg = args[0];
 
     if (arg->exprType() == Expr::ConstInt) {
-      ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
+      const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
             cn->location(),
             cn->type(),
             cast<ConstantInt>(llvm::ConstantExpr::getNeg(cn->value())));
     } else if (arg->exprType() == Expr::ConstFloat) {
-      ConstantFloat * cn = static_cast<const ConstantFloat *>(arg);
+      const ConstantFloat * cn = static_cast<const ConstantFloat *>(arg);
       return new ConstantFloat(
             cn->location(),
             cn->type(),
@@ -392,7 +396,7 @@ public:
     const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
-      ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
+      const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
             cn->location(),
             cn->type(),
@@ -428,7 +432,7 @@ public:
     const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
-      ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
+      const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
       return new ConstantInteger(
             cn->location(),
             cn->type(),
