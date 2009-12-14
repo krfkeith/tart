@@ -91,7 +91,7 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
 }
 
 const Type * ResultOfConstraint::singularValue() const {
-  const Type* result;
+  const Type * result = NULL;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
@@ -227,7 +227,7 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
 }
 
 const Type * ParameterOfConstraint::singularValue() const {
-  const Type * result;
+  const Type * result = NULL;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
