@@ -98,6 +98,7 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 if (MSVC)
   add_definitions(
       -D_CRT_SECURE_NO_WARNINGS
+      -DUNICODE -D_UNICODE
       -wd4146 -wd4503 -wd4996 -wd4800 -wd4244 -wd4624
       -wd4355 -wd4715 -wd4180 -wd4345 -wd4224
   )

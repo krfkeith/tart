@@ -27,6 +27,6 @@
 /** Whether GCC builtin atomic functions are available. */
 #cmakedefine HAVE_GCC_ATOMICS 1
 
-#if MSVC
+#if _MSC_VER
   #define snprintf _snprintf
 #endif

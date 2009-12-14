@@ -97,10 +97,6 @@ Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
   return createTypeInfoBlockPtr(getRTTypeInfo(type));
 }
 
-bool CodeGenerator::createTypeInfoBlock(const CompositeType * type) {
-  return createTypeInfoBlock(getRTTypeInfo(type));
-}
-
 Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
   return createTypeAllocator(getRTTypeInfo(type));
 }
@@ -378,7 +374,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
 }
 
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
-  // TODO: Implement valueOf, asString
+  // TODO: Implement valueOf
   DefnList enumConstants;
   for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
@@ -426,7 +422,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       // Create the table of strings.
       Constant * stringArray = llvm::ConstantArray::get(
           llvm::ArrayType::get(Builtins::typeString->irEmbeddedType(), enumConstants.size()),
-          enumConstants.data(), enumConstants.size());
+          &*enumConstants.begin(), enumConstants.size());
       GlobalVariable * stringTable = new GlobalVariable(*irModule_,
           stringArray->getType(), true, GlobalValue::InternalLinkage, stringArray,
           ".names." + type->typeDefn()->linkageName());

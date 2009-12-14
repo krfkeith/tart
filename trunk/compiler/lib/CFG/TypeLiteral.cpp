@@ -67,6 +67,7 @@ const llvm::Type * TypeLiteralType::createIRType() const {
 //  DASSERT_OBJ(literalType_ != NULL, this);
 //  const llvm::Type * type = literalType_->irEmbeddedType();
 //  return llvm::PointerType::getUnqual(type);
+  DFAIL("Implement");
 }
 
 ConversionRank TypeLiteralType::convertImpl(const Conversion & cn) const {
