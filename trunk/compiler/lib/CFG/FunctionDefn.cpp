@@ -49,6 +49,49 @@ void ParameterDefn::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // FunctionDefn
+/** Constructor that takes an AST */
+FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast)
+  : ValueDefn(dtype, m, ast)
+  , type_(NULL)
+  , flags_(0)
+  , dispatchIndex_(-1)
+  , intrinsic_(NULL)
+{
+  if (modifiers_.flags & tart::Undef) {
+    flags_ |= Undefined;
+  }
+
+  if (modifiers_.flags & tart::Override) {
+    flags_ |= Override;
+  }
+
+  if (modifiers_.flags & tart::Abstract) {
+    flags_ |= Abstract;
+  }
+
+  if (modifiers_.flags & tart::Final) {
+    flags_ |= Final;
+  }
+}
+
+/** Constructor that takes a name */
+FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
+  : ValueDefn(dtype, m, name)
+  , type_(NULL)
+  , flags_(0)
+  , dispatchIndex_(-1)
+  , intrinsic_(NULL)
+{}
+
+/** Constructor used for static type construction */
+FunctionDefn::FunctionDefn(Module * m, const char * name, FunctionType * ty)
+  : ValueDefn(Function, m, name)
+  , type_(ty)
+  , flags_(0)
+  , dispatchIndex_(-1)
+  , intrinsic_(NULL)
+{}
+
 const Type * FunctionDefn::type() const {
   return type_;
 }

@@ -27,8 +27,8 @@ namespace {
   };
 
   EssentialType annexTypes[] = {
-    "tart.core.Iterable", &Builtins::typeIterable,
-    "tart.core.Iterator", &Builtins::typeIterator,
+    { "tart.core.Iterable", &Builtins::typeIterable },
+    { "tart.core.Iterator", &Builtins::typeIterator },
   };
 }
 
@@ -38,34 +38,32 @@ Module Builtins::syntheticModule(&builtinSource, "$synthetic");
 SystemClass Builtins::typeTypeInfoBlock("tart.core.TypeInfoBlock");
 SystemClass Builtins::typeObject("tart.core.Object");
 SystemClass Builtins::typeString("tart.core.String");
-Type * Builtins::typeArray;
-Type * Builtins::typeRange;
-Type * Builtins::typeThrowable;
-Type * Builtins::typeUnwindException;
+SystemClass Builtins::typeArray("tart.core.Array");
+SystemClass Builtins::typeRange("tart.core.Range");
+SystemClass Builtins::typeThrowable("tart.core.Throwable");
 Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
-Type * Builtins::typeUnsupportedOperationException;
+SystemClass Builtins::typeUnsupportedOperationException("tart.core.UnsupportedOperationException");
 
-Type * Builtins::typeType;
-Type * Builtins::typeSimpleType;
-Type * Builtins::typeComplexType;
-Type * Builtins::typeEnumType;
-Type * Builtins::typeFunctionType;
-Type * Builtins::typeDerivedType;
-Type * Builtins::typeMember;
-Type * Builtins::typeField;
-Type * Builtins::typeProperty;
-Type * Builtins::typeMethod;
-Type * Builtins::typeModule;
+SystemClass Builtins::typeType("tart.reflect.Type");
+SystemClass Builtins::typeSimpleType("tart.reflect.SimpleType");
+SystemClass Builtins::typeComplexType("tart.reflect.ComplexType");
+SystemClass Builtins::typeEnumType("tart.reflect.EnumType");
+SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
+SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
+SystemClass Builtins::typeMember("tart.reflect.Member");
+SystemClass Builtins::typeField("tart.reflect.Field");
+SystemClass Builtins::typeProperty("tart.reflect.Property");
+SystemClass Builtins::typeMethod("tart.reflect.Method");
+SystemClass Builtins::typeModule("tart.reflect.Module");
 
-Type * Builtins::typeAttribute;
-Type * Builtins::typeIntrinsicAttribute;
+SystemClass Builtins::typeAttribute("tart.core.Attribute");
+SystemClass Builtins::typeIntrinsicAttribute("tart.annex.Intrinsic");
 
 SystemClass Builtins::typeRef("tart.core.Ref");
 SystemClass Builtins::typeValueRef("tart.core.ValueRef");
 
-//SystemTypeRef Builtins::typeComplexType("tart.reflect.ComplexType");
-//SystemTypeRef Builtins::typeEnumType("tart.reflect.EnumType");
+Type * Builtins::typeUnwindException;
 
 TypeAlias Builtins::typeAliasString = NULL;
 
@@ -128,15 +126,15 @@ Defn * Builtins::getSingleDefn(Type * type, const char * name) {
 }
 
 void Builtins::loadSystemClasses() {
-  typeArray = loadSystemType("tart.core.Array");
-  typeAttribute = loadSystemType("tart.core.Attribute");
+  typeArray.get();
+  typeAttribute.get();
   typeTypeInfoBlock.get();
-  typeType = loadSystemType("tart.reflect.Type");
+  typeType.get();
   typeObject.get();
   typeString.get();
-  typeThrowable = loadSystemType("tart.core.Throwable");
-  typeUnsupportedOperationException = loadSystemType("tart.core.UnsupportedOperationException");
-  typeIntrinsicAttribute = loadSystemType("tart.annex.Intrinsic");
+  typeThrowable.get();
+  typeUnsupportedOperationException.get();
+  typeIntrinsicAttribute.get();
 
   // Analyze class Object.
   //AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
@@ -147,32 +145,10 @@ void Builtins::loadSystemClasses() {
   funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastError");
 
   // Get the low-level exception structure
-  typeUnwindException = getMember<TypeDefn>(typeThrowable, "UnwindException")->typeValue();
+  typeUnwindException = getMember<TypeDefn>(typeThrowable.get(), "UnwindException")->typeValue();
 
   // Set the aliases
   typeAliasString.setValue(typeString);
-}
-
-void Builtins::loadReflectionClasses() {
-  if (typeModule == NULL) {
-    typeSimpleType = loadSystemType("tart.reflect.SimpleType");
-    typeComplexType = loadSystemType("tart.reflect.ComplexType");
-    typeEnumType = loadSystemType("tart.reflect.EnumType");
-    typeFunctionType = loadSystemType("tart.reflect.FunctionType");
-    typeDerivedType = loadSystemType("tart.reflect.DerivedType");
-    typeMember = loadSystemType("tart.reflect.Member");
-    typeField = loadSystemType("tart.reflect.Field");
-    typeProperty = loadSystemType("tart.reflect.Property");
-    typeMethod = loadSystemType("tart.reflect.Method");
-    typeModule = loadSystemType("tart.reflect.Module");
-
-    // Analyzing these types should analyze the rest.
-    AnalyzerBase::analyzeType(typeModule, Task_PrepCodeGeneration);
-    AnalyzerBase::analyzeType(typeComplexType, Task_PrepCodeGeneration);
-    AnalyzerBase::analyzeType(typeEnumType, Task_PrepCodeGeneration);
-    AnalyzerBase::analyzeType(typeFunctionType, Task_PrepCodeGeneration);
-    AnalyzerBase::analyzeType(typeDerivedType, Task_PrepCodeGeneration);
-  }
 }
 
 bool Builtins::compileBuiltins(ProgramSource & source) {
@@ -183,7 +159,7 @@ bool Builtins::compileBuiltins(ProgramSource & source) {
 #define elementsof(x)   (sizeof(x)/sizeof(x[0]))
 
 void Builtins::registerEssentialType(const Type * type) {
-  for (int i = 0; i < elementsof(annexTypes); ++i) {
+  for (size_t i = 0; i < elementsof(annexTypes); ++i) {
     EssentialType * atype = &annexTypes[i];
     if (type->typeDefn()->qualifiedName() == atype->name) {
       *atype->type = const_cast<Type *>(type);
@@ -220,6 +196,10 @@ CompositeType * SystemClass::get() const {
 
 const llvm::Type * SystemClass::irType() const {
   return get()->irType();
+}
+
+TypeDefn * SystemClass::typeDefn() const {
+  return get()->typeDefn();
 }
 
 }

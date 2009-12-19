@@ -176,16 +176,6 @@ void typeLinkageName(std::string & out, const Type * ty) {
   }
 }
 
-/*void typeLinkageName(std::string & out, TupleType * tv) {
-  for (TupleType::iterator it = tv->begin(); it != tv->end(); ++it) {
-    if (it != tv->begin()) {
-      out.append(",");
-    }
-
-    typeLinkageName(out, *it);
-  }
-}*/
-
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
 Conversion::Conversion(const Type * from)
@@ -243,6 +233,30 @@ bool Type::isVoidType() const {
 bool Type::isUnsizedIntType() const {
   return cls == Primitive &&
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
+}
+
+bool Type::isBoxableType() const {
+  switch (cls) {
+    // Types that need to be boxed.
+    case Type::Primitive: {
+      return !isVoidType();
+    }
+
+    case Type::Struct:
+    case Type::Enum:
+    case Type::BoundMethod:
+    case Type::Tuple:
+    case Type::Union: {
+      return true;
+    }
+
+    case Type::Alias: {
+      return static_cast<const TypeAlias *>(this)->value()->isBoxableType();
+    }
+
+    default:
+      return false;
+  }
 }
 
 const Type * Type::typeParam(int index) const {

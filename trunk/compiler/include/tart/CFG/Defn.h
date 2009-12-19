@@ -87,25 +87,16 @@ public:
   };
 
   enum Trait {
-    Final,                  // Can't be overridden
-    Abstract,               // Can't be instantiated
     ReadOnly,               // Can't be written to from non-privileged code
     Const,                  // Declares a field to be immutable.
-    Extern,                 // Externally defined function
     Unsafe,                 // Requires unsafe language extensions
-    Ctor,                   // Constructor function
     Singular,               // Has no unbound template params
     Synthetic,              // Generated via template
-    Undefined,              // Undefining a definition in a base class.
-    Override,               // Override a definition in a base class.
     Nonreflective,          // Don't generate reflection data for this class.
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
     RequestStackTrace,      // Set on catch variables that want stack tracing.
-
-    //Commutative = (1<<10),  // A function whose order of arguments can be reversed
-    //Associative = (1<<11),  // A varargs function that can be combined with itself.
 
     TraitCount,
   };
@@ -192,11 +183,8 @@ public:
 
   // Various trait convenience methods
 
-  bool isAbstract() const { return traits_.contains(Abstract); }
-  bool isFinal() const { return traits_.contains(Final); }
   virtual bool isSingular() const { return traits_.contains(Singular); }
   bool isSynthetic() const { return traits_.contains(Synthetic); }
-  bool isExtern() const { return traits_.contains(Extern); }
 
   void setSingular(bool t) {
     if (t) {

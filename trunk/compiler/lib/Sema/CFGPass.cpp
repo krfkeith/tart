@@ -98,7 +98,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitFnCall(static_cast<FnCallExpr *>(in));
 
     case Expr::IndirectCall:
-      return visitIndirectCall(static_cast<IndirectCallExpr *>(in));
+      return visitIndirectCall(static_cast<CallExpr *>(in));
 
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(in));
@@ -158,6 +158,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::PatternVar:
       DFAIL("PatternVar");
+
+    default:
+      break;
   }
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType());
@@ -227,7 +230,7 @@ Expr * CFGPass::visitFnCall(FnCallExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitIndirectCall(IndirectCallExpr * in) {
+Expr * CFGPass::visitIndirectCall(CallExpr * in) {
   visitExpr(in->function());
   //in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);

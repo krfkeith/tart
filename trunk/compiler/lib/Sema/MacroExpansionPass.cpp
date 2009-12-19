@@ -55,7 +55,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     LValueExpr * retLVal = NULL;
     LValueExpr * savedRetVal = NULL;
     if (retVal != NULL) {
-      retLVal = new LValueExpr(in->location(), NULL, retVal);
+      retLVal = LValueExpr::get(in->location(), NULL, retVal);
       savedRetVal = stAn.setMacroReturnVal(retLVal);
       DASSERT_OBJ(retLVal->isSingular(), retLVal);
     }

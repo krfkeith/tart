@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Module.h"
+#include "tart/CFG/FunctionDefn.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
@@ -23,9 +24,9 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   : Defn(Mod, this, "<module>")
   , IterableScope(builtinScope)
   , moduleSource_(src)
-  , irModule_(NULL)
   , entryPoint_(NULL)
   , flags_(Module_Reflect)
+  , irModule_(NULL)
 {
   loc.file = src;
   qname_.assign(qual);
@@ -45,9 +46,9 @@ Module::Module(ProgramSource * src, const std::string & qual)
   : Defn(Mod, this, "<module>")
   , IterableScope(NULL)
   , moduleSource_(src)
-  , irModule_(NULL)
   , entryPoint_(NULL)
   , flags_(Module_Reflect)
+  , irModule_(NULL)
 {
   loc.file = src;
   qname_.assign(qual);

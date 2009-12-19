@@ -6,7 +6,7 @@ import tart.annex.Nonreflective;
  */
 @Nonreflective struct TypeInfoBlock {
   /** Reference to the type object for this type. */
-  readonly var type:Type;
+  //readonly var type:Type;
 
   /** The fully-qualified name of this type. */
   readonly var name:String;
@@ -16,7 +16,8 @@ import tart.annex.Nonreflective;
   readonly var bases:__Address[__Pointer[TypeInfoBlock]];
 
   /** Compiler-generated function to lookup the specified interface method. */
-  readonly var idispatch:static fn(interfaceType:__Pointer[TypeInfoBlock], methodIndex:int) -> __Pointer[void];
+  readonly var idispatch:static fn(
+      interfaceType:__Pointer[TypeInfoBlock], methodIndex:int) -> __Pointer[void];
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[__Pointer[void], 0];

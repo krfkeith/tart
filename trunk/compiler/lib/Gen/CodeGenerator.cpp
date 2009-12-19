@@ -65,6 +65,8 @@ CodeGenerator::CodeGenerator(Module * mod)
     , globalAlloc_(NULL)
     , debug_(Debug)
 {
+  // Turn on reflection if (a) it's enabled on the command-line, and (b) there were
+  // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
   methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
 #if 0
@@ -82,14 +84,15 @@ void CodeGenerator::generate() {
   }
 
   addTypeName(Builtins::typeObject);
-  addTypeName(Builtins::typeTypeInfoBlock.get());
-  addTypeName(Builtins::typeType);
-  addTypeName(Builtins::typeModule);
-  addTypeName(Builtins::typeSimpleType);
-  addTypeName(Builtins::typeComplexType);
-  addTypeName(Builtins::typeEnumType);
-  addTypeName(Builtins::typeFunctionType);
-  addTypeName(Builtins::typeMember);
+  addTypeName(Builtins::typeTypeInfoBlock);
+  if (reflector_.enabled() && Builtins::typeModule.peek() != NULL) {
+    addTypeName(Builtins::typeModule);
+    addTypeName(Builtins::typeType);
+    addTypeName(Builtins::typeSimpleType);
+    addTypeName(Builtins::typeComplexType);
+    addTypeName(Builtins::typeEnumType);
+    addTypeName(Builtins::typeFunctionType);
+  }
 
   // Write out a list of all modules this one depends on.
   addModuleDependencies();
@@ -148,7 +151,8 @@ void CodeGenerator::generate() {
     }
   }
 
-  if (reflector_.enabled()) {
+  if (reflector_.enabled() &&
+      Builtins::typeModule->passes().isFinished(CompositeType::FieldPass)) {
     reflector_.emitModule(module_);
   }
 
@@ -278,7 +282,7 @@ void CodeGenerator::genEntryPoint() {
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
   // Create the entry block
-  builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", mainFunc));
+  builder_.SetInsertPoint(BasicBlock::Create(context_, "main_entry", mainFunc));
 
   // Create the exception handler block
   BasicBlock * blkSuccess = BasicBlock::Create(context_, "success", mainFunc);
@@ -439,13 +443,15 @@ void CodeGenerator::addModuleDependencies() {
       deps.push_back(MDString::get(context_, m->qualifiedName()));
     }
 
-    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
-        MDNode::get(context_, deps.data(), deps.size()));
+    //irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
+    //    MDNode::get(context_, deps.data(), deps.size()));
   }
 }
 
-void CodeGenerator::addTypeName(const Type * type) {
-  if (type != NULL && type->typeDefn() != NULL) {
+void CodeGenerator::addTypeName(const CompositeType * type) {
+  if (type != NULL && type->typeDefn() != NULL &&
+      type->passes().isFinished(CompositeType::BaseTypesPass) &&
+      type->passes().isFinished(CompositeType::FieldPass)) {
     irModule_->addTypeName(type->typeDefn()->qualifiedName(), type->irType());
   }
 }

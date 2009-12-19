@@ -15,6 +15,8 @@
 
 namespace tart {
 
+class FunctionDefn;
+
 // -------------------------------------------------------------------
 // Type class for functions and macros.
 class FunctionType : public Type {

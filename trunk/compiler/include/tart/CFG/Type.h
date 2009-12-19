@@ -146,6 +146,9 @@ public:
   /** True if this type is the 'unsized int' type. */
   bool isUnsizedIntType() const;
 
+  /** Return true if this type can be boxed. */
+  bool isBoxableType() const;
+
   /** Determine if the specified 'fromType' can be converted to this
       type. Returns the degree of compatibility. */
   ConversionRank convert(const Conversion & conversion) const;
@@ -313,8 +316,7 @@ public:
     }
 
     static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
-      return Type::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
-          Type::KeyInfo::isEqual(lhs.second_, rhs.second_);
+      return lhs.first_ == rhs.first_ && lhs.second_ == rhs.second_;
     }
 
     static bool isPod() { return true; }

@@ -27,6 +27,7 @@ StructBuilder & StructBuilder::createObjectHeader(const Type * type) {
 }
 
 StructBuilder & StructBuilder::addField(llvm::Constant * value) {
+  DASSERT(value->getType() != NULL);
   members_.push_back(value);
   return *this;
 }
@@ -62,6 +63,8 @@ StructBuilder & StructBuilder::addArrayField(
   } else {
     DFAIL("Not an array type");
   }
+
+  return *this;
 }
 
 StructBuilder & StructBuilder::combine() {

@@ -9,8 +9,10 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
+#include "tart/CFG/EnumType.h"
 #include "tart/Sema/FindExternalRefsPass.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 
@@ -27,13 +29,22 @@ Defn * FindExternalRefsPass::run(Module * m, Defn * in) {
 Defn * FindExternalRefsPass::runImpl(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+      if (ctype->typeClass() == Type::Interface || ctype->typeClass() == Type::Protocol) {
+        return in;
+      }
+
       if (tdef->isSynthetic()) {
         ctype->addMethodDefsToModule(module);
       }
 
+      for (Defn * de = ctype->firstMember(); de != NULL; de = de->nextInScope()) {
+        if (de->isSingular() && de->storageClass() == Storage_Static) {
+          module->addSymbol(de);
+        }
+      }
+
       const DefnList & staticFields = ctype->staticFields();
       for (DefnList::const_iterator it = staticFields.begin(); it != staticFields.end(); ++it) {
-        module->addSymbol(*it);
         if (VariableDefn * var = dyn_cast<VariableDefn>(*it)) {
           if (var->initValue()) {
             visitExpr(var->initValue());
@@ -41,11 +52,13 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
         }
       }
     }
-  }
-
-  if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
+  } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern()) {
       visit(fn);
+    }
+  } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
+    if (var->initValue()) {
+      visitExpr(var->initValue());
     }
   }
 
@@ -66,6 +79,14 @@ void FindExternalRefsPass::addSymbol(Defn * de) {
       }
     }
   }
+}
+
+bool FindExternalRefsPass::addTypeRef(const Type * type) {
+  if (type->typeDefn() != NULL) {
+    return module->addSymbol(type->typeDefn());
+  }
+
+  return false;
 }
 
 bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
@@ -100,11 +121,7 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
-  TypeDefn * tdef = in->type()->typeDefn();
-  if (tdef != NULL) {
-    module->addSymbol(tdef);
-  }
-
+  addTypeRef(in->type());
   return in;
 }
 

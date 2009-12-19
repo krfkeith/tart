@@ -26,9 +26,9 @@ public:
     , type_(type)
   {
     addTrait(Defn::Synthetic);
-    addTrait(Defn::Final);
     addTrait(Defn::Singular);
     addTrait(Defn::Nonreflective);
+    setFlag(Final);
     setStorageClass(Storage_Instance);
     createQualifiedName(type->typeDefn());
   }
@@ -75,9 +75,9 @@ public:
     , opCode_(opCode)
   {
     addTrait(Defn::Synthetic);
-    addTrait(Defn::Final);
     addTrait(Defn::Singular);
     addTrait(Defn::Nonreflective);
+    setFlag(Final);
     setStorageClass(Storage_Global);
     createQualifiedName(m);
   }
@@ -118,9 +118,9 @@ public:
     , type_(type)
   {
     addTrait(Defn::Synthetic);
-    addTrait(Defn::Final);
     addTrait(Defn::Singular);
     addTrait(Defn::Nonreflective);
+    setFlag(Final);
     setStorageClass(Storage_Instance);
     createQualifiedName(type->typeDefn());
   }

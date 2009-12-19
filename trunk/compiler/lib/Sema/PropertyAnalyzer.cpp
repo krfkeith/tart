@@ -9,6 +9,7 @@
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+#include "tart/Objects/Builtins.h"
 #include "tart/Sema/PropertyAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 
@@ -151,7 +152,9 @@ bool PropertyAnalyzer::resolvePropertyType() {
       }
 
       getter->setFunctionType(getterType);
-      module->addSymbol(getter);
+      if (!getter->isAbstract()) {
+        module->addSymbol(getter);
+      }
     }
 
     if (target->setter() != NULL) {
@@ -203,7 +206,9 @@ bool PropertyAnalyzer::resolvePropertyType() {
       setterType->setReturnType(&VoidType::instance);
 
       setter->setFunctionType(setterType);
-      module->addSymbol(setter);
+      if (!setter->isAbstract()) {
+        module->addSymbol(setter);
+      }
     }
 
     target->passes().finish(PropertyDefn::PropertyTypePass);

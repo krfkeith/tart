@@ -68,7 +68,13 @@ const String * int_toString(int32_t value) {
 
 const String * long_toString(int64_t value) {
   char data[32];
+#if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%lld", value);
+#elif SIZEOF_LONG == 64
+  int length = snprintf(data, sizeof(data), "%ld", value);
+#else
+  #error Unsupported size for int64_t
+#endif
   return String_create(data, length);
 }
 
@@ -92,7 +98,13 @@ const String * uint_toString(uint32_t value) {
 
 const String * ulong_toString(uint64_t value) {
   char data[32];
+#if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%llu", value);
+#elif SIZEOF_LONG == 64
+  int length = snprintf(data, sizeof(data), "%lu", value);
+#else
+  #error Unsupported size for int64_t
+#endif
   return String_create(data, length);
 }
 

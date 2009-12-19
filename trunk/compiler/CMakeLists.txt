@@ -1,5 +1,14 @@
 # CMake build file for Tart/compiler
 
+# Extra flags for GCC (C++ only)
+if (CMAKE_COMPILER_IS_GNUCXX)
+  add_definitions(
+      -Woverloaded-virtual
+      -fno-operator-names -ffor-scope
+      )
+   set(LINK_FLAGS -pg)
+endif (CMAKE_COMPILER_IS_GNUCXX)
+
 file(GLOB sources lib/*/*.cpp)
 file(GLOB headers include/*/*.h)
 

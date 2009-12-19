@@ -1,20 +1,9 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
+
 @EntryPoint
 def main(args:String[]) -> int {
-  testTryBlock();
-  testTryCatchBlock();
-  testTryAndReturn();
-  testThrowAndCatch();
-  testUnwindAndCatch();
-  testUnwindAndCatch2();
-  //testExceptionMsg();
-  testNestedTry();
-  testNestedTry2();
-  testTryFinally();
-  testTryCatchFinally();
-  //testTryReturnFinally();
-  testStackTrace();
-  testExceptionToString();
-  return 0;
+  return TestUtils.runModuleTests(Module.thisModule());
 }
 
 def throwSomething() {
@@ -92,7 +81,7 @@ def testUnwindAndCatch2() {
   Debug.assertTrue(v);
 }
 
-def testExceptionMsg() {
+def DISABLED_testExceptionMsg() {
   var v = false;
   try {
     throwSomething();

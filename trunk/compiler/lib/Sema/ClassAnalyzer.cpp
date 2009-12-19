@@ -22,7 +22,7 @@
 
 namespace tart {
 
-static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
+//static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
 
 static const CompositeType::PassSet PASS_SET_RESOLVE_TYPE = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
@@ -284,7 +284,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   DASSERT_OBJ(type->super() == NULL, type);
 
   // Check for valid finality
-  if (target->isFinal()) {
+  if (type->isFinal()) {
     if (type->typeClass() == Type::Interface) {
       diag.error(target) << "Interface type cannot be final";
     } else if (type->typeClass() == Type::Protocol) {
@@ -318,8 +318,10 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
       return false;
     }
 
-    if (baseDefn->isFinal()) {
-      diag.error(*it) << "Base type '" << baseDefn << "' is final";
+    if (CompositeType * baseClass = dyn_cast<CompositeType>(baseType)) {
+      if (baseClass->isFinal()) {
+        diag.error(*it) << "Base type '" << baseDefn << "' is final";
+      }
     }
 
     // Recursively analyze the bases of the base
@@ -453,6 +455,9 @@ bool ClassAnalyzer::analyzeMemberTypes() {
           case Type::Enum:
             module->addSymbol(memberType);
             break;
+
+          default:
+            break;
         }
       }
     }
@@ -488,7 +493,7 @@ bool ClassAnalyzer::analyzeFields() {
         case Defn::Var:
         case Defn::Let: {
           VariableDefn * field = static_cast<VariableDefn *>(member);
-          field->copyTrait(target, Defn::Final);
+          //field->copyTrait(target, Defn::Final);
 
           analyzeValueDefn(field, Task_PrepTypeComparison);
           DASSERT(field->type() != NULL);
@@ -529,10 +534,13 @@ bool ClassAnalyzer::analyzeFields() {
           //DFAIL("Implement");
           break;
         }
+
+        default:
+          break;
       }
     }
 
-    DASSERT(type->instanceFields_.size() == instanceFieldCount);
+    DASSERT(type->instanceFields_.size() == size_t(instanceFieldCount));
     type->passes().finish(CompositeType::FieldPass);
   }
 
@@ -564,7 +572,7 @@ bool ClassAnalyzer::analyzeConstructors() {
             diag.recovered();
 
             hasConstructors = true;
-            ctor->addTrait(Defn::Ctor);
+            ctor->setFlag(FunctionDefn::Ctor);
 
             if (!FunctionAnalyzer(ctor).analyze(Task_PrepTypeComparison)) {
               continue;
@@ -589,6 +597,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               ctor->addTrait(Defn::Singular);
             }
 
+            ctor->copyTrait(target, Defn::Nonreflective);
             analyzeConstructBase(ctor);
           } else {
             diag.fatal(*it) << "Member named 'construct' must be a method.";
@@ -611,6 +620,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
+            ctor->copyTrait(target, Defn::Nonreflective);
             // TODO: check return type.
           }
         }
@@ -649,6 +659,7 @@ bool ClassAnalyzer::analyzeMethods() {
     // Analyze all methods
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
+        //FunctionDefn * method = cast<FunctionDefn>(member);
         if (member->isTemplate()) {
          analyzeTemplateSignature(member);
          if (member->hasUnboundTypeParams()) {
@@ -656,15 +667,23 @@ bool ClassAnalyzer::analyzeMethods() {
          }
         }
 
-        if (member->isFinal()) {
-          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
-            diag.error(target) << "Interface or protocol method cannot be final";
-          }
-        } else if (member->visibility() != Public) {
+        if (member->visibility() != Public) {
           if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
             diag.error(target) << "Interface or protocol method cannot be non-public";
+            continue;
           }
         }
+
+        if (FunctionDefn * fn = dyn_cast<FunctionDefn>(member)) {
+          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+            if (fn->isFinal()) {
+               diag.error(target) << "Interface or protocol method cannot be final";
+               continue;
+             }
+           }
+        }
+
+        member->copyTrait(target, Defn::Nonreflective);
 
         if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
           analyzeValueDefn(val, Task_PrepTypeComparison);
@@ -827,7 +846,9 @@ void ClassAnalyzer::overrideMembers() {
     for (SymbolTable::Entry::iterator it = entry.begin(); it != entry.end(); ++it) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {
         if (func->isSingular()) {
-          module->addSymbol(func);
+          if (!func->isInterfaceMethod()) {
+            module->addSymbol(func);
+          }
           if (func->storageClass() == Storage_Instance && !func->isCtor()) {
             methods.push_back(func);
           }
@@ -935,11 +956,11 @@ void ClassAnalyzer::addNewMethods() {
 void ClassAnalyzer::checkForRequiredMethods() {
   typedef CompositeType::InterfaceList InterfaceList;
 
-  if (target->isAbstract()) {
+  CompositeType * type = targetType();
+  if (type->isAbstract()) {
     return;
   }
 
-  CompositeType * type = targetType();
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
@@ -954,7 +975,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     }
 
     if (!abstractMethods.empty()) {
-      if (tcls == Type::Struct || (tcls == Type::Class && !target->isAbstract())) {
+      if (tcls == Type::Struct || (tcls == Type::Class)) {
         diag.recovered();
         diag.error(target) << "Concrete type '" << target <<
             "'lacks definition for the following methods:";
@@ -1086,9 +1107,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
-  LValueExpr * selfExpr = new LValueExpr(target->location(), NULL, selfParam);
+  LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
 
-  Block * constructorBody = new Block("entry");
+  Block * constructorBody = new Block("ctor_entry");
   constructorBody->exitReturn(target->location(), NULL);
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance) {
@@ -1136,7 +1157,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
             requiredParams.push_back(param);
           }
 
-          initVal = new LValueExpr(target->location(), NULL, param);
+          initVal = LValueExpr::get(target->location(), NULL, param);
         } else {
           if (defaultValue != NULL) {
             // TODO: This doesn't work because native pointer initializations
@@ -1165,7 +1186,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           }
         }
 
-        LValueExpr * memberExpr = new LValueExpr(target->location(), selfExpr, memberVar);
+        LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, memberVar);
         Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initVal);
         constructorBody->append(initExpr);
         //diag.info(de) << "Uninitialized field " << de->qualifiedName() << " with default value " << initExpr;
@@ -1185,8 +1206,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
   constructorDef->setVisibility(Public);
-  constructorDef->addTrait(Defn::Ctor);
-  constructorDef->addTrait(Defn::Ctor);
+  constructorDef->setFlag(FunctionDefn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);
   constructorDef->blocks().push_back(constructorBody);
   constructorDef->passes().finished().addAll(

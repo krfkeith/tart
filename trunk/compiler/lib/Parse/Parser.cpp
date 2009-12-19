@@ -2804,6 +2804,9 @@ void Parser::expected(const char * what) {
       case Lexer::MULTI_CHAR_LITERAL:
         diag.error(loc) << "Multiple character literal";
         break;
+
+      default:
+        break;
     }
   } else {
     diag.error(loc) << "Expected " << what << ", not " << GetTokenName(token);

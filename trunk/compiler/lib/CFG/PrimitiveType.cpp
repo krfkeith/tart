@@ -1316,7 +1316,7 @@ AnyType::convertImpl(const Conversion & cn) const {
 }
 
 template<> Expr * AnyType::nullInitValue() const {
-  DASSERT("IllegalState");
+  DFAIL("IllegalState");
 }
 
 /// -------------------------------------------------------------------

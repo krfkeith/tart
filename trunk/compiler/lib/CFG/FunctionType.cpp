@@ -130,7 +130,7 @@ const llvm::Type * FunctionType::createIRType() const {
 
   // Insert the 'self' parameter if it's an instance method
   const Type * selfType = NULL;
-  if (selfParam_ != NULL) {
+  if (selfParam_ != NULL && !isStatic()) {
     selfType = selfParam_->type();
   }
 
@@ -188,11 +188,11 @@ void FunctionType::trace() const {
 }
 
 const llvm::Type * FunctionType::irEmbeddedType() const {
-  if (isStatic()) {
-    return llvm::PointerType::get(irType(), 0);
-  } else {
-    DFAIL("Plain function type cannot be embedded");
-  }
+  return llvm::PointerType::get(irType(), 0);
+//  if (isStatic()) {
+//  } else {
+//    DFAIL("Plain function type cannot be embedded");
+//  }
 }
 
 const llvm::Type * FunctionType::irParameterType() const {

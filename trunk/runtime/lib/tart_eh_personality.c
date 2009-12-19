@@ -1,5 +1,7 @@
 /* Exception personality function for Tart */
 
+#include "config.h"
+
 #if HAVE_UNWIND_H
 #include "unwind.h"
 #include "stdio.h"
@@ -8,7 +10,6 @@
 #include "stddef.h"
 #include "stdbool.h"
 #include "string.h"
-//#include "config.h"
 
 #define TART_EXCEPTION_CLASS 0
 //#define TART_EXCEPTION_CLASS (('T' << 56L) << ('A' << 48L) << ('R' << 40L) << ('T' << 32L))
@@ -24,7 +25,7 @@ struct Type;
 // method table and other type information. The list of base classes is a NULL-terminated
 // list of type pointers.
 struct TypeInfoBlock {
-  const struct Type * type;
+  //const struct Type * type;
   const void * name;
   const struct TypeInfoBlock * const * bases;
   void ** methodTable;
