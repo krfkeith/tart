@@ -211,6 +211,11 @@ void ArglistExpr::trace() const {
 
 // -------------------------------------------------------------------
 // LValueExpr
+
+LValueExpr * LValueExpr::get(ValueDefn * val) {
+  return new LValueExpr(val->location(), NULL, val);
+}
+
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
   : Expr(LValue, loc, value->type())
   , base_(base)
@@ -307,7 +312,10 @@ InitVarExpr::InitVarExpr(
   : Expr(InitVar, loc, v->type())
   , var(v)
   , initExpr_(expr)
-{}
+{
+  DASSERT_OBJ(expr != NULL, expr);
+  DASSERT_OBJ(var->initValue() == NULL, var);
+}
 
 bool InitVarExpr::isSingular() const {
   return initExpr_->isSingular() && var->isSingular();
@@ -574,6 +582,22 @@ void NewExpr::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // CastExpr
+CastExpr * CastExpr::bitCast(Expr * value, const Type * toType) {
+  return new CastExpr(Expr::BitCast, value->location(), toType, value);
+}
+
+CastExpr * CastExpr::upCast(Expr * value, const Type * toType) {
+  return new CastExpr(Expr::UpCast, value->location(), toType, value);
+}
+
+CastExpr * CastExpr::tryCast(Expr * value, const Type * toType) {
+  return new CastExpr(Expr::TryCast, value->location(), toType, value);
+}
+
+CastExpr * CastExpr::dynamicCast(Expr * value, const Type * toType) {
+  return new CastExpr(Expr::DynamicCast, value->location(), toType, value);
+}
+
 void CastExpr::format(FormatStream & out) const {
   if (exprType() == ImplicitCast) {
     out << "implicitCast<" << type() << ">(" << arg() << ")";

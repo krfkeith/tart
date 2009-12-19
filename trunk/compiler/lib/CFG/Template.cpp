@@ -23,11 +23,9 @@ namespace tart {
 /** The set of traits that should be copied from the template to its
     instantiation. */
 static const Defn::Traits INSTANTIABLE_TRAITS = Defn::Traits::of(
-  Defn::Final,
-  Defn::Abstract,
-  Defn::ReadOnly,
-  Defn::Extern,
-  Defn::Ctor
+  //Defn::Final,
+  //Defn::Abstract,
+  Defn::ReadOnly
 );
 
 // -------------------------------------------------------------------
@@ -124,8 +122,8 @@ TemplateSignature * TemplateSignature::get(Defn * v, Scope * parent) {
 TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
   : value_(v)
   , ast_(NULL)
-  , paramScope_(parentScope)
   , typeParams_(NULL)
+  , paramScope_(parentScope)
 {
   paramScope_.setScopeName("template-params");
 }
@@ -238,20 +236,17 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   tinst->instantiatedFrom() = loc;
 
   // Create the definition
+  DASSERT_OBJ(value_->ast() != NULL, value_);
   Defn * result = NULL;
-  if (value_->ast() != NULL) {
-    result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value_->ast());
-    tinst->setValue(result);
-    result->setQualifiedName(value_->qualifiedName());
-    result->addTrait(Defn::Synthetic);
-    result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
-    result->setParentDefn(value_->parentDefn());
-    result->setDefiningScope(tinst);
-    if (isPartial) {
-      result->addTrait(Defn::PartialInstantiation);
-    }
-  } else {
-    DFAIL("Invalid template type");
+  result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value_->ast());
+  tinst->setValue(result);
+  result->setQualifiedName(value_->qualifiedName());
+  result->addTrait(Defn::Synthetic);
+  result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
+  result->setParentDefn(value_->parentDefn());
+  result->setDefiningScope(tinst);
+  if (isPartial) {
+    result->addTrait(Defn::PartialInstantiation);
   }
 
   // Copy over certain attributes

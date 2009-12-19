@@ -10,6 +10,7 @@ include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
+include(CheckTypeSize)
 include(FindThreads)
 
 # Check for the existence of include files.
@@ -30,6 +31,7 @@ check_include_file(libkern/OSAtomic.h HAVE_LIBKERN_OSATOMIC_H)
 check_include_file_cxx(new HAVE_NEW)
 check_include_file_cxx(ctime HAVE_CTIME)
 check_include_file_cxx(cxxabi.h HAVE_CXXABI_H)
+check_include_file_cxx(dlfcn.h HAVE_DLFCN_H)
 check_include_file_cxx(unwind.h HAVE_UNWIND_H)
 
 if (CMAKE_USE_PTHREADS_INIT)
@@ -57,6 +59,11 @@ check_cxx_source_compiles(
     }"
     HAVE_GCC_ATOMICS)
 
+# Check for type sizes
+check_type_size(int SIZEOF_INT)
+check_type_size(long SIZEOF_LONG)
+check_type_size(long long SIZEOF_LONG_LONG)
+
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)
 
@@ -83,13 +90,10 @@ add_definitions(
 
 # Extra flags for GCC (C++ only)
 if (CMAKE_COMPILER_IS_GNUCXX)
-  set(GCC_CXX_FLAGS
+  add_definitions(
       -pipe
       -Wall -Wextra -Werror -Wcast-align -Wpointer-arith
       -Wno-deprecated -Wno-unused
-      -Woverloaded-virtual
-      -fno-operator-names -ffor-scope
-      -fconst-strings
       -fmessage-length=0
       )
 endif (CMAKE_COMPILER_IS_GNUCXX)
@@ -117,6 +121,7 @@ add_subdirectory(stdlib)
 #add_subdirectory(test/nolib)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/fail)
+#add_subdirectory(libext)
 
 #enable_testing()
 #add_test(UnitTest ${CMAKE_CURRENT_BINARY_DIR}/test-unit/unittest)

@@ -78,7 +78,7 @@ void CallSite::finish() {
   removeCulled();
   CallCandidate * c = cd.front();
   if (c->method() != NULL) {
-    callExpr->setFunction(new LValueExpr(callExpr->location(), c->base(), c->method()));
+    callExpr->setFunction(LValueExpr::get(callExpr->location(), c->base(), c->method()));
   }
 }
 
@@ -129,6 +129,9 @@ void ConstraintSite::update() {
       //diag.debug(expr) << "Conversion rank " << rank;
       break;
     }
+
+    default:
+      break;
   }
 }
 

@@ -146,6 +146,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::PtrCall:
       DFAIL("PtrCall");
 #endif
+
+    default:
+      break;
   }
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType()) << " : " << in;
@@ -250,7 +253,20 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
 }
 
 Expr * EvalPass::evalLValue(LValueExpr * in) {
-  if (VariableDefn * var = dyn_cast<VariableDefn>(in->value())) {
+  if (ParameterDefn * param = dyn_cast<ParameterDefn>(in->value())) {
+    FunctionType * ftype = callFrame_->function()->functionType();
+    if (param == ftype->selfParam()) {
+      return callFrame_->selfArg();
+    }
+
+    for (size_t i = 0; i < ftype->params().size(); ++i) {
+      if (ftype->params()[i] == param) {
+        return callFrame_->args()[i];
+      }
+    }
+
+    DFAIL("Couldn't locate param");
+  } else  if (VariableDefn * var = dyn_cast<VariableDefn>(in->value())) {
     if (var->defnType() == Defn::Let) {
       if (var->storageClass() == Storage_Global || var->storageClass() == Storage_Static) {
         return evalExpr(var->initValue());
@@ -287,20 +303,9 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
         DFAIL("IMPLEMENT Storage_Closure");
         break;
     }
-  } else if (ParameterDefn * param = dyn_cast<ParameterDefn>(in->value())) {
-    FunctionType * ftype = callFrame_->function()->functionType();
-    if (param == ftype->selfParam()) {
-      return callFrame_->selfArg();
-    }
-
-    for (size_t i = 0; i < ftype->params().size(); ++i) {
-      if (ftype->params()[i] == param) {
-        return callFrame_->args()[i];
-      }
-    }
-
-    DFAIL("Couldn't locate param");
   }
+
+  DFAIL("Not an LValue");
 }
 
 Expr * EvalPass::evalNew(NewExpr * in) {
@@ -319,6 +324,7 @@ Expr * EvalPass::evalAssign(AssignmentExpr * in) {
   }
 
   store(from, in->toExpr());
+  return in->toExpr();
 }
 
 void EvalPass::store(Expr * value, Expr * dest) {
@@ -410,7 +416,7 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   // Constant array objects are special because of their variable size.
   ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
   arrayObj->setMemberValue("_length",
-      ConstantInteger::get(in->location(), &UIntType::instance, arrayData->elements().size()));
+      ConstantInteger::getUInt32(arrayData->elements().size())->at(in->location()));
   arrayObj->setMemberValue("_data", arrayData);
   return arrayObj;
 }
@@ -426,6 +432,9 @@ Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
 
   switch (in->opCode()) {
     case llvm::Instruction::Add:
+      break;
+
+    default:
       break;
   }
 

@@ -17,6 +17,10 @@
 #include <cxxabi.h>
 #endif
 
+#if HAVE_DLFCN_H && __GNUG__
+#include <dlfcn.h>
+#endif
+
 static llvm::cl::opt<bool>
 DebugErrors("debug-errors",
     llvm::cl::desc("Print compiler stack trace on fatal error"));
@@ -157,7 +161,7 @@ void Diagnostics::assertionFailed(const char * expression, const char * filename
   abort();
 }
 
-void Diagnostics::fail(const char * msg, const char * filename, unsigned lineno) {
+void Diagnostics::__fail(const char * msg, const char * filename, unsigned lineno) {
   fprintf(stderr, "%s:%d: Fatal error (%s)\n", filename, lineno, msg);
   debugBreak();
   printStackTrace(2);
@@ -176,7 +180,23 @@ void Diagnostics::printStackTrace(int skipFrames) {
   int depth = backtrace(stackTrace,
       static_cast<int>(sizeof(stackTrace) / sizeof(stackTrace[0])));
 
-#if HAVE_CXXABI_H
+#if HAVE_DLFCN_H && __GNUG__
+  for (int i = skipFrames; i < depth; ++i) {
+    Dl_info dlinfo;
+    dladdr(stackTrace[i], &dlinfo);
+    if (dlinfo.dli_sname != NULL) {
+      int status;
+      fputs("   ", stderr);
+      char* d = abi::__cxa_demangle(dlinfo.dli_sname, NULL, NULL, &status);
+      if (d == NULL) fputs(dlinfo.dli_sname, stderr);
+      else           fputs(d, stderr);
+      free(d);
+
+      fprintf(stderr, " + %tu",(char*)stackTrace[i]-(char*)dlinfo.dli_saddr);
+    }
+    fputc('\n', stderr);
+  }
+#elif HAVE_CXXABI_H
   if (char ** symbols = backtrace_symbols(stackTrace, depth)) {
 
     // Name buffer used to contain demangling result.
@@ -309,6 +329,11 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
   }
 
   str_.append(buffer, 0, len);
+}
+
+Diagnostics::FailStream::~FailStream() {
+  flush();
+  diag.__fail(sstream_.str().c_str(), fname_, lineno_);
 }
 
 }

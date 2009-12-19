@@ -13,10 +13,6 @@ namespace tart {
 
 typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 
-// TODO: Eliminate union members that are subclasses of other members.
-// TODO: Sort union members into a canonical order.
-// TODO: Allow comparisons between union types independent of member declaration order.
-// TODO: Fold equivalent unions into a single representation.
 // TODO: Finish the trace() function for this type.
 
 // -------------------------------------------------------------------
@@ -85,6 +81,7 @@ protected:
   size_t numValueTypes_;
   size_t numReferenceTypes_;
   bool hasVoidType_;
+  bool hasNullType_;
 
   mutable IRTypeList irTypes_; // IR types corresponding to tart types.
 };

@@ -235,6 +235,7 @@ llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef nam
     default:
       diag.fatal(in) << "Not a constant reference: " <<
       exprTypeName(in->exprType()) << " [" << in << "]";
+      return NULL;
   }
 }
 
@@ -246,6 +247,8 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
 
   VariableDefn * var = in->getVar();
   if (var->defnType() == Defn::Let) {
+    DASSERT_OBJ(var->initValue() == NULL, var);
+    DASSERT_OBJ(initValue != NULL, var);
     var->setIRValue(initValue);
   } else {
     builder_.CreateStore(initValue, var->irValue());
@@ -624,10 +627,22 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     return in;
   }
 
+  const FunctionDefn * converter = NULL;
   TypePair conversionKey(fromType, toType);
   ConverterMap::iterator it = module_->converters().find(conversionKey);
   if (it != module_->converters().end()) {
-    const FunctionDefn * converter = it->second;
+    converter = it->second;
+  } else {
+    // TODO: This is kind of a hack - we don't know for sure if the converters
+    // in the synthetic module are the correct ones to use, but we have no way
+    // to know what the correct module is unless we add it to the type.
+    it = Builtins::syntheticModule.converters().find(conversionKey);
+    if (it != Builtins::syntheticModule.converters().end()) {
+      converter = it->second;
+    }
+  }
+
+  if (converter != NULL) {
     ValueList args;
     Value * fnVal = genFunctionValue(converter);
     args.push_back(in);
@@ -649,6 +664,8 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
         return builder_.CreatePointerCast(in, cto->irEmbeddedType(), "typecast");
       }
     } else if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
+      diag.debug() << "Need unbox cast from " << fromType << " to " << toType;
+      DFAIL("Implement");
     } else if (const EnumType * eto = dyn_cast<EnumType>(toType)) {
       return genCast(in, fromType, eto->baseType());
     }
@@ -745,9 +762,11 @@ Value * CodeGenerator::genBitCast(const CastExpr * in) {
   const Type * toType = in->type();
 
   if (value != NULL && toType != NULL) {
+    //if (toType->typeClass() == Type::Function)
     return builder_.CreateBitCast(value, toType->irEmbeddedType(), "bitcast");
   }
 
+  DFAIL("Bad bitcast");
   return NULL;
 }
 
@@ -948,7 +967,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
       if (ft->isStatic()) {
         //fnValue = builder_.CreateLoad(fnValue);
       } else {
-        DFAIL("Implement");
+        //DFAIL("Implement");
       }
     }
   } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
@@ -966,7 +985,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
     args.push_back(selfArg);
   } else {
     diag.info(in) << in->function() << " - " << in->function()->exprType();
-    DFAIL("Invalid function type");
+    TFAIL << "Invalid function type: " << in->function() << " - " << in->function()->exprType();
   }
 
   const ExprList & inArgs = in->args();

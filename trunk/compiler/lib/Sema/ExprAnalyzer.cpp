@@ -17,6 +17,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
@@ -278,7 +279,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       selfParam->setType(env->type());
       selfParam->setInternalType(env->type());
       selfParam->addTrait(Defn::Singular);
-      selfParam->addTrait(Defn::Final);
+      //selfParam->addTrait(Defn::Final);
       selfParam->setStorageClass(Storage_Instance);
 
       ftype->setSelfParam(selfParam);
@@ -291,7 +292,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       fn->setStorageClass(Storage_Local);
       fn->setParentDefn(currentFunction_);
       fn->copyTrait(currentFunction_, Defn::Synthetic);
-      fn->addTrait(Defn::Final);
+      fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(selfParam);
 
@@ -836,7 +837,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // CallExpr type used to hold the array reference and parameters.
-  LValueExpr * callable = new LValueExpr(ast->location(), arrayExpr, indexer);
+  LValueExpr * callable = LValueExpr::get(ast->location(), arrayExpr, indexer);
   CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
   call->args().append(args.begin(), args.end());
   call->setType(indexer->type());
@@ -1268,12 +1269,57 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   return spBest->def();
 }
 
+Expr * ExprAnalyzer::doBoxCast(Expr * in) {
+  const Type * fromType = dealias(in->type());
+  FunctionDefn * coerceFn = coerceToObjectFn(fromType);
+  FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), coerceFn, NULL);
+  call->appendArg(in);
+  call->setType(Builtins::typeObject);
+  return call;
+}
+
+/** Given a type, return the coercion function to convert it to a reference type. */
+FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
+  DASSERT(!type->isReferenceType());
+  DASSERT(type->typeClass() != Type::NPointer);
+  DASSERT(type->typeClass() != Type::NAddress);
+  DASSERT(type->typeClass() != Type::NArray);
+  DASSERT(type->isSingular());
+
+  TypePair conversionKey(type, Builtins::typeObject.get());
+  ConverterMap::iterator it = module->converters().find(conversionKey);
+  if (it != module->converters().end()) {
+    return it->second;
+  }
+
+  FunctionDefn * coerceFn = Builtins::objectCoerceFn();
+  TemplateSignature * coerceTemplate = coerceFn->templateSignature();
+
+  DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
+  // Do analysis on template if needed.
+  if (coerceTemplate->ast() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
+    da.analyzeTemplateSignature(coerceFn);
+  }
+
+  BindingEnv env;
+  env.addSubstitution(coerceTemplate->patternVar(0), type);
+  FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
+  analyzeDefn(coercer, Task_PrepTypeComparison);
+  DASSERT(coercer->isSingular());
+  module->converters()[conversionKey] = coercer;
+  module->addSymbol(coercer);
+  //diag.info() << Format_Verbose << "Generated coercer " << coercer;
+  return coercer;
+}
+
 Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
   FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType);
   if (valueOfMethod == NULL) {
     return NULL;
   }
 
+  DASSERT(valueOfMethod->isSingular());
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), valueOfMethod, NULL);
   call->appendArg(doImplicitCast(in, Builtins::typeObject));
   call->setType(valueOfMethod->returnType());
@@ -1308,7 +1354,8 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
   analyzeDefn(valueOfMethod, Task_PrepTypeComparison);
   module->converters()[conversionKey] = valueOfMethod;
-  //diag.debug(loc) << Format_Type << "Defining unbox function: " << valueOfMethod;
+  module->addSymbol(valueOfMethod);
+  //diag.info() << Format_Verbose << "Generated boxer " << valueOfMethod;
   return valueOfMethod;
 }
 

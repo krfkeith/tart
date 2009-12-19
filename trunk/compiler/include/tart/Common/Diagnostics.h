@@ -39,8 +39,9 @@ namespace tart {
     diag.assertionFailed(#expression, __FILE__, __LINE__, ctx); \
   } else (void)0
 
-#define DFAIL(msg) \
-  diag.fail(msg, __FILE__, __LINE__)
+#define DFAIL(msg) diag.__fail(msg, __FILE__, __LINE__)
+
+#define TFAIL diag.failMsg(__FILE__, __LINE__)
 
 /// ---------------------------------------------------------------
 /// Various diagnostic functions.
@@ -132,8 +133,34 @@ public:
   typedef MessageStream<DiagnosticAction<Info> > InfoStream;
   typedef MessageStream<DiagnosticAction<Debug> > DebugStream;
 
-  typedef MessageStream<FailAction> FailStream;
   typedef MessageStream<AssertAction> AssertStream;
+
+  /** Stream class which aborts. */
+  class FailStream : public FormatStream {
+  private:
+    const char * fname_;
+    int lineno_;
+    std::stringstream sstream_;
+
+  public:
+
+    FailStream(const char * fname, int lineno)
+      : FormatStream(sstream_)
+      , fname_(fname)
+      , lineno_(lineno)
+    {}
+
+    FailStream(const FailStream & src)
+      : FormatStream(sstream_)
+      , fname_(src.fname_)
+      , lineno_(src.lineno_)
+    {}
+
+    // The destructor is where all the real action happens.
+    // When the entry is destructed, the accumulated messages are
+    // written to the diagnostic output.
+    ~FailStream();
+  };
 
   /** A stream which does nothing. */
   class NullStream {
@@ -168,16 +195,6 @@ public:
     std::string str_;
   };
 
-protected:
-  int messageCount[Severity_Levels];
-  Writer * writer_;
-  RecoveryState recovery;       // True if in recovery mode.
-  int indentLevel;    // Used for dumping hierarchical stuff
-  Severity minSeverity;
-
-  void write(const SourceLocation & loc, Severity sev, const std::string & msg);
-
-public:
   Diagnostics();
 
   /** Set the writer. */
@@ -239,6 +256,10 @@ public:
     return DebugStream(loc);
   }
 
+  FailStream failMsg(const char * fname, unsigned lineno) {
+    return FailStream(fname, lineno);
+  }
+
   /** Debugging message. */
   void debug(char * msg, ...);
 
@@ -288,23 +309,32 @@ public:
   template<class T>
   void NORETURN(assertionFailed(
       const char * expr, const char * fname, unsigned lineno, const T & obj)) {
-    std::stringstream ss;
-    FormatStream stream(ss);
+    StrFormatStream stream;
     stream.setFormatOptions(Format_Verbose);
     stream << expr;
     stream << ", context = ";
     stream << obj;
-    assertionFailed(ss.str().c_str(), fname, lineno);
+    stream.flush();
+    assertionFailed(stream.str().c_str(), fname, lineno);
   }
 
   /** Fatal compiler error. */
-  void NORETURN(fail(const char * msg, const char * fname, unsigned lineno));
+  void NORETURN(__fail(const char * msg, const char * fname, unsigned lineno));
 
   /** Break execution. */
   static void debugBreak();
 
   /** Print the current stack trace. */
   void printStackTrace(int skipFrames);
+
+protected:
+  int messageCount[Severity_Levels];
+  Writer * writer_;
+  RecoveryState recovery;       // True if in recovery mode.
+  int indentLevel;    // Used for dumping hierarchical stuff
+  Severity minSeverity;
+
+  void write(const SourceLocation & loc, Severity sev, const std::string & msg);
 };
 
 extern Diagnostics diag;

@@ -55,8 +55,8 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
         DASSERT(srcPath.isAbsolute());
         compileUnit = dbgFactory_.CreateCompileUnit(
           0xABBA, // Take a chance on me...
-          srcPath.getLast().c_str(),
-          srcPath.getDirname().c_str(),
+          srcPath.getLast(),
+          srcPath.getDirname(),
           "0.1 tartc",
           module_->entryPoint() != NULL);
       }

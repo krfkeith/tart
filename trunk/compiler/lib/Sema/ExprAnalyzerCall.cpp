@@ -294,7 +294,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
   DASSERT_OBJ(selfParam->type() != NULL, currentFunction_);
   TypeDefn * selfType = selfParam->type()->typeDefn();
   DASSERT_OBJ(selfType != NULL, currentFunction_);
-  Expr * selfExpr = new LValueExpr(selfParam->location(), NULL, selfParam);
+  Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
   selfExpr = superClass->implicitCast(loc, selfExpr);
 
   CallExpr * call = new CallExpr(Expr::ExactCall, loc, NULL);
@@ -352,7 +352,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
           DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
           DASSERT(cons->isTemplate() || cons->isTemplateMember());
-          cons->addTrait(Defn::Ctor);
+          cons->setFlag(FunctionDefn::Ctor);
           addOverload(call, newExpr, cons, args);
         }
       }

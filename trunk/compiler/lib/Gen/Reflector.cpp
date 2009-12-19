@@ -30,62 +30,58 @@ using namespace llvm;
 /// Contains a lazy reference to an enumeration constant.
 
 // Members of tart.core.reflect.Type.
-BuiltinMemberRef<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
+SystemClassMember<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
 
 // Members of tart.core.reflect.SimpleType.
-BuiltinMemberRef<VariableDefn> simpleType_subtype(Builtins::typeSimpleType, "_subtype");
-BuiltinMemberRef<VariableDefn> simpleType_size(Builtins::typeSimpleType, "_size");
+SystemClassMember<VariableDefn> simpleType_subtype(Builtins::typeSimpleType, "_subtype");
+SystemClassMember<VariableDefn> simpleType_size(Builtins::typeSimpleType, "_size");
 
 // Members of tart.core.reflect.DerivedType.
-BuiltinMemberRef<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
+SystemClassMember<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
 
 // Members of tart.core.reflect.ComplexType.
-BuiltinMemberRef<VariableDefn> complexType_tib(Builtins::typeComplexType, "_typeInfo");
-BuiltinMemberRef<VariableDefn> complexType_superType(Builtins::typeComplexType, "_superType");
-BuiltinMemberRef<VariableDefn> complexType_interfaces(Builtins::typeComplexType, "_interfaces");
-BuiltinMemberRef<VariableDefn> complexType_typeParams(Builtins::typeComplexType, "_typeParams");
-BuiltinMemberRef<VariableDefn> complexType_attributes(Builtins::typeComplexType, "_attributes");
-BuiltinMemberRef<VariableDefn> complexType_fields(Builtins::typeComplexType, "_fields");
-BuiltinMemberRef<VariableDefn> complexType_properties(Builtins::typeComplexType, "_properties");
-BuiltinMemberRef<VariableDefn> complexType_constructors(Builtins::typeComplexType, "_constructors");
-BuiltinMemberRef<VariableDefn> complexType_methods(Builtins::typeComplexType, "_methods");
+SystemClassMember<VariableDefn> complexType_tib(Builtins::typeComplexType, "_typeInfo");
+SystemClassMember<VariableDefn> complexType_superType(Builtins::typeComplexType, "_superType");
+SystemClassMember<VariableDefn> complexType_interfaces(Builtins::typeComplexType, "_interfaces");
+SystemClassMember<VariableDefn> complexType_typeParams(Builtins::typeComplexType, "_typeParams");
+SystemClassMember<VariableDefn> complexType_attributes(Builtins::typeComplexType, "_attributes");
+SystemClassMember<VariableDefn> complexType_fields(Builtins::typeComplexType, "_fields");
+SystemClassMember<VariableDefn> complexType_properties(Builtins::typeComplexType, "_properties");
+SystemClassMember<VariableDefn> complexType_constructors(Builtins::typeComplexType, "_constructors");
+SystemClassMember<VariableDefn> complexType_methods(Builtins::typeComplexType, "_methods");
+SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeComplexType, "_innerTypes");
 
 // Members of tart.core.reflect.EnumType.
-BuiltinMemberRef<VariableDefn> enumType_superType(Builtins::typeEnumType, "_superType");
-BuiltinMemberRef<VariableDefn> enumType_values(Builtins::typeEnumType, "_values");
+SystemClassMember<VariableDefn> enumType_superType(Builtins::typeEnumType, "_superType");
+SystemClassMember<VariableDefn> enumType_values(Builtins::typeEnumType, "_values");
 
 // Members of tart.core.reflect.FunctionType.
-BuiltinMemberRef<VariableDefn> functionType_returnType(Builtins::typeFunctionType, "_returnType");
-BuiltinMemberRef<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
-BuiltinMemberRef<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
-BuiltinMemberRef<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
-BuiltinMemberRef<VariableDefn> functionType_dcObject(Builtins::typeFunctionType, "_dcObject");
-BuiltinMemberRef<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
-BuiltinMemberRef<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
-BuiltinMemberRef<FunctionDefn> functionType_ignoreObj(Builtins::typeFunctionType, "ignoreObjectPtr");
-
-// Members of tart.core.reflect.TypeDescriptor.
-//BuiltinMemberRef<VariableDefn> typeDescriptor_typeInfo(Builtins::typeTypeDescriptor, "_typeInfo");
-//BuiltinMemberRef<VariableDefn> typeDescriptor_typeKind(Builtins::typeTypeDescriptor, "_typeKind");
+SystemClassMember<VariableDefn> functionType_returnType(Builtins::typeFunctionType, "_returnType");
+SystemClassMember<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
+SystemClassMember<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
+SystemClassMember<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
+SystemClassMember<VariableDefn> functionType_dcObject(Builtins::typeFunctionType, "_dcObject");
+SystemClassMember<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
+SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
+SystemClassMember<FunctionDefn> functionType_ignoreObj(Builtins::typeFunctionType, "ignoreObjectPtr");
 
 // Members of tart.core.reflect.Member.
-BuiltinMemberRef<VariableDefn> member_name(Builtins::typeMember, "_name");
-BuiltinMemberRef<VariableDefn> member_kind(Builtins::typeMember, "_kind");
-BuiltinMemberRef<VariableDefn> member_access(Builtins::typeMember, "_access");
-BuiltinMemberRef<VariableDefn> member_traits(Builtins::typeMember, "_traits");
-BuiltinMemberRef<VariableDefn> member_type(Builtins::typeMember, "_type");
-BuiltinMemberRef<VariableDefn> member_attributes(Builtins::typeMember, "_attributes");
+SystemClassMember<VariableDefn> member_name(Builtins::typeMember, "_name");
+SystemClassMember<VariableDefn> member_kind(Builtins::typeMember, "_kind");
+SystemClassMember<VariableDefn> member_access(Builtins::typeMember, "_access");
+SystemClassMember<VariableDefn> member_traits(Builtins::typeMember, "_traits");
+SystemClassMember<VariableDefn> member_type(Builtins::typeMember, "_type");
+SystemClassMember<VariableDefn> member_attributes(Builtins::typeMember, "_attributes");
 
 // Members of tart.core.reflect.Method.
-BuiltinMemberRef<VariableDefn> method_typeParams(Builtins::typeMethod, "_typeParams");
-//BuiltinMemberRef<VariableDefn> method_functionType(Builtins::typeMethod, "_functionType");
-BuiltinMemberRef<VariableDefn> method_params(Builtins::typeMethod, "_params");
-BuiltinMemberRef<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
+SystemClassMember<VariableDefn> method_typeParams(Builtins::typeMethod, "_typeParams");
+SystemClassMember<VariableDefn> method_params(Builtins::typeMethod, "_params");
+SystemClassMember<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
 
 // Members of tart.core.reflect.Module.
-BuiltinMemberRef<VariableDefn> module_name(Builtins::typeModule, "_name");
-BuiltinMemberRef<VariableDefn> module_types(Builtins::typeModule, "_types");
-BuiltinMemberRef<VariableDefn> module_methods(Builtins::typeModule, "_methods");
+SystemClassMember<VariableDefn> module_name(Builtins::typeModule, "_name");
+SystemClassMember<VariableDefn> module_types(Builtins::typeModule, "_types");
+SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods");
 
 Reflector::Reflector(CodeGenerator & cg)
     : cg_(cg)
@@ -93,7 +89,6 @@ Reflector::Reflector(CodeGenerator & cg)
     , builder_(cg.builder())
     , irModule_(cg.irModule())
     , moduleTable_(NULL)
-    , syntheticIndex_(0)
 {
 }
 
@@ -106,6 +101,7 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
 
   irModule_->addTypeName("tart.reflect.Module", Builtins::typeModule->irType());
   irModule_->addTypeName("tart.reflect.Method", Builtins::typeMethod->irType());
+  irModule_->addTypeName("tart.reflect.Member", Builtins::typeMember->irType());
   GlobalVariable * rfModule = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
       GlobalValue::ExternalLinkage, NULL, moduleSymbol);
   globals_[moduleSymbol] = rfModule;
@@ -117,15 +113,23 @@ llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
 }
 
 void Reflector::emitModule(Module * module) {
-  if (Builtins::typeModule != NULL) {
+  // See if there are any reflected defns.
+  bool hasReflectedDefns = false;
+  for (DefnSet::iterator it = module->reflectedDefs().begin();
+      it != module->reflectedDefs().end(); ++it) {
+    if (!(*it)->hasTrait(Defn::Nonreflective)) {
+      hasReflectedDefns = true;
+      break;
+    }
+  }
+
+  if (hasReflectedDefns) {
     GlobalVariable * modulePtr = getModulePtr(module);
     if (!modulePtr->hasInitializer()) {
       ReflectedMembers rfMembers;
 
       // First visit members which are explicitly declared in this module.
-      for (Defn * member = module->firstMember(); member != NULL; member = member->nextInScope()) {
-        visitMember(rfMembers, member);
-      }
+      visitMembers(rfMembers, module);
 
       StructBuilder sb(cg_);
       sb.createObjectHeader(Builtins::typeModule);
@@ -136,7 +140,7 @@ void Reflector::emitModule(Module * module) {
     }
 
     // If this module is the "Type" module, then also do the built-in types.
-    if (module == Builtins::typeType->typeDefn()->module()) {
+    if (module == Builtins::typeObject->typeDefn()->module()) {
       ReflectedMembers rfBuiltins;
       visitMember(rfBuiltins, &VoidType::typedefn);
       visitMember(rfBuiltins, &BoolType::typedefn);
@@ -153,16 +157,22 @@ void Reflector::emitModule(Module * module) {
       visitMember(rfBuiltins, &DoubleType::typedefn);
     }
 
-    // Reflect any template instantiations that were generated from this module.
-    ReflectedMembers rfSynthetics;
-    while (syntheticIndex_ < synthetics_.size()) {
-      Defn * member = synthetics_[syntheticIndex_++];
-      visitMember(rfSynthetics, member);
+    for (DefnSet::iterator it = module->reflectedDefs().begin();
+        it != module->reflectedDefs().end(); ++it) {
+      if (const TypeDefn * td = dyn_cast<TypeDefn>(*it)) {
+        emitTypeDefn(td);
+      }
     }
   }
 }
 
 GlobalVariable * Reflector::getTypePtr(const Type * type) {
+//  if (type->typeDefn() != NULL && type->typeClass() != Type::Primitive &&
+//      module()->reflectedDefs().count(type->typeDefn()) == 0) {
+//    diag.fatal() << Format_Verbose << "Attempting to reference reflection type " << type <<
+//        " but it has not been listed as a reflected type.";
+//  }
+
   // Generate a unique string which identifies this type.
   std::string typeString(".type.");
   typeLinkageName(typeString, type);
@@ -176,9 +186,16 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
     // Types which have unique names
     TypeDefn * td = type->typeDefn();
     GlobalValue::LinkageTypes linkageType = GlobalValue::ExternalLinkage;
-    if (td->isSynthetic() && cg_.module()->exportDefs().count(td) > 0) {
+
+    if (type->typeClass() != Type::Primitive &&
+        module()->exportDefs().count(td) == 0 &&
+        module()->importDefs().count(td) == 0) {
+      diag.fatal() << Format_Verbose << "Attempting to reference type " << type <<
+          " but it has not been imported into this module.";
+    }
+
+    if (td->isSynthetic() && module()->exportDefs().count(td) > 0) {
       linkageType = GlobalValue::LinkOnceODRLinkage;
-      synthetics_.insert(td);
     }
 
     rfType = new GlobalVariable(*irModule_, reflectedTypeOf(type), true,
@@ -194,8 +211,8 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
 }
 
 bool Reflector::visitMembers(ReflectedMembers & rm, const IterableScope * scope) {
-  for (const Defn * member = scope->firstMember(); member != NULL; member = member->nextInScope()) {
-    if (!visitMember(rm, member)) {
+  for (const Defn * m = scope->firstMember(); m != NULL; m = m->nextInScope()) {
+    if (module()->reflectedDefs().count(const_cast<Defn *>(m)) && !visitMember(rm, m)) {
       return false;
     }
   }
@@ -230,13 +247,21 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
       break;
 
     case Defn::Function: {
+      if (member->hasTrait(Defn::Nonreflective)) {
+        return true;
+      }
+
       const FunctionDefn * fn = static_cast<const FunctionDefn *>(member);
-      if (!fn->isIntrinsic() && fn->isSingular() && !fn->hasTrait(Defn::Nonreflective)) {
+      if (!fn->isIntrinsic() && fn->isSingular()) {
         Constant * method = emitMethod(fn);
         if (method != NULL) {
           GlobalVariable * rMethod = new GlobalVariable(*irModule_, method->getType(), true,
-              GlobalValue::InternalLinkage, method, ".method." + fn->qualifiedName());
-          rm.methods.push_back(rMethod);
+              GlobalValue::InternalLinkage, method, ".method." + fn->linkageName());
+          if (fn->isCtor()) {
+            rm.constructors.push_back(rMethod);
+          } else {
+            rm.methods.push_back(rMethod);
+          }
         }
       }
       break;
@@ -246,6 +271,7 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
     case Defn::Parameter:
     case Defn::Mod:
     case Defn::ExplicitImport:
+    default:
       break;
   }
 
@@ -292,13 +318,18 @@ llvm::Constant * Reflector::emitArray(
 
 llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
   StructBuilder sb(cg_);
-  sb.addField(emitMember(cast<CompositeType>(Builtins::typeMethod), func));
+  sb.addField(emitMember(Builtins::typeMethod.get(), func));
   sb.addNullField(method_typeParams.type());
   sb.addField(getTypePtr(func->functionType()));
   sb.addNullField(method_params.type());
 
-  llvm::Constant * fnVal = cg_.genFunctionValue(func);
-  sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type()->irType()));
+  if (func->isAbstract() || func->isUndefined() || func->isIntrinsic() ||
+      func->isInterfaceMethod()) {
+    sb.addNullField(method_methodPointer.type());
+  } else  {
+    llvm::Constant * fnVal = cg_.genFunctionValue(func);
+    sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type()->irType()));
+  }
   return sb.build(Builtins::typeMethod->irType());
 }
 
@@ -308,7 +339,7 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   StructBuilder sb(cg_);
   sb.createObjectHeader(structType);
   sb.addField(internSymbol(def->name()));
-  sb.addField(internSymbol(def->qualifiedName()));
+  sb.addField(internSymbol(def->linkageName()));
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));
   sb.addIntegerField(member_traits, memberTraits(def));
@@ -336,9 +367,14 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
     case Type::Protocol:
       if (type->typeDefn()->hasTrait(Defn::Nonreflective)) {
         return Builtins::typeSimpleType->irType();
+      } else {
+        if (type->typeDefn()->isSynthetic() &&
+            module()->exportDefs().count(type->typeDefn()) == 0) {
+          diag.fatal() << "Attempting to use reflected type of synthetic type " << type <<
+              " but it has not been imported into the module.";
+        }
+        return Builtins::typeComplexType->irType();
       }
-
-     return Builtins::typeComplexType->irType();
 
     case Type::Enum:
       return Builtins::typeEnumType->irType();
@@ -370,7 +406,7 @@ llvm::Constant * Reflector::emitType(const Type * type) {
       if (type->typeDefn()->hasTrait(Defn::Nonreflective)) {
         return emitOpaqueType(type);
       } else {
-        return emitCompositeType(static_cast<const CompositeType *>(type));
+        return emitComplexType(static_cast<const CompositeType *>(type));
       }
 
     case Type::Enum:
@@ -391,26 +427,68 @@ llvm::Constant * Reflector::emitType(const Type * type) {
   }
 }
 
-llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
+llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
+  DASSERT_OBJ(!type->typeDefn()->hasTrait(Defn::Nonreflective), type);
+  if (type->typeDefn()->isSynthetic() &&
+      module()->exportDefs().count(type->typeDefn()) == 0) {
+    diag.fatal() << "Attempting to reflect synthetic type " << type <<
+        " but it has not been imported into the module.";
+  }
+
   // Don't reflect non-retained attributes.
   if (type->isAttribute() && !type->attributeInfo().isRetained()) {
     return NULL;
   }
 
-  //ReflectedMembers rfMembers;
-  //visitMembers(rfMembers, type->memberScope());
+  std::string qname = type->typeDefn()->linkageName();
+  ReflectedMembers rfMembers;
+
+  // First visit members which are explicitly declared in this module.
+  //const IterableScope * members = type->memberScope();
+  visitMembers(rfMembers, type->memberScope());
+//  for (Defn * member = members->firstMember(); member != NULL; member = member->nextInScope()) {
+//    if (module()->reflectedDefs().count(member)) {
+//      visitMember(rfMembers, member);
+//    }
+//  }
 
   StructBuilder sb(cg_);
+
+  // SimpleType base
   sb.addField(emitSimpleType(Builtins::typeComplexType, type));
+
+  // Pointer to TIB for this type.
   sb.addNullField(complexType_tib.type());
-  sb.addNullField(complexType_superType.type());
-  sb.addNullField(complexType_interfaces.type());
+
+  // Superclass
+  if (type->super() != NULL) {
+    sb.addField(getTypePtr(type->super()));
+  } else {
+    sb.addNullField(complexType_superType.type());
+  }
+
+  // Interface list
+  ConstantList interfaces;
+  for (ClassList::const_iterator it = type->bases().begin(); it != type->bases().end(); ++it) {
+    const CompositeType * base = *it;
+    if (base->typeClass() == Type::Interface) {
+      interfaces.push_back(getTypePtr(base));
+    }
+  }
+
+  sb.addField(emitArray(qname, complexType_interfaces.get(), interfaces));
+  //sb.addNullField(complexType_interfaces.type());
   sb.addNullField(complexType_typeParams.type());
   sb.addNullField(complexType_attributes.type());
-  sb.addNullField(complexType_fields.type());
-  sb.addNullField(complexType_properties.type());
-  sb.addNullField(complexType_constructors.type());
-  sb.addNullField(complexType_methods.type());
+  //sb.addNullField(complexType_fields.type());
+  sb.addField(emitArray(qname, complexType_fields.get(), rfMembers.fields));
+  //sb.addNullField(complexType_properties.type());
+  sb.addField(emitArray(qname, complexType_properties.get(), rfMembers.properties));
+  //sb.addNullField(complexType_constructors.type());
+  sb.addField(emitArray(qname, complexType_constructors.get(), rfMembers.constructors));
+  //sb.addNullField(complexType_methods.type());
+  sb.addField(emitArray(qname, complexType_methods.get(), rfMembers.methods));
+  sb.addField(emitArray(qname, complexType_innerTypes.get(), rfMembers.types));
   return sb.build(Builtins::typeComplexType->irType());
 }
 
@@ -428,7 +506,7 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
   sb.addField(emitTypeBase(Builtins::typeFunctionType, FUNCTION));
   sb.addField(emitTypeReference(type->returnType()));
   if (type->selfParam() != NULL) {
-    sb.addField(getTypePtr(type->selfParam()->type()));
+    sb.addField(emitTypeReference(type->selfParam()->type()));
   } else {
     sb.addNullField(functionType_selfType.type());
   }
@@ -439,7 +517,7 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
     // For now, we only support reflection of classes and interfaces.
     if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
       sb.addField(cg_.genInvokeFn(type));
-      sb.addField(cg_.genDcObjectFn(type));
+      sb.addField(cg_.genDcObjectFn(selfType));
     } else {
       sb.addNullField(functionType_invoke.type());
       sb.addNullField(functionType_dcObject.type());
@@ -480,7 +558,7 @@ llvm::Constant * Reflector::emitOpaqueType(const Type * type) {
   DASSERT_OBJ(type->typeDefn() != NULL, type);
   sb.addField(emitTypeBase(Builtins::typeSimpleType, OPAQUE));
   sb.addIntegerField(type_typeKind.get(), NONE);
-  sb.addField(internSymbol(type->typeDefn()->qualifiedName()));
+  sb.addField(internSymbol(type->typeDefn()->linkageName()));
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
   return sb.build(Builtins::typeSimpleType->irType());
@@ -531,7 +609,7 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
   DASSERT_OBJ(type->typeDefn() != NULL, type);
   sb.addField(emitTypeBase(reflectType, kind));
   sb.addIntegerField(type_typeKind.get(), subtype);
-  sb.addField(internSymbol(type->typeDefn()->qualifiedName()));
+  sb.addField(internSymbol(type->typeDefn()->linkageName()));
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
   return sb.build(Builtins::typeSimpleType->irType());
@@ -611,13 +689,13 @@ Reflector::MemberKind Reflector::memberKind(const Defn * member) {
 
 Reflector::Traits Reflector::memberTraits(const Defn * member) {
   int memberTraits = 0;
-  if (member->isFinal()) {
-    memberTraits |= FINAL;
-  }
+  //if (member->isFinal()) {
+  //  memberTraits |= FINAL;
+  //}
 
-  if (member->isAbstract()) {
-    memberTraits |= ABSTRACT;
-  }
+  //if (member->isAbstract()) {
+  //  memberTraits |= ABSTRACT;
+  //}
 
   if (member->storageClass() == Storage_Static || member->storageClass() == Storage_Global) {
     memberTraits |= STATIC;
@@ -625,5 +703,7 @@ Reflector::Traits Reflector::memberTraits(const Defn * member) {
 
   return Traits(memberTraits);
 }
+
+Module * Reflector::module() { return cg_.module(); }
 
 } // namespace tart

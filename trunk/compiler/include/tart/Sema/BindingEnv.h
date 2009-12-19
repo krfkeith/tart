@@ -37,8 +37,8 @@ public:
   Substitution(const Type * left, const Type * right, Substitution * prev = NULL)
     : left_(left)
     , right_(right)
-    , upperBound_(right)
     , lowerBound_(right)
+    , upperBound_(right)
     , prev_(prev)
   {
   }
@@ -47,8 +47,8 @@ public:
       Substitution * prev = NULL)
     : left_(left)
     , right_(lower)
-    , upperBound_(upper)
     , lowerBound_(lower)
+    , upperBound_(upper)
     , prev_(prev)
   {
   }

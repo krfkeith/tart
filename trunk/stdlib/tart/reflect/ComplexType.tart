@@ -4,7 +4,7 @@ import tart.core.Memory.Address;
 public class ComplexType : SimpleType {
   private {
     var _typeInfo:Address[TypeInfoBlock];
-    var _superType:ComplexType;
+    var _superType:ComplexType or Null;
     var _interfaces:ComplexType[];
     var _typeParams:Type[];
     var _attributes:Attribute[];
@@ -12,12 +12,13 @@ public class ComplexType : SimpleType {
     var _properties:Property[];
     var _constructors:Method[];
     var _methods:Method[];
+    var _innerTypes:Type[];
   }
 
   undef construct();
 
   /** Pointer to this type's supertype, or null. */
-  final def supertype:ComplexType /* or void */ { get { return self._superType; } }
+  final def supertype:ComplexType or Null { get { return self._superType; } }
   
   /** Array of inherited interfaces. */
   final def interfaces:ComplexType[] { get { return self._interfaces; } }
@@ -39,4 +40,7 @@ public class ComplexType : SimpleType {
   
   /** Array of methods. */
   final def methods:Method[] { get { return self._methods; } }
+
+  /** Array of types defined within this type. */
+  final def innerTypes:Type[] { get { return self._innerTypes; } }
 }

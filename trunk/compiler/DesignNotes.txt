@@ -33,7 +33,6 @@ Implementation TODOS:
   * Class members.
   * Attributes
   * Find all properties/functions having some attribute
-  * auto TypeLiteral
 * Closures
 * intptr and uintptr
 * Stack dumps / trace
@@ -43,8 +42,7 @@ Implementation TODOS:
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
 * Override for property getters and setters.
-* Typename.type
-  * Proxy
+* Proxy types
 * Preconditions.verify[%T]
 * Preconditions.checkState()
 * Need to work on makefile dependencies.
@@ -56,9 +54,7 @@ Implementation TODOS:
   * Stack trace
 * Enum types
   * Enum operators (relational and bitwise).
-  * .toString
   * .parse
-  * Write unit tests for enum.toString()
 * Tuple types
   * Destructuring assignment
   * Named tuple types
@@ -407,3 +403,33 @@ let heapPageShift:int = ??;
 abstract class Arena {
   abstract def ??;
 }
+
+// ------------------------------------------------------------------------
+
+class ExprBuilder {
+  Expr * build();
+
+  ExprBuilder & at(const SourceLocation &);
+  ExprBuilder & at(const Locatable *);
+  
+  ExprBuilder & setType(const Type * type);
+  
+  ExprBuilder & bitCast(const Type * toType);
+  ExprBuilder & lvalue(const ValueDefn * lval, Expr * baseExpr = NULL);
+  
+  ExprBuilder & pushArg();
+  ExprBuilder & call();
+};
+
+ExprBuilder builder;
+builder.lval(param).bitCast(&PointerType).getElement(0).build();
+
+// ------------------------------------------------------------------------
+
+// Some way to store it as Object, but retrieve it as the original type.
+// Like saying: I want you to store all occurances of T as type Object.
+// Mainly this affects naming conventions for methods.
+
+Something like [@Strict %T <: Object]
+
+@Unsafe @Intrinsic def reinterpretCast[%T <: Object](obj:Object);

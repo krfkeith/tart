@@ -85,6 +85,9 @@ public:
   /** Cast operator so we can use an expression node as a location. */
   operator const SourceLocation & () const { return loc_; }
 
+  /** Set the location of this expression. */
+  Expr * at(const SourceLocation & loc) { loc_ = loc; return this; }
+
   /** Produce a textual representation of this value. */
   virtual void format(FormatStream & out) const;
 
@@ -214,6 +217,12 @@ private:
   ValueDefn * value_;
 
 public:
+  static LValueExpr * get(const SourceLocation & loc, Expr * baseVal, ValueDefn * val) {
+    return new LValueExpr(loc, baseVal, val);
+  }
+
+  static LValueExpr * get(ValueDefn * val);
+
   /** Constructor. */
   LValueExpr(const SourceLocation & loc, Expr * baseVal, ValueDefn * val);
 
@@ -536,6 +545,11 @@ public:
 /// A typecast operator
 class CastExpr : public UnaryExpr {
 public:
+  static CastExpr * bitCast(Expr * value, const Type * toType);
+  static CastExpr * upCast(Expr * value, const Type * toType);
+  static CastExpr * tryCast(Expr * value, const Type * toType);
+  static CastExpr * dynamicCast(Expr * value, const Type * toType);
+
   /** Constructor. */
   CastExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
     : UnaryExpr(k, loc, type, a)
@@ -550,8 +564,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const CastExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
-    return ex->exprType() >= ImplicitCast &&
-        ex->exprType() <= ZeroExtend;
+    return ex->exprType() >= ImplicitCast && ex->exprType() <= ZeroExtend;
   }
 
 private:

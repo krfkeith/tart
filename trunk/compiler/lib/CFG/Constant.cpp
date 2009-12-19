@@ -73,6 +73,14 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * 
   return new ConstantInteger(loc, type, value);
 }
 
+ConstantInteger * ConstantInteger::getSInt32(int32_t value) {
+  return get(SourceLocation(), &IntType::instance, value);
+}
+
+ConstantInteger * ConstantInteger::getUInt32(uint32_t value) {
+  return get(SourceLocation(), &UIntType::instance, value);
+}
+
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value,
     const PrimitiveType * type) {
   DASSERT(type->numBits() == value.getBitWidth());

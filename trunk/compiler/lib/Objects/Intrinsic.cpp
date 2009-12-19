@@ -521,8 +521,10 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
   DASSERT_OBJ(extName != NULL, self);
 
   LValueExpr * lval = cast<LValueExpr>(args[0]);
-  lval->value()->addTrait(Defn::Extern);
-  lval->value()->setLinkageName(extName->value());
+  if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+    fn->setFlag(FunctionDefn::Extern);
+    fn->setLinkageName(extName->value());
+  }
   return self;
 }
 

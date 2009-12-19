@@ -47,22 +47,6 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   , tsig_(NULL)
   , tinst_(NULL)
 {
-  if (modifiers_.flags & tart::Final) {
-    addTrait(Final);
-  }
-
-  if (modifiers_.flags & tart::Abstract) {
-    addTrait(Abstract);
-  }
-
-  if (modifiers_.flags & tart::Undef) {
-    addTrait(Undefined);
-  }
-
-  if (modifiers_.flags & tart::Override) {
-    addTrait(Override);
-  }
-
   if (modifiers_.flags & tart::ReadOnly) {
     addTrait(ReadOnly);
   }
@@ -103,7 +87,7 @@ void Defn::createQualifiedName(Defn * parent) {
 
 const std::string & Defn::linkageName() const {
   if (lnkName.empty()) {
-    if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray->typeDefn()) {
+    if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray.typeDefn()) {
       // Handle arrays specially.
       typeLinkageName(lnkName, (*tinst_->typeArgs())[0]);
       lnkName.append("[]");
@@ -294,6 +278,7 @@ const char * getPassName(DefnPass pass) {
       return "ResolveAttributes";
 
     case DefnPassCount:
+    default:
       DFAIL("Invalid pass");
   }
 

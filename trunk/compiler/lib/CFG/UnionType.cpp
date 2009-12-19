@@ -26,6 +26,7 @@ UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
   , numValueTypes_(0)
   , numReferenceTypes_(0)
   , hasVoidType_(false)
+  , hasNullType_(false)
 {
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
@@ -55,9 +56,12 @@ UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
 
   for (TypeList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
     const Type * memberType = dealias(*it);
-    if (memberType == &NullType::instance || memberType == &VoidType::instance) {
+    if (memberType == &VoidType::instance) {
       hasVoidType_ = true;
     } else if (memberType->isReferenceType()) {
+      if (memberType == &NullType::instance) {
+        hasNullType_ = true;
+      }
       numReferenceTypes_ += 1;
     } else {
       numValueTypes_ += 1;
@@ -117,7 +121,7 @@ const llvm::Type * UnionType::createIRType() const {
 
   if (numValueTypes_ > 0 || hasVoidType_) {
     size_t numStates = numValueTypes_;
-    if (numReferenceTypes_ > 0 || hasVoidType_) {
+    if (numReferenceTypes_ > 0 || hasVoidType_ || hasNullType_) {
       numStates += 1;
     }
 
@@ -138,6 +142,9 @@ const llvm::Type * UnionType::createIRType() const {
     unionMembers.push_back(discriminatorType);
     unionMembers.push_back(largestType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
+  } else if (hasNullType_ && numReferenceTypes_ == 2) {
+    // If it's Null or some reference type, then use the reference type.
+    return members_->member(0)->irEmbeddedType();
   } else {
     return Builtins::typeObject->irParameterType();
   }
@@ -292,6 +299,7 @@ int UnionType::getTypeIndex(const Type * type) const {
     ++index;
   }
 
+  // Previous version - did not use discriminator field for ref types.
   #if 0
 
   if (type->isReferenceType()) {

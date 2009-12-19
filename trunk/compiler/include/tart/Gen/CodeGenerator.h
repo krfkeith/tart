@@ -79,8 +79,8 @@ class CodeGenerator {
 public:
   // Field indices for TypeInfoBlock
   enum TIBFields {
-    TIB_TYPE = 0,
-    TIN_NAME,
+    //TIB_TYPE = 0,
+    TIN_NAME = 0,
     TIB_BASES,
     TIB_IDISPATCH,
     TIB_METHOD_TABLE,
@@ -332,7 +332,6 @@ public:
 
   // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genInvokeFn(const FunctionType * fnType);
-  llvm::FunctionType * getInvokeFnType();
 
   // Generate the function that down-casts the 'self' argument in a reflected call.
   llvm::Function * genDcObjectFn(const Type * objType);
@@ -358,7 +357,7 @@ private:
   /** Return true if 'type' requires an implicit dereference, such as a struct. */
   bool requiresImplicitDereference(const Type * type);
 
-  void addTypeName(const Type * type);
+  void addTypeName(const CompositeType * type);
 
   /** Generate code to throw a typecast exception at the current point. */
   void throwCondTypecastError(llvm::Value * typeTestResult);

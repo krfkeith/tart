@@ -51,6 +51,22 @@ namespace {
 /// -------------------------------------------------------------------
 /// CompositeType
 
+CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope,
+    uint32_t flags)
+  : DeclaredType(tcls, de, parentScope)
+  , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , super_(NULL)
+  , classFlags_(0)
+{
+  if (flags & tart::Final) {
+    classFlags_ |= CompositeType::Final;
+  }
+
+  if (flags & tart::Abstract) {
+    classFlags_ |= CompositeType::Abstract;
+  }
+}
+
 FunctionDefn * CompositeType::defaultConstructor() {
   const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
   if (ctors == NULL) {
@@ -275,6 +291,9 @@ bool CompositeType::isSupportedBy(const Type * type) const {
 
           return false;
         }
+
+        default:
+          break;
       }
     }
   }
@@ -306,7 +325,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       return IdenticalTypes;
     } else if (typeClass() != Type::Struct && fromClass->isSubclassOf(this)) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new CastExpr(Expr::UpCast, cn.fromValue->location(), this, cn.fromValue);
+        *cn.resultValue = CastExpr::upCast(cn.fromValue, this)->at(cn.fromValue->location());
       }
 
       return ExactConversion;
@@ -326,8 +345,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     // Check dynamic casts.
     if ((cn.options & Conversion::Dynamic) && isReferenceType() && fromClass->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new CastExpr(Expr::DynamicCast, cn.fromValue->location(),
-            this, cn.fromValue);
+        *cn.resultValue = CastExpr::dynamicCast(cn.fromValue, this)->at(cn.fromValue->location());
       }
 
       return NonPreferred;
@@ -389,19 +407,27 @@ const CompositeType::InterfaceTable * CompositeType::findBaseImplementationOf(Co
   return NULL;
 }
 
-void CompositeType::addMethodDefsToModule(Module * module) {
+void CompositeType::addMethodDefsToModule(Module * module) const {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 
   // Make certain that every method that is referred to from the TIB is XRef'd.
-  for (MethodList::iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
+  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
     FunctionDefn * method = *m;
-    module->addSymbol(method);
+    if (method->hasBody() && module->addSymbol(method)) {
+      //diag.info() << Format_Verbose << "Added method " << method;
+    }
   }
 
-  for (InterfaceList::iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
-    for (MethodList::iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
+  for (InterfaceList::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
+    if (it->interfaceType->typeDefn()->isSynthetic()) {
+      module->addSymbol(it->interfaceType->typeDefn());
+    }
+
+    for (MethodList::const_iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
       FunctionDefn * method = *m;
-      module->addSymbol(method);
+      if (method->hasBody()) {
+        module->addSymbol(method);
+      }
     }
   }
 }
@@ -409,6 +435,29 @@ void CompositeType::addMethodDefsToModule(Module * module) {
 void CompositeType::addStaticDefsToModule(Module * module) {
   for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
     module->addSymbol(*it);
+  }
+}
+
+void CompositeType::addFieldTypesToModule(Module * module) const {
+  // Make certain that every method that is referred to from the TIB is XRef'd.
+  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
+    FunctionDefn * method = *m;
+    module->addSymbol(method);
+  }
+
+  for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
+    if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
+      if (var->type() != NULL) {
+        TypeDefn * tdef = var->type()->typeDefn();
+        if (tdef != NULL && tdef->isSynthetic()) {
+          module->addSymbol(tdef);
+        }
+      }
+    }
+  }
+
+  if (super() != NULL) {
+    super()->addFieldTypesToModule(module);
   }
 }
 
