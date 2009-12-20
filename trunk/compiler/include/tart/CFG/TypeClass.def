@@ -21,4 +21,8 @@ TYPE_CLASS(TypeLiteral)   // A type of a type literal.
 TYPE_CLASS(Alias)         // A named alias for a type expression
 TYPE_CLASS(Pattern)       // A type parameter
 TYPE_CLASS(PatternVal)    // The value of a type parameter
-TYPE_CLASS(Constraint)    // A type constraint or indeterminate type
+
+// Type constraints.
+TYPE_CLASS(ResultOf)      // Type constraint - result of function
+TYPE_CLASS(ParameterOf)   // Type constraint - param of function
+TYPE_CLASS(TupleOf)       // Type constraint - tuple of constraints

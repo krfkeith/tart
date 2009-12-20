@@ -400,7 +400,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
   }
 
   if (match(Token_Assign)) {
-    declValue = expression();
+    declValue = expressionList();
     if (declValue == NULL) {
       expectedExpression();
       return DECL_ERROR;
@@ -1044,27 +1044,27 @@ ASTNode * Parser::typeExprPrimary() {
       return NULL;
     }
 
-    int constraint = ASTPatternVar::IS_INSTANCE;
+    int constraint = ASTTypeVariable::IS_INSTANCE;
     if (match(Token_Colon)) {
       declType = typeExpression();
       if (declType == NULL) {
         expected("type expression after ':'");
       }
     } else if (match(Token_IsSubclass)) {
-      constraint = ASTPatternVar::IS_SUBTYPE;
+      constraint = ASTTypeVariable::IS_SUBTYPE;
       declType = typeExpression();
       if (declType == NULL) {
         expected("type expression after '<:'");
       }
     } else if (match(Token_IsSuperclass)) {
-      constraint = ASTPatternVar::IS_SUPERTYPE;
+      constraint = ASTTypeVariable::IS_SUPERTYPE;
       declType = typeExpression();
       if (declType == NULL) {
         expected("type expression after '>:'");
       }
     }
 
-    result = new ASTPatternVar(matchLoc, pvarName, declType, constraint);
+    result = new ASTTypeVariable(matchLoc, pvarName, declType, constraint);
   } else if (match(Token_Static)) {
     if (match(Token_Function)) {
       // Function type.
@@ -1544,7 +1544,7 @@ Stmt * Parser::returnStmt() {
 }
 
 Stmt * Parser::yieldStmt() {
-  ASTNode * expr = expression();
+  ASTNode * expr = expressionList();
   if (expr == NULL) {
     expectedExpression();
   }
@@ -1721,7 +1721,7 @@ Stmt * Parser::forStmt() {
     ASTNode * loopVar = localDeclList(ASTNode::Var);
     if (match(Token_In)) {
       // It's a 'for-in' statement.
-      ASTNode * iterable = expression();
+      ASTNode * iterable = expressionList();
       if (iterable == NULL) {
         diag.error(lexer.tokenLocation()) << "Expression expected after 'in'";
         return NULL;
@@ -1734,7 +1734,7 @@ Stmt * Parser::forStmt() {
     // It's a 'for' statement.
     initExpr = loopVar;
     if (loopVar && match(Token_Assign)) {
-      ASTNode * rhs = expression();
+      ASTNode * rhs = expressionList();
       if (rhs == NULL) {
         diag.error(lexer.tokenLocation()) << "Expression expected after '='";
       }
@@ -1821,7 +1821,7 @@ Stmt * Parser::switchStmt() {
 
 Stmt * Parser::caseStmt() {
   SourceLocation loc = matchLoc;
-  ASTNode * test = expression();
+  ASTNode * test = expressionList();
   if (test != NULL) {
     Stmt * body = bodyStmt();
     if (body != NULL) {
@@ -1959,7 +1959,7 @@ ASTNode * Parser::testOrDecl() {
         return NULL;
       }
 
-      ASTNode * init = expression();
+      ASTNode * init = expressionList();
       if (init == NULL) {
         expectedExpression();
       } else {
@@ -2411,7 +2411,7 @@ ASTNode * Parser::primaryExpression() {
   switch (token) {
     case Token_LParen:
       next();
-      result = expression();
+      result = expressionList();
       // Match generator expression here...
       if (!match(Token_RParen)) {
         expectedCloseParen();

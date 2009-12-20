@@ -16,11 +16,11 @@ namespace tart {
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::get(const SourceLocation & loc, const TypeList & members) {
+UnionType * UnionType::get(const SourceLocation & loc, const ConstTypeList & members) {
   return new UnionType(loc, members);
 }
 
-UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
+UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
   : TypeImpl(Union)
   , loc_(loc)
   , numValueTypes_(0)
@@ -31,7 +31,7 @@ UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
   TypeList combined;
-  for (TypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
+  for (ConstTypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
     const Type * type = dealias(*it);
 
     bool addNew = true;
@@ -93,7 +93,7 @@ const llvm::Type * UnionType::createIRType() const {
   const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
 
   // Create an array representing all of the IR types that correspond to the Tart types.
-  for (TypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+  for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
     const Type * type = dealias(*it);
 
     const llvm::Type * irType = type->irEmbeddedType();
@@ -196,12 +196,12 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
   }
 
   ConversionRank bestRank = Incompatible;
-  Type * bestType = NULL;
+  const Type * bestType = NULL;
 
   // Create a temporary cn with no result value.
   Conversion ccTemp(cn);
   ccTemp.resultValue = NULL;
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     ConversionRank rank = (*it)->convert(ccTemp);
     if (rank > bestRank) {
       bestRank = rank;
@@ -255,7 +255,7 @@ bool UnionType::isEqual(const Type * other) const {
 }
 
 bool UnionType::isSingular() const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (!(*it)->isSingular()) {
       return false;
     }
@@ -271,7 +271,7 @@ bool UnionType::isSubtype(const Type * other) const {
 }
 
 bool UnionType::includes(const Type * other) const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if ((*it)->includes(other)) {
       return true;
     }
@@ -291,7 +291,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 
   // Otherwise, calculate the type index.
   int index = 0;
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (type->isEqual(*it)) {
       return index;
     }
@@ -336,7 +336,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 
   // Determine all of the possible member types that could represent an object of
   // type 'toType'.
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     const Type * memberType = *it;
     if (toType->canConvert(memberType)) {
       // TODO: Add additional cast if toType is not exactly the same type as the member.
@@ -350,7 +350,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 }
 
 void UnionType::format(FormatStream & out) const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (it != members_->begin()) {
       out << " or ";
     }

@@ -18,7 +18,7 @@ namespace tart {
 class EnumType;
 class UnionType;
 class UnitType;
-class PatternVar;
+class TypeVariable;
 class PatternValue;
 class TypeConstraint;
 class TypeAlias;
@@ -42,7 +42,7 @@ public:
   virtual const Type * visitTypeLiteralType(const TypeLiteralType * in);
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);
-  virtual const Type * visitPatternVar(const PatternVar * in);
+  virtual const Type * visitTypeVariable(const TypeVariable * in);
   virtual const Type * visitPatternValue(const PatternValue * in);
   virtual const Type * visitTypeConstraint(const TypeConstraint * in);
 
@@ -55,7 +55,7 @@ class SubstitutionTransform : public TypeTransform {
 public:
   SubstitutionTransform(const BindingEnv & env) : env_(env) {}
 
-  const Type * visitPatternVar(const PatternVar * in);
+  const Type * visitTypeVariable(const TypeVariable * in);
   const Type * visitPatternValue(const PatternValue * in);
   const Type * visitCompositeType(const CompositeType * in);
   const Type * visitTypeConstraint(const TypeConstraint * in);
@@ -70,7 +70,7 @@ class RelabelTransform : public SubstitutionTransform {
 public:
   RelabelTransform(const BindingEnv & env) : SubstitutionTransform(env) {}
 
-  const Type * visitPatternVar(const PatternVar * in);
+  const Type * visitTypeVariable(const TypeVariable * in);
 
 private:
   BindingEnv vars_;

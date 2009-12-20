@@ -21,7 +21,7 @@ TypeLiteralType::TypeMap TypeLiteralType::uniqueTypes_;
 void TypeLiteralType::initBuiltin() {
   // Create type parameters
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "T"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "T"));
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
   tsig->setTypeParams(TupleType::get(typeParams));
 

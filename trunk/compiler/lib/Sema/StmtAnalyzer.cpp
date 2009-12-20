@@ -615,7 +615,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   const Type * testType = testExpr->type();
 
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
-    if (isIntegerType(ptype->typeId())) {
+    if (isIntegerTypeId(ptype->typeId())) {
       // TODO: Implement
     } else {
       diag.error(st) << "Invalid expression type for switch statement: " << testType;

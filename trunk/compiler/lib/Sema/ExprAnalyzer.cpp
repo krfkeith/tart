@@ -149,10 +149,13 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
     case ASTNode::ArrayLiteral:
       return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
 
+    case ASTNode::Tuple:
+      return reduceTuple(static_cast<const ASTOper *> (ast), expected);
+
     case ASTNode::AnonFn:
       return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
-    case ASTNode::PatternVar:
+    case ASTNode::TypeVar:
       diag.error(ast) << "Pattern variable used outside of pattern.";
       return &Expr::ErrorVal;
 
@@ -630,6 +633,46 @@ Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expect
   DFAIL("Array type not found for array literal");
 }
 
+Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
+  DASSERT(ast->count() >= 2);
+
+  const TupleType * ttype = dyn_cast_or_null<TupleType>(dealias(expected));
+  if (ttype != NULL) {
+    if (ast->count() != ttype->numTypeParams()) {
+      diag.error(ast) << "Type of '" << ast << "' does not match '" << expected << "'";
+    }
+  }
+
+  TupleCtorExpr * tuple = new TupleCtorExpr(ast->location(), NULL);
+  ConstTypeList types;
+  size_t numParams = ast->count();
+  bool isSingular = true;
+  for (size_t i = 0; i < numParams; ++i) {
+    const Type * elType = ttype != NULL ? ttype->typeParam(i) : NULL;
+    Expr * el = reduceExpr(ast->args()[i], elType);
+    if (isErrorResult(el)) {
+      return &Expr::ErrorVal;
+    }
+
+    if (!el->type()->isSingular()) {
+      isSingular = false;
+    }
+
+    tuple->args().push_back(el);
+    types.push_back(dealias(el->type()));
+  }
+
+  const Type * tupleType;
+  if (isSingular) {
+    tupleType = TupleType::get(types);
+  } else {
+    tupleType = new TupleOfConstraint(tuple);
+  }
+
+  tuple->setType(tupleType);
+  return tuple;
+}
+
 Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, bool store) {
   if (ast->nodeType() == ASTNode::GetElement) {
     return reduceElementRef(static_cast<const ASTOper *>(ast), store);
@@ -801,11 +844,50 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     DASSERT_OBJ(elemType != NULL, naType);
 
     if (args.size() != 1) {
-      diag.fatal(ast) << "Incorrect number of array index dimensions";
+      diag.fatal(ast) << "Incorrect number of array subscripts";
+      return &Expr::ErrorVal;
+    }
+
+    Expr * indexExpr = args[0];
+    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+      diag.fatal(ast) << "Native array subscript must be integer type, but is " << indexExpr->type();
+      return &Expr::ErrorVal;
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
+  }
+
+  // Handle tuples
+  if (const TupleType * tt = dyn_cast<TupleType>(arrayType)) {
+    if (args.size() != 1) {
+      diag.fatal(ast) << "Incorrect number of array subscripts";
+      return &Expr::ErrorVal;
+    }
+
+    Expr * indexExpr = args[0];
+    const Type * indexType = indexExpr->type();
+    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+      diag.fatal(args[0]) << "Tuple subscript must be integer type, is " << indexType;
+      return &Expr::ErrorVal;
+    }
+
+    if (ConstantInteger * cint = dyn_cast<ConstantInteger>(indexExpr)) {
+      const llvm::APInt & indexVal = cint->intValue();
+      if (indexVal.isNegative() || indexVal.getZExtValue() >= tt->numTypeParams()) {
+        diag.fatal(args[0]) << "Tuple subscript out of range";
+        return &Expr::ErrorVal;
+      } else if (store) {
+        diag.fatal(args[0]) << "Tuples are immutable";
+        return &Expr::ErrorVal;
+      }
+
+      uint32_t index = uint32_t(indexVal.getZExtValue());
+      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
+    } else {
+      diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
+      return &Expr::ErrorVal;
+    }
   }
 
   // See if the type has any indexers defined.

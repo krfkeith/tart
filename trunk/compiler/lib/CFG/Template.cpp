@@ -31,34 +31,34 @@ static const Defn::Traits INSTANTIABLE_TRAITS = Defn::Traits::of(
 // -------------------------------------------------------------------
 // Class to discover all pattern variables in a type parameter list.
 
-class FindPatternVars : public TypeTransform {
+class FindTypeVariables : public TypeTransform {
 public:
-  FindPatternVars(PatternVarList & vars) : vars_(vars) {}
+  FindTypeVariables(TypeVariableList & vars) : vars_(vars) {}
 
-  const Type * visitPatternVar(const PatternVar * in) {
-    vars_.push_back(const_cast<PatternVar *>(in));
+  const Type * visitTypeVariable(const TypeVariable * in) {
+    vars_.push_back(const_cast<TypeVariable *>(in));
     return in;
   }
 
 private:
-  PatternVarList & vars_;
+  TypeVariableList & vars_;
 };
 
 // -------------------------------------------------------------------
-// PatternVar
+// TypeVariable
 
-PatternVar::PatternVar(const SourceLocation & location, const char * name, const Type * valueType)
+TypeVariable::TypeVariable(const SourceLocation & location, const char * name, const Type * valueType)
   : TypeImpl(Pattern)
   , location_(location)
   , valueType_(valueType)
   , name_(name)
 {}
 
-const llvm::Type * PatternVar::createIRType() const {
+const llvm::Type * TypeVariable::createIRType() const {
   DFAIL("Invalid");
 }
 
-ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
+ConversionRank TypeVariable::convertImpl(const Conversion & cn) const {
   // The only place where this conversion function is called is when attempting to
   // determine if a custom coercion can be done (without actually doing it.)
   if (cn.resultValue != NULL) {
@@ -68,7 +68,7 @@ ConversionRank PatternVar::convertImpl(const Conversion & cn) const {
   return NonPreferred;
 }
 
-bool PatternVar::canBindTo(const Type * value) const {
+bool TypeVariable::canBindTo(const Type * value) const {
   if (const UnitType * nt = dyn_cast<UnitType>(value)) {
     if (valueType_ == NULL) {
       return false;
@@ -83,24 +83,24 @@ bool PatternVar::canBindTo(const Type * value) const {
   }
 }
 
-bool PatternVar::isSubtype(const Type * other) const {
+bool TypeVariable::isSubtype(const Type * other) const {
   return false;
 }
 
-bool PatternVar::isReferenceType() const {
+bool TypeVariable::isReferenceType() const {
   return false;
 }
 
-bool PatternVar::isSingular() const {
+bool TypeVariable::isSingular() const {
   return false;
 }
 
-void PatternVar::trace() const {
+void TypeVariable::trace() const {
   TypeImpl::trace();
   location_.trace();
 }
 
-void PatternVar::format(FormatStream & out) const {
+void TypeVariable::format(FormatStream & out) const {
   if (out.getShowQualifiedName()) {
     out << name_ << "%" << name();
   } else {
@@ -131,9 +131,9 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
 void TemplateSignature::setTypeParams(const TupleType * typeParams) {
   DASSERT(typeParams_ == NULL);
   typeParams_ = typeParams;
-  FindPatternVars(vars_).transform(typeParams_);
-  for (PatternVarList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
-    PatternVar * var = *it;
+  FindTypeVariables(vars_).transform(typeParams_);
+  for (TypeVariableList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
+    TypeVariable * var = *it;
     DASSERT(paramScope_.lookupSingleMember(var->name()) == NULL);
     TypeDefn * tdef = new TypeDefn(value_->module(), var->name(), var);
     paramScope_.addMember(tdef);
@@ -144,16 +144,16 @@ const Type * TemplateSignature::typeParam(int index) const {
   return (*typeParams_)[index];
 }
 
-PatternVar * TemplateSignature::patternVar(const char * name) const {
+TypeVariable * TemplateSignature::patternVar(const char * name) const {
   Defn * de = paramScope_.lookupSingleMember(name);
   if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(de)) {
-    return cast<PatternVar>(tdef->typeValue());
+    return cast<TypeVariable>(tdef->typeValue());
   }
 
   return NULL;
 }
 
-PatternVar * TemplateSignature::patternVar(int index) const {
+TypeVariable * TemplateSignature::patternVar(int index) const {
   return vars_[index];
 }
 
@@ -175,7 +175,9 @@ void TemplateSignature::trace() const {
 }
 
 void TemplateSignature::format(FormatStream & out) const {
-  out << "[" << typeParams_ << "]";
+  out << "[";
+  typeParams_->formatMembers(out);
+  out << "]";
 }
 
 Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
@@ -194,8 +196,8 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   // Check to make sure that the parameters are of the correct type.
   ConstTypeList paramValues;
   bool noCache = false;
-  for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
-    PatternVar * var = *it;
+  for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
+    TypeVariable * var = *it;
     const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
@@ -262,7 +264,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   bool isSingular = true;
 
   for (size_t i = 0; i < vars_.size(); ++i) {
-    PatternVar * var = vars_[i];
+    TypeVariable * var = vars_[i];
     const Type * value = paramValues[i];
 
     Defn * argDefn;
@@ -327,8 +329,8 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   // TODO: Can TypeTransform do this?
   // Check to make sure that the parameters are of the correct type.
   TypeList paramValues;
-  for (PatternVarList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
-    PatternVar * var = *it;
+  for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
+    TypeVariable * var = *it;
     const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
@@ -409,14 +411,7 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 
 void TemplateInstance::format(FormatStream & out) const {
   out << "[";
-  for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it) {
-    if (it != typeArgs_->begin()) {
-      out << ", ";
-    }
-
-    out << *it;
-  }
-
+  typeArgs_->formatMembers(out);
   out << "]";
 }
 

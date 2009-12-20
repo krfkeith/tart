@@ -205,7 +205,7 @@ bool EnumAnalyzer::analyzeEnum() {
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
       intValueType = cast<PrimitiveType>(baseType);
-      if (intValueType == NULL || !isIntegerType(intValueType->typeId())) {
+      if (intValueType == NULL || !isIntegerTypeId(intValueType->typeId())) {
         diag.fatal(ast) << "Enumerations can only derive from integer types.";
         return false;
       }

@@ -34,11 +34,11 @@ static unsigned typeEncoding(TypeId id) {
     return dwarf::DW_ATE_boolean;
   } else if (id == TypeId_Char) {
     return dwarf::DW_ATE_unsigned_char;
-  } else if (isFloatingType(id)) {
+  } else if (isFloatingTypeId(id)) {
     return dwarf::DW_ATE_float;
-  } else if (isSignedIntegerType(id)) {
+  } else if (isSignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_signed;
-  } else if (isUnsignedIntegerType(id)) {
+  } else if (isUnsignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_unsigned;
   }
 
@@ -189,6 +189,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
     case Type::Union:
       result = genDIUnionType(static_cast<const UnionType *>(type));
+      break;
+
+    case Type::Tuple:
+      result = genDITupleType(static_cast<const TupleType *>(type));
       break;
 
     case Type::Function:
@@ -504,6 +508,41 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   }
 
   return unionType;
+}
+
+DICompositeType CodeGenerator::genDITupleType(const TupleType * type) {
+  DIDescriptorArray members;
+  int32_t index = 0;
+  char memberName[16];
+  for (TupleType::const_iterator it = type->begin(); it != type->end(); ++it) {
+    const Type * memberType = *it;
+    Constant * offset = getOffsetOfInBits(cast<StructType>(type->irType()), index++);
+    sprintf(memberName, "_%d", index);
+    members.push_back(dbgFactory_.CreateDerivedTypeEx(
+        dwarf::DW_TAG_member,
+        dbgCompileUnit_,
+        memberName,
+        DICompileUnit(),
+        0,
+        getSizeOfInBits(memberType->irEmbeddedType()),
+        getAlignOfInBits(memberType->irEmbeddedType()),
+        offset, 0,
+        genDIEmbeddedType(memberType)));
+  }
+
+  std::string tupleName;
+  typeLinkageName(tupleName, type);
+  return dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_structure_type,
+      dbgCompileUnit_,
+      tupleName,
+      DICompileUnit(),
+      0,
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
+      getInt64Val(0), 0,
+      DIType(),
+      dbgFactory_.GetOrCreateArray(members.data(), members.size()));
 }
 
 DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {

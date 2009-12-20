@@ -1,0 +1,42 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  return TestUtils.runModuleTests(Module.thisModule());
+}
+
+def testTupleCreate() {
+  var a = 1, 2;
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+}
+
+def testTupleCreate2() {
+  var a = 1, "Hello";
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq("Hello", a[1]);
+}
+
+def testTupleCreateExplicitType() {
+  var a:(int, int) = 1, 2;
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+}
+
+def testTupleAssign() {
+  var a = 1, 2;
+  var b = a;
+  Debug.assertEq(1, b[0]);
+  Debug.assertEq(2, a[1]);
+}
+
+def testTupleReturn() {
+  var a = returnTuple();
+  Debug.assertEq(3, a[0]);
+  Debug.assertEq("Hello", a[1]);
+}
+
+def returnTuple() -> (int, String) {
+  return 3, "Hello";
+}

@@ -20,19 +20,19 @@ class ASTBuiltIn;
 /// -------------------------------------------------------------------
 /// Predicate functions for type ids.
 
-inline bool isIntegerType(TypeId id) {
+inline bool isIntegerTypeId(TypeId id) {
   return id >= TypeId_Char && id <= TypeId_UIntPtr;
 }
 
-inline bool isUnsignedIntegerType(TypeId id) {
+inline bool isUnsignedIntegerTypeId(TypeId id) {
   return (id >= TypeId_UInt8 && id <= TypeId_UIntPtr) || id == TypeId_Char;
 }
 
-inline bool isSignedIntegerType(TypeId id) {
+inline bool isSignedIntegerTypeId(TypeId id) {
   return id >= TypeId_SInt8 && id <= TypeId_SIntPtr;
 }
 
-inline static bool isFloatingType(TypeId id) {
+inline static bool isFloatingTypeId(TypeId id) {
   return id >= TypeId_Float && id <= TypeId_LongDouble;
 }
 

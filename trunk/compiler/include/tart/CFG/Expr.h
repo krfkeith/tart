@@ -184,17 +184,7 @@ public:
 /// -------------------------------------------------------------------
 /// An operation with a variable number of arguments
 class ArglistExpr : public Expr {
-protected:
-  ExprList args_;
-
-  ArglistExpr(ExprType k, const SourceLocation & loc, Type * type)
-    : Expr(k, loc, type)
-  {}
-
-  bool areArgsSideEffectFree() const;
-
 public:
-
   /** The argument list. */
   ExprList & args() { return args_; }
   const ExprList & args() const { return args_; }
@@ -207,6 +197,15 @@ public:
 
   bool isSingular() const;
   void trace() const;
+
+protected:
+  ExprList args_;
+
+  bool areArgsSideEffectFree() const;
+
+  ArglistExpr(ExprType k, const SourceLocation & loc, const Type * type)
+    : Expr(k, loc, type)
+  {}
 };
 
 /// -------------------------------------------------------------------
@@ -527,7 +526,7 @@ public:
 /// A 'new object' expression
 class NewExpr : public Expr {
 public:
-  NewExpr(const SourceLocation & loc, Type * type)
+  NewExpr(const SourceLocation & loc, const Type * type)
     : Expr(New, loc, type)
   {}
 
@@ -664,7 +663,7 @@ private:
 
 public:
   /** Constructor. */
-  IRValueExpr(const SourceLocation & loc, Type * type, llvm::Value * value = NULL)
+  IRValueExpr(const SourceLocation & loc, const Type * type, llvm::Value * value = NULL)
     : Expr(IRValue, loc, type)
     , value_(value)
   {}
@@ -740,6 +739,32 @@ public:
   static inline bool classof(const ArrayLiteralExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == ArrayLiteral;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// A tuple constructor expression.
+class TupleCtorExpr : public ArglistExpr {
+public:
+  TupleCtorExpr(const SourceLocation & loc, const Type * type)
+    : ArglistExpr(TupleCtor, loc, type)
+  {}
+
+  TupleCtorExpr(const SourceLocation & loc, const Type * type, const ExprList & argList)
+    : ArglistExpr(TupleCtor, loc, type)
+  {
+    args().append(argList.begin(), argList.end());
+  }
+
+  // Overrides
+
+  bool isSideEffectFree() const {
+    return areArgsSideEffectFree();
+  }
+
+  static inline bool classof(const TupleCtorExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == TupleCtor;
   }
 };
 

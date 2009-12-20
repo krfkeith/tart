@@ -61,7 +61,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
         size_t numParams = ts->typeParams()->size();
         // For each template parameter, create a PatternValue instance.
         for (size_t i = 0; i < numParams; ++i) {
-          PatternVar * var = ts->patternVar(i);
+          TypeVariable * var = ts->patternVar(i);
           Type * value = bindingEnv_.get(var);
           if (value == NULL) {
             bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
@@ -349,7 +349,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
         // See if the parameter type is an unsigned integer type.
         if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(dealias(paramType))) {
-          if (isUnsignedIntegerType(ptype->typeId())) {
+          if (isUnsignedIntegerTypeId(ptype->typeId())) {
             isUnsigned = true;
           }
         }
@@ -382,7 +382,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
       size_t numParams = ts->typeParams()->size();
       // For each template parameter, create a PatternValue instance.
       for (size_t i = 0; i < numParams; ++i) {
-        PatternVar * var = ts->patternVar(i);
+        TypeVariable * var = ts->patternVar(i);
         Type * value = bindingEnv_.get(var);
         if (value == NULL) {
           return false;

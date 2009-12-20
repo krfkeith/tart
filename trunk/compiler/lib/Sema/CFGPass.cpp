@@ -150,6 +150,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ArrayLiteral:
       return visitArrayLiteral(static_cast<ArrayLiteralExpr *>(in));
 
+    case Expr::TupleCtor:
+      return visitTupleCtor(static_cast<TupleCtorExpr *>(in));
+
     case Expr::ClosureEnv:
       return visitClosureScope(static_cast<ClosureEnvExpr *>(in));
 
@@ -297,6 +300,11 @@ Expr * CFGPass::visitProg2(BinaryExpr * in) {
 }
 
 Expr * CFGPass::visitArrayLiteral(ArrayLiteralExpr * in) {
+  visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitTupleCtor(TupleCtorExpr * in) {
   visitExprArgs(in);
   return in;
 }

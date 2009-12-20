@@ -43,4 +43,15 @@ public class ComplexType : SimpleType {
 
   /** Array of types defined within this type. */
   final def innerTypes:Type[] { get { return self._innerTypes; } }
+
+  /** Return the first method whose name is 'name'. */
+  def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }
 }

@@ -147,15 +147,18 @@ void typeLinkageName(std::string & out, const Type * ty) {
       typeLinkageName(out, ftype->returnType());
     }
   } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
-    for (TypeList::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
+    out.append("(");
+    for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
       if (it != ttype->begin()) {
         out.append(",");
       }
 
       typeLinkageName(out, *it);
     }
+    out.append(")");
   } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
-    for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
+        ++it) {
       if (it != utype->members().begin()) {
         out.append("|");
       }
@@ -228,6 +231,21 @@ bool Type::supports(const Type * protocol) const {
 
 bool Type::isVoidType() const {
   return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Void;
+}
+
+bool Type::isIntType() const {
+  return cls == Primitive &&
+      isIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
+bool Type::isUnsignedType() const {
+  return cls == Primitive &&
+      isUnsignedIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
+bool Type::isFPType() const {
+  return cls == Primitive &&
+      isFloatingTypeId(static_cast<const PrimitiveType *>(this)->typeId());
 }
 
 bool Type::isUnsizedIntType() const {
@@ -339,11 +357,11 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
       const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
       const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
 
-      if (isIntegerType(p1->typeId()) && isIntegerType(p2->typeId())) {
-        bool isSignedResult = isSignedIntegerType(p1->typeId())
-            || isSignedIntegerType(p2->typeId());
-        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerType(p1->typeId()) ? 1 : 0);
-        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerType(p2->typeId()) ? 1 : 0);
+      if (isIntegerTypeId(p1->typeId()) && isIntegerTypeId(p2->typeId())) {
+        bool isSignedResult = isSignedIntegerTypeId(p1->typeId())
+            || isSignedIntegerTypeId(p2->typeId());
+        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p1->typeId()) ? 1 : 0);
+        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p2->typeId()) ? 1 : 0);
         int resultBits = std::max(type1Bits, type2Bits);
 
         if (isSignedResult) {
@@ -413,8 +431,8 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
     // Now test the type parameters to see if they are also equivalent.
     const TypeDefn * d1 = type1->typeDefn();
     const TypeDefn * d2 = type2->typeDefn();
-    const TypeList * type1Params = NULL;
-    const TypeList * type2Params = NULL;
+    const ConstTypeList * type1Params = NULL;
+    const ConstTypeList * type2Params = NULL;
 
     if (d1->isTemplate()) {
       type1Params = &d1->templateSignature()->typeParams()->members();
