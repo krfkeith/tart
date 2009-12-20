@@ -86,8 +86,8 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
     TypeId srcId = fromPType->typeId();
     uint32_t srcBits = fromPType->numBits();
 
-    if (isUnsignedIntegerType(dstId)) {
-      if (isUnsignedIntegerType(srcId)) {
+    if (isUnsignedIntegerTypeId(dstId)) {
+      if (isUnsignedIntegerTypeId(srcId)) {
         ConversionRank result = ExactConversion;
         if (srcBits > dstBits) {
           result = Truncation;
@@ -109,7 +109,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         }
 
         return result;
-      } else if (isSignedIntegerType(srcId)) {
+      } else if (isSignedIntegerTypeId(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           // Either truncate or s-extend
           *cn.resultValue = new CastExpr(
@@ -118,7 +118,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         }
 
         return SignedUnsigned;
-      } else if (isFloatingType(srcId)) {
+      } else if (isFloatingTypeId(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           // Convert from float
           DFAIL("Implement");
@@ -134,8 +134,8 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         //return BoolToInteger;
         return ExactConversion;
       }
-    } else if (isSignedIntegerType(dstId)) {
-      if (isSignedIntegerType(srcId)) {
+    } else if (isSignedIntegerTypeId(dstId)) {
+      if (isSignedIntegerTypeId(srcId)) {
         ConversionRank result = ExactConversion;
         if (srcBits > dstBits) {
           result = Truncation;
@@ -149,7 +149,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         }
 
         return result;
-      } else if (isUnsignedIntegerType(srcId)) {
+      } else if (isUnsignedIntegerTypeId(srcId)) {
         ConversionRank result = NonPreferred;
         if (srcBits > dstBits) {
           result = Truncation;
@@ -165,7 +165,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         }
 
         return result;
-      } else if (isFloatingType(srcId)) {
+      } else if (isFloatingTypeId(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           //return new CastExpr(llvm::Instruction::FPToSI, expr, this);
           DFAIL("Implement");
@@ -218,7 +218,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  bool dstIsSigned = isSignedIntegerType(dstId);
+  bool dstIsSigned = isSignedIntegerTypeId(dstId);
 
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
@@ -226,7 +226,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
     if (srcId == TypeId_UnsizedInt) {
       // Convert from 'unsized' integer to sized int.
       return fromUnsizedIntToInt(cint, cn.resultValue);
-    } else if (isUnsignedIntegerType(srcId)) {
+    } else if (isUnsignedIntegerTypeId(srcId)) {
       // Convert from unsigned int.
       APInt srcVal(cint->value()->getValue());
       uint32_t srcBits = srcVal.getActiveBits();
@@ -250,7 +250,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
       }
 
       return ExactConversion;
-    } else if (isSignedIntegerType(srcId)) {
+    } else if (isSignedIntegerTypeId(srcId)) {
       // Convert from signed int.
       APInt srcVal(cint->value()->getValue());
       uint32_t srcBits = srcVal.getMinSignedBits();
@@ -299,7 +299,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
 }
 
 ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, Expr ** out) const {
-  bool dstIsSigned = isSignedIntegerType(typeId());
+  bool dstIsSigned = isSignedIntegerTypeId(typeId());
 
   // Number of bits needed to hold the integer constant.
   uint32_t bitsNeeded = dstIsSigned
@@ -369,7 +369,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
     TypeId srcId = fromPType->typeId();
     uint32_t srcBits = fromPType->numBits();
 
-    if (isFloatingType(srcId)) {
+    if (isFloatingTypeId(srcId)) {
       if (cn.fromValue && cn.resultValue) {
         // float convert
         *cn.resultValue = new CastExpr(
@@ -379,7 +379,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       DASSERT(srcBits != dstBits);
       return srcBits > dstBits ? Truncation : ExactConversion;
-    } else if (isUnsignedIntegerType(srcId)) {
+    } else if (isUnsignedIntegerTypeId(srcId)) {
       ConversionRank result = NonPreferred;
       if (srcBits > 48 || (dstId == TypeId_Float && srcBits > 24)) {
         ConversionRank result = PrecisionLoss;
@@ -392,7 +392,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
       }
 
       return result;
-    } else if (isSignedIntegerType(srcId)) {
+    } else if (isSignedIntegerTypeId(srcId)) {
       ConversionRank result = NonPreferred;
       if (srcBits > 48 || (dstId == TypeId_Float && srcBits > 24)) {
         ConversionRank result = PrecisionLoss;
@@ -423,7 +423,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  bool dstIsSigned = isSignedIntegerType(dstId);
+  bool dstIsSigned = isSignedIntegerTypeId(dstId);
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
@@ -432,7 +432,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
       // Convert from 'unsized' integer to sized int.
       //return fromUnsizedIntToInt(cint, dstBits, cn.resultValue);
       return fromUnsizedIntToFloat(cint, cn.resultValue);
-    } else if (isUnsignedIntegerType(srcId)) {
+    } else if (isUnsignedIntegerTypeId(srcId)) {
       // Convert from unsigned int.
       APInt srcVal(cint->value()->getValue());
       uint32_t srcBits = srcVal.getActiveBits();
@@ -448,7 +448,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
       } else {
         return ExactConversion;
       }
-    } else if (isSignedIntegerType(srcId)) {
+    } else if (isSignedIntegerTypeId(srcId)) {
       // Convert from signed int.
       APInt srcVal(cint->value()->getValue());
       uint32_t srcBits = srcVal.getMinSignedBits();
@@ -530,7 +530,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
 
   if (const PrimitiveType * fromPType = dyn_cast<PrimitiveType>(fromType)) {
     TypeId srcId = fromPType->typeId();
-    if (isIntegerType(srcId)) {
+    if (isIntegerTypeId(srcId)) {
       if (cn.fromValue && cn.resultValue) {
         // Compare with 0.
         *cn.resultValue = new CompareExpr(SourceLocation(), llvm::CmpInst::ICMP_NE, cn.fromValue,
@@ -557,7 +557,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
-    DASSERT(isIntegerType(srcId) || srcId == TypeId_UnsizedInt);
+    DASSERT(isIntegerTypeId(srcId) || srcId == TypeId_UnsizedInt);
 
     if (cn.resultValue) {
       Constant * cival = cint->value();

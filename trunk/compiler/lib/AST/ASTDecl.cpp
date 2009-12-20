@@ -179,12 +179,12 @@ void ASTParameter::format(FormatStream & out) const {
 }
 
 // ---------------------------------------------------------------
-// ASTPatternVar
-void ASTPatternVar::trace() const {
+// ASTTypeVariable
+void ASTTypeVariable::trace() const {
   ASTVarDecl::trace();
 }
 
-void ASTPatternVar::format(FormatStream & out) const {
+void ASTTypeVariable::format(FormatStream & out) const {
   out << "%" << name();
 }
 

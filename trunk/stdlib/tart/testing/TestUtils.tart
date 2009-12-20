@@ -7,7 +7,7 @@ namespace TestUtils {
     try {
 		  for method in m.methods {
 		    if method.name.startsWith("test") {
-		      Debug.writeLn("[Running] ", method.name);
+		      Debug.writeLn("[Running] ", m.name, ".", method.name);
 		      method.call(m);
 		    }
 		  } 

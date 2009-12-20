@@ -21,7 +21,7 @@ namespace tart {
 
 class TemplateSignature;
 class TemplateCondition;
-class PatternVar;
+class TypeVariable;
 class AddressType;
 class TypeLiteralType;
 class PointerType;
@@ -86,18 +86,18 @@ private:
 };
 
 /// -------------------------------------------------------------------
-/// A PatternValue represents the value of a PatternVariable within a
+/// A PatternValue represents the value of a TypeVariable within a
 /// specific environment.
 class PatternValue : public Type {
 public:
-  PatternValue(BindingEnv * env, const PatternVar * var)
+  PatternValue(BindingEnv * env, const TypeVariable * var)
     : Type(PatternVal)
     , env_(env)
     , var_(var)
   {}
 
   const BindingEnv * env() const { return env_; }
-  const PatternVar * var() const { return var_; }
+  const TypeVariable * var() const { return var_; }
 
   // The value that is currently bound to var in env. Can return null if there's no value
   // bound to var.
@@ -123,7 +123,7 @@ public:
 
 private:
   BindingEnv * env_;
-  const PatternVar * var_;
+  const TypeVariable * var_;
 };
 
 /// -------------------------------------------------------------------
@@ -143,13 +143,13 @@ public:
   /** If the given variable does not already have a definition in this environment,
       then bind it to a PatternValue instance
    */
-  //void defineVar(PatternVar * var);
+  //void defineVar(TypeVariable * var);
 
   /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const Type * pattern, const Type * value, Variance variance);
 
   /** Get the value for the specified pattern variable. */
-  Type * get(const PatternVar * type) const;
+  Type * get(const TypeVariable * type) const;
 
   /** Get the value for the specified pattern variable. If the binding is to another
       variable, dereference that as well. */
@@ -202,7 +202,7 @@ private:
 
   Substitution * substitutions_;
 
-  bool unifyPattern(SourceContext * source, const PatternVar * pattern, const Type * value,
+  bool unifyPattern(SourceContext * source, const TypeVariable * pattern, const Type * value,
       Variance variance);
   bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
   bool unifyPointerType(SourceContext * source, const PointerType * pattern, const Type * value);
@@ -216,7 +216,7 @@ private:
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
 
-  bool hasVar(const PatternVar * var) const;
+  bool hasVar(const TypeVariable * var) const;
 };
 
 FormatStream & operator<<(FormatStream & out, const BindingEnv & env);

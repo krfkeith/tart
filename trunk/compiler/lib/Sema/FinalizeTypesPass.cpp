@@ -72,7 +72,7 @@ Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
   if (!isErrorResult(first) && !isErrorResult(second)) {
     bool isAlreadyInt = false;
     if (const PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(second->type())) {
-      isAlreadyInt = isIntegerType(ptype->typeId());
+      isAlreadyInt = isIntegerTypeId(ptype->typeId());
     }
 
     if (!isAlreadyInt) {
@@ -410,7 +410,7 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
     // Check to make sure that all template params are bound.
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
-      const PatternVar * var = tsig->patternVar(i);
+      const TypeVariable * var = tsig->patternVar(i);
       const Type * value = env.get(var);
       if (value == NULL || !value->isSingular()) {
         diag.fatal(loc) << "Unable to deduce template parameter '" << var << "' for '" <<
@@ -670,6 +670,44 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   }
 }
 
+Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
+  const Type * ty = dealias(in->type());
+  const TupleType * ttype;
+  if (const TupleOfConstraint * toc = dyn_cast<TupleOfConstraint>(ty)) {
+    //TupleCtorExpr * tuple() const { return tuple_; }
+    DFAIL("Imp");
+  } else if ((ttype = dyn_cast<TupleType>(dealias(in->type())))) {
+    if (in->argCount() != ttype->numTypeParams()) {
+      diag.error(in->location()) << "Type of '" << in << "' does not match '" << ttype << "'";
+    }
+  } else {
+    diag.error(in->location()) << "Type of '" << in << "' does not match '" << in->type() << "'";
+  }
+
+  ExprList & args = in->args();
+  ConstTypeList types;
+  DASSERT(args.size() > 0);
+  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
+    Expr * arg = visitExpr(*it);
+    if (arg->type()->isUnsizedIntType()) {
+      arg = chooseIntSize(arg);
+    }
+
+    if (ttype != NULL) {
+    }
+
+    types.push_back(arg->type());
+    *it = arg;
+  }
+
+  //return addCastIfNeeded()
+  in->setType(TupleType::get(types));
+  DASSERT(ttype->isSingular());
+
+  return in;
+  //return addCastIfNeeded(in, ttype);
+}
+
 Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doImplicitCast(in, toType, tryCoerciveCasts_);
@@ -683,5 +721,19 @@ Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
 
   return in;
 }
+
+Expr * FinalizeTypesPassImpl::chooseIntSize(Expr * in) {
+  ConstantInteger * cintVal = cast<ConstantInteger>(in);
+  const PrimitiveType * ptype = cintVal->primitiveType();
+  bool isUnsigned = isUnsignedIntegerTypeId(ptype->typeId());
+  const llvm::APInt & intVal = cintVal->value()->getValue();
+  unsigned bitsRequired = isUnsigned ? intVal.getActiveBits() : intVal.getMinSignedBits();
+  if (bitsRequired < 32) {
+    bitsRequired = 32;
+  }
+  ptype = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
+  return ptype->implicitCast(in->location(), cintVal);
+}
+
 
 } // namespace tart

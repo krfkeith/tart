@@ -143,6 +143,15 @@ public:
   /** True if this type is the 'void' type. */
   bool isVoidType() const;
 
+  /** True if this type is an integer type. */
+  bool isIntType() const;
+
+  /** True if this type is an unsigned integer type. */
+  bool isUnsignedType() const;
+
+  /** True if this type is a floating point type. */
+  bool isFPType() const;
+
   /** True if this type is the 'unsized int' type. */
   bool isUnsizedIntType() const;
 

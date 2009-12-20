@@ -33,7 +33,7 @@ NODE_TYPE(Idx)
 NODE_TYPE(Param)
 NODE_TYPE(Template)
 NODE_TYPE(TParam)
-NODE_TYPE(PatternVar)
+NODE_TYPE(TypeVar)
 NODE_TYPE(Namespace)
 
 // Type modifiers

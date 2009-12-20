@@ -418,11 +418,7 @@ Function * CodeGenerator::findMethod(const CompositeType * type, const char * me
 }
 
 bool CodeGenerator::requiresImplicitDereference(const Type * type) {
-  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    return ctype->typeClass() == Type::Struct;
-  }
-
-  return false;
+  return type->typeClass() == Type::Struct || type->typeClass() == Type::Tuple;
 }
 
 llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {

@@ -11,7 +11,7 @@ namespace {
   /// -------------------------------------------------------------------
   /// Represents a sub-range of a list of type references.
 
-  typedef std::pair<TypeList::const_iterator, TypeList::const_iterator> TypeTupleKey;
+  typedef std::pair<TupleType::const_iterator, TupleType::const_iterator> TypeTupleKey;
 
   struct TypeTupleKeyInfo {
     static inline TypeTupleKey getEmptyKey() {
@@ -24,7 +24,7 @@ namespace {
 
     static unsigned getHashValue(const TypeTupleKey & key) {
       unsigned result = 0;
-      for (TypeList::const_iterator it = key.first; it != key.second; ++it) {
+      for (TupleType::const_iterator it = key.first; it != key.second; ++it) {
         result *= 0x5bd1e995;
         result ^= result >> 24;
         result ^= Type::KeyInfo::getHashValue(*it);
@@ -37,8 +37,8 @@ namespace {
       size_t lhsBytes = (uint8_t *)lhs.second - (uint8_t *)lhs.first;
       size_t rhsBytes = (uint8_t *)rhs.second - (uint8_t *)rhs.first;
       if (lhsBytes == rhsBytes) {
-        TypeList::const_iterator li = lhs.first;
-        TypeList::const_iterator ri = rhs.first;
+        TupleType::const_iterator li = lhs.first;
+        TupleType::const_iterator ri = rhs.first;
         for (; li != lhs.second; ++li, ++ri) {
           if (!Type::KeyInfo::isEqual(*li, *ri)) {
             return false;
@@ -86,7 +86,7 @@ TupleType * TupleType::get(const Type * typeArg) {
   return get(const_cast<const_iterator>(&typeArg), const_cast<const_iterator>(&typeArg + 1));
 }
 
-TupleType * TupleType::get(TypeList::const_iterator first, TypeList::const_iterator last) {
+TupleType * TupleType::get(TupleType::const_iterator first, TupleType::const_iterator last) {
   if (!initFlag) {
     initFlag = true;
     GC::registerUninitCallback(&hook);
@@ -102,65 +102,96 @@ TupleType * TupleType::get(TypeList::const_iterator first, TypeList::const_itera
   return newEntry;
 }
 
-TupleType::TupleType(TypeList::const_iterator first, TypeList::const_iterator last)
+TupleType::TupleType(TupleType::const_iterator first, TupleType::const_iterator last)
   : TypeImpl(Tuple)
   , members_(first, last)
 {
 }
 
 const llvm::Type * TupleType::createIRType() const {
-  DFAIL("Implement");
+  // Members of the class
+  std::vector<const llvm::Type *> fieldTypes;
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    const llvm::Type * fieldType = (*it)->irEmbeddedType();
+    if (fieldType == NULL) {
+      return NULL;
+    }
+
+    fieldTypes.push_back(fieldType);
+  }
+
+  return llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
 }
 
 ConversionRank TupleType::convertImpl(const Conversion & cn) const {
-#if 0
-  if (isEqual(cn.fromType)) {
+
+  const TupleType * fromType = dyn_cast<TupleType>(cn.getFromType());
+  if (fromType == NULL) {
+    return Incompatible;
+  }
+
+  if (isEqual(fromType)) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
-      return IdenticalTypes;
+    }
+
+    return IdenticalTypes;
+  }
+
+  size_t fieldCount = members_.size();
+  if (fromType->numTypeParams() != fieldCount) {
+    return Incompatible;
+  }
+
+  ExprList args;
+  ConversionRank rank = Incompatible;
+  bool identical = true;
+  for (size_t i = 0; i < fieldCount; ++i) {
+    const Type * fromFieldType = fromType->member(i);
+    const Type * toFieldType = members_[i];
+    Expr * fieldResult = NULL;
+
+    // Convert each field individually
+    Conversion fieldConversion(fromFieldType);
+    fieldConversion.options = Conversion::Coerce;
+
+    if (cn.fromValue != NULL) {
+      if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(cn.fromValue)) {
+        fieldConversion.fromValue = tce->arg(i);
+      } else {
+        DFAIL("Implement tuple GetElement");
+      }
+
+      fieldConversion.resultValue = &fieldResult;
+    }
+
+    ConversionRank fieldRank = toFieldType->convert(fieldConversion);
+    if (fieldRank == Incompatible) {
+      return Incompatible;
+    }
+
+    rank = std::min(rank, fieldRank);
+
+    if (cn.fromValue != NULL) {
+      DASSERT(fieldResult != NULL);
+      args.push_back(fieldResult);
+
+      if (fieldResult != fieldConversion.fromValue) {
+        identical = false;
+      }
     }
   }
 
-  ConversionRank bestRank = Incompatible;
-  Type * bestType = NULL;
-
-  // Create a temporary cn with no result value.
-  Conversion ccTemp(cn);
-  ccTemp.resultValue = NULL;
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    ConversionRank rank = it->type()->convert(ccTemp);
-    if (rank > bestRank) {
-      bestRank = rank;
-      bestType = it->type();
+  if (cn.resultValue != NULL) {
+    DASSERT(cn.fromValue != NULL);
+    if (identical) {
+      *cn.resultValue = cn.fromValue;
+    } else {
+      *cn.resultValue = new TupleCtorExpr(cn.fromValue->location(), this, args);
     }
   }
 
-  // Since we're converting to a union type, it's not identical.
-  // TODO: Don't know if we really need this.
-  //if (bestRank == IdenticalTypes) {
-  //  bestRank = ExactConversion;
-  //}
-
-  if (bestType != NULL && cn.resultValue != NULL) {
-    // Do the conversion to the best type first.
-    bestRank = bestType->convertImpl(cn);
-
-    // And now add a cast to the union type.
-    if (*cn.resultValue != NULL) {
-      int typeIndex = getTypeIndex(bestType);
-      CastExpr * result = new CastExpr(
-          Expr::UnionCtorCast,
-          cn.fromValue->location(),
-          const_cast<UnionType *>(this),
-          *cn.resultValue);
-      result->setTypeIndex(typeIndex);
-      *cn.resultValue = result;
-    }
-  }
-
-  return bestRank;
-#endif
-  DFAIL("Implement");
+  return rank;
 }
 
 bool TupleType::isEqual(const Type * other) const {
@@ -172,7 +203,7 @@ bool TupleType::isEqual(const Type * other) const {
 }
 
 bool TupleType::isSingular() const {
-  for (TypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     if (!(*it)->isSingular()) {
       return false;
     }
@@ -182,11 +213,11 @@ bool TupleType::isSingular() const {
 }
 
 bool TupleType::isSubtype(const Type * other) const {
-  DFAIL("Implement");
+  return isEqual(other);
 }
 
 bool TupleType::includes(const Type * other) const {
-  for (TypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     if (!(*it)->includes(other)) {
       return true;
     }
@@ -195,14 +226,20 @@ bool TupleType::includes(const Type * other) const {
   return false;
 }
 
-void TupleType::format(FormatStream & out) const {
-  for (TypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+void TupleType::formatMembers(FormatStream & out) const {
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     if (it != members_.begin()) {
       out << ", ";
     }
 
     out << *it;
   }
+}
+
+void TupleType::format(FormatStream & out) const {
+  out << "(";
+  formatMembers(out);
+  out << ")";
 }
 
 void TupleType::trace() const {

@@ -152,6 +152,10 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     if (requiresImplicitDereference(returnVal->type())) {
       //value = builder_.CreateLoad(value);
     }
+    if (returnVal->type()->typeClass() == Type::Tuple) {
+      value = builder_.CreateLoad(value);
+    }
+
     //genDoFinally(blk);
     builder_.CreateRet(value);
   }

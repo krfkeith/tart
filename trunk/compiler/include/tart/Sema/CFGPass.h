@@ -56,6 +56,7 @@ public:
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  virtual Expr * visitTupleCtor(TupleCtorExpr * in);
   virtual Expr * visitClosureScope(ClosureEnvExpr * in);
 
 protected:

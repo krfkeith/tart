@@ -13,6 +13,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/Common/Diagnostics.h"
@@ -78,12 +79,28 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::LogicalOr: {
-      TypeList unionTypes;
+      ConstTypeList unionTypes;
       if (getUnionTypes(ast, unionTypes)) {
         return UnionType::get(ast->location(), unionTypes);
       }
 
       return &BadType::instance;
+    }
+
+    case ASTNode::Tuple: {
+      const ASTOper * tupleOp = static_cast<const ASTOper *>(ast);
+      const ASTNodeList & args = tupleOp->args();
+      ConstTypeList fieldTypes;
+      for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
+        Type * fieldType = typeFromAST(*it);
+        if (isErrorResult(fieldType)) {
+          return false;
+        }
+
+        fieldTypes.push_back(fieldType);
+      }
+
+      return TupleType::get(fieldTypes.begin(), fieldTypes.end());
     }
 
     case ASTNode::AnonFn: {
@@ -128,8 +145,8 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       }
     }
 
-    case ASTNode::PatternVar:
-      return reduceTypeVariable(static_cast<const ASTPatternVar *>(ast));
+    case ASTNode::TypeVar:
+      return reduceTypeVariable(static_cast<const ASTTypeVariable *>(ast));
 
     default:
       diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
@@ -190,12 +207,12 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
   return new FunctionType(returnType, params);
 }
 
-Type * TypeAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
+Type * TypeAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   diag.error(ast) << "Type variable used outside of pattern.";
   return &BadType::instance;
 }
 
-bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, TypeList & result) {
+bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, ConstTypeList & result) {
   if (ast->nodeType() == ASTNode::LogicalOr) {
     const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
     const ASTNodeList & args = unionOp->args();

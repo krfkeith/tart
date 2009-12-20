@@ -82,6 +82,7 @@ public:
   Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
   Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
+  Expr * reduceTuple(const ASTOper * ast, const Type * expected);
 
   // Calls
 

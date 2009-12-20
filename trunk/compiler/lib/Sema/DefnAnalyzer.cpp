@@ -37,14 +37,14 @@ public:
     , tsig_(de->templateSignature())
   {}
 
-  Type * reduceTypeVariable(const ASTPatternVar * ast);
+  Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
 private:
   llvm::StringMap<TypeVariable *> vars_;
   TemplateSignature * tsig_;
 };
 
-Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
+Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   llvm::StringMap<TypeVariable *>::iterator it = vars_.find(ast->name());
   TypeVariable * tvar = NULL;
   if (it != vars_.end()) {
@@ -63,11 +63,11 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
   if (ast->type() != NULL) {
     Type * type = typeFromAST(ast->type());
     if (type != NULL) {
-      if (ast->constraint() == ASTPatternVar::IS_SUBTYPE) {
+      if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
         // Add a subclass test
         TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
         tsig_->conditions().push_back(condition);
-      } else if (ast->constraint() == ASTPatternVar::IS_SUPERTYPE) {
+      } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {
         // Add a subclass test - reversed.
         TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
         tsig_->conditions().push_back(condition);

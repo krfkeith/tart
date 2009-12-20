@@ -22,9 +22,9 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 
 namespace tart {
 
-static void assureNoPatternVars(Type * t) {
+static void assureNoTypeVars(Type * t) {
   for (size_t i = 0; i < t->numTypeParams(); ++i) {
-    if (isa<PatternVar>(t->typeParam(i))) {
+    if (isa<TypeVariable>(t->typeParam(i))) {
       diag.fatal() << "What's a type param doing here?" << t;
       DFAIL("Unexpected pattern var");
     }
@@ -32,7 +32,7 @@ static void assureNoPatternVars(Type * t) {
 
   if (CompositeType * ctype = dyn_cast<CompositeType>(t)) {
     for (ClassList::iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
-      assureNoPatternVars(*it);
+      assureNoTypeVars(*it);
     }
   }
 }
@@ -181,7 +181,7 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     return true;
   } else if (isErrorResult(pattern)) {
     return false;
-  } else if (const PatternVar * pv = dyn_cast<PatternVar>(pattern)) {
+  } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(pattern)) {
     return unifyPattern(source, pv, value, variance);
   } else if (const PatternValue * pval = dyn_cast<PatternValue>(pattern)) {
     if (pval->env() == this) {
@@ -203,7 +203,7 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     return unifyNativeArrayType(source, nap, value);
   } else if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(pattern)) {
     return unifyTypeLiteralType(source, npp, value);
-  } else if (const PatternVar * pv = dyn_cast<PatternVar>(value)) {
+  } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(value)) {
     diag.debug(source) << "Unify error: " << pattern << " : " << pv;
     DFAIL("Should not be unifying with a value that is a pattern var.");
   } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
@@ -400,14 +400,14 @@ bool BindingEnv::unifyCompositeType(
 }
 
 bool BindingEnv::unifyPattern(
-    SourceContext * source, const PatternVar * pattern, const Type * value, Variance variance) {
+    SourceContext * source, const TypeVariable * pattern, const Type * value, Variance variance) {
 
   if (pattern == value) {
     // Don't bind a pattern to itself.
     return true;
   }
 
-  /*if (PatternVar * pvar = dyn_cast<PatternVar>(value)) {
+  /*if (TypeVariable * pvar = dyn_cast<TypeVariable>(value)) {
     diag.debug() << pattern->templateDefn()->name() << pattern << " <- " << pvar->templateDefn()->name() << pvar << " in " << *this;
     //DFAIL("Abort");
   }*/
@@ -449,7 +449,7 @@ bool BindingEnv::unifyPattern(
       return false;
     }
 
-    if (const PatternVar * svar = dyn_cast<PatternVar>(s->right())) {
+    if (const TypeVariable * svar = dyn_cast<TypeVariable>(s->right())) {
       //DFAIL("Should not happen");
       // If 'pattern' is bound to another pattern variable, then go ahead and override
       // that binding.
@@ -550,7 +550,7 @@ Substitution * BindingEnv::addSubstitution(
   return substitutions_;
 }
 
-Type * BindingEnv::get(const PatternVar * type) const {
+Type * BindingEnv::get(const TypeVariable * type) const {
   Substitution * s = getSubstitutionFor(type);
   if (s != NULL) {
     return const_cast<Type *>(s->right());
@@ -561,7 +561,7 @@ Type * BindingEnv::get(const PatternVar * type) const {
 
 Type * BindingEnv::dereference(Type * type) const {
   while (type != NULL) {
-    if (PatternVar * var = dyn_cast<PatternVar>(type)) {
+    if (TypeVariable * var = dyn_cast<TypeVariable>(type)) {
       Substitution * s = getSubstitutionFor(type);
       if (s != NULL) {
         type = const_cast<Type *>(s->right());

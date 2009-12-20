@@ -38,7 +38,7 @@ bool ConstantInteger::isEqual(const ConstantExpr * cexpr) const {
 
 bool ConstantInteger::isNegative() const {
   const PrimitiveType * ptype = primitiveType();
-  if (isUnsignedIntegerType(ptype->typeId())) {
+  if (isUnsignedIntegerTypeId(ptype->typeId())) {
     return false;
   }
 
@@ -50,7 +50,7 @@ void ConstantInteger::format(FormatStream & out) const {
     out << (value_->isZero() ? "false" : "true");
   } else {
     const PrimitiveType * ptype = primitiveType();
-    out << value_->getValue().toString(10, isSignedIntegerType(ptype->typeId()));
+    out << value_->getValue().toString(10, isSignedIntegerTypeId(ptype->typeId()));
   }
 }
 

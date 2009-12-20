@@ -45,6 +45,7 @@ EXPR_TYPE(FnCall)         // Function call
 EXPR_TYPE(VTableCall)     // Virtual method call
 EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
 EXPR_TYPE(IndirectCall)   // Indirect call
+EXPR_TYPE(TupleCtor)      // Tuple constructor.
 
 // Casts
 EXPR_TYPE(ImplicitCast)   // Implicit cast

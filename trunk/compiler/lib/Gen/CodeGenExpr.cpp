@@ -60,8 +60,12 @@ namespace {
 const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator first,
     ValueList::const_iterator last) {
   for (ValueList::const_iterator it = first; it != last; ++it) {
-    const ConstantInt * index = cast<ConstantInt> (*it);
-    type = type->getContainedType(index->getSExtValue());
+    if (const ArrayType * atype = dyn_cast<ArrayType>(type)) {
+      type = type->getContainedType(0);
+    } else {
+      const ConstantInt * index = cast<ConstantInt> (*it);
+      type = type->getContainedType(index->getSExtValue());
+    }
   }
 
   return type;
@@ -143,6 +147,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::UnionMemberCast:
     case Expr::CheckedUnionMemberCast:
       return genUnionMemberCast(static_cast<const CastExpr *>(in));
+
+    case Expr::TupleCtor:
+      return genTupleCtor(static_cast<const TupleCtorExpr *>(in));
 
     case Expr::Assign:
     case Expr::PostAssign:
@@ -243,6 +250,10 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
+  }
+
+  if (requiresImplicitDereference(in->initExpr()->type())) {
+    initValue = builder_.CreateLoad(initValue);
   }
 
   VariableDefn * var = in->getVar();
@@ -389,6 +400,10 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
   if (var->defnType() == Defn::Let) {
     const VariableDefn * let = static_cast<const VariableDefn *>(var);
     Value * letValue = genLetValue(let);
+    if (lval->type()->typeClass() == Type::Tuple) {
+      return letValue;
+    }
+
     if (let->hasStorage()) {
       letValue = builder_.CreateLoad(letValue, var->name());
     }
@@ -396,6 +411,10 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     return letValue;
   } else if (var->defnType() == Defn::Var) {
     Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
+    if (var->type()->typeClass() == Type::Tuple) {
+      return varValue;
+    }
+
     return builder_.CreateLoad(varValue, var->name());
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
@@ -403,9 +422,15 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
       diag.fatal(param) << "Invalid parameter IR value for parameter '" << param << "'";
     }
     DASSERT_OBJ(param->irValue() != NULL, param);
+
+    if (param->type()->typeClass() == Type::Tuple) {
+      return param->irValue();
+    }
+
     if (param->isLValue()) {
       return builder_.CreateLoad(param->irValue(), param->name());
     }
+
     return param->irValue();
   } else {
     DFAIL("IllegalState");
@@ -475,32 +500,37 @@ Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
     return NULL;
   }
 
+  if (in->type()->typeClass() == Type::Tuple) {
+    DASSERT(isa<llvm::PointerType>(baseVal->getType()));
+  }
+
   return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(),
       labelStream.str().c_str());
 }
 
-Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
-    FormatStream & labelStream) {
+Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & label) {
 
   switch (expr->exprType()) {
     case Expr::LValue: {
+      // In this case, lvalue refers to a member of the base expression.
       const LValueExpr * lval = static_cast<const LValueExpr *>(expr);
-      Value * baseAddr = genBaseExpr(lval->base(), indices, labelStream);
+      Value * baseAddr = genBaseExpr(lval->base(), indices, label);
       const VariableDefn * field = cast<VariableDefn>(lval->value());
 
-      // TODO: Do the search later. (to handle fields in base classes.)
-      //Type * referringType = obj->getCanonicalType();
-      //assert(referringType == definingType);
       DASSERT(field->memberIndex() >= 0);
-
       indices.push_back(getInt32Val(field->memberIndex()));
-      labelStream << "." << field->name();
+      label << "." << field->name();
 
       // Assert that the type is what we expected: A pointer to the field type.
-      //DASSERT_TYPE_EQ_MSG(
-      //    PointerType::getUntypeeld->getType()->irType()),
-      //    getGEPType(baseAddr->getType(), indices.begin(), indices.end()),
-      //    "for field: " << field);
+      if (expr->type()->isReferenceType()) {
+        DASSERT_TYPE_EQ(
+            llvm::PointerType::get(expr->type()->irType(), 0),
+            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      } else {
+        DASSERT_TYPE_EQ(
+            expr->type()->irType(),
+            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      }
 
       return baseAddr;
     }
@@ -514,26 +544,38 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
       if (arrayExpr->type()->typeClass() == Type::NAddress) {
         // Handle auto-deref of Address type.
         arrayVal = genExpr(arrayExpr);
-        labelStream << arrayExpr;
+        label << arrayExpr;
       } else {
-        arrayVal = genBaseExpr(arrayExpr, indices, labelStream);
+        arrayVal = genBaseExpr(arrayExpr, indices, label);
       }
 
       // TODO: Make sure the dimensions are in the correct order here.
       // I think they might be backwards.
-      labelStream << "[" << indexExpr << "]";
+      label << "[" << indexExpr << "]";
       Value * indexVal = genExpr(indexExpr);
       if (indexVal == NULL) {
         return NULL;
       }
 
       indices.push_back(indexVal);
+
+      // Assert that the type is what we expected: A pointer to the field or element type.
+      if (expr->type()->isReferenceType()) {
+        DASSERT_TYPE_EQ(
+            llvm::PointerType::get(expr->type()->irType(), 0),
+            getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
+      } else {
+        //DASSERT_TYPE_EQ(
+        //    expr->type()->irType(),
+        //    getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
+      }
+
       return arrayVal;
     }
 
     default:
-    DFAIL("Bad GEP call");
-    break;
+      DFAIL("Bad GEP call");
+      break;
   }
 
   return NULL;
@@ -554,7 +596,7 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
    1) The expression is an explicit pointer dereference.
    2) The expression is a variable or parameter containing a reference type.
    3) The expression is a parameter to a value type, but has the reference
-      flag set (which should only be true for the self parameter.)
+      flag set (which should only be true for the 'self' parameter.)
    */
 
   const Expr * base = in;
@@ -569,6 +611,8 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     }
 
     if (fieldType->isReferenceType()) {
+      needsDeref = true;
+    } else if (fieldType->typeClass() == Type::Tuple) {
       needsDeref = true;
     }
 
@@ -599,16 +643,6 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
       indices.push_back(getInt32Val(0));
     }
   }
-
-  // Uncomment to enable some debugging stuff
-#if 0
-  diag.debug() << "Base address '" << base << "' has type '" << baseAddr->type() << "'";
-  if (!indices.empty()) {
-    diag.debug() << "Base address '" << base << "' with indices {" <<
-    indices << "} dereferences as '" <<
-    getGEPType(baseAddr->type(), indices.begin(), indices.end()) << "'";
-  }
-#endif
 
   // Assert that the type is what we expected.
   DASSERT_OBJ(in->type() != NULL, in);
@@ -708,7 +742,7 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
     llvm::Instruction::CastOps castType;
     switch (in->exprType()) {
       case Expr::Truncate:
-        if (isFloatingType(fromTypeId)) {
+        if (isFloatingTypeId(fromTypeId)) {
           castType = llvm::Instruction::FPTrunc;
         } else {
           castType = llvm::Instruction::Trunc;
@@ -716,7 +750,7 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
         break;
 
       case Expr::SignExtend:
-        if (isFloatingType(fromTypeId)) {
+        if (isFloatingTypeId(fromTypeId)) {
           castType = llvm::Instruction::FPExt;
         } else {
           castType = llvm::Instruction::SExt;
@@ -728,7 +762,7 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
         break;
 
       case Expr::IntToFloat:
-        if (isUnsignedIntegerType(fromTypeId)) {
+        if (isUnsignedIntegerTypeId(fromTypeId)) {
           castType = llvm::Instruction::UIToFP;
         } else {
           castType = llvm::Instruction::SIToFP;
@@ -880,6 +914,20 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   return NULL;
 }
 
+Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
+  const TupleType * tt = cast<TupleType>(dealias(in->type()));
+  Value * tupleValue = builder_.CreateAlloca(tt->irType(), 0, "tuple");
+  size_t index = 0;
+  for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it, ++index) {
+    Value * fieldPtr = builder_.CreateConstInBoundsGEP2_32(tupleValue, 0, index);
+    Value * fieldValue = genExpr(*it);
+    builder_.CreateStore(fieldValue, fieldPtr, false);
+  }
+
+  return tupleValue;
+  //return builder_.CreateLoad(tupleValue);
+}
+
 Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   const FunctionDefn * fn = in->function();
 
@@ -950,6 +998,13 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
     return selfArg;
   } else {
+    // Special handling for tuples.
+    if (requiresImplicitDereference(fn->returnType())) {
+      Value * aggResult = builder_.CreateAlloca(fn->returnType()->irType(), 0, "retval");
+      builder_.CreateStore(result, aggResult);
+      return aggResult;
+    }
+
     return result;
   }
 }

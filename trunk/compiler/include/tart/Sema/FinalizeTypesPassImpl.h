@@ -41,12 +41,14 @@ private:
   Expr * visitCast(CastExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitRefEq(BinaryExpr * in);
+  Expr * visitTupleCtor(TupleCtorExpr * in);
 
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
   Defn * doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env);
 
   Expr * addCastIfNeeded(Expr * in, const Type * toType);
   Expr * handleUnboxCast(CastExpr * in);
+  Expr * chooseIntSize(Expr * in);
 };
 
 } // namespace tart

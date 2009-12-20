@@ -24,7 +24,7 @@ AddressType::TypeMap AddressType::uniqueTypes_;
 
 void AddressType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
@@ -148,7 +148,7 @@ PointerType::TypeMap PointerType::uniqueTypes_;
 
 void PointerType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
@@ -270,8 +270,8 @@ NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 
 void NativeArrayType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "ElementType"));
-  typeParams.push_back(new PatternVar(SourceLocation(), "Length", &IntType::instance));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &IntType::instance));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
