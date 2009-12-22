@@ -21,6 +21,7 @@ class Module;
 class Expr;
 class CastExpr;
 class AssignmentExpr;
+class MultiAssignExpr;
 class BinaryOpcodeExpr;
 class BinaryExpr;
 class UnaryExpr;
@@ -146,11 +147,13 @@ public:
   llvm::Value * genCast(llvm::Value * in, const Type * fromType, const Type * toType);
   llvm::Value * genNumericCast(const CastExpr * in);
   llvm::Value * genUpCast(const CastExpr * in);
+  llvm::Value * genDynamicCast(const CastExpr * in, bool throwOnFailure);
   llvm::Value * genBitCast(const CastExpr * in);
   llvm::Value * genUnionCtorCast(const CastExpr * in);
   llvm::Value * genUnionMemberCast(const CastExpr * in);
   llvm::Value * genTupleCtor(const TupleCtorExpr * in);
   llvm::Value * genAssignment(const AssignmentExpr * in);
+  llvm::Value * genMultiAssign(const MultiAssignExpr * in);
   llvm::Value * genInstanceOf(const InstanceOfExpr * in);
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
   llvm::Value * genPtrDeref(const UnaryExpr * in);
@@ -159,6 +162,8 @@ public:
   llvm::Value * genCall(const FnCallExpr * in);
   llvm::Value * genIndirectCall(const IndirectCallExpr * in);
   llvm::Value * genNew(const NewExpr * in);
+  llvm::Value * genCompositeCast(llvm::Value * in, const CompositeType * fromCls,
+      const CompositeType * toCls, bool throwOnFailure);
 
   /** Load an expression */
   llvm::Value * genLoadLValue(const LValueExpr * lval);
@@ -169,8 +174,11 @@ public:
   /** Generate the address of a member field. */
   llvm::Value * genMemberFieldAddr(const LValueExpr * lval);
 
+  /** Load the value of an array element. */
+  llvm::Value * genLoadElement(const BinaryExpr * in);
+
   /** Generate the address of an array element. */
-  llvm::Value * genElementAddr(const UnaryExpr * in);
+  llvm::Value * genElementAddr(const BinaryExpr * in);
 
 #if 0
   /** Generate a type cast. */
@@ -358,9 +366,6 @@ private:
   llvm::Constant * genReflectionDataArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Return true if 'type' requires an implicit dereference, such as a struct. */
-  bool requiresImplicitDereference(const Type * type);
-
   void addTypeName(const CompositeType * type);
 
   /** Generate code to throw a typecast exception at the current point. */
@@ -371,6 +376,12 @@ private:
   llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
   llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
 
+  void ensureLValue(const Expr * expr, const llvm::Type * type);
+  void checkCallingArgs(const llvm::Value * fn,
+      ValueList::const_iterator first, ValueList::const_iterator last);
+
+  llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
+
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
 
@@ -379,6 +390,7 @@ private:
   llvm::Function * currentFn_;
   llvm::FunctionType * invokeFnType_;
   llvm::FunctionType * dcObjectFnType_;
+  llvm::Value * structRet_;
 
 #if 0
   llvm::Function * moduleInitFunc;

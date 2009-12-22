@@ -29,6 +29,10 @@ const llvm::Type * TypeAlias::irParameterType() const {
   return value_->irParameterType();
 }
 
+const llvm::Type * TypeAlias::irReturnType() const {
+  return value_->irReturnType();
+}
+
 ConversionRank TypeAlias::convertImpl(const Conversion & conversion) const {
   DASSERT(value_ != NULL);
   return value_->convertImpl(conversion);

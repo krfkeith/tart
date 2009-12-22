@@ -32,6 +32,8 @@ public:
   // Overrides
 
   const llvm::Type * irType() const;
+  TypeShape typeShape() const { return Shape_Unset; }
+
   static inline bool classof(const TypeConstraint *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() >= ResultOf;

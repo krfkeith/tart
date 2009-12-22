@@ -62,6 +62,7 @@ target_link_libraries(tartln
     ${LLVM_X86_ASM_PARSER}
     ${LLVM_X86_ASM_PRINTER}
     ${LLVM_X86_CODE_GEN}
+    ${LLVM_X86_DISASSEMBLER}
     ${LLVM_X86_INFO}
     ${LLVM_XCORE}
     ${LLVM_XCORE_ASM_PRINTER}

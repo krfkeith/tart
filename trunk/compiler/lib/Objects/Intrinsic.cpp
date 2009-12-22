@@ -90,7 +90,7 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * 
     }
   }
 
-  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
+  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::DynamicThrow);
 }
 
 // -------------------------------------------------------------------
@@ -623,9 +623,14 @@ NonreflectiveApplyIntrinsic NonreflectiveApplyIntrinsic::instance;
 Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
-  if (TypeDefn * tdef = ctype->value()->typeDefn()) {
-    tdef->addTrait(Defn::Nonreflective);
+  if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
+    if (TypeDefn * tdef = ctype->value()->typeDefn()) {
+      tdef->addTrait(Defn::Nonreflective);
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    lval->value()->addTrait(Defn::Nonreflective);
+  } else {
+    diag.fatal(loc) << "Invalid target for nonreflective.";
   }
 
   return args[0];

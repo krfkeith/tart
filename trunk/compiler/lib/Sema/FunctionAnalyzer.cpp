@@ -610,14 +610,7 @@ bool FunctionAnalyzer::createReflectionData() {
         }
       }
 
-      if (doReflect) {
-        /*analyzeDefn(functionType_paramTypes.get(), Task_PrepTypeComparison);
-        analyzeDefn(method_typeParams.get(), Task_PrepTypeComparison);
-        analyzeDefn(member_attributes.get(), Task_PrepTypeComparison);
-        module->addSymbol(functionType_paramTypes.type()->typeDefn());
-        module->addSymbol(method_typeParams.type()->typeDefn());
-        module->addSymbol(member_attributes.type()->typeDefn());*/
-      } else {
+      if (!doReflect) {
         target->addTrait(Defn::Nonreflective);
       }
     }

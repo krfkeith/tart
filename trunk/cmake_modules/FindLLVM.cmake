@@ -156,6 +156,7 @@ endif (NOT MSVC)
 find_llvm_library(X86_ASM_PARSER LLVMX86AsmParser)
 find_llvm_library(X86_ASM_PRINTER LLVMX86AsmPrinter)
 find_llvm_library(X86_CODE_GEN LLVMX86CodeGen)
+find_llvm_library(X86_DISASSEMBLER LLVMX86Disassembler)
 find_llvm_library(X86_INFO LLVMX86Info)
 
 if (NOT MSVC)

@@ -74,6 +74,7 @@ public:
   Expr * reduceAssign(const ASTOper * ast);
   Expr * reducePostAssign(const ASTOper * ast);
   Expr * reduceAugmentedAssign(const ASTOper * ast);
+  Expr * reduceMultipleAssign(const ASTOper * ast);
   Expr * reduceLoadValue(const ASTNode * ast);
   Expr * reduceStoreValue(const SourceLocation & loc, Expr * lval, Expr * rval);
   Expr * reduceRefEqualityTest(const ASTOper * ast);

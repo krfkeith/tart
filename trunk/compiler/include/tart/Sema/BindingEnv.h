@@ -109,6 +109,10 @@ public:
   bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
+  TypeShape typeShape() const {
+    Type * ty = value();
+    return ty != NULL ? ty->typeShape() : Shape_Unset;
+  }
   bool includes(const Type * other) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const;

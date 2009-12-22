@@ -47,6 +47,7 @@ public:
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;
+  TypeShape typeShape() const { return valueType_ ? valueType_->typeShape() : Shape_None; }
   void format(FormatStream & out) const;
 
   static inline bool classof(const TypeVariable *) { return true; }

@@ -15,7 +15,33 @@
 
 using namespace tart;
 
-TEST(TypeTest, FindCommonType) {
+class TupleTest : public testing::Test {
+public:
+  SourceFile testSource;
+  Module testModule;
+  Type * testClass;
+
+  Type * intTypes[4];
+  Type * shortTypes[4];
+  Type * testClassTypes[1];
+  Type * intAndTestClass[4];
+
+  TupleTest() : testSource(""), testModule(&testSource, "test") {
+    // Set up test class.
+    TypeDefn * de = new TypeDefn(&testModule, "test");
+    testClass = new CompositeType(Type::Class, de, &testModule);
+    de->addTrait(Defn::Singular);
+    de->setTypeValue(testClass);
+
+    // Set up arrays of types
+    intTypes[0] = intTypes[1] = intTypes[2] = intTypes[3] = &IntType::instance;
+    shortTypes[0] = shortTypes[1] = shortTypes[2] = shortTypes[3] = &ShortType::instance;
+    intAndTestClass[0] = intAndTestClass[2] = &IntType::instance;
+    intAndTestClass[1] = intAndTestClass[3] = testClassTypes[0] = testClass;
+  }
+};
+
+TEST_F(TupleTest, FindCommonType) {
   EXPECT_EQ(&IntType::instance,
       findCommonType(&IntType::instance, &IntType::instance));
 
@@ -23,7 +49,7 @@ TEST(TypeTest, FindCommonType) {
       findCommonType(&IntType::instance, &ShortType::instance));
 }
 
-TEST(TypeTest, TypeAttributes) {
+TEST_F(TupleTest, TypeAttributes) {
 }
 
 #if 0
@@ -41,7 +67,7 @@ TEST(TypeTest, TypePairTest) {
 }
 #endif
 
-TEST(TypeTest, TupleTypeTest) {
+TEST_F(TupleTest, TupleTypeTest) {
   //typedef TypeRefIterPairKeyInfo TRIPKI;
 
   TupleType * t0 = TupleType::get(&IntType::instance);
@@ -72,16 +98,9 @@ TEST(TypeTest, TupleTypeTest) {
   ASSERT_TRUE(t0->isSingular());
 }
 
-TEST(TypeTest, TupleTypeTest2) {
-  SourceFile testSource("");
-  Module testModule(&testSource, "test");
-  TypeDefn * de = new TypeDefn(&testModule, "test");
-  Type * testType = new CompositeType(Type::Class, de, &testModule);
-  de->addTrait(Defn::Singular);
-  de->setTypeValue(testType);
-
-  TupleType * t0 = TupleType::get(&testType, &testType + 1);
-  TupleType * t1 = TupleType::get(&testType, &testType + 1);
+TEST_F(TupleTest, TupleTypeTest2) {
+  TupleType * t0 = TupleType::get(&testClassTypes[0], &testClassTypes[1]);
+  TupleType * t1 = TupleType::get(&testClassTypes[0], &testClassTypes[1]);
 
   ASSERT_TRUE(TupleType::KeyInfo::getHashValue(t0) == TupleType::KeyInfo::getHashValue(t1));
   ASSERT_TRUE(TupleType::KeyInfo::isEqual(t0, t1));
@@ -92,8 +111,34 @@ TEST(TypeTest, TupleTypeTest2) {
   ASSERT_TRUE((void *)t0 == (void *)t1);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE((*t0->begin())->isEqual(testType));
+  ASSERT_TRUE(t0->member(0)->isEqual(testClass));
   ASSERT_TRUE(t0->isSingular());
+}
+
+/*TEST_F(TupleTest, LargeValue) {
+  TupleType * t0 = TupleType::get(&testClassTypes[0], &testClassTypes[1]);
+  TupleType * t1 = TupleType::get(&testClassTypes[0], &testClassTypes[2]);
+  TupleType * t2 = TupleType::get(&testClassTypes[0], &testClassTypes[3]);
+  TupleType * t3 = TupleType::get(&testClassTypes[0], &testClassTypes[4]);
+
+  ASSERT_FALSE(t0->isLargeValueType());
+  ASSERT_FALSE(t1->isLargeValueType());
+  ASSERT_TRUE(t2->isLargeValueType());
+  ASSERT_TRUE(t3->isLargeValueType());
+}*/
+
+TEST_F(TupleTest, TupleConversion) {
+  TupleType * t0 = TupleType::get(&testClassTypes[0], &testClassTypes[2]);
+  TupleType * t1 = TupleType::get(&testClassTypes[0], &testClassTypes[2]);
+  TupleType * t2 = TupleType::get(&intTypes[0], &intTypes[2]);
+  TupleType * t3 = TupleType::get(&shortTypes[0], &shortTypes[2]);
+
+  ASSERT_EQ(IdenticalTypes, t0->canConvert(t1));
+  ASSERT_EQ(IdenticalTypes, t1->canConvert(t0));
+  ASSERT_EQ(ExactConversion, t2->canConvert(t3));
+  ASSERT_EQ(Truncation, t3->canConvert(t2));
+  ASSERT_EQ(Incompatible, t0->canConvert(t3));
+  ASSERT_EQ(Incompatible, t3->canConvert(t0));
 }
 
 

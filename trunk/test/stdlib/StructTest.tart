@@ -1,0 +1,119 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  return TestUtils.runModuleTests(Module.thisModule());
+}
+
+struct Point {
+  var x:int;
+  var y:int;
+  var z:int = 1;
+}
+
+struct LargePoint {
+  var x:int64;
+  var y:int64;
+  var z:int64 = 1;
+}
+
+struct TwoPoints {
+  var pt:Point;
+  var lpt:LargePoint;
+}
+
+def testDefaultConstructor() {
+  var p = Point();
+  Debug.assertEq(0, p.x);
+  Debug.assertEq(0, p.y);
+  Debug.assertEq(1, p.z);
+
+  let p2 = Point();
+  Debug.assertEq(0, p2.x);
+  Debug.assertEq(0, p2.y);
+  Debug.assertEq(1, p2.z);
+}
+
+def testConstructorArgs() {
+  var p = Point(1, 2, 3);
+  Debug.assertEq(1, p.x);
+  Debug.assertEq(2, p.y);
+  Debug.assertEq(3, p.z);
+
+  let p2 = Point(1, 2, 3);
+  Debug.assertEq(1, p2.x);
+  Debug.assertEq(2, p2.y);
+  Debug.assertEq(3, p2.z);
+}
+
+def testConstructorKwdArgs() {
+  var p = Point(z=1, x=2, y=3);
+  Debug.assertEq(2, p.x);
+  Debug.assertEq(3, p.y);
+  Debug.assertEq(1, p.z);
+
+  let p2 = Point(z=1, x=2, y=3);
+  Debug.assertEq(2, p2.x);
+  Debug.assertEq(3, p2.y);
+  Debug.assertEq(1, p2.z);
+}
+
+def testConstructorLarge() {
+  var p = LargePoint(1, 2, 3);
+  Debug.assertEq(1, p.x);
+  Debug.assertEq(2, p.y);
+  Debug.assertEq(3, p.z);
+}
+
+def testAssign() {
+  var p = Point(z=1, x=2, y=3);
+  var p2 = p;
+  Debug.assertEq(2, p2.x);
+  Debug.assertEq(3, p2.y);
+  Debug.assertEq(1, p2.z);
+  
+  var p3:Point;
+  p3 = p;
+  Debug.assertEq(2, p3.x);
+  Debug.assertEq(3, p3.y);
+  Debug.assertEq(1, p3.z);
+  
+  let p4 = Point(8, 8, 8);
+  p3 = p4;
+  Debug.assertEq(8, p4.x);
+  Debug.assertEq(8, p4.y);
+  Debug.assertEq(8, p4.z);
+}
+
+def testAssignLarge() {
+  var p = LargePoint(z=1, x=2, y=3);
+  var p2 = p;
+  Debug.assertEq(2, p2.x);
+  Debug.assertEq(3, p2.y);
+  Debug.assertEq(1, p2.z);
+  
+  var p3:LargePoint = LargePoint(0, 0, 0);
+  p3 = p;
+  Debug.assertEq(2, p3.x);
+  Debug.assertEq(3, p3.y);
+  Debug.assertEq(1, p3.z);
+
+  let p4 = LargePoint(8, 8, 8);
+  p3 = p4;
+  Debug.assertEq(8, p4.x);
+  Debug.assertEq(8, p4.y);
+  Debug.assertEq(8, p4.z);
+}
+
+def testStructMemberConstruction() {
+  // Default constructor
+  //var tp1:TwoPoints = TwoPoints();
+  //var tp:TwoPoints = TwoPoints(Point(1, 1, 1), LargePoint(2, 2, 2));
+}
+
+def testStructMemberRead() {
+}
+
+def testStructMemberAssign() {
+}

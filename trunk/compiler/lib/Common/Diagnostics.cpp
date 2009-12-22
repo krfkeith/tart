@@ -99,7 +99,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
   if (writer_ && sev >= minSeverity) {
     writer_->write(loc, sev, msg);
     if (sev == Fatal && DebugErrors) {
-      printStackTrace(5);
+      printStackTrace(4);
     }
   }
 

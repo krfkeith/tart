@@ -103,7 +103,7 @@ TupleType * TupleType::get(TupleType::const_iterator first, TupleType::const_ite
 }
 
 TupleType::TupleType(TupleType::const_iterator first, TupleType::const_iterator last)
-  : TypeImpl(Tuple)
+  : TypeImpl(Tuple, Shape_Unset)
   , members_(first, last)
 {
 }
@@ -120,7 +120,18 @@ const llvm::Type * TupleType::createIRType() const {
     fieldTypes.push_back(fieldType);
   }
 
-  return llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
+  llvm::Type * result = llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
+  shape_ = isLargeIRType(result) ? Shape_Large_Value : Shape_Small_RValue;
+  return result;
+}
+
+const llvm::Type * TupleType::irParameterType() const {
+  const llvm::Type * type = irType();
+  if (shape_ == Shape_Large_Value) {
+    return llvm::PointerType::get(type, 0);
+  } else {
+    return type;
+  }
 }
 
 ConversionRank TupleType::convertImpl(const Conversion & cn) const {
@@ -144,7 +155,7 @@ ConversionRank TupleType::convertImpl(const Conversion & cn) const {
   }
 
   ExprList args;
-  ConversionRank rank = Incompatible;
+  ConversionRank rank = IdenticalTypes;
   bool identical = true;
   for (size_t i = 0; i < fieldCount; ++i) {
     const Type * fromFieldType = fromType->member(i);
@@ -224,6 +235,18 @@ bool TupleType::includes(const Type * other) const {
   }
 
   return false;
+}
+
+TypeShape TupleType::typeShape() const {
+  if (shape_ == Shape_Unset) {
+    if (isLargeIRType(irType())) {
+      shape_ = Shape_Large_Value;
+    } else {
+      shape_ = Shape_Small_RValue;
+    }
+  }
+
+  return shape_;
 }
 
 void TupleType::formatMembers(FormatStream & out) const {

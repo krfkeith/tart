@@ -52,13 +52,13 @@ AddressType * AddressType::get(const Type * elemType) {
 }
 
 AddressType::AddressType(const Type * elemType)
-  : TypeImpl(Type::NAddress)
+  : TypeImpl(Type::NAddress, Shape_Primitive)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
-AddressType::AddressType() : TypeImpl(Type::NAddress) {}
+AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
 
 AddressType::~AddressType() {
   /*TypeMap::iterator it = uniqueTypes_.find(elementType_);
@@ -176,13 +176,13 @@ PointerType * PointerType::get(const Type * elemType) {
 }
 
 PointerType::PointerType(const Type * elemType)
-  : TypeImpl(Type::NPointer)
+  : TypeImpl(Type::NPointer, Shape_Primitive)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
-PointerType::PointerType() : TypeImpl(Type::NPointer) {}
+PointerType::PointerType() : TypeImpl(Type::NPointer, Shape_Primitive) {}
 
 const llvm::Type * PointerType::createIRType() const {
   const llvm::Type * type = elementType_->irEmbeddedType();
@@ -298,7 +298,7 @@ NativeArrayType * NativeArrayType::get(const TupleType * typeArgs) {
 }
 
 NativeArrayType::NativeArrayType(const TupleType * typeArgs)
-  : TypeImpl(Type::NArray)
+  : TypeImpl(Type::NArray, Shape_Large_Value)
   , typeArgs_(typeArgs)
 //  , size_(sz)
 {
@@ -307,7 +307,7 @@ NativeArrayType::NativeArrayType(const TupleType * typeArgs)
   //DFAIL("Implement sz");
 }
 
-NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray) {}
+NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray, Shape_Large_Value) {}
 
 const Type * NativeArrayType::typeParam(int index) const {
   return (*typeArgs_)[index];

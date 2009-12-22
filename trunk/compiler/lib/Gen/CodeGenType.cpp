@@ -512,6 +512,15 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   builder_.CreateCall2(checkArgsFn, argsArray, getInt32Val(numParams));
 
   ValueList args;
+
+  // Handle struct return argument if present.
+  Value * sret = NULL;
+  if (fnType->isStructReturn()) {
+    sret = builder_.CreateAlloca(fnType->returnType()->irType());
+    args.push_back(sret);
+  }
+
+  // Handle self argument if present.
   const llvm::FunctionType * callType;
   if (fnType->selfParam() != NULL && !fnType->isStatic()) {
     // Push the 'self' argument.
@@ -530,8 +539,30 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
     indices[0] = getInt32Val(0);
     indices[1] = getInt32Val(2);
     indices[2] = getInt32Val(i);
-    Value * argVal = builder_.CreateLoad(
-        builder_.CreateInBoundsGEP(argsArray, &indices[0], &indices[3]));
+    Value * argAddr = builder_.CreateInBoundsGEP(argsArray, &indices[0], &indices[3]);
+    Value * argVal = argAddr;
+    ensureLValue(NULL, argAddr->getType());
+    argVal = builder_.CreateLoad(argAddr);
+//    if (!isSmallAggregateValueType(paramType)) {
+//      ensureLValue(NULL, argAddr->getType());
+//      argVal = builder_.CreateLoad(argAddr);
+//    }
+    /*TypeShape typeShape = paramType->typeShape();
+    switch (typeShape) {
+      case Shape_Primitive:
+      case Shape_Small_RValue:
+        break;
+
+      case Shape_Reference:
+      case Shape_Small_LValue:
+      case Shape_Large_Value:
+        //needsDeref = true;
+        break;
+
+      default:
+        diag.fatal(in) << "Invalid type shape";
+    }*/
+
     argVal = genCast(argVal, Builtins::typeObject, paramType);
     if (argVal == NULL) {
       currentFn_ = NULL;
@@ -542,10 +573,15 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   }
 
   fnPtr = builder_.CreatePointerCast(fnPtr, llvm::PointerType::get(callType, 0));
-  Value * returnVal = builder_.CreateCall(fnPtr, args.begin(), args.end(), "invoke");
+  checkCallingArgs(fnPtr, args.begin(), args.end());
+  Value * returnVal = builder_.CreateCall(fnPtr, args.begin(), args.end() /*, "invoke"*/);
 
   if (!fnType->returnType()->isVoidType()) {
     const Type * returnType = fnType->returnType();
+    if (sret != NULL) {
+      returnVal = sret;
+    }
+
     returnVal = genCast(returnVal, returnType, Builtins::typeObject);
     if (returnVal == NULL) {
       currentFn_ = NULL;
@@ -609,7 +645,7 @@ llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
     paramTypes.push_back(fnType->params()[0]->type()->irParameterType());
 
     dcObjectFnType_ = llvm::FunctionType::get(
-        fnType->returnType()->irParameterType(), paramTypes, false);
+        fnType->returnType()->irReturnType(), paramTypes, false);
   }
 
   return dcObjectFnType_;

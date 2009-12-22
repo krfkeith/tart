@@ -13,12 +13,6 @@ namespace tart {
 
 typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 
-// TODO: Eliminate union members that are subclasses of other members.
-// TODO: Sort union members into a canonical order.
-// TODO: Allow comparisons between union types independent of member declaration order.
-// TODO: Fold equivalent unions into a single representation.
-// TODO: Finish the trace() function for this type.
-
 /// -------------------------------------------------------------------
 /// Represents a tuple of values which may have different types.
 class TupleType : public TypeImpl {
@@ -49,11 +43,13 @@ public:
   // Overrides
 
   const llvm::Type * createIRType() const;
+  const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
+  TypeShape typeShape() const;
   bool includes(const Type * other) const;
   void formatMembers(FormatStream & out) const;
   void format(FormatStream & out) const;

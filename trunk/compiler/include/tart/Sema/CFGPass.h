@@ -41,6 +41,7 @@ public:
 
   virtual Expr * visitAssign(AssignmentExpr * in);
   virtual Expr * visitPostAssign(AssignmentExpr * in);
+  virtual Expr * visitMultiAssign(MultiAssignExpr * in);
   virtual Expr * visitCall(CallExpr * in);
   virtual Expr * visitFnCall(FnCallExpr * in);
   virtual Expr * visitIndirectCall(CallExpr * in);

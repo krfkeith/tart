@@ -148,16 +148,20 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     builder_.CreateRet(NULL);
   } else {
     Value * value = genExpr(returnVal);
+    const Type * returnType = returnVal->canonicalType();
+    TypeShape returnShape = returnType->typeShape();
     DASSERT(value != NULL);
-    if (requiresImplicitDereference(returnVal->type())) {
-      //value = builder_.CreateLoad(value);
-    }
-    if (returnVal->type()->typeClass() == Type::Tuple) {
+    if (returnShape == Shape_Large_Value || returnShape == Shape_Small_LValue) {
       value = builder_.CreateLoad(value);
     }
 
     //genDoFinally(blk);
-    builder_.CreateRet(value);
+    if (structRet_ != NULL) {
+      builder_.CreateStore(value, structRet_);
+      builder_.CreateRet(NULL);
+    } else {
+      builder_.CreateRet(value);
+    }
   }
 }
 

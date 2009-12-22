@@ -48,7 +48,7 @@ private:
 // TypeVariable
 
 TypeVariable::TypeVariable(const SourceLocation & location, const char * name, const Type * valueType)
-  : TypeImpl(Pattern)
+  : TypeImpl(Pattern, Shape_Unset)
   , location_(location)
   , valueType_(valueType)
   , name_(name)

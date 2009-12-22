@@ -12,6 +12,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -52,6 +53,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , currentFn_(NULL)
     , invokeFnType_(NULL)
     , dcObjectFnType_(NULL)
+    , structRet_(NULL)
     , reflector_(*this)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -417,10 +419,6 @@ Function * CodeGenerator::findMethod(const CompositeType * type, const char * me
   return genFunctionValue(fn);
 }
 
-bool CodeGenerator::requiresImplicitDereference(const Type * type) {
-  return type->typeClass() == Type::Struct || type->typeClass() == Type::Tuple;
-}
-
 llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {
   return reflector_.getModulePtr(module_);
 }
@@ -450,6 +448,37 @@ void CodeGenerator::addTypeName(const CompositeType * type) {
       type->passes().isFinished(CompositeType::FieldPass)) {
     irModule_->addTypeName(type->typeDefn()->qualifiedName(), type->irType());
   }
+}
+
+void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
+#if !NDEBUG
+  if (!isa<llvm::PointerType>(type)) {
+    if (expr != NULL) {
+      diag.error(expr) << "Not an lvalue: " << expr;
+    }
+    type->dump(irModule_);
+    DFAIL("Expecting an lvalue");
+  }
+#endif
+}
+
+void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
+    ValueList::const_iterator first, ValueList::const_iterator last) {
+#if !NDEBUG
+  const llvm::FunctionType * fnType = cast<llvm::FunctionType>(fn->getType()->getContainedType(0));
+  size_t argCount = last - first;
+  DASSERT(fnType->getNumParams() == argCount);
+  for (size_t i = 0; i < argCount; ++i) {
+    const llvm::Type * paramType = fnType->getContainedType(i + 1);
+    const llvm::Type * argType = first[i]->getType();
+    if (paramType != argType) {
+      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType;
+      diag.info() << "but was '" << *argType;
+      diag.info() << "function value: '" << *fn;
+      DFAIL("Called from here");
+    }
+  }
+#endif
 }
 
 }
