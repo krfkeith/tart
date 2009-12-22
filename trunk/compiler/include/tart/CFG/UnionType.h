@@ -60,6 +60,7 @@ public:
   bool isSingular() const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
+  TypeShape typeShape() const;
   bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   void trace() const;
@@ -82,7 +83,6 @@ protected:
   size_t numReferenceTypes_;
   bool hasVoidType_;
   bool hasNullType_;
-
   mutable IRTypeList irTypes_; // IR types corresponding to tart types.
 };
 

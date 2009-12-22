@@ -160,9 +160,6 @@ public:
   const PassMgr & passes() const { return passes_; }
   PassMgr & passes() { return passes_; }
 
-  /** Return true if this is a reference type. */
-  bool isReferenceType() const;
-
   /** Return the set of all ancestor classes. */
   void ancestorClasses(ClassSet & out) const;
 
@@ -191,10 +188,13 @@ public:
   const llvm::Type * createIRType() const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
+  const llvm::Type * irReturnType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   void trace() const;
   bool isSubtype(const Type * other) const;
   bool isSingular() const;
+  bool isReferenceType() const;
+  TypeShape typeShape() const;
   bool includes(const Type * other) const;
 
   static inline bool classof(const CompositeType *) { return true; }

@@ -55,15 +55,6 @@ public:
   /** Define a constant member of this type. */
   void defineConstant(const char * name, ConstantExpr * value);
 
-  // Overrides
-  const llvm::Type * createIRType() const;
-  virtual bool isSingular() const { return true; }
-
-  static inline bool classof(const PrimitiveType *) { return true; }
-  static inline bool classof(const Type * t) {
-    return t->typeClass() == Type::Primitive;
-  }
-
   PrimitiveType * nextType() const { return nextType_; }
 
   // Return an integer type that fits the given number of bits.
@@ -73,6 +64,15 @@ public:
   static const Type * derefEnumType(const Type * in);
 
   static void initPrimitiveTypes(Module * module);
+
+  // Overrides
+  const llvm::Type * createIRType() const;
+  virtual bool isSingular() const { return true; }
+
+  static inline bool classof(const PrimitiveType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == Type::Primitive;
+  }
 
 protected:
   ConversionRank convertToInteger(const Conversion & cn) const;

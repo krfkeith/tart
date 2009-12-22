@@ -161,7 +161,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
       }
     }
   } else if (context->type() != NULL) {
-    const Type * contextType = dealias(context->type());
+    const Type * contextType = context->canonicalType();
     if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
       const Type * type = inferType(lvalue->value());
       if (type == NULL) {

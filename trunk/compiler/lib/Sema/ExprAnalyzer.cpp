@@ -319,6 +319,10 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 }
 
 Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
+  if (ast->arg(0)->nodeType() == ASTNode::Tuple) {
+    return reduceMultipleAssign(ast);
+  }
+
   Expr * lhs = reduceValueRef(ast->arg(0), true);
   if (isErrorResult(lhs)) {
     return &Expr::ErrorVal;
@@ -366,6 +370,46 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
   }
 
   return new AssignmentExpr(Expr::PostAssign, ast->location(), lvalue, newValue);
+}
+
+Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
+  const ASTOper * lhs = static_cast<const ASTOper *>(ast->arg(0));
+  ConstTypeList varTypes;
+  ExprList dstVars;
+  for (ASTNodeList::const_iterator it = lhs->args().begin(); it != lhs->args().end(); ++it) {
+    Expr * dstLVal = reduceValueRef(*it, true);
+    if (isErrorResult(dstLVal)) {
+      return &Expr::ErrorVal;
+    }
+
+    DASSERT_OBJ(dstLVal->type() != NULL, dstLVal);
+    dstVars.push_back(dstLVal);
+    varTypes.push_back(dstLVal->type());
+  }
+
+  TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
+  Expr * rhs = inferTypes(subject_, reduceExpr(ast->arg(1), tt), tt, true);
+  if (isErrorResult(rhs)) {
+    return &Expr::ErrorVal;
+  }
+
+  // Create a multi-assign node.
+  MultiAssignExpr * ma = new MultiAssignExpr(ast->location(), rhs->type());
+  for (size_t i = 0; i < dstVars.size(); ++i) {
+    Expr * srcVal;
+    if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
+      srcVal = tce->arg(i);
+    } else {
+      srcVal = new BinaryExpr(
+        Expr::ElementRef, rhs->location(), tt->member(i),
+        rhs, ConstantInteger::getUInt32(i));
+    }
+
+    Expr * assign = reduceStoreValue(ast->location(), dstVars[i], srcVal);
+    ma->appendArg(assign);
+  }
+
+  return ma;
 }
 
 Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
@@ -474,22 +518,24 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
   return lvalue;
 }
 
-Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lvalue, Expr * rvalue) {
-  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
+Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Expr * rhs) {
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(lhs)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
       checkAccess(loc, prop);
-      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rvalue);
+      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rhs);
     }
-  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  } else if (CallExpr * call = dyn_cast<CallExpr>(lhs)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        return reduceSetParamPropertyValue(loc, call, rvalue);
+        return reduceSetParamPropertyValue(loc, call, rhs);
       }
     }
+
+    diag.error(lhs) << "lvalue expected on left side of assignment: " << lhs;
   }
 
-  return new AssignmentExpr(Expr::Assign, loc, lvalue, rvalue);
+  return new AssignmentExpr(Expr::Assign, loc, lhs, rhs);
 }
 
 Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {

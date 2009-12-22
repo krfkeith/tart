@@ -53,7 +53,7 @@ namespace {
 
 CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope,
     uint32_t flags)
-  : DeclaredType(tcls, de, parentScope)
+  : DeclaredType(tcls, de, parentScope, Shape_Unset)
   , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , super_(NULL)
   , classFlags_(0)
@@ -164,7 +164,6 @@ const llvm::Type * CompositeType::createIRType() const {
   DASSERT_OBJ(isSingular(), this);
   DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
   DASSERT_OBJ(passes_.isFinished(FieldPass), this);
-  //DASSERT(irType_ == NULL);
 
   // Members of the class
   std::vector<const llvm::Type *> fieldTypes;
@@ -194,6 +193,26 @@ const llvm::Type * CompositeType::createIRType() const {
   // because sometimes irType_ will be NULL which PATypeHolder cannot be. However, it is
   // assumed that no one is keeping a persistent copy of irType_ around in raw pointer form.
   llvm::Type * finalType = StructType::get(llvm::getGlobalContext(), fieldTypes);
+
+  // Determine the shape of the type.
+  switch (typeClass()) {
+    case Type::Class:
+    case Type::Interface:
+      shape_ = Shape_Reference;
+      break;
+
+    case Type::Struct:
+      shape_ = isLargeIRType(finalType) ? Shape_Large_Value : Shape_Small_LValue;
+      break;
+
+    case Type::Protocol:
+      shape_ = Shape_None;
+      break;
+
+    default:
+      DFAIL("Invalid composite");
+  }
+
   cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
   return irTypeHolder_.get();
 }
@@ -208,6 +227,15 @@ const llvm::Type * CompositeType::irEmbeddedType() const {
 }
 
 const llvm::Type * CompositeType::irParameterType() const {
+  const llvm::Type * type = irType();
+  if (isReferenceType()) {
+    return llvm::PointerType::get(type, 0);
+  } else {
+    return type;
+  }
+}
+
+const llvm::Type * CompositeType::irReturnType() const {
   const llvm::Type * type = irType();
   if (isReferenceType()) {
     return llvm::PointerType::get(type, 0);
@@ -343,9 +371,10 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
 
 
     // Check dynamic casts.
-    if ((cn.options & Conversion::Dynamic) && isReferenceType() && fromClass->isReferenceType()) {
+    if ((cn.options & Conversion::DynamicThrow)
+        && isReferenceType() && fromClass->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = CastExpr::dynamicCast(cn.fromValue, this)->at(cn.fromValue->location());
+        *cn.resultValue = CastExpr::tryCast(cn.fromValue, this)->at(cn.fromValue->location());
       }
 
       return NonPreferred;
@@ -362,6 +391,14 @@ bool CompositeType::isSingular() const {
 bool CompositeType::isReferenceType() const {
   // TODO: Not if it's a static interface...
   return (typeClass() == Type::Class || typeClass() == Type::Interface);
+}
+
+TypeShape CompositeType::typeShape() const {
+  if (shape_ == Shape_Unset) {
+    irType();
+  }
+
+  return shape_;
 }
 
 bool CompositeType::isSubtype(const Type * other) const {

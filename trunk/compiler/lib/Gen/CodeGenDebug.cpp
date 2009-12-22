@@ -558,7 +558,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         "self",
         genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->type()->irParameterType()),
+        getSizeOfInBits(llvm::PointerType::get(param->type()->irType(), 0)),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);

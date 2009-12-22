@@ -21,7 +21,7 @@ UnionType * UnionType::get(const SourceLocation & loc, const ConstTypeList & mem
 }
 
 UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
-  : TypeImpl(Union)
+  : TypeImpl(Union, Shape_Unset)
   , loc_(loc)
   , numValueTypes_(0)
   , numReferenceTypes_(0)
@@ -91,6 +91,7 @@ const llvm::Type * UnionType::createIRType() const {
   size_t largestSize64 = 0;
   const Type * largestType32 = 0;   // Largest type on 32-bit platforms
   const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
+  shape_ = Shape_Small_RValue;
 
   // Create an array representing all of the IR types that correspond to the Tart types.
   for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
@@ -98,6 +99,10 @@ const llvm::Type * UnionType::createIRType() const {
 
     const llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
+
+    if (type->typeShape() == Shape_Large_Value) {
+      shape_ == Shape_Large_Value;
+    }
 
     size_t size32 = estimateTypeSize(irType, 32);
     size_t size64 = estimateTypeSize(irType, 64);
@@ -144,8 +149,10 @@ const llvm::Type * UnionType::createIRType() const {
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else if (hasNullType_ && numReferenceTypes_ == 2) {
     // If it's Null or some reference type, then use the reference type.
+    shape_ = Shape_Primitive;
     return members_->member(0)->irEmbeddedType();
   } else {
+    shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
   }
 }
@@ -278,6 +285,14 @@ bool UnionType::includes(const Type * other) const {
   }
 
   return false;
+}
+
+TypeShape UnionType::typeShape() const {
+  if (shape_ == Shape_Unset) {
+    irType();
+  }
+
+  return shape_;
 }
 
 int UnionType::getTypeIndex(const Type * type) const {

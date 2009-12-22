@@ -12,10 +12,27 @@ def testTupleCreate() {
   Debug.assertEq(2, a[1]);
 }
 
+def testTupleCreateLarge() {
+  var a = 1, 2, 3, 4, 5, 6;
+  Debug.assertEq(1, a[0]);
+  Debug.assertEq(2, a[1]);
+  Debug.assertEq(3, a[2]);
+  Debug.assertEq(4, a[3]);
+  Debug.assertEq(5, a[4]);
+  Debug.assertEq(6, a[5]);
+}
+
 def testTupleCreate2() {
   var a = 1, "Hello";
   Debug.assertEq(1, a[0]);
   Debug.assertEq("Hello", a[1]);
+}
+
+def testTupleCreate2Large() {
+  var a = "Hello", "there", "world!";
+  Debug.assertEq("Hello", a[0]);
+  Debug.assertEq("there", a[1]);
+  Debug.assertEq("world!", a[2]);
 }
 
 def testTupleCreateExplicitType() {
@@ -31,12 +48,61 @@ def testTupleAssign() {
   Debug.assertEq(2, a[1]);
 }
 
+def testTupleAssignLarge() {
+  var a = 1, 2, 3, 4, 5, 6;
+  var b = a;
+  Debug.assertEq(1, b[0]);
+  Debug.assertEq(2, b[1]);
+  Debug.assertEq(3, b[2]);
+  Debug.assertEq(4, b[3]);
+  Debug.assertEq(5, b[4]);
+  Debug.assertEq(6, b[5]);
+}
+
 def testTupleReturn() {
   var a = returnTuple();
   Debug.assertEq(3, a[0]);
   Debug.assertEq("Hello", a[1]);
 }
 
+def testTupleReturnLarge() {
+  var a = returnTupleLarge();
+  Debug.assertEq(3, a[0]);
+  Debug.assertEq("Hello", a[1]);
+  Debug.assertEq(2, a[2]);
+  Debug.assertEq("World", a[3]);
+}
+
 def returnTuple() -> (int, String) {
   return 3, "Hello";
+}
+
+def returnTupleLarge() -> (int, String, int, String) {
+  return 3, "Hello", 2, "World";
+}
+
+def testTupleArg() {
+  tupleArg((3, 4.5));
+}
+
+def tupleArg(a:(int, double)) {
+  Debug.assertEq(3, a[0]);
+  Debug.assertEq(4.5, a[1]);
+}
+
+def testUnpackedAssign() {
+  var a = 1, 2.0;
+  var b, c = a;
+  //var b2:int, c2:double = a;
+  //var b3:long, c3 = a;
+  
+  b, c = a;
+}
+
+def testSwapIdiom() {
+  var a = 1;
+  var b = 2;
+  a, b = b, a;
+  Debug.assertEq(2, a);
+  //Debug.assertEq(1, b);
 }

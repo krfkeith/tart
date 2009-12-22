@@ -472,8 +472,8 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
 // -------------------------------------------------------------------
 // DeclaredType
 
-DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope)
-  : TypeImpl(cls)
+DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope, TypeShape shape)
+  : TypeImpl(cls, shape)
   , IterableScope(parentScope)
   , defn_(de)
 {
@@ -569,6 +569,71 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
+}
+
+void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & numBits) {
+
+  switch (type->getTypeID()) {
+    case llvm::Type::VoidTyID:
+    case llvm::Type::FloatTyID:
+    case llvm::Type::DoubleTyID:
+    case llvm::Type::X86_FP80TyID:
+    case llvm::Type::FP128TyID:
+    case llvm::Type::PPC_FP128TyID:
+    case llvm::Type::IntegerTyID:
+      numBits += type->getPrimitiveSizeInBits();
+      break;
+
+    case llvm::Type::PointerTyID:
+      numPointers += 1;
+      break;
+
+    case llvm::Type::StructTyID:
+      for (llvm::Type::subtype_iterator it = type->subtype_begin(); it != type->subtype_end();
+          ++it) {
+        estimateTypeSize(*it, numPointers, numBits);
+      }
+
+      break;
+
+    case llvm::Type::ArrayTyID: {
+      const llvm::ArrayType * atype = cast<llvm::ArrayType>(type);
+      size_t elemPointers = 0;
+      size_t elemBits = 0;
+      estimateTypeSize(atype->getElementType(), numPointers, numBits);
+      numPointers += elemPointers * atype->getNumElements();
+      numBits += elemBits * atype->getNumElements();
+      break;
+    }
+
+    case llvm::Type::VectorTyID: {
+      const llvm::VectorType * atype = cast<llvm::VectorType>(type);
+      size_t elemPointers = 0;
+      size_t elemBits = 0;
+      estimateTypeSize(atype->getElementType(), numPointers, numBits);
+      numPointers += elemPointers * atype->getNumElements();
+      numBits += elemBits * atype->getNumElements();
+      break;
+    }
+
+    case llvm::Type::OpaqueTyID:
+    case llvm::Type::LabelTyID:
+    case llvm::Type::MetadataTyID:
+    case llvm::Type::FunctionTyID:
+    default:
+      break;
+  }
+}
+
+bool isLargeIRType(const llvm::Type * type) {
+  if (type->isAbstract() || !type->isFirstClassType()) {
+    return true;
+  }
+
+  size_t numPointers = 0;
+  size_t numBits = 0;
+  estimateTypeSize(type, numPointers, numBits);
+  return (numPointers > 2 || numBits > 64 || (numPointers > 0 && numBits > 32));
 }
 
 } // namespace tart

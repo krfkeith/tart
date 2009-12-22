@@ -494,7 +494,7 @@ TEST_F(ParserTest, Statements) {
 
   ast = parseStatement("while let a, a = b {}");
   ASSERT_EQ(ASTNode::While, ast->nodeType());
-  EXPECT_AST_EQ("While (Assign(Tuple(let a, let a), b), {})", ast);
+  EXPECT_AST_EQ("While (varlist vlist(let a, let a) = b, {})", ast);
 
   ast = parseStatement("for a; b; c {}");
   ASSERT_EQ(ASTNode::For, ast->nodeType());

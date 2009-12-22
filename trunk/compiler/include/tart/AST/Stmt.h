@@ -24,6 +24,7 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// Forward declarations.
 class ASTDecl;
+class ASTVarDecl;
 class CodeGenerator;
 
 // -------------------------------------------------------------------
@@ -275,13 +276,13 @@ private:
 // For each statement
 class ForEachStmt: public Stmt {
 public:
-  ForEachStmt(SourceLocation loc, ASTNode * lvars, ASTNode * iter, Stmt * body) :
+  ForEachStmt(SourceLocation loc, ASTVarDecl * lvars, ASTNode * iter, Stmt * body) :
     Stmt(ForEach, loc), loopVars_(lvars), iterExpr_(iter), body_(body)
   {
   }
 
-  const ASTNode * loopVars() const { return loopVars_; }
-  ASTNode * loopVars() { return loopVars_; }
+  const ASTVarDecl * loopVars() const { return loopVars_; }
+  ASTVarDecl * loopVars() { return loopVars_; }
 
   const ASTNode * iterExpr() const { return iterExpr_; }
   ASTNode * iterExpr() { return iterExpr_; }
@@ -300,7 +301,7 @@ public:
   void format(FormatStream & out) const;
 
 private:
-  ASTNode * loopVars_;
+  ASTVarDecl * loopVars_;
   ASTNode * iterExpr_;
   Stmt * body_;
 };

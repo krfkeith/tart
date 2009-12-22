@@ -69,6 +69,6 @@ def testFindClass() {
 
 def testCallInstanceMethod() {
   let ty:Type = Type.of(TestClass);
-//  let ct = typecast[ComplexType](ty);
-//  let method = typecast[Method](ct.findMethod("square"));
+  let ct = typecast[ComplexType](ty);
+  let method = typecast[Method](ct.findMethod("square"));
 }

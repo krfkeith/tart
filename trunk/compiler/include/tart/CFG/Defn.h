@@ -327,6 +327,7 @@ public:
 
   /** Type of this variable. */
   virtual const Type * type() const = 0;
+  const Type * canonicalType() const { return dealias(type()); }
 
   // Overrides
 

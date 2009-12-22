@@ -40,7 +40,7 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
 /// -------------------------------------------------------------------
 /// Primitive types
 PrimitiveType::PrimitiveType(TypeDefn * de) :
-  DeclaredType(Type::Primitive, de, &Builtins::module) {
+  DeclaredType(Type::Primitive, de, &Builtins::module, Shape_Primitive) {
   nextType_ = primitiveTypeList;
   primitiveTypeList = this;
 }
@@ -201,7 +201,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
     diag.fatal() << "cannot convert " << fromType << " to " << this;
     DFAIL("Illegal State");
-  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;
@@ -406,7 +406,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       return result;
     }
-  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   }
 
@@ -541,7 +541,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     }
 
     return Incompatible;
-  } else if ((cn.options & Conversion::Dynamic) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;

@@ -37,9 +37,6 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
         case Type::Interface:
         case Type::Protocol:
           createScopeMembers(type->memberScope(), parent, decs);
-          //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-          //  createMemberDefn(type->memberScope(), parent, *it);
-          //}
           break;
 
         case Type::Enum:
@@ -59,16 +56,10 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
 
     case Defn::Namespace:
       createScopeMembers(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, decs);
-      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-      //  createMemberDefn(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, *it);
-      //}
       break;
 
     case Defn::Mod:
       createScopeMembers(static_cast<Module *>(parent), parent, decs);
-      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-      //  createMemberDefn(static_cast<Module *>(parent), parent, *it);
-      //}
       break;
 
     case Defn::Property:
@@ -127,7 +118,12 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
 void ScopeBuilder::createScopeMembers(
     IterableScope * scope, Defn * parent, const ASTDeclList & decs) {
   for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-    createMemberDefn(scope, parent, *it);
+    const ASTDecl * de = *it;
+    if (de->nodeType() == ASTNode::VarList) {
+      createScopeMembers(scope, parent, de->members());
+    } else {
+      createMemberDefn(scope, parent, de);
+    }
   }
 
   checkNameConflicts(scope);

@@ -18,11 +18,14 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Finish renaming PatternVar. (What about PatternValue?)
+  * Find a better name for PatternValue?
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
   * Fill out TypeOrderings.h / TypeComparator.h
   * Unit tests for lexical type ordering.
+* Win32
+  * Fix unicode unit tests.
+  * Figure out crash in tartc.
 * Link-time coalescing
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
@@ -57,12 +60,13 @@ Implementation TODOS:
   * .parse
 * Tuple types
   * Destructuring assignment
-  * Named tuple types
   * Variadic Tuple args
+  * Test struct members, params.
+  * Member-wise conversions.
 * Disjoint types
   * Nullable types
   * Equality comparison (with member types, and with other disjoint types.)
-* Multiple Return Values (requires Tuples)
+* Multiple Return Values (requires Unpacking)
 * Constructors
   * init all variables not explicitly initialized in constructor, both ones with initializers
     and ones without.
@@ -73,6 +77,7 @@ Implementation TODOS:
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
 * Import-as, import-namespace tests.
+  * Implement import namespace.
 * Runtime
   * Compile runtime with clang so as to allow optimization.
 * Source-level debug info.
@@ -433,3 +438,43 @@ builder.lval(param).bitCast(&PointerType).getElement(0).build();
 Something like [@Strict %T <: Object]
 
 @Unsafe @Intrinsic def reinterpretCast[%T <: Object](obj:Object);
+
+// ------------------------------------------------------------------------
+
+isLarge
+isPassedByValue
+isReturnedByValue
+isStoredByValue
+isStoredByValueIfImmutable
+
+isStoredByValue
+isStoredByValueIfImmutable
+
+enum Form {
+  INTERMEDIATE,
+  PARAMETER,
+  FIELD,
+  RETURN,
+  VAR,
+  LET,
+}
+
+enum Representation {
+  VALUE,
+  INDIRECT_VALUE,
+  REFERENCE,
+  STRUCT_RETURN
+}
+
+
+REFERENCE_TYPE,
+LARGE_VALUE_TYPE,
+MUTABLE_SMALL_VALUE_TYPE.
+CONST_VALUE_TYPE,
+PRIMITIVE_TYPE,
+
+SHAPE_PRIMITIVE,
+SHAPE_CONSTANT,
+SHAPE_VARIABLE,
+SHAPE_LARGE,
+SHAPE_REFERENCE,

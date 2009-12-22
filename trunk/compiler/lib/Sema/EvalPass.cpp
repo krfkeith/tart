@@ -74,6 +74,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::PostAssign:
       return evalPostAssign(static_cast<AssignmentExpr *>(in));
 
+    case Expr::MultiAssign:
+      ??
+
     case Expr::Call:
     case Expr::ExactCall:
     //case Expr::ICall:

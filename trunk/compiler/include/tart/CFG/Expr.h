@@ -70,6 +70,9 @@ public:
   const Type * type() const { return type_; }
   void setType(const Type * type) { type_ = type; }
 
+  /** The type of this expression with aliases removed. */
+  const Type * canonicalType() const;
+
   /** Return true if this expression is a constant. */
   virtual bool isConstant() const { return false; }
 
@@ -305,6 +308,22 @@ public:
   static inline bool classof(const AssignmentExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == Assign || ex->exprType() == PostAssign;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// An multiple assignment expression
+class MultiAssignExpr : public ArglistExpr {
+public:
+  MultiAssignExpr(const SourceLocation & loc, const Type * type);
+
+  // Overrides
+
+  bool isSideEffectFree() const { return false; }
+
+  static inline bool classof(const MultiAssignExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == MultiAssign;
   }
 };
 

@@ -70,6 +70,19 @@ enum TypeId {
 };
 
 /// -------------------------------------------------------------------
+/// An enumeration of the different varieties of representation for
+/// a type.
+enum TypeShape {
+  Shape_Unset = 0,          // Shape hasn't been determined yet
+  Shape_None,               // Can't be instantiated
+  Shape_Primitive,          // A primitive type
+  Shape_Small_RValue,       // A small value which cannot be addressed.
+  Shape_Small_LValue,       // A small value which can be addressed.
+  Shape_Large_Value,        // A large aggregate value
+  Shape_Reference,          // A reference to an instance
+};
+
+/// -------------------------------------------------------------------
 /// EnumSet of defn states.
 typedef SmallEnumSet<TypeId, TypeId_Count> TypeIdSet;
 
@@ -100,6 +113,9 @@ public:
 
   /** Get the LLVM IR type corresponding to this type when passed as a parameter. */
   virtual const llvm::Type * irParameterType() const { return irType(); }
+
+  /** Get the LLVM IR type corresponding to this type when returned from a function. */
+  virtual const llvm::Type * irReturnType() const { return irParameterType(); }
 
   /** Get the type of this type. */
   virtual Type * metaType() const { return NULL; }
@@ -157,6 +173,9 @@ public:
 
   /** Return true if this type can be boxed. */
   bool isBoxableType() const;
+
+  /** Return information about the representation of this type. */
+  virtual TypeShape typeShape() const = 0;
 
   /** Determine if the specified 'fromType' can be converted to this
       type. Returns the degree of compatibility. */
@@ -234,16 +253,6 @@ protected:
 /// -------------------------------------------------------------------
 /// Base class for most types.
 class TypeImpl : public Type {
-protected:
-  mutable const llvm::Type * irType_;
-
-  TypeImpl(TypeClass cls)
-    : Type(cls)
-    , irType_(NULL)
-  {}
-
-  virtual const llvm::Type * createIRType() const = 0;
-
 public:
 
   const llvm::Type * irType() const {
@@ -253,6 +262,20 @@ public:
 
     return irType_;
   }
+
+  TypeShape typeShape() const { return shape_; }
+
+protected:
+  mutable const llvm::Type * irType_;
+  mutable TypeShape shape_;
+
+  TypeImpl(TypeClass cls, TypeShape shape)
+    : Type(cls)
+    , irType_(NULL)
+    , shape_(shape)
+  {}
+
+  virtual const llvm::Type * createIRType() const = 0;
 };
 
 /// -------------------------------------------------------------------
@@ -266,7 +289,7 @@ class DeclaredType : public TypeImpl, public IterableScope {
 protected:
   TypeDefn * defn_;
 
-  DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope);
+  DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope, TypeShape shape);
 
 public:
 
@@ -361,6 +384,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return baseType_->isReferenceType(); }
   void format(FormatStream & out) const;
+  TypeShape typeShape() const { return baseType_->typeShape(); }
 
   static inline bool classof(const CVQualifiedType *) { return true; }
   static inline bool classof(const Type * t) {
@@ -413,6 +437,8 @@ public:
     return t0->isEqual(t1);
   }
 };
+
+bool isLargeIRType(const llvm::Type * type);
 
 } // namespace tart
 

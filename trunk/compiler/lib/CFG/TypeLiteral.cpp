@@ -48,13 +48,13 @@ TypeLiteralType * TypeLiteralType::get(const Type * literalType) {
 }
 
 TypeLiteralType::TypeLiteralType(const Type * literalType)
-  : TypeImpl(Type::TypeLiteral)
+  : TypeImpl(Type::TypeLiteral, Shape_None)
   , literalType_(literalType)
 {
   DASSERT_OBJ(!isa<UnitType>(literalType), literalType);
 }
 
-TypeLiteralType::TypeLiteralType() : TypeImpl(Type::TypeLiteral) {}
+TypeLiteralType::TypeLiteralType() : TypeImpl(Type::TypeLiteral, Shape_None) {}
 
 TypeLiteralType::~TypeLiteralType() {
   /*TypeMap::iterator it = uniqueTypes_.find(literalType_);

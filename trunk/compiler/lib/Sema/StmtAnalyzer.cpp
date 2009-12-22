@@ -363,6 +363,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
       if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
         return false;
       }
+
       DASSERT(initDefn->initValue() != NULL);
       Expr * initValue = initDefn->initValue();
       initDefn->setInitValue(NULL);
@@ -370,46 +371,25 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
       //if (initDefn == NULL) {
       //  return NULL;
       //}
-    } else if (initExpr->nodeType() == ASTNode::Tuple) {
-      const ASTOper * initTuple = static_cast<const ASTOper *>(initExpr);
-      DFAIL("Implement");
-    }
-  }
+    } else if (initExpr->nodeType() == ASTNode::VarList) {
+      const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(initExpr);
+      //Expr * initExpr = ea.analyze(varList->value(), target->type());
 
-#if 0
-  if (initExpr) {
-    if (initExpr->exprType() == Expr::Let ||
-        initExpr->exprType() == Expr::Var) {
-      ValueDef * initDecl =
-      static_cast<ValueDef *>(const_cast<Expr *>(initExpr));
-      if (!analyzeLocalDecl(initDecl)) {
+      DASSERT(varList->value() != NULL);
+      //Expr * initValue = initDefn->initValue();
+      //initDefn->setInitValue(NULL);
+
+      //currentBlock_->append(new InitVarExpr(st->location(), initDefn, initValue));
+
+      DefnList vars;
+      if (!astToDefnList(varList, vars)) {
         return false;
       }
 
-      currentBlock_->append(DeclStatement::get(initDecl));
-    } else if (initExpr->getClass() == Expr::Assign) {
-      const OpExpr * op = static_cast<const OpExpr *>(initExpr);
-      const Expr * to = op->getOperands()[0];
-      if (const ValueDef * initDecl = dyn_cast<ValueDef>(to)) {
-        DASSERT(false && "shouldn't happen - decls are inited, not assigned");
-        /*initDecl->setValue(op->getOperands()[1]);
-         if (!analyzeLocalDecl(loopAnalyzer, initDecl)) {
-         return false;
-         }*/
-      } else if (to->getClass() == Expr::Tuple) {
-        DASSERT(false && "deal with tuples.");
-      } else {
-        DASSERT(false && "eh?");
-      }
-
-      initExpr = analyzer.reduceExpression(initExpr);
-      DASSERT(initExpr != NULL);
-      currentBlock_->append(ExprStatement::get(initExpr));
-    } else {
-      DASSERT(false);
+      //VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
+      DFAIL("Implement");
     }
   }
-#endif
 
   // Evaluate the test expression
   Expr * testExpr = NULL;
@@ -572,8 +552,16 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     }
 
     blkBody->append(new InitVarExpr(st->location(), initDefn, iterValue));
+  } else if (st->loopVars()->nodeType() == ASTNode::VarList) {
+    const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(st->loopVars());
+    DefnList vars;
+    if (!astToDefnList(varList, vars)) {
+      return false;
+    }
+
+    DFAIL("Implement");
   } else {
-    DFAIL("Implement multiple loop variables");
+    DFAIL("Invalid loop variable");
   }
 
   breakTarget_ = blkDone;
@@ -1253,6 +1241,65 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 }
 
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
+  // Handle multiple vars.
+  if (st->decl()->nodeType() == ASTNode::VarList) {
+    DefnList vars;
+    const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(st->decl());
+    if (!astToDefnList(varList, vars)) {
+      return false;
+    }
+
+    // Gather up the types of each var. If a var has no type, then use the 'any' type.
+    ConstTypeList varTypes;
+    for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+      VariableDefn * var = static_cast<VariableDefn *>(*it);
+      const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
+      DASSERT(varDecl->value() == NULL);
+      if (varDecl->type() != NULL) {
+        VarAnalyzer va(var, module, function, function);
+        if (!va.analyze(Task_PrepTypeComparison)) {
+          return false;
+        }
+
+        varTypes.push_back(var->type());
+      } else {
+        varTypes.push_back(&AnyType::instance);
+      }
+    }
+
+    if (varList->value() != NULL) {
+      const TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
+      ExprAnalyzer ea(module, activeScope, function, function);
+      Expr * initExpr = inferTypes(ea.analyze(varList->value(), tt), tt);
+      if (initExpr == NULL) {
+        return false;
+      }
+
+      DASSERT_OBJ(initExpr->canonicalType()->typeClass() == Type::Tuple, initExpr);
+      LValueExpr * initVar = createTempVar(".packed-value", initExpr, false);
+
+      if (const TupleType * ttActual = dyn_cast_or_null<TupleType>(initVar->type())) {
+        tt = ttActual;
+      }
+
+      // Now extract members from the tuple and assign to individual vars.
+      int memberIndex = 0;
+      for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it, ++memberIndex) {
+        VariableDefn * var = static_cast<VariableDefn *>(*it);
+        Expr * initVal = new BinaryExpr(
+            Expr::ElementRef, var->ast()->location(), tt->member(memberIndex),
+            initVar, ConstantInteger::getUInt32(memberIndex));
+        currentBlock_->append(new InitVarExpr(var->location(), var, initVal));
+        if (var->type() == NULL) {
+          DASSERT(initVal->canonicalType() != &AnyType::instance);
+          var->setType(initVal->canonicalType());
+        }
+      }
+    }
+
+    return true;
+  }
+
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
     VarAnalyzer va(var, module, function, function);
@@ -1370,7 +1417,20 @@ Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, const Type * expectedType) {
 }
 
 Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {
+  if (ast->nodeType() == ASTNode::VarList) {
+    diag.error(ast) << "Multiple variable declarations not allowed here";
+  }
+
   return ScopeBuilder::createLocalDefn(activeScope, function, ast);
+}
+
+bool StmtAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
+  for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
+    Defn * var = ScopeBuilder::createLocalDefn(activeScope, function, *it);
+    vars.push_back(var);
+  }
+
+  return true;
 }
 
 LValueExpr * StmtAnalyzer::setMacroReturnVal(LValueExpr * retVal) {

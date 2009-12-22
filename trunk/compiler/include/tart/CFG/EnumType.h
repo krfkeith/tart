@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_CFG_ENUMTYPE_H
 #define TART_CFG_ENUMTYPE_H
 
@@ -22,14 +22,14 @@ private:
 
 public:
   EnumType(TypeDefn * de, Scope * parentScope)
-      : DeclaredType(Type::Enum, de, parentScope)
+      : DeclaredType(Type::Enum, de, parentScope, Shape_Primitive)
       , baseType_(NULL)
       , isFlags_(false)
   {}
-  
+
   const Type * baseType() const { return baseType_; }
   void setBaseType(const Type * value) { baseType_ = value; }
-  
+
   bool isFlags() const { return isFlags_; }
   void setIsFlags(bool value) { isFlags_ = value; }
 

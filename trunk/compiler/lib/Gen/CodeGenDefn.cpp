@@ -17,6 +17,7 @@
 
 #include "tart/Objects/Builtins.h"
 
+#include "llvm/Attributes.h"
 #include "llvm/Module.h"
 #include "llvm/Function.h"
 #include "llvm/Analysis/Verifier.h"
@@ -131,6 +132,13 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     unsigned param_index = 0;
     Function::arg_iterator it = f->arg_begin();
 
+    Value * saveStructRet = structRet_;
+    if (ftype->isStructReturn()) {
+      it->addAttr(llvm::Attribute::StructRet);
+      structRet_ = it;
+      ++it;
+    }
+
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
       DASSERT_OBJ(fdef->storageClass() == Storage_Instance ||
@@ -142,6 +150,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     for (; it != f->arg_end(); ++it, ++param_index) {
+      Value * argVal = it;
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
@@ -149,7 +158,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       it->setName(param->name());
 
       // See if we need to make a local copy of the param.
-      if (param->isLValue()) {
+      if (param->isLValue() /*|| isSmallAggregateValueType(param->type())*/
+          || param->type()->typeClass() == Type::Struct) {
         //|| (!param->getParameterFlag(ParameterDefn::Reference)
         //  && isAllocValueType(ptypeetType()))) {
         // TODO: For struct parameters, make a copy of whole struct.
@@ -178,6 +188,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 #endif
 
     currentFn_ = saveFn;
+    structRet_ = saveStructRet;
 
     if (!diag.inRecovery()) {
       if (verifyFunction(*f, PrintMessageAction)) {

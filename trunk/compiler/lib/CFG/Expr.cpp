@@ -83,6 +83,10 @@ ErrorExpr Expr::ErrorVal;
 
 const ExprList Expr::emptyList;
 
+const Type * Expr::canonicalType() const {
+  return dealias(type());
+}
+
 void Expr::format(FormatStream & out) const {
   out << exprTypeName(exprType_);
 }
@@ -302,6 +306,14 @@ void AssignmentExpr::format(FormatStream & out) const {
   } else {
     out << toExpr() << " = " << fromExpr();
   }
+}
+
+// -------------------------------------------------------------------
+// MultiAssignExpr
+
+MultiAssignExpr::MultiAssignExpr(const SourceLocation & loc, const Type * type)
+  : ArglistExpr(MultiAssign, loc, type)
+{
 }
 
 // -------------------------------------------------------------------
