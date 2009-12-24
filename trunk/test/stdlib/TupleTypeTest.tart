@@ -97,6 +97,16 @@ def testUnpackedAssign() {
   //var b3:long, c3 = a;
   
   b, c = a;
+  
+  var d, e = returnTuple();
+  Debug.assertEq(3, d);
+  Debug.assertEq("Hello", e);
+  
+  var d1, e1, d2, e2 = returnTupleLarge();
+  Debug.assertEq(3, d1);
+  Debug.assertEq("Hello", e1);
+  Debug.assertEq(2, d2);
+  Debug.assertEq("World", e2);
 }
 
 def testSwapIdiom() {
@@ -104,5 +114,21 @@ def testSwapIdiom() {
   var b = 2;
   a, b = b, a;
   Debug.assertEq(2, a);
-  //Debug.assertEq(1, b);
+  Debug.assertEq(1, b);
+}
+
+def testMultiValueReturn() {
+  let a, b = returnTuple();
+  Debug.assertEq(3, a);
+  Debug.assertEq("Hello", b);
+
+  var a0, b0 = returnTuple();
+  Debug.assertEq(3, a0);
+  Debug.assertEq("Hello", b0);
+
+  let a1, b1, c1, d1 = returnTupleLarge();
+  Debug.assertEq(3, a1);
+  Debug.assertEq("Hello", b1);
+  Debug.assertEq(2, c1);
+  Debug.assertEq("World", d1);
 }

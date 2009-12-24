@@ -395,18 +395,19 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
 
   // Create a multi-assign node.
   MultiAssignExpr * ma = new MultiAssignExpr(ast->location(), rhs->type());
-  for (size_t i = 0; i < dstVars.size(); ++i) {
-    Expr * srcVal;
-    if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
-      srcVal = tce->arg(i);
-    } else {
-      srcVal = new BinaryExpr(
-        Expr::ElementRef, rhs->location(), tt->member(i),
-        rhs, ConstantInteger::getUInt32(i));
+  if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
+    for (size_t i = 0; i < dstVars.size(); ++i) {
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], tce->arg(i)));
     }
+  } else {
+    rhs = SharedValueExpr::get(rhs);
+    for (size_t i = 0; i < dstVars.size(); ++i) {
+      Expr * srcVal = new BinaryExpr(
+          Expr::ElementRef, rhs->location(), tt->member(i),
+          rhs, ConstantInteger::getUInt32(i));
 
-    Expr * assign = reduceStoreValue(ast->location(), dstVars[i], srcVal);
-    ma->appendArg(assign);
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
+    }
   }
 
   return ma;
