@@ -162,6 +162,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::IRValue:
       return in;
 
+    case Expr::SharedValue:
+      return visitSharedValue(static_cast<SharedValueExpr *>(in));
+
     case Expr::PatternVar:
       DFAIL("PatternVar");
 
@@ -314,6 +317,11 @@ Expr * CFGPass::visitArrayLiteral(ArrayLiteralExpr * in) {
 
 Expr * CFGPass::visitTupleCtor(TupleCtorExpr * in) {
   visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitSharedValue(SharedValueExpr * in) {
+  in->setArg(visitExpr(in->arg()));
   return in;
 }
 

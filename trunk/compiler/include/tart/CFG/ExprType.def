@@ -70,3 +70,6 @@ EXPR_TYPE(LocalCall)      // A jump to a local subroutine.
 EXPR_TYPE(ArrayLiteral)   // An array literal
 EXPR_TYPE(BoundMethod)    // A reference to a method and a base object
 EXPR_TYPE(ClosureEnv)     // A reference to a closure environment.
+
+// Structural
+EXPR_TYPE(SharedValue)    // Expression referenced multiple times but eval'd once.

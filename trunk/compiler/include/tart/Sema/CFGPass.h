@@ -59,6 +59,7 @@ public:
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   virtual Expr * visitTupleCtor(TupleCtorExpr * in);
   virtual Expr * visitClosureScope(ClosureEnvExpr * in);
+  virtual Expr * visitSharedValue(SharedValueExpr * in);
 
 protected:
   void visitExprArgs(ArglistExpr * in);

@@ -195,6 +195,15 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return irExpr->value();
     }
 
+    case Expr::SharedValue: {
+      const SharedValueExpr * svExpr = static_cast<const SharedValueExpr *>(in);
+      if (svExpr->value() == NULL) {
+        svExpr->setValue(genExpr(svExpr->arg()));
+      }
+
+      return svExpr->value();
+    }
+
     case Expr::ArrayLiteral:
       return genArrayLiteral(static_cast<const ArrayLiteralExpr *>(in));
 
@@ -347,7 +356,7 @@ Value * CodeGenerator::genMultiAssign(const MultiAssignExpr * in) {
       return NULL;
     }
 
-    return doAssignment(assign, toVal, fromVals[i]);
+    doAssignment(assign, toVal, fromVals[i]);
   }
 
   return NULL;
@@ -734,6 +743,22 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     hasBase = true;
   } else if (base->type()->isReferenceType()) {
     needsDeref = true;
+  } else {
+    TypeShape typeShape = base->type()->typeShape();
+    switch (typeShape) {
+      case Shape_Primitive:
+      case Shape_Small_RValue:
+        break;
+
+      case Shape_Reference:
+      case Shape_Small_LValue:
+      case Shape_Large_Value:
+        needsDeref = true;
+        break;
+
+      default:
+        diag.fatal(in) << "Invalid type shape";
+    }
   }
 
   Value * baseAddr;

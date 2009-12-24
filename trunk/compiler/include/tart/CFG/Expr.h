@@ -121,9 +121,6 @@ public:
 /// -------------------------------------------------------------------
 /// An operation with a single argument
 class UnaryExpr : public Expr {
-private:
-  Expr * arg_;
-
 public:
   /** Constructor. */
   UnaryExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
@@ -142,6 +139,9 @@ public:
   bool isSingular() const;
   void format(FormatStream & out) const;
   void trace() const;
+
+protected:
+  Expr * arg_;
 };
 
 /// -------------------------------------------------------------------
@@ -677,9 +677,6 @@ public:
 /// -------------------------------------------------------------------
 /// An expression that directly represents an IR value.
 class IRValueExpr : public Expr {
-private:
-  llvm::Value * value_;
-
 public:
   /** Constructor. */
   IRValueExpr(const SourceLocation & loc, const Type * type, llvm::Value * value = NULL)
@@ -702,6 +699,9 @@ public:
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == IRValue;
   }
+
+private:
+  llvm::Value * value_;
 };
 
 /// -------------------------------------------------------------------
@@ -785,6 +785,36 @@ public:
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == TupleCtor;
   }
+};
+
+/// -------------------------------------------------------------------
+/// An expression which may occur at several places in the CFG, but
+/// which should only be evaluated once.
+class SharedValueExpr : public UnaryExpr {
+public:
+  static SharedValueExpr * get(Expr * ex) {
+    return new SharedValueExpr(ex);
+  }
+
+  /** Constructor. */
+  SharedValueExpr(Expr * arg)
+    : UnaryExpr(SharedValue, arg->location(), arg->type(), arg)
+    , value_(NULL)
+  {}
+
+  /** The cached IR value. */
+  llvm::Value * value() const { return value_; }
+  void setValue(llvm::Value * value) const { value_ = value; }
+
+  // Overrides
+
+  static inline bool classof(const SharedValueExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == SharedValue;
+  }
+
+private:
+  mutable llvm::Value * value_;
 };
 
 /// -------------------------------------------------------------------
