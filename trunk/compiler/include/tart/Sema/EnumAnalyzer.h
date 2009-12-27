@@ -9,6 +9,10 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
+#ifndef TART_CFG_ENUMTYPE_H
+#include "tart/CFG/EnumType.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -27,7 +31,8 @@ public:
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze();
-  bool analyzeEnum();
+  bool runPasses(EnumType::PassSet passesToRun);
+  bool createMembers();
   bool createEnumConstant(const ASTVarDecl * ast);
   void defineOperators();
 };

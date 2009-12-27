@@ -91,6 +91,10 @@ public:
     return members_.findSymbol(key);
   }
 
+  /** Auxiliary scopes associated with this one. */
+  const ScopeSet & auxScopes() const { return auxScopes_; }
+  ScopeSet & auxScopes() { return auxScopes_; }
+
   /** Return a reference to the symbol table. */
   const SymbolTable & members() const { return members_; }
   SymbolTable & members() { return members_; }
@@ -113,7 +117,7 @@ public:
 private:
   OrderedSymbolTable members_;
   Scope * parentScope_;
-  Defn * defn_;
+  ScopeSet auxScopes_;
 
 #ifndef NDEBUG
   // For debugging

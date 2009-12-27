@@ -156,11 +156,6 @@ bool Defn::beginPass(DefnPass pass) {
     return false;
   }
 
-  if (running_.contains(pass)) {
-    diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
-    return false;
-  }
-
   running_.add(pass);
   return true;
 }
@@ -267,27 +262,6 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
       out << "=" << param->initValue();
     }
   }
-}
-
-const char * getPassName(DefnPass pass) {
-  switch (pass) {
-    case Pass_CreateMembers:
-      return "CreateMembers";
-
-    case Pass_ResolveAttributes:
-      return "ResolveAttributes";
-
-    case DefnPassCount:
-    default:
-      DFAIL("Invalid pass");
-  }
-
-  DFAIL("Invalid pass");
-}
-
-FormatStream & operator<<(FormatStream & out, DefnPass pass) {
-  out << getPassName(pass);
-  return out;
 }
 
 } // namespace tart
