@@ -300,7 +300,7 @@ ConversionRank Type::convert(const Conversion & cn) const {
 
   if (rank == Incompatible && (cn.options & Conversion::Coerce) && !cn.resultValue) {
     if (const CompositeType * ctype = dyn_cast<CompositeType>(this)) {
-      if (!ctype->passes().isFinished(CompositeType::ConverterPass)) {
+      if (!ctype->passes().isFinished(CompositeType::CoercerPass)) {
         diag.warn() << "Converter pass for " << ctype << " not done.";
       }
 

@@ -34,9 +34,6 @@ public:
   /** Do a full analysis of the target module. */
   bool analyzeModule();
 
-  /** Run the specified passes. */
-  bool analyze(Defn * in, DefnPasses & passes);
-
   /** Call the ScopeBuilder to create members of this defn. */
   bool createMembersFromAST(Defn * in);
 
@@ -60,7 +57,7 @@ public:
 
   /** Resolve the target of an import statement, and add a definition
       to the target scope. */
-  void importIntoScope(const ASTImport * import, Scope * targetScope);
+  void importIntoScope(const ASTImport * import, IterableScope * targetScope);
 
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);

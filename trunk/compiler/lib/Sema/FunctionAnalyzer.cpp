@@ -105,8 +105,12 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
     return true;
   }
 
-  if (passesToRun.contains(FunctionDefn::AttributePass) && !resolveAttributes(target)) {
-    return false;
+  if (passesToRun.contains(FunctionDefn::AttributePass)) {
+    if (!resolveAttributes(target)) {
+      return false;
+    }
+
+    target->passes().finish(FunctionDefn::AttributePass);
   }
 
   if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {

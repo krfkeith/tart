@@ -168,27 +168,45 @@ EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
 }
 
 bool EnumAnalyzer::analyze() {
-  return analyzeEnum();
+  return runPasses(EnumType::PassSet::of(EnumType::AttributePass, EnumType::ScopeCreationPass));
 }
 
-bool EnumAnalyzer::analyzeEnum() {
-  if (!target_->beginPass(Pass_CreateMembers)) {
+bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
+  // Work out what passes need to be run.
+  EnumType * type = cast<EnumType>(target_->typeValue());
+  passesToRun.removeAll(type->passes().finished());
+  if (passesToRun.empty()) {
     return true;
   }
 
-  EnumType * enumType = cast<EnumType>(target_->typeValue());
-  if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
-    // Don't evaluate the attributes if the enclosing class is Attribute, because that creates
-    // a circular dependency. For now, assume that any Enum defined within Attribute that has
-    // any attributes at all is a Flags enum.
-    if (!target_->ast()->attributes().empty()) {
-      enumType->setIsFlags(true);
+  if (passesToRun.contains(EnumType::AttributePass)) {
+    if (target_->parentDefn() == Builtins::typeAttribute->typeDefn()) {
+      // Don't evaluate the attributes if the enclosing class is Attribute, because that creates
+      // a circular dependency. For now, assume that any Enum defined within Attribute that has
+      // any attributes at all is a Flags enum.
+      if (!target_->ast()->attributes().empty()) {
+        type->setIsFlags(true);
+      }
+
+    } else if (!resolveAttributes(target_)) {
+      return false;
     }
-    target_->finishPass(Pass_ResolveAttributes);
-  } else if (!resolveAttributes(target_)) {
-    return false;
+
+    type->passes().finish(EnumType::AttributePass);
   }
 
+  if (passesToRun.contains(EnumType::ScopeCreationPass) &&
+      type->passes().begin(EnumType::ScopeCreationPass)) {
+    if (!createMembers()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool EnumAnalyzer::createMembers() {
+  EnumType * enumType = cast<EnumType>(target_->typeValue());
   bool isFlags = enumType->isFlags();
 
   const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
@@ -218,7 +236,7 @@ bool EnumAnalyzer::analyzeEnum() {
   defineOperators();
 
   // Mark as finished so that we don't recurse when referring to members.
-  target_->finishPass(Pass_CreateMembers);
+  enumType->passes().finish(EnumType::ScopeCreationPass);
 
   Scope * savedScope = setActiveScope(enumType->memberScope());
   const ASTDeclList & members = ast->members();

@@ -39,6 +39,7 @@ static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassS
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
   CompositeType::ConstructorPass
 );
@@ -47,16 +48,18 @@ static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass
+  CompositeType::CoercerPass
 );
 
 static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass,
+  CompositeType::CoercerPass,
   CompositeType::MemberTypePass,
   CompositeType::FieldPass,
   CompositeType::MethodPass,
@@ -66,6 +69,7 @@ static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet
 static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
   CompositeType::AttributePass,
   CompositeType::FieldPass,
@@ -76,8 +80,9 @@ static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::o
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass,
+  CompositeType::CoercerPass,
   CompositeType::ConstructorPass,
   CompositeType::MemberTypePass,
   CompositeType::FieldPass,
@@ -179,6 +184,10 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     type->passes().finish(CompositeType::AttributePass);
   }
 
+  if (passesToRun.contains(CompositeType::ImportPass) && !analyzeImports()) {
+    return false;
+  }
+
   if (passesToRun.contains(CompositeType::NamingConflictPass) && !checkNameConflicts()) {
     return false;
   }
@@ -195,7 +204,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
-  if (passesToRun.contains(CompositeType::ConverterPass) && !analyzeCoercers()) {
+  if (passesToRun.contains(CompositeType::CoercerPass) && !analyzeCoercers()) {
     return false;
   }
 
@@ -406,9 +415,26 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   return true;
 }
 
+bool ClassAnalyzer::analyzeImports() {
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::ImportPass)) {
+    if (target->ast() != NULL) {
+      DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
+      const ASTNodeList & imports = target->ast()->imports();
+      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+        da.importIntoScope(cast<ASTImport>(*it), type->memberScope());
+      }
+    }
+
+    type->passes().finish(CompositeType::ImportPass);
+  }
+
+  return true;
+}
+
 bool ClassAnalyzer::analyzeCoercers() {
   CompositeType * type = targetType();
-  if (type->passes().begin(CompositeType::ConverterPass)) {
+  if (type->passes().begin(CompositeType::CoercerPass)) {
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Note: "coerce" methods are *not* inherited.
@@ -435,7 +461,7 @@ bool ClassAnalyzer::analyzeCoercers() {
       }
     }
 
-    type->passes().finish(CompositeType::ConverterPass);
+    type->passes().finish(CompositeType::CoercerPass);
   }
 
   return true;

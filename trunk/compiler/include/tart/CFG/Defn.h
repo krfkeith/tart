@@ -47,12 +47,6 @@ class PropertyDefn;
 /// The various passes of analysis for a definition.
 enum DefnPass {
 
-  /** Create scope members. */
-  Pass_CreateMembers,
-
-  /** For all defn types - resolve attribute references. */
-  Pass_ResolveAttributes,
-
   /** Resolve an import statement. */
   Pass_ResolveImport,
 

@@ -9,18 +9,26 @@
 #include "tart/CFG/Type.h"
 #endif
 
+#ifndef TART_COMMON_PASSMGR_H
+#include "tart/Common/PassMgr.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
 /// Enumeration type
 class EnumType : public DeclaredType {
-private:
   friend class EnumAnalyzer;
-
-  const Type * baseType_;
-  bool isFlags_;
-
 public:
+  enum AnalysisPass {
+    AttributePass,
+    ScopeCreationPass,
+    PassCount
+  };
+
+  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
+  typedef PassMgr::PassSet PassSet;
+
   EnumType(TypeDefn * de, Scope * parentScope)
       : DeclaredType(Type::Enum, de, parentScope, Shape_Primitive)
       , baseType_(NULL)
@@ -32,6 +40,10 @@ public:
 
   bool isFlags() const { return isFlags_; }
   void setIsFlags(bool value) { isFlags_ = value; }
+
+  /** The current passes state. */
+  const PassMgr & passes() const { return passes_; }
+  PassMgr & passes() { return passes_; }
 
   // Overrides
 
@@ -46,6 +58,11 @@ public:
   static inline bool classof(const Type * t) {
     return t->typeClass() == Type::Enum;
   }
+
+private:
+  const Type * baseType_;
+  bool isFlags_;
+  PassMgr passes_;
 };
 
 }

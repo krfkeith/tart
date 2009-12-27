@@ -74,8 +74,7 @@ Implementation TODOS:
   * Insure that we can't call constructors from non-constructor functions.
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
-* Import-as, import-namespace tests.
-  * Implement import namespace.
+* Import-as.
 * Runtime
   * Compile runtime with clang so as to allow optimization.
 * Source-level debug info.
@@ -277,81 +276,6 @@ namespace Numbers {
 
 // ------------------------------------------------------------------------
 
-Compressed reflection information:
-
-public class TypeExpression {
-}
-
-public class UnionType : TypeExpression {
-}
-
-public class AddressType : TypeExpression {
-}
-
-public class PointerType : TypeExpression {
-}
-
-public class FixedArrayType : TypeExpression {
-}
-
-public class TupleType : TypeExpression {
-}
-
-/** A member of a type */
-class Member {
-  enum Access : ubyte {
-    PUBLIC,
-    PRIVATE,
-    PROTECTED,
-  }
-  
-  enum MemberKind : ubyte {
-    FIELD,
-    PROPERTY,
-    METHOD,
-    CONSTRUCTOR,
-  }
-  
-  @Flags enum Traits : ubyte {
-    FINAL,
-    ABSTRACT,
-    STATIC,
-  } 
-
-  private def construct() {}
-
-  /** The unqualified member name. */
-  let name:String;
-  
-  /** The type of this member. */
-  let memberType:Type;
-  
-  /** The class that declared this member, or null if it's a global function. */
-  let declaringType:Type;
-
-  /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
-  let kind:MemberKind;
-  
-  /** Accessibility of this member. */
-  let access:Access;
-  
-  /** Various member flags. */
-  let traits:Traits;
-
-  /** Array of attributes for this member. */
-  let attributes:Attribute[];
-}
-
-Member: 4 + 4 + 4 + 1 + 1 + 1 + 4 = 20.
-
-Method: 20 + 4 + 4 + 4 + 4 = 36 + (16 * numParams).
-
-Parameter: 8 + 4 + 4 + 4 = 20.
-
-Parameter:
-  2 - name index
-  1+ type
-  
 // ------------------------------------------------------------------------
 
 Weak references implemented in terms of finalization:

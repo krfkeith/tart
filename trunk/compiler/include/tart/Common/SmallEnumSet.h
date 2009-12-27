@@ -250,6 +250,14 @@ public:
         .add(v6).add(v7).add(v8).add(v9).add(v10);
   }
 
+  static SmallEnumSet of(
+      EnumType v0, EnumType v1, EnumType v2, EnumType v3, EnumType v4,
+      EnumType v5, EnumType v6, EnumType v7, EnumType v8, EnumType v9,
+      EnumType v10, EnumType v11) {
+    return SmallEnumSet().add(v0).add(v1).add(v2).add(v3).add(v4).add(v5)
+        .add(v6).add(v7).add(v8).add(v9).add(v10).add(v11);
+  }
+
   static SmallEnumSet ofRange(EnumType first, EnumType last) {
     return SmallEnumSet().addRange(first, last);
   }

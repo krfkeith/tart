@@ -7,6 +7,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PropertyDefn.h"
+#include "tart/CFG/NamespaceDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnitType.h"
@@ -148,70 +149,46 @@ bool DefnAnalyzer::analyzeModule() {
   return success;
 }
 
-bool DefnAnalyzer::analyze(Defn * in, DefnPasses & passes) {
-
-  // Create members of this scope.
-  if (passes.contains(Pass_CreateMembers)) {
-    createMembersFromAST(in);
-  }
-
-  // Resolve attributes
-  if (passes.contains(Pass_ResolveAttributes) && !resolveAttributes(in)) {
-    return false;
-  }
-
-  return true;
-}
-
 bool DefnAnalyzer::createMembersFromAST(Defn * in) {
   // Create members of this scope.
-  if (in->beginPass(Pass_CreateMembers)) {
-    if (in->ast() != NULL) {
-      ScopeBuilder::createScopeMembers(in);
-    }
-
-    in->finishPass(Pass_CreateMembers);
+  if (in->ast() != NULL) {
+    ScopeBuilder::createScopeMembers(in);
   }
 
   return true;
 }
 
 bool DefnAnalyzer::resolveAttributes(Defn * in) {
-  if (in->beginPass(Pass_ResolveAttributes)) {
-    if (in == Builtins::typeAttribute->typeDefn()) {
-      // Don't evaluate attributes for class Attribute - it creates a circular dependency.
-      CompositeType * attrType = Builtins::typeAttribute.get();
-      attrType->setClassFlag(CompositeType::Attribute, true);
-      attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
-      attrType->attributeInfo().setRetained(false);
-      attrType->typeDefn()->addTrait(Defn::Nonreflective);
-      in->finishPass(Pass_ResolveAttributes);
-      return true;
-    }
+  if (in == Builtins::typeAttribute->typeDefn()) {
+    // Don't evaluate attributes for class Attribute - it creates a circular dependency.
+    CompositeType * attrType = Builtins::typeAttribute.get();
+    attrType->setClassFlag(CompositeType::Attribute, true);
+    attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
+    attrType->attributeInfo().setRetained(false);
+    attrType->typeDefn()->addTrait(Defn::Nonreflective);
+    return true;
+  }
 
-    if (in->ast() != NULL) {
-      ExprAnalyzer ea(module, activeScope, subject(), NULL);
-      const ASTNodeList & attrs = in->ast()->attributes();
-      for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-        Expr * attrExpr = ea.reduceAttribute(*it);
-        if (attrExpr != NULL) {
-          //diag.info(in) << attrExpr;
-          in->attrs().push_back(attrExpr);
-        }
+  if (in->ast() != NULL) {
+    ExprAnalyzer ea(module, activeScope, subject(), NULL);
+    const ASTNodeList & attrs = in->ast()->attributes();
+    for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
+      Expr * attrExpr = ea.reduceAttribute(*it);
+      if (attrExpr != NULL) {
+        //diag.info(in) << attrExpr;
+        in->attrs().push_back(attrExpr);
       }
     }
+  }
 
-    applyAttributes(in);
+  applyAttributes(in);
 
-    // Also propagate attributes from the parent defn.
-    Defn * parent = in->parentDefn();
-    if (parent != NULL) {
-      for (ExprList::const_iterator it = parent->attrs().begin(); it != parent->attrs().end(); ++it) {
-        propagateMemberAttributes(parent, in);
-      }
+  // Also propagate attributes from the parent defn.
+  Defn * parent = in->parentDefn();
+  if (parent != NULL) {
+    for (ExprList::const_iterator it = parent->attrs().begin(); it != parent->attrs().end(); ++it) {
+      propagateMemberAttributes(parent, in);
     }
-
-    in->finishPass(Pass_ResolveAttributes);
   }
 
   return true;
@@ -379,17 +356,46 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   }
 }
 
-void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope) {
-  if (import->unpack()) {
-    DFAIL("Implement import namespace");
-  }
-
+void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
   ExprList importDefs;
   Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
-  if (lookupName(importDefs, import->path(), true)) {
-    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
-  } else if (lookupName(importDefs, import->path(), false)) {
-    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+  bool found = lookupName(importDefs, import->path(), true);
+  if (!found) {
+    found = lookupName(importDefs, import->path(), false);
+  }
+
+  if (found) {
+    if (import->unpack()) {
+      if (importDefs.size() > 1) {
+        diag.error(import) << "Ambiguous import statement due to multiple definitions of " <<
+            import->path();
+      }
+
+      Expr * impExpr = importDefs.front();
+      Scope * impScope = NULL;
+      if (ScopeNameExpr * se = dyn_cast<ScopeNameExpr>(impExpr)) {
+        if (Module * mod = dyn_cast<Module>(se->value())) {
+          analyzeDefn(mod, Task_PrepMemberLookup);
+          impScope = mod;
+        } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(se->value())) {
+          analyzeDefn(ns, Task_PrepMemberLookup);
+          impScope = &ns->memberScope();
+        }
+      } else if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(impExpr)) {
+        if (tl->type()->typeDefn() != NULL) {
+          analyzeDefn(tl->type()->typeDefn(), Task_PrepMemberLookup);
+        }
+        impScope = const_cast<IterableScope *>(tl->value()->memberScope());
+      }
+
+      if (impScope != NULL) {
+        targetScope->auxScopes().insert(impScope);
+      } else {
+        diag.error(import) << "Invalid type for import: " << impExpr;
+      }
+    } else {
+      targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+    }
   } else {
     diag.error(import) << "Not found '" << import << "'";
   }
