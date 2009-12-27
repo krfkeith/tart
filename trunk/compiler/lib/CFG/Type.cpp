@@ -10,6 +10,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Common/Diagnostics.h"
@@ -173,9 +174,11 @@ void typeLinkageName(std::string & out, const Type * ty) {
     out.append("__Pointer[");
     typeLinkageName(out, npt->typeParam(0));
     out.append("]");
+  } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
+    out.append("tart.reflect.Type");
   } else {
     diag.error() << "Type: " << ty;
-    DFAIL("Can't compute linkage name of type");
+    TFAIL << "Can't compute linkage name of type: " << ty;
   }
 }
 

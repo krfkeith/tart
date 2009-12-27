@@ -673,6 +673,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
     return typeDecl;
   }
 
+  parseImports(typeDecl->imports());
   declarationList(typeDecl->members(), DeclModifiers(Storage_Instance));
 
   if (!match(Token_RBrace)) {

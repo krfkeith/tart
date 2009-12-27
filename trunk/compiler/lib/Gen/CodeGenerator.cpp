@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Gen/CodeGenerator.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/InternedString.h"
@@ -91,6 +92,7 @@ void CodeGenerator::generate() {
     addTypeName(Builtins::typeModule);
     addTypeName(Builtins::typeType);
     addTypeName(Builtins::typeSimpleType);
+    addTypeName(Builtins::typeDerivedType);
     addTypeName(Builtins::typeComplexType);
     addTypeName(Builtins::typeEnumType);
     addTypeName(Builtins::typeFunctionType);
@@ -157,6 +159,9 @@ void CodeGenerator::generate() {
       Builtins::typeModule->passes().isFinished(CompositeType::FieldPass)) {
     reflector_.emitModule(module_);
   }
+
+  addTypeName(Builtins::typeObject);
+  addTypeName(Builtins::typeTypeInfoBlock);
 
 #if 0
   // Finish up static constructors.

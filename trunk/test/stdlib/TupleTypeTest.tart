@@ -93,7 +93,7 @@ def tupleArg(a:(int, double)) {
 def testUnpackedAssign() {
   var a = 1, 2.0;
   var b, c = a;
-  //var b2:int, c2:double = a;
+  var b2:int, c2:double = a;
   //var b3:long, c3 = a;
   
   b, c = a;
@@ -131,4 +131,9 @@ def testMultiValueReturn() {
   Debug.assertEq("Hello", b1);
   Debug.assertEq(2, c1);
   Debug.assertEq("World", d1);
+}
+
+struct TupleContainer {
+  var i:int;
+  var t:(int, double);
 }

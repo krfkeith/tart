@@ -8,7 +8,6 @@ Design TODOS:
 
 Implementation TODOS:
 
-* Need to deal with passing structs/unions/tuples larger than 8 bytes around.
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * See if we can move template stuff into the type (CompositeType and FunctionType)
@@ -59,7 +58,6 @@ Implementation TODOS:
   * Enum operators (relational and bitwise).
   * .parse
 * Tuple types
-  * Destructuring assignment
   * Variadic Tuple args
   * Test struct members, params.
   * Member-wise conversions.

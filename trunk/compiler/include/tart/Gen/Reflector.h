@@ -146,8 +146,7 @@ public:
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Get the type pointer for the reflected type, and cast it
-      to a Type. */
+  /** Get the type pointer for the reflected type, and cast it to a Type. */
   llvm::Constant * emitTypeReference(const Type * type);
 
   /** Return the LLVM type of the reflection infor for this type. */
