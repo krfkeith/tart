@@ -71,4 +71,6 @@ def testCallInstanceMethod() {
   let ty:Type = Type.of(TestClass);
   let ct = typecast[ComplexType](ty);
   let method = typecast[Method](ct.findMethod("square"));
+  let tclass = TestClass();
+  Debug.assertEq(484, typecast[int](method.call(tclass, 22)));
 }

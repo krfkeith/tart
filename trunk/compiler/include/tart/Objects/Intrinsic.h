@@ -80,6 +80,14 @@ class TypeOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// ComplexType.of intrinsic
+class ComplexTypeOfIntrinsic : public Intrinsic {
+  static ComplexTypeOfIntrinsic instance;
+  ComplexTypeOfIntrinsic() : Intrinsic("tart.reflect.ComplexType.of") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Debug.stringify intrinsic
 class StringifyIntrinsic : public Intrinsic {
   static StringifyIntrinsic instance;

@@ -47,7 +47,7 @@ SystemClassMember<VariableDefn> complexType_typeParams(Builtins::typeComplexType
 SystemClassMember<VariableDefn> complexType_attributes(Builtins::typeComplexType, "_attributes");
 SystemClassMember<VariableDefn> complexType_fields(Builtins::typeComplexType, "_fields");
 SystemClassMember<VariableDefn> complexType_properties(Builtins::typeComplexType, "_properties");
-SystemClassMember<VariableDefn> complexType_constructors(Builtins::typeComplexType, "_constructors");
+SystemClassMember<VariableDefn> complexType_ctors(Builtins::typeComplexType, "_constructors");
 SystemClassMember<VariableDefn> complexType_methods(Builtins::typeComplexType, "_methods");
 SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeComplexType, "_innerTypes");
 
@@ -156,12 +156,12 @@ void Reflector::emitModule(Module * module) {
       visitMember(rfBuiltins, &FloatType::typedefn);
       visitMember(rfBuiltins, &DoubleType::typedefn);
     }
+  }
 
-    for (DefnSet::iterator it = module->reflectedDefs().begin();
-        it != module->reflectedDefs().end(); ++it) {
-      if (const TypeDefn * td = dyn_cast<TypeDefn>(*it)) {
-        emitTypeDefn(td);
-      }
+  for (DefnSet::iterator it = module->reflectedDefs().begin();
+      it != module->reflectedDefs().end(); ++it) {
+    if (const TypeDefn * td = dyn_cast<TypeDefn>(*it)) {
+      emitTypeDefn(td);
     }
   }
 }
@@ -194,7 +194,8 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
           " but it has not been imported into this module.";
     }
 
-    if (td->isSynthetic() && module()->exportDefs().count(td) > 0) {
+    if ((td->isSynthetic() || td->hasTrait(Defn::Nonreflective)) &&
+        module()->exportDefs().count(td) > 0) {
       linkageType = GlobalValue::LinkOnceODRLinkage;
     }
 
@@ -373,6 +374,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
           diag.fatal() << "Attempting to use reflected type of synthetic type " << type <<
               " but it has not been imported into the module.";
         }
+
         return Builtins::typeComplexType->irType();
       }
 
@@ -477,16 +479,11 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
   }
 
   sb.addField(emitArray(qname, complexType_interfaces.get(), interfaces));
-  //sb.addNullField(complexType_interfaces.type());
   sb.addNullField(complexType_typeParams.type());
   sb.addNullField(complexType_attributes.type());
-  //sb.addNullField(complexType_fields.type());
   sb.addField(emitArray(qname, complexType_fields.get(), rfMembers.fields));
-  //sb.addNullField(complexType_properties.type());
   sb.addField(emitArray(qname, complexType_properties.get(), rfMembers.properties));
-  //sb.addNullField(complexType_constructors.type());
-  sb.addField(emitArray(qname, complexType_constructors.get(), rfMembers.constructors));
-  //sb.addNullField(complexType_methods.type());
+  sb.addField(emitArray(qname, complexType_ctors.get(), rfMembers.constructors));
   sb.addField(emitArray(qname, complexType_methods.get(), rfMembers.methods));
   sb.addField(emitArray(qname, complexType_innerTypes.get(), rfMembers.types));
   return sb.build(Builtins::typeComplexType->irType());
@@ -624,9 +621,8 @@ llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, TypeKind kind
 
 llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
   // Get cached version if already generated.
-  std::string typeTupleName(".TupleType(");
+  std::string typeTupleName(".tuple");
   typeLinkageName(typeTupleName, types);
-  typeTupleName.append(")");
   GlobalVarMap::iterator it = globals_.find(typeTupleName);
   if (it != globals_.end()) {
     return it->second;

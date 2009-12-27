@@ -117,6 +117,7 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
+  importSystemType(Builtins::typeModule);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeDefn(Builtins::funcTypecastError, Task_PrepTypeGeneration);
 
@@ -390,7 +391,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope
   } else if (lookupName(importDefs, import->path(), false)) {
     targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
   } else {
-    diag.fatal(import) << "Not found '" << import << "'";
+    diag.error(import) << "Not found '" << import << "'";
   }
 
   setActiveScope(saveScope);
@@ -459,9 +460,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
             reflectTypeMembers(ctype);
           }
 
-          if (importSystemType(Builtins::typeComplexType)) {
-            importSystemType(Builtins::typeModule);
-          }
+          importSystemType(Builtins::typeComplexType);
         } else if (enableReflection) {
           module->reflectedDefs().insert(tdef);
           importSystemType(Builtins::typeSimpleType);
@@ -498,7 +497,6 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           importSystemType(Builtins::typeMethod);
           importSystemType(Builtins::typeFunctionType);
           importSystemType(Builtins::typeDerivedType);
-          importSystemType(Builtins::typeModule);
         }
 
         for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
@@ -522,7 +520,6 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       module->reflectedDefs().insert(in);
       reflectType(prop->type());
       importSystemType(Builtins::typeProperty);
-      importSystemType(Builtins::typeModule);
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (enableReflectionDetail) {
@@ -542,6 +539,14 @@ bool DefnAnalyzer::reflectType(const Type * type) {
         importSystemType(Builtins::typeSimpleType);
       } else if (type->typeClass() == Type::Enum) {
         importSystemType(Builtins::typeEnumType);
+      } else if (type->typeClass() == Type::Class) {
+        if (type == Builtins::typeComplexType.get()) {
+          // Special case for where a reference to a system class is used as
+          // a parameter - it will already have been added to the module, so
+          // importSystemType won't work.
+          AnalyzerBase::analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
+          Builtins::typeComplexType->addFieldTypesToModule(module);
+        }
       }
       //diag.info() << Format_Verbose << "Reflecting type: " << type;
     }

@@ -198,6 +198,18 @@ const llvm::Type * SystemClass::irType() const {
   return get()->irType();
 }
 
+const llvm::Type * SystemClass::irEmbeddedType() const {
+  return get()->irEmbeddedType();
+}
+
+const llvm::Type * SystemClass::irParameterType() const {
+  return get()->irParameterType();
+}
+
+const llvm::Type * SystemClass::irReturnType() const {
+  return get()->irReturnType();
+}
+
 TypeDefn * SystemClass::typeDefn() const {
   return get()->typeDefn();
 }

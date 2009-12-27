@@ -123,6 +123,9 @@ public:
   }
 
   const llvm::Type * irType() const;
+  const llvm::Type * irEmbeddedType() const;
+  const llvm::Type * irParameterType() const;
+  const llvm::Type * irReturnType() const;
 
   TypeDefn * typeDefn() const;
 

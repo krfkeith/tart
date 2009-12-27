@@ -87,7 +87,9 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(type->passes().isFinished(CompositeType::OverloadingPass), type);
   DASSERT_OBJ(type->irType() != NULL, type);
 
-  irModule_->addTypeName(tdef->linkageName(), type->irType());
+  if (irModule_->getTypeName(type->irType()).empty()) {
+    irModule_->addTypeName(tdef->linkageName(), type->irType());
+  }
   createTypeInfoBlock(rtype);
   createTypeAllocator(rtype);
   return type->irType();

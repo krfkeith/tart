@@ -39,7 +39,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       lookupName(typeExprs, ast);
 
       if (typeExprs.empty()) {
-        diag.fatal(loc) << "Undefined type '" << ast << "'";
+        diag.error(loc) << "Undefined type '" << ast << "'";
         return &BadType::instance;
       }
 

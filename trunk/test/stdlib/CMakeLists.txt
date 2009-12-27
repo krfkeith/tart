@@ -1,10 +1,12 @@
-# CMake build file for Tart/tart/stdlib
+# CMake build file for tart/test/stdlib
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
+set(MODPATH  # Module search path
+  -i ${TART_SOURCE_DIR}/stdlib
+  -i ${TART_SOURCE_DIR}/libext/testing)
 set(TART_OPTIONS -g -debug-errors -show-generated)
 #set(TART_OPTIONS -debug-errors -show-generated)
 set(TARTLN_OPTIONS -internalize -O0)
@@ -14,15 +16,17 @@ foreach(SRC_FILE ${TART_SRC})
   # Compile tart source
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${BC_FILE}
-      COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} -i${MODPATH} ${SRC_FILE}
+      COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       DEPENDS "${SRC_FILE}" tartc
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Link with stdlib
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE} "${TART_BINARY_DIR}/stdlib/stdlib.bc"
-      DEPENDS "${BC_FILE}" tartln stdlib
+      COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE}
+          "${PROJECT_BINARY_DIR}/stdlib/stdlib.bc"
+          "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
+      DEPENDS "${BC_FILE}" tartln stdlib "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
   # Assemble and run

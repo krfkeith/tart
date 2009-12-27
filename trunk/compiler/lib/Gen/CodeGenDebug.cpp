@@ -106,6 +106,7 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   if (debug_ && !dbgContext_.isNull()) {
     setDebugLocation(fn->location());
 
+    // TODO: Need to take 'shape' into account, esp for return type.
 #if 0
     const FunctionType * ftype = fn->functionType();
     if (ftype->selfParam() != NULL) {
@@ -208,6 +209,11 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDIType(alias->value());
     }
 
+    case Type::TypeLiteral:
+      // TODO: Implement this.
+      result = DIType();
+      break;
+
     default:
       diag.debug() << type;
       DFAIL("Invalid type defn");
@@ -252,6 +258,7 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
 }
 
 DIType CodeGenerator::genDIParameterType(const Type * type) {
+  // TODO: Need to take 'shape' into account.
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedTypeEx(
@@ -260,8 +267,8 @@ DIType CodeGenerator::genDIParameterType(const Type * type) {
         "",
         genDICompileUnit(type->typeDefn()),
         0,
-        getSizeOfInBits(type->irEmbeddedType()),
-        getAlignOfInBits(type->irEmbeddedType()),
+        getSizeOfInBits(type->irParameterType()),
+        getAlignOfInBits(type->irParameterType()),
         getInt64Val(0), 0,
         di);
   }
@@ -547,6 +554,7 @@ DICompositeType CodeGenerator::genDITupleType(const TupleType * type) {
 
 DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   DIDescriptorArray args;
+  // TODO: Need to take 'shape' into account.
   args.push_back(genDIType(type->returnType()));
 
   if (type->selfParam() != NULL) {

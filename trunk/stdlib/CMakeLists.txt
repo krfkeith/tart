@@ -1,4 +1,4 @@
-# CMake build file for Tart/stdlib
+# CMake build file for tart/stdlib
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -37,7 +37,8 @@ foreach(SRC_FILE ${TART_STDLIB_SRC})
 endforeach(SRC_FILE)
 
 # Target to drive the conversion
-add_custom_command(OUTPUT stdlib.bc
+add_custom_command(
+    OUTPUT stdlib.bc
     COMMAND tartln -filetype=bc -o stdlib.bc ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} tartln
     COMMENT "Linking stdlib.bc")

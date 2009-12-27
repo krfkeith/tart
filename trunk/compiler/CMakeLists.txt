@@ -18,5 +18,6 @@ source_group(CFG REGULAR_EXPRESSION include/tart/CFG/*)
 source_group(Common REGULAR_EXPRESSION include/tart/Common/*)
 source_group(Gen REGULAR_EXPRESSION include/tart/Gen/*)
 source_group(Lex REGULAR_EXPRESSION include/tart/Lex/*)
+source_group(Sema REGULAR_EXPRESSION include/tart/Sema/*)
 
 add_library(compiler STATIC ${sources} ${headers})

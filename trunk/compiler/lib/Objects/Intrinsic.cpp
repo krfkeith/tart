@@ -104,6 +104,22 @@ Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
 }
 
 // -------------------------------------------------------------------
+// ComplexTypeOfIntrinsic
+ComplexTypeOfIntrinsic ComplexTypeOfIntrinsic::instance;
+
+Value * ComplexTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
+  const Type * type = typeLiteral->value();
+  if (!isa<CompositeType>(type)) {
+    diag.error(call->location()) << "Type '" << type << "' is not a complex type.";
+  }
+
+  return cg.builder().CreateBitCast(
+      cg.createTypeObjectPtr(type), Builtins::typeComplexType->irEmbeddedType(), "bitcast");
+}
+
+// -------------------------------------------------------------------
 // StringifyIntrinsic
 StringifyIntrinsic StringifyIntrinsic::instance;
 

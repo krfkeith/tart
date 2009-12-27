@@ -210,6 +210,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::ClosureEnv:
       return genClosureEnv(static_cast<const ClosureEnvExpr *>(in));
 
+    case Expr::TypeLiteral:
+      return reflector_.emitTypeReference(static_cast<const TypeLiteralExpr *>(in)->value());
+
     case Expr::NoOp:
       return NULL;
 

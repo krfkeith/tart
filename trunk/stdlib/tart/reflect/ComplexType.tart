@@ -1,3 +1,4 @@
+import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 
 /** Reflection type for classes, structs, and interfaces. */
@@ -17,6 +18,9 @@ public class ComplexType : SimpleType {
 
   undef construct();
 
+  /** Given a type literal, return the reflected complex type object. */
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> ComplexType;
+
   /** Pointer to this type's supertype, or null. */
   final def supertype:ComplexType or Null { get { return self._superType; } }
   
@@ -31,7 +35,7 @@ public class ComplexType : SimpleType {
   
   /** Array of field members. */
   final def fields:Field[] { get { return self._fields; } }
-  
+
   /** Array of property members. */
   final def properties:Property[] { get { return self._properties; } }
   
