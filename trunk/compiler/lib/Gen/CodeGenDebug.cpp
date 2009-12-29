@@ -106,32 +106,38 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   if (debug_ && !dbgContext_.isNull()) {
     setDebugLocation(fn->location());
 
-    // TODO: Need to take 'shape' into account, esp for return type.
 #if 0
+    // TODO: Need to take 'shape' into account, esp for return type.
     const FunctionType * ftype = fn->functionType();
     if (ftype->selfParam() != NULL) {
       /// CreateVariable - Create a new descriptor for the specified variable.
       const ParameterDefn * p = ftype->selfParam();
-      DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
-          p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+      DIVariable argVar = dbgFactory_.CreateVariable(
+          dwarf::DW_TAG_arg_variable, dbgContext_,
+          p->name(), dbgCompileUnit_,
+          getSourceLineNumber(p->location()),
           genDIParameterType(p->type()));
       dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
     }
+#endif
 
-    for (ParameterList::const_iterator it = ftype->params().begin(); it != ftype->params().end();
-        ++it) {
+#if 0
+    const ParameterList & params = ftype->params();
+    for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
       const ParameterDefn * p = *it;
       if (p->isLValue()) {
         // TODO: Handle this case later.
       } else {
         /// CreateVariable - Create a new descriptor for the specified variable.
-        DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
+        DIVariable argVar = dbgFactory_.CreateVariable(
+            dwarf::DW_TAG_arg_variable, dbgContext_,
             p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
             genDIParameterType(p->type()));
         dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
       }
     }
 #endif
+
     const LocalScopeList & lsl = fn->localScopes();
     for (LocalScopeList::const_iterator it = lsl.begin(); it != lsl.end(); ++it) {
       LocalScope * lscope = *it;

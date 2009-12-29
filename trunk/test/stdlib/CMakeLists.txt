@@ -9,7 +9,7 @@ set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/libext/testing)
 set(TART_OPTIONS -g -debug-errors -show-generated)
 #set(TART_OPTIONS -debug-errors -show-generated)
-set(TARTLN_OPTIONS -internalize -O0)
+set(TARTLN_OPTIONS -internalize -O0 -show-size)
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
@@ -26,6 +26,7 @@ foreach(SRC_FILE ${TART_SRC})
       COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE}
           "${PROJECT_BINARY_DIR}/stdlib/stdlib.bc"
           "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
+#      DEPENDS "${BC_FILE}" tartln stdlib "${PROJECT_BINARY_DIR}/testing.lib"
       DEPENDS "${BC_FILE}" tartln stdlib "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
@@ -33,7 +34,7 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${EXE_FILE}
       COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
-      COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime
+      COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
       #COMMAND dsymutil ${EXE_FILE}
       DEPENDS "${ASM_FILE}" runtime
       COMMENT "Assembling ${ASM_FILE}")

@@ -315,14 +315,11 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
 Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
-  if (rtype->getTypeAllocator() == NULL &&
-      type->typeClass() == Type::Class /*&&
-      type->hasTrait(Defn::DefaultAlloc)*/) {
+  if (rtype->getTypeAllocator() == NULL && type->typeClass() == Type::Class) {
 
     // Declare the allocator function
-    std::vector<const llvm::Type *> argTypes;
-    llvm::FunctionType * alloctype = llvm::FunctionType::get(llvm::PointerType::getUnqual(
-        type->irType()), argTypes, false);
+    llvm::FunctionType * alloctype = llvm::FunctionType::get(
+        llvm::PointerType::getUnqual(type->irType()), false);
     Function * allocFunc = Function::Create(
         alloctype, rtype->getLinkageType(),
         type->typeDefn()->linkageName() + ".type.alloc", irModule_);
@@ -399,7 +396,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       cast_or_null<FunctionDefn>(type->memberScope()->lookupSingleMember("toString"));
 
   if (type->isFlags()) {
-  } else {
+  } else if (!enumConstants.empty()) {
     VariableDefn * minVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("minVal"));
     VariableDefn * maxVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("maxVal"));
     APInt minValInt = cast<ConstantInteger>(minVal->initValue())->intValue();

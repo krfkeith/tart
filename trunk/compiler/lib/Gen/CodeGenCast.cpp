@@ -275,11 +275,21 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
         throwCondTypecastError(test);
       }
 
+#if 0
+      const llvm::Type * fieldType = toType->irEmbeddedType();
+      const llvm::Type * unionTypeForMember = llvm::PointerType::get(llvm::StructType::get(
+          context_, utype->getDiscriminatorType(), fieldType, NULL), 0);
+
+      return builder_.CreateLoad(
+          builder_.CreateConstInBoundsGEP2_32(
+              builder_.CreateBitCast(value, unionTypeForMember), 0, 1));
+#else
       const llvm::Type * fieldType = toType->irEmbeddedType();
       return builder_.CreateLoad(
           builder_.CreateBitCast(
               builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
               llvm::PointerType::get(fieldType, 0)));
+#endif
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.

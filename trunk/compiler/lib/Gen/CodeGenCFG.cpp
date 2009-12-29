@@ -51,6 +51,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 void CodeGenerator::genBlocks(BlockList & blocks) {
 
   // Generate the list of predecessor blocks for each block.
+#if 0
   for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
     Block * blk = *b;
     BlockList & succs = blk->succs();
@@ -58,6 +59,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
       (*s)->preds().push_back(blk);
     }
   }
+#endif
 
   // Generate the code for each Block.
   for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
@@ -286,7 +288,8 @@ void CodeGenerator::genCatch(Block * blk) {
       irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
   Function * ehSelector = llvm::Intrinsic::getDeclaration(
       irModule_, llvm::Intrinsic::eh_selector, NULL, 0);
-  Function * personality = getExceptionPersonality();
+  Function * personality = requestStackTrace ?
+      getExceptionTracePersonality() : getExceptionPersonality();
 
   // Exception header
   Value * ehPtr = builder_.CreateCall(ehException, "eh_ptr");

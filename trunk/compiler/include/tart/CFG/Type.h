@@ -159,6 +159,9 @@ public:
   /** True if this type is the 'void' type. */
   bool isVoidType() const;
 
+  /** True if this type is the 'Null' type. */
+  bool isNullType() const;
+
   /** True if this type is an integer type. */
   bool isIntType() const;
 

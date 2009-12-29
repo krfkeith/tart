@@ -37,6 +37,8 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Config/config.h"
 
+#include "ReflectionSizePass.h"
+
 #include <memory>
 #include <cstring>
 
@@ -90,6 +92,9 @@ static cl::list<std::string> optFrameworks("framework",
 
 static cl::opt<bool> optDumpAsm("dump-asm",
     cl::desc("Print resulting IR"));
+
+static cl::opt<bool> optShowSizes("show-size",
+    cl::desc("Print size of debugging and reflection data"));
 
 // Options to control the linking, optimization, and code gen processes
 
@@ -267,8 +272,18 @@ void optimize(Module * module) {
     passes.add(createVerifierPass());
   }
 
+  ReflectionSizePass * rsPass = NULL;
+  if (optShowSizes) {
+    rsPass = new ReflectionSizePass();
+    passes.add(rsPass);
+  }
+
   // Run our queue of passes all at once now, efficiently.
   passes.run(*module);
+
+  if (rsPass != NULL) {
+    rsPass->report();
+  }
 }
 
 /// copyEnv - This function takes an array of environment variables and makes a

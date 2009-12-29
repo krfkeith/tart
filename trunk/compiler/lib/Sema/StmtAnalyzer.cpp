@@ -24,6 +24,7 @@
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Sema/ScopeBuilder.h"
+#include "tart/Sema/EvalPass.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -741,8 +742,8 @@ ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type 
         " can never equal switch expression of type '" << testType << "'";
   }
 
-  if (!result->isConstant()) {
-    diag.error(ast) << "Case expression '" << ast << "' is not a constant.";
+  result = EvalPass::eval(result, false);
+  if (result == NULL) {
     return NULL;
   }
 

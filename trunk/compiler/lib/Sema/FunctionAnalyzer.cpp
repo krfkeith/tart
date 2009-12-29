@@ -386,6 +386,15 @@ bool FunctionAnalyzer::createCFG() {
     if (target->hasBody() && target->blocks().empty()) {
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
+
+      // Generate the list of predecessor blocks for each block.
+      for (BlockList::iterator b = target->blocks().begin(); b != target->blocks().end(); ++b) {
+        Block * blk = *b;
+        BlockList & succs = blk->succs();
+        for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
+          (*s)->preds().push_back(blk);
+        }
+      }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.
       Block * block = new Block("undef_entry");

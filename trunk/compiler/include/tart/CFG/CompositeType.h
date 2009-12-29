@@ -151,8 +151,11 @@ public:
       requirements of this protocol. */
   bool isSupportedBy(const Type * type) const;
 
-  /** Return the default (no-arg) constructor for this type. */
-  FunctionDefn * defaultConstructor();
+  /** Return the default constructor for this type. */
+  FunctionDefn * defaultConstructor() const;
+
+  /** Return the no-arg constructor for this type. */
+  FunctionDefn * noArgConstructor() const;
 
   /** The list of implicit converters for this class */
   const MethodList & coercers() const { return coercers_; }

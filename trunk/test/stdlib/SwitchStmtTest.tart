@@ -1,18 +1,61 @@
+import tart.testing.Test;
+
 @EntryPoint
 def main(args:String[]) -> int {
-  Debug.assertEq("One", switchTest(1));
-  Debug.assertEq("Two", switchTest(2));
-  Debug.assertEq("Three", switchTest(3));
-  
-  return 0;
+  return SwitchStmtTest().runTests(SwitchStmtTest);
 }
 
-def switchTest(value:int) -> String {
-  switch value {
-    case 1 { return "One"; }
-    case 2 { return "Two"; }
-    case 3 { return "Three"; }
+class SwitchStmtTest : Test {
+	private def switchTest(value:int) -> String {
+	  switch value {
+	    case 1 { return "One"; }
+	    case 2 { return "Two"; }
+	    case 3 { return "Three"; }
+	  }
+	  
+	  return "Other";
+	}
+	
+  private def switchElseTest(value:int) -> String {
+    switch value {
+      case 1 { return "One"; }
+      case 2 { return "Two"; }
+      case 3 { return "Three"; }
+      else { return "Other"; }
+    }
   }
   
-  return "Fail";
+  enum ETEST {
+    ONE = 1,
+    TWO,
+    THREE,
+  }
+
+  private def switchEnum(value:ETEST) -> String {
+    switch value {
+      case ONE { return "One"; }
+      case TWO { return "Two"; }
+      else { return "Other"; }
+    }
+  }
+  
+	def testSimpleNonConstSwitch {
+	  assertEq("One", switchTest(1));
+	  assertEq("Two", switchTest(2));
+	  assertEq("Three", switchTest(3));
+	}
+
+  def testNonConstFallThroughSwitch {
+    assertEq("Other", switchTest(4));
+  }
+
+  def testNonConstElseSwitch {
+    assertEq("Other", switchElseTest(4));
+  }
+
+  def testNonConstEnumSwitch {
+    assertEq("One", switchEnum(ETEST.ONE));
+    assertEq("Two", switchEnum(ETEST.TWO));
+    assertEq("Other", switchEnum(ETEST.THREE));
+  }
 }

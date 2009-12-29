@@ -1,4 +1,3 @@
-import tart.reflect.ComplexType;
 import tart.testing.Test;
 
 @EntryPoint

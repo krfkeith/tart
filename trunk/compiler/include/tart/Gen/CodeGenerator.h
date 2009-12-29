@@ -274,6 +274,9 @@ public:
   /** return a reference to the exception personality function. */
   llvm::Function * getExceptionPersonality();
 
+  /** return a reference to the exception personality function that handles stack back trace. */
+  llvm::Function * getExceptionTracePersonality();
+
   /** return a reference to the global allocator function. */
   llvm::Function * getGlobalAlloc();
 
@@ -415,6 +418,7 @@ private:
   llvm::Function * unwindRaiseException_;
   llvm::Function * unwindResume_;
   llvm::Function * exceptionPersonality_;
+  llvm::Function * exceptionTracePersonality_;
   llvm::Function * globalAlloc_;
 
   RTTypeMap compositeTypeMap_;

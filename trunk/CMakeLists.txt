@@ -39,13 +39,12 @@ if (CMAKE_USE_PTHREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
 
 # Check for library functions we need.
+set(CMAKE_REQUIRED_DEFINITIONS -D__USE_GNU)
 check_function_exists(backtrace HAVE_BACKTRACE)
+check_function_exists(dladdr HAVE_DLADDR)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
-
-# Check for Electric fence
-find_library(LIB_EFENCE efence)
 
 # Check for GCC atomics
 check_cxx_source_compiles(

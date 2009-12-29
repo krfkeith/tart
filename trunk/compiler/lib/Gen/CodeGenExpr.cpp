@@ -95,10 +95,8 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::ConstString:
       return genStringLiteral(static_cast<const ConstantString *> (in)->value());
 
-    case Expr::ConstNull: {
-      //DASSERT_OBJ(in->type()->isReferenceType(), in->type());
+    case Expr::ConstNull:
       return ConstantPointerNull::get(cast<llvm::PointerType>(in->type()->irParameterType()));
-    }
 
     case Expr::ConstObjRef:
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "");
@@ -332,7 +330,8 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
         exit(-1);
       }
 
-      return builder_.CreateStore(rvalue, lvalue);
+      builder_.CreateStore(rvalue, lvalue);
+      return rvalue;
     }
   }
 
