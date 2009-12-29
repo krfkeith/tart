@@ -12,18 +12,12 @@
 namespace tart {
 
 class Module;
+class SystemClass;
 
 /// -------------------------------------------------------------------
 /// Function pass which assigns final types to all expressions and
 /// inserts implicit casts as needed.
 class FindExternalRefsPass : public CFGPass {
-  Module * module;
-
-  FindExternalRefsPass(Module * m) : module(m) {}
-  Defn * runImpl(Defn * in);
-  void addSymbol(Defn * de);
-  bool addFunction(FunctionDefn * de);
-
 public:
 
   /** Run this pass on the specified expression. */
@@ -36,6 +30,18 @@ public:
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitConstantObjectRef(ConstantObjectRef * in);
+
+private:
+  Module * module;
+
+  FindExternalRefsPass(Module * m)
+    : module(m)
+  {}
+
+  Defn * runImpl(Defn * in);
+  void addSymbol(Defn * de);
+  bool addFunction(FunctionDefn * de);
+  bool addTypeRef(const Type * type);
 };
 
 } // namespace tart

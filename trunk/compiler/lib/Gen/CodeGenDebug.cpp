@@ -2,6 +2,7 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "config.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
@@ -33,11 +34,11 @@ static unsigned typeEncoding(TypeId id) {
     return dwarf::DW_ATE_boolean;
   } else if (id == TypeId_Char) {
     return dwarf::DW_ATE_unsigned_char;
-  } else if (isFloatingType(id)) {
+  } else if (isFloatingTypeId(id)) {
     return dwarf::DW_ATE_float;
-  } else if (isSignedIntegerType(id)) {
+  } else if (isSignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_signed;
-  } else if (isUnsignedIntegerType(id)) {
+  } else if (isUnsignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_unsigned;
   }
 
@@ -54,8 +55,8 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
         DASSERT(srcPath.isAbsolute());
         compileUnit = dbgFactory_.CreateCompileUnit(
           0xABBA, // Take a chance on me...
-          srcPath.getLast().c_str(),
-          srcPath.getDirname().c_str(),
+          srcPath.getLast(),
+          srcPath.getDirname(),
           "0.1 tartc",
           module_->entryPoint() != NULL);
       }
@@ -106,30 +107,37 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
     setDebugLocation(fn->location());
 
 #if 0
+    // TODO: Need to take 'shape' into account, esp for return type.
     const FunctionType * ftype = fn->functionType();
     if (ftype->selfParam() != NULL) {
       /// CreateVariable - Create a new descriptor for the specified variable.
       const ParameterDefn * p = ftype->selfParam();
-      DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
-          p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+      DIVariable argVar = dbgFactory_.CreateVariable(
+          dwarf::DW_TAG_arg_variable, dbgContext_,
+          p->name(), dbgCompileUnit_,
+          getSourceLineNumber(p->location()),
           genDIParameterType(p->type()));
       dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
     }
+#endif
 
-    for (ParameterList::const_iterator it = ftype->params().begin(); it != ftype->params().end();
-        ++it) {
+#if 0
+    const ParameterList & params = ftype->params();
+    for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
       const ParameterDefn * p = *it;
       if (p->isLValue()) {
         // TODO: Handle this case later.
       } else {
         /// CreateVariable - Create a new descriptor for the specified variable.
-        DIVariable argVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgFunction_,
+        DIVariable argVar = dbgFactory_.CreateVariable(
+            dwarf::DW_TAG_arg_variable, dbgContext_,
             p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
             genDIParameterType(p->type()));
         dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
       }
     }
 #endif
+
     const LocalScopeList & lsl = fn->localScopes();
     for (LocalScopeList::const_iterator it = lsl.begin(); it != lsl.end(); ++it) {
       LocalScope * lscope = *it;
@@ -190,6 +198,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDIUnionType(static_cast<const UnionType *>(type));
       break;
 
+    case Type::Tuple:
+      result = genDITupleType(static_cast<const TupleType *>(type));
+      break;
+
     case Type::Function:
       result = genDIFunctionType(static_cast<const FunctionType *>(type));
       break;
@@ -202,6 +214,11 @@ DIType CodeGenerator::genDIType(const Type * type) {
       const TypeAlias * alias = static_cast<const TypeAlias *>(type);
       result = genDIType(alias->value());
     }
+
+    case Type::TypeLiteral:
+      // TODO: Implement this.
+      result = DIType();
+      break;
 
     default:
       diag.debug() << type;
@@ -247,6 +264,7 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
 }
 
 DIType CodeGenerator::genDIParameterType(const Type * type) {
+  // TODO: Need to take 'shape' into account.
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedTypeEx(
@@ -255,8 +273,8 @@ DIType CodeGenerator::genDIParameterType(const Type * type) {
         "",
         genDICompileUnit(type->typeDefn()),
         0,
-        getSizeOfInBits(type->irEmbeddedType()),
-        getAlignOfInBits(type->irEmbeddedType()),
+        getSizeOfInBits(type->irParameterType()),
+        getAlignOfInBits(type->irParameterType()),
         getInt64Val(0), 0,
         di);
   }
@@ -505,8 +523,44 @@ DICompositeType CodeGenerator::genDIUnionType(const UnionType * type) {
   return unionType;
 }
 
+DICompositeType CodeGenerator::genDITupleType(const TupleType * type) {
+  DIDescriptorArray members;
+  int32_t index = 0;
+  char memberName[16];
+  for (TupleType::const_iterator it = type->begin(); it != type->end(); ++it) {
+    const Type * memberType = *it;
+    Constant * offset = getOffsetOfInBits(cast<StructType>(type->irType()), index++);
+    sprintf(memberName, "_%d", index);
+    members.push_back(dbgFactory_.CreateDerivedTypeEx(
+        dwarf::DW_TAG_member,
+        dbgCompileUnit_,
+        memberName,
+        DICompileUnit(),
+        0,
+        getSizeOfInBits(memberType->irEmbeddedType()),
+        getAlignOfInBits(memberType->irEmbeddedType()),
+        offset, 0,
+        genDIEmbeddedType(memberType)));
+  }
+
+  std::string tupleName;
+  typeLinkageName(tupleName, type);
+  return dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_structure_type,
+      dbgCompileUnit_,
+      tupleName,
+      DICompileUnit(),
+      0,
+      getSizeOfInBits(type->irType()),
+      getAlignOfInBits(type->irType()),
+      getInt64Val(0), 0,
+      DIType(),
+      dbgFactory_.GetOrCreateArray(members.data(), members.size()));
+}
+
 DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   DIDescriptorArray args;
+  // TODO: Need to take 'shape' into account.
   args.push_back(genDIType(type->returnType()));
 
   if (type->selfParam() != NULL) {
@@ -518,7 +572,7 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
         "self",
         genDICompileUnit(param),
         getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->type()->irParameterType()),
+        getSizeOfInBits(llvm::PointerType::get(param->type()->irType(), 0)),
         getInt64Val(0),
         getInt64Val(0), 0,
         ptype);

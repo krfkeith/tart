@@ -17,6 +17,7 @@
 
 #include "tart/Objects/Builtins.h"
 
+#include "llvm/Attributes.h"
 #include "llvm/Module.h"
 #include "llvm/Function.h"
 #include "llvm/Analysis/Verifier.h"
@@ -60,6 +61,13 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
     return fn;
   }
 
+  DASSERT_OBJ(!fdef->isAbstract(), fdef);
+  DASSERT_OBJ(!fdef->isInterfaceMethod(), fdef);
+  DASSERT_OBJ(!fdef->isUndefined(), fdef);
+  DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
+  //DASSERT_OBJ(fdef->hasBody() || fdef->isExtern(), fdef);
+  DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
+
   // If it's a function from a different module...
   if (fdef->module() != module_) {
     const FunctionType * funcType = fdef->functionType();
@@ -70,9 +78,6 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
     return fn;
   }
 
-  DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
-  DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
-
   // Generate the function reference
   const FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
@@ -81,15 +86,12 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
       cast<llvm::FunctionType>(funcType->irType()),
       Function::ExternalLinkage, fdef->linkageName(), fdef->module()->irModule());
 
-  // TODO - Don't store irFunction in the function, as it makes it hard to compile more than
-  // one module.
-  //fdef->setIRFunction(fn);
   return fn;
 }
 
 bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   // Don't generate undefined functions.
-  if (fdef->hasTrait(Defn::Undefined)) {
+  if (fdef->isUndefined() || fdef->isAbstract() || fdef->isInterfaceMethod()) {
     return true;
   }
 
@@ -130,6 +132,13 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     unsigned param_index = 0;
     Function::arg_iterator it = f->arg_begin();
 
+    Value * saveStructRet = structRet_;
+    if (ftype->isStructReturn()) {
+      it->addAttr(llvm::Attribute::StructRet);
+      structRet_ = it;
+      ++it;
+    }
+
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
       DASSERT_OBJ(fdef->storageClass() == Storage_Instance ||
@@ -141,6 +150,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     for (; it != f->arg_end(); ++it, ++param_index) {
+      Value * argVal = it;
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
@@ -148,7 +158,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       it->setName(param->name());
 
       // See if we need to make a local copy of the param.
-      if (param->isLValue()) {
+      if (param->isLValue() /*|| isSmallAggregateValueType(param->type())*/
+          || param->type()->typeClass() == Type::Struct) {
         //|| (!param->getParameterFlag(ParameterDefn::Reference)
         //  && isAllocValueType(ptypeetType()))) {
         // TODO: For struct parameters, make a copy of whole struct.
@@ -177,6 +188,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 #endif
 
     currentFn_ = saveFn;
+    structRet_ = saveStructRet;
 
     if (!diag.inRecovery()) {
       if (verifyFunction(*f, PrintMessageAction)) {
@@ -238,6 +250,9 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   Value * letValue = NULL;
   if (let->storageClass() == Storage_Local) {
     // If it's a local variable, then use the value directly.
+    if (value == NULL) {
+      diag.fatal(let) << "Use of value before initialization: " << let;
+    }
     letValue = value;
   } else if (llvm::Constant * constantValue = dyn_cast<llvm::Constant>(value)) {
     // See if it's a constant.
@@ -258,7 +273,12 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 }
 
 bool CodeGenerator::genLetDefn(VariableDefn * let) {
-  return genLetValue(let) != NULL;
+  if (let->storageClass() != Storage_Local) {
+    return genLetValue(let) != NULL;
+  } else {
+    // Don't generate the let value until it is initialized.
+    return true;
+  }
 }
 
 Value * CodeGenerator::genVarValue(const VariableDefn * var) {

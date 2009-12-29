@@ -15,6 +15,8 @@
 
 namespace tart {
 
+class FunctionDefn;
+
 // -------------------------------------------------------------------
 // Type class for functions and macros.
 class FunctionType : public Type {
@@ -30,6 +32,9 @@ public:
   // Return type
   const Type * returnType() const { return returnType_; }
   void setReturnType(const Type * type) { returnType_ = type; }
+
+  /** True if this function type uses 'struct return' calling convention. */
+  bool isStructReturn() const { return isStructReturn_; }
 
   const llvm::Type * irType() const;
 
@@ -74,6 +79,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
   bool isSingular() const;
+  TypeShape typeShape() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionType *) { return true; }
@@ -89,6 +95,7 @@ private:
   mutable TupleType * paramTypes_;
   mutable llvm::PATypeHolder irType_;
   mutable bool isCreatingType;
+  mutable bool isStructReturn_;
   mutable std::string invokeName_;
 };
 
@@ -118,6 +125,7 @@ public:
   bool isSingular() const;
   void trace() const;
   void format(FormatStream & out) const;
+  TypeShape typeShape() const { return Shape_Small_RValue; }
   static inline bool classof(const BoundMethodType *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == BoundMethod;

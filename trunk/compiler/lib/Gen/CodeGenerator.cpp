@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Gen/CodeGenerator.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/InternedString.h"
@@ -12,6 +13,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -52,6 +54,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , currentFn_(NULL)
     , invokeFnType_(NULL)
     , dcObjectFnType_(NULL)
+    , structRet_(NULL)
     , reflector_(*this)
     , dbgFactory_(*mod->irModule())
 #if 0
@@ -62,9 +65,12 @@ CodeGenerator::CodeGenerator(Module * mod)
     , unwindRaiseException_(NULL)
     , unwindResume_(NULL)
     , exceptionPersonality_(NULL)
+    , exceptionTracePersonality_(NULL)
     , globalAlloc_(NULL)
     , debug_(Debug)
 {
+  // Turn on reflection if (a) it's enabled on the command-line, and (b) there were
+  // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
   methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
 #if 0
@@ -82,14 +88,16 @@ void CodeGenerator::generate() {
   }
 
   addTypeName(Builtins::typeObject);
-  addTypeName(Builtins::typeTypeInfoBlock.get());
-  addTypeName(Builtins::typeType);
-  addTypeName(Builtins::typeModule);
-  addTypeName(Builtins::typeSimpleType);
-  addTypeName(Builtins::typeComplexType);
-  addTypeName(Builtins::typeEnumType);
-  addTypeName(Builtins::typeFunctionType);
-  addTypeName(Builtins::typeMember);
+  addTypeName(Builtins::typeTypeInfoBlock);
+  if (reflector_.enabled() && Builtins::typeModule.peek() != NULL) {
+    addTypeName(Builtins::typeModule);
+    addTypeName(Builtins::typeType);
+    addTypeName(Builtins::typeSimpleType);
+    addTypeName(Builtins::typeDerivedType);
+    addTypeName(Builtins::typeComplexType);
+    addTypeName(Builtins::typeEnumType);
+    addTypeName(Builtins::typeFunctionType);
+  }
 
   // Write out a list of all modules this one depends on.
   addModuleDependencies();
@@ -148,9 +156,13 @@ void CodeGenerator::generate() {
     }
   }
 
-  if (reflector_.enabled()) {
+  if (reflector_.enabled() &&
+      Builtins::typeModule->passes().isFinished(CompositeType::FieldPass)) {
     reflector_.emitModule(module_);
   }
+
+  addTypeName(Builtins::typeObject);
+  addTypeName(Builtins::typeTypeInfoBlock);
 
 #if 0
   // Finish up static constructors.
@@ -278,7 +290,7 @@ void CodeGenerator::genEntryPoint() {
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
   // Create the entry block
-  builder_.SetInsertPoint(BasicBlock::Create(context_, "entry", mainFunc));
+  builder_.SetInsertPoint(BasicBlock::Create(context_, "main_entry", mainFunc));
 
   // Create the exception handler block
   BasicBlock * blkSuccess = BasicBlock::Create(context_, "success", mainFunc);
@@ -376,6 +388,28 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
   return exceptionPersonality_;
 }
 
+llvm::Function * CodeGenerator::getExceptionTracePersonality() {
+  using namespace llvm;
+  using llvm::Type;
+  using llvm::FunctionType;
+
+  if (exceptionTracePersonality_ == NULL) {
+    std::vector<const Type *> parameterTypes;
+    parameterTypes.push_back(builder_.getInt32Ty());
+    parameterTypes.push_back(builder_.getInt32Ty());
+    parameterTypes.push_back(builder_.getInt64Ty());
+    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
+
+    exceptionTracePersonality_ = cast<Function>(
+        irModule_->getOrInsertFunction("__tart_eh_trace_personality", ftype));
+    exceptionTracePersonality_->addFnAttr(Attribute::NoUnwind);
+  }
+
+  return exceptionTracePersonality_;
+}
+
 llvm::Function * CodeGenerator::getGlobalAlloc() {
   using namespace llvm;
   using llvm::Type;
@@ -413,14 +447,6 @@ Function * CodeGenerator::findMethod(const CompositeType * type, const char * me
   return genFunctionValue(fn);
 }
 
-bool CodeGenerator::requiresImplicitDereference(const Type * type) {
-  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    return ctype->typeClass() == Type::Struct;
-  }
-
-  return false;
-}
-
 llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {
   return reflector_.getModulePtr(module_);
 }
@@ -439,15 +465,48 @@ void CodeGenerator::addModuleDependencies() {
       deps.push_back(MDString::get(context_, m->qualifiedName()));
     }
 
-    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
-        MDNode::get(context_, deps.data(), deps.size()));
+    //irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
+    //    MDNode::get(context_, deps.data(), deps.size()));
   }
 }
 
-void CodeGenerator::addTypeName(const Type * type) {
-  if (type != NULL && type->typeDefn() != NULL) {
+void CodeGenerator::addTypeName(const CompositeType * type) {
+  if (type != NULL && type->typeDefn() != NULL &&
+      type->passes().isFinished(CompositeType::BaseTypesPass) &&
+      type->passes().isFinished(CompositeType::FieldPass)) {
     irModule_->addTypeName(type->typeDefn()->qualifiedName(), type->irType());
   }
+}
+
+void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
+#if !NDEBUG
+  if (!isa<llvm::PointerType>(type)) {
+    if (expr != NULL) {
+      diag.error(expr) << "Not an lvalue: " << expr;
+    }
+    type->dump(irModule_);
+    DFAIL("Expecting an lvalue");
+  }
+#endif
+}
+
+void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
+    ValueList::const_iterator first, ValueList::const_iterator last) {
+#if !NDEBUG
+  const llvm::FunctionType * fnType = cast<llvm::FunctionType>(fn->getType()->getContainedType(0));
+  size_t argCount = last - first;
+  DASSERT(fnType->getNumParams() == argCount);
+  for (size_t i = 0; i < argCount; ++i) {
+    const llvm::Type * paramType = fnType->getContainedType(i + 1);
+    const llvm::Type * argType = first[i]->getType();
+    if (paramType != argType) {
+      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType;
+      diag.info() << "but was '" << *argType;
+      diag.info() << "function value: '" << *fn;
+      DFAIL("Called from here");
+    }
+  }
+#endif
 }
 
 }

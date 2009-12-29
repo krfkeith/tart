@@ -2,71 +2,77 @@ import tart.reflect.Module;
 import tart.reflect.Method;
 import tart.reflect.Type;
 import tart.reflect.ComplexType;
-import tart.testing.TestUtils;
+import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return TestUtils.runModuleTests(Module.thisModule());
-}
-
-def testModuleReflection() {
-  let m = Module.thisModule();
-  Debug.assertEq("ReflectionTest", m.name);
-  Debug.assertEq(1, m.types.length);
-  Debug.assertEq(9, m.methods.length);
-}
-
-def testModuleMethods() {
-  let m = Module.thisModule();
-  var foundSample = false;
-  for method in m.methods {
-    if method.name == "sample" {
-      foundSample = true;
-    }
-  } 
-
-  Debug.assertTrue(foundSample);
-}
-
-def testFindMethod() {
-  let m = Module.thisModule();
-  let f1 = m.findMethod("sample");
-  Debug.assertTrue(f1 isa Method);
-  let f2 = m.findMethod("ample");
-  Debug.assertFalse(f2 isa Method);
-}
-
-def sample() {
-}
-
-def testCallMethod() {
-  let m = Module.thisModule();
-  let method = typecast[Method](m.findMethod("sample2"));
-	savedValue = 0;
-	method.call(m, 77);
-	Debug.assertEq(77, savedValue);
+  return ReflectionTest().runTests(ReflectionTest);
 }
 
 var savedValue:int;
 
+def sample() {
+}
+  
 def sample2(arg:int) {
   savedValue = arg;
 }
-
+  
 class TestClass {
   def square(arg:int) -> int {
     return arg * arg;
   }
 }
+  
+class ReflectionTest : Test {
+	def testModuleReflection() {
+	  let m = Module.thisModule();
+	  assertEq("ReflectionTest", m.name);
+	  assertEq(2, m.types.length);
+	  assertEq(3, m.methods.length);
+	}
+	
+	def testModuleMethods() {
+	  let m = Module.thisModule();
+	  var foundSample = false;
+	  for method in m.methods {
+	    if method.name == "sample" {
+	      foundSample = true;
+	    }
+	  } 
+	
+	  assertTrue(foundSample);
+	}
+	
+	def testFindMethod() {
+	  let m = Module.thisModule();
+	  let f1 = m.findMethod("sample");
+	  assertTrue(f1 isa Method);
+	  let f2 = m.findMethod("ample");
+	  assertFalse(f2 isa Method);
+	}
+	
+	def testCallMethod() {
+	  let m = Module.thisModule();
+	  let method = typecast[Method](m.findMethod("sample2"));
+		savedValue = 0;
+		method.call(m, 77);
+		assertEq(77, savedValue);
+	}
+	
+	def testFindClass() {
+	  let ty:Type = Type.of(TestClass);
+	  assertEq("tart.reflect.ComplexType", ty.__typeName);
+	  assertEq(Type.TypeKind.CLASS, ty.typeKind);
+	  assertTrue(ty isa tart.reflect.SimpleType);
+	  assertTrue(ty isa ComplexType);
+	}
 
-def testFindClass() {
-  let ty:Type = Type.of(TestClass);
-  Debug.assertEq("tart.reflect.ComplexType", ty.__typeName);
-  Debug.assertEq(Type.TypeKind.CLASS, ty.typeKind);
-  Debug.assertTrue(ty isa tart.reflect.SimpleType);
-  Debug.assertTrue(ty isa ComplexType);
-}
-
-def testCallInstanceMethod() {
-  //let m = Module.thisModule();
+	def testCallInstanceMethod() {
+	  let ty:Type = Type.of(TestClass);
+	  let ct = typecast[ComplexType](ty);
+	  let method = typecast[Method](ct.findMethod("square"));
+	  let tclass = TestClass();
+	  assertEq(484, typecast[int](method.call(tclass, 22)));
+	}
 }

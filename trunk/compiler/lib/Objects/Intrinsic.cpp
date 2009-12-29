@@ -2,6 +2,7 @@
  TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "config.h"
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
@@ -22,6 +23,9 @@
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/AnalyzerBase.h"
+
+#include "llvm/Function.h"
+#include "llvm/GlobalVariable.h"
 
 namespace tart {
 
@@ -89,7 +93,7 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * 
     }
   }
 
-  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Dynamic);
+  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::DynamicThrow);
 }
 
 // -------------------------------------------------------------------
@@ -100,6 +104,22 @@ Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
   return cg.createTypeObjectPtr(type->value());
+}
+
+// -------------------------------------------------------------------
+// ComplexTypeOfIntrinsic
+ComplexTypeOfIntrinsic ComplexTypeOfIntrinsic::instance;
+
+Value * ComplexTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
+  const Type * type = typeLiteral->value();
+  if (!isa<CompositeType>(type)) {
+    diag.error(call->location()) << "Type '" << type << "' is not a complex type.";
+  }
+
+  return cg.builder().CreateBitCast(
+      cg.createTypeObjectPtr(type), Builtins::typeComplexType->irEmbeddedType(), "bitcast");
 }
 
 // -------------------------------------------------------------------
@@ -520,8 +540,10 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
   DASSERT_OBJ(extName != NULL, self);
 
   LValueExpr * lval = cast<LValueExpr>(args[0]);
-  lval->value()->addTrait(Defn::Extern);
-  lval->value()->setLinkageName(extName->value());
+  if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+    fn->setFlag(FunctionDefn::Extern);
+    fn->setLinkageName(extName->value());
+  }
   return self;
 }
 
@@ -620,9 +642,14 @@ NonreflectiveApplyIntrinsic NonreflectiveApplyIntrinsic::instance;
 Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
-  if (TypeDefn * tdef = ctype->value()->typeDefn()) {
-    tdef->addTrait(Defn::Nonreflective);
+  if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
+    if (TypeDefn * tdef = ctype->value()->typeDefn()) {
+      tdef->addTrait(Defn::Nonreflective);
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    lval->value()->addTrait(Defn::Nonreflective);
+  } else {
+    diag.fatal(loc) << "Invalid target for nonreflective.";
   }
 
   return args[0];

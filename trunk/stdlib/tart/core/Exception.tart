@@ -12,15 +12,12 @@ public class Exception : Throwable {
   
   /** Default constructor. */
   def construct() {
-    // TODO: Make call to super() implicit.
-    super();
     // TODO: Allow to test for NULL.
     self._message = "";
   }
 
   /** Message constructor. */
   def construct(message:String) {
-    super();
     self._message = message;
   }
 

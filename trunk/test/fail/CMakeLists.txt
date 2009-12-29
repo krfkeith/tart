@@ -18,7 +18,7 @@ target_link_libraries(testrunner
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
     )
-set_target_properties(testrunner PROPERTIES LINK_FLAGS ${LLVM_LD_FLAGS})
+set_target_properties(testrunner PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
 # Now run the tests on these files.
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)

@@ -21,7 +21,7 @@ TypeLiteralType::TypeMap TypeLiteralType::uniqueTypes_;
 void TypeLiteralType::initBuiltin() {
   // Create type parameters
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "T"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "T"));
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
   tsig->setTypeParams(TupleType::get(typeParams));
 
@@ -48,13 +48,13 @@ TypeLiteralType * TypeLiteralType::get(const Type * literalType) {
 }
 
 TypeLiteralType::TypeLiteralType(const Type * literalType)
-  : TypeImpl(Type::TypeLiteral)
+  : TypeImpl(Type::TypeLiteral, Shape_None)
   , literalType_(literalType)
 {
   DASSERT_OBJ(!isa<UnitType>(literalType), literalType);
 }
 
-TypeLiteralType::TypeLiteralType() : TypeImpl(Type::TypeLiteral) {}
+TypeLiteralType::TypeLiteralType() : TypeImpl(Type::TypeLiteral, Shape_None) {}
 
 TypeLiteralType::~TypeLiteralType() {
   /*TypeMap::iterator it = uniqueTypes_.find(literalType_);
@@ -67,6 +67,8 @@ const llvm::Type * TypeLiteralType::createIRType() const {
 //  DASSERT_OBJ(literalType_ != NULL, this);
 //  const llvm::Type * type = literalType_->irEmbeddedType();
 //  return llvm::PointerType::getUnqual(type);
+  //DFAIL("Implement");
+  return Builtins::typeType.irEmbeddedType();
 }
 
 ConversionRank TypeLiteralType::convertImpl(const Conversion & cn) const {

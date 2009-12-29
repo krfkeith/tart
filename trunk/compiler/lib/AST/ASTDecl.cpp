@@ -79,6 +79,10 @@ void ASTVarDecl::format(FormatStream & out) const {
       out << "var ";
       break;
 
+    case VarList:
+      out << "varlist ";
+      break;
+
     default:
       DFAIL("Illegal state");
   }
@@ -86,6 +90,18 @@ void ASTVarDecl::format(FormatStream & out) const {
   out << name();
   if (type_) {
     out << ":" << type_;
+  }
+
+  if (nodeType() == VarList) {
+    out << "(";
+    for (ASTDeclList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+      if (it != members_.begin()) {
+        out << ", ";
+      }
+
+      out << *it;
+    }
+    out << ")";
   }
 
   if (value_) {
@@ -179,12 +195,12 @@ void ASTParameter::format(FormatStream & out) const {
 }
 
 // ---------------------------------------------------------------
-// ASTPatternVar
-void ASTPatternVar::trace() const {
+// ASTTypeVariable
+void ASTTypeVariable::trace() const {
   ASTVarDecl::trace();
 }
 
-void ASTPatternVar::format(FormatStream & out) const {
+void ASTTypeVariable::format(FormatStream & out) const {
   out << "%" << name();
 }
 

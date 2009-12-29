@@ -37,8 +37,19 @@ typedef llvm::SetVector<Defn *> DefnSet;
 /// Represents all of the reflected symbols within a single scope.
 
 struct ReflectedMembers {
+  ConstantList fields;
+  ConstantList properties;
+  ConstantList constructors;
   ConstantList methods;
   ConstantList types;
+
+  bool isEmpty() const {
+    return fields.empty() &&
+        properties.empty() &&
+        constructors.empty() &&
+        methods.empty() &&
+        types.empty();
+  }
 };
 
 /// -------------------------------------------------------------------
@@ -135,8 +146,7 @@ public:
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Get the type pointer for the reflected type, and cast it
-      to a Type. */
+  /** Get the type pointer for the reflected type, and cast it to a Type. */
   llvm::Constant * emitTypeReference(const Type * type);
 
   /** Return the LLVM type of the reflection infor for this type. */
@@ -144,8 +154,7 @@ public:
 
   /** Generate a Type object and return a pointer to it. */
   llvm::Constant * emitType(const Type * type);
-  llvm::Constant * emitPrimitiveType(const PrimitiveType * type);
-  llvm::Constant * emitCompositeType(const CompositeType * type);
+  llvm::Constant * emitComplexType(const CompositeType * type);
   llvm::Constant * emitEnumType(const EnumType * type);
   llvm::Constant * emitFunctionType(const FunctionType * type);
   llvm::Constant * emitDerivedType(const Type * type);
@@ -165,6 +174,8 @@ private:
   MemberKind memberKind(const Defn * member);
   Traits memberTraits(const Defn * member);
 
+  Module * module();
+
   CodeGenerator & cg_;
   bool enabled_;
   llvm::LLVMContext & context_;
@@ -173,8 +184,6 @@ private:
   llvm::GlobalVariable * moduleTable_;
 
   GlobalVarMap globals_;
-  DefnSet synthetics_;
-  size_t syntheticIndex_;
 };
 
 }

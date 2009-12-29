@@ -43,37 +43,34 @@ public:
   static SystemClass typeTypeInfoBlock;
   static SystemClass typeObject;
   static SystemClass typeString;
-  static Type * typeArray;
-  static Type * typeRange;
-  static Type * typeThrowable;
+  static SystemClass typeArray;
+  static SystemClass typeRange;
+  static SystemClass typeThrowable;
+  static SystemClass typeUnsupportedOperationException;
   static Type * typeUnwindException;
   static Type * typeIterable;
   static Type * typeIterator;
-  static Type * typeUnsupportedOperationException;
 
   // System types - reflection
-  static Type * typeType;
-  static Type * typeSimpleType;
-  static Type * typeComplexType;
-  static Type * typeEnumType;
-  static Type * typeFunctionType;
-  static Type * typeDerivedType;
-  static Type * typeMember;
-  static Type * typeField;
-  static Type * typeProperty;
-  static Type * typeMethod;
-  static Type * typeModule;
+  static SystemClass typeType;
+  static SystemClass typeSimpleType;
+  static SystemClass typeComplexType;
+  static SystemClass typeEnumType;
+  static SystemClass typeFunctionType;
+  static SystemClass typeDerivedType;
+  static SystemClass typeMember;
+  static SystemClass typeField;
+  static SystemClass typeProperty;
+  static SystemClass typeMethod;
+  static SystemClass typeModule;
 
   // System types - attributes
-  static Type * typeAttribute;
-  static Type * typeIntrinsicAttribute;
+  static SystemClass typeAttribute;
+  static SystemClass typeIntrinsicAttribute;
 
   // System types - lazily loaded
   static SystemClass typeRef;
   static SystemClass typeValueRef;
-
-  //static SystemTypeRef typeComplexType;
-  //static SystemTypeRef typeEnumType;
 
   // Global aliases - used to create static references to types that are dynamically loaded.
   static TypeAlias typeAliasString;
@@ -90,9 +87,6 @@ public:
 
   /** Load classes known to the compiler. */
   static void loadSystemClasses();
-
-  /** Load classes needed for reflection. */
-  static void loadReflectionClasses();
 
   /** Define built-in operators. */
   static void initOperators();
@@ -119,9 +113,7 @@ public:
     {}
 
   CompositeType * get() const;
-
   CompositeType * peek() const { return type_; }
-
   CompositeType * operator->() const {
     return get();
   }
@@ -131,6 +123,11 @@ public:
   }
 
   const llvm::Type * irType() const;
+  const llvm::Type * irEmbeddedType() const;
+  const llvm::Type * irParameterType() const;
+  const llvm::Type * irReturnType() const;
+
+  TypeDefn * typeDefn() const;
 
 private:
   const char * typeName_;
@@ -140,17 +137,17 @@ private:
 /// -------------------------------------------------------------------
 /// Contains a lazy reference to a member of a system type
 template <class T>
-class BuiltinMemberRef {
+class SystemClassMember {
 public:
-  BuiltinMemberRef(Type *& definingType, const char * fieldName)
-    : definingType_(definingType)
+  SystemClassMember(SystemClass & definingClass, const char * fieldName)
+    : definingClass_(definingClass)
     , fieldName_(fieldName)
     , member_(NULL)
-    {}
+  {}
 
   T * get() const {
     if (member_ == NULL) {
-      member_ = Builtins::getMember<T>(definingType_, fieldName_);
+      member_ = Builtins::getMember<T>(definingClass_.get(), fieldName_);
     }
 
     return member_;
@@ -169,7 +166,7 @@ public:
   }
 
 private:
-  Type *& definingType_;
+  SystemClass & definingClass_;
   const char * fieldName_;
   mutable T * member_;
 };

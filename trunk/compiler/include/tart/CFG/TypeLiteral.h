@@ -37,6 +37,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
+  TypeShape typeShape() const { return Shape_None; }
 
   static inline bool classof(const TypeLiteralType *) { return true; }
   static inline bool classof(const Type * t) {

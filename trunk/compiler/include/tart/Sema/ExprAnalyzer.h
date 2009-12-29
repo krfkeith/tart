@@ -42,6 +42,7 @@ public:
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
       Report an error if the cast is not possible. */
   Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
+  Expr * doBoxCast(Expr * in);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 
   // Literals
@@ -73,6 +74,7 @@ public:
   Expr * reduceAssign(const ASTOper * ast);
   Expr * reducePostAssign(const ASTOper * ast);
   Expr * reduceAugmentedAssign(const ASTOper * ast);
+  Expr * reduceMultipleAssign(const ASTOper * ast);
   Expr * reduceLoadValue(const ASTNode * ast);
   Expr * reduceStoreValue(const SourceLocation & loc, Expr * lval, Expr * rval);
   Expr * reduceRefEqualityTest(const ASTOper * ast);
@@ -81,6 +83,7 @@ public:
   Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
   Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
+  Expr * reduceTuple(const ASTOper * ast, const Type * expected);
 
   // Calls
 
@@ -162,6 +165,9 @@ public:
 
   /** Given an LValue, return the base expression. */
   Expr * lvalueBase(LValueExpr * lval);
+
+  /** Given a type, return the coercion function to convert it to a reference type. */
+  FunctionDefn * coerceToObjectFn(const Type * type);
 
   /** Return the function to unbox the specified type. */
   FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);

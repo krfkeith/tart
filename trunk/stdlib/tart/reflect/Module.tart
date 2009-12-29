@@ -10,7 +10,7 @@ import tart.core.Memory.Address;
     var _types:Type[];
     var _methods:Method[];
     
-    def construct() {}
+    undef construct();
   }
   
   /** Fully-qualified name of the module. */

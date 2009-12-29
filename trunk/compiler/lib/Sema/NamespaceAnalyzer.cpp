@@ -38,6 +38,9 @@ bool NamespaceAnalyzer::analyze(AnalysisTask task) {
     case Task_PrepEvaluation:
     case Task_PrepReflection:
       return runPasses(PASS_SET_CODEGEN);
+
+    default:
+      return true;
   }
 }
 

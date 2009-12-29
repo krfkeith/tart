@@ -29,9 +29,11 @@ public:
   bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
   bool includes(const Type * other) const { return value_->includes(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
+  TypeShape typeShape() const { return value_->typeShape(); }
   const llvm::Type * irType() const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
+  const llvm::Type * irReturnType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;

@@ -21,6 +21,7 @@ class Module;
 class Expr;
 class CastExpr;
 class AssignmentExpr;
+class MultiAssignExpr;
 class BinaryOpcodeExpr;
 class BinaryExpr;
 class UnaryExpr;
@@ -32,6 +33,7 @@ class IndirectCallExpr;
 class ArrayLiteralExpr;
 class ClosureEnvExpr;
 class NewExpr;
+class TupleCtorExpr;
 class LValueExpr;
 class BoundMethodExpr;
 class Defn;
@@ -49,6 +51,7 @@ class AddressType;
 class PointerType;
 class NativeArrayType;
 class UnionType;
+class TupleType;
 class BoundMethodType;
 class Block;
 class LocalScope;
@@ -79,8 +82,8 @@ class CodeGenerator {
 public:
   // Field indices for TypeInfoBlock
   enum TIBFields {
-    TIB_TYPE = 0,
-    TIN_NAME,
+    //TIB_TYPE = 0,
+    TIN_NAME = 0,
     TIB_BASES,
     TIB_IDISPATCH,
     TIB_METHOD_TABLE,
@@ -144,10 +147,13 @@ public:
   llvm::Value * genCast(llvm::Value * in, const Type * fromType, const Type * toType);
   llvm::Value * genNumericCast(const CastExpr * in);
   llvm::Value * genUpCast(const CastExpr * in);
+  llvm::Value * genDynamicCast(const CastExpr * in, bool throwOnFailure);
   llvm::Value * genBitCast(const CastExpr * in);
   llvm::Value * genUnionCtorCast(const CastExpr * in);
   llvm::Value * genUnionMemberCast(const CastExpr * in);
+  llvm::Value * genTupleCtor(const TupleCtorExpr * in);
   llvm::Value * genAssignment(const AssignmentExpr * in);
+  llvm::Value * genMultiAssign(const MultiAssignExpr * in);
   llvm::Value * genInstanceOf(const InstanceOfExpr * in);
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
   llvm::Value * genPtrDeref(const UnaryExpr * in);
@@ -156,6 +162,8 @@ public:
   llvm::Value * genCall(const FnCallExpr * in);
   llvm::Value * genIndirectCall(const IndirectCallExpr * in);
   llvm::Value * genNew(const NewExpr * in);
+  llvm::Value * genCompositeCast(llvm::Value * in, const CompositeType * fromCls,
+      const CompositeType * toCls, bool throwOnFailure);
 
   /** Load an expression */
   llvm::Value * genLoadLValue(const LValueExpr * lval);
@@ -166,8 +174,11 @@ public:
   /** Generate the address of a member field. */
   llvm::Value * genMemberFieldAddr(const LValueExpr * lval);
 
+  /** Load the value of an array element. */
+  llvm::Value * genLoadElement(const BinaryExpr * in);
+
   /** Generate the address of an array element. */
-  llvm::Value * genElementAddr(const UnaryExpr * in);
+  llvm::Value * genElementAddr(const BinaryExpr * in);
 
 #if 0
   /** Generate a type cast. */
@@ -263,6 +274,9 @@ public:
   /** return a reference to the exception personality function. */
   llvm::Function * getExceptionPersonality();
 
+  /** return a reference to the exception personality function that handles stack back trace. */
+  llvm::Function * getExceptionTracePersonality();
+
   /** return a reference to the global allocator function. */
   llvm::Function * getGlobalAlloc();
 
@@ -317,6 +331,7 @@ public:
   llvm::DIDerivedType genDIAddressType(const AddressType * type);
   llvm::DIDerivedType genDIPointerType(const PointerType * type);
   llvm::DICompositeType genDIUnionType(const UnionType * type);
+  llvm::DICompositeType genDITupleType(const TupleType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);
   llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
   llvm::DIDerivedType genDITypeBase(const CompositeType * type);
@@ -332,7 +347,6 @@ public:
 
   // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genInvokeFn(const FunctionType * fnType);
-  llvm::FunctionType * getInvokeFnType();
 
   // Generate the function that down-casts the 'self' argument in a reflected call.
   llvm::Function * genDcObjectFn(const Type * objType);
@@ -355,10 +369,7 @@ private:
   llvm::Constant * genReflectionDataArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Return true if 'type' requires an implicit dereference, such as a struct. */
-  bool requiresImplicitDereference(const Type * type);
-
-  void addTypeName(const Type * type);
+  void addTypeName(const CompositeType * type);
 
   /** Generate code to throw a typecast exception at the current point. */
   void throwCondTypecastError(llvm::Value * typeTestResult);
@@ -368,6 +379,12 @@ private:
   llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
   llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
 
+  void ensureLValue(const Expr * expr, const llvm::Type * type);
+  void checkCallingArgs(const llvm::Value * fn,
+      ValueList::const_iterator first, ValueList::const_iterator last);
+
+  llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
+
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
 
@@ -376,6 +393,7 @@ private:
   llvm::Function * currentFn_;
   llvm::FunctionType * invokeFnType_;
   llvm::FunctionType * dcObjectFnType_;
+  llvm::Value * structRet_;
 
 #if 0
   llvm::Function * moduleInitFunc;
@@ -400,6 +418,7 @@ private:
   llvm::Function * unwindRaiseException_;
   llvm::Function * unwindResume_;
   llvm::Function * exceptionPersonality_;
+  llvm::Function * exceptionTracePersonality_;
   llvm::Function * globalAlloc_;
 
   RTTypeMap compositeTypeMap_;

@@ -42,12 +42,21 @@ void IterableScope::addMember(Defn * d) {
 
 bool IterableScope::lookupMember(const char * name, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = members_.findSymbol(name);
+  bool found = false;
   if (entry != NULL) {
     defs.append(entry->begin(), entry->end());
-    return true;
+    found = true;
   }
 
-  return false;
+  if (inherit) {
+    for (ScopeSet::const_iterator it = auxScopes_.begin(); it != auxScopes_.end(); ++it) {
+      if ((*it)->lookupMember(name, defs, true)) {
+        found = true;
+      }
+    }
+  }
+
+  return found;
 }
 
 void IterableScope::trace() const {
@@ -67,11 +76,6 @@ void IterableScope::dumpHierarchy(bool full) const {
 
   members_.getDebugSummary(out);
   diag.writeLnIndent(out);
-  //diag.indent();
-  //if (parentScope != NULL) {
-  //  parentScope->dumpHierarchy(full);
-  //}
-  //diag.unindent();
 }
 
 /// -------------------------------------------------------------------

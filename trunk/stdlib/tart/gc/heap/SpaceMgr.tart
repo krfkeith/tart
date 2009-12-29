@@ -1,9 +1,10 @@
+import tart.annex.Nonreflective;
 import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 import tart.gc.AddressRange;
 
 /** Manages the global list of memory regions. */
-final class SpaceMgr {
+@Nonreflective final class SpaceMgr {
   private var _spaceTableExtent:AddressRange;
   
   // The global table of regions.

@@ -20,19 +20,19 @@ class ASTBuiltIn;
 /// -------------------------------------------------------------------
 /// Predicate functions for type ids.
 
-inline bool isIntegerType(TypeId id) {
+inline bool isIntegerTypeId(TypeId id) {
   return id >= TypeId_Char && id <= TypeId_UIntPtr;
 }
 
-inline bool isUnsignedIntegerType(TypeId id) {
+inline bool isUnsignedIntegerTypeId(TypeId id) {
   return (id >= TypeId_UInt8 && id <= TypeId_UIntPtr) || id == TypeId_Char;
 }
 
-inline bool isSignedIntegerType(TypeId id) {
+inline bool isSignedIntegerTypeId(TypeId id) {
   return id >= TypeId_SInt8 && id <= TypeId_SIntPtr;
 }
 
-inline static bool isFloatingType(TypeId id) {
+inline static bool isFloatingTypeId(TypeId id) {
   return id >= TypeId_Float && id <= TypeId_LongDouble;
 }
 
@@ -55,15 +55,6 @@ public:
   /** Define a constant member of this type. */
   void defineConstant(const char * name, ConstantExpr * value);
 
-  // Overrides
-  const llvm::Type * createIRType() const;
-  virtual bool isSingular() const { return true; }
-
-  static inline bool classof(const PrimitiveType *) { return true; }
-  static inline bool classof(const Type * t) {
-    return t->typeClass() == Type::Primitive;
-  }
-
   PrimitiveType * nextType() const { return nextType_; }
 
   // Return an integer type that fits the given number of bits.
@@ -73,6 +64,15 @@ public:
   static const Type * derefEnumType(const Type * in);
 
   static void initPrimitiveTypes(Module * module);
+
+  // Overrides
+  const llvm::Type * createIRType() const;
+  virtual bool isSingular() const { return true; }
+
+  static inline bool classof(const PrimitiveType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == Type::Primitive;
+  }
 
 protected:
   ConversionRank convertToInteger(const Conversion & cn) const;

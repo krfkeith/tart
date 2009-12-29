@@ -10,6 +10,7 @@ include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
+include(CheckTypeSize)
 include(FindThreads)
 
 # Check for the existence of include files.
@@ -18,8 +19,10 @@ check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(stddef.h HAVE_STDDEF_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(string.h HAVE_STRING_H)
+check_include_file(stdbool.h HAVE_STDBOOL_H)
 check_include_file(malloc.h HAVE_MALLOC_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(errno.h HAVE_ERRNO_H)
 check_include_file(execinfo.h HAVE_EXECINFO_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -29,6 +32,7 @@ check_include_file(libkern/OSAtomic.h HAVE_LIBKERN_OSATOMIC_H)
 check_include_file_cxx(new HAVE_NEW)
 check_include_file_cxx(ctime HAVE_CTIME)
 check_include_file_cxx(cxxabi.h HAVE_CXXABI_H)
+check_include_file_cxx(dlfcn.h HAVE_DLFCN_H)
 check_include_file_cxx(unwind.h HAVE_UNWIND_H)
 
 if (CMAKE_USE_PTHREADS_INIT)
@@ -36,13 +40,12 @@ if (CMAKE_USE_PTHREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
 
 # Check for library functions we need.
+set(CMAKE_REQUIRED_DEFINITIONS -D__USE_GNU)
 check_function_exists(backtrace HAVE_BACKTRACE)
+check_function_exists(dladdr HAVE_DLADDR)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
-
-# Check for Electric fence
-find_library(LIB_EFENCE efence)
 
 # Check for GCC atomics
 check_cxx_source_compiles(
@@ -55,6 +58,11 @@ check_cxx_source_compiles(
         __sync_bool_compare_and_swap(&f, 1, 0);
     }"
     HAVE_GCC_ATOMICS)
+
+# Check for type sizes
+check_type_size(int SIZEOF_INT)
+check_type_size(long SIZEOF_LONG)
+check_type_size(long long SIZEOF_LONG_LONG)
 
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)
@@ -82,16 +90,23 @@ add_definitions(
 
 # Extra flags for GCC (C++ only)
 if (CMAKE_COMPILER_IS_GNUCXX)
-  set(GCC_CXX_FLAGS
+  add_definitions(
       -pipe
       -Wall -Wextra -Werror -Wcast-align -Wpointer-arith
       -Wno-deprecated -Wno-unused
-      -Woverloaded-virtual
-      -fno-operator-names -ffor-scope
-      -fconst-strings
       -fmessage-length=0
       )
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+# Extra flags for MSVC (C only)
+if (MSVC)
+  add_definitions(
+      -D_CRT_SECURE_NO_WARNINGS
+      -DUNICODE -D_UNICODE
+      -wd4146 -wd4503 -wd4996 -wd4800 -wd4244 -wd4624
+      -wd4355 -wd4715 -wd4180 -wd4345 -wd4224
+  )
+endif (MSVC)
 
 # Add the check-build target
 add_custom_target(check)
@@ -103,9 +118,7 @@ add_subdirectory(runtime)
 add_subdirectory(third-party)
 add_subdirectory(test/unit)
 add_subdirectory(stdlib)
+add_subdirectory(libext/testing)
 #add_subdirectory(test/nolib)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/fail)
-
-#enable_testing()
-#add_test(UnitTest ${CMAKE_CURRENT_BINARY_DIR}/test-unit/unittest)

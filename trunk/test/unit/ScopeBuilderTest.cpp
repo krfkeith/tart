@@ -49,7 +49,7 @@ TEST_F(ScopeBuilderTest, TestAddMember) {
   Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1);
 
   ASSERT_EQ(Defn::Typedef, cl1Defn->defnType());
-  ASSERT_EQ("cl1", cl1Defn->name());
+  ASSERT_STREQ("cl1", cl1Defn->name());
   ASSERT_EQ(&testModule, cl1Defn->module());
   ASSERT_EQ(&testModule, cl1Defn->definingScope());
   //ASSERT_EQ(&testModule, cl1Defn->parentDefn());

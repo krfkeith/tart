@@ -19,6 +19,8 @@
 
 namespace tart {
 
+class SystemClass;
+
 /// -------------------------------------------------------------------
 /// Base class for analyzers that operate on declarations (class, function,
 /// etc.)
@@ -31,9 +33,6 @@ public:
 
   /** Do a full analysis of the target module. */
   bool analyzeModule();
-
-  /** Run the specified passes. */
-  bool analyze(Defn * in, DefnPasses & passes);
 
   /** Call the ScopeBuilder to create members of this defn. */
   bool createMembersFromAST(Defn * in);
@@ -58,7 +57,7 @@ public:
 
   /** Resolve the target of an import statement, and add a definition
       to the target scope. */
-  void importIntoScope(const ASTImport * import, Scope * targetScope);
+  void importIntoScope(const ASTImport * import, IterableScope * targetScope);
 
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);
@@ -66,6 +65,17 @@ public:
   /** Add requested passes to the toRun set if not already run. */
   static void addPass(Defn * de, DefnPasses & toRun, const DefnPass requested);
   static void addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested);
+
+  /** Add 'in' to the set of reflected types, and import any types needed to store
+      the reflection info. */
+  void addReflectionInfo(Defn * in);
+
+  /** Add a type to the set of types reflected within a module. */
+  bool reflectType(const Type * type);
+  void reflectTypeMembers(CompositeType * type);
+
+  /** Import a system class into the module. */
+  bool importSystemType(const SystemClass & sclass);
 
   /** Get the module in which a definition was defined - includes code to handle
       template instances which are defined in no module, but whose template definition

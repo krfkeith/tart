@@ -20,10 +20,10 @@ namespace tart {
 class Module;
 class Scope;
 class Expr;
-class SourceLocation;
 class NamespaceDefn;
 class FunctionDefn;
 class ArrayLiteralExpr;
+struct SourceLocation;
 
 /// -------------------------------------------------------------------
 /// Represents the set of possible operations that are done on a definition.
@@ -122,9 +122,6 @@ public:
       construction of the array. */
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const Type * elementType);
 
-  /** Given a type, return the coercion function to convert it to a reference type. */
-  static FunctionDefn * coerceToObjectFn(const Type * type);
-
   /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);
   static void checkAccess(const SourceLocation & loc, Defn * source, Defn * target);
@@ -169,7 +166,7 @@ protected:
   // Add a candidate to the list of specializations being considered.
   void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de, TupleType * args);
 
-    // Lookup helper function that attempts to load a module from 'path'.
+  // Lookup helper function that attempts to load a module from 'path'.
   bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);
 
   // Create a reference to a definition.

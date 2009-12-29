@@ -7,9 +7,8 @@ namespace TestUtils {
     try {
 		  for method in m.methods {
 		    if method.name.startsWith("test") {
-		      Debug.writeLn("Running:  ", method.name);
+		      Debug.writeLn("[Running] ", m.name, ".", method.name);
 		      method.call(m);
-          Debug.writeLn("Finished: ", method.name);
 		    }
 		  } 
     } catch t:Throwable {
@@ -17,6 +16,7 @@ namespace TestUtils {
       return 1;
     }
     
+    Debug.writeLn("[OK     ]");
     return 0;
   }
 }

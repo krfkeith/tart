@@ -45,7 +45,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
     return IdenticalTypes;
   }
 
-  if ((cn.options & Conversion::Dynamic) && cn.getFromType()->isReferenceType()) {
+  if ((cn.options & Conversion::DynamicThrow) && cn.getFromType()->isReferenceType()) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
           this, cn.fromValue);

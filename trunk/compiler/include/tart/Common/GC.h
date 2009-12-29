@@ -21,6 +21,7 @@ public:
   class Callback {
   public:
     virtual void call() = 0;
+    virtual ~Callback() {}
   };
 
   /** Construct a new GC object. */
@@ -49,7 +50,7 @@ public:
   static void sweep();
 
   /** Set the verbosity level. */
-  static void setDebugLevel(int level) { debugLevel = level; }
+  static void setDebugLevel(int level);
 
   static void registerUninitCallback(Callback * cb);
 
@@ -83,11 +84,6 @@ public:
 private:
   mutable bool marked_;
   GC * next_;
-
-  static size_t reclaimed;
-  static size_t total;
-  static int debugLevel;
-  static GC * allocList_;
 
   static bool sweepCallback(void * alloc, void * ctx);
 };

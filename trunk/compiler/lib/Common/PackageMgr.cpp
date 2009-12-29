@@ -89,6 +89,11 @@ Module * PackageMgr::getModuleForImportPath(const std::string & qname) {
       }
 
       return mod;
+    } else {
+      if (ShowImports) {
+        diag.debug(SourceLocation()) << "Import: checking for module '" << qname << "' at " <<
+            path.c_str();
+      }
     }
   }
 

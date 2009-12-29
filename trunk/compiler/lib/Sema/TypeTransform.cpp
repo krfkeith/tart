@@ -75,12 +75,14 @@ const Type * TypeTransform::visit(const Type * in) {
       return visitTypeAlias(static_cast<const TypeAlias *>(in));
 
     case Type::Pattern:
-      return visitPatternVar(static_cast<const PatternVar *>(in));
+      return visitTypeVariable(static_cast<const TypeVariable *>(in));
 
     case Type::PatternVal:
       return visitPatternValue(static_cast<const PatternValue *>(in));
 
-    case Type::Constraint:
+    case Type::ResultOf:
+    case Type::ParameterOf:
+    case Type::TupleOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
     default:
@@ -186,7 +188,7 @@ const Type * TypeTransform::visitUnitType(const UnitType * in) {
   return in;
 }
 
-const Type * TypeTransform::visitPatternVar(const PatternVar * in) {
+const Type * TypeTransform::visitTypeVariable(const TypeVariable * in) {
   return in;
 }
 
@@ -206,7 +208,7 @@ const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
 // -------------------------------------------------------------------
 // SubstitutionTransform
 
-const Type * SubstitutionTransform::visitPatternVar(const PatternVar * in) {
+const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
   Type * value = env_.get(in);
   return value != NULL ? visit(value) : in;
 }
@@ -235,7 +237,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     // Add type param mappings.
     size_t numVars = tsig->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
-      PatternVar * param = tsig->patternVar(i);
+      TypeVariable * param = tsig->patternVar(i);
       const Type * value = tinst->typeArg(i);
       const Type * svalue = visit(value);
       if (svalue != NULL) {
@@ -245,7 +247,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
 
     Defn * def = tsig->instantiate(SourceLocation(), partialEnv);
     if (def != NULL) {
-      //assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
+      //assureNoTypeVariables(cast<TypeDefn>(def)->typeValue());
       return cast<TypeDefn>(def)->typeValue();
     } else {
       return NULL;
@@ -258,7 +260,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
   } else if (in->typeDefn()->isTemplate()) {
     Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
     if (def != NULL) {
-      assureNoPatternVars(cast<TypeDefn>(def)->typeValue());
+      assureNoTypeVariables(cast<TypeDefn>(def)->typeValue());
       return cast<TypeDefn>(def)->typeValue();
     } else {
       return NULL;
@@ -271,7 +273,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
   return in;
 #endif
 
-  //assureNoPatternVars(in);
+  //assureNoTypeVariables(in);
   return in;
 }
 
@@ -285,7 +287,7 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
   return in;
 }
 
-const Type * RelabelTransform::visitPatternVar(const PatternVar * in) {
+const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
   Type * value = env_.get(in);
   if (value != NULL) {
     return value;

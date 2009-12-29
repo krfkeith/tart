@@ -70,6 +70,8 @@ public:
   static ConstantInteger * get(const SourceLocation & loc, const Type * type, int32_t value);
   static ConstantInteger * get(const SourceLocation & loc, const Type * type,
       llvm::ConstantInt * value);
+  static ConstantInteger * getSInt32(int32_t value);
+  static ConstantInteger * getUInt32(uint32_t value);
   static ConstantInteger * getSigned(const llvm::APInt & value, const PrimitiveType * type);
   static ConstantInteger * getUnsigned(const llvm::APInt & value, const PrimitiveType * type);
 

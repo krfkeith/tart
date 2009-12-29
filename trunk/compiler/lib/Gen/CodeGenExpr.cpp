@@ -2,27 +2,18 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Expr.h"
-#include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/CompositeType.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/NativeType.h"
-#include "tart/CFG/EnumType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
-#include "tart/CFG/Module.h"
 #include "tart/CFG/Closure.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
-#include "tart/Objects/Intrinsic.h"
 
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Module.h"
 
 namespace tart {
@@ -60,8 +51,14 @@ namespace {
 const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator first,
     ValueList::const_iterator last) {
   for (ValueList::const_iterator it = first; it != last; ++it) {
-    const ConstantInt * index = cast<ConstantInt> (*it);
-    type = type->getContainedType(index->getSExtValue());
+    if (const llvm::PointerType * atype = dyn_cast<llvm::PointerType>(type)) {
+      type = type->getContainedType(0);
+    } else if (const ArrayType * atype = dyn_cast<ArrayType>(type)) {
+      type = type->getContainedType(0);
+    } else {
+      const ConstantInt * index = cast<ConstantInt> (*it);
+      type = type->getContainedType(index->getSExtValue());
+    }
   }
 
   return type;
@@ -98,26 +95,20 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::ConstString:
       return genStringLiteral(static_cast<const ConstantString *> (in)->value());
 
-    case Expr::ConstNull: {
-      //DASSERT_OBJ(in->type()->isReferenceType(), in->type());
+    case Expr::ConstNull:
       return ConstantPointerNull::get(cast<llvm::PointerType>(in->type()->irParameterType()));
-    }
 
     case Expr::ConstObjRef:
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "");
 
-    case Expr::LValue: {
+    case Expr::LValue:
       return genLoadLValue(static_cast<const LValueExpr *>(in));
-    }
 
-    case Expr::BoundMethod: {
+    case Expr::BoundMethod:
       return genBoundMethod(static_cast<const BoundMethodExpr *>(in));
-    }
 
-    case Expr::ElementRef: {
-      Value * addr = genElementAddr(static_cast<const UnaryExpr *>(in));
-      return addr != NULL ? builder_.CreateLoad(addr) : NULL;
-    }
+    case Expr::ElementRef:
+      return genLoadElement(static_cast<const BinaryExpr *>(in));
 
     case Expr::InitVar:
       return genInitVar(static_cast<const InitVarExpr *>(in));
@@ -134,6 +125,12 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::UpCast:
       return genUpCast(static_cast<const CastExpr *>(in));
 
+    case Expr::TryCast:
+      return genDynamicCast(static_cast<const CastExpr *>(in), true);
+
+    case Expr::DynamicCast:
+      return genDynamicCast(static_cast<const CastExpr *>(in), false);
+
     case Expr::BitCast:
       return genBitCast(static_cast<const CastExpr *>(in));
 
@@ -144,9 +141,15 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::CheckedUnionMemberCast:
       return genUnionMemberCast(static_cast<const CastExpr *>(in));
 
+    case Expr::TupleCtor:
+      return genTupleCtor(static_cast<const TupleCtorExpr *>(in));
+
     case Expr::Assign:
     case Expr::PostAssign:
       return genAssignment(static_cast<const AssignmentExpr *>(in));
+
+    case Expr::MultiAssign:
+      return genMultiAssign(static_cast<const MultiAssignExpr *>(in));
 
     case Expr::Compare:
       return genCompare(static_cast<const CompareExpr *>(in));
@@ -190,11 +193,23 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return irExpr->value();
     }
 
+    case Expr::SharedValue: {
+      const SharedValueExpr * svExpr = static_cast<const SharedValueExpr *>(in);
+      if (svExpr->value() == NULL) {
+        svExpr->setValue(genExpr(svExpr->arg()));
+      }
+
+      return svExpr->value();
+    }
+
     case Expr::ArrayLiteral:
       return genArrayLiteral(static_cast<const ArrayLiteralExpr *>(in));
 
     case Expr::ClosureEnv:
       return genClosureEnv(static_cast<const ClosureEnvExpr *>(in));
+
+    case Expr::TypeLiteral:
+      return reflector_.emitTypeReference(static_cast<const TypeLiteralExpr *>(in)->value());
 
     case Expr::NoOp:
       return NULL;
@@ -235,19 +250,49 @@ llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef nam
     default:
       diag.fatal(in) << "Not a constant reference: " <<
       exprTypeName(in->exprType()) << " [" << in << "]";
+      return NULL;
   }
 }
 
 Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
+  VariableDefn * var = in->getVar();
+  TypeShape typeShape = var->canonicalType()->typeShape();
+  const Type * initExprType = in->initExpr()->canonicalType();
   Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
   }
 
-  VariableDefn * var = in->getVar();
   if (var->defnType() == Defn::Let) {
+    switch (typeShape) {
+      case Shape_Primitive:
+      case Shape_Reference:
+      case Shape_Small_RValue:
+        DASSERT_TYPE_EQ_MSG(var->type()->irEmbeddedType(), initValue->getType(), "genInitVar:Let");
+        break;
+
+      case Shape_Small_LValue:
+      case Shape_Large_Value:
+        //DASSERT_TYPE_EQ_MSG(var->irType()->, initValue->getType(), "genInitVar:Let");
+        break;
+
+      default:
+        diag.fatal(in) << "Invalid type shape for '" << var->type() << "': " << typeShape;
+        break;
+    }
+
+    DASSERT_OBJ(var->initValue() == NULL, var);
+    DASSERT_OBJ(initValue != NULL, var);
     var->setIRValue(initValue);
   } else {
+    if (typeShape == Shape_Large_Value || typeShape == Shape_Small_LValue) {
+      ensureLValue(in->initExpr(), initValue->getType());
+      initValue = builder_.CreateLoad(initValue);
+    }
+
+    DASSERT_TYPE_EQ_MSG(
+        var->irValue()->getType()->getContainedType(0),
+        initValue->getType(), "genInitVar:Var");
     builder_.CreateStore(initValue, var->irValue());
   }
 
@@ -255,17 +300,65 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
 }
 
 Value * CodeGenerator::genAssignment(const AssignmentExpr * in) {
-  Value * rvalue = genExpr(in->fromExpr());
   Value * lvalue = genLValueAddress(in->toExpr());
+  Value * rvalue = genExpr(in->fromExpr());
+  return doAssignment(in, lvalue, rvalue);
+}
 
+Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, Value * rvalue) {
   if (rvalue != NULL && lvalue != NULL) {
+    // TODO: We could also do this via memcpy.
+    TypeShape typeShape = in->fromExpr()->canonicalType()->typeShape();
+    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
+      ensureLValue(in->fromExpr(), rvalue->getType());
+      rvalue = builder_.CreateLoad(rvalue);
+    }
+
+    DASSERT_TYPE_EQ_MSG(
+        lvalue->getType()->getContainedType(0),
+        rvalue->getType(), "doAssignment");
+
     if (in->exprType() == Expr::PostAssign) {
       Value * result = builder_.CreateLoad(lvalue);
       builder_.CreateStore(rvalue, lvalue);
       return result;
     } else {
-      return builder_.CreateStore(rvalue, lvalue);
+      if (rvalue->getType() != lvalue->getType()->getContainedType(0)) {
+        diag.error(in) << "Invalid assignment:";
+        rvalue->getType()->dump(irModule_);
+        lvalue->getType()->dump(irModule_);
+        exit(-1);
+      }
+
+      builder_.CreateStore(rvalue, lvalue);
+      return rvalue;
     }
+  }
+
+  return NULL;
+}
+
+Value * CodeGenerator::genMultiAssign(const MultiAssignExpr * in) {
+  ValueList fromVals;
+
+  // Evaluate all of the source args before setting a destination arg.
+  size_t numArgs = in->argCount();
+  for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
+    const AssignmentExpr * assign = cast<AssignmentExpr>(*it);
+    Value * fromVal = genExpr(assign->fromExpr());
+
+    fromVals.push_back(fromVal);
+  }
+
+  // Now store them.
+  for (size_t i = 0; i < fromVals.size(); ++i) {
+    const AssignmentExpr * assign = cast<AssignmentExpr>(in->arg(i));
+    Value * toVal = genLValueAddress(assign->toExpr());
+    if (toVal == NULL) {
+      return NULL;
+    }
+
+    doAssignment(assign, toVal, fromVals[i]);
   }
 
   return NULL;
@@ -375,10 +468,15 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
 
 Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
   const ValueDefn * var = lval->value();
+  TypeShape typeShape = var->canonicalType()->typeShape();
 
   // It's a member or element expression
   if (lval->base() != NULL) {
     Value * addr = genMemberFieldAddr(lval);
+    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
+      return addr;
+    }
+
     return addr != NULL ? builder_.CreateLoad(addr, var->name()) : NULL;
   }
 
@@ -386,13 +484,19 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
   if (var->defnType() == Defn::Let) {
     const VariableDefn * let = static_cast<const VariableDefn *>(var);
     Value * letValue = genLetValue(let);
-    if (let->hasStorage()) {
+
+    // If this is a let-value that has actual storage
+    if (let->hasStorage() && typeShape != Shape_Small_LValue && typeShape != Shape_Large_Value) {
       letValue = builder_.CreateLoad(letValue, var->name());
     }
 
     return letValue;
   } else if (var->defnType() == Defn::Var) {
     Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
+    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
+      return varValue;
+    }
+
     return builder_.CreateLoad(varValue, var->name());
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
@@ -400,9 +504,11 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
       diag.fatal(param) << "Invalid parameter IR value for parameter '" << param << "'";
     }
     DASSERT_OBJ(param->irValue() != NULL, param);
+
     if (param->isLValue()) {
       return builder_.CreateLoad(param->irValue(), param->name());
     }
+
     return param->irValue();
   } else {
     DFAIL("IllegalState");
@@ -425,11 +531,6 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         return genVarValue(static_cast<const VariableDefn *>(var));
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
-        if (param->type()->typeClass() == Type::Struct) {
-          return param->irValue();
-        }
-
-        DASSERT_OBJ(param->isLValue(), param);
         return param->irValue();
       } else {
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
@@ -438,7 +539,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
     }
 
     case Expr::ElementRef: {
-      return genElementAddr(static_cast<const UnaryExpr *>(in));
+      return genElementAddr(static_cast<const BinaryExpr *>(in));
       break;
     }
 
@@ -459,11 +560,43 @@ Value * CodeGenerator::genMemberFieldAddr(const LValueExpr * lval) {
     return NULL;
   }
 
+  switch (lval->canonicalType()->typeShape()) {
+    case Shape_Primitive:
+    case Shape_Reference:
+    case Shape_Small_RValue:
+    case Shape_Small_LValue:
+    case Shape_Large_Value:
+      ensureLValue(lval, baseVal->getType());
+      break;
+
+    default:
+      diag.fatal(lval) << "Invalid type shape for '" << lval->canonicalType() << "'";
+  }
+
   return builder_.CreateInBoundsGEP(
       baseVal, indices.begin(), indices.end(), labelStream.str().c_str());
 }
 
-Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
+Value * CodeGenerator::genLoadElement(const BinaryExpr * in) {
+  TypeShape typeShape = in->canonicalType()->typeShape();
+  if (in->first()->type()->typeShape() == Shape_Small_RValue) {
+    const Expr * tupleExpr = in->first();
+    const Expr * indexExpr = in->second();
+    Value * tupleVal = genExpr(tupleExpr);
+    Value * indexVal = genExpr(indexExpr);
+    if (tupleVal == NULL && indexVal == NULL) {
+      return NULL;
+    }
+
+    uint32_t index = cast<ConstantInt>(indexVal)->getValue().getZExtValue();
+    return builder_.CreateExtractValue(tupleVal, index, "");
+  } else {
+    Value * addr = genElementAddr(static_cast<const BinaryExpr *>(in));
+    return addr != NULL ? builder_.CreateLoad(addr) : NULL;
+  }
+}
+
+Value * CodeGenerator::genElementAddr(const BinaryExpr * in) {
   ValueList indices;
   std::stringstream labelStream;
   FormatStream fs(labelStream);
@@ -476,28 +609,29 @@ Value * CodeGenerator::genElementAddr(const UnaryExpr * in) {
       labelStream.str().c_str());
 }
 
-Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
-    FormatStream & labelStream) {
+Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & label) {
 
   switch (expr->exprType()) {
     case Expr::LValue: {
+      // In this case, lvalue refers to a member of the base expression.
       const LValueExpr * lval = static_cast<const LValueExpr *>(expr);
-      Value * baseAddr = genBaseExpr(lval->base(), indices, labelStream);
+      Value * baseAddr = genBaseExpr(lval->base(), indices, label);
       const VariableDefn * field = cast<VariableDefn>(lval->value());
 
-      // TODO: Do the search later. (to handle fields in base classes.)
-      //Type * referringType = obj->getCanonicalType();
-      //assert(referringType == definingType);
       DASSERT(field->memberIndex() >= 0);
-
       indices.push_back(getInt32Val(field->memberIndex()));
-      labelStream << "." << field->name();
+      label << "." << field->name();
 
       // Assert that the type is what we expected: A pointer to the field type.
-      //DASSERT_TYPE_EQ_MSG(
-      //    PointerType::getUntypeeld->getType()->irType()),
-      //    getGEPType(baseAddr->getType(), indices.begin(), indices.end()),
-      //    "for field: " << field);
+      if (expr->type()->isReferenceType()) {
+        DASSERT_TYPE_EQ(
+            llvm::PointerType::get(expr->type()->irType(), 0),
+            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      } else {
+        DASSERT_TYPE_EQ(
+            expr->type()->irType(),
+            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      }
 
       return baseAddr;
     }
@@ -511,26 +645,38 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices,
       if (arrayExpr->type()->typeClass() == Type::NAddress) {
         // Handle auto-deref of Address type.
         arrayVal = genExpr(arrayExpr);
-        labelStream << arrayExpr;
+        label << arrayExpr;
       } else {
-        arrayVal = genBaseExpr(arrayExpr, indices, labelStream);
+        arrayVal = genBaseExpr(arrayExpr, indices, label);
       }
 
       // TODO: Make sure the dimensions are in the correct order here.
       // I think they might be backwards.
-      labelStream << "[" << indexExpr << "]";
+      label << "[" << indexExpr << "]";
       Value * indexVal = genExpr(indexExpr);
       if (indexVal == NULL) {
         return NULL;
       }
 
       indices.push_back(indexVal);
+
+      // Assert that the type is what we expected: A pointer to the field or element type.
+      if (expr->type()->isReferenceType()) {
+        DASSERT_TYPE_EQ(
+            llvm::PointerType::get(expr->type()->irType(), 0),
+            getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
+      } else {
+        //DASSERT_TYPE_EQ(
+        //    expr->type()->irType(),
+        //    getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
+      }
+
       return arrayVal;
     }
 
     default:
-    DFAIL("Bad GEP call");
-    break;
+      DFAIL("Bad GEP call");
+      break;
   }
 
   return NULL;
@@ -546,12 +692,13 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   bool hasBase = false;
 
   /*  Determine if the expression is actually a pointer that needs to be
-   dereferenced. This happens under the following circumstances:
+      dereferenced. This happens under the following circumstances:
 
-   1) The expression is an explicit pointer dereference.
-   2) The expression is a variable or parameter containing a reference type.
-   3) The expression is a parameter to a value type, but has the reference
-      flag set (which should only be true for the self parameter.)
+      1) The expression is an explicit pointer dereference.
+      2) The expression is a variable or parameter containing a reference type.
+      3) The expression is a variable of an aggregate value type.
+      4) The expression is a parameter to a value type, but has the reference
+         flag set (which should only be true for the 'self' parameter.)
    */
 
   const Expr * base = in;
@@ -565,9 +712,28 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
       }
     }
 
-    if (fieldType->isReferenceType()) {
-      needsDeref = true;
+    TypeShape typeShape = fieldType->typeShape();
+    switch (typeShape) {
+      case Shape_Primitive:
+      case Shape_Small_RValue:
+        break;
+
+      case Shape_Reference:
+      case Shape_Small_LValue:
+      case Shape_Large_Value:
+        needsDeref = true;
+        break;
+
+      default:
+        diag.fatal(in) << "Invalid type shape";
     }
+
+    //if (typeShape == Shape_Reference || typeShape == Shape_Small_LValue ||)
+//    if (fieldType->isReferenceType() ||
+//        fieldType->typeClass() == Type::Struct ||
+//        (isAggregateValueType(fieldType) && field->defnType() != Defn::Let)) {
+//      needsDeref = true;
+//    }
 
     if (lval->base() != NULL) {
       hasBase = true;
@@ -579,6 +745,22 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     hasBase = true;
   } else if (base->type()->isReferenceType()) {
     needsDeref = true;
+  } else {
+    TypeShape typeShape = base->type()->typeShape();
+    switch (typeShape) {
+      case Shape_Primitive:
+      case Shape_Small_RValue:
+        break;
+
+      case Shape_Reference:
+      case Shape_Small_LValue:
+      case Shape_Large_Value:
+        needsDeref = true;
+        break;
+
+      default:
+        diag.fatal(in) << "Invalid type shape";
+    }
   }
 
   Value * baseAddr;
@@ -590,22 +772,13 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     // Otherwise generate a pointer value.
     labelStream << base;
     baseAddr = genExpr(base);
+    ensureLValue(in, baseAddr->getType());
     if (needsDeref) {
       // baseAddr is of pointer type, we need to add an extra 0 to convert it
       // to the type of thing being pointed to.
       indices.push_back(getInt32Val(0));
     }
   }
-
-  // Uncomment to enable some debugging stuff
-#if 0
-  diag.debug() << "Base address '" << base << "' has type '" << baseAddr->type() << "'";
-  if (!indices.empty()) {
-    diag.debug() << "Base address '" << base << "' with indices {" <<
-    indices << "} dereferences as '" <<
-    getGEPType(baseAddr->type(), indices.begin(), indices.end()) << "'";
-  }
-#endif
 
   // Assert that the type is what we expected.
   DASSERT_OBJ(in->type() != NULL, in);
@@ -618,564 +791,30 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   return baseAddr;
 }
 
-Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * toType) {
-  // If types are the same, no need for a cast.
-  if (fromType->isEqual(toType)) {
-    return in;
-  }
-
-  TypePair conversionKey(fromType, toType);
-  ConverterMap::iterator it = module_->converters().find(conversionKey);
-  if (it != module_->converters().end()) {
-    const FunctionDefn * converter = it->second;
-    ValueList args;
-    Value * fnVal = genFunctionValue(converter);
-    args.push_back(in);
-    return genCallInstr(fnVal, args.begin(), args.end(), "convert");
-  }
-
-  if (const CompositeType * cfrom = dyn_cast<CompositeType>(fromType)) {
-    if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
-      if (cto->isReferenceType() && cfrom->isReferenceType()) {
-        if (cfrom->isSubclassOf(cto)) {
-          // Upcast, no need for type test.
-          return genUpCastInstr(in, cfrom, cto);
-        } else if (cto->isSubclassOf(cfrom)) {
-        }
-
-        // Composite to composite.
-        Value * typeTest = genCompositeTypeTest(in, cfrom, cto);
-        throwCondTypecastError(typeTest);
-        return builder_.CreatePointerCast(in, cto->irEmbeddedType(), "typecast");
-      }
-    } else if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
-    } else if (const EnumType * eto = dyn_cast<EnumType>(toType)) {
-      return genCast(in, fromType, eto->baseType());
-    }
-  } else if (const PrimitiveType * pfrom = dyn_cast<PrimitiveType>(fromType)) {
-    if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
-    } else if (toType == Builtins::typeObject) {
-      const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
-      const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
-          tsig->findSpecialization(TupleType::get(fromType)));
-      if (coerceFn == NULL) {
-        diag.error() << "Missing function Object.coerce[" << fromType << "]";
-        DFAIL("Missing Object.coerce fn");
-      }
-
-      ValueList args;
-      Value * fnVal = genFunctionValue(coerceFn);
-      args.push_back(in);
-      return genCallInstr(fnVal, args.begin(), args.end(), "coerce");
-    } else if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
-      // TODO: This would be *much* easier to handle in the analysis phase.
-      // But that means doing the invoke function in the analysis phase as well.
-      //return tart.core.ValueRef[type].create(in).
-    }
-  } else if (const EnumType * efrom = dyn_cast<EnumType>(fromType)) {
-    return genCast(in, efrom->baseType(), toType);
-  }
-
-  diag.debug() << "Unsupported cast from " << fromType << " to " << toType;
-  DFAIL("Implement");
-}
-
-Value * CodeGenerator::genNumericCast(const CastExpr * in) {
-  Value * value = genExpr(in->arg());
-  TypeId fromTypeId = TypeId_Void;
-  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->arg()->type())) {
-    fromTypeId = ptype->typeId();
-  }
-
-  if (value != NULL) {
-    llvm::Instruction::CastOps castType;
-    switch (in->exprType()) {
-      case Expr::Truncate:
-        if (isFloatingType(fromTypeId)) {
-          castType = llvm::Instruction::FPTrunc;
-        } else {
-          castType = llvm::Instruction::Trunc;
-        }
-        break;
-
-      case Expr::SignExtend:
-        if (isFloatingType(fromTypeId)) {
-          castType = llvm::Instruction::FPExt;
-        } else {
-          castType = llvm::Instruction::SExt;
-        }
-        break;
-
-      case Expr::ZeroExtend:
-        castType = llvm::Instruction::ZExt;
-        break;
-
-      case Expr::IntToFloat:
-        if (isUnsignedIntegerType(fromTypeId)) {
-          castType = llvm::Instruction::UIToFP;
-        } else {
-          castType = llvm::Instruction::SIToFP;
-        }
-        break;
-
-      default:
-        DFAIL("IllegalState");
+Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
+  const TupleType * tt = cast<TupleType>(in->canonicalType());
+  if (in->canonicalType()->typeShape() == Shape_Small_RValue) {
+    // Small tuple values are stored in SSA vars.
+    Value * tupleValue = llvm::UndefValue::get(tt->irType());
+    size_t index = 0;
+    for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it, ++index) {
+      Value * fieldValue = genExpr(*it);
+      tupleValue = builder_.CreateInsertValue(tupleValue, fieldValue, index);
     }
 
-    return builder_.CreateCast(castType, value, in->type()->irType());
-  }
-
-  return NULL;
-}
-
-Value * CodeGenerator::genUpCast(const CastExpr * in) {
-  Value * value = genExpr(in->arg());
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
-
-  if (value != NULL && fromType != NULL && toType != NULL) {
-    return genUpCastInstr(value, fromType, toType);
-  }
-
-  return NULL;
-}
-
-Value * CodeGenerator::genBitCast(const CastExpr * in) {
-  Value * value = genExpr(in->arg());
-  const Type * toType = in->type();
-
-  if (value != NULL && toType != NULL) {
-    return builder_.CreateBitCast(value, toType->irEmbeddedType(), "bitcast");
-  }
-
-  return NULL;
-}
-
-Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
-  Value * value = NULL;
-
-  if (!fromType->isVoidType()) {
-    value = genExpr(in->arg());
-    if (value == NULL) {
-      return NULL;
-    }
-  }
-
-  if (toType != NULL) {
-    const UnionType * utype = cast<UnionType>(toType);
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
-      int index = utype->getTypeIndex(fromType);
-      if (index < 0) {
-        diag.error() << "Can't convert " << fromType << " to " << utype;
-      }
-      DASSERT(index >= 0);
-      Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
-
-      Value * uvalue = builder_.CreateAlloca(utype->irType());
-      builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
-      if (value != NULL) {
-        const llvm::Type * fieldType = fromType->irEmbeddedType();
-        builder_.CreateStore(value,
-            builder_.CreateBitCast(
-                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
-                llvm::PointerType::get(fieldType, 0)));
-      }
-
-      return builder_.CreateLoad(uvalue);
-
-#if 0
-      // TODO: An alternate method of constructing the value that doesn't involve an alloca.
-      // This won't work until union types are supported in LLVM.
-      Value * uvalue = UndefValue::get(utype->irType());
-      uvalue = builder_.CreateInsertValue(uvalue, indexVal, 0);
-      uvalue = builder_.CreateInsertValue(uvalue, value, 1);
-      return uvalue;
-#endif
-    } else {
-      // The type returned from irType() is a pointer type.
-      //Value * uvalue = builder_.CreateBitCast(utype->irType());
-      return builder_.CreateBitCast(value, utype->irType());
-    }
-  }
-
-  return NULL;
-}
-
-Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
-  // Retrieve a value from a union. Presumes that the type-test has already been done.
-  bool checked = in->exprType() == Expr::CheckedUnionMemberCast;
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
-  Value * value;
-  // Our current process for handling unions requires that the union be an LValue,
-  // so that we can bitcast the pointer to the data.
-  if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef) {
-    value = genLValueAddress(in->arg());
-    if (value == NULL) {
-      return NULL;
-    }
+    return tupleValue;
   } else {
-    // Create a temp var.
-    value = genExpr(in->arg());
-    if (value == NULL) {
-      return NULL;
+    // Large tuple values stored in local allocas.
+    Value * tupleValue = builder_.CreateAlloca(tt->irType(), 0, "tuple");
+    size_t index = 0;
+    for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it, ++index) {
+      Value * fieldPtr = builder_.CreateConstInBoundsGEP2_32(tupleValue, 0, index);
+      Value * fieldValue = genExpr(*it);
+      builder_.CreateStore(fieldValue, fieldPtr, false);
     }
 
-    Value * var = builder_.CreateAlloca(value->getType());
-    builder_.CreateStore(value, var);
-    value = var;
+    return tupleValue;
   }
-
-  if (fromType != NULL) {
-    const UnionType * utype = cast<UnionType>(fromType);
-
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
-      if (checked) {
-        Value * test = genUnionTypeTest(value, utype, toType, true);
-        throwCondTypecastError(test);
-      }
-
-      const llvm::Type * fieldType = toType->irEmbeddedType();
-      return builder_.CreateLoad(
-          builder_.CreateBitCast(
-              builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
-              llvm::PointerType::get(fieldType, 0)));
-    } else {
-      // The union contains only pointer types, so we know that its representation is simply
-      // a single pointer, so a bit cast will work.
-      Value * refTypeVal = builder_.CreateLoad(
-          builder_.CreateBitCast(value, llvm::PointerType::get(toType->irEmbeddedType(), 0)));
-
-      if (checked) {
-        const CompositeType * cto = cast<CompositeType>(toType);
-        Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
-        throwCondTypecastError(test);
-      }
-
-      return refTypeVal;
-    }
-  }
-
-  return NULL;
-}
-
-Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
-  const FunctionDefn * fn = in->function();
-
-  if (fn->isIntrinsic()) {
-    return fn->intrinsic()->generate(*this, in);
-  }
-
-  ValueList args;
-
-  Value * selfArg = NULL;
-  if (in->selfArg() != NULL) {
-    if (in->selfArg()->type()->typeClass() == Type::Struct) {
-      if (in->exprType() == Expr::CtorCall) {
-        selfArg = genExpr(in->selfArg());
-      } else {
-        selfArg = genLValueAddress(in->selfArg());
-      }
-    } else {
-      selfArg = genExpr(in->selfArg());
-    }
-
-    DASSERT_OBJ(selfArg != NULL, in->selfArg());
-
-    // Upcast the self argument type.
-    if (fn->functionType()->selfParam() != NULL) {
-      const Type * selfType = dealias(fn->functionType()->selfParam()->type());
-      selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
-    }
-
-    if (fn->storageClass() == Storage_Instance) {
-      args.push_back(selfArg);
-    }
-  }
-
-  const ExprList & inArgs = in->args();
-  for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
-    Value * argVal = genExpr(*it);
-    if (argVal == NULL) {
-      return NULL;
-    }
-
-    args.push_back(argVal);
-  }
-
-  // Generate the function to call.
-  Value * fnVal;
-  if (in->exprType() == Expr::VTableCall) {
-    DASSERT_OBJ(selfArg != NULL, in);
-    const Type * classType = dealias(fn->functionType()->selfParam()->type());
-    if (classType->typeClass() == Type::Class) {
-      fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
-    } else if (classType->typeClass() == Type::Interface) {
-      fnVal = genITableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
-    } else {
-      // Struct or protocol.
-      fnVal = genFunctionValue(fn);
-    }
-  } else {
-    fnVal = genFunctionValue(fn);
-  }
-
-  Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());
-  if (in->exprType() == Expr::CtorCall) {
-    // Constructor call returns the 'self' argument.
-    if (in->selfArg() != NULL && in->selfArg()->type()->typeClass() == Type::Struct) {
-      return builder_.CreateLoad(selfArg);
-    }
-
-    return selfArg;
-  } else {
-    return result;
-  }
-}
-
-Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
-  const Expr * fn = in->function();
-  const Type * fnType = fn->type();
-
-  Value * fnValue;
-  ValueList args;
-
-  if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
-    fnValue = genExpr(fn);
-    if (fnValue != NULL) {
-      if (ft->isStatic()) {
-        //fnValue = builder_.CreateLoad(fnValue);
-      } else {
-        DFAIL("Implement");
-      }
-    }
-  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
-    Value * fnref = genExpr(fn);
-    if (fnref == NULL) {
-      return NULL;
-    }
-
-    fnValue = builder_.CreateExtractValue(fnref, 0, "method");
-    Value * selfArg = builder_.CreateExtractValue(fnref, 1, "self");
-    if (selfArg == NULL) {
-      return NULL;
-    }
-
-    args.push_back(selfArg);
-  } else {
-    diag.info(in) << in->function() << " - " << in->function()->exprType();
-    DFAIL("Invalid function type");
-  }
-
-  const ExprList & inArgs = in->args();
-  for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
-    Value * argVal = genExpr(*it);
-    if (argVal == NULL) {
-      return NULL;
-    }
-
-    args.push_back(argVal);
-  }
-
-  return genCallInstr(fnValue, args.begin(), args.end(), "indirect");
-}
-
-Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
-    Value * selfPtr) {
-  DASSERT_OBJ(!method->isFinal(), method);
-  DASSERT_OBJ(!method->isCtor(), method);
-  int methodIndex = method->dispatchIndex();
-  if (methodIndex < 0) {
-    diag.fatal(method) << "Invalid member index of " << method;
-    return NULL;
-  }
-
-  // Make sure it's a class.
-  DASSERT(classType->typeClass() == Type::Class);
-  DASSERT_TYPE_EQ(classType->irParameterType(), selfPtr->getType());
-
-  // Upcast to type 'object' and load the vtable pointer.
-  ValueList indices;
-  for (const CompositeType * t = classType; t != NULL && t != Builtins::typeObject; t = t->super()) {
-    indices.push_back(getInt32Val(0));
-  }
-  indices.push_back(getInt32Val(0));
-  indices.push_back(getInt32Val(0));
-
-  // Get the TIB
-  Value * tib = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
-  DASSERT_TYPE_EQ(llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0), tib->getType());
-
-  indices.clear();
-  indices.push_back(getInt32Val(0));
-  indices.push_back(getInt32Val(TIB_METHOD_TABLE));
-  indices.push_back(getInt32Val(methodIndex));
-  Value * fptr = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
-  return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type()->irType()));
-}
-
-Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
-    Value * objectPtr) {
-
-  // Interface function table entry
-  DASSERT(!method->isFinal());
-  DASSERT(!method->isCtor());
-  int methodIndex = method->dispatchIndex();
-  if (methodIndex < 0) {
-    diag.fatal(method) << "Invalid member index of " << method;
-    return NULL;
-  }
-
-  // Make sure it's an interface.
-  DASSERT(classType->typeClass() == Type::Interface);
-
-  // Get the interface ID (which is just the type pointer).
-  Constant * itype = getTypeInfoBlockPtr(classType);
-
-  // Load the pointer to the TIB.
-  Value * tib = builder_.CreateLoad(
-      builder_.CreateConstInBoundsGEP2_32(objectPtr, 0, 0, "tib_ptr"), "tib");
-
-  // Load the pointer to the dispatcher function.
-  Value * dispatcher = builder_.CreateLoad(
-      builder_.CreateConstInBoundsGEP2_32(tib, 0, TIB_IDISPATCH, "idispatch_ptr"), "idispatch");
-
-  // Construct the call to the dispatcher
-  ValueList args;
-  args.push_back(itype);
-  args.push_back(getInt32Val(methodIndex));
-  Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
-  return builder_.CreateBitCast(
-      methodPtr, llvm::PointerType::getUnqual(method->type()->irType()), "method");
-}
-
-/** Get the address of a value. */
-Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
-  const BoundMethodType * type = cast<BoundMethodType>(in->type());
-  const FunctionDefn * fn = in->method();
-  if (fn->isIntrinsic()) {
-    diag.error(in) << "Intrinsic methods cannot be called indirectly.";
-    return NULL;
-  } else if (fn->isCtor()) {
-    diag.error(in) << "Constructors cannot be called indirectly (yet).";
-    return NULL;
-  }
-
-  Value * selfArg = NULL;
-  if (in->selfArg() != NULL) {
-    selfArg = genExpr(in->selfArg());
-
-    // Upcast the self argument type.
-    if (fn->functionType()->selfParam() != NULL) {
-      const Type * selfType = dealias(fn->functionType()->selfParam()->type());
-      selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
-    }
-  }
-
-  // Generate the function to call.
-  Value * fnVal;
-  if (in->exprType() == Expr::VTableCall) {
-    DASSERT_OBJ(selfArg != NULL, in);
-    const Type * classType = dealias(fn->functionType()->selfParam()->type());
-    if (classType->typeClass() == Type::Class) {
-      fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
-    } else if (classType->typeClass() == Type::Interface) {
-      fnVal = genITableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
-    } else {
-      // Struct or protocol.
-      fnVal = genFunctionValue(fn);
-    }
-  } else {
-    fnVal = genFunctionValue(fn);
-  }
-
-  const llvm::Type * fnValType =
-      StructType::get(context_, fnVal->getType(), selfArg->getType(), NULL);
-
-  Value * result = builder_.CreateAlloca(fnValType);
-  builder_.CreateStore(fnVal, builder_.CreateConstInBoundsGEP2_32(result, 0, 0, "method"));
-  builder_.CreateStore(selfArg, builder_.CreateConstInBoundsGEP2_32(result, 0, 1, "self"));
-  result = builder_.CreateLoad(
-      builder_.CreateBitCast(result, llvm::PointerType::get(type->irType(), 0)));
-  return result;
-}
-
-Value * CodeGenerator::genNew(const tart::NewExpr* in) {
-  if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
-    const llvm::Type * type = ctdef->irType();
-    if (ctdef->typeClass() == Type::Struct) {
-      return builder_.CreateAlloca(type, 0, ctdef->typeDefn()->name());
-    } else if (ctdef->typeClass() == Type::Class) {
-      Function * allocator = getTypeAllocator(ctdef);
-      if (allocator != NULL) {
-        return builder_.CreateCall(allocator, Twine(ctdef->typeDefn()->name(), StringRef("_new")));
-      } else {
-        diag.fatal(in) << "Cannot create an instance of type '" <<
-        ctdef->typeDefn()->name() << "'";
-      }
-    }
-  }
-
-  DFAIL("IllegalState");
-}
-
-Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
-    ValueList::iterator lastArg, const char * name) {
-  if (unwindTarget_ != NULL) {
-    Function * f = currentFn_;
-    BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
-    normalDest->moveAfter(builder_.GetInsertBlock());
-    Value * result = builder_.CreateInvoke(func, normalDest, unwindTarget_, firstArg, lastArg, name);
-    builder_.SetInsertPoint(normalDest);
-    return result;
-  } else {
-    return builder_.CreateCall(func, firstArg, lastArg, name);
-  }
-}
-
-Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type * to) {
-
-  if (from == to) {
-    return val;
-  }
-
-  DASSERT_OBJ(isa<CompositeType>(to), to);
-  DASSERT_OBJ(isa<CompositeType>(from), from);
-
-  const CompositeType * toType = dyn_cast<CompositeType>(to);
-  const CompositeType * fromType = dyn_cast<CompositeType>(from);
-
-  if (!fromType->isSubclassOf(toType)) {
-    diag.fatal() << "'" << fromType << "' does not inherit from '" <<
-    toType << "'";
-    return val;
-  }
-
-  DASSERT(val->getType()->getTypeID() == llvm::Type::PointerTyID);
-
-  // If it's an interface, then we'll need to simply bit-cast it.
-  if (toType->typeClass() == Type::Interface) {
-    return builder_.CreateBitCast(val, llvm::PointerType::get(toType->irType(), 0), "intf_ptr");
-  }
-
-  // List of GetElementPtr indices
-  ValueList indices;
-
-  // Once index to dereference the pointer.
-  indices.push_back(getInt32Val(0));
-
-  // One index for each supertype
-  while (fromType != toType) {
-    DASSERT_OBJ(fromType->super() != NULL, fromType);
-    fromType = fromType->super();
-    indices.push_back(getInt32Val(0));
-  }
-
-  return builder_.CreateInBoundsGEP(val, indices.begin(), indices.end(), "upcast");
 }
 
 llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
@@ -1279,104 +918,6 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
 
 Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
   return llvm::ConstantPointerNull::get(llvm::PointerType::get(in->type()->irType(), 0));
-}
-
-Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * fromType,
-    const CompositeType * toType) {
-  DASSERT(fromType != NULL);
-  DASSERT(toType != NULL);
-
-  // Make sure it's a class.
-  DASSERT(toType->typeClass() == Type::Class || toType->typeClass() == Type::Interface);
-  Constant * toTypeObj = getTypeInfoBlockPtr(toType);
-
-  // Bitcast to object type
-  Value * valueAsObjType = builder_.CreateBitCast(val,
-      llvm::PointerType::getUnqual(Builtins::typeObject->irType()));
-
-  // Upcast to type 'object' and load the TIB pointer.
-  ValueList indices;
-  indices.push_back(getInt32Val(0));
-  indices.push_back(getInt32Val(0));
-  Value * tib = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(valueAsObjType, indices.begin(), indices.end()),
-      "tib");
-
-  ValueList args;
-  args.push_back(tib);
-  args.push_back(toTypeObj);
-  Function * upcastTest = genFunctionValue(Builtins::funcHasBase);
-  Value * result = builder_.CreateCall(upcastTest, args.begin(), args.end());
-  return result;
-}
-
-Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unionType,
-    const Type * toType, bool valIsLVal) {
-  DASSERT(unionType != NULL);
-  DASSERT(toType != NULL);
-
-  if (unionType->numValueTypes() > 0 || unionType->hasVoidType()) {
-    // The index of the actual type.
-    Value * actualTypeIndex;
-    if (valIsLVal) {
-      // Load the type index field.
-      actualTypeIndex = builder_.CreateLoad(builder_.CreateConstInBoundsGEP2_32(in, 0, 0));
-    } else {
-      // Extract the type index field.
-      actualTypeIndex = builder_.CreateExtractValue(in, 0);
-    }
-
-    int testIndex = unionType->getTypeIndex(toType);
-    if (testIndex < 0) {
-      return ConstantInt::getFalse(context_);
-    }
-
-    Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
-    Value * testResult = builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
-
-#if 0
-    // This section of code was based on a hybrid formula where all reference types
-    // shared the same testIndex.
-    if (testIndex == 0 && unionType->numRefTypes() > 1) {
-      BasicBlock * blkIsRefType = BasicBlock::Create(context_, "is_ref_type", currentFn_);
-      BasicBlock * blkEndTest = BasicBlock::Create(context_, "utest_end", currentFn_);
-
-      // If it isn't a reference type, branch to the end (fail).
-      BasicBlock * blkInitial = builder_.GetInsertBlock();
-      builder_.CreateCondBr(testResult, blkIsRefType, blkEndTest);
-
-      // If it is a reference type, then test if it's the right kind of reference type.
-      builder_.SetInsertPoint(blkIsRefType);
-      const CompositeType * cto = cast<CompositeType>(toType);
-      if (valIsLVal) {
-        in = builder_.CreateLoad(in);
-      }
-
-      Value * refTypeVal = builder_.CreateBitCast(in, toType->irEmbeddedType());
-      Value * subclassTest = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
-      blkIsRefType = builder_.GetInsertBlock();
-      builder_.CreateBr(blkEndTest);
-
-      // Combine the two branches into one boolean test result.
-      builder_.SetInsertPoint(blkEndTest);
-      PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
-      phi->addIncoming(ConstantInt::getFalse(context_), blkInitial);
-      phi->addIncoming(subclassTest, blkIsRefType);
-      testResult = phi;
-    }
-#endif
-
-    return testResult;
-  } else {
-    // It's only reference types.
-    if (valIsLVal) {
-      in = builder_.CreateLoad(in);
-    }
-
-    const CompositeType * cto = cast<CompositeType>(toType);
-    Value * refTypeVal = builder_.CreateBitCast(in, toType->irEmbeddedType());
-    return genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
-  }
 }
 
 llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
@@ -1523,33 +1064,6 @@ llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * arr
   }
 
   return ConstantArray::get(cast<ArrayType>(array->type()->irType()), elementValues);
-}
-
-void CodeGenerator::throwCondTypecastError(Value * typeTestResult) {
-  BasicBlock * blkCastFail = BasicBlock::Create(context_, "typecast_fail", currentFn_);
-  BasicBlock * blkCastSucc = BasicBlock::Create(context_, "typecast_succ", currentFn_);
-  builder_.CreateCondBr(typeTestResult, blkCastSucc, blkCastFail);
-  builder_.SetInsertPoint(blkCastFail);
-  throwTypecastError();
-  builder_.SetInsertPoint(blkCastSucc);
-}
-
-void CodeGenerator::throwTypecastError() {
-  Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
-  typecastFailure->setDoesNotReturn(true);
-  if (unwindTarget_ != NULL) {
-    Function * f = currentFn_;
-    ValueList emptyArgs;
-    BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
-    normalDest->moveAfter(builder_.GetInsertBlock());
-    builder_.CreateInvoke(typecastFailure, normalDest, unwindTarget_,
-        emptyArgs.begin(), emptyArgs.end(), "");
-    builder_.SetInsertPoint(normalDest);
-    builder_.CreateUnreachable();
-  } else {
-    builder_.CreateCall(typecastFailure);
-    builder_.CreateUnreachable();
-  }
 }
 
 } // namespace tart

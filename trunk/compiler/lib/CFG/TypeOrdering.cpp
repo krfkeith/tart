@@ -36,6 +36,7 @@ ComparisonResult operator+(ComparisonResult r0, ComparisonResult r1) {
       return r1 == EQUAL || r1 == RIGHT_FIRST ? RIGHT_FIRST : UNORDERED;
 
     case UNORDERED:
+    default:
       return UNORDERED;
   }
 }
@@ -44,6 +45,7 @@ ComparisonResult operator-(ComparisonResult cr) {
   switch (cr) {
     case EQUAL:
     case UNORDERED:
+    default:
       return cr;
 
     case LEFT_FIRST:
@@ -67,7 +69,7 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
       break;
 
     case Type::Pattern:
-      return compareWithPattern(static_cast<const PatternVar *>(t1), t2);
+      return compareWithPattern(static_cast<const TypeVariable *>(t1), t2);
 
     case Type::PatternVal:
       return compareWithPatternValue(static_cast<const PatternValue *>(t1), t2);
@@ -81,7 +83,7 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
       break;
 
     case Type::Pattern:
-      return -compareWithPattern(static_cast<const PatternVar *>(t2), t1);
+      return -compareWithPattern(static_cast<const TypeVariable *>(t2), t1);
 
     case Type::PatternVal:
       return -compareWithPatternValue(static_cast<const PatternValue *>(t2), t1);
@@ -218,7 +220,7 @@ ComparisonResult TypeOrdering::compareDissimilar(const Type * t1, const Type * t
   return UNORDERED;
 }
 
-ComparisonResult TypeOrdering::compareWithPattern(const PatternVar * t1, const Type * t2) {
+ComparisonResult TypeOrdering::compareWithPattern(const TypeVariable * t1, const Type * t2) {
   return t1 == t2 ? EQUAL : UNORDERED;
 }
 
@@ -291,7 +293,7 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
     case Type::Tuple: {
       const TupleType * tt0 = static_cast<const TupleType *>(t0);
       const TupleType * tt1 = static_cast<const TupleType *>(t1);
-      for (int i = 0; ; ++i) {
+      for (size_t i = 0; ; ++i) {
         if (i < tt0->size() && i < tt1->size()) {
           int result = compare(tt0->member(i), tt1->member(i));
           if (result != 0) {

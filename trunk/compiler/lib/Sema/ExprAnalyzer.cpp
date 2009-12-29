@@ -17,6 +17,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
@@ -148,10 +149,13 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
     case ASTNode::ArrayLiteral:
       return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
 
+    case ASTNode::Tuple:
+      return reduceTuple(static_cast<const ASTOper *> (ast), expected);
+
     case ASTNode::AnonFn:
       return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
 
-    case ASTNode::PatternVar:
+    case ASTNode::TypeVar:
       diag.error(ast) << "Pattern variable used outside of pattern.";
       return &Expr::ErrorVal;
 
@@ -278,7 +282,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       selfParam->setType(env->type());
       selfParam->setInternalType(env->type());
       selfParam->addTrait(Defn::Singular);
-      selfParam->addTrait(Defn::Final);
+      //selfParam->addTrait(Defn::Final);
       selfParam->setStorageClass(Storage_Instance);
 
       ftype->setSelfParam(selfParam);
@@ -291,7 +295,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       fn->setStorageClass(Storage_Local);
       fn->setParentDefn(currentFunction_);
       fn->copyTrait(currentFunction_, Defn::Synthetic);
-      fn->addTrait(Defn::Final);
+      fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(selfParam);
 
@@ -315,6 +319,10 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 }
 
 Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
+  if (ast->arg(0)->nodeType() == ASTNode::Tuple) {
+    return reduceMultipleAssign(ast);
+  }
+
   Expr * lhs = reduceValueRef(ast->arg(0), true);
   if (isErrorResult(lhs)) {
     return &Expr::ErrorVal;
@@ -362,6 +370,47 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
   }
 
   return new AssignmentExpr(Expr::PostAssign, ast->location(), lvalue, newValue);
+}
+
+Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
+  const ASTOper * lhs = static_cast<const ASTOper *>(ast->arg(0));
+  ConstTypeList varTypes;
+  ExprList dstVars;
+  for (ASTNodeList::const_iterator it = lhs->args().begin(); it != lhs->args().end(); ++it) {
+    Expr * dstLVal = reduceValueRef(*it, true);
+    if (isErrorResult(dstLVal)) {
+      return &Expr::ErrorVal;
+    }
+
+    DASSERT_OBJ(dstLVal->type() != NULL, dstLVal);
+    dstVars.push_back(dstLVal);
+    varTypes.push_back(dstLVal->type());
+  }
+
+  TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
+  Expr * rhs = inferTypes(subject_, reduceExpr(ast->arg(1), tt), tt, true);
+  if (isErrorResult(rhs)) {
+    return &Expr::ErrorVal;
+  }
+
+  // Create a multi-assign node.
+  MultiAssignExpr * ma = new MultiAssignExpr(ast->location(), rhs->type());
+  if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
+    for (size_t i = 0; i < dstVars.size(); ++i) {
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], tce->arg(i)));
+    }
+  } else {
+    rhs = SharedValueExpr::get(rhs);
+    for (size_t i = 0; i < dstVars.size(); ++i) {
+      Expr * srcVal = new BinaryExpr(
+          Expr::ElementRef, rhs->location(), tt->member(i),
+          rhs, ConstantInteger::getUInt32(i));
+
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
+    }
+  }
+
+  return ma;
 }
 
 Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
@@ -470,22 +519,24 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
   return lvalue;
 }
 
-Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lvalue, Expr * rvalue) {
-  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
+Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Expr * rhs) {
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(lhs)) {
     // If it's a property reference, convert it into a method call.
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
       checkAccess(loc, prop);
-      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rvalue);
+      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rhs);
     }
-  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  } else if (CallExpr * call = dyn_cast<CallExpr>(lhs)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        return reduceSetParamPropertyValue(loc, call, rvalue);
+        return reduceSetParamPropertyValue(loc, call, rhs);
       }
     }
+
+    diag.error(lhs) << "lvalue expected on left side of assignment: " << lhs;
   }
 
-  return new AssignmentExpr(Expr::Assign, loc, lvalue, rvalue);
+  return new AssignmentExpr(Expr::Assign, loc, lhs, rhs);
 }
 
 Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {
@@ -627,6 +678,46 @@ Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expect
   }
 
   DFAIL("Array type not found for array literal");
+}
+
+Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
+  DASSERT(ast->count() >= 2);
+
+  const TupleType * ttype = dyn_cast_or_null<TupleType>(dealias(expected));
+  if (ttype != NULL) {
+    if (ast->count() != ttype->numTypeParams()) {
+      diag.error(ast) << "Type of '" << ast << "' does not match '" << expected << "'";
+    }
+  }
+
+  TupleCtorExpr * tuple = new TupleCtorExpr(ast->location(), NULL);
+  ConstTypeList types;
+  size_t numParams = ast->count();
+  bool isSingular = true;
+  for (size_t i = 0; i < numParams; ++i) {
+    const Type * elType = ttype != NULL ? ttype->typeParam(i) : NULL;
+    Expr * el = reduceExpr(ast->args()[i], elType);
+    if (isErrorResult(el)) {
+      return &Expr::ErrorVal;
+    }
+
+    if (!el->type()->isSingular()) {
+      isSingular = false;
+    }
+
+    tuple->args().push_back(el);
+    types.push_back(dealias(el->type()));
+  }
+
+  const Type * tupleType;
+  if (isSingular) {
+    tupleType = TupleType::get(types);
+  } else {
+    tupleType = new TupleOfConstraint(tuple);
+  }
+
+  tuple->setType(tupleType);
+  return tuple;
 }
 
 Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, bool store) {
@@ -800,11 +891,50 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     DASSERT_OBJ(elemType != NULL, naType);
 
     if (args.size() != 1) {
-      diag.fatal(ast) << "Incorrect number of array index dimensions";
+      diag.fatal(ast) << "Incorrect number of array subscripts";
+      return &Expr::ErrorVal;
+    }
+
+    Expr * indexExpr = args[0];
+    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+      diag.fatal(ast) << "Native array subscript must be integer type, but is " << indexExpr->type();
+      return &Expr::ErrorVal;
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
+  }
+
+  // Handle tuples
+  if (const TupleType * tt = dyn_cast<TupleType>(arrayType)) {
+    if (args.size() != 1) {
+      diag.fatal(ast) << "Incorrect number of array subscripts";
+      return &Expr::ErrorVal;
+    }
+
+    Expr * indexExpr = args[0];
+    const Type * indexType = indexExpr->type();
+    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+      diag.fatal(args[0]) << "Tuple subscript must be integer type, is " << indexType;
+      return &Expr::ErrorVal;
+    }
+
+    if (ConstantInteger * cint = dyn_cast<ConstantInteger>(indexExpr)) {
+      const llvm::APInt & indexVal = cint->intValue();
+      if (indexVal.isNegative() || indexVal.getZExtValue() >= tt->numTypeParams()) {
+        diag.fatal(args[0]) << "Tuple subscript out of range";
+        return &Expr::ErrorVal;
+      } else if (store) {
+        diag.fatal(args[0]) << "Tuples are immutable";
+        return &Expr::ErrorVal;
+      }
+
+      uint32_t index = uint32_t(indexVal.getZExtValue());
+      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
+    } else {
+      diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
+      return &Expr::ErrorVal;
+    }
   }
 
   // See if the type has any indexers defined.
@@ -836,7 +966,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // CallExpr type used to hold the array reference and parameters.
-  LValueExpr * callable = new LValueExpr(ast->location(), arrayExpr, indexer);
+  LValueExpr * callable = LValueExpr::get(ast->location(), arrayExpr, indexer);
   CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
   call->args().append(args.begin(), args.end());
   call->setType(indexer->type());
@@ -1268,12 +1398,57 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   return spBest->def();
 }
 
+Expr * ExprAnalyzer::doBoxCast(Expr * in) {
+  const Type * fromType = dealias(in->type());
+  FunctionDefn * coerceFn = coerceToObjectFn(fromType);
+  FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), coerceFn, NULL);
+  call->appendArg(in);
+  call->setType(Builtins::typeObject);
+  return call;
+}
+
+/** Given a type, return the coercion function to convert it to a reference type. */
+FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
+  DASSERT(!type->isReferenceType());
+  DASSERT(type->typeClass() != Type::NPointer);
+  DASSERT(type->typeClass() != Type::NAddress);
+  DASSERT(type->typeClass() != Type::NArray);
+  DASSERT(type->isSingular());
+
+  TypePair conversionKey(type, Builtins::typeObject.get());
+  ConverterMap::iterator it = module->converters().find(conversionKey);
+  if (it != module->converters().end()) {
+    return it->second;
+  }
+
+  FunctionDefn * coerceFn = Builtins::objectCoerceFn();
+  TemplateSignature * coerceTemplate = coerceFn->templateSignature();
+
+  DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
+  // Do analysis on template if needed.
+  if (coerceTemplate->ast() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
+    da.analyzeTemplateSignature(coerceFn);
+  }
+
+  BindingEnv env;
+  env.addSubstitution(coerceTemplate->patternVar(0), type);
+  FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
+  analyzeDefn(coercer, Task_PrepTypeComparison);
+  DASSERT(coercer->isSingular());
+  module->converters()[conversionKey] = coercer;
+  module->addSymbol(coercer);
+  //diag.info() << Format_Verbose << "Generated coercer " << coercer;
+  return coercer;
+}
+
 Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
   FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType);
   if (valueOfMethod == NULL) {
     return NULL;
   }
 
+  DASSERT(valueOfMethod->isSingular());
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), valueOfMethod, NULL);
   call->appendArg(doImplicitCast(in, Builtins::typeObject));
   call->setType(valueOfMethod->returnType());
@@ -1308,7 +1483,8 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
   analyzeDefn(valueOfMethod, Task_PrepTypeComparison);
   module->converters()[conversionKey] = valueOfMethod;
-  //diag.debug(loc) << Format_Type << "Defining unbox function: " << valueOfMethod;
+  module->addSymbol(valueOfMethod);
+  //diag.info() << Format_Verbose << "Generated boxer " << valueOfMethod;
   return valueOfMethod;
 }
 

@@ -51,7 +51,23 @@ namespace {
 /// -------------------------------------------------------------------
 /// CompositeType
 
-FunctionDefn * CompositeType::defaultConstructor() {
+CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope,
+    uint32_t flags)
+  : DeclaredType(tcls, de, parentScope, Shape_Unset)
+  , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , super_(NULL)
+  , classFlags_(0)
+{
+  if (flags & tart::Final) {
+    classFlags_ |= CompositeType::Final;
+  }
+
+  if (flags & tart::Abstract) {
+    classFlags_ |= CompositeType::Abstract;
+  }
+}
+
+FunctionDefn * CompositeType::defaultConstructor() const {
   const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
   if (ctors == NULL) {
     return NULL;
@@ -94,6 +110,39 @@ FunctionDefn * CompositeType::defaultConstructor() {
       }
 
       if (requiredArgCount == 0) {
+        return ctor;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+FunctionDefn * CompositeType::noArgConstructor() const {
+  const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
+  if (ctors == NULL) {
+    return NULL;
+  }
+
+  // Look for a constructor that has zero required parameters.
+  for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
+    if (FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it)) {
+      if (ctor->params().empty()) {
+        return ctor;
+      }
+    }
+  }
+
+  // Try creators
+  ctors = findSymbol(istrings.idCreate);
+  if (ctors == NULL) {
+    return NULL;
+  }
+
+  // Look for a creator that has zero required parameters.
+  for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
+    if (FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it)) {
+      if (ctor->params().empty()) {
         return ctor;
       }
     }
@@ -148,7 +197,6 @@ const llvm::Type * CompositeType::createIRType() const {
   DASSERT_OBJ(isSingular(), this);
   DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
   DASSERT_OBJ(passes_.isFinished(FieldPass), this);
-  //DASSERT(irType_ == NULL);
 
   // Members of the class
   std::vector<const llvm::Type *> fieldTypes;
@@ -178,6 +226,26 @@ const llvm::Type * CompositeType::createIRType() const {
   // because sometimes irType_ will be NULL which PATypeHolder cannot be. However, it is
   // assumed that no one is keeping a persistent copy of irType_ around in raw pointer form.
   llvm::Type * finalType = StructType::get(llvm::getGlobalContext(), fieldTypes);
+
+  // Determine the shape of the type.
+  switch (typeClass()) {
+    case Type::Class:
+    case Type::Interface:
+      shape_ = Shape_Reference;
+      break;
+
+    case Type::Struct:
+      shape_ = isLargeIRType(finalType) ? Shape_Large_Value : Shape_Small_LValue;
+      break;
+
+    case Type::Protocol:
+      shape_ = Shape_None;
+      break;
+
+    default:
+      DFAIL("Invalid composite");
+  }
+
   cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
   return irTypeHolder_.get();
 }
@@ -192,6 +260,15 @@ const llvm::Type * CompositeType::irEmbeddedType() const {
 }
 
 const llvm::Type * CompositeType::irParameterType() const {
+  const llvm::Type * type = irType();
+  if (isReferenceType()) {
+    return llvm::PointerType::get(type, 0);
+  } else {
+    return type;
+  }
+}
+
+const llvm::Type * CompositeType::irReturnType() const {
   const llvm::Type * type = irType();
   if (isReferenceType()) {
     return llvm::PointerType::get(type, 0);
@@ -275,6 +352,9 @@ bool CompositeType::isSupportedBy(const Type * type) const {
 
           return false;
         }
+
+        default:
+          break;
       }
     }
   }
@@ -306,7 +386,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       return IdenticalTypes;
     } else if (typeClass() != Type::Struct && fromClass->isSubclassOf(this)) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new CastExpr(Expr::UpCast, cn.fromValue->location(), this, cn.fromValue);
+        *cn.resultValue = CastExpr::upCast(cn.fromValue, this)->at(cn.fromValue->location());
       }
 
       return ExactConversion;
@@ -324,10 +404,10 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
 
 
     // Check dynamic casts.
-    if ((cn.options & Conversion::Dynamic) && isReferenceType() && fromClass->isReferenceType()) {
+    if ((cn.options & Conversion::DynamicThrow)
+        && isReferenceType() && fromClass->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new CastExpr(Expr::DynamicCast, cn.fromValue->location(),
-            this, cn.fromValue);
+        *cn.resultValue = CastExpr::tryCast(cn.fromValue, this)->at(cn.fromValue->location());
       }
 
       return NonPreferred;
@@ -344,6 +424,14 @@ bool CompositeType::isSingular() const {
 bool CompositeType::isReferenceType() const {
   // TODO: Not if it's a static interface...
   return (typeClass() == Type::Class || typeClass() == Type::Interface);
+}
+
+TypeShape CompositeType::typeShape() const {
+  if (shape_ == Shape_Unset) {
+    irType();
+  }
+
+  return shape_;
 }
 
 bool CompositeType::isSubtype(const Type * other) const {
@@ -389,19 +477,27 @@ const CompositeType::InterfaceTable * CompositeType::findBaseImplementationOf(Co
   return NULL;
 }
 
-void CompositeType::addMethodDefsToModule(Module * module) {
+void CompositeType::addMethodDefsToModule(Module * module) const {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 
   // Make certain that every method that is referred to from the TIB is XRef'd.
-  for (MethodList::iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
+  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
     FunctionDefn * method = *m;
-    module->addSymbol(method);
+    if (method->hasBody() && module->addSymbol(method)) {
+      //diag.info() << Format_Verbose << "Added method " << method;
+    }
   }
 
-  for (InterfaceList::iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
-    for (MethodList::iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
+  for (InterfaceList::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
+    if (it->interfaceType->typeDefn()->isSynthetic()) {
+      module->addSymbol(it->interfaceType->typeDefn());
+    }
+
+    for (MethodList::const_iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
       FunctionDefn * method = *m;
-      module->addSymbol(method);
+      if (method->hasBody()) {
+        module->addSymbol(method);
+      }
     }
   }
 }
@@ -409,6 +505,29 @@ void CompositeType::addMethodDefsToModule(Module * module) {
 void CompositeType::addStaticDefsToModule(Module * module) {
   for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
     module->addSymbol(*it);
+  }
+}
+
+void CompositeType::addFieldTypesToModule(Module * module) const {
+  // Make certain that every method that is referred to from the TIB is XRef'd.
+  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
+    FunctionDefn * method = *m;
+    module->addSymbol(method);
+  }
+
+  for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
+    if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
+      if (var->type() != NULL) {
+        TypeDefn * tdef = var->type()->typeDefn();
+        if (tdef != NULL && tdef->isSynthetic()) {
+          module->addSymbol(tdef);
+        }
+      }
+    }
+  }
+
+  if (super() != NULL) {
+    super()->addFieldTypesToModule(module);
   }
 }
 

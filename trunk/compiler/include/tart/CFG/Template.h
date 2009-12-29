@@ -18,11 +18,11 @@ typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
 
 /// -------------------------------------------------------------------
 /// Used to represent a pattern variable used within a type expressions.
-class PatternVar : public TypeImpl, public Locatable {
+class TypeVariable : public TypeImpl, public Locatable {
 public:
 
   /** Construct a type pattern variable. */
-  PatternVar(const SourceLocation & loc, const char * name, const Type * valueType = NULL);
+  TypeVariable(const SourceLocation & loc, const char * name, const Type * valueType = NULL);
 
   /** Location where this variable was defined. */
   const SourceLocation & location() const { return location_; }
@@ -47,9 +47,10 @@ public:
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;
+  TypeShape typeShape() const { return valueType_ ? valueType_->typeShape() : Shape_None; }
   void format(FormatStream & out) const;
 
-  static inline bool classof(const PatternVar *) { return true; }
+  static inline bool classof(const TypeVariable *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == Pattern;
   }
@@ -60,9 +61,6 @@ private:
   const char * name_;
 };
 
-typedef llvm::SmallVector<PatternVar *, 4> PatternVarList;
-
-typedef PatternVar TypeVariable;
 typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
 
 /// -------------------------------------------------------------------

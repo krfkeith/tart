@@ -24,7 +24,7 @@ AddressType::TypeMap AddressType::uniqueTypes_;
 
 void AddressType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
@@ -52,13 +52,13 @@ AddressType * AddressType::get(const Type * elemType) {
 }
 
 AddressType::AddressType(const Type * elemType)
-  : TypeImpl(Type::NAddress)
+  : TypeImpl(Type::NAddress, Shape_Primitive)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
-AddressType::AddressType() : TypeImpl(Type::NAddress) {}
+AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
 
 AddressType::~AddressType() {
   /*TypeMap::iterator it = uniqueTypes_.find(elementType_);
@@ -103,7 +103,7 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
   } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(fromType)) {
     if (ptype->typeId() == TypeId_Null) {
       if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+        *cn.resultValue = ConstantNull::get(cn.fromValue->location(), this);
       }
 
       return ExactConversion;
@@ -148,7 +148,7 @@ PointerType::TypeMap PointerType::uniqueTypes_;
 
 void PointerType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "Target"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
@@ -176,13 +176,13 @@ PointerType * PointerType::get(const Type * elemType) {
 }
 
 PointerType::PointerType(const Type * elemType)
-  : TypeImpl(Type::NPointer)
+  : TypeImpl(Type::NPointer, Shape_Primitive)
   , elementType_(elemType)
 {
   DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
 }
 
-PointerType::PointerType() : TypeImpl(Type::NPointer) {}
+PointerType::PointerType() : TypeImpl(Type::NPointer, Shape_Primitive) {}
 
 const llvm::Type * PointerType::createIRType() const {
   const llvm::Type * type = elementType_->irEmbeddedType();
@@ -215,7 +215,7 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
 
     if (rank != Incompatible && cn.resultValue) {
       if (rank == ExactConversion) {
-        fromValue = new CastExpr(Expr::BitCast, SourceLocation(), this, fromValue);
+        fromValue = CastExpr::bitCast(fromValue, this);
       }
 
       *cn.resultValue = fromValue;
@@ -225,7 +225,7 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
   } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(fromType)) {
     if (ptype->typeId() == TypeId_Null) {
       if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+        *cn.resultValue = ConstantNull::get(cn.fromValue->location(), this);
       }
 
       return ExactConversion;
@@ -270,8 +270,8 @@ NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 
 void NativeArrayType::initBuiltin() {
   TypeList typeParams;
-  typeParams.push_back(new PatternVar(SourceLocation(), "ElementType"));
-  typeParams.push_back(new PatternVar(SourceLocation(), "Length", &IntType::instance));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &IntType::instance));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
@@ -298,7 +298,7 @@ NativeArrayType * NativeArrayType::get(const TupleType * typeArgs) {
 }
 
 NativeArrayType::NativeArrayType(const TupleType * typeArgs)
-  : TypeImpl(Type::NArray)
+  : TypeImpl(Type::NArray, Shape_Large_Value)
   , typeArgs_(typeArgs)
 //  , size_(sz)
 {
@@ -307,7 +307,7 @@ NativeArrayType::NativeArrayType(const TupleType * typeArgs)
   //DFAIL("Implement sz");
 }
 
-NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray) {}
+NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray, Shape_Large_Value) {}
 
 const Type * NativeArrayType::typeParam(int index) const {
   return (*typeArgs_)[index];

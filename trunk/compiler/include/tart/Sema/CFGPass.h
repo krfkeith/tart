@@ -41,9 +41,10 @@ public:
 
   virtual Expr * visitAssign(AssignmentExpr * in);
   virtual Expr * visitPostAssign(AssignmentExpr * in);
+  virtual Expr * visitMultiAssign(MultiAssignExpr * in);
   virtual Expr * visitCall(CallExpr * in);
   virtual Expr * visitFnCall(FnCallExpr * in);
-  virtual Expr * visitIndirectCall(IndirectCallExpr * in);
+  virtual Expr * visitIndirectCall(CallExpr * in);
   virtual Expr * visitNew(NewExpr * in);
   virtual Expr * visitCast(CastExpr * in);
   virtual Expr * visitBinaryOpcode(BinaryOpcodeExpr * in);
@@ -56,7 +57,9 @@ public:
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  virtual Expr * visitTupleCtor(TupleCtorExpr * in);
   virtual Expr * visitClosureScope(ClosureEnvExpr * in);
+  virtual Expr * visitSharedValue(SharedValueExpr * in);
 
 protected:
   void visitExprArgs(ArglistExpr * in);

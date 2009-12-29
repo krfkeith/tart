@@ -357,7 +357,7 @@ public:
 
 /// ---------------------------------------------------------------
 /// A template pattern variable
-class ASTPatternVar : public ASTVarDecl {
+class ASTTypeVariable : public ASTVarDecl {
 public:
   enum ConstraintType {
     IS_INSTANCE,
@@ -365,8 +365,8 @@ public:
     IS_SUPERTYPE,
   };
 
-  ASTPatternVar(const SourceLocation & loc, const char * name, ASTNode * typ, int constraint)
-    : ASTVarDecl(PatternVar, loc, name, typ, NULL, DeclModifiers())
+  ASTTypeVariable(const SourceLocation & loc, const char * name, ASTNode * typ, int constraint)
+    : ASTVarDecl(TypeVar, loc, name, typ, NULL, DeclModifiers())
     , constraint_(constraint)
   {}
 
@@ -376,9 +376,9 @@ public:
 
   void trace() const;
   void format(FormatStream & out) const;
-  static inline bool classof(const ASTPatternVar *) { return true; }
+  static inline bool classof(const ASTTypeVariable *) { return true; }
   static inline bool classof(const ASTNode * e) {
-      return e->nodeType() == ASTNode::PatternVar;
+      return e->nodeType() == ASTNode::TypeVar;
   }
 
 private:

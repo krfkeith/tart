@@ -221,8 +221,8 @@ TEST_F(LexerTest, StringLiterals) {
   }
 
   {
-    std::string     expected("\u2100");
-    FakeSourceFile  src("\"\\u2100\"");
+    std::string     expected("\u2105");
+    FakeSourceFile  src("\"\\u2105\"");
     Lexer           lex(&src);
 
     EXPECT_EQ(Token_String, lex.next());

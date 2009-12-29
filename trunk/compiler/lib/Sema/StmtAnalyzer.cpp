@@ -24,6 +24,7 @@
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Sema/ScopeBuilder.h"
+#include "tart/Sema/EvalPass.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -65,7 +66,7 @@ public:
 
   Expr * baseExpr() {
     if (selfExpr == NULL) {
-      selfExpr = new LValueExpr(selfParam->location(), NULL, selfParam);
+      selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
     }
 
     return selfExpr;
@@ -363,51 +364,33 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
       if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
         return false;
       }
+
       DASSERT(initDefn->initValue() != NULL);
-      currentBlock_->append(new InitVarExpr(st->location(), initDefn, initDefn->initValue()));
+      Expr * initValue = initDefn->initValue();
+      initDefn->setInitValue(NULL);
+      currentBlock_->append(new InitVarExpr(st->location(), initDefn, initValue));
       //if (initDefn == NULL) {
       //  return NULL;
       //}
-    } else if (initExpr->nodeType() == ASTNode::Tuple) {
-      const ASTOper * initTuple = static_cast<const ASTOper *>(initExpr);
-      DFAIL("Implement");
-    }
-  }
+    } else if (initExpr->nodeType() == ASTNode::VarList) {
+      const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(initExpr);
+      //Expr * initExpr = ea.analyze(varList->value(), target->type());
 
-#if 0
-  if (initExpr) {
-    if (initExpr->exprType() == Expr::Let ||
-        initExpr->exprType() == Expr::Var) {
-      ValueDef * initDecl =
-      static_cast<ValueDef *>(const_cast<Expr *>(initExpr));
-      if (!analyzeLocalDecl(initDecl)) {
+      DASSERT(varList->value() != NULL);
+      //Expr * initValue = initDefn->initValue();
+      //initDefn->setInitValue(NULL);
+
+      //currentBlock_->append(new InitVarExpr(st->location(), initDefn, initValue));
+
+      DefnList vars;
+      if (!astToDefnList(varList, vars)) {
         return false;
       }
 
-      currentBlock_->append(DeclStatement::get(initDecl));
-    } else if (initExpr->getClass() == Expr::Assign) {
-      const OpExpr * op = static_cast<const OpExpr *>(initExpr);
-      const Expr * to = op->getOperands()[0];
-      if (const ValueDef * initDecl = dyn_cast<ValueDef>(to)) {
-        DASSERT(false && "shouldn't happen - decls are inited, not assigned");
-        /*initDecl->setValue(op->getOperands()[1]);
-         if (!analyzeLocalDecl(loopAnalyzer, initDecl)) {
-         return false;
-         }*/
-      } else if (to->getClass() == Expr::Tuple) {
-        DASSERT(false && "deal with tuples.");
-      } else {
-        DASSERT(false && "eh?");
-      }
-
-      initExpr = analyzer.reduceExpression(initExpr);
-      DASSERT(initExpr != NULL);
-      currentBlock_->append(ExprStatement::get(initExpr));
-    } else {
-      DASSERT(false);
+      //VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
+      DFAIL("Implement");
     }
   }
-#endif
 
   // Evaluate the test expression
   Expr * testExpr = NULL;
@@ -505,7 +488,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
       return false;
     }
 
-    LValueExpr * iterMethod = new LValueExpr(iterate->location(), iterExpr, iterate);
+    LValueExpr * iterMethod = LValueExpr::get(iterate->location(), iterExpr, iterate);
     iterExpr = inferTypes(callExpr(st->location(), iterMethod, ASTNodeList(), NULL), NULL);
     if (iterExpr == NULL) {
       return false;
@@ -526,7 +509,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   }
 
   iterExpr = createTempVar(".iterator", iterExpr, false);
-  LValueExpr * nextMethod = new LValueExpr(next->location(), iterExpr, next);
+  LValueExpr * nextMethod = LValueExpr::get(next->location(), iterExpr, next);
   Expr * nextCall = inferTypes(
       callExpr(iterExpr->location(), nextMethod, ASTNodeList(), NULL), NULL);
   if (nextCall == NULL) {
@@ -569,10 +552,17 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
       return false;
     }
 
-    DASSERT(initDefn->initValue() == NULL);
     blkBody->append(new InitVarExpr(st->location(), initDefn, iterValue));
+  } else if (st->loopVars()->nodeType() == ASTNode::VarList) {
+    const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(st->loopVars());
+    DefnList vars;
+    if (!astToDefnList(varList, vars)) {
+      return false;
+    }
+
+    DFAIL("Implement");
   } else {
-    DFAIL("Implement multiple loop variables");
+    DFAIL("Invalid loop variable");
   }
 
   breakTarget_ = blkDone;
@@ -614,7 +604,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   const Type * testType = testExpr->type();
 
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
-    if (isIntegerType(ptype->typeId())) {
+    if (isIntegerTypeId(ptype->typeId())) {
       // TODO: Implement
     } else {
       diag.error(st) << "Invalid expression type for switch statement: " << testType;
@@ -752,8 +742,8 @@ ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type 
         " can never equal switch expression of type '" << testType << "'";
   }
 
-  if (!result->isConstant()) {
-    diag.error(ast) << "Case expression '" << ast << "' is not a constant.";
+  result = EvalPass::eval(result, false);
+  if (result == NULL) {
     return NULL;
   }
 
@@ -775,9 +765,9 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   // TODO: There are lots of optimizations that could be done here.
   const Type * fromType = testExpr->type();
   Expr::ExprType castType = Expr::BitCast;
-  Defn::DefnType dt = Defn::Var;
+  bool testIsLValue = true;
   if (fromType->isReferenceType()) {
-    dt = Defn::Let;
+    testIsLValue = false;
   } else if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
     castType = Expr::UnionMemberCast;
   } else {
@@ -785,19 +775,10 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   }
 
   // Create the temporary variable which is going to hold the test expression.
-  VariableDefn * testVar = new VariableDefn(dt, module, "classify-expr", testExpr);
-  testVar->setStorageClass(Storage_Local);
-  testVar->setType(testExpr->type());
-  activeScope->addMember(testVar);
-  currentBlock_->append(new InitVarExpr(st->location(), testVar, testExpr));
-
-  // After this we will refer to the variable instead of referring to its value.
-  LValueExpr * testLVal = new LValueExpr(testExpr->location(), NULL, testVar);
+  LValueExpr * testLVal = createTempVar("classify-expr", testExpr, testIsLValue);
 
   Block * endBlock = NULL;
   Block * prevTestBlock = NULL;
-  //prevTestBlock->setTerminator(st->location(), BlockTerm_Branch);
-
   llvm::SmallSet<const Type *, 16> typesSeen;
   const Stmt * elseSt = NULL;
   const StmtList & cases = st->caseList();
@@ -1016,8 +997,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
       // Analyze the exception type definition
       AnalyzerBase::analyzeType(exceptType, Task_PrepTypeComparison);
-      if (exceptType == NULL ||
-          !exceptType->isSubclassOf(cast<CompositeType>(Builtins::typeThrowable))) {
+      if (exceptType == NULL || !exceptType->isSubclassOf(Builtins::typeThrowable.get())) {
         diag.fatal(exceptDecl) << "'" << exceptDecl << "' is not a subtype of Throwable";
         return false;
       }
@@ -1029,7 +1009,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       // If we're catching type "Throwable", then that catches everything.
-      if (exceptType->isEqual(cast<CompositeType>(Builtins::typeThrowable))) {
+      if (exceptType->isEqual(Builtins::typeThrowable.get())) {
         catchAll = true;
       }
 
@@ -1052,7 +1032,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       if (exceptDefn->name() != NULL) {
         const SourceLocation & loc = cst->location();
         Expr * initExpr = new InitVarExpr(cst->location(), exceptDefn,
-            new CastExpr(Expr::BitCast, loc, exceptType, activeThrowable));
+            CastExpr::bitCast(activeThrowable, exceptType)->at(loc));
         currentBlock_->append(initExpr);
       }
 
@@ -1262,6 +1242,65 @@ bool StmtAnalyzer::buildContinueStmtCFG(const Stmt * st) {
 }
 
 bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
+  // Handle multiple vars.
+  if (st->decl()->nodeType() == ASTNode::VarList) {
+    DefnList vars;
+    const ASTVarDecl * varList = static_cast<const ASTVarDecl *>(st->decl());
+    if (!astToDefnList(varList, vars)) {
+      return false;
+    }
+
+    // Gather up the types of each var. If a var has no type, then use the 'any' type.
+    ConstTypeList varTypes;
+    for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+      VariableDefn * var = static_cast<VariableDefn *>(*it);
+      const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
+      DASSERT(varDecl->value() == NULL);
+      if (varDecl->type() != NULL) {
+        VarAnalyzer va(var, module, function, function);
+        if (!va.analyze(Task_PrepTypeComparison)) {
+          return false;
+        }
+
+        varTypes.push_back(var->type());
+      } else {
+        varTypes.push_back(&AnyType::instance);
+      }
+    }
+
+    if (varList->value() != NULL) {
+      const TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
+      ExprAnalyzer ea(module, activeScope, function, function);
+      Expr * initExpr = inferTypes(ea.analyze(varList->value(), tt), tt);
+      if (initExpr == NULL) {
+        return false;
+      }
+
+      DASSERT_OBJ(initExpr->canonicalType()->typeClass() == Type::Tuple, initExpr);
+      LValueExpr * initVar = createTempVar(".packed-value", initExpr, false);
+
+      if (const TupleType * ttActual = dyn_cast_or_null<TupleType>(initVar->type())) {
+        tt = ttActual;
+      }
+
+      // Now extract members from the tuple and assign to individual vars.
+      int memberIndex = 0;
+      for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it, ++memberIndex) {
+        VariableDefn * var = static_cast<VariableDefn *>(*it);
+        Expr * initVal = new BinaryExpr(
+            Expr::ElementRef, var->ast()->location(), tt->member(memberIndex),
+            initVar, ConstantInteger::getUInt32(memberIndex));
+        currentBlock_->append(new InitVarExpr(var->location(), var, initVal));
+        if (var->type() == NULL) {
+          DASSERT(initVal->canonicalType() != &AnyType::instance);
+          var->setType(initVal->canonicalType());
+        }
+      }
+    }
+
+    return true;
+  }
+
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
     VarAnalyzer va(var, module, function, function);
@@ -1271,16 +1310,11 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
     DASSERT_OBJ(var->isSingular(), var);
 
-    // TODO: Should we insure that Let has an initializer?
     // TODO: Should we check for true constants here?
     if (var->initValue() != NULL) {
       Expr * initVal = MacroExpansionPass::run(*this, var->initValue());
-      if (initVal->type()->isEqual(&VoidType::instance)) {
-        //return expr;
-      }
-
-      //Expr * initVal = inferTypes(var->initValue(), var->type());
       if (!isErrorResult(initVal)) {
+        var->setInitValue(NULL);
         currentBlock_->append(new InitVarExpr(st->location(), var, initVal));
       }
     }
@@ -1331,7 +1365,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     //    testDefn->initValue()));
 
     // TODO: We need to cast the defn to a boolean as well.
-    testExpr = new LValueExpr(test->location(), NULL, testValueDefn);
+    testExpr = LValueExpr::get(test->location(), NULL, testValueDefn);
   } else {
     testExpr = astToExpr(test, &BoolType::instance);
     if (isErrorResult(testExpr)) {
@@ -1384,7 +1418,20 @@ Expr * StmtAnalyzer::astToExpr(const ASTNode * ast, const Type * expectedType) {
 }
 
 Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {
+  if (ast->nodeType() == ASTNode::VarList) {
+    diag.error(ast) << "Multiple variable declarations not allowed here";
+  }
+
   return ScopeBuilder::createLocalDefn(activeScope, function, ast);
+}
+
+bool StmtAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
+  for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
+    Defn * var = ScopeBuilder::createLocalDefn(activeScope, function, *it);
+    vars.push_back(var);
+  }
+
+  return true;
 }
 
 LValueExpr * StmtAnalyzer::setMacroReturnVal(LValueExpr * retVal) {
@@ -1439,13 +1486,13 @@ Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffi
 }
 
 LValueExpr * StmtAnalyzer::createTempVar(const char * name, Expr * value, bool isMutable) {
-  VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module, name, value);
+  VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module, name);
   var->setLocation(value->location());
   var->setType(value->type());
   var->setStorageClass(Storage_Local);
   activeScope->addMember(var);
   currentBlock_->append(new InitVarExpr(value->location(), var, value));
-  return new LValueExpr(value->location(), NULL, var);
+  return LValueExpr::get(value->location(), NULL, var);
 }
 
 void StmtAnalyzer::defineLocalProcedure(Block * first, Block * last) {
@@ -1581,7 +1628,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
       proc.stateVar->setType(&IntType::instance);
       proc.stateVar->setStorageClass(Storage_Local);
       proc.stateVar->addTrait(Defn::Singular);
-      proc.stateExpr = new LValueExpr(SourceLocation(), NULL, proc.stateVar);
+      proc.stateExpr = LValueExpr::get(proc.stateVar);
 
       // Add it to the local scope
       if (stateVarScope == NULL) {

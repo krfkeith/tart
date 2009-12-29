@@ -8,7 +8,7 @@ interface ContextHandler {
 }
 
 struct Vector4D[%T] require T issubtype Number {
-  private var data:NativeArray<[T, 4]>;
+  private var data:NativeArray[T, 4];
 
   def x:T {
     get { return data[0]; }
@@ -43,7 +43,7 @@ struct Vector4D[%T] require T issubtype Number {
 }
 
 struct Matrix[%T, %Rows:int, %Cols:int] require T issubtype Number {
-  private var data:NativeArray<[T, Rows * Cols]>;
+  private var data:NativeArray[T, Rows * Cols];
 
   def [row:int, col:int]:T {
     get {
