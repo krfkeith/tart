@@ -176,6 +176,7 @@ public:
   class Writer {
   public:
     virtual void write(const SourceLocation & loc, Severity sev, const std::string & msg) = 0;
+    virtual ~Writer() {}
   };
 
   class StdErrWriter : public Writer {

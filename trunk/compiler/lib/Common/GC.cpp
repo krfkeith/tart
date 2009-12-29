@@ -5,7 +5,11 @@
 #include "tart/Common/GC.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceLocation.h"
+
+#if HAVE_MALLOC_H
 #include <malloc.h>
+#endif
+
 #include <llvm/ADT/SmallVector.h>
 
 namespace tart {

@@ -21,6 +21,7 @@ public:
   class Callback {
   public:
     virtual void call() = 0;
+    virtual ~Callback() {}
   };
 
   /** Construct a new GC object. */

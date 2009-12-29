@@ -44,6 +44,8 @@ ComparisonResult operator-(ComparisonResult cr);
 /// expressions.
 
 class TypeOrdering {
+  virtual ~TypeOrdering() {}
+
   virtual ComparisonResult compare(const Type * t1, const Type * t2);
   virtual ComparisonResult compare(const PrimitiveType * t1, const PrimitiveType * t2);
   virtual ComparisonResult compare(const CompositeType * t1, const CompositeType * t2);

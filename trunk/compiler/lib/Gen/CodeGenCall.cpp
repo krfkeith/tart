@@ -9,6 +9,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
+#include "llvm/Function.h"
 
 #ifdef NDEBUG
 #define DASSERT_TYPE_EQ(expected, actual)
