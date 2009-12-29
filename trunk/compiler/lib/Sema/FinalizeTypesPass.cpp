@@ -614,6 +614,19 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
       return in;
     }
 
+    // Comparison with Null is allowed for all reference types.
+    if (t1->isNullType() || t2->isNullType()) {
+      if (t1->isNullType()) {
+        in->setFirst(ConstantNull::get(in->first()->location(), t2));
+      }
+
+      if (t2->isNullType()) {
+        in->setSecond(ConstantNull::get(in->second()->location(), t1));
+      }
+
+      return in;
+    }
+
     const Type * tr = findCommonType(t1, t2);
     if (tr == NULL) {
       diag.fatal(in) << "Can't compare incompatible types '" << t1 <<

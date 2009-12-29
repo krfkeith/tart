@@ -6,7 +6,6 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
 #include "llvm/Support/CommandLine.h"
-#include "config.h"
 #include <stdio.h>
 
 #if HAVE_EXECINFO_H

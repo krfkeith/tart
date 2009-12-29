@@ -1,0 +1,55 @@
+import tart.reflect.Method;
+import tart.reflect.ComplexType;
+import tart.reflect.Type;
+
+class Test {
+  import namespace Asserts;
+  
+  // Find all tests in package.
+  // Need a TestRunner class I think.
+  
+  /** Run all of the test cases in the specified module. */
+  //static def runTests(m:Module) {
+  //}
+
+  /** Test fixture setup method. Will be called before every test. */
+  def setUp() {}
+
+  /** Test fixture teardown method. Will be called after every test. */
+  def tearDown() {}
+
+  final def runTests[%T](testType:TypeLiteral[T]) -> int {
+    return runTests(ComplexType.of(T));
+  }
+
+  final def runTests(testClass:ComplexType) -> int {
+    for method in testClass.methods {
+      if method.name.startsWith("test") {
+        Debug.writeLn("[Running] ", self.__typeName, ".", method.name);
+	      if not runTestMethod(method) {
+	        Debug.writeLn("[FAIL   ]");
+	        return 1;
+	      }
+      }
+    }
+
+    // for each test
+    // integrate with test runner.
+
+    Debug.writeLn("[OK     ]");
+    return 0;
+  }
+
+  def runTestMethod(test:Method) -> bool {
+    try {
+      setUp();
+      test.call(self);
+      tearDown();
+      return true;
+      // TODO: Save test results
+    } catch (t:Throwable) {
+      Debug.fail(self.__typeName, ".", test.name, " failed: ", t.toString());
+      return false;
+    }
+  }
+}

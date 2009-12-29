@@ -65,6 +65,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , unwindRaiseException_(NULL)
     , unwindResume_(NULL)
     , exceptionPersonality_(NULL)
+    , exceptionTracePersonality_(NULL)
     , globalAlloc_(NULL)
     , debug_(Debug)
 {
@@ -385,6 +386,28 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
   }
 
   return exceptionPersonality_;
+}
+
+llvm::Function * CodeGenerator::getExceptionTracePersonality() {
+  using namespace llvm;
+  using llvm::Type;
+  using llvm::FunctionType;
+
+  if (exceptionTracePersonality_ == NULL) {
+    std::vector<const Type *> parameterTypes;
+    parameterTypes.push_back(builder_.getInt32Ty());
+    parameterTypes.push_back(builder_.getInt32Ty());
+    parameterTypes.push_back(builder_.getInt64Ty());
+    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
+
+    exceptionTracePersonality_ = cast<Function>(
+        irModule_->getOrInsertFunction("__tart_eh_trace_personality", ftype));
+    exceptionTracePersonality_->addFnAttr(Attribute::NoUnwind);
+  }
+
+  return exceptionTracePersonality_;
 }
 
 llvm::Function * CodeGenerator::getGlobalAlloc() {

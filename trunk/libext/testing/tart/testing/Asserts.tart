@@ -1,0 +1,106 @@
+import tart.core.Debug.stringify;
+
+namespace Asserts {
+  macro fail(msg:String) {
+    throw AssertionFailureException(msg);
+  }
+
+  macro assertTrue(cond:bool) {
+    if not cond {
+      throw AssertionFailureException(stringify(cond));
+    }
+  }
+
+  macro assertTrue(cond:bool, msg:String) {
+    if not cond {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertFalse(cond:bool) {
+    if cond {
+      throw AssertionFailureException(String.concat("not ", stringify(cond)));
+    }
+  }
+
+  macro assertFalse(cond:bool, msg:String) {
+    if cond {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T, msg:String) {
+    if expected != actual {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T) {
+    if expected != actual {
+      throw AssertionFailureException(
+        String.concat("expected: ", expected.toString(), ", actual value: ", actual.toString()));
+    }
+  }
+
+  macro assertGreater[%T](expected:T, actual:T, msg:String) {
+    if not expected > actual {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertGreater[%T](expected:T, actual:T) {
+    if not expected > actual {
+      throw AssertionFailureException(
+        String.concat("expected: ", expected.toString(), ", actual value: ", actual.toString()));
+    }
+  }
+
+  macro assertGreaterOrEqual[%T](expected:T, actual:T, msg:String) {
+    if not expected >= actual {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertGreaterOrEqual[%T](expected:T, actual:T) {
+    if not expected >= actual {
+      throw AssertionFailureException(
+        String.concat("expected: ", expected.toString(), ", actual value: ", actual.toString()));
+    }
+  }
+
+  macro assertLess[%T](expected:T, actual:T, msg:String) {
+    if not expected < actual {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertLess[%T](expected:T, actual:T) {
+    if not expected < actual {
+      throw AssertionFailureException(
+        String.concat("expected: ", expected.toString(), ", actual value: ", actual.toString()));
+    }
+  }
+
+  macro assertLessOrEqual[%T](expected:T, actual:T, msg:String) {
+    if not expected >= actual {
+      throw AssertionFailureException(msg);
+    }
+  }
+
+  macro assertLessOrEqual[%T](expected:T, actual:T) {
+    if not expected >= actual {
+      throw AssertionFailureException(
+        String.concat("expected: ", expected.toString(), ", actual value: ", actual.toString()));
+    }
+  }
+
+  macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
+    if not Iterators.equal(expected, actual) {
+      throw AssertionFailureException(
+        // TODO: Replace with String.format.
+        String.concat("expected: ", expected.toString(), ", actual: ", actual.toString()));
+    }
+  }
+  
+  // assertContentsAnyOrder
+}

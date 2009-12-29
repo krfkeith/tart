@@ -50,6 +50,8 @@ SystemClassMember<VariableDefn> complexType_properties(Builtins::typeComplexType
 SystemClassMember<VariableDefn> complexType_ctors(Builtins::typeComplexType, "_constructors");
 SystemClassMember<VariableDefn> complexType_methods(Builtins::typeComplexType, "_methods");
 SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeComplexType, "_innerTypes");
+SystemClassMember<VariableDefn> complexType_alloc(Builtins::typeComplexType, "_alloc");
+SystemClassMember<VariableDefn> complexType_noArgCtor(Builtins::typeComplexType, "_noArgCtor");
 
 // Members of tart.core.reflect.EnumType.
 SystemClassMember<VariableDefn> enumType_superType(Builtins::typeEnumType, "_superType");
@@ -486,6 +488,33 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
   sb.addField(emitArray(qname, complexType_ctors.get(), rfMembers.constructors));
   sb.addField(emitArray(qname, complexType_methods.get(), rfMembers.methods));
   sb.addField(emitArray(qname, complexType_innerTypes.get(), rfMembers.types));
+
+  /** The allocator function for this type. */
+  if (type->typeClass() == Type::Class) {
+    llvm::Function * alloc = cg_.getTypeAllocator(type);
+    if (alloc != NULL) {
+      sb.addField(llvm::ConstantExpr::getPointerCast(alloc,
+          complexType_alloc.type()->irEmbeddedType()));
+    } else {
+      sb.addNullField(complexType_alloc.type());
+    }
+  } else {
+    sb.addNullField(complexType_alloc.type());
+  }
+
+  if (type->typeClass() == Type::Class) {
+    const FunctionDefn * ctor = type->noArgConstructor();
+    if (ctor != NULL) {
+      // TODO: Finish it.
+      sb.addNullField(complexType_noArgCtor.type());
+    } else {
+      sb.addNullField(complexType_noArgCtor.type());
+    }
+  } else {
+    // TODO: Structs can be constructed, but must be boxed afterwards.
+    sb.addNullField(complexType_noArgCtor.type());
+  }
+
   return sb.build(Builtins::typeComplexType->irType());
 }
 

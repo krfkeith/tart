@@ -67,7 +67,7 @@ CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parent
   }
 }
 
-FunctionDefn * CompositeType::defaultConstructor() {
+FunctionDefn * CompositeType::defaultConstructor() const {
   const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
   if (ctors == NULL) {
     return NULL;
@@ -110,6 +110,39 @@ FunctionDefn * CompositeType::defaultConstructor() {
       }
 
       if (requiredArgCount == 0) {
+        return ctor;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+FunctionDefn * CompositeType::noArgConstructor() const {
+  const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
+  if (ctors == NULL) {
+    return NULL;
+  }
+
+  // Look for a constructor that has zero required parameters.
+  for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
+    if (FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it)) {
+      if (ctor->params().empty()) {
+        return ctor;
+      }
+    }
+  }
+
+  // Try creators
+  ctors = findSymbol(istrings.idCreate);
+  if (ctors == NULL) {
+    return NULL;
+  }
+
+  // Look for a creator that has zero required parameters.
+  for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
+    if (FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it)) {
+      if (ctor->params().empty()) {
         return ctor;
       }
     }

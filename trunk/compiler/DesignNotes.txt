@@ -6,6 +6,12 @@ Design TODOS:
 * Null vs. Void, and nullable types.
 * Need a way to collect all declarations that a given attribute is assigned to.
 
+Working on currently:
+  -- Measure reflection overhead size.
+  -- Exception backtrace.
+  -- BUG: Test classes segfault if another class is declared first. Most likely reflection
+      data is being miscompiled.
+
 Implementation TODOS:
 
 * Refactoring
@@ -22,28 +28,28 @@ Implementation TODOS:
   * Finish up override keyword, with failure tests.
   * Fill out TypeOrderings.h / TypeComparator.h
   * Unit tests for lexical type ordering.
+* I/O library.
 * Win32
   * Fix unicode unit tests.
   * Figure out crash in tartc.
 * Link-time coalescing
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
-* Boxed values:
-  * Closure Cells
+* Closures - Closure cells.
+* Garbage collector
 * Reflection
+  * Constructors
   * Properties and fields.
   * Class members.
   * Attributes
   * Find all properties/functions having some attribute
-* Closures
 * intptr and uintptr
 * Stack dumps / trace
-* Why is linking so slow? (because internalize doesn't work).
+* Profiling.
 * Test overloading of augmented assignment operators.
-* Constructor inheritance.
+* Override for property getters and setters.
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
-* Override for property getters and setters.
 * Proxy types
 * Preconditions.verify[%T]
 * Preconditions.checkState()
@@ -55,17 +61,15 @@ Implementation TODOS:
   * Nested catch (try inside catch or finally block) - test
   * Stack trace
 * Enum types
-  * Enum operators (relational and bitwise).
+   * Enum operators (relational and bitwise).
   * .parse
 * Tuple types
   * Variadic Tuple args
   * Test struct members, params.
   * Member-wise conversions.
-* Disjoint types
-  * Nullable types
-  * Equality comparison (with member types, and with other disjoint types.)
 * Multiple Return Values (requires Unpacking)
 * Constructors
+  * Constructor inheritance.
   * init all variables not explicitly initialized in constructor, both ones with initializers
     and ones without.
   * Inherit constructors from parent class if no constructors defined.
@@ -75,17 +79,22 @@ Implementation TODOS:
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
 * Import-as.
-* Runtime
-  * Compile runtime with clang so as to allow optimization.
 * Source-level debug info.
+  * Finish debug support.
   * Fix gdb problem with function entry points.
   * Isolate and report bugs.
 * Generator functions.
   * Yield statement.
   * State machine.
-* String formatting
-  * Define toStringFmt
+* Strings
+  * Define toStringFmt - string formatting
+  * Define String.format
+  * Other string-related functions
+  * Characters.tart
 * Let with instance scope.
+* Disjoint types
+  * Nullable types? (I.e. should we have special support for?)
+  * Equality comparison (with member types, and with other disjoint types.)
 * SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).

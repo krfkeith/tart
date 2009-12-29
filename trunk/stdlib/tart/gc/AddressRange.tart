@@ -11,7 +11,7 @@ import tart.core.Memory.zeroPtr;
   }
   
   def construct() {
-    //_first = _last = zeroPtr[ubyte]();
+    _first = _last = null;
   }
   
   def construct(first:Address[ubyte], last:Address[ubyte]) {

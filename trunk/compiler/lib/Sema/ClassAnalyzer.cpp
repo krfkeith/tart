@@ -16,6 +16,7 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
+#include "tart/Sema/ConstructorAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
@@ -574,10 +575,10 @@ bool ClassAnalyzer::analyzeFields() {
 }
 
 bool ClassAnalyzer::analyzeConstructors() {
+  // Analyze the constructors before methods, because we may need them
+  // during the rest of the analysis.
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::ConstructorPass)) {
-    // Analyze the constructors first, because we may need them
-    // during the rest of the analysis.
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Analyze superclass constructors
@@ -1297,6 +1298,15 @@ bool ClassAnalyzer::analyzeCompletely() {
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       analyzeDefn(member, Task_PrepCodeGeneration);
+
+      if ((type->typeClass() == Type::Class || type->typeClass() == Type::Struct) &&
+          type != Builtins::typeObject && type != Builtins::typeTypeInfoBlock) {
+        if (FunctionDefn * func = dyn_cast<FunctionDefn>(member)) {
+          if (func->isCtor()) {
+            ConstructorAnalyzer(type).run(func);
+          }
+        }
+      }
     }
 
     /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();

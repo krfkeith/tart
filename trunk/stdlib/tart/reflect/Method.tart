@@ -26,12 +26,21 @@ final class Method : Member {
   /** The parameters of this method. */
   final def params:Parameter[] { get { return _params; } }
   
-  /** Invoke the method on the specified object with the given arguments. */
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or Null if this is a static method.
+        args - The list of arguments to the method.
+   */
   final def call(obj:Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
     return _functionType.invoke(_methodPointer, obj, args);
   }
 
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or Null if this is a static method.
+        args - The list of arguments to the method.
+   */
   final def call(obj:Object, args:Object...) -> Object {
     return _functionType.invoke(_methodPointer, obj, args);
   }

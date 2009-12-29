@@ -125,20 +125,7 @@ const llvm::Type * UnionType::createIRType() const {
   }
 
   if (numValueTypes_ > 0 || hasVoidType_) {
-    size_t numStates = numValueTypes_;
-    if (numReferenceTypes_ > 0 || hasVoidType_ || hasNullType_) {
-      numStates += 1;
-    }
-
-    const llvm::Type * discriminatorType;
-    if (numStates == 2) {
-      discriminatorType = llvm::Type::getInt1Ty(llvm::getGlobalContext());
-    } else if (numStates < 256) {
-      discriminatorType = llvm::Type::getInt8Ty(llvm::getGlobalContext());
-    } else {
-      discriminatorType = llvm::Type::getInt32Ty(llvm::getGlobalContext());
-    }
-
+    const llvm::Type * discriminatorType = getDiscriminatorType();
     const llvm::Type * largestType = largestType32->irType();
     if (largestType32->isReferenceType()) {
       largestType = llvm::PointerType::get(largestType, 0);
@@ -154,6 +141,23 @@ const llvm::Type * UnionType::createIRType() const {
   } else {
     shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
+  }
+}
+
+const llvm::Type * UnionType::getDiscriminatorType() const {
+  size_t numStates = numValueTypes_;
+  if (numReferenceTypes_ > 0 || hasVoidType_ || hasNullType_) {
+    numStates += 1;
+  }
+
+  if (numStates == 2) {
+    return llvm::Type::getInt1Ty(llvm::getGlobalContext());
+  } else if (numStates < 256) {
+    return llvm::Type::getInt8Ty(llvm::getGlobalContext());
+  } else if (numStates < 0x10000) {
+    return llvm::Type::getInt16Ty(llvm::getGlobalContext());
+  } else {
+    return llvm::Type::getInt32Ty(llvm::getGlobalContext());
   }
 }
 

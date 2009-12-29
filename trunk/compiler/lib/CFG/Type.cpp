@@ -236,6 +236,10 @@ bool Type::isVoidType() const {
   return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Void;
 }
 
+bool Type::isNullType() const {
+  return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Null;
+}
+
 bool Type::isIntType() const {
   return cls == Primitive &&
       isIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());

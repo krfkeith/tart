@@ -14,6 +14,8 @@ public class ComplexType : SimpleType {
     var _constructors:Method[];
     var _methods:Method[];
     var _innerTypes:Type[];
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
   }
 
   undef construct();
@@ -48,6 +50,9 @@ public class ComplexType : SimpleType {
   /** Array of types defined within this type. */
   final def innerTypes:Type[] { get { return self._innerTypes; } }
 
+  /** Return true if this type has a custom allocator. */
+  final def hasCustomAlloc:bool { get { return self._alloc is null; } }
+
   /** Return the first method whose name is 'name'. */
   def findMethod(name:String) -> Method or void {
     for m in _methods {
@@ -57,5 +62,43 @@ public class ComplexType : SimpleType {
     }
 
     return;
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor. */  
+  final def create(ctor:Method, args:Object...) -> Object {
+    switch (typeKind) {
+      case CLASS {
+        return ctor.call(self._alloc(), args);
+      }
+        
+      case STRUCT {
+        throw InvocationException("Unimplemented struct construction");
+      }
+      
+      else {
+        throw InstantiationException(self);
+      }
+    }
+  }
+
+  /** Allocate and initialize a new object of this type, using a default constructor. */  
+  final def create() -> Object {
+    switch (typeKind) {
+      case CLASS {
+	      if _noArgCtor is not null {
+	        return _noArgCtor(self._alloc());
+	      }
+    
+        throw InvocationException("Class does not have a no-arg constructor");
+      }
+        
+      case STRUCT {
+        throw InvocationException("Unimplemented struct construction");
+      }
+      
+      else {
+        throw InstantiationException(self);
+      }
+    }
   }
 }

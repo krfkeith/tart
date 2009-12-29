@@ -103,7 +103,7 @@ ConversionRank AddressType::convertImpl(const Conversion & cn) const {
   } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(fromType)) {
     if (ptype->typeId() == TypeId_Null) {
       if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+        *cn.resultValue = ConstantNull::get(cn.fromValue->location(), this);
       }
 
       return ExactConversion;
@@ -225,7 +225,7 @@ ConversionRank PointerType::convertImpl(const Conversion & cn) const {
   } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(fromType)) {
     if (ptype->typeId() == TypeId_Null) {
       if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
+        *cn.resultValue = ConstantNull::get(cn.fromValue->location(), this);
       }
 
       return ExactConversion;
