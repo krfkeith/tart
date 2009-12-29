@@ -28,6 +28,8 @@ class TypeLiteralType;
 /// A framework for general transformations on type expressions.
 class TypeTransform {
 public:
+  virtual ~TypeTransform() {}
+
   const Type * transform(const Type * in) { return visit(in); }
 
   const Type * visit(const Type * in);

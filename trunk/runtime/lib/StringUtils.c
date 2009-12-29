@@ -71,7 +71,7 @@ const String * long_toString(int64_t value) {
 #if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%lld", value);
 #elif SIZEOF_LONG == 64
-  int length = snprintf(data, sizeof(data), "%ld", value);
+  int length = snprintf(data, sizeof(data), "%ld", (long)value);
 #else
   #error Unsupported size for int64_t
 #endif
@@ -101,7 +101,7 @@ const String * ulong_toString(uint64_t value) {
 #if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%llu", value);
 #elif SIZEOF_LONG == 64
-  int length = snprintf(data, sizeof(data), "%lu", value);
+  int length = snprintf(data, sizeof(data), "%lu", (unsigned long)value);
 #else
   #error Unsupported size for int64_t
 #endif

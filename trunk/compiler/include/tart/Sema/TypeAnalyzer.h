@@ -28,6 +28,8 @@ public:
     : AnalyzerBase(mod, parent)
   {}
 
+  virtual ~TypeAnalyzer() {}
+
   /** Construct a type from an AST. */
   Type * typeFromAST(const ASTNode * ast);
 

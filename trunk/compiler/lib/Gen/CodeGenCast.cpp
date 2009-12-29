@@ -17,6 +17,7 @@
 //
 #include "llvm/Type.h"
 #include "llvm/Value.h"
+#include "llvm/Function.h"
 
 namespace tart {
 

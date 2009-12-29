@@ -36,6 +36,7 @@ ComparisonResult operator+(ComparisonResult r0, ComparisonResult r1) {
       return r1 == EQUAL || r1 == RIGHT_FIRST ? RIGHT_FIRST : UNORDERED;
 
     case UNORDERED:
+    default:
       return UNORDERED;
   }
 }
@@ -44,6 +45,7 @@ ComparisonResult operator-(ComparisonResult cr) {
   switch (cr) {
     case EQUAL:
     case UNORDERED:
+    default:
       return cr;
 
     case LEFT_FIRST:

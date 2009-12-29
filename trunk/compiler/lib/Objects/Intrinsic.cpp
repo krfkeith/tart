@@ -24,6 +24,9 @@
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/AnalyzerBase.h"
 
+#include "llvm/Function.h"
+#include "llvm/GlobalVariable.h"
+
 namespace tart {
 
 using namespace llvm;
