@@ -6,6 +6,7 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeConstraint.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/CallCandidate.h"
 
@@ -91,7 +92,7 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
 }
 
 const Type * ResultOfConstraint::singularValue() const {
-  const Type* result;
+  const Type * result = NULL;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
@@ -227,7 +228,7 @@ ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion)
 }
 
 const Type * ParameterOfConstraint::singularValue() const {
-  const Type * result;
+  const Type * result = NULL;
   Candidates & cd = callExpr->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
@@ -323,6 +324,192 @@ void ParameterOfConstraint::format(FormatStream & out) const {
     first = false;
   }
   out << "}";
+}
+
+// -------------------------------------------------------------------
+// TupleOfConstraint
+
+ConversionRank TupleOfConstraint::convertTo(const Type * toType) const {
+  ConversionRank rank = IdenticalTypes;
+  if (const TupleType * ttype = dyn_cast<TupleType>(toType)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return Incompatible;
+    }
+
+    DFAIL("Implement");
+  } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(toType)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return Incompatible;
+    }
+
+    DFAIL("Implement");
+  } else {
+    return Incompatible;
+  }
+
+  return rank;
+
+#if 0
+
+
+  const Candidates & cd = callExpr->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    const Type * paramType = (*it)->paramType(argIndex);
+    ConversionRank rank = toType->canConvert(paramType);
+    if (rank > best) {
+      best = rank;
+      if (rank == IdenticalTypes) {
+        break;
+      }
+    }
+  }
+
+  return best;
+#endif
+}
+
+ConversionRank TupleOfConstraint::convertImpl(const Conversion & conversion) const {
+  ConversionRank rank = IdenticalTypes;
+  if (const TupleType * ttype = dyn_cast<TupleType>(conversion.fromType)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return Incompatible;
+    }
+
+    DFAIL("Implement");
+  } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(conversion.fromType)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return Incompatible;
+    }
+
+    DFAIL("Implement");
+  } else {
+    return Incompatible;
+  }
+
+  return rank;
+
+#if 0
+  ConversionRank rank = IdenticalTypes;
+  if (TupleType * ttype = dyn_cast<TupleType>(toType)) {
+
+  }
+
+  ConversionRank best = Incompatible;
+  const Candidates & cd = callExpr->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    const Type * paramType = (*it)->paramType(argIndex);
+    ConversionRank rank = paramType->convert(conversion);
+    if (rank > best) {
+      best = rank;
+      if (rank == IdenticalTypes) {
+        break;
+      }
+    }
+  }
+
+  return best;
+#endif
+}
+
+const Type * TupleOfConstraint::singularValue() const {
+  return tuple_->type();
+}
+
+bool TupleOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
+  DFAIL("Implement");
+#if 0
+  Candidates & cd = callExpr->candidates();
+  Substitution * saveSub = env.substitutions();
+  SourceContext callSite(callExpr, NULL, callExpr);
+  bool match = false;
+  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    const Type * paramType = (*it)->paramType(argIndex);
+    SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
+    if (env.unify(&candidateSite, pattern, paramType, Invariant)) {
+      if (match) {
+        env.setSubstitutions(saveSub);
+        return true;
+        //Substitution * saveSub = env.substitutions();
+      } else {
+        match = true;
+      }
+    }
+
+    env.setSubstitutions(saveSub);
+  }
+
+  return match;
+#endif
+}
+
+bool TupleOfConstraint::isSingular() const {
+  return tuple_->isSingular();
+}
+
+bool TupleOfConstraint::isSubtype(const Type * other) const {
+  DFAIL("Implement");
+}
+
+bool TupleOfConstraint::includes(const Type * other) const {
+  ConversionRank rank = IdenticalTypes;
+  if (const TupleType * ttype = dyn_cast<TupleType>(other)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return false;
+    }
+
+    DFAIL("Implement");
+  } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(other)) {
+    if (ttype->numTypeParams() != tuple_->argCount()) {
+      return false;
+    }
+
+    DFAIL("Implement");
+  } else {
+    return false;
+  }
+
+  return false;
+
+#if 0
+  const Candidates & cd = callExpr->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    const Type * paramType = (*it)->paramType(argIndex);
+    if (paramType->includes(other)) {
+      return true;
+    }
+  }
+
+  return false;
+#endif
+}
+
+bool TupleOfConstraint::isReferenceType() const {
+  DFAIL("Illegal State");
+}
+
+void TupleOfConstraint::trace() const {
+  Type::trace();
+  tuple_->mark();
+}
+
+void TupleOfConstraint::format(FormatStream & out) const {
+  out << tuple_;
 }
 
 } // namespace tart

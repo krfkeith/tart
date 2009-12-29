@@ -161,7 +161,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
       }
     }
   } else if (context->type() != NULL) {
-    const Type * contextType = dealias(context->type());
+    const Type * contextType = context->canonicalType();
     if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
       const Type * type = inferType(lvalue->value());
       if (type == NULL) {
@@ -347,6 +347,8 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
   if (defn != NULL) {
     return getDefnAsExpr(defn, sp->base(), loc);
   }
+
+  DFAIL("Bad state");
 }
 
 void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
@@ -419,7 +421,7 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
     }
 
     analyzeDefn(vdef, Task_PrepTypeComparison);
-    LValueExpr * result = new LValueExpr(loc, context, vdef);
+    LValueExpr * result = LValueExpr::get(loc, context, vdef);
 
     // If it's a variadic parameter, then the actual type is an array of the declared type.
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
@@ -525,7 +527,12 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
         for (size_t i = 0; i < numTypes; ++i) {
           analyzeType(in->typeParam(i), task);
         }
+
+        break;
       }
+
+      default:
+        break;
     }
   }
 
@@ -630,7 +637,7 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
 
   // Special case for when the elementType is Array.ElementType
   if (elementType == arrayTemplate->typeParam(0)) {
-    return cast<CompositeType>(Builtins::typeArray);
+    return Builtins::typeArray.get();
   }
 
   BindingEnv arrayEnv;
@@ -645,28 +652,6 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elem
   array->setType(arrayType);
 
   return array;
-}
-
-/** Given a type, return the coercion function to convert it to a reference type. */
-FunctionDefn * AnalyzerBase::coerceToObjectFn(const Type * type) {
-  DASSERT(!type->isReferenceType());
-  DASSERT(type->typeClass() != Type::NPointer);
-  DASSERT(type->typeClass() != Type::NAddress);
-  DASSERT(type->typeClass() != Type::NArray);
-
-  FunctionDefn * coerceFn = Builtins::objectCoerceFn();
-  TemplateSignature * coerceTemplate = coerceFn->templateSignature();
-
-  DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
-  // Do analysis on template if needed.
-  if (coerceTemplate->ast() != NULL) {
-    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
-    da.analyzeTemplateSignature(coerceFn);
-  }
-
-  BindingEnv env;
-  env.addSubstitution(coerceTemplate->patternVar(0), type);
-  return cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
 }
 
 // Determine if the target is able to be accessed from the current source defn.

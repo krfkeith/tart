@@ -238,7 +238,7 @@ public:
 
   /** Parse a list of local declations. Returns either a single declaration
       or a tuple of declarations. */
-  ASTNode * localDeclList(ASTNode::NodeType nt);
+  ASTVarDecl * localDeclList(ASTNode::NodeType nt);
 
   /** Either an expression, or a tuple of expressions. */
   ASTNode * expressionList();

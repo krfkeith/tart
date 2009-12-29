@@ -86,6 +86,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::PostAssign:
       return visitPostAssign(static_cast<AssignmentExpr *>(in));
 
+    case Expr::MultiAssign:
+      return visitMultiAssign(static_cast<MultiAssignExpr *>(in));
+
     case Expr::Call:
     case Expr::ExactCall:
     //case Expr::ICall:
@@ -98,7 +101,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitFnCall(static_cast<FnCallExpr *>(in));
 
     case Expr::IndirectCall:
-      return visitIndirectCall(static_cast<IndirectCallExpr *>(in));
+      return visitIndirectCall(static_cast<CallExpr *>(in));
 
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(in));
@@ -150,14 +153,23 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ArrayLiteral:
       return visitArrayLiteral(static_cast<ArrayLiteralExpr *>(in));
 
+    case Expr::TupleCtor:
+      return visitTupleCtor(static_cast<TupleCtorExpr *>(in));
+
     case Expr::ClosureEnv:
       return visitClosureScope(static_cast<ClosureEnvExpr *>(in));
 
     case Expr::IRValue:
       return in;
 
+    case Expr::SharedValue:
+      return visitSharedValue(static_cast<SharedValueExpr *>(in));
+
     case Expr::PatternVar:
       DFAIL("PatternVar");
+
+    default:
+      break;
   }
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType());
@@ -214,6 +226,11 @@ Expr * CFGPass::visitPostAssign(AssignmentExpr * in) {
   return in;
 }
 
+Expr * CFGPass::visitMultiAssign(MultiAssignExpr * in) {
+  visitExprArgs(in);
+  return in;
+}
+
 Expr * CFGPass::visitCall(CallExpr * in) {
   //in->setFunction(visitExpr(in->function()));
   visitExprArgs(in);
@@ -227,7 +244,7 @@ Expr * CFGPass::visitFnCall(FnCallExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitIndirectCall(IndirectCallExpr * in) {
+Expr * CFGPass::visitIndirectCall(CallExpr * in) {
   visitExpr(in->function());
   //in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);
@@ -295,6 +312,16 @@ Expr * CFGPass::visitProg2(BinaryExpr * in) {
 
 Expr * CFGPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitTupleCtor(TupleCtorExpr * in) {
+  visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitSharedValue(SharedValueExpr * in) {
+  in->setArg(visitExpr(in->arg()));
   return in;
 }
 

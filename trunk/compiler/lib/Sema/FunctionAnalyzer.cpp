@@ -6,6 +6,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
@@ -19,6 +20,11 @@
 #define INFER_RETURN_TYPE 0
 
 namespace tart {
+
+extern SystemClassMember<VariableDefn> functionType_invoke;
+extern SystemClassMember<VariableDefn> functionType_paramTypes;
+extern SystemClassMember<VariableDefn> method_typeParams;
+extern SystemClassMember<VariableDefn> member_attributes;
 
 static const FunctionDefn::PassSet PASS_SET_RESOLVETYPE = FunctionDefn::PassSet::of(
   FunctionDefn::AttributePass,
@@ -99,8 +105,12 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
     return true;
   }
 
-  if (passesToRun.contains(FunctionDefn::AttributePass) && !resolveAttributes(target)) {
-    return false;
+  if (passesToRun.contains(FunctionDefn::AttributePass)) {
+    if (!resolveAttributes(target)) {
+      return false;
+    }
+
+    target->passes().finish(FunctionDefn::AttributePass);
   }
 
   if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {
@@ -117,11 +127,11 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
   }
 #endif
 
-  if (passesToRun.contains(FunctionDefn::ControlFlowPass) && !createCFG()) {
+  if (passesToRun.contains(FunctionDefn::ReturnTypePass) && !resolveReturnType()) {
     return false;
   }
 
-  if (passesToRun.contains(FunctionDefn::ReturnTypePass) && !resolveReturnType()) {
+  if (passesToRun.contains(FunctionDefn::ControlFlowPass) && !createCFG()) {
     return false;
   }
 
@@ -208,6 +218,15 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       }
     }
 
+    TypeDefn * parentClass = target->enclosingClassDefn();
+    if (parentClass != NULL) {
+      if (CompositeType * ctype = dyn_cast<CompositeType>(parentClass->typeValue())) {
+        if (ctype->isFinal()) {
+          target->setFlag(FunctionDefn::Final);
+        }
+      }
+    }
+
     if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
       ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
       TypeDefn * selfType = target->enclosingClassDefn();
@@ -216,7 +235,6 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
-      selfParam->copyTrait(selfType, Defn::Final);
       selfParam->setFlag(ParameterDefn::Reference, true);
       ftype->setSelfParam(selfParam);
       target->parameterScope().addMember(selfParam);
@@ -273,13 +291,14 @@ bool FunctionAnalyzer::resolveModifiers() {
             success = false;
           }
 
+          target->setFlag(FunctionDefn::InterfaceMethod);
           break;
         }
 
         case Type::Class: {
-          if (isAbstract && !enclosingClassDefn->isAbstract()) {
+          if (isAbstract && !enclosingClass->isAbstract()) {
             diag.error(target) << "Method '" << target->name() <<
-                " declared abstract in non-abstract class";
+                "' declared abstract in non-abstract class";
             success = false;
           }
 
@@ -297,11 +316,14 @@ bool FunctionAnalyzer::resolveModifiers() {
 
           break;
         }
+
+        default:
+          break;
       }
 
       // Add the constructor flag if it has the name 'construct'
       if (target->name() == istrings.idConstruct) {
-        target->addTrait(Defn::Ctor);
+        target->setFlag(FunctionDefn::Ctor);
       }
 
     } else {
@@ -364,9 +386,18 @@ bool FunctionAnalyzer::createCFG() {
     if (target->hasBody() && target->blocks().empty()) {
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
+
+      // Generate the list of predecessor blocks for each block.
+      for (BlockList::iterator b = target->blocks().begin(); b != target->blocks().end(); ++b) {
+        Block * blk = *b;
+        BlockList & succs = blk->succs();
+        for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
+          (*s)->preds().push_back(blk);
+        }
+      }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.
-      Block * block = new Block("entry");
+      Block * block = new Block("undef_entry");
       target->blocks().push_back(block);
       module->addSymbol(Builtins::typeUnsupportedOperationException->typeDefn());
     }
@@ -529,7 +560,8 @@ bool FunctionAnalyzer::createReflectionData() {
     if (!target->isSingular() || target->defnType() == Defn::Macro) {
       // Don't reflect uninstantiated templates
       doReflect = false;
-    } else if (target->storageClass() == Storage_Local || target->storageClass() == Storage_Closure) {
+    } else if (target->storageClass() == Storage_Local
+        || target->storageClass() == Storage_Closure) {
       // Don't reflect local methods
       doReflect = false;
       target->addTrait(Defn::Nonreflective);
@@ -562,48 +594,37 @@ bool FunctionAnalyzer::createReflectionData() {
       }
     }
 
+    // Generate the invoke function.
     if (doReflect) {
-      if (target->functionType()->selfParam() != NULL) {
-        getUnboxFnForParam(target->functionType()->selfParam());
-      }
+      FunctionType * ftype = target->functionType();
 
+      // Add the other arguments
       for (ParameterList::const_iterator it = target->params().begin();
           it != target->params().end(); ++it) {
-        getUnboxFnForParam(*it);
+        const Type * paramType = dealias((*it)->type());
+        if (paramType->isBoxableType()) {
+          // Cache the unbox function for this type.
+          ExprAnalyzer(module, activeScope, subject_, target)
+              .getUnboxFn(SourceLocation(), paramType);
+        } else if (!paramType->isReferenceType()) {
+          // For the moment we can't handle non-reference types in reflection.
+          doReflect = false;
+        }
       }
 
-      if (!target->returnType()->isVoidType()) {
-        const Type * returnType = target->returnType();
-        switch (returnType->typeClass()) {
-          // Types that need to be boxed.
-          case Type::Primitive:
-          case Type::Struct:
-          case Type::Enum:
-          case Type::BoundMethod:
-          case Type::Tuple:
-          case Type::Union: {
-            FunctionDefn * coerceFn = coerceToObjectFn(returnType);
-            module->addSymbol(coerceFn);
-            break;
-          }
-
-          // Types that need to be upcast
-          case Type::Class:
-          case Type::Interface:
-            break;
-
-          // Types that aren't handled via reflection
-          case Type::NAddress:
-          case Type::NPointer:
-            break;
-
-          // Types that can't be passed as a parameter
-          case Type::Protocol:
-          case Type::NArray:
-          default:
-            diag.error(target) << "Invalid parameter type: " << returnType;
-            DFAIL("Invalid parameter type");
+      if (!ftype->returnType()->isVoidType()) {
+        const Type * returnType = dealias(ftype->returnType());
+        if (returnType->isBoxableType()) {
+          // Cache the boxing function for this type.
+          ExprAnalyzer(module, activeScope, subject_, target).coerceToObjectFn(returnType);
+        } else if (!returnType->isReferenceType()) {
+          // For the moment we can't handle non-reference types in reflection.
+          doReflect = false;
         }
+      }
+
+      if (!doReflect) {
+        target->addTrait(Defn::Nonreflective);
       }
     }
 
@@ -611,44 +632,6 @@ bool FunctionAnalyzer::createReflectionData() {
   }
 
   return true;
-}
-
-void FunctionAnalyzer::getUnboxFnForParam(ParameterDefn * param) {
-  const Type * paramType = dealias(param->type());
-  switch (paramType->typeClass()) {
-    // Types that need to be boxed.
-    case Type::Primitive:
-    case Type::Struct:
-    case Type::Enum:
-    case Type::BoundMethod:
-    case Type::Tuple:
-    case Type::Union: {
-      FunctionDefn * unboxFn = ExprAnalyzer(module, activeScope, subject_, target)
-          .getUnboxFn(param->location(), paramType);
-      if (unboxFn && unboxFn->isSingular()) {
-        module->addSymbol(unboxFn);
-      }
-      break;
-    }
-
-    // Types that need to be down-cast
-    case Type::Class:
-    case Type::Interface:
-      break;
-
-    // Types that aren't handled via reflection
-    case Type::NAddress:
-    case Type::NPointer:
-      target->addTrait(Defn::Nonreflective);
-      break;
-
-    // Types that can't be passed as a parameter
-    case Type::Protocol:
-    case Type::NArray:
-    default:
-      diag.error(target) << "Invalid parameter type: " << paramType;
-      DFAIL("Invalid parameter type");
-  }
 }
 
 bool FunctionAnalyzer::analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass) {

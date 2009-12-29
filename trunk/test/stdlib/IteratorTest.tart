@@ -1,13 +1,10 @@
+import tart.reflect.Module;
+import tart.testing.TestUtils;
 import tart.collections.Iterators;
 
 @EntryPoint
 def main(args: String[]) -> int {
-  testManualIteration();
-  testManualIteration2();
-  testForeach();
-  testForeach2();
-  testIteratorEqual();
-  return 0;
+  return TestUtils.runModuleTests(Module.thisModule());
 }
 
 class Counter : Iterator[int] {

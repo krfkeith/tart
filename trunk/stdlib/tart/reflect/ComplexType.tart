@@ -1,10 +1,11 @@
+import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 
 /** Reflection type for classes, structs, and interfaces. */
 public class ComplexType : SimpleType {
   private {
     var _typeInfo:Address[TypeInfoBlock];
-    var _superType:ComplexType;
+    var _superType:ComplexType or Null;
     var _interfaces:ComplexType[];
     var _typeParams:Type[];
     var _attributes:Attribute[];
@@ -12,12 +13,18 @@ public class ComplexType : SimpleType {
     var _properties:Property[];
     var _constructors:Method[];
     var _methods:Method[];
+    var _innerTypes:Type[];
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
   }
 
   undef construct();
 
+  /** Given a type literal, return the reflected complex type object. */
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> ComplexType;
+
   /** Pointer to this type's supertype, or null. */
-  final def supertype:ComplexType /* or void */ { get { return self._superType; } }
+  final def supertype:ComplexType or Null { get { return self._superType; } }
   
   /** Array of inherited interfaces. */
   final def interfaces:ComplexType[] { get { return self._interfaces; } }
@@ -30,7 +37,7 @@ public class ComplexType : SimpleType {
   
   /** Array of field members. */
   final def fields:Field[] { get { return self._fields; } }
-  
+
   /** Array of property members. */
   final def properties:Property[] { get { return self._properties; } }
   
@@ -39,4 +46,59 @@ public class ComplexType : SimpleType {
   
   /** Array of methods. */
   final def methods:Method[] { get { return self._methods; } }
+
+  /** Array of types defined within this type. */
+  final def innerTypes:Type[] { get { return self._innerTypes; } }
+
+  /** Return true if this type has a custom allocator. */
+  final def hasCustomAlloc:bool { get { return self._alloc is null; } }
+
+  /** Return the first method whose name is 'name'. */
+  def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor. */  
+  final def create(ctor:Method, args:Object...) -> Object {
+    switch (typeKind) {
+      case CLASS {
+        return ctor.call(self._alloc(), args);
+      }
+        
+      case STRUCT {
+        throw InvocationException("Unimplemented struct construction");
+      }
+      
+      else {
+        throw InstantiationException(self);
+      }
+    }
+  }
+
+  /** Allocate and initialize a new object of this type, using a default constructor. */  
+  final def create() -> Object {
+    switch (typeKind) {
+      case CLASS {
+	      if _noArgCtor is not null {
+	        return _noArgCtor(self._alloc());
+	      }
+    
+        throw InvocationException("Class does not have a no-arg constructor");
+      }
+        
+      case STRUCT {
+        throw InvocationException("Unimplemented struct construction");
+      }
+      
+      else {
+        throw InstantiationException(self);
+      }
+    }
+  }
 }

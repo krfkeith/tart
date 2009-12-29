@@ -10,6 +10,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Common/Diagnostics.h"
@@ -147,15 +148,18 @@ void typeLinkageName(std::string & out, const Type * ty) {
       typeLinkageName(out, ftype->returnType());
     }
   } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
-    for (TypeList::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
+    out.append("(");
+    for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
       if (it != ttype->begin()) {
         out.append(",");
       }
 
       typeLinkageName(out, *it);
     }
+    out.append(")");
   } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
-    for (TypeList::const_iterator it = utype->members().begin(); it != utype->members().end(); ++it) {
+    for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
+        ++it) {
       if (it != utype->members().begin()) {
         out.append("|");
       }
@@ -170,21 +174,13 @@ void typeLinkageName(std::string & out, const Type * ty) {
     out.append("__Pointer[");
     typeLinkageName(out, npt->typeParam(0));
     out.append("]");
+  } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
+    out.append("tart.reflect.Type");
   } else {
     diag.error() << "Type: " << ty;
-    DFAIL("Can't compute linkage name of type");
+    TFAIL << "Can't compute linkage name of type: " << ty;
   }
 }
-
-/*void typeLinkageName(std::string & out, TupleType * tv) {
-  for (TupleType::iterator it = tv->begin(); it != tv->end(); ++it) {
-    if (it != tv->begin()) {
-      out.append(",");
-    }
-
-    typeLinkageName(out, *it);
-  }
-}*/
 
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
@@ -240,9 +236,52 @@ bool Type::isVoidType() const {
   return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Void;
 }
 
+bool Type::isNullType() const {
+  return cls == Primitive && static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Null;
+}
+
+bool Type::isIntType() const {
+  return cls == Primitive &&
+      isIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
+bool Type::isUnsignedType() const {
+  return cls == Primitive &&
+      isUnsignedIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
+bool Type::isFPType() const {
+  return cls == Primitive &&
+      isFloatingTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
 bool Type::isUnsizedIntType() const {
   return cls == Primitive &&
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
+}
+
+bool Type::isBoxableType() const {
+  switch (cls) {
+    // Types that need to be boxed.
+    case Type::Primitive: {
+      return !isVoidType();
+    }
+
+    case Type::Struct:
+    case Type::Enum:
+    case Type::BoundMethod:
+    case Type::Tuple:
+    case Type::Union: {
+      return true;
+    }
+
+    case Type::Alias: {
+      return static_cast<const TypeAlias *>(this)->value()->isBoxableType();
+    }
+
+    default:
+      return false;
+  }
 }
 
 const Type * Type::typeParam(int index) const {
@@ -265,7 +304,7 @@ ConversionRank Type::convert(const Conversion & cn) const {
 
   if (rank == Incompatible && (cn.options & Conversion::Coerce) && !cn.resultValue) {
     if (const CompositeType * ctype = dyn_cast<CompositeType>(this)) {
-      if (!ctype->passes().isFinished(CompositeType::ConverterPass)) {
+      if (!ctype->passes().isFinished(CompositeType::CoercerPass)) {
         diag.warn() << "Converter pass for " << ctype << " not done.";
       }
 
@@ -325,11 +364,11 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
       const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
       const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
 
-      if (isIntegerType(p1->typeId()) && isIntegerType(p2->typeId())) {
-        bool isSignedResult = isSignedIntegerType(p1->typeId())
-            || isSignedIntegerType(p2->typeId());
-        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerType(p1->typeId()) ? 1 : 0);
-        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerType(p2->typeId()) ? 1 : 0);
+      if (isIntegerTypeId(p1->typeId()) && isIntegerTypeId(p2->typeId())) {
+        bool isSignedResult = isSignedIntegerTypeId(p1->typeId())
+            || isSignedIntegerTypeId(p2->typeId());
+        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p1->typeId()) ? 1 : 0);
+        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p2->typeId()) ? 1 : 0);
         int resultBits = std::max(type1Bits, type2Bits);
 
         if (isSignedResult) {
@@ -399,8 +438,8 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
     // Now test the type parameters to see if they are also equivalent.
     const TypeDefn * d1 = type1->typeDefn();
     const TypeDefn * d2 = type2->typeDefn();
-    const TypeList * type1Params = NULL;
-    const TypeList * type2Params = NULL;
+    const ConstTypeList * type1Params = NULL;
+    const ConstTypeList * type2Params = NULL;
 
     if (d1->isTemplate()) {
       type1Params = &d1->templateSignature()->typeParams()->members();
@@ -440,8 +479,8 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
 // -------------------------------------------------------------------
 // DeclaredType
 
-DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope)
-  : TypeImpl(cls)
+DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope, TypeShape shape)
+  : TypeImpl(cls, shape)
   , IterableScope(parentScope)
   , defn_(de)
 {
@@ -537,6 +576,71 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
+}
+
+void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & numBits) {
+
+  switch (type->getTypeID()) {
+    case llvm::Type::VoidTyID:
+    case llvm::Type::FloatTyID:
+    case llvm::Type::DoubleTyID:
+    case llvm::Type::X86_FP80TyID:
+    case llvm::Type::FP128TyID:
+    case llvm::Type::PPC_FP128TyID:
+    case llvm::Type::IntegerTyID:
+      numBits += type->getPrimitiveSizeInBits();
+      break;
+
+    case llvm::Type::PointerTyID:
+      numPointers += 1;
+      break;
+
+    case llvm::Type::StructTyID:
+      for (llvm::Type::subtype_iterator it = type->subtype_begin(); it != type->subtype_end();
+          ++it) {
+        estimateTypeSize(*it, numPointers, numBits);
+      }
+
+      break;
+
+    case llvm::Type::ArrayTyID: {
+      const llvm::ArrayType * atype = cast<llvm::ArrayType>(type);
+      size_t elemPointers = 0;
+      size_t elemBits = 0;
+      estimateTypeSize(atype->getElementType(), numPointers, numBits);
+      numPointers += elemPointers * atype->getNumElements();
+      numBits += elemBits * atype->getNumElements();
+      break;
+    }
+
+    case llvm::Type::VectorTyID: {
+      const llvm::VectorType * atype = cast<llvm::VectorType>(type);
+      size_t elemPointers = 0;
+      size_t elemBits = 0;
+      estimateTypeSize(atype->getElementType(), numPointers, numBits);
+      numPointers += elemPointers * atype->getNumElements();
+      numBits += elemBits * atype->getNumElements();
+      break;
+    }
+
+    case llvm::Type::OpaqueTyID:
+    case llvm::Type::LabelTyID:
+    case llvm::Type::MetadataTyID:
+    case llvm::Type::FunctionTyID:
+    default:
+      break;
+  }
+}
+
+bool isLargeIRType(const llvm::Type * type) {
+  if (type->isAbstract() || !type->isFirstClassType()) {
+    return true;
+  }
+
+  size_t numPointers = 0;
+  size_t numBits = 0;
+  estimateTypeSize(type, numPointers, numBits);
+  return (numPointers > 2 || numBits > 64 || (numPointers > 0 && numBits > 32));
 }
 
 } // namespace tart

@@ -1,4 +1,4 @@
-# CMake build file for Tart/stdlib
+# CMake build file for tart/stdlib
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -22,7 +22,7 @@ set(TART_OPTIONS
     -show-generated)
 
 # Empty list of output files
-set(STDILB_BC_FILES)
+set(STDLIB_BC_FILES)
 
 # Create a command for each source file
 foreach(SRC_FILE ${TART_STDLIB_SRC})
@@ -33,13 +33,14 @@ foreach(SRC_FILE ${TART_STDLIB_SRC})
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.
-  set(STDILB_BC_FILES ${STDILB_BC_FILES} "${OUT_FILE}")
+  set(STDLIB_BC_FILES ${STDLIB_BC_FILES} "${OUT_FILE}")
 endforeach(SRC_FILE)
 
 # Target to drive the conversion
-add_custom_command(OUTPUT stdlib.bc
-    COMMAND tartln -filetype=bc -o stdlib.bc ${STDILB_BC_FILES}
-    DEPENDS ${STDILB_BC_FILES} tartln
+add_custom_command(
+    OUTPUT stdlib.bc
+    COMMAND tartln -filetype=bc -o stdlib.bc ${STDLIB_BC_FILES}
+    DEPENDS ${STDLIB_BC_FILES} tartln
     COMMENT "Linking stdlib.bc")
 
 add_custom_target(stdlib DEPENDS stdlib.bc)

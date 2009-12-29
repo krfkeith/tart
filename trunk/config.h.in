@@ -10,8 +10,10 @@
 #cmakedefine HAVE_STDDEF_H 1
 #cmakedefine HAVE_STDLIB_H 1
 #cmakedefine HAVE_STRING_H 1
+#cmakedefine HAVE_STDBOOL_H 1
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_INTTYPES_H 1
 #cmakedefine HAVE_ERRNO_H 1
 #cmakedefine HAVE_EXECINFO_H 1
 #cmakedefine HAVE_SYS_TIME_H 1
@@ -19,9 +21,23 @@
 #cmakedefine HAVE_SYS_RESOURCE_H 1
 #cmakedefine HAVE_LIBKERN_OSATOMIC_H 1
 #cmakedefine HAVE_CXXABI_H 1
+#cmakedefine HAVE_DLFCN_H 1
+#cmakedefine HAVE_UNWIND_H 1
 
 /** Whether the backtrace() function is available. */
 #cmakedefine HAVE_BACKTRACE 1
 
+/** Whether the dladdr() function is available. */
+#cmakedefine HAVE_DLADDR 1
+
 /** Whether GCC builtin atomic functions are available. */
 #cmakedefine HAVE_GCC_ATOMICS 1
+
+#if _MSC_VER
+  #define snprintf _snprintf
+#endif
+
+/** Type sizes */
+#cmakedefine SIZEOF_INT 32
+#cmakedefine SIZEOF_LONG 64
+#cmakedefine SIZEOF_LONG_LONG 64

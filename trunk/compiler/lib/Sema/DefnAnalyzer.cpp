@@ -6,6 +6,8 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/PropertyDefn.h"
+#include "tart/CFG/NamespaceDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/UnitType.h"
@@ -29,11 +31,6 @@
 
 namespace tart {
 
-extern BuiltinMemberRef<VariableDefn> module_types;
-extern BuiltinMemberRef<VariableDefn> module_methods;
-extern BuiltinMemberRef<VariableDefn> method_typeParams;
-extern BuiltinMemberRef<VariableDefn> member_attributes;
-
 class TemplateParamAnalyzer : public TypeAnalyzer {
 public:
   TemplateParamAnalyzer(Defn * de)
@@ -41,14 +38,14 @@ public:
     , tsig_(de->templateSignature())
   {}
 
-  Type * reduceTypeVariable(const ASTPatternVar * ast);
+  Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
 private:
   llvm::StringMap<TypeVariable *> vars_;
   TemplateSignature * tsig_;
 };
 
-Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
+Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   llvm::StringMap<TypeVariable *>::iterator it = vars_.find(ast->name());
   TypeVariable * tvar = NULL;
   if (it != vars_.end()) {
@@ -67,11 +64,11 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
   if (ast->type() != NULL) {
     Type * type = typeFromAST(ast->type());
     if (type != NULL) {
-      if (ast->constraint() == ASTPatternVar::IS_SUBTYPE) {
+      if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
         // Add a subclass test
         TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
         tsig_->conditions().push_back(condition);
-      } else if (ast->constraint() == ASTPatternVar::IS_SUPERTYPE) {
+      } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {
         // Add a subclass test - reversed.
         TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
         tsig_->conditions().push_back(condition);
@@ -91,7 +88,6 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTPatternVar * ast) {
 
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
-  bool requireReflection = false;
 
   if (!createMembersFromAST(module)) {
     return false;
@@ -111,32 +107,18 @@ bool DefnAnalyzer::analyzeModule() {
     if (!de->hasUnboundTypeParams()) {
       if (analyzeDefn(de, Task_PrepCodeGeneration)) {
         module->addSymbol(de);
-        if (!de->hasTrait(Defn::Nonreflective)) {
-          requireReflection = true;
-        }
       } else {
         success = false;
         diag.recovered();
       }
     }
-  }
 
-  // If reflection is required, import those types.
-  if (module->isReflectionEnabled()) {
-    Builtins::loadReflectionClasses();
-    analyzeType(Builtins::typeType, Task_PrepMemberLookup);
-    analyzeType(Builtins::typeModule, Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeMethod, Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
-    if (requireReflection) {
-      module->addSymbol(Builtins::typeModule->typeDefn());
-      module->addSymbol(module_types.get()->type()->typeDefn());
-      module->addSymbol(module_methods.get()->type()->typeDefn());
-      module->addSymbol(method_typeParams.get()->type()->typeDefn());
-      module->addSymbol(member_attributes.get()->type()->typeDefn());
+    if (de->isSingular()) {
+      addReflectionInfo(de);
     }
   }
 
+  importSystemType(Builtins::typeModule);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeDefn(Builtins::funcTypecastError, Task_PrepTypeGeneration);
 
@@ -167,70 +149,46 @@ bool DefnAnalyzer::analyzeModule() {
   return success;
 }
 
-bool DefnAnalyzer::analyze(Defn * in, DefnPasses & passes) {
-
-  // Create members of this scope.
-  if (passes.contains(Pass_CreateMembers)) {
-    createMembersFromAST(in);
-  }
-
-  // Resolve attributes
-  if (passes.contains(Pass_ResolveAttributes) && !resolveAttributes(in)) {
-    return false;
-  }
-
-  return true;
-}
-
 bool DefnAnalyzer::createMembersFromAST(Defn * in) {
   // Create members of this scope.
-  if (in->beginPass(Pass_CreateMembers)) {
-    if (in->ast() != NULL) {
-      ScopeBuilder::createScopeMembers(in);
-    }
-
-    in->finishPass(Pass_CreateMembers);
+  if (in->ast() != NULL) {
+    ScopeBuilder::createScopeMembers(in);
   }
 
   return true;
 }
 
 bool DefnAnalyzer::resolveAttributes(Defn * in) {
-  if (in->beginPass(Pass_ResolveAttributes)) {
-    if (in == Builtins::typeAttribute->typeDefn()) {
-      // Don't evaluate attributes for class Attribute - it creates a circular dependency.
-      CompositeType * attrType = cast<CompositeType>(Builtins::typeAttribute);
-      attrType->setClassFlag(CompositeType::Attribute, true);
-      attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
-      attrType->attributeInfo().setRetained(false);
-      attrType->typeDefn()->addTrait(Defn::Nonreflective);
-      in->finishPass(Pass_ResolveAttributes);
-      return true;
-    }
+  if (in == Builtins::typeAttribute->typeDefn()) {
+    // Don't evaluate attributes for class Attribute - it creates a circular dependency.
+    CompositeType * attrType = Builtins::typeAttribute.get();
+    attrType->setClassFlag(CompositeType::Attribute, true);
+    attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
+    attrType->attributeInfo().setRetained(false);
+    attrType->typeDefn()->addTrait(Defn::Nonreflective);
+    return true;
+  }
 
-    if (in->ast() != NULL) {
-      ExprAnalyzer ea(module, activeScope, subject(), NULL);
-      const ASTNodeList & attrs = in->ast()->attributes();
-      for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-        Expr * attrExpr = ea.reduceAttribute(*it);
-        if (attrExpr != NULL) {
-          //diag.info(in) << attrExpr;
-          in->attrs().push_back(attrExpr);
-        }
+  if (in->ast() != NULL) {
+    ExprAnalyzer ea(module, activeScope, subject(), NULL);
+    const ASTNodeList & attrs = in->ast()->attributes();
+    for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
+      Expr * attrExpr = ea.reduceAttribute(*it);
+      if (attrExpr != NULL) {
+        //diag.info(in) << attrExpr;
+        in->attrs().push_back(attrExpr);
       }
     }
+  }
 
-    applyAttributes(in);
+  applyAttributes(in);
 
-    // Also propagate attributes from the parent defn.
-    Defn * parent = in->parentDefn();
-    if (parent != NULL) {
-      for (ExprList::const_iterator it = parent->attrs().begin(); it != parent->attrs().end(); ++it) {
-        propagateMemberAttributes(parent, in);
-      }
+  // Also propagate attributes from the parent defn.
+  Defn * parent = in->parentDefn();
+  if (parent != NULL) {
+    for (ExprList::const_iterator it = parent->attrs().begin(); it != parent->attrs().end(); ++it) {
+      propagateMemberAttributes(parent, in);
     }
-
-    in->finishPass(Pass_ResolveAttributes);
   }
 
   return true;
@@ -364,7 +322,7 @@ void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       args.push_back(tdef->asExpr());
     } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
-      args.push_back(new LValueExpr(attrObj->location(), NULL, vdef));
+      args.push_back(LValueExpr::get(attrObj->location(), NULL, vdef));
     } else {
       DFAIL("Implement");
     }
@@ -398,19 +356,48 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   }
 }
 
-void DefnAnalyzer::importIntoScope(const ASTImport * import, Scope * targetScope) {
-  if (import->unpack()) {
-    DFAIL("Implement import namespace");
-  }
-
+void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
   ExprList importDefs;
   Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
-  if (lookupName(importDefs, import->path(), true)) {
-    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
-  } else if (lookupName(importDefs, import->path(), false)) {
-    targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+  bool found = lookupName(importDefs, import->path(), true);
+  if (!found) {
+    found = lookupName(importDefs, import->path(), false);
+  }
+
+  if (found) {
+    if (import->unpack()) {
+      if (importDefs.size() > 1) {
+        diag.error(import) << "Ambiguous import statement due to multiple definitions of " <<
+            import->path();
+      }
+
+      Expr * impExpr = importDefs.front();
+      Scope * impScope = NULL;
+      if (ScopeNameExpr * se = dyn_cast<ScopeNameExpr>(impExpr)) {
+        if (Module * mod = dyn_cast<Module>(se->value())) {
+          analyzeDefn(mod, Task_PrepMemberLookup);
+          impScope = mod;
+        } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(se->value())) {
+          analyzeDefn(ns, Task_PrepMemberLookup);
+          impScope = &ns->memberScope();
+        }
+      } else if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(impExpr)) {
+        if (tl->type()->typeDefn() != NULL) {
+          analyzeDefn(tl->type()->typeDefn(), Task_PrepMemberLookup);
+        }
+        impScope = const_cast<IterableScope *>(tl->value()->memberScope());
+      }
+
+      if (impScope != NULL) {
+        targetScope->auxScopes().insert(impScope);
+      } else {
+        diag.error(import) << "Invalid type for import: " << impExpr;
+      }
+    } else {
+      targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+    }
   } else {
-    diag.fatal(import) << "Not found '" << import << "'";
+    diag.error(import) << "Not found '" << import << "'";
   }
 
   setActiveScope(saveScope);
@@ -451,6 +438,169 @@ void DefnAnalyzer::addPass(Defn * de, DefnPasses & toRun, const DefnPass request
 void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested) {
   toRun.addAll(requested);
   toRun.removeAll(de->finished());
+}
+
+void DefnAnalyzer::addReflectionInfo(Defn * in) {
+  analyzeDefn(in, Task_PrepTypeComparison);
+  bool enableReflection = module->isReflectionEnabled() &&
+        (in->isSynthetic() || in->module() == module);
+  bool enableReflectionDetail = enableReflection && !in->hasTrait(Defn::Nonreflective);
+
+  if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
+    switch (tdef->typeValue()->typeClass()) {
+      case Type::Primitive:
+        if (enableReflectionDetail) {
+          module->reflectedDefs().insert(in);
+          importSystemType(Builtins::typeSimpleType);
+        }
+        break;
+
+      case Type::Class:
+      case Type::Interface: {
+        CompositeType * ctype = static_cast<CompositeType *>(tdef->typeValue());
+
+        // If reflection enabled for this type then load the reflection classes.
+        if (enableReflectionDetail) {
+          if (module->reflectedDefs().insert(tdef)) {
+            module->addSymbol(tdef);
+            reflectTypeMembers(ctype);
+          }
+
+          importSystemType(Builtins::typeComplexType);
+        } else if (enableReflection) {
+          module->reflectedDefs().insert(tdef);
+          importSystemType(Builtins::typeSimpleType);
+        }
+
+        break;
+      }
+
+      case Type::Struct:
+        if (enableReflectionDetail) {
+          importSystemType(Builtins::typeComplexType);
+        }
+
+        break;
+
+      case Type::Protocol:
+        break;
+
+      case Type::Enum:
+        if (enableReflectionDetail) {
+          module->reflectedDefs().insert(in);
+          importSystemType(Builtins::typeEnumType);
+        }
+        break;
+
+      default:
+        break;
+    }
+  } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
+    if (!fn->isIntrinsic() && !fn->isExtern()) {
+      if (enableReflectionDetail) {
+        if (module->reflectedDefs().insert(fn)) {
+          module->addSymbol(fn);
+          importSystemType(Builtins::typeMethod);
+          importSystemType(Builtins::typeFunctionType);
+          importSystemType(Builtins::typeDerivedType);
+        }
+
+        for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
+          const Type * paramType = (*it)->internalType();
+          reflectType(paramType);
+          if (paramType->isBoxableType()) {
+            // Cache the unbox function for this type.
+            ExprAnalyzer(module, activeScope, fn, fn).getUnboxFn(SourceLocation(), paramType);
+          }
+        }
+
+        reflectType(fn->returnType());
+        if (fn->returnType()->isBoxableType()) {
+          // Cache the boxing function for this type.
+          ExprAnalyzer(module, activeScope, subject_, fn).coerceToObjectFn(fn->returnType());
+        }
+      }
+    }
+  } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
+    if (enableReflectionDetail) {
+      module->reflectedDefs().insert(in);
+      reflectType(prop->type());
+      importSystemType(Builtins::typeProperty);
+    }
+  } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
+    if (enableReflectionDetail) {
+      //diag.info() << Format_Verbose << "Member " << in;
+      reflectType(var->type());
+    }
+  }
+}
+
+bool DefnAnalyzer::reflectType(const Type * type) {
+  TypeDefn * tdef = type->typeDefn();
+  if (tdef != NULL) {
+    if (tdef->isSynthetic()) {
+      addReflectionInfo(tdef);
+    } else if (module->addSymbol(tdef)) {
+      if (type->typeClass() == Type::Primitive) {
+        importSystemType(Builtins::typeSimpleType);
+      } else if (type->typeClass() == Type::Enum) {
+        importSystemType(Builtins::typeEnumType);
+      } else if (type->typeClass() == Type::Class) {
+        if (type == Builtins::typeComplexType.get()) {
+          // Special case for where a reference to a system class is used as
+          // a parameter - it will already have been added to the module, so
+          // importSystemType won't work.
+          AnalyzerBase::analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
+          Builtins::typeComplexType->addFieldTypesToModule(module);
+        }
+      }
+      //diag.info() << Format_Verbose << "Reflecting type: " << type;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
+  analyzeDefn(type->typeDefn(), Task_PrepCodeGeneration);
+  //diag.info() << Format_Verbose << "Adding reflect info for " << type;
+
+  // If we're doing detailed reflection, then reflect the members of this type.
+  for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
+    if (de->isSingular()) {
+      switch (de->defnType()) {
+        case Defn::Typedef:
+        case Defn::Namespace:
+        case Defn::Var:
+        case Defn::Let:
+        case Defn::Property:
+        case Defn::Indexer:
+        case Defn::Function:
+          addReflectionInfo(de);
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  ClassList & bases = type->bases();
+  for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
+    reflectType(*it);
+  }
+}
+
+bool DefnAnalyzer::importSystemType(const SystemClass & sclass) {
+  if (module->addSymbol(sclass.typeDefn())) {
+    AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
+    sclass->addFieldTypesToModule(module);
+    return true;
+  }
+
+  return false;
 }
 
 Module * DefnAnalyzer::moduleForDefn(const Defn * def) {

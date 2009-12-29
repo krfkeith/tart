@@ -13,10 +13,6 @@ namespace tart {
 
 typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 
-// TODO: Eliminate union members that are subclasses of other members.
-// TODO: Sort union members into a canonical order.
-// TODO: Allow comparisons between union types independent of member declaration order.
-// TODO: Fold equivalent unions into a single representation.
 // TODO: Finish the trace() function for this type.
 
 // -------------------------------------------------------------------
@@ -24,7 +20,7 @@ typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 class UnionType : public TypeImpl, public Locatable {
 public:
   /** Return a union of the given element types. */
-  static UnionType * get(const SourceLocation & loc, const TypeList & members);
+  static UnionType * get(const SourceLocation & loc, const ConstTypeList & members);
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }
@@ -59,11 +55,13 @@ public:
   // Overrides
 
   const llvm::Type * createIRType() const;
+  const llvm::Type * getDiscriminatorType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
+  TypeShape typeShape() const;
   bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   void trace() const;
@@ -75,7 +73,7 @@ public:
 
 protected:
   /** Construct a disjoint union type */
-  UnionType(const SourceLocation & loc, const TypeList & members);
+  UnionType(const SourceLocation & loc, const ConstTypeList & members);
 
   // Given an IR type, return an estimate of the size of this type.
   static size_t estimateTypeSize(const llvm::Type * type, size_t ptrSize);
@@ -85,7 +83,7 @@ protected:
   size_t numValueTypes_;
   size_t numReferenceTypes_;
   bool hasVoidType_;
-
+  bool hasNullType_;
   mutable IRTypeList irTypes_; // IR types corresponding to tart types.
 };
 

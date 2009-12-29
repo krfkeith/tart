@@ -47,22 +47,6 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   , tsig_(NULL)
   , tinst_(NULL)
 {
-  if (modifiers_.flags & tart::Final) {
-    addTrait(Final);
-  }
-
-  if (modifiers_.flags & tart::Abstract) {
-    addTrait(Abstract);
-  }
-
-  if (modifiers_.flags & tart::Undef) {
-    addTrait(Undefined);
-  }
-
-  if (modifiers_.flags & tart::Override) {
-    addTrait(Override);
-  }
-
   if (modifiers_.flags & tart::ReadOnly) {
     addTrait(ReadOnly);
   }
@@ -103,7 +87,7 @@ void Defn::createQualifiedName(Defn * parent) {
 
 const std::string & Defn::linkageName() const {
   if (lnkName.empty()) {
-    if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray->typeDefn()) {
+    if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray.typeDefn()) {
       // Handle arrays specially.
       typeLinkageName(lnkName, (*tinst_->typeArgs())[0]);
       lnkName.append("[]");
@@ -169,11 +153,6 @@ bool Defn::hasUnboundTypeParams() const {
 
 bool Defn::beginPass(DefnPass pass) {
   if (finished_.contains(pass)) {
-    return false;
-  }
-
-  if (running_.contains(pass)) {
-    diag.fatal(this) << "Infinite recursion during " << pass << " of " << this;
     return false;
   }
 
@@ -283,26 +262,6 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
       out << "=" << param->initValue();
     }
   }
-}
-
-const char * getPassName(DefnPass pass) {
-  switch (pass) {
-    case Pass_CreateMembers:
-      return "CreateMembers";
-
-    case Pass_ResolveAttributes:
-      return "ResolveAttributes";
-
-    case DefnPassCount:
-      DFAIL("Invalid pass");
-  }
-
-  DFAIL("Invalid pass");
-}
-
-FormatStream & operator<<(FormatStream & out, DefnPass pass) {
-  out << getPassName(pass);
-  return out;
 }
 
 } // namespace tart

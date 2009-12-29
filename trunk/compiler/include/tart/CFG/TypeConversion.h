@@ -51,7 +51,8 @@ FormatStream & operator<<(FormatStream & out, ConversionRank tc);
 struct Conversion {
   enum Options {
     Coerce = (1<<0),        // Allow coercive casts
-    Dynamic = (1<<1),       // Allow dynamic casts
+    DynamicNull = (1<<1),   // Allow dynamic casts (null if fail)
+    DynamicThrow = (1<<2),  // Allow dynamic casts (exception if fail)
   };
 
   const Type * fromType;

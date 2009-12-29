@@ -16,13 +16,14 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
+#include "tart/Sema/ConstructorAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
 
-static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
+//static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
 
 static const CompositeType::PassSet PASS_SET_RESOLVE_TYPE = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
@@ -39,6 +40,7 @@ static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassS
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
   CompositeType::ConstructorPass
 );
@@ -47,16 +49,18 @@ static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass
+  CompositeType::CoercerPass
 );
 
 static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass,
+  CompositeType::CoercerPass,
   CompositeType::MemberTypePass,
   CompositeType::FieldPass,
   CompositeType::MethodPass,
@@ -66,6 +70,7 @@ static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet
 static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
   CompositeType::AttributePass,
   CompositeType::FieldPass,
@@ -76,8 +81,9 @@ static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::o
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
+  CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConverterPass,
+  CompositeType::CoercerPass,
   CompositeType::ConstructorPass,
   CompositeType::MemberTypePass,
   CompositeType::FieldPass,
@@ -179,6 +185,10 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     type->passes().finish(CompositeType::AttributePass);
   }
 
+  if (passesToRun.contains(CompositeType::ImportPass) && !analyzeImports()) {
+    return false;
+  }
+
   if (passesToRun.contains(CompositeType::NamingConflictPass) && !checkNameConflicts()) {
     return false;
   }
@@ -195,7 +205,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
-  if (passesToRun.contains(CompositeType::ConverterPass) && !analyzeCoercers()) {
+  if (passesToRun.contains(CompositeType::CoercerPass) && !analyzeCoercers()) {
     return false;
   }
 
@@ -284,7 +294,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   DASSERT_OBJ(type->super() == NULL, type);
 
   // Check for valid finality
-  if (target->isFinal()) {
+  if (type->isFinal()) {
     if (type->typeClass() == Type::Interface) {
       diag.error(target) << "Interface type cannot be final";
     } else if (type->typeClass() == Type::Protocol) {
@@ -318,8 +328,10 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
       return false;
     }
 
-    if (baseDefn->isFinal()) {
-      diag.error(*it) << "Base type '" << baseDefn << "' is final";
+    if (CompositeType * baseClass = dyn_cast<CompositeType>(baseType)) {
+      if (baseClass->isFinal()) {
+        diag.error(*it) << "Base type '" << baseDefn << "' is final";
+      }
     }
 
     // Recursively analyze the bases of the base
@@ -404,9 +416,26 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   return true;
 }
 
+bool ClassAnalyzer::analyzeImports() {
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::ImportPass)) {
+    if (target->ast() != NULL) {
+      DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
+      const ASTNodeList & imports = target->ast()->imports();
+      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+        da.importIntoScope(cast<ASTImport>(*it), type->memberScope());
+      }
+    }
+
+    type->passes().finish(CompositeType::ImportPass);
+  }
+
+  return true;
+}
+
 bool ClassAnalyzer::analyzeCoercers() {
   CompositeType * type = targetType();
-  if (type->passes().begin(CompositeType::ConverterPass)) {
+  if (type->passes().begin(CompositeType::CoercerPass)) {
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Note: "coerce" methods are *not* inherited.
@@ -433,7 +462,7 @@ bool ClassAnalyzer::analyzeCoercers() {
       }
     }
 
-    type->passes().finish(CompositeType::ConverterPass);
+    type->passes().finish(CompositeType::CoercerPass);
   }
 
   return true;
@@ -452,6 +481,9 @@ bool ClassAnalyzer::analyzeMemberTypes() {
           case Type::Interface:
           case Type::Enum:
             module->addSymbol(memberType);
+            break;
+
+          default:
             break;
         }
       }
@@ -488,7 +520,7 @@ bool ClassAnalyzer::analyzeFields() {
         case Defn::Var:
         case Defn::Let: {
           VariableDefn * field = static_cast<VariableDefn *>(member);
-          field->copyTrait(target, Defn::Final);
+          //field->copyTrait(target, Defn::Final);
 
           analyzeValueDefn(field, Task_PrepTypeComparison);
           DASSERT(field->type() != NULL);
@@ -529,10 +561,13 @@ bool ClassAnalyzer::analyzeFields() {
           //DFAIL("Implement");
           break;
         }
+
+        default:
+          break;
       }
     }
 
-    DASSERT(type->instanceFields_.size() == instanceFieldCount);
+    DASSERT(type->instanceFields_.size() == size_t(instanceFieldCount));
     type->passes().finish(CompositeType::FieldPass);
   }
 
@@ -540,10 +575,10 @@ bool ClassAnalyzer::analyzeFields() {
 }
 
 bool ClassAnalyzer::analyzeConstructors() {
+  // Analyze the constructors before methods, because we may need them
+  // during the rest of the analysis.
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::ConstructorPass)) {
-    // Analyze the constructors first, because we may need them
-    // during the rest of the analysis.
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Analyze superclass constructors
@@ -564,7 +599,7 @@ bool ClassAnalyzer::analyzeConstructors() {
             diag.recovered();
 
             hasConstructors = true;
-            ctor->addTrait(Defn::Ctor);
+            ctor->setFlag(FunctionDefn::Ctor);
 
             if (!FunctionAnalyzer(ctor).analyze(Task_PrepTypeComparison)) {
               continue;
@@ -589,6 +624,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               ctor->addTrait(Defn::Singular);
             }
 
+            ctor->copyTrait(target, Defn::Nonreflective);
             analyzeConstructBase(ctor);
           } else {
             diag.fatal(*it) << "Member named 'construct' must be a method.";
@@ -611,6 +647,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
+            ctor->copyTrait(target, Defn::Nonreflective);
             // TODO: check return type.
           }
         }
@@ -649,6 +686,7 @@ bool ClassAnalyzer::analyzeMethods() {
     // Analyze all methods
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
+        //FunctionDefn * method = cast<FunctionDefn>(member);
         if (member->isTemplate()) {
          analyzeTemplateSignature(member);
          if (member->hasUnboundTypeParams()) {
@@ -656,15 +694,23 @@ bool ClassAnalyzer::analyzeMethods() {
          }
         }
 
-        if (member->isFinal()) {
-          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
-            diag.error(target) << "Interface or protocol method cannot be final";
-          }
-        } else if (member->visibility() != Public) {
+        if (member->visibility() != Public) {
           if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
             diag.error(target) << "Interface or protocol method cannot be non-public";
+            continue;
           }
         }
+
+        if (FunctionDefn * fn = dyn_cast<FunctionDefn>(member)) {
+          if (type->typeClass() == Type::Interface || type->typeClass() == Type::Protocol) {
+            if (fn->isFinal()) {
+               diag.error(target) << "Interface or protocol method cannot be final";
+               continue;
+             }
+           }
+        }
+
+        member->copyTrait(target, Defn::Nonreflective);
 
         if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
           analyzeValueDefn(val, Task_PrepTypeComparison);
@@ -827,7 +873,9 @@ void ClassAnalyzer::overrideMembers() {
     for (SymbolTable::Entry::iterator it = entry.begin(); it != entry.end(); ++it) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {
         if (func->isSingular()) {
-          module->addSymbol(func);
+          if (!func->isInterfaceMethod()) {
+            module->addSymbol(func);
+          }
           if (func->storageClass() == Storage_Instance && !func->isCtor()) {
             methods.push_back(func);
           }
@@ -935,11 +983,11 @@ void ClassAnalyzer::addNewMethods() {
 void ClassAnalyzer::checkForRequiredMethods() {
   typedef CompositeType::InterfaceList InterfaceList;
 
-  if (target->isAbstract()) {
+  CompositeType * type = targetType();
+  if (type->isAbstract()) {
     return;
   }
 
-  CompositeType * type = targetType();
   Type::TypeClass tcls = type->typeClass();
   MethodList & methods = type->instanceMethods_;
   if (!methods.empty()) {
@@ -954,7 +1002,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
     }
 
     if (!abstractMethods.empty()) {
-      if (tcls == Type::Struct || (tcls == Type::Class && !target->isAbstract())) {
+      if (tcls == Type::Struct || (tcls == Type::Class)) {
         diag.recovered();
         diag.error(target) << "Concrete type '" << target <<
             "'lacks definition for the following methods:";
@@ -1086,9 +1134,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
-  LValueExpr * selfExpr = new LValueExpr(target->location(), NULL, selfParam);
+  LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
 
-  Block * constructorBody = new Block("entry");
+  Block * constructorBody = new Block("ctor_entry");
   constructorBody->exitReturn(target->location(), NULL);
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance) {
@@ -1136,7 +1184,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
             requiredParams.push_back(param);
           }
 
-          initVal = new LValueExpr(target->location(), NULL, param);
+          initVal = LValueExpr::get(target->location(), NULL, param);
         } else {
           if (defaultValue != NULL) {
             // TODO: This doesn't work because native pointer initializations
@@ -1165,7 +1213,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
           }
         }
 
-        LValueExpr * memberExpr = new LValueExpr(target->location(), selfExpr, memberVar);
+        LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, memberVar);
         Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initVal);
         constructorBody->append(initExpr);
         //diag.info(de) << "Uninitialized field " << de->qualifiedName() << " with default value " << initExpr;
@@ -1185,8 +1233,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
   constructorDef->setVisibility(Public);
-  constructorDef->addTrait(Defn::Ctor);
-  constructorDef->addTrait(Defn::Ctor);
+  constructorDef->setFlag(FunctionDefn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);
   constructorDef->blocks().push_back(constructorBody);
   constructorDef->passes().finished().addAll(
@@ -1251,6 +1298,15 @@ bool ClassAnalyzer::analyzeCompletely() {
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       analyzeDefn(member, Task_PrepCodeGeneration);
+
+      if ((type->typeClass() == Type::Class || type->typeClass() == Type::Struct) &&
+          type != Builtins::typeObject && type != Builtins::typeTypeInfoBlock) {
+        if (FunctionDefn * func = dyn_cast<FunctionDefn>(member)) {
+          if (func->isCtor()) {
+            ConstructorAnalyzer(type).run(func);
+          }
+        }
+      }
     }
 
     /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();

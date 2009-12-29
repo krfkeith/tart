@@ -2,6 +2,7 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "config.h"
 #include "tart/Lex/Lexer.h"
 #include "tart/Common/Diagnostics.h"
 #include <algorithm>
@@ -28,7 +29,7 @@ namespace {
   }
 
   bool isHexDigitChar(char ch) {
-    return (ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'f' || ch >= 'A' && ch <= 'F');
+    return ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
   }
 
   // Instead of a hash table or sorted list, we rely on the compiler to
@@ -750,7 +751,7 @@ TokenType Lexer::next() {
                   } else {
                     // For character literals, since the token value is a string, then just
                     // encode it as a hex number.
-                    len = snprintf(charbuf, 9, "%0.8lx", charVal);
+                    len = snprintf(charbuf, 9, "%.08lx", charVal);
                     tokenValue_.append(charbuf, len);
                   }
 

@@ -21,7 +21,7 @@ class CallCandidate;
 /// some subset of possible types.
 class TypeConstraint : public Type {
 protected:
-  TypeConstraint() : Type(Constraint) {}
+  TypeConstraint(TypeClass tcls) : Type(tcls) {}
 
 public:
 
@@ -32,9 +32,11 @@ public:
   // Overrides
 
   const llvm::Type * irType() const;
+  TypeShape typeShape() const { return Shape_Unset; }
+
   static inline bool classof(const TypeConstraint *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() == Constraint;
+    return type->typeClass() >= ResultOf;
   }
 };
 
@@ -42,11 +44,10 @@ public:
 /// A type constraint representing the result of a method, where we don't
 /// know exactly which method will be chosen yet.
 class ResultOfConstraint : public TypeConstraint {
-private:
-  CallExpr * callExpr;
 public:
   ResultOfConstraint(CallExpr * call)
-    : callExpr(call)
+    : TypeConstraint(ResultOf)
+    , callExpr(call)
   {}
 
   // Overrides
@@ -61,6 +62,9 @@ public:
   void format(FormatStream & out) const;
   bool isSingular() const;
   bool isReferenceType() const;
+
+private:
+  CallExpr * callExpr;
 };
 
 /// -------------------------------------------------------------------
@@ -68,12 +72,10 @@ public:
 /// argument to a method, where we don't know exactly which method
 /// will be chosen yet.
 class ParameterOfConstraint : public TypeConstraint {
-private:
-  CallExpr * callExpr;
-  int argIndex;
 public:
   ParameterOfConstraint(CallExpr * call, int index)
-    : callExpr(call)
+    : TypeConstraint(ParameterOf)
+    , callExpr(call)
     , argIndex(index)
   {}
 
@@ -89,6 +91,44 @@ public:
   bool isReferenceType() const;
   void trace() const;
   void format(FormatStream & out) const;
+
+private:
+  CallExpr * callExpr;
+  int argIndex;
+};
+
+/// -------------------------------------------------------------------
+/// A type constraint representing a tuple whose members may themselves
+/// be constraints.
+class TupleOfConstraint : public TypeConstraint {
+public:
+  TupleOfConstraint(TupleCtorExpr * tuple)
+    : TypeConstraint(TupleOf)
+    , tuple_(tuple)
+  {}
+
+  TupleCtorExpr * tuple() const { return tuple_; }
+
+  // Overrides
+
+  const Type * singularValue() const;
+  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
+  ConversionRank convertTo(const Type * toType) const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool includes(const Type * other) const;
+  bool isSubtype(const Type * other) const;
+  bool isSingular() const;
+  bool isReferenceType() const;
+  void trace() const;
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const TupleOfConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == TupleOf;
+  }
+
+private:
+  TupleCtorExpr * tuple_;
 };
 
 } // namespace tart

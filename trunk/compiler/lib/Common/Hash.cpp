@@ -1,5 +1,5 @@
 #include "config.h"
-#include <stdint.h>
+#include "llvm/System/DataTypes.h"
 
 namespace tart {
 

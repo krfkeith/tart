@@ -38,7 +38,7 @@ bool ConstantInteger::isEqual(const ConstantExpr * cexpr) const {
 
 bool ConstantInteger::isNegative() const {
   const PrimitiveType * ptype = primitiveType();
-  if (isUnsignedIntegerType(ptype->typeId())) {
+  if (isUnsignedIntegerTypeId(ptype->typeId())) {
     return false;
   }
 
@@ -50,7 +50,7 @@ void ConstantInteger::format(FormatStream & out) const {
     out << (value_->isZero() ? "false" : "true");
   } else {
     const PrimitiveType * ptype = primitiveType();
-    out << value_->getValue().toString(10, isSignedIntegerType(ptype->typeId()));
+    out << value_->getValue().toString(10, isSignedIntegerTypeId(ptype->typeId()));
   }
 }
 
@@ -71,6 +71,14 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * 
 ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * type,
     llvm::ConstantInt * value) {
   return new ConstantInteger(loc, type, value);
+}
+
+ConstantInteger * ConstantInteger::getSInt32(int32_t value) {
+  return get(SourceLocation(), &IntType::instance, value);
+}
+
+ConstantInteger * ConstantInteger::getUInt32(uint32_t value) {
+  return get(SourceLocation(), &UIntType::instance, value);
 }
 
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value,
@@ -186,12 +194,12 @@ bool ConstantObjectRef::isSingular() const {
 }
 
 Expr * ConstantObjectRef::getMemberValue(VariableDefn * member) const {
-  DASSERT(member->memberIndexRecursive() < members_.size());
+  DASSERT((size_t) member->memberIndexRecursive() < members_.size());
   return members_[member->memberIndexRecursive()];
 }
 
 void ConstantObjectRef::setMemberValue(VariableDefn * member, Expr * value) {
-  DASSERT(member->memberIndexRecursive() < members_.size());
+  DASSERT((size_t) member->memberIndexRecursive() < members_.size());
   members_[member->memberIndexRecursive()] = value;
 }
 

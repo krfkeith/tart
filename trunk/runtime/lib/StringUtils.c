@@ -2,10 +2,27 @@
 
 #include "tart_object.h"
 #include "tart_string.h"
+
+#if HAVE_STRING_H
 #include <string.h>
+#endif
+
+#if HAVE_STDIO_H
 #include <stdio.h>
+#endif
+
+#if HAVE_STDBOOL_H
 #include <stdbool.h>
+#endif
+
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+
+#if WIN32
+  #define bool int
+  #define snprintf _snprintf
+#endif
 
 const String * bool_toString(bool value) {
   if (value) {
@@ -19,7 +36,7 @@ const String * bool_toString(bool value) {
 
 const String * char_toString(uint32_t value) {
   char data[16];
-  int length;
+  size_t length;
   if (value == 0) {
     length = snprintf(data, sizeof(data), "\\0");
   } else if (value < 0x32) {
@@ -33,7 +50,7 @@ const String * char_toString(uint32_t value) {
 
 const String * byte_toString(int8_t value) {
   char data[16];
-  int length = snprintf(data, sizeof(data), "%d", value);
+  size_t length = snprintf(data, sizeof(data), "%d", value);
   return String_create(data, length);
 }
 
@@ -51,7 +68,13 @@ const String * int_toString(int32_t value) {
 
 const String * long_toString(int64_t value) {
   char data[32];
+#if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%lld", value);
+#elif SIZEOF_LONG == 64
+  int length = snprintf(data, sizeof(data), "%ld", (long)value);
+#else
+  #error Unsupported size for int64_t
+#endif
   return String_create(data, length);
 }
 
@@ -75,7 +98,13 @@ const String * uint_toString(uint32_t value) {
 
 const String * ulong_toString(uint64_t value) {
   char data[32];
+#if SIZEOF_LONG_LONG == 64
   int length = snprintf(data, sizeof(data), "%llu", value);
+#elif SIZEOF_LONG == 64
+  int length = snprintf(data, sizeof(data), "%lu", (unsigned long)value);
+#else
+  #error Unsupported size for int64_t
+#endif
   return String_create(data, length);
 }
 

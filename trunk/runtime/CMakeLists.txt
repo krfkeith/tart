@@ -8,6 +8,12 @@ if (CMAKE_COMPILER_IS_GNUCC)
       -Wpointer-arith)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
+if (CMAKE_COMPILER_IS_GNUCXX)
+  remove_definitions(
+      -Wno-deprecated -Wno-unused
+      )
+endif (CMAKE_COMPILER_IS_GNUCXX)
+
 include_directories(include)
 
 file(GLOB sources lib/*.c)

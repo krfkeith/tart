@@ -37,9 +37,6 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
         case Type::Interface:
         case Type::Protocol:
           createScopeMembers(type->memberScope(), parent, decs);
-          //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-          //  createMemberDefn(type->memberScope(), parent, *it);
-          //}
           break;
 
         case Type::Enum:
@@ -59,16 +56,10 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
 
     case Defn::Namespace:
       createScopeMembers(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, decs);
-      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-      //  createMemberDefn(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, *it);
-      //}
       break;
 
     case Defn::Mod:
       createScopeMembers(static_cast<Module *>(parent), parent, decs);
-      //for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-      //  createMemberDefn(static_cast<Module *>(parent), parent, *it);
-      //}
       break;
 
     case Defn::Property:
@@ -99,7 +90,9 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
     prop->accessorScope().addMember(getter);
     getter->createQualifiedName(prop);
     getter->copyTrait(prop, Defn::Synthetic);
-    getter->copyTrait(prop, Defn::Final);
+    if (ast->modifiers().flags & tart::Final) {
+      getter->setFlag(FunctionDefn::Final);
+    }
     getter->setParentDefn(prop);
     if (getter->templateSignature() == NULL) {
       getter->copyTrait(prop, Defn::Singular);
@@ -112,7 +105,9 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
     prop->accessorScope().addMember(setter);
     setter->createQualifiedName(prop);
     setter->copyTrait(prop, Defn::Synthetic);
-    setter->copyTrait(prop, Defn::Final);
+    if (ast->modifiers().flags & tart::Final) {
+      setter->setFlag(FunctionDefn::Final);
+    }
     setter->setParentDefn(prop);
     if (setter->templateSignature() == NULL) {
       setter->copyTrait(prop, Defn::Singular);
@@ -123,7 +118,12 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
 void ScopeBuilder::createScopeMembers(
     IterableScope * scope, Defn * parent, const ASTDeclList & decs) {
   for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
-    createMemberDefn(scope, parent, *it);
+    const ASTDecl * de = *it;
+    if (de->nodeType() == ASTNode::VarList) {
+      createScopeMembers(scope, parent, de->members());
+    } else {
+      createMemberDefn(scope, parent, de);
+    }
   }
 
   checkNameConflicts(scope);
@@ -150,9 +150,9 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
     member->addTrait(Defn::TemplateMember);
   }
 
-  if (isa<ValueDefn>(member)) {
-    member->copyTrait(parentDefn, Defn::Final);
-  }
+  //if (isa<ValueDefn>(member)) {
+  //  member->copyTrait(parentDefn, Defn::Final);
+  //}
 
   if (parentDefn->isSingular() && member->templateSignature() == NULL) {
     member->addTrait(Defn::Singular);
@@ -262,36 +262,29 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
     case ASTDecl::Class:
     case ASTDecl::Struct:
     case ASTDecl::Interface:
-    case ASTDecl::Protocol:
-    case ASTDecl::Enum: {
+    case ASTDecl::Protocol: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
+      Type::TypeClass tc;
 
       switch (int(ast->nodeType())) {
-      case ASTDecl::Class:
-        tdef->setTypeValue(new CompositeType(Type::Class, tdef, parent));
-        break;
-
-      case ASTDecl::Struct:
-        tdef->setTypeValue(new CompositeType(Type::Struct, tdef, parent));
-        break;
-
-      case ASTDecl::Interface:
-        tdef->setTypeValue(new CompositeType(Type::Interface, tdef, parent));
-        break;
-
-      case ASTDecl::Protocol:
-        tdef->setTypeValue(new CompositeType(Type::Protocol, tdef, parent));
-        break;
-
-      case ASTDecl::Enum:
-        tdef->setTypeValue(new EnumType(tdef, parent));
-        break;
+        case ASTDecl::Class: tc = Type::Class; break;
+        case ASTDecl::Struct: tc = Type::Struct; break;
+        case ASTDecl::Interface: tc = Type::Interface; break;
+        case ASTDecl::Protocol: tc = Type::Protocol; break;
       }
 
+      CompositeType * ctype = new CompositeType(tc, tdef, parent, ast->modifiers().flags);
+      tdef->setTypeValue(ctype);
       return tdef;
     }
 
-#if 0
+    case ASTDecl::Enum: {
+      TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
+      tdef->setTypeValue(new EnumType(tdef, parent));
+      return tdef;
+    }
+
+    #if 0
     case ASTDecl::Alias:
       break;
 

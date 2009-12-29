@@ -18,11 +18,13 @@
 
 namespace tart {
 
-size_t GC::reclaimed;
-size_t GC::total;
-int GC::debugLevel;
-GC * GC::allocList_ = NULL;
-llvm::SmallVector<GC::Callback *, 8> uninitCallbacks;
+namespace {
+  size_t reclaimed;
+  size_t total;
+  int debugLevel;
+  GC * allocList_ = NULL;
+  llvm::SmallVector<GC::Callback *, 8> uninitCallbacks;
+}
 
 static bool initialized = false;
 
@@ -31,6 +33,7 @@ void * GC::operator new(size_t size) {
   GC * gc = reinterpret_cast<GC *>(malloc(size));
   gc->next_ = allocList_;
   allocList_ = gc;
+  return gc;
 }
 
 void GC::operator delete(void * mem) {}
@@ -71,8 +74,6 @@ bool GC::sweepCallback(void * alloc, void * ctx) {
 void GC::sweep() {
   reclaimed = 0;
   total = 0;
-  //gc_heap_validate(0);
-  //gc_heap_free_if(&sweepCallback, NULL);
   GC ** ptr = &allocList_;
   while (GC * gc = *ptr) {
     if (gc->marked_) {
@@ -87,7 +88,10 @@ void GC::sweep() {
     diag.info(SourceLocation()) << "GC: " << reclaimed <<
         " objects reclaimed, " << (total - reclaimed) << " in use";
   }
-  //gc_heap_validate(0);
+}
+
+void GC::setDebugLevel(int level) {
+  debugLevel = level;
 }
 
 }

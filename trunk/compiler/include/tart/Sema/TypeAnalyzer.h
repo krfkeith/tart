@@ -28,6 +28,8 @@ public:
     : AnalyzerBase(mod, parent)
   {}
 
+  virtual ~TypeAnalyzer() {}
+
   /** Construct a type from an AST. */
   Type * typeFromAST(const ASTNode * ast);
 
@@ -37,9 +39,9 @@ public:
   /** Construct a function type from an AST. */
   FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
 
-  virtual Type * reduceTypeVariable(const ASTPatternVar * ast);
+  virtual Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
-  bool getUnionTypes(const ASTNode * ast, TypeList & result);
+  bool getUnionTypes(const ASTNode * ast, ConstTypeList & result);
 
 protected:
   void undefinedType(const ASTNode * ast);

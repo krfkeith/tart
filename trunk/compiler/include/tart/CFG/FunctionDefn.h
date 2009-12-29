@@ -20,11 +20,12 @@ namespace tart {
 class ParameterDefn : public VariableDefn {
 public:
   enum ParameterFlag {
-    Variadic = (1<<0),    // Allows multiple values via "..."
-    Reference = (1<<1),   // Value passed by reference, even if value type
-    LValueParam = (1<<2), // Allow taking address or mutating param
-    KeywordOnly = (1<<3), // A "keyword only" argument.
-    ClosureEnv = (1<<4),  // A reference to a closure environment.
+    Variadic = (1<<0),      // Allows multiple values via "..."
+    Reference = (1<<1),     // Value passed by reference, even if value type
+    LValueParam = (1<<2),   // Allow taking address or mutating param
+    KeywordOnly = (1<<3),   // A "keyword only" argument.
+    ClosureEnv = (1<<4),    // A reference to a closure environment.
+    ValueType = (1<<5),     // Indicates a value type argument.
   };
 
   /** Constructor that takes a name */
@@ -113,6 +114,18 @@ class FunctionDefn : public ValueDefn {
 public:
   typedef llvm::SmallPtrSet<FunctionDefn *, 1> FunctionSet;
 
+  enum FunctionFlag {
+    Abstract = (1<<0),          // Function is explicitly abstract.
+    InterfaceMethod = (1<<1),   // Function is defined in an interface.
+    Undefined = (1<<2),         // Used to undefine a method in a base class.
+    Override = (1<<3),          // Function is externally defined
+    Extern = (1<<4),            // Function overrides one in a base class.
+    Ctor = (1<<5),              // Function is a constructor
+    Final = (1<<6),             // Function cannot be overridden
+    //Commutative = (1<<6),  // A function whose order of arguments can be reversed
+    //Associative = (1<<7),  // A varargs function that can be combined with itself.
+  };
+
   enum AnalysisPass {
     AttributePass,
     ParameterTypePass,
@@ -129,28 +142,13 @@ public:
   typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes an AST */
-  FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast)
-    : ValueDefn(dtype, m, ast)
-    , type_(NULL)
-    , dispatchIndex_(-1)
-    , intrinsic_(NULL)
-  {}
+  FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast);
 
   /** Constructor that takes a name */
-  FunctionDefn(DefnType dtype, Module * m, const char * name)
-    : ValueDefn(dtype, m, name)
-    , type_(NULL)
-    , dispatchIndex_(-1)
-    , intrinsic_(NULL)
-  {}
+  FunctionDefn(DefnType dtype, Module * m, const char * name);
 
   /** Constructor used for static type construction */
-  FunctionDefn(Module * m, const char * name, FunctionType * ty)
-    : ValueDefn(Function, m, name)
-    , type_(ty)
-    , dispatchIndex_(-1)
-    , intrinsic_(NULL)
-  {}
+  FunctionDefn(Module * m, const char * name, FunctionType * ty);
 
   /** Function type. */
   FunctionType * functionType() { return type_; }
@@ -167,6 +165,16 @@ public:
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }
   IterableScope & parameterScope() { return parameterScope_; }
+
+  /** Function flags. */
+  uint32_t flags() const { return flags_; }
+  void setFlag(uint32_t flag, bool set = true) {
+    if (set) {
+      flags_ |= flag;
+    } else {
+      flags_ &= ~flag;
+    }
+  }
 
   /** List of basic blocks. */
   const BlockList & blocks() const { return blocks_; }
@@ -190,9 +198,13 @@ public:
   bool isIntrinsic() const { return intrinsic_ != NULL; }
 
   /** Various function aspects. */
-  bool isCtor() const { return hasTrait(Ctor); }
-  bool isUndefined() const { return hasTrait(Undefined); }
-  bool isOverride() const { return hasTrait(Override); }
+  bool isAbstract() const { return (flags_ & Abstract) != 0; }
+  bool isInterfaceMethod() const { return (flags_ & InterfaceMethod) != 0; }
+  bool isUndefined() const { return (flags_ & Undefined) != 0; }
+  bool isOverride() const { return (flags_ & Override) != 0; }
+  bool isExtern() const { return (flags_ & Extern) != 0; }
+  bool isCtor() const { return (flags_ & Ctor) != 0; }
+  bool isFinal() const { return (flags_ & Final) != 0; }
 
   /** True if this function has a body. */
   bool hasBody() const;
@@ -234,6 +246,7 @@ public:
 
 private:
   FunctionType * type_;
+  uint32_t flags_;
   BlockList blocks_;
   IterableScope parameterScope_;
   LocalScopeList localScopes_;

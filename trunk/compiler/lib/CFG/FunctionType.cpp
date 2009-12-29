@@ -29,7 +29,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
-
+  , isStructReturn_(false)
 {
   for (ParameterList::iterator it = plist.begin(); it != plist.end(); ++it) {
     addParam(*it);
@@ -43,6 +43,8 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
   , selfParam_(NULL)
   , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , isCreatingType(false)
+  , isStructReturn_(false)
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);
@@ -57,6 +59,8 @@ FunctionType::FunctionType(
   , selfParam_(selfParam)
   , paramTypes_(NULL)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , isCreatingType(false)
+  , isStructReturn_(false)
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);
@@ -130,7 +134,7 @@ const llvm::Type * FunctionType::createIRType() const {
 
   // Insert the 'self' parameter if it's an instance method
   const Type * selfType = NULL;
-  if (selfParam_ != NULL) {
+  if (selfParam_ != NULL && !isStatic()) {
     selfType = selfParam_->type();
   }
 
@@ -151,6 +155,13 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
   // Types of the function parameters.
   std::vector<const llvm::Type *> parameterTypes;
 
+  const llvm::Type * rType = returnType->irReturnType();
+  if (returnType->typeShape() == Shape_Large_Value) {
+    parameterTypes.push_back(rType);
+    rType = llvm::Type::getVoidTy(llvm::getGlobalContext());
+    isStructReturn_ = true;
+  }
+
   // Insert the 'self' parameter if it's an instance method
   if (selfType != NULL) {
     const llvm::Type * argType = selfType->irType();
@@ -167,15 +178,15 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
     const Type * paramType = param->internalType();
     DASSERT_OBJ(paramType != NULL, param);
 
-    const llvm::Type * argType = paramType->irType();
-    if (paramType->isReferenceType() || param->getFlag(ParameterDefn::Reference)) {
-      argType = PointerType::getUnqual(argType);
+    const llvm::Type * argType;
+    if (paramType->isReferenceType()) {
+      argType = PointerType::get(paramType->irType(), 0);
+    } else {
+      argType = paramType->irParameterType();
     }
 
     parameterTypes.push_back(argType);
   }
-
-  const llvm::Type * rType = returnType->irParameterType();
 
   // Create the function type
   return llvm::FunctionType::get(rType, parameterTypes, false);
@@ -188,11 +199,11 @@ void FunctionType::trace() const {
 }
 
 const llvm::Type * FunctionType::irEmbeddedType() const {
-  if (isStatic()) {
-    return llvm::PointerType::get(irType(), 0);
-  } else {
-    DFAIL("Plain function type cannot be embedded");
-  }
+  return llvm::PointerType::get(irType(), 0);
+//  if (isStatic()) {
+//  } else {
+//    DFAIL("Plain function type cannot be embedded");
+//  }
 }
 
 const llvm::Type * FunctionType::irParameterType() const {
@@ -237,6 +248,11 @@ bool FunctionType::isEqual(const Type * other) const {
 
 bool FunctionType::isReferenceType() const {
   return true;
+}
+
+TypeShape FunctionType::typeShape() const {
+  // It's a primitive when used as a function pointer
+  return Shape_Primitive;
 }
 
 void FunctionType::format(FormatStream & out) const {

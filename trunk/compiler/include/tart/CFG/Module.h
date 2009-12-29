@@ -74,11 +74,14 @@ public:
   Defn * primaryDefn() const;
   bool findPrimaryDefn();
 
-  /** Get the set of decls_ which will be generated. */
+  /** Get the set of defns which will be generated. */
   DefnSet & exportDefs() { return exportDefs_; }
 
-  /** Get the set of decls_ which are referenced from this module. */
+  /** Get the set of defns which are referenced from this module. */
   DefnSet & importDefs() { return importDefs_; }
+
+  /** Get the set of defns for which reflection data is generated. */
+  DefnSet & reflectedDefs() { return reflectedDefs_; }
 
   /** Import this symbol into this module. If the symbol is from another module, add it
       to the list of imported symbols. If it is from this module, or if it is synthetic, then
@@ -141,6 +144,7 @@ private:
   DefnList primaryDefs_;
   DefnSet exportDefs_;
   DefnSet importDefs_;
+  DefnSet reflectedDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
   ConverterMap converters_;

@@ -23,7 +23,7 @@ class AddressType;
 class PointerType;
 class NativeArrayType;
 class UnitType;
-class PatternVar;
+class TypeVariable;
 class PatternValue;
 class TypeConstraint;
 
@@ -44,6 +44,8 @@ ComparisonResult operator-(ComparisonResult cr);
 /// expressions.
 
 class TypeOrdering {
+  virtual ~TypeOrdering() {}
+
   virtual ComparisonResult compare(const Type * t1, const Type * t2);
   virtual ComparisonResult compare(const PrimitiveType * t1, const PrimitiveType * t2);
   virtual ComparisonResult compare(const CompositeType * t1, const CompositeType * t2);
@@ -58,7 +60,7 @@ class TypeOrdering {
   virtual ComparisonResult compare(const UnitType * t1, const UnitType * t2);
 
   virtual ComparisonResult compareDissimilar(const Type * t1, const Type * t2);
-  virtual ComparisonResult compareWithPattern(const PatternVar * t1, const Type * t2);
+  virtual ComparisonResult compareWithPattern(const TypeVariable * t1, const Type * t2);
   virtual ComparisonResult compareWithPatternValue(const PatternValue * t1, const Type * t2);
   virtual ComparisonResult compareWithConstraint(const TypeConstraint * t1, const Type * t2);
 

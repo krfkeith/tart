@@ -44,6 +44,8 @@ class CompositeType : public DeclaredType {
 public:
   enum ClassFlags {
     Attribute = (1<<0),         // This class is an attribute.
+    Abstract = (1<<1),          // This class cannot be instantiated
+    Final = (1<<2),             // This class cannot be subclassed
   };
 
   /** A table of methods that together implement a given interface. */
@@ -72,7 +74,8 @@ public:
     BaseTypesPass,
     AttributePass,
     NamingConflictPass,
-    ConverterPass,
+    ImportPass,
+    CoercerPass,
     ConstructorPass,
     MemberTypePass,
     FieldPass,
@@ -86,12 +89,7 @@ public:
   typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
   typedef PassMgr::PassSet PassSet;
 
-  CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope)
-    : DeclaredType(tcls, de, parentScope)
-    , super_(NULL)
-    , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
-    , classFlags_(0)
-  {}
+  CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope, uint32_t flags = 0);
 
   bool getClassFlag(ClassFlags flg) const {
     return (classFlags_ & flg) != 0;
@@ -136,6 +134,8 @@ public:
 
   /** True if this class is an attribute. */
   bool isAttribute() const { return (classFlags_ & Attribute) != 0; }
+  bool isFinal() const { return (classFlags_ & Final) != 0; }
+  bool isAbstract() const { return (classFlags_ & Abstract) != 0; }
 
   const AttributeInfo & attributeInfo() const { return attributeInfo_; }
   AttributeInfo & attributeInfo() { return attributeInfo_; }
@@ -151,8 +151,11 @@ public:
       requirements of this protocol. */
   bool isSupportedBy(const Type * type) const;
 
-  /** Return the default (no-arg) constructor for this type. */
-  FunctionDefn * defaultConstructor();
+  /** Return the default constructor for this type. */
+  FunctionDefn * defaultConstructor() const;
+
+  /** Return the no-arg constructor for this type. */
+  FunctionDefn * noArgConstructor() const;
 
   /** The list of implicit converters for this class */
   const MethodList & coercers() const { return coercers_; }
@@ -160,9 +163,6 @@ public:
   /** The current passes state. */
   const PassMgr & passes() const { return passes_; }
   PassMgr & passes() { return passes_; }
-
-  /** Return true if this is a reference type. */
-  bool isReferenceType() const;
 
   /** Return the set of all ancestor classes. */
   void ancestorClasses(ClassSet & out) const;
@@ -173,10 +173,13 @@ public:
 
   /** Add all of the methods that are referred to by this class's TypeInfoBlock as
       definitions to this module. This is used for template instances. */
-  void addMethodDefsToModule(Module * module);
+  void addMethodDefsToModule(Module * module) const;
 
   /** Add all of the static member variables of this class as definitions to this module. */
   void addStaticDefsToModule(Module * module);
+
+  /** Add all of the symbols needed to construct a static instance of this type. */
+  void addFieldTypesToModule(Module * module) const;
 
   /** Add all of the ancestor classes as references to this module. */
   void addBaseXRefs(Module * module);
@@ -189,10 +192,13 @@ public:
   const llvm::Type * createIRType() const;
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
+  const llvm::Type * irReturnType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   void trace() const;
   bool isSubtype(const Type * other) const;
   bool isSingular() const;
+  bool isReferenceType() const;
+  TypeShape typeShape() const;
   bool includes(const Type * other) const;
 
   static inline bool classof(const CompositeType *) { return true; }

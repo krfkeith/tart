@@ -99,6 +99,9 @@ public:
   /** Build defn from AST. Don't do any type inferencing yet. */
   Defn * astToDefn(const ASTDecl * ast);
 
+  /** Build a list of defns from a multi-var decl. Don't do any type inferencing yet. */
+  bool astToDefnList(const ASTVarDecl * ast, DefnList & vars);
+
   /** Convert an AST into an switch case value. */
   ConstantExpr * astToCaseValueExpr(const ASTNode * ast, const Type * testType);
 

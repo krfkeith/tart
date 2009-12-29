@@ -1,64 +1,59 @@
 import tart.collections.ArrayList;
+import tart.reflect.ComplexType;
+import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  try {
-    testConstruct();
-    testImplicitType();
-    testOutOfRange();
-    testAdd();
-    testRemove();
-  } catch e:Exception {
-    Debug.fail("Exception BAD");
+  return ArrayListTest().runTests(ArrayListTest);
+}
+
+class ArrayListTest : Test {
+  def testConstruct() {
+    let a = ArrayList[int](1, 2, 3);
+    assertEq(3, a.length);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
   }
-  return 0;
-}
-
-def testConstruct() {
-  let a = ArrayList[int](1, 2, 3);
-  Debug.assertEq(3, a.length);
-  Debug.assertEq(1, a[0]);
-  Debug.assertEq(2, a[1]);
-  Debug.assertEq(3, a[2]);
-}
-
-def testImplicitType() {
-  let a = ArrayList(1, 2, 3);
-  Debug.assertEq(3, a.length);
-  Debug.assertEq(1, a[0]);
-  Debug.assertEq(2, a[1]);
-  Debug.assertEq(3, a[2]);
-}
-
-def testOutOfRange() {
-  let a = ArrayList[int](1, 2, 3);
-  try {
-    let s = a[4];
-    Debug.fail("Out of range access");
-  } catch :IndexOutOfRangeException {
+	
+  def testImplicitType() {
+    let a = ArrayList(1, 2, 3);
+    assertEq(3, a.length);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
   }
-
-  try {
-    let s = a[-1];
-    Debug.fail("Out of range access");
-  } catch :IndexOutOfRangeException {
-  }
-}
-
-def testAdd() {
-  let a = ArrayList[int](1, 2, 3);
-  a.add(4);
-  Debug.assertEq(4, a.length);
-  Debug.assertEq(1, a[0]);
-  Debug.assertEq(2, a[1]);
-  Debug.assertEq(3, a[2]);
-  Debug.assertEq(4, a[3]);
-}
-
-def testRemove() {
-  let a = ArrayList[int](1, 2, 3);
-  a.remove(1);
-  Debug.assertEq(2, a.length);
-  Debug.assertEq(1, a[0]);
-  Debug.assertEq(3, a[1]);
+	
+	def testOutOfRange() {
+	  let a = ArrayList[int](1, 2, 3);
+	  try {
+	    let s = a[4];
+	    fail("Out of range access");
+	  } catch :IndexOutOfRangeException {
+	  }
+	
+	  try {
+	    let s = a[-1];
+	    fail("Out of range access");
+	  } catch :IndexOutOfRangeException {
+	  }
+	}
+	
+	def testAdd() {
+	  let a = ArrayList[int](1, 2, 3);
+	  a.add(4);
+	  assertEq(4, a.length);
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
+	  assertEq(4, a[3]);
+	}
+	
+	def testRemove() {
+	  let a = ArrayList[int](1, 2, 3);
+	  a.remove(1);
+	  assertEq(2, a.length);
+	  assertEq(1, a[0]);
+	  assertEq(3, a[1]);
+	}
 }

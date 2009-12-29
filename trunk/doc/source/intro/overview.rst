@@ -48,30 +48,25 @@ from all the others. Some of these motivations are:
 Features of Tart
 ----------------
 
-* Able to be compiled directly to native code. Although there may also
-  be versions of the Tart compiler that are targeted at virtual machines
-  such as the JVM and CLR, Tart doesn't require a VM.
 * Strong static typing. Tart's type system is optimized for
   expressiveness and power. Types can be automatically inferred in many
   cases, which means that the code isn't cluttered up by redundant
   type declarations.
-* Built-in support for garbage collection.
-* Able to interoperate with libraries written in other languages through
-  the platform ABI using a foreign function interface (FFI).
 * Supports a variety of programming styles: object-oriented, functional
   programming, imperative programming, generic programming, metaprogramming,
   and so on.
-* Support for concurrency and multiprocessor programming.
 * Built-in support for reflection and type inspection.
+* Built-in support for garbage collection.
+* Support for closures and anonymous functions.
+* Able to interoperate with libraries written in other languages through
+  the platform ABI using a foreign function interface (FFI).
+* Able to be compiled directly to native code. Although there may also
+  be versions of the Tart compiler that are targeted at virtual machines
+  such as the JVM and CLR, Tart doesn't require a VM.
+* Support for concurrency and multiprocessor programming.
 * Supports operator overloading via generic functions. Writing a new '+'
   operator is simply a matter of writing a new specialization for
   ``infixAdd``.
-* Support for closures and anonymous functions.
-* Support for "effect declarations" - meaning that you can annotate what
-  effects a particular function has, and those effects can propagate
-  upward at compile time to the calling functions. So for example, if
-  a function requires doing I/O, or is not thread-safe you can annotate
-  this fact with an effect.
 * Regular, unambiguous syntax that is easy to write parsers for. It will
   be easy to support Tart in IDEs and refactoring tools. At the same time,
   Tart's syntax has been designed with humans in mind - the syntax provides

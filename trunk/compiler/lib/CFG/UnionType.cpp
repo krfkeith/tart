@@ -16,21 +16,22 @@ namespace tart {
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::get(const SourceLocation & loc, const TypeList & members) {
+UnionType * UnionType::get(const SourceLocation & loc, const ConstTypeList & members) {
   return new UnionType(loc, members);
 }
 
-UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
-  : TypeImpl(Union)
+UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
+  : TypeImpl(Union, Shape_Unset)
   , loc_(loc)
   , numValueTypes_(0)
   , numReferenceTypes_(0)
   , hasVoidType_(false)
+  , hasNullType_(false)
 {
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
   TypeList combined;
-  for (TypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
+  for (ConstTypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
     const Type * type = dealias(*it);
 
     bool addNew = true;
@@ -55,9 +56,12 @@ UnionType::UnionType(const SourceLocation & loc, const TypeList & members)
 
   for (TypeList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
     const Type * memberType = dealias(*it);
-    if (memberType == &NullType::instance || memberType == &VoidType::instance) {
+    if (memberType == &VoidType::instance) {
       hasVoidType_ = true;
     } else if (memberType->isReferenceType()) {
+      if (memberType == &NullType::instance) {
+        hasNullType_ = true;
+      }
       numReferenceTypes_ += 1;
     } else {
       numValueTypes_ += 1;
@@ -87,13 +91,18 @@ const llvm::Type * UnionType::createIRType() const {
   size_t largestSize64 = 0;
   const Type * largestType32 = 0;   // Largest type on 32-bit platforms
   const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
+  shape_ = Shape_Small_RValue;
 
   // Create an array representing all of the IR types that correspond to the Tart types.
-  for (TypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+  for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
     const Type * type = dealias(*it);
 
     const llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
+
+    if (type->typeShape() == Shape_Large_Value) {
+      shape_ == Shape_Large_Value;
+    }
 
     size_t size32 = estimateTypeSize(irType, 32);
     size_t size64 = estimateTypeSize(irType, 64);
@@ -116,20 +125,7 @@ const llvm::Type * UnionType::createIRType() const {
   }
 
   if (numValueTypes_ > 0 || hasVoidType_) {
-    size_t numStates = numValueTypes_;
-    if (numReferenceTypes_ > 0 || hasVoidType_) {
-      numStates += 1;
-    }
-
-    const llvm::Type * discriminatorType;
-    if (numStates == 2) {
-      discriminatorType = llvm::Type::getInt1Ty(llvm::getGlobalContext());
-    } else if (numStates < 256) {
-      discriminatorType = llvm::Type::getInt8Ty(llvm::getGlobalContext());
-    } else {
-      discriminatorType = llvm::Type::getInt32Ty(llvm::getGlobalContext());
-    }
-
+    const llvm::Type * discriminatorType = getDiscriminatorType();
     const llvm::Type * largestType = largestType32->irType();
     if (largestType32->isReferenceType()) {
       largestType = llvm::PointerType::get(largestType, 0);
@@ -138,8 +134,30 @@ const llvm::Type * UnionType::createIRType() const {
     unionMembers.push_back(discriminatorType);
     unionMembers.push_back(largestType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
+  } else if (hasNullType_ && numReferenceTypes_ == 2) {
+    // If it's Null or some reference type, then use the reference type.
+    shape_ = Shape_Primitive;
+    return members_->member(0)->irEmbeddedType();
   } else {
+    shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
+  }
+}
+
+const llvm::Type * UnionType::getDiscriminatorType() const {
+  size_t numStates = numValueTypes_;
+  if (numReferenceTypes_ > 0 || hasVoidType_ || hasNullType_) {
+    numStates += 1;
+  }
+
+  if (numStates == 2) {
+    return llvm::Type::getInt1Ty(llvm::getGlobalContext());
+  } else if (numStates < 256) {
+    return llvm::Type::getInt8Ty(llvm::getGlobalContext());
+  } else if (numStates < 0x10000) {
+    return llvm::Type::getInt16Ty(llvm::getGlobalContext());
+  } else {
+    return llvm::Type::getInt32Ty(llvm::getGlobalContext());
   }
 }
 
@@ -162,7 +180,7 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
     case llvm::Type::StructTyID: {
       size_t total = 0;
       unsigned numFields = type->getNumContainedTypes();
-      for (int i = 0; i < numFields; ++i) {
+      for (unsigned i = 0; i < numFields; ++i) {
         total += estimateTypeSize(type->getContainedType(i), ptrSize);
         // TODO: Add padding?
       }
@@ -189,12 +207,12 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
   }
 
   ConversionRank bestRank = Incompatible;
-  Type * bestType = NULL;
+  const Type * bestType = NULL;
 
   // Create a temporary cn with no result value.
   Conversion ccTemp(cn);
   ccTemp.resultValue = NULL;
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     ConversionRank rank = (*it)->convert(ccTemp);
     if (rank > bestRank) {
       bestRank = rank;
@@ -248,7 +266,7 @@ bool UnionType::isEqual(const Type * other) const {
 }
 
 bool UnionType::isSingular() const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (!(*it)->isSingular()) {
       return false;
     }
@@ -264,13 +282,21 @@ bool UnionType::isSubtype(const Type * other) const {
 }
 
 bool UnionType::includes(const Type * other) const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if ((*it)->includes(other)) {
       return true;
     }
   }
 
   return false;
+}
+
+TypeShape UnionType::typeShape() const {
+  if (shape_ == Shape_Unset) {
+    irType();
+  }
+
+  return shape_;
 }
 
 int UnionType::getTypeIndex(const Type * type) const {
@@ -284,7 +310,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 
   // Otherwise, calculate the type index.
   int index = 0;
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (type->isEqual(*it)) {
       return index;
     }
@@ -292,6 +318,7 @@ int UnionType::getTypeIndex(const Type * type) const {
     ++index;
   }
 
+  // Previous version - did not use discriminator field for ref types.
   #if 0
 
   if (type->isReferenceType()) {
@@ -328,7 +355,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 
   // Determine all of the possible member types that could represent an object of
   // type 'toType'.
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     const Type * memberType = *it;
     if (toType->canConvert(memberType)) {
       // TODO: Add additional cast if toType is not exactly the same type as the member.
@@ -342,7 +369,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 }
 
 void UnionType::format(FormatStream & out) const {
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (it != members_->begin()) {
       out << " or ";
     }

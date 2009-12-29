@@ -70,6 +70,9 @@ public:
   const Type * type() const { return type_; }
   void setType(const Type * type) { type_ = type; }
 
+  /** The type of this expression with aliases removed. */
+  const Type * canonicalType() const;
+
   /** Return true if this expression is a constant. */
   virtual bool isConstant() const { return false; }
 
@@ -84,6 +87,9 @@ public:
 
   /** Cast operator so we can use an expression node as a location. */
   operator const SourceLocation & () const { return loc_; }
+
+  /** Set the location of this expression. */
+  Expr * at(const SourceLocation & loc) { loc_ = loc; return this; }
 
   /** Produce a textual representation of this value. */
   virtual void format(FormatStream & out) const;
@@ -115,9 +121,6 @@ public:
 /// -------------------------------------------------------------------
 /// An operation with a single argument
 class UnaryExpr : public Expr {
-private:
-  Expr * arg_;
-
 public:
   /** Constructor. */
   UnaryExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
@@ -136,6 +139,9 @@ public:
   bool isSingular() const;
   void format(FormatStream & out) const;
   void trace() const;
+
+protected:
+  Expr * arg_;
 };
 
 /// -------------------------------------------------------------------
@@ -181,17 +187,7 @@ public:
 /// -------------------------------------------------------------------
 /// An operation with a variable number of arguments
 class ArglistExpr : public Expr {
-protected:
-  ExprList args_;
-
-  ArglistExpr(ExprType k, const SourceLocation & loc, Type * type)
-    : Expr(k, loc, type)
-  {}
-
-  bool areArgsSideEffectFree() const;
-
 public:
-
   /** The argument list. */
   ExprList & args() { return args_; }
   const ExprList & args() const { return args_; }
@@ -204,6 +200,15 @@ public:
 
   bool isSingular() const;
   void trace() const;
+
+protected:
+  ExprList args_;
+
+  bool areArgsSideEffectFree() const;
+
+  ArglistExpr(ExprType k, const SourceLocation & loc, const Type * type)
+    : Expr(k, loc, type)
+  {}
 };
 
 /// -------------------------------------------------------------------
@@ -214,6 +219,12 @@ private:
   ValueDefn * value_;
 
 public:
+  static LValueExpr * get(const SourceLocation & loc, Expr * baseVal, ValueDefn * val) {
+    return new LValueExpr(loc, baseVal, val);
+  }
+
+  static LValueExpr * get(ValueDefn * val);
+
   /** Constructor. */
   LValueExpr(const SourceLocation & loc, Expr * baseVal, ValueDefn * val);
 
@@ -297,6 +308,22 @@ public:
   static inline bool classof(const AssignmentExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == Assign || ex->exprType() == PostAssign;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// An multiple assignment expression
+class MultiAssignExpr : public ArglistExpr {
+public:
+  MultiAssignExpr(const SourceLocation & loc, const Type * type);
+
+  // Overrides
+
+  bool isSideEffectFree() const { return false; }
+
+  static inline bool classof(const MultiAssignExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == MultiAssign;
   }
 };
 
@@ -518,7 +545,7 @@ public:
 /// A 'new object' expression
 class NewExpr : public Expr {
 public:
-  NewExpr(const SourceLocation & loc, Type * type)
+  NewExpr(const SourceLocation & loc, const Type * type)
     : Expr(New, loc, type)
   {}
 
@@ -536,6 +563,11 @@ public:
 /// A typecast operator
 class CastExpr : public UnaryExpr {
 public:
+  static CastExpr * bitCast(Expr * value, const Type * toType);
+  static CastExpr * upCast(Expr * value, const Type * toType);
+  static CastExpr * tryCast(Expr * value, const Type * toType);
+  static CastExpr * dynamicCast(Expr * value, const Type * toType);
+
   /** Constructor. */
   CastExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
     : UnaryExpr(k, loc, type, a)
@@ -550,8 +582,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const CastExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
-    return ex->exprType() >= ImplicitCast &&
-        ex->exprType() <= ZeroExtend;
+    return ex->exprType() >= ImplicitCast && ex->exprType() <= ZeroExtend;
   }
 
 private:
@@ -646,12 +677,9 @@ public:
 /// -------------------------------------------------------------------
 /// An expression that directly represents an IR value.
 class IRValueExpr : public Expr {
-private:
-  llvm::Value * value_;
-
 public:
   /** Constructor. */
-  IRValueExpr(const SourceLocation & loc, Type * type, llvm::Value * value = NULL)
+  IRValueExpr(const SourceLocation & loc, const Type * type, llvm::Value * value = NULL)
     : Expr(IRValue, loc, type)
     , value_(value)
   {}
@@ -671,6 +699,9 @@ public:
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == IRValue;
   }
+
+private:
+  llvm::Value * value_;
 };
 
 /// -------------------------------------------------------------------
@@ -728,6 +759,62 @@ public:
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == ArrayLiteral;
   }
+};
+
+/// -------------------------------------------------------------------
+/// A tuple constructor expression.
+class TupleCtorExpr : public ArglistExpr {
+public:
+  TupleCtorExpr(const SourceLocation & loc, const Type * type)
+    : ArglistExpr(TupleCtor, loc, type)
+  {}
+
+  TupleCtorExpr(const SourceLocation & loc, const Type * type, const ExprList & argList)
+    : ArglistExpr(TupleCtor, loc, type)
+  {
+    args().append(argList.begin(), argList.end());
+  }
+
+  // Overrides
+
+  bool isSideEffectFree() const {
+    return areArgsSideEffectFree();
+  }
+
+  static inline bool classof(const TupleCtorExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == TupleCtor;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// An expression which may occur at several places in the CFG, but
+/// which should only be evaluated once.
+class SharedValueExpr : public UnaryExpr {
+public:
+  static SharedValueExpr * get(Expr * ex) {
+    return new SharedValueExpr(ex);
+  }
+
+  /** Constructor. */
+  SharedValueExpr(Expr * arg)
+    : UnaryExpr(SharedValue, arg->location(), arg->type(), arg)
+    , value_(NULL)
+  {}
+
+  /** The cached IR value. */
+  llvm::Value * value() const { return value_; }
+  void setValue(llvm::Value * value) const { value_ = value; }
+
+  // Overrides
+
+  static inline bool classof(const SharedValueExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == SharedValue;
+  }
+
+private:
+  mutable llvm::Value * value_;
 };
 
 /// -------------------------------------------------------------------
