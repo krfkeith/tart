@@ -281,7 +281,7 @@ bool CodeGenerator::genLetDefn(VariableDefn * let) {
   }
 }
 
-Value * CodeGenerator::genVarValue(const VariableDefn * var) {
+llvm::Value * CodeGenerator::genVarValue(const VariableDefn * var) {
   // If it's not a global, then then the IRValue must have been pre-generated.
   if (var->storageClass() != Storage_Global &&
       var->storageClass() != Storage_Static) {
@@ -296,7 +296,7 @@ Value * CodeGenerator::genVarValue(const VariableDefn * var) {
   return genGlobalVar(var);
 }
 
-Value * CodeGenerator::genGlobalVar(const VariableDefn * var) {
+llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // Global variables never set the IRValue field, because that field has a different value
   // depending on what module we are compiling.
   DASSERT(var->defnType() == Defn::Var);

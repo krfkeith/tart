@@ -1,9 +1,5 @@
 /** Map interface */
-interface Map[%Key, %Value] : Iterable[Entry] {
-  struct Entry {
-    var key:Key;
-    var value:Value;
-  }
+interface Map[%Key, %Value] : Iterable[(Key, Value)] {
 
   /** Access a value by key. */
   def [key:Key]:Value { get; set; }

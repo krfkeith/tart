@@ -15,6 +15,7 @@ public:
   ReflectionSizePass()
     : ModulePass(&ID)
     , globalSize_(0)
+    , stringSize_(0)
     , methodCount_(0)
   {
 
@@ -24,11 +25,12 @@ public:
   void measureGlobal(const GlobalValue * val);
   size_t getSizeofGlobalValue(const GlobalValue * val);
   size_t getSizeofConstant(const Constant * c);
-  void getSizeofType(const llvm::Type * ty, size_t & size);
+  size_t getSizeofType(const llvm::Type * ty, size_t prevSize = 0);
   void report() const;
 
 private:
   size_t globalSize_;
+  size_t stringSize_;
   size_t methodCount_;
   SmallPtrSet<const GlobalValue *, 64> globals_;
 };

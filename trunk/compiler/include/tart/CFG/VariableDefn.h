@@ -53,7 +53,7 @@ public:
   Expr * initValue() { return initValue_; }
   void setInitValue(Expr * e) { initValue_ = e; }
 
-  /** IR representation of this function. */
+  /** IR representation of this variable. */
   llvm::Value * irValue() const { return irValue_; }
   void setIRValue(llvm::Value * ir) const { irValue_ = ir; }
 
