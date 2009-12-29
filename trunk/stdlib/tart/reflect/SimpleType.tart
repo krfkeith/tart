@@ -3,6 +3,7 @@ class SimpleType : Type {
   enum SubtypeId : ubyte {
     NONE = 0,
     VOID,
+    NULL,
     BOOL,
     CHAR,
     BYTE,

@@ -20,8 +20,18 @@ RegisterPass<ReflectionSizePass> X(
 
 const size_t PTR_SIZE = sizeof(void *);
 
-size_t ptrAlign(size_t size) {
-  return size + ((PTR_SIZE - 1) & ~PTR_SIZE);
+size_t align(size_t size, size_t align) {
+  if (align >= 8) {
+    align = 8;
+  } else if (align >= 3) {
+    align = 4;
+  } else if (align >= 2) {
+    align = 2;
+  } else {
+    return size;
+  }
+
+  return (size + align - 1) & ~(align - 1);
 }
 
 }
@@ -41,104 +51,96 @@ void ReflectionSizePass::measureGlobal(const GlobalValue * val) {
       val->getName().startswith(".method") ||
       val->getName().startswith(".tuple") ||
       val->getName().startswith(".data")) {
-    size_t size = getSizeofGlobalValue(val);
-    errs() << "Size of '" << val->getName() << "' is " << size << "\n";
-    globalSize_ += size;
+    globalSize_ += getSizeofGlobalValue(val);
+  } else if (val->getName().startswith(".string")) {
+    stringSize_ += getSizeofGlobalValue(val);
   }
 }
 
 size_t ReflectionSizePass::getSizeofGlobalValue(const GlobalValue * val) {
-  if (globals_.count(val)) {
+  if (!globals_.insert(val)) {
     return 0;
   }
 
-  globals_.insert(val);
+  if (val->getName().endswith(".tib")) {
+    return 0;
+  }
 
   const GlobalVariable * var = cast<GlobalVariable>(val);
-  if (var->getInitializer() != NULL) {
-    return getSizeofConstant(var->getInitializer());
+  if (var->hasInitializer()) {
+    size_t size = getSizeofConstant(var->getInitializer());
+    //errs() << "Size of '" << val->getName() << "' is " << size << "\n";
+    return size;
   }
 
   return 0;
 }
 
 size_t ReflectionSizePass::getSizeofConstant(const Constant * c) {
-  size_t size = 0;
-  //if (ConstantInt * csize = dyn_cast<ConstantInt>(ConstantExpr::getSizeOf(c->getType()))) {
-  //  size += csize->getValue().getZExtValue();
-  //}
-
+  size_t size = getSizeofType(c->getType(), 0);
   if (const ConstantStruct * cs = dyn_cast<ConstantStruct>(c)) {
-    //errs() << "CStruct: " << val->getName() << "\n";
-    //size += cs->getType()->getScalarSizeInBits();
     for (ConstantStruct::const_op_iterator it = cs->op_begin(); it != cs->op_end(); ++it) {
-      if (const Constant * op = dyn_cast<Constant>(it)) {
-        size += getSizeofConstant(op);
-      } else {
-        errs() << "Other op: " << it << "\n";
+      if (GlobalVariable * gv = dyn_cast<GlobalVariable>(it)) {
+        //size += getSizeofGlobalValue(gv);
       }
     }
   } else if (const ConstantArray * ca = dyn_cast<ConstantArray>(c)) {
     for (ConstantStruct::const_op_iterator it = ca->op_begin(); it != ca->op_end(); ++it) {
-      if (const Constant * op = dyn_cast<Constant>(it)) {
-        size += getSizeofConstant(op);
-      } else {
-        errs() << "Other op: " << it << "\n";
+      if (GlobalVariable * gv = dyn_cast<GlobalVariable>(it)) {
+        //size += getSizeofGlobalValue(gv);
       }
     }
-    //errs() << "CArray: " << val->getName() << "\n";
-  } else if (const ConstantInt * ci = dyn_cast<ConstantInt>(c)) {
-    return ci->getType()->getPrimitiveSizeInBits() / 8;
-  } else if (const ConstantFP * cf = dyn_cast<ConstantFP>(c)) {
-    return cf->getType()->getPrimitiveSizeInBits() / 8;
-  } else if (const ConstantExpr * ce = dyn_cast<ConstantExpr>(c)) {
-    return ce->getType()->getPrimitiveSizeInBits() / 8;
-  } else if (const ConstantPointerNull * cpn = dyn_cast<ConstantPointerNull>(c)) {
-    return sizeof(void *);
-  } else if (const ConstantExpr * ce = dyn_cast<ConstantExpr>(c)) {
-    return sizeof(void *);
-  } else if (const ConstantAggregateZero * caz = dyn_cast<ConstantAggregateZero>(c)) {
-    getSizeofType(caz->getType(), size);
-  } else if (const GlobalValue * val = dyn_cast<GlobalValue>(c)) {
-    return sizeof(void *);
-    //return getSizeofGlobalValue(val) + sizeof(void *);
-  } else {
-    errs() << "Other: ";
-    c->print(errs());
-    errs() << "\n";
   }
 
   return size;
 }
 
-void ReflectionSizePass::getSizeofType(const llvm::Type * ty, size_t & size) {
+size_t ReflectionSizePass::getSizeofType(const llvm::Type * ty, size_t prevSize) {
   switch (ty->getTypeID()) {
     case Type::FloatTyID:
     case Type::DoubleTyID:
     case Type::X86_FP80TyID:
     case Type::FP128TyID:
     case Type::PPC_FP128TyID:
-    case Type::IntegerTyID:
-      size += ty->getPrimitiveSizeInBits() / 8;
-      break;
+    case Type::IntegerTyID: {
+      size_t sz = ty->getPrimitiveSizeInBits() / 8;
+      return align(prevSize, sz) + sz;
+    }
 
     case Type::PointerTyID:
-      size = ptrAlign(size) + PTR_SIZE;
-      break;
+      return align(prevSize, PTR_SIZE) + PTR_SIZE;
 
-    case Type::StructTyID:
-    case Type::ArrayTyID:
-    case Type::VectorTyID:
-      break;
+    case Type::StructTyID: {
+      size_t size = prevSize;
+      size_t fieldCount = ty->getNumContainedTypes();
+      for (size_t i = 0; i < fieldCount; ++i) {
+        size = getSizeofType(ty->getContainedType(i), size);
+      }
+
+      return size;
+    }
+
+    case Type::ArrayTyID: {
+      const llvm::ArrayType * aty = cast<llvm::ArrayType>(ty);
+      size_t elemSize = getSizeofType(ty->getContainedType(0));
+      return align(elemSize, prevSize) + elemSize * aty->getNumElements();
+    }
+
+    case Type::VectorTyID: {
+      const llvm::VectorType * vty = cast<llvm::VectorType>(ty);
+      size_t elemSize = getSizeofType(ty->getContainedType(0));
+      return align(elemSize, prevSize) + elemSize * vty->getNumElements();
+    }
 
     default:
-      break;
+      return 0;
   }
 }
 
 void ReflectionSizePass::report() const {
-  errs() << "Reflection size: globals=" << globalSize_ << " methodCount=" << methodCount_ << "\n";
-
+  errs() << "Reflection size: globalSize = " << globalSize_ <<
+      " stringSize = " << stringSize_ <<
+      " methodCount = " << methodCount_ << "\n";
 }
 
 }

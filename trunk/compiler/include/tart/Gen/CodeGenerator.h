@@ -108,7 +108,7 @@ public:
   llvm::Function * genFunctionValue(const FunctionDefn * fn);
   llvm::Value * genLetValue(const VariableDefn * let);
   llvm::Value * genVarValue(const VariableDefn * var);
-  llvm::Value * genGlobalVar(const VariableDefn * var);
+  llvm::Constant * genGlobalVar(const VariableDefn * var);
 
   // Methods to generate the contents of a definition
 

@@ -7,7 +7,7 @@ set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/stdlib
   -i ${TART_SOURCE_DIR}/libext/testing)
-set(TART_OPTIONS -g -debug-errors -show-generated)
+set(TART_OPTIONS -g --debug-errors)
 #set(TART_OPTIONS -debug-errors -show-generated)
 set(TARTLN_OPTIONS -internalize -O0 -show-size)
 
@@ -35,9 +35,17 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_command(OUTPUT ${EXE_FILE}
       COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
       COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
-      #COMMAND dsymutil ${EXE_FILE}
       DEPENDS "${ASM_FILE}" runtime
       COMMENT "Assembling ${ASM_FILE}")
+
+  # Generate debugging symbols
+  # TODO(talin): This doesn't work and I have no idea why
+  if ($DSYMUTIL)
+    add_custom_command(OUTPUT "${EXE_FILE}.dSYM/Contents/Resources/DWARF/${EXE_FILE}"
+        COMMAND ${DSYMUTIL} ${EXE_FILE}
+        DEPENDS "${EXE_FILE}"
+        COMMENT "Generating debug symbols for ${EXE_FILE}")
+  endif ($DSYMUTIL)
 
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
   add_dependencies(check "${EXE_FILE}.run")

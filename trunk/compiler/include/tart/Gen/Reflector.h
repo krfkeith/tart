@@ -98,6 +98,7 @@ public:
   enum SubtypeId {
     NONE = 0,
     VOID,
+    NULLTYPE,
     BOOL,
     CHAR,
     BYTE,

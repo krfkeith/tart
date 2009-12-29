@@ -157,6 +157,7 @@ void Reflector::emitModule(Module * module) {
       visitMember(rfBuiltins, &ULongType::typedefn);
       visitMember(rfBuiltins, &FloatType::typedefn);
       visitMember(rfBuiltins, &DoubleType::typedefn);
+      visitMember(rfBuiltins, &NullType::typedefn);
     }
   }
 
@@ -304,7 +305,12 @@ llvm::Constant * Reflector::emitArray(
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), var);
 
   if (values.empty()) {
-    // TODO: point to shared empty array.
+    VariableDefn * emptyArray = cast_or_null<VariableDefn>(
+        arrayType->memberScope()->lookupSingleMember("emptyArray"));
+    if (emptyArray != NULL) {
+      return llvm::ConstantExpr::getPointerCast(
+          cast<Constant>(cg_.genVarValue(emptyArray)), arrayType->irEmbeddedType());
+    }
   }
 
   StructBuilder sb(cg_);
@@ -613,6 +619,7 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
         case TypeId_UIntPtr: subtype = UINTPTR; break;
         case TypeId_Float: subtype = FLOAT; break;
         case TypeId_Double: subtype = DOUBLE; break;
+        case TypeId_Null: subtype = NULLTYPE; break;
         //case TypeId_LongDouble: subtype = VOID; break;
         default:
           DFAIL("Invalid subtype");

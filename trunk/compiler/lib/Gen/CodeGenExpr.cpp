@@ -852,10 +852,10 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   Twine name;
   GlobalValue::LinkageTypes linkage = GlobalValue::LinkOnceODRLinkage;
   if (symName.empty()) {
-    name = "string";
+    name = ".string";
     linkage = GlobalValue::InternalLinkage;
   } else {
-    name = "string." + symName;
+    name = ".string." + symName;
   }
 
   Constant * strStruct = ConstantStruct::get(context_, members, false);
