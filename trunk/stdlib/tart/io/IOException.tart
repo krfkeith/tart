@@ -1,0 +1,6 @@
+/** Exception that signals an i/o error. */
+class IOException : Exception {
+
+  /** Default constructor. */
+  def construct() {}
+}

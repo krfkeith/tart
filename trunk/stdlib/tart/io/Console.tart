@@ -1,0 +1,19 @@
+/** Contains the standard input & output streams. */
+public namespace Console {
+  /*private class StdIOWriter : TextWriter {
+    def construct(fileNo:int);
+  }
+
+  private class StdIOReader : TextWriter {
+    def construct(fileNo:int);
+  }*/
+
+  /** Standard input stream. */
+  //let cin:TextReader = StdIOReader(1);
+
+  /** Standard output stream. */
+  //let cout:TextWriter = StdIOWriter(2);
+
+  /** Standard error output stream. */
+  //let cerr:TextWriter = StdIOWriter(3);
+}
