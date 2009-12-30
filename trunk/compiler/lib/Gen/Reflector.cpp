@@ -509,8 +509,9 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
   if (type->typeClass() == Type::Class) {
     const FunctionDefn * ctor = type->noArgConstructor();
     if (ctor != NULL) {
-      // TODO: Finish it.
-      sb.addNullField(complexType_noArgCtor.type());
+      llvm::Function * fn = cg_.genFunctionValue(ctor);
+      sb.addField(llvm::ConstantExpr::getPointerCast(fn,
+          complexType_noArgCtor.type()->irEmbeddedType()));
     } else {
       sb.addNullField(complexType_noArgCtor.type());
     }

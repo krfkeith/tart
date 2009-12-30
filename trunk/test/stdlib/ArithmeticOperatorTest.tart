@@ -2,7 +2,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return ArithmeticOperatorTest().runTests(ArithmeticOperatorTest);
+  return Test.run(ArithmeticOperatorTest);
 }
 
 class ArithmeticOperatorTest : Test {

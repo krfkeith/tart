@@ -6,14 +6,14 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return ReflectionTest().runTests(ReflectionTest);
+  return Test.run(ReflectionTest);
 }
 
 var savedValue:int;
 
 def sample() {
 }
-  
+
 def sample2(arg:int) {
   savedValue = arg;
 }
@@ -75,4 +75,12 @@ class ReflectionTest : Test {
 	  let tclass = TestClass();
 	  assertEq(484, typecast[int](method.call(tclass, 22)));
 	}
+
+  def testConstruct() {
+    let ty:Type = Type.of(TestClass);
+    let ct = typecast[ComplexType](ty);
+    let method = typecast[Method](ct.findMethod("square"));
+    let tclass = typecast[TestClass](ct.create());
+    assertEq(484, typecast[int](method.call(tclass, 22)));
+  }
 }

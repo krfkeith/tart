@@ -6,7 +6,7 @@ file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/stdlib
-  -i ${TART_SOURCE_DIR}/libext/testing)
+  -i ${TART_SOURCE_DIR}/libtesting)
 set(TART_OPTIONS -g --debug-errors)
 #set(TART_OPTIONS -debug-errors -show-generated)
 set(TARTLN_OPTIONS -internalize -O0 -show-size)
@@ -17,7 +17,8 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
-      DEPENDS "${SRC_FILE}" tartc
+      MAIN_DEPENDENCY "${SRC_FILE}" 
+      DEPENDS tartc stdlib libtesting
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Link with stdlib
@@ -25,9 +26,8 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_command(OUTPUT ${ASM_FILE}
       COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE}
           "${PROJECT_BINARY_DIR}/stdlib/stdlib.bc"
-          "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
-#      DEPENDS "${BC_FILE}" tartln stdlib "${PROJECT_BINARY_DIR}/testing.lib"
-      DEPENDS "${BC_FILE}" tartln stdlib "${PROJECT_BINARY_DIR}/libext/testing/testing.lib.bc"
+          "${PROJECT_BINARY_DIR}/libtesting/libtesting.bc"
+      MAIN_DEPENDENCY "${BC_FILE}" 
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
   # Assemble and run
@@ -35,7 +35,8 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_command(OUTPUT ${EXE_FILE}
       COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
       COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
-      DEPENDS "${ASM_FILE}" runtime
+      MAIN_DEPENDENCY "${ASM_FILE}"
+      DEPENDS runtime
       COMMENT "Assembling ${ASM_FILE}")
 
   # Generate debugging symbols
@@ -43,7 +44,7 @@ foreach(SRC_FILE ${TART_SRC})
   if ($DSYMUTIL)
     add_custom_command(OUTPUT "${EXE_FILE}.dSYM/Contents/Resources/DWARF/${EXE_FILE}"
         COMMAND ${DSYMUTIL} ${EXE_FILE}
-        DEPENDS "${EXE_FILE}"
+        MAIN_DEPENDENCY "${EXE_FILE}"
         COMMENT "Generating debug symbols for ${EXE_FILE}")
   endif ($DSYMUTIL)
 

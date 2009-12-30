@@ -5,7 +5,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # Module search path
 set(MODPATH
     -i ${TART_SOURCE_DIR}/stdlib
-    -i ${TART_SOURCE_DIR}/libext/testing)
+    -i ${TART_SOURCE_DIR}/libtesting)
 
 # Input files
 file(GLOB TESTING_SRC
@@ -30,9 +30,9 @@ endforeach(SRC_FILE)
 
 # Target to drive the conversion
 add_custom_command(
-    OUTPUT testing.lib.bc
-    COMMAND tartln -filetype=bc -o testing.lib.bc ${TESTING_BC_FILES}
+    OUTPUT libtesting.bc
+    COMMAND tartln -filetype=bc -o libtesting.bc ${TESTING_BC_FILES}
     DEPENDS ${TESTING_BC_FILES} tartln
-    COMMENT "Linking testing.lib.bc")
+    COMMENT "Linking libtesting.bc")
 
-add_custom_target(testing.lib DEPENDS testing.lib.bc)
+add_custom_target(libtesting DEPENDS libtesting.bc)

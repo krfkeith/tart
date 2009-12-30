@@ -6,18 +6,25 @@ class Test {
   import namespace Asserts;
   
   // Find all tests in package.
-  // Need a TestRunner class I think.
+
+  // TODO: Need a TestRunner class I think.
   
   /** Run all of the test cases in the specified module. */
   //static def runTests(m:Module) {
   //}
+
+  static def run[%T](testType:TypeLiteral[T]) -> int {
+    var testClass:ComplexType = ComplexType.of(T);
+    var testInstance = typecast[Test](testClass.create());
+    return testInstance.runTests(testClass);
+  }
 
   /** Test fixture setup method. Will be called before every test. */
   def setUp() {}
 
   /** Test fixture teardown method. Will be called after every test. */
   def tearDown() {}
-
+  
   final def runTests[%T](testType:TypeLiteral[T]) -> int {
     return runTests(ComplexType.of(T));
   }

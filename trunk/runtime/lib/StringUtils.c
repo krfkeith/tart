@@ -69,7 +69,7 @@ const String * int_toString(int32_t value) {
 const String * long_toString(int64_t value) {
   char data[32];
 #if SIZEOF_LONG_LONG == 8
-  int length = snprintf(data, sizeof(data), "%lld", value);
+  int length = snprintf(data, sizeof(data), "%lld", (long long)value);
 #elif SIZEOF_LONG == 8
   int length = snprintf(data, sizeof(data), "%ld", (long)value);
 #else
@@ -99,7 +99,7 @@ const String * uint_toString(uint32_t value) {
 const String * ulong_toString(uint64_t value) {
   char data[32];
 #if SIZEOF_LONG_LONG == 8
-  int length = snprintf(data, sizeof(data), "%llu", value);
+  int length = snprintf(data, sizeof(data), "%llu", (unsigned long long)value);
 #elif SIZEOF_LONG == 8
   int length = snprintf(data, sizeof(data), "%lu", (unsigned long)value);
 #else

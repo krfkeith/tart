@@ -3,7 +3,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return UnionTypeTest().runTests(UnionTypeTest);
+  return Test.run(UnionTypeTest);
 }
 
 class UnionTypeTest : Test {
