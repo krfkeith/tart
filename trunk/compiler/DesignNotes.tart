@@ -1,3 +1,137 @@
+struct ParseState {
+  var s:String;
+  var pos:int;
+  var end:int;
+}
+
+struct ConversionSpec {
+  enum Alignment {
+    DEFAULT,
+    LEFT,
+    RIGHT,
+    CENTER,
+    SIGN,   // Padding between sign and digits.
+  }
+  
+  enum Sign {
+    ALWAYS,
+    SPACE_IF_POSITIVE,
+    IF_NEGATIVE,
+  }
+  
+  var fill:char = ' ';
+  var align:Alignment = Alignment.DEFAULT;
+  var sign:Sign = Sign.IF_NEGATIVE;
+  var altForm:bool = false;
+  var zeroPad:bool = false;
+  var width:int;
+  var precision:int = 0;
+  var type:char;
+
+  def construct() {}
+  
+  static def parse(in:String) -> ConversionSpec {
+    return parse(in, 0, in.length);
+  }
+
+  static def parse(in:String, start:int, length:int) -> ConversionSpec {
+    let end = Math.min(in.length, start + length);
+    var c:char;
+    ConversionSpec result;
+
+    if (start < end) {
+    }
+  }
+}
+
+class StringConverter {
+  def convert(value:Object) -> String {
+    classify value {
+    }
+  }
+}
+
+class StringFormatter {
+  private {
+	  enum State {
+	    LITERAL_TEXT,
+	    FIELD_BEGIN,
+	    FIELD_INDEX,
+	    FIELD_CONVERSION,
+	  }
+	  
+	  var _formatStr:char[];
+  }
+  
+  def format(args:Object[]) -> String {
+    var pos:int = 0;
+    var result = StringBuilder();
+    var state = LITERAL_TEXT;
+    var fieldIndex:uint = 0;
+    var conversionSpec:StringBuilder;
+    while _pos < _formatStr.length {
+      let c = _formatStr[pos++];
+      switch (state) {
+        case LITERAL_TEXT {
+          if c == '{' {
+            state_ = FIELD_BEGIN;
+          } else {
+          }
+        }
+        
+        case FIELD_BEGIN {
+          if c == '{' {
+            result.append('{');
+          } else if c >= '0' and c <= '9' {
+            state = FIELD_INDEX;
+            fieldIndex = uint(c - '0');
+          } else {
+            throw StringFormatException("Field index expected after '{' at ", pos - 1);
+          }
+        }
+        
+        case FIELD_INDEX {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], "");
+            _state = LITERAL_TEXT;
+          } else if c == ':' {
+            conversionSpec = StringBuilder();
+            state = FIELD_CONVERSION;
+          } else if c >= '0' and c <= '9' {
+            fieldIndex = fieldIndex * 10 + uint(c - '0');
+          } else {
+            throw StringFormatException("Invalid field index at ", (pos - 1).toString());
+          }
+        }
+
+        case CONVERSION_SPEC {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], conversionSpec.toString());
+            state = LITERAL_TEXT;
+          } else {
+            conversionSpec.append(c);
+          }
+        }
+      }
+    }
+    
+    switch (state_) {
+      case FIELD_BEGIN {
+        result.append('{');
+      }
+      
+      case FIELD_INDEX
+      case CONVERSION_SPEC {
+        throw StringFormatException("Unexpected end of string");
+      }
+    }
+    
+    return result_.toString();
+  }
+
+  def convertAndAppend(arg:Object, conversionSpec:String) {
+  }
+}
 
 interface ContextHandler {
   def enter();

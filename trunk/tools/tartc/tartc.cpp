@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
     const std::string &modPath = ModulePaths[i];
-    fprintf(stderr, "Module path: %s\n", modPath.c_str());
+    //fprintf(stderr, "Module path: %s\n", modPath.c_str());
     PackageMgr::get().addImportPath(modPath);
   }
 

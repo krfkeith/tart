@@ -9,6 +9,8 @@ Design TODOS:
 Working on currently:
   -- Measure reflection overhead size.
   -- Exception backtrace.
+  -- Hashing
+  -- String iteration
   -- BUG: Test classes segfault if another class is declared first. Most likely reflection
       data is being miscompiled.
 
@@ -38,7 +40,8 @@ Implementation TODOS:
 * Closures - Closure cells.
 * Garbage collector
 * Reflection
-  * Constructors
+  * Struct Constructors
+  * Constructor arg tests.
   * Properties and fields.
   * Class members.
   * Attributes
@@ -61,7 +64,7 @@ Implementation TODOS:
   * Nested catch (try inside catch or finally block) - test
   * Stack trace
 * Enum types
-   * Enum operators (relational and bitwise).
+   * Enum operators (relational).
   * .parse
 * Tuple types
   * Variadic Tuple args
