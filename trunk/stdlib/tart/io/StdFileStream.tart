@@ -1,0 +1,143 @@
+import tart.core.Memory.Address;
+
+/** A stream which can read / write to a C stdio FILE handle. */
+class StdFileStream : TextReader, TextWriter, IOStream {
+  struct FILE {}
+  
+  private {
+    var _file:Address[FILE];
+    let _canRead:bool;
+    let _canWrite:bool;
+    let _canSeek:bool;
+  }
+  
+  def construct(file:Address[FILE], canRead:bool, canWrite:bool, canSeek:bool) {
+    self._file = file;
+    self._canRead = canRead;
+    self._canWrite = canWrite;
+    self._canSeek = canSeek;
+  }
+
+  /** Read a single byte from the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_read_byte")
+  def read -> byte;
+  
+  /** Read a buffer of bytes from the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_read_bytes")
+  def read(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> int;
+  
+  @Extern("StdFileStream_read_chars")
+  def read(buffer:char[], start:int, length:int) -> int;
+  
+  def readLn -> String {
+    return "";
+  }
+
+  def readAll -> String {
+    return "";
+  }
+
+  /** Write a single byte to the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_write_byte") 
+  def write(value:byte) -> void;
+
+  /** Write a buffer of bytes to the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_write_bytes") 
+  def write(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> void;
+
+  //def write(text:String, start:int = 0, count:int = int.maxVal) -> int;
+
+  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
+    return 0;
+  }
+
+  def writeString(text:String, start:int = 0, count:int = int.maxVal) -> int {
+    return 0;
+  }
+
+  /** Write a string of text to the output stream. */
+  final def write(text:String) -> TextWriter {
+    writeString(text);
+    return self;
+  }
+
+  /** Concatenate strings and write them to the output stream. */
+  final def write(text:String...) -> TextWriter {
+    writeString(String.concat(text));
+    return self;
+  }
+
+  /** Write a string of text to the output stream followed by a line break. */
+  final def writeLn(text:String) -> TextWriter {
+    writeString(text);
+    writeString("\n");
+    return self;
+  }
+
+  /** Concatenate strings and write them to the output stream, followed by a line break. */
+  final def writeLn(text:String...) -> TextWriter {
+    writeString(String.concat(text));
+    writeString("\n");
+    return self;
+  }
+
+  /** Write values to the output stream using a format string. */
+  final def writeFmt(format:String, values:Object...) -> TextWriter {
+    return self;
+  }
+
+  /** Write values to the output stream using a format string, followed by a line break. */
+  final def writeLnFmt(format:String, values:Object...) -> TextWriter {
+    writeString("\n");
+    return self;
+  }
+
+  /** Change the current read/write position of the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_seek") 
+  def seek(from:SeekFrom, offset:int64) -> int64;
+  
+  /** True if we've reached the end of available input. */
+  //@Throws(IOException)
+  def atEnd: bool { 
+    @Extern("StdFileStream_atEnd") 
+    get;
+  }
+  
+  /** True if the stream supports reading. */
+  def canRead:bool { get { return _canRead; } }
+  
+  /** True if the stream supports writing. */
+  def canWrite:bool { get { return _canWrite; } }
+  
+  /** True if this stream supports seek operations. */
+  def canSeek:bool { get { return _canSeek; } }
+  
+  /** Returns the current position in the stream. */
+  //@Throws(IOException)
+  def position:int64 {
+    @Extern("StdFileStream_position") 
+    get;
+  }
+  
+  /** Return the length of the stream, or -1 if indeterminate. */
+  //@Throws(IOException)
+  def length:int64 {
+    @Extern("StdFileStream_length") 
+    get;
+  }
+  
+  /** Flush any pending writes. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_flush") 
+  def flush -> void;
+  
+  /** Close the stream. */
+  //@Throws(IOException)
+  @Extern("StdFileStream_close") 
+  def close -> void;
+}

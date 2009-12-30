@@ -201,7 +201,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
     diag.fatal() << "cannot convert " << fromType << " to " << this;
     DFAIL("Illegal State");
-  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;
@@ -406,7 +406,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       return result;
     }
-  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   }
 
@@ -541,7 +541,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     }
 
     return Incompatible;
-  } else if ((cn.options & Conversion::DynamicThrow) && fromType->isReferenceType()) {
+  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;

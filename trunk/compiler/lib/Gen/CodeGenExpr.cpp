@@ -223,6 +223,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
 llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   switch (in->exprType()) {
+    case Expr::ConstNull:
+      return ConstantPointerNull::getNullValue(in->type()->irParameterType());
+
     case Expr::ConstInt:
       return static_cast<const ConstantInteger *>(in)->value();
 
@@ -231,6 +234,9 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
 
     case Expr::ConstNArray:
       return genConstantArray(static_cast<const ConstantNativeArray *>(in));
+
+    case Expr::UnionCtorCast:
+      return genConstantUnion(static_cast<const CastExpr *>(in));
 
     default:
       diag.fatal(in) << "Not a constant: " <<
@@ -1064,6 +1070,60 @@ llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * arr
   }
 
   return ConstantArray::get(cast<ArrayType>(array->type()->irType()), elementValues);
+}
+
+llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
+  const Type * fromType = in->arg()->type();
+  const Type * toType = in->type();
+  Constant * value = NULL;
+
+  if (!fromType->isVoidType()) {
+    value = genConstExpr(in->arg());
+    if (value == NULL) {
+      return NULL;
+    }
+  }
+
+  if (toType != NULL) {
+    const UnionType * utype = cast<UnionType>(toType);
+    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+      int index = utype->getTypeIndex(fromType);
+      if (index < 0) {
+        diag.error() << "Can't convert " << fromType << " to " << utype;
+      }
+      DASSERT(index >= 0);
+
+      Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
+      DFAIL("Implement");
+#if 0
+      Value * uvalue = builder_.CreateAlloca(utype->irType());
+      builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
+      if (value != NULL) {
+        const llvm::Type * fieldType = fromType->irEmbeddedType();
+        builder_.CreateStore(value,
+            builder_.CreateBitCast(
+                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
+                llvm::PointerType::get(fieldType, 0)));
+      }
+
+      return builder_.CreateLoad(uvalue);
+#endif
+
+#if 0
+      // TODO: An alternate method of constructing the value that doesn't involve an alloca.
+      // This won't work until union types are supported in LLVM.
+      Value * uvalue = UndefValue::get(utype->irType());
+      uvalue = builder_.CreateInsertValue(uvalue, indexVal, 0);
+      uvalue = builder_.CreateInsertValue(uvalue, value, 1);
+      return uvalue;
+#endif
+    } else {
+      // The type returned from irType() is a pointer type.
+      return llvm::ConstantExpr::getBitCast(value, utype->irType());
+    }
+  }
+
+  return NULL;
 }
 
 } // namespace tart

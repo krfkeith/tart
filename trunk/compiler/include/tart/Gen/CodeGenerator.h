@@ -304,6 +304,9 @@ public:
   /** Generate a constant array. */
   llvm::Constant * genConstantArray(const ConstantNativeArray * array);
 
+  /** Generate a constant union. */
+  llvm::Constant * genConstantUnion(const CastExpr * array);
+
   /** Return the IR module being compiled. */
   llvm::Module * irModule() const { return irModule_; }
 

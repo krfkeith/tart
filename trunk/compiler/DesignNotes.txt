@@ -7,7 +7,7 @@ Design TODOS:
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Working on currently:
-  -- Measure reflection overhead size.
+  -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
   -- Hashing
   -- String iteration

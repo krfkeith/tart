@@ -602,10 +602,27 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 
   in->setFirst(v1);
   in->setSecond(v2);
+
   const Type * t1 = in->first()->type();
   const Type * t2 = in->second()->type();
   DASSERT_OBJ(t1 != NULL, in->first());
   DASSERT_OBJ(t2 != NULL, in->second());
+
+  if (const UnionType * u1 = dyn_cast<UnionType>(t1)) {
+    Conversion cn(in->second(), &v2);
+    ConversionRank rank = u1->convert(cn);
+    if (rank >= ExactConversion) {
+      in->setSecond(v2);
+      return in;
+    }
+  } else if (const UnionType * u2 = dyn_cast<UnionType>(t2)) {
+    Conversion cn(in->first(), &v1);
+    ConversionRank rank = u2->convert(cn);
+    if (rank >= ExactConversion) {
+      in->setFirst(v1);
+      return in;
+    }
+  }
 
   if (t1->isReferenceType()) {
     if (!t2->isReferenceType()) {
@@ -659,6 +676,8 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 
     diag.error(in) << "Can't compare " << t1 << " to " << t2;
     DFAIL("Implement");
+//  } else if (const UnionType * u1 = dyn_cast<UnionType>(t1)) {
+
   } else if (t2->isReferenceType()) {
     diag.fatal(in) << "Can't compare non-reference type '" << t1 <<
     "' with reference type '" << t2 << "'";
@@ -711,6 +730,12 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
   return in;
   //return addCastIfNeeded(in, ttype);
 }
+
+/*Expr * FinalizeTypesPassImpl::visitInitVar(InitVarExpr * in) {
+  DFAIL("Implement");
+  //in->setInitExpr(visitExpr(in->initExpr()));
+  //return in;
+}*/
 
 Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)

@@ -1,19 +1,54 @@
+import tart.core.Memory.Address;
+
 /** Contains the standard input & output streams. */
 public namespace Console {
-  /*private class StdIOWriter : TextWriter {
-    def construct(fileNo:int);
+  private {
+    enum StreamID {
+      STDIN,
+      STDOUT,
+      STDERR,
+    }
+    
+    @Extern("get_std_stream") def getStdStream(id:StreamID) -> Address[StdFileStream.FILE];
+
+    var _cin:TextReader or Null = null;
+    var _cout:TextWriter or Null = null;
+    var _cerr:TextWriter or Null = null;
   }
 
-  private class StdIOReader : TextWriter {
-    def construct(fileNo:int);
-  }*/
-
-  /** Standard input stream. */
-  //let cin:TextReader = StdIOReader(1);
+  /** Return the input stream for stdin. */
+  def cin:TextReader {
+    get {
+      classify _cin {
+        as r:TextReader { return r; }
+        else {
+          let r:TextReader = StdFileStream(getStdStream(StreamID.STDIN), true, false, false);
+          _cin = r;
+          return r;
+        }
+      }
+    }
+  }
 
   /** Standard output stream. */
-  //let cout:TextWriter = StdIOWriter(2);
+  def cin:TextWriter {
+    get {
+      if _cout is null {
+        _cout = StdFileStream(getStdStream(StreamID.STDOUT), false, true, false);
+      }
+      
+      return typecast[TextWriter](_cerr);
+    }
+  }
 
   /** Standard error output stream. */
-  //let cerr:TextWriter = StdIOWriter(3);
+  def cin:TextWriter {
+    get {
+      if _cerr is null {
+        _cerr = StdFileStream(getStdStream(StreamID.STDERR), false, true, false);
+      }
+      
+      return typecast[TextWriter](_cerr);
+    }
+  }
 }
