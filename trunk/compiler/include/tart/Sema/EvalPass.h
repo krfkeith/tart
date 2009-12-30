@@ -67,6 +67,7 @@ private:
   Expr * evalNew(NewExpr * in);
   Expr * evalAssign(AssignmentExpr * in);
   Expr * evalArrayLiteral(ArrayLiteralExpr * in);
+  Expr * evalUnionCtorCast(CastExpr *in);
   Expr * evalBinaryOpcode(BinaryOpcodeExpr *in);
 
   llvm::Constant * asConstNumber(ConstantExpr * e);

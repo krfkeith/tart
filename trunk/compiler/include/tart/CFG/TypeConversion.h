@@ -52,7 +52,7 @@ struct Conversion {
   enum Options {
     Coerce = (1<<0),        // Allow coercive casts
     DynamicNull = (1<<1),   // Allow dynamic casts (null if fail)
-    DynamicThrow = (1<<2),  // Allow dynamic casts (exception if fail)
+    Checked = (1<<2),       // Allow dynamic casts (exception if fail)
   };
 
   const Type * fromType;

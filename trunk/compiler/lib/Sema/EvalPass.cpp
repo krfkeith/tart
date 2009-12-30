@@ -9,6 +9,7 @@
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/Block.h"
@@ -105,10 +106,11 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ZeroExtend:
     case Expr::IntToFloat:
     case Expr::BitCast:
-    case Expr::UnionCtorCast:
     case Expr::UnionMemberCast:
       return evalCast(static_cast<CastExpr *>(in));
 #endif
+    case Expr::UnionCtorCast:
+      return evalUnionCtorCast(static_cast<CastExpr *>(in));
 
     case Expr::BinaryOpcode:
       return evalBinaryOpcode(static_cast<BinaryOpcodeExpr *>(in));
@@ -422,6 +424,51 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
       ConstantInteger::getUInt32(arrayData->elements().size())->at(in->location()));
   arrayObj->setMemberValue("_data", arrayData);
   return arrayObj;
+}
+
+Expr * EvalPass::evalUnionCtorCast(CastExpr *in) {
+  const Type * fromType = in->arg()->type();
+  const Type * toType = in->type();
+  Expr * value = NULL;
+
+  if (!fromType->isVoidType()) {
+    value = evalExpr(in->arg());
+    if (value == NULL) {
+      return NULL;
+    }
+  }
+
+  if (toType != NULL) {
+    const UnionType * utype = cast<UnionType>(toType);
+    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+      int index = utype->getTypeIndex(fromType);
+      if (index < 0) {
+        diag.error() << "Can't convert " << fromType << " to " << utype;
+      }
+      DASSERT(index >= 0);
+
+      DFAIL("Implement");
+#if 0
+      Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
+      Value * uvalue = builder_.CreateAlloca(utype->irType());
+      builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
+      if (value != NULL) {
+        const llvm::Type * fieldType = fromType->irEmbeddedType();
+        builder_.CreateStore(value,
+            builder_.CreateBitCast(
+                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
+                llvm::PointerType::get(fieldType, 0)));
+      }
+
+      return builder_.CreateLoad(uvalue);
+#endif
+    } else {
+      in->setArg(value);
+      return in;
+    }
+  }
+
+  return NULL;
 }
 
 Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {

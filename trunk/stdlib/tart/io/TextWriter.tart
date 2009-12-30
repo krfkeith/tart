@@ -2,75 +2,34 @@ import tart.text.encodings.Codec;
 import tart.text.encodings.Codecs;
 
 /** A class which can read a sequence of characters. */
-class TextWriter {
-  private {
-    var codec:Codec;
-    var source:ByteStream;
-  }
-
-  def construct(source:ByteStream) {
-    self.codec = Codecs.UTF_8;
-    self.source = source;
-  }
-  
-  def construct(source:ByteStream, codec:Codec) {
-    self.codec = codec;
-    self.source = source;
-  }
-  
+interface TextWriter {
   // Need encoding
 
   /** Close the reader and release any resources held by the reader instance. */
-  def close() {
-    source.close();
-  }
+  def close();
 
   /** Flush any pending writes. */
-  def flush() {
-  }
+  def flush();
+  
+  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int;
 
-  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
-    return 0;
-  }
-
-  def writeString(text:String, start:int = 0, count:int = int.maxVal) -> int {
-    return 0;
-  }
+  def writeString(text:String, start:int = 0, count:int = int.maxVal) -> int;
 
   /** Write a string of text to the output stream. */
-  final def write(text:String) -> TextWriter {
-    writeString(text);
-    return self;
-  }
+  def write(text:String) -> TextWriter;
 
   /** Concatenate strings and write them to the output stream. */
-  final def write(text:String...) -> TextWriter {
-    writeString(String.concat(text));
-    return self;
-  }
+  def write(text:String...) -> TextWriter;
 
   /** Write a string of text to the output stream followed by a line break. */
-  final def writeLn(text:String) -> TextWriter {
-    writeString(text);
-    writeString("\n");
-    return self;
-  }
+  def writeLn(text:String) -> TextWriter;
 
   /** Concatenate strings and write them to the output stream, followed by a line break. */
-  final def writeLn(text:String...) -> TextWriter {
-    writeString(String.concat(text));
-    writeString("\n");
-    return self;
-  }
+  def writeLn(text:String...) -> TextWriter;
 
   /** Write values to the output stream using a format string. */
-  final def writeFmt(format:String, values:Object...) -> TextWriter {
-    return self;
-  }
+  def writeFmt(format:String, values:Object...) -> TextWriter;
 
   /** Write values to the output stream using a format string, followed by a line break. */
-  final def writeLnFmt(format:String, values:Object...) -> TextWriter {
-    writeString("\n");
-    return self;
-  }
+  def writeLnFmt(format:String, values:Object...) -> TextWriter;
 }

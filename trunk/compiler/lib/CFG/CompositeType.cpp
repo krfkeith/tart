@@ -404,7 +404,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
 
 
     // Check dynamic casts.
-    if ((cn.options & Conversion::DynamicThrow)
+    if ((cn.options & Conversion::Checked)
         && isReferenceType() && fromClass->isReferenceType()) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = CastExpr::tryCast(cn.fromValue, this)->at(cn.fromValue->location());
