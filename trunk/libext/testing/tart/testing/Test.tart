@@ -33,9 +33,6 @@ class Test {
       }
     }
 
-    // for each test
-    // integrate with test runner.
-
     Debug.writeLn("[OK     ]");
     return 0;
   }

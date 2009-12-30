@@ -13,7 +13,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Objects/Builtins.h"
-#include "tart/Objects/Intrinsic.h"
+#include "tart/Objects/Intrinsics.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Instructions.h"
@@ -787,7 +787,7 @@ template<> Expr * CharType::nullInitValue() const {
 
 template<> TypeDefn ByteType::typedefn(&Builtins::module, "byte", &ByteType::instance);
 template<> TypeIdSet ByteType::MORE_GENERAL =
-TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
+    TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
 template<> TypeIdSet ByteType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void ByteType::init() {

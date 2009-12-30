@@ -1,6 +1,7 @@
 import tart.annex.Intrinsic;
 
-/** Memory utility functions */
+/** Memory utility functions. These functions are inherently unsafe and will cause memory
+    corruption if misused. */
 namespace Memory {
   // Import built-in type definition.
   import __Address as Address;
@@ -39,10 +40,14 @@ namespace Memory {
   def zeroPtr[%ElemTy]() -> ElemTy;
 
   /** Take the address of a variable and return the result as a native
-      pointer.
+      pointer. 'Value' can be a complex expression that resolves to an l-value.
   */
   @Intrinsic
   def addressOf[%T](value:T) -> Address[T];
+
+  /** Convert an object reference into a native address. */
+  @Intrinsic
+  def objectAddress(value:Object) -> Address[Object];
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
@@ -57,6 +62,15 @@ namespace Memory {
    */
   @Intrinsic
   def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> long;
+
+  /** Return the integer value of a pointer. Not guaranteed to be convertible back
+      into a pointer (may be truncated.) */
+  @Intrinsic
+  def ptrToInt[%T](addr:Address[T]) -> uint32;
+
+  /** An unchecked cast of one pointer type to another */
+  @Intrinsic
+  def ptrToPtr[%S, %T](from:Address[S]) -> Address[T];
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.

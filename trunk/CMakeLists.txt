@@ -62,7 +62,7 @@ check_cxx_source_compiles(
 # Check for type sizes
 check_type_size(int SIZEOF_INT)
 check_type_size(long SIZEOF_LONG)
-check_type_size(long long SIZEOF_LONG_LONG)
+check_type_size("long long" SIZEOF_LONG_LONG)
 
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)
