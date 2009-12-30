@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #include "config.h"
@@ -20,7 +20,7 @@
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
-#include "tart/Objects/Intrinsic.h"
+#include "tart/Objects/Intrinsics.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/AnalyzerBase.h"
 
@@ -229,6 +229,26 @@ Value * ZeroPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) 
 }
 
 // -------------------------------------------------------------------
+// PtrToIntIntrinsic
+PtrToIntIntrinsic PtrToIntIntrinsic::instance;
+
+Value * PtrToIntIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreatePtrToInt(val, call->type()->irType(), "ptrToInt");
+}
+
+// -------------------------------------------------------------------
+// PtrToPtrIntrinsic
+PtrToPtrIntrinsic PtrToPtrIntrinsic::instance;
+
+Value * PtrToPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreatePointerCast(val, call->type()->irType(), "ptrToPtr");
+}
+
+// -------------------------------------------------------------------
 // AddressOfIntrinsic
 AddressOfIntrinsic AddressOfIntrinsic::instance;
 
@@ -236,6 +256,16 @@ Value * AddressOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   DASSERT(call->argCount() == 1);
   Value * argVal = cg.genLValueAddress(call->arg(0));
   return argVal;
+}
+
+// -------------------------------------------------------------------
+// ObjectAddressIntrinsic
+ObjectAddressIntrinsic ObjectAddressIntrinsic::instance;
+
+Value * ObjectAddressIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreatePointerCast(val, call->type()->irType(), "objectAddress");
 }
 
 // -------------------------------------------------------------------

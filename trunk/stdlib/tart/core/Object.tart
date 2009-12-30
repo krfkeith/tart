@@ -53,12 +53,17 @@ public class Object {
 
   /** Remove a finalizer that was registered via addFinalizer. */
   //final def removeFinalizer(finalizer:fn) {}
+
+  /** Return the fully-qualified name of this object's class. */
+  final def __typeName:String { get { return __tib.name; } }
   
   /** Return a string representation of this object. */
   def toString() -> String {
     return String.concat("<", __tib.name, ">");
   }
 
-  /** Return the fully-qualified name of this object's class. */
-  final def __typeName:String { get { return __tib.name; } }
+  /** Return a hash value for this object. The base version hashes the object address. */
+  /*def hash -> uint32 {
+    return Hashing.hash(Memory.objectAddress(self));
+  }*/
 }

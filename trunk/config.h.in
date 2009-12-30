@@ -38,6 +38,6 @@
 #endif
 
 /** Type sizes */
-#cmakedefine SIZEOF_INT 32
-#cmakedefine SIZEOF_LONG 64
-#cmakedefine SIZEOF_LONG_LONG 64
+#cmakedefine SIZEOF_INT @SIZEOF_INT@
+#cmakedefine SIZEOF_LONG @SIZEOF_LONG@
+#cmakedefine SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
