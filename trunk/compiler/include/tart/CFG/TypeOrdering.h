@@ -20,7 +20,6 @@ class BoundMethodType;
 class UnionType;
 class TupleType;
 class AddressType;
-class PointerType;
 class NativeArrayType;
 class UnitType;
 class TypeVariable;
@@ -55,7 +54,6 @@ class TypeOrdering {
   virtual ComparisonResult compare(const UnionType * t1, const UnionType * t2);
   virtual ComparisonResult compare(const TupleType * t1, const TupleType * t2);
   virtual ComparisonResult compare(const AddressType * t1, const AddressType * t2);
-  virtual ComparisonResult compare(const PointerType * t1, const PointerType * t2);
   virtual ComparisonResult compare(const NativeArrayType * t1, const NativeArrayType * t2);
   virtual ComparisonResult compare(const UnitType * t1, const UnitType * t2);
 

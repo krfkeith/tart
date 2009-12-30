@@ -1,4 +1,4 @@
-import tart.core.Memory.Pointer;
+import tart.core.Memory.Address;
 
 /** Reflection type class for functions. This object is shared by all functions that
     have the same type signature.
@@ -8,8 +8,8 @@ class FunctionType : Type {
     var _returnType:Type;
     var _selfType:Type;
     var _paramTypes:Type[];
-    var _invoke:static fn (func:Pointer[void], obj:Pointer[void], args:Object[]) -> Object;
-    var _dcObject:static fn (obj:Object) -> Pointer[void]; // Down-cast object
+    var _invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+    var _dcObject:static fn (obj:Object) -> Address[void]; // Down-cast object
 
 	  /** Helper function to check the number of arguments. */
 	  static def checkArgCount(args:Object[], count:int) {
@@ -19,7 +19,7 @@ class FunctionType : Type {
 	  }
 	
 	  /** Helper function to ensure that the object pointer is null. */
-	  static def ignoreObjectPtr(obj:Object) -> Pointer[void] {
+	  static def ignoreObjectPtr(obj:Object) -> Address[void] {
 	    return null;
 	  }
   }
@@ -37,7 +37,7 @@ class FunctionType : Type {
   final def paramTypes:Type[] { get { return _paramTypes; } }
 
   /** Trampoline function to invoke a method of this type. */
-  final def invoke(func:Pointer[void], obj:Object, args:Object[]) -> Object {
+  final def invoke(func:Address[void], obj:Object, args:Object[]) -> Object {
     return self._invoke(func, self._dcObject(obj), args);
   }
 }

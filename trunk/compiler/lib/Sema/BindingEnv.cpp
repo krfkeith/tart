@@ -195,8 +195,6 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
       //return false;
       return true;
     }
-  } else if (const PointerType * npp = dyn_cast<PointerType>(pattern)) {
-    return unifyPointerType(source, npp, value);
   } else if (const AddressType * npp = dyn_cast<AddressType>(pattern)) {
     return unifyAddressType(source, npp, value);
   } else if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
@@ -231,25 +229,6 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     //diag.error() << Format_Dealias << "Implement unification of " << pattern << " and " << value;
     return false;
     //DFAIL("Implement");
-  }
-}
-
-bool BindingEnv::unifyPointerType(
-    SourceContext * source, const PointerType * pat, const Type * value) {
-  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
-    return false;
-  }
-
-  if (const PointerType * npv = dyn_cast<PointerType>(value)) {
-    if (!AnalyzerBase::analyzeType(npv, Task_PrepTypeComparison)) {
-      return false;
-    }
-
-    return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    return tc->unifyWithPattern(*this, pat);
-  } else {
-    return false;
   }
 }
 

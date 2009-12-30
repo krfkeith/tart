@@ -24,7 +24,6 @@ class TemplateCondition;
 class TypeVariable;
 class AddressType;
 class TypeLiteralType;
-class PointerType;
 class NativeArrayType;
 
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
@@ -209,7 +208,6 @@ private:
   bool unifyPattern(SourceContext * source, const TypeVariable * pattern, const Type * value,
       Variance variance);
   bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
-  bool unifyPointerType(SourceContext * source, const PointerType * pattern, const Type * value);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * pattern,
       const Type * value);
   bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * pattern,

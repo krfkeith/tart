@@ -637,16 +637,11 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
-  } else if (isa<PointerType>(t1) || isa<AddressType>(t1)) {
+  } else if (isa<AddressType>(t1)) {
     const Type * e0 = t1->typeParam(0);
-    if (isa<PointerType>(t2) || isa<AddressType>(t2)) {
+    if (isa<AddressType>(t2)) {
       if (e0->isEqual(t2->typeParam(0))) {
-        if (isa<PointerType>(t2)) {
-          in->setFirst(addCastIfNeeded(in->first(), t2));
-        } else {
-          in->setSecond(addCastIfNeeded(in->second(), t1));
-        }
-
+        in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       }
     } else if (t2->isReferenceType()) {
@@ -667,10 +662,6 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   } else if (t2->isReferenceType()) {
     diag.fatal(in) << "Can't compare non-reference type '" << t1 <<
     "' with reference type '" << t2 << "'";
-    return in;
-  } else if (t1->typeClass() == Type::NPointer
-      && t2->typeClass() == Type::NPointer
-      && t1 == t2) {
     return in;
   } else if (t1->typeClass() == Type::NAddress
       && t2->typeClass() == Type::NAddress

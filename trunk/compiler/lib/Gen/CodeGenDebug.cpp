@@ -186,10 +186,6 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDINativeArrayType(static_cast<const NativeArrayType *>(type));
       break;
 
-    case Type::NPointer:
-      result = genDIPointerType(static_cast<const PointerType *>(type));
-      break;
-
     case Type::NAddress:
       result = genDIAddressType(static_cast<const AddressType *>(type));
       break;
@@ -401,19 +397,6 @@ DICompositeType CodeGenerator::genDINativeArrayType(const NativeArrayType * type
       getInt64Val(0), 0,
       DIType(),
       dbgFactory_.GetOrCreateArray(&subrange, 1));
-}
-
-DIDerivedType CodeGenerator::genDIPointerType(const PointerType * type) {
-  return dbgFactory_.CreateDerivedTypeEx(
-      dwarf::DW_TAG_pointer_type,
-      dbgCompileUnit_,
-      "",
-      dbgCompileUnit_,
-      0,
-      getSizeOfInBits(type->irType()),
-      getAlignOfInBits(type->irType()),
-      getInt64Val(0), 0,
-      genDIType(type->typeParam(0)));
 }
 
 DIDerivedType CodeGenerator::genDIAddressType(const AddressType * type) {

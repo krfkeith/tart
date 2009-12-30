@@ -1,4 +1,4 @@
-import tart.core.Memory.Pointer;
+import tart.core.Memory.Address;
 
 /** Description of a callable method. */
 final class Method : Member {
@@ -6,7 +6,7 @@ final class Method : Member {
 	  var _typeParams:Type[];
     var _functionType:FunctionType;
 	  var _params:Parameter[];
-    var _methodPointer:Pointer[void];
+    var _methodPointer:Address[void];
   }
 
   undef construct();

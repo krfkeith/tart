@@ -170,10 +170,6 @@ void typeLinkageName(std::string & out, const Type * ty) {
     out.append("__Address[");
     typeLinkageName(out, mat->typeParam(0));
     out.append("]");
-  } else if (const PointerType * npt = dyn_cast<PointerType>(ty)) {
-    out.append("__Pointer[");
-    typeLinkageName(out, npt->typeParam(0));
-    out.append("]");
   } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
     out.append("tart.reflect.Type");
   } else {

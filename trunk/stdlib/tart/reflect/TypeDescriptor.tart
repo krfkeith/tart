@@ -1,4 +1,4 @@
-import tart.core.Memory.Pointer;
+import tart.core.Memory.Address;
 
 /** The metatype object - the class that describes a type. */
 public class TypeDescriptor {

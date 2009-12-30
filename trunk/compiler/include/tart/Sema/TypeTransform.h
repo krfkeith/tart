@@ -40,7 +40,6 @@ public:
   virtual const Type * visitUnionType(const UnionType * in);
   virtual const Type * visitTupleType(const TupleType * in);
   virtual const Type * visitAddressType(const AddressType * in);
-  virtual const Type * visitPointerType(const PointerType * in);
   virtual const Type * visitTypeLiteralType(const TypeLiteralType * in);
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);

@@ -1399,10 +1399,6 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,
         ConstantNull::get(test->location(), testExpr->type()));
-  } else if (const PointerType * np = dyn_cast<PointerType>(testExpr->type())) {
-    return new CompareExpr(test->location(),
-        llvm::CmpInst::ICMP_NE, testExpr,
-        ConstantNull::get(test->location(), testExpr->type()));
   } else if (const AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
     return new CompareExpr(test->location(),
         llvm::CmpInst::ICMP_NE, testExpr,

@@ -1260,7 +1260,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       DFAIL("Invalid storage class");
   }
 
-  if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NPointer) {
+  if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
     lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
         lvalue->base()->type()->typeParam(0), lvalue->base()));
   }
@@ -1410,7 +1410,6 @@ Expr * ExprAnalyzer::doBoxCast(Expr * in) {
 /** Given a type, return the coercion function to convert it to a reference type. */
 FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(!type->isReferenceType());
-  DASSERT(type->typeClass() != Type::NPointer);
   DASSERT(type->typeClass() != Type::NAddress);
   DASSERT(type->typeClass() != Type::NArray);
   DASSERT(type->isSingular());

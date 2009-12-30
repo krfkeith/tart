@@ -15,7 +15,6 @@ import tart.annex.Intrinsic;
     TUPLE,
     UNION,
     ADDRESS,
-    POINTER,
     NATIVE_ARRAY,
     UNIT,
   }

@@ -79,7 +79,6 @@ void Builtins::init() {
 
   // Other built-in types
   AddressType::initBuiltin();
-  PointerType::initBuiltin();
   NativeArrayType::initBuiltin();
   TypeLiteralType::initBuiltin();
 

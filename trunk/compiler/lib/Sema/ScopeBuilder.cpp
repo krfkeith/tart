@@ -41,7 +41,6 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
 
         case Type::Enum:
         case Type::NAddress:
-        case Type::NPointer:
         case Type::NArray:
         case Type::Alias:
           DFAIL("Unimplemented");
