@@ -59,9 +59,6 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::NAddress:
       return visitAddressType(static_cast<const AddressType *>(in));
 
-    case Type::NPointer:
-      return visitPointerType(static_cast<const PointerType *>(in));
-
     case Type::NArray:
       return visitNativeArrayType(static_cast<const NativeArrayType *>(in));
 
@@ -147,19 +144,6 @@ const Type * TypeTransform::visitAddressType(const AddressType * in) {
   }
 
   return AddressType::get(elemType);
-}
-
-const Type * TypeTransform::visitPointerType(const PointerType * in) {
-  if (in->typeParam(0) == NULL) {
-    return in;
-  }
-
-  const Type * elemType = visit(in->typeParam(0));
-  if (elemType == in->typeParam(0)) {
-    return in;
-  }
-
-  return PointerType::get(elemType);
 }
 
 const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {

@@ -89,7 +89,6 @@ public:
     TUPLE,
     UNION,
     ADDRESS,
-    POINTER,
     NATIVE_ARRAY,
     //SingleValue
   };

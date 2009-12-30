@@ -395,7 +395,6 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
     case Type::Tuple:
     case Type::Union:
     case Type::NAddress:
-    case Type::NPointer:
     case Type::NArray:
       return Builtins::typeDerivedType->irType();
 
@@ -428,7 +427,6 @@ llvm::Constant * Reflector::emitType(const Type * type) {
     case Type::Tuple:
     case Type::Union:
     case Type::NAddress:
-    case Type::NPointer:
     case Type::NArray:
       return emitDerivedType(type);
 
@@ -572,7 +570,6 @@ llvm::Constant * Reflector::emitDerivedType(const Type * type) {
   switch (type->typeClass()) {
     case Type::Union: kind = UNION; break;
     case Type::NAddress: kind = ADDRESS; break;
-    case Type::NPointer: kind = POINTER; break;
     case Type::NArray: kind = NATIVE_ARRAY; break;
     case Type::Tuple: kind = TUPLE; break;
     default:

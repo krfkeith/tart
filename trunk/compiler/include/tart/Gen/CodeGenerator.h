@@ -48,7 +48,6 @@ class EnumType;
 class FunctionType;
 class PrimitiveType;
 class AddressType;
-class PointerType;
 class NativeArrayType;
 class UnionType;
 class TupleType;
@@ -329,7 +328,6 @@ public:
   llvm::DIType genDIEnumType(const EnumType * type);
   llvm::DICompositeType genDINativeArrayType(const NativeArrayType * type);
   llvm::DIDerivedType genDIAddressType(const AddressType * type);
-  llvm::DIDerivedType genDIPointerType(const PointerType * type);
   llvm::DICompositeType genDIUnionType(const UnionType * type);
   llvm::DICompositeType genDITupleType(const TupleType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);

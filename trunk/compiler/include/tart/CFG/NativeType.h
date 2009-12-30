@@ -64,49 +64,6 @@ private:
 };
 
 // -------------------------------------------------------------------
-// Generic template for native pointers
-class PointerType : public TypeImpl {
-public:
-
-  /** Construct a native pointer type for the specified element type. */
-  static PointerType * get(const Type * elemType);
-
-  /** Initialize the built-in template for this type. */
-  static void initBuiltin();
-
-  // Overrides
-
-  size_t numTypeParams() const { return 1; }
-  virtual const Type * typeParam(int index) const { return elementType_; }
-  const llvm::Type * irType() const { return createIRType(); }
-  const llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSingular() const;
-  bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
-  bool isReferenceType() const { return false; }
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const PointerType *) { return true; }
-  static inline bool classof(const Type * t) {
-    return t->typeClass() == NPointer;
-  }
-
-  /** Singleton instance. */
-  static PointerType prototype;
-  static TypeDefn typedefn;
-
-protected:
-  typedef llvm::DenseMap<const Type *, PointerType *, Type::KeyInfo> TypeMap;
-  static TypeMap uniqueTypes_;
-
-  PointerType(const Type * elemType);
-  PointerType();
-
-  const Type * elementType_;
-};
-
-// -------------------------------------------------------------------
 // Generic template for native arrays
 class NativeArrayType : public TypeImpl {
 public:

@@ -1,3 +1,5 @@
+import tart.core.Memory.Address;
+
 /** Namespace of convenience macros that support design-by-contract programming.
 */
 namespace Preconditions {
@@ -15,7 +17,7 @@ namespace Preconditions {
     }
   }
 
-  macro checkIndex[%T](index:int, begin:__Pointer[T], end:__Pointer[T]) {
+  macro checkIndex[%T](index:int, begin:Address[T], end:Address[T]) {
     if not Memory.between(index, begin, end) {
       throw IndexOutOfRangeException(Debug.stringify(expr));
     }

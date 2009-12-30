@@ -141,11 +141,6 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
           static_cast<const AddressType *>(t1),
           static_cast<const AddressType *>(t2));
 
-    case Type::NPointer:
-      return compare(
-          static_cast<const PointerType *>(t1),
-          static_cast<const PointerType *>(t2));
-
     case Type::NArray:
       return compare(
           static_cast<const NativeArrayType *>(t1),
@@ -200,10 +195,6 @@ ComparisonResult TypeOrdering::compare(const TupleType * t1, const TupleType * t
 }
 
 ComparisonResult TypeOrdering::compare(const AddressType * t1, const AddressType * t2) {
-  return t1 == t2 ? EQUAL : compare(t1->typeParam(0), t2->typeParam(0));
-}
-
-ComparisonResult TypeOrdering::compare(const PointerType * t1, const PointerType * t2) {
   return t1 == t2 ? EQUAL : compare(t1->typeParam(0), t2->typeParam(0));
 }
 
@@ -315,7 +306,6 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
           static_cast<const UnionType *>(t1)->typeArgs());
 
     case Type::NAddress:
-    case Type::NPointer:
       return compare(t0->typeParam(0), t1->typeParam(0));
 
     case Type::NArray:
