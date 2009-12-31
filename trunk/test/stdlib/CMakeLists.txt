@@ -8,8 +8,8 @@ set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/stdlib
   -i ${TART_SOURCE_DIR}/libtesting)
 set(TART_OPTIONS -g --debug-errors)
-#set(TART_OPTIONS -debug-errors -show-generated)
-set(TARTLN_OPTIONS -internalize -O0 -show-size)
+#set(TART_OPTIONS -debug-errors -show-generated -show-size)
+set(TARTLN_OPTIONS -internalize -O0)
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})

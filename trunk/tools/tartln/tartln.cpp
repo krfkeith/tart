@@ -2,7 +2,6 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Common/Diagnostics.h"
 #include "llvm/LinkAllVMCore.h"
 #include "llvm/Linker.h"
 #include "llvm/LLVMContext.h"
@@ -43,7 +42,6 @@
 #include <cstring>
 
 using namespace llvm;
-using namespace tart;
 
 enum OutputType {
   Unset = 0,
@@ -244,8 +242,8 @@ void optimize(Module * module) {
   if (optOptimizationLevel > O0) {
     createStandardLTOPasses(
         &passes,
-        false,
-        !optDisableInline,
+        false,              // Internalize
+        !optDisableInline,  // Run inliner
         optVerifyEach);
   }
 
@@ -272,9 +270,9 @@ void optimize(Module * module) {
     passes.add(createVerifierPass());
   }
 
-  ReflectionSizePass * rsPass = NULL;
+  tart::ReflectionSizePass * rsPass = NULL;
   if (optShowSizes) {
-    rsPass = new ReflectionSizePass();
+    rsPass = new tart::ReflectionSizePass();
     passes.add(rsPass);
   }
 

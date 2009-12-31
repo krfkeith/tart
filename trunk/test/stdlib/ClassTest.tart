@@ -2,7 +2,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return ClassTest().runTests(ClassTest);
+  return Test.run(ClassTest);
 }
 
 public macro mtest(i:int) -> int {
