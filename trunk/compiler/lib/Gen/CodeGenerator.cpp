@@ -462,11 +462,11 @@ void CodeGenerator::addModuleDependencies() {
     ValueList deps;
     for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
       Module * m = *it;
-      deps.push_back(MDString::get(context_, m->qualifiedName()));
+      deps.push_back(MDString::get(context_, m->moduleSource()->getFilePath()));
     }
 
-    //irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
-    //    MDNode::get(context_, deps.data(), deps.size()));
+    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
+        MDNode::get(context_, deps.data(), deps.size()));
   }
 }
 

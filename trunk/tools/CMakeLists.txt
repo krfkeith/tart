@@ -17,7 +17,6 @@ target_link_libraries(tartc
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-#    ${LIB_EFENCE}
     )
 set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
@@ -87,3 +86,14 @@ target_link_libraries(tartln
     ${LLVM_SYSTEM}
     )
 set_target_properties(tartln PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+add_executable(gendeps gendeps/gendeps.cpp)
+target_link_libraries(gendeps
+    ${LLVM_BIT_READER}
+    ${LLVM_ASM_PARSER}
+    ${LLVM_TARGET}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
+set_target_properties(gendeps PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

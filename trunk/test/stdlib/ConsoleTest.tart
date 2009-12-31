@@ -1,0 +1,11 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  return Test.run(ConsoleTest);
+}
+
+class ConsoleTest : Test {
+  def testConsoleOut {
+  }
+}

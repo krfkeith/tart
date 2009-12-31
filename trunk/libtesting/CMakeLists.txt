@@ -15,13 +15,21 @@ file(GLOB TESTING_SRC
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(TESTING_BC_FILES)
 
+include(${CMAKE_CURRENT_BINARY_DIR}/libtesting.deps OPTIONAL)
+
 # Create a command for each source file
 foreach(SRC_FILE ${TESTING_SRC})
   string(REGEX REPLACE ".tart\$" ".bc" OUT_FILE "${SRC_FILE}")
+
+  # Generate the deps variable name
+  string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
+  string(TOUPPER "${DEPS_NAME}" DEPS_NAME)
+  string(REGEX REPLACE "[^a-zA-Z0-9]" "_" DEPS_NAME "${DEPS_NAME}")
+
   add_custom_command(
       OUTPUT ${OUT_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
-      DEPENDS "${SRC_FILE}" tartc
+      DEPENDS "${SRC_FILE}" tartc ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.
@@ -35,4 +43,11 @@ add_custom_command(
     DEPENDS ${TESTING_BC_FILES} tartln
     COMMENT "Linking libtesting.bc")
 
-add_custom_target(libtesting DEPENDS libtesting.bc)
+# Generate dependency info
+add_custom_command(
+    OUTPUT libtesting.deps
+    COMMAND gendeps -o libtesting.deps ${TESTING_BC_FILES}
+    DEPENDS ${TESTING_BC_FILES} gendeps
+    COMMENT "Generating dependencies for libtesting.bc")
+
+add_custom_target(libtesting DEPENDS stdlib libtesting.bc libtesting.deps)

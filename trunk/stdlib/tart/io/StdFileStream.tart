@@ -1,7 +1,7 @@
 import tart.core.Memory.Address;
 
 /** A stream which can read / write to a C stdio FILE handle. */
-class StdFileStream : TextReader, TextWriter, IOStream {
+class StdFileStream : IOStream, TextReader, TextWriter {
   struct FILE {}
   
   private {
@@ -9,6 +9,12 @@ class StdFileStream : TextReader, TextWriter, IOStream {
     let _canRead:bool;
     let _canWrite:bool;
     let _canSeek:bool;
+
+    @Extern("StdFileStream_atEnd") static def _adEnd(file:Address[FILE]) -> bool;
+    @Extern("StdFileStream_position") static def _position(file:Address[FILE]) -> int64;
+    @Extern("StdFileStream_length") static def _length(file:Address[FILE]) -> int64;
+    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOException.ResultCode;
+    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOException.ResultCode;
   }
   
   def construct(file:Address[FILE], canRead:bool, canWrite:bool, canSeek:bool) {
@@ -21,12 +27,12 @@ class StdFileStream : TextReader, TextWriter, IOStream {
   /** Read a single byte from the stream. */
   //@Throws(IOException)
   @Extern("StdFileStream_read_byte")
-  def read -> byte;
+  def read -> int;
   
   /** Read a buffer of bytes from the stream. */
   //@Throws(IOException)
   @Extern("StdFileStream_read_bytes")
-  def read(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> int;
+  def read(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> int;
   
   @Extern("StdFileStream_read_chars")
   def read(buffer:char[], start:int, length:int) -> int;
@@ -118,26 +124,20 @@ class StdFileStream : TextReader, TextWriter, IOStream {
   def canSeek:bool { get { return _canSeek; } }
   
   /** Returns the current position in the stream. */
-  //@Throws(IOException)
-  def position:int64 {
-    @Extern("StdFileStream_position") 
-    get;
-  }
+  def position:int64 { get { return _position(_file); } }
   
   /** Return the length of the stream, or -1 if indeterminate. */
-  //@Throws(IOException)
-  def length:int64 {
-    @Extern("StdFileStream_length") 
-    get;
-  }
+  def length:int64 { get { return _length(_file); } }
   
   /** Flush any pending writes. */
   //@Throws(IOException)
-  @Extern("StdFileStream_flush") 
-  def flush -> void;
+  def flush {
+    IOException.checkResult(_flush(_file));
+  }
   
   /** Close the stream. */
   //@Throws(IOException)
-  @Extern("StdFileStream_close") 
-  def close -> void;
+  def close {
+    IOException.checkResult(_close(_file));
+  }
 }
