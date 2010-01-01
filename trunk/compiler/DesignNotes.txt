@@ -3,7 +3,6 @@
 Design TODOS:
 
 * Const-ness "const" and "const? / constable"
-* Null vs. Void, and nullable types.
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Working on currently:
@@ -56,7 +55,6 @@ Implementation TODOS:
 * Proxy types
 * Preconditions.verify[%T]
 * Preconditions.checkState()
-* Need to work on makefile dependencies.
 * Exceptions:
   * Finally
     * Return
@@ -72,9 +70,6 @@ Implementation TODOS:
   * Member-wise conversions.
 * Multiple Return Values (requires Unpacking)
 * Constructors
-  * Constructor inheritance.
-  * init all variables not explicitly initialized in constructor, both ones with initializers
-    and ones without.
   * Inherit constructors from parent class if no constructors defined.
   * Test implicit call to super() (no args) constructor if not called.
   * Insure that constructor calls aren't recursive.
@@ -95,8 +90,8 @@ Implementation TODOS:
   * Other string-related functions
   * Characters.tart
 * Let with instance scope.
+  * Insure that it cannot be assigned to in non-constructor.
 * Disjoint types
-  * Nullable types? (I.e. should we have special support for?)
   * Equality comparison (with member types, and with other disjoint types.)
 * SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
 	location means that its hard to fold constants together. Exprs really ought to be shallow.
@@ -117,10 +112,10 @@ Implementation TODOS:
 * String class
   * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
   * character iterator functions.
+  * Unicode character class tests.
 * Tartdoc
   * Requires command-line parsing lib.
 * 'get' and 'set' should not be keywords. Properties can do just fine.
-* Get -internalize link pass working (works on Linux)
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.

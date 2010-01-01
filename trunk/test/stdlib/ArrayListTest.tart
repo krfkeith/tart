@@ -4,7 +4,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return ArrayListTest().runTests(ArrayListTest);
+  return Test.run(ArrayListTest);
 }
 
 class ArrayListTest : Test {

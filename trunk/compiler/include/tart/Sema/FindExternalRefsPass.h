@@ -30,6 +30,7 @@ public:
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitConstantObjectRef(ConstantObjectRef * in);
+  Expr * visitCast(CastExpr * in);
 
 private:
   Module * module;
