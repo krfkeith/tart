@@ -55,6 +55,9 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
       // No need to generate this.
       return NULL;
 
+    case Type::Protocol:
+      return NULL;
+
     default:
       diag.debug() << type;
       DFAIL("Invalid type defn");

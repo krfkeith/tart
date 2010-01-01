@@ -465,7 +465,7 @@ void CodeGenerator::addModuleDependencies() {
       deps.push_back(MDString::get(context_, m->moduleSource()->getFilePath()));
     }
 
-    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addElement(
+    irModule_->getOrInsertNamedMetadata("tart.module_deps")->addOperand(
         MDNode::get(context_, deps.data(), deps.size()));
   }
 }

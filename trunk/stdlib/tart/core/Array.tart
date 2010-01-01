@@ -55,6 +55,12 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   }
 
   @Unsafe def data:Address[ElementType] { get { return addressOf(_data[0]); } }
+  @Unsafe def elementAddress(offset:int32) -> Address[ElementType] {
+    return addressOf(_data[offset]);
+  }
+  @Unsafe def elementAddress(offset:int64) -> Address[ElementType] {
+    return addressOf(_data[offset]);
+  }
 
   /** Array element access. */
   def [index:int]:ElementType {

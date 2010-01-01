@@ -53,6 +53,7 @@ SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
 SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
 SystemClass Builtins::typeMember("tart.reflect.Member");
 SystemClass Builtins::typeField("tart.reflect.Field");
+SystemClass Builtins::typeParameter("tart.reflect.Parameter");
 SystemClass Builtins::typeProperty("tart.reflect.Property");
 SystemClass Builtins::typeMethod("tart.reflect.Method");
 SystemClass Builtins::typeModule("tart.reflect.Module");

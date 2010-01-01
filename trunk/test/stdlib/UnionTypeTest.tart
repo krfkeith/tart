@@ -172,6 +172,19 @@ class UnionTypeTest : Test {
 	  var y:int or String = x;
 	  assertTrue(y isa int);
 	}
+	
+	def testOptionalType {
+    var x:optional String;
+    
+    x = "Hello";
+    assertEq(5, x.length);
+    
+    x = null;
+    try {
+      assertEq(5, x.length);
+      fail("union member test failed");
+    } catch t:TypecastException {}
+	}
 }
 
 class TestClass {}

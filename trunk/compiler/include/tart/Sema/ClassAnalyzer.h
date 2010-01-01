@@ -39,9 +39,9 @@ public:
   bool analyzeCompletely();
 
   void overrideMembers();
-  void overrideMethods(MethodList & table, const MethodList & overrides, bool canHide);
+  void overrideMethods(MethodList & table, const MethodList & overrides, bool isClassTable);
   void overridePropertyAccessors(MethodList & table, PropertyDefn * prop,
-      const MethodList & accessors, bool canHide);
+      const MethodList & accessors, bool isClassTable);
   void copyBaseClassMethods();
   void createInterfaceTables();
   void ensureUniqueSignatures(MethodList & methods);
@@ -53,6 +53,7 @@ public:
 
 private:
   TypeDefn * target;
+  bool trace_;
 };
 
 }

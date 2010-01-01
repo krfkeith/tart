@@ -128,8 +128,18 @@ bool DefnAnalyzer::analyzeModule() {
 
   // Analyze all external references.
   while (Defn * de = module->nextDefToAnalyze()) {
-    if (analyzeDefn(de, Task_PrepCodeGeneration)) {
-      if (module->isReflectionEnabled() && module->exportDefs().count(de) > 0) {
+    bool isExport = module->exportDefs().count(de) > 0;
+    AnalysisTask task = Task_PrepTypeGeneration;
+    if (isExport) {
+      task = Task_PrepCodeGeneration;
+    }
+
+    if (isTraceEnabled(de)) {
+      diag.debug(de) << Format_Verbose << "Next in queue: " << de;
+    }
+
+    if (analyzeDefn(de, task)) {
+      if (module->isReflectionEnabled() && isExport) {
         analyzeDefn(de, Task_PrepReflection);
       }
 

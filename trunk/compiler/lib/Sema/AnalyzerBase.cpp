@@ -34,6 +34,14 @@
 
 namespace tart {
 
+llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
+    llvm::cl::desc("Enable debugging messages for this definition"),
+    llvm::cl::value_desc("defn-name"));
+
+bool AnalyzerBase::isTraceEnabled(Defn * de) {
+  return de != NULL && traceDef_.getValue() == de->name();
+}
+
 bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, bool absPath) {
   std::string path;
   lookupNameRecurse(out, ast, path, absPath);
@@ -174,6 +182,17 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
     // If it's a native pointer, then do an implicit dereference.
     if (const AddressType * nptype = dyn_cast<AddressType>(contextType)) {
       contextType = nptype->typeParam(0);
+    } else if (const UnionType * utype = dyn_cast<UnionType>(contextType)) {
+      // See if an implicit conversion makes sense here.
+      if (utype->isSingleOptionalType()) {
+        const Type * toType = utype->getFirstNonVoidType();
+        Expr * newContext = NULL;
+        Conversion cn(context, &newContext, 0);
+        if (toType->convert(cn) > Incompatible) {
+          context = newContext;
+          contextType = context->canonicalType();
+        }
+      }
     }
 
     TypeDefn * typeDef = contextType->typeDefn();
@@ -551,6 +570,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 
     case Defn::Var:
     case Defn::Let:
+    case Defn::MacroArg:
     case Defn::Parameter: {
       return VarAnalyzer(static_cast<VariableDefn *>(in)).analyze(task);
     }

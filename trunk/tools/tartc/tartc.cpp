@@ -6,9 +6,13 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/Compiler.h"
 #include "tart/Common/PackageMgr.h"
+
 #include "tart/Objects/Builtins.h"
-#include <llvm/Support/CommandLine.h>
-#include <llvm/System/Signals.h>
+
+#include "llvm/Support/CommandLine.h"
+#include "llvm/System/Signals.h"
+#include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/PrettyStackTrace.h"
 
 using namespace tart;
 
@@ -29,6 +33,8 @@ Depends("depends", llvm::cl::desc("Name of file to write dependency information 
 int main(int argc, char **argv) {
   llvm::sys::PrintStackTraceOnErrorSignal();
   llvm::cl::ParseCommandLineOptions(argc, argv, " tart\n");
+  llvm::PrettyStackTraceProgram X(argc, argv);
+  //llvm::llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
   // Requires at least one input file
   if (InputFilenames.empty()) {

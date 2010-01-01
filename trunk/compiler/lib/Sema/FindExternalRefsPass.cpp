@@ -113,6 +113,9 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
   if (addFunction(in->function())) {
     CFGPass::visitFnCall(in);
   } else {
+    if (in->selfArg() != NULL) {
+      AnalyzerBase::analyzeType(in->selfArg()->type(), Task_PrepTypeGeneration);
+    }
     visitExpr(in->selfArg());
     visitExprArgs(in);
   }

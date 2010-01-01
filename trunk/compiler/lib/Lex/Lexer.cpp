@@ -117,6 +117,7 @@ namespace {
         case 'o':
           if (strcmp(kw, "or") == 0) return Token_LogicalOr;
           if (strcmp(kw, "override") == 0) return Token_Override;
+          if (strcmp(kw, "optional") == 0) return Token_Optional;
           break;
 
         case 'p':

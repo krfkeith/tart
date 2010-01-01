@@ -1,7 +1,7 @@
 /** The base class for all throwable objects. */
 class Throwable {
   class StackFrame {
-    var caller:StackFrame or Null;
+    var caller:optional StackFrame;
     var function:String;
     var sourceFile:String;
     var sourceLine:uint;
@@ -17,7 +17,7 @@ class Throwable {
     }
     
     // Padding needed to align the exceptInfo
-    var stackTrace:StackFrame or Null;
+    var stackTrace:optional StackFrame;
     //var padding:__Pointer[void];
 
     // Exception structure instance.

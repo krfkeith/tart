@@ -2,7 +2,6 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Sema/ClassAnalyzer.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -12,13 +11,16 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Block.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
+#include "tart/Sema/ClassAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
-#include "tart/Sema/ConstructorAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/EvalPass.h"
+
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
@@ -42,7 +44,8 @@ static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassS
   CompositeType::AttributePass,
   CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
-  CompositeType::ConstructorPass
+  CompositeType::ConstructorPass,
+  CompositeType::FieldPass
 );
 
 static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet::of(
@@ -74,7 +77,9 @@ static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::o
   CompositeType::NamingConflictPass,
   CompositeType::AttributePass,
   CompositeType::FieldPass,
-  CompositeType::FieldTypePass
+  CompositeType::FieldTypePass,
+  CompositeType::MethodPass,
+  CompositeType::OverloadingPass
 );
 
 static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::of(
@@ -95,6 +100,7 @@ static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::o
 ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
   : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
   , target(de)
+  , trace_(isTraceEnabled(de))
 {
   DASSERT(de != NULL);
   DASSERT(isa<CompositeType>(target->typeValue()));
@@ -142,6 +148,12 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return true;
   }
 
+  if (trace_) {
+    diag.debug(target) << Format_Verbose << "Analyzing: " << target;
+  }
+
+  AutoIndent A(trace_);
+
   // Skip analysis of templates - for now.
   if (target->isTemplate()) {
     // Get the template scope and set it as the active scope.
@@ -153,6 +165,9 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
 
     if (passesToRun.contains(CompositeType::ScopeCreationPass) &&
         type->passes().begin(CompositeType::ScopeCreationPass)) {
+      if (trace_) {
+        diag.debug() << "Scope creation";
+      }
       if (!createMembersFromAST(target)) {
         return false;
       }
@@ -169,6 +184,9 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
 
   if (passesToRun.contains(CompositeType::ScopeCreationPass) &&
       type->passes().begin(CompositeType::ScopeCreationPass)) {
+    if (trace_) {
+      diag.debug() << "Scope creation";
+    }
     if (!createMembersFromAST(target)) {
       return false;
     }
@@ -178,6 +196,9 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
 
   if (passesToRun.contains(CompositeType::AttributePass) &&
       type->passes().begin(CompositeType::AttributePass)) {
+    if (trace_) {
+      diag.debug() << "Attributes";
+    }
     if (!resolveAttributes(target)) {
       return false;
     }
@@ -236,6 +257,9 @@ bool ClassAnalyzer::checkNameConflicts() {
   CompositeType * type = targetType();
   bool success = true;
   if (type->passes().begin(CompositeType::NamingConflictPass)) {
+    if (trace_) {
+      diag.debug() << "Check name conflicts";
+    }
     Defn::DefnType dtype = target->defnType();
     const SymbolTable & symbols = type->members();
     for (SymbolTable::const_iterator entry = symbols.begin(); entry != symbols.end(); ++entry) {
@@ -270,6 +294,10 @@ bool ClassAnalyzer::analyzeBaseClasses() {
 
   if (!type->passes().begin(CompositeType::BaseTypesPass)) {
     return true;
+  }
+
+  if (trace_) {
+    diag.debug() << "Base classes";
   }
 
   bool result = analyzeBaseClassesImpl();
@@ -419,6 +447,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 bool ClassAnalyzer::analyzeImports() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::ImportPass)) {
+    if (trace_) {
+      diag.debug() << "Imports";
+    }
     if (target->ast() != NULL) {
       DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
       const ASTNodeList & imports = target->ast()->imports();
@@ -436,6 +467,9 @@ bool ClassAnalyzer::analyzeImports() {
 bool ClassAnalyzer::analyzeCoercers() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::CoercerPass)) {
+    if (trace_) {
+      diag.debug() << "Coercers";
+    }
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Note: "coerce" methods are *not* inherited.
@@ -471,6 +505,10 @@ bool ClassAnalyzer::analyzeCoercers() {
 bool ClassAnalyzer::analyzeMemberTypes() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::MemberTypePass)) {
+    if (trace_) {
+      diag.debug() << "Member types";
+    }
+
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
         // TODO: Copy attributes that are inherited.
@@ -498,6 +536,12 @@ bool ClassAnalyzer::analyzeMemberTypes() {
 bool ClassAnalyzer::analyzeFields() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::FieldPass)) {
+    if (trace_) {
+      diag.debug() << "Fields";
+    }
+
+    //diag.debug() << Format_Verbose << "Analyzing fields: " << target;
+
     CompositeType * super = type->super();
     // Also analyze base class fields.
     int instanceFieldCount = 0;
@@ -579,6 +623,10 @@ bool ClassAnalyzer::analyzeConstructors() {
   // during the rest of the analysis.
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::ConstructorPass)) {
+    if (trace_) {
+      diag.debug() << "Constructors";
+    }
+
     Type::TypeClass tcls = type->typeClass();
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Analyze superclass constructors
@@ -681,6 +729,9 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
 bool ClassAnalyzer::analyzeMethods() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::MethodPass)) {
+    if (trace_) {
+      diag.debug() << "Methods";
+    }
     Defn::DefnType dtype = target->defnType();
 
     // Analyze all methods
@@ -770,6 +821,9 @@ bool ClassAnalyzer::analyzeMethods() {
 bool ClassAnalyzer::analyzeOverloading() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::OverloadingPass)) {
+    if (trace_) {
+      diag.debug() << "Overloading";
+    }
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
@@ -955,7 +1009,10 @@ void ClassAnalyzer::addNewMethods() {
                 "' defined with 'undef' but does not override a base class method.";
           }
         } else if (fn->isOverride()) {
-          // TODO: Implement
+          // TODO: Implement (what?)
+          if (fn->overriddenMethods().empty()) {
+            diag.error(de) << de << " huh?";
+          }
         }
 
         if (!fn->isCtor() && !fn->isFinal() && fn->dispatchIndex() < 0) {
@@ -1040,7 +1097,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
 }
 
 void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overrides,
-    bool canHide) {
+    bool isClassTable) {
   // 'table' is the set of methods inherited from the superclass or interface.
   // 'overrides' is all of the methods defined in *this* class that share the same name.
   // 'canHide' is true if 'overrides' are from a class, false if from an interface.
@@ -1054,17 +1111,21 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
       FunctionDefn * newMethod = findOverride(m, overrides);
       if (newMethod != NULL) {
         table[i] = newMethod;
-        if (canHide && newMethod->dispatchIndex() < 0) {
-          newMethod->setDispatchIndex(i);
+        if (isClassTable) {
+          if (newMethod->dispatchIndex() < 0) {
+            newMethod->setDispatchIndex(i);
+          }
+
+          if ((m->hasBody() || m->isExtern()) && !newMethod->isOverride()) {
+            diag.recovered();
+            diag.error(newMethod) << "Method '" << newMethod->name() <<
+                "' which overrides method in base class '" << m->parentDefn()->qualifiedName() <<
+                "' should be declared with 'override'";
+          }
         }
 
-        if (m->hasBody() && !newMethod->isOverride()) {
-          diag.error(newMethod) << "Method '" << newMethod->name() <<
-              "' which overrides method in base class '" << m->parentDefn()->qualifiedName() <<
-              "' should be declared with 'override'";
-        }
         newMethod->overriddenMethods().insert(m);
-      } else if (canHide) {
+      } else if (isClassTable) {
         diag.recovered();
         diag.warn(m) << "Definition of '" << m << "' is hidden";
         for (MethodList::const_iterator it = overrides.begin(); it != overrides.end(); ++it) {
@@ -1076,7 +1137,7 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
 }
 
 void ClassAnalyzer::overridePropertyAccessors(MethodList & table, PropertyDefn * prop,
-    const MethodList & accessors, bool canHide) {
+    const MethodList & accessors, bool isClassTable) {
   const char * name = accessors.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
@@ -1086,9 +1147,16 @@ void ClassAnalyzer::overridePropertyAccessors(MethodList & table, PropertyDefn *
         FunctionDefn * newAccessor = findOverride(m, accessors);
         if (newAccessor != NULL) {
           table[i] = newAccessor;
-          if (canHide && newAccessor->dispatchIndex() < 0) {
+          if (isClassTable && newAccessor->dispatchIndex() < 0) {
             newAccessor->setDispatchIndex(i);
           }
+
+          if (isClassTable && (m->hasBody() || m->isExtern()) && !newAccessor->isOverride()) {
+            diag.error(newAccessor) << "Property '" << newAccessor->name() <<
+                "' which overrides property in base class '" << m->parentDefn()->qualifiedName() <<
+                "' should be declared with 'override'";
+          }
+
           newAccessor->overriddenMethods().insert(m);
         } else {
           diag.recovered();
@@ -1114,6 +1182,9 @@ FunctionDefn * ClassAnalyzer::findOverride(const FunctionDefn * f, const MethodL
 }
 
 bool ClassAnalyzer::createDefaultConstructor() {
+  if (trace_) {
+    diag.debug() << "Default constructor";
+  }
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a default constructor.
   CompositeType * type = targetType();
@@ -1268,6 +1339,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
 bool ClassAnalyzer::analyzeFieldTypes() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::FieldTypePass, true)) {
+    if (trace_) {
+      diag.debug() << "Field types";
+    }
     if (type->super() != NULL) {
       analyzeType(type->super(), Task_PrepTypeGeneration);
     }
@@ -1291,6 +1365,9 @@ bool ClassAnalyzer::analyzeCompletely() {
   // completes, not that it completes right now.
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::CompletionPass, true)) {
+    if (trace_) {
+      diag.debug() << "Analyze completely";
+    }
     CompositeType * super = type->super();
     if (super != NULL) {
       analyzeType(super, Task_PrepCodeGeneration);
@@ -1298,15 +1375,6 @@ bool ClassAnalyzer::analyzeCompletely() {
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       analyzeDefn(member, Task_PrepCodeGeneration);
-
-      if ((type->typeClass() == Type::Class || type->typeClass() == Type::Struct) &&
-          type != Builtins::typeObject && type != Builtins::typeTypeInfoBlock) {
-        if (FunctionDefn * func = dyn_cast<FunctionDefn>(member)) {
-          if (func->isCtor()) {
-            ConstructorAnalyzer(type).run(func);
-          }
-        }
-      }
     }
 
     /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();

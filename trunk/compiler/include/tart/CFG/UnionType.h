@@ -40,14 +40,27 @@ public:
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;
 
-  /** The number of value types in the union. */
-  size_t numValueTypes() const { return numValueTypes_; }
-
   /** The number of reference types in the union. */
-  size_t numRefTypes() const { return numReferenceTypes_; }
+  //size_t numRefTypes() const { return numReferenceTypes_; }
 
   /** Whether the 'void' type is included. */
   size_t hasVoidType() const { return hasVoidType_; }
+
+  /** Whether the 'Null' type is included. */
+  size_t hasNullType() const { return hasNullType_; }
+
+  /** Return true if this union contains only reference types. (Including Null). This means
+      that the type can be represented as a single pointer with no discriminator field. */
+  bool hasRefTypesOnly() const;
+
+  /** Return true if this type is a union of a single type with either null or void.
+      (Null if it's a reference type, void if it's a value type.) The 'optional' keyword
+      creates unions of this type.
+   */
+  bool isSingleOptionalType() const;
+
+  /* Return the first member type that is neither null nor void. */
+  const Type * getFirstNonVoidType() const;
 
   /** Create a typecast from this type to the desired type. */
   Expr * createDynamicCast(Expr * from, const Type * toType) const;
@@ -57,6 +70,7 @@ public:
   const llvm::Type * createIRType() const;
   const llvm::Type * getDiscriminatorType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isSubtype(const Type * other) const;

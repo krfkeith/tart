@@ -106,6 +106,7 @@ DEFINE_TOKEN(Final)
 DEFINE_TOKEN(Abstract)
 DEFINE_TOKEN(Readonly)
 DEFINE_TOKEN(Const)
+DEFINE_TOKEN(Optional)
 
 // Primitive types
 DEFINE_TOKEN(BoolType)

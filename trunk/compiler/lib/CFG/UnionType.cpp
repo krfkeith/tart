@@ -51,17 +51,15 @@ UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
     }
   }
 
-  // TODO: Sort members, and uniqueify
   std::sort(combined.begin(), combined.end(), LexicalTypeOrdering());
 
   for (TypeList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
     const Type * memberType = dealias(*it);
     if (memberType == &VoidType::instance) {
       hasVoidType_ = true;
+    } else if (memberType == &NullType::instance) {
+      hasNullType_ = true;
     } else if (memberType->isReferenceType()) {
-      if (memberType == &NullType::instance) {
-        hasNullType_ = true;
-      }
       numReferenceTypes_ += 1;
     } else {
       numValueTypes_ += 1;
@@ -77,6 +75,31 @@ size_t UnionType::numTypeParams() const {
 
 const Type * UnionType::typeParam(int index) const {
   return (*members_)[index];
+}
+
+bool UnionType::hasRefTypesOnly() const {
+  return numValueTypes_ == 0 && !hasVoidType_;
+}
+
+bool UnionType::isSingleOptionalType() const {
+  if (numValueTypes_ == 0) {
+    return (hasNullType_ && !hasVoidType_ && numReferenceTypes_ == 1);
+  } else if (numReferenceTypes_ == 0) {
+    return hasVoidType_ && !hasNullType_ && numValueTypes_ == 1;
+  }
+
+  return false;
+}
+
+const Type * UnionType::getFirstNonVoidType() const {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    const Type * memberType = *it;
+    if (!memberType->isVoidType() && !memberType->isNullType()) {
+      return memberType;
+    }
+  }
+
+  return NULL;
 }
 
 const llvm::Type * UnionType::createIRType() const {
@@ -134,10 +157,10 @@ const llvm::Type * UnionType::createIRType() const {
     unionMembers.push_back(discriminatorType);
     unionMembers.push_back(largestType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
-  } else if (hasNullType_ && numReferenceTypes_ == 2) {
+  } else if (hasNullType_ && numReferenceTypes_ == 1) {
     // If it's Null or some reference type, then use the reference type.
     shape_ = Shape_Primitive;
-    return members_->member(0)->irEmbeddedType();
+    return getFirstNonVoidType()->irEmbeddedType();
   } else {
     shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
@@ -249,17 +272,45 @@ ConversionRank UnionType::convertImpl(const Conversion & cn) const {
   return bestRank;
 }
 
+ConversionRank UnionType::convertTo(const Type * toType, const Conversion & cn) const {
+  if (isSingleOptionalType() && toType->isReferenceType()) {
+    // Find the single optional type.
+    const Type * memberType = getFirstNonVoidType();
+    DASSERT(memberType != NULL);
+    ConversionRank rank = toType->canConvert(memberType, cn.options);
+    if (rank != Incompatible && cn.resultValue != NULL) {
+      *cn.resultValue = new CastExpr(Expr::CheckedUnionMemberCast, SourceLocation(),
+          toType, cn.fromValue);
+    }
+
+    return rank == IdenticalTypes ? ExactConversion : rank;
+  }
+
+  return Incompatible;
+}
+
 bool UnionType::isEqual(const Type * other) const {
   if (other == this) {
     return true;
   }
 
-  // A union type is the same if it contains the same types.
-  // TODO: Handle case of unions having types declared in a different order.
+  // A union type is the same if it contains the same types (dealiased).
   if (const UnionType * u = dyn_cast<UnionType>(other)) {
-    if (u->members().size() == members_->size()) {
-      return std::equal(members_->begin(), members_->end(), u->members().begin(), TypeEquals());
+    // Make sure that all types in u are in this.
+    for (TupleType::const_iterator it = u->typeArgs()->begin(); it != u->typeArgs()->end(); ++it) {
+      if (getTypeIndex(*it) < 0) {
+        return false;
+      }
     }
+
+    // Make sure that all types in this are in u.
+    for (TupleType::const_iterator it = typeArgs()->begin(); it != typeArgs()->end(); ++it) {
+      if (u->getTypeIndex(*it) < 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   return false;
@@ -317,32 +368,6 @@ int UnionType::getTypeIndex(const Type * type) const {
 
     ++index;
   }
-
-  // Previous version - did not use discriminator field for ref types.
-  #if 0
-
-  if (type->isReferenceType()) {
-    return 0;
-  }
-
-  int index = 0;
-  if (numReferenceTypes_ > 0) {
-    index += 1;
-  }
-
-  for (TypeList::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (type->isEqual(*it)) {
-      return index;
-    }
-
-    if (!(*it)->isReferenceType()) {
-      ++index;
-    }
-  }
-
-  // TODO: The type passed in might have been a subtype?
-  // TODO: It would be better to calculate this during the cast.
-#endif
 
   return -1;
 }

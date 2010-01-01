@@ -2,7 +2,6 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -10,11 +9,16 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
+#include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/VarAnalyzer.h"
+#include "tart/Sema/ConstructorAnalyzer.h"
+
 #include "tart/Objects/Builtins.h"
 
 #define INFER_RETURN_TYPE 0
@@ -394,6 +398,16 @@ bool FunctionAnalyzer::createCFG() {
         for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
           (*s)->preds().push_back(blk);
         }
+      }
+
+      // Make sure that the constructor calls the superclass and initializes all fields.
+      if (target->isCtor() && target->isSingular()) {
+        TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
+        CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
+        if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
+          ConstructorAnalyzer(cls).run(target);
+        }
+
       }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.

@@ -14,6 +14,14 @@ public namespace Console {
     var _cin:TextReader or Null = null;
     var _cout:TextWriter or Null = null;
     var _cerr:TextWriter or Null = null;
+    
+    macro lazyEval[%T](lval:T or Null, init:T) -> T {
+      if lval is null {
+        lval = init;
+      }
+      
+      return typecast[T](lval);
+    }
   }
 
   /** Return the input stream for stdin. */
@@ -31,24 +39,16 @@ public namespace Console {
   }
 
   /** Standard output stream. */
-  def cin:TextWriter {
+  def cout:TextWriter {
     get {
-      if _cout is null {
-        _cout = StdFileStream(getStdStream(StreamID.STDOUT), false, true, false);
-      }
-      
-      return typecast[TextWriter](_cerr);
+      return lazyEval(_cout, StdFileStream(getStdStream(StreamID.STDOUT), false, true, false));
     }
   }
 
   /** Standard error output stream. */
-  def cin:TextWriter {
+  def cerr:TextWriter {
     get {
-      if _cerr is null {
-        _cerr = StdFileStream(getStdStream(StreamID.STDERR), false, true, false);
-      }
-      
-      return typecast[TextWriter](_cerr);
+      return lazyEval(_cerr, StdFileStream(getStdStream(StreamID.STDERR), false, true, false));
     }
   }
 }

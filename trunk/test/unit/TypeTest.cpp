@@ -176,7 +176,7 @@ public:
   ConversionRank canConvert(const Type * fromType, int options = 0) const;
 
   /** Reverse conversion function, used when the source is a constraint. */
-  virtual ConversionRank convertTo(const Type * toType) const {
+  virtual ConversionRank convertTo(const Type * toType, const Conversion & cn) const {
     return Incompatible;
   }
 

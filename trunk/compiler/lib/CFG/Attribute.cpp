@@ -59,6 +59,7 @@ bool AttributeInfo::canAttachTo(const Defn * de) const {
 
     case Defn::Mod:
     case Defn::ExplicitImport:
+    case Defn::MacroArg:
       return false;
 
     case Defn::DefnTypeCount:

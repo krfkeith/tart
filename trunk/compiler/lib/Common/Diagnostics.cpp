@@ -39,10 +39,6 @@ namespace {
 
   static const char * INDENTATION = "                                ";
   static int MAX_INDENT = 16;
-
-  void writeIndent(int level) {
-    fprintf(stderr, "%.*s", std::min(level, MAX_INDENT) * 2, INDENTATION);
-  }
 }
 
 Diagnostics diag;
@@ -131,6 +127,16 @@ void Diagnostics::unindent() {
 
 int Diagnostics::getIndentLevel() {
   return indentLevel;
+}
+
+void Diagnostics::writeIndent(int level) {
+  fprintf(stderr, "%.*s", std::min(level, MAX_INDENT) * 2, INDENTATION);
+}
+
+void Diagnostics::writeIndent(FormatStream & out, int level) {
+  for (int i = 0; i < level; ++i) {
+    out << " ";
+  }
 }
 
 int Diagnostics::setIndentLevel(int level) {

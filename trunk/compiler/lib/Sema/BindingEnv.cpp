@@ -9,12 +9,17 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Template.h"
+
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/TypeTransform.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Objects/Builtins.h"
+
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/Support/CommandLine.h"
 
 static llvm::cl::opt<bool>
@@ -222,6 +227,12 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     }
 
     return false;
+  } else if (const UnionType * uPattern = dyn_cast<UnionType>(pattern)) {
+    if (const UnionType * uValue = dyn_cast<UnionType>(value)) {
+      return unifyUnionType(source, uPattern, uValue, variance);
+    }
+
+    return false;
   } else if (const PrimitiveType * pval = dyn_cast<PrimitiveType>(pattern)) {
     // Go ahead and unify - type inference will see if it can convert.
     return true;
@@ -376,6 +387,59 @@ bool BindingEnv::unifyCompositeType(
   } else {
     return false;
   }
+}
+
+bool BindingEnv::unifyUnionType(
+    SourceContext * source, const UnionType * pattern, const UnionType * value,
+    Variance variance) {
+  if (pattern->isEqual(value)) {
+    return true;
+  }
+
+  if (!AnalyzerBase::analyzeType(pattern, Task_PrepTypeComparison)) {
+    return false;
+  }
+
+  if (!AnalyzerBase::analyzeType(value, Task_PrepTypeComparison)) {
+    return false;
+  }
+
+  if (pattern->members().size() != value->members().size()) {
+    return false;
+  }
+
+  typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
+  TypeSet patternTypes;
+  for (TupleType::const_iterator it = pattern->members().begin(); it != pattern->members().end();
+      ++it) {
+    patternTypes.insert(dealias(*it));
+  }
+
+  TypeSet valueTypes;
+  for (TupleType::const_iterator it = value->members().begin(); it != value->members().end();
+      ++it) {
+    valueTypes.insert(dealias(*it));
+    patternTypes.erase(dealias(*it));
+  }
+
+  for (TupleType::const_iterator it = pattern->members().begin(); it != pattern->members().end();
+      ++it) {
+    valueTypes.erase(dealias(*it));
+  }
+
+  if (valueTypes.size() != patternTypes.size()) {
+    return false;
+  }
+
+  if (valueTypes.size() == 0) {
+    return true;
+  }
+
+  if (valueTypes.size() > 1) {
+    DFAIL("Implement more than one pattern var per union");
+  }
+
+  return unify(source, *patternTypes.begin(), *valueTypes.begin(), Invariant);
 }
 
 bool BindingEnv::unifyPattern(

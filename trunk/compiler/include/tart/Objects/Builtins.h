@@ -60,6 +60,7 @@ public:
   static SystemClass typeDerivedType;
   static SystemClass typeMember;
   static SystemClass typeField;
+  static SystemClass typeParameter;
   static SystemClass typeProperty;
   static SystemClass typeMethod;
   static SystemClass typeModule;

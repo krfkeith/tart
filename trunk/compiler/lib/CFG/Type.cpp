@@ -287,13 +287,12 @@ const Type * Type::typeParam(int index) const {
 
 ConversionRank Type::convert(const Conversion & cn) const {
   ConversionRank rank;
-  if (cn.resultValue == NULL) {
-    // Ask the constraint if we can convert to this type. Most types don't
-    // know about constraints, but constraints know about most types.
-    rank = cn.fromType->convertTo(this);
-    if (rank != Incompatible) {
-      return rank;
-    }
+
+  // Ask the constraint if we can convert to this type. Most types don't
+  // know about constraints, but constraints know about most types.
+  rank = cn.fromType->convertTo(this, cn);
+  if (rank != Incompatible) {
+    return rank;
   }
 
   rank = convertImpl(cn);

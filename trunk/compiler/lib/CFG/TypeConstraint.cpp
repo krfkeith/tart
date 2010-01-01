@@ -22,7 +22,12 @@ const llvm::Type * TypeConstraint::irType() const {
 // -------------------------------------------------------------------
 // ResultOfConstraint
 
-ConversionRank ResultOfConstraint::convertTo(const Type * toType) const {
+ConversionRank ResultOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
+  // Makes no sense to return a value when converting to a constraint.
+  if (cn.resultValue != NULL) {
+    return Incompatible;
+  }
+
   ConversionRank best = Incompatible;
   const Candidates & cd = callExpr->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -185,7 +190,12 @@ void ResultOfConstraint::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // ParameterOfConstraint
 
-ConversionRank ParameterOfConstraint::convertTo(const Type * toType) const {
+ConversionRank ParameterOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
+  // Makes no sense to return a value when converting to a constraint.
+  if (cn.resultValue != NULL) {
+    return Incompatible;
+  }
+
   ConversionRank best = Incompatible;
   const Candidates & cd = callExpr->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -329,7 +339,12 @@ void ParameterOfConstraint::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // TupleOfConstraint
 
-ConversionRank TupleOfConstraint::convertTo(const Type * toType) const {
+ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
+  // Makes no sense to return a value when converting to a constraint.
+  if (cn.resultValue != NULL) {
+    return Incompatible;
+  }
+
   ConversionRank rank = IdenticalTypes;
   if (const TupleType * ttype = dyn_cast<TupleType>(toType)) {
     if (ttype->numTypeParams() != tuple_->argCount()) {
