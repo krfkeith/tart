@@ -85,11 +85,6 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
       return NULL;
     }
 
-//    if (isSmallAggregateValueType(argType)) {
-//      ensureLValue(*it, argVal->getType());
-//      argVal = builder_.CreateLoad(argVal);
-//    }
-
     args.push_back(argVal);
   }
 
@@ -231,6 +226,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   Constant * itype = getTypeInfoBlockPtr(classType);
 
   // Load the pointer to the TIB.
+  objectPtr = builder_.CreatePointerCast(objectPtr, Builtins::typeObject->irEmbeddedType());
   Value * tib = builder_.CreateLoad(
       builder_.CreateConstInBoundsGEP2_32(objectPtr, 0, 0, "tib_ptr"), "tib");
 

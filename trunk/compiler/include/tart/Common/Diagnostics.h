@@ -83,15 +83,19 @@ public:
       , loc(SourceLocation())
     {}
 
-    MessageStream(const SourceLocation & l)
+    MessageStream(const SourceLocation & l, int indent = 0)
       : FormatStream(sstream)
       , loc(l)
-    {}
+    {
+      writeIndent(*this, indent);
+    }
 
-    MessageStream(const Locatable * l)
+    MessageStream(const Locatable * l, int indent = 0)
       : FormatStream(sstream)
       , loc(l ? l->location() : SourceLocation())
-    {}
+    {
+      writeIndent(*this, indent);
+    }
 
     MessageStream(const MessageStream & src)
       : FormatStream(sstream)
@@ -249,12 +253,12 @@ public:
 
   /** Debugging message. */
   DebugStream debug(const SourceLocation & loc = SourceLocation()) {
-    return DebugStream(loc);
+    return DebugStream(loc, getIndentLevel());
   }
 
   /** Debugging message. */
   DebugStream debug(const Locatable * loc) {
-    return DebugStream(loc);
+    return DebugStream(loc, getIndentLevel());
   }
 
   FailStream failMsg(const char * fname, unsigned lineno) {
@@ -302,6 +306,12 @@ public:
 
   /** write an indented line, formatted. */
   void writeLnIndent(const char * msg, ...);
+
+  /** write an indentation. */
+  static void writeIndent(int level);
+
+  /** Write an indentation to 'out'. */
+  static void writeIndent(FormatStream & out, int level);
 
   /** Assertion failure. */
   void NORETURN(assertionFailed(const char * expr, const char * fname, unsigned lineno));

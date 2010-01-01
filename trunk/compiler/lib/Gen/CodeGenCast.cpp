@@ -204,7 +204,7 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
 
   if (toType != NULL) {
     const UnionType * utype = cast<UnionType>(toType);
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+    if (!utype->hasRefTypesOnly()) {
       int index = utype->getTypeIndex(fromType);
       if (index < 0) {
         diag.error() << "Can't convert " << fromType << " to " << utype;
@@ -247,30 +247,29 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   bool checked = in->exprType() == Expr::CheckedUnionMemberCast;
   const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
-  Value * value;
-  // Our current process for handling unions requires that the union be an LValue,
-  // so that we can bitcast the pointer to the data.
-  if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef) {
-    value = genLValueAddress(in->arg());
-    if (value == NULL) {
-      return NULL;
-    }
-  } else {
-    // Create a temp var.
-    value = genExpr(in->arg());
-    if (value == NULL) {
-      return NULL;
-    }
-
-    Value * var = builder_.CreateAlloca(value->getType());
-    builder_.CreateStore(value, var);
-    value = var;
-  }
-
   if (fromType != NULL) {
     const UnionType * utype = cast<UnionType>(fromType);
+    if (!utype->hasRefTypesOnly()) {
+      Value * value;
+      // Our current process for handling unions requires that the union be an LValue,
+      // so that we can bitcast the pointer to the data.
+      if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef) {
+        value = genLValueAddress(in->arg());
+        if (value == NULL) {
+          return NULL;
+        }
+      } else {
+        // Create a temp var.
+        value = genExpr(in->arg());
+        if (value == NULL) {
+          return NULL;
+        }
 
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+        Value * var = builder_.CreateAlloca(value->getType());
+        builder_.CreateStore(value, var);
+        value = var;
+      }
+
       if (checked) {
         Value * test = genUnionTypeTest(value, utype, toType, true);
         throwCondTypecastError(test);
@@ -294,13 +293,34 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
     } else {
       // The union contains only pointer types, so we know that its representation is simply
       // a single pointer, so a bit cast will work.
-      Value * refTypeVal = builder_.CreateLoad(
-          builder_.CreateBitCast(value, llvm::PointerType::get(toType->irEmbeddedType(), 0)));
+      Value * refTypeVal = genExpr(in->arg());
+      refTypeVal = builder_.CreatePointerCast(refTypeVal, toType->irEmbeddedType());
 
       if (checked) {
-        const CompositeType * cto = cast<CompositeType>(toType);
-        Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
-        throwCondTypecastError(test);
+        if (utype->hasNullType()) {
+          if (utype->isSingleOptionalType()) { // Null counts as a ref type.
+            // Compare with null pointer.
+            Value * test;
+            if (toType->isNullType()) {
+              test = builder_.CreateICmpEQ(
+                  refTypeVal,
+                  ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+                  "null_cmp");
+            } else {
+              test = builder_.CreateICmpNE(
+                  refTypeVal,
+                  ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+                  "null_cmp");
+            }
+            throwCondTypecastError(test);
+          } else {
+            DFAIL("Implement Null + multiple types union");
+          }
+        } else {
+          const CompositeType * cto = cast<CompositeType>(toType);
+          Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+          throwCondTypecastError(test);
+        }
       }
 
       return refTypeVal;
@@ -386,7 +406,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
   DASSERT(unionType != NULL);
   DASSERT(toType != NULL);
 
-  if (unionType->numValueTypes() > 0 || unionType->hasVoidType()) {
+  if (!unionType->hasRefTypesOnly()) {
     // The index of the actual type.
     Value * actualTypeIndex;
     if (valIsLVal) {
@@ -444,8 +464,26 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
       in = builder_.CreateLoad(in);
     }
 
-    const CompositeType * cto = cast<CompositeType>(toType);
     Value * refTypeVal = builder_.CreateBitCast(in, toType->irEmbeddedType());
+    if (unionType->hasNullType()) {
+      if (unionType->isSingleOptionalType()) {
+        if (toType->isNullType()) {
+          return builder_.CreateICmpEQ(
+              refTypeVal,
+              ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+              "null_cmp");
+        } else {
+          return builder_.CreateICmpNE(
+              refTypeVal,
+              ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+              "null_cmp");
+        }
+      } else {
+        DFAIL("Implement Null + multiple types union");
+      }
+    }
+
+    const CompositeType * cto = cast<CompositeType>(toType);
     return genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
   }
 }

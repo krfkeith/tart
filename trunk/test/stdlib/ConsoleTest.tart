@@ -1,4 +1,5 @@
 import tart.testing.Test;
+import tart.io.Console;
 
 @EntryPoint
 def main(args:String[]) -> int {
@@ -6,6 +7,29 @@ def main(args:String[]) -> int {
 }
 
 class ConsoleTest : Test {
+  def testConsoleProperties {
+    assertTrue(Console.cin.canRead);
+    assertFalse(Console.cin.canWrite);
+    assertFalse(Console.cin.canSeek);
+    assertEq(-1, Console.cin.length);
+    
+    assertFalse(Console.cout.canRead);
+    assertTrue(Console.cout.canWrite);
+    assertFalse(Console.cout.canSeek);
+    assertEq(-1, Console.cout.length);
+
+    assertFalse(Console.cerr.canRead);
+    assertTrue(Console.cerr.canWrite);
+    assertFalse(Console.cerr.canSeek);
+    assertEq(-1, Console.cerr.length);
+  }
+
   def testConsoleOut {
+    Console.cout.writeLn("Hello, world!");
+    Console.cerr.writeLn("Hello, world!");
+  }
+
+  def testChainedWrite {
+    //Console.cout.write("Hello, ").writeLn(" world!");
   }
 }

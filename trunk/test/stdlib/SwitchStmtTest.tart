@@ -2,7 +2,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int {
-  return SwitchStmtTest().runTests(SwitchStmtTest);
+  return Test.run(SwitchStmtTest);
 }
 
 class SwitchStmtTest : Test {

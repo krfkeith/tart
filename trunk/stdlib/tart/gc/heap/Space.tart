@@ -8,6 +8,7 @@ import tart.gc.AddressRange;
   private var _contiguous:bool;
   
   def construct() {
+    _contiguous = true;
   }
   
   /** True if the space contains the specified address. */

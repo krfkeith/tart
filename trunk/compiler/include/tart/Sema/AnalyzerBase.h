@@ -13,7 +13,8 @@
 #include "tart/Common/Agenda.h"
 #endif
 
-#include <llvm/ADT/SetVector.h>
+#include "llvm/ADT/SetVector.h"
+#include "llvm/Support/CommandLine.h"
 
 namespace tart {
 
@@ -130,6 +131,9 @@ public:
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();
 
+  /** True if tracing is enabled for this def. */
+  static bool isTraceEnabled(Defn * de);
+
 protected:
   Module * module;
   Scope * activeScope;
@@ -177,6 +181,7 @@ protected:
   // symbol, multiple expressions) representing a reference to the definition.
   bool getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context, ExprList & out);
 
+  static llvm::cl::opt<std::string> traceDef_;
 };
 
 /** Class used to report what analysis tasks are in progress. */

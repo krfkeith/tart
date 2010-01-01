@@ -3,7 +3,7 @@
 public class Exception : Throwable {
   private {
     var _message:String;
-    var _cause:Exception;
+    var _cause:Exception or Null;
   }
 
   // TODO: Add location
@@ -12,13 +12,14 @@ public class Exception : Throwable {
   
   /** Default constructor. */
   def construct() {
-    // TODO: Allow to test for NULL.
     self._message = "";
+    self._cause = null;
   }
 
   /** Message constructor. */
   def construct(message:String) {
     self._message = message;
+    self._cause = null;
   }
 
   /** The error message for this exception. */
@@ -27,7 +28,7 @@ public class Exception : Throwable {
   }
 
   /** The lower-level exception that caused this one, if any. */ 
-  final def cause:Exception {
+  final def cause:Exception or Null {
     get { return self._cause; }
   }
 

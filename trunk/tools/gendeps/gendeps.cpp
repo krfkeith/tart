@@ -66,10 +66,10 @@ int main(int argc, char **argv, char **envp) {
     depPaths.clear();
     NamedMDNode * deps = module->getNamedMetadata("tart.module_deps");
     if (deps != NULL) {
-      MDNode * node = cast<MDNode>(deps->getElement(0));
-      size_t nodeCt = node->getNumElements();
+      MDNode * node = cast<MDNode>(deps->getOperand(0));
+      size_t nodeCt = node->getNumOperands();
       for (size_t i = 0; i < nodeCt; ++i) {
-        if (const MDString * ms = dyn_cast<MDString>(node->getElement(i))) {
+        if (const MDString * ms = dyn_cast<MDString>(node->getOperand(i))) {
           depPaths.push_back(sys::Path(ms->getString()));
         }
       }

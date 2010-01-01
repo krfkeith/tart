@@ -1076,6 +1076,13 @@ ASTNode * Parser::typeExprPrimary() {
     }
 
     result = new ASTTypeVariable(matchLoc, pvarName, declType, constraint);
+  } else if (match(Token_Optional)) {
+    result = typeExprPrimary();
+    if (result != NULL) {
+      result = new ASTOper(ASTNode::LogicalOr, result, &NullType::biDef);
+    }
+
+    return result;
   } else if (match(Token_Static)) {
     if (match(Token_Function)) {
       // Function type.

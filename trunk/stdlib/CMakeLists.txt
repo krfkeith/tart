@@ -19,7 +19,8 @@ set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
 set(TART_OPTIONS
     -g
     -debug-errors
-    -show-generated)
+#    -trace-def=TypecastException
+)
 
 # Empty list of output files
 set(STDLIB_BC_FILES)

@@ -54,7 +54,7 @@ public:
 
   const Type * singularValue() const;
   bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
-  ConversionRank convertTo(const Type * toType) const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
   bool isSubtype(const Type * other) const;
@@ -83,7 +83,7 @@ public:
 
   const Type * singularValue() const;
   bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
-  ConversionRank convertTo(const Type * toType) const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
   bool isSubtype(const Type * other) const;
@@ -113,7 +113,7 @@ public:
 
   const Type * singularValue() const;
   bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
-  ConversionRank convertTo(const Type * toType) const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
   bool isSubtype(const Type * other) const;

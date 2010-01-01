@@ -10,5 +10,7 @@ class Parameter {
     var _attributes:Attribute[];
   }
 
-  private def construct() {}
+  private def construct(name:String) {
+    self._name = name;
+  }
 }

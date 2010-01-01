@@ -1,7 +1,9 @@
 import tart.core.Memory.Address;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
 
 /** A stream which can read / write to a C stdio FILE handle. */
-class StdFileStream : IOStream, TextReader, TextWriter {
+final class StdFileStream : TextReader, TextWriter {
   struct FILE {}
   
   private {
@@ -9,33 +11,49 @@ class StdFileStream : IOStream, TextReader, TextWriter {
     let _canRead:bool;
     let _canWrite:bool;
     let _canSeek:bool;
+    let _encoding:Codec;
+    //let _isIdentityCoding:bool = true;
+    //var _buffer:ubyte[];
 
-    @Extern("StdFileStream_atEnd") static def _adEnd(file:Address[FILE]) -> bool;
+    @Extern("StdFileStream_read_byte") static def _readByte(file:Address[FILE]) -> int;
+    @Extern("StdFileStream_read_bytes") static def _readBytes(
+        file:Address[FILE], buffer:ubyte[], count:int64) -> int64;
+    //@Extern("StdFileStream_read_chars") static def _readChars(
+    //    file:Address[FILE], buffer:char[], length:int64) -> int64;
+    @Extern("StdFileStream_write_byte") static def _writeByte(
+        file:Address[FILE], value:ubyte) -> IOException.IOResult;
+    @Extern("StdFileStream_write_bytes") static def _writeBytes(
+        file:Address[FILE], buffer:Address[ubyte], count:int64) -> IOException.IOResult;
+    @Extern("StdFileStream_atEnd") static def _atEnd(file:Address[FILE]) -> bool;
     @Extern("StdFileStream_position") static def _position(file:Address[FILE]) -> int64;
     @Extern("StdFileStream_length") static def _length(file:Address[FILE]) -> int64;
-    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOException.ResultCode;
-    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOException.ResultCode;
+    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOException.IOResult;
+    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOException.IOResult;
   }
-  
+
   def construct(file:Address[FILE], canRead:bool, canWrite:bool, canSeek:bool) {
     self._file = file;
     self._canRead = canRead;
     self._canWrite = canWrite;
     self._canSeek = canSeek;
+    self._encoding = Codecs.UTF_8;
   }
 
   /** Read a single byte from the stream. */
   //@Throws(IOException)
-  @Extern("StdFileStream_read_byte")
-  def read -> int;
+  def read -> int {
+    return _readByte(_file);
+  }
   
   /** Read a buffer of bytes from the stream. */
   //@Throws(IOException)
-  @Extern("StdFileStream_read_bytes")
-  def read(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> int;
+  def read(buffer:ubyte[], start:int64 = 0, count:int64 = int64.maxVal) -> int64 {
+    return 0;
+  }
   
-  @Extern("StdFileStream_read_chars")
-  def read(buffer:char[], start:int, length:int) -> int;
+  def read(buffer:char[], start:int64 = 0, length:int64 = int64.maxVal) -> int64 {
+    return 0;
+  }
   
   def readLn -> String {
     return "";
@@ -47,58 +65,87 @@ class StdFileStream : IOStream, TextReader, TextWriter {
 
   /** Write a single byte to the stream. */
   //@Throws(IOException)
-  @Extern("StdFileStream_write_byte") 
-  def write(value:byte) -> void;
+  def write(value:ubyte) {
+    IOException.checkResult(_writeByte(_file, value));
+  }
 
   /** Write a buffer of bytes to the stream. */
   //@Throws(IOException)
-  @Extern("StdFileStream_write_bytes") 
-  def write(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> void;
+  def write(buffer:ubyte[], start:int64 = 0, count:int64 = int64.maxVal) -> void {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, buffer.length);
+    count = Math.min(count, buffer.length - start);
+    if count > 0 {
+      IOException.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
+    }
+  }
 
   //def write(text:String, start:int = 0, count:int = int.maxVal) -> int;
 
-  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
+  def writeChars(chars:char[], start:int64 = 0, count:int64 = int64.maxVal) -> int64 {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, chars.length);
+    count = Math.min(count, chars.length - start);
+    Debug.writeLn(count.toString());
+    if count > 0 {
+      // TODO: Shortcut for identity encoding.
+      let encodedLength = _encoding.encodedLength(chars, int(start), int(count));
+      Debug.writeLn(encodedLength.toString());
+      let buffer:ubyte[] = ubyte[](encodedLength);
+      _encoding.encode(buffer, 0, chars, int(start), int(count));
+      IOException.checkResult(_writeBytes(_file, buffer.data, encodedLength));
+    }
+
     return 0;
   }
 
-  def writeString(text:String, start:int = 0, count:int = int.maxVal) -> int {
+  def writeChars(text:String, start:int64 = 0, count:int64 = int64.maxVal) -> int64 {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, text.length);
+    count = Math.min(count, text.length - start);
+    if count > 0 {
+      writeChars(text.toCharArray(int(start), int(count)), 0, count);
+      Debug.writeLn(text);
+    }
+    
     return 0;
   }
 
   /** Write a string of text to the output stream. */
-  final def write(text:String) -> TextWriter {
-    writeString(text);
+  def write(text:String) -> TextWriter {
+    writeChars(text);
     return self;
   }
 
   /** Concatenate strings and write them to the output stream. */
-  final def write(text:String...) -> TextWriter {
-    writeString(String.concat(text));
+  def write(text:String...) -> TextWriter {
+    writeChars(String.concat(text));
     return self;
   }
 
   /** Write a string of text to the output stream followed by a line break. */
-  final def writeLn(text:String) -> TextWriter {
-    writeString(text);
-    writeString("\n");
+  def writeLn(text:String) -> TextWriter {
+    Debug.writeLn(text);
+    writeChars(text);
+    writeChars("\n");
     return self;
   }
 
   /** Concatenate strings and write them to the output stream, followed by a line break. */
-  final def writeLn(text:String...) -> TextWriter {
-    writeString(String.concat(text));
-    writeString("\n");
+  def writeLn(text:String...) -> TextWriter {
+    writeChars(String.concat(text));
+    writeChars("\n");
     return self;
   }
 
   /** Write values to the output stream using a format string. */
-  final def writeFmt(format:String, values:Object...) -> TextWriter {
+  def writeFmt(format:String, values:Object...) -> TextWriter {
     return self;
   }
 
   /** Write values to the output stream using a format string, followed by a line break. */
-  final def writeLnFmt(format:String, values:Object...) -> TextWriter {
-    writeString("\n");
+  def writeLnFmt(format:String, values:Object...) -> TextWriter {
+    writeChars("\n");
     return self;
   }
 
@@ -109,10 +156,7 @@ class StdFileStream : IOStream, TextReader, TextWriter {
   
   /** True if we've reached the end of available input. */
   //@Throws(IOException)
-  def atEnd: bool { 
-    @Extern("StdFileStream_atEnd") 
-    get;
-  }
+  def atEnd: bool { get { return _atEnd(_file); } }
   
   /** True if the stream supports reading. */
   def canRead:bool { get { return _canRead; } }

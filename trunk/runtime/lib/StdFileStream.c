@@ -24,7 +24,13 @@
 #include <errno.h>
 #endif
 
-uint32_t translateErrCode(int code) {
+enum StreamID {
+  STDIN,
+  STDOUT,
+  STDERR,
+};
+
+int32_t translateErrCode(int code) {
   switch (code) {
     default:
       return IORESULT_UNSPECIFIED;
@@ -37,22 +43,46 @@ uint32_t translateErrCode(int code) {
   }
 }
 
-#if 0
+FILE * get_std_stream(int32_t id) {
+  if (id == STDIN) {
+    return stdin;
+  } else if (id == STDOUT) {
+    return stdout;
+  } else {
+    return stderr;
+  }
+}
 
-  @Extern("StdFileStream_read_byte")
-  def read -> byte;
+int32_t StdFileStream_read_byte(FILE * fh) {
+  return fgetc(fh);
+}
+
+//StdFileStream_read_bytes
+//StdFileStream_read_chars
+
+int32_t StdFileStream_write_byte(FILE * fh, int b) {
+  if (fputc(b, fh) < 0) {
+    return translateErrCode(ferror(fh));
+  }
+
+  return 0;
+}
+
+int32_t StdFileStream_write_bytes(FILE * fh, char * buffer, uint64_t length) {
+  if (fwrite(buffer, 1, length, fh) != length) {
+    return translateErrCode(ferror(fh));
+  }
+
+  return 0;
+}
+
+#if 0
 
   @Extern("StdFileStream_read_bytes")
   def read(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> int;
 
   @Extern("StdFileStream_read_chars")
   def read(buffer:char[], start:int, length:int) -> int;
-
-  @Extern("StdFileStream_write_byte")
-  def write(value:byte) -> void;
-
-  @Extern("StdFileStream_write_bytes")
-  def write(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> void;
 
   def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
   }

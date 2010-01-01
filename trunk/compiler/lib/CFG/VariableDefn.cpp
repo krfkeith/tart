@@ -10,6 +10,27 @@ namespace tart {
 
 // -------------------------------------------------------------------
 // VariableDefn
+
+VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value)
+  : ValueDefn(dtype, m, name)
+  , type_(value ? value->type() : NULL)
+  , initValue_(value)
+  , irValue_(NULL)
+  , memberIndex_(0)
+  , memberIndexRecursive_(0)
+  , isConstant_(dtype == Defn::Let)
+{}
+
+VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
+  : ValueDefn(dtype, m, de)
+  , type_(NULL)
+  , initValue_(NULL)
+  , irValue_(NULL)
+  , memberIndex_(0)
+  , memberIndexRecursive_(0)
+  , isConstant_(dtype == Defn::Let)
+{}
+
 void VariableDefn::trace() const {
   ValueDefn::trace();
   safeMark(type_);
@@ -63,7 +84,7 @@ void VariableDefn::format(FormatStream & out) const {
     out << ":" << type_;
   }
 
-  if (out.getShowInitializer() && initValue_) {
+  if ((out.getShowInitializer() || defnType() == MacroArg) && initValue_) {
     out << "=" << initValue_;
   }
 }

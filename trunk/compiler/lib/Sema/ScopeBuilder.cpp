@@ -77,6 +77,7 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
     case Defn::ExplicitImport:
     //case Defn::TypeParameter:
     case Defn::DefnTypeCount:
+    case Defn::MacroArg:
       DFAIL("IllegalState");
   }
 }

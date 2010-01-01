@@ -25,6 +25,7 @@ class TypeVariable;
 class AddressType;
 class TypeLiteralType;
 class NativeArrayType;
+class UnionType;
 
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
 
@@ -213,8 +214,9 @@ private:
   bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * pattern,
       const Type * value);
   bool unifyCompositeType(SourceContext * source, const CompositeType * pattern,
-      const CompositeType * value,
-      Variance variance);
+      const CompositeType * value, Variance variance);
+  bool unifyUnionType(SourceContext * source, const UnionType * pattern,
+      const UnionType * value, Variance variance);
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
 

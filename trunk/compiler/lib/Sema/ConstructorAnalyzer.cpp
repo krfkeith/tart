@@ -3,11 +3,13 @@
  * ================================================================ */
 
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/FunctionDefn.h"
 
 #include "tart/Objects/Builtins.h"
 
 #include "tart/Sema/ConstructorAnalyzer.h"
+#include "tart/Sema/AnalyzerBase.h"
 
 namespace tart {
 
@@ -21,7 +23,7 @@ ConstructorAnalyzer::ConstructorAnalyzer(CompositeType * cls)
     if (*it != NULL) {
       VariableDefn * var = cast<VariableDefn>(*it);
       // TODO: Handle memberwise initialization of structs later.
-      if (var->type()->typeClass() != Type::Struct) {
+      if (var->type()->typeClass() != Type::Struct && var->type()->typeClass() != Type::NArray) {
         varIndices_[var] = varCount_++;
       }
     }
@@ -29,16 +31,32 @@ ConstructorAnalyzer::ConstructorAnalyzer(CompositeType * cls)
 }
 
 void ConstructorAnalyzer::run(FunctionDefn * ctor) {
-  // Check for blocks which end in return
-
   // If there's no superclass, and there's no variables to initialize, then there's
   // no need to check if anything is initialized.
   if (varIndices_.empty() && cls_->super() == NULL) {
     return;
   }
 
+  // Don't do classes whose instance vars are filled in by the compiler.
+  if (cls_ == Builtins::typeObject ||
+      cls_ == Builtins::typeTypeInfoBlock ||
+      cls_ == Builtins::typeThrowable ||
+      cls_ == Builtins::typeMember ||
+      cls_ == Builtins::typeParameter) {
+    return;
+  }
+
+  bool trace = AnalyzerBase::isTraceEnabled(ctor->parentDefn());
+  if (trace) {
+    diag.debug(ctor) << Format_Verbose << "Analyzing constructor " << ctor;
+  }
+
+  // Check for blocks which end in return
   BlockList returnBlocks;
   Block * entry = ctor->blocks().front();
+  FunctionType * ctorType = ctor->functionType();
+
+  DASSERT(!ctor->blocks().empty());
 
   // For every block, determine which instance vars are initialized in that block.
   for (BlockList::const_iterator it = ctor->blocks().begin(); it != ctor->blocks().end(); ++it) {
@@ -84,7 +102,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
 
             if (LValueExpr * selfLVal = dyn_cast<LValueExpr>(selfExpr)) {
               if (ParameterDefn * selfParam = dyn_cast<ParameterDefn>(selfLVal->value())) {
-                if (selfParam == ctor->functionType()->selfParam()) {
+                if (selfParam == ctorType->selfParam()) {
                   if (isSuperCall) {
                     bstate.initialized_.set(0);
                   } else {
@@ -129,37 +147,61 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
   if (needsSuperCall) {
     CompositeType * superCls = cls_->super();
     // See if the superclass has any fields at all.
-    if (superCls->instanceFieldCountRecursive() > 0) {
-      FunctionDefn * defaultSuperCtor = superCls->defaultConstructor();
-      if (defaultSuperCtor == NULL) {
-        diag.error(ctor) << "Missing call to superclass constructor";
-        diag.info(ctor) << "(required because superclass does not have a default constructor.)";
-      } else {
-        // Synthesize a call to the superclass constructor.
-        ParameterDefn * selfParam = ctor->functionType()->selfParam();
-        DASSERT_OBJ(selfParam != NULL, ctor);
-        DASSERT_OBJ(selfParam->type() != NULL, ctor);
-        TypeDefn * selfType = selfParam->type()->typeDefn();
-        DASSERT_OBJ(selfType != NULL, ctor);
-        Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
-        selfExpr = superCls->implicitCast(ctor->location(), selfExpr);
-
-        defaultInitializers.push_back(
-            new FnCallExpr(Expr::FnCall, ctor->location(), defaultSuperCtor, selfExpr));
+    FunctionDefn * defaultSuperCtor = superCls->defaultConstructor();
+    if (defaultSuperCtor == NULL) {
+      diag.error(ctor) << "Missing call to superclass constructor";
+      diag.info(ctor) << "(required because superclass does not have a default constructor.)";
+    } else {
+      FunctionType * superCtorType = defaultSuperCtor->functionType();
+      if (trace) {
+        diag.debug(ctor) << Format_Verbose << "Adding call to super() in " << ctor;
       }
+      // Synthesize a call to the superclass constructor.
+      ParameterDefn * selfParam = ctorType->selfParam();
+      DASSERT_OBJ(selfParam != NULL, ctor);
+      DASSERT_OBJ(selfParam->type() != NULL, ctor);
+      TypeDefn * selfType = selfParam->type()->typeDefn();
+      DASSERT_OBJ(selfType != NULL, ctor);
+      Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
+      selfExpr = superCls->implicitCast(ctor->location(), selfExpr);
+      FnCallExpr * superCall = new FnCallExpr(
+          Expr::FnCall, ctor->location(), defaultSuperCtor, selfExpr);
+
+      // Fill in default params
+      size_t paramCount = superCtorType->params().size();
+      for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
+        ParameterDefn * param = superCtorType->params()[paramIndex];
+        if (param->initValue() == NULL) {
+          diag.error(ctor) << "Attempting to call a default superclass constructor, but parameter "
+              << (paramIndex + 1) << " does not have a default value.";
+          diag.info(param) << param;
+          break;
+        } else if (param->isVariadic()) {
+          // Pass a null array - possibly a static singleton.
+          ArrayLiteralExpr * arrayParam =
+              AnalyzerBase::createArrayLiteral(param->location(), param->type());
+          AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
+          superCall->appendArg(arrayParam);
+        } else {
+          superCall->appendArg(param->initValue());
+        }
+      }
+
+      defaultInitializers.push_back(superCall);
     }
   }
 
   // Determine if each instance var was initialized on all exit paths.
   const DefnList & fields = cls_->instanceFields();
+  Expr * selfArg = NULL;
   for (DefnList::const_iterator it = fields.begin(); it != fields.end(); ++it) {
     if (*it == NULL) {
-      return;
+      continue;
     }
 
     VariableDefn * field = cast<VariableDefn>(*it);
     // TODO: Handle memberwise initialization of structs later.
-    if (field->type()->typeClass() == Type::Struct) {
+    if (field->type()->typeClass() == Type::Struct || field->type()->typeClass() == Type::NArray) {
       continue;
     }
 
@@ -183,6 +225,20 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
         }
 
         defaultValue = fieldType->nullInitValue();
+        if (defaultValue == NULL) {
+          if (fieldType->isReferenceType()) {
+            defaultValue = ConstantNull::get(field->location(), fieldType);
+          } else if (const UnionType * utype = dyn_cast<UnionType>(fieldType)) {
+            if (utype->isSingleOptionalType()) {
+              if (utype->hasRefTypesOnly()) {
+                defaultValue = utype->implicitCast(field->location(),
+                    ConstantNull::get(field->location(), fieldType));
+              } else {
+                DFAIL("Implement default construction of non-ref unions");
+              }
+            }
+          }
+        }
       }
 
       if (defaultValue == NULL) {
@@ -190,11 +246,17 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
         diag.error(ctor) << "Instance member '" << field->name() <<
             "' may not have been initialized.";
       } else {
-        DFAIL("Implement");
+        if (selfArg == NULL) {
+          selfArg = LValueExpr::get(ctor->location(), NULL, ctor->functionType()->selfParam());
+        }
+        Expr * assign = new AssignmentExpr(Expr::Assign, field->location(),
+            LValueExpr::get(field->location(), selfArg, field), defaultValue);
+        defaultInitializers.push_back(assign);
       }
     }
   }
 
+  // TODO: There's also an ordering issue, as some fields may depend on others.
   entry->exprs().insert(entry->exprs().begin(),
       defaultInitializers.begin(), defaultInitializers.end());
 }

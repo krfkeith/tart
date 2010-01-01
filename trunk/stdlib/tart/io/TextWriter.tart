@@ -2,7 +2,7 @@ import tart.text.encodings.Codec;
 import tart.text.encodings.Codecs;
 
 /** A class which can read a sequence of characters. */
-interface TextWriter {
+interface TextWriter : IOStream {
   // Need encoding
 
   /** Close the reader and release any resources held by the reader instance. */
@@ -11,9 +11,9 @@ interface TextWriter {
   /** Flush any pending writes. */
   def flush();
   
-  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int;
+  def writeChars(chars:char[], start:int64 = 0, count:int64 = int64.maxVal) -> int64;
 
-  def writeString(text:String, start:int = 0, count:int = int.maxVal) -> int;
+  def writeChars(text:String, start:int64 = 0, count:int64 = int64.maxVal) -> int64;
 
   /** Write a string of text to the output stream. */
   def write(text:String) -> TextWriter;

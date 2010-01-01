@@ -1,12 +1,12 @@
 /** A class which can read a sequence of characters. */
-interface TextReader {
+interface TextReader : IOStream {
 
   /** Close the reader and release any resources held by the reader instance. */
   def close();
 
   /** Read up to 'length' characters into the array 'buffer', starting at position 'start'.
       returns the actual number of characters read, or 0 if there were no characters remaining. */
-  def read(buffer:char[], start:int, length:int) -> int;
+  def read(buffer:char[], start:int64, length:int64) -> int64;
 
   /** Read characters until the next line-end delimiter. The delimiter is not included
       in the result string. Returns an empty string if there are no more characters to be read. */

@@ -1001,13 +1001,15 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
    }*/
 
   Expr::ExprType callType = Expr::FnCall;
-  if (basePtr->type()->typeClass() == Type::Interface ||
-      (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
-    callType = Expr::VTableCall;
-  } else if (basePtr->type()->typeClass() == Type::Struct) {
-    if (LValueExpr * lval = dyn_cast<LValueExpr>(basePtr)) {
-      if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
-        param->setFlag(ParameterDefn::LValueParam, true);
+  if (basePtr != NULL) {
+    if (basePtr->type()->typeClass() == Type::Interface ||
+        (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
+      callType = Expr::VTableCall;
+    } else if (basePtr->type()->typeClass() == Type::Struct) {
+      if (LValueExpr * lval = dyn_cast<LValueExpr>(basePtr)) {
+        if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
+          param->setFlag(ParameterDefn::LValueParam, true);
+        }
       }
     }
   }
@@ -1049,9 +1051,11 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
    }*/
 
   Expr::ExprType callType = Expr::FnCall;
-  if (basePtr->type()->typeClass() == Type::Interface ||
-      (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
-    callType = Expr::VTableCall;
+  if (basePtr != NULL) {
+    if (basePtr->type()->typeClass() == Type::Interface ||
+        (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
+      callType = Expr::VTableCall;
+    }
   }
 
   FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);

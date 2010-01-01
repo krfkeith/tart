@@ -15,6 +15,8 @@ file(GLOB TESTING_SRC
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(TESTING_BC_FILES)
 
+set(TART_OPTIONS -g -debug-errors)
+
 include(${CMAKE_CURRENT_BINARY_DIR}/libtesting.deps OPTIONAL)
 
 # Create a command for each source file

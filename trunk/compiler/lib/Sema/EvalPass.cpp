@@ -440,7 +440,7 @@ Expr * EvalPass::evalUnionCtorCast(CastExpr *in) {
 
   if (toType != NULL) {
     const UnionType * utype = cast<UnionType>(toType);
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+    if (!utype->hasRefTypesOnly()) {
       int index = utype->getTypeIndex(fromType);
       if (index < 0) {
         diag.error() << "Can't convert " << fromType << " to " << utype;

@@ -193,8 +193,9 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
     const ParameterDefn * baseArg = baseType->params()[i];
     const ParameterDefn * funcArg = funcType->params()[i];
 
-    if (baseArg->isVariadic() != funcArg->isVariadic())
+    if (baseArg->isVariadic() != funcArg->isVariadic()) {
       return false;
+    }
 
     const Type * baseArgType = baseArg->type();
     const Type * funcArgType = funcArg->type();

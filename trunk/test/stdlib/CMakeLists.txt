@@ -11,6 +11,8 @@ set(TART_OPTIONS -g --debug-errors)
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 set(TARTLN_OPTIONS -internalize -O0)
 
+set(TEST_BC_FILES)
+
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
   # Compile tart source
@@ -20,6 +22,9 @@ foreach(SRC_FILE ${TART_SRC})
       MAIN_DEPENDENCY "${SRC_FILE}" 
       DEPENDS tartc stdlib libtesting
       COMMENT "Compiling Tart source file ${SRC_FILE}")
+
+  # Remember the list of output files.
+  set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
 
   # Link with stdlib
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
@@ -51,3 +56,12 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
   add_dependencies(check "${EXE_FILE}.run")
 endforeach(SRC_FILE)
+
+# Generate dependency info
+add_custom_command(
+    OUTPUT test.deps
+    COMMAND gendeps -o test.deps ${TEST_BC_FILES}
+    DEPENDS ${TEST_BC_FILES} gendeps
+    COMMENT "Generating dependencies for tests")
+
+add_dependencies(check test.deps)

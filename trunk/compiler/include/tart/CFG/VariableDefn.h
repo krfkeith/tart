@@ -27,26 +27,10 @@ public:
   typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes a name */
-  VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL)
-    : ValueDefn(dtype, m, name)
-    , type_(value ? value->type() : NULL)
-    , initValue_(value)
-    , irValue_(NULL)
-    , memberIndex_(0)
-    , memberIndexRecursive_(0)
-    , isConstant_(dtype == Defn::Let)
-  {}
+  VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL);
 
   /** Constructor that takes an AST declaration. */
-  VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
-    : ValueDefn(dtype, m, de)
-    , type_(NULL)
-    , initValue_(NULL)
-    , irValue_(NULL)
-    , memberIndex_(0)
-    , memberIndexRecursive_(0)
-    , isConstant_(dtype == Defn::Let)
-  {}
+  VariableDefn(DefnType dtype, Module * m, const ASTDecl * de);
 
   /** Initial value for this variable. */
   const Expr * initValue() const { return initValue_; }
@@ -89,7 +73,7 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
   static inline bool classof(const Defn * de) {
-    return de->defnType() == Let || de->defnType() == Var;
+    return de->defnType() == Let || de->defnType() == Var || de->defnType() == MacroArg;
   }
 
 private:

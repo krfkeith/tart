@@ -1,6 +1,6 @@
 /** Exception that signals an i/o error. */
 class IOException : Exception {
-  enum ResultCode {
+  enum IOResult {
     SUCCESS = 0,
     UNSPECIFIED,        // Unspecified error
     
@@ -13,20 +13,20 @@ class IOException : Exception {
     ENOSPC,             // No space left on device
   }
   
-  private let code:ResultCode;
+  private let code:IOResult;
 
   /** Default constructor. */
   def construct() {
-    self.code = ResultCode.UNSPECIFIED;
+    self.code = IOResult.UNSPECIFIED;
   }
   
   /** Default constructor. */
-  def construct(code:ResultCode) {
+  def construct(code:IOResult) {
     self.code = code;
   }
   
-  static def checkResult(code:ResultCode) {
-    if code != ResultCode.SUCCESS {
+  static def checkResult(code:IOResult) {
+    if code != IOResult.SUCCESS {
       throw IOException(code);
     }
   }

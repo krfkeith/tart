@@ -516,6 +516,9 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     }
 
     return param->irValue();
+  } else if (var->defnType() == Defn::MacroArg) {
+    const VariableDefn * arg = static_cast<const VariableDefn *>(var);
+    return genExpr(arg->initValue());
   } else {
     DFAIL("IllegalState");
   }
@@ -538,6 +541,8 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
         return param->irValue();
+      } else if (var->defnType() == Defn::MacroArg) {
+        return genLValueAddress(static_cast<const VariableDefn *>(var)->initValue());
       } else {
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
         DFAIL("IllegalState");
@@ -1086,7 +1091,7 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
 
   if (toType != NULL) {
     const UnionType * utype = cast<UnionType>(toType);
-    if (utype->numValueTypes() > 0 || utype->hasVoidType()) {
+    if (!utype->hasRefTypesOnly()) {
       int index = utype->getTypeIndex(fromType);
       if (index < 0) {
         diag.error() << "Can't convert " << fromType << " to " << utype;

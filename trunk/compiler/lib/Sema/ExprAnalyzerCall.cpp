@@ -156,6 +156,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     if (expected != NULL) {
       fs << " -> " << expected;
     }
+    fs.flush();
 
     diag.error(loc) << "No matching method for call to " << fs.str() << ", candidates are:";
     for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
@@ -599,6 +600,7 @@ void ExprAnalyzer::noCandidatesError(CallExpr * call, const ExprList & methods) 
   if (call->expectedReturnType() != NULL) {
     fs << " -> " << call->expectedReturnType();
   }
+  fs.flush();
 
   diag.error(call) << "No matching method for call to " << fs.str() << ", candidates are:";
   for (ExprList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
