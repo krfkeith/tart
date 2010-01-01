@@ -592,6 +592,8 @@ bool ClassAnalyzer::analyzeFields() {
               //if (target->hasTrait(Defn::Nonreflective)) {
               //  module->addSymbol(field);
               //}
+
+              //analyzeType(field->type(), Task_PrepTypeGeneration);
             } else if (field->storageClass() == Storage_Static) {
               module->addSymbol(field);
               type->staticFields_.push_back(field);

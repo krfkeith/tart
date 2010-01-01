@@ -13,14 +13,23 @@ set(TARTLN_OPTIONS -internalize -O0)
 
 set(TEST_BC_FILES)
 
+include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
+
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
-  # Compile tart source
+  # Source file name
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
+
+  # Generate the deps variable name
+  string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
+  string(TOUPPER "${DEPS_NAME}" DEPS_NAME)
+  string(REGEX REPLACE "[^a-zA-Z0-9]" "_" DEPS_NAME "${DEPS_NAME}")
+
+  # Compile tart source
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       MAIN_DEPENDENCY "${SRC_FILE}" 
-      DEPENDS tartc stdlib libtesting
+      DEPENDS tartc stdlib libtesting ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.
@@ -58,8 +67,7 @@ foreach(SRC_FILE ${TART_SRC})
 endforeach(SRC_FILE)
 
 # Generate dependency info
-add_custom_command(
-    OUTPUT test.deps
+add_custom_target(test.deps
     COMMAND gendeps -o test.deps ${TEST_BC_FILES}
     DEPENDS ${TEST_BC_FILES} gendeps
     COMMENT "Generating dependencies for tests")

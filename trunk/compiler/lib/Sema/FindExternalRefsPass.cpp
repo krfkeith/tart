@@ -134,6 +134,14 @@ Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
   return CFGPass::visitConstantObjectRef(in);
 }
 
+Expr * FindExternalRefsPass::visitCast(CastExpr * in) {
+  if (in->type()->typeDefn() != NULL) {
+    module->addSymbol(in->type()->typeDefn());
+  }
+
+  return CFGPass::visitCast(in);
+}
+
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   const CompositeType * arrayType = cast<CompositeType>(in->type());
   DASSERT(arrayType->passes().isFinished(CompositeType::ScopeCreationPass));
