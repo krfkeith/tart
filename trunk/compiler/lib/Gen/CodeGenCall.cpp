@@ -223,7 +223,8 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   DASSERT(classType->typeClass() == Type::Interface);
 
   // Get the interface ID (which is just the type pointer).
-  Constant * itype = getTypeInfoBlockPtr(classType);
+  //Constant * itype = getTypeInfoBlockPtr(classType);
+  Constant * iname = reflector_.internSymbol(classType->typeDefn()->linkageName());
 
   // Load the pointer to the TIB.
   objectPtr = builder_.CreatePointerCast(objectPtr, Builtins::typeObject->irEmbeddedType());
@@ -236,7 +237,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
 
   // Construct the call to the dispatcher
   ValueList args;
-  args.push_back(itype);
+  args.push_back(iname);
   args.push_back(getInt32Val(methodIndex));
   Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
   return builder_.CreateBitCast(

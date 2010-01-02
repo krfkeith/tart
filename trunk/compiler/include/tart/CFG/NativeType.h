@@ -52,6 +52,7 @@ public:
   /** Singleton instance. */
   static TypeDefn typedefn;
   static AddressType prototype;
+  static ASTBuiltIn biDef;
 
 private:
   typedef llvm::DenseMap<const Type * , AddressType *, Type::KeyInfo> TypeMap;

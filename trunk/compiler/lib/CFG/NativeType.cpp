@@ -21,6 +21,7 @@ namespace tart {
 AddressType AddressType::prototype;
 TypeDefn AddressType::typedefn(&Builtins::module, "__Address", NULL);
 AddressType::TypeMap AddressType::uniqueTypes_;
+ASTBuiltIn AddressType::biDef(&AddressType::typedefn);
 
 void AddressType::initBuiltin() {
   TypeList typeParams;
@@ -136,7 +137,7 @@ bool AddressType::isSubtype(const Type * other) const {
 }
 
 void AddressType::format(FormatStream & out) const {
-  out << "Address[" << elementType_ << "]";
+  out << elementType_ << "^";
 }
 
 // -------------------------------------------------------------------

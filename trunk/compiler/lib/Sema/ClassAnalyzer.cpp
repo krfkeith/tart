@@ -875,8 +875,9 @@ void ClassAnalyzer::createInterfaceTables() {
   // Remove from the set all types which are the first parent of some other type
   // that is already in the set, since they can use the same dispatch table.
   ClassSet interfaceTypes(ancestors);
-  ancestors.insert(type);
-  for (ClassSet::iterator it = ancestors.begin(); it != ancestors.end(); ++it) {
+  //ancestors.insert(type);
+
+/*  for (ClassSet::iterator it = ancestors.begin(); it != ancestors.end(); ++it) {
     CompositeType * base = *it;
 
     // The first parent of each parent can always be removed, since the itable
@@ -885,12 +886,18 @@ void ClassAnalyzer::createInterfaceTables() {
       CompositeType * baseBase = base->bases().front();
       interfaceTypes.remove(baseBase);
     }
-  }
+  }*/
 
   // Create the tables for each interface that remains.
-  for (ClassSet::iterator it = interfaceTypes.begin(); it != interfaceTypes.end(); ++it) {
+  for (ClassSet::iterator it = ancestors.begin(); it != ancestors.end(); ++it) {
     CompositeType * itype = *it;
-    DASSERT(itype->typeClass() == Type::Interface);
+    if (itype->typeClass() != Type::Interface) {
+      continue;
+    }
+
+    //if (!interfaceTypes.count(itype)) {
+    //  continue;
+    //}
 
     // Do the search before we push the new itable entry.
     const CompositeType::InterfaceTable * parentImpl = type->findBaseImplementationOf(itype);
@@ -898,6 +905,23 @@ void ClassAnalyzer::createInterfaceTables() {
     // Add an itable entry.
     type->interfaces_.push_back(CompositeType::InterfaceTable(itype));
     CompositeType::InterfaceTable & itable = type->interfaces_.back();
+
+    // Insert the interface, and it's first parents into the list, but only if they
+    // aren't already on some other list.
+    /*(for (CompositeType * iface = itype; iface != NULL; ) {
+      if (!interfaceTypes.count(iface)) {
+        break;
+      }
+
+      itable.ifaces.insert(iface);
+      interfaceTypes.remove(iface);
+
+      if (!iface->bases().empty()) {
+        iface = iface->bases().front();
+      } else {
+        break;
+      }
+    }*/
 
     if (parentImpl != NULL) {
       DASSERT(itype->instanceMethods_.size() == parentImpl->methods.size());

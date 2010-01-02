@@ -1,16 +1,86 @@
+import tart.testing.Test;
+
 @EntryPoint
 def main(args:String[]) -> int {
-  let p:ITest = A();
-  Debug.assertEq("Hello", p.test());
-  return 0;
+  return Test.run(InterfaceTest);
+}
+
+class InterfaceTest : Test {
+  def testICall {
+    let p:ITest = A();
+    assertEq("Hello", p.test());
+  }
+
+  def testMultipleInterfaces {
+    let p:ITest = B();
+    assertEq("Hello", p.test());
+
+    //let p2a:ITest2 = B();
+    //assertEq("!", p2a.test2a());
+
+    let p2:ITest2 = B();
+    assertEq("World", p2.test2());
+  }
+
+  def testDiamondInheritance {
+    let p:ITest = C();
+    assertEq("Hello", p.test());
+
+    let p3:ITest3 = C();
+    assertEq("World3", p3.test3());
+
+    let p4:ITest4 = C();
+    assertEq("World4", p4.test4());
+  }
 }
 
 interface ITest {
   def test() -> String;
 }
 
+interface ITest2 {
+  def test2() -> String;
+  def test2a() -> String;
+}
+
+interface ITest3 : ITest {
+  def test3() -> String;
+}
+
+interface ITest4 : ITest {
+  def test4() -> String;
+}
+
 class A : ITest {
   def test() -> String {
     return "Hello";
+  }
+}
+
+class B : ITest, ITest2 {
+  def test() -> String {
+    return "Hello";
+  }
+
+  def test2() -> String {
+    return "World";
+  }
+
+  def test2a() -> String {
+    return "!";
+  }
+}
+
+class C : ITest3, ITest4 {
+  def test() -> String {
+    return "Hello";
+  }
+
+  def test3() -> String {
+    return "World3";
+  }
+
+  def test4() -> String {
+    return "World4";
   }
 }

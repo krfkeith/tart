@@ -8,6 +8,7 @@
 #include "tart/Common/InternedString.h"
 #include "tart/AST/Stmt.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Module.h"
 #include <errno.h>
@@ -1120,18 +1121,7 @@ ASTNode * Parser::typeName() {
     return NULL;
   }
 
-  if (match(Token_LBracket)) {
-    ASTNodeList templateArgs;
-    if (!templateArgList(templateArgs)) {
-      return NULL;
-    }
-
-    if (templateArgs.empty()) {
-      result = ASTUnaryOp::get(ASTNode::Array, result->location() | matchLoc, result);
-    } else {
-      result = new ASTSpecialize(matchLoc | result->location(), result, templateArgs);
-    }
-  }
+  result = typeSuffix(result);
 
   while (match(Token_Dot)) {
     const char * typeName = matchIdent();
@@ -1141,7 +1131,21 @@ ASTNode * Parser::typeName() {
     }
 
     result = new ASTMemberRef(loc | matchLoc, result, typeName);
+    result = typeSuffix(result);
+    if (result == NULL) {
+      return NULL;
+    }
+  }
 
+  return result;
+}
+
+ASTNode * Parser::typeSuffix(ASTNode * result) {
+  if (result == NULL) {
+    return NULL;
+  }
+
+  for (;;) {
     if (match(Token_LBracket)) {
       ASTNodeList templateArgs;
       if (!templateArgList(templateArgs)) {
@@ -1151,23 +1155,16 @@ ASTNode * Parser::typeName() {
       if (templateArgs.empty()) {
         result = ASTUnaryOp::get(ASTNode::Array, result->location() | matchLoc, result);
       } else {
-        result = new ASTSpecialize(result->location(), result, templateArgs);
+        result = new ASTSpecialize(matchLoc | result->location(), result, templateArgs);
       }
+    } else if (match(Token_Caret)) {
+      ASTNodeList templateArgs;
+      templateArgs.push_back(result);
+      result = new ASTSpecialize(matchLoc | result->location(), &AddressType::biDef, templateArgs);
+    } else {
+      return result;
     }
   }
-
-  loc = lexer.tokenLocation();
-  while (match(Token_LBracket)) {
-    // Array
-    if (!match(Token_RBracket)) {
-      expected("close bracket");
-      return NULL;
-    }
-
-    result = ASTUnaryOp::get(ASTNode::Array, result->location() | loc, result);
-  }
-
-  return result;
 }
 
 ASTNode * Parser::builtInTypeName(TokenType t) {
@@ -1341,6 +1338,7 @@ bool Parser::templateArgList(ASTNodeList & templateArgs) {
   for (;;) {
     SourceLocation loc = lexer.tokenLocation();
     ASTNode * arg = templateArg();
+    arg = typeSuffix(arg);
     if (arg == NULL) {
       diag.error(loc) << "Template argument expected";
       skipToRParen();
@@ -1360,14 +1358,11 @@ bool Parser::templateArgList(ASTNodeList & templateArgs) {
 }
 
 ASTNode * Parser::templateArg() {
-  // TODO: Also allow constants, expressions and such...
-  // But don't require templates to be dotted and don't allow <> chars
-  // Also, allow keywords.
   return expression();
 }
 
 void Parser::templateRequirements(ASTNodeList & requirements) {
-
+  // TODO: Implement or delete.
 }
 
 bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
@@ -2368,6 +2363,8 @@ ASTNode * Parser::binaryOperator() {
 
     ASTNode * e1 = unaryOperator();
     if (e1 == NULL) {
+      // Special case for pointer declaration.
+
       diag.error(lexer.tokenLocation()) << "value expected after " << GetTokenName(operatorToken);
       return NULL;
     }

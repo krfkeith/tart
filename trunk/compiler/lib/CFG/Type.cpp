@@ -167,9 +167,8 @@ void typeLinkageName(std::string & out, const Type * ty) {
       typeLinkageName(out, *it);
     }
   } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
-    out.append("__Address[");
     typeLinkageName(out, mat->typeParam(0));
-    out.append("]");
+    out.append("^");
   } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
     out.append("tart.reflect.Type");
   } else {

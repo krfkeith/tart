@@ -143,13 +143,14 @@ void CodeGenerator::generate() {
 
     //diag.debug(de) << "XRef: " << de;
 
-    if (const TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
+    /*if (const TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
-        if (irModule_->getTypeByName(tdef->linkageName()) == NULL) {
+        if (ctype->typeClass() != Type::Interface &&
+            irModule_->getTypeByName(tdef->linkageName()) == NULL) {
           irModule_->addTypeName(tdef->linkageName(), ctype->irType());
         }
       }
-    }
+    }*/
 
     if (de->isSynthetic()) {
       genXDef(de);

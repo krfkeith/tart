@@ -7,7 +7,12 @@ set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/stdlib
   -i ${TART_SOURCE_DIR}/libtesting)
-set(TART_OPTIONS -g --debug-errors)
+
+set(TART_OPTIONS
+  -g
+  -debug-errors
+  -trace-def=InterfaceTest
+)
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 set(TARTLN_OPTIONS -internalize -O0)
 

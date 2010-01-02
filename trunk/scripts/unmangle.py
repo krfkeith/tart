@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# Script that un-mangles linkage names generated on Linux by LLVM.
+
 import sys
 import re
 

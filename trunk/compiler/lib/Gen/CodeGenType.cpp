@@ -90,7 +90,7 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(type->passes().isFinished(CompositeType::OverloadingPass), type);
   DASSERT_OBJ(type->irType() != NULL, type);
 
-  if (irModule_->getTypeName(type->irType()).empty()) {
+  if (irModule_->getTypeName(type->irType()).empty() && type->typeClass() != Type::Interface) {
     irModule_->addTypeName(tdef->linkageName(), type->irType());
   }
   createTypeInfoBlock(rtype);
@@ -245,7 +245,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
   // Create the dispatch function declaration
   std::vector<const llvm::Type *> argTypes;
-  argTypes.push_back(llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0));
+  argTypes.push_back(llvm::PointerType::get(Builtins::typeString.irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
   DASSERT(dbgContext_.isNull());
@@ -269,7 +269,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   indices.push_back(getInt32Val(0));
   indices.push_back(methodIndex);
 
-  BasicBlock * blk = BasicBlock::Create(context_, "", idispatch);
+  BasicBlock * blk = BasicBlock::Create(context_, "first", idispatch);
   for (CompositeType::InterfaceList::const_iterator it =
       type->interfaces_.begin(); it != type->interfaces_.end(); ++it) {
 
@@ -280,15 +280,15 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
       itableMembers->getType(), true, GlobalValue::InternalLinkage,
       itableMembers,
       itDecl->typeDefn()->linkageName() + "->" + linkageName);
-    Constant * itype = getTypeInfoBlockPtr(it->interfaceType);
+    Constant * iname = reflector_.internSymbol(itDecl->typeDefn()->linkageName());
 
     // Create the blocks
     BasicBlock * ret = BasicBlock::Create(context_, itDecl->typeDefn()->name(), idispatch);
-    BasicBlock * next = BasicBlock::Create(context_, "", idispatch);
+    BasicBlock * next = BasicBlock::Create(context_, "next", idispatch);
 
     // Test the interface pointer
     builder_.SetInsertPoint(blk);
-    Value * testVal = builder_.CreateICmp(ICmpInst::ICMP_EQ, iid, itype);
+    Value * testVal = builder_.CreateICmp(ICmpInst::ICMP_EQ, iid, iname);
     builder_.CreateCondBr(testVal, ret, next);
 
     // Return the specified method
