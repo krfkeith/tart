@@ -36,7 +36,8 @@ namespace tart {
 
 llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
     llvm::cl::desc("Enable debugging messages for this definition"),
-    llvm::cl::value_desc("defn-name"));
+    llvm::cl::value_desc("defn-name"),
+    llvm::cl::init("-"));
 
 bool AnalyzerBase::isTraceEnabled(Defn * de) {
   return de != NULL && traceDef_.getValue() == de->name();

@@ -53,17 +53,16 @@ public:
     /** The base class. */
     CompositeType * interfaceType;
 
+    /** List of interfaces that can use this dispatch table. */
+    ClassSet ifaces;
+
     /** The list of methods that are overridden for this type. For the direct
         superclass this includes all methods defined in this class. */
     MethodList methods;
 
-    /** The constant array of compiled method pointers. */
-    llvm::GlobalVariable * methodTable;
-
     /** Constructor */
     InterfaceTable(CompositeType * itype)
       : interfaceType(itype)
-      , methodTable(NULL)
     {}
   };
 

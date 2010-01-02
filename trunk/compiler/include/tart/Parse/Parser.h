@@ -139,6 +139,9 @@ public:
   /** Parse a type name - this includes compound names and template params. */
   ASTNode * typeName();
 
+  /** Parse the optional suffix of a type name. */
+  ASTNode * typeSuffix(ASTNode * result);
+
   /** Parse a built-in type name. */
   ASTNode * builtInTypeName(TokenType t);
 

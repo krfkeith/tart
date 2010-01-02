@@ -117,7 +117,10 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
           p->name(), dbgCompileUnit_,
           getSourceLineNumber(p->location()),
           genDIParameterType(p->type()));
-      dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+      dbgFactory_.InsertDbgValueIntrinsic(
+          p->irValue(), llvm::Value *Offset,
+          argVar, builder_.GetInsertBlock());
+      //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
     }
 #endif
 
@@ -133,7 +136,10 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
             dwarf::DW_TAG_arg_variable, dbgContext_,
             p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
             genDIParameterType(p->type()));
-        dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+        dbgFactory_.InsertDbgValueIntrinsic(
+            p->irValue(), llvm::Value *Offset,
+            argVar, builder_.GetInsertBlock());
+        //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
       }
     }
 #endif
