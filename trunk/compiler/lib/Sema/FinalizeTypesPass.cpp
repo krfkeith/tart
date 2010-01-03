@@ -32,7 +32,9 @@ Expr * FinalizeTypesPass::run(Defn * source, Expr * in, bool tryCoerciveCasts) {
 
 Expr * FinalizeTypesPass::runImpl(Expr * in) {
   Expr * result = visitExpr(in);
-  DASSERT(result->isSingular());
+  if (!diag.inRecovery()) {
+    DASSERT(result->isSingular());
+  }
   return result;
 }
 

@@ -1,0 +1,32 @@
+/** Set interface */
+interface Collection[%ItemType] : Iterable[ItemType] {
+  /** Add an item to the collection. Returns true if this caused a new item to be added,
+      false if it was already in the collection. */
+  def add(item:ItemType) -> bool;
+
+  /** Add all of the items in the specified collection into this collection. */
+  def addAll(items:Collection[ItemType]);
+  def addAll(items:Iterator[ItemType]);
+
+  /** Remove an item from the collection. Returns true if the item was in the collection and
+      was removed, false if the item wasn't in the collection to begin with. */
+  def remove(item:ItemType) -> bool;
+  
+  /** Add all of the items in the specified collection from this collection. */
+  def removeAll(items:Collection[ItemType]);
+  def removeAll(items:Iterator[ItemType]);
+
+  /** Return true if the specified item is in the collection. */
+  def contains(item:ItemType) -> bool;
+
+  /** Remove all items from the collection. */
+  def clear();
+  
+  /** Return the number of items in the collection. */
+  def length:int { get; }
+
+  /** Return true if this collection has no items. */
+  def isEmpty:bool { get; }
+  
+  // TODO: Add equals, computeHash (for immutable collections only).
+}

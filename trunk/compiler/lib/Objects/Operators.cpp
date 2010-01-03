@@ -469,6 +469,12 @@ static SourceString infixLogicalSrc(
     " @tart.annex.Intrinsic"
     " def infixLogicalOr(:bool, :bool) -> bool;");
 
+static SourceString infixAddSrc(
+    " @tart.annex.Intrinsic"
+    " def infixAdd[%T](:__Address[T], :int32) -> __Address[T];"
+    " @tart.annex.Intrinsic"
+    " def infixAdd[%T](:__Address[T], :int64) -> __Address[T];");
+
 } // namespace
 
 void Builtins::initOperators() {
@@ -707,6 +713,7 @@ void Builtins::initOperators() {
   compileBuiltins(infixEqSrc);
   compileBuiltins(infixNeSrc);
   compileBuiltins(infixLogicalSrc);
+  compileBuiltins(infixAddSrc);
 }
 
 }

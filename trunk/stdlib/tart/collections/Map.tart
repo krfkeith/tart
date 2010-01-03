@@ -6,4 +6,7 @@ interface Map[%Key, %Value] : Iterable[(Key, Value)] {
   
   /** The number of items in the map. */
   def length:int { get; }
+
+  /** Return true if there are no entries in this map. */
+  def isEmpty:bool { get; }
 }

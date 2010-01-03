@@ -59,7 +59,7 @@ public:
   virtual llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 
   /** Lookup an intrinsic by name. */
-  static Intrinsic * get(const char * name);
+  static Intrinsic * get(const SourceLocation & loc, const char * name);
 };
 
 } // namespace tart

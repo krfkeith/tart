@@ -22,5 +22,7 @@ class HashingTest : Test {
   }
 
   def testHashString {
+    assertEq(uint64(11772811824609541424), "Hello".computeHash());
+    assertEq(uint64(  471848232802090609), "Yello".computeHash());
   }
 }

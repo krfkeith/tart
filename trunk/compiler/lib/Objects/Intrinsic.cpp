@@ -59,7 +59,7 @@ llvm::Value * Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
   DFAIL("IllegalState");
 }
 
-Intrinsic * Intrinsic::get(const char * name) {
+Intrinsic * Intrinsic::get(const SourceLocation & loc, const char * name) {
   static bool init = false;
   if (!init) {
     init = true;
@@ -70,7 +70,7 @@ Intrinsic * Intrinsic::get(const char * name) {
     return it->second;
   }
 
-  diag.fatal() << "Unknown intrinsic function '" << name << "'";
+  diag.fatal(loc) << "Unknown intrinsic function '" << name << "'";
   return NULL;
 }
 
@@ -239,10 +239,10 @@ Value * PtrToIntIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call)
 }
 
 // -------------------------------------------------------------------
-// PtrToPtrIntrinsic
-PtrToPtrIntrinsic PtrToPtrIntrinsic::instance;
+// ReinterpretPtrIntrinsic
+ReinterpretPtrIntrinsic ReinterpretPtrIntrinsic::instance;
 
-Value * PtrToPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+Value * ReinterpretPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   DASSERT(call->argCount() == 1);
   Value * val = cg.genExpr(call->arg(0));
   return cg.builder().CreatePointerCast(val, call->type()->irType(), "ptrToPtr");
@@ -292,6 +292,16 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 }
 
 // -------------------------------------------------------------------
+// DerefIntrinsic
+DerefIntrinsic DerefIntrinsic::instance;
+
+Value * DerefIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreateLoad(val, "deref");
+}
+
+// -------------------------------------------------------------------
 // PointerComparisonIntrinsic
 template<llvm::CmpInst::Predicate pred>
 Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc,
@@ -307,6 +317,17 @@ PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEQ");
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
+
+// -------------------------------------------------------------------
+// AddressAddIntrinsic
+AddressAddIntrinsic AddressAddIntrinsic::instance;
+
+Value * AddressAddIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 2);
+  Value * ptr = cg.genExpr(call->arg(0));
+  Value * offset = cg.genExpr(call->arg(1));
+  return cg.builder().CreateGEP(ptr, &offset, (&offset) + 1, "ptr_add");
+}
 
 // -------------------------------------------------------------------
 // LogicalAndIntrinsic
@@ -679,7 +700,28 @@ Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, const Funct
   } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     lval->value()->addTrait(Defn::Nonreflective);
   } else {
-    diag.fatal(loc) << "Invalid target for nonreflective.";
+    diag.fatal(loc) << "Invalid target for @Nonreflective.";
+  }
+
+  return args[0];
+}
+
+// -------------------------------------------------------------------
+// TargetPropertyApplyIntrinsic
+TargetPropertyApplyIntrinsic TargetPropertyApplyIntrinsic::instance;
+
+Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+
+    } else {
+      diag.fatal(loc) << "Invalid target for @TargetProperty.";
+    }
+    //lval->value()->addTrait(Defn::TargetProperty);
+  } else {
+    diag.fatal(loc) << "Invalid target for @TargetProperty.";
   }
 
   return args[0];
