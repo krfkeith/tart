@@ -491,23 +491,4 @@ void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
 #endif
 }
 
-void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
-    ValueList::const_iterator first, ValueList::const_iterator last) {
-#if !NDEBUG
-  const llvm::FunctionType * fnType = cast<llvm::FunctionType>(fn->getType()->getContainedType(0));
-  size_t argCount = last - first;
-  DASSERT(fnType->getNumParams() == argCount);
-  for (size_t i = 0; i < argCount; ++i) {
-    const llvm::Type * paramType = fnType->getContainedType(i + 1);
-    const llvm::Type * argType = first[i]->getType();
-    if (paramType != argType) {
-      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType;
-      diag.info() << "but was '" << *argType;
-      diag.info() << "function value: '" << *fn;
-      DFAIL("Called from here");
-    }
-  }
-#endif
-}
-
 }

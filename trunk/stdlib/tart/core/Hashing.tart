@@ -1,4 +1,5 @@
 import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
 
 /** Various useful hash functions. */
 namespace Hashing {
@@ -17,6 +18,11 @@ namespace Hashing {
   /** Hash a pointer. */
   def hash[%T](value:Address[T]) -> uint32 {
     return murmurHash(Memory.ptrToPtr[T, void](value));
+  }
+  
+  /** Hash a buffer of bytes. */
+  def hash(buffer:Memory.Buffer[ubyte]) -> uint64 {
+    return murmurHash(buffer);
   }
   
   let M32:uint32 = 0x5bd1e995;
@@ -63,8 +69,13 @@ namespace Hashing {
     return murmurHash(Memory.ptrToInt(key));
   }
 
+  /** Hash a region of memory. */
+  def murmurHash(buffer:Memory.Buffer[ubyte], seed:uint32 = 0) -> uint32 {
+    return murmurHash(buffer.begin, buffer.end, seed);
+  }
+
   /** Hash a byte buffer segment. */
-  def murmurHash(key:Address[ubyte], length:int, seed:uint32 = 0) -> uint32 {
+  def murmurHash(first:Address[ubyte], last:Address[ubyte], seed:uint32 = 0) -> uint32 {
     //start = Math.min(start, key.length);
     //count = Math.min(count, key.length - start);
     

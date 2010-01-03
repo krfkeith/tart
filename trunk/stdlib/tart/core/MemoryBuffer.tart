@@ -7,7 +7,7 @@ struct MemoryBuffer[%T] {
   
   // The starting address of the buffer.
   public let begin:Address[T];
-  
+
   // The ending address of the buffer.
   public let end:Address[T];
 

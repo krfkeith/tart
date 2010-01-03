@@ -1,0 +1,7 @@
+protocol Hashable {
+  /** Compute the hash value for this object. */
+  def computeHash -> uint64;
+  
+  /** A hashable object must also be comparable with other hashable objects. */
+  //def equals(other:Object) -> bool;
+}

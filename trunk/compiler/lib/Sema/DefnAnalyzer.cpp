@@ -455,6 +455,11 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   bool enableReflection = module->isReflectionEnabled() &&
         (in->isSynthetic() || in->module() == module);
   bool enableReflectionDetail = enableReflection && !in->hasTrait(Defn::Nonreflective);
+  bool trace = isTraceEnabled(in);
+
+  if (trace) {
+    diag.debug() << Format_Verbose << "Adding reflection info for: " << in;
+  }
 
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     switch (tdef->typeValue()->typeClass()) {
@@ -487,7 +492,9 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
       case Type::Struct:
         if (enableReflectionDetail) {
-          importSystemType(Builtins::typeComplexType);
+          if (module->reflectedDefs().insert(tdef)) {
+            importSystemType(Builtins::typeComplexType);
+          }
         }
 
         break;
@@ -524,7 +531,11 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           }
         }
 
+        if (trace) {
+          diag.debug() << Format_Verbose << "  Reflecting return type: " << fn->returnType();
+        }
         reflectType(fn->returnType());
+
         if (fn->returnType()->isBoxableType()) {
           // Cache the boxing function for this type.
           ExprAnalyzer(module, activeScope, subject_, fn).coerceToObjectFn(fn->returnType());

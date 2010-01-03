@@ -79,7 +79,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     const Expr * arg = *it;
     const Type * argType = arg->canonicalType();
-    TypeShape typeShape = argType->typeShape();
+    //TypeShape typeShape = argType->typeShape();
     Value * argVal = genExpr(arg);
     if (argVal == NULL) {
       return NULL;
@@ -321,12 +321,38 @@ Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
     Function * f = currentFn_;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     normalDest->moveAfter(builder_.GetInsertBlock());
-    Value * result = builder_.CreateInvoke(func, normalDest, unwindTarget_, firstArg, lastArg/*, name*/);
+    Value * result = builder_.CreateInvoke(func, normalDest, unwindTarget_, firstArg, lastArg);
     builder_.SetInsertPoint(normalDest);
+    if (!result->getType()->isVoidTy()) {
+      result->setName(name);
+    }
     return result;
   } else {
-    return builder_.CreateCall(func, firstArg, lastArg /*, name*/ );
+    Value * result = builder_.CreateCall(func, firstArg, lastArg);
+    if (!result->getType()->isVoidTy()) {
+      result->setName(name);
+    }
+    return result;
   }
+}
+
+void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
+    ValueList::const_iterator first, ValueList::const_iterator last) {
+#if !NDEBUG
+  const llvm::FunctionType * fnType = cast<llvm::FunctionType>(fn->getType()->getContainedType(0));
+  size_t argCount = last - first;
+  DASSERT(fnType->getNumParams() == argCount);
+  for (size_t i = 0; i < argCount; ++i) {
+    const llvm::Type * paramType = fnType->getContainedType(i + 1);
+    const llvm::Type * argType = first[i]->getType();
+    if (paramType != argType) {
+      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType;
+      diag.info() << "but was '" << *argType;
+      diag.info() << "function value: '" << *fn;
+      DFAIL("Called from here");
+    }
+  }
+#endif
 }
 
 } // namespace tart

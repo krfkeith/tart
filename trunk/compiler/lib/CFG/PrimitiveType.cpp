@@ -785,7 +785,7 @@ template<> Expr * CharType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Byte
 
-template<> TypeDefn ByteType::typedefn(&Builtins::module, "byte", &ByteType::instance);
+template<> TypeDefn ByteType::typedefn(&Builtins::module, "int8", &ByteType::instance);
 template<> TypeIdSet ByteType::MORE_GENERAL =
     TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
 template<> TypeIdSet ByteType::INCLUDES = TypeIdSet::noneOf();
@@ -829,7 +829,7 @@ template<> Expr * ByteType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Short
 
-template<> TypeDefn ShortType::typedefn(&Builtins::module, "short", &ShortType::instance);
+template<> TypeDefn ShortType::typedefn(&Builtins::module, "int16", &ShortType::instance);
 template<> TypeIdSet ShortType::MORE_GENERAL = TypeIdSet::of(TypeId_SInt32, TypeId_SInt64);
 template<> TypeIdSet ShortType::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UInt8);
 
@@ -870,7 +870,7 @@ template<> Expr * ShortType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Int
 
-template<> TypeDefn IntType::typedefn(&Builtins::module, "int", &IntType::instance);
+template<> TypeDefn IntType::typedefn(&Builtins::module, "int32", &IntType::instance);
 template<> TypeIdSet IntType::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64);
 template<> TypeIdSet IntType::INCLUDES = TypeIdSet::of(
     TypeId_SInt8, TypeId_SInt16, TypeId_UInt8, TypeId_UInt16
@@ -913,7 +913,7 @@ template<> Expr * IntType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Long
 
-template<> TypeDefn LongType::typedefn(&Builtins::module, "long", &LongType::instance);
+template<> TypeDefn LongType::typedefn(&Builtins::module, "int64", &LongType::instance);
 template<> TypeIdSet LongType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet LongType::INCLUDES = TypeIdSet::of(
     TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
@@ -996,7 +996,7 @@ template<> Expr * IntPtrType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: UByte
 
-template<> TypeDefn UByteType::typedefn(&Builtins::module, "ubyte", &UByteType::instance);
+template<> TypeDefn UByteType::typedefn(&Builtins::module, "uint8", &UByteType::instance);
 template<> TypeIdSet UByteType::MORE_GENERAL =
 TypeIdSet::of(TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
 template<> TypeIdSet UByteType::INCLUDES = TypeIdSet::noneOf();
@@ -1038,7 +1038,7 @@ template<> Expr * UByteType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: UShort
 
-template<> TypeDefn UShortType::typedefn(&Builtins::module, "ushort", &UShortType::instance);
+template<> TypeDefn UShortType::typedefn(&Builtins::module, "uint16", &UShortType::instance);
 template<> TypeIdSet UShortType::MORE_GENERAL = TypeIdSet::of(TypeId_UInt32, TypeId_UInt64);
 template<> TypeIdSet UShortType::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 
@@ -1079,7 +1079,7 @@ template<> Expr * UShortType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: UInt
 
-template<> TypeDefn UIntType::typedefn(&Builtins::module, "uint", &UIntType::instance);
+template<> TypeDefn UIntType::typedefn(&Builtins::module, "uint32", &UIntType::instance);
 template<> TypeIdSet UIntType::MORE_GENERAL = TypeIdSet::of(TypeId_UInt64);
 template<> TypeIdSet UIntType::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UInt16);
 
@@ -1120,7 +1120,7 @@ template<> Expr * UIntType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: ULong
 
-template<> TypeDefn ULongType::typedefn(&Builtins::module, "ulong", &ULongType::instance);
+template<> TypeDefn ULongType::typedefn(&Builtins::module, "uint64", &ULongType::instance);
 template<> TypeIdSet ULongType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet ULongType::INCLUDES =
 TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);

@@ -155,6 +155,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
   // Types of the function parameters.
   std::vector<const llvm::Type *> parameterTypes;
 
+  // See if we need to use a struct return.
   const llvm::Type * rType = returnType->irReturnType();
   if (returnType->typeShape() == Shape_Large_Value) {
     parameterTypes.push_back(rType);
@@ -177,15 +178,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
     const ParameterDefn * param = *it;
     const Type * paramType = param->internalType();
     DASSERT_OBJ(paramType != NULL, param);
-
-    const llvm::Type * argType;
-    if (paramType->isReferenceType()) {
-      argType = PointerType::get(paramType->irType(), 0);
-    } else {
-      argType = paramType->irParameterType();
-    }
-
-    parameterTypes.push_back(argType);
+    parameterTypes.push_back(paramType->irParameterType());
   }
 
   // Create the function type
