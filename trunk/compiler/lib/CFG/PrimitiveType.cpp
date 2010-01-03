@@ -643,7 +643,7 @@ public:
 
   void init() {
     // Can't do this in constructor because it happens too early.
-    setIntrinsic(PrimitiveToStringIntrinsic::get("PrimitiveType.toString"));
+    setIntrinsic(PrimitiveToStringIntrinsic::get(SourceLocation(), "PrimitiveType.toString"));
   }
 
   static ParameterDefn selfParam;

@@ -1047,6 +1047,7 @@ ASTNode * Parser::typeExprPrimary() {
       expectedCloseParen();
       return NULL;
     }
+
   } else if (match(Token_Percent)) {
     // Pattern variable.
     ASTNode * declType = NULL;
@@ -1104,6 +1105,7 @@ ASTNode * Parser::typeExprPrimary() {
     }
   }
 
+  result = typeSuffix(result);
   return result;
 }
 
@@ -1121,7 +1123,6 @@ ASTNode * Parser::typeName() {
     return NULL;
   }
 
-  result = typeSuffix(result);
 
   while (match(Token_Dot)) {
     const char * typeName = matchIdent();
@@ -1131,7 +1132,7 @@ ASTNode * Parser::typeName() {
     }
 
     result = new ASTMemberRef(loc | matchLoc, result, typeName);
-    result = typeSuffix(result);
+    //result = typeSuffix(result);
     if (result == NULL) {
       return NULL;
     }
@@ -1678,15 +1679,15 @@ Stmt * Parser::declStmt() {
 
 Stmt * Parser::ifStmt() {
   SourceLocation loc = matchLoc;
-  bool parens = match(Token_LParen);
+  //bool parens = match(Token_LParen);
   ASTNode * testExpr = testOrDecl();
   if (testExpr == NULL)
     return NULL;
 
-  if (parens && !match(Token_RParen)) {
-    expectedCloseParen();
-    return NULL;
-  }
+  //if (parens && !match(Token_RParen)) {
+  //  expectedCloseParen();
+  //  return NULL;
+  //}
 
   Stmt * thenSt = bodyStmt();
   if (thenSt == NULL)

@@ -343,7 +343,7 @@ void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
 
 void DefnAnalyzer::handleIntrinsicAttribute(Defn * de, Expr * attrExpr) {
   if (FunctionDefn * func = dyn_cast<FunctionDefn>(de)) {
-    func->setIntrinsic(Intrinsic::get(func->qualifiedName().c_str()));
+    func->setIntrinsic(Intrinsic::get(func->location(), func->qualifiedName().c_str()));
   } else {
     diag.fatal(attrExpr) << "Only functions can be Intrinsics";
   }

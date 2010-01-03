@@ -12,6 +12,7 @@ Working on currently:
   -- String iteration
   -- BUG: Test classes segfault if another class is declared first. Most likely reflection
       data is being miscompiled.
+  -- Migrate pointer+length to pointer+pointer apis. Or get intptr working,
 
 Implementation TODOS:
 

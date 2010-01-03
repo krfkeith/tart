@@ -113,10 +113,10 @@ class PtrToIntIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Memory.ptrToPtr intrinsic
-class PtrToPtrIntrinsic : public Intrinsic {
-  static PtrToPtrIntrinsic instance;
-  PtrToPtrIntrinsic() : Intrinsic("tart.core.Memory.ptrToPtr") {}
+// Memory.reinterpretPtr intrinsic
+class ReinterpretPtrIntrinsic : public Intrinsic {
+  static ReinterpretPtrIntrinsic instance;
+  ReinterpretPtrIntrinsic() : Intrinsic("tart.core.Memory.reinterpretPtr") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
@@ -145,6 +145,14 @@ class PointerDiffIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Memory.deref intrinsic
+class DerefIntrinsic : public Intrinsic {
+  static DerefIntrinsic instance;
+  DerefIntrinsic() : Intrinsic("tart.core.Memory.deref") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Operator.equal and Operator.unequal for native pointers.
 template<llvm::CmpInst::Predicate pred>
 class PointerComparisonIntrinsic : public Intrinsic {
@@ -152,6 +160,14 @@ class PointerComparisonIntrinsic : public Intrinsic {
   PointerComparisonIntrinsic(const char * name) : Intrinsic(name) {}
   Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
       const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Operator.infixAdd native address.
+class AddressAddIntrinsic : public Intrinsic {
+  static AddressAddIntrinsic instance;
+  AddressAddIntrinsic() : Intrinsic("infixAdd") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
 // -------------------------------------------------------------------
@@ -302,6 +318,15 @@ class UnsafeApplyIntrinsic : public Intrinsic {
 class NonreflectiveApplyIntrinsic : public Intrinsic {
   static NonreflectiveApplyIntrinsic instance;
   NonreflectiveApplyIntrinsic() : Intrinsic("tart.annex.Nonreflective.apply") {}
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// TargetProperty.apply intrinsic
+class TargetPropertyApplyIntrinsic : public Intrinsic {
+  static TargetPropertyApplyIntrinsic instance;
+  TargetPropertyApplyIntrinsic() : Intrinsic("tart.annex.TargetProperty.apply") {}
   Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
       const ExprList & args, Type * expectedReturn) const;
 };

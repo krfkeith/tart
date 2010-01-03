@@ -66,23 +66,27 @@ namespace Memory {
       the value is too large to be contained within a signed integer.
    */
   @Intrinsic
-  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int32;
 
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
       the value is too large to be contained within a signed long.
    */
   @Intrinsic
-  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> long;
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int64;
 
   /** Return the integer value of a pointer. Not guaranteed to be convertible back
       into a pointer (may be truncated.) */
   @Intrinsic
   def ptrToInt[%T](addr:Address[T]) -> uint32;
 
-  /** An unchecked cast of one pointer type to another */
-  @Intrinsic
-  def ptrToPtr[%S, %T](from:Address[S]) -> Address[T];
+  /** An unchecked cast of one pointer type to another. */
+  @Unsafe @Intrinsic
+  def reinterpretPtr[%S, %T](from:Address[S]) -> Address[T];
+
+  /** Dereference a pointer value. */
+  @Unsafe @Intrinsic
+  def deref[%T](from:Address[T]) -> T;
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.

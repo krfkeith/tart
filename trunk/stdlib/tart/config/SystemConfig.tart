@@ -1,3 +1,6 @@
+import tart.annex.Intrinsic;
+import tart.annex.TargetProperty;
+
 /** Information about the host platform. */
 namespace SystemConfig {
   /** Operating system type. */
@@ -10,10 +13,14 @@ namespace SystemConfig {
   }
 
   /** Operating system type of the target platform. */  
-  let os:OS = osType();
+  @TargetProperty var os:OS;
+  
+  /** Whether this processor allows unaligned reads. */  
+  @TargetProperty var allowUnalignedMemoryAccess:bool;
+  
+  /** Size of a pointer field in memory, in bits. */
+  @TargetProperty var sizeOfPointer:int;
 
-  // Functions to produce the system configuration variables at compile-time.
-  private {
-    @Intrinsic static def osType() -> OS;
-  }
+  /** True if the target platform is little endian. */ 
+  @TargetProperty var isLittleEndian:bool;
 }

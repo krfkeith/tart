@@ -196,18 +196,19 @@ static inline void addPass(PassManager & pm, Pass * pass) {
 /// Optimize - Perform link time optimizations. This will run the scalar
 /// optimizations, any loaded plugin-optimization modules, and then the
 /// inter-procedural optimizations if applicable.
-void optimize(Module * module) {
-#if 0
-  if (OptimizationLevel >= O1) {
-    FunctionPassManager fpm(new ExistingModuleProvider(&mod));
-    fpm.add(new TargetData(*target.getTargetData()));
-    createStandardFunctionPasses(&fpm, int(OptimizationLevel));
-    fpm.doInitialization();
-    for (Module::iterator it = mod.begin(); it != mod.end(); ++it) {
-      fpm.run(*it);
+void optimize(Module * module, const TargetData * targetData) {
+  // Add an appropriate TargetData instance for this module...
+  FunctionPassManager *FPasses = NULL;
+  if (optOptimizationLevel >= O1) {
+    FunctionPassManager fpm(new ExistingModuleProvider(module));
+    if (targetData) {
+      fpm.add(new TargetData(*targetData));
+      fpm.doInitialization();
+      for (Module::iterator it = module->begin(); it != module->end(); ++it) {
+        fpm.run(*it);
+      }
     }
   }
-#endif
 
   // Instantiate the pass manager to organize the passes.
   PassManager passes;
@@ -218,7 +219,7 @@ void optimize(Module * module) {
   }
 
   // Add an appropriate TargetData instance for this module...
-  addPass(passes, new TargetData(module));
+  addPass(passes, new TargetData(*targetData));
 
   if (optInternalize) {
     std::vector<const char *> externs;
@@ -453,9 +454,7 @@ void generateBitcode(Module * module, const sys::Path & outputFilePath) {
 }
 
 static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & assemblyFile,
-    TargetMachine::CodeGenFileType codeGenType) {
-  std::auto_ptr<TargetMachine> targetMachine = selectTarget(*mod.get());
-  TargetMachine & target = *targetMachine.get();
+    TargetMachine & target, TargetMachine::CodeGenFileType codeGenType) {
   std::string errMsg;
 
   if (optVerbose) {
@@ -583,109 +582,6 @@ fail:
   exit(1);
 }
 
-#if 0
-/// GenerateNative - generates a native object file from the
-/// specified bitcode file.
-///
-/// Inputs:
-///  InputFilename   - The name of the input bitcode file.
-///  OutputFilename  - The name of the file to generate.
-///  NativeLinkItems - The native libraries, files, code with which to link
-///  LibPaths        - The list of directories in which to find libraries.
-///  FrameworksPaths - The list of directories in which to find frameworks.
-///  Frameworks      - The list of frameworks (dynamic libraries)
-///  gcc             - The pathname to use for GGC.
-///  envp            - A copy of the process's current environment.
-///
-/// Outputs:
-///  None.
-///
-/// Returns non-zero value on error.
-///
-static int generateNative(const std::string &OutputFilename, const std::string &InputFilename,
-    const Linker::ItemList &LinkItems, const sys::Path &gcc, char ** const envp,
-    std::string& ErrMsg) {
-  // Remove these environment variables from the environment of the
-  // programs that we will execute.  It appears that GCC sets these
-  // environment variables so that the programs it uses can configure
-  // themselves identically.
-  //
-  // However, when we invoke GCC below, we want it to use its normal
-  // configuration.  Hence, we must sanitize its environment.
-  char ** clean_env = copyEnv(envp);
-  if (clean_env == NULL) return 1;
-  removeEnv("LIBRARY_PATH", clean_env);
-  removeEnv("COLLECT_GCC_OPTIONS", clean_env);
-  removeEnv("GCC_EXEC_PREFIX", clean_env);
-  removeEnv("COMPILER_PATH", clean_env);
-  removeEnv("COLLECT_GCC", clean_env);
-
-  // Run GCC to assemble and link the program into native code.
-  //
-  // Note:
-  //  We can't just assemble and link the file with the system assembler
-  //  and linker because we don't know where to put the _start symbol.
-  //  GCC mysteriously knows how to do it.
-  std::vector<std::string> args;
-  args.push_back(gcc.c_str());
-  args.push_back("-fno-strict-aliasing");
-  args.push_back("-O3");
-  args.push_back("-o");
-  args.push_back(OutputFilename);
-  args.push_back(InputFilename);
-
-  // Add in the library and framework paths
-  for (unsigned index = 0; index < optLibPaths.size(); index++) {
-    args.push_back("-L" + optLibPaths[index]);
-  }
-
-  for (unsigned index = 0; index < optFrameworkPaths.size(); index++) {
-    args.push_back("-F" + optFrameworkPaths[index]);
-  }
-
-  // Add the requested options
-  for (unsigned index = 0; index < optXLinker.size(); index++) {
-    args.push_back(optXLinker[index]);
-  }
-
-  // Add in the libraries to link.
-  for (unsigned index = 0; index < LinkItems.size(); index++)
-    if (LinkItems[index].first != "crtend") {
-      if (LinkItems[index].second) {
-        args.push_back("-l" + LinkItems[index].first);
-      } else {
-        args.push_back(LinkItems[index].first);
-      }
-    }
-
-  // Add in frameworks to link.
-  for (unsigned index = 0; index < optFrameworks.size(); index++) {
-    args.push_back("-framework");
-    args.push_back(optFrameworks[index]);
-  }
-
-  // Now that "args" owns all the std::strings for the arguments, call the c_str
-  // method to get the underlying string array.  We do this game so that the
-  // std::string array is guaranteed to outlive the const char* array.
-  std::vector<const char *> Args;
-  for (unsigned i = 0, e = args.size(); i != e; ++i) {
-    Args.push_back(args[i].c_str());
-  }
-
-  Args.push_back(0);
-
-  if (optVerbose) {
-    outs() << "Generating Native Executable With:\n";
-    printCommand(Args);
-  }
-
-  // Run the compiler to assembly and link together the program.
-  int R = sys::Program::ExecuteAndWait(gcc, &Args[0], (const char**) clean_env, 0, 0, 0, &ErrMsg);
-  delete[] clean_env;
-  return R;
-}
-#endif
-
 // BuildLinkItems -- This function generates a LinkItemList for the LinkItems
 // linker function by combining the Files and Libraries in the order they were
 // declared on the command line.
@@ -777,9 +673,22 @@ int main(int argc, char **argv, char **envp) {
     }
 
     std::auto_ptr<Module> composite(linker.releaseModule());
+    std::auto_ptr<TargetMachine> targetMachine = selectTarget(*composite.get());
+
+    errs() << "TargetData = " << targetMachine->getTargetData()->getStringRepresentation();
+
+/*    TargetData * TD = 0;
+    const std::string &ModuleDataLayout = M.get()->getDataLayout();
+    if (!ModuleDataLayout.empty())
+      TD = new TargetData(ModuleDataLayout);
+    else if (!DefaultDataLayout.empty())
+      TD = new TargetData(DefaultDataLayout);
+
+    if (TD)
+      Passes.add(TD);*/
 
     // Optimize the module
-    optimize(composite.get());
+    optimize(composite.get(), targetMachine->getTargetData());
 
     if (optDumpAsm) {
       errs() << "-------------------------------------------------------------\n";
@@ -842,7 +751,8 @@ int main(int argc, char **argv, char **envp) {
     if (optOutputType == BitcodeFile) {
       generateBitcode(composite.get(), outputFilename);
     } else if (optOutputType == AssemblyFile) {
-      generateAssembly(composite, outputFilename, TargetMachine::AssemblyFile);
+      generateAssembly(composite, outputFilename, *targetMachine.get(),
+          TargetMachine::AssemblyFile);
     } else {
       printAndExit("Unsupported output type");
     }
