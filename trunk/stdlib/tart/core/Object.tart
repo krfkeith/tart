@@ -64,7 +64,7 @@ public class Object : Hashable {
   }
 
   /** Return a hash value for this object. The base version hashes the object address. */
-  def computeHash -> uint32 {
+  def computeHash -> uint64 {
     return Hashing.hash(Memory.objectAddress(self));
   }
 }

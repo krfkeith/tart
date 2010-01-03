@@ -200,6 +200,10 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
     if ((td->isSynthetic() || td->hasTrait(Defn::Nonreflective)) &&
         module()->exportDefs().count(td) > 0) {
       linkageType = GlobalValue::LinkOnceODRLinkage;
+      if (module()->reflectedDefs().count(type->typeDefn()) == 0) {
+        diag.fatal() << Format_Verbose << "Attempting to reflect synthetic type " << td <<
+            " but it has not been listed as a reflected type.";
+      }
     }
 
     rfType = new GlobalVariable(*irModule_, reflectedTypeOf(type), true,
@@ -594,7 +598,7 @@ llvm::Constant * Reflector::emitOpaqueType(const Type * type) {
   return sb.build(Builtins::typeSimpleType->irType());
 }
 
-llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type * type) {
+llvm::Constant * Reflector::emitSimpleType(const Type * simpleType, const Type * type) {
   SubtypeId subtype = NONE;
   TypeKind kind;
   switch (type->typeClass()) {
@@ -638,7 +642,7 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
 
   StructBuilder sb(cg_);
   DASSERT_OBJ(type->typeDefn() != NULL, type);
-  sb.addField(emitTypeBase(reflectType, kind));
+  sb.addField(emitTypeBase(simpleType, kind));
   sb.addIntegerField(type_typeKind.get(), subtype);
   sb.addField(internSymbol(type->typeDefn()->linkageName()));
   sb.addField(llvm::ConstantExpr::getTrunc(
@@ -646,9 +650,9 @@ llvm::Constant * Reflector::emitSimpleType(const Type * reflectType, const Type 
   return sb.build(Builtins::typeSimpleType->irType());
 }
 
-llvm::Constant * Reflector::emitTypeBase(const Type * reflectType, TypeKind kind) {
+llvm::Constant * Reflector::emitTypeBase(const Type * typeBase, TypeKind kind) {
   StructBuilder sb(cg_);
-  sb.createObjectHeader(reflectType);
+  sb.createObjectHeader(typeBase);
   sb.addIntegerField(type_typeKind.get(), kind);
   return sb.build(Builtins::typeType->irType());
 }

@@ -154,21 +154,23 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
+      const Type * paramType = param->type();
       DASSERT_OBJ(param != NULL, fdef);
       it->setName(param->name());
+      Value * paramValue = it;
 
       // See if we need to make a local copy of the param.
-      if (param->isLValue() /*|| isSmallAggregateValueType(param->type())*/
-          || param->type()->typeClass() == Type::Struct) {
-        //|| (!param->getParameterFlag(ParameterDefn::Reference)
-        //  && isAllocValueType(ptypeetType()))) {
-        // TODO: For struct parameters, make a copy of whole struct.
-        // If parameter was modified, then copy to a local var.
-        Value * localValue = builder_.CreateAlloca(it->getType(), 0, param->name());
-        builder_.CreateStore(it, localValue);
+      if (param->isLValue()) {
+        Value * localValue = builder_.CreateAlloca(paramType->irEmbeddedType(), 0, param->name());
         param->setIRValue(localValue);
+
+        if (paramType->typeShape() == Shape_Large_Value) {
+          paramValue = builder_.CreateLoad(paramValue);
+        }
+
+        builder_.CreateStore(paramValue, localValue);
       } else {
-        param->setIRValue(it);
+        param->setIRValue(paramValue);
       }
     }
 

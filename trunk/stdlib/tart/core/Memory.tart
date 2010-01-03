@@ -9,28 +9,41 @@ namespace Memory {
   /** Represents a sub-range of an array or list or other container that uses
       contiguous storage of elements. */
   struct Buffer[%T] {
-    // Reference to the container for GC purposes.
-    private var container:Object;
-    private var first:Address[T];
-    private var last:Address[T];
-    
-    def construct(container:Object, first:Address[T], last:Address[T]) {
-      self.container = container;
-      self.first = first;
-      self.last = last;
-    }
-    
-    def length:int {
-      get { return ptrDiff(first, last); }
+    protected {
+      // Reference to the container for GC purposes.
+      var _container:Object;
+      var _begin:Address[T];
+      var _end:Address[T];
     }
 
-    def length:long {
-      get { return ptrDiff(first, last); }
+    def construct(container:Object, begin:Address[T], end:Address[T]) {
+      self._container = container;
+      self._begin = begin;
+      self._end = end;
     }
+
+    // TODO: Mark T as const.
+    
+    /** Read-only access to the beginning of the buffer. */
+    def begin:Address[T] { get { return _begin; } }
+
+    /** Read-only access to the end of the buffer. */
+    def end:Address[T] { get { return _end; } }
+    
+    /*def length:int32 {
+      get { return ptrDiff(_begin, _end); }
+    }
+
+    def length:int64 {
+      get { return ptrDiff(_begin, _end); }
+    }*/
   }
 
   /** Extension of Buffer to support mutatbility of elements. */
-  struct MutableBuffer[%T] : Buffer[T] {}
+  struct MutableBuffer[%T] : Buffer[T] {
+    def mutableBegin:Address[T] { get { return _begin; } }
+    def mutableEnd:Address[T] { get { return _end; } }
+  }
 
   /** The integer 0, converted to a pointer of a given type. Intended to be
       used for offset calculations.
@@ -77,15 +90,24 @@ namespace Memory {
       The behavior is equivalent to the CLib function memcpy().
       Parameters:
         dst: The array containing the destination range.
-        dstOffset: The starting index of the destination range.
         src: The array containing the source range.
-        srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int32);
 
   /** [Ditto] */
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:long);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int64);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Does not guarantee correct behavior if the source and destination overlap.
+      
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dstBegin: The start of the destination range.
+        dstEnd: The end of the destination range.
+        src: The start of the source range.
+   */
+  @Unsafe @Intrinsic def arrayCopy[%T](dstBegin:Address[T], dstEnd:Address[T], src:Address[T]);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
@@ -98,9 +120,19 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int32);
 
-  /** [Ditto] 
+  /** [Ditto] */
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int64);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Handles the case of overlapping ranges.
+      
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dstBegin: The start of the destination range.
+        dstEnd: The end of the destination range.
+        src: The start of the source range.
    */
-  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:long);
+  @Unsafe @Intrinsic def arrayMove[%T](dstBegin:Address[T], dstEnd:Address[T], src:Address[T]);
 }

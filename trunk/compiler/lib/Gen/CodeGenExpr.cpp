@@ -224,7 +224,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   switch (in->exprType()) {
     case Expr::ConstNull:
-      return ConstantPointerNull::getNullValue(in->type()->irParameterType());
+      return ConstantPointerNull::getNullValue(PointerType::get(in->type()->irType(), 0));
 
     case Expr::ConstInt:
       return static_cast<const ConstantInteger *>(in)->value();

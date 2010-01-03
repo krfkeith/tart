@@ -16,14 +16,14 @@ TEST(TypeTest, Primitive) {
   ASSERT_STREQ("void", VoidType::typedefn.name());
   ASSERT_STREQ("bool", BoolType::typedefn.name());
   ASSERT_STREQ("char", CharType::typedefn.name());
-  ASSERT_STREQ("byte", ByteType::typedefn.name());
-  ASSERT_STREQ("short",ShortType::typedefn.name());
-  ASSERT_STREQ("int",  IntType::typedefn.name());
-  ASSERT_STREQ("long", LongType::typedefn.name());
-  ASSERT_STREQ("ubyte",UByteType::typedefn.name());
-  ASSERT_STREQ("ushort",UShortType::typedefn.name());
-  ASSERT_STREQ("uint", UIntType::typedefn.name());
-  ASSERT_STREQ("ulong",ULongType::typedefn.name());
+  ASSERT_STREQ("int8", ByteType::typedefn.name());
+  ASSERT_STREQ("int16",ShortType::typedefn.name());
+  ASSERT_STREQ("int32",  IntType::typedefn.name());
+  ASSERT_STREQ("int64", LongType::typedefn.name());
+  ASSERT_STREQ("uint8",UByteType::typedefn.name());
+  ASSERT_STREQ("uint16",UShortType::typedefn.name());
+  ASSERT_STREQ("uint32", UIntType::typedefn.name());
+  ASSERT_STREQ("uint64",ULongType::typedefn.name());
   ASSERT_STREQ("float",FloatType::typedefn.name());
   ASSERT_STREQ("double",DoubleType::typedefn.name());
 }

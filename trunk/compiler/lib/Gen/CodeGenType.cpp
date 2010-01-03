@@ -56,6 +56,7 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
       return NULL;
 
     case Type::Protocol:
+      // Protocols have no runtime representation.
       return NULL;
 
     default:
@@ -78,6 +79,10 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
+  if (irModule_->getTypeName(type->irType()).empty() && type->typeClass() != Type::Interface) {
+    irModule_->addTypeName(tdef->linkageName(), type->irType());
+  }
+
   // Don't need to define this twice.
   if (rtype->isExternal() ||
       (rtype->getTypeInfoBlock() != NULL && rtype->getTypeInfoBlock()->hasInitializer())) {
@@ -90,9 +95,6 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(type->passes().isFinished(CompositeType::OverloadingPass), type);
   DASSERT_OBJ(type->irType() != NULL, type);
 
-  if (irModule_->getTypeName(type->irType()).empty() && type->typeClass() != Type::Interface) {
-    irModule_->addTypeName(tdef->linkageName(), type->irType());
-  }
   createTypeInfoBlock(rtype);
   createTypeAllocator(rtype);
   return type->irType();
@@ -526,9 +528,11 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   const llvm::FunctionType * callType;
   if (fnType->selfParam() != NULL && !fnType->isStatic()) {
     // Push the 'self' argument.
-    callType = fnType->createIRFunctionType(Builtins::typeObject, fnType->params(),
-        fnType->returnType());
-    args.push_back(builder_.CreatePointerCast(objPtr, callType->getParamType(0)));
+    callType = fnType->createIRFunctionType(
+        Builtins::typeObject, fnType->params(), fnType->returnType());
+    args.push_back(builder_.CreatePointerCast(
+        objPtr,
+        callType->getParamType(sret ? 1 : 0)));
   } else {
     // Use the real function type.
     callType = cast<llvm::FunctionType>(fnType->irType());
@@ -545,26 +549,6 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
     Value * argVal = argAddr;
     ensureLValue(NULL, argAddr->getType());
     argVal = builder_.CreateLoad(argAddr);
-//    if (!isSmallAggregateValueType(paramType)) {
-//      ensureLValue(NULL, argAddr->getType());
-//      argVal = builder_.CreateLoad(argAddr);
-//    }
-    /*TypeShape typeShape = paramType->typeShape();
-    switch (typeShape) {
-      case Shape_Primitive:
-      case Shape_Small_RValue:
-        break;
-
-      case Shape_Reference:
-      case Shape_Small_LValue:
-      case Shape_Large_Value:
-        //needsDeref = true;
-        break;
-
-      default:
-        diag.fatal(in) << "Invalid type shape";
-    }*/
-
     argVal = genCast(argVal, Builtins::typeObject, paramType);
     if (argVal == NULL) {
       currentFn_ = NULL;
@@ -608,8 +592,6 @@ llvm::Function * CodeGenerator::genDcObjectFn(const Type * objType) {
   if (dcObjectFn != NULL) {
     return dcObjectFn;
   }
-
-  //diag.debug() << Format_Type << "Generating downcast function for type " << objType;
 
   DASSERT(currentFn_ == NULL);
 

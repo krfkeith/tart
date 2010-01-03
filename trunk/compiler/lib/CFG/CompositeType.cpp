@@ -261,7 +261,7 @@ const llvm::Type * CompositeType::irEmbeddedType() const {
 
 const llvm::Type * CompositeType::irParameterType() const {
   const llvm::Type * type = irType();
-  if (isReferenceType()) {
+  if (isReferenceType() || typeShape() == Shape_Large_Value) {
     return llvm::PointerType::get(type, 0);
   } else {
     return type;
@@ -270,7 +270,7 @@ const llvm::Type * CompositeType::irParameterType() const {
 
 const llvm::Type * CompositeType::irReturnType() const {
   const llvm::Type * type = irType();
-  if (isReferenceType()) {
+  if (isReferenceType() || typeShape() == Shape_Large_Value) {
     return llvm::PointerType::get(type, 0);
   } else {
     return type;

@@ -48,25 +48,25 @@ const String * char_toString(uint32_t value) {
   return String_create(data, length);
 }
 
-const String * byte_toString(int8_t value) {
+const String * int8_toString(int8_t value) {
   char data[16];
   size_t length = snprintf(data, sizeof(data), "%d", value);
   return String_create(data, length);
 }
 
-const String * short_toString(int16_t value) {
+const String * int16_toString(int16_t value) {
   char data[16];
   int length = snprintf(data, sizeof(data), "%d", value);
   return String_create(data, length);
 }
 
-const String * int_toString(int32_t value) {
+const String * int32_toString(int32_t value) {
   char data[16];
   int length = snprintf(data, sizeof(data), "%d", value);
   return String_create(data, length);
 }
 
-const String * long_toString(int64_t value) {
+const String * int64_toString(int64_t value) {
   char data[32];
 #if SIZEOF_LONG_LONG == 8
   int length = snprintf(data, sizeof(data), "%lld", (long long)value);
@@ -78,25 +78,25 @@ const String * long_toString(int64_t value) {
   return String_create(data, length);
 }
 
-const String * ubyte_toString(uint8_t value) {
+const String * uint8_toString(uint8_t value) {
   char data[16];
   int length = snprintf(data, sizeof(data), "%u", value);
   return String_create(data, length);
 }
 
-const String * ushort_toString(uint16_t value) {
+const String * uint16_toString(uint16_t value) {
   char data[16];
   int length = snprintf(data, sizeof(data), "%u", value);
   return String_create(data, length);
 }
 
-const String * uint_toString(uint32_t value) {
+const String * uint32_toString(uint32_t value) {
   char data[16];
   int length = snprintf(data, sizeof(data), "%u", value);
   return String_create(data, length);
 }
 
-const String * ulong_toString(uint64_t value) {
+const String * uint64_toString(uint64_t value) {
   char data[32];
 #if SIZEOF_LONG_LONG == 8
   int length = snprintf(data, sizeof(data), "%llu", (unsigned long long)value);

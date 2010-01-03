@@ -114,19 +114,19 @@ TEST_F(ParserTest, Types) {
 
   ast = parseType("byte");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
-  EXPECT_AST_EQ("byte", ast);
+  EXPECT_AST_EQ("int8", ast);
 
   ast = parseType("int");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
-  EXPECT_AST_EQ("int", ast);
+  EXPECT_AST_EQ("int32", ast);
 
   ast = parseType("long");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
-  EXPECT_AST_EQ("long", ast);
+  EXPECT_AST_EQ("int64", ast);
 
   ast = parseType("uint");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
-  EXPECT_AST_EQ("uint", ast);
+  EXPECT_AST_EQ("uint32", ast);
 
   ast = parseType("float");
   ASSERT_EQ(ASTNode::BuiltIn, ast->nodeType());
@@ -139,26 +139,26 @@ TEST_F(ParserTest, Types) {
   // Function type
   ast = parseType("fn :int -> int");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
-  EXPECT_AST_EQ("fn (:int) -> int", ast);
+  EXPECT_AST_EQ("fn (:int32) -> int32", ast);
 
   // Function type
   ast = parseType("fn (x) -> int");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
-  EXPECT_AST_EQ("fn (x) -> int", ast);
+  EXPECT_AST_EQ("fn (x) -> int32", ast);
 
   ast = parseType("fn (:int) -> int");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
-  EXPECT_AST_EQ("fn (:int) -> int", ast);
+  EXPECT_AST_EQ("fn (:int32) -> int32", ast);
 
   ast = parseType("fn (x:int) -> int");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
-  EXPECT_AST_EQ("fn (x:int) -> int", ast);
+  EXPECT_AST_EQ("fn (x:int32) -> int32", ast);
 
   ast = parseType("fn (xx:int, y:int) -> int");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
-  EXPECT_AST_EQ("fn (xx:int, y:int) -> int", ast);
+  EXPECT_AST_EQ("fn (xx:int32, y:int32) -> int32", ast);
 
-  ast = parseType("fn (:int -> int", 1);
+  ast = parseType("fn (:int32 -> int32", 1);
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
   //ASSERT_EQ(NULL, ast);
 }
@@ -549,19 +549,19 @@ TEST_F(ParserTest, Decls) {
 
   ast = parseDeclaration("let X:int;");
   ASSERT_EQ(ASTNode::Let, ast->nodeType());
-  EXPECT_AST_EQ("let X:int", ast);
+  EXPECT_AST_EQ("let X:int32", ast);
 
   ast = parseDeclaration("var X:int;");
   ASSERT_EQ(ASTNode::Var, ast->nodeType());
-  EXPECT_AST_EQ("var X:int", ast);
+  EXPECT_AST_EQ("var X:int32", ast);
 
   ast = parseDeclaration("def X:int {}");
   ASSERT_EQ(ASTNode::Prop, ast->nodeType());
-  EXPECT_AST_EQ("def X:int", ast);
+  EXPECT_AST_EQ("def X:int32", ast);
 
   ast = parseDeclaration("def [x:int]:int;");
   ASSERT_EQ(ASTNode::Idx, ast->nodeType());
-  EXPECT_AST_EQ("def $index(x:int):int", ast);
+  EXPECT_AST_EQ("def $index(x:int32):int32", ast);
 
   ast = parseDeclaration("def X();");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
@@ -569,23 +569,23 @@ TEST_F(ParserTest, Decls) {
 
   ast = parseDeclaration("def X(x:int);");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
-  EXPECT_AST_EQ("def X (x:int)", ast);
+  EXPECT_AST_EQ("def X (x:int32)", ast);
 
   ast = parseDeclaration("def X(x:int = 3);");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
-  EXPECT_AST_EQ("def X (x:int = 3)", ast);
+  EXPECT_AST_EQ("def X (x:int32 = 3)", ast);
 
   ast = parseDeclaration("def X(x:int, y:int);");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
-  EXPECT_AST_EQ("def X (x:int, y:int)", ast);
+  EXPECT_AST_EQ("def X (x:int32, y:int32)", ast);
 
   ast = parseDeclaration("def X(x:int, y:int) -> int;");
   ASSERT_EQ(ASTNode::Function, ast->nodeType());
-  EXPECT_AST_EQ("def X (x:int, y:int) -> int", ast);
+  EXPECT_AST_EQ("def X (x:int32, y:int32) -> int32", ast);
 
   ast = parseDeclaration("def X[%T](x:int, y:int) -> int;");
   ASSERT_EQ(ASTNode::Template, ast->nodeType());
-  EXPECT_AST_EQ("[%T] def X (x:int, y:int) -> int", ast);
+  EXPECT_AST_EQ("[%T] def X (x:int32, y:int32) -> int32", ast);
 
   ast = parseDeclaration("class X[%T] {}");
   ASSERT_EQ(ASTDecl::Template, ast->nodeType());

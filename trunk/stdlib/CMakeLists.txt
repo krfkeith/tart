@@ -19,7 +19,7 @@ set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
 set(TART_OPTIONS
     -g
     -debug-errors
-#    -trace-def=TypecastException
+#    -trace-def=asBuffer
 )
 
 # Empty list of output files
