@@ -13,14 +13,13 @@ namespace tart {
 
 typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 
-// TODO: Finish the trace() function for this type.
-
 // -------------------------------------------------------------------
 // Disjoint or union type.
 class UnionType : public TypeImpl, public Locatable {
 public:
   /** Return a union of the given element types. */
   static UnionType * get(const SourceLocation & loc, const ConstTypeList & members);
+  static UnionType * get(const SourceLocation & loc, ...); // END_WITH_NULL
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }

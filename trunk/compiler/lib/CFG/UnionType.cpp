@@ -11,12 +11,34 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 namespace tart {
 
 // -------------------------------------------------------------------
 // UnionType
 
 UnionType * UnionType::get(const SourceLocation & loc, const ConstTypeList & members) {
+  return new UnionType(loc, members);
+}
+
+UnionType * UnionType::get(const SourceLocation & loc, ...) {
+  ConstTypeList members;
+
+  va_list args;
+  va_start(args, loc);
+  for (;;) {
+    const Type * arg = va_arg(args, const Type *);
+    if (arg == NULL) {
+      break;
+    }
+
+    members.push_back(arg);
+  }
+  va_end(args);
+
   return new UnionType(loc, members);
 }
 

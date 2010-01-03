@@ -28,6 +28,7 @@ add_executable(unittest
   DeclAnalyzerTest.cpp
   ParameterAssignmentsTest.cpp
   TypeInferenceTest.cpp
+  UnionTest.cpp
   UnifyTest.cpp)
 target_link_libraries(unittest
     gtest gmock compiler

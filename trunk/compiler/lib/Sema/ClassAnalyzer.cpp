@@ -377,9 +377,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
           } else {
             diag.error(target) << "classes can only have a single concrete supertype";
           }
-        } else if (baseKind != Type::Interface) {
-          diag.error(target) << (Defn *)target <<
-              "a class can only inherit from class or interface";
+        } else if (baseKind != Type::Interface && baseKind != Type::Protocol) {
+          diag.error(target) << "class '" << target <<
+              "' can only inherit from a class, interface or protocol";
         }
         break;
 
