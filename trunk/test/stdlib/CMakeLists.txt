@@ -11,7 +11,7 @@ set(MODPATH  # Module search path
 set(TART_OPTIONS
   -g
   -debug-errors
-  -trace-def=InterfaceTest
+#  -trace-def=InterfaceTest
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 set(TARTLN_OPTIONS -internalize -O0)

@@ -308,3 +308,77 @@ public final class StringBuilder : %2 {
   public def remove(n:int, count:int);
   public def clear();
 }
+
+// -------------------------------------------------------------
+
+interface OptionParserBase {
+  enum ParseError {
+    BAD_FORMAT,
+  }
+
+  def parse -> Object or ParseError;
+}
+
+interface OptionParser[%T] : OptionParserBase {
+  def parse -> Object or ParseError;
+}
+
+class Option[bool] : OptionBase[bool] {
+  private {
+    var name:String;
+  }
+  
+  def value:bool {
+    get {}
+  }
+  
+  def isPresent {
+    get { return present; }
+  }
+}
+
+class Option[%T, %Parser=OptionParsers[T]] {
+  
+}
+
+  var debug = Option[bool](
+      name = "debug",
+      help = "Enable debugging");
+
+class Option[%T] {
+  private {
+    var name:String;
+    var help:String;
+    var value:optional T;
+    var present:bool;
+    var parser = OptionParser[T]();
+    
+    static var options:Map[String, Option];
+  }
+
+  def construct(name:String = "", help:String = "") {
+    self.name = name;
+    self.help = help;
+    self.value = value;
+    self.present = false;
+
+    if name in options {
+      // Duplicate option definition 'name'.
+    } else {
+      options[name] = self;
+    }
+  }
+
+  def setDefault(value:T) -> Option {
+    self.value = value;
+    return self;
+  }
+
+  def parse(s:String) {
+    let v = parser.parse(s);
+    present = true;
+    
+  }
+
+  def isPresent { get { return present; } }
+}
