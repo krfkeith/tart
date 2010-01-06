@@ -11,23 +11,6 @@
 #include "tart/Objects/Intrinsic.h"
 #include "llvm/Function.h"
 
-#ifdef NDEBUG
-#define DASSERT_TYPE_EQ(expected, actual)
-#define DASSERT_TYPE_EQ_MSG(expected, actual, msg)
-#else
-#define DASSERT_TYPE_EQ(expected, actual) \
-      if (expected != actual) {\
-        diag.fatal() << "Expected '" << expected << "' == '" << actual << "'"; \
-      }
-
-#define DASSERT_TYPE_EQ_MSG(expected, actual, msg) \
-      if (expected != actual) {\
-        diag.fatal() << "Expected '" << expected << "' == '" << actual << \
-            "' " << msg; \
-      }
-
-#endif
-
 namespace tart {
 
 using namespace llvm;
@@ -79,12 +62,13 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     const Expr * arg = *it;
     const Type * argType = arg->canonicalType();
-    //TypeShape typeShape = argType->typeShape();
+    TypeShape argTypeShape = argType->typeShape();
     Value * argVal = genExpr(arg);
     if (argVal == NULL) {
       return NULL;
     }
 
+    DASSERT_TYPE_EQ(in, argType->irParameterType(), argVal->getType());
     args.push_back(argVal);
   }
 
@@ -108,6 +92,13 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());
   if (in->exprType() == Expr::CtorCall) {
     // Constructor call returns the 'self' argument.
+#if FC_STRUCTS_INTERNAL
+    TypeShape selfTypeShape = in->selfArg()->type()->typeShape();
+    // A large value type will, at this point, be a pointer.
+    if (selfTypeShape == Shape_Small_LValue) {
+      selfArg = builder_.CreateLoad(selfArg, "self");
+    }
+#endif
     /*if (in->selfArg() != NULL && in->selfArg()->type()->typeClass() == Type::Struct) {
       return builder_.CreateLoad(selfArg);
     }*/
@@ -115,10 +106,12 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     return selfArg;
   } else if (fnType->isStructReturn()) {
     return retVal;
+#if !FC_STRUCTS_INTERNAL
   } else if (fn->returnType()->typeShape() == Shape_Small_LValue) {
     retVal = builder_.CreateAlloca(fnType->returnType()->irType(), NULL, "retval");
     builder_.CreateStore(result, retVal);
     return retVal;
+#endif
   } else {
     return result;
   }

@@ -369,9 +369,9 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
 void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
   ExprList importDefs;
   Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
-  bool found = lookupName(importDefs, import->path(), true);
+  bool found = lookupName(importDefs, import->path(), LOOKUP_ABS_PATH);
   if (!found) {
-    found = lookupName(importDefs, import->path(), false);
+    found = lookupName(importDefs, import->path(), LOOKUP_DEFAULT);
   }
 
   if (found) {

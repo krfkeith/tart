@@ -14,6 +14,7 @@
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/SpCandidate.h"
+
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/NamespaceDefn.h"
@@ -27,9 +28,11 @@
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
+
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
@@ -43,9 +46,9 @@ bool AnalyzerBase::isTraceEnabled(Defn * de) {
   return de != NULL && traceDef_.getValue() == de->name();
 }
 
-bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, bool absPath) {
+bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions lookupOptions) {
   std::string path;
-  lookupNameRecurse(out, ast, path, absPath);
+  lookupNameRecurse(out, ast, path, lookupOptions);
   return !out.empty();
 }
 
@@ -56,25 +59,39 @@ bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, bool absPath)
 // If we return false and path is empty, then it means that we found nothing,
 //    and there's no hope of finding anything.
 bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path,
-    bool absPath) {
+    LookupOptions lookupOptions) {
 
   SLC & loc = ast->location();
+  bool isAbsPath = (lookupOptions & LOOKUP_ABS_PATH) != 0;
+  bool isRequired = (lookupOptions & LOOKUP_REQUIRED) != 0;
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
     const char * name = ident->value();
-    if (!absPath && activeScope != NULL && lookupIdent(out, name, loc)) {
+    if (!isAbsPath && activeScope != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
 
     path.assign(name);
-    return importName(out, path, absPath, loc);
+    if (importName(out, path, isAbsPath, loc)) {
+      return true;
+    }
+
+    if (isRequired) {
+      diag.error(ast) << "Undefined symbol '" << ast << "'";
+      diag.info() << "Scopes searched:";
+      dumpScopeHierarchy();
+    }
+
+    return false;
   } else if (ast->nodeType() == ASTNode::Member) {
     const ASTMemberRef * mref = static_cast<const ASTMemberRef *>(ast);
     const ASTNode * qual = mref->qualifier();
     ExprList lvals;
-    if (lookupNameRecurse(lvals, qual, path, absPath)) {
+    if (lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions & ~LOOKUP_REQUIRED))) {
       if (lvals.size() > 1) {
-        diag.fatal(ast) << "Multiply defined symbol " << qual;
+        diag.error(ast) << "Multiply defined symbol " << qual;
+        diag.info() << "Found in scopes:";
+        dumpScopeList(lvals);
         path.clear();
         return false;
       }
@@ -85,28 +102,44 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
       }
 
       path.clear();
+      if (isRequired) {
+        diag.error(ast) << "Undefined member '" << mref->memberName() << "'";
+        diag.info() << "Scoped searched:";
+        dumpScopeList(lvals);
+      }
+
       return false;
     }
 
     if (!path.empty()) {
       path.push_back('.');
       path.append(mref->memberName());
-      return importName(out, path, absPath, loc);
+      if (importName(out, path, isAbsPath, loc)) {
+        return true;
+      }
+    }
+
+    if (isRequired) {
+      diag.error(qual) << "Undefined symbol '" << qual << "'";
+      diag.info() << "Scopes searched:";
+      dumpScopeHierarchy();
     }
 
     return false;
   } else if (ast->nodeType() == ASTNode::Specialize) {
     const ASTSpecialize * spec = static_cast<const ASTSpecialize *>(ast);
     ExprList lvals;
-    if (!lookupNameRecurse(lvals, spec->templateExpr(), path, absPath)) {
-      diag.error(spec) << "Undefined symbol: " << spec->templateExpr();
-      dumpScopeHierarchy();
+    if (!lookupNameRecurse(lvals, spec->templateExpr(), path,
+        LookupOptions(lookupOptions | LOOKUP_REQUIRED))) {
+      //DASSERT(diag.inRecovery());
       return false;
     }
 
     Expr * expr = specialize(loc, lvals, spec->args());
     if (expr == NULL) {
       diag.error(spec) << "No template found matching expression: " << spec->templateExpr();
+      diag.info() << "Scoped searched:";
+      dumpScopeList(lvals);
       return false;
     }
 
@@ -118,13 +151,13 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     // See if it's an expression.
     ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
-    //Expr * result = ea.inferTypes(ea.reduceExpr(ast, NULL), NULL);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
       out.push_back(result);
       return true;
     }
 
+    //DASSERT(diag.inRecovery());
     return false;
   }
 }
@@ -170,6 +203,17 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
       }
     }
   } else if (context->type() != NULL) {
+    if (!context->isSingular()) {
+      // Member lookup requires types be singular.
+      Expr * singularContext = ExprAnalyzer::inferTypes(subject_, context, NULL, false);
+      if (singularContext == NULL) {
+        diag.error(loc) << "Base expression '" << context << "' is ambiguous.";
+        return false;
+      }
+
+      context = singularContext;
+    }
+
     const Type * contextType = context->canonicalType();
     if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
       const Type * type = inferType(lvalue->value());
@@ -747,6 +791,24 @@ void AnalyzerBase::dumpScopeHierarchy() {
   diag.recovered();
 }
 
+void AnalyzerBase::dumpScopeList(const ExprList & lvals) {
+  diag.indent();
+  for (ExprList::const_iterator it = lvals.begin(); it != lvals.end(); ++it) {
+    const Expr * ex = *it;
+    if (const ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(ex)) {
+      diag.info(ex) << ex;
+    } else if (const TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(ex)) {
+      diag.info(ex) << ex;
+    } else if (ex->type() != NULL) {
+      diag.info(ex) << ex->type();
+    } else {
+      diag.info(ex) << ex;
+    }
+  }
+
+  diag.unindent();
+  diag.recovered();
+}
 
 TaskInProgress * TaskInProgress::tasks_ = NULL;
 

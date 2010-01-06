@@ -64,22 +64,6 @@ const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator
   return type;
 }
 
-#ifdef NDEBUG
-#define DASSERT_TYPE_EQ(expected, actual)
-#define DASSERT_TYPE_EQ_MSG(expected, actual, msg)
-#else
-#define DASSERT_TYPE_EQ(expected, actual) \
-      if (expected != actual) {\
-        diag.fatal() << "Expected '" << expected << "' == '" << actual << "'"; \
-      }
-
-#define DASSERT_TYPE_EQ_MSG(expected, actual, msg) \
-      if (expected != actual) {\
-        diag.fatal() << "Expected '" << expected << "' == '" << actual << \
-            "' " << msg; \
-      }
-
-#endif
 }
 
 Value * CodeGenerator::genExpr(const Expr * in) {
@@ -270,33 +254,22 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   }
 
   if (var->defnType() == Defn::Let) {
-    switch (typeShape) {
-      case Shape_Primitive:
-      case Shape_Reference:
-      case Shape_Small_RValue:
-        DASSERT_TYPE_EQ_MSG(var->type()->irEmbeddedType(), initValue->getType(), "genInitVar:Let");
-        break;
-
-      case Shape_Small_LValue:
-      case Shape_Large_Value:
-        //DASSERT_TYPE_EQ_MSG(var->irType()->, initValue->getType(), "genInitVar:Let");
-        break;
-
-      default:
-        diag.fatal(in) << "Invalid type shape for '" << var->type() << "': " << typeShape;
-        break;
-    }
-
+    // Bind the initValue to the variable. Large value types will be allocas.
     DASSERT_OBJ(var->initValue() == NULL, var);
     DASSERT_OBJ(initValue != NULL, var);
+    DASSERT_TYPE_EQ(in->initExpr(), var->type()->irParameterType(), initValue->getType());
     var->setIRValue(initValue);
   } else {
-    if (typeShape == Shape_Large_Value || typeShape == Shape_Small_LValue) {
-      ensureLValue(in->initExpr(), initValue->getType());
-      initValue = builder_.CreateLoad(initValue);
+    // Store the initValue to the variable.
+#if FC_STRUCTS_INTERNAL
+    DASSERT_TYPE_EQ(in->initExpr(), var->type()->irParameterType(), initValue->getType());
+    if (typeShape == Shape_Large_Value) {
+      initValue = loadValue(initValue, in->initExpr(), "deref");
     }
+    DASSERT_TYPE_EQ(in->initExpr(), var->type()->irEmbeddedType(), initValue->getType());
+#endif
 
-    DASSERT_TYPE_EQ_MSG(
+    DASSERT_TYPE_EQ_MSG(in->initExpr(),
         var->irValue()->getType()->getContainedType(0),
         initValue->getType(), "genInitVar:Var");
     builder_.CreateStore(initValue, var->irValue());
@@ -315,12 +288,13 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
   if (rvalue != NULL && lvalue != NULL) {
     // TODO: We could also do this via memcpy.
     TypeShape typeShape = in->fromExpr()->canonicalType()->typeShape();
-    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
-      ensureLValue(in->fromExpr(), rvalue->getType());
-      rvalue = builder_.CreateLoad(rvalue);
+#if FC_STRUCTS_INTERNAL
+    if (typeShape == Shape_Large_Value) {
+      rvalue = loadValue(rvalue, in->fromExpr(), "deref");
     }
+#endif
 
-    DASSERT_TYPE_EQ_MSG(
+    DASSERT_TYPE_EQ_MSG(in,
         lvalue->getType()->getContainedType(0),
         rvalue->getType(), "doAssignment");
 
@@ -425,7 +399,7 @@ Value * CodeGenerator::genPtrDeref(const UnaryExpr * in) {
   Value * ptrVal = genExpr(in->arg());
   if (ptrVal != NULL) {
     DASSERT(ptrVal->getType()->getTypeID() == llvm::Type::PointerTyID);
-    DASSERT_TYPE_EQ_MSG(
+    DASSERT_TYPE_EQ_MSG(in,
         in->type()->irType(),
         ptrVal->getType()->getContainedType(0), "for expression " << in);
     return builder_.CreateLoad(ptrVal);
@@ -478,12 +452,7 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
 
   // It's a member or element expression
   if (lval->base() != NULL) {
-    Value * addr = genMemberFieldAddr(lval);
-    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
-      return addr;
-    }
-
-    return addr != NULL ? builder_.CreateLoad(addr, var->name()) : NULL;
+    return genLoadMemberField(lval);
   }
 
   // It's a global, static, or parameter
@@ -492,27 +461,34 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     Value * letValue = genLetValue(let);
 
     // If this is a let-value that has actual storage
-    if (let->hasStorage() && typeShape != Shape_Small_LValue && typeShape != Shape_Large_Value) {
-      letValue = builder_.CreateLoad(letValue, var->name());
+#if FC_STRUCTS_INTERNAL
+    if (let->hasStorage() && typeShape != Shape_Large_Value) {
+      letValue = loadValue(letValue, lval, var->name());
     }
+#endif
 
+    DASSERT_TYPE_EQ(lval, let->type()->irParameterType(), letValue->getType());
     return letValue;
   } else if (var->defnType() == Defn::Var) {
     Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
-    if (typeShape == Shape_Small_LValue || typeShape == Shape_Large_Value) {
+#if FC_STRUCTS_INTERNAL
+    if (typeShape == Shape_Large_Value) {
       return varValue;
     }
+#endif
 
-    return builder_.CreateLoad(varValue, var->name());
+    varValue = loadValue(varValue, lval, var->name());
+    DASSERT_TYPE_EQ(lval, var->type()->irEmbeddedType(), varValue->getType());
+    return varValue;
   } else if (var->defnType() == Defn::Parameter) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
     if (param->irValue() == NULL) {
       diag.fatal(param) << "Invalid parameter IR value for parameter '" << param << "'";
     }
-    DASSERT_OBJ(param->irValue() != NULL, param);
 
-    if (param->isLValue()) {
-      return builder_.CreateLoad(param->irValue(), param->name());
+    DASSERT_OBJ(param->irValue() != NULL, param);
+    if (param->isLValue() && typeShape != Shape_Large_Value) {
+      return loadValue(param->irValue(), lval, param->name());
     }
 
     return param->irValue();
@@ -525,6 +501,10 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
 }
 
 Value * CodeGenerator::genLValueAddress(const Expr * in) {
+  if (in->type()->typeShape() == Shape_Large_Value) {
+    return genExpr(in);
+  }
+
   switch (in->exprType()) {
     case Expr::LValue: {
       const LValueExpr * lval = static_cast<const LValueExpr *>(in);
@@ -560,37 +540,48 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
   }
 }
 
+Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
+  TypeShape baseShape = lval->base()->type()->typeShape();
+
+  if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
+    // TODO: Change this to 'isLValue' test.
+    if (lval->base()->exprType() != Expr::LValue && lval->base()->exprType() != Expr::ElementRef) {
+      // If the base expression is not an l-value, and it's a value type, then we
+      // have to use extract value instead of GEP.
+      const VariableDefn * var = cast<VariableDefn>(lval->value());
+      Value * baseValue = genExpr(lval->base());
+      return builder_.CreateExtractValue(baseValue, var->memberIndex(), "fieldValue");
+    }
+  }
+
+  Value * addr = genMemberFieldAddr(lval);
+  if (addr == NULL) {
+    return NULL;
+  }
+
+  if (lval->value()->type()->typeShape() == Shape_Large_Value) {
+    return addr;
+  }
+
+  return loadValue(addr, lval, lval->value()->name());
+}
+
 Value * CodeGenerator::genMemberFieldAddr(const LValueExpr * lval) {
-  const Defn * de = lval->value();
   DASSERT(lval->base() != NULL);
   ValueList indices;
-  std::stringstream labelStream;
-  FormatStream fs(labelStream);
+  StrFormatStream fs;
   Value * baseVal = genGEPIndices(lval, indices, fs);
   if (baseVal == NULL) {
     return NULL;
   }
 
-  switch (lval->canonicalType()->typeShape()) {
-    case Shape_Primitive:
-    case Shape_Reference:
-    case Shape_Small_RValue:
-    case Shape_Small_LValue:
-    case Shape_Large_Value:
-      ensureLValue(lval, baseVal->getType());
-      break;
-
-    default:
-      diag.fatal(lval) << "Invalid type shape for '" << lval->canonicalType() << "'";
-  }
-
-  return builder_.CreateInBoundsGEP(
-      baseVal, indices.begin(), indices.end(), labelStream.str().c_str());
+  ensureLValue(lval, baseVal->getType());
+  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(), fs.str());
 }
 
 Value * CodeGenerator::genLoadElement(const BinaryExpr * in) {
-  TypeShape typeShape = in->canonicalType()->typeShape();
-  if (in->first()->type()->typeShape() == Shape_Small_RValue) {
+  TypeShape baseShape = in->first()->type()->typeShape();
+  if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
     const Expr * tupleExpr = in->first();
     const Expr * indexExpr = in->second();
     Value * tupleVal = genExpr(tupleExpr);
@@ -602,7 +593,12 @@ Value * CodeGenerator::genLoadElement(const BinaryExpr * in) {
     uint32_t index = cast<ConstantInt>(indexVal)->getValue().getZExtValue();
     return builder_.CreateExtractValue(tupleVal, index, "");
   } else {
+    TypeShape typeShape = in->type()->typeShape();
     Value * addr = genElementAddr(static_cast<const BinaryExpr *>(in));
+    if (/*typeShape == Shape_Small_LValue || */typeShape == Shape_Large_Value) {
+      return addr;
+    }
+
     return addr != NULL ? builder_.CreateLoad(addr) : NULL;
   }
 }
@@ -621,28 +617,34 @@ Value * CodeGenerator::genElementAddr(const BinaryExpr * in) {
 }
 
 Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & label) {
-
   switch (expr->exprType()) {
     case Expr::LValue: {
       // In this case, lvalue refers to a member of the base expression.
       const LValueExpr * lval = static_cast<const LValueExpr *>(expr);
-      Value * baseAddr = genBaseExpr(lval->base(), indices, label);
+      Value * baseAddr = genBaseAddress(lval->base(), indices, label);
       const VariableDefn * field = cast<VariableDefn>(lval->value());
+
+      DASSERT_TYPE_EQ(lval->base(),
+          lval->base()->type()->irType(),
+          getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
 
       DASSERT(field->memberIndex() >= 0);
       indices.push_back(getInt32Val(field->memberIndex()));
       label << "." << field->name();
 
       // Assert that the type is what we expected: A pointer to the field type.
-      if (expr->type()->isReferenceType()) {
-        DASSERT_TYPE_EQ(
+      DASSERT_TYPE_EQ(expr,
+          expr->type()->irEmbeddedType(),
+          getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      /*if (expr->type()->typeShape() == Shape_Reference) {
+        DASSERT_TYPE_EQ(expr,
             llvm::PointerType::get(expr->type()->irType(), 0),
             getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
       } else {
-        DASSERT_TYPE_EQ(
+        DASSERT_TYPE_EQ(expr,
             expr->type()->irType(),
             getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
-      }
+      }*/
 
       return baseAddr;
     }
@@ -658,7 +660,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
         arrayVal = genExpr(arrayExpr);
         label << arrayExpr;
       } else {
-        arrayVal = genBaseExpr(arrayExpr, indices, label);
+        arrayVal = genBaseAddress(arrayExpr, indices, label);
       }
 
       // TODO: Make sure the dimensions are in the correct order here.
@@ -672,15 +674,18 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       indices.push_back(indexVal);
 
       // Assert that the type is what we expected: A pointer to the field or element type.
-      if (expr->type()->isReferenceType()) {
-        DASSERT_TYPE_EQ(
+      DASSERT_TYPE_EQ(expr,
+          expr->type()->irEmbeddedType(),
+          getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
+      /*if (expr->type()->isReferenceType()) {
+        DASSERT_TYPE_EQ(expr,
             llvm::PointerType::get(expr->type()->irType(), 0),
             getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
       } else {
         //DASSERT_TYPE_EQ(
         //    expr->type()->irType(),
         //    getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
-      }
+      }*/
 
       return arrayVal;
     }
@@ -693,14 +698,14 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
   return NULL;
 }
 
-Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
+Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
     FormatStream & labelStream) {
 
   // If the base is a pointer
   bool needsDeref = false;
 
   // True if the base address itself has a base.
-  bool hasBase = false;
+  bool baseHasBase = false;
 
   /*  Determine if the expression is actually a pointer that needs to be
       dereferenced. This happens under the following circumstances:
@@ -727,11 +732,11 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     switch (typeShape) {
       case Shape_Primitive:
       case Shape_Small_RValue:
+      case Shape_Small_LValue:
         break;
 
-      case Shape_Reference:
-      case Shape_Small_LValue:
       case Shape_Large_Value:
+      case Shape_Reference:
         needsDeref = true;
         break;
 
@@ -739,21 +744,14 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
         diag.fatal(in) << "Invalid type shape";
     }
 
-    //if (typeShape == Shape_Reference || typeShape == Shape_Small_LValue ||)
-//    if (fieldType->isReferenceType() ||
-//        fieldType->typeClass() == Type::Struct ||
-//        (isAggregateValueType(fieldType) && field->defnType() != Defn::Let)) {
-//      needsDeref = true;
-//    }
-
     if (lval->base() != NULL) {
-      hasBase = true;
+      baseHasBase = true;
     }
   } else if (base->exprType() == Expr::PtrDeref) {
     base = static_cast<const UnaryExpr *>(base)->arg();
     needsDeref = true;
   } else if (base->exprType() == Expr::ElementRef) {
-    hasBase = true;
+    baseHasBase = true;
   } else if (base->type()->isReferenceType()) {
     needsDeref = true;
   } else {
@@ -761,11 +759,11 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
     switch (typeShape) {
       case Shape_Primitive:
       case Shape_Small_RValue:
+      case Shape_Small_LValue:
         break;
 
-      case Shape_Reference:
-      case Shape_Small_LValue:
       case Shape_Large_Value:
+      case Shape_Reference:
         needsDeref = true;
         break;
 
@@ -775,15 +773,16 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   }
 
   Value * baseAddr;
-  if (hasBase && !needsDeref) {
+  if (baseHasBase && !needsDeref) {
     // If it's a field within a larger object, then we can simply take a
     // relative address from the base.
     baseAddr = genGEPIndices(base, indices, labelStream);
   } else {
     // Otherwise generate a pointer value.
     labelStream << base;
+    //baseAddr = genLValueAddress(base);
     baseAddr = genExpr(base);
-    ensureLValue(in, baseAddr->getType());
+    //ensureLValue(in, baseAddr->getType());
     if (needsDeref) {
       // baseAddr is of pointer type, we need to add an extra 0 to convert it
       // to the type of thing being pointed to.
@@ -794,7 +793,7 @@ Value * CodeGenerator::genBaseExpr(const Expr * in, ValueList & indices,
   // Assert that the type is what we expected.
   DASSERT_OBJ(in->type() != NULL, in);
   if (!indices.empty()) {
-    DASSERT_TYPE_EQ(
+    DASSERT_TYPE_EQ(in,
         in->type()->irType(),
         getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
   }

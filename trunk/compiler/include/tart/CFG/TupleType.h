@@ -40,6 +40,9 @@ public:
   const Type * operator[](int index) const { return members_[index]; }
   const Type * member(int index) const { return members_[index]; }
 
+  /** True if this contains an error type. */
+  bool containsBadType() const;
+
   // Overrides
 
   const llvm::Type * createIRType() const;

@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/FoldConstantsPass.h"
@@ -470,6 +471,7 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
 
     CallCandidate * call = *cc;
     bool addNew = true;
+    bool trace = AnalyzerBase::isTraceEnabled(call->method());
     for (Candidates::iterator ms = mostSpecific.begin(); ms != mostSpecific.end();) {
       if ((*ms)->isCulled()) {
         continue;
@@ -479,7 +481,7 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
       bool oldIsBetter = (*ms)->isMoreSpecific(call) && (*ms)->conversionRank() >= call->conversionRank();
       if (newIsBetter) {
         if (!oldIsBetter) {
-          if (ShowInference) {
+          if (ShowInference || trace) {
             diag.debug() << Format_Type << "Culling [" << (*ms)->method() <<
                 "] because [" << call->method() << "] is more specific";
           }
@@ -487,7 +489,7 @@ void TypeInferencePass::cullBySpecificity(CallSite & site) {
           continue;
         }
       } else if (oldIsBetter) {
-        if (ShowInference) {
+        if (ShowInference || trace) {
           diag.debug() << Format_Type << "Culling [" << call->method() << "] because [" <<
               (*ms)->method() << "] is more specific";
         }

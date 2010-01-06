@@ -1,0 +1,187 @@
+/** A quadratically-probed hash set. */
+final class HashSet[%ItemType <: Hashable] : Set[ItemType] {
+  
+  private {
+    enum EntryState {
+      EMPTY,
+      DELETED,
+      OCCUPIED
+    }
+    
+    struct Entry {
+      var value:ItemType;
+      var state:EntryState;
+      
+      def construct(value:ItemType) {
+        self.value = value;
+        self.state = EntryState.OCCUPIED;
+      }
+    }
+    
+    var _data:Entry[];
+    var _length:int32;
+    var _modified:bool = false;
+    
+    def findEntry(key:ItemType) -> Memory.Address[Entry] {
+      if _data.length > 16 {
+      } else {
+        for i = 0; i < _length; ++i {
+          if _data[i].value == key {
+            return _data.elementAddress(i);
+          }
+        }
+      }
+
+      return null;
+    }
+  }
+  
+  def construct(capacity:int32 = 0) {
+    self._data = Entry[](capacity);
+    self._length = 0;
+  }
+
+  def add(item:ItemType) -> bool {
+    if _data.length > 16 {
+	    //let entry:Memory.Address[Entry] = findEntry(item);
+	    //if entry is not null {
+	    //  return false;
+	    //}
+    
+      let hashVal = item.computeHash();
+    } else if _data.length > 0 {
+      for i = 0; i < _length; ++i {
+        Debug.writeLn("Checking");
+        if _data[i].value == item {
+          return false;
+        }
+      }
+
+      Debug.writeLn("Not found");
+      _data[_length] = Entry(item);
+      _length++;
+    } else {
+      _data = Entry[](16);
+      _data[0] = Entry(item);
+      _length = 1;
+    }
+
+    return true;
+  }
+
+  def addAll(items:Collection[ItemType]) {
+    for item in items {
+      add(item);
+    }
+  }
+
+  def addAll(items:Iterator[ItemType]) {
+    for item in items {
+      add(item);
+    }
+  }
+
+  def remove(item:ItemType) -> bool {
+    if _data.length > 16 {
+      let hashVal = item.computeHash();
+    } else if _data.length > 0 {
+      for i = 0; i < _length; ++i {
+        Debug.writeLn("Checking");
+        if _data[i].value == item {
+          Debug.writeLn("Found");
+          Memory.arrayMove(_data.elementAddress(i), _data.elementAddress(i+1), _length - i - 1);
+          --_length;
+          return true;
+        }
+      }
+
+      Debug.writeLn("Not found");
+      return false;
+    } else {
+      return false;
+    }
+    
+    return false;
+  }
+  
+  def removeAll(items:Collection[ItemType]) {
+    for item in items {
+      remove(item);
+    }
+  }
+
+  def removeAll(items:Iterator[ItemType]) {
+    for item in items {
+      remove(item);
+    }
+  }
+
+  def contains(item:ItemType) -> bool {
+    return false;
+  }
+
+  def clear() {
+    _data = Entry[](0);
+    _length = 0;
+    _modified = true;
+  }
+  
+  def length:int32 { get { return _length; } }
+
+  def isEmpty:bool { get { return _length == 0; } }
+  
+  def iterate -> Iterator[ItemType] {
+    return HashSetIterator(self);
+  }
+  
+  def containsAll(items:Collection[ItemType]) -> bool {
+    for item in items {
+      return false if not contains(item);
+    }
+    
+    return true;
+  }
+  
+  def containsAll(items:Iterator[ItemType]) -> bool {
+    for item in items {
+      return false if not contains(item);
+    }
+    
+    return true;
+  }
+  
+  def containsAny(items:Collection[ItemType]) -> bool {
+    for item in items {
+      return true if contains(item);
+    }
+    
+    return false;
+  }
+  
+  def containsAny(items:Iterator[ItemType]) -> bool {
+    for item in items {
+      return true if contains(item);
+    }
+    
+    return false;
+  }
+  
+  class HashSetIterator : Iterator[ItemType] {
+    private {
+      var data:Entry[];
+      var index:int32;
+    }
+
+    def construct(hashSet:HashSet) {
+      self.data = hashSet._data;
+    }
+
+    def next -> ItemType or void {
+      while index < data.length {
+        index += 1;
+      }
+      
+      return;
+    }
+  }
+}

@@ -10,7 +10,6 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/TemplateConditions.h"
-#include "tart/CFG/TypeOrdering.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/TypeTransform.h"

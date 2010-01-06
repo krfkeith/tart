@@ -240,7 +240,7 @@ bool FunctionType::isEqual(const Type * other) const {
 }
 
 bool FunctionType::isReferenceType() const {
-  return true;
+  return true; // TODO: Should be false
 }
 
 TypeShape FunctionType::typeShape() const {

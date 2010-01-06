@@ -215,6 +215,19 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
       Value * uvalue = builder_.CreateAlloca(utype->irType());
       builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
       if (value != NULL) {
+        TypeShape fromShape = fromType->typeShape();
+#if FC_STRUCTS_INTERNAL
+        DASSERT_TYPE_EQ(in, fromType->irParameterType(), value->getType());
+        if (fromShape == Shape_Large_Value) {
+          value = builder_.CreateLoad(value, "deref");
+        }
+        DASSERT_TYPE_EQ(in, fromType->irEmbeddedType(), value->getType());
+#else
+        if (fromShape == Shape_Small_LValue || fromShape == Shape_Large_Value) {
+          value = builder_.CreateLoad(value);
+        }
+#endif
+
         const llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(

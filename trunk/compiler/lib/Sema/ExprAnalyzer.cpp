@@ -730,14 +730,14 @@ Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, bool store) {
 
 Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
   ExprList values;
-  lookupName(values, ast);
+  lookupName(values, ast, LOOKUP_REQUIRED);
 
   if (values.size() == 0) {
-    diag.error(ast) << "Undefined symbol " << ast;
-    if (ast->nodeType() != ASTNode::Member) {
-      diag.writeLnIndent("Scopes searched:");
-      dumpScopeHierarchy();
-    }
+    //diag.error(ast) << "Undefined symbol " << ast;
+    //if (ast->nodeType() != ASTNode::Member) {
+      //diag.writeLnIndent("Scopes searched:");
+      //dumpScopeHierarchy();
+    //}
 
     return &Expr::ErrorVal;
   } else if (values.size() > 1) {
@@ -775,12 +775,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   Expr * arrayExpr;
   if (base->nodeType() == ASTNode::Id || base->nodeType() == ASTNode::Member) {
     ExprList values;
-    lookupName(values, base);
+    lookupName(values, base, LOOKUP_REQUIRED);
 
     if (values.size() == 0) {
-      diag.error(base) << "Undefined symbol " << base;
-      diag.writeLnIndent("Scopes searched:");
-      dumpScopeHierarchy();
+      //diag.error(base) << "Undefined symbol " << base;
+      //diag.writeLnIndent("Scopes searched:");
+      //dumpScopeHierarchy();
       return &Expr::ErrorVal;
     } else {
       // For type names and function names, brackets always mean specialize, not index.
@@ -1333,14 +1333,16 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   }
 
   if (bestRank == Incompatible) {
-    SpCandidate * front = *candidates.begin();
-    diag.error(spe) << "No candidate found for '" << front->def()->name() <<
-        "' which matches template arguments [" << spe->args() << "]:";
-    diag.info(spe) << "Candidates are:";
-    for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
-      SpCandidate * sp = *it;
-      sp->updateConversionRank(); // Helps with debugging.
-      diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
+    if (!spe->args()->containsBadType()) {
+      SpCandidate * front = *candidates.begin();
+      diag.error(spe) << "No candidate found for '" << front->def()->name() <<
+          "' which matches template arguments [" << spe->args() << "]:";
+      diag.info(spe) << "Candidates are:";
+      for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+        SpCandidate * sp = *it;
+        sp->updateConversionRank(); // Helps with debugging.
+        diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
+      }
     }
     return NULL;
   }

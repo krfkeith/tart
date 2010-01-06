@@ -43,6 +43,12 @@ enum AnalysisTask {
   Task_PrepReflection,          // Prepare to generate reflection data
 };
 
+enum LookupOptions {
+  LOOKUP_DEFAULT = 0,           // Default options
+  LOOKUP_ABS_PATH = (1<<0),     // Means that the input is an absolute path
+  LOOKUP_REQUIRED = (1<<1),     // This is the last resort, fail otherwise.
+};
+
 /// -------------------------------------------------------------------
 /// Base class of analyzers. Contains the machinery needed to do
 /// qualified and unqualified name lookups.
@@ -89,7 +95,7 @@ public:
       However, if 'absPath' is true, then only the absolute package path
       method will be used.
   */
-  bool lookupName(ExprList & out, const ASTNode * ast, bool absPath = false);
+  bool lookupName(ExprList & out, const ASTNode * ast, LookupOptions options = LOOKUP_DEFAULT);
 
   /** Given a list of expression, ensures that they are either all types or
       that none of them are (an error message is emitted otherwise.) If they
@@ -131,6 +137,9 @@ public:
   /** Dump the current set of search scopes. */
   void dumpScopeHierarchy();
 
+  /** Dump a given set of search scopes. */
+  void dumpScopeList(const ExprList & lvals);
+
   /** True if tracing is enabled for this def. */
   static bool isTraceEnabled(Defn * de);
 
@@ -141,7 +150,8 @@ protected:
   FunctionDefn * currentFunction_;
 
   // Recursive name-lookup helper function
-  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path, bool absPath);
+  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path,
+      LookupOptions lookupOptions);
 
   // Lookup an unqualified identifier in the current scope.
   bool lookupIdent(ExprList & out, const char * name, SLC & loc);
