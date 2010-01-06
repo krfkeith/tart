@@ -1,0 +1,60 @@
+import tart.collections.HashSet;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int {
+  return Test.run(HashSetTest);
+}
+
+class HashSetTest : Test {
+  def testEmptySet {
+    let h = HashSet[String]();
+    
+    assertEq(0, h.length);
+    assertTrue(h.isEmpty);
+  }
+  
+  def testAdd {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertEq(1, h.length);
+    assertFalse(h.isEmpty);
+  }
+  
+  def testAddRemove {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertTrue(h.remove("Hello"));
+    assertEq(0, h.length);
+    assertTrue(h.isEmpty);
+  }
+  
+  def testAddTwice {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertFalse(h.add("Hello"));
+    assertEq(1, h.length);
+    assertFalse(h.isEmpty);
+  }
+  
+  /**
+  def construct(capacity:int32 = 0) {
+  }
+
+  def add(item:ItemType) -> bool {
+  def addAll(items:Collection[ItemType]) {
+  def addAll(items:Iterator[ItemType]) {
+  def remove(item:ItemType) -> bool {
+  def removeAll(items:Collection[ItemType]) {
+  def removeAll(items:Iterator[ItemType]) {
+  def contains(item:ItemType) -> bool {
+  def clear() {
+  def length:int32 { get { return _length; } }
+  def isEmpty:bool { get { return _length == 0; } }
+  def iterate -> Iterator[ItemType] {
+  def containsAll(items:Collection[ItemType]) -> bool {
+  def containsAll(items:Iterator[ItemType]) -> bool {
+  def containsAny(items:Collection[ItemType]) -> bool {
+  def containsAny(items:Iterator[ItemType]) -> bool {
+  */
+}

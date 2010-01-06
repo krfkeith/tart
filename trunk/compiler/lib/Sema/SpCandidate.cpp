@@ -6,6 +6,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
+#include "tart/CFG/TemplateConditions.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/TypeTransform.h"
 #include "tart/Common/Diagnostics.h"
@@ -31,9 +32,12 @@ bool SpCandidate::unify(SourceContext * source) {
     }
   }
 
-  const TemplateConditionList & reqs = tsig->conditions();
-  for (TemplateConditionList::const_iterator it = reqs.begin(); it != reqs.end(); ++it) {
-    DFAIL("Implement");
+  conditions_.clear();
+  for (TemplateConditionList::const_iterator it = tsig->conditions().begin();
+      it != tsig->conditions().end(); ++it) {
+    TemplateCondition * condition = *it;
+    SubstitutionTransform subst(env_);
+    conditions_.push_back(condition->transform(subst));
   }
 
   return true;
@@ -52,6 +56,14 @@ ConversionRank SpCandidate::updateConversionRank() {
   }
 
   conversionRank_ = IdenticalTypes;
+  for (TemplateConditionList::const_iterator it = conditions_.begin();
+      it != conditions_.end(); ++it) {
+    if (!(*it)->eval()) {
+      conversionRank_ = Incompatible;
+      return Incompatible;
+    }
+  }
+
   for (size_t i = 0; i < args_->size(); ++i) {
     const Type * pattern = (*params_)[i];
     const Type * value = (*args_)[i];

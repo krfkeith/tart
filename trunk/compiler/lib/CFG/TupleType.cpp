@@ -269,4 +269,14 @@ void TupleType::trace() const {
   markList(members_.begin(), members_.end());
 }
 
+bool TupleType::containsBadType() const {
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    if (isErrorResult(*it)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 } // namespace tart

@@ -1679,15 +1679,9 @@ Stmt * Parser::declStmt() {
 
 Stmt * Parser::ifStmt() {
   SourceLocation loc = matchLoc;
-  //bool parens = match(Token_LParen);
   ASTNode * testExpr = testOrDecl();
   if (testExpr == NULL)
     return NULL;
-
-  //if (parens && !match(Token_RParen)) {
-  //  expectedCloseParen();
-  //  return NULL;
-  //}
 
   Stmt * thenSt = bodyStmt();
   if (thenSt == NULL)
@@ -1707,15 +1701,9 @@ Stmt * Parser::ifStmt() {
 
 Stmt * Parser::whileStmt() {
   SourceLocation loc = matchLoc;
-  bool parens = match(Token_LParen);
   ASTNode * testExpr = testOrDecl();
   if (testExpr == NULL)
     return NULL;
-
-  if (parens && !match(Token_RParen)) {
-    expectedCloseParen();
-    return NULL;
-  }
 
   Stmt * bodySt = bodyStmt();
   if (bodySt == NULL)

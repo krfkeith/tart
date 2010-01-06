@@ -56,29 +56,13 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   bool success = true;
 
   ExprList results;
-  lookupName(results, callable);
+  lookupName(results, callable, (isOptional || isUnqualified) ? LOOKUP_DEFAULT : LOOKUP_REQUIRED);
 
   // If there were no results, and it was a qualified search, then
   // it's an error. (If it's unqualified, then there are still things
   // left to try.)
   if (results.empty() && !isUnqualified) {
-    if (isOptional) {
-      return NULL;
-    }
-
-    diag.error(loc) << "Undefined method " << callable;
-    // See if we can give a better idea of the scope being searched:
-    if (callable->nodeType() == ASTNode::Member) {
-      lookupName(results, static_cast<const ASTMemberRef *>(callable)->qualifier());
-      if (!results.empty()) {
-        diag.info() << "Scopes searched:";
-        for (ExprList::const_iterator it = results.begin(); it != results.end(); ++it) {
-          diag.info(*it) << Format_Type << Format_QualifiedName << *it;
-        }
-      }
-    }
-
-    return &Expr::ErrorVal;
+    return isOptional ? NULL : &Expr::ErrorVal;
   }
 
   // Try getting the lookup results as a type definition.
@@ -143,9 +127,11 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   if (!success) {
     return &Expr::ErrorVal;
   } else if (results.empty()) {
-    diag.error(loc) << "Undefined method " << callable;
-    diag.writeLnIndent("Scopes searched:");
-    dumpScopeHierarchy();
+    // Search failed, run it again with required to report errors.
+    lookupName(results, callable, LOOKUP_REQUIRED);
+    //diag.error(loc) << "Undefined method " << callable;
+    //diag.writeLnIndent("Scopes searched:");
+    //dumpScopeHierarchy();
     return &Expr::ErrorVal;
   } else if (call->candidates().empty()) {
     // Generate the calling signature in a buffer.

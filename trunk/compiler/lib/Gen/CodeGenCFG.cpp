@@ -153,15 +153,25 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     const Type * returnType = returnVal->canonicalType();
     TypeShape returnShape = returnType->typeShape();
     DASSERT(value != NULL);
-    if (returnShape == Shape_Large_Value || returnShape == Shape_Small_LValue) {
+
+#if FC_STRUCTS_INTERNAL
+    // TODO: Optimize so that we store directly into sret.
+    if (returnShape == Shape_Large_Value) {
+      value = loadValue(value, returnVal);
+    }
+    DASSERT_TYPE_EQ(returnVal, returnType->irEmbeddedType(), value->getType());
+#else
+    if ((returnShape == Shape_Large_Value || returnShape == Shape_Small_LValue)) {
       value = builder_.CreateLoad(value);
     }
+#endif
 
     //genDoFinally(blk);
     if (structRet_ != NULL) {
       builder_.CreateStore(value, structRet_);
       builder_.CreateRet(NULL);
     } else {
+      DASSERT_TYPE_EQ(returnVal, returnType->irEmbeddedType(), value->getType());
       builder_.CreateRet(value);
     }
   }

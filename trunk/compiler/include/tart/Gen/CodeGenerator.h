@@ -5,15 +5,20 @@
 #ifndef TART_GEN_CODEGENERATOR_H
 #define TART_GEN_CODEGENERATOR_H
 
-#include <tart/Common/SourceLocation.h>
-#include <tart/Gen/Reflector.h>
+#include "tart/Common/SourceLocation.h"
+#include "tart/Common/Formattable.h"
+#include "tart/Gen/Reflector.h"
 
-#include <llvm/Support/IRBuilder.h>
-#include <llvm/PassManager.h>
-#include <llvm/ADT/DenseMap.h>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/Analysis/DebugInfo.h>
+#include "llvm/Support/IRBuilder.h"
+#include "llvm/PassManager.h"
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/StringMap.h"
+#include "llvm/Analysis/DebugInfo.h"
 #include <iostream>
+
+// If true, means that structs are passed as first-class values internally within
+// a function; If false, it means they are passed as pointers.
+#define FC_STRUCTS_INTERNAL 1
 
 namespace tart {
 
@@ -170,6 +175,9 @@ public:
   /** Get the address of a value. */
   llvm::Value * genLValueAddress(const Expr * in);
 
+  /** Load the value of a member field. */
+  llvm::Value * genLoadMemberField(const LValueExpr * lval);
+
   /** Generate the address of a member field. */
   llvm::Value * genMemberFieldAddr(const LValueExpr * lval);
 
@@ -193,7 +201,7 @@ public:
   llvm::Value * genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & labelStream);
 
   /** Generate the base address of a struct or array. */
-  llvm::Value * genBaseExpr(const Expr * base, ValueList & indices, FormatStream & labelStream);
+  llvm::Value * genBaseAddress(const Expr * base, ValueList & indices, FormatStream & labelStream);
 
   /** Generate the code to look up a method in a vtable. */
   llvm::Value * genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -380,9 +388,10 @@ private:
   llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
   llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
 
-  void ensureLValue(const Expr * expr, const llvm::Type * type);
+  void ensureLValue(const Expr * expr, const llvm::Type * irType);
   void checkCallingArgs(const llvm::Value * fn,
       ValueList::const_iterator first, ValueList::const_iterator last);
+  llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
 
   llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
 
@@ -428,6 +437,32 @@ private:
 
   bool debug_;
 };
+
+#ifdef NDEBUG
+#define DASSERT_TYPE_EQ(loc, expected, actual)
+#define DASSERT_TYPE_EQ_MSG(loc, expected, actual, msg)
+#else
+#define DASSERT_TYPE_EQ(expr, expected, actual) \
+      if (expected != actual) {\
+        diag.error(expr) << "Compiled type mismatch for expression:" << expr; \
+        diag.info() << "Expected: '" << expected << "'"; \
+        diag.info() << "Actual:   '" << actual << "'"; \
+        DFAIL("Called from here"); \
+      }
+
+#define DASSERT_TYPE_EQ_MSG(loc, expected, actual, msg) \
+      if (expected != actual) {\
+        diag.error(loc) << msg; \
+        diag.info() << "Expected: '" << expected << "'"; \
+        diag.info() << "Actual:   '" << actual << "'"; \
+        DFAIL("Called from here"); \
+      }
+
+#endif
+
+FormatStream & operator<<(FormatStream & out, const llvm::Type * type);
+FormatStream & operator<<(FormatStream & out, const llvm::Value * value);
+FormatStream & operator<<(FormatStream & out, const ValueList & values);
 
 }
 

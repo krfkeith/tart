@@ -675,8 +675,6 @@ int main(int argc, char **argv, char **envp) {
     std::auto_ptr<Module> composite(linker.releaseModule());
     std::auto_ptr<TargetMachine> targetMachine = selectTarget(*composite.get());
 
-    errs() << "TargetData = " << targetMachine->getTargetData()->getStringRepresentation();
-
 /*    TargetData * TD = 0;
     const std::string &ModuleDataLayout = M.get()->getDataLayout();
     if (!ModuleDataLayout.empty())

@@ -66,6 +66,7 @@ private:
   Expr * base_;
   const TupleType * args_;
   const TupleType * params_;
+  TemplateConditionList conditions_;
   BindingEnv env_;
   ConversionRank conversionRank_;
 };

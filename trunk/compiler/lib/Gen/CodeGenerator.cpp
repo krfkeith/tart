@@ -491,4 +491,20 @@ void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
 #endif
 }
 
+llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
+    llvm::StringRef name ) {
+#if !NDEBUG
+  const llvm::Type * type = value->getType();
+  if (!isa<llvm::PointerType>(type)) {
+    if (expr != NULL) {
+      diag.error(expr) << Format_Type << "Not an lvalue: " << expr;
+    }
+
+    type->dump(irModule_);
+    DFAIL("Expecting an lvalue");
+  }
+#endif
+  return builder_.CreateLoad(value, name);
+}
+
 }

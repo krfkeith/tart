@@ -210,6 +210,10 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     diag.debug(source) << "Unify error: " << pattern << " : " << pv;
     DFAIL("Should not be unifying with a value that is a pattern var.");
   } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+    if (pattern->isSingular()) {
+      // Let conversion pass take care of it.
+      return true;
+    }
     return tc->unifyWithPattern(*this, pattern);
   } else if (const PatternValue * pval = dyn_cast<PatternValue>(value)) {
     Type * boundValue = pval->value();
