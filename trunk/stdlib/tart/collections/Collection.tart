@@ -5,6 +5,7 @@ interface Collection[%ItemType] : Iterable[ItemType] {
   def add(item:ItemType) -> bool;
 
   /** Add all of the items in the specified collection into this collection. */
+  def addAll(items:ItemType...);
   def addAll(items:Collection);
   def addAll(items:Iterator[ItemType]);
 
@@ -13,6 +14,7 @@ interface Collection[%ItemType] : Iterable[ItemType] {
   def remove(item:ItemType) -> bool;
   
   /** Add all of the items in the specified collection from this collection. */
+  def removeAll(items:ItemType...);
   def removeAll(items:Collection);
   def removeAll(items:Iterator[ItemType]);
 
