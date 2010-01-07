@@ -99,9 +99,6 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
       selfArg = builder_.CreateLoad(selfArg, "self");
     }
 #endif
-    /*if (in->selfArg() != NULL && in->selfArg()->type()->typeClass() == Type::Struct) {
-      return builder_.CreateLoad(selfArg);
-    }*/
 
     return selfArg;
   } else if (fnType->isStructReturn()) {
