@@ -402,7 +402,7 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   TypeList naTypeArgs;
   naTypeArgs.push_back(const_cast<Type *>(elementType));
   naTypeArgs.push_back(UnitType::get(
-      ConstantInteger::get(in->location(), &ULongType::instance, in->args().size())));
+      ConstantInteger::get(in->location(), &UInt64Type::instance, in->args().size())));
   ConstantNativeArray * arrayData =
       new ConstantNativeArray(
           in->location(),

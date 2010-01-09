@@ -1,7 +1,7 @@
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(StructTest);
 }
 
@@ -10,9 +10,9 @@ def main(args:String[]) -> int {
 // TODO: Structs in unions and tuples.
 
 struct Point {
-  var x:int;
-  var y:int;
-  var z:int = 1;
+  var x:int32;
+  var y:int32;
+  var z:int32 = 1;
 }
 
 struct LargePoint {

@@ -30,7 +30,7 @@ TEST_F(UnifyTest, UnifyBasicExpr) {
 TEST_F(UnifyTest, UnifyBasicType) {
   BindingEnv env;
   SourceContext source(SourceLocation(), NULL);
-  ASSERT_TRUE(env.unify(&source, &ShortType::instance, &ShortType::instance, Invariant));
+  ASSERT_TRUE(env.unify(&source, &Int16Type::instance, &Int16Type::instance, Invariant));
 }
 
 }

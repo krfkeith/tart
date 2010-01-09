@@ -3,7 +3,7 @@ import tart.reflect.Module;
 namespace TestUtils {
 
   /** Simple function to run all of the test functions in a module. */  
-  def runModuleTests(m:Module) -> int {
+  def runModuleTests(m:Module) -> int32 {
     try {
 		  for method in m.methods {
 		    if method.name.startsWith("test") {

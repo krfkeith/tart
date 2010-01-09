@@ -8,7 +8,7 @@ import tart.text.encodings.Codecs;
 public final class String {
   private {
     /** The length of the string, in bytes. */
-    var len:int;
+    var len:int32;
 
     /** For strings which are slices, this points to the original string.
         For non-slice strings, or strings which refer to constant string
@@ -67,7 +67,7 @@ public final class String {
         count: The number of characters to use in constructing the string. Will be clamped
             to the end of the string if there are fewer than 'count' characters following 'start'.
    */
-  static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
+  static def create(chars:char[], start:int32 = 0, count:int32 = int32.maxVal) -> String {
     let length = Codecs.UTF_8.encodedLength(chars, start, count);
     let self = alloc(length);
     Codecs.UTF_8.encodeRaw(addressOf(self.data[0]), length, addressOf(chars.data[0]), count);
@@ -76,7 +76,7 @@ public final class String {
 
   /** Construct a string from a native byte array. */
   @LinkageName("String_create")
-  static def create(bytes:Address[ubyte], length:int) -> String {
+  static def create(bytes:Address[ubyte], length:int32) -> String {
     let self = alloc(length);
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes[0]), length);
     return self;
@@ -93,7 +93,7 @@ public final class String {
   }
   
   /** The length of the string in bytes. */
-  def length:int { get { return self.len; } } 
+  def length:int32 { get { return self.len; } } 
 
   /** Return true if this string starts with the substring 's'. */  
   def startsWith(s:String) -> bool {
@@ -121,7 +121,7 @@ public final class String {
         start: The starting byte index of the substring to measure.
         count: The length, in bytes, of the substring to measure.
    */
-  def charLength(start:int = 0, count:int = int.maxVal) -> int {
+  def charLength(start:int32 = 0, count:int32 = int32.maxVal) -> int32 {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, length);
     count = Math.min(count, length - start);
@@ -133,7 +133,7 @@ public final class String {
         start: The starting byte index of the substring to convert.
         count: The length, in bytes, of the substring to convert.
    */
-  def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
+  def toCharArray(start:int32 = 0, count:int32 = int32.maxVal) -> char[] {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, length);
     count = Math.min(count, length - start);
@@ -155,7 +155,7 @@ public final class String {
   }
 
   /** The index operator. */
-  def [index:int]:ubyte {
+  def [index:int32]:ubyte {
     get {
       //Preconditions.verify[IndexOutOfRangeError](index < 0 or index >= len);
       return self.data[index];

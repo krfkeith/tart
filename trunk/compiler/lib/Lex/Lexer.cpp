@@ -47,7 +47,6 @@ namespace {
 
         case 'b':
           if (strcmp(kw, "bool") == 0) return Token_BoolType;
-          if (strcmp(kw, "byte") == 0) return Token_ByteType;
           if (strcmp(kw, "break") == 0) return Token_Break;
           break;
 
@@ -83,7 +82,7 @@ namespace {
         case 'i':
           if (strcmp(kw, "is") == 0) return Token_Is;
           if (strcmp(kw, "in") == 0) return Token_In;
-          if (strcmp(kw, "int") == 0) return Token_IntType;
+          if (strcmp(kw, "int") == 0) return Token_IntpType;
           if (strcmp(kw, "if") == 0) return Token_If;
           if (strcmp(kw, "import") == 0) return Token_Import;
           if (strcmp(kw, "interface") == 0) return Token_Interface;
@@ -92,7 +91,6 @@ namespace {
           if (strcmp(kw, "int16") == 0) return Token_ShortType;
           if (strcmp(kw, "int32") == 0) return Token_IntType;
           if (strcmp(kw, "int64") == 0) return Token_LongType;
-          if (strcmp(kw, "intp") == 0) return Token_IntpType;
           break;
 
         case 'g':
@@ -101,7 +99,6 @@ namespace {
 
         case 'l':
           if (strcmp(kw, "let") == 0) return Token_Let;
-          if (strcmp(kw, "long") == 0) return Token_LongType;
           break;
 
         case 'm':
@@ -136,9 +133,8 @@ namespace {
           break;
 
         case 's':
-          if (strcmp(kw, "short") == 0) return Token_ShortType;
           if (strcmp(kw, "struct") == 0) return Token_Struct;
-          if (strcmp(kw, "sbyte") == 0) return Token_ByteType;
+          //if (strcmp(kw, "sbyte") == 0) return Token_ByteType;
           if (strcmp(kw, "set") == 0) return Token_Set;
           if (strcmp(kw, "static") == 0) return Token_Static;
           if (strcmp(kw, "super") == 0) return Token_Super;
@@ -154,14 +150,11 @@ namespace {
 
         case 'u':
           if (strcmp(kw, "ubyte") == 0) return Token_UByteType;
-          if (strcmp(kw, "ushort") == 0) return Token_UShortType;
-          if (strcmp(kw, "uint") == 0) return Token_UIntType;
-          if (strcmp(kw, "ulong") == 0) return Token_ULongType;
+          if (strcmp(kw, "uint") == 0) return Token_UIntpType;
           if (strcmp(kw, "uint8") == 0) return Token_UByteType;
           if (strcmp(kw, "uint16") == 0) return Token_UShortType;
           if (strcmp(kw, "uint32") == 0) return Token_UIntType;
           if (strcmp(kw, "uint64") == 0) return Token_ULongType;
-          if (strcmp(kw, "uintp") == 0) return Token_UIntpType;
           if (strcmp(kw, "undef") == 0) return Token_Undef;
           break;
 

@@ -12,7 +12,7 @@ class FunctionType : Type {
     var _dcObject:static fn (obj:Object) -> Address[void]; // Down-cast object
 
 	  /** Helper function to check the number of arguments. */
-	  static def checkArgCount(args:Object[], count:int) {
+	  static def checkArgCount(args:Object[], count:int32) {
 	    if args.length != count {
 	      throw InvocationException("Incorrect number of arguments");
 	    }

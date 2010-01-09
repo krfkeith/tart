@@ -19,7 +19,7 @@ import tart.core.Memory.zeroPtr;
     self._last = last;
   }
 
-  def construct(base:Address[ubyte], size:long) {
+  def construct(base:Address[ubyte], size:int) {
     self._first = base;
     self._last = Memory.addressOf(base[size]);
   }
@@ -36,7 +36,7 @@ import tart.core.Memory.zeroPtr;
 
   //def first[%T]:Address[T] { get { return ???; } }
   //def last[%T]:Address[T] { get { return ???; } }
-  def size:long { get { return ptrDiff(_first, _last); } }
+  def size:int { get { return ptrDiff(_first, _last); } }
   def contains(a:Address[ubyte]) -> bool {
     //
     return true;

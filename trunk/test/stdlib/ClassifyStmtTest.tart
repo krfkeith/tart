@@ -1,5 +1,5 @@
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   classifyTest1();
   classifyTest2();
   classifyTest3();
@@ -43,7 +43,7 @@ def classifyTest4 {
       Debug.fail("Invalid classification");
     }
     
-    as a:int[] {
+    as a:int32[] {
       Debug.fail("Invalid classification");
     }
     
@@ -57,9 +57,9 @@ def classifyTest4 {
 
 // These test requires union support in LLVM.
 def classifyTest5 {
-  var n:int or float = 1;
+  var n:int32 or float = 1;
   classify n {
-    as i:int {
+    as i:int32 {
       return;
     }
     
@@ -72,9 +72,9 @@ def classifyTest5 {
 }
 
 def classifyTest6 {
-  let n:int or float = 1.0;
+  let n:int32 or float = 1.0;
   classify n {
-    as i:int {
+    as i:int32 {
       Debug.fail("Invalid classification");
     }
     

@@ -3,9 +3,9 @@
 public final class StringBuilder {
   private {
     var value:char[];
-    var len:int;
+    var len:int32;
 
-    def grow(amount:int) {
+    def grow(amount:int32) {
       let newSize = self.len + amount;
       if value.length < newSize {
         let newValue = char[](newSize + newSize / 2 + 16);
@@ -24,13 +24,13 @@ public final class StringBuilder {
   }
 
   /** Construct a StringBuilder from an existing String. */
-  def construct(str:String, start:int = 0, count:int = int.maxVal) {
+  def construct(str:String, start:int32 = 0, count:int32 = int32.maxVal) {
     value = str.toCharArray(start, count);
     self.len = int32(value.length);
   }
 
   /** Construct a StringBuilder from a character array. */
-  def construct(chars:char[], start:int = 0, count:int = int.maxVal) {
+  def construct(chars:char[], start:int32 = 0, count:int32 = int32.maxVal) {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkIndex(count >= 0);
     start = Math.min(start, int32(chars.length));
@@ -41,7 +41,7 @@ public final class StringBuilder {
   }
   
   /** The number of characters in the buffer. */
-  def length:int {
+  def length:int32 {
     get { return self.len; }
   }
 
@@ -56,12 +56,12 @@ public final class StringBuilder {
   }
   
   /** Append all or part of a character array to the buffer. */
-  def append(c:char[], start:int = 0, count:int = int.maxVal) {
+  def append(c:char[], start:int32 = 0, count:int32 = int32.maxVal) {
     insert(self.len, c, start, count);
   }
   
   /** Append all or part of a String to the buffer. */
-  def append(s:String, start:int = 0, count:int = int.maxVal) {
+  def append(s:String, start:int32 = 0, count:int32 = int32.maxVal) {
     append(s.toCharArray(), start, count);
   }
   
@@ -69,11 +69,11 @@ public final class StringBuilder {
     insert(self.len, s);
   }
   
-  def insert(insertPos:int, c:char) {
+  def insert(insertPos:int32, c:char) {
   }
   
   /** Insert all or part of a character array to the buffer at position 'insertPos'. */
-  def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int32, chars:char[], start:int32 = 0, count:int32 = int32.maxVal) {
     Preconditions.checkIndex(insertPos >= 0 and insertPos <= self.len);
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(start >= 0);
@@ -102,7 +102,7 @@ public final class StringBuilder {
         IndexOutOfRangeException: If 'count' or 'start' are less than zero, or if the
           insertPos is outside of the range of the buffer.
    */
-  def insert(insertPos:int, src:String, start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int32, src:String, start:int32 = 0, count:int32 = int32.maxVal) {
     Preconditions.checkIndex(insertPos >= 0 and insertPos <= self.len);
     let chars = src.toCharArray(start, count);
     if chars.length > 0 {
@@ -113,10 +113,10 @@ public final class StringBuilder {
     }
   }
   
-  def insert(insertPos:int, s:Iterator[char]) {
+  def insert(insertPos:int32, s:Iterator[char]) {
     classify s {
       as sequence:HasLength {
-        grow(int(sequence.length));
+        grow(int32(sequence.length));
         for c in s {
           value[self.len++] = c;
         }
@@ -133,7 +133,7 @@ public final class StringBuilder {
       Parameters:
         n: The index of the character to remove.
    */
-  def remove(n:int) {
+  def remove(n:int32) {
     remove(n, 1);
   }
 
@@ -147,7 +147,7 @@ public final class StringBuilder {
       Exceptions:
         IndexOutOfRangeException: If 'count' or 'start' are less than zero.
     */
-  def remove(start:int, count:int) {
+  def remove(start:int32, count:int32) {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(start >= 0);
     start = Math.min(start, self.len);

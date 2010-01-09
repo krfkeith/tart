@@ -367,13 +367,13 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
 
         if (isSignedResult) {
           if (resultBits <= 8) {
-            return &ByteType::instance;
+            return &Int8Type::instance;
           } else if (resultBits <= 16) {
-            return &ShortType::instance;
+            return &Int16Type::instance;
           } else if (resultBits <= 32) {
-            return &IntType::instance;
+            return &Int32Type::instance;
           } else if (resultBits <= 64) {
-            return &LongType::instance;
+            return &Int64Type::instance;
           }
 
           diag.error() << "Integer value requires " << resultBits << " bits, too large.";
@@ -382,13 +382,13 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
           //DFAIL("Integer value too large to be represented as native type.");
         } else {
           if (resultBits <= 8) {
-            return &UByteType::instance;
+            return &UInt8Type::instance;
           } else if (resultBits <= 16) {
-            return &UShortType::instance;
+            return &UInt16Type::instance;
           } else if (resultBits <= 32) {
-            return &UIntType::instance;
+            return &UInt32Type::instance;
           } else if (resultBits <= 64) {
-            return &ULongType::instance;
+            return &UInt64Type::instance;
           }
 
           diag.error() << "Integer value requires " << resultBits << " bits, too large.";

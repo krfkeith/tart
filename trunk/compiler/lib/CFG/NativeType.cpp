@@ -153,7 +153,7 @@ NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 void NativeArrayType::initBuiltin() {
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
-  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &IntType::instance));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &Int32Type::instance));
 
   // Create type parameters
   TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);

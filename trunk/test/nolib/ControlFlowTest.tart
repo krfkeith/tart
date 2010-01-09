@@ -1,6 +1,6 @@
 @EntryPoint
-def main(args:String[]) -> int {
-  var g:int;
+def main(args:String[]) -> int32 {
+  var g:int32;
   if 1 == 2 {
     g = 11;
   } else {

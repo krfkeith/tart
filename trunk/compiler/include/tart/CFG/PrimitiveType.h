@@ -79,8 +79,8 @@ public:
   }
 
   // Used by the parser
-  static ASTBuiltIn intpDef;
-  static ASTBuiltIn uintpDef;
+  static ASTBuiltIn intDef;
+  static ASTBuiltIn uintDef;
 
 protected:
   ConversionRank convertToInteger(const Conversion & cn) const;
@@ -184,14 +184,14 @@ PrimitiveTypeImpl<kTypeId> PrimitiveTypeImpl<kTypeId>::instance;
 typedef PrimitiveTypeImpl<TypeId_Void>    VoidType;
 typedef PrimitiveTypeImpl<TypeId_Bool>    BoolType;
 typedef PrimitiveTypeImpl<TypeId_Char>    CharType;
-typedef PrimitiveTypeImpl<TypeId_SInt8>   ByteType;
-typedef PrimitiveTypeImpl<TypeId_SInt16>  ShortType;
-typedef PrimitiveTypeImpl<TypeId_SInt32>  IntType;
-typedef PrimitiveTypeImpl<TypeId_SInt64>  LongType;
-typedef PrimitiveTypeImpl<TypeId_UInt8>   UByteType;
-typedef PrimitiveTypeImpl<TypeId_UInt16>  UShortType;
-typedef PrimitiveTypeImpl<TypeId_UInt32>  UIntType;
-typedef PrimitiveTypeImpl<TypeId_UInt64>  ULongType;
+typedef PrimitiveTypeImpl<TypeId_SInt8>   Int8Type;
+typedef PrimitiveTypeImpl<TypeId_SInt16>  Int16Type;
+typedef PrimitiveTypeImpl<TypeId_SInt32>  Int32Type;
+typedef PrimitiveTypeImpl<TypeId_SInt64>  Int64Type;
+typedef PrimitiveTypeImpl<TypeId_UInt8>   UInt8Type;
+typedef PrimitiveTypeImpl<TypeId_UInt16>  UInt16Type;
+typedef PrimitiveTypeImpl<TypeId_UInt32>  UInt32Type;
+typedef PrimitiveTypeImpl<TypeId_UInt64>  UInt64Type;
 typedef PrimitiveTypeImpl<TypeId_Float>   FloatType;
 typedef PrimitiveTypeImpl<TypeId_Double>  DoubleType;
 typedef PrimitiveTypeImpl<TypeId_Null>    NullType;

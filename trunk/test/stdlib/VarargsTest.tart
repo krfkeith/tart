@@ -1,5 +1,5 @@
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   stringArgs("Three", "String", "Args");
   intArgs(1, 2, 3);
   intArgs2(1, 2, 3);
@@ -12,12 +12,12 @@ def stringArgs(s:String...) {
   Debug.assertEq("Three", s[0]);
 }
 
-def intArgs(s:int...) {
+def intArgs(s:int32...) {
   Debug.assertEq(3, s.length);
 }
 
-def intArgs2(s:int...) {
-  let s2:Array[int] = s;
+def intArgs2(s:int32...) {
+  let s2:Array[int32] = s;
   Debug.assertEq(3, s2.length);
 }
 
@@ -28,7 +28,7 @@ def testMakeArray() {
   Debug.assertEq(3, makeArray(5, 5, 5).length);
 }
 
-def makeArray(s:int...) -> int[] {
+def makeArray(s:int32...) -> int32[] {
   return s;
 }
 

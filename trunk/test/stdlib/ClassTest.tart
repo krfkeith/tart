@@ -1,11 +1,11 @@
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(ClassTest);
 }
 
-public macro mtest(i:int) -> int {
+public macro mtest(i:int32) -> int32 {
   return i + i;
 }
 
@@ -32,7 +32,7 @@ class ClassTest : Test {
     var s = t.testMethod();
     assertEq(11, s);
 
-    var m:short = t.test2();
+    var m:int16 = t.test2();
     assertEq(18, m);
   }
   
@@ -68,30 +68,30 @@ class ClassTest : Test {
 }
 
 class TestClass {
-  public var m0:int;
+  public var m0:int32;
 
-  public def testMethod() -> int {
+  public def testMethod() -> int32 {
     return 11;
   }
 
-  public final def test2() -> short {
+  public final def test2() -> int16 {
     return self.test3() + self.test3();
   }
 
-  public final def test3() -> byte {
+  public final def test3() -> int8 {
     return 9;
   }
   
-  public def test4() -> byte {
+  public def test4() -> int8 {
     return 33;
   }
 }
 
 class SubClass : TestClass {
-  private var m2:int;
-  //private var m1:int[];
+  private var m2:int32;
+  //private var m1:int32[];
   
-  public override testMethod() -> int {
+  public override testMethod() -> int32 {
     return 13;
   }
   
@@ -99,7 +99,7 @@ class SubClass : TestClass {
     self.m2 = 20;
   }
   
-  public override test4() -> byte {
+  public override test4() -> int8 {
     return super() + 1;
   }
 }

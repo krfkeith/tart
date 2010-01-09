@@ -1,4 +1,4 @@
 @EntryPoint
-def main() -> int {
+def main() -> int32 {
   return 0;
 }

@@ -1,7 +1,7 @@
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(StringTest);
 }
 

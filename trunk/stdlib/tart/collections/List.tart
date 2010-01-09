@@ -5,14 +5,14 @@ interface List[%ElementType] : Iterable[ElementType] {
   def add(e:ElementType);
 
   /** Insert the element 'e' at the specific position 'position'. */
-  def insert(position:intp, e:ElementType);
+  def insert(position:int, e:ElementType);
 
   /** Remove the item at the specified index. */
-  def remove(index:intp);
+  def remove(index:int);
 
   /** Access a list element by index. */
-  def [index:intp]:ElementType { get; set; }
+  def [index:int]:ElementType { get; set; }
   
   /** The number of items in the list. */
-  def length:intp { get; }
+  def length:int { get; }
 }

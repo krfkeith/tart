@@ -2,7 +2,7 @@ let globalLet = 3;
 var globalVar = 4;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   let localLet = 3;
   var localVar = 4;
   return globalLet - localLet + globalVar - localVar;

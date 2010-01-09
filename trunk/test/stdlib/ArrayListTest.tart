@@ -3,13 +3,13 @@ import tart.reflect.ComplexType;
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(ArrayListTest);
 }
 
 class ArrayListTest : Test {
   def testConstruct() {
-    let a = ArrayList[int](1, 2, 3);
+    let a = ArrayList[int32](1, 2, 3);
     assertEq(3, a.length);
     assertEq(1, a[0]);
     assertEq(2, a[1]);
@@ -25,7 +25,7 @@ class ArrayListTest : Test {
   }
 	
 	def testOutOfRange() {
-	  let a = ArrayList[int](1, 2, 3);
+	  let a = ArrayList[int32](1, 2, 3);
 	  try {
 	    let s = a[4];
 	    fail("Out of range access");
@@ -40,7 +40,7 @@ class ArrayListTest : Test {
 	}
 	
 	def testAdd() {
-	  let a = ArrayList[int](1, 2, 3);
+	  let a = ArrayList[int32](1, 2, 3);
 	  a.add(4);
 	  assertEq(4, a.length);
 	  assertEq(1, a[0]);
@@ -50,7 +50,7 @@ class ArrayListTest : Test {
 	}
 	
 	def testRemove() {
-	  let a = ArrayList[int](1, 2, 3);
+	  let a = ArrayList[int32](1, 2, 3);
 	  a.remove(1);
 	  assertEq(2, a.length);
 	  assertEq(1, a[0]);

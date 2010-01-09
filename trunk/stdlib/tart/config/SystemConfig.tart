@@ -19,7 +19,7 @@ namespace SystemConfig {
   @TargetProperty var allowUnalignedMemoryAccess:bool;
   
   /** Size of a pointer field in memory, in bits. */
-  @TargetProperty var sizeOfPointer:int;
+  @TargetProperty var sizeOfPointer:int32;
 
   /** True if the target platform is little endian. */ 
   @TargetProperty var isLittleEndian:bool;

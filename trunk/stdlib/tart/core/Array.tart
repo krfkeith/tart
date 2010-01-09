@@ -7,11 +7,11 @@ import tart.core.Math.min;
 /** Built-in array class */
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
-    var _length:intp;
+    var _length:int;
     var _data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
-    static def alloc(length:intp) -> Array {
+    static def alloc(length:int) -> Array {
       let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[length]);
       self._length = length;
       return self;
@@ -26,7 +26,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   }
 
   /** Construct an array of a given length */
-  static def create(length:intp) -> Array {
+  static def create(length:int) -> Array {
     Preconditions.checkArgument(length >= 0);
     if (length == 0) {
       return emptyArray;
@@ -50,7 +50,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   }
 
   /** The length of the array. */
-  def length:intp {
+  def length:int {
     get { return _length; }
   }
 
@@ -63,7 +63,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   }
 
   /** Array element access. */
-  def [index:intp]:ElementType {
+  def [index:int]:ElementType {
     get {
       Preconditions.checkIndex(index >= 0 and index < _length);
       return self._data[index];
@@ -89,7 +89,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
       'dstOffset' in array 'dst'.
    */  
-  static def copyElements(dst:Array, dstOffset:intp, src:Array, srcOffset:intp, count:intp) {
+  static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._length);
     Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._length);
@@ -101,7 +101,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   private final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
-    private var index:intp;
+    private var index:int;
     
     def construct(array:Array) {
       self.array = array;
@@ -116,6 +116,6 @@ public final class Array[%ElementType] : Iterable[ElementType] {
       }
     }
 
-    def length:long { get { return array._length; } }
+    def length:int { get { return array._length; } }
   }
 }

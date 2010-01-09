@@ -1,6 +1,6 @@
 /// TEST SwitchDuplicateCase: Duplicate case
 def func() {
-  var a:int = 1;
+  var a:int32 = 1;
   switch a {
     case 1 {}
     case 1 {}
@@ -9,7 +9,7 @@ def func() {
 
 /// TEST SwitchInvalidCaseType: incompatible
 def func() {
-  var a:int = 1;
+  var a:int32 = 1;
   switch a {
     case "Hey" {}
   }
@@ -17,7 +17,7 @@ def func() {
 
 /// TEST SwitchTruncatedCaseValue: can never equal
 def func() {
-  var a:byte = 1;
+  var a:int8 = 1;
   switch a {
     case 1000 {}
   }
@@ -33,7 +33,7 @@ def func() {
 
 /// TEST SwitchOnlyOneElse: Only one
 def func() {
-  var a:byte = 1;
+  var a:int8 = 1;
   switch a {
     case 1 {}
     else {}

@@ -111,7 +111,7 @@ TEST(ParameterAssigmentsTest, TestVariadicArg) {
       &StaticParamDefn<TypeId_SInt32, 1, ParameterDefn::Variadic>::value,
       &StaticParamDefn<TypeId_SInt32, 2, ParameterDefn::KeywordOnly>::value,
   };
-  static FunctionType variadicFunction(&IntType::instance, variadicArgs, 3);
+  static FunctionType variadicFunction(&Int32Type::instance, variadicArgs, 3);
   ParameterAssignments target;
   ParameterAssignmentsBuilder builder(target, &variadicFunction);
       
@@ -140,7 +140,7 @@ TEST(ParameterAssigmentsTest, TestEmptyVariadicArg) {
       &StaticParamDefn<TypeId_SInt32, 1, ParameterDefn::Variadic>::value,
       &StaticParamDefn<TypeId_SInt32, 2, ParameterDefn::KeywordOnly>::value,
   };
-  static FunctionType variadicFunction(&IntType::instance, variadicArgs, 3);
+  static FunctionType variadicFunction(&Int32Type::instance, variadicArgs, 3);
   ParameterAssignments target;
   ParameterAssignmentsBuilder builder(target, &variadicFunction);
       

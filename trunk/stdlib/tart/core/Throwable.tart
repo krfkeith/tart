@@ -4,16 +4,16 @@ class Throwable {
     var caller:optional StackFrame;
     var function:String;
     var sourceFile:String;
-    var sourceLine:uint;
+    var sourceLine:uint32;
   }
   
   private {
     // Exception structure needed by libunwind.
     final struct UnwindException {
-      var exceptionClass:ulong;
-      var exceptionCleanup:static fn(:int, :int);
-      var private1:ulong;
-      var private2:ulong;
+      var exceptionClass:uint64;
+      var exceptionCleanup:static fn(:int32, :int32);
+      var private1:uint64;
+      var private2:uint64;
     }
     
     // Padding needed to align the exceptInfo

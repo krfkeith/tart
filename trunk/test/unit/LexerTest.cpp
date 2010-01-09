@@ -139,14 +139,14 @@ TEST_F(LexerTest, SingleTokens) {
   // Primtypes
   EXPECT_EQ(Token_BoolType, LexToken("bool"));
   EXPECT_EQ(Token_CharType, LexToken("char"));
-  EXPECT_EQ(Token_ByteType, LexToken("byte"));
-  EXPECT_EQ(Token_IntType, LexToken("int"));
-  EXPECT_EQ(Token_ShortType, LexToken("short"));
-  EXPECT_EQ(Token_LongType, LexToken("long"));
-  EXPECT_EQ(Token_UByteType, LexToken("ubyte"));
-  EXPECT_EQ(Token_UIntType, LexToken("uint"));
-  EXPECT_EQ(Token_UShortType, LexToken("ushort"));
-  EXPECT_EQ(Token_ULongType, LexToken("ulong"));
+  EXPECT_EQ(Token_ByteType, LexToken("int8"));
+  EXPECT_EQ(Token_IntType, LexToken("int32"));
+  EXPECT_EQ(Token_ShortType, LexToken("int16"));
+  EXPECT_EQ(Token_LongType, LexToken("int64"));
+  EXPECT_EQ(Token_UByteType, LexToken("uint8"));
+  EXPECT_EQ(Token_UIntType, LexToken("uint32"));
+  EXPECT_EQ(Token_UShortType, LexToken("uint16"));
+  EXPECT_EQ(Token_ULongType, LexToken("uint64"));
   EXPECT_EQ(Token_FloatType, LexToken("float"));
   EXPECT_EQ(Token_DoubleType, LexToken("double"));
 

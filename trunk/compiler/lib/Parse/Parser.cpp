@@ -1177,30 +1177,30 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
       return &CharType::biDef;
 
     case Token_ByteType:
-      return &ByteType::biDef;
+      return &Int8Type::biDef;
 
     case Token_ShortType:
-      return &ShortType::biDef;
+      return &Int16Type::biDef;
 
     case Token_IntType:
-      return &IntType::biDef;
+      return &Int32Type::biDef;
 
     case Token_LongType:
-      return &LongType::biDef;
+      return &Int64Type::biDef;
       //if (match(Token_DoubleType))
       //  return &LongDoubleType::biDef;
 
     case Token_UByteType:
-      return &UByteType::biDef;
+      return &UInt8Type::biDef;
 
     case Token_UShortType:
-      return &UShortType::biDef;
+      return &UInt16Type::biDef;
 
     case Token_UIntType:
-      return &UIntType::biDef;
+      return &UInt32Type::biDef;
 
     case Token_ULongType:
-      return &ULongType::biDef;
+      return &UInt64Type::biDef;
 
     case Token_FloatType:
       return &FloatType::biDef;
@@ -1212,10 +1212,10 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
       return &VoidType::biDef;
 
     case Token_IntpType:
-      return &PrimitiveType::intpDef;
+      return &PrimitiveType::intDef;
 
     case Token_UIntpType:
-      return &PrimitiveType::uintpDef;
+      return &PrimitiveType::uintDef;
 
     default:
       DASSERT(false);
