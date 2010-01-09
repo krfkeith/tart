@@ -418,7 +418,7 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();
-    if (tsig->typeParams()->size() == args->size()) {
+    if (args->size() >= tsig->numRequiredArgs() && args->size() <= tsig->typeParams()->size()) {
       // Attempt unification of pattern variables with template args.
       SpCandidate * spc = new SpCandidate(base, defn, args);
       SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);

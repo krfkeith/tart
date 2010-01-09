@@ -92,6 +92,7 @@ namespace {
           if (strcmp(kw, "int16") == 0) return Token_ShortType;
           if (strcmp(kw, "int32") == 0) return Token_IntType;
           if (strcmp(kw, "int64") == 0) return Token_LongType;
+          if (strcmp(kw, "intp") == 0) return Token_IntpType;
           break;
 
         case 'g':
@@ -160,6 +161,7 @@ namespace {
           if (strcmp(kw, "uint16") == 0) return Token_UShortType;
           if (strcmp(kw, "uint32") == 0) return Token_UIntType;
           if (strcmp(kw, "uint64") == 0) return Token_ULongType;
+          if (strcmp(kw, "uintp") == 0) return Token_UIntpType;
           if (strcmp(kw, "undef") == 0) return Token_Undef;
           break;
 

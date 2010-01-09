@@ -1,0 +1,63 @@
+/** A quadratically-probed hash map. */
+final class HashMap[%Key <: Hashable, %Value] : Map[Key, Value] {
+  
+  private {
+    enum EntryState : uint8 {
+      EMPTY,
+      DELETED,
+      OCCUPIED
+    }
+    
+    struct Entry {
+      var key:Key;
+      var value:Value;
+      var state:EntryState;
+      
+      def construct(key:Key, value:Value) {
+        self.key = key;
+        self.value = value;
+        self.state = EntryState.OCCUPIED;
+      }
+    }
+    
+    var _data:Entry[];
+    var _length:int32;
+    var _modified:bool = false;
+  }
+
+  def construct() {
+    self._data = Entry[](0);
+    self._length = 0;
+  }
+
+  /** Access a value by key. */
+  def [key:Key]:Value {
+    get ;
+    set ;
+  }
+  
+  def length:int { get { return _length; } }
+
+  def isEmpty:bool { get { return _length == 0; } }
+
+  def contains(key:Key) -> bool;
+
+  def clear();
+
+  def keys:Iterator[Key] { get; }
+
+  def values:Iterator[Key] { get; }
+  
+  def add(entry:(Key, Value)) -> bool;
+
+  def addAll(entries:(Key, Value)...);
+  def addAll(entries:Collection[(Key, Value)]);
+  def addAll(entries:Iterator[(Key, Value)]);
+
+  def remove(key:Key) -> bool;
+  
+  def removeAll(keys:Key...);
+  def removeAll(keys:Iterator[Key]);
+  
+  // TODO: Add equals, computeHash (for immutable collections only).
+}

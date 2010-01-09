@@ -16,20 +16,21 @@
 namespace tart {
 
 class ASTBuiltIn;
+class TypeAlias;
 
 /// -------------------------------------------------------------------
 /// Predicate functions for type ids.
 
 inline bool isIntegerTypeId(TypeId id) {
-  return id >= TypeId_Char && id <= TypeId_UIntPtr;
+  return id >= TypeId_Char && id <= TypeId_UInt64;
 }
 
 inline bool isUnsignedIntegerTypeId(TypeId id) {
-  return (id >= TypeId_UInt8 && id <= TypeId_UIntPtr) || id == TypeId_Char;
+  return (id >= TypeId_UInt8 && id <= TypeId_UInt64) || id == TypeId_Char;
 }
 
 inline bool isSignedIntegerTypeId(TypeId id) {
-  return id >= TypeId_SInt8 && id <= TypeId_SIntPtr;
+  return id >= TypeId_SInt8 && id <= TypeId_SInt64;
 }
 
 inline static bool isFloatingTypeId(TypeId id) {
@@ -65,6 +66,9 @@ public:
 
   static void initPrimitiveTypes(Module * module);
 
+  // Size of a pointer in bits, controlled by command-line options.
+  static uint32_t pointerSize() { return pointerSize_; }
+
   // Overrides
   const llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
@@ -73,6 +77,10 @@ public:
   static inline bool classof(const Type * t) {
     return t->typeClass() == Type::Primitive;
   }
+
+  // Used by the parser
+  static ASTBuiltIn intpDef;
+  static ASTBuiltIn uintpDef;
 
 protected:
   ConversionRank convertToInteger(const Conversion & cn) const;
@@ -92,6 +100,7 @@ protected:
 
   // Static list of all primitive types.
   static PrimitiveType * primitiveTypeList;
+  static uint32_t pointerSize_;
 };
 
 // -------------------------------------------------------------------
@@ -179,12 +188,10 @@ typedef PrimitiveTypeImpl<TypeId_SInt8>   ByteType;
 typedef PrimitiveTypeImpl<TypeId_SInt16>  ShortType;
 typedef PrimitiveTypeImpl<TypeId_SInt32>  IntType;
 typedef PrimitiveTypeImpl<TypeId_SInt64>  LongType;
-typedef PrimitiveTypeImpl<TypeId_SIntPtr> IntPtrType;
 typedef PrimitiveTypeImpl<TypeId_UInt8>   UByteType;
 typedef PrimitiveTypeImpl<TypeId_UInt16>  UShortType;
 typedef PrimitiveTypeImpl<TypeId_UInt32>  UIntType;
 typedef PrimitiveTypeImpl<TypeId_UInt64>  ULongType;
-typedef PrimitiveTypeImpl<TypeId_UIntPtr> UIntPtrType;
 typedef PrimitiveTypeImpl<TypeId_Float>   FloatType;
 typedef PrimitiveTypeImpl<TypeId_Double>  DoubleType;
 typedef PrimitiveTypeImpl<TypeId_Null>    NullType;

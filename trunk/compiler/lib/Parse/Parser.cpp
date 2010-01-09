@@ -1115,7 +1115,7 @@ ASTNode * Parser::typeName() {
   if (token == Token_Ident) {
     const char * typeName = matchIdent();
     result = new ASTIdent(loc, typeName);
-  } else if (token >= Token_BoolType && token <= Token_VoidType) {
+  } else if (token >= Token_BoolType && token <= Token_UIntpType) {
     TokenType t = token;
     token = lexer.next();
     result = builtInTypeName(t);
@@ -1211,6 +1211,12 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
     case Token_VoidType:
       return &VoidType::biDef;
 
+    case Token_IntpType:
+      return &PrimitiveType::intpDef;
+
+    case Token_UIntpType:
+      return &PrimitiveType::uintpDef;
+
     default:
       DASSERT(false);
   }
@@ -1299,16 +1305,15 @@ void Parser::templateParamList(ASTNodeList & templateParams) {
 bool Parser::templateParam(ASTNodeList & templateParams) {
   ASTNode * param = typeExpression();
   if (param) {
-    /*if (match(Token_Assign)) {
-      ASTNode * paramDefault = expression();
+    if (match(Token_Assign)) {
+      ASTNode * paramDefault = typeExpression();
       if (paramDefault == NULL) {
         expectedExpression();
         return false;
       }
 
-      // TODO: Create an op representing the default value.
-      DFAIL("Implement");
-    }*/
+      param = new ASTOper(ASTNode::Assign, param, paramDefault);
+    }
 
     templateParams.push_back(param);
     return true;
@@ -2494,7 +2499,7 @@ ASTNode * Parser::primaryExpression() {
       break;
 
     default:
-      if (token >= Token_BoolType && token <= Token_VoidType) {
+      if (token >= Token_BoolType && token <= Token_UIntpType) {
         result = builtInTypeName(token);
         //result = new ASTIdent(lexer.tokenLocation(),
         //    istrings.intern(lexer.tokenValue().c_str()));

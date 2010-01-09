@@ -82,6 +82,9 @@ public:
   /** Return true if this expression has been fully resolved. */
   virtual bool isSingular() const = 0;
 
+  /** Return true if this can be assigned to. */
+  virtual bool isLValue() const { return false; }
+
   /** Where in the source file this expression comes from. */
   const SourceLocation & location() const { return loc_; }
 
@@ -180,6 +183,7 @@ public:
   bool isSideEffectFree() const;
   bool isConstant() const;
   bool isSingular() const;
+  bool isLValue() const;
   void format(FormatStream & out) const;
   void trace() const;
 };
@@ -246,6 +250,7 @@ public:
   void trace() const;
   bool isSideEffectFree() const { return true; }
   bool isSingular() const;
+  bool isLValue() const;
 
   static inline bool classof(const LValueExpr *) { return true; }
   static inline bool classof(const Expr * ex) {

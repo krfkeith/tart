@@ -26,15 +26,15 @@ public final class StringBuilder {
   /** Construct a StringBuilder from an existing String. */
   def construct(str:String, start:int = 0, count:int = int.maxVal) {
     value = str.toCharArray(start, count);
-    self.len = value.length;
+    self.len = int32(value.length);
   }
 
   /** Construct a StringBuilder from a character array. */
   def construct(chars:char[], start:int = 0, count:int = int.maxVal) {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkIndex(count >= 0);
-    start = Math.min(start, chars.length);
-    count = Math.min(count, chars.length - start);
+    start = Math.min(start, int32(chars.length));
+    count = Math.min(count, int32(chars.length) - start);
     value = char[](count);
     char[].copyElements(value, 0, chars, start, count);
     self.len = count;
@@ -78,7 +78,7 @@ public final class StringBuilder {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(start >= 0);
     if start < chars.length {
-      count = Math.min(count, chars.length - start);
+      count = Math.min(count, int32(chars.length) - start);
       if count > 0 {
         let remaining = self.len - insertPos;
         grow(count);
@@ -107,7 +107,7 @@ public final class StringBuilder {
     let chars = src.toCharArray(start, count);
     if chars.length > 0 {
       let remaining = self.len - insertPos;
-      grow(chars.length);
+      grow(int32(chars.length));
       char[].copyElements(value, insertPos + chars.length, value, insertPos, remaining);
       char[].copyElements(value, insertPos, chars, 0, chars.length);
     }

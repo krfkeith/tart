@@ -25,10 +25,8 @@ interface Collection[%ItemType] : Iterable[ItemType] {
   def clear();
   
   /** Return the number of items in the collection. */
-  def length:int { get; }
+  def length:intp { get; }
 
   /** Return true if this collection has no items. */
   def isEmpty:bool { get; }
-  
-  // TODO: Add equals, computeHash (for immutable collections only).
 }

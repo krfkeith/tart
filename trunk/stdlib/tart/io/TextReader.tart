@@ -1,8 +1,14 @@
 /** A class which can read a sequence of characters. */
 interface TextReader : IOStream {
 
+  /** Character constant that signals no more characters can be read. */
+  let EOF = char(-1);
+
   /** Close the reader and release any resources held by the reader instance. */
-  def close();
+  def close;
+
+  /** Read a single character from the stream. Return 'EOF' if no more characters can be read. */  
+  def readCh -> char;
 
   /** Read up to 'length' characters into the array 'buffer', starting at position 'start'.
       returns the actual number of characters read, or 0 if there were no characters remaining. */

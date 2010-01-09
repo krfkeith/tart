@@ -23,10 +23,19 @@ SpCandidate::SpCandidate(Expr * base, Defn * tdef, TupleType * args)
 
 bool SpCandidate::unify(SourceContext * source) {
   const TemplateSignature * tsig = def_->templateSignature();
-  DASSERT(tsig->typeParams()->size() == args_->size());
-  for (size_t i = 0; i < args_->size(); ++i) {
+  DASSERT(args_->size() <= tsig->typeParams()->size());
+  size_t i;
+  for (i = 0; i < args_->size(); ++i) {
     const Type * pattern = tsig->typeParam(i);
     const Type * value = (*args_)[i];
+    if (!env_.unify(source, pattern, value, Invariant)) {
+      return false;
+    }
+  }
+
+  for (; i < tsig->typeParams()->size(); ++i) {
+    const Type * pattern = tsig->typeParam(i);
+    const Type * value = tsig->typeParamDefaults()[i];
     if (!env_.unify(source, pattern, value, Invariant)) {
       return false;
     }

@@ -45,6 +45,10 @@ final class StdFileStream : TextReader, TextWriter {
     return _readByte(_file);
   }
   
+  def readCh -> char {
+    return EOF;
+  }
+
   /** Read a buffer of bytes from the stream. */
   //@Throws(IOException)
   def read(buffer:ubyte[], start:int64 = 0, count:int64 = int64.maxVal) -> int64 {
