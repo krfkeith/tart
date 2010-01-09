@@ -2,17 +2,17 @@
 interface ByteStream : IOStream {
   /** Read a single byte from the stream. */
   //@Throws(IOException)
-  def read -> byte;
+  def read -> ubyte;
   
   /** Read a buffer of bytes from the stream. */
   //@Throws(IOException)
-  def read(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> int;
+  def read(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> int;
   
   /** Write a single byte to the stream. */
   //@Throws(IOException)
-  def write(value:byte) -> void;
+  def write(value:ubyte) -> void;
 
   /** Write a buffer of bytes to the stream. */
   //@Throws(IOException)
-  def write(buffer:byte[], offset:int = 0, count:int = int.maxVal) -> void;
+  def write(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> void;
 }

@@ -176,7 +176,7 @@ bool VarAnalyzer::resolveVarType() {
 
         if (initType->isEqual(&UnsizedIntType::instance)) {
           // TODO: Only if this is a var, not a let
-          initType = &IntType::instance;
+          initType = &Int32Type::instance;
         }
 
         if (target->type() == NULL) {

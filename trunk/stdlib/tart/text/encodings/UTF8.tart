@@ -2,7 +2,7 @@ import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 
 final class UTF8 : Codec {
-  private static var lengthTable:int[] = [
+  private static var lengthTable:int32[] = [
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -31,11 +31,11 @@ final class UTF8 : Codec {
   /** Return the length in bytes of the encoding character starting with
       the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
       prefix byte. */ 
-  static def charLength(byteVal:ubyte) -> int {
+  static def charLength(byteVal:ubyte) -> int32 {
     return lengthTable[byteVal];
   }
 
-  def encodedLength(src:char[], start:int, count:int) -> int {
+  def encodedLength(src:char[], start:int32, count:int32) -> int32 {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, int32(src.length));
     count = Math.min(count, int32(src.length) - start);
@@ -65,7 +65,7 @@ final class UTF8 : Codec {
   }
 
   /** Return the number of characters in the byte sequence. */
-  def decodedLength(buffer:ubyte[], start:int, count:int) -> int {
+  def decodedLength(buffer:ubyte[], start:int32, count:int32) -> int32 {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, int32(buffer.length));
     count = Math.min(count, int32(buffer.length) - start);
@@ -73,8 +73,8 @@ final class UTF8 : Codec {
   }
 
   /** Return the number of characters in the byte sequence. */
-  def decodedLengthRaw(buffer:Address[ubyte], length:int) -> int {
-    var charCount:int = 0;
+  def decodedLengthRaw(buffer:Address[ubyte], length:int32) -> int32 {
+    var charCount:int32 = 0;
     var index = 0;
     while index < length {
       var byteCount = lengthTable[buffer[index]];
@@ -93,7 +93,7 @@ final class UTF8 : Codec {
     return charCount;
   }
 
-  def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
+  def encode(dst:ubyte[], dstIndex:int32, src:char[], srcIndex:int32, count:int32) -> int32 {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
     srcIndex = Math.min(srcIndex, int32(src.length));
@@ -104,7 +104,7 @@ final class UTF8 : Codec {
       addressOf(src.data[srcIndex]), count);
   }
   
-  def encodeRaw(dst:Address[ubyte], dstLength:int, src:Address[char], srcLength:int) -> int {
+  def encodeRaw(dst:Address[ubyte], dstLength:int32, src:Address[char], srcLength:int32) -> int32 {
     var srcIndex = 0;
     var dstIndex = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
@@ -144,7 +144,7 @@ final class UTF8 : Codec {
     return dstIndex;
   }
   
-  def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> int {
+  def decode(dst:char[], dstIndex:int32, src:ubyte[], srcIndex:int32, count:int32) -> int32 {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
     srcIndex = Math.min(srcIndex, int32(src.length));
@@ -155,12 +155,12 @@ final class UTF8 : Codec {
       addressOf(src.data[srcIndex]), count);
   }
 
-  def decodeRaw(dst:Address[char], dstLength:int, src:Address[ubyte], srcLength:int) -> int {
+  def decodeRaw(dst:Address[char], dstLength:int32, src:Address[ubyte], srcLength:int32) -> int32 {
     var srcIndex = 0;
     var dstIndex = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
       let b = src[srcIndex];
-      var charVal:uint = 0;
+      var charVal:uint32 = 0;
       if b < 0x80 {
         srcIndex += 1;
         charVal = b;
@@ -168,18 +168,18 @@ final class UTF8 : Codec {
         // Invalid unicode char
         break;
       } else if b < 0xe0 {
-        charVal = (uint(b & 0x3f) << 6)
+        charVal = (uint32(b & 0x3f) << 6)
                 | (src[srcIndex + 1] & 0x7f);
         srcIndex += 2;
       } else if b < 0xf0 {
-        charVal = (uint(b & 0x1f) << 12)
-                | (uint(src[srcIndex + 1] & 0x7f) << 6)
+        charVal = (uint32(b & 0x1f) << 12)
+                | (uint32(src[srcIndex + 1] & 0x7f) << 6)
                 | (src[srcIndex + 2] & 0x7f);
         srcIndex += 3;
       } else if b < 0xf5 {
-        charVal = (uint(b & 0x0f) << 18)
-                | (uint(src[srcIndex + 1] & 0x7f) << 12)
-                | (uint(src[srcIndex + 2] & 0x7f) << 6)
+        charVal = (uint32(b & 0x0f) << 18)
+                | (uint32(src[srcIndex + 1] & 0x7f) << 12)
+                | (uint32(src[srcIndex + 2] & 0x7f) << 6)
                 | (src[srcIndex + 3] & 0x7f);
         srcIndex += 4;
       } else {

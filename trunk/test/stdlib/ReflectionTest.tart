@@ -5,21 +5,21 @@ import tart.reflect.ComplexType;
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(ReflectionTest);
 }
 
-var savedValue:int;
+var savedValue:int32;
 
 def sample() {
 }
 
-def sample2(arg:int) {
+def sample2(arg:int32) {
   savedValue = arg;
 }
   
 class TestClass {
-  def square(arg:int) -> int {
+  def square(arg:int32) -> int32 {
     return arg * arg;
   }
 }
@@ -73,7 +73,7 @@ class ReflectionTest : Test {
 	  let ct = typecast[ComplexType](ty);
 	  let method = typecast[Method](ct.findMethod("square"));
 	  let tclass = TestClass();
-	  assertEq(484, typecast[int](method.call(tclass, 22)));
+	  assertEq(484, typecast[int32](method.call(tclass, 22)));
 	}
 
   def testConstruct() {
@@ -81,6 +81,6 @@ class ReflectionTest : Test {
     let ct = typecast[ComplexType](ty);
     let method = typecast[Method](ct.findMethod("square"));
     let tclass = typecast[TestClass](ct.create());
-    assertEq(484, typecast[int](method.call(tclass, 22)));
+    assertEq(484, typecast[int32](method.call(tclass, 22)));
   }
 }

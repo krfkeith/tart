@@ -34,19 +34,19 @@ public:
     de->setTypeValue(testClass);
 
     // Set up arrays of types
-    intTypes[0] = intTypes[1] = intTypes[2] = intTypes[3] = &IntType::instance;
-    shortTypes[0] = shortTypes[1] = shortTypes[2] = shortTypes[3] = &ShortType::instance;
-    intAndTestClass[0] = intAndTestClass[2] = &IntType::instance;
+    intTypes[0] = intTypes[1] = intTypes[2] = intTypes[3] = &Int32Type::instance;
+    shortTypes[0] = shortTypes[1] = shortTypes[2] = shortTypes[3] = &Int16Type::instance;
+    intAndTestClass[0] = intAndTestClass[2] = &Int32Type::instance;
     intAndTestClass[1] = intAndTestClass[3] = testClassTypes[0] = testClass;
   }
 };
 
 TEST_F(TupleTest, FindCommonType) {
-  EXPECT_EQ(&IntType::instance,
-      findCommonType(&IntType::instance, &IntType::instance));
+  EXPECT_EQ(&Int32Type::instance,
+      findCommonType(&Int32Type::instance, &Int32Type::instance));
 
-  EXPECT_EQ(&IntType::instance,
-      findCommonType(&IntType::instance, &ShortType::instance));
+  EXPECT_EQ(&Int32Type::instance,
+      findCommonType(&Int32Type::instance, &Int16Type::instance));
 }
 
 TEST_F(TupleTest, TypeAttributes) {
@@ -56,9 +56,9 @@ TEST_F(TupleTest, TypeAttributes) {
 TEST(TypeTest, TypePairTest) {
   typedef TypeTupleKeyInfo TRIPKI;
 
-  TypeTupleKey p0(&IntType::instance, &IntType::instance + 1);
-  TypeTupleKey p1(&IntType::instance, &IntType::instance + 1);
-  TypeTupleKey p2(&ShortType::instance, &ShortType::instance + 1);
+  TypeTupleKey p0(&Int32Type::instance, &Int32Type::instance + 1);
+  TypeTupleKey p1(&Int32Type::instance, &Int32Type::instance + 1);
+  TypeTupleKey p2(&Int16Type::instance, &Int16Type::instance + 1);
 
   ASSERT_TRUE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p1));
   ASSERT_FALSE(TRIPKI::getHashValue(p0) == TRIPKI::getHashValue(p2));
@@ -70,9 +70,9 @@ TEST(TypeTest, TypePairTest) {
 TEST_F(TupleTest, TupleTypeTest) {
   //typedef TypeRefIterPairKeyInfo TRIPKI;
 
-  TupleType * t0 = TupleType::get(&IntType::instance);
-  TupleType * t1 = TupleType::get(&IntType::instance);
-  TupleType * t2 = TupleType::get(&ShortType::instance);
+  TupleType * t0 = TupleType::get(&Int32Type::instance);
+  TupleType * t1 = TupleType::get(&Int32Type::instance);
+  TupleType * t2 = TupleType::get(&Int16Type::instance);
 
   //ASSERT_TRUE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t1->iterPair()));
   //ASSERT_FALSE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t2->iterPair()));
@@ -92,8 +92,8 @@ TEST_F(TupleTest, TupleTypeTest) {
   ASSERT_TRUE(t0 != t2);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE((*t0->begin())->isEqual(&IntType::instance));
-  ASSERT_TRUE((*t0)[0]->isEqual(&IntType::instance));
+  ASSERT_TRUE((*t0->begin())->isEqual(&Int32Type::instance));
+  ASSERT_TRUE((*t0)[0]->isEqual(&Int32Type::instance));
 
   ASSERT_TRUE(t0->isSingular());
 }

@@ -15,7 +15,7 @@ final class StdFileStream : TextReader, TextWriter {
     //let _isIdentityCoding:bool = true;
     //var _buffer:ubyte[];
 
-    @Extern("StdFileStream_read_byte") static def _readByte(file:Address[FILE]) -> int;
+    @Extern("StdFileStream_read_byte") static def _readByte(file:Address[FILE]) -> int32;
     @Extern("StdFileStream_read_bytes") static def _readBytes(
         file:Address[FILE], buffer:ubyte[], count:int64) -> int64;
     //@Extern("StdFileStream_read_chars") static def _readChars(
@@ -41,7 +41,7 @@ final class StdFileStream : TextReader, TextWriter {
 
   /** Read a single byte from the stream. */
   //@Throws(IOException)
-  def read -> int {
+  def read -> int32 {
     return _readByte(_file);
   }
   
@@ -84,7 +84,7 @@ final class StdFileStream : TextReader, TextWriter {
     }
   }
 
-  //def write(text:String, start:int = 0, count:int = int.maxVal) -> int;
+  //def write(text:String, start:int32 = 0, count:int32 = int32.maxVal) -> int32;
 
   def writeChars(chars:char[], start:int64 = 0, count:int64 = int64.maxVal) -> int64 {
     Preconditions.checkArgument(count >= 0);
@@ -92,11 +92,11 @@ final class StdFileStream : TextReader, TextWriter {
     count = Math.min(count, chars.length - start);
     if count > 0 {
       // TODO: Shortcut for identity encoding.
-      let encodedLength = _encoding.encodedLength(chars, int(start), int(count));
-      //let encodedLength = tart.text.encodings.Codecs.UTF_8.encodedLength(chars, int(start), int(count));
+      let encodedLength = _encoding.encodedLength(chars, int32(start), int32(count));
+      //let encodedLength = tart.text.encodings.Codecs.UTF_8.encodedLength(chars, int32(start), int32(count));
       let buffer:ubyte[] = ubyte[](encodedLength);
-      _encoding.encode(buffer, 0, chars, int(start), int(count));
-      //tart.text.encodings.Codecs.UTF_8.encode(buffer, 0, chars, int(start), int(count));
+      _encoding.encode(buffer, 0, chars, int32(start), int32(count));
+      //tart.text.encodings.Codecs.UTF_8.encode(buffer, 0, chars, int32(start), int32(count));
       IOException.checkResult(_writeBytes(_file, buffer.data, encodedLength));
     }
 
@@ -108,7 +108,7 @@ final class StdFileStream : TextReader, TextWriter {
     start = Math.min(start, text.length);
     count = Math.min(count, text.length - start);
     if count > 0 {
-      writeChars(text.toCharArray(int(start), int(count)), 0, count);
+      writeChars(text.toCharArray(int32(start), int32(count)), 0, count);
     }
     
     return 0;

@@ -214,7 +214,7 @@ bool EnumAnalyzer::createMembers() {
   DASSERT_OBJ(enumType->baseType() == NULL, enumType);
 
   // Analyze the base type of the enum.
-  const PrimitiveType * intValueType = &IntType::instance;
+  const PrimitiveType * intValueType = &Int32Type::instance;
   //const Type * superType = ast->super();
   if (!ast->bases().empty()) {
     // For the moment, we require enums to be derived from integer types only.

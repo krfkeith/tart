@@ -17,7 +17,7 @@ import tart.reflect.Type;
   readonly var bases:Address[Address[TypeInfoBlock]];
 
   /** Compiler-generated function to lookup the specified interface method. */
-  readonly var idispatch:static fn(iid:String, methodIndex:int) -> void^;
+  readonly var idispatch:static fn(iid:String, methodIndex:int32) -> void^;
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[Address[void], 0];

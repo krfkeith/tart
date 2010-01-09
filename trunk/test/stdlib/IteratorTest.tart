@@ -3,20 +3,20 @@ import tart.testing.TestUtils;
 import tart.collections.Iterators;
 
 @EntryPoint
-def main(args: String[]) -> int {
+def main(args: String[]) -> int32 {
   return TestUtils.runModuleTests(Module.thisModule());
 }
 
-class Counter : Iterator[int] {
-  private var value:int;
-  private var end:int;
+class Counter : Iterator[int32] {
+  private var value:int32;
+  private var end:int32;
   
-  def construct(end:int) {
+  def construct(end:int32) {
     self.value = 0;
     self.end = end;
   }
   
-  def next -> int or void {
+  def next -> int32 or void {
     if (self.value < self.end) {
       return self.value++;
     } else {
@@ -27,23 +27,23 @@ class Counter : Iterator[int] {
 
 def testManualIteration() {
   let ctr = Counter(5);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertFalse(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertFalse(ctr.next() isa int32);
 }
 
 def testManualIteration2() {
   expect2(1, 2);
 }
 
-def expect2(values:int...) {
+def expect2(values:int32...) {
   let ctr = values.iterate();
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertTrue(ctr.next() isa int);
-  Debug.assertFalse(ctr.next() isa int);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertTrue(ctr.next() isa int32);
+  Debug.assertFalse(ctr.next() isa int32);
 }
 
 def testForeach() {
@@ -68,7 +68,7 @@ def testForeach2() {
   Debug.assertEq(10, sum(1,5,4));
 }
 
-def sum(nums:int...) -> int {
+def sum(nums:int32...) -> int32 {
   var sum = 0;
   for i in nums {
     sum += i;

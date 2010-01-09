@@ -1,14 +1,14 @@
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(ValueRefTest);
 }
 
 class ValueRefTest : Test {
 	def testManualBoxing() {
 	  let b = ValueRef(3);
-	  Debug.assertTrue(b isa ValueRef[int]);
+	  Debug.assertTrue(b isa ValueRef[int32]);
 	  Debug.assertEq(3, b.value);
 	}
 	
@@ -247,26 +247,26 @@ class ValueRefTest : Test {
 	  Debug.assertTrue(typecast[bool](true));
 	  Debug.assertFalse(typecast[bool](false));
 	  Debug.assertTrue(typecast[bool](ValueRef(true)));
-	  Debug.assertEq(1, typecast[int](ValueRef(1)));
-	  Debug.assertNe(1, typecast[int](ValueRef(2)));
+	  Debug.assertEq(1, typecast[int32](ValueRef(1)));
+	  Debug.assertNe(1, typecast[int32](ValueRef(2)));
 	}
 	
 	def testAutoBoxing() {
 	  let b = echo(3);
-	  Debug.assertTrue(b isa ValueRef[int]);
+	  Debug.assertTrue(b isa ValueRef[int32]);
 	  let c = echo2(3);
-	  Debug.assertTrue(c isa ValueRef[int]);
+	  Debug.assertTrue(c isa ValueRef[int32]);
 	  let d = echo3(1, 2, 3);
-	  Debug.assertTrue(d[0] isa ValueRef[int]);
-	  Debug.assertTrue(d[1] isa ValueRef[int]);
-	  Debug.assertTrue(d[2] isa ValueRef[int]);
+	  Debug.assertTrue(d[0] isa ValueRef[int32]);
+	  Debug.assertTrue(d[1] isa ValueRef[int32]);
+	  Debug.assertTrue(d[2] isa ValueRef[int32]);
 	}
 	
 	private final def echo(v:Object) -> Object {
 	  return v;
 	}
 	
-	private final def echo2(v:int) -> Object {
+	private final def echo2(v:int32) -> Object {
 	  return v;
 	}
 	

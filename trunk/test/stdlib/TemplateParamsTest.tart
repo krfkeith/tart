@@ -1,5 +1,5 @@
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   testTemplateConditions();
   return 0;
 }

@@ -19,14 +19,14 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
     }
     
     var _data:Entry[];
-    var _length:intp;
+    var _length:int;
     var _modified:bool = false;
     let _hashFn:HashFn;
     
-    def findEntry(item:ItemType) -> intp {
+    def findEntry(item:ItemType) -> int {
 	    if _data.length > 16 {
         let mask = _data.length - 1;
-        var index = intp(_hashFn.hash(item)) & mask;
+        var index = int(_hashFn.hash(item)) & mask;
         var probe = 1;
       
 	      // First, see if the item is already in the table
@@ -52,7 +52,7 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
 	    }
     }
 
-    def rehash(oldItems:Entry[], oldLength:intp, newLength:intp) {
+    def rehash(oldItems:Entry[], oldLength:int, newLength:int) {
       let mask = newLength - 1;
       self._data = Entry[](newLength);
       for i = 0; i < oldLength; ++i {
@@ -97,9 +97,9 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
     if _data.length > 16 {
       // Compute the hash of the item
       let mask = _data.length - 1;
-		  var index = intp(_hashFn.hash(item)) & mask;
-		  var probe:intp = 1;
-      var pos:intp = -1;
+		  var index = int(_hashFn.hash(item)) & mask;
+		  var probe:int = 1;
+      var pos:int = -1;
 		  
 		  // First, see if the item is already in the table
       while probe <= 4 {
@@ -216,7 +216,7 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
     _modified = true;
   }
   
-  def length:intp { get { return _length; } }
+  def length:int { get { return _length; } }
 
   def isEmpty:bool { get { return _length == 0; } }
   

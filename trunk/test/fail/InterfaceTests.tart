@@ -1,6 +1,6 @@
 /// TEST InterfaceDataMember: Data member not allowed in interface
 interface Test {
-  var x:int;
+  var x:int32;
 }
 
 /// TEST InterfaceMethodWithBody: body not allowed

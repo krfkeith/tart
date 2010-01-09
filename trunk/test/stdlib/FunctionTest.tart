@@ -2,11 +2,11 @@ import tart.reflect.Module;
 import tart.testing.TestUtils;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return TestUtils.runModuleTests(Module.thisModule());
 }
 
-def func(a:int, b="Hello") -> int {
+def func(a:int32, b="Hello") -> int32 {
   return a;
 }
 
@@ -23,7 +23,7 @@ def testFunctionVar {
 }
 
 def testAnonFn {
-  let f = fn (i:int) -> int {
+  let f = fn (i:int32) -> int32 {
     return i + i;
   };
   

@@ -1,12 +1,12 @@
 import tart.testing.Test;
 
 @EntryPoint
-def main(args:String[]) -> int {
+def main(args:String[]) -> int32 {
   return Test.run(SwitchStmtTest);
 }
 
 class SwitchStmtTest : Test {
-	private def switchTest(value:int) -> String {
+	private def switchTest(value:int32) -> String {
 	  switch value {
 	    case 1 { return "One"; }
 	    case 2 { return "Two"; }
@@ -16,7 +16,7 @@ class SwitchStmtTest : Test {
 	  return "Other";
 	}
 	
-  private def switchElseTest(value:int) -> String {
+  private def switchElseTest(value:int32) -> String {
     switch value {
       case 1 { return "One"; }
       case 2 { return "Two"; }

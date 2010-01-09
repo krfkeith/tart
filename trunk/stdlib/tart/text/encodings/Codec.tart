@@ -9,10 +9,10 @@ interface Codec {
   }
   
   struct CodecState {
-    var dstIndex:int;     /** Next available position in the destination array. */
-    var srcIndex:int;     /** Next position to read in the source array. */
-    var errorState:int;   /** The current error state. */
-    var partial:int;      /** Used to save the state of a partially-decoded character. */
+    var dstIndex:int32;     /** Next available position in the destination array. */
+    var srcIndex:int32;     /** Next position to read in the source array. */
+    var errorState:int32;   /** The current error state. */
+    var partial:int32;      /** Used to save the state of a partially-decoded character. */
   }
   
   /** Return the length, in bytes, of the character array when encoded.
@@ -22,7 +22,7 @@ interface Codec {
         count: The number of characters to encode.
       Returns: The number of bytes required to encode the specified character range.
     */
-  def encodedLength(src:char[], srcOffset:int, count:int) -> int;
+  def encodedLength(src:char[], srcOffset:int32, count:int32) -> int32;
 
   /** Return the length, in characters, of the byte array when decoded.
       Parameters:
@@ -31,7 +31,7 @@ interface Codec {
         count: The number of bytes to decode.
       Returns: The number of encoded characters.
     */
-  def decodedLength(src:ubyte[], srcOffset:int, count:int) -> int;
+  def decodedLength(src:ubyte[], srcOffset:int32, count:int32) -> int32;
 
   /** Encode the characters in 'src'.
       Parameters:
@@ -42,7 +42,7 @@ interface Codec {
         count: The number of characters to encode.
       Returns: The number of bytes written to 'dst'.
     */
-  def encode(dst:ubyte[], dstOffset:int, src:char[], srcOffset:int, count:int) -> int;
+  def encode(dst:ubyte[], dstOffset:int32, src:char[], srcOffset:int32, count:int32) -> int32;
 
   /** Decode the characters in 'src'.
       Parameters:
@@ -53,5 +53,5 @@ interface Codec {
         count: The number of bytes to decode.
       Returns: The number of characters written to 'dst'.
     */
-  def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int;
+  def decode(dst:char[], dstOffset:int32, src:ubyte[], srcOffset:int32, count:int32) -> int32;
 }

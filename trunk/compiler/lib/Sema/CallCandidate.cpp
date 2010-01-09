@@ -341,7 +341,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
         if (const PatternValue * pvar = dyn_cast<PatternValue>(dealias(paramType))) {
           if (pvar->value() == NULL) {
             // There are no constraints, so bind it to an int.
-            bindingEnv_.addSubstitution(pvar->var(), &IntType::instance);
+            bindingEnv_.addSubstitution(pvar->var(), &Int32Type::instance);
             continue;
           }
         }

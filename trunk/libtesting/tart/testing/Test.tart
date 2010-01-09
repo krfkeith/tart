@@ -13,7 +13,7 @@ class Test {
   //static def runTests(m:Module) {
   //}
 
-  static def run[%T](testType:TypeLiteral[T]) -> int {
+  static def run[%T](testType:TypeLiteral[T]) -> int32 {
     var testClass:ComplexType = ComplexType.of(T);
     var testInstance = typecast[Test](testClass.create());
     return testInstance.runTests(testClass);
@@ -25,11 +25,11 @@ class Test {
   /** Test fixture teardown method. Will be called after every test. */
   def tearDown() {}
   
-  final def runTests[%T](testType:TypeLiteral[T]) -> int {
+  final def runTests[%T](testType:TypeLiteral[T]) -> int32 {
     return runTests(ComplexType.of(T));
   }
 
-  final def runTests(testClass:ComplexType) -> int {
+  final def runTests(testClass:ComplexType) -> int32 {
     for method in testClass.methods {
       if method.name.startsWith("test") {
         Debug.writeLn("[Running] ", self.__typeName, ".", method.name);

@@ -6,34 +6,23 @@ class SimpleType : Type {
     NULL,
     BOOL,
     CHAR,
-    BYTE,
-    SHORT,
-    INT,
-    LONG,
-    INTPTR,
-    UBYTE,
-    USHORT,
-    UINT,
-    UINTPTR,
-    ULONG,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
     FLOAT,
     DOUBLE,
-
-    INT8 = BYTE,
-    INT16 = SHORT,
-    INT32 = INT,
-    INT64 = LONG,
-    UINT8 = UBYTE,
-    UINT16 = USHORT,
-    UINT32 = UINT,
-    UINT64 = ULONG,
   }
 
   private {
     var _subtype:SubtypeId;
     var _name:String;
     //var _scopeName:String;
-    var _size:uint;
+    var _size:uint32;
   }
 
   /** Size of this type in bits. */
@@ -43,7 +32,7 @@ class SimpleType : Type {
   final def name:String { get { return self._name; } }
 
   /** Size of this type in bytes. */
-  final def size:uint { get { return self._size; } }
+  final def size:uint32 { get { return self._size; } }
 
   undef construct();
 }

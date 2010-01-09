@@ -4,7 +4,7 @@ import tart.reflect.Module;
 // TODO: Add tests for bitwise combinations of flags.
 
 @EntryPoint
-def main() -> int {
+def main() -> int32 {
   return TestUtils.runModuleTests(Module.thisModule());
 }
 

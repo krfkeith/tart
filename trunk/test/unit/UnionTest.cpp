@@ -35,50 +35,50 @@ protected:
 
 TEST_F(UnionTest, CreateUnion) {
   ConstTypeList memberTypes;
-  memberTypes.push_back(&IntType::instance);
+  memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(&FloatType::instance);
   UnionType * utype = UnionType::get(loc, memberTypes);
 
   ASSERT_EQ(2u, utype->members().size());
   ASSERT_EQ(2u, utype->typeArgs()->size());
   ASSERT_EQ(2u, utype->numTypeParams());
-  ASSERT_EQ(&IntType::instance, utype->typeParam(0));
+  ASSERT_EQ(&Int32Type::instance, utype->typeParam(0));
   ASSERT_EQ(&FloatType::instance, utype->typeParam(1));
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_FALSE(utype->isSingleOptionalType());
   ASSERT_FALSE(utype->hasRefTypesOnly());
-  ASSERT_EQ(&IntType::instance, utype->getFirstNonVoidType());
+  ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
   ASSERT_TRUE(utype->isSingular());
 }
 
 TEST_F(UnionTest, CreateUnionVarargs) {
-  UnionType * utype = UnionType::get(loc, &IntType::instance, &FloatType::instance, NULL);
+  UnionType * utype = UnionType::get(loc, &Int32Type::instance, &FloatType::instance, NULL);
   ASSERT_EQ(2u, utype->members().size());
   ASSERT_EQ(2u, utype->typeArgs()->size());
   ASSERT_EQ(2u, utype->numTypeParams());
-  ASSERT_EQ(&IntType::instance, utype->typeParam(0));
+  ASSERT_EQ(&Int32Type::instance, utype->typeParam(0));
   ASSERT_EQ(&FloatType::instance, utype->typeParam(1));
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_FALSE(utype->isSingleOptionalType());
   ASSERT_FALSE(utype->hasRefTypesOnly());
-  ASSERT_EQ(&IntType::instance, utype->getFirstNonVoidType());
+  ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
   ASSERT_TRUE(utype->isSingular());
 }
 
 TEST_F(UnionTest, GetTypeIndex) {
-  UnionType * utype = UnionType::get(loc, &IntType::instance, &FloatType::instance, NULL);
-  ASSERT_EQ(0, utype->getTypeIndex(&IntType::instance));
+  UnionType * utype = UnionType::get(loc, &Int32Type::instance, &FloatType::instance, NULL);
+  ASSERT_EQ(0, utype->getTypeIndex(&Int32Type::instance));
   ASSERT_EQ(1, utype->getTypeIndex(&FloatType::instance));
-  ASSERT_EQ(&IntType::instance, utype->getFirstNonVoidType());
+  ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
 }
 
 TEST_F(UnionTest, GetTypeSorting) {
-  UnionType * utype = UnionType::get(loc, &FloatType::instance, &IntType::instance, NULL);
-  ASSERT_EQ(0, utype->getTypeIndex(&IntType::instance));
+  UnionType * utype = UnionType::get(loc, &FloatType::instance, &Int32Type::instance, NULL);
+  ASSERT_EQ(0, utype->getTypeIndex(&Int32Type::instance));
   ASSERT_EQ(1, utype->getTypeIndex(&FloatType::instance));
-  ASSERT_EQ(&IntType::instance, utype->getFirstNonVoidType());
+  ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
 }
 
 TEST_F(UnionTest, IntOrVoidUnion) {
@@ -92,7 +92,7 @@ TEST_F(UnionTest, IntOrVoidUnion) {
 }
 
 TEST_F(UnionTest, IntOrRefTypeUnion) {
-  UnionType * utype = UnionType::get(loc, &IntType::instance, testClass, NULL);
+  UnionType * utype = UnionType::get(loc, &Int32Type::instance, testClass, NULL);
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_FALSE(utype->isSingleOptionalType());

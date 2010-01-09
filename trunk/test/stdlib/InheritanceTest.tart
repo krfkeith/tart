@@ -1,5 +1,5 @@
 @EntryPoint
-def main() -> int {
+def main() -> int32 {
   testInheritance1();
   testInheritance2();
   testInheritance3();

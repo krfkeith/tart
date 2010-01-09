@@ -896,7 +896,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     }
 
     Expr * indexExpr = args[0];
-    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
       diag.fatal(ast) << "Native array subscript must be integer type, but is " << indexExpr->type();
       return &Expr::ErrorVal;
     }
@@ -914,7 +914,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
     Expr * indexExpr = args[0];
     const Type * indexType = indexExpr->type();
-    if (IntType::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
       diag.fatal(args[0]) << "Tuple subscript must be integer type, is " << indexType;
       return &Expr::ErrorVal;
     }

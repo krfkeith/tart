@@ -39,8 +39,8 @@ static llvm::cl::opt<PointerSize> optPointerSize(llvm::cl::init(PTR_DEFAULT),
 PrimitiveType * PrimitiveType::primitiveTypeList;
 uint32_t PrimitiveType::pointerSize_;
 
-ASTBuiltIn PrimitiveType::intpDef(NULL);
-ASTBuiltIn PrimitiveType::uintpDef(NULL);
+ASTBuiltIn PrimitiveType::intDef(NULL);
+ASTBuiltIn PrimitiveType::uintDef(NULL);
 
 void PrimitiveType::initPrimitiveTypes(Module * module) {
   for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
@@ -60,8 +60,8 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
     case PTR_64: pointerSize_ = 64; break;
   }
 
-  intpDef.setValue(pointerSize_ == 64 ? &LongType::typedefn : &IntType::typedefn);
-  uintpDef.setValue(pointerSize_ == 64 ? &ULongType::typedefn : &UIntType::typedefn);
+  intDef.setValue(pointerSize_ == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
+  uintDef.setValue(pointerSize_ == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
 }
 
 /// -------------------------------------------------------------------
@@ -812,12 +812,12 @@ template<> Expr * CharType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Byte
 
-template<> TypeDefn ByteType::typedefn(&Builtins::module, "int8", &ByteType::instance);
-template<> TypeIdSet ByteType::MORE_GENERAL =
+template<> TypeDefn Int8Type::typedefn(&Builtins::module, "int8", &Int8Type::instance);
+template<> TypeIdSet Int8Type::MORE_GENERAL =
     TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
-template<> TypeIdSet ByteType::INCLUDES = TypeIdSet::noneOf();
+template<> TypeIdSet Int8Type::INCLUDES = TypeIdSet::noneOf();
 
-template<> void ByteType::init() {
+template<> void Int8Type::init() {
   irType_ = llvm::Type::getInt8Ty(llvm::getGlobalContext());
 
   // Conversion constructors
@@ -839,16 +839,16 @@ template<> void ByteType::init() {
   PrimitiveToString<TypeId_SInt8>::value.init();
 }
 
-template<> uint32_t ByteType::numBits() const {
+template<> uint32_t Int8Type::numBits() const {
   return 8;
 }
 
 template<> ConversionRank
-ByteType::convertImpl(const Conversion & cn) const {
+Int8Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * ByteType::nullInitValue() const {
+template<> Expr * Int8Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -856,11 +856,11 @@ template<> Expr * ByteType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Short
 
-template<> TypeDefn ShortType::typedefn(&Builtins::module, "int16", &ShortType::instance);
-template<> TypeIdSet ShortType::MORE_GENERAL = TypeIdSet::of(TypeId_SInt32, TypeId_SInt64);
-template<> TypeIdSet ShortType::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UInt8);
+template<> TypeDefn Int16Type::typedefn(&Builtins::module, "int16", &Int16Type::instance);
+template<> TypeIdSet Int16Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt32, TypeId_SInt64);
+template<> TypeIdSet Int16Type::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UInt8);
 
-template<> void ShortType::init() {
+template<> void Int16Type::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt8>::value);
@@ -880,16 +880,16 @@ template<> void ShortType::init() {
   PrimitiveToString<TypeId_SInt16>::value.init();
 }
 
-template<> uint32_t ShortType::numBits() const {
+template<> uint32_t Int16Type::numBits() const {
   return 16;
 }
 
 template<> ConversionRank
-ShortType::convertImpl(const Conversion & cn) const {
+Int16Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * ShortType::nullInitValue() const {
+template<> Expr * Int16Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -897,13 +897,13 @@ template<> Expr * ShortType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Int
 
-template<> TypeDefn IntType::typedefn(&Builtins::module, "int32", &IntType::instance);
-template<> TypeIdSet IntType::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64);
-template<> TypeIdSet IntType::INCLUDES = TypeIdSet::of(
+template<> TypeDefn Int32Type::typedefn(&Builtins::module, "int32", &Int32Type::instance);
+template<> TypeIdSet Int32Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64);
+template<> TypeIdSet Int32Type::INCLUDES = TypeIdSet::of(
     TypeId_SInt8, TypeId_SInt16, TypeId_UInt8, TypeId_UInt16
 );
 
-template<> void IntType::init() {
+template<> void Int32Type::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt8>::value);
@@ -923,16 +923,16 @@ template<> void IntType::init() {
   PrimitiveToString<TypeId_SInt32>::value.init();
 }
 
-template<> uint32_t IntType::numBits() const {
+template<> uint32_t Int32Type::numBits() const {
   return 32;
 }
 
 template<> ConversionRank
-IntType::convertImpl(const Conversion & cn) const {
+Int32Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * IntType::nullInitValue() const {
+template<> Expr * Int32Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -940,12 +940,12 @@ template<> Expr * IntType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: Long
 
-template<> TypeDefn LongType::typedefn(&Builtins::module, "int64", &LongType::instance);
-template<> TypeIdSet LongType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet LongType::INCLUDES = TypeIdSet::of(
+template<> TypeDefn Int64Type::typedefn(&Builtins::module, "int64", &Int64Type::instance);
+template<> TypeIdSet Int64Type::MORE_GENERAL = TypeIdSet::noneOf();
+template<> TypeIdSet Int64Type::INCLUDES = TypeIdSet::of(
     TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
 
-template<> void LongType::init() {
+template<> void Int64Type::init() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt8>::value);
@@ -965,71 +965,28 @@ template<> void LongType::init() {
   PrimitiveToString<TypeId_SInt64>::value.init();
 }
 
-template<> uint32_t LongType::numBits() const {
+template<> uint32_t Int64Type::numBits() const {
   return 64;
 }
 
-template<> ConversionRank LongType::convertImpl(const Conversion & cn) const {
+template<> ConversionRank Int64Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * LongType::nullInitValue() const {
+template<> Expr * Int64Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
-
-#if 0
-/// -------------------------------------------------------------------
-/// Primitive type: IntPtr
-
-template<> TypeDefn IntPtrType::typedefn(&Builtins::module, "intp", &IntPtrType::instance);
-template<> TypeIdSet IntPtrType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet IntPtrType::INCLUDES = TypeIdSet::of(
-    TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
-
-template<> void IntPtrType::init() {
-  irType_ = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UInt32>::value);
-  //addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_SInt64>::value);
-  //addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SIntPtr, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SIntPtr>::value);
-
-/*  defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(64), this));
-  defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(64), this));*/
-
-  PrimitiveToString<TypeId_SIntPtr>::value.init();
-}
-
-template<> uint32_t IntPtrType::numBits() const {
-  return 64;
-}
-
-template<> ConversionRank IntPtrType::convertImpl(const Conversion & cn) const {
-  return convertToInteger(cn);
-}
-
-template<> Expr * IntPtrType::nullInitValue() const {
-  return new ConstantInteger(SourceLocation(), &instance,
-      cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
-}
-#endif
 
 /// -------------------------------------------------------------------
 /// Primitive type: UByte
 
-template<> TypeDefn UByteType::typedefn(&Builtins::module, "uint8", &UByteType::instance);
-template<> TypeIdSet UByteType::MORE_GENERAL =
+template<> TypeDefn UInt8Type::typedefn(&Builtins::module, "uint8", &UInt8Type::instance);
+template<> TypeIdSet UInt8Type::MORE_GENERAL =
 TypeIdSet::of(TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
-template<> TypeIdSet UByteType::INCLUDES = TypeIdSet::noneOf();
+template<> TypeIdSet UInt8Type::INCLUDES = TypeIdSet::noneOf();
 
-template<> void UByteType::init() {
+template<> void UInt8Type::init() {
   irType_ = llvm::Type::getInt8Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_SInt8>::value);
@@ -1049,16 +1006,16 @@ template<> void UByteType::init() {
   PrimitiveToString<TypeId_UInt8>::value.init();
 }
 
-template<> uint32_t UByteType::numBits() const {
+template<> uint32_t UInt8Type::numBits() const {
   return 8;
 }
 
 template<> ConversionRank
-UByteType::convertImpl(const Conversion & cn) const {
+UInt8Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * UByteType::nullInitValue() const {
+template<> Expr * UInt8Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -1066,11 +1023,11 @@ template<> Expr * UByteType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: UShort
 
-template<> TypeDefn UShortType::typedefn(&Builtins::module, "uint16", &UShortType::instance);
-template<> TypeIdSet UShortType::MORE_GENERAL = TypeIdSet::of(TypeId_UInt32, TypeId_UInt64);
-template<> TypeIdSet UShortType::INCLUDES = TypeIdSet::of(TypeId_UInt8);
+template<> TypeDefn UInt16Type::typedefn(&Builtins::module, "uint16", &UInt16Type::instance);
+template<> TypeIdSet UInt16Type::MORE_GENERAL = TypeIdSet::of(TypeId_UInt32, TypeId_UInt64);
+template<> TypeIdSet UInt16Type::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 
-template<> void UShortType::init() {
+template<> void UInt16Type::init() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt8>::value);
@@ -1090,16 +1047,16 @@ template<> void UShortType::init() {
   PrimitiveToString<TypeId_UInt16>::value.init();
 }
 
-template<> uint32_t UShortType::numBits() const {
+template<> uint32_t UInt16Type::numBits() const {
   return 16;
 }
 
 template<> ConversionRank
-UShortType::convertImpl(const Conversion & cn) const {
+UInt16Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * UShortType::nullInitValue() const {
+template<> Expr * UInt16Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -1107,11 +1064,11 @@ template<> Expr * UShortType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: UInt
 
-template<> TypeDefn UIntType::typedefn(&Builtins::module, "uint32", &UIntType::instance);
-template<> TypeIdSet UIntType::MORE_GENERAL = TypeIdSet::of(TypeId_UInt64);
-template<> TypeIdSet UIntType::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UInt16);
+template<> TypeDefn UInt32Type::typedefn(&Builtins::module, "uint32", &UInt32Type::instance);
+template<> TypeIdSet UInt32Type::MORE_GENERAL = TypeIdSet::of(TypeId_UInt64);
+template<> TypeIdSet UInt32Type::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UInt16);
 
-template<> void UIntType::init() {
+template<> void UInt32Type::init() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt8>::value);
@@ -1131,16 +1088,16 @@ template<> void UIntType::init() {
   PrimitiveToString<TypeId_UInt32>::value.init();
 }
 
-template<> uint32_t UIntType::numBits() const {
+template<> uint32_t UInt32Type::numBits() const {
   return 32;
 }
 
 template<> ConversionRank
-UIntType::convertImpl(const Conversion & cn) const {
+UInt32Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * UIntType::nullInitValue() const {
+template<> Expr * UInt32Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
@@ -1148,12 +1105,12 @@ template<> Expr * UIntType::nullInitValue() const {
 /// -------------------------------------------------------------------
 /// Primitive type: ULong
 
-template<> TypeDefn ULongType::typedefn(&Builtins::module, "uint64", &ULongType::instance);
-template<> TypeIdSet ULongType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet ULongType::INCLUDES =
+template<> TypeDefn UInt64Type::typedefn(&Builtins::module, "uint64", &UInt64Type::instance);
+template<> TypeIdSet UInt64Type::MORE_GENERAL = TypeIdSet::noneOf();
+template<> TypeIdSet UInt64Type::INCLUDES =
 TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
 
-template<> void ULongType::init() {
+template<> void UInt64Type::init() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_Char>::value);
   addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt8>::value);
@@ -1173,63 +1130,19 @@ template<> void ULongType::init() {
   PrimitiveToString<TypeId_UInt64>::value.init();
 }
 
-template<> uint32_t ULongType::numBits() const {
+template<> uint32_t UInt64Type::numBits() const {
   return 64;
 }
 
 template<> ConversionRank
-ULongType::convertImpl(const Conversion & cn) const {
+UInt64Type::convertImpl(const Conversion & cn) const {
   return convertToInteger(cn);
 }
 
-template<> Expr * ULongType::nullInitValue() const {
+template<> Expr * UInt64Type::nullInitValue() const {
   return new ConstantInteger(SourceLocation(), &instance,
       cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
 }
-
-#if 0
-/// -------------------------------------------------------------------
-/// Primitive type: UIntPtr
-
-template<> TypeDefn UIntPtrType::typedefn(&Builtins::module, "uintp", &UIntPtrType::instance);
-template<> TypeIdSet UIntPtrType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet UIntPtrType::INCLUDES =
-    TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
-
-template<> void UIntPtrType::init() {
-  irType_ = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_SInt32>::value);
-  //addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_SInt64>::value);
-  //addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UIntPtr, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UIntPtr>::value);
-
-/*  defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(64), this));
-  defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(64), this));*/
-
-  PrimitiveToString<TypeId_UIntPtr>::value.init();
-}
-
-template<> uint32_t UIntPtrType::numBits() const {
-  return 64;
-}
-
-template<> ConversionRank
-UIntPtrType::convertImpl(const Conversion & cn) const {
-  return convertToInteger(cn);
-}
-
-template<> Expr * UIntPtrType::nullInitValue() const {
-  return new ConstantInteger(SourceLocation(), &instance,
-      cast<llvm::ConstantInt>(llvm::Constant::getNullValue(irType_)));
-}
-#endif
 
 /// -------------------------------------------------------------------
 /// Primitive type: Float
@@ -1387,28 +1300,28 @@ template<> Expr * UnsizedIntType::nullInitValue() const {
 PrimitiveType * PrimitiveType::fitIntegerType(size_t nBits, bool isUnsigned) {
   if (isUnsigned) {
     if (nBits <= 8) {
-      return &UByteType::instance;
+      return &UInt8Type::instance;
     } else if (nBits <= 16) {
-      return &UShortType::instance;
+      return &UInt16Type::instance;
     } else if (nBits <= 32) {
-      return &UIntType::instance;
+      return &UInt32Type::instance;
     } else if (nBits <= 64) {
-      return &ULongType::instance;
+      return &UInt64Type::instance;
     }
   } else {
     if (nBits <= 8) {
-      return &ByteType::instance;
+      return &Int8Type::instance;
     } else if (nBits <= 16) {
-      return &ShortType::instance;
+      return &Int16Type::instance;
     } else if (nBits <= 32) {
-      return &IntType::instance;
+      return &Int32Type::instance;
     } else if (nBits <= 64) {
-      return &LongType::instance;
+      return &Int64Type::instance;
     }
   }
 
   diag.error() << "Integer value requires " << nBits << " bits, too large.";
-  return &LongType::instance;
+  return &Int64Type::instance;
 }
 
 /// -------------------------------------------------------------------

@@ -284,7 +284,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
-  if (call->type() == &IntType::instance) {
+  if (call->type() == &Int32Type::instance) {
     return cg.builder().CreateTrunc(diffVal, cg.builder().getInt32Ty());
   } else {
     return diffVal;

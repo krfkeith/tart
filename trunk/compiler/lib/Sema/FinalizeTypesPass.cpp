@@ -78,7 +78,7 @@ Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
     }
 
     if (!isAlreadyInt) {
-      second = IntType::instance.implicitCast(in->location(), second);
+      second = Int32Type::instance.implicitCast(in->location(), second);
     }
 
     in->setFirst(first);

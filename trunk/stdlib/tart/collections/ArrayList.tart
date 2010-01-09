@@ -4,9 +4,9 @@ import tart.core.Math.max;
 final class ArrayList[%ElementType] : List[ElementType] {
   private {
     var data:ElementType[];
-    var _length:intp;
+    var _length:int;
 
-    def grow(amount:intp) {
+    def grow(amount:int) {
       let nlength = self._length + amount;
       if data.length < nlength {
         let ndata = ElementType[](nlength + nlength / 2 + 16);
@@ -24,7 +24,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
           initialCapacity: This optional parameter, if present, indicates
               how much initial space to reserve.
    */
-  def construct(data:ElementType...; initialCapacity:intp = 0) {
+  def construct(data:ElementType...; initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
     self.data = ElementType[](initialCapacity);
     ElementType[].copyElements(self.data, 0, data, 0, data.length);
@@ -37,7 +37,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
           initialCapacity: This optional parameter, if present, indicates
               how much initial space to reserve.
    */
-  def construct(data:Array[ElementType], initialCapacity:intp = 0) {
+  def construct(data:Array[ElementType], initialCapacity:int = 0) {
     initialCapacity = max(initialCapacity, data.length);
     self.data = ElementType[](initialCapacity);
     ElementType[].copyElements(self.data, 0, data, 0, data.length);
@@ -50,17 +50,17 @@ final class ArrayList[%ElementType] : List[ElementType] {
     data[index] = e;
   }
 
-  def insert(position:intp, e:ElementType) {
+  def insert(position:int, e:ElementType) {
   }
 
-  def remove(index:intp) {
+  def remove(index:int) {
     Preconditions.checkIndex(index >= 0);
     Preconditions.checkIndex(index < _length);
     ElementType[].copyElements(data, index, data, index + 1, _length - index - 1);
     --_length;
   }
 
-  def [index:intp]:ElementType {
+  def [index:int]:ElementType {
     get {
       Preconditions.checkIndex(index >= 0);
       Preconditions.checkIndex(index < _length);
@@ -74,12 +74,12 @@ final class ArrayList[%ElementType] : List[ElementType] {
     }
   }
   
-  def length:intp {
+  def length:int {
     get { return _length; }
   }
 
   /** The amount of space currently reserved. */
-  def capacity:intp {
+  def capacity:int {
     get { return data.length; }
   }
 
@@ -90,7 +90,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
   /** Iterator class for ArrayList. */
   private final class ArrayListIterator : Iterator[ElementType], HasLength {
     private var list:ArrayList;
-    private var index:intp;
+    private var index:int;
     
     def construct(list:ArrayList) {
       self.list = list;
@@ -105,6 +105,6 @@ final class ArrayList[%ElementType] : List[ElementType] {
       }
     }
 
-    def length:long { get { return list.length; } }
+    def length:int64 { get { return list.length; } }
   }
 }

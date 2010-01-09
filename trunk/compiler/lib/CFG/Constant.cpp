@@ -74,11 +74,11 @@ ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * 
 }
 
 ConstantInteger * ConstantInteger::getSInt32(int32_t value) {
-  return get(SourceLocation(), &IntType::instance, value);
+  return get(SourceLocation(), &Int32Type::instance, value);
 }
 
 ConstantInteger * ConstantInteger::getUInt32(uint32_t value) {
-  return get(SourceLocation(), &UIntType::instance, value);
+  return get(SourceLocation(), &UInt32Type::instance, value);
 }
 
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value,

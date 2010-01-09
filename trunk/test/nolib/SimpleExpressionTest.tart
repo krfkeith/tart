@@ -1,4 +1,4 @@
 @EntryPoint
-def main(args: String[]) -> int {
+def main(args: String[]) -> int32 {
   return 1 + 2 * (2 + 1) - 7;
 }

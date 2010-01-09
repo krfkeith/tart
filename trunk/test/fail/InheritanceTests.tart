@@ -9,7 +9,7 @@ public final class Test : Iterable[String] {
 
 /// TEST BadOverrideType: lacks implementation
 public final class Test : Iterable[String] {
-  def iterate (i:int) -> void {}
+  def iterate (i:int32) -> void {}
 }
 
 /// TEST CannotInheritFromFinalType: is final
@@ -26,8 +26,8 @@ public interface Test : Object {}
 /// TEST NonSingularBase: is a template
 public final class Test : Array {}
 
-/// TEST PrimitiveBase: Cannot inherit from int
-public final class Test : int {}
+/// TEST PrimitiveBase: Cannot inherit from int32
+public final class Test : int32 {}
 
 /// TEST CircularInheritance: Circular
 public class Test : Test {}

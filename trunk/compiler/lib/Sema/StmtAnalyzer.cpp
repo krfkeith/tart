@@ -1148,10 +1148,10 @@ bool StmtAnalyzer::buildReturnStmtCFG(const ReturnStmt * st) {
     // type declared, then choose an integer type.
     const Type * exprType = resultVal->type();
     if (exprType->isUnsizedIntType() && returnType_ == NULL) {
-      if (IntType::instance.canConvert(resultVal) >= ExactConversion) {
-        resultVal->setType(&IntType::instance);
-      } else if (LongType::instance.canConvert(resultVal) >= ExactConversion) {
-        resultVal->setType(&LongType::instance);
+      if (Int32Type::instance.canConvert(resultVal) >= ExactConversion) {
+        resultVal->setType(&Int32Type::instance);
+      } else if (Int64Type::instance.canConvert(resultVal) >= ExactConversion) {
+        resultVal->setType(&Int64Type::instance);
       }
     }
 
@@ -1621,7 +1621,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
     } else {
       // Otherwise, create a state variable and do a conditional branch.
       proc.stateVar = new VariableDefn(Defn::Var, NULL, "__state");
-      proc.stateVar->setType(&IntType::instance);
+      proc.stateVar->setType(&Int32Type::instance);
       proc.stateVar->setStorageClass(Storage_Local);
       proc.stateVar->addTrait(Defn::Singular);
       proc.stateExpr = LValueExpr::get(proc.stateVar);
