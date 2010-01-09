@@ -1,32 +1,34 @@
 import tart.reflect.Module;
-import tart.testing.TestUtils;
+import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
-  return TestUtils.runModuleTests(Module.thisModule());
+  return Test.run(FunctionTest);
 }
 
 def func(a:int32, b="Hello") -> int32 {
   return a;
 }
 
-def testDefaultArgs() {
-  Debug.assertEq(1, func(1, "Hello"));
-  Debug.assertEq(1, func(1));
-}
-
-def testFunctionVar {
-  var streq:fn s:String -> bool;
-  streq = "Hello".equals;
-  Debug.assertTrue(streq("Hello"));
-  Debug.assertFalse(streq("Yello"));
-}
-
-def testAnonFn {
-  let f = fn (i:int32) -> int32 {
-    return i + i;
-  };
-  
-  Debug.assertEq(2, f(1));
-  Debug.assertEq(4, f(2));
+class FunctionTest : Test {
+	def testDefaultArgs() {
+	  Debug.assertEq(1, func(1, "Hello"));
+	  Debug.assertEq(1, func(1));
+	}
+	
+	def testFunctionVar {
+	  var streq:fn s:String -> bool;
+	  streq = "Hello".equals;
+	  Debug.assertTrue(streq("Hello"));
+	  Debug.assertFalse(streq("Yello"));
+	}
+	
+	def testAnonFn {
+	  let f = fn (i:int32) -> int32 {
+	    return i + i;
+	  };
+	  
+	  Debug.assertEq(2, f(1));
+	  Debug.assertEq(4, f(2));
+	}
 }

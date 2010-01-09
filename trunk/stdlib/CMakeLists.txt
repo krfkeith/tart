@@ -12,7 +12,6 @@ file(GLOB TART_STDLIB_SRC
     tart/gc/heap/*.tart
     tart/io/*.tart
     tart/reflect/*.tart
-    tart/testing/*.tart
     tart/text/encodings/*.tart)
 
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
