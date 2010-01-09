@@ -1,50 +1,52 @@
-import tart.testing.TestUtils;
+import tart.testing.Test;
 import tart.reflect.Module;
 
 // TODO: Add tests for bitwise combinations of flags.
 
 @EntryPoint
 def main() -> int32 {
-  return TestUtils.runModuleTests(Module.thisModule());
+  return Test.run(EnumTest);
 }
 
-def testEnumConstants {
-  Debug.assertTrue(Test.Rock == 1);
-  Debug.assertEq(Test.Paper, 2);
-  Debug.assertEq(Test.Scissors, 2);
-  Debug.assertEq(Test.minVal, 1);
-  Debug.assertEq(Test.maxVal, 2);
+class EnumTest : Test {
+	enum Test {
+  	Rock = 1,
+  	Paper,
+  	Scissors = Rock + 1
+	}
 
-  let a = Test.Rock;
-  Debug.assertEq(a, 1);
-
-  Debug.assertEq(FlagTest.Waving, 1);
-  Debug.assertEq(FlagTest.Fluttering, 2);
-  Debug.assertEq(FlagTest.GallantlyStreaming, 4);
-  Debug.assertEq(FlagTest.All, 7);
-}
-
-def testImplicitScoping {
-  let b:Test = Rock;
-  Debug.assertEq(b, 1);
-}
-
-def testContainsOperator {
-  let v = FlagTest.Waving;
-  Debug.assertTrue(FlagTest.Waving in v);
-  Debug.assertTrue(FlagTest.Fluttering not in v);
-}
-
-def testToString {
-  let b:Test = Rock;
-  Debug.assertEq("Paper", Test.Paper.toString());
-  Debug.assertEq("Rock", b.toString());
-}
-
-enum Test {
-  Rock = 1,
-  Paper,
-  Scissors = Rock + 1
+	def testEnumConstants {
+	  assertTrue(Test.Rock == 1);
+	  assertEq(Test.Paper, 2);
+	  assertEq(Test.Scissors, 2);
+	  assertEq(Test.minVal, 1);
+	  assertEq(Test.maxVal, 2);
+	
+	  let a = Test.Rock;
+	  assertEq(a, 1);
+	
+	  assertEq(FlagTest.Waving, 1);
+	  assertEq(FlagTest.Fluttering, 2);
+	  assertEq(FlagTest.GallantlyStreaming, 4);
+	  assertEq(FlagTest.All, 7);
+	}
+	
+	def testImplicitScoping {
+	  let b:Test = Rock;
+	  assertEq(b, 1);
+	}
+	
+	def testContainsOperator {
+	  let v = FlagTest.Waving;
+	  assertTrue(FlagTest.Waving in v);
+	  assertTrue(FlagTest.Fluttering not in v);
+	}
+	
+	def testToString {
+	  let b:Test = Rock;
+	  assertEq("Paper", Test.Paper.toString());
+	  assertEq("Rock", b.toString());
+	}
 }
 
 @Flags
