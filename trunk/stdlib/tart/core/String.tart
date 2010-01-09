@@ -23,7 +23,7 @@ public final class String {
     var data:NativeArray[ubyte, 0];
 
     /** Custom allocation function for strings. */
-    static def alloc(len:int) -> String {
+    static def alloc(len:int32) -> String {
       // The 'offsetof' trick for calculating the size.
       let s:String = __pvalloc(zeroPtr[String]().data[len]);
       s.len = len;
@@ -38,7 +38,7 @@ public final class String {
         bytes: The byte array.
    */
   static def create(bytes:ubyte[]) -> String {
-    let self = alloc(bytes.length);
+    let self = alloc(int32(bytes.length));
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), bytes.length);
     return self;
   }
@@ -50,11 +50,11 @@ public final class String {
         count: The number of bytes to use in constructing the string. Will be clamped
             to the end of the string if there are fewer than 'count' bytes following 'start'.
    */
-  static def create(bytes:ubyte[], start:int, count:int) -> String {
+  static def create(bytes:ubyte[], start:int32, count:int32) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, bytes.length);
-    count = Math.min(count, bytes.length - start);
+    start = Math.min(start, int32(bytes.length));
+    count = Math.min(count, int32(bytes.length) - start);
     let self = alloc(count);
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), count);
     return self;

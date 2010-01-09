@@ -5,6 +5,19 @@ import tart.core.Memory.reinterpretPtr;
 /** Various useful hash functions. */
 namespace Hashing {
   // Hash functions based on MurmurHash 2.0 by Austin Appleby.
+
+  /** Hash functor that calls computeHash(). */
+  struct HashFn[%T <: Hashable] {
+    def hash(value:T) -> uint64 {
+      return value.computeHash();
+    }
+  }
+  
+  /*struct HashFn[int32] {
+    def hash(value:int32) {
+      return Hashing.hash(value);
+    }
+  }*/
   
   /** Hash a single 32-bit integer. */
   def hash(value:uint32) -> uint32 {

@@ -81,6 +81,10 @@ public:
   const TupleType * typeParams() const { return typeParams_; }
   void setTypeParams(const TupleType * typeParams);
 
+  /** Return the default values for the type parameters. */
+  const TypeList & typeParamDefaults() const { return typeParamDefaults_; }
+  TypeList & typeParamDefaults() { return typeParamDefaults_; }
+
   /** Return the Nth type param. */
   const Type * typeParam(int index) const;
 
@@ -97,7 +101,11 @@ public:
   /** Look up the specified pattern variable by index. */
   TypeVariable * patternVar(int index) const;
 
-  /** Get the parameter scope. */
+  /** The minimum number of required arguments (the rest have defaults.) */
+  size_t numRequiredArgs() const { return numRequiredArgs_; }
+  void setNumRequiredArgs(size_t value) { numRequiredArgs_ = value; }
+
+ /** Get the parameter scope. */
   const IterableScope & paramScope() const { return paramScope_; }
   IterableScope & paramScope() { return paramScope_; }
 
@@ -122,12 +130,14 @@ private:
   const ASTTemplate * ast_;
 
   const TupleType * typeParams_;
+  TypeList typeParamDefaults_;
   TemplateConditionList conditions_;
   TypeVariableList vars_;
 
   typedef llvm::DenseMap<const Type *, Defn *, Type::KeyInfo> SpecializationMap;
   SpecializationMap specializations_;
   IterableScope paramScope_;
+  size_t numRequiredArgs_;
 };
 
 /// -------------------------------------------------------------------

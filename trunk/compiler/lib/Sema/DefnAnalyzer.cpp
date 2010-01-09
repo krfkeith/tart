@@ -41,22 +41,28 @@ public:
   Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
 private:
-  llvm::StringMap<TypeVariable *> vars_;
   TemplateSignature * tsig_;
 };
 
 Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
-  llvm::StringMap<TypeVariable *>::iterator it = vars_.find(ast->name());
+  DefnList defs;
   TypeVariable * tvar = NULL;
-  if (it != vars_.end()) {
-    tvar = it->second;
+  Defn * def = tsig_->paramScope().lookupSingleMember(ast->name());
+  if (def != NULL) {
+    if (TypeDefn * tdef = dyn_cast<TypeDefn>(defs.front())) {
+      tvar = dyn_cast<TypeVariable>(tdef->typeValue());
+    }
+
+    if (tvar == NULL) {
+      diag.error(ast) << "Conflicting type declaration for type variable '" << ast->name() << "'";
+      return NULL;
+    }
   }
 
-  // TODO: Actually we should make this a proper scope so that we can refer to the
-  // same pattern variable without the % in the template parameter list.
   if (tvar == NULL) {
     tvar = new TypeVariable(ast->location(), ast->name(), NULL);
-    vars_[ast->name()] = tvar;
+    TypeDefn * tdef = new TypeDefn(module, ast->name(), tvar);
+    tsig_->paramScope().addMember(tdef);
   }
 
   // See if the type variable has constraints
@@ -421,15 +427,44 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tsig->ast()->params();
     TypeList params;
+    ASTConstNodeList defaults;
 
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
-      Type * param = TemplateParamAnalyzer(de).typeFromAST(*it);
+      const ASTNode * node = *it;
+      const ASTNode * paramDefault = NULL;
+
+      // If the template argument has a default value.
+      if (node->nodeType() == ASTNode::Assign) {
+        const ASTOper * op = static_cast<const ASTOper *>(node);
+        node = op->arg(0);
+        paramDefault = op->arg(1);
+      }
+
+      Type * param = TemplateParamAnalyzer(de).typeFromAST(node);
       if (param != NULL) {
         params.push_back(param);
+        defaults.push_back(paramDefault);
       }
     }
 
     tsig->setTypeParams(TupleType::get(params));
+
+    int argCount = 0;
+    for (ASTConstNodeList::const_iterator it = defaults.begin(); it != defaults.end(); ++it) {
+      const ASTNode * node = *it;
+      Type * paramDefault = NULL;
+      if (node != NULL) {
+        paramDefault = TypeAnalyzer(de->module(), &tsig->paramScope()).typeFromAST(node);
+      }
+
+      ++argCount;
+      if (paramDefault == NULL) {
+        // If there's no default, then this arg (and all args which precede it) are required.
+        tsig->setNumRequiredArgs(argCount);
+      }
+
+      tsig->typeParamDefaults().push_back(paramDefault);
+    }
 
     if (!de->hasUnboundTypeParams()) {
       de->addTrait(Defn::Singular);
@@ -493,6 +528,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Struct:
         if (enableReflectionDetail) {
           if (module->reflectedDefs().insert(tdef)) {
+            module->addSymbol(tdef);
             importSystemType(Builtins::typeComplexType);
           }
         }

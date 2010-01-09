@@ -150,6 +150,14 @@ bool BinaryExpr::isSingular() const {
   return type()->isSingular() && first_->isSingular() && second_->isSingular();
 }
 
+bool BinaryExpr::isLValue() const {
+  if (exprType() == ElementRef) {
+    return first_->isLValue();
+  }
+
+  return false;
+}
+
 void BinaryExpr::format(FormatStream & out) const {
   switch (exprType()) {
     case RefEq:
@@ -264,6 +272,18 @@ Expr * LValueExpr::constValue(Expr * in) {
   }
 
   return in;
+}
+
+bool LValueExpr::isLValue() const {
+  if (value_->defnType() == Defn::Let) {
+    return false;
+  }
+
+  if (base_ == NULL || base_->type()->isReferenceType()) {
+    return true;
+  }
+
+  return base_->isLValue();
 }
 
 // -------------------------------------------------------------------

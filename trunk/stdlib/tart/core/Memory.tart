@@ -30,13 +30,9 @@ namespace Memory {
     /** Read-only access to the end of the buffer. */
     def end:Address[T] { get { return _end; } }
     
-    /*def length:int32 {
+    def length:intp {
       get { return ptrDiff(_begin, _end); }
     }
-
-    def length:int64 {
-      get { return ptrDiff(_begin, _end); }
-    }*/
   }
 
   /** Extension of Buffer to support mutatbility of elements. */
@@ -66,19 +62,12 @@ namespace Memory {
       the value is too large to be contained within a signed integer.
    */
   @Intrinsic
-  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int32;
-
-  /** Return the difference between two pointers. Subtracts the pointer
-      values, and then divides by the size of 'T'. Raises an exception if
-      the value is too large to be contained within a signed long.
-   */
-  @Intrinsic
-  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int64;
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> intp;
 
   /** Return the integer value of a pointer. Not guaranteed to be convertible back
       into a pointer (may be truncated.) */
   @Intrinsic
-  def ptrToInt[%T](addr:Address[T]) -> uint32;
+  def ptrToInt[%T](addr:Address[T]) -> uintp;
 
   /** An unchecked cast of one pointer type to another. */
   @Unsafe @Intrinsic
@@ -97,10 +86,7 @@ namespace Memory {
         src: The array containing the source range.
         length: The number of elements to copy. 
    */
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int32);
-
-  /** [Ditto] */
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int64);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:intp);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.
@@ -124,10 +110,7 @@ namespace Memory {
         srcOffset: The starting index of the source ranbge.
         length: The number of elements to copy. 
    */
-  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int32);
-
-  /** [Ditto] */
-  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int64);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:intp);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.

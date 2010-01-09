@@ -37,8 +37,8 @@ final class UTF8 : Codec {
 
   def encodedLength(src:char[], start:int, count:int) -> int {
     Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, src.length);
-    count = Math.min(count, src.length - start);
+    start = Math.min(start, int32(src.length));
+    count = Math.min(count, int32(src.length) - start);
     
     var length = 0;
     var index = start;
@@ -67,8 +67,8 @@ final class UTF8 : Codec {
   /** Return the number of characters in the byte sequence. */
   def decodedLength(buffer:ubyte[], start:int, count:int) -> int {
     Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, buffer.length);
-    count = Math.min(count, buffer.length - start);
+    start = Math.min(start, int32(buffer.length));
+    count = Math.min(count, int32(buffer.length) - start);
     return decodedLengthRaw(addressOf(buffer.data[start]), count);
   }
 
@@ -96,11 +96,11 @@ final class UTF8 : Codec {
   def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
-    srcIndex = Math.min(srcIndex, src.length);
-    count = Math.min(count, src.length - srcIndex);
+    srcIndex = Math.min(srcIndex, int32(src.length));
+    count = Math.min(count, int32(src.length) - srcIndex);
 
     return encodeRaw(
-      addressOf(dst.data[dstIndex]), dst.length - dstIndex,
+      addressOf(dst.data[dstIndex]), int32(dst.length) - dstIndex,
       addressOf(src.data[srcIndex]), count);
   }
   
@@ -147,11 +147,11 @@ final class UTF8 : Codec {
   def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> int {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.length);
-    srcIndex = Math.min(srcIndex, src.length);
-    count = Math.min(count, src.length - srcIndex);
+    srcIndex = Math.min(srcIndex, int32(src.length));
+    count = Math.min(count, int32(src.length) - srcIndex);
 
     return decodeRaw(
-      addressOf(dst.data[dstIndex]), dst.length - dstIndex,
+      addressOf(dst.data[dstIndex]), int32(dst.length) - dstIndex,
       addressOf(src.data[srcIndex]), count);
   }
 

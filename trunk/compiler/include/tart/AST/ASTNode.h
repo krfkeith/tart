@@ -464,6 +464,7 @@ public:
   {}
 
   Defn * value() const { return value_; }
+  void setValue(Defn * de) { value_ = de; }
 
   void format(FormatStream & out) const;
   void trace() const;

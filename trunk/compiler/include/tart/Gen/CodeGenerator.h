@@ -388,6 +388,7 @@ private:
   llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
   llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
 
+  bool hasAddress(const Expr * expr);
   void ensureLValue(const Expr * expr, const llvm::Type * irType);
   void checkCallingArgs(const llvm::Value * fn,
       ValueList::const_iterator first, ValueList::const_iterator last);

@@ -95,6 +95,23 @@ class HashSetTest : Test {
     assertTrue("17" in h);
   }
   
+  def testIterate() {
+    let h = buildLargeStringSet();
+    var i = 0;
+    for entry in h {
+      i++;
+    }
+    assertEq(26, i);
+  }
+  
+  def buildLargeStringSet() -> HashSet[String] {
+    let h = HashSet[String]();
+    h.addAll("a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+             "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+             "u", "v", "w", "x", "y", "z");
+    return h;
+  }
+  
   /**
   def construct(capacity:int32 = 0) {
   }

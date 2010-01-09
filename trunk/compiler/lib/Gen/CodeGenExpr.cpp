@@ -4,6 +4,7 @@
 
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
+#include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Template.h"
@@ -545,7 +546,7 @@ Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
 
   if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
     // TODO: Change this to 'isLValue' test.
-    if (lval->base()->exprType() != Expr::LValue && lval->base()->exprType() != Expr::ElementRef) {
+    if (!lval->base()->isLValue()) {
       // If the base expression is not an l-value, and it's a value type, then we
       // have to use extract value instead of GEP.
       const VariableDefn * var = cast<VariableDefn>(lval->value());
@@ -896,7 +897,8 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
 
   // Arguments to the array-creation function
   ValueList args;
-  args.push_back(getInt32Val(arrayLength));
+  args.push_back(
+      PrimitiveType::pointerSize() == 64 ?  getInt64Val(arrayLength) : getInt32Val(arrayLength));
   Function * allocFunc = findMethod(arrayType, "alloc");
   Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
 

@@ -124,6 +124,7 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
   , ast_(NULL)
   , typeParams_(NULL)
   , paramScope_(parentScope)
+  , numRequiredArgs_(0)
 {
   paramScope_.setScopeName("template-params");
 }
@@ -131,12 +132,14 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
 void TemplateSignature::setTypeParams(const TupleType * typeParams) {
   DASSERT(typeParams_ == NULL);
   typeParams_ = typeParams;
+  numRequiredArgs_ = typeParams->size();
   FindTypeVariables(vars_).transform(typeParams_);
   for (TypeVariableList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    DASSERT(paramScope_.lookupSingleMember(var->name()) == NULL);
-    TypeDefn * tdef = new TypeDefn(value_->module(), var->name(), var);
-    paramScope_.addMember(tdef);
+    if (paramScope_.lookupSingleMember(var->name()) == NULL) {
+      TypeDefn * tdef = new TypeDefn(value_->module(), var->name(), var);
+      paramScope_.addMember(tdef);
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 // Compiler class
 
 #include "tart/Parse/Parser.h"
@@ -16,7 +16,7 @@ public:
     : generateBitcode_(true)
     , generateDependencies_(false)
   {}
-  
+
   void processInputFile(const std::string & infile);
   void setGenerateBitcode(bool generate) {
     generateBitcode_ = generate;

@@ -479,6 +479,45 @@ void CodeGenerator::addTypeName(const CompositeType * type) {
   }
 }
 
+bool CodeGenerator::hasAddress(const Expr * expr) {
+  switch (expr->exprType()) {
+    case Expr::LValue: {
+      const LValueExpr * lval = static_cast<const LValueExpr *>(expr);
+      if (lval->base() != NULL) {
+        if (lval->base()->type()->isReferenceType()) {
+          return true;
+        }
+
+        // It has an address if it's base does.
+        return hasAddress(lval->base());
+      }
+
+      if (lval->value()->defnType() == Defn::Var) {
+        return true;
+      }
+
+      if (lval->value()->defnType() == Defn::Parameter) {
+        const ParameterDefn * param = static_cast<const ParameterDefn *>(lval->value());
+        if (param->isLValue()) {
+          return true;
+        }
+      }
+
+      TypeShape shape = lval->type()->typeShape();
+      return shape == Shape_Reference || shape == Shape_Large_Value;
+    }
+
+    case Expr::ElementRef: {
+      const BinaryExpr * op = static_cast<const BinaryExpr *>(expr);
+      return hasAddress(op->first());
+      break;
+    }
+
+    default:
+      return false;
+  }
+}
+
 void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
 #if !NDEBUG
   if (!isa<llvm::PointerType>(type)) {

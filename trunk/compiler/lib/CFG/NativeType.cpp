@@ -8,10 +8,13 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Objects/Builtins.h"
-#include "tart/Sema/BindingEnv.h"
-#include <llvm/DerivedTypes.h>
+
+#include "llvm/DerivedTypes.h"
+#include "llvm/Support/CommandLine.h"
 
 namespace tart {
 

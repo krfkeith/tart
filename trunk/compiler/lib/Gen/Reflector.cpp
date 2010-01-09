@@ -613,12 +613,12 @@ llvm::Constant * Reflector::emitSimpleType(const Type * simpleType, const Type *
         case TypeId_SInt16: subtype = SHORT; break;
         case TypeId_SInt32: subtype = INT; break;
         case TypeId_SInt64: subtype = LONG; break;
-        case TypeId_SIntPtr: subtype = INTPTR; break;
+        //case TypeId_SIntPtr: subtype = INTPTR; break;
         case TypeId_UInt8: subtype = UBYTE; break;
         case TypeId_UInt16: subtype = USHORT; break;
         case TypeId_UInt32: subtype = UINT; break;
         case TypeId_UInt64: subtype = ULONG; break;
-        case TypeId_UIntPtr: subtype = UINTPTR; break;
+        //case TypeId_UIntPtr: subtype = UINTPTR; break;
         case TypeId_Float: subtype = FLOAT; break;
         case TypeId_Double: subtype = DOUBLE; break;
         case TypeId_Null: subtype = NULLTYPE; break;
