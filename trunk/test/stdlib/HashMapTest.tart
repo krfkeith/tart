@@ -1,0 +1,42 @@
+import tart.collections.HashMap;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(HashMapTest);
+}
+
+class HashMapTest : Test {
+  def testEmptyMap {
+    let h = HashMap[String, int32]();
+    assertEq(0, h.length);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+
+  def testAdd {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertEq(1, h.length);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+
+  def testRemoveNonExisting {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertFalse(h.remove("World"));
+    assertEq(1, h.length);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+
+  def DISABLED_testAddRemove {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertTrue(h.remove("Hello"));
+    assertEq(0, h.length);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+}

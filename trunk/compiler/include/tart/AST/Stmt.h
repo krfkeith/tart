@@ -392,11 +392,11 @@ private:
 // Case statement
 class CaseStmt: public Stmt {
 public:
-  CaseStmt(SourceLocation loc, ASTNode * caseExpr, Stmt * body)
-    : Stmt(Case, loc), caseExpr_(caseExpr), body_(body) {
+  CaseStmt(SourceLocation loc, const ASTNodeList & caseExprs, Stmt * body)
+    : Stmt(Case, loc), caseExprs_(caseExprs), body_(body) {
   }
 
-  ASTNode * caseExpr() const { return caseExpr_; }
+  const ASTNodeList & caseExprs() const { return caseExprs_; }
 
   Stmt * body() const { return body_; }
 
@@ -404,7 +404,7 @@ public:
   void format(FormatStream & out) const;
 
 private:
-  ASTNode * caseExpr_;
+  ASTNodeList caseExprs_;
   Stmt * body_;
 };
 
@@ -427,6 +427,26 @@ public:
 private:
   ASTNode * testExpr_;
   StmtList caseList_;
+};
+
+// -------------------------------------------------------------------
+// Classify/As statement
+class ClassifyAsStmt: public Stmt {
+public:
+  ClassifyAsStmt(SourceLocation loc, ASTDecl * asDecl, Stmt * body)
+    : Stmt(Case, loc), asDecl_(asDecl), body_(body) {
+  }
+
+  const ASTDecl * asDecl() const { return asDecl_; }
+
+  Stmt * body() const { return body_; }
+
+  void trace() const;
+  void format(FormatStream & out) const;
+
+private:
+  ASTDecl * asDecl_;
+  Stmt * body_;
 };
 
 }

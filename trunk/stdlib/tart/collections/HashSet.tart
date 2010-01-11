@@ -264,6 +264,7 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
 
     def construct(hashSet:HashSet) {
       self.data = hashSet._data;
+      self.index = 0;
     }
 
     def next -> ItemType or void {

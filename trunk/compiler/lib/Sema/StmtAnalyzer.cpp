@@ -633,22 +633,12 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     const Stmt * s = *it;
     if (s->nodeType() == ASTNode::Case) {
       const CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
-      ASTNode * caseValAst = caseSt->caseExpr();
       ConstantExprList caseValList;
       Scope * saveCaseScope = setActiveScope(caseValScope);
-      if (caseValAst->nodeType() == ASTNode::Tuple) {
-        const ASTOper * caseVals = static_cast<const ASTOper *>(caseValAst);
-        for (ASTNodeList::const_iterator it = caseVals->args().begin();
-            it != caseVals->args().end(); ++it) {
-          ConstantExpr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
-          if (caseVal == NULL) {
-            continue;
-          }
 
-          caseValList.push_back(caseVal);
-        }
-      } else {
-        ConstantExpr * caseVal = astToCaseValueExpr(caseSt->caseExpr(), testType);
+      for (ASTNodeList::const_iterator it = caseSt->caseExprs().begin();
+          it != caseSt->caseExprs().end(); ++it) {
+        ConstantExpr * caseVal = astToCaseValueExpr(*it, testType);
         if (caseVal == NULL) {
           continue;
         }
@@ -657,7 +647,9 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
       }
 
       setActiveScope(saveCaseScope);
-      DASSERT(!caseValList.empty());
+      if (caseValList.empty()) {
+        continue;
+      }
 
       Block * caseBody = createBlock("casebody");
       for (ConstantExprList::iterator ci = caseValList.begin(); ci != caseValList.end(); ++ci) {
@@ -785,8 +777,8 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
     if (s->nodeType() == ASTNode::Case) {
-      const CaseStmt * caseSt = static_cast<const CaseStmt *>(s);
-      if (const ASTDecl * asDecl = dyn_cast<ASTDecl>(caseSt->caseExpr())) {
+      const ClassifyAsStmt * asSt = static_cast<const ClassifyAsStmt *>(s);
+      if (const ASTDecl * asDecl = asSt->asDecl()) {
         SourceLocation stLoc = asDecl->location();
         LocalScope * caseScope = createLocalScope("as-scope");
         Scope * prevScope = setActiveScope(caseScope);
@@ -837,7 +829,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         currentBlock_->append(new InitVarExpr(stLoc, asValueDefn, asValueExpr));
 
         // Build the body of the case.
-        buildStmtCFG(caseSt->body());
+        buildStmtCFG(asSt->body());
 
         // Only generate a branch if we haven't returned or thrown.
         if (currentBlock_ && !currentBlock_->hasTerminator()) {

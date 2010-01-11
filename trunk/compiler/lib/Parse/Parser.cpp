@@ -1793,11 +1793,23 @@ Stmt * Parser::switchStmt() {
 
 Stmt * Parser::caseStmt() {
   SourceLocation loc = matchLoc;
-  ASTNode * test = expressionList();
+  ASTNode * test = expression();
   if (test != NULL) {
+    ASTNodeList exprs;
+    exprs.push_back(test);
+    while (match(Token_Case)) {
+      ASTNode * test = expression();
+      if (test == NULL) {
+        expected("expression after 'case'");
+        return NULL;
+      }
+
+      exprs.push_back(test);
+    }
+
     Stmt * body = bodyStmt();
     if (body != NULL) {
-      return new CaseStmt(loc, test, body);
+      return new CaseStmt(loc, exprs, body);
     }
   }
 
@@ -1888,7 +1900,7 @@ Stmt * Parser::asStmt() {
     return NULL;
   }
 
-  return new CaseStmt(loc, var, body);
+  return new ClassifyAsStmt(loc, var, body);
 }
 
 Stmt * Parser::bodyStmt() {

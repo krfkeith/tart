@@ -271,12 +271,16 @@ void SwitchStmt::format(FormatStream & out) const {
 
 void CaseStmt::trace() const {
   Stmt::trace();
-  safeMark(caseExpr_);
+  markList(caseExprs_.begin(), caseExprs_.end());
   safeMark(body_);
 }
 
 void CaseStmt::format(FormatStream & out) const {
-  out << "Case (" << caseExpr_ << ", " << body_ << ")";
+  for (ASTNodeList::const_iterator it = caseExprs_.begin(); it != caseExprs_.end(); ++it) {
+    out << "case " << *it << " ";
+  }
+
+  out << "{" << body_ << "}";
 }
 
 // -------------------------------------------------------------------
@@ -295,6 +299,19 @@ void ClassifyStmt::format(FormatStream & out) const {
   }
 
   out << ")";
+}
+
+// -------------------------------------------------------------------
+// Case
+
+void ClassifyAsStmt::trace() const {
+  Stmt::trace();
+  safeMark(asDecl_);
+  safeMark(body_);
+}
+
+void ClassifyAsStmt::format(FormatStream & out) const {
+  out << "as (" << asDecl_ << ", " << body_ << ")";
 }
 
 }
