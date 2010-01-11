@@ -329,6 +329,9 @@ public:
   virtual const Type * type() const = 0;
   const Type * canonicalType() const { return dealias(type()); }
 
+  /** Class in which this is defined, or NULL if defining scope is not a class. */
+  const CompositeType * definingClass() const;
+
   // Overrides
 
   Scope * definingScope() const { return definingScope_; }

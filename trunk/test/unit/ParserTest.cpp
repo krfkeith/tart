@@ -515,12 +515,12 @@ TEST_F(ParserTest, Statements) {
   ast = parseStatement("switch n { case 1 {} case 2 {} else {}}");
   ASSERT_TRUE(ast != NULL);
   ASSERT_EQ(ASTNode::Switch, ast->nodeType());
-  ASSERT_AST_EQ("Switch (n,  Case (1, {}); Case (2, {}); {};)", ast);
+  ASSERT_AST_EQ("Switch (n,  case 1 {{}}; case 2 {{}}; {};)", ast);
 
   ast = parseStatement("classify n { as e:T {} as e:T {} else {}}");
   ASSERT_TRUE(ast != NULL);
   ASSERT_EQ(ASTNode::Classify, ast->nodeType());
-  ASSERT_AST_EQ("Classify (n,  Case (let e:T, {}); Case (let e:T, {}); {};)", ast);
+  ASSERT_AST_EQ("Classify (n,  as (let e:T, {}); as (let e:T, {}); {};)", ast);
 }
 
 TEST_F(ParserTest, Decls) {

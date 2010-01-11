@@ -7,6 +7,7 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TupleType.h"
+#include "tart/CFG/CompositeType.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -235,6 +236,16 @@ void Defn::trace() const {
 
 // -------------------------------------------------------------------
 // ValueDefn
+
+const CompositeType * ValueDefn::definingClass() const {
+  TypeDefn * enclosingType = enclosingClassDefn();
+  if (enclosingType != NULL) {
+    return dyn_cast<CompositeType>(enclosingType->typeValue());
+  }
+
+  return NULL;
+}
+
 void ValueDefn::trace() const {
   Defn::trace();
 }

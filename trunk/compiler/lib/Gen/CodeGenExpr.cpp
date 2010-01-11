@@ -629,6 +629,16 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
           lval->base()->type()->irType(),
           getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
 
+      // Handle upcasting of the base to match the field.
+      const CompositeType * fieldClass = field->definingClass();
+      DASSERT(fieldClass != NULL);
+      const CompositeType * baseClass = cast<CompositeType>(lval->base()->type());
+      DASSERT(baseClass->isSubclassOf(fieldClass));
+      while (baseClass != fieldClass) {
+        baseClass = baseClass->super();
+        indices.push_back(getInt32Val(0));
+      }
+
       DASSERT(field->memberIndex() >= 0);
       indices.push_back(getInt32Val(field->memberIndex()));
       label << "." << field->name();
@@ -637,15 +647,6 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       DASSERT_TYPE_EQ(expr,
           expr->type()->irEmbeddedType(),
           getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
-      /*if (expr->type()->typeShape() == Shape_Reference) {
-        DASSERT_TYPE_EQ(expr,
-            llvm::PointerType::get(expr->type()->irType(), 0),
-            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
-      } else {
-        DASSERT_TYPE_EQ(expr,
-            expr->type()->irType(),
-            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
-      }*/
 
       return baseAddr;
     }
@@ -678,15 +679,6 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       DASSERT_TYPE_EQ(expr,
           expr->type()->irEmbeddedType(),
           getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
-      /*if (expr->type()->isReferenceType()) {
-        DASSERT_TYPE_EQ(expr,
-            llvm::PointerType::get(expr->type()->irType(), 0),
-            getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
-      } else {
-        //DASSERT_TYPE_EQ(
-        //    expr->type()->irType(),
-        //    getGEPType(arrayVal->getType(), indices.begin(), indices.end()));
-      }*/
 
       return arrayVal;
     }
