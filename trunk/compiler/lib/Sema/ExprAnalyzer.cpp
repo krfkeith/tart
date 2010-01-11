@@ -188,7 +188,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   }
 }
 
-ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected) {
+Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected) {
   Expr * expr = analyze(ast, expected);
   if (isErrorResult(expr)) {
     return NULL;
@@ -205,7 +205,7 @@ ConstantExpr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expe
     return NULL;
   }
 
-  return cast<ConstantExpr> (expr);
+  return expr;
 }
 
 Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
@@ -270,6 +270,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       envTypeDef->addTrait(Defn::Nonreflective);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
+      envTypeDef->setDefiningScope(activeScope);
       envTypeDef->createQualifiedName(currentFunction_);
       CompositeType * envType = new CompositeType(Type::Struct, envTypeDef, activeScope);
       envTypeDef->setTypeValue(envType);
@@ -298,6 +299,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(selfParam);
+      fn->setDefiningScope(activeScope);
 
       if (!analyzeDefn(fn, Task_PrepEvaluation)) {
         return &Expr::ErrorVal;

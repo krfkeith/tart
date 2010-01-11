@@ -25,8 +25,6 @@
 
 namespace tart {
 
-//static const Defn::Traits CONSTRUCTOR_TRAITS = Defn::Traits::of(Defn::Ctor);
-
 static const CompositeType::PassSet PASS_SET_RESOLVE_TYPE = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
   CompositeType::BaseTypesPass

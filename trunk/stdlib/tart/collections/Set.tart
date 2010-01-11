@@ -2,11 +2,11 @@
 interface Set[%ItemType] : Collection[ItemType] {
 
   /** Return true if this set contains all of the specified items. */
-  def containsAll(items:Collection[ItemType]) -> bool;
+  def containsAll(items:Iterable[ItemType]) -> bool;
   def containsAll(items:Iterator[ItemType]) -> bool;
   
   /** Return true if this set contains any of the specified items. */
-  def containsAny(items:Collection[ItemType]) -> bool;
+  def containsAny(items:Iterable[ItemType]) -> bool;
   def containsAny(items:Iterator[ItemType]) -> bool;
   
   // TODO: Add equals, computeHash (for immutable sets only).

@@ -15,6 +15,9 @@ interface Codec {
     var partial:int32;      /** Used to save the state of a partially-decoded character. */
   }
   
+  /** Name of this codec. */
+  def name:String { get; }
+  
   /** Return the length, in bytes, of the character array when encoded.
       Parameters:
         src: The characters to be encoded.

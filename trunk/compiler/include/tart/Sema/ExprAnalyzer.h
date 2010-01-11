@@ -37,7 +37,7 @@ public:
   Expr * reduceAttribute(const ASTNode * ast);
 
   /** Similar to reduceExpr, but returns a constant. */
-  ConstantExpr * reduceConstantExpr(const ASTNode * ast, Type * expected);
+  Expr * reduceConstantExpr(const ASTNode * ast, Type * expected);
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
       Report an error if the cast is not possible. */

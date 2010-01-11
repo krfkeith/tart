@@ -44,9 +44,9 @@ VarAnalyzer::VarAnalyzer(VariableDefn * var)
   DASSERT(var != NULL);
 }
 
-VarAnalyzer::VarAnalyzer(VariableDefn * var, Module * module, Defn * subject,
+VarAnalyzer::VarAnalyzer(VariableDefn * var, Scope * scope, Module * module, Defn * subject,
     FunctionDefn * currentFunction)
-  : DefnAnalyzer(module, var->definingScope(), subject, currentFunction)
+  : DefnAnalyzer(module, scope, subject, currentFunction)
   , target(var)
 {
   DASSERT(var != NULL);
@@ -117,7 +117,7 @@ bool VarAnalyzer::resolveVarType() {
     if (target->type() == NULL) {
       DASSERT(ast != NULL);
       if (ast->type() != NULL) {
-        TypeAnalyzer ta(module, target->definingScope());
+        TypeAnalyzer ta(module, activeScope);
         Type * varType = ta.typeFromAST(ast->type());
         if (varType == NULL) {
           target->passes().finish(VariableDefn::VariableTypePass);

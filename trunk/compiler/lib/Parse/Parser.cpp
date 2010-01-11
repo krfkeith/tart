@@ -988,13 +988,6 @@ ASTNode * Parser::typeExprBinary() {
     std::string tokenVal = lexer.tokenValue();
 
     switch (token) {
-      /*case Token_LogicalAnd:
-        opstack.pushOperator(
-          new ASTOper(ASTNode::LogicalAnd, lexer.tokenLocation()),
-          Prec_LogicalAnd, Left);
-        next();
-        break; */
-
       // Disjoint type
       case Token_LogicalOr:
         opstack.pushOperator(
@@ -1245,35 +1238,7 @@ ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, const char *
 
 ASTNode * Parser::functionReturnType() {
   if (match(Token_ReturnType)) {
-    if (match(Token_LParen)) {
-      // Check for multiple return values.
-      ASTNodeList returnTypes;
-      if (!match(Token_RParen)) {
-        for (;;) {
-
-          ASTNode * type = typeExpression();
-          if (type != NULL)
-            returnTypes.push_back(type);
-
-          if (match(Token_RParen)) {
-            break;
-          } else if (!match(Token_Comma)) {
-            expected("',' or ')'");
-            break;
-          }
-        }
-      }
-
-      if (returnTypes.empty()) {
-        return NULL;
-      } else if (returnTypes.size() == 1) {
-        return returnTypes[0];
-      } else {
-        return new ASTOper(ASTNode::Tuple, returnTypes);
-      }
-    } else {
-      return typeExpression();
-    }
+    return typeExpression();
   }
 
   return NULL;

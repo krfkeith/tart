@@ -1257,7 +1257,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
       const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
       DASSERT(varDecl->value() == NULL);
       if (varDecl->type() != NULL) {
-        VarAnalyzer va(var, module, function, function);
+        VarAnalyzer va(var, activeScope, module, function, function);
         if (!va.analyze(Task_PrepTypeComparison)) {
           return false;
         }
@@ -1303,7 +1303,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    VarAnalyzer va(var, module, function, function);
+    VarAnalyzer va(var, activeScope, module, function, function);
     if (!va.analyze(Task_PrepConstruction)) {
       return false;
     }

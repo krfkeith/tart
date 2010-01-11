@@ -224,7 +224,7 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
     return HashSetIterator(self);
   }
   
-  def containsAll(items:Collection[ItemType]) -> bool {
+  def containsAll(items:Iterable[ItemType]) -> bool {
     for item in items {
       return false if not contains(item);
     }
@@ -240,7 +240,7 @@ final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemTyp
     return true;
   }
   
-  def containsAny(items:Collection[ItemType]) -> bool {
+  def containsAny(items:Iterable[ItemType]) -> bool {
     for item in items {
       return true if contains(item);
     }

@@ -128,6 +128,10 @@ const llvm::Type * FunctionType::irType() const {
 const llvm::Type * FunctionType::createIRType() const {
   using namespace llvm;
 
+  DASSERT_OBJ(isSingular(), this);
+//  DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
+//  DASSERT_OBJ(passes_.isFinished(FieldPass), this);
+
   // Prevent recursive types from entering this function while type is being
   // created.
   isCreatingType = true;
