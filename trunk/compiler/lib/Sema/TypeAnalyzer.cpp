@@ -196,7 +196,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
     params.push_back(param);
     if (aparam->flags() & Param_Variadic) {
       param->setFlag(ParameterDefn::Variadic, true);
-      param->setInternalType(getArrayTypeForElement(paramType));
+      //param->setInternalType(getArrayTypeForElement(paramType));
     }
 
     if (aparam->flags() & Param_KeywordOnly) {

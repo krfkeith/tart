@@ -208,6 +208,7 @@ public:
 protected:
   ExprList args_;
 
+  bool areArgsConstant() const;
   bool areArgsSideEffectFree() const;
 
   ArglistExpr(ExprType k, const SourceLocation & loc, const Type * type)
@@ -782,9 +783,8 @@ public:
 
   // Overrides
 
-  bool isSideEffectFree() const {
-    return areArgsSideEffectFree();
-  }
+  bool isConstant() const { return areArgsConstant(); }
+  bool isSideEffectFree() const { return areArgsSideEffectFree(); }
 
   static inline bool classof(const TupleCtorExpr *) { return true; }
   static inline bool classof(const Expr * ex) {

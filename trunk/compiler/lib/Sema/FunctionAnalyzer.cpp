@@ -164,6 +164,11 @@ bool FunctionAnalyzer::resolveParameterTypes() {
   if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
     FunctionType * ftype = target->functionType();
 
+    bool trace = isTraceEnabled(target);
+    if (trace) {
+      diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
+    }
+
     // Set the module reference for the parameter scope.
     //target->parameterScope().setModule(module);
 
@@ -190,7 +195,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
     if (ftype == NULL) {
       DASSERT(target->ast() != NULL);
-      TypeAnalyzer ta(module, activeScope);
+      TypeAnalyzer ta(target->sourceModule(), activeScope);
       ftype = ta.typeFromFunctionAST(target->functionDecl());
       if (ftype == NULL) {
         success = false;
@@ -203,16 +208,22 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param, module, target, target).analyze(Task_PrepTypeComparison);
+        VarAnalyzer(param, target->definingScope(), module, target, target)
+            .analyze(Task_PrepTypeComparison);
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
         //} else if (param->type()->typeClass() == Type::NArray) {
         //  diag.error(param) << "Invalid parameter type (native array)";
-        } else if (param->getFlag(ParameterDefn::Variadic)) {
-          if (param->internalType()->isSingular()) {
-            module->addSymbol(param->internalType()->typeDefn());
+        } else if (param->isVariadic() && param->type()->isSingular()) {
+          if (trace) {
+            diag.debug(target) << Format_Type << "  Analyzing variadic param " << param;
           }
+          analyzeType(param->type(), Task_PrepTypeComparison);
+          param->setInternalType(getArrayTypeForElement(param->type()));
+          DASSERT_OBJ(param->internalType()->isSingular(), param);
+          analyzeType(param->internalType(), Task_PrepConstruction);
+          module->addSymbol(param->internalType()->typeDefn());
         }
 
         // TODO: Should only add the param as a member if we "own" it.

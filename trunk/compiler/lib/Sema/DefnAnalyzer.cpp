@@ -549,7 +549,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
         break;
     }
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
-    if (!fn->isIntrinsic() && !fn->isExtern()) {
+    if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
       if (enableReflectionDetail) {
         if (module->reflectedDefs().insert(fn)) {
           module->addSymbol(fn);

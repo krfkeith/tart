@@ -23,6 +23,8 @@ final class UTF8 : Codec {
 
   private var errorAction:ErrorAction;
 
+  def name:String { get { return "UTF8"; } }
+
   /** Construct a new UTF8 codec. */  
   def construct(errorAction:ErrorAction = REPLACE) {
     self.errorAction = errorAction;

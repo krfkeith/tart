@@ -198,8 +198,13 @@ public:
   virtual Scope * definingScope() const = 0;
   virtual void setDefiningScope(Scope * scope) = 0;
 
-  /** Get the module in which this declaration was defined. */
-  virtual Module * module() const { return module_; }
+  /** Get the module which contains this declaration. */
+  Module * module() const { return module_; }
+
+  /** Get the module which originally defines this defn. This will be different than 'module'
+      for defns which are template instances - it returns the module in which the template
+      was defined. */
+  Module * sourceModule() const;
 
   /** Get the defn in which this is defined, if any. */
   Defn * parentDefn() const { return parentDefn_; }

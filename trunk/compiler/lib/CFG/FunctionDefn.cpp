@@ -139,8 +139,10 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
   const FunctionType * ft0 = functionType();
   const FunctionType * ft1 = otherFn->functionType();
 
-  DASSERT_OBJ(returnType() != NULL, this);
-  DASSERT_OBJ(ft1->returnType() != NULL, otherFn);
+  if (isErrorResult(ft0->returnType()) || isErrorResult(ft1->returnType())) {
+    return false;
+  }
+
   if (!ft0->returnType()->isEqual(ft1->returnType())) {
     return false;
   }
@@ -155,6 +157,10 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
 
     DASSERT_OBJ(p0->type() != NULL, p0);
     DASSERT_OBJ(p1->type() != NULL, p1);
+
+    if (isErrorResult(p0->type()) || isErrorResult(p1->type())) {
+      return false;
+    }
 
     if (!p0->type()->isEqual(p1->type())) {
       return false;
@@ -284,7 +290,7 @@ void FunctionDefn::format(FormatStream & out) const {
       out << "(";
       formatParameterList(out, params());
       out << ")";
-      if (!type_->returnType()->isVoidType()) {
+      if (type_->returnType() != NULL && !type_->returnType()->isVoidType()) {
         out << " -> " << type_->returnType();
       }
     }

@@ -285,7 +285,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   if (ast->value() != NULL) {
     // The constant has an explicit value.
     ExprAnalyzer ea(module, activeScope, subject(), NULL);
-    ConstantExpr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
+    Expr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
     if (isErrorResult(enumValue)) {
       return false;
     }

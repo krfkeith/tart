@@ -56,12 +56,7 @@ class AnalyzerBase {
 public:
   /** Constructor. */
   AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL,
-      FunctionDefn * currentFunction = NULL)
-    : module(mod)
-    , activeScope(parent)
-    , subject_(subject)
-    , currentFunction_(currentFunction)
-  {}
+      FunctionDefn * currentFunction = NULL);
 
   /** Replace the current active scope with a new scope. Returns the old scope. */
   Scope * setActiveScope(Scope * newScope) {
@@ -101,6 +96,10 @@ public:
       that none of them are (an error message is emitted otherwise.) If they
       are all types, then the type definitions are added to the output list. */
   static bool getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out);
+
+  /** Given a tuple expression which consists entirely of type literals, return a type literal
+      of the tuple type. */
+  static const Type * getTupleTypesFromTupleExpr(Expr * in);
 
   /** Given a value definition, infer its type. */
   const Type * inferType(ValueDefn * valueDef);

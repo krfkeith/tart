@@ -17,7 +17,8 @@ class VarAnalyzer : public DefnAnalyzer {
 public:
   /** Constructor. */
   VarAnalyzer(VariableDefn * var);
-  VarAnalyzer(VariableDefn * var, Module * module, Defn * subject, FunctionDefn * currentFunction);
+  VarAnalyzer(VariableDefn * var, Scope * scope, Module * module,
+      Defn * subject, FunctionDefn * currentFunction);
 
   /** Fully analyze the input defn and all of its descendants. */
   bool analyze(AnalysisTask task);

@@ -42,6 +42,16 @@ llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
     llvm::cl::value_desc("defn-name"),
     llvm::cl::init("-"));
 
+AnalyzerBase::AnalyzerBase(Module * mod, Scope * parent, Defn * subject,
+    FunctionDefn * currentFunction)
+  : module(mod)
+  , activeScope(parent)
+  , subject_(subject)
+  , currentFunction_(currentFunction)
+{
+  DASSERT(activeScope != NULL);
+}
+
 bool AnalyzerBase::isTraceEnabled(Defn * de) {
   return de != NULL && traceDef_.getValue() == de->name();
 }
@@ -326,9 +336,18 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   // so the resolution is relatively straightforward.
   ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-    ConstantExpr * cb = ea.reduceConstantExpr(*it, NULL);
+    Expr * cb = ea.reduceConstantExpr(*it, NULL);
     if (isErrorResult(cb)) {
       return NULL;
+    }
+
+    // Handle the case of a type argument that is a tuple type.
+    if (TupleCtorExpr * tc = dyn_cast<TupleCtorExpr>(cb)) {
+      const Type * ttype = getTupleTypesFromTupleExpr(cb);
+      if (ttype != NULL) {
+        DASSERT(ttype->isSingular());
+        cb = new TypeLiteralExpr(cb->location(), ttype);
+      }
     }
 
     const Type * typeArg = NULL;
@@ -340,7 +359,11 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     }
 
     if (typeArg == NULL) {
-      typeArg = UnitType::get(cb);
+      if (!isa<ConstantExpr>(cb)) {
+        diag.fatal(cb) << "Not a constant expression: " << *it;
+      }
+
+      typeArg = UnitType::get(cast<ConstantExpr>(cb));
     }
 
     if (!cb->isSingular()) {
@@ -526,6 +549,26 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   return true;
 }
 
+const Type * AnalyzerBase::getTupleTypesFromTupleExpr(Expr * in) {
+  if (TupleCtorExpr * tctor = dyn_cast<TupleCtorExpr>(in)) {
+    // Check to see if all members are type literals.
+    ConstTypeList typeMembers;
+    for (ExprList::const_iterator it = tctor->args().begin(); it != tctor->args().end(); ++it) {
+      TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(*it);
+      if (tl == NULL) {
+        return NULL;
+      }
+
+      typeMembers.push_back(tl->value());
+
+    }
+
+    return TupleType::get(typeMembers);
+  }
+
+  return NULL;
+}
+
 const Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   if (valueDef->type() == NULL) {
     if (!analyzeDefn(valueDef, Task_PrepTypeComparison)) {
@@ -583,7 +626,8 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
 
       case Type::NAddress:
       case Type::NArray:
-      case Type::Union: {
+      case Type::Union:
+      case Type::Tuple: {
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
           analyzeType(in->typeParam(i), task);

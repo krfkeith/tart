@@ -130,6 +130,18 @@ const SourceLocation & Defn::location() const {
   return ast_ ? ast_->location() : defaultLocation;
 }
 
+Module * Defn::sourceModule() const {
+  if (isSynthetic()) {
+    for (const Defn * de = this; de != NULL; de = de->parentDefn()) {
+      if (de->templateInstance() != NULL) {
+        return de->templateInstance()->templateDefn()->module();
+      }
+    }
+  }
+
+  return module_;
+}
+
 TypeDefn * Defn::enclosingClassDefn() const {
   Defn * parent = parentDefn();
   if (parent == NULL) {

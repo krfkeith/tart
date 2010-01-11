@@ -73,7 +73,7 @@ void formatTypeList(FormatStream & out, const TypeList & types) {
 }
 
 bool isErrorResult(const Type * ex) {
-  return BadType::instance.isEqual(ex);
+  return ex == NULL || BadType::instance.isEqual(ex);
 }
 
 // -------------------------------------------------------------------
@@ -194,6 +194,16 @@ void BinaryExpr::trace() const {
 bool ArglistExpr::areArgsSideEffectFree() const {
   for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
     if (!(*it)->isSideEffectFree()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool ArglistExpr::areArgsConstant() const {
+  for (ExprList::const_iterator it = args_.begin(); it != args_.end(); ++it) {
+    if (!(*it)->isConstant()) {
       return false;
     }
   }

@@ -65,6 +65,9 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   DASSERT_OBJ(!fdef->isInterfaceMethod(), fdef);
   DASSERT_OBJ(!fdef->isUndefined(), fdef);
   DASSERT_OBJ(!fdef->isIntrinsic(), fdef);
+  DASSERT_OBJ(fdef->isSingular(), fdef);
+  DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ParameterTypePass), fdef);
+  DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ReturnTypePass), fdef);
   //DASSERT_OBJ(fdef->hasBody() || fdef->isExtern(), fdef);
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
 
