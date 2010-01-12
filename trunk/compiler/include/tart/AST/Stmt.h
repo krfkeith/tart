@@ -241,6 +241,37 @@ private:
 };
 
 // -------------------------------------------------------------------
+// DoWhile statement
+class DoWhileStmt: public Stmt {
+public:
+  DoWhileStmt(SourceLocation loc, ASTNode * test, Stmt * body) :
+    Stmt(DoWhile, loc), testExpr_(test), body_(body) {
+  }
+
+  /** The test expression. This may be a simple expression, a let-declaration,
+   or a tuple of let-declarations. */
+  const ASTNode * testExpr() const { return testExpr_; }
+  ASTNode * testExpr() { return testExpr_; }
+
+  const Stmt * body() const { return body_; }
+  Stmt * body() { return body_; }
+
+  virtual const SourceLocation & finalLocation() const {
+    if (body_)
+      return body_->finalLocation();
+    else
+      return location();
+  }
+
+  void trace() const;
+  void format(FormatStream & out) const;
+
+private:
+  ASTNode * testExpr_;
+  Stmt * body_;
+};
+
+// -------------------------------------------------------------------
 // For statement
 class ForStmt: public Stmt {
 public:

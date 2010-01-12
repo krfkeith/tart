@@ -1,5 +1,4 @@
 import tart.testing.Test;
-import tart.reflect.Module;
 
 // TODO: Add tests for bitwise combinations of flags.
 

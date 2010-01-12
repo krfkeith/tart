@@ -215,6 +215,9 @@ public:
   /** Parse a while Stmt */
   Stmt * whileStmt();
 
+  /** Parse a do/while Stmt */
+  Stmt * doWhileStmt();
+
   /** Parse a for Stmt */
   Stmt * forStmt();
 

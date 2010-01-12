@@ -30,6 +30,7 @@ class BlockStmt;
 class ExprStmt;
 class IfStmt;
 class WhileStmt;
+class DoWhileStmt;
 class ForStmt;
 class ForEachStmt;
 class SwitchStmt;
@@ -60,6 +61,7 @@ public:
   bool buildExprStmtCFG(const ExprStmt * st);
   bool buildIfStmtCFG(const IfStmt * st);
   bool buildWhileStmtCFG(const WhileStmt * st);
+  bool buildDoWhileStmtCFG(const DoWhileStmt * st);
   bool buildForStmtCFG(const ForStmt * st);
   bool buildForEachStmtCFG(const ForEachStmt * st);
   bool buildSwitchStmtCFG(const SwitchStmt * st);

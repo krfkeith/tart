@@ -172,6 +172,9 @@ bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
     case ASTNode::While:
       return buildWhileStmtCFG(static_cast<const WhileStmt *>(st));
 
+    case ASTNode::DoWhile:
+      return buildDoWhileStmtCFG(static_cast<const DoWhileStmt *>(st));
+
     case ASTNode::For:
       return buildForStmtCFG(static_cast<const ForStmt *>(st));
 
@@ -306,13 +309,6 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
 
 bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   Scope * savedScope = activeScope;
-  Expr * testExpr = astToTestExpr(st->testExpr());
-  if (isErrorResult(testExpr)) {
-    return false;
-  }
-
-  DASSERT(testExpr != NULL);
-  DASSERT_OBJ(testExpr->type() != NULL, testExpr);
 
   // Create the set of basic blocks. We don't know yet
   // if we need an else block or endif block.
@@ -322,6 +318,15 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
 
   // Start by branching to the 'test' block.
   currentBlock_->branchTo(st->location(), blkTest);
+
+  // Generate the test expression.
+  Expr * testExpr = astToTestExpr(st->testExpr());
+  if (isErrorResult(testExpr)) {
+    return false;
+  }
+
+  DASSERT(testExpr != NULL);
+  DASSERT_OBJ(testExpr->type() != NULL, testExpr);
 
   // Generate the 'test' block with the conditional branch.
   blkTest->condBranchTo(st->testExpr()->location(),
@@ -343,6 +348,51 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   // Only generate a branch if we haven't returned or thrown.
   if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
     currentBlock_->branchTo(st->testExpr()->location(), blkTest);
+  }
+
+  setInsertPos(blkDone);
+  setActiveScope(savedScope);
+  return true;
+}
+
+bool StmtAnalyzer::buildDoWhileStmtCFG(const DoWhileStmt * st) {
+  Scope * savedScope = activeScope;
+
+  // Create the set of basic blocks. We don't know yet
+  // if we need an else block or endif block.
+  Block * blkBody = createBlock("loopbody");
+  Block * blkDone = createBlock("endwhile");
+
+  // Start by branching to the loop body block.
+  currentBlock_->branchTo(st->location(), blkBody);
+
+  // Generate the 'body' block.
+  Block * saveBreakTarget = breakTarget_;
+  Block * saveContinueTarget = continueTarget_;
+  CleanupHandler * saveLoopEH = loopCleanups_;
+  setInsertPos(blkBody);
+  breakTarget_ = blkDone;
+  loopCleanups_ = cleanups_;
+  continueTarget_ = blkBody;
+  buildStmtCFG(st->body());
+  breakTarget_ = saveBreakTarget;
+  continueTarget_ = saveContinueTarget;
+  loopCleanups_ = saveLoopEH;
+
+  // Only generate a branch if we haven't returned or thrown.
+  if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
+    // Generate the test expression at the end of the body.
+    Expr * testExpr = astToTestExpr(st->testExpr());
+    if (isErrorResult(testExpr)) {
+      return false;
+    }
+
+    DASSERT(testExpr != NULL);
+    DASSERT_OBJ(testExpr->type() != NULL, testExpr);
+
+    // Generate the 'test' block with the conditional branch.
+    blkBody->condBranchTo(st->testExpr()->location(),
+        testExpr, blkBody, blkDone);
   }
 
   setInsertPos(blkDone);
