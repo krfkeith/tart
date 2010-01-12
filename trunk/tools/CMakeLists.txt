@@ -97,3 +97,5 @@ target_link_libraries(gendeps
     ${LLVM_SYSTEM}
     )
 set_target_properties(gendeps PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+add_subdirectory(lexgen)

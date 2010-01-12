@@ -1468,6 +1468,10 @@ Stmt * Parser::statement() {
       token = lexer.next();
       return continueStmt();
 
+    case Token_Goto:
+      token = lexer.next();
+      return gotoStmt();
+
     case Token_Throw:
       token = lexer.next();
       return throwStmt();
@@ -1482,6 +1486,9 @@ Stmt * Parser::statement() {
     case Token_Class:
     case Token_Struct:
       return declStmt();
+
+    //case Token_Ident:
+      //if (lexer)
 
     default: {
       ASTNode * expr = assignmentExpression();
@@ -1549,6 +1556,19 @@ Stmt * Parser::breakStmt() {
 
 Stmt * Parser::continueStmt() {
   Stmt * st = new Stmt(Stmt::Continue, lexer.tokenLocation());
+  st = postCondition(st);
+  needSemi();
+  return st;
+}
+
+Stmt * Parser::gotoStmt() {
+  const char * target = matchIdent();
+  if (!target) {
+    expected("label after 'goto'");
+    return false;
+  }
+
+  Stmt * st = new GotoStmt(Stmt::Goto, lexer.tokenLocation(), target);
   st = postCondition(st);
   needSemi();
   return st;
@@ -2421,6 +2441,9 @@ ASTNode * Parser::primaryExpression() {
     case Token_Ident: {
       const char * ident = matchIdent();
       result = new ASTIdent(matchLoc, ident);
+      /*if (match(Token_Colon)) {
+
+      }*/
       break;
     }
 

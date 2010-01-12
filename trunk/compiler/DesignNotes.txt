@@ -46,11 +46,10 @@ Implementation TODOS:
   * Class members.
   * Attributes
   * Find all properties/functions having some attribute
-* intptr and uintptr
 * Stack dumps / trace
 * Profiling.
 * Test overloading of augmented assignment operators.
-* Override for property getters and setters.
+* Override for property getters and setters. (I think that's done.)
 * Move stringify and locationOf to a different place.
 * Finish array unit tests.
 * Proxy types
@@ -90,6 +89,9 @@ Implementation TODOS:
   * Define String.format
   * Other string-related functions
   * Characters.tart
+  * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
+  * character iterator functions.
+  * Unicode character class tests.
 * Let with instance scope.
   * Insure that it cannot be assigned to in non-constructor.
 * Disjoint types
@@ -110,10 +112,6 @@ Implementation TODOS:
   * yield
   * fork/threading primitives
   * with (what interface for using?)
-* String class
-  * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
-  * character iterator functions.
-  * Unicode character class tests.
 * Tartdoc
   * Requires command-line parsing lib.
 * 'get' and 'set' should not be keywords. Properties can do just fine.

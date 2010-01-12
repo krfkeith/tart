@@ -447,7 +447,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(Incompatible, BoolType::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, CharType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, CharType::instance.canConvert(&BoolType::instance));
+  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&BoolType::instance));
   EXPECT_EQ(IdenticalTypes, CharType::instance.canConvert(&CharType::instance));
   EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int8Type::instance));
   EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int16Type::instance));
@@ -517,7 +517,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, UInt8Type::instance.canConvert(&BoolType::instance));
+  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&BoolType::instance));
   EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&CharType::instance));
   EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int8Type::instance));
   EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int16Type::instance));
@@ -531,7 +531,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, UInt16Type::instance.canConvert(&BoolType::instance));
+  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&BoolType::instance));
   EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&CharType::instance));
   EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int8Type::instance));
   EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int16Type::instance));
@@ -545,7 +545,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, UInt32Type::instance.canConvert(&BoolType::instance));
+  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&BoolType::instance));
   EXPECT_EQ(NonPreferred, UInt32Type::instance.canConvert(&CharType::instance));
   EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int8Type::instance));
   EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int16Type::instance));
@@ -559,7 +559,7 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&BoolType::instance));
+  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&BoolType::instance));
   EXPECT_EQ(NonPreferred, UInt64Type::instance.canConvert(&CharType::instance));
   EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int8Type::instance));
   EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int16Type::instance));

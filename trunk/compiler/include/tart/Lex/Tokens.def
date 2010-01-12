@@ -168,6 +168,8 @@ DEFINE_TOKEN(Switch)
 DEFINE_TOKEN(Case)
 DEFINE_TOKEN(Classify)
 DEFINE_TOKEN(As)
+DEFINE_TOKEN(Goto)
+DEFINE_TOKEN(Label)
 
 // Exception handling
 DEFINE_TOKEN(Try)

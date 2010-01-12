@@ -23,7 +23,7 @@ interface Map[%Key, %Value] : Iterable[(Key, Value)] {
   def values:Iterator[Value] { get; }
   
   /** Add the specified key/value pair to the map. */
-  def add(entry:(Key, Value)) -> bool;
+  def add(entry:(Key, Value));
 
   /** Add to the map all of the key value pairs in 'entries'. */
   def addAll(entries:(Key, Value)...);
