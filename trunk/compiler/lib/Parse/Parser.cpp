@@ -1436,6 +1436,10 @@ Stmt * Parser::statement() {
       token = lexer.next();
       return whileStmt();
 
+    case Token_Do:
+      token = lexer.next();
+      return doWhileStmt();
+
     case Token_For:
       token = lexer.next();
       return forStmt();
@@ -1700,6 +1704,25 @@ Stmt * Parser::whileStmt() {
     return NULL;
 
   return new WhileStmt(matchLoc, testExpr, bodySt);
+}
+
+Stmt * Parser::doWhileStmt() {
+  SourceLocation loc = matchLoc;
+  Stmt * bodySt = bodyStmt();
+  if (bodySt == NULL)
+    return NULL;
+
+  if (!match(Token_While)) {
+    expected("'while' at end of do-while body");
+    return NULL;
+  }
+
+  ASTNode * testExpr = testOrDecl();
+  if (testExpr == NULL)
+    return NULL;
+
+  needSemi();
+  return new DoWhileStmt(matchLoc, testExpr, bodySt);
 }
 
 Stmt * Parser::forStmt() {

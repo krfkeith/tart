@@ -63,6 +63,7 @@ namespace {
         case 'd':
           if (strcmp(kw, "def") == 0) return Token_Def;
           if (strcmp(kw, "double") == 0) return Token_DoubleType;
+          if (strcmp(kw, "do") == 0) return Token_Do;
           break;
 
         case 'e':

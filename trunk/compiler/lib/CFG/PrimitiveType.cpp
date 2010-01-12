@@ -302,11 +302,12 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
       return ExactConversion;
     } else if (srcId == TypeId_Bool) {
       // Convert to 0 or 1
-      if (cn.resultValue) {
+      /*if (cn.resultValue) {
         *cn.resultValue = new ConstantInteger(cint->location(), this, cint->value());
       }
 
-      return ExactConversion;
+      return ExactConversion;*/
+      return Incompatible;
     } else {
       DFAIL("ConstantInteger expression with non-integer type");
     }

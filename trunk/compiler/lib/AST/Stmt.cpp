@@ -132,6 +132,22 @@ void WhileStmt::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
+// DoWhile
+void DoWhileStmt::trace() const {
+  Stmt::trace();
+  safeMark(testExpr_);
+  safeMark(body_);
+}
+
+void DoWhileStmt::format(FormatStream & out) const {
+  out << "Do ";
+  if (body_) {
+    out << ", " << body_;
+  }
+  out << " While (" << testExpr_ << ")";
+}
+
+// -------------------------------------------------------------------
 // For
 void ForStmt::trace() const {
   Stmt::trace();
