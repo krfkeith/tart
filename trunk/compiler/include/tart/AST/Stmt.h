@@ -449,6 +449,23 @@ private:
   Stmt * body_;
 };
 
+// -------------------------------------------------------------------
+// Jump to a label statement
+class GotoStmt: public Stmt {
+public:
+  GotoStmt(NodeType stype, SourceLocation loc, const char * target) :
+    Stmt(stype, loc), target_(target) {
+  }
+
+  const char * target() const { return target_; }
+  void setTarget(const char * target) { target_ = target; }
+
+  void format(FormatStream & out) const;
+
+protected:
+  const char * target_;
+};
+
 }
 
 #endif

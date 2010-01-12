@@ -155,11 +155,11 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
       } else if (srcId == TypeId_Bool) {
         if (cn.fromValue && cn.resultValue) {
           // Convert from bool
-          DFAIL("Implement");
+          //DFAIL("Implement");
         }
 
         //return BoolToInteger;
-        return ExactConversion;
+        return Incompatible;
       }
     } else if (isSignedIntegerTypeId(dstId)) {
       if (isSignedIntegerTypeId(srcId)) {

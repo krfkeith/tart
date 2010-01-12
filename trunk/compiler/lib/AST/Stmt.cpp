@@ -314,4 +314,10 @@ void ClassifyAsStmt::format(FormatStream & out) const {
   out << "as (" << asDecl_ << ", " << body_ << ")";
 }
 
+// -------------------------------------------------------------------
+// Goto
+void GotoStmt::format(FormatStream & out) const {
+  out << "goto " << target_ << ";";
+}
+
 }

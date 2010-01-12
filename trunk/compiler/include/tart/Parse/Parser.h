@@ -197,6 +197,9 @@ public:
   /** Parse a continue Stmt */
   Stmt * continueStmt();
 
+  /** Parse a goto Stmt */
+  Stmt * gotoStmt();
+
   /** Parse a throw Stmt */
   Stmt * throwStmt();
 
