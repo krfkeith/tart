@@ -110,14 +110,26 @@ public:
   /** Do the a complete analysis of the module. */
   static bool analyzeModule(Module * mod);
 
-  /** Do the requested analysis passes on the definition. */
-  static bool analyzeDefn(Defn * in, AnalysisTask pass);
+  /** Do the requested analysis of a function. */
+  static bool analyzeFunction(FunctionDefn * fn, AnalysisTask task);
 
-  /** Do the requested analysis passes on the type definition. */
-  static bool analyzeValueDefn(ValueDefn * in, AnalysisTask pass);
+  /** Do the requested analysis of a variable. */
+  static bool analyzeVariable(VariableDefn * fn, AnalysisTask task);
+
+  /** Do the requested analysis of a property. */
+  static bool analyzeProperty(PropertyDefn * fn, AnalysisTask task);
+
+  /** Do the requested analysis of a namespace. */
+  static bool analyzeNamespace(NamespaceDefn * ns, AnalysisTask task);
 
   /** Do the requested analysis passes on the type definition. */
   static bool analyzeTypeDefn(TypeDefn * in, AnalysisTask pass);
+
+  /** Do the requested analysis passes on the definition. */
+  static bool analyzeDefn(Defn * in, AnalysisTask pass);
+
+  /** Do all possible analysis on the definition. */
+  static bool analyzeCompletely(Defn * in);
 
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */

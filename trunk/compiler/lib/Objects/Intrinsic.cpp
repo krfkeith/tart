@@ -201,6 +201,23 @@ Value * ModuleOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call)
 }
 
 // -------------------------------------------------------------------
+// ThisPackageIntrinsic
+ThisPackageIntrinsic ThisPackageIntrinsic::instance;
+
+Value * ThisPackageIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  return cg.createPackageObjectPtr();
+}
+
+// -------------------------------------------------------------------
+// PackageOfIntrinsic
+PackageOfIntrinsic PackageOfIntrinsic::instance;
+
+Value * PackageOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DFAIL("Implement");
+  return cg.createPackageObjectPtr();
+}
+
+// -------------------------------------------------------------------
 // VAllocIntrinsic
 VAllocIntrinsic VAllocIntrinsic::instance;
 

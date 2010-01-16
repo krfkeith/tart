@@ -361,6 +361,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
         gv->setInitializer(initValue);
       } else {
+        diag.debug(initExpr) << "Initialization expr not a constant: " << initExpr;
         DFAIL("Implement");
 #if 0
         genModuleInitFunc();

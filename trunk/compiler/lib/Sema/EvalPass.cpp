@@ -23,6 +23,7 @@ namespace tart {
 /// EvalPass
 
 Expr * EvalPass::eval(Expr * in, bool allowPartial) {
+  allowPartial = false;
   return EvalPass(allowPartial).evalExpr(in);
 }
 
@@ -240,7 +241,7 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
     return NULL;
   }
 
-  if (!AnalyzerBase::analyzeDefn(func, Task_PrepEvaluation)) {
+  if (!AnalyzerBase::analyzeFunction(func, Task_PrepEvaluation)) {
     return NULL;
   }
 

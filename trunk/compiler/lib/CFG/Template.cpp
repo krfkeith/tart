@@ -178,9 +178,11 @@ void TemplateSignature::trace() const {
 }
 
 void TemplateSignature::format(FormatStream & out) const {
-  out << "[";
-  typeParams_->formatMembers(out);
-  out << "]";
+  if (typeParams_) {
+    out << "[";
+    typeParams_->formatMembers(out);
+    out << "]";
+  }
 }
 
 Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {

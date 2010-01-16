@@ -452,6 +452,18 @@ llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr() {
   return reflector_.getModulePtr(module_);
 }
 
+llvm::GlobalVariable * CodeGenerator::createModuleObjectPtr(Module * module) {
+  return reflector_.getModulePtr(module);
+}
+
+llvm::GlobalVariable * CodeGenerator::createPackageObjectPtr() {
+  return reflector_.getPackagePtr(module_);
+}
+
+llvm::GlobalVariable * CodeGenerator::createPackageObjectPtr(Module * module) {
+  return reflector_.getPackagePtr(module);
+}
+
 llvm::Constant * CodeGenerator::createTypeObjectPtr(const Type * type) {
   return reflector_.emitTypeReference(type);
 }

@@ -96,7 +96,6 @@ namespace {
 
         case 'g':
           if (strcmp(kw, "get") == 0) return Token_Get;
-          if (strcmp(kw, "goto") == 0) return Token_Goto;
           break;
 
         case 'l':

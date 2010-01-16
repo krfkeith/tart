@@ -37,6 +37,7 @@
 #include "llvm/Config/config.h"
 
 #include "ReflectionSizePass.h"
+#include "ReflectorPass.h"
 
 #include <memory>
 #include <cstring>
@@ -220,6 +221,9 @@ void optimize(Module * module, const TargetData * targetData) {
 
   // Add an appropriate TargetData instance for this module...
   addPass(passes, new TargetData(*targetData));
+  if (!optLinkAsLibrary) {
+    addPass(passes, new tart::ReflectorPass());
+  }
 
   if (optInternalize) {
     std::vector<const char *> externs;

@@ -59,6 +59,10 @@ final class ArrayList[%ElementType] : List[ElementType] {
     ElementType[].copyElements(data, index, data, index + 1, _length - index - 1);
     --_length;
   }
+  
+  def clear() {
+    _length = 0;
+  }
 
   def [index:int]:ElementType {
     get {

@@ -10,6 +10,9 @@ interface List[%ElementType] : Iterable[ElementType] {
   /** Remove the item at the specified index. */
   def remove(index:int);
 
+  /** Remove all items from the list. */
+  def clear();
+  
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }
   

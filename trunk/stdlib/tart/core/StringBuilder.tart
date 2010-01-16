@@ -43,6 +43,10 @@ public final class StringBuilder {
   /** The number of characters in the buffer. */
   def length:int32 {
     get { return self.len; }
+    set {
+      // We can make the length shorter, but not longer.
+      self.len = Math.clamp(value, 0, self.len);
+    }
   }
 
   /** Append a single character to the buffer.

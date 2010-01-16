@@ -1,4 +1,5 @@
 import tart.reflect.Method;
+import tart.reflect.Package;
 import tart.reflect.ComplexType;
 import tart.reflect.Type;
 
@@ -12,6 +13,10 @@ class Test {
   /** Run all of the test cases in the specified module. */
   //static def runTests(m:Module) {
   //}
+  
+  static def runTests(package:Package) -> int32 {
+    return 0;
+  }
 
   static def run[%T](testType:TypeLiteral[T]) -> int32 {
     var testClass:ComplexType = ComplexType.of(T);

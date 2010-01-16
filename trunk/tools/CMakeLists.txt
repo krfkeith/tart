@@ -20,7 +20,10 @@ target_link_libraries(tartc
     )
 set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
-add_executable(tartln tartln/tartln.cpp tartln/ReflectionSizePass.cpp)
+add_executable(tartln
+    tartln/tartln.cpp
+    tartln/ReflectorPass.cpp
+    tartln/ReflectionSizePass.cpp)
 target_link_libraries(tartln
     ${LLVM_ALPHA_ASM_PRINTER}
     ${LLVM_ALPHA_CODE_GEN}

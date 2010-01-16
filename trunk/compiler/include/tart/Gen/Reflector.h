@@ -127,6 +127,9 @@ public:
   /** Generate a pointer to a module's reflection info. */
   llvm::GlobalVariable * getModulePtr(Module * module);
 
+  /** Generate a pointer to the package reflection info. */
+  llvm::GlobalVariable * getPackagePtr(Module * module);
+
   /** Generate a pointer to a type's reflection info. */
   llvm::GlobalVariable * getTypePtr(const Type * type);
 

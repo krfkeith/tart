@@ -1,0 +1,22 @@
+/** Represents a location in a source file. */
+struct Location {
+  var file:optional String;
+  var line:int32;
+  var col:int32;
+  
+  def construct() {
+    file = null;
+    line = col = 0;
+  }
+
+  def construct(file:String) {
+    self.file = file;
+    line = col = 0;
+  }
+
+  def construct(file:String, line:int32, col:int32) {
+    self.file = file;
+    self.line = line;
+    self.col = col;
+  }
+}

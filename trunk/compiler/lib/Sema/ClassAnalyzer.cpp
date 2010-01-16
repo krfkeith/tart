@@ -75,7 +75,7 @@ static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::o
   CompositeType::NamingConflictPass,
   CompositeType::AttributePass,
   CompositeType::FieldPass,
-  CompositeType::FieldTypePass,
+  CompositeType::RecursiveFieldTypePass,
   CompositeType::MethodPass,
   CompositeType::OverloadingPass
 );
@@ -240,7 +240,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
-  if (passesToRun.contains(CompositeType::FieldTypePass) && !analyzeFieldTypes()) {
+  if (passesToRun.contains(CompositeType::RecursiveFieldTypePass) && !analyzeFieldTypesRecursive()) {
     return false;
   }
 
@@ -435,7 +435,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     propagateSubtypeAttributes(primaryBase->typeDefn(), target);
   }
 
-  if (dtype == Type::Interface) {
+  if (dtype == Type::Interface && Builtins::funcTypecastError != NULL) {
     module->addSymbol(Builtins::funcTypecastError);
   }
 
@@ -564,7 +564,7 @@ bool ClassAnalyzer::analyzeFields() {
           VariableDefn * field = static_cast<VariableDefn *>(member);
           //field->copyTrait(target, Defn::Final);
 
-          analyzeValueDefn(field, Task_PrepTypeComparison);
+          analyzeVariable(field, Task_PrepTypeComparison);
           DASSERT(field->type() != NULL);
 
           bool isStorageRequired = true;
@@ -763,8 +763,10 @@ bool ClassAnalyzer::analyzeMethods() {
 
         member->copyTrait(target, Defn::Nonreflective);
 
-        if (ValueDefn * val = dyn_cast<ValueDefn>(member)) {
-          analyzeValueDefn(val, Task_PrepTypeComparison);
+        if (FunctionDefn * val = dyn_cast<FunctionDefn>(member)) {
+          analyzeFunction(val, Task_PrepTypeComparison);
+        } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(member)) {
+          analyzeProperty(prop, Task_PrepTypeComparison);
         }
       }
     }
@@ -963,12 +965,12 @@ void ClassAnalyzer::overrideMembers() {
         if (prop->storageClass() == Storage_Instance && prop->isSingular()) {
           DASSERT_OBJ(prop->passes().isFinished(PropertyDefn::PropertyTypePass), prop);
           if (prop->getter() != NULL) {
-            analyzeValueDefn(prop->getter(), Task_PrepTypeGeneration);
+            analyzeFunction(prop->getter(), Task_PrepTypeGeneration);
             getters.push_back(prop->getter());
           }
 
           if (prop->setter() != NULL) {
-            analyzeValueDefn(prop->setter(), Task_PrepTypeGeneration);
+            analyzeFunction(prop->setter(), Task_PrepTypeGeneration);
             setters.push_back(prop->setter());
           }
         }
@@ -1246,7 +1248,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         }
       } else if (de->defnType() == Defn::Var) {
         VariableDefn * memberVar = static_cast<VariableDefn *>(de);
-        analyzeValueDefn(memberVar, Task_PrepConstruction);
+        analyzeVariable(memberVar, Task_PrepConstruction);
         Expr * defaultValue = memberVar->initValue();
         const Type * memberType = memberVar->type();
         if (defaultValue == NULL) {
@@ -1360,9 +1362,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
   return true;
 }
 
-bool ClassAnalyzer::analyzeFieldTypes() {
+bool ClassAnalyzer::analyzeFieldTypesRecursive() {
   CompositeType * type = targetType();
-  if (type->passes().begin(CompositeType::FieldTypePass, true)) {
+  if (type->passes().begin(CompositeType::RecursiveFieldTypePass, true)) {
     if (trace_) {
       diag.debug() << "Field types";
     }
@@ -1374,11 +1376,12 @@ bool ClassAnalyzer::analyzeFieldTypes() {
         ++it) {
       VariableDefn * var = dyn_cast_or_null<VariableDefn>(*it);
       if (var != NULL) {
+        analyzeVariable(var, Task_PrepTypeGeneration);
         analyzeType(var->type(), Task_PrepTypeGeneration);
       }
     }
 
-    type->passes().finish(CompositeType::FieldTypePass);
+    type->passes().finish(CompositeType::RecursiveFieldTypePass);
   }
 
   return true;
@@ -1398,22 +1401,8 @@ bool ClassAnalyzer::analyzeCompletely() {
     }
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
-      analyzeDefn(member, Task_PrepCodeGeneration);
+      AnalyzerBase::analyzeCompletely(member);
     }
-
-    /*for (DefnList::iterator it = type->staticFields_.begin(); it != type->staticFields_.end();
-        ++it) {
-      VariableDefn * var = cast<VariableDefn>(*it);
-      if (var->initValue() != NULL) {
-        Expr * initVal = var->initValue();
-        Expr * constInitVal = EvalPass::eval(initVal, true);
-        if (constInitVal != NULL) {
-          var->setInitValue(constInitVal);
-        } else {
-          DFAIL("Implement");
-        }
-      }
-    }*/
 
     type->passes().finish(CompositeType::CompletionPass);
   }

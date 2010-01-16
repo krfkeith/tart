@@ -1472,10 +1472,6 @@ Stmt * Parser::statement() {
       token = lexer.next();
       return continueStmt();
 
-    case Token_Goto:
-      token = lexer.next();
-      return gotoStmt();
-
     case Token_Throw:
       token = lexer.next();
       return throwStmt();
@@ -1560,19 +1556,6 @@ Stmt * Parser::breakStmt() {
 
 Stmt * Parser::continueStmt() {
   Stmt * st = new Stmt(Stmt::Continue, lexer.tokenLocation());
-  st = postCondition(st);
-  needSemi();
-  return st;
-}
-
-Stmt * Parser::gotoStmt() {
-  const char * target = matchIdent();
-  if (!target) {
-    expected("label after 'goto'");
-    return false;
-  }
-
-  Stmt * st = new GotoStmt(Stmt::Goto, lexer.tokenLocation(), target);
   st = postCondition(st);
   needSemi();
   return st;

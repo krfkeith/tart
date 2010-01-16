@@ -90,7 +90,7 @@ bool NamespaceAnalyzer::analyzeImports() {
 bool NamespaceAnalyzer::resolveStaticInitializers() {
   if (target->passes().begin(NamespaceDefn::StaticInitializerPass)) {
     for (Defn * m = target->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
-      if (analyzeDefn(m, Task_PrepCodeGeneration) && m->isSingular()) {
+      if (analyzeCompletely(m) && m->isSingular()) {
         //diag.debug(m) << "Analyzing " << m;
         target->module()->addSymbol(m);
       }
