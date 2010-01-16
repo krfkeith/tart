@@ -1,4 +1,4 @@
-# CMake build file for Tart/tart/stdlib
+# CMake build file for tests/fail
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -23,7 +23,7 @@ set_target_properties(testrunner PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 # Now run the tests on these files.
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
+set(MODPATH ${TART_SOURCE_DIR}/lib/core)  # Module search path
 set(TART_OPTIONS -debug-errors -show-generated)
 
 add_custom_target(failtests)
@@ -35,6 +35,6 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   add_custom_command(TARGET failtests PRE_BUILD
       COMMAND testrunner ${TART_OPTIONS} -sourcepath ${SRCDIR} -i${MODPATH} ${SRC_FILE}
-      DEPENDS "${SRC_FILE}" testrunner stdlib
+      DEPENDS "${SRC_FILE}" testrunner libcore
       COMMENT "Running failure test ${SRC_FILE}")
 endforeach(SRC_FILE)

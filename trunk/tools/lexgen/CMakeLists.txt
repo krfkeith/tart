@@ -9,8 +9,8 @@ set(TARTLN_OPTIONS -disable-fp-elim -internalize -O0)
 
 # Module search path
 set(TART_MODULE_PATH
-    -i ${TART_SOURCE_DIR}/stdlib
-    -i ${TART_SOURCE_DIR}/libtesting
+    -i ${TART_SOURCE_DIR}/lib/core
+    -i ${TART_SOURCE_DIR}/lib/testing
     -i ${SRC_ROOT}
     -i ${TEST_ROOT})
 
@@ -28,7 +28,7 @@ add_tart_library(LexGenTest "${TEST_ROOT}" "${LIB_LEXGEN_TEST_SRC}")
 function(add_tart_executable Name)
   set(ASM_FILE ${Name}.s)
   set(EXE_FILE ${Name})
-  set(LIBCORE "${PROJECT_BINARY_DIR}/stdlib/stdlib.bc")
+  set(LIBCORE "${PROJECT_BINARY_DIR}/lib/core/libcore.bc")
   set(DEPS)
   foreach(DEP ${ARGN})
     set(DEPS ${DEPS} "${DEP}")
@@ -40,8 +40,7 @@ function(add_tart_executable Name)
   # Link
   add_custom_command(OUTPUT ${ASM_FILE}
       COMMAND tartln -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${DEPS} ${LIBCORE}
-      
-      DEPENDS ${DEPS} stdlib
+      DEPENDS ${DEPS} "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
       COMMENT "Linking Tart bitcode file ${ASM_FILE}")
 
   # Assemble

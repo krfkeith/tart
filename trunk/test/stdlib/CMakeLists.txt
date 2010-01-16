@@ -5,8 +5,8 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
-  -i ${TART_SOURCE_DIR}/stdlib
-  -i ${TART_SOURCE_DIR}/libtesting)
+  -i ${TART_SOURCE_DIR}/lib/core
+  -i ${TART_SOURCE_DIR}/lib/testing)
 
 set(TART_OPTIONS
   -g
@@ -34,18 +34,18 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       MAIN_DEPENDENCY "${SRC_FILE}" 
-      DEPENDS tartc stdlib libtesting ${${DEPS_NAME}_DEPS}
+      DEPENDS tartc ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.
   set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
 
-  # Link with stdlib
+  # Link with libcore
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   add_custom_command(OUTPUT ${ASM_FILE}
       COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE}
-          "${PROJECT_BINARY_DIR}/stdlib/stdlib.bc"
-          "${PROJECT_BINARY_DIR}/libtesting/libtesting.bc"
+          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       MAIN_DEPENDENCY "${BC_FILE}" 
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
