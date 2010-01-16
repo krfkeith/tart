@@ -1,5 +1,5 @@
 /** Exception that signals an i/o error. */
-class IOException : Exception {
+class IOError : Exception {
   enum IOResult {
     SUCCESS = 0,
     UNSPECIFIED,        // Unspecified error
@@ -27,7 +27,7 @@ class IOException : Exception {
   
   static def checkResult(code:IOResult) {
     if code != IOResult.SUCCESS {
-      throw IOException(code);
+      throw IOError(code);
     }
   }
 }

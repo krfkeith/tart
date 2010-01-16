@@ -424,7 +424,7 @@ bool FunctionAnalyzer::createCFG() {
       // Push a dummy block for undefined method.
       Block * block = new Block("undef_entry");
       target->blocks().push_back(block);
-      module->addSymbol(Builtins::typeUnsupportedOperationException->typeDefn());
+      module->addSymbol(Builtins::typeUnsupportedOperationError->typeDefn());
     }
 
     target->passes().finish(FunctionDefn::ControlFlowPass);

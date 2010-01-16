@@ -110,10 +110,6 @@ if (MSVC)
   )
 endif (MSVC)
 
-# Add custom targets for standard libraries
-add_custom_target(libcore)
-add_custom_target(libtesting)
-
 # Add the check-build target
 add_custom_target(check)
 

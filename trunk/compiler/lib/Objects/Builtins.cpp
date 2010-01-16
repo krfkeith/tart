@@ -43,7 +43,7 @@ SystemClass Builtins::typeRange("tart.core.Range");
 SystemClass Builtins::typeThrowable("tart.core.Throwable");
 Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
-SystemClass Builtins::typeUnsupportedOperationException("tart.core.UnsupportedOperationException");
+SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperationError");
 
 SystemClass Builtins::typeType("tart.reflect.Type");
 SystemClass Builtins::typeSimpleType("tart.reflect.SimpleType");
@@ -134,7 +134,7 @@ void Builtins::loadSystemClasses() {
   typeObject.get();
   typeString.get();
   typeThrowable.get();
-  typeUnsupportedOperationException.get();
+  typeUnsupportedOperationError.get();
   typeIntrinsicAttribute.get();
 
   // Analyze class Object.

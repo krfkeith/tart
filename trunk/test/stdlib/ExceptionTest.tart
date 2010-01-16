@@ -72,7 +72,7 @@ class ExceptionTest : Test {
 	  try {
 	    throwSomething();
 	    fail("exception not thrown");
-	  } catch t:InvalidArgumentException {
+	  } catch t:ArgumentError{
 	    fail("testUnwindAndCatch2: invalid catch");
 	  } catch t:Throwable {
 	    assertTrue(t isa Throwable);
@@ -104,7 +104,7 @@ class ExceptionTest : Test {
 	    } catch e:Exception {
 	      v = true;
 	    }
-	  } catch t:InvalidArgumentException {
+	  } catch t:ArgumentError {
 	    fail("testNestedTry: invalid catch InvalidArgumentException");
 	  } catch t:Throwable {
 	    fail("testNestedTry: invalid catch Throwable");
@@ -118,7 +118,7 @@ class ExceptionTest : Test {
 	  try {
 	    try {
 	      throw Exception();
-	    } catch e:InvalidArgumentException {
+	    } catch e:ArgumentError {
 	      fail("testNestedTry2: invalid catch 2");
 	    }
 	  } catch t:Exception {
@@ -180,8 +180,8 @@ class ExceptionTest : Test {
 	}
 
 	def testExceptionToString() {
-	  assertEq("tart.core.InvalidArgumentException", InvalidArgumentException().toString());
-	  assertEq("tart.core.InvalidArgumentException: out of range",
-	      InvalidArgumentException("out of range").toString());
+	  assertEq("tart.core.ArgumentError", ArgumentError().toString());
+	  assertEq("tart.core.ArgumentError: out of range",
+	      ArgumentError("out of range").toString());
 	}
 }

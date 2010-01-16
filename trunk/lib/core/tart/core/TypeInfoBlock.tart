@@ -37,6 +37,6 @@ import tart.reflect.Type;
 
   /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
   public static def typecastError() {
-    throw TypecastException();
+    throw TypecastError();
   }
 }

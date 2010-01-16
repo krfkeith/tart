@@ -1,7 +1,7 @@
 import tart.text.encodings.Codec;
 import tart.text.encodings.Codecs;
 import tart.text.encodings.UTF8;
-import tart.text.encodings.InvalidCharacterException;
+import tart.text.encodings.InvalidCharacterError;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
@@ -32,7 +32,7 @@ def testUTF8InvalidCharLength() {
   try {
     UTF8(UTF8.ErrorAction.ABORT).encodedLength(['\U200000'], 0, 1);
     Debug.fail("Failed to throw an exception for invalid input char.");
-  } catch e:InvalidCharacterException {}
+  } catch e:InvalidCharacterError {}
 }
 
 def testUTF8Encode() {

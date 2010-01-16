@@ -21,14 +21,14 @@ final class StdFileStream : TextReader, TextWriter {
     //@Extern("StdFileStream_read_chars") static def _readChars(
     //    file:Address[FILE], buffer:char[], length:int64) -> int64;
     @Extern("StdFileStream_write_byte") static def _writeByte(
-        file:Address[FILE], value:ubyte) -> IOException.IOResult;
+        file:Address[FILE], value:ubyte) -> IOError.IOResult;
     @Extern("StdFileStream_write_bytes") static def _writeBytes(
-        file:Address[FILE], buffer:Address[ubyte], count:int64) -> IOException.IOResult;
+        file:Address[FILE], buffer:Address[ubyte], count:int64) -> IOError.IOResult;
     @Extern("StdFileStream_atEnd") static def _atEnd(file:Address[FILE]) -> bool;
     @Extern("StdFileStream_position") static def _position(file:Address[FILE]) -> int64;
     @Extern("StdFileStream_length") static def _length(file:Address[FILE]) -> int64;
-    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOException.IOResult;
-    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOException.IOResult;
+    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOError.IOResult;
+    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOError.IOResult;
   }
 
   def construct(file:Address[FILE], canRead:bool, canWrite:bool, canSeek:bool) {
@@ -40,7 +40,7 @@ final class StdFileStream : TextReader, TextWriter {
   }
 
   /** Read a single byte from the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def read -> int32 {
     return _readByte(_file);
   }
@@ -50,7 +50,7 @@ final class StdFileStream : TextReader, TextWriter {
   }
 
   /** Read a buffer of bytes from the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
     return 0;
   }
@@ -68,19 +68,19 @@ final class StdFileStream : TextReader, TextWriter {
   }
 
   /** Write a single byte to the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def write(value:ubyte) {
-    IOException.checkResult(_writeByte(_file, value));
+    IOError.checkResult(_writeByte(_file, value));
   }
 
   /** Write a buffer of bytes to the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> void {
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, buffer.length);
     count = Math.min(count, buffer.length - start);
     if count > 0 {
-      IOException.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
+      IOError.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
     }
   }
 
@@ -99,7 +99,7 @@ final class StdFileStream : TextReader, TextWriter {
       let buffer:ubyte[] = ubyte[](encodedLength);
       _encoding.encode(buffer, 0, chars, int32(start), int32(count));
       //tart.text.encodings.Codecs.UTF_8.encode(buffer, 0, chars, int32(start), int32(count));
-      IOException.checkResult(_writeBytes(_file, buffer.data, encodedLength));
+      IOError.checkResult(_writeBytes(_file, buffer.data, encodedLength));
     }
 
     return 0;
@@ -154,12 +154,12 @@ final class StdFileStream : TextReader, TextWriter {
   }
 
   /** Change the current read/write position of the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   @Extern("StdFileStream_seek") 
   def seek(from:SeekFrom, offset:int64) -> int64;
   
   /** True if we've reached the end of available input. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def atEnd: bool { get { return _atEnd(_file); } }
   
   /** True if the stream supports reading. */
@@ -178,14 +178,14 @@ final class StdFileStream : TextReader, TextWriter {
   def length:int64 { get { return _length(_file); } }
   
   /** Flush any pending writes. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def flush {
-    IOException.checkResult(_flush(_file));
+    IOError.checkResult(_flush(_file));
   }
   
   /** Close the stream. */
-  //@Throws(IOException)
+  //@Throws(IOError)
   def close {
-    IOException.checkResult(_close(_file));
+    IOError.checkResult(_close(_file));
   }
 }

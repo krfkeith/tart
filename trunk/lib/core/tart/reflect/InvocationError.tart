@@ -1,6 +1,6 @@
 /** Exception which is thrown when the attempt to call a method via reflection
     has the incorrect number of arguments. */
-class InvocationException : Exception {
+class InvocationError : Exception {
   def construct(msg:String) {
     super(msg);
   }
