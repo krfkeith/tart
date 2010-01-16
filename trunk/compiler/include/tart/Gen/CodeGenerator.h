@@ -352,6 +352,9 @@ public:
 
   // Return the pointer to the reflection data for this module.
   llvm::GlobalVariable * createModuleObjectPtr();
+  llvm::GlobalVariable * createModuleObjectPtr(Module * module);
+  llvm::GlobalVariable * createPackageObjectPtr();
+  llvm::GlobalVariable * createPackageObjectPtr(Module * module);
   llvm::Constant * createTypeObjectPtr(const Type * type);
 
   // Generate the function that unboxes arguments from reflection interfaces.

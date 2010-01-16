@@ -97,7 +97,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //  isUnqualified = false;
         //}
       } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
-        if (!analyzeValueDefn(var, Task_PrepTypeComparison)) {
+        if (!analyzeVariable(var, Task_PrepTypeComparison)) {
           return false;
         }
 
@@ -334,7 +334,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        if (analyzeDefn(cons, Task_PrepTypeComparison)) {
+        if (analyzeFunction(cons, Task_PrepTypeComparison)) {
           DASSERT(cons->type() != NULL);
           DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
@@ -348,7 +348,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
         if (create->storageClass() == Storage_Static) {
-          if (analyzeDefn(create, Task_PrepTypeComparison)) {
+          if (analyzeFunction(create, Task_PrepTypeComparison)) {
             DASSERT(create->type() != NULL);
             //Type * returnType = create->returnType();
             addOverload(call, NULL, create, args);
@@ -510,7 +510,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * callable, const ASTNodeLi
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ASTNodeList & args) {
-  if (!analyzeValueDefn(method, Task_PrepConversion)) {
+  if (!analyzeFunction(method, Task_PrepConversion)) {
     return false;
   }
 
@@ -526,7 +526,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ASTNodeList & args, SpCandidate * sp) {
-  if (!analyzeValueDefn(method, Task_PrepConversion)) {
+  if (!analyzeFunction(method, Task_PrepConversion)) {
     return false;
   }
 
@@ -558,7 +558,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * fn, const FunctionType * 
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
     const ExprList & args) {
-  if (!analyzeValueDefn(method, Task_PrepConversion)) {
+  if (!analyzeFunction(method, Task_PrepConversion)) {
     return false;
   }
 

@@ -111,7 +111,7 @@ bool DefnAnalyzer::analyzeModule() {
     }
 
     if (!de->hasUnboundTypeParams()) {
-      if (analyzeDefn(de, Task_PrepCodeGeneration)) {
+      if (analyzeCompletely(de)) {
         module->addSymbol(de);
       } else {
         success = false;
@@ -125,8 +125,9 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   importSystemType(Builtins::typeModule);
+  importSystemType(Builtins::typePackage);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
-  analyzeDefn(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+  analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
@@ -333,7 +334,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
 
 void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
     FunctionDefn * applyMethod) {
-  if (analyzeDefn(applyMethod, Task_PrepEvaluation)) {
+  if (analyzeFunction(applyMethod, Task_PrepEvaluation)) {
     ExprList args;
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       args.push_back(tdef->asExpr());
@@ -391,15 +392,16 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * tar
       Scope * impScope = NULL;
       if (ScopeNameExpr * se = dyn_cast<ScopeNameExpr>(impExpr)) {
         if (Module * mod = dyn_cast<Module>(se->value())) {
-          analyzeDefn(mod, Task_PrepMemberLookup);
+          createMembersFromAST(mod);
+          //analyzeDefn(mod, Task_PrepMemberLookup);
           impScope = mod;
         } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(se->value())) {
-          analyzeDefn(ns, Task_PrepMemberLookup);
+          analyzeNamespace(ns, Task_PrepMemberLookup);
           impScope = &ns->memberScope();
         }
       } else if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(impExpr)) {
         if (tl->type()->typeDefn() != NULL) {
-          analyzeDefn(tl->type()->typeDefn(), Task_PrepMemberLookup);
+          analyzeTypeDefn(tl->type()->typeDefn(), Task_PrepMemberLookup);
         }
         impScope = const_cast<IterableScope *>(tl->value()->memberScope());
       }
@@ -621,7 +623,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 }
 
 void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
-  analyzeDefn(type->typeDefn(), Task_PrepCodeGeneration);
+  analyzeTypeDefn(type->typeDefn(), Task_PrepCodeGeneration);
   //diag.info() << Format_Verbose << "Adding reflect info for " << type;
 
   // If we're doing detailed reflection, then reflect the members of this type.

@@ -35,7 +35,7 @@ public:
   void analyzeConstructBase(FunctionDefn * ctor);
   bool analyzeMethods();
   bool analyzeOverloading();
-  bool analyzeFieldTypes();
+  bool analyzeFieldTypesRecursive();
   bool analyzeCompletely();
 
   void overrideMembers();

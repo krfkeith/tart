@@ -1,0 +1,25 @@
+/** An ordered set of character ranges, used to define a character class pattern
+    such as [a-zA-Z]. */
+class CharacterClass {
+  struct Range {
+    let begin:char;
+    let end:char;
+    
+    def construct(begin:char, end:char) {
+      self.begin = begin;
+      self.end = end;
+    }
+    
+    def contains(c:char) -> bool {
+      return c >= begin and c < end;
+    }
+
+    def contains(first:char, last:char) -> bool {
+      return first >= begin and last <= end;
+    }
+    
+    def computeHash() -> uint64 {
+      return Hashing.hash(begin) + Hashing.hash(end);
+    }
+  }
+}

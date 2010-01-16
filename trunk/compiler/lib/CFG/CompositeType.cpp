@@ -20,7 +20,7 @@ namespace tart {
 
 // Given a definition from some base class, find a method in this class that can override it.
 namespace {
-  const Defn * findOverride(const Type * searchContext, const Defn * baseDef, bool inherit) {
+  const Defn * findOverride(const Type * searchContext, Defn * baseDef, bool inherit) {
     if (searchContext->memberScope() == NULL) {
       return NULL;
     }
@@ -30,11 +30,17 @@ namespace {
       return NULL;
     }
 
+    if (FunctionDefn * baseFn = dyn_cast<FunctionDefn>(baseDef)) {
+      AnalyzerBase::analyzeFunction(baseFn, Task_PrepTypeComparison);
+    } else {
+      // TODO: Implement overrides of properties.
+    }
+
     for (DefnList::const_iterator it = defs.begin(); it != defs.end(); ++it) {
       Defn * de = *it;
       if (de->defnType() == baseDef->defnType() && de != baseDef) {
-        AnalyzerBase::analyzeDefn(de, Task_PrepTypeComparison);
-        if (const FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
+        if (FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
+          AnalyzerBase::analyzeFunction(fn, Task_PrepTypeComparison);
           if (fn->canOverride(static_cast<const FunctionDefn *>(baseDef))) {
             return fn;
           }
@@ -349,7 +355,6 @@ bool CompositeType::isSupportedBy(const Type * type) const {
         // case Defn::Indexer:
         case Defn::Function:
         case Defn::Property: {
-          AnalyzerBase::analyzeDefn(pm, Task_PrepTypeComparison);
           const Defn * de = findOverride(type, pm, true);
           if (de != NULL && de->visibility() == Public) {
             return true;

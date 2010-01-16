@@ -45,6 +45,16 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
     return IdenticalTypes;
   }
 
+  // An integer 0 can be converted to a flags enum.
+  if (isFlags() && cn.getFromType()->isIntType() && cn.fromValue != NULL &&
+      cn.fromValue->isConstant()) {
+    if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
+      if (cint->value()->isNullValue()) {
+        return baseType_->convertImpl(cn);
+      }
+    }
+  }
+
   if ((cn.options & Conversion::Checked) && cn.getFromType()->isReferenceType()) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),

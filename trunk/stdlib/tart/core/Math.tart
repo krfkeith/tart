@@ -40,6 +40,13 @@ namespace Math {
     return max(a0, max(a1, max(a2, a3)));
   }
   
+  /** Clamp the input value between the lower and upper bound. */
+  def clamp[%T](value:T, minVal:T, maxVal:T) -> T {
+    return minVal if value < minVal; 
+    return maxVal if value > maxVal; 
+    return value;
+  }
+  
   /** Return the square root of the input operand. */
   @Intrinsic
   def sqrt(f:float) -> float;

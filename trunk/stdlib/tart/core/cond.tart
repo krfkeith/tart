@@ -45,3 +45,18 @@ macro cond[%T](
   if (test3) { return val3; }
   return defaultVal;
 }
+
+macro cond[%T](
+    test0:bool, val0:T,
+    test1:bool, val1:T,
+    test2:bool, val2:T,
+    test3:bool, val3:T,
+    test4:bool, val4:T,
+    defaultVal:T) -> T {
+  if (test0) { return val0; }
+  if (test1) { return val1; }
+  if (test2) { return val2; }
+  if (test3) { return val3; }
+  if (test4) { return val4; }
+  return defaultVal;
+}

@@ -197,7 +197,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     if _data.length > 16 {
 			var index:int = findEntry(key);
 			if index >= 0 {
-			  //throw KeyNotFoundException();
+			  throw KeyError();
 			}
 	
 	    return false;

@@ -80,7 +80,7 @@ public:
     FieldPass,
     MethodPass,
     OverloadingPass,
-    FieldTypePass,
+    RecursiveFieldTypePass,
     CompletionPass,
     PassCount
   };

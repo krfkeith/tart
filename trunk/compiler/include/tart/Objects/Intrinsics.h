@@ -81,6 +81,22 @@ class ModuleOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Package.thisPackage intrinsic
+class ThisPackageIntrinsic : public Intrinsic {
+  static ThisPackageIntrinsic instance;
+  ThisPackageIntrinsic() : Intrinsic("tart.reflect.Package.thisPackage") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
+// Package.of intrinsic
+class PackageOfIntrinsic : public Intrinsic {
+  static PackageOfIntrinsic instance;
+  PackageOfIntrinsic() : Intrinsic("tart.reflect.Package.of") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Object.__valloc intrinsic
 class VAllocIntrinsic : public Intrinsic {
   static VAllocIntrinsic instance;

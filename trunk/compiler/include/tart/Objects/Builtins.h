@@ -64,6 +64,7 @@ public:
   static SystemClass typeProperty;
   static SystemClass typeMethod;
   static SystemClass typeModule;
+  static SystemClass typePackage;
 
   // System types - attributes
   static SystemClass typeAttribute;

@@ -91,6 +91,7 @@ bool FindExternalRefsPass::addTypeRef(const Type * type) {
 
 bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
   if (!fn->isIntrinsic() && !fn->isExtern()) {
+    AnalyzerBase::analyzeType(fn->type(), Task_PrepTypeGeneration);
     return module->addSymbol(fn);
   }
 

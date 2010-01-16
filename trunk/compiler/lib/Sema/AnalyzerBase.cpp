@@ -191,7 +191,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
         return true;
       }
     } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(scopeName->value())) {
-      AnalyzerBase::analyzeDefn(ns, Task_PrepMemberLookup);
+      analyzeNamespace(ns, Task_PrepMemberLookup);
       if (findInScope(out, name, &ns->memberScope(), NULL, loc)) {
         return true;
       }
@@ -649,29 +649,49 @@ bool AnalyzerBase::analyzeModule(Module * mod) {
   return da.analyzeModule();
 }
 
+bool AnalyzerBase::analyzeFunction(FunctionDefn * fn, AnalysisTask task) {
+  return FunctionAnalyzer(fn).analyze(task);
+}
+
+bool AnalyzerBase::analyzeVariable(VariableDefn * var, AnalysisTask task) {
+  return VarAnalyzer(var).analyze(task);
+}
+
+bool AnalyzerBase::analyzeProperty(PropertyDefn * prop, AnalysisTask task) {
+  return PropertyAnalyzer(prop).analyze(task);
+}
+
+bool AnalyzerBase::analyzeNamespace(NamespaceDefn * ns, AnalysisTask task) {
+  return NamespaceAnalyzer(ns).analyze(task);
+}
+
+bool AnalyzerBase::analyzeCompletely(Defn * in) {
+  return analyzeDefn(in, Task_PrepCodeGeneration);
+}
+
 bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
   switch (in->defnType()) {
     case Defn::Typedef:
       return analyzeTypeDefn(static_cast<TypeDefn *>(in), task);
 
     case Defn::Namespace:
-      return NamespaceAnalyzer(static_cast<NamespaceDefn *>(in)).analyze(task);
+      return analyzeNamespace(static_cast<NamespaceDefn *>(in), task);
 
     case Defn::Var:
     case Defn::Let:
     case Defn::MacroArg:
     case Defn::Parameter: {
-      return VarAnalyzer(static_cast<VariableDefn *>(in)).analyze(task);
+      return analyzeVariable(static_cast<VariableDefn *>(in), task);
     }
 
     case Defn::Property:
     case Defn::Indexer: {
-      return PropertyAnalyzer(static_cast<PropertyDefn *>(in)).analyze(task);
+      return analyzeProperty(static_cast<PropertyDefn *>(in), task);
     }
 
     case Defn::Function:
     case Defn::Macro: {
-      return FunctionAnalyzer(static_cast<FunctionDefn *>(in)).analyze(task);
+      return analyzeFunction(static_cast<FunctionDefn *>(in), task);
     }
 
     case Defn::Mod: {
@@ -681,7 +701,6 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 
     case Defn::ExplicitImport:
       return true;
-      //DFAIL("IllegalState");
 
     case Defn::DefnTypeCount:
     default:
@@ -722,10 +741,6 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
       diag.debug(in) << in;
       DFAIL("IllegalState");
   }
-}
-
-bool AnalyzerBase::analyzeValueDefn(ValueDefn * in, AnalysisTask task) {
-  return analyzeDefn(in, task);
 }
 
 CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {

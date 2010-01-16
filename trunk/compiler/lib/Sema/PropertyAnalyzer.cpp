@@ -88,11 +88,11 @@ bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
 
   if (passesToRun.contains(PropertyDefn::AccessorAnalysisPass)) {
     if (target->getter() != NULL) {
-      analyzeDefn(target->getter(), Task_PrepTypeComparison);
+      analyzeFunction(target->getter(), Task_PrepTypeComparison);
     }
 
     if (target->setter() != NULL) {
-      analyzeDefn(target->setter(), Task_PrepTypeComparison);
+      analyzeFunction(target->setter(), Task_PrepTypeComparison);
     }
 
     target->passes().finish(PropertyDefn::AccessorAnalysisPass);
@@ -100,11 +100,11 @@ bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
 
   if (passesToRun.contains(PropertyDefn::CompletionPass)) {
     if (target->getter() != NULL) {
-      analyzeDefn(target->getter(), Task_PrepCodeGeneration);
+      analyzeFunction(target->getter(), Task_PrepCodeGeneration);
     }
 
     if (target->setter() != NULL) {
-      analyzeDefn(target->setter(), Task_PrepCodeGeneration);
+      analyzeFunction(target->setter(), Task_PrepCodeGeneration);
     }
     return false;
   }

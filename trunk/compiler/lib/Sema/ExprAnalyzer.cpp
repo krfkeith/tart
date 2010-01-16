@@ -301,7 +301,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       fn->parameterScope().addMember(selfParam);
       fn->setDefiningScope(activeScope);
 
-      if (!analyzeDefn(fn, Task_PrepEvaluation)) {
+      if (!analyzeFunction(fn, Task_PrepEvaluation)) {
         return &Expr::ErrorVal;
       }
 
@@ -963,7 +963,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   PropertyDefn * indexer = cast<PropertyDefn>(indexers.front());
-  if (!analyzeDefn(indexer, Task_PrepTypeComparison)) {
+  if (!analyzeProperty(indexer, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -978,7 +978,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr,
     PropertyDefn * prop) {
 
-  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
+  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -991,7 +991,7 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
     return &Expr::ErrorVal;
   }
 
-  if (!analyzeValueDefn(getter, Task_PrepMemberLookup)) {
+  if (!analyzeFunction(getter, Task_PrepMemberLookup)) {
     return &Expr::ErrorVal;
   }
 
@@ -1026,7 +1026,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
     Expr * basePtr, PropertyDefn * prop, Expr * value) {
 
   DASSERT(value != NULL);
-  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
+  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1039,7 +1039,7 @@ Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
   DASSERT_OBJ(prop->isSingular(), prop);
   DASSERT_OBJ(setter->isSingular(), prop);
 
-  if (!analyzeValueDefn(setter, Task_PrepTypeComparison)) {
+  if (!analyzeFunction(setter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1074,7 +1074,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   Expr * basePtr = lvalueBase(lval);
   //const ASTNodeList & args = call->args();
 
-  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
+  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1087,7 +1087,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  if (!analyzeValueDefn(getter, Task_PrepTypeComparison)) {
+  if (!analyzeFunction(getter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1170,7 +1170,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   PropertyDefn * prop = cast<PropertyDefn>(lval->value());
   Expr * basePtr = lvalueBase(lval);
 
-  if (!analyzeValueDefn(prop, Task_PrepTypeComparison)) {
+  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1183,7 +1183,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
   DASSERT_OBJ(prop->isSingular(), prop);
   DASSERT_OBJ(setter->isSingular(), prop);
 
-  if (!analyzeValueDefn(setter, Task_PrepTypeComparison)) {
+  if (!analyzeFunction(setter, Task_PrepTypeComparison)) {
     return &Expr::ErrorVal;
   }
 
@@ -1231,7 +1231,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 
 Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   DASSERT(lvalue->value() != NULL);
-  analyzeValueDefn(lvalue->value(), Task_PrepTypeComparison);
+  analyzeDefn(lvalue->value(), Task_PrepTypeComparison);
   DASSERT(lvalue->value()->type() != NULL);
   lvalue->setType(lvalue->value()->type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
@@ -1441,7 +1441,7 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   BindingEnv env;
   env.addSubstitution(coerceTemplate->patternVar(0), type);
   FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
-  analyzeDefn(coercer, Task_PrepTypeComparison);
+  analyzeFunction(coercer, Task_PrepTypeComparison);
   DASSERT(coercer->isSingular());
   module->converters()[conversionKey] = coercer;
   module->addSymbol(coercer);
@@ -1471,7 +1471,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   }
 
   //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
-  analyzeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
+  analyzeTypeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc);
   DASSERT(!methods.empty());
   Expr * valueOf = specialize(loc, methods, TupleType::get(toType));
@@ -1488,7 +1488,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
     DFAIL("IllegalState");
   }
 
-  analyzeDefn(valueOfMethod, Task_PrepTypeComparison);
+  analyzeFunction(valueOfMethod, Task_PrepTypeComparison);
   module->converters()[conversionKey] = valueOfMethod;
   module->addSymbol(valueOfMethod);
   //diag.info() << Format_Verbose << "Generated boxer " << valueOfMethod;

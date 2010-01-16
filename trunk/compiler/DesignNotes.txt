@@ -6,13 +6,14 @@ Design TODOS:
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Working on currently:
+  -- Package reflection.
+  -- Target selection in compiler.
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
-  -- Hashing
+  -- Hashing of integers
   -- String iteration
   -- BUG: Test classes segfault if another class is declared first. Most likely reflection
       data is being miscompiled.
-  -- Migrate pointer+length to pointer+pointer apis. Or get intptr working,
 
 Implementation TODOS:
 
@@ -32,8 +33,7 @@ Implementation TODOS:
   * Unit tests for lexical type ordering.
 * I/O library.
 * Win32
-  * Fix unicode unit tests.
-  * Figure out crash in tartc.
+  * Find an assembler
 * Link-time coalescing
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
@@ -63,12 +63,11 @@ Implementation TODOS:
   * Stack trace
 * Enum types
    * Enum operators (relational).
-  * .parse
+  * .parse or valueOf.
 * Tuple types
   * Variadic Tuple args
   * Test struct members, params.
   * Member-wise conversions.
-* Multiple Return Values (requires Unpacking)
 * Constructors
   * Inherit constructors from parent class if no constructors defined.
   * Test implicit call to super() (no args) constructor if not called.
@@ -108,13 +107,12 @@ Implementation TODOS:
   * for (need unpacking assignment.)
   * for/in
     * unpacking assignment
-  * do-while
   * yield
   * fork/threading primitives
   * with (what interface for using?)
 * Tartdoc
   * Requires command-line parsing lib.
-* 'get' and 'set' should not be keywords. Properties can do just fine.
+* 'get' and 'set' should not be keywords.
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.
@@ -319,46 +317,6 @@ class WeakReference[%T:Object] {
 
 // ------------------------------------------------------------------------
 
-typealias MachineAddress:Address[ubyte];
-typealias AllocBlkPtr:Address[ubyte];
-
-abstract class AbstractSpace {
-  abstract def isAllocated(ptr:ObjectPtr);
-  abstract def trace(ptr:ObjectPtr);
-}
-
-var heapMap:Address[Address[AbstractSpace]];
-var heapMapSize:int;
-var heapMapOffset:int;
-let heapPageSize:long = 128Kb;
-let heapPageShift:int = ??;
-
-abstract class Arena {
-  abstract def ??;
-}
-
-// ------------------------------------------------------------------------
-
-class ExprBuilder {
-  Expr * build();
-
-  ExprBuilder & at(const SourceLocation &);
-  ExprBuilder & at(const Locatable *);
-  
-  ExprBuilder & setType(const Type * type);
-  
-  ExprBuilder & bitCast(const Type * toType);
-  ExprBuilder & lvalue(const ValueDefn * lval, Expr * baseExpr = NULL);
-  
-  ExprBuilder & pushArg();
-  ExprBuilder & call();
-};
-
-ExprBuilder builder;
-builder.lval(param).bitCast(&PointerType).getElement(0).build();
-
-// ------------------------------------------------------------------------
-
 // Some way to store it as Object, but retrieve it as the original type.
 // Like saying: I want you to store all occurances of T as type Object.
 // Mainly this affects naming conventions for methods.
@@ -366,4 +324,3 @@ builder.lval(param).bitCast(&PointerType).getElement(0).build();
 Something like [@Strict %T <: Object]
 
 @Unsafe @Intrinsic def reinterpretCast[%T <: Object](obj:Object);
-

@@ -85,6 +85,11 @@ SystemClassMember<VariableDefn> module_name(Builtins::typeModule, "_name");
 SystemClassMember<VariableDefn> module_types(Builtins::typeModule, "_types");
 SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods");
 
+// Members of tart.core.reflect.Package.
+SystemClassMember<VariableDefn> package_name(Builtins::typePackage, "_name");
+SystemClassMember<VariableDefn> package_modules(Builtins::typePackage, "_modules");
+SystemClassMember<VariableDefn> package_subpackages(Builtins::typePackage, "_subpackages");
+
 Reflector::Reflector(CodeGenerator & cg)
     : cg_(cg)
     , context_(cg.context())
@@ -108,6 +113,26 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
       GlobalValue::ExternalLinkage, NULL, moduleSymbol);
   globals_[moduleSymbol] = rfModule;
   return rfModule;
+}
+
+llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
+  std::string packageSymbol(".package." + module->packageName());
+  GlobalVarMap::iterator it = globals_.find(packageSymbol);
+  if (it != globals_.end()) {
+    return it->second;
+  }
+
+  irModule_->addTypeName("tart.reflect.Package", Builtins::typePackage->irType());
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(Builtins::typePackage);
+  sb.addField(internSymbol(module->packageName()));
+  sb.addField(emitArray("tart.reflect.Package.", package_modules.get(), ConstantList()));
+  sb.addField(emitArray("tart.reflect.Package.", package_subpackages.get(), ConstantList()));
+
+  GlobalVariable * rfPackage = new GlobalVariable(*irModule_, Builtins::typePackage->irType(), true,
+      GlobalValue::LinkOnceAnyLinkage, sb.build(), packageSymbol);
+  globals_[packageSymbol] = rfPackage;
+  return rfPackage;
 }
 
 llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
@@ -306,7 +331,7 @@ llvm::Constant * Reflector::emitArray(
   const CompositeType * arrayType = cast<CompositeType>(var->type());
   const Type * elementType = arrayType->typeParam(0);
   irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
-  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), var);
+  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), var);
 
   if (values.empty()) {
     VariableDefn * emptyArray = cast_or_null<VariableDefn>(
@@ -672,7 +697,7 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
 
   const CompositeType * arrayType = cast<CompositeType>(derivedType_typeParams->type());
   const Type * elementType = arrayType->typeParam(0);
-  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::FieldTypePass), derivedType_typeParams);
+  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), derivedType_typeParams);
 
   if (values.empty()) {
     // TODO: point to shared empty array.

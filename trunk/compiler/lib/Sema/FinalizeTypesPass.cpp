@@ -141,7 +141,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
     if (isTemplateMethod) {
       method = cast_or_null<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
-      if (method == NULL || !AnalyzerBase::analyzeValueDefn(method, Task_PrepTypeComparison)) {
+      if (method == NULL || !AnalyzerBase::analyzeFunction(method, Task_PrepTypeComparison)) {
         return &Expr::ErrorVal;
       }
 
@@ -217,6 +217,8 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
       callType = Expr::VTableCall;
     }
 
+    // PrepConstruction is just a convenient way to run FieldPass.
+    AnalyzerBase::analyzeType(method->type(), Task_PrepConstruction);
     FnCallExpr * result = new FnCallExpr(callType, in->location(), method, selfArg);
     result->args().append(callingArgs.begin(), callingArgs.end());
 
@@ -376,14 +378,17 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
       return NULL;
     }
 
-    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepMemberLookup)) {
-      return NULL;
-    }
+//    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepMemberLookup)) {
+//      return NULL;
+//    }
 
     Defn * newdef = NULL;
     DefnList defns;
 
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(parent)) {
+      if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup)) {
+        return NULL;
+      }
       tdef->typeValue()->memberScope()->lookupMember(def->name(), defns, false);
     } else {
       DFAIL("Implement pattern substitutions for parent scopes other than types");

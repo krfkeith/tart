@@ -12,6 +12,9 @@ def testZeroLengthArray() {
   let a = int32[](0);
   Debug.assertTrue(a.isEmpty);
   Debug.assertTrue(a.length == 0);
+  let a2:int32[] = [];
+  Debug.assertTrue(a2.isEmpty);
+  Debug.assertTrue(a2.length == 0);
 }
 
 def testSimpleArray() {

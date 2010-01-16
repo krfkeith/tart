@@ -11,6 +11,7 @@ include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
 include(CheckTypeSize)
+include(CMakeDetermineASMCompiler)
 include(FindThreads)
 
 # Check for the existence of include files.

@@ -1,0 +1,5 @@
+class MatchCharactersNode : Node {
+  def construct() {
+    super(NodeType.MATCH_CHARACTERS);
+  }
+}

@@ -57,6 +57,7 @@ SystemClass Builtins::typeParameter("tart.reflect.Parameter");
 SystemClass Builtins::typeProperty("tart.reflect.Property");
 SystemClass Builtins::typeMethod("tart.reflect.Method");
 SystemClass Builtins::typeModule("tart.reflect.Module");
+SystemClass Builtins::typePackage("tart.reflect.Package");
 
 SystemClass Builtins::typeAttribute("tart.core.Attribute");
 SystemClass Builtins::typeIntrinsicAttribute("tart.annex.Intrinsic");

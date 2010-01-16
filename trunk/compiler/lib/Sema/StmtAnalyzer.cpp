@@ -411,7 +411,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
     if (initExpr->nodeType() == ASTNode::Var) {
       const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(initExpr);
       VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
-      if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
+      if (!analyzeVariable(initDefn, Task_PrepTypeGeneration)) {
         return false;
       }
 
@@ -598,7 +598,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
     const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(st->loopVars());
     VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
     initDefn->setType(iterVarType);
-    if (!analyzeValueDefn(initDefn, Task_PrepTypeGeneration)) {
+    if (!analyzeVariable(initDefn, Task_PrepTypeGeneration)) {
       return false;
     }
 
@@ -834,7 +834,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         Scope * prevScope = setActiveScope(caseScope);
 
         Defn * asDefn = astToDefn(asDecl);
-        if (asDefn == NULL || !analyzeDefn(asDefn, Task_PrepCodeGeneration)) {
+        if (asDefn == NULL || !analyzeCompletely(asDefn)) {
           return NULL;
         }
 
@@ -1023,7 +1023,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       ASTDecl * exceptDecl = cst->exceptDecl();
       VariableDefn * exceptDefn = cast<VariableDefn>(
           ScopeBuilder::createLocalDefn(catchScope, function, exceptDecl));
-      if (!analyzeValueDefn(exceptDefn, Task_PrepCodeGeneration)) {
+      if (!analyzeVariable(exceptDefn, Task_PrepCodeGeneration)) {
         return false;
       }
 
