@@ -15,37 +15,37 @@ import tart.annex.Nonreflective;
 
     def rangeCheck[%T](value:int32) {
 	    if value < T.minVal or value > T.maxVal {
-	      throw TypecastException();
+	      throw TypecastError();
 	    }
 	  }
 
 	  def rangeCheck[%T](value:int64) {
 	    if value < T.minVal or value > T.maxVal {
-	      throw TypecastException();
+	      throw TypecastError();
 	    }
 	  }
 	
 	  def rangeCheck[%T](value:uint32) {
 	    if value > asUnsigned(T.maxVal) {
-	      throw TypecastException();
+	      throw TypecastError();
 	    }
 	  }
 	
 	  def rangeCheck[%T](value:uint64) {
 	    if value > asUnsigned(T.maxVal) {
-	      throw TypecastException();
+	      throw TypecastError();
 	    }
 	  }
 
     def rangeCheck[%T](value:char) {
       if uint32(value) > asUnsigned(T.maxVal) {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   
     def check(value:bool) {
       if not value {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
 
@@ -53,13 +53,13 @@ import tart.annex.Nonreflective;
 
     def signCheck(value:int32) {
       if value < 0 {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
 
     def signCheck(value:int64) {
       if value < 0 {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -70,7 +70,7 @@ import tart.annex.Nonreflective;
     classify ref {
       as v:ValueRef[bool]   { return v.value; }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -93,7 +93,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { check(v.value <= uint64(char.maxVal)); return char(v.value); }
       as v:ValueRef[char]   { return v.value; }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -110,7 +110,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[int8](v.value); return int8(v.value); }
       as v:ValueRef[char]   { rangeCheck[int8](v.value); return int8(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -127,7 +127,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[int16](v.value); return int16(v.value); }
       as v:ValueRef[char]   { rangeCheck[int16](v.value); return int16(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -144,7 +144,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[int32](v.value); return int32(v.value); }
       as v:ValueRef[char]   { rangeCheck[int32](v.value); return int32(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -161,7 +161,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[int64](v.value); return int64(v.value); }
       as v:ValueRef[char]   { rangeCheck[int64](v.value); return int64(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -187,7 +187,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[uint8](v.value); return uint8(v.value); }
       as v:ValueRef[char]   { rangeCheck[uint8](v.value); return uint8(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -210,7 +210,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[uint16](v.value); return uint16(v.value); }
       as v:ValueRef[char]   { rangeCheck[uint16](v.value); return uint16(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -230,7 +230,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { rangeCheck[uint32](v.value); return uint32(v.value); }
       as v:ValueRef[char]   { return uint32(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -247,7 +247,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[uint64] { return v.value; }
       as v:ValueRef[char]   { return uint64(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -265,7 +265,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[float]  { return v.value; }
       as v:ValueRef[double] { return float(v.value); }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -283,7 +283,7 @@ import tart.annex.Nonreflective;
       as v:ValueRef[float]  { return double(v.value); }
       as v:ValueRef[double] { return v.value; }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }
@@ -292,7 +292,7 @@ import tart.annex.Nonreflective;
     classify ref {
       as v:ValueRef[T]   { return v.value; }
       else {
-        throw TypecastException();
+        throw TypecastError();
       }
     }
   }

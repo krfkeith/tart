@@ -1,6 +1,6 @@
 /** Exception which is thrown when an attempt is made to instantiate a type via
     reflection which is not instantiable. */
-class InstantiationException : Exception {
+class InstantiationError : Exception {
   private var type:Type;
   def construct(type:Type) {
     self.type = type;

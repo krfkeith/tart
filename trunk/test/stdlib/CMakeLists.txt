@@ -47,6 +47,9 @@ foreach(SRC_FILE ${TART_SRC})
           "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
           "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       MAIN_DEPENDENCY "${BC_FILE}" 
+      DEPENDS
+          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
   # Assemble and run

@@ -28,19 +28,15 @@ add_tart_library(LexGenTest "${TEST_ROOT}" "${LIB_LEXGEN_TEST_SRC}")
 function(add_tart_executable Name)
   set(ASM_FILE ${Name}.s)
   set(EXE_FILE ${Name})
-  set(LIBCORE "${PROJECT_BINARY_DIR}/lib/core/libcore.bc")
   set(DEPS)
   foreach(DEP ${ARGN})
     set(DEPS ${DEPS} "${DEP}")
   endforeach(DEP)
-  foreach(DEP ${DEPS})
-    message(${DEP})
-  endforeach(DEP)
 
   # Link
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${DEPS} ${LIBCORE}
-      DEPENDS ${DEPS} "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+      COMMAND tartln -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${DEPS}
+      DEPENDS ${DEPS}
       COMMENT "Linking Tart bitcode file ${ASM_FILE}")
 
   # Assemble
@@ -56,7 +52,8 @@ function(add_tart_executable Name)
 endfunction(add_tart_executable)
 
 add_tart_executable(lexGenTest
-  "${PROJECT_BINARY_DIR}/libtesting/libtesting.bc"
+  "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+  "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
   libLexGenCommon.bc
   libLexGenGen.bc 
   libLexGenTest.bc 

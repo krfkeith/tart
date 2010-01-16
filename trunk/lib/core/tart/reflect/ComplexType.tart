@@ -72,11 +72,11 @@ public class ComplexType : SimpleType {
       }
         
       case STRUCT {
-        throw InvocationException("Unimplemented struct construction");
+        throw InvocationError("Unimplemented struct construction");
       }
       
       else {
-        throw InstantiationException(self);
+        throw InstantiationError(self);
       }
     }
   }
@@ -89,15 +89,15 @@ public class ComplexType : SimpleType {
 	        return _noArgCtor(self._alloc());
 	      }
     
-        throw InvocationException("Class does not have a no-arg constructor");
+        throw InvocationError("Class does not have a no-arg constructor");
       }
         
       case STRUCT {
-        throw InvocationException("Unimplemented struct construction");
+        throw InvocationError("Unimplemented struct construction");
       }
       
       else {
-        throw InstantiationException(self);
+        throw InstantiationError(self);
       }
     }
   }

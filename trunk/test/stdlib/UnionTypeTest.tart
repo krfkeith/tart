@@ -23,7 +23,7 @@ class UnionTypeTest : Test {
 	  try {
 	    assertEq(1.0, typecast[float](x));
 	    fail("union member test failed");
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	
 	  // classify  
 	  classify x as xi:int32 {
@@ -46,7 +46,7 @@ class UnionTypeTest : Test {
 	  try {
 	    assertEq(1, typecast[int32](x));
 	    fail("union member test failed");
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	  
 	  // classify
 	  classify x as xf:float {
@@ -73,7 +73,7 @@ class UnionTypeTest : Test {
 	  assertEq("Hello", typecast[String](x));
 	  try {
 	    //assertEq(1.0, typecast[Throwable](x));
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	
 	  // classify  
 	  classify x as xs:String {
@@ -107,7 +107,7 @@ class UnionTypeTest : Test {
 	  try {
 	    assertEq(1.0, typecast[float](x));
 	    fail("union member test failed");
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	
 	  // classify  
 	  classify x as xi:int32 {
@@ -130,7 +130,7 @@ class UnionTypeTest : Test {
 	  try {
 	    assertEq(1, typecast[int32](x));
 	    fail("union member test failed");
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	  
 	  // classify
 	  classify x as xs:String {
@@ -157,7 +157,7 @@ class UnionTypeTest : Test {
 	  try {
 	    assertTrue(TestClass() is typecast[TestClass](x));
 	    fail("union member test failed");
-	  } catch t:TypecastException {}
+	  } catch t:TypecastError {}
 	  
 	  // classify
 	  classify x as xs:String {
@@ -183,7 +183,7 @@ class UnionTypeTest : Test {
     try {
       assertEq(5, x.length);
       fail("union member test failed");
-    } catch t:TypecastException {}
+    } catch t:TypecastError {}
 	}
 }
 

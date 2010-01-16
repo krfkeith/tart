@@ -1,5 +1,5 @@
 /** Exception thrown when a method argument is invalid. */
-public class InvalidArgumentException : Exception {
+public class ArgumentError : Exception {
   def construct() {
     super();
   }

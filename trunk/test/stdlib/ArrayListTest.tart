@@ -29,13 +29,13 @@ class ArrayListTest : Test {
 	  try {
 	    let s = a[4];
 	    fail("Out of range access");
-	  } catch :IndexOutOfRangeException {
+	  } catch :IndexError {
 	  }
 	
 	  try {
 	    let s = a[-1];
 	    fail("Out of range access");
-	  } catch :IndexOutOfRangeException {
+	  } catch :IndexError {
 	  }
 	}
 	

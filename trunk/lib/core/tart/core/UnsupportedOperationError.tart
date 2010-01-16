@@ -1,5 +1,5 @@
 /** Exception thrown when a method does not have an implementation. */
-public class UnsupportedOperationException : Exception {
+public class UnsupportedOperationError : Exception {
   def construct() {
     super();
   }

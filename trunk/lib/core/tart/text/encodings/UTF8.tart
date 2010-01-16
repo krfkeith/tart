@@ -58,7 +58,7 @@ final class UTF8 : Codec {
         if errorAction == ErrorAction.REPLACE {
           length += 1;
         } if errorAction == ErrorAction.ABORT {
-          throw InvalidCharacterException();
+          throw InvalidCharacterError();
         } /* Otherwise, SKIP over. */
       }
     }
@@ -84,7 +84,7 @@ final class UTF8 : Codec {
         if errorAction == ErrorAction.REPLACE {
           byteCount = 1;
         } if errorAction == ErrorAction.ABORT {
-          throw MalformedInputException();
+          throw MalformedInputError();
         } /* Otherwise, SKIP over. */
       }
 
@@ -134,13 +134,13 @@ final class UTF8 : Codec {
           break if dstIndex >= dstLength;
           dst[dstIndex++] = ubyte('?');
         } if errorAction == ErrorAction.ABORT {
-          throw InvalidCharacterException();
+          throw InvalidCharacterError();
         } /* Otherwise, SKIP over. */
       }
     }
     
     if srcIndex < srcLength {
-      throw IndexOutOfRangeException();
+      throw IndexError();
     }
     
     return dstIndex;
@@ -193,7 +193,7 @@ final class UTF8 : Codec {
     }
 
     if srcIndex < srcLength {
-      throw IndexOutOfRangeException();
+      throw IndexError();
     }
 
     // Return the number of bytes copied.    

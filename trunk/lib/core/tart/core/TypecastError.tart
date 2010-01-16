@@ -1,6 +1,6 @@
 /** Exception thrown when an attempt to cast an object reference to a type that is not
     a subclass of the instance. */
-public final class TypecastException : Exception {
+public final class TypecastError : Exception {
   def construct() {
   }
 

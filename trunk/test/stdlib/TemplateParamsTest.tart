@@ -12,7 +12,7 @@ def testValue[%T <: String.HasToString](t:T) -> String { return "TS"; }
 def testTemplateConditions() {
   //Debug.assertEq("T", testValue("X"));
   //Debug.assertEq("E", testValue(Exception()));
-  Debug.assertEq("TS", testValue(IndexOutOfRangeException()));
+  Debug.assertEq("TS", testValue(IndexError()));
   Debug.assertEq("TS", testValue(StringBuilder()));
   Debug.assertEq("TS", testValue(1.0));
 }

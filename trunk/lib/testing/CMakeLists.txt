@@ -15,4 +15,5 @@ set(TART_MODULE_PATH
 file(GLOB LIB_TESTING_SRC RELATIVE ${SRC_ROOT} ${SRC_ROOT}/tart/testing/*.tart)
 
 add_tart_library(testing "${SRC_ROOT}" "${LIB_TESTING_SRC}")
-add_dependencies(libtesting libcore libtesting.bc libtesting.deps)
+add_custom_target(libtesting ALL DEPENDS libtesting.bc libtesting.deps)
+add_dependencies(libtesting libcore)

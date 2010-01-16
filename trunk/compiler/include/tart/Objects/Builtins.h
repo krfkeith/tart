@@ -46,7 +46,7 @@ public:
   static SystemClass typeArray;
   static SystemClass typeRange;
   static SystemClass typeThrowable;
-  static SystemClass typeUnsupportedOperationException;
+  static SystemClass typeUnsupportedOperationError;
   static Type * typeUnwindException;
   static Type * typeIterable;
   static Type * typeIterator;

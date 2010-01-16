@@ -224,7 +224,7 @@ class ValueRefTest : Test {
 	  try {
 	    let n = Ref.valueOf[T](actual);
 	    Debug.assertEq(expected, n);
-	  } catch e:TypecastException {
+	  } catch e:TypecastError {
 	    Debug.fail("Typecast exception unboxing ", actual.toString(), " [",
 	        T.minVal.toString(), " .. ", T.maxVal.toString(), "]");
 	  }
@@ -235,7 +235,7 @@ class ValueRefTest : Test {
 	    let n = Ref.valueOf[T](o);
 	    Debug.fail("Typecast exception expected unboxing ", o.toString(), " [",
 	        T.minVal.toString(), " .. ", T.maxVal.toString(), "]");
-	  } catch e:TypecastException {
+	  } catch e:TypecastError {
 	    return;
 	  }
 	}
