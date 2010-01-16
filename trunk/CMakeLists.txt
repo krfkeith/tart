@@ -110,6 +110,10 @@ if (MSVC)
   )
 endif (MSVC)
 
+# Add custom targets for standard libraries
+add_custom_target(libcore)
+add_custom_target(libtesting)
+
 # Add the check-build target
 add_custom_target(check)
 
@@ -119,8 +123,7 @@ add_subdirectory(tools)
 add_subdirectory(runtime)
 add_subdirectory(third-party)
 add_subdirectory(test/unit)
-add_subdirectory(stdlib)
-add_subdirectory(libtesting)
+add_subdirectory(lib)
 #add_subdirectory(test/nolib)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/fail)

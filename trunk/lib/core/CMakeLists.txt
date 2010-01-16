@@ -1,4 +1,4 @@
-# CMake build file for tart/stdlib
+# CMake build file for lib/core
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -15,7 +15,7 @@ file(GLOB TART_STDLIB_SRC
     tart/text/encodings/*.tart)
 
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(MODPATH ${TART_SOURCE_DIR}/stdlib)  # Module search path
+set(MODPATH ${TART_SOURCE_DIR}/lib/core)  # Module search path
 set(TART_OPTIONS
     -g
     -debug-errors
@@ -47,16 +47,16 @@ endforeach(SRC_FILE)
 
 # Target to drive the conversion
 add_custom_command(
-    OUTPUT stdlib.bc
-    COMMAND tartln -filetype=bc -o stdlib.bc ${STDLIB_BC_FILES}
+    OUTPUT libcore.bc
+    COMMAND tartln -filetype=bc -o libcore.bc ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} tartln
-    COMMENT "Linking stdlib.bc")
+    COMMENT "Linking libcore.bc")
     
 # Generate dependency info
 add_custom_command(
     OUTPUT libcore.deps
     COMMAND gendeps -o libcore.deps ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} gendeps
-    COMMENT "Generating dependencies for stdlib.bc")
+    COMMENT "Generating dependencies for libcore.bc")
 
-add_custom_target(stdlib DEPENDS stdlib.bc libcore.deps)
+add_dependencies(libcore libcore.bc libcore.deps)
