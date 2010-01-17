@@ -6,7 +6,10 @@ Design TODOS:
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Working on currently:
-  -- Package reflection.
+  -- Static If
+  -- Module type list reflection.
+  -- Run all tests in module.
+  -- Compile-time configuration options. (Another reason to support target triples.)
   -- Target selection in compiler.
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
