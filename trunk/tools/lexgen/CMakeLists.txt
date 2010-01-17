@@ -28,15 +28,19 @@ add_tart_library(LexGenTest "${TEST_ROOT}" "${LIB_LEXGEN_TEST_SRC}")
 function(add_tart_executable Name)
   set(ASM_FILE ${Name}.s)
   set(EXE_FILE ${Name})
-  set(DEPS)
-  foreach(DEP ${ARGN})
-    set(DEPS ${DEPS} "${DEP}")
-  endforeach(DEP)
+  set(LIBS ${ARGN})
+  
+  # Generate the list of .deps files.
+  set(DEPFILES)
+  foreach(LIB ${LIBS})
+    string(REGEX REPLACE ".bc\$" ".deps" DEPFILE "${LIB}")
+    set(DEPFILES ${DEPFILES} "${DEPFILE}")
+  endforeach(LIB)
 
   # Link
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${DEPS}
-      DEPENDS ${DEPS}
+      COMMAND tartln -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${LIBS}
+      DEPENDS ${LIBS} ${DEPFILES}
       COMMENT "Linking Tart bitcode file ${ASM_FILE}")
 
   # Assemble
@@ -58,3 +62,4 @@ add_tart_executable(lexGenTest
   libLexGenGen.bc 
   libLexGenTest.bc 
 )
+add_dependencies(lexGenTest libcore libtesting libLexGenCommon libLexGenGen libLexGenTest)

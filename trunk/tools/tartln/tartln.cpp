@@ -223,13 +223,12 @@ void optimize(Module * module, const TargetData * targetData) {
   addPass(passes, new TargetData(*targetData));
   if (!optLinkAsLibrary) {
     addPass(passes, new tart::ReflectorPass());
-  }
-
-  if (optInternalize) {
-    std::vector<const char *> externs;
-    externs.push_back("main");
-    externs.push_back("String_create");
-    passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
+    if (optInternalize) {
+      std::vector<const char *> externs;
+      externs.push_back("main");
+      externs.push_back("String_create");
+      passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
+    }
   }
 
   if (optOptimizationLevel > O0) {

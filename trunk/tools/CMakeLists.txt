@@ -22,6 +22,7 @@ set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
 add_executable(tartln
     tartln/tartln.cpp
+    tartln/ConstantBuilder.cpp
     tartln/ReflectorPass.cpp
     tartln/ReflectionSizePass.cpp)
 target_link_libraries(tartln

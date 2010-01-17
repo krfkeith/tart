@@ -48,7 +48,7 @@ endforeach(SRC_FILE)
 # Target to drive the conversion
 add_custom_command(
     OUTPUT libcore.bc
-    COMMAND tartln -filetype=bc -o libcore.bc ${STDLIB_BC_FILES}
+    COMMAND tartln -filetype=bc -link-as-library -o libcore.bc ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} tartln
     COMMENT "Linking libcore.bc")
     
