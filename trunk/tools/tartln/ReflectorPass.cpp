@@ -6,7 +6,8 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "ReflectorPass.h"
-#include "ConstantBuilder.h"
+
+#include <algorithm>
 
 namespace tart {
 using namespace llvm;
@@ -19,6 +20,12 @@ RegisterPass<ReflectorPass> X(
     "reflector", "Generate reflection info",
     false /* Only looks at CFG */,
     false /* Analysis Pass */);
+
+struct ModuleNameComparator {
+  bool operator()(GlobalVariable * m0, GlobalVariable * m1) {
+    return m0->getName() < m1->getName();
+  }
+};
 }
 
 ReflectorPass::~ReflectorPass() {
@@ -39,7 +46,26 @@ bool ReflectorPass::runOnModule(llvm::Module & module) {
         packageName.erase(0, 9); // remove ".package."
         Package * p = getOrCreatePackage(packageName);
         p->setGlobal(globalVar);
-        //errs() << packageName << "\n";
+
+        if (packageHeader_.value() == NULL) {
+          //errs() << packageName << "\n";
+          Constant * init = globalVar->getInitializer();
+          assert(init != NULL);
+          packageHeader_ = ConstantRef(init).operand(0);
+          moduleArrayPtr_ = ConstantRef(init).operand(2, 0, 0);
+          moduleArrayHeader_ = moduleArrayPtr_.operand(0, 0, 0);
+          packageArrayPtr_ = ConstantRef(init).operand(3, 0, 0);
+          packageArrayHeader_ = packageArrayPtr_.operand(0, 0, 0);
+
+//          moduleArrayPtr_.type()->dump(&module);
+//          packageArrayPtr_.type()->dump(&module);
+//          packageHeader_.type()->dump(&module);
+//          moduleArrayHeader_.type()->dump(&module);
+//          packageArrayHeader_.type()->dump(&module);
+
+          assert(packageHeader_.type() == moduleArrayHeader_.type());
+          assert(packageHeader_.type() == packageArrayHeader_.type());
+        }
       }
     }
   }
@@ -57,15 +83,42 @@ bool ReflectorPass::runOnModule(llvm::Module & module) {
     } else {
       // TODO: Look for ancestor package.
     }
+  }
 
-    //GlobalVarMap::iterator pi = packages_.find(packageName);
-    //if (pi == packages_.end()) {
+  for (PackageMap::iterator it = packages_.begin(); it != packages_.end(); ++it) {
+    Package * p = it->second;
+    ConstantRef packageConst = p->global()->getInitializer();
 
-    //} else {
+    // List of modules in package
+    ConstantList modules;
+    std::sort(p->modules().begin(), p->modules().end(), ModuleNameComparator());
+    for (GlobalVarList::iterator m = p->modules().begin(); m != p->modules().end(); ++m) {
+      modules.push_back(*m);
+    }
 
-    //}
+    Constant * moduleArray = packageConst.operand(2).value();
+    if (modules.size() > 0) {
+      Constant * moduleArrayVar = createArray(module, modules, moduleArrayHeader_.value());
+      moduleArray = llvm::ConstantExpr::getPointerCast(moduleArrayVar, moduleArray->getType());
+    }
 
-    //errs() << "Module " << moduleVar->getName() << " in package " << packageName << "\n";
+    // List of subpackages in package
+    ConstantList subpackages;
+    std::sort(p->subpackages().begin(), p->subpackages().end(), ModuleNameComparator());
+    for (GlobalVarList::iterator m = p->subpackages().begin(); m != p->subpackages().end(); ++m) {
+      subpackages.push_back(*m);
+    }
+
+    if (subpackages.size() > 0) {
+      // TODO: List of child packages.
+    }
+
+    ConstantBuilder cb(module);
+    cb.addField(packageHeader_);            // Object header
+    cb.addField(packageConst.operand(1));   // Package name
+    cb.addField(moduleArray);               // Module array
+    cb.addField(packageConst.operand(3));   // Package array
+    p->global()->setInitializer(cb.buildStruct(packageConst.value()->getType()));
   }
 
   return false;
@@ -91,11 +144,24 @@ Package * ReflectorPass::getOrCreatePackage(const StringRef & pkgName) {
   return p;
 }
 
-/*
-bool ReflectorPass::createArray(llvm::Module & module, Package * p) {
-  Value vals[3];
+Constant * ReflectorPass::createArray(
+    llvm::Module & module,
+    const ConstantList & elements,
+    Constant * arrayTypeInfo) {
 
-  ConstantStruct::get(module.getContext(), &vals[0], 3);
+  TargetData targetData(&module);
+  const IntegerType * intptrType = targetData.getIntPtrType(module.getContext());
+  const Type * elementType = elements.front()->getType();
+  const ArrayType * elementArrayType = ArrayType::get(elementType, elements.size());
+  ConstantInt * elementCount = ConstantInt::get(intptrType, elements.size(), false);
+
+  ConstantBuilder builder(module);
+  builder.addField(arrayTypeInfo);
+  builder.addField(elementCount);
+  builder.addField(ConstantArray::get(elementArrayType, elements));
+  Constant * arrayStruct = builder.buildStruct();
+  return new GlobalVariable(module, arrayStruct->getType(), true,
+      GlobalValue::InternalLinkage, arrayStruct, ".modules");
 }
-*/
+
 }

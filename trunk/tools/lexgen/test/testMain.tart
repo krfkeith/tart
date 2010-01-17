@@ -3,5 +3,5 @@ import tart.reflect.Package;
 
 @EntryPoint
 def testMain(args:String[]) -> int32 {
-  return Test.runTests(Package.thisPackage());
+  return Test.runAllTests(Package.thisPackage());
 }
