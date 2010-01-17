@@ -14,6 +14,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Analysis/DebugInfo.h"
+#include "llvm/Target/TargetData.h"
 #include <iostream>
 
 // If true, means that structs are passed as first-class values internally within
@@ -318,6 +319,9 @@ public:
   /** Return the IR module being compiled. */
   llvm::Module * irModule() const { return irModule_; }
 
+  /** Return a constant integer with the specified value. */
+  llvm::ConstantInt * getIntVal(int value);
+
   /** Return a 32-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt32Val(int value);
 
@@ -408,6 +412,7 @@ private:
   llvm::FunctionType * invokeFnType_;
   llvm::FunctionType * dcObjectFnType_;
   llvm::Value * structRet_;
+  const llvm::TargetData * targetData_;
 
 #if 0
   llvm::Function * moduleInitFunc;

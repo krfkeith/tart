@@ -24,7 +24,7 @@ private:
   Module          * module;         // The module we're parsing.
   Lexer             lexer;          // Lexer
   TokenType         token;          // Current token
-  SourceLocation    matchLoc;       // Location of just-matched token
+  SourceLocation    tokenLoc;       // Location of just-matched token
   int               templateNesting;// template nesting level
   bool              recover;        // In error recovery state.
   ASTFunctionDecl * function;       // Current function being parsed.

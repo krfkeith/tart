@@ -14,6 +14,7 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsics.h"
+#include "tart/Objects/TargetSelection.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Instructions.h"
@@ -23,21 +24,7 @@ namespace tart {
 
 using llvm::APInt;
 
-enum PointerSize {
-  PTR_DEFAULT,
-  PTR_32,
-  PTR_64,
-};
-
-static llvm::cl::opt<PointerSize> optPointerSize(llvm::cl::init(PTR_DEFAULT),
-    llvm::cl::desc("target machine word size"),
-    llvm::cl::values(
-        clEnumValN(PTR_32, "32", "32-bits"),
-        clEnumValN(PTR_64, "64", "64-bits"),
-        clEnumValEnd));
-
 PrimitiveType * PrimitiveType::primitiveTypeList;
-uint32_t PrimitiveType::pointerSize_;
 
 ASTBuiltIn PrimitiveType::intDef(NULL);
 ASTBuiltIn PrimitiveType::uintDef(NULL);
@@ -54,14 +41,11 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
     module->addMember(de);
   }
 
-  switch (optPointerSize) {
-    case PTR_DEFAULT: pointerSize_ = 8 * sizeof(void *); break;
-    case PTR_32: pointerSize_ = 32; break;
-    case PTR_64: pointerSize_ = 64; break;
-  }
+  const llvm::TargetData * td = TargetSelection::instance.targetData();
+  unsigned pointerSize = td->getPointerSizeInBits();
 
-  intDef.setValue(pointerSize_ == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
-  uintDef.setValue(pointerSize_ == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
+  intDef.setValue(pointerSize == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
+  uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
 }
 
 /// -------------------------------------------------------------------

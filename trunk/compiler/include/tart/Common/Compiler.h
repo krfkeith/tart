@@ -12,10 +12,7 @@ namespace tart {
 // The compiler class
 class Compiler {
 public:
-  Compiler()
-    : generateBitcode_(true)
-    , generateDependencies_(false)
-  {}
+  Compiler();
 
   void processInputFile(const std::string & infile);
   void setGenerateBitcode(bool generate) {

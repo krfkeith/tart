@@ -52,10 +52,10 @@ bool ReflectorPass::runOnModule(llvm::Module & module) {
           Constant * init = globalVar->getInitializer();
           assert(init != NULL);
           packageHeader_ = ConstantRef(init).operand(0);
-          moduleArrayPtr_ = ConstantRef(init).operand(2, 0, 0);
-          moduleArrayHeader_ = moduleArrayPtr_.operand(0, 0, 0);
-          packageArrayPtr_ = ConstantRef(init).operand(3, 0, 0);
-          packageArrayHeader_ = packageArrayPtr_.operand(0, 0, 0);
+          moduleArrayPtr_ = ConstantRef(init).operand(2, 0);
+          moduleArrayHeader_ = moduleArrayPtr_.operand(0);
+          packageArrayPtr_ = ConstantRef(init).operand(3, 0);
+          packageArrayHeader_ = packageArrayPtr_.operand(0);
 
 //          moduleArrayPtr_.type()->dump(&module);
 //          packageArrayPtr_.type()->dump(&module);

@@ -22,12 +22,12 @@ class Test {
 
   /** Run all of the test cases in the specified module. */
   static def runAllTests(mod:Module) -> int32 {
-    Debug.writeLn("Module: ", mod.name);
-    //for type in mod.types {
-      /*classify type as complex:ComplexType {
+    Debug.writeLn("Module: ", mod.name, " symbols: ", mod.types.length.toString());
+    for type in mod.types {
+      //classify type as complex:ComplexType {
 	      //Debug.writeLn(complex.name);
-      }*/
-    //}
+      //}
+    }
     
     return 0;
   }

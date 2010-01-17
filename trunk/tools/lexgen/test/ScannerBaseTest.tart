@@ -1,4 +1,9 @@
 import tart.testing.Test;
 
 class ScannerBaseTest : Test {
+  def testConstruct {
+  }
+  
+  def testReadChar {
+  }
 }

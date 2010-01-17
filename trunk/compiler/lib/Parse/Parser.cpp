@@ -80,12 +80,13 @@ Parser::Parser(ProgramSource * src, Module * m)
 // -------------------------------------------------------------------
 
 void Parser::next() {
+  tokenLoc = lexer.tokenLocation();
   token = lexer.next();
 }
 
 inline bool Parser::match(TokenType tok) {
   if (token == tok) {
-    token = lexer.next();
+    next();
     return true;
   }
   return false;
@@ -96,11 +97,8 @@ const char * Parser::matchIdent() {
     // Save the token value as a string
     const char * value = istrings.intern(lexer.tokenValue().c_str());
 
-    // Save the token location
-    matchLoc = lexer.tokenLocation();
-
     // Get the next token
-    token = lexer.next();
+    next();
     return value;
   }
   return NULL;
@@ -113,17 +111,17 @@ void Parser::skipToNextOpenDelim() {
       return;
     }
 
-    token = lexer.next();
+    next();
   }
 }
 
 void Parser::skipToRParen() {
   for (;;) {
     if (token == Token_RParen) {
-      lexer.next();
+      next();
       return;
     } else if (token == Token_LParen) {
-      token = lexer.next();
+      next();
       skipToRParen();
       return;
     } else if (token == Token_End || token == Token_LBrace ||
@@ -131,7 +129,7 @@ void Parser::skipToRParen() {
       return;
     }
 
-    token = lexer.next();
+    next();
   }
 }
 
@@ -328,7 +326,7 @@ bool Parser::importStmt(ASTNodeList & out) {
     return false;
   }
 
-  ASTNode * path = new ASTIdent(matchLoc, importName);
+  ASTNode * path = new ASTIdent(tokenLoc, importName);
   while (match(Token_Dot)) {
     importName = matchIdent();
     if (!importName) {
@@ -336,7 +334,7 @@ bool Parser::importStmt(ASTNodeList & out) {
       return false;
     }
 
-    path = new ASTMemberRef(matchLoc, path, importName);
+    path = new ASTMemberRef(tokenLoc, path, importName);
   }
 
   const char * asName = importName;
@@ -394,7 +392,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
     // One or more variable declarations.
     ASTNode * declType = NULL;
     const char * declName = matchIdent();
-    loc = matchLoc;
+    loc = tokenLoc;
     if (declName == NULL) {
       expectedIdentifier();
       return DECL_ERROR;
@@ -404,7 +402,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
       declType = typeExpression();
     }
 
-    vars.push_back(new ASTVarDecl(varKind, matchLoc, declName, declType, NULL, mods));
+    vars.push_back(new ASTVarDecl(varKind, loc, declName, declType, NULL, mods));
   } while (match(Token_Comma));
 
   ASTNode * declValue = NULL;
@@ -423,7 +421,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
   ASTVarDecl * var;
   if (vars.size() > 1) {
     // Multiple variables declared with a single defn.
-    var = new ASTVarDecl(ASTNode::VarList, matchLoc, "vlist", NULL, declValue, mods);
+    var = new ASTVarDecl(ASTNode::VarList, loc, "vlist", NULL, declValue, mods);
     for (ASTDeclList::const_iterator it = vars.begin(); it != vars.end(); ++it) {
       ASTVarDecl * v = static_cast<ASTVarDecl *>(*it);
       if (v->type() == NULL && declValue == NULL) {
@@ -449,7 +447,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
 
 ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
   if (match(Token_LBracket)) {
-    SourceLocation loc = matchLoc;
+    SourceLocation loc = tokenLoc;
     ASTNode * returnType = NULL;
     ASTParamList params;
 
@@ -491,7 +489,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     declName = istrings.idCall;
   }
 
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   if (match(Token_Colon)) {
     // It's a property
     ASTNode * declType = typeExpression();
@@ -521,7 +519,6 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     ASTNodeList requirements;
     templateParamList(templateParams);
 
-    SourceLocation loc = matchLoc;
     ASTParamList params;
     if (match(Token_LParen)) {
       // Argument list
@@ -585,11 +582,10 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
     return DECL_ERROR;
   }
 
+  SourceLocation loc = tokenLoc;
   ASTNodeList templateParams;
   ASTNodeList requirements;
   templateParamList(templateParams);
-
-  SourceLocation loc = matchLoc;
 
   ASTFunctionDecl * fd = functionDeclaration(ASTNode::Macro, declName, mods);
 
@@ -620,6 +616,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
 
 ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
   const char * declName = matchIdent();
+  SourceLocation loc = tokenLoc;
   if (declName == NULL) {
     expectedIdentifier();
     skipToNextOpenDelim();
@@ -658,7 +655,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
 
   // TODO: If there were no errors
 
-  ASTTypeDecl * typeDecl = new ASTTypeDecl(kind, matchLoc, declName, bases, mods);
+  ASTTypeDecl * typeDecl = new ASTTypeDecl(kind, loc, declName, bases, mods);
 
   if (!templateParams.empty()) {
     if (match(Token_Where)) {
@@ -701,7 +698,7 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
   }
 
   mods.storageClass = Storage_Global; // Namespaces are always global
-  ASTNamespace * nsDef = new ASTNamespace(matchLoc, declName);
+  ASTNamespace * nsDef = new ASTNamespace(tokenLoc, declName);
 
   if (!match(Token_LBrace)) {
     expected("namespace body");
@@ -727,6 +724,7 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
 
 ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
   const char * declName = matchIdent();
+  SourceLocation loc = tokenLoc;
   if (declName == NULL) {
     expectedIdentifier();
     skipToNextOpenDelim();
@@ -745,7 +743,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
   DeclModifiers enumMods(mods);
   enumMods.storageClass = Storage_Static;
   //enumMods.flags = Final | Available;
-  ASTTypeDecl * enumDef = new ASTTypeDecl(ASTNode::Enum, matchLoc, declName, bases, enumMods);
+  ASTTypeDecl * enumDef = new ASTTypeDecl(ASTNode::Enum, loc, declName, bases, enumMods);
 
   if (!match(Token_LBrace)) {
     diag.error(lexer.tokenLocation()) << "Expecting enumeration constants";
@@ -768,12 +766,13 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
       break;
     }
 
+    loc = tokenLoc;
     ASTNode * ecValue = NULL;
     if (match(Token_Assign)) {
       ecValue = expression();
     }
 
-    ASTDecl * ecDecl = new ASTVarDecl(ASTNode::Let, matchLoc, ecName, NULL, ecValue, enumMods);
+    ASTDecl * ecDecl = new ASTVarDecl(ASTNode::Let, loc, ecName, NULL, ecValue, enumMods);
     ecDecl->attributes().append(attributes.begin(), attributes.end());
     enumDef->addMember(ecDecl);
 
@@ -809,20 +808,6 @@ ASTDecl * Parser::declareTypealias(const DeclModifiers & mods) {
   }
 
   DFAIL("Implement");
-
-#if 0
-  // Enum superclass.
-  ASTNodeList bases;
-  if (match(Token_Colon)) {
-    ASTNode * enumBase = typeExpression();
-    if (enumBase != NULL) {
-      bases.push_back(enumBase);
-    }
-  }
-
-  ASTTypeDecl * typeDef = new ASTTypeDecl(ASTNode::Enum, matchLoc, declName, bases, mods);
-  return enumDef;
-#endif
 }
 
 bool Parser::accessorMethodList(ASTPropertyDecl * parent,
@@ -928,7 +913,7 @@ bool Parser::attributeList(ASTNodeList & attributes) {
       return false;
     }
 
-    ASTNode * attrExpr = new ASTIdent(matchLoc, ident);
+    ASTNode * attrExpr = new ASTIdent(tokenLoc, ident);
     for (;;) {
       SourceLocation loc = lexer.tokenLocation();
       if (match(Token_LParen)) {
@@ -1070,7 +1055,7 @@ ASTNode * Parser::typeExprPrimary() {
       }
     }
 
-    result = new ASTTypeVariable(matchLoc, pvarName, declType, constraint);
+    result = new ASTTypeVariable(tokenLoc, pvarName, declType, constraint);
   } else if (match(Token_Optional)) {
     result = typeExprPrimary();
     if (result != NULL) {
@@ -1110,7 +1095,7 @@ ASTNode * Parser::typeName() {
     result = new ASTIdent(loc, typeName);
   } else if (token >= Token_BoolType && token <= Token_UIntpType) {
     TokenType t = token;
-    token = lexer.next();
+    next();
     result = builtInTypeName(t);
   } else {
     return NULL;
@@ -1124,7 +1109,7 @@ ASTNode * Parser::typeName() {
       return NULL;
     }
 
-    result = new ASTMemberRef(loc | matchLoc, result, typeName);
+    result = new ASTMemberRef(loc | tokenLoc, result, typeName);
     //result = typeSuffix(result);
     if (result == NULL) {
       return NULL;
@@ -1147,14 +1132,14 @@ ASTNode * Parser::typeSuffix(ASTNode * result) {
       }
 
       if (templateArgs.empty()) {
-        result = ASTUnaryOp::get(ASTNode::Array, result->location() | matchLoc, result);
+        result = ASTUnaryOp::get(ASTNode::Array, result->location() | tokenLoc, result);
       } else {
-        result = new ASTSpecialize(matchLoc | result->location(), result, templateArgs);
+        result = new ASTSpecialize(tokenLoc | result->location(), result, templateArgs);
       }
     } else if (match(Token_Caret)) {
       ASTNodeList templateArgs;
       templateArgs.push_back(result);
-      result = new ASTSpecialize(matchLoc | result->location(), &AddressType::biDef, templateArgs);
+      result = new ASTSpecialize(tokenLoc | result->location(), &AddressType::biDef, templateArgs);
     } else {
       return result;
     }
@@ -1218,7 +1203,7 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
 ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, const char * name,
     const DeclModifiers & mods) {
 
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
 
   ASTParamList params;
   if (match(Token_LParen)) {
@@ -1285,20 +1270,6 @@ bool Parser::templateParam(ASTNodeList & templateParams) {
   }
 
   return false;
-
-/*
-  const char * paramName = matchIdent();
-  if (paramName == NULL) {
-    expectedIdentifier();
-    return false;
-  }
-
-  // TODO: Parse types, default values and varargs...
-
-  ASTParameter * paramDef =
-      new ASTParameter(matchLoc, paramName, NULL, NULL, 0);
-  templateParams.push_back(paramDef);
-  return true; */
 }
 
 bool Parser::templateArgList(ASTNodeList & templateArgs) {
@@ -1318,7 +1289,6 @@ bool Parser::templateArgList(ASTNodeList & templateArgs) {
       templateArgs.push_back(arg);
     }
 
-    matchLoc = lexer.tokenLocation();
     if (match(Token_RBracket)) {
       return true;
     } else if (!match(Token_Comma)) {
@@ -1425,59 +1395,59 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
 Stmt * Parser::statement() {
   switch (token) {
     case Token_LBrace:
-      token = lexer.next();
+      next();
       return blockStmt();
 
     case Token_If:
-      token = lexer.next();
+      next();
       return ifStmt();
 
     case Token_While:
-      token = lexer.next();
+      next();
       return whileStmt();
 
     case Token_Do:
-      token = lexer.next();
+      next();
       return doWhileStmt();
 
     case Token_For:
-      token = lexer.next();
+      next();
       return forStmt();
 
     case Token_Repeat:
-      token = lexer.next();
+      next();
       return repeatStmt();
 
     case Token_Switch:
-      token = lexer.next();
+      next();
       return switchStmt();
 
     case Token_Classify:
-      token = lexer.next();
+      next();
       return classifyStmt();
 
     case Token_Return:
-      token = lexer.next();
+      next();
       return returnStmt();
 
     case Token_Yield:
-      token = lexer.next();
+      next();
       return yieldStmt();
 
     case Token_Break:
-      token = lexer.next();
+      next();
       return breakStmt();
 
     case Token_Continue:
-      token = lexer.next();
+      next();
       return continueStmt();
 
     case Token_Throw:
-      token = lexer.next();
+      next();
       return throwStmt();
 
     case Token_Try:
-      token = lexer.next();
+      next();
       return tryStmt();
 
     case Token_Let:
@@ -1655,7 +1625,7 @@ Stmt * Parser::declStmt() {
 }
 
 Stmt * Parser::ifStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   ASTNode * testExpr = testOrDecl();
   if (testExpr == NULL)
     return NULL;
@@ -1673,11 +1643,11 @@ Stmt * Parser::ifStmt() {
     }
   }
 
-  return new IfStmt(matchLoc, testExpr, thenSt, elseSt);
+  return new IfStmt(loc, testExpr, thenSt, elseSt);
 }
 
 Stmt * Parser::whileStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   ASTNode * testExpr = testOrDecl();
   if (testExpr == NULL)
     return NULL;
@@ -1686,11 +1656,11 @@ Stmt * Parser::whileStmt() {
   if (bodySt == NULL)
     return NULL;
 
-  return new WhileStmt(matchLoc, testExpr, bodySt);
+  return new WhileStmt(loc, testExpr, bodySt);
 }
 
 Stmt * Parser::doWhileStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   Stmt * bodySt = bodyStmt();
   if (bodySt == NULL)
     return NULL;
@@ -1705,11 +1675,11 @@ Stmt * Parser::doWhileStmt() {
     return NULL;
 
   needSemi();
-  return new DoWhileStmt(matchLoc, testExpr, bodySt);
+  return new DoWhileStmt(loc, testExpr, bodySt);
 }
 
 Stmt * Parser::forStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   ASTNodeList initVars;
 
   ASTNode * initExpr = NULL;
@@ -1766,16 +1736,16 @@ Stmt * Parser::forStmt() {
 }
 
 Stmt * Parser::repeatStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   Stmt * bodySt = bodyStmt();
   if (bodySt == NULL)
     return NULL;
 
-  return new WhileStmt(matchLoc, new ASTBoolLiteral(loc, true), bodySt);
+  return new WhileStmt(loc, new ASTBoolLiteral(loc, true), bodySt);
 }
 
 Stmt * Parser::switchStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   bool parens = match(Token_LParen);
 
   // It's a plain expression
@@ -1818,7 +1788,7 @@ Stmt * Parser::switchStmt() {
 }
 
 Stmt * Parser::caseStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   ASTNode * test = expression();
   if (test != NULL) {
     ASTNodeList exprs;
@@ -1843,7 +1813,7 @@ Stmt * Parser::caseStmt() {
 }
 
 Stmt * Parser::classifyStmt() {
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   bool parens = match(Token_LParen);
 
   // It's a plain expression
@@ -1903,7 +1873,7 @@ Stmt * Parser::classifyStmt() {
 
 Stmt * Parser::asStmt() {
   const char * declName = matchIdent();
-  SourceLocation loc = matchLoc;
+  SourceLocation loc = tokenLoc;
   ASTNode * declType = NULL;
 
   if (declName == NULL) {
@@ -1919,7 +1889,7 @@ Stmt * Parser::asStmt() {
     expected("type expression");
   }
 
-  ASTVarDecl * var = new ASTVarDecl(ASTNode::Let, matchLoc, declName, declType, NULL,
+  ASTVarDecl * var = new ASTVarDecl(ASTNode::Let, loc, declName, declType, NULL,
       DeclModifiers(Storage_Local));
   Stmt * body = bodyStmt();
   if (body == NULL) {
@@ -1944,7 +1914,7 @@ Stmt * Parser::bodyStmt() {
 
 Stmt * Parser::postCondition(Stmt * st) {
   if (match(Token_If)) {
-    SourceLocation loc = matchLoc;
+    SourceLocation loc = tokenLoc;
     ASTNode * testExpr = expression();
     if (testExpr == NULL) {
       expectedExpression();
@@ -2002,7 +1972,7 @@ ASTVarDecl * Parser::localDeclList(ASTNode::NodeType nt) {
   ASTDeclList decls;
   do {
     const char * declName = matchIdent();
-    SourceLocation loc = matchLoc;
+    SourceLocation loc = tokenLoc;
     ASTNode * declType = NULL;
 
     if (declName == NULL) {
@@ -2014,14 +1984,14 @@ ASTVarDecl * Parser::localDeclList(ASTNode::NodeType nt) {
       declType = typeExpression();
     }
 
-    decls.push_back(new ASTVarDecl(nt, matchLoc, declName, declType, NULL, mods));
+    decls.push_back(new ASTVarDecl(nt, loc, declName, declType, NULL, mods));
   } while (match(Token_Comma));
 
   DASSERT(!decls.empty());
   if (decls.size() == 1) {
     return static_cast<ASTVarDecl *>(decls.front());
   } else {
-    ASTVarDecl * var = new ASTVarDecl(ASTNode::VarList, matchLoc, "vlist", NULL, NULL, mods);
+    ASTVarDecl * var = new ASTVarDecl(ASTNode::VarList, tokenLoc, "vlist", NULL, NULL, mods);
     for (ASTDeclList::const_iterator it = decls.begin(); it != decls.end(); ++it) {
       var->addMember(static_cast<ASTVarDecl *>(*it));
     }
@@ -2446,7 +2416,7 @@ ASTNode * Parser::primaryExpression() {
 
     case Token_Ident: {
       const char * ident = matchIdent();
-      result = new ASTIdent(matchLoc, ident);
+      result = new ASTIdent(tokenLoc, ident);
       /*if (match(Token_Colon)) {
 
       }*/
@@ -2509,7 +2479,7 @@ ASTNode * Parser::primaryExpression() {
         result = builtInTypeName(token);
         //result = new ASTIdent(lexer.tokenLocation(),
         //    istrings.intern(lexer.tokenValue().c_str()));
-        token = lexer.next();
+        next();
       }
 
       break;
@@ -2523,7 +2493,7 @@ ASTNode * Parser::primaryExpression() {
         ASTNodeList argList;
         if (!parseArgumentList(argList))
           return NULL;
-        result = new ASTCall(matchLoc | result->location(), result, argList);
+        result = new ASTCall(loc | result->location(), result, argList);
       } else if (match(Token_LBracket)) {
         // Array dereference
         ASTOper * indexop = new ASTOper(ASTNode::GetElement, result->location());
@@ -2587,7 +2557,6 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
       }
     }
 
-    matchLoc = lexer.tokenLocation();
     args.push_back(arg);
     if (match(Token_RParen))
       break;

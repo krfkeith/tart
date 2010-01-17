@@ -72,6 +72,8 @@ public:
       llvm::ConstantInt * value);
   static ConstantInteger * getSInt32(int32_t value);
   static ConstantInteger * getUInt32(uint32_t value);
+  static ConstantInteger * getSInt(int32_t value);
+  static ConstantInteger * getUInt(uint32_t value);
   static ConstantInteger * getSigned(const llvm::APInt & value, const PrimitiveType * type);
   static ConstantInteger * getUnsigned(const llvm::APInt & value, const PrimitiveType * type);
 
