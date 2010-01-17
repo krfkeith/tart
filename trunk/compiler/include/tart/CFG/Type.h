@@ -13,10 +13,6 @@
 #include "tart/Common/SmallEnumSet.h"
 #endif
 
-#ifndef TART_COMMON_HASH_H
-#include "tart/Common/Hash.h"
-#endif
-
 #ifndef TART_CFG_SCOPE_H
 #include "tart/CFG/Scope.h"
 #endif
