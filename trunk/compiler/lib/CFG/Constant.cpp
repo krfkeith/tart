@@ -11,6 +11,7 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/TargetSelection.h"
 #include "tart/Common/Diagnostics.h"
 #include <llvm/ADT/StringExtras.h>
 
@@ -79,6 +80,22 @@ ConstantInteger * ConstantInteger::getSInt32(int32_t value) {
 
 ConstantInteger * ConstantInteger::getUInt32(uint32_t value) {
   return get(SourceLocation(), &UInt32Type::instance, value);
+}
+
+ConstantInteger * ConstantInteger::getSInt(int32_t value) {
+  const llvm::TargetData * td = TargetSelection::instance.targetData();
+  const Type * intType = td->getPointerSizeInBits() >= 64 ?
+      static_cast<const PrimitiveType *>(&Int64Type::instance) :
+      static_cast<const PrimitiveType *>(&Int32Type::instance);
+  return get(SourceLocation(), intType, value);
+}
+
+ConstantInteger * ConstantInteger::getUInt(uint32_t value) {
+  const llvm::TargetData * td = TargetSelection::instance.targetData();
+  const Type * intType = td->getPointerSizeInBits() >= 64 ?
+      static_cast<const PrimitiveType *>(&UInt64Type::instance) :
+      static_cast<const PrimitiveType *>(&UInt32Type::instance);
+  return get(SourceLocation(), intType, value);
 }
 
 ConstantInteger * ConstantInteger::getSigned(const llvm::APInt & value,

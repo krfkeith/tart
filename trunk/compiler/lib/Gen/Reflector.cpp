@@ -337,14 +337,14 @@ llvm::Constant * Reflector::emitArray(
     VariableDefn * emptyArray = cast_or_null<VariableDefn>(
         arrayType->memberScope()->lookupSingleMember("emptyArray"));
     if (emptyArray != NULL) {
-      return llvm::ConstantExpr::getPointerCast(
-          cast<Constant>(cg_.genVarValue(emptyArray)), arrayType->irEmbeddedType());
+      GlobalVariable * eaVar = cast<GlobalVariable>(cg_.genVarValue(emptyArray));
+      return eaVar->getInitializer();
     }
   }
 
   StructBuilder sb(cg_);
   sb.createObjectHeader(arrayType);
-  sb.addField(cg_.getInt32Val(values.size()));
+  sb.addField(cg_.getIntVal(values.size()));
   sb.addArrayField(elementType, values);
 
   llvm::Constant * arrayStruct = sb.build();
@@ -705,7 +705,7 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
 
   StructBuilder sb(cg_);
   sb.createObjectHeader(arrayType);
-  sb.addField(cg_.getInt32Val(values.size()));
+  sb.addField(cg_.getIntVal(values.size()));
   sb.addArrayField(elementType, values);
 
   llvm::Constant * arrayStruct = sb.build();

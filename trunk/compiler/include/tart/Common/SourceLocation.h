@@ -72,8 +72,8 @@ struct SourceLocation {
 
   void trace() const;
 
-  // Print this location to stderr (for debugging)
-  void dump() const;
+  // Print this location to stderr (for debugging). Virtual to prevent inlining.
+  virtual void dump() const;
 };
 
 // Because 'const SourceLocation' occurs so much, an abbreviation is useful

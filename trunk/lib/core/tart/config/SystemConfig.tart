@@ -3,17 +3,35 @@ import tart.annex.TargetProperty;
 
 /** Information about the host platform. */
 namespace SystemConfig {
+  // TODO: Add more OSs and CPUs.
+  
   /** Operating system type. */
-  @Flags enum OS {
+  enum OS {
+    CYGWIN,
+    DARWIN,
+    FREEBSD,
     LINUX,
-    MACOSX,
+    NETBSD,
+    OPENBSD,
+    SOLARIS,
     WINDOWS,
-    WIN32,
-    WIN64,
+  }
+
+	/** CPU type. */  
+  enum CPU {
+    ALPHA,
+    ARM,
+    PPC,
+    PPC_64,
+    X86,
+    X86_64,
   }
 
   /** Operating system type of the target platform. */  
   @TargetProperty var os:OS;
+  
+  /** Operating system type of the target platform. */  
+  @TargetProperty var cpu:CPU;
   
   /** Whether this processor allows unaligned reads. */  
   @TargetProperty var allowUnalignedMemoryAccess:bool;

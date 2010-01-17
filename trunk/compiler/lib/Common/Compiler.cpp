@@ -5,11 +5,16 @@
 #include "tart/Common/Compiler.h"
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/PackageMgr.h"
+
 #include "tart/CFG/Module.h"
+
 #include "tart/Objects/Builtins.h"
+
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/ScopeBuilder.h"
+
 #include "tart/Gen/CodeGenerator.h"
+
 #include <llvm/Support/CommandLine.h>
 #include <llvm/System/Path.h>
 
@@ -17,6 +22,12 @@ namespace tart {
 
 static llvm::cl::opt<std::string>
 SourcePath("sourcepath", llvm::cl::desc("Where to find input files"));
+
+Compiler::Compiler()
+  : generateBitcode_(true)
+  , generateDependencies_(false)
+{
+}
 
 void Compiler::processInputFile(const std::string & inFile) {
   llvm::sys::Path filePath(SourcePath);

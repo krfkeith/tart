@@ -66,9 +66,6 @@ public:
 
   static void initPrimitiveTypes(Module * module);
 
-  // Size of a pointer in bits, controlled by command-line options.
-  static uint32_t pointerSize() { return pointerSize_; }
-
   // Overrides
   const llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
@@ -100,7 +97,6 @@ protected:
 
   // Static list of all primitive types.
   static PrimitiveType * primitiveTypeList;
-  static uint32_t pointerSize_;
 };
 
 // -------------------------------------------------------------------

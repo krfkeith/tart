@@ -26,6 +26,10 @@ import tart.gc.AddressRange;
   //def free(pages:AddressRange) {
   //  freeImpl(pages);
   //}
+ 
+ 	if true {
+ 	  var index:int;
+ 	}
   
   //if SystemConfig.LINUX in SystemConfig.os {
   //} else if SystemConfig.WINDOWS in SystemConfig.os {

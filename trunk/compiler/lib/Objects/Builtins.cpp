@@ -9,6 +9,7 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/Objects/TargetSelection.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
@@ -73,6 +74,8 @@ FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
 
 void Builtins::init() {
+  TargetSelection::instance.selectTarget();
+
   // Initialize primitive types
   PrimitiveType::initPrimitiveTypes(&module);
 
@@ -138,7 +141,6 @@ void Builtins::loadSystemClasses() {
   typeIntrinsicAttribute.get();
 
   // Analyze class Object.
-  //AnalyzerBase::analyzeType(typeObject, Task_PrepCodeGeneration);
   AnalyzerBase::analyzeType(typeObject, Task_PrepMemberLookup);
 
   // Get the function that tests for a type

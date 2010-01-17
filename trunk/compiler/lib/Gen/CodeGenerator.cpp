@@ -17,6 +17,8 @@
 
 #include "tart/Objects/Builtins.h"
 
+#include "tart/Objects/TargetSelection.h"
+
 #include "llvm/Config/config.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Module.h"
@@ -81,6 +83,10 @@ CodeGenerator::CodeGenerator(Module * mod)
 
 void CodeGenerator::generate() {
   using namespace llvm;
+
+  // Add target selection info
+  TargetSelection::instance.addToModule(irModule_);
+  targetData_ = TargetSelection::instance.targetData();
 
   // Generate debugging information
   if (debug_) {
@@ -210,6 +216,11 @@ void CodeGenerator::generate() {
     verifyModule();
     outputModule();
   }
+}
+
+llvm::ConstantInt * CodeGenerator::getIntVal(int value) {
+  using namespace llvm;
+  return ConstantInt::get(targetData_->getIntPtrType(context_), value, true);
 }
 
 llvm::ConstantInt * CodeGenerator::getInt32Val(int value) {
