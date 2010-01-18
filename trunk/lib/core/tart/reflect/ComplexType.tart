@@ -101,4 +101,18 @@ public class ComplexType : SimpleType {
       }
     }
   }
+  
+  private final def isSubclassImpl(cls:Type) -> bool {
+    return true if self is cls;
+    return false if _superType is null;
+    return _superType.isSubclassImpl(cls);
+  }
+
+  final def isSubclass(cls:Type) -> bool {
+    return isSubclassImpl(cls);
+  }
+
+  final def isSubclass[%T](cls:TypeLiteral[T]) -> bool {
+    return isSubclassImpl(Type.of(T));
+  }
 }

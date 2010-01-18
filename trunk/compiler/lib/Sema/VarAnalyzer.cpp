@@ -40,6 +40,7 @@ static const VariableDefn::PassSet PASS_SET_COMPLETE = VariableDefn::PassSet::of
 VarAnalyzer::VarAnalyzer(VariableDefn * var)
   : DefnAnalyzer(var->module(), var->definingScope(), var, NULL)
   , target(var)
+  , trace_(isTraceEnabled(var))
 {
   DASSERT(var != NULL);
 }
@@ -48,6 +49,7 @@ VarAnalyzer::VarAnalyzer(VariableDefn * var, Scope * scope, Module * module, Def
     FunctionDefn * currentFunction)
   : DefnAnalyzer(module, scope, subject, currentFunction)
   , target(var)
+  , trace_(isTraceEnabled(var))
 {
   DASSERT(var != NULL);
 }
@@ -67,6 +69,7 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
     case Task_PrepConstruction:
     case Task_PrepEvaluation:
     case Task_PrepTypeGeneration:
+    case Task_PrepReflection:
       return runPasses(PASS_SET_CONSTRUCT);
 
     case Task_PrepCodeGeneration:
@@ -84,8 +87,17 @@ bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
     return true;
   }
 
+  if (trace_) {
+    diag.debug(target) << Format_Verbose << "Analyzing: " << target;
+  }
+
+  AutoIndent A(trace_);
+
   if (passesToRun.contains(VariableDefn::AttributePass) &&
       target->passes().begin(VariableDefn::AttributePass)) {
+    if (trace_) {
+      diag.debug() << "Resolve attributes";
+    }
     if (!resolveAttributes(target)) {
       return false;
     }
@@ -110,6 +122,10 @@ bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
 }
 
 bool VarAnalyzer::resolveVarType() {
+  if (trace_) {
+    diag.debug() << "Resolve variable type";
+  }
+
   if (target->passes().begin(VariableDefn::VariableTypePass)) {
     const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->ast());
 
@@ -198,7 +214,6 @@ bool VarAnalyzer::resolveVarType() {
     target->passes().finish(VariableDefn::VariableTypePass);
   }
 
-
   DASSERT_OBJ(!target->type()->isVoidType(), target);
   return true;
 }
@@ -216,6 +231,10 @@ void VarAnalyzer::setTargetType(const Type * type) {
 }
 
 bool VarAnalyzer::resolveInitializers() {
+  if (trace_) {
+    diag.debug() << "Resolve initializer";
+  }
+
   if (target->passes().begin(VariableDefn::InitializerPass)) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(target)) {
       switch (var->storageClass()) {

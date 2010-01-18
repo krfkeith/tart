@@ -53,7 +53,7 @@ AnalyzerBase::AnalyzerBase(Module * mod, Scope * parent, Defn * subject,
 }
 
 bool AnalyzerBase::isTraceEnabled(Defn * de) {
-  return de != NULL && traceDef_.getValue() == de->name();
+  return de != NULL && de->name() != NULL && traceDef_.getValue() == de->name();
 }
 
 bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions lookupOptions) {

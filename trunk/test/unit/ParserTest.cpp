@@ -396,25 +396,25 @@ TEST_F(ParserTest, Arguments) {
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f()", ast);
   EXPECT_EQ(0u, ast->location().begin);
-  EXPECT_EQ(1u, ast->location().end);
+  EXPECT_EQ(2u, ast->location().end);
 
   ast = parseExpression("f(1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1)", ast);
   EXPECT_EQ(0u, ast->location().begin);
-  EXPECT_EQ(4u, ast->location().end);
+  EXPECT_EQ(2u, ast->location().end);
 
   ast = parseExpression("f(1, 1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1, 1)", ast);
   EXPECT_EQ(0u, ast->location().begin);
-  EXPECT_EQ(7u, ast->location().end);
+  EXPECT_EQ(2u, ast->location().end);
 
   ast = parseExpression("f(1, n=1)");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
   EXPECT_AST_EQ("f(1, n=1)", ast);
   EXPECT_EQ(0u, ast->location().begin);
-  EXPECT_EQ(9u, ast->location().end);
+  EXPECT_EQ(2u, ast->location().end);
 
   ast = parseExpression("f(1,)", 1);
   ASSERT_EQ(NULL, ast);

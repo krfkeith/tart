@@ -419,6 +419,17 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
     //*it = element;
   }
 
+  // If it's empty, then prepare the empty list singleton.
+  if (arrayData->elements().empty()) {
+    VariableDefn * emptyArray = cast_or_null<VariableDefn>(
+        arrayType->memberScope()->lookupSingleMember("emptyArray"));
+    if (emptyArray != NULL) {
+      AnalyzerBase::analyzeVariable(emptyArray, Task_PrepCodeGeneration);
+      // TODO: Replace with empty list in code gen phase.
+      //return new LValueExpr(in->location(), NULL, emptyArray);
+    }
+  }
+
   // Constant array objects are special because of their variable size.
   ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
   arrayObj->setMemberValue("_length",
