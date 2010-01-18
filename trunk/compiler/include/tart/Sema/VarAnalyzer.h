@@ -28,6 +28,7 @@ public:
 
 private:
   VariableDefn * target;
+  bool trace_;
 
   void setTargetType(const Type * type);
 

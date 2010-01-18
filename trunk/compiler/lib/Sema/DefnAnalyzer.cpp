@@ -653,13 +653,10 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
 }
 
 bool DefnAnalyzer::importSystemType(const SystemClass & sclass) {
-  if (module->addSymbol(sclass.typeDefn())) {
-    AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
-    sclass->addFieldTypesToModule(module);
-    return true;
-  }
-
-  return false;
+  module->addSymbol(sclass.typeDefn());
+  AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
+  sclass->addFieldTypesToModule(module);
+  return true;
 }
 
 Module * DefnAnalyzer::moduleForDefn(const Defn * def) {

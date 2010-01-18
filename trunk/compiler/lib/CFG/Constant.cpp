@@ -84,7 +84,7 @@ ConstantInteger * ConstantInteger::getUInt32(uint32_t value) {
 
 ConstantInteger * ConstantInteger::getSInt(int32_t value) {
   const llvm::TargetData * td = TargetSelection::instance.targetData();
-  const Type * intType = td->getPointerSizeInBits() >= 64 ?
+  const Type * intType = td != NULL && td->getPointerSizeInBits() >= 64 ?
       static_cast<const PrimitiveType *>(&Int64Type::instance) :
       static_cast<const PrimitiveType *>(&Int32Type::instance);
   return get(SourceLocation(), intType, value);
@@ -92,7 +92,7 @@ ConstantInteger * ConstantInteger::getSInt(int32_t value) {
 
 ConstantInteger * ConstantInteger::getUInt(uint32_t value) {
   const llvm::TargetData * td = TargetSelection::instance.targetData();
-  const Type * intType = td->getPointerSizeInBits() >= 64 ?
+  const Type * intType = td != NULL && td->getPointerSizeInBits() >= 64 ?
       static_cast<const PrimitiveType *>(&UInt64Type::instance) :
       static_cast<const PrimitiveType *>(&UInt32Type::instance);
   return get(SourceLocation(), intType, value);

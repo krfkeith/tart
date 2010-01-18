@@ -41,8 +41,11 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
     module->addMember(de);
   }
 
+  unsigned pointerSize = 32;
   const llvm::TargetData * td = TargetSelection::instance.targetData();
-  unsigned pointerSize = td->getPointerSizeInBits();
+  if (td != NULL) {
+    pointerSize = td->getPointerSizeInBits();
+  }
 
   intDef.setValue(pointerSize == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
   uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);

@@ -2,8 +2,10 @@ import tart.testing.Test;
 
 class ScannerBaseTest : Test {
   def testConstruct {
+    Debug.writeLn("Here");
   }
   
   def testReadChar {
+    Debug.writeLn("There");
   }
 }

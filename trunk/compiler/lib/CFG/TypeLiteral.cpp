@@ -108,5 +108,4 @@ void TypeLiteralType::format(FormatStream & out) const {
   out << "TypeLiteral[" << literalType_ << "]";
 }
 
-
 } // namespace tart

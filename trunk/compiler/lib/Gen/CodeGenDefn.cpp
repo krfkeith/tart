@@ -308,6 +308,8 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   DASSERT(var->irValue() == NULL);
   DASSERT(var->storageClass() == Storage_Global || var->storageClass() == Storage_Static);
 
+  DASSERT_OBJ(var->passes().isFinished(VariableDefn::InitializerPass), var);
+
   GlobalVariable * gv = irModule_->getGlobalVariable(var->linkageName());
   if (gv != NULL) {
     return gv;
@@ -361,7 +363,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
         gv->setInitializer(initValue);
       } else {
-        diag.debug(initExpr) << "Initialization expr not a constant: " << initExpr;
+        diag.debug(initExpr) << Format_Verbose << "Initialization expr not a constant: " << initExpr;
         DFAIL("Implement");
 #if 0
         genModuleInitFunc();

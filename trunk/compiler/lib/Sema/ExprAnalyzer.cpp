@@ -406,7 +406,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
     for (size_t i = 0; i < dstVars.size(); ++i) {
       Expr * srcVal = new BinaryExpr(
           Expr::ElementRef, rhs->location(), tt->member(i),
-          rhs, ConstantInteger::getUInt(i));
+          rhs, ConstantInteger::getUInt32(i));
 
       ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
     }

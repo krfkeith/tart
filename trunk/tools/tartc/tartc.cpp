@@ -8,11 +8,13 @@
 #include "tart/Common/PackageMgr.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/TargetSelection.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/System/Signals.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Target/TargetSelect.h"
 
 using namespace tart;
 
@@ -36,6 +38,8 @@ int main(int argc, char **argv) {
   llvm::PrettyStackTraceProgram X(argc, argv);
   //llvm::llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
+  llvm::InitializeAllTargets();
+
   // Requires at least one input file
   if (InputFilenames.empty()) {
     fprintf(stderr, "No input files specified\n");
@@ -53,6 +57,7 @@ int main(int argc, char **argv) {
   }
 
   // Now get the system classes we will need.
+  TargetSelection::init();
   Builtins::init();
   Builtins::loadSystemClasses();
 

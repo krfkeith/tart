@@ -12,7 +12,11 @@ namespace tart {
 
 class TargetSelection {
 public:
-  TargetSelection() : initialized_(false) {}
+  TargetSelection()
+    : initialized_(false)
+    , targetData_(NULL)
+    , targetMachine_(NULL)
+  {}
 
   /** Select a target based on the command-line parameters. */
   bool selectTarget();
@@ -22,6 +26,9 @@ public:
 
   /** The TargetData for the selected target. */
   const llvm::TargetData * targetData() const { return targetData_; }
+
+  /** Static initialization function. */
+  static void init();
 
   // Static instance of target selection.
   static TargetSelection instance;

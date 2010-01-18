@@ -74,8 +74,6 @@ FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
 
 void Builtins::init() {
-  TargetSelection::instance.selectTarget();
-
   // Initialize primitive types
   PrimitiveType::initPrimitiveTypes(&module);
 

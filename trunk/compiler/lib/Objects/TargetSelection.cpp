@@ -9,7 +9,6 @@
 #include "llvm/Module.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetRegistry.h"
-#include "llvm/Target/TargetSelect.h"
 #include "llvm/Target/SubtargetFeature.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/System/Host.h"
@@ -36,14 +35,16 @@ namespace tart {
 
 TargetSelection TargetSelection::instance;
 
+void TargetSelection::init() {
+  instance.selectTarget();
+}
+
 bool TargetSelection::selectTarget() {
   if (initialized_) {
     return true;
   }
 
   initialized_ = true;
-
-  llvm::InitializeAllTargets();
 
   if (!optTargetTriple.empty()) {
     targetTriple_.setTriple(optTargetTriple);
