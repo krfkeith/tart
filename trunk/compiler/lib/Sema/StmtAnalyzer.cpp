@@ -597,7 +597,10 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   if (st->loopVars()->nodeType() == ASTNode::Var) {
     const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(st->loopVars());
     VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
-    initDefn->setType(iterVarType);
+    if (initDefn->type() == NULL) {
+      initDefn->setType(iterVarType);
+    }
+
     if (!analyzeVariable(initDefn, Task_PrepTypeGeneration)) {
       return false;
     }
@@ -610,7 +613,39 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
       return false;
     }
 
-    DFAIL("Implement");
+    if (const TupleType * tt = dyn_cast<TupleType>(iterVarType)) {
+      if (tt->size() != vars.size()) {
+        diag.error(st) << "Incorrect number of iteration variables.";
+        return false;
+      }
+
+      size_t numVars = tt->size();
+      DASSERT(iterValue->isSingular());
+      iterValue = SharedValueExpr::get(iterValue);
+      for (size_t i = 0; i < numVars; ++i) {
+        VariableDefn * var = cast<VariableDefn>(vars[i]);
+        const Type * elementType = tt->member(i);
+        if (var->type() == NULL) {
+          var->setType(elementType);
+        }
+
+        if (!analyzeVariable(var, Task_PrepTypeGeneration)) {
+          return false;
+        }
+
+        Expr * elementVal = new BinaryExpr(
+             Expr::ElementRef, iterValue->location(), elementType,
+             iterValue, ConstantInteger::getUInt32(i));
+
+        elementVal = var->type()->implicitCast(st->location(), elementVal);
+        if (elementVal != NULL) {
+          blkBody->append(new InitVarExpr(st->location(), var, elementVal));
+        }
+      }
+    } else {
+      diag.error(st) << "Iterator type incompatible with multiple iteration variables.";
+      return false;
+    }
   } else {
     DFAIL("Invalid loop variable");
   }
@@ -1525,6 +1560,7 @@ Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffi
 
 LValueExpr * StmtAnalyzer::createTempVar(const char * name, Expr * value, bool isMutable) {
   VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module, name);
+  var->addTrait(Defn::Singular);
   var->setLocation(value->location());
   var->setType(value->type());
   var->setStorageClass(Storage_Local);

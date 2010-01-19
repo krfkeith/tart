@@ -23,9 +23,9 @@ import tart.gc.AddressRange;
   }
 
   /** Free the specified pages. */  
-  //def free(pages:AddressRange) {
-  //  freeImpl(pages);
-  //}
+  def free(pages:AddressRange) {
+  	freeImpl(pages.first, pages.size);
+  }
  
  	if true {
  	  var index:int;
@@ -39,6 +39,10 @@ import tart.gc.AddressRange;
   /** Allocate the specified number of pages. */  
   @Extern("PageAllocator_allocImpl")
   private def allocImpl(pageSize:int, numPages:int) -> Address[ubyte];
+  
+  /** Allocate the specified number of pages. */  
+  @Extern("PageAllocator_freeImpl")
+  private def freeImpl(addr:Address[ubyte], size:int);
   
   //@Extern("PageAllocator_freeImpl")
   //private def freeImpl(page:Address[ubyte]);

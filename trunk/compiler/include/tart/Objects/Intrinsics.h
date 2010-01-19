@@ -165,7 +165,8 @@ class PointerDiffIntrinsic : public Intrinsic {
 class DerefIntrinsic : public Intrinsic {
   static DerefIntrinsic instance;
   DerefIntrinsic() : Intrinsic("tart.core.Memory.deref") {}
-  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -345,6 +346,14 @@ class TargetPropertyApplyIntrinsic : public Intrinsic {
   TargetPropertyApplyIntrinsic() : Intrinsic("tart.annex.TargetProperty.apply") {}
   Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
       const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Proxy.create intrinsic
+class ProxyCreateIntrinsic : public Intrinsic {
+  static ProxyCreateIntrinsic instance;
+  ProxyCreateIntrinsic() : Intrinsic("tart.reflect.Proxy.create") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
 }

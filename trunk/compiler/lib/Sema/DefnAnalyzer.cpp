@@ -477,21 +477,11 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   }
 }
 
-void DefnAnalyzer::addPass(Defn * de, DefnPasses & toRun, const DefnPass requested) {
-  toRun.add(requested);
-  toRun.removeAll(de->finished());
-}
-
-void DefnAnalyzer::addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested) {
-  toRun.addAll(requested);
-  toRun.removeAll(de->finished());
-}
-
 void DefnAnalyzer::addReflectionInfo(Defn * in) {
   analyzeDefn(in, Task_PrepTypeComparison);
   bool enableReflection = module->isReflectionEnabled() &&
         (in->isSynthetic() || in->module() == module);
-  bool enableReflectionDetail = enableReflection && !in->hasTrait(Defn::Nonreflective);
+  bool enableReflectionDetail = enableReflection && !in->isNonreflective();
   bool trace = isTraceEnabled(in);
 
   if (trace) {
@@ -501,8 +491,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     switch (tdef->typeValue()->typeClass()) {
       case Type::Primitive:
-        if (enableReflectionDetail) {
-          module->reflectedDefs().insert(in);
+        if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
           importSystemType(Builtins::typeSimpleType);
         }
         break;
@@ -518,9 +507,12 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
             reflectTypeMembers(ctype);
           }
 
+          importSystemType(Builtins::typeType);
           importSystemType(Builtins::typeComplexType);
         } else if (enableReflection) {
+          module->addSymbol(tdef);
           module->reflectedDefs().insert(tdef);
+          importSystemType(Builtins::typeType);
           importSystemType(Builtins::typeSimpleType);
         }
 
@@ -528,11 +520,9 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       }
 
       case Type::Struct:
-        if (enableReflectionDetail) {
-          if (module->reflectedDefs().insert(tdef)) {
-            module->addSymbol(tdef);
-            importSystemType(Builtins::typeComplexType);
-          }
+        if (enableReflectionDetail && module->reflectedDefs().insert(tdef)) {
+          module->addSymbol(tdef);
+          importSystemType(Builtins::typeComplexType);
         }
 
         break;
@@ -541,8 +531,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
         break;
 
       case Type::Enum:
-        if (enableReflectionDetail) {
-          module->reflectedDefs().insert(in);
+        if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
           importSystemType(Builtins::typeEnumType);
         }
         break;
@@ -556,33 +545,27 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
         if (module->reflectedDefs().insert(fn)) {
           module->addSymbol(fn);
           importSystemType(Builtins::typeMethod);
-          importSystemType(Builtins::typeFunctionType);
           importSystemType(Builtins::typeDerivedType);
         }
 
+        reflectType(fn->type());
+
         for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
           const Type * paramType = (*it)->internalType();
-          reflectType(paramType);
+          // Cache the unbox function for this type.
           if (paramType->isBoxableType()) {
-            // Cache the unbox function for this type.
             ExprAnalyzer(module, activeScope, fn, fn).getUnboxFn(SourceLocation(), paramType);
           }
         }
 
-        if (trace) {
-          diag.debug() << Format_Verbose << "  Reflecting return type: " << fn->returnType();
-        }
-        reflectType(fn->returnType());
-
-        if (fn->returnType()->isBoxableType()) {
-          // Cache the boxing function for this type.
+        // Cache the boxing function for this type.
+       if (fn->returnType()->isBoxableType()) {
           ExprAnalyzer(module, activeScope, subject_, fn).coerceToObjectFn(fn->returnType());
         }
       }
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
-    if (enableReflectionDetail) {
-      module->reflectedDefs().insert(in);
+    if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
       reflectType(prop->type());
       importSystemType(Builtins::typeProperty);
     }
@@ -597,26 +580,52 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 bool DefnAnalyzer::reflectType(const Type * type) {
   TypeDefn * tdef = type->typeDefn();
   if (tdef != NULL) {
-    if (tdef->isSynthetic()) {
+    if (tdef->isNonreflective() || tdef->isSynthetic()) {
       addReflectionInfo(tdef);
-    } else if (module->addSymbol(tdef)) {
-      if (type->typeClass() == Type::Primitive) {
-        importSystemType(Builtins::typeSimpleType);
-      } else if (type->typeClass() == Type::Enum) {
-        importSystemType(Builtins::typeEnumType);
-      } else if (type->typeClass() == Type::Class) {
-        if (type == Builtins::typeComplexType.get()) {
-          // Special case for where a reference to a system class is used as
-          // a parameter - it will already have been added to the module, so
-          // importSystemType won't work.
-          AnalyzerBase::analyzeType(Builtins::typeComplexType, Task_PrepCodeGeneration);
-          Builtins::typeComplexType->addFieldTypesToModule(module);
-        }
-      }
-      //diag.info() << Format_Verbose << "Reflecting type: " << type;
+      return true;
     }
 
-    return true;
+    module->addSymbol(tdef);
+  }
+
+  switch (type->typeClass()) {
+    case Type::Primitive:
+      importSystemType(Builtins::typeSimpleType);
+      break;
+
+    case Type::Enum:
+      importSystemType(Builtins::typeEnumType);
+      break;
+
+    case Type::Class:
+    case Type::Interface:
+      importSystemType(Builtins::typeComplexType);
+      break;
+
+    case Type::Function: {
+      importSystemType(Builtins::typeFunctionType);
+      const FunctionType * ft = static_cast<const FunctionType *>(type);
+      for (ParameterList::const_iterator it = ft->params().begin();
+          it != ft->params().end(); ++it) {
+        const Type * paramType = (*it)->internalType();
+        reflectType(paramType);
+      }
+
+      reflectType(ft->returnType());
+      break;
+    }
+
+    case Type::Tuple: {
+      const TupleType * tt = static_cast<const TupleType *>(type);
+      for (TupleType::const_iterator it = tt->begin(); it != tt->end(); ++it) {
+        reflectType(*it);
+      }
+      importSystemType(Builtins::typeDerivedType);
+      break;
+    }
+
+    default:
+      break;
   }
 
   return false;
@@ -653,10 +662,15 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
 }
 
 bool DefnAnalyzer::importSystemType(const SystemClass & sclass) {
-  module->addSymbol(sclass.typeDefn());
-  AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
-  sclass->addFieldTypesToModule(module);
-  return true;
+  if (!module->systemDefs().count(sclass.typeDefn())) {
+    module->systemDefs().insert(sclass.typeDefn());
+    module->addSymbol(sclass.typeDefn());
+    AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
+    sclass->addFieldTypesToModule(module);
+    return true;
+  }
+
+  return false;
 }
 
 Module * DefnAnalyzer::moduleForDefn(const Defn * def) {

@@ -24,6 +24,9 @@ namespace tart {
 
 using llvm::APInt;
 
+/// -------------------------------------------------------------------
+/// PrimitiveType
+
 PrimitiveType * PrimitiveType::primitiveTypeList;
 
 ASTBuiltIn PrimitiveType::intDef(NULL);
@@ -51,8 +54,14 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
   uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
 }
 
-/// -------------------------------------------------------------------
-/// Primitive types
+const Type * PrimitiveType::intType() {
+  return static_cast<TypeDefn *>(intDef.value())->typeValue();
+}
+
+const Type * PrimitiveType::uintType() {
+  return static_cast<TypeDefn *>(uintDef.value())->typeValue();
+}
+
 PrimitiveType::PrimitiveType(TypeDefn * de) :
   DeclaredType(Type::Primitive, de, &Builtins::module, Shape_Primitive) {
   nextType_ = primitiveTypeList;

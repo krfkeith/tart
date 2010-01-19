@@ -102,8 +102,6 @@ bool TargetSelection::selectTarget() {
   targetMachine_ = target->createTargetMachine(targetTriple_.getTriple(), featuresStr);
   assert(targetMachine_ && "Could not allocate target machine!");
   targetData_ = targetMachine_->getTargetData();
-
-  diag.debug() << "Target is " << targetTriple_.getTriple();
   return true;
 }
 

@@ -312,10 +312,11 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 // DerefIntrinsic
 DerefIntrinsic DerefIntrinsic::instance;
 
-Value * DerefIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  DASSERT(call->argCount() == 1);
-  Value * val = cg.genExpr(call->arg(0));
-  return cg.builder().CreateLoad(val, "deref");
+Expr * DerefIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+    const ExprList & args, Type * expectedReturn) const {
+  DASSERT(args.size() == 1);
+  Expr * arg = args[0];
+  return new UnaryExpr(Expr::PtrDeref, loc, arg->type()->typeParam(0), arg);
 }
 
 // -------------------------------------------------------------------
@@ -742,6 +743,29 @@ Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, const Func
   }
 
   return args[0];
+}
+
+// -------------------------------------------------------------------
+// ProxyCreateIntrinsic
+ProxyCreateIntrinsic ProxyCreateIntrinsic::instance;
+
+Value * ProxyCreateIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 2);
+  const Expr * typeArg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(typeArg);
+  const Type * type = typeLiteral->value();
+  if (type->typeClass() != Type::Interface) {
+    diag.error(call) << "Only interface types can be proxied.";
+    return NULL;
+  }
+
+  // Could be a bound or unbound method.
+  const Expr * handlerArg = call->arg(1);
+
+  // Note: We want to make sure that we generate this only once.
+
+  //return cg.createTypeObjectPtr(type->value());
+  DFAIL("Implement");
 }
 
 } // namespace tart

@@ -33,6 +33,11 @@ extern SystemClassMember<FunctionDefn> functionType_invokeFn;
 extern SystemClassMember<VariableDefn> functionType_dcObject;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
+// Members of tart.core.TypeInfoBlock.
+SystemClassMember<VariableDefn> tib_name(Builtins::typeTypeInfoBlock, "name");
+SystemClassMember<VariableDefn> tib_bases(Builtins::typeTypeInfoBlock, "bases");
+SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
+
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
   Type * type = tdef->typeValue();
@@ -118,7 +123,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
   if (rtype->getTypeInfoPtr() == NULL) {
     // Create the global variable for the type info block.
     const CompositeType * type = rtype->getType();
-    if (type->typeClass() != Type::Class) {
+    if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
       rtype->setTypeInfoPtr(ConstantPointerNull::get(
           llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType())));
     } else {
@@ -142,7 +147,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
 
-  if (type->typeClass() != Type::Class) {
+  if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
     return true;
   }
 
@@ -152,14 +157,15 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     return true;
   }
 
-  // Generate the base class list.
-  ClassSet baseClassSet;
-  type->ancestorClasses(baseClassSet);
   llvm::PointerType * typePointerType =
       llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType());
 
-  // Concrete classes first
+  // Generate the base class list.
   ConstantList baseClassList;
+  ClassSet baseClassSet;
+  type->ancestorClasses(baseClassSet);
+
+  // Concrete classes first
   for (const CompositeType * s = type->super(); s != NULL; s = s->super()) {
     // If the class lives in this module, then create it.
     genCompositeType(s);
@@ -186,18 +192,29 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     baseClassArray, type->typeDefn()->linkageName() + ".type.tib.bases");
 
   // Generate the interface dispatch function
-  Function * idispatch = genInterfaceDispatchFunc(type);
-  DASSERT(idispatch != NULL);
+  Function * idispatch = NULL;
+  if (type->typeClass() == Type::Class) {
+    idispatch = genInterfaceDispatchFunc(type);
+    DASSERT(idispatch != NULL);
+  }
 
   // Create the TypeInfoBlock struct
-  ConstantList tibMembers;
+  StructBuilder builder(*this);
+  //ConstantList tibMembers;
   //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
   //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
-  tibMembers.push_back(reflector_.internSymbol(type->typeDefn()->linkageName()));
-  tibMembers.push_back(baseClassArrayPtr);
-  tibMembers.push_back(idispatch);
-  tibMembers.push_back(genMethodArray(type->instanceMethods_));
-  Constant * tibStruct = ConstantStruct::get(context_, tibMembers, false);
+  builder.addField(reflector_.internSymbol(type->typeDefn()->linkageName()));
+  builder.addField(baseClassArrayPtr);
+  if (type->typeClass() == Type::Class) {
+    builder.addField(idispatch);
+    builder.addField(genMethodArray(type->instanceMethods_));
+  } else {
+    builder.addNullField(tib_idispatch.type());
+    builder.addField(genMethodArray(MethodList()));
+  }
+
+  // ConstantStruct::get(context_, tibMembers, false);
+  Constant * tibStruct = builder.build();
 
   // Assign the TIB value to the tib global variable.
   GlobalVariable * tibPtr = rtype->getTypeInfoBlock();

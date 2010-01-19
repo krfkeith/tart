@@ -587,7 +587,7 @@ bool ClassAnalyzer::analyzeFields() {
 
               // Special case for non-reflective classes, we need to also export the types
               // of members.
-              //if (target->hasTrait(Defn::Nonreflective)) {
+              //if (target->isNonreflective()) {
               //  module->addSymbol(field);
               //}
 

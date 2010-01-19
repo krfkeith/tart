@@ -71,7 +71,7 @@ class IteratorTest : Test {
 }
 
 def sum(nums:int32...) -> int32 {
-  var sum = 0;
+  var sum:int32 = 0;
   for i in nums {
     sum += i;
   }

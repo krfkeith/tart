@@ -1,6 +1,40 @@
 import tart.testing.Test;
+import tartx.lexgen.common.ScannerBase;
+import tartx.lexgen.common.LogWriter;
+import tartx.lexgen.common.Location;
+import tart.io.TextReader;
 
 class ScannerBaseTest : Test {
+  class TestLogWriter : LogWriter {
+	  def fatal(loc:Location, mgs:String...) {
+	  }
+	
+	  def error(loc:Location, mgs:String...) {
+	  }
+	  
+	  def warn(loc:Location, mgs:String...) {
+	  }
+	  
+	  def info(loc:Location, mgs:String...) {
+	  }
+  }
+  
+  class TestScanner : ScannerBase {
+    def construct(reader:TextReader, log:LogWriter) {
+      super("TestSource", reader, log);
+    }
+  }
+  
+  var log:TestLogWriter;
+  var scanner:TestScanner;
+  var reader:TextReader;
+  
+  override setUp {
+    Debug.writeLn("In setup");
+    //log = TestLogWriter();
+    //scanner = TestScanner(reader, log);
+  }
+  
   def testConstruct {
     Debug.writeLn("Here");
   }

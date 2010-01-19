@@ -62,10 +62,6 @@ public:
   /** Analyze the template signature for this declaration */
   static void analyzeTemplateSignature(Defn * de);
 
-  /** Add requested passes to the toRun set if not already run. */
-  static void addPass(Defn * de, DefnPasses & toRun, const DefnPass requested);
-  static void addPasses(Defn * de, DefnPasses & toRun, const DefnPasses & requested);
-
   /** Add 'in' to the set of reflected types, and import any types needed to store
       the reflection info. */
   void addReflectionInfo(Defn * in);

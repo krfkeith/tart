@@ -45,6 +45,7 @@ endif (CMAKE_USE_PTHREADS_INIT)
 set(CMAKE_REQUIRED_DEFINITIONS -D__USE_GNU)
 check_function_exists(backtrace HAVE_BACKTRACE)
 check_function_exists(dladdr HAVE_DLADDR)
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)

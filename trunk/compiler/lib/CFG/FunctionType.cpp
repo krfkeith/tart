@@ -312,12 +312,11 @@ ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
 const std::string & FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {
-      invokeName_.append(".invoke_static.(");
+      invokeName_.append(".invoke_static.");
     } else {
-      invokeName_.append(".invoke.(");
+      invokeName_.append(".invoke.");
     }
     typeLinkageName(invokeName_, paramTypes());
-    invokeName_.append(")");
     if (!returnType_->isVoidType()) {
       invokeName_.append("->");
       typeLinkageName(invokeName_, returnType_);

@@ -98,7 +98,7 @@ public final class String {
   /** Return true if this string starts with the substring 's'. */  
   def startsWith(s:String) -> bool {
     return false if s.length > self.len;
-    for i = 0; i < s.length; ++i {
+    for i:int32 = 0; i < s.length; ++i {
       return false if s[i] != self.data[i];
     }
       
@@ -109,7 +109,7 @@ public final class String {
   def endsWith(s:String) -> bool {
     return false if s.length > self.len;
     let offset = self.length - s.length;
-    for i = 0; i < s.length; ++i {
+    for i:int32 = 0; i < s.length; ++i {
       return false if s[i] != self.data[i + offset];
     }
       
@@ -178,7 +178,7 @@ public final class String {
 
   static def concat(s:String[]) -> String {
     let count = s.length;
-    var length = 0;
+    var length:int32 = 0;
     for i = 0; i < count; ++i {
       length += s[i].len;
     }

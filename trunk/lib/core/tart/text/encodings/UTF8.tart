@@ -42,7 +42,7 @@ final class UTF8 : Codec {
     start = Math.min(start, int32(src.length));
     count = Math.min(count, int32(src.length) - start);
     
-    var length = 0;
+    var length:int32 = 0;
     var index = start;
     while count-- > 0 {
       let c = src[index++];
@@ -107,8 +107,8 @@ final class UTF8 : Codec {
   }
   
   def encodeRaw(dst:Address[ubyte], dstLength:int32, src:Address[char], srcLength:int32) -> int32 {
-    var srcIndex = 0;
-    var dstIndex = 0;
+    var srcIndex:int32 = 0;
+    var dstIndex:int32 = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
       let c = src[srcIndex++];
       if c <= 0x7f {
@@ -158,8 +158,8 @@ final class UTF8 : Codec {
   }
 
   def decodeRaw(dst:Address[char], dstLength:int32, src:Address[ubyte], srcLength:int32) -> int32 {
-    var srcIndex = 0;
-    var dstIndex = 0;
+    var srcIndex:int32 = 0;
+    var dstIndex:int32 = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
       let b = src[srcIndex];
       var charVal:uint32 = 0;

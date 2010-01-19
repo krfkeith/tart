@@ -463,7 +463,7 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
 
     // If this is a let-value that has actual storage
 #if FC_STRUCTS_INTERNAL
-    if (let->hasStorage() && typeShape != Shape_Large_Value) {
+    if (let->hasStorage() && typeShape != Shape_Large_Value && typeShape != Shape_Reference) {
       letValue = loadValue(letValue, lval, var->name());
     }
 #endif
@@ -502,6 +502,11 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
 }
 
 Value * CodeGenerator::genLValueAddress(const Expr * in) {
+  if (in->exprType() == Expr::PtrDeref) {
+    const UnaryExpr * ue = static_cast<const UnaryExpr *>(in);
+    return genExpr(ue->arg());
+  }
+
   if (in->type()->typeShape() == Shape_Large_Value) {
     return genExpr(in);
   }
@@ -696,6 +701,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
 
   // If the base is a pointer
   bool needsDeref = false;
+  bool needsAddress = false;
 
   // True if the base address itself has a base.
   bool baseHasBase = false;
@@ -745,8 +751,6 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
     needsDeref = true;
   } else if (base->exprType() == Expr::ElementRef) {
     baseHasBase = true;
-  } else if (base->type()->isReferenceType()) {
-    needsDeref = true;
   } else {
     TypeShape typeShape = base->type()->typeShape();
     switch (typeShape) {
@@ -773,9 +777,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
   } else {
     // Otherwise generate a pointer value.
     labelStream << base;
-    //baseAddr = genLValueAddress(base);
     baseAddr = genExpr(base);
-    //ensureLValue(in, baseAddr->getType());
     if (needsDeref) {
       // baseAddr is of pointer type, we need to add an extra 0 to convert it
       // to the type of thing being pointed to.
@@ -897,11 +899,15 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   ValueList arrayVals;
   arrayVals.resize(arrayLength);
   for (size_t i = 0; i < arrayLength; ++i) {
-    Value * el = genExpr(in->args()[i]);
+    Expr * arg = in->args()[i];
+    Value * el = genExpr(arg);
     if (el == NULL) {
       return NULL;
     }
 
+    if (arg->type()->typeShape() == Shape_Large_Value) {
+      el = loadValue(el, arg, "deref");
+    }
     arrayVals[i] = el;
   }
 

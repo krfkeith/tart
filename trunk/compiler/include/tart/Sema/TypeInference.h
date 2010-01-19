@@ -129,6 +129,7 @@ private:
   Expr * visitCall(CallExpr * in);
   Expr * visitAssign(AssignmentExpr * in);
   Expr * visitPostAssign(AssignmentExpr * in);
+  Expr * visitTupleCtor(TupleCtorExpr * in);
 };
 
 /// -------------------------------------------------------------------

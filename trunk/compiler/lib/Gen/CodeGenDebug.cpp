@@ -84,8 +84,8 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
       sp = dbgFactory_.CreateSubprogram(
           compileUnit, // TODO: Replace for functions within a scope.
           fn->name(),
-          fn->qualifiedName().c_str(),
-          fn->linkageName().c_str(),
+          fn->qualifiedName(),
+          fn->linkageName(),
           compileUnit,
           getSourceLineNumber(fn->location()),
           dbgFuncType,
@@ -106,31 +106,33 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   if (debug_ && !dbgContext_.isNull()) {
     setDebugLocation(fn->location());
 
-#if 0
-    // TODO: Need to take 'shape' into account, esp for return type.
     const FunctionType * ftype = fn->functionType();
+    // TODO: Need to take 'shape' into account, esp for return type.
     if (ftype->selfParam() != NULL) {
       /// CreateVariable - Create a new descriptor for the specified variable.
       const ParameterDefn * p = ftype->selfParam();
-      DIVariable selfVar = dbgFactory_.CreateVariable(
-          dwarf::DW_TAG_arg_variable, dbgContext_,
-          p->name(), dbgCompileUnit_,
-          getSourceLineNumber(p->location()),
-          genDIType(p->type()));
-//      dbgFactory_.InsertDbgValueIntrinsic(
-//          p->irValue(), llvm::Value *Offset,
-//          argVar, builder_.GetInsertBlock());
-      dbgFactory_.InsertDeclare(p->irValue(), selfVar, builder_.GetInsertBlock());
-    }
-#endif
-
 #if 0
+      if (p->type()->typeClass() == Type::Class) {
+        DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgContext_,
+            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+            genDIParameterType(p->type()));
+        setDebugLocation(p->location());
+        dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
+      }
+#endif
+    }
+
     const ParameterList & params = ftype->params();
     for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
       const ParameterDefn * p = *it;
       if (p->isLValue()) {
-        // TODO: Handle this case later.
+        DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgContext_,
+            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+            genDIParameterType(p->type()));
+        setDebugLocation(p->location());
+        dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
       } else {
+#if 0
         /// CreateVariable - Create a new descriptor for the specified variable.
         DIVariable argVar = dbgFactory_.CreateVariable(
             dwarf::DW_TAG_arg_variable, dbgContext_,
@@ -140,9 +142,9 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
             p->irValue(), llvm::Value *Offset,
             argVar, builder_.GetInsertBlock());
         //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+#endif
       }
     }
-#endif
 
     const LocalScopeList & lsl = fn->localScopes();
     for (LocalScopeList::const_iterator it = lsl.begin(); it != lsl.end(); ++it) {
@@ -156,10 +158,36 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
               genDIEmbeddedType(var->type()));
           setDebugLocation(var->location());
           dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
+        } else if (de->defnType() == Defn::Let) {
+          // Currently we can only handle vars that point to an alloca.
+          const VariableDefn * var = static_cast<const VariableDefn *>(de);
+          if (isa<CompositeType>(var->type())) {
+            DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
+                var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
+                genDIType(var->type()));
+            setDebugLocation(var->location());
+          }
         }
       }
     }
   }
+}
+
+void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable * gv) {
+  DASSERT(var != NULL);
+  DIType varType = genDIEmbeddedType(var->type());
+  DICompileUnit compileUnit = genDICompileUnit(var);
+  dbgFactory_.CreateGlobalVariable(
+      compileUnit,
+      var->name(),
+      var->qualifiedName(),
+      var->linkageName(),
+      compileUnit,
+      getSourceLineNumber(var->location()),
+      varType,
+      var->storageClass() == Storage_Static,
+      true,
+      gv);
 }
 
 DIType CodeGenerator::genDIType(const Type * type) {

@@ -66,6 +66,12 @@ public:
 
   static void initPrimitiveTypes(Module * module);
 
+  /** Return the type of 'int'. */
+  static const Type * intType();
+
+  /** Return the type of 'uint'. */
+  static const Type * uintType();
+
   // Overrides
   const llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }

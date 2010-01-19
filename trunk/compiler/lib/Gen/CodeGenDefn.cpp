@@ -232,19 +232,30 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   // Calculate the type.
   DASSERT(let->type() != NULL);
   const llvm::Type * irType = let->type()->irEmbeddedType();
+  TypeShape shape = let->type()->typeShape();
 
   // Generate the value
   Value * value = NULL;
   if (let->initValue() != NULL) {
+    // 'hasStorage' is true if:
+    // -- it's not a local, and
+    // -- the expression is not a constant, or its a constant object or constant array.
     if (let->hasStorage()) {
-      if (let->module() != module_) {
+      if (shape == Shape_Reference) {
+        irType = let->type()->irType();
+      }
+
+      if (let->module() == module_) {
+        value = genConstRef(let->initValue(), let->linkageName());
+        DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
+      } else {
         value = new GlobalVariable(
             *irModule_, irType, true, GlobalValue::ExternalLinkage, NULL, let->linkageName());
-      } else {
-        value = genConstRef(let->initValue(), let->linkageName());
+        DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
       }
     } else {
       value = genExpr(let->initValue());
+      DASSERT_TYPE_EQ(let->initValue(), irType, value->getType());
     }
 
     if (value == NULL) {
@@ -258,6 +269,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
     if (value == NULL) {
       diag.fatal(let) << "Use of value before initialization: " << let;
     }
+
     letValue = value;
   } else if (llvm::Constant * constantValue = dyn_cast<llvm::Constant>(value)) {
     // See if it's a constant.
@@ -269,9 +281,9 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   }
 
   DIType dbgType;
-  //if (debug_) {
+  if (debug_ && (let->storageClass() == Storage_Global || let->storageClass() == Storage_Static)) {
   //  dbgType = genTypeDebugInfo(letType);
-  //}
+  }
 
   let->setIRValue(letValue);
   return letValue;
@@ -341,10 +353,9 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
   if (var->module() == module_ || var->isSynthetic()) {
-    /*DIType dbgType;
     if (debug_) {
-      dbgType = genTypeDebugInfo(varType);
-    }*/
+      genDIGlobalVariable(var, gv);
+    }
 
     // If it has an initialization expression
     const Expr * initExpr = var->initValue();
@@ -357,7 +368,8 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
         if (varType->isReferenceType()) {
           initValue = new GlobalVariable(
-              *irModule_, initValue->getType(), false, linkType, initValue, "");
+              *irModule_, initValue->getType(), false, linkType, initValue,
+              var->linkageName() + ".init");
           initValue = llvm::ConstantExpr::getPointerCast(initValue, varType->irEmbeddedType());
         }
 

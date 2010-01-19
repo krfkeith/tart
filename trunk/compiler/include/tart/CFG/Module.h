@@ -83,6 +83,9 @@ public:
   /** Get the set of defns for which reflection data is generated. */
   DefnSet & reflectedDefs() { return reflectedDefs_; }
 
+  /** Keep track of which system defs have been imported into this module. */
+  DefnSet & systemDefs() { return systemDefs_; }
+
   /** Import this symbol into this module. If the symbol is from another module, add it
       to the list of imported symbols. If it is from this module, or if it is synthetic, then
       add it to the list of exported symbols. Also, add the symbol to the queue of symbols to
@@ -145,6 +148,7 @@ private:
   DefnSet exportDefs_;
   DefnSet importDefs_;
   DefnSet reflectedDefs_;
+  DefnSet systemDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
   ConverterMap converters_;

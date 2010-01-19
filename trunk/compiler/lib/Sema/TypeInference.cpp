@@ -6,6 +6,7 @@
 #include "tart/CFG/TypeConstraint.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -131,6 +132,20 @@ void ConstraintSite::update() {
       break;
     }
 
+    case Expr::TupleCtor: {
+      diag.debug() << "Updating tuple ranking.";
+      const TupleCtorExpr * tce = static_cast<const TupleCtorExpr *>(expr);
+      rank = IdenticalTypes;
+      if (const TupleType * tt = dyn_cast<TupleType>(expr->type())) {
+        size_t size = tt->size();
+        for (size_t i = 0; i < size; ++i) {
+          rank = std::min(rank, tt->member(i)->canConvert(tce->arg(i)));
+        }
+      }
+
+      break;
+    }
+
     default:
       break;
   }
@@ -172,6 +187,15 @@ Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
   }
 
   CFGPass::visitPostAssign(in);
+  return in;
+}
+
+Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
+  if (!in->isSingular() && visited_.insert(in)) {
+    cstrSites_.push_back(ConstraintSite(in));
+  }
+
+  CFGPass::visitTupleCtor(in);
   return in;
 }
 
