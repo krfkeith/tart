@@ -298,6 +298,12 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
               builder_.CreateBitCast(value, unionTypeForMember), 0, 1));
 #else
       const llvm::Type * fieldType = toType->irEmbeddedType();
+      if (toType->typeShape() == Shape_Large_Value) {
+        return builder_.CreateBitCast(
+            builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
+            llvm::PointerType::get(fieldType, 0));
+      }
+
       return builder_.CreateLoad(
           builder_.CreateBitCast(
               builder_.CreateConstInBoundsGEP2_32(value, 0, 1),

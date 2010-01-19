@@ -71,6 +71,7 @@ foreach(SRC_FILE ${TART_SRC})
   endif ($DSYMUTIL)
 
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
+  add_dependencies("${EXE_FILE}.run" libcore libtesting)
   add_dependencies(check "${EXE_FILE}.run")
 endforeach(SRC_FILE)
 

@@ -133,6 +133,32 @@ class TupleTypeTest : Test {
 	  assertEq(2, c1);
 	  assertEq("World", d1);
 	}
+	
+	def DISABLED_testTupleIteration() {
+	  var s = [(int(1), int(2)), (int(2), int(3)), (int(3), int(4))];
+	  var asum = 0;
+	  var bsum = 0;
+	  for a, b in s {
+	    asum += a;
+	    bsum += b;
+	  }
+	  
+	  assertEq(6, asum);
+	  assertEq(9, bsum);
+	}
+	
+/*	def testVarargsTuple() {
+	  let s = concat(("A", 1), ("B", 2), ("C", 3));
+	}
+	
+	def concat(tuples:(String, int)...) -> String {
+	  let sb = StringBuilder();
+	  for a, b in tuples {
+	    sb.append(a);
+	  }
+	  
+	  return sb.toString();
+	}*/
 }
 
 struct TupleContainer {

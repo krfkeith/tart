@@ -1,3 +1,5 @@
+import tart.collections.KeyError;
+
 /** A quadratically-probed hash map. */
 final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : Map[KeyType, ValueType] {
   private {
@@ -115,7 +117,9 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
 	      
 	      // Fall through an rehash
 	    } else if _data.length > 0 {
+			  Debug.writeLn(_length.toString());
 	      for i = 0; i < _length; ++i {
+			    Debug.writeLn("A: ", key);
 	        if _data[i].key == key {
 			      _data[i] = Entry(key, value);
 	          return;
@@ -144,7 +148,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     get {
 			var index:int = findEntry(key);
 			if index < 0 {
-			  //throw KeyTypeNotFoundException();
+			  throw KeyError();
 			}
 
 			return _data[index].value;
@@ -189,6 +193,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
 
   def addAll(entries:Iterator[(KeyType, ValueType)]) {
     for entry in entries {
+			Debug.writeLn("Adding: ", entry[1].toString());
       add(entry);
     }
   }

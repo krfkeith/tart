@@ -329,7 +329,7 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
 }
 
 Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args) {
-  TypeList argList; // Template args, not function args.
+  ConstTypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
@@ -370,7 +370,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
       isSingularArgList = false;
     }
 
-    argList.push_back(const_cast<Type *>(typeArg));
+    argList.push_back(typeArg);
   }
 
   return specialize(loc, exprs, TupleType::get(argList));

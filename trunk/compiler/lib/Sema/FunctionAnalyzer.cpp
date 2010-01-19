@@ -593,7 +593,7 @@ bool FunctionAnalyzer::createReflectionData() {
     } else {
       // Don't reflect if any parent is non-reflective.
       for (Defn * de = target; de != NULL; de = de->parentDefn()) {
-        if (de->hasTrait(Defn::Nonreflective)) {
+        if (de->isNonreflective()) {
           target->addTrait(Defn::Nonreflective);
           doReflect = false;
           break;

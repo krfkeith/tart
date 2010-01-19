@@ -5,18 +5,20 @@ Design TODOS:
 * Const-ness "const" and "const? / constable"
 * Need a way to collect all declarations that a given attribute is assigned to.
 
+Bad bugs:
+  -- Lots of bugs in TupleTypeTest.
+  -- HashMapTest addAll.
+  -- ReflectionTest with optimization.
+  -- lexGenTest doesn't work.
+
 Working on currently:
   -- Static If
-  -- Module type list reflection.
   -- Run all tests in module.
-  -- Compile-time configuration options. (Another reason to support target triples.)
-  -- Target selection in compiler.
+  -- Compile-time configuration options. @TargetProperty.
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
   -- Hashing of integers
   -- String iteration
-  -- BUG: Test classes segfault if another class is declared first. Most likely reflection
-      data is being miscompiled.
 
 Implementation TODOS:
 
@@ -81,7 +83,6 @@ Implementation TODOS:
 * Import-as.
 * Source-level debug info.
   * Finish debug support.
-  * Fix gdb problem with function entry points.
   * Isolate and report bugs.
 * Generator functions.
   * Yield statement.
@@ -330,9 +331,4 @@ Something like [@Strict %T <: Object]
 
 // ------------------------------------------------------------------------
 
-1) Creating a reflect.Method (type imported by DA)
-2) Method has arrays of attributes, which are analyzed to a level of PrepCodeGeneration.
-3) The array of attributes has type Array[Attribute]. These are instance fields, which are
-     analyzed to a level of PrepTypeGeneration.
-
-
+ 

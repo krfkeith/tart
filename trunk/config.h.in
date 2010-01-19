@@ -34,6 +34,9 @@
 /** Whether GCC builtin atomic functions are available. */
 #cmakedefine HAVE_GCC_ATOMICS 1
 
+/** Whether the have_posix_memalign() function is available. */
+#cmakedefine HAVE_POSIX_MEMALIGN 1
+
 #if _MSC_VER
   #define snprintf _snprintf
 #endif

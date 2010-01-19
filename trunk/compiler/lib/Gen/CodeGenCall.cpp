@@ -35,7 +35,8 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
   Value * selfArg = NULL;
   if (in->selfArg() != NULL) {
-    if (in->selfArg()->type()->typeClass() == Type::Struct) {
+    Type::TypeClass selfTypeClass = in->selfArg()->type()->typeClass();
+    if (selfTypeClass == Type::Struct) {
       if (in->exprType() == Expr::CtorCall) {
         selfArg = genExpr(in->selfArg());
       } else {

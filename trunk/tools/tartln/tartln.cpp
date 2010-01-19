@@ -370,9 +370,9 @@ static void removeEnv(const char * name, char ** const envp) {
 
 std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
   // If we are supposed to override the target triple, do so now.
-  if (!optTargetTriple.empty()) {
-    mod.setTargetTriple(optTargetTriple);
-  }
+  //if (!optTargetTriple.empty()) {
+  //  mod.setTargetTriple(optTargetTriple);
+  //}
 
   Triple theTriple(mod.getTargetTriple());
   if (theTriple.getTriple().empty()) {
@@ -543,9 +543,9 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
     case FileModel::AsmFile:
       break;
 
-    case FileModel::MachOFile:
-      emitter = AddMachOWriter(passes, *asOut.get(), target);
-      break;
+    //case FileModel::MachOFile:
+    //  emitter = AddMachOWriter(passes, *asOut.get(), target);
+    //  break;
 
     case FileModel::ElfFile:
       emitter = AddELFWriter(passes, *asOut.get(), target);

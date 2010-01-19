@@ -333,6 +333,7 @@ public:
   llvm::DICompileUnit genDICompileUnit(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
+  void genDIGlobalVariable(const VariableDefn * var, llvm::GlobalVariable * gv);
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void setDebugLocation(const SourceLocation & loc);
 

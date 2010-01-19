@@ -87,20 +87,18 @@ final class StdFileStream : TextReader, TextWriter {
   //def write(text:String, start:int32 = 0, count:int32 = int32.maxVal) -> int32;
 
   def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
-    Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, chars.length);
-    count = Math.min(count, chars.length - start);
-    if count > 0 {
+    //Preconditions.checkArgument(count >= 0);
+    //start = Math.min(start, chars.length);
+    //count = Math.min(count, chars.length - start);
+    //if count > 0 {
       // TODO: Shortcut for identity encoding.
-      Debug.assertTrue(_encoding is Codecs.UTF_8);
-      Debug.writeLn(_encoding.name);
       let encodedLength = _encoding.encodedLength(chars, int32(start), int32(count));
       //let encodedLength = tart.text.encodings.Codecs.UTF_8.encodedLength(chars, int32(start), int32(count));
       let buffer:ubyte[] = ubyte[](encodedLength);
       _encoding.encode(buffer, 0, chars, int32(start), int32(count));
       //tart.text.encodings.Codecs.UTF_8.encode(buffer, 0, chars, int32(start), int32(count));
       IOError.checkResult(_writeBytes(_file, buffer.data, encodedLength));
-    }
+    //}
 
     return 0;
   }

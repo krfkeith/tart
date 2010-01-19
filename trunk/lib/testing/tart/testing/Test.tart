@@ -9,7 +9,7 @@ class Test {
   
   /** Run all of the test cases in the specified package. */
   static def runAllTests(package:Package) -> int32 {
-    var overallStatus = 0;
+    var overallStatus:int32 = 0;
     for mod in package.modules {
       let testStatus = runAllTests(mod);
       if testStatus != 0 {
@@ -34,7 +34,8 @@ class Test {
     
     return 0;
   }
-  
+
+	/** Run all tests in this class. */  
   static def run[%T](testType:TypeLiteral[T]) -> int32 {
     var testClass:ComplexType = ComplexType.of(T);
     var testInstance = typecast[Test](testClass.create());

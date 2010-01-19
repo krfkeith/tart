@@ -132,37 +132,6 @@ void CodeGenerator::generate() {
     genXDef(de);
   }
 
-  DefnSet & xrefs = module_->importDefs();
-  for (DefnSet::iterator it = xrefs.begin(); it != xrefs.end(); ++it) {
-    Defn * de = *it;
-    if (xdefs.count(de)) {
-      continue;
-    }
-
-    if (diag.inRecovery()) {
-      diag.recovered();
-    }
-
-    if (!de->isSingular()) {
-      continue;
-    }
-
-    //diag.debug(de) << "XRef: " << de;
-
-    /*if (const TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
-      if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
-        if (ctype->typeClass() != Type::Interface &&
-            irModule_->getTypeByName(tdef->linkageName()) == NULL) {
-          irModule_->addTypeName(tdef->linkageName(), ctype->irType());
-        }
-      }
-    }*/
-
-    if (de->isSynthetic()) {
-      genXDef(de);
-    }
-  }
-
   if (reflector_.enabled() &&
       Builtins::typeModule->passes().isFinished(CompositeType::FieldPass)) {
     reflector_.emitModule(module_);

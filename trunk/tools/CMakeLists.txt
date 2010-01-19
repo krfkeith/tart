@@ -134,6 +134,7 @@ target_link_libraries(tartln
     ${LLVM_ASM_PRINTER}
     ${LLVM_CODE_GEN}
     ${LLVM_SCALAR_OPTS}
+    ${LLVM_INSTCOMBINE}
     ${LLVM_IPA}
     ${LLVM_TRANSFORM_UTILS}
     ${LLVM_ANALYSIS}

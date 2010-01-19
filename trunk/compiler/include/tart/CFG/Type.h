@@ -182,7 +182,7 @@ public:
   virtual ConversionRank convertImpl(const Conversion & conversion) const = 0;
 
   /** Some convenient wrappers around 'convert'. */
-  ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
+  ConversionRank canConvert(const Expr * fromExpr, int options = 0) const;
   ConversionRank canConvert(const Type * fromType, int options = 0) const;
 
   /** Reverse conversion function, used when the source is a constraint. */

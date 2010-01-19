@@ -127,8 +127,14 @@ void typeLinkageName(std::string & out, const Type * ty) {
     out.append(td->linkageName());
   } else if (const FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
     out.append("fn");
+    if (ftype->selfParam() != NULL) {
+      out.append(":");
+      typeLinkageName(out, ftype->selfParam()->type());
+    }
+
     if (!ftype->params().empty()) {
       out.append("(");
+
       const ParameterList & params = ftype->params();
       for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
         if (it != params.begin()) {
@@ -321,8 +327,8 @@ ConversionRank Type::convert(const Conversion & cn) const {
   return rank;
 }
 
-ConversionRank Type::canConvert(Expr * fromExpr, int options) const {
-  return convert(Conversion(fromExpr).setOption(options));
+ConversionRank Type::canConvert(const Expr * fromExpr, int options) const {
+  return convert(Conversion(const_cast<Expr *>(fromExpr)).setOption(options));
 }
 
 ConversionRank Type::canConvert(const Type * fromType, int options) const {

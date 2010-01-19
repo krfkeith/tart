@@ -29,17 +29,17 @@ using namespace llvm;
 /// -------------------------------------------------------------------
 /// Contains a lazy reference to an enumeration constant.
 
-// Members of tart.core.reflect.Type.
+// Members of tart.reflect.Type.
 SystemClassMember<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
 
-// Members of tart.core.reflect.SimpleType.
+// Members of tart.reflect.SimpleType.
 SystemClassMember<VariableDefn> simpleType_subtype(Builtins::typeSimpleType, "_subtype");
 SystemClassMember<VariableDefn> simpleType_size(Builtins::typeSimpleType, "_size");
 
-// Members of tart.core.reflect.DerivedType.
+// Members of tart.reflect.DerivedType.
 SystemClassMember<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
 
-// Members of tart.core.reflect.ComplexType.
+// Members of tart.reflect.ComplexType.
 SystemClassMember<VariableDefn> complexType_tib(Builtins::typeComplexType, "_typeInfo");
 SystemClassMember<VariableDefn> complexType_superType(Builtins::typeComplexType, "_superType");
 SystemClassMember<VariableDefn> complexType_interfaces(Builtins::typeComplexType, "_interfaces");
@@ -53,11 +53,11 @@ SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeComplexType
 SystemClassMember<VariableDefn> complexType_alloc(Builtins::typeComplexType, "_alloc");
 SystemClassMember<VariableDefn> complexType_noArgCtor(Builtins::typeComplexType, "_noArgCtor");
 
-// Members of tart.core.reflect.EnumType.
+// Members of tart.reflect.EnumType.
 SystemClassMember<VariableDefn> enumType_superType(Builtins::typeEnumType, "_superType");
 SystemClassMember<VariableDefn> enumType_values(Builtins::typeEnumType, "_values");
 
-// Members of tart.core.reflect.FunctionType.
+// Members of tart.reflect.FunctionType.
 SystemClassMember<VariableDefn> functionType_returnType(Builtins::typeFunctionType, "_returnType");
 SystemClassMember<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
 SystemClassMember<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
@@ -67,7 +67,7 @@ SystemClassMember<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType
 SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
 SystemClassMember<FunctionDefn> functionType_ignoreObj(Builtins::typeFunctionType, "ignoreObjectPtr");
 
-// Members of tart.core.reflect.Member.
+// Members of tart.reflect.Member.
 SystemClassMember<VariableDefn> member_name(Builtins::typeMember, "_name");
 SystemClassMember<VariableDefn> member_kind(Builtins::typeMember, "_kind");
 SystemClassMember<VariableDefn> member_access(Builtins::typeMember, "_access");
@@ -75,17 +75,17 @@ SystemClassMember<VariableDefn> member_traits(Builtins::typeMember, "_traits");
 SystemClassMember<VariableDefn> member_type(Builtins::typeMember, "_type");
 SystemClassMember<VariableDefn> member_attributes(Builtins::typeMember, "_attributes");
 
-// Members of tart.core.reflect.Method.
+// Members of tart.reflect.Method.
 SystemClassMember<VariableDefn> method_typeParams(Builtins::typeMethod, "_typeParams");
 SystemClassMember<VariableDefn> method_params(Builtins::typeMethod, "_params");
 SystemClassMember<VariableDefn> method_methodPointer(Builtins::typeMethod, "_methodPointer");
 
-// Members of tart.core.reflect.Module.
+// Members of tart.reflect.Module.
 SystemClassMember<VariableDefn> module_name(Builtins::typeModule, "_name");
 SystemClassMember<VariableDefn> module_types(Builtins::typeModule, "_types");
 SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods");
 
-// Members of tart.core.reflect.Package.
+// Members of tart.reflect.Package.
 SystemClassMember<VariableDefn> package_name(Builtins::typePackage, "_name");
 SystemClassMember<VariableDefn> package_modules(Builtins::typePackage, "_modules");
 SystemClassMember<VariableDefn> package_subpackages(Builtins::typePackage, "_subpackages");
@@ -144,7 +144,7 @@ void Reflector::emitModule(Module * module) {
   bool hasReflectedDefns = false;
   for (DefnSet::iterator it = module->reflectedDefs().begin();
       it != module->reflectedDefs().end(); ++it) {
-    if (!(*it)->hasTrait(Defn::Nonreflective)) {
+    if (!(*it)->isNonreflective()) {
       hasReflectedDefns = true;
       break;
     }
@@ -222,7 +222,7 @@ GlobalVariable * Reflector::getTypePtr(const Type * type) {
           " but it has not been imported into this module.";
     }
 
-    if ((td->isSynthetic() || td->hasTrait(Defn::Nonreflective)) &&
+    if ((td->isSynthetic() || td->isNonreflective()) &&
         module()->exportDefs().count(td) > 0) {
       linkageType = GlobalValue::LinkOnceODRLinkage;
       if (module()->reflectedDefs().count(type->typeDefn()) == 0) {
@@ -280,7 +280,7 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
       break;
 
     case Defn::Function: {
-      if (member->hasTrait(Defn::Nonreflective)) {
+      if (member->isNonreflective()) {
         return true;
       }
 
@@ -403,7 +403,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol:
-      if (type->typeDefn()->hasTrait(Defn::Nonreflective)) {
+      if (type->typeDefn()->isNonreflective()) {
         return Builtins::typeSimpleType->irType();
       } else {
         if (type->typeDefn()->isSynthetic() &&
@@ -441,7 +441,7 @@ llvm::Constant * Reflector::emitType(const Type * type) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol:
-      if (type->typeDefn()->hasTrait(Defn::Nonreflective)) {
+      if (type->typeDefn()->isNonreflective()) {
         return emitOpaqueType(type);
       } else {
         return emitComplexType(static_cast<const CompositeType *>(type));
@@ -465,7 +465,7 @@ llvm::Constant * Reflector::emitType(const Type * type) {
 }
 
 llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
-  DASSERT_OBJ(!type->typeDefn()->hasTrait(Defn::Nonreflective), type);
+  DASSERT_OBJ(!type->typeDefn()->isNonreflective(), type);
   if (type->typeDefn()->isSynthetic() &&
       module()->exportDefs().count(type->typeDefn()) == 0) {
     diag.fatal() << "Attempting to reflect synthetic type " << type <<

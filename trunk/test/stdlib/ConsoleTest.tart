@@ -26,10 +26,10 @@ class ConsoleTest : Test {
   }
 
   def testConsoleOut {
-    //Console.cerr.writeLn("Hello, world!");
+    Console.cerr.writeLn("Hello, world!");
   }
 
   def testChainedWrite {
-    //Console.cerr.write("Hello,").writeLn(" world!");
+    Console.cerr.write("Hello,").writeLn(" world!");
   }
 }
