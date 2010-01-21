@@ -137,8 +137,8 @@ class TupleTypeTest : Test {
 	}
 	
 	def testTupleUnion() {
-	  var s:(int, int) or void = (2, 3);
-	  classify s as n:(int, int) {
+	  var s:(ubyte, ubyte) or void = (2, 3);
+	  classify s as n:(ubyte, ubyte) {
 	    assertEq(2, n[0]);
 	    assertEq(3, n[1]);
 	  }
@@ -154,6 +154,15 @@ class TupleTypeTest : Test {
 	  }
 	}
 	
+	def testTupleUnionReturn() {
+	  let n = upair();
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	}
+	
+	def upair() -> (int32, int32) or void {
+	  return 1, 2;
+	}
+	
 	def testTupleArray() {
 	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
 	  assertEq(3, s.size);
@@ -163,14 +172,46 @@ class TupleTypeTest : Test {
 	  assertEq(3, s[1][1]);
 	  assertEq(3, s[2][0]);
 	  assertEq(4, s[2][1]);
-	}
 	  
-	def D_testTupleIteration() {
+	  var b = s[0];
+	  assertEq(1, b[0]);
+	  assertEq(2, b[1]);
+	  
+	  var i = s.iterate();
+	  var n = i.next();
+	  assertFalse(n isa void);
+	  assertTrue(n isa (int32, int32));
+	  classify n as t:(int32, int32) {
+		  assertEq(1, t[0]);
+		  assertEq(2, t[1]);
+	  }
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	  assertEq(2, typecast[(int32, int32)](n)[1]);
+	}
+	
+	/*def testTupleArrayExplicitType() {
+	  var s:(int32, int32)[] = [(1, 2), (2, 3), (3, 4)];
+	  assertEq(3, s.size);
+	  assertEq(1, s[0][0]);
+	  assertEq(2, s[0][1]);
+	  assertEq(2, s[1][0]);
+	  assertEq(3, s[1][1]);
+	  assertEq(3, s[2][0]);
+	  assertEq(4, s[2][1]);
+	  
+	  var i = s.iterate();
+	  var n = i.next();
+	  assertFalse(n isa void);
+	  assertTrue(n isa (int32, int32));
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	  assertEq(2, typecast[(int32, int32)](n)[1]);
+	}*/
+	  
+	def testTupleIteration() {
 	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
 	  var asum = 0;
 	  var bsum = 0;
 	  for t in s {
-	    Debug.writeLn(t[0].toString());
 	    asum += t[0];
 	    bsum += t[1];
 	  }
@@ -188,7 +229,7 @@ class TupleTypeTest : Test {
 	  assertEq(9, bsum);
 	}
 
-/*	def testVarargsTuple() {
+	def testVarargsTuple() {
 	  let s = concat(("A", 1), ("B", 2), ("C", 3));
 	}
 	
@@ -199,7 +240,7 @@ class TupleTypeTest : Test {
 	  }
 	  
 	  return sb.toString();
-	}*/
+	}
 }
 
 struct TupleContainer {

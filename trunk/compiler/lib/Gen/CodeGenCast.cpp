@@ -236,6 +236,10 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
                 llvm::PointerType::get(fieldType, 0)));
       }
 
+      if (utype->typeShape() == Shape_Large_Value) {
+        return uvalue;
+      }
+
       return builder_.CreateLoad(uvalue);
 
 #if 0
@@ -267,7 +271,8 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
       Value * value;
       // Our current process for handling unions requires that the union be an LValue,
       // so that we can bitcast the pointer to the data.
-      if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef) {
+      if (in->exprType() == Expr::LValue || in->exprType() == Expr::ElementRef ||
+          utype->typeShape() == Shape_Large_Value) {
         value = genLValueAddress(in->arg());
         if (value == NULL) {
           return NULL;
@@ -429,7 +434,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
   if (!unionType->hasRefTypesOnly()) {
     // The index of the actual type.
     Value * actualTypeIndex;
-    if (valIsLVal) {
+    if (valIsLVal || unionType->typeShape() == Shape_Large_Value) {
       // Load the type index field.
       actualTypeIndex = builder_.CreateLoad(
           builder_.CreateConstInBoundsGEP2_32(in, 0, 0, "union_index_ptr"), "union_index");

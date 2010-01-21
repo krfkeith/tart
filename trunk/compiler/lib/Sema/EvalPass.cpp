@@ -432,7 +432,7 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
 
   // Constant array objects are special because of their variable size.
   ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
-  arrayObj->setMemberValue("_length",
+  arrayObj->setMemberValue("_size",
       ConstantInteger::getUInt(arrayData->elements().size())->at(in->location()));
   arrayObj->setMemberValue("_data", arrayData);
   return arrayObj;

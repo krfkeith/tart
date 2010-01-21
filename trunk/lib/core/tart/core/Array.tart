@@ -10,13 +10,13 @@ import tart.core.Math.min;
 @Nonreflective @Reflection(Reflection.Detail.MINIMAL)
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
-    var _length:int;
+    var _size:int;
     var _data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
     static def alloc(size:int) -> Array {
       let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[size]);
-      self._length = size;
+      self._size = size;
       return self;
     }
 
@@ -49,12 +49,12 @@ public final class Array[%ElementType] : Iterable[ElementType] {
 
   /** True if the array is zero size. */
   def isEmpty:bool {
-    get { return self._length == 0; }
+    get { return self._size == 0; }
   }
 
   /** The length of the array. */
   def size:int {
-    get { return _length; }
+    get { return _size; }
   }
 
   @Unsafe def data:Address[ElementType] { get { return addressOf(_data[0]); } }
@@ -68,19 +68,19 @@ public final class Array[%ElementType] : Iterable[ElementType] {
   /** Array element access. */
   def [index:int]:ElementType {
     get {
-      Preconditions.checkIndex(index >= 0 and index < _length);
+      Preconditions.checkIndex(index >= 0 and index < _size);
       return self._data[index];
     }
     set {
-      Preconditions.checkArgument(index >= 0 and index < _length);
+      Preconditions.checkArgument(index >= 0 and index < _size);
       self._data[index] = value;
     }
   }
 
   /** Make a copy of this array. */  
   def copy() -> Array {
-    let result = Array(self._length);
-    Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._length);
+    let result = Array(self._size);
+    Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._size);
     return result;
   }
 
@@ -94,9 +94,9 @@ public final class Array[%ElementType] : Iterable[ElementType] {
    */  
   static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
-    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._length);
-    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._length);
-    count = min(count, dst._length - dstOffset, src._length - srcOffset);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._size);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._size);
+    count = min(count, dst._size - dstOffset, src._size - srcOffset);
     if count > 0 {
       Memory.arrayMove(addressOf(dst._data[dstOffset]), addressOf(src._data[srcOffset]), count);
     }
@@ -112,13 +112,14 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     }
     
     def next() -> ElementType or void {
-      if (self.index < self.array._length) {
+      if (self.index < self.array._size) {
         return self.array._data[self.index++];
       } else {
         return;
       }
     }
 
-    def length:int { get { return array._length; } }
+    def length:int { get { return array._size; } }
+    def size:int { get { return array._size; } }
   }
 }

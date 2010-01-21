@@ -137,6 +137,7 @@ const llvm::Type * UnionType::createIRType() const {
   const Type * largestType32 = 0;   // Largest type on 32-bit platforms
   const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
   shape_ = Shape_Small_RValue;
+  shape_ = Shape_Large_Value;
 
   // Create an array representing all of the IR types that correspond to the Tart types.
   for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
@@ -146,7 +147,7 @@ const llvm::Type * UnionType::createIRType() const {
     irTypes_.push_back(irType);
 
     if (type->typeShape() == Shape_Large_Value) {
-      shape_ == Shape_Large_Value;
+      shape_ = Shape_Large_Value;
     }
 
     size_t size32 = estimateTypeSize(irType, 32);
@@ -187,6 +188,15 @@ const llvm::Type * UnionType::createIRType() const {
     shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
   }
+}
+
+const llvm::Type * UnionType::irParameterType() const {
+  const llvm::Type * type = irType();
+  if (shape_ == Shape_Large_Value) {
+    type = llvm::PointerType::get(type, 0);
+  }
+
+  return type;
 }
 
 const llvm::Type * UnionType::getDiscriminatorType() const {

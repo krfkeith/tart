@@ -67,6 +67,7 @@ public:
   // Overrides
 
   const llvm::Type * createIRType() const;
+  const llvm::Type * irParameterType() const;
   const llvm::Type * getDiscriminatorType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
