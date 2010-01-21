@@ -8,7 +8,7 @@ def main(args:String[]) -> int32 {
 class StringTest : Test {
 	def testStringLiteral() {
 	  let s = "Hello";
-	  assertTrue(5 == s.length);
+	  assertTrue(5 == s.size);
 	  assertFalse(s.isEmpty);
 	  assertTrue("".isEmpty);
 	  assertFalse("a".isEmpty);
@@ -55,27 +55,27 @@ class StringTest : Test {
 	
 	def testStringConcatenation() {
 	  let s = String.concat("This", "Is", "A", "Test");
-	  assertEq(11, s.length);
+	  assertEq(11, s.size);
 	  assertEq("ThisIsATest", s);
 	}
 	
 	def testUnicode() {
-	  assertEq(2, "\u0200".length);
+	  assertEq(2, "\u0200".size);
 	  assertEq(1, "\u0200".charLength());
-	  assertEq(6, "Test\u0200".length);
+	  assertEq(6, "Test\u0200".size);
 	  assertEq(5, "Test\u0200".charLength());
-	  assertEq(3, "\u2100".length);
+	  assertEq(3, "\u2100".size);
 	  assertEq(1, "\u2100".charLength());
-	  assertEq(6, "\u2100\u2100".length);
+	  assertEq(6, "\u2100\u2100".size);
 	  assertEq(2, "\u2100\u2100".charLength());
-	  assertEq(4, "\U20000".length);
+	  assertEq(4, "\U20000".size);
 	  assertEq(1, "\U20000".charLength());
 	}
 	
 	def testToCharArray() {
 	  let s = "Hello";
 	  let a = s.toCharArray();
-	  assertEq(5, a.length);
+	  assertEq(5, a.size);
 	  assertEq('H', a[0]);
 	  assertEq('e', a[1]);
 	  assertEq('l', a[2]);
@@ -84,7 +84,7 @@ class StringTest : Test {
 	
 	  let s2 = "\u2100";
 	  let a2 = s2.toCharArray();
-	  assertEq(1, a2.length);
+	  assertEq(1, a2.size);
 	  assertEq('\u2100', a2[0]);
 	}
 	

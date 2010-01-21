@@ -570,7 +570,8 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
   currentBlock_->branchTo(st->location(), blkTest);
   setInsertPos(blkTest);
 
-  LValueExpr * nextVal = createTempVar(".iterval", nextCall, true);
+  //LValueExpr * nextVal = createTempVar(".iterval", nextCall, true);
+  Expr * nextVal = SharedValueExpr::get(nextCall);
 
   const UnionType * utype = dyn_cast<UnionType>(nextVal->type());
   DASSERT(utype != NULL);
@@ -898,7 +899,8 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         }
 
         // Create the block containing the case body.
-        Block * caseBlock = createBlock("as-", toType->typeDefn()->name());
+        Block * caseBlock = createBlock("as-",
+            toType->typeDefn() ? toType->typeDefn()->name() : "");
 
         prevTestBlock = testBlock;
 

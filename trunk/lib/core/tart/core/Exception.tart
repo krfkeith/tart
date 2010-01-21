@@ -33,7 +33,7 @@ public class Exception : Throwable {
   }
 
   override toString() -> String {
-    if _message.length > 0 {
+    if _message.size > 0 {
       return String.concat(__typeName, ": ", _message);
     } else {
       return __typeName;

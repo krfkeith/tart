@@ -8,7 +8,7 @@ import tart.text.encodings.Codecs;
 public final class String {
   private {
     /** The length of the string, in bytes. */
-    var len:int32;
+    var _size:int32;
 
     /** For strings which are slices, this points to the original string.
         For non-slice strings, or strings which refer to constant string
@@ -26,7 +26,7 @@ public final class String {
     static def alloc(len:int32) -> String {
       // The 'offsetof' trick for calculating the size.
       let s:String = __pvalloc(zeroPtr[String]().data[len]);
-      s.len = len;
+      s._size = len;
       s.source = s;
       s.start = addressOf(s.data[0]);
       return s;
@@ -38,8 +38,8 @@ public final class String {
         bytes: The byte array.
    */
   static def create(bytes:ubyte[]) -> String {
-    let self = alloc(int32(bytes.length));
-    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), bytes.length);
+    let self = alloc(int32(bytes.size));
+    Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), bytes.size);
     return self;
   }
 
@@ -53,8 +53,8 @@ public final class String {
   static def create(bytes:ubyte[], start:int32, count:int32) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, int32(bytes.length));
-    count = Math.min(count, int32(bytes.length) - start);
+    start = Math.min(start, int32(bytes.size));
+    count = Math.min(count, int32(bytes.size) - start);
     let self = alloc(count);
     Memory.arrayCopy(addressOf(self.data[0]), addressOf(bytes.data[0]), count);
     return self;
@@ -89,16 +89,16 @@ public final class String {
 
   /** 'true' if this is an empty string. */
   def isEmpty:bool {
-    get { return self.len == 0; }
+    get { return self._size == 0; }
   }
   
   /** The length of the string in bytes. */
-  def length:int32 { get { return self.len; } } 
+  def size:int32 { get { return self._size; } } 
 
   /** Return true if this string starts with the substring 's'. */  
   def startsWith(s:String) -> bool {
-    return false if s.length > self.len;
-    for i:int32 = 0; i < s.length; ++i {
+    return false if s.size > self._size;
+    for i:int32 = 0; i < s.size; ++i {
       return false if s[i] != self.data[i];
     }
       
@@ -107,9 +107,9 @@ public final class String {
   
   /** Return true if this string ends with the substring 's'. */  
   def endsWith(s:String) -> bool {
-    return false if s.length > self.len;
-    let offset = self.length - s.length;
-    for i:int32 = 0; i < s.length; ++i {
+    return false if s.size > self._size;
+    let offset = self.size - s.size;
+    for i:int32 = 0; i < s.size; ++i {
       return false if s[i] != self.data[i + offset];
     }
       
@@ -123,8 +123,8 @@ public final class String {
    */
   def charLength(start:int32 = 0, count:int32 = int32.maxVal) -> int32 {
     Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, length);
-    count = Math.min(count, length - start);
+    start = Math.min(start, self._size);
+    count = Math.min(count, self._size - start);
     return Codecs.UTF_8.decodedLengthRaw(addressOf(self.data[start]), count);
   }
   
@@ -135,8 +135,8 @@ public final class String {
    */
   def toCharArray(start:int32 = 0, count:int32 = int32.maxVal) -> char[] {
     Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, length);
-    count = Math.min(count, length - start);
+    start = Math.min(start, self._size);
+    count = Math.min(count, self._size - start);
     let charCount = self.charLength(start, count);
     let result = char[](charCount);
     Codecs.UTF_8.decodeRaw(
@@ -146,8 +146,8 @@ public final class String {
 
   /** 'true' if 's' is equal to to this string. */
   def equals(s:String) -> bool {
-    return false if self.len != s.len;
-    for i = 0; i < self.len; i++ {
+    return false if self._size != s._size;
+    for i = 0; i < self._size; i++ {
       return false if self.start[i] != s.start[i];
     }
     
@@ -177,18 +177,18 @@ public final class String {
   }
 
   static def concat(s:String[]) -> String {
-    let count = s.length;
+    let count = s.size;
     var length:int32 = 0;
     for i = 0; i < count; ++i {
-      length += s[i].len;
+      length += s[i]._size;
     }
     
     let result = alloc(length);
     var index = 0;
     for i = 0; i < count; ++i {
       let src = s[i];
-      Memory.arrayCopy(addressOf(result.data[index]), addressOf(src.data[0]), src.len);
-      index += src.len;
+      Memory.arrayCopy(addressOf(result.data[index]), addressOf(src.data[0]), src._size);
+      index += src._size;
     }
 
     return result;
@@ -206,7 +206,7 @@ public final class String {
 
   /** Return an immutable buffer representation of this string's data. */
   def asBuffer() -> Memory.Buffer[ubyte] {
-    return Memory.Buffer[ubyte](self, start, addressOf(start[len]));
+    return Memory.Buffer[ubyte](self, start, addressOf(start[self._size]));
   }
 
   /** Compute a hash value for this string. */

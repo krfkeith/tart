@@ -4,17 +4,17 @@ import tart.core.Math.max;
 final class ArrayList[%ElementType] : List[ElementType] {
   private {
     var data:ElementType[];
-    var _length:int;
+    var _size:int;
 
     def grow(amount:int) {
-      let nlength = self._length + amount;
-      if data.length < nlength {
-        let ndata = ElementType[](nlength + nlength / 2 + 16);
-        ElementType[].copyElements(ndata, 0, data, 0, self._length);
+      let nsize = self._size + amount;
+      if data.size < nsize {
+        let ndata = ElementType[](nsize + nsize / 2 + 16);
+        ElementType[].copyElements(ndata, 0, data, 0, self._size);
         self.data = ndata;
       }
 
-      self._length = nlength;
+      self._size = nsize;
     }
   }
 
@@ -25,10 +25,10 @@ final class ArrayList[%ElementType] : List[ElementType] {
               how much initial space to reserve.
    */
   def construct(data:ElementType...; initialCapacity:int = 0) {
-    initialCapacity = max(initialCapacity, data.length);
+    initialCapacity = max(initialCapacity, data.size);
     self.data = ElementType[](initialCapacity);
-    ElementType[].copyElements(self.data, 0, data, 0, data.length);
-    _length = data.length;
+    ElementType[].copyElements(self.data, 0, data, 0, data.size);
+    _size = data.size;
   }
 
   /** Construct a new ArrayList from an array.
@@ -38,14 +38,14 @@ final class ArrayList[%ElementType] : List[ElementType] {
               how much initial space to reserve.
    */
   def construct(data:Array[ElementType], initialCapacity:int = 0) {
-    initialCapacity = max(initialCapacity, data.length);
+    initialCapacity = max(initialCapacity, data.size);
     self.data = ElementType[](initialCapacity);
-    ElementType[].copyElements(self.data, 0, data, 0, data.length);
-    _length = data.length;
+    ElementType[].copyElements(self.data, 0, data, 0, data.size);
+    _size = data.size;
   }
 
   def add(e:ElementType) {
-    let index = _length;
+    let index = _size;
     grow(1);
     data[index] = e;
   }
@@ -55,36 +55,36 @@ final class ArrayList[%ElementType] : List[ElementType] {
 
   def remove(index:int) {
     Preconditions.checkIndex(index >= 0);
-    Preconditions.checkIndex(index < _length);
-    ElementType[].copyElements(data, index, data, index + 1, _length - index - 1);
-    --_length;
+    Preconditions.checkIndex(index < _size);
+    ElementType[].copyElements(data, index, data, index + 1, _size - index - 1);
+    --_size;
   }
   
   def clear() {
-    _length = 0;
+    _size = 0;
   }
 
   def [index:int]:ElementType {
     get {
       Preconditions.checkIndex(index >= 0);
-      Preconditions.checkIndex(index < _length);
+      Preconditions.checkIndex(index < _size);
       return data[index];
     }
 
     set {
       Preconditions.checkIndex(index >= 0);
-      Preconditions.checkIndex(index < _length);
+      Preconditions.checkIndex(index < _size);
       data[index] = value;
     }
   }
   
-  def length:int {
-    get { return _length; }
+  def size:int {
+    get { return _size; }
   }
 
   /** The amount of space currently reserved. */
   def capacity:int {
-    get { return data.length; }
+    get { return data.size; }
   }
 
   def iterate -> Iterator[ElementType] {
@@ -102,13 +102,13 @@ final class ArrayList[%ElementType] : List[ElementType] {
     }
     
     def next -> ElementType or void {
-      if (self.index < self.list.length) {
+      if (self.index < self.list.size) {
         return self.list.data[self.index++];
       } else {
         return;
       }
     }
 
-    def length:int { get { return list.length; } }
+    def length:int { get { return list.size; } }
   }
 }

@@ -9,7 +9,7 @@ def main(args:String[]) -> int32 {
 class HashMapTest : Test {
   def testEmptyMap {
     let h = HashMap[String, int32]();
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -18,7 +18,7 @@ class HashMapTest : Test {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
     assertEq(1, h["Hello"]);
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
@@ -27,7 +27,7 @@ class HashMapTest : Test {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
     assertFalse(h.remove("World"));
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
@@ -36,7 +36,7 @@ class HashMapTest : Test {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
     assertTrue(h.remove("Hello"));
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -45,7 +45,7 @@ class HashMapTest : Test {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
     h["Hello"] = 2;
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
   
@@ -58,7 +58,7 @@ class HashMapTest : Test {
     assertTrue(h.remove("Hello"));
     assertFalse("Hello" in h);
     assertTrue("World" in h);
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
   
@@ -66,7 +66,7 @@ class HashMapTest : Test {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
     h.clear();
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -74,7 +74,7 @@ class HashMapTest : Test {
   def testAddTuple {
     let h = HashMap[String, int32]();
     h.add(("One", 1));
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
     assertTrue("One" in h);
     assertEq(1, h["One"]);
@@ -86,7 +86,7 @@ class HashMapTest : Test {
   def DISABLED_testAddAll {
     let h = HashMap[String, int32]();
     h.addAll(("One", 1), ("Two", 2), ("Three", 3), ("Four", 4));
-    //assertEq(4, h.length);
+    //assertEq(4, h.size);
     //assertFalse(h.isEmpty);
     //assertTrue("One" in h);
     //assertTrue("Two" in h);
@@ -98,7 +98,7 @@ class HashMapTest : Test {
     let h = HashSet[String]();
     h.addAll("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
              "15", "16", "17");
-    assertEq(17, h.length);
+    assertEq(17, h.size);
     assertFalse(h.isEmpty);
     assertTrue("1" in h);
     assertTrue("2" in h);

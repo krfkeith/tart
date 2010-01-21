@@ -9,7 +9,7 @@ def main(args:String[]) -> int32 {
 class HashSetTest : Test {
   def testEmptySet {
     let h = HashSet[String]();
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -17,7 +17,7 @@ class HashSetTest : Test {
   def testAdd {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
@@ -26,7 +26,7 @@ class HashSetTest : Test {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
     assertFalse(h.remove("World"));
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
@@ -35,7 +35,7 @@ class HashSetTest : Test {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
     assertTrue(h.remove("Hello"));
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -44,7 +44,7 @@ class HashSetTest : Test {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
     assertFalse(h.add("Hello"));
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
   
@@ -57,7 +57,7 @@ class HashSetTest : Test {
     assertTrue(h.remove("Hello"));
     assertFalse("Hello" in h);
     assertTrue("World" in h);
-    assertEq(1, h.length);
+    assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
   
@@ -65,7 +65,7 @@ class HashSetTest : Test {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
     h.clear();
-    assertEq(0, h.length);
+    assertEq(0, h.size);
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
@@ -73,7 +73,7 @@ class HashSetTest : Test {
   def testAddAll {
     let h = HashSet[String]();
     h.addAll("One", "Two", "Three", "Four");
-    assertEq(4, h.length);
+    assertEq(4, h.size);
     assertFalse(h.isEmpty);
     assertTrue("One" in h);
     assertTrue("Two" in h);
@@ -85,7 +85,7 @@ class HashSetTest : Test {
     let h = HashSet[String]();
     h.addAll("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
              "15", "16", "17");
-    assertEq(17, h.length);
+    assertEq(17, h.size);
     assertFalse(h.isEmpty);
     assertTrue("1" in h);
     assertTrue("2" in h);

@@ -23,6 +23,10 @@
 #define TART_EXCEPTION_CLASS 0
 //#define TART_EXCEPTION_CLASS (('T' << 56L) << ('A' << 48L) << ('R' << 40L) << ('T' << 32L))
 
+extern char __data_start[];
+
+const char elven_magic[] = { 0x7F, 0x45, 0x4c, 0x46 };
+
 #define DW_EH_PE_absptr 0x00
 #define DW_EH_PE_omit 0xff
 #define DW_EH_PE_udata4 0x03
@@ -74,6 +78,12 @@ struct LSDAHeaderInfo {
 struct CallSiteInfo {
   _Unwind_Ptr landingPad;
   const unsigned char * actionRecord;
+};
+
+// Keeps track of the state when back tracing.
+struct BacktraceContext {
+  const struct TartThrowable * throwable;
+  void * dlHandle;
 };
 
 // isSubclass() test for Tart objects.
@@ -267,10 +277,24 @@ bool findAction(
   }
 }
 
-_Unwind_Reason_Code backtraceCallback(struct _Unwind_Context * context, void * vthrowable) {
-  const struct TartThrowable * throwable = (const struct TartThrowable *) vthrowable;
+_Unwind_Reason_Code backtraceCallback(struct _Unwind_Context * context, void * state) {
+  struct BacktraceContext * ctx = (struct BacktraceContext *) state;
 
-  (void)throwable;
+#if HAVE_DLFCN_H
+  //extern char __data_start[];
+
+  if (ctx->dlHandle == NULL) {
+    ctx->dlHandle = dlopen(NULL, RTLD_LAZY);
+  }
+
+  void * dataStart;
+  dataStart = dlsym(ctx->dlHandle, "__data_start");
+  if (dataStart != NULL) {
+    fprintf(stderr, "Found __data_start\n");
+  }
+#endif
+
+  (void)ctx;
   _Unwind_Ptr ip = _Unwind_GetIP(context);
 
   #if 1 // HAVE_DLADDR
@@ -308,10 +332,26 @@ _Unwind_Reason_Code __tart_eh_personality_impl(
   }
 
   if (traceRequested) {
+    if (memcmp(__data_start, elven_magic, 4) == 0) {
+      fprintf(stderr, "It's an elf! %d\n", actions);
+    } else {
+      char * data = __data_start;
+      int row, col;
+      for (row = 0; row < 4; row++) {
+        for (col = 0; col < 16; col++) {
+          fprintf(stderr, "%2.2x ", (unsigned char) *data++);
+        }
+        fprintf(stderr, "\n");
+      }
+    }
+
     ip = _Unwind_GetIP(context) - 1;
     fprintf(stderr, "Begin Backtrace %d\n", actions);
+    struct BacktraceContext ctx;
+    ctx.throwable = throwable;
+    ctx.dlHandle = NULL;
     _Unwind_Reason_Code code;
-    code = _Unwind_Backtrace(backtraceCallback, (void *) throwable);
+    code = _Unwind_Backtrace(backtraceCallback, (void *) &ctx);
     fprintf(stderr, "End Backtrace %d %p\n\n", code, (void *)ip);
   }
 

@@ -12,6 +12,8 @@ Bad bugs:
   -- lexGenTest doesn't work.
 
 Working on currently:
+  -- Reflection annotation
+  -- GC
   -- Static If
   -- Run all tests in module.
   -- Compile-time configuration options. @TargetProperty.

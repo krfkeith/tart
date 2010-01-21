@@ -13,7 +13,7 @@ class FunctionType : Type {
 
 	  /** Helper function to check the number of arguments. */
 	  static def checkArgCount(args:Object[], count:int32) {
-	    if args.length != count {
+	    if args.size != count {
 	      throw InvocationError("Incorrect number of arguments");
 	    }
 	  }

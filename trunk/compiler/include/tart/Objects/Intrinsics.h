@@ -340,6 +340,15 @@ class NonreflectiveApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Reflection.apply intrinsic
+class ReflectionApplyIntrinsic : public Intrinsic {
+  static ReflectionApplyIntrinsic instance;
+  ReflectionApplyIntrinsic() : Intrinsic("tart.reflect.Reflection.apply") {}
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
 // TargetProperty.apply intrinsic
 class TargetPropertyApplyIntrinsic : public Intrinsic {
   static TargetPropertyApplyIntrinsic instance;
