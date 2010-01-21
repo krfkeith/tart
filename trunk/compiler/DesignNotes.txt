@@ -6,7 +6,6 @@ Design TODOS:
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Bad bugs:
-  -- Lots of bugs in TupleTypeTest.
   -- HashMapTest addAll.
   -- ReflectionTest with optimization.
   -- lexGenTest doesn't work.
@@ -72,7 +71,6 @@ Implementation TODOS:
    * Enum operators (relational).
   * .parse or valueOf.
 * Tuple types
-  * Variadic Tuple args
   * Test struct members, params.
   * Member-wise conversions.
 * Constructors

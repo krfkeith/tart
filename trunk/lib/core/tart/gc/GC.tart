@@ -1,0 +1,23 @@
+import tart.gc.heap.PageAllocator;
+import tart.gc.heap.SpaceMgr;
+
+class GC {
+  private {
+    var pageAlloc:PageAllocator;
+
+	  static var instance:GC;
+  }
+  
+  def construct() {
+    pageAlloc = PageAllocator();
+    SpaceMgr.init(pageAlloc);
+  }
+  
+  static def init {
+    instance = GC();
+  }
+  
+  static def cleanup {
+    SpaceMgr.cleanup();
+  }
+}
