@@ -10,7 +10,7 @@ def main(args:String[]) -> int32 {
 class ArrayListTest : Test {
   def testConstruct() {
     let a = ArrayList[int32](1, 2, 3);
-    assertEq(3, a.length);
+    assertEq(3, a.size);
     assertEq(1, a[0]);
     assertEq(2, a[1]);
     assertEq(3, a[2]);
@@ -18,7 +18,7 @@ class ArrayListTest : Test {
 	
   def testImplicitType() {
     let a = ArrayList(1, 2, 3);
-    assertEq(3, a.length);
+    assertEq(3, a.size);
     assertEq(1, a[0]);
     assertEq(2, a[1]);
     assertEq(3, a[2]);
@@ -42,7 +42,7 @@ class ArrayListTest : Test {
 	def testAdd() {
 	  let a = ArrayList[int32](1, 2, 3);
 	  a.add(4);
-	  assertEq(4, a.length);
+	  assertEq(4, a.size);
 	  assertEq(1, a[0]);
 	  assertEq(2, a[1]);
 	  assertEq(3, a[2]);
@@ -52,7 +52,7 @@ class ArrayListTest : Test {
 	def testRemove() {
 	  let a = ArrayList[int32](1, 2, 3);
 	  a.remove(1);
-	  assertEq(2, a.length);
+	  assertEq(2, a.size);
 	  assertEq(1, a[0]);
 	  assertEq(3, a[1]);
 	}

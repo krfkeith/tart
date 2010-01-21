@@ -8,20 +8,20 @@ def main(args:String[]) -> int32 {
 class StringBuilderTest : Test {
 	def testEmptyStringBuilder() {
 	  let sb = StringBuilder();
-	  assertEq(0, sb.length);
+	  assertEq(0, sb.size);
 	  assertEq("", sb.toString());
 	}
 	
 	def testNonEmptyStringBuilder() {
 	  let sb = StringBuilder("Hello");
-	  assertEq(5, sb.length);
+	  assertEq(5, sb.size);
 	  assertEq("Hello", sb.toString());
 	}
 	
 	def testStringBuilderAppend() {
 	  let sb = StringBuilder();
 	  sb.append("Hello");
-	  assertEq(5, sb.toString().length);
+	  assertEq(5, sb.toString().size);
 	  assertEq("Hello", sb.toString());
 	  sb.append(", World");
 	  assertEq("Hello, World", sb.toString());
@@ -35,9 +35,9 @@ class StringBuilderTest : Test {
 	  let sb = StringBuilder();
 	  sb.append(", World");
 	  sb.insert(0, "Hello");
-	  assertEq(12, sb.toString().length);
+	  assertEq(12, sb.toString().size);
 	  assertEq("Hello, World", sb.toString());
-	  sb.insert(sb.length, '!');
+	  sb.insert(sb.size, '!');
 	}
 	
 	def testStringBuilderRemove() {

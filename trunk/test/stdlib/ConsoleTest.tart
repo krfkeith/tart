@@ -12,17 +12,17 @@ class ConsoleTest : Test {
     assertTrue(Console.cin.canRead);
     assertFalse(Console.cin.canWrite);
     assertFalse(Console.cin.canSeek);
-    assertEq(-1, Console.cin.length);
+    assertEq(-1, Console.cin.size);
     
     assertFalse(Console.cout.canRead);
     assertTrue(Console.cout.canWrite);
     assertFalse(Console.cout.canSeek);
-    assertEq(-1, Console.cout.length);
+    assertEq(-1, Console.cout.size);
 
     assertFalse(Console.cerr.canRead);
     assertTrue(Console.cerr.canWrite);
     assertFalse(Console.cerr.canSeek);
-    assertEq(-1, Console.cerr.length);
+    assertEq(-1, Console.cerr.size);
   }
 
   def testConsoleOut {

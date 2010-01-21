@@ -38,8 +38,8 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     }
   }
   
-  def length:int {
-    get { return self.data.length; }
+  def size:int {
+    get { return self.data.size; }
   }
 
   def iterate -> Iterator[ElementType] {

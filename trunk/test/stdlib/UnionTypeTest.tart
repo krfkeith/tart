@@ -177,11 +177,11 @@ class UnionTypeTest : Test {
     var x:optional String;
     
     x = "Hello";
-    assertEq(5, x.length);
+    assertEq(5, x.size);
     
     x = null;
     try {
-      assertEq(5, x.length);
+      assertEq(5, x.size);
       fail("union member test failed");
     } catch t:TypecastError {}
 	}

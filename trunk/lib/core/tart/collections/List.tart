@@ -17,5 +17,5 @@ interface List[%ElementType] : Iterable[ElementType] {
   def [index:int]:ElementType { get; set; }
   
   /** The number of items in the list. */
-  def length:int { get; }
+  def size:int { get; }
 }

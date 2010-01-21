@@ -8,24 +8,24 @@ def main(args:String[]) -> int32 {
 }
 
 def stringArgs(s:String...) {
-  Debug.assertEq(3, s.length);
+  Debug.assertEq(3, s.size);
   Debug.assertEq("Three", s[0]);
 }
 
 def intArgs(s:int32...) {
-  Debug.assertEq(3, s.length);
+  Debug.assertEq(3, s.size);
 }
 
 def intArgs2(s:int32...) {
   let s2:Array[int32] = s;
-  Debug.assertEq(3, s2.length);
+  Debug.assertEq(3, s2.size);
 }
 
 def testMakeArray() {
-  Debug.assertEq(0, makeArray().length);
-  Debug.assertEq(1, makeArray(5).length);
-  Debug.assertEq(2, makeArray(5, 5).length);
-  Debug.assertEq(3, makeArray(5, 5, 5).length);
+  Debug.assertEq(0, makeArray().size);
+  Debug.assertEq(1, makeArray(5).size);
+  Debug.assertEq(2, makeArray(5, 5).size);
+  Debug.assertEq(3, makeArray(5, 5, 5).size);
 }
 
 def makeArray(s:int32...) -> int32[] {

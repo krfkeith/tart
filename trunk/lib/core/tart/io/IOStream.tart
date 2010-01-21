@@ -30,7 +30,7 @@ interface IOStream {
   
   /** Return the length of the stream, or -1 if indeterminate. */
   //@Throws(IOException)
-  def length:int64 { get; }
+  def size:int64 { get; }
   
   /** Flush any pending writes. */
   //@Throws(IOException)

@@ -41,9 +41,9 @@ def testUTF8Encode() {
 
 def assertEncodingEq(expected:String, input:char[]) {
   let encoder = Codecs.UTF_8;
-  let buffer = ubyte[](expected.length);
-  let length = encoder.encode(buffer, 0, input, 0, int32(input.length));
-  Debug.assertEq(expected.length, length);
+  let buffer = ubyte[](expected.size);
+  let length = encoder.encode(buffer, 0, input, 0, int32(input.size));
+  Debug.assertEq(expected.size, length);
   let s = String(buffer);
   Debug.assertEq(expected, s);
 }

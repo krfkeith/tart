@@ -1,8 +1,10 @@
 import tart.reflect.Module;
 import tart.testing.Test;
+import tart.gc.GC;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
+  GC.init();
   return Test.run(TupleTypeTest);
 }
 
@@ -134,19 +136,58 @@ class TupleTypeTest : Test {
 	  assertEq("World", d1);
 	}
 	
-	def DISABLED_testTupleIteration() {
-	  var s = [(int(1), int(2)), (int(2), int(3)), (int(3), int(4))];
+	def testTupleUnion() {
+	  var s:(int, int) or void = (2, 3);
+	  classify s as n:(int, int) {
+	    assertEq(2, n[0]);
+	    assertEq(3, n[1]);
+	  }
+	}
+	
+	def testTupleLargeUnion() {
+	  var s:(int, int, int, int) or void = (2, 3, 4, 5);
+	  classify s as n:(int, int, int, int) {
+	    assertEq(2, n[0]);
+	    assertEq(3, n[1]);
+	    assertEq(4, n[2]);
+	    assertEq(5, n[3]);
+	  }
+	}
+	
+	def testTupleArray() {
+	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
+	  assertEq(3, s.size);
+	  assertEq(1, s[0][0]);
+	  assertEq(2, s[0][1]);
+	  assertEq(2, s[1][0]);
+	  assertEq(3, s[1][1]);
+	  assertEq(3, s[2][0]);
+	  assertEq(4, s[2][1]);
+	}
+	  
+	def D_testTupleIteration() {
+	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
 	  var asum = 0;
 	  var bsum = 0;
+	  for t in s {
+	    Debug.writeLn(t[0].toString());
+	    asum += t[0];
+	    bsum += t[1];
+	  }
+
+	  assertEq(6, asum);
+	  assertEq(9, bsum);
+
+		asum = bsum = 0;
 	  for a, b in s {
 	    asum += a;
 	    bsum += b;
 	  }
-	  
+
 	  assertEq(6, asum);
 	  assertEq(9, bsum);
 	}
-	
+
 /*	def testVarargsTuple() {
 	  let s = concat(("A", 1), ("B", 2), ("C", 3));
 	}

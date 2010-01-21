@@ -212,8 +212,9 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
       DASSERT(index >= 0);
       Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
 
-      Value * uvalue = builder_.CreateAlloca(utype->irType());
-      builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
+      Value * uvalue = builder_.CreateAlloca(utype->irType(), 0, "union_lval");
+      builder_.CreateStore(indexVal,
+          builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0, "union_index_ptr"));
       if (value != NULL) {
         TypeShape fromShape = fromType->typeShape();
 #if FC_STRUCTS_INTERNAL
@@ -231,7 +232,7 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
         const llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(
-                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
+                builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1, "union_val_ptr"),
                 llvm::PointerType::get(fieldType, 0)));
       }
 
@@ -278,7 +279,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
           return NULL;
         }
 
-        Value * var = builder_.CreateAlloca(value->getType());
+        Value * var = builder_.CreateAlloca(value->getType(), 0, "union_lval");
         builder_.CreateStore(value, var);
         value = var;
       }
@@ -300,14 +301,14 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
       const llvm::Type * fieldType = toType->irEmbeddedType();
       if (toType->typeShape() == Shape_Large_Value) {
         return builder_.CreateBitCast(
-            builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
+            builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
             llvm::PointerType::get(fieldType, 0));
       }
 
       return builder_.CreateLoad(
           builder_.CreateBitCast(
-              builder_.CreateConstInBoundsGEP2_32(value, 0, 1),
-              llvm::PointerType::get(fieldType, 0)));
+              builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
+              llvm::PointerType::get(fieldType, 0)), "union_val");
 #endif
     } else {
       // The union contains only pointer types, so we know that its representation is simply
@@ -430,10 +431,11 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
     Value * actualTypeIndex;
     if (valIsLVal) {
       // Load the type index field.
-      actualTypeIndex = builder_.CreateLoad(builder_.CreateConstInBoundsGEP2_32(in, 0, 0));
+      actualTypeIndex = builder_.CreateLoad(
+          builder_.CreateConstInBoundsGEP2_32(in, 0, 0, "union_index_ptr"), "union_index");
     } else {
       // Extract the type index field.
-      actualTypeIndex = builder_.CreateExtractValue(in, 0);
+      actualTypeIndex = builder_.CreateExtractValue(in, 0, "union_index");
     }
 
     int testIndex = unionType->getTypeIndex(toType);
@@ -442,7 +444,7 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
     }
 
     Constant * testIndexValue = ConstantInt::get(actualTypeIndex->getType(), testIndex);
-    Value * testResult = builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "isa");
+    Value * testResult = builder_.CreateICmpEQ(actualTypeIndex, testIndexValue, "union_isa");
 
 #if 0
     // This section of code was based on a hybrid formula where all reference types

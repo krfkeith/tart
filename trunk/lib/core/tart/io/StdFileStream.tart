@@ -77,8 +77,8 @@ final class StdFileStream : TextReader, TextWriter {
   //@Throws(IOError)
   def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> void {
     Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, buffer.length);
-    count = Math.min(count, buffer.length - start);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start);
     if count > 0 {
       IOError.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
     }
@@ -88,8 +88,8 @@ final class StdFileStream : TextReader, TextWriter {
 
   def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
     //Preconditions.checkArgument(count >= 0);
-    //start = Math.min(start, chars.length);
-    //count = Math.min(count, chars.length - start);
+    //start = Math.min(start, chars.size);
+    //count = Math.min(count, chars.size - start);
     //if count > 0 {
       // TODO: Shortcut for identity encoding.
       let encodedLength = _encoding.encodedLength(chars, int32(start), int32(count));
@@ -105,8 +105,8 @@ final class StdFileStream : TextReader, TextWriter {
 
   def writeChars(text:String, start:int = 0, count:int = int.maxVal) -> int {
     Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, text.length);
-    count = Math.min(count, text.length - start);
+    start = Math.min(start, text.size);
+    count = Math.min(count, text.size - start);
     if count > 0 {
       writeChars(text.toCharArray(int32(start), int32(count)), 0, count);
     }
@@ -173,7 +173,7 @@ final class StdFileStream : TextReader, TextWriter {
   def position:int64 { get { return _position(_file); } }
   
   /** Return the length of the stream, or -1 if indeterminate. */
-  def length:int64 { get { return _length(_file); } }
+  def size:int64 { get { return _length(_file); } }
   
   /** Flush any pending writes. */
   //@Throws(IOError)

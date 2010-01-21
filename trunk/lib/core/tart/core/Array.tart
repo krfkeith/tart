@@ -1,3 +1,4 @@
+import tart.reflect.Reflection;
 import tart.annex.Nonreflective;
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
@@ -6,15 +7,16 @@ import tart.core.Memory.Address;
 import tart.core.Math.min;
 
 /** Built-in array class */
-@Nonreflective public final class Array[%ElementType] : Iterable[ElementType] {
+@Nonreflective @Reflection(Reflection.Detail.MINIMAL)
+public final class Array[%ElementType] : Iterable[ElementType] {
   private {
     var _length:int;
     var _data:NativeArray[ElementType, 0];
 
     /** Array allocator function */
-    static def alloc(length:int) -> Array {
-      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[length]);
-      self._length = length;
+    static def alloc(size:int) -> Array {
+      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[size]);
+      self._length = size;
       return self;
     }
 
@@ -27,13 +29,13 @@ import tart.core.Math.min;
   }
 
   /** Construct an array of a given length */
-  static def create(length:int) -> Array {
-    Preconditions.checkArgument(length >= 0);
-    if (length == 0) {
+  static def create(size:int) -> Array {
+    Preconditions.checkArgument(size >= 0);
+    if (size == 0) {
       return emptyArray;
     }
 
-    let self:Array = alloc(length);
+    let self:Array = alloc(size);
     // TODO: Need to initialize the array elements to default values.
     // Memory.initToDefaultValues(addressOf(data[0]), end);
     return self;
@@ -45,13 +47,13 @@ import tart.core.Math.min;
     return elements;
   }
 
-  /** True if the array is zero length. */
+  /** True if the array is zero size. */
   def isEmpty:bool {
     get { return self._length == 0; }
   }
 
   /** The length of the array. */
-  def length:int {
+  def size:int {
     get { return _length; }
   }
 

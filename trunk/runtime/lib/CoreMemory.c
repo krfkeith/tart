@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include "config.h"
 
-extern char __data_start[];
-
 void * PageAllocator_allocImpl(int pageSize, int numPages) {
 #ifdef HAVE_POSIX_MEMALIGN
   void * memptr;

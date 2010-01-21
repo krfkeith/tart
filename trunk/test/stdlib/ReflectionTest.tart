@@ -28,8 +28,8 @@ class ReflectionTest : Test {
 	def testModuleReflection() {
 	  let m = Module.thisModule();
 	  assertEq("ReflectionTest", m.name);
-	  assertEq(2, m.types.length);
-	  assertEq(3, m.methods.length);
+	  assertEq(2, m.types.size);
+	  assertEq(3, m.methods.size);
 	}
 	
 	def testModuleMethods() {

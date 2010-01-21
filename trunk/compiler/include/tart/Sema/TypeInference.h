@@ -16,54 +16,83 @@
 namespace tart {
 
 /// -------------------------------------------------------------------
+/// Represents a point in the expression hierarchy where the AST node
+/// maps to multiple possible items. The type inferencer attempts to
+/// narrow the possibilities to a single choice for each point.
+class ChoicePoint {
+public:
+
+  // Update conversion rankings
+  virtual void update() = 0;
+
+  /** Return the total number of choices. */
+  virtual size_t count() const = 0;
+
+  /** Return the number of viable choices remaining after culling. */
+  virtual int remaining() const = 0;
+
+  /** Return the current worst-case conversion rank. */
+  virtual ConversionRank rank() const = 0;
+
+  /** Return true if the specified choice has been culled. */
+  virtual bool isCulled(int index) const = 0;
+
+  /** Cull all choices lower than a given conversion rank. */
+  virtual int cullByConversionRank(ConversionRank lowerLimit, int searchDepth) = 0;
+
+  /** Cull all choices which are less specific than others. */
+  virtual void cullBySpecificity(int searchDepth) = 0;
+
+  /** Cull all choices except for the numbered choice. */
+  virtual void cullAllExcept(int choice, int searchDepth) = 0;
+
+  /** Cull all choices except for the best choice. */
+  virtual void cullAllExceptBest(int searchDepth) = 0;
+
+  /** Eliminate from consideration any culled candidates. */
+  virtual void removeCulled() = 0;
+
+  /** Generate a printable version of this choice point's expression. */
+  virtual const Expr * expr() const = 0;
+
+  // Eliminate culled candidates
+  //void finish();
+
+  // Report the given error message, along with the calling signature and the candidates.
+  //void reportErrors(const char * msg);
+};
+
+/// -------------------------------------------------------------------
 /// Represents a call site within an expression.
-struct CallSite {
-  /** The overloaded call. */
-  CallExpr * callExpr;
-
-  /** Number of possible overload choices remaining after pruning. */
-  int numRemaining;
-
-  /** The lowest compatibility score of all choices. */
-  ConversionRank lowestRank;
-
-  /** The best candidate for the current solution being tested. */
-  CallCandidate * best;
-
+class CallSite : public ChoicePoint {
+public:
   CallSite()
-    : callExpr(NULL)
-    , numRemaining(0)
-    , lowestRank(IdenticalTypes)
-    , best(NULL)
+    : callExpr_(NULL)
+    , remaining_(0)
+    , lowestRank_(IdenticalTypes)
+    , best_(NULL)
   {}
 
   CallSite(CallExpr * call)
-    : callExpr(call)
-    , numRemaining(0)
-    , lowestRank(IdenticalTypes)
-    , best(NULL)
+    : callExpr_(call)
+    , remaining_(0)
+    , lowestRank_(IdenticalTypes)
+    , best_(NULL)
   {}
 
-  CallSite(const CallSite & src)
-    : callExpr(src.callExpr)
-    , numRemaining(src.numRemaining)
-    , lowestRank(src.lowestRank)
-    , best(src.best)
-  {}
-
-  const CallSite & operator=(const CallSite & src) {
-    callExpr = src.callExpr;
-    numRemaining = src.numRemaining;
-    lowestRank = src.lowestRank;
-    best = src.best;
-    return *this;
-  }
-
-  // Update conversion rankings
   void update();
-
-  // Eliminate from consideration any culld candidates
+  size_t count() const;
+  ConversionRank rank() const { return lowestRank_; }
+  int remaining() const { return remaining_; }
+  bool unify(int cullingDepth);
+  bool isCulled(int ch) const;
+  int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
+  void cullBySpecificity(int searchDepth);
+  void cullAllExcept(int choice, int searchDepth);
+  void cullAllExceptBest(int searchDepth);
   void removeCulled();
+  void backtrack(int searchDepth);
+  const Expr * expr() const { return callExpr_; }
 
   // Eliminate culled candidates
   void finish();
@@ -73,10 +102,50 @@ struct CallSite {
 
   // Report the given error message, along with the calling signature and the candidates.
   void reportErrors(const char * msg);
+  void reportRanks();
+
+  /** Save the single best candidate. */
+  void saveBest();
+
+private:
+  /** The overloaded call. */
+  CallExpr * callExpr_;
+
+  /** Number of possible overload choices remaining after pruning. */
+  int remaining_;
+
+  /** The lowest compatibility score of all choices. */
+  ConversionRank lowestRank_;
+
+  /** The best candidate for the current solution being tested. */
+  CallCandidate * best_;
 };
 
-typedef llvm::SmallVector<CallSite, 16> CallSiteList;
+typedef llvm::SmallVector<CallSite *, 16> CallSiteList;
 typedef llvm::SmallSet<const Expr *, 16> ExprSet;
+
+/// -------------------------------------------------------------------
+/// A choice point for constant integers.
+class ConstantIntegerSite : public ChoicePoint {
+public:
+  // Update conversion rankings
+  void update();
+  size_t count() const;
+  int remaining() const;
+  ConversionRank rank() const;
+  bool isCulled(int index) const;
+  int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
+  void cullBySpecificity(int searchDepth);
+  void cullAllExcept(int choice, int searchDepth);
+  void cullAllExceptBest(int searchDepth);
+  void removeCulled() {}
+  const Expr * expr() const { return expr_; }
+
+private:
+  ConstantInteger * expr_;
+  int remaining_;
+  ConversionRank lowestRank_;
+};
 
 /// -------------------------------------------------------------------
 /// Represents an additional type constraint that is not a call.
@@ -177,20 +246,19 @@ private:
   /** Remove from consideration overloads that have a low conversion rank. */
   void cullByConversionRank();
   void cullByConversionRank(ConversionRank lowerLimit);
-  void cullByConversionRank(ConversionRank lowerLimit, CallSite & site);
 
   /** Remove from consideration overloads that are less specific. */
   void cullBySpecificity();
-  void cullBySpecificity(CallSite & site);
+  void cullBySpecificity(CallSite * site);
 
   /** Try removing each from consideration and re-evaluate all conversion
       ranks for the entire AST. Choose the one with the best rank. */
   void cullByElimination();
   void cullByElimination(CallSiteList::iterator first, CallSiteList::iterator last);
-  void cullByElimination(CallSite & site);
+  void cullByElimination(CallSite * site);
 
-  /** Cull all candidates for a given site except for cc. */
-  void cullAllButOne(CallSite & site, CallCandidate * cc);
+  /** Cull all candidates for a given site except for ch. */
+  void cullAllButOne(CallSite * site, int choice);
 
   // Undo the last pruning
   void backtrack();
