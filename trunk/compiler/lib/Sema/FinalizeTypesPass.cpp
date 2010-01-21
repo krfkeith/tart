@@ -583,9 +583,6 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value,
     // is the simplest case. Otherwise, we'll need to do additional tests on the value.
     if (memberType->isEqual(to)) {
       return in;
-      //in->setTypeIndex(index);
-      //class InstanceOfExpr : public Expr {
-      //int index = from->getTypeIndex(memberType);
     }
 
     diag.info(in) << "Found " << matchingTypes.size() << " type in union: " << memberType;
