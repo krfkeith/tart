@@ -160,6 +160,12 @@ protected:
   Defn * subject_;
   FunctionDefn * currentFunction_;
 
+  enum MemberPreference {
+    NO_PREFERENCE,
+    PREFER_INSTANCE,
+    PREFER_STATIC,
+  };
+
   // Recursive name-lookup helper function
   bool lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path,
       LookupOptions lookupOptions);
@@ -172,7 +178,7 @@ protected:
 
   // Find a name in a scope and return a list of matching expressions.
   bool findInScope(ExprList & out, const char * name, const Scope * scope, Expr * context,
-      SLC & loc);
+      SLC & loc, MemberPreference pref);
 
   // Special lookup function for static members of templated types.
   bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);

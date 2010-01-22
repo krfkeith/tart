@@ -129,9 +129,6 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   } else if (results.empty()) {
     // Search failed, run it again with required to report errors.
     lookupName(results, callable, LOOKUP_REQUIRED);
-    //diag.error(loc) << "Undefined method " << callable;
-    //diag.writeLnIndent("Scopes searched:");
-    //dumpScopeHierarchy();
     return &Expr::ErrorVal;
   } else if (call->candidates().empty()) {
     // Generate the calling signature in a buffer.
@@ -177,9 +174,7 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
         // TODO: Also include overrides
         // TODO: Refactor
         Defn * argTypeDefn = argType->typeDefn();
-        //Scope * argTypeScope = argType->memberScope();
         if (argTypeDefn != NULL && argTypeDefn->definingScope() != NULL) {
-          //diag.debug(call) << "ADL: " << call << " - " << arg << ":" << argType;
           argTypeDefn->definingScope()->lookupMember(name, defns, true);
         }
       }

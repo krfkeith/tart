@@ -1486,7 +1486,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
   //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
   analyzeTypeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
-  findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc);
+  findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());
   Expr * valueOf = specialize(loc, methods, TupleType::get(toType));
   FunctionDefn * valueOfMethod;

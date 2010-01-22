@@ -108,5 +108,6 @@ class StringTest : Test {
 	def testStringFormatEscapeBraces() {
 	  assertEq("Test {}", String.format("Test {{}}"));
 	  assertEq("Test Hello", String.format("Test {0}", "Hello"));
+	  assertEq("Test Hello", "Test {0}".format("Hello"));
 	}
 }
