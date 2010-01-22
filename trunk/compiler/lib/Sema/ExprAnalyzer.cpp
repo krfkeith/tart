@@ -527,6 +527,20 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Ex
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
       checkAccess(loc, prop);
       return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rhs);
+    } else if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+      // The only time we may assign to a 'let' variable is in a constructor, and only
+      // if the variable is an instance member of that class.
+      if (var->defnType() == Defn::Let) {
+        if (var->storageClass() == Storage_Instance) {
+          if (FunctionDefn * subjectFn = dyn_cast<FunctionDefn>(subject_)) {
+            if (subjectFn->isCtor() && subjectFn->parentDefn() == var->parentDefn()) {
+              return new AssignmentExpr(Expr::Assign, loc, lhs, rhs);
+            }
+          }
+        }
+
+        diag.error(loc) << "Assignment to immutable value '" << var << "'";
+      }
     }
   } else if (CallExpr * call = dyn_cast<CallExpr>(lhs)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {

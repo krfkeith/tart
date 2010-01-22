@@ -95,7 +95,6 @@ Implementation TODOS:
   * Other string-related functions
   * Characters.tart
   * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
-  * character iterator functions.
   * Unicode character class tests.
 * Let with instance scope.
   * Insure that it cannot be assigned to in non-constructor.
