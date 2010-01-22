@@ -4,8 +4,7 @@ import tart.core.Memory.Address;
 import tart.text.encodings.Codecs;
 
 /** The built-in string class. Strings are immutable. */
- /* : public Iterable[char] */
-public final class String {
+public final class String : Iterable[char] {
   private {
     /** The length of the string, in bytes. */
     var _size:int32;
@@ -69,7 +68,7 @@ public final class String {
    */
   static def create(chars:char[], start:int32 = 0, count:int32 = int32.maxVal) -> String {
     let length = Codecs.UTF_8.encodedLength(chars, start, count);
-    let self = alloc(length);
+    let self = alloc(int32(length));
     Codecs.UTF_8.encodeRaw(addressOf(self.data[0]), length, addressOf(chars.data[0]), count);
     return self;
   }
@@ -125,7 +124,7 @@ public final class String {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, self._size);
     count = Math.min(count, self._size - start);
-    return Codecs.UTF_8.decodedLengthRaw(addressOf(self.data[start]), count);
+    return int32(Codecs.UTF_8.decodedLengthRaw(addressOf(self.data[start]), count));
   }
   
   /** Convert this string to a character array.
@@ -155,7 +154,7 @@ public final class String {
   }
 
   /** The index operator. */
-  def [index:int32]:ubyte {
+  def [index:int]:ubyte {
     get {
       //Preconditions.verify[IndexOutOfRangeError](index < 0 or index >= len);
       return self.data[index];
@@ -174,6 +173,18 @@ public final class String {
 
   static def concat(s:String...) -> String {
     return concat(s);
+  }
+  
+  static def format(formatString:String, args:Object...) -> String {
+    return formatString.format(args);
+  }
+
+  def format(args:Object...) -> String {
+    return format(args);
+  }
+
+  def format(args:Object[]) -> String {
+    return StringFormatter(self, args).toString();
   }
 
   static def concat(s:String[]) -> String {
@@ -212,6 +223,34 @@ public final class String {
   /** Compute a hash value for this string. */
   override computeHash -> uint64 {
     return Hashing.hash(asBuffer());
+  }
+
+	/** Iterate over the characters in this string. */  
+  def iterate -> Iterator[char] {
+    return StringIterator(self);
+  }
+  
+  /** String iterator class. */
+  private final class StringIterator : Iterator[char] {
+    private {
+      let str:String;
+      var index:int;
+    }
+    
+    def construct(str:String) {
+      self.str = str;
+      self.index = 0;
+    }
+    
+    def next -> char or void {
+      var charVal:char;
+      if index < str._size {
+	      charVal, index = Codecs.UTF_8.decodeOne(str.start, index, str._size);
+  	    return charVal;
+      } else {
+        return;
+      }
+    }
   }
 }
 

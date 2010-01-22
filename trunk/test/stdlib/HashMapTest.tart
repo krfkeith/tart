@@ -83,15 +83,15 @@ class HashMapTest : Test {
     //assertTrue("Four" in h);
   }
 
-  def DISABLED_testAddAll {
+  def testAddAll {
     let h = HashMap[String, int32]();
     h.addAll(("One", 1), ("Two", 2), ("Three", 3), ("Four", 4));
-    //assertEq(4, h.size);
-    //assertFalse(h.isEmpty);
-    //assertTrue("One" in h);
-    //assertTrue("Two" in h);
-    //assertTrue("Three" in h);
-    //assertTrue("Four" in h);
+    assertEq(4, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("One" in h);
+    assertTrue("Two" in h);
+    assertTrue("Three" in h);
+    assertTrue("Four" in h);
   }
 
 /*  def testAddMany {

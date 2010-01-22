@@ -536,6 +536,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   // Handle struct return argument if present.
   Value * sret = NULL;
+  fnType->irType(); // Make sure irType is generated, because it sets structReturn property.
   if (fnType->isStructReturn()) {
     sret = builder_.CreateAlloca(fnType->returnType()->irType());
     args.push_back(sret);
@@ -650,6 +651,46 @@ llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
   }
 
   return dcObjectFnType_;
+}
+
+llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
+  std::string interceptName(".intercept.");
+  interceptName.append(fn->linkageName());
+  llvm::Function * interceptFn = irModule_->getFunction(interceptName);
+  if (interceptFn != NULL) {
+    return interceptFn;
+  }
+
+  const FunctionType * fnType = fn->functionType();
+  const llvm::FunctionType * interceptFnType = cast<llvm::FunctionType>(fnType->irType());
+  DASSERT(dbgContext_.isNull());
+  interceptFn = Function::Create(
+      interceptFnType, Function::LinkOnceODRLinkage, interceptName, irModule_);
+  BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", interceptFn);
+  DASSERT(currentFn_ == NULL);
+  currentFn_ = interceptFn;
+  builder_.SetInsertPoint(blk);
+
+  Function::arg_iterator it = interceptFn->arg_begin();
+  Value * sret = NULL;
+  if (fnType->isStructReturn()) {
+    sret = it++;
+  }
+
+  Value * selfArg = it++;
+  // Need to upcast to object.
+
+
+  // Function does the following:
+  // 1) Creates an array of all params (except the object pointer).
+  // 2) Boxes each value and stores it in the array.
+  // 3) Gets a pointer to the method object.
+  // 4) Gets a pointer to the interceptor instance via the object pointer.
+  // 5) Calls the interceptor with object, method and array.
+  // 6) Gets the return value, unboxes it, and returns it.
+
+  currentFn_ = NULL;
+  return interceptFn;
 }
 
 } // namespace tart

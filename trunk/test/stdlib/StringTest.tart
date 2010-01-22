@@ -91,4 +91,18 @@ class StringTest : Test {
 	def testStringConversion() {
 	  assertEq("1", String(1));
 	}
+
+	def testStringIteration() {
+	  let i = "Test".iterate();
+	  assertEq('T', typecast[char](i.next()));
+	  assertEq('e', typecast[char](i.next()));
+	  assertEq('s', typecast[char](i.next()));
+	  assertEq('t', typecast[char](i.next()));
+	  assertTrue(i.next() isa void);
+	}
+
+	def testStringFormatEscapeBraces() {
+	  assertEq("Test {}", String.format("Test {{}}"));
+	}
+
 }
