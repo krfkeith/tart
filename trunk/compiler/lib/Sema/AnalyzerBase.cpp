@@ -175,7 +175,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, SLC & loc) {
   // Search the current active scopes.
   for (Scope * sc = activeScope; sc != NULL; sc = sc->parentScope()) {
-    if (findInScope(out, name, sc, sc->baseExpr(), loc)) {
+    if (findInScope(out, name, sc, sc->baseExpr(), loc, NO_PREFERENCE)) {
       return true;
     }
   }
@@ -187,18 +187,19 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
     if (Module * m = dyn_cast<Module>(scopeName->value())) {
       AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
-      if (findInScope(out, name, m, NULL, loc)) {
+      if (findInScope(out, name, m, NULL, loc, NO_PREFERENCE)) {
         return true;
       }
     } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(scopeName->value())) {
       analyzeNamespace(ns, Task_PrepMemberLookup);
-      if (findInScope(out, name, &ns->memberScope(), NULL, loc)) {
+      if (findInScope(out, name, &ns->memberScope(), NULL, loc, NO_PREFERENCE)) {
         return true;
       }
     }
   }
 
   if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
+    // Look for static members.
     const Type * type = dealias(typeNameExpr->value());
     TypeDefn * typeDef = type->typeDefn();
     if (typeDef != NULL && type->memberScope() != NULL) {
@@ -208,7 +209,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
 
       DASSERT_OBJ(typeNameExpr->isSingular(), typeDef);
       AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, type->memberScope(), context, loc)) {
+      if (findInScope(out, name, type->memberScope(), context, loc, PREFER_STATIC)) {
         return true;
       }
     }
@@ -259,7 +260,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
 
       DASSERT_OBJ(typeDef->isSingular(), typeDef);
       AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, contextType->memberScope(), context, loc)) {
+      if (findInScope(out, name, contextType->memberScope(), context, loc, PREFER_INSTANCE)) {
         return true;
       }
     }
@@ -269,9 +270,39 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
 }
 
 bool AnalyzerBase::findInScope(ExprList & out, const char * name, const Scope * scope,
-    Expr * context, SLC & loc) {
+    Expr * context, SLC & loc, MemberPreference pref) {
   DefnList defns;
   if (scope->lookupMember(name, defns, true)) {
+    // If there's an exclusion in effect by storage class
+    if (pref != NO_PREFERENCE) {
+      bool hasStaticMembers = false;
+      bool hasInstanceMembers = false;
+      for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
+        StorageClass sc = (*it)->storageClass();
+        if (sc == Storage_Instance) {
+          hasInstanceMembers = true;
+        } else if (sc == Storage_Static) {
+          hasStaticMembers = true;
+        }
+      }
+
+      if (hasStaticMembers && hasInstanceMembers) {
+        StorageClass scToRemove;
+        if (pref == PREFER_INSTANCE) {
+          scToRemove = Storage_Static;
+        } else {
+          scToRemove = Storage_Instance;
+        }
+        for (DefnList::iterator it = defns.begin(); it != defns.end();) {
+          if ((*it)->storageClass() == scToRemove) {
+            it = defns.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+    }
+
     return getDefnListAsExprList(loc, defns, context, out);
   }
 
