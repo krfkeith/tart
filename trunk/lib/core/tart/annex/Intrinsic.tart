@@ -2,7 +2,5 @@
     built-in compiler intrinsic. */
 @Attribute(Attribute.Target.CALLABLE)
 class Intrinsic {
-  private var tag:String;
-  public def construct() { self.tag = ""; }
-  public def construct(tag:String) { self.tag = tag; }
+  public def construct() {}
 }

@@ -369,6 +369,8 @@ public:
   llvm::Function * genDcObjectFn(const Type * objType);
   llvm::FunctionType * getDcObjectFnType();
 
+  // Generate the function that boxes arguments when a call is intercepted.
+  llvm::Function * genInterceptFn(const FunctionDefn * fn);
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;

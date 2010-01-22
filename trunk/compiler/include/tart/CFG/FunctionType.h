@@ -64,7 +64,8 @@ public:
   /** Print an explanation as to why this function type is not singular. */
   void whyNotSingular() const;
 
-  /** Return the name of the 'invoke' trampoline function for this function type. */
+  /** Return the name of the 'invoke' trampoline function for this function type.
+      This is used when calling methods via reflection. */
   const std::string & invokeName() const;
 
   // Overrides

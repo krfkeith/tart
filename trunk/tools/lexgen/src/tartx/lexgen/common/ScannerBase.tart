@@ -73,24 +73,24 @@ class ScannerBase {
 
 	/** Replace the last 'n' token characters with the string 's'. */  
   def replace(n:int32, s:String) {
-    _tokenText.length -= n;
+    _tokenText.size -= n;
     append(s);
   }
   
   /** Discard the current token. */
   def skip {
-    _tokenText.length = _saveTokenLength;
+    _tokenText.size = _saveTokenLength;
     _skipToken = true;
   }
 
 	/** Drop the last 'n' characters of the current token text. */  
   def erase(n:int32) {
-    _tokenText.length -= n;
+    _tokenText.size -= n;
   }
 
 	/** Drop all of the characters accumulated since the end of the previous token. */
   def erase() {
-    _tokenText.length = _saveTokenLength;
+    _tokenText.size = _saveTokenLength;
   }
 
   /** If the current character matches the specified character,

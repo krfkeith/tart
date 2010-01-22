@@ -117,9 +117,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
 	      
 	      // Fall through an rehash
 	    } else if _data.size > 0 {
-			  Debug.writeLn(_size.toString());
 	      for i = 0; i < _size; ++i {
-			    Debug.writeLn("A: ", key);
 	        if _data[i].key == key {
 			      _data[i] = Entry(key, value);
 	          return;
@@ -193,7 +191,6 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
 
   def addAll(entries:Iterator[(KeyType, ValueType)]) {
     for entry in entries {
-			Debug.writeLn("Adding: ", entry[1].toString());
       add(entry);
     }
   }

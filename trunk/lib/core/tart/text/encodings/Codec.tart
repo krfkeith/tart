@@ -25,7 +25,7 @@ interface Codec {
         count: The number of characters to encode.
       Returns: The number of bytes required to encode the specified character range.
     */
-  def encodedLength(src:char[], srcOffset:int32, count:int32) -> int32;
+  def encodedLength(src:char[], srcOffset:int, count:int) -> int;
 
   /** Return the length, in characters, of the byte array when decoded.
       Parameters:
@@ -34,7 +34,7 @@ interface Codec {
         count: The number of bytes to decode.
       Returns: The number of encoded characters.
     */
-  def decodedLength(src:ubyte[], srcOffset:int32, count:int32) -> int32;
+  def decodedLength(src:ubyte[], srcOffset:int, count:int) -> int;
 
   /** Encode the characters in 'src'.
       Parameters:
@@ -45,7 +45,7 @@ interface Codec {
         count: The number of characters to encode.
       Returns: The number of bytes written to 'dst'.
     */
-  def encode(dst:ubyte[], dstOffset:int32, src:char[], srcOffset:int32, count:int32) -> int32;
+  def encode(dst:ubyte[], dstOffset:int, src:char[], srcOffset:int, count:int) -> int;
 
   /** Decode the characters in 'src'.
       Parameters:
@@ -56,5 +56,5 @@ interface Codec {
         count: The number of bytes to decode.
       Returns: The number of characters written to 'dst'.
     */
-  def decode(dst:char[], dstOffset:int32, src:ubyte[], srcOffset:int32, count:int32) -> int32;
+  def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int;
 }

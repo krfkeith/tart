@@ -6,12 +6,12 @@ Design TODOS:
 * Need a way to collect all declarations that a given attribute is assigned to.
 
 Bad bugs:
-  -- HashMapTest addAll.
   -- ReflectionTest with optimization.
-  -- lexGenTest doesn't work.
+  -- lexGenTest segfaults.
 
 Working on currently:
-  -- Reflection annotation
+  -- BitTricks tests.
+  -- New @Reflection annotation
   -- GC
   -- Static If
   -- Run all tests in module.
@@ -19,7 +19,7 @@ Working on currently:
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
   -- Hashing of integers
-  -- String iteration
+  -- String character iteration
 
 Implementation TODOS:
 
@@ -89,6 +89,8 @@ Implementation TODOS:
   * State machine.
 * Strings
   * Define toStringFmt - string formatting
+  * "Hello, {0}"(world, planet);
+  * "Hello, {0}".format(world, planet);
   * Define String.format
   * Other string-related functions
   * Characters.tart
@@ -144,10 +146,8 @@ Error TODOS: (things that should be an error)
 TODOS from V1 Compiler:
 
 o  Our never-ending quest to get 'hello world' working!
-  o Work on FileStream
   o Do we want to use stdio open() or fopen()? (Do we want to do our own buffering?)
   o Need stdin/stdout/stderr pointers.
-o  Hook up base object and type classes
 o  Namespace merging.
 o  'virtual' arguments. (Or 'dispatched')
   o  implicit convert (silent)
