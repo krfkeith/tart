@@ -691,9 +691,16 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
       && t1 == t2) {
     return in;
   } else {
-    // Otherwise, it's just a regular equality test.
-    diag.error(in) << "Can't compare " << t1 << " and " << t2;
-    DFAIL("Implement");
+    const Type * tr = findCommonType(t1, t2);
+    if (tr == NULL) {
+      // Otherwise, it's just a regular equality test.
+      diag.error(in) << "Can't compare " << t1 << " and " << t2;
+    } else {
+      in->setFirst(addCastIfNeeded(in->first(), tr));
+      in->setSecond(addCastIfNeeded(in->second(), tr));
+    }
+
+    return in;
   }
 }
 

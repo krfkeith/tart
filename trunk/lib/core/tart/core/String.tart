@@ -184,7 +184,7 @@ public final class String : Iterable[char] {
   }
 
   def format(args:Object[]) -> String {
-    return StringFormatter(self, args).toString();
+    return StringFormatter(self, args).build();
   }
 
   static def concat(s:String[]) -> String {

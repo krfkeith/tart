@@ -99,10 +99,14 @@ class StringTest : Test {
 	  assertEq('s', typecast[char](i.next()));
 	  assertEq('t', typecast[char](i.next()));
 	  assertTrue(i.next() isa void);
+	  
+	  let i2 = "\u2100".iterate();
+	  assertEq(0x2100, typecast[char](i2.next()));
+	  assertTrue(i2.next() isa void);
 	}
 
 	def testStringFormatEscapeBraces() {
 	  assertEq("Test {}", String.format("Test {{}}"));
+	  assertEq("Test Hello", String.format("Test {0}", "Hello"));
 	}
-
 }
