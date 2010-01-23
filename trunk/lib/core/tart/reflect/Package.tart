@@ -1,10 +1,9 @@
 import tart.annex.Intrinsic;
 import tart.annex.Essential;
-import tart.annex.Nonreflective;
 import tart.core.Memory.Address;
 
 /** Description of a package. */
-@Nonreflective final class Package {
+@Reflection(Reflection.Detail.NONE) final class Package {
   private {
     var _name:String;
     var _modules:Module[];

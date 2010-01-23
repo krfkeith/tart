@@ -24,6 +24,8 @@ include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 foreach(SRC_FILE ${TART_SRC})
   # Source file name
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
+  string(REGEX REPLACE ".tart\$" ".out.bc" OUT_BC_FILE "${SRC_FILE}")
+  string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
 
   # Generate the deps variable name
   string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
@@ -41,9 +43,8 @@ foreach(SRC_FILE ${TART_SRC})
   set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
 
   # Link with libcore
-  string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
-  add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND tartln -disable-fp-elim -filetype=asm ${TARTLN_OPTIONS} ${BC_FILE}
+  add_custom_command(OUTPUT ${OUT_BC_FILE}
+      COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
           "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
           "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       MAIN_DEPENDENCY "${BC_FILE}" 
@@ -51,6 +52,12 @@ foreach(SRC_FILE ${TART_SRC})
           "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
           "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
+      
+  # Convert to assembly
+  add_custom_command(OUTPUT ${ASM_FILE}
+      COMMAND ${LLVM_BIN_DIR}/llc -o ${ASM_FILE} ${OUT_BC_FILE}
+      DEPENDS "${OUT_BC_FILE}"
+      COMMENT "Generating assembly for file ${BC_FILE}")
 
   # Assemble and run
   string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
