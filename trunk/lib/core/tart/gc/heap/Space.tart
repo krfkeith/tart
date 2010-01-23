@@ -1,9 +1,9 @@
-import tart.annex.Nonreflective;
+import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.gc.AddressRange;
 
 /** Manages a region of memory under a specific allocation and collection policy. */
-@Nonreflective abstract class Space {
+@Reflection(Reflection.Detail.NONE) abstract class Space {
   private var _extent:AddressRange;
   private var _contiguous:bool;
   

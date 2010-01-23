@@ -348,7 +348,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
   // the type of a global variable into a pointer anyway.
   const llvm::Type * irType = varType->irEmbeddedType();
-  gv = new GlobalVariable(*irModule_, irType, true, linkType, NULL, var->linkageName());
+  gv = new GlobalVariable(*irModule_, irType, false, linkType, NULL, var->linkageName());
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.

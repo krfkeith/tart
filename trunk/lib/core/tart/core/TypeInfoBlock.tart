@@ -1,11 +1,11 @@
-import tart.annex.Nonreflective;
+import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.reflect.Type;
 
 /** All objects contain a pointer to a TypeInfoBlock, which contains the
     pointer to the type object and the method table.
  */
-@Nonreflective struct TypeInfoBlock {
+@Reflection(Reflection.Detail.NONE) struct TypeInfoBlock {
   /** Reference to the type object for this type. */
   //readonly var type:Type;
 

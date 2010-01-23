@@ -1,7 +1,7 @@
-import tart.annex.Nonreflective;
+import tart.reflect.Reflection;
 
 /** Abstract class used to represent a reference to some value. */
-@Nonreflective abstract class Ref {
+@Reflection(Reflection.Detail.NONE) abstract class Ref {
   private static {
     /// Convert signed integers to their unsigned equivalents. Supresses conversion warnings.
 

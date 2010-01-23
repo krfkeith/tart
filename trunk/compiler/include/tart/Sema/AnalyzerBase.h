@@ -67,8 +67,12 @@ public:
 
   /** Represents the current scope from which accesses are being made. Used to check
       whether private/protected variables can be seen. */
-  //void setSubject(Defn * subject) { subject_ = subject; }
   Defn * subject() const { return subject_; }
+  Defn * setSubject(Defn * subject) {
+    Defn * result = subject_;
+    subject_ = subject;
+    return result;
+  }
 
   /** Represents the function currently being compiled. */
   FunctionDefn * currentFunction() const { return currentFunction_; }

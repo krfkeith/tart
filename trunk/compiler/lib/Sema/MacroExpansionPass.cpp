@@ -67,7 +67,9 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     const Type * savedReturnType = stAn.setReturnType(returnType);
     const Stmt * macroBody = macro->functionDecl()->body();
 
+    Defn * saveSubject = stAn.setSubject(macro);
     stAn.buildStmtCFG(macroBody);
+    stAn.setSubject(saveSubject);
 
     // If control fell off the end of the macro, then branch to return block.
     Block * finalBlock = stAn.insertionBlock();

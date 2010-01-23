@@ -1,5 +1,4 @@
 import tart.reflect.Reflection;
-import tart.annex.Nonreflective;
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
@@ -7,7 +6,7 @@ import tart.core.Memory.Address;
 import tart.core.Math.min;
 
 /** Built-in array class */
-@Nonreflective @Reflection(Reflection.Detail.MINIMAL)
+@Reflection(Reflection.Detail.MINIMAL)
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
     var _size:int;

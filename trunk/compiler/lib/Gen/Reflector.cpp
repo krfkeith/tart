@@ -72,7 +72,6 @@ SystemClassMember<VariableDefn> member_name(Builtins::typeMember, "_name");
 SystemClassMember<VariableDefn> member_kind(Builtins::typeMember, "_kind");
 SystemClassMember<VariableDefn> member_access(Builtins::typeMember, "_access");
 SystemClassMember<VariableDefn> member_traits(Builtins::typeMember, "_traits");
-SystemClassMember<VariableDefn> member_type(Builtins::typeMember, "_type");
 SystemClassMember<VariableDefn> member_attributes(Builtins::typeMember, "_attributes");
 
 // Members of tart.reflect.Method.
@@ -381,7 +380,6 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));
   sb.addIntegerField(member_traits, memberTraits(def));
-  sb.addField(emitTypeReference(def->type()));
   sb.addField(emitArray(
       module->qualifiedName(),
       member_attributes.get(),

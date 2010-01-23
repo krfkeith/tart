@@ -88,10 +88,8 @@ Implementation TODOS:
   * Yield statement.
   * State machine.
 * Strings
-  * Define toStringFmt - string formatting
-  * "Hello, {0}"(world, planet);
-  * "Hello, {0}".format(world, planet);
-  * Define String.format
+  * Conversion specs.
+  * Define toStringFmt - custom string formatting
   * Other string-related functions
   * Characters.tart
   * text functions - substr, toLower, etc. (Character classes, need unicode stuff)

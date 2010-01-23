@@ -1,8 +1,8 @@
-import tart.annex.Nonreflective;
+import tart.reflect.Reflection;
 import tart.annex.Intrinsic;
 
 /** The metatype object - the class that describes a type. */
-@Nonreflective class Type {
+@Reflection(Reflection.Detail.NONE) class Type {
   enum TypeKind : ubyte {
     OPAQUE,
     PRIMITIVE,

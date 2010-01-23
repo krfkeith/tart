@@ -29,29 +29,43 @@ namespace Debug {
     fail(String.concat(msgs));
   }
   
+  def assertTrueFailed(loc:String, cond:String) {
+    fail(loc, " Assertion failed: ", cond);
+  }
+  
+  def assertFalseFailed(loc:String, cond:String) {
+    fail(loc, " Assertion failed, expected false: ", cond);
+  }
+  
+  def assertEqFailed(loc:String, expected:String, actual:String) {
+    fail(loc, " Assertion failure, expected: ", expected, ", actual value: ", actual);
+  }
+  
+  def assertNeFailed(loc:String, expected:String, actual:String) {
+    fail(loc, " Assertion failure: ", expected, " not expected to equal ", actual);
+  }
+  
   macro assertTrue(cond:bool) {
     if not cond {
-      fail(locationOf(cond), " Assertion failed: ", stringify(cond));
+  		assertTrueFailed(locationOf(cond), stringify(cond));
     }
   }
 
   macro assertFalse(cond:bool) {
     if cond {
-      fail(locationOf(cond), " Assertion failed, expected false: ", stringify(cond));
+  		assertFalseFailed(locationOf(cond), stringify(cond));
     }
   }
 
   macro assertEq[%T](expected:T, actual:T) {
     if expected != actual {
-      fail(locationOf(actual), " Assertion failure, expected: ", stringify(expected),
-        ", actual value: ", actual.toString());
+			assertEqFailed(locationOf(actual), stringify(expected), actual.toString());
     }
   }
 
   macro assertNe[%T](expected:T, actual:T) {
     if expected == actual {
-      fail(locationOf(actual), " Assertion failure: ", stringify(expected),
-        " not expected to equal ", actual.toString());
+			assertNeFailed(locationOf(actual), stringify(expected), actual.toString());
     }
   }
 }
