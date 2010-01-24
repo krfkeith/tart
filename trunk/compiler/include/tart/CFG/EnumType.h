@@ -22,7 +22,9 @@ class EnumType : public DeclaredType {
 public:
   enum AnalysisPass {
     AttributePass,
+    BaseTypePass,
     ScopeCreationPass,
+    OperatorCreationPass,
     PassCount
   };
 

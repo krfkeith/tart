@@ -19,7 +19,6 @@ Working on currently:
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
   -- Hashing of integers
-  -- String character iteration
 
 Implementation TODOS:
 
@@ -107,12 +106,9 @@ Implementation TODOS:
   multiple times.
 * Call gc_alloc instead of malloc.
 * Statements:
-  * for (need unpacking assignment.)
-  * for/in
-    * unpacking assignment
+  * with (what interface for using?)
   * yield
   * fork/threading primitives
-  * with (what interface for using?)
 * Tartdoc
   * Requires command-line parsing lib.
 * 'get' and 'set' should not be keywords.
@@ -328,4 +324,9 @@ Something like [@Strict %T <: Object]
 
 // ------------------------------------------------------------------------
 
- 
+  static var OutputFile = StringOption("o",
+      altName="output",
+      varName="output file",
+      help="Path to output file"); 
+
+      

@@ -26,6 +26,10 @@ namespace Asserts {
 	  assertionFailed(locationOf(msg), msg);
   }
 
+  macro failf(format:String, args:Object...) {
+	  assertionFailed(locationOf(format), format.format(args));
+  }
+
   macro assertTrue(cond:bool) {
     if not cond {
 		  assertionFailed(locationOf(cond), stringify(cond));
@@ -59,6 +63,19 @@ namespace Asserts {
   macro assertEq[%T](expected:T, actual:T) {
     if expected != actual {
       assertionFailed(locationOf(actual), "expected <", expected.toString(), ">, actual value <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertNe[%T](expected:T, actual:T, msg:String) {
+    if expected == actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertNe[%T](expected:T, actual:T) {
+    if expected == actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), ">, != actual <",
       	actual.toString(), ">");
     }
   }

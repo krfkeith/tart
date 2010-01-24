@@ -83,6 +83,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
   def construct() {
     self._data = Entry[](0);
     self._size = 0;
+    self._hashFn = HashFn();
   }
 
   def setValue(key:KeyType, value:ValueType) {

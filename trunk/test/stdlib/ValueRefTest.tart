@@ -8,18 +8,18 @@ def main(args:String[]) -> int32 {
 class ValueRefTest : Test {
 	def testManualBoxing() {
 	  let b = ValueRef(3);
-	  Debug.assertTrue(b isa ValueRef[int32]);
-	  Debug.assertEq(3, b.value);
+	  assertTrue(b isa ValueRef[int32]);
+	  assertEq(3, b.value);
 	}
 	
 	def testManualUnboxing() {
 	  let b = ValueRef(true);
 	  let c = Ref.valueOf[bool](b);
-	  Debug.assertTrue(c);
+	  assertTrue(c);
 	
 	  // Boolean tests
-	  Debug.assertTrue(Ref.valueOf[bool](true));
-	  Debug.assertFalse(Ref.valueOf[bool](false));
+	  assertTrue(Ref.valueOf[bool](true));
+	  assertFalse(Ref.valueOf[bool](false));
 	
 	  // char
 	  tryUnbox[char]('a', 'a');
@@ -121,28 +121,28 @@ class ValueRefTest : Test {
 	  tryUnbox[uint64](97, 'a');
 	
 	  // float
-	  Debug.assertEq(1.0f, Ref.valueOf[float](int8(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](int16(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](int32(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](int64(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](uint8(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](uint16(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](uint32(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](uint64(1)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](float(1.0)));
-	  Debug.assertEq(1.0f, Ref.valueOf[float](double(1.0)));
+	  assertEq(1.0f, Ref.valueOf[float](int8(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int16(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int32(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int64(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint8(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint16(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint32(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint64(1)));
+	  assertEq(1.0f, Ref.valueOf[float](float(1.0)));
+	  assertEq(1.0f, Ref.valueOf[float](double(1.0)));
 	
 	  // double
-	  Debug.assertEq(1.0, Ref.valueOf[double](int8(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](int16(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](int32(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](int64(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](uint8(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](uint16(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](uint32(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](uint64(1)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](float(1.0)));
-	  Debug.assertEq(1.0, Ref.valueOf[double](double(1.0)));
+	  assertEq(1.0, Ref.valueOf[double](int8(1)));
+	  assertEq(1.0, Ref.valueOf[double](int16(1)));
+	  assertEq(1.0, Ref.valueOf[double](int32(1)));
+	  assertEq(1.0, Ref.valueOf[double](int64(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint8(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint16(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint32(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint64(1)));
+	  assertEq(1.0, Ref.valueOf[double](float(1.0)));
+	  assertEq(1.0, Ref.valueOf[double](double(1.0)));
 	}
 	
 	def testUnboxingFailure() {
@@ -223,18 +223,16 @@ class ValueRefTest : Test {
 	final def tryUnbox[%T](expected:T, actual:Object) {
 	  try {
 	    let n = Ref.valueOf[T](actual);
-	    Debug.assertEq(expected, n);
+	    assertEq(expected, n);
 	  } catch e:TypecastError {
-	    Debug.fail("Typecast exception unboxing ", actual.toString(), " [",
-	        T.minVal.toString(), " .. ", T.maxVal.toString(), "]");
+	    failf("Typecast exception unboxing {0} [{1} .. {2}]", actual, T.minVal, T.maxVal);
 	  }
 	}
 	
 	final def expectFailure[%T](o:Object) {
 	  try {
 	    let n = Ref.valueOf[T](o);
-	    Debug.fail("Typecast exception expected unboxing ", o.toString(), " [",
-	        T.minVal.toString(), " .. ", T.maxVal.toString(), "]");
+	    failf("Typecast exception expected unboxing {0} [{1} .. {2}]", o, T.minVal, T.maxVal);
 	  } catch e:TypecastError {
 	    return;
 	  }
@@ -244,22 +242,22 @@ class ValueRefTest : Test {
 	  // typecast of Object -> primitive type is similar to valueOf, except that the
 	  // input isn't coerced to an object - that is, if both the input and result
 	  // types are the same, then no conversion is done at all.
-	  Debug.assertTrue(typecast[bool](true));
-	  Debug.assertFalse(typecast[bool](false));
-	  Debug.assertTrue(typecast[bool](ValueRef(true)));
-	  Debug.assertEq(1, typecast[int32](ValueRef(1)));
-	  Debug.assertNe(1, typecast[int32](ValueRef(2)));
+	  assertTrue(typecast[bool](true));
+	  assertFalse(typecast[bool](false));
+	  assertTrue(typecast[bool](ValueRef(true)));
+	  assertEq(1, typecast[int32](ValueRef(1)));
+	  assertNe(1, typecast[int32](ValueRef(2)));
 	}
 	
 	def testAutoBoxing() {
 	  let b = echo(3);
-	  Debug.assertTrue(b isa ValueRef[int32]);
+	  assertTrue(b isa ValueRef[int32]);
 	  let c = echo2(3);
-	  Debug.assertTrue(c isa ValueRef[int32]);
+	  assertTrue(c isa ValueRef[int32]);
 	  let d = echo3(1, 2, 3);
-	  Debug.assertTrue(d[0] isa ValueRef[int32]);
-	  Debug.assertTrue(d[1] isa ValueRef[int32]);
-	  Debug.assertTrue(d[2] isa ValueRef[int32]);
+	  assertTrue(d[0] isa ValueRef[int32]);
+	  assertTrue(d[1] isa ValueRef[int32]);
+	  assertTrue(d[2] isa ValueRef[int32]);
 	}
 	
 	private final def echo(v:Object) -> Object {

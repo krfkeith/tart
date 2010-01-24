@@ -406,6 +406,16 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
 }
 
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
+  TypeDefn * enumDef = type->typeDefn();
+  GlobalValue::LinkageTypes linkage = GlobalValue::ExternalLinkage;
+  if (enumDef->module() != module_) {
+    if (enumDef->isSynthetic()) {
+      linkage = GlobalValue::LinkOnceODRLinkage;
+    } else {
+      return type->irType();
+    }
+  }
+
   // TODO: Implement valueOf
   DefnList enumConstants;
   for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -463,6 +473,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       Function * toStringFn = cast<Function>(irModule_->getOrInsertFunction(
           toString->linkageName(),
           cast<llvm::FunctionType>(toString->functionType()->irType())));
+      toStringFn->setLinkage(linkage);
       DASSERT(toStringFn->arg_size() == 1);
       llvm::Argument * selfArg = toStringFn->arg_begin();
       selfArg->setName("self");

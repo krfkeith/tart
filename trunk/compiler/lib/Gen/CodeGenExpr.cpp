@@ -84,7 +84,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return ConstantPointerNull::get(cast<llvm::PointerType>(in->type()->irParameterType()));
 
     case Expr::ConstObjRef:
-      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "");
+      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "", false);
 
     case Expr::LValue:
       return genLoadLValue(static_cast<const LValueExpr *>(in));
@@ -223,6 +223,21 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
     case Expr::UnionCtorCast:
       return genConstantUnion(static_cast<const CastExpr *>(in));
 
+    case Expr::LValue: {
+      const LValueExpr * lval = static_cast<const LValueExpr *>(in);
+      if (lval->base() == NULL) {
+        if (const VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+          if (var->defnType() == Defn::Let) {
+            return cast<Constant>(genLetValue(var));
+          }
+        }
+      }
+
+      diag.fatal(in) << "Not a constant: " <<
+      exprTypeName(in->exprType()) << " [" << in << "]";
+      DFAIL("Implement");
+    }
+
     default:
       diag.fatal(in) << "Not a constant: " <<
       exprTypeName(in->exprType()) << " [" << in << "]";
@@ -230,10 +245,10 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   }
 }
 
-llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef name) {
+llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef name, bool synthetic) {
   switch (in->exprType()) {
     case Expr::ConstObjRef:
-      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), name);
+      return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), name, synthetic);
 
     //case Expr::ConstNArray:
       //return genConstantArrayPtr(static_cast<const ConstantNativeArray *>(in));
@@ -354,7 +369,7 @@ Value * CodeGenerator::genBinaryOpcode(const BinaryOpcodeExpr * in) {
 llvm::Value * CodeGenerator::genCompare(const tart::CompareExpr* in) {
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
-  CmpInst::Predicate pred = in->getPredicate();
+  CmpInst::Predicate pred = in->predicate();
   if (pred >= CmpInst::FIRST_ICMP_PREDICATE &&
       pred <= CmpInst::LAST_ICMP_PREDICATE) {
     return builder_.CreateICmp(pred, first, second);
@@ -990,7 +1005,7 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
 }
 
 GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj,
-    llvm::StringRef name) {
+    llvm::StringRef name, bool synthetic) {
   Constant * constObject = genConstantObject(obj);
   if (name != "") {
     GlobalVariable * gv = irModule_->getGlobalVariable(name, true);
@@ -1000,7 +1015,9 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
   }
 
   return new GlobalVariable(
-      *irModule_, constObject->getType(), true, GlobalValue::ExternalLinkage, constObject, name);
+      *irModule_, constObject->getType(), true,
+      synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
+      constObject, name);
 }
 
 Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {

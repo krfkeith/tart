@@ -63,7 +63,7 @@ class ClassTest : Test {
 
 	def testCallSuper() {
 	  let u = SubClass();
-	  Debug.assertEq(34, u.test4());
+	  assertEq(34, u.test4());
 	}
 }
 

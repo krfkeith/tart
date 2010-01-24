@@ -8,55 +8,55 @@ def main(args:String[]) -> int32 {
 class ArrayTest : Test {
 	def testZeroLengthArray() {
 	  let a = int32[](0);
-	  Debug.assertTrue(a.isEmpty);
-	  Debug.assertTrue(a.size == 0);
+	  assertTrue(a.isEmpty);
+	  assertTrue(a.size == 0);
 	  let a2:int32[] = [];
-	  Debug.assertTrue(a2.isEmpty);
-	  Debug.assertTrue(a2.size == 0);
+	  assertTrue(a2.isEmpty);
+	  assertTrue(a2.size == 0);
 	}
 	
 	def testSimpleArray() {
 	  let a = int32[](5);
-	  Debug.assertFalse(a.isEmpty);
-	  Debug.assertEq(5, a.size);
+	  assertFalse(a.isEmpty);
+	  assertEq(5, a.size);
 	
 	  a[0] = 22;
-	  Debug.assertEq(22, a[0]);
+	  assertEq(22, a[0]);
 	
 	  let b = Array[int32](5);
-	  Debug.assertFalse(b.isEmpty);
-	  Debug.assertEq(5, b.size);
+	  assertFalse(b.isEmpty);
+	  assertEq(5, b.size);
 	
 	  //let c:Array[int32] = Array(5);
-	  //Debug.assertFalse(c.isEmpty);
-	  //Debug.assertTrue(c.size == 5);
+	  //assertFalse(c.isEmpty);
+	  //assertTrue(c.size == 5);
 	
 	  let d = Array[String](5);
-	  Debug.assertFalse(d.isEmpty);
-	  Debug.assertEq(5, d.size);
+	  assertFalse(d.isEmpty);
+	  assertEq(5, d.size);
 	}
 	
 	def testArrayOf() {
 	  let a = Array.of(1, 2, 3);
-	  Debug.assertEq(1, a[0]);
-	  Debug.assertEq(2, a[1]);
-	  Debug.assertEq(3, a[2]);
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
 	}
 	
 	def testArrayLiteral() {
 	  let a = [1, 2, 3];
-	  Debug.assertEq(1, a[0]);
-	  Debug.assertEq(2, a[1]);
-	  Debug.assertEq(3, a[2]);
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
 	}
 	
 	def testArrayCopy() {
 	  let a = [1, 2, 3];
 	  let b = a.copy();
-	  Debug.assertFalse(a is b);
-	  Debug.assertEq(1, b[0]);
-	  Debug.assertEq(2, b[1]);
-	  Debug.assertEq(3, b[2]);
+	  assertFalse(a is b);
+	  assertEq(1, b[0]);
+	  assertEq(2, b[1]);
+	  assertEq(3, b[2]);
 	}
 	
 	// TODO: Check for out of bounds exceptions, once exceptions are actually working.

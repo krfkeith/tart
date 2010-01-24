@@ -30,11 +30,12 @@ public:
   EnumAnalyzer(TypeDefn * target);
 
   /** Fully analyze the input defn and all of its descendants. */
-  bool analyze();
+  bool analyze(AnalysisTask task);
   bool runPasses(EnumType::PassSet passesToRun);
+  bool analyzeBase();
   bool createMembers();
   bool createEnumConstant(const ASTVarDecl * ast);
-  void defineOperators();
+  void createOperators();
 };
 
 }

@@ -63,6 +63,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
     // See which vars are initialized within this block
     Block * blk = *it;
     BlockState & bstate = blockStates_[blk];
+    bstate.visited_ = false;
     bstate.initialized_.resize(varCount_, false);
 
     for (ExprList::const_iterator it = blk->exprs().begin(); it != blk->exprs().end(); ++it) {
@@ -128,6 +129,12 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
     if (blk->terminator() == BlockTerm_Return) {
       returnBlocks.push_back(blk);
     }
+  }
+
+  // A simple (yet incorrect) flow analysis...
+  // TODO: Do this with real dominance graph analysis.
+  for (BlockList::const_iterator it = returnBlocks.begin(); it != returnBlocks.end(); ++it) {
+    visitBlock(*it);
   }
 
   // List of additional initializers to add.
@@ -259,6 +266,28 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
   // TODO: There's also an ordering issue, as some fields may depend on others.
   entry->exprs().insert(entry->exprs().begin(),
       defaultInitializers.begin(), defaultInitializers.end());
+}
+
+void ConstructorAnalyzer::visitBlock(Block * b) {
+  BlockState & bstate = blockStates_[b];
+  if (bstate.visited_) {
+    return;
+  }
+
+  // Get the intersection of all predecessor blocks.
+  bstate.visited_ = true;
+  if (!b->preds().empty()) {
+    BlockState combinedStates;
+    combinedStates.initialized_.resize(varCount_, true);
+    for (BlockList::const_iterator it = b->preds().begin(); it != b->preds().end(); ++it) {
+      Block * pred = *it;
+      visitBlock(pred);
+      combinedStates.initialized_ &= blockStates_[pred].initialized_;
+    }
+
+    // Now union it with the current block.
+    bstate.initialized_ |= combinedStates.initialized_;
+  }
 }
 
 } // namespace tart

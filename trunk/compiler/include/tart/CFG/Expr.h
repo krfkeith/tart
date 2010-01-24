@@ -636,7 +636,7 @@ public:
   typedef llvm::CmpInst::Predicate Predicate;
 
 private:
-  Predicate predicate;
+  Predicate predicate_;
 
 public:
   /** Constructor. */
@@ -645,7 +645,7 @@ public:
   /** Constructor. */
   CompareExpr(const SourceLocation & loc, Predicate pred, Expr * f, Expr * s);
 
-  Predicate getPredicate() const { return predicate; }
+  Predicate predicate() const { return predicate_; }
 
   // Overrides
 

@@ -285,7 +285,7 @@ bool FunctionAnalyzer::resolveModifiers() {
 
     // Functions defined in interfaces or protocols must not have a body.
     TypeDefn * enclosingClassDefn = target->enclosingClassDefn();
-    if (enclosingClassDefn != NULL) {
+    if (enclosingClassDefn != NULL && isa<CompositeType>(enclosingClassDefn->typeValue())) {
       CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typeValue());
 
       switch (enclosingClass->typeClass()) {

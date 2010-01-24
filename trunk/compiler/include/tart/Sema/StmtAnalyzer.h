@@ -21,7 +21,7 @@
 #include "tart/Sema/ExprAnalyzer.h"
 #endif
 
-#include <llvm/ADT/DenseMap.h>
+#include "llvm/ADT/DenseMap.h"
 
 namespace tart {
 

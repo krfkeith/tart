@@ -12,36 +12,36 @@ class ClassifyStmtTest : Test {
 	    return;
 	  }
 	  
-	  Debug.fail("Invalid classification");
+	  fail("Invalid classification");
 	}
 	
 	def testClassifyFallThrough {
 	  let e:Object = "H";
 	  classify e as s:Exception {
-	    Debug.fail("Invalid classification");
+	    fail("Invalid classification");
 	  }
 	}
 	
 	def testClassifyElse {
 	  let e:Object = "H";
 	  classify e as s:Exception {
-	    Debug.fail("Invalid classification");
+	    fail("Invalid classification");
 	  } else {
 	    return;
 	  }
 	
-	  Debug.fail("Invalid control flow");
+	  fail("Invalid control flow");
 	}
 	
 	def testClassifyComplex {
 	  let e:Object = "H";
 	  classify e {
 	    as s:Exception {
-	      Debug.fail("Invalid classification");
+	      fail("Invalid classification");
 	    }
 	    
 	    as a:int32[] {
-	      Debug.fail("Invalid classification");
+	      fail("Invalid classification");
 	    }
 	    
 	    else {
@@ -49,7 +49,7 @@ class ClassifyStmtTest : Test {
 	    }
 	  }
 	
-	  Debug.fail("Invalid control flow");
+	  fail("Invalid control flow");
 	}
 	
 	// These test requires union support in LLVM.
@@ -61,18 +61,18 @@ class ClassifyStmtTest : Test {
 	    }
 	    
 	    as f:float {
-	      Debug.fail("Invalid classification");
+	      fail("Invalid classification");
 	    }
 	  }
 	
-	  Debug.fail("Invalid control flow");
+	  fail("Invalid control flow");
 	}
 	
 	def testClassifyMulti {
 	  let n:int32 or float = 1.0;
 	  classify n {
 	    as i:int32 {
-	      Debug.fail("Invalid classification");
+	      fail("Invalid classification");
 	    }
 	    
 	    as f:float {
@@ -80,6 +80,6 @@ class ClassifyStmtTest : Test {
 	    }
 	  }
 	
-	  Debug.fail("Invalid control flow");
+	  fail("Invalid control flow");
 	}
 }
