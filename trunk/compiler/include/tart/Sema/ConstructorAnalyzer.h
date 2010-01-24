@@ -25,6 +25,7 @@ class FunctionDefn;
 /// Analyzer for constructors - determines which instance vars have
 /// been properly initialized.
 struct BlockState {
+  bool visited_;
   llvm::BitVector initialized_;
 };
 
@@ -39,6 +40,7 @@ public:
   ConstructorAnalyzer(CompositeType * cls_);
 
   void run(FunctionDefn * ctor);
+  void visitBlock(Block * b);
 
 private:
   CompositeType * cls_;

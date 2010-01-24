@@ -44,91 +44,91 @@ def triple(p:LargePoint) -> LargePoint {
 class StructTest : Test {
 	def testVarInitDefaultConstructor() {
 	  var p = Point();
-	  Debug.assertEq(0, p.x);
-	  Debug.assertEq(0, p.y);
-	  Debug.assertEq(1, p.z);
+	  assertEq(0, p.x);
+	  assertEq(0, p.y);
+	  assertEq(1, p.z);
   }
   
   def testLetInitDefaultConstructor() {
 	  let p = Point();
-	  Debug.assertEq(0, p.x);
-	  Debug.assertEq(0, p.y);
-	  Debug.assertEq(1, p.z);
+	  assertEq(0, p.x);
+	  assertEq(0, p.y);
+	  assertEq(1, p.z);
 	}
 	
 	def testVarInitConstructorArgs() {
 	  var p = Point(1, 2, 3);
-	  Debug.assertEq(1, p.x);
-	  Debug.assertEq(2, p.y);
-	  Debug.assertEq(3, p.z);
+	  assertEq(1, p.x);
+	  assertEq(2, p.y);
+	  assertEq(3, p.z);
   }
   
   def testLetInitConstructorArgs() {
 	  let p = Point(1, 2, 3);
-	  Debug.assertEq(1, p.x);
-	  Debug.assertEq(2, p.y);
-	  Debug.assertEq(3, p.z);
+	  assertEq(1, p.x);
+	  assertEq(2, p.y);
+	  assertEq(3, p.z);
 	}
 	
 	def testVarInitConstructorKwdArgs() {
 	  var p = Point(z=1, x=2, y=3);
-	  Debug.assertEq(2, p.x);
-	  Debug.assertEq(3, p.y);
-	  Debug.assertEq(1, p.z);
+	  assertEq(2, p.x);
+	  assertEq(3, p.y);
+	  assertEq(1, p.z);
   }
   
   def testLetInitConstructorKwdArgs() {
 	  let p = Point(z=1, x=2, y=3);
-	  Debug.assertEq(2, p.x);
-	  Debug.assertEq(3, p.y);
-	  Debug.assertEq(1, p.z);
+	  assertEq(2, p.x);
+	  assertEq(3, p.y);
+	  assertEq(1, p.z);
 	}
 	
 	def testConstructorLarge() {
 	  var p = LargePoint(1, 2, 3);
-	  Debug.assertEq(1, p.x);
-	  Debug.assertEq(2, p.y);
-	  Debug.assertEq(3, p.z);
+	  assertEq(1, p.x);
+	  assertEq(2, p.y);
+	  assertEq(3, p.z);
 	}
 	
 	def testAssign() {
 	  var p = Point(z=1, x=2, y=3);
 	  var p2 = p;
-	  Debug.assertEq(2, p2.x);
-	  Debug.assertEq(3, p2.y);
-	  Debug.assertEq(1, p2.z);
+	  assertEq(2, p2.x);
+	  assertEq(3, p2.y);
+	  assertEq(1, p2.z);
 	  
 	  var p3:Point;
 	  p3 = p;
-	  Debug.assertEq(2, p3.x);
-	  Debug.assertEq(3, p3.y);
-	  Debug.assertEq(1, p3.z);
+	  assertEq(2, p3.x);
+	  assertEq(3, p3.y);
+	  assertEq(1, p3.z);
 	  
 	  let p4 = Point(8, 8, 8);
 	  p3 = p4;
-	  Debug.assertEq(8, p4.x);
-	  Debug.assertEq(8, p4.y);
-	  Debug.assertEq(8, p4.z);
+	  assertEq(8, p4.x);
+	  assertEq(8, p4.y);
+	  assertEq(8, p4.z);
 	}
 	
 	def testAssignLarge() {
 	  var p = LargePoint(z=1, x=2, y=3);
 	  var p2 = p;
-	  Debug.assertEq(2, p2.x);
-	  Debug.assertEq(3, p2.y);
-	  Debug.assertEq(1, p2.z);
+	  assertEq(2, p2.x);
+	  assertEq(3, p2.y);
+	  assertEq(1, p2.z);
 	  
 	  var p3:LargePoint = LargePoint(0, 0, 0);
 	  p3 = p;
-	  Debug.assertEq(2, p3.x);
-	  Debug.assertEq(3, p3.y);
-	  Debug.assertEq(1, p3.z);
+	  assertEq(2, p3.x);
+	  assertEq(3, p3.y);
+	  assertEq(1, p3.z);
 	
 	  let p4 = LargePoint(8, 8, 8);
 	  p3 = p4;
-	  Debug.assertEq(8, p4.x);
-	  Debug.assertEq(8, p4.y);
-	  Debug.assertEq(8, p4.z);
+	  assertEq(8, p4.x);
+	  assertEq(8, p4.y);
+	  assertEq(8, p4.z);
 	}
 	
 	// TODO: Fix default construction of struct fields.
@@ -137,9 +137,9 @@ class StructTest : Test {
 	  var tp:TwoPoints = TwoPoints();
     var p = tp.pt;
     
-    //Debug.assertEq(0, p.x);
-    //Debug.assertEq(0, p.y);
-    //Debug.assertEq(1, p.z);
+    //assertEq(0, p.x);
+    //assertEq(0, p.y);
+    //assertEq(1, p.z);
 
 	  //var tp:TwoPoints = TwoPoints(Point(1, 1, 1), LargePoint(2, 2, 2));
 	}
@@ -147,66 +147,66 @@ class StructTest : Test {
   def testStructExplicitMemberConstruction() {
     // Default constructor
     var tp:TwoPoints = TwoPoints(Point(1, 2, 3), LargePoint(4, 5, 6));
-    Debug.assertEq(1, tp.pt.x);
-    Debug.assertEq(2, tp.pt.y);
-    Debug.assertEq(3, tp.pt.z);
-    Debug.assertEq(4, tp.lp.x);
-    Debug.assertEq(5, tp.lp.y);
-    Debug.assertEq(6, tp.lp.z);
+    assertEq(1, tp.pt.x);
+    assertEq(2, tp.pt.y);
+    assertEq(3, tp.pt.z);
+    assertEq(4, tp.lp.x);
+    assertEq(5, tp.lp.y);
+    assertEq(6, tp.lp.z);
   }
   
 	def testAssignFromStructMember() {
     var tp:TwoPoints = TwoPoints(Point(1, 2, 3), LargePoint(4, 5, 6));
     let pt = tp.pt;
     let lp = tp.lp;
-    Debug.assertEq(1, pt.x);
-    Debug.assertEq(2, pt.y);
-    Debug.assertEq(3, pt.z);
-    Debug.assertEq(4, lp.x);
-    Debug.assertEq(5, lp.y);
-    Debug.assertEq(6, tp.lp.z);
+    assertEq(1, pt.x);
+    assertEq(2, pt.y);
+    assertEq(3, pt.z);
+    assertEq(4, lp.x);
+    assertEq(5, lp.y);
+    assertEq(6, tp.lp.z);
 	}
 	
 	def testAssignToStructMember() {
     var tp:TwoPoints = TwoPoints(Point(1, 2, 3), LargePoint(4, 5, 6));
     tp.pt = Point(11, 12, 13);
     tp.lp = LargePoint(14, 15, 16);
-    Debug.assertEq(11, tp.pt.x);
-    Debug.assertEq(12, tp.pt.y);
-    Debug.assertEq(13, tp.pt.z);
-    Debug.assertEq(14, tp.lp.x);
-    Debug.assertEq(15, tp.lp.y);
-    Debug.assertEq(16, tp.lp.z);
+    assertEq(11, tp.pt.x);
+    assertEq(12, tp.pt.y);
+    assertEq(13, tp.pt.z);
+    assertEq(14, tp.lp.x);
+    assertEq(15, tp.lp.y);
+    assertEq(16, tp.lp.z);
 	}
 
   def testParamAndReturn() {
     let pt = triple(Point(1, 2, 3));
     let lp = triple(LargePoint(1, 2, 3)); 
-    Debug.assertEq(3, pt.x);
-    Debug.assertEq(6, pt.y);
-    Debug.assertEq(9, pt.z);
-    Debug.assertEq(3, lp.x);
-    Debug.assertEq(6, lp.y);
-    Debug.assertEq(9, lp.z);
+    assertEq(3, pt.x);
+    assertEq(6, pt.y);
+    assertEq(9, pt.z);
+    assertEq(3, lp.x);
+    assertEq(6, lp.y);
+    assertEq(9, lp.z);
   }
 
   def testNestedParamAndReturn() {
     let pt = triple(triple(Point(1, 2, 3)));
     let lp = triple(triple(LargePoint(1, 2, 3))); 
-    Debug.assertEq(9, pt.x);
-    Debug.assertEq(18, pt.y);
-    Debug.assertEq(27, pt.z);
-    Debug.assertEq(9, lp.x);
-    Debug.assertEq(18, lp.y);
-    Debug.assertEq(27, lp.z);
+    assertEq(9, pt.x);
+    assertEq(18, pt.y);
+    assertEq(27, pt.z);
+    assertEq(9, lp.x);
+    assertEq(18, lp.y);
+    assertEq(27, lp.z);
   }
 
   def testCallMember() {
-    Debug.assertEq(3, triple(Point(1, 2, 3)).x);
-    Debug.assertEq(6, triple(Point(1, 2, 3)).y);
-    Debug.assertEq(9, triple(Point(1, 2, 3)).z);
-    Debug.assertEq(3, triple(LargePoint(1, 2, 3)).x);
-    Debug.assertEq(6, triple(LargePoint(1, 2, 3)).y);
-    Debug.assertEq(9, triple(LargePoint(1, 2, 3)).z);
+    assertEq(3, triple(Point(1, 2, 3)).x);
+    assertEq(6, triple(Point(1, 2, 3)).y);
+    assertEq(9, triple(Point(1, 2, 3)).z);
+    assertEq(3, triple(LargePoint(1, 2, 3)).x);
+    assertEq(6, triple(LargePoint(1, 2, 3)).y);
+    assertEq(9, triple(LargePoint(1, 2, 3)).z);
   }
 }

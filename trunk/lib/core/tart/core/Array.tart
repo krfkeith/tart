@@ -24,7 +24,7 @@ public final class Array[%ElementType] : Iterable[ElementType] {
     //}
 
     // Static empty array singleton.
-    static var emptyArray:Array = [];
+    static let emptyArray:Array = [];
   }
 
   /** Construct an array of a given length */

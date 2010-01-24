@@ -30,6 +30,7 @@ public:
     addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Instance);
+    setParentDefn(type->typeDefn());
     createQualifiedName(type->typeDefn());
   }
 
@@ -79,6 +80,7 @@ public:
     addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Global);
+    setParentDefn(type->typeDefn());
     createQualifiedName(m);
   }
 
@@ -122,6 +124,7 @@ public:
     addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Instance);
+    setParentDefn(type->typeDefn());
     createQualifiedName(type->typeDefn());
   }
 
@@ -167,7 +170,28 @@ EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
   DASSERT(de != NULL);
 }
 
-bool EnumAnalyzer::analyze() {
+static const EnumType::PassSet PASS_SET_RESOLVETYPE = EnumType::PassSet::of(
+  EnumType::AttributePass,
+  EnumType::BaseTypePass,
+  EnumType::ScopeCreationPass
+);
+
+static const EnumType::PassSet PASS_SET_COMPLETE = EnumType::PassSet::of(
+  EnumType::AttributePass,
+  EnumType::BaseTypePass,
+  EnumType::ScopeCreationPass,
+  EnumType::OperatorCreationPass
+);
+
+bool EnumAnalyzer::analyze(AnalysisTask task) {
+  switch (task) {
+    case Task_PrepTypeComparison:
+    case Task_PrepConversion:
+      return runPasses(PASS_SET_RESOLVETYPE);
+
+    default:
+      return runPasses(PASS_SET_COMPLETE);
+  }
   return runPasses(EnumType::PassSet::of(EnumType::AttributePass, EnumType::ScopeCreationPass));
 }
 
@@ -195,6 +219,13 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
     type->passes().finish(EnumType::AttributePass);
   }
 
+  if (passesToRun.contains(EnumType::BaseTypePass) &&
+      type->passes().begin(EnumType::BaseTypePass)) {
+    if (!analyzeBase()) {
+      return false;
+    }
+  }
+
   if (passesToRun.contains(EnumType::ScopeCreationPass) &&
       type->passes().begin(EnumType::ScopeCreationPass)) {
     if (!createMembers()) {
@@ -202,12 +233,19 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
     }
   }
 
+  if (passesToRun.contains(EnumType::OperatorCreationPass) &&
+      type->passes().begin(EnumType::OperatorCreationPass)) {
+    createOperators();
+  }
+
   return true;
 }
 
-bool EnumAnalyzer::createMembers() {
+bool EnumAnalyzer::analyzeBase() {
   EnumType * enumType = cast<EnumType>(target_->typeValue());
   bool isFlags = enumType->isFlags();
+
+  enumType->passes().finish(EnumType::BaseTypePass);
 
   const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
   DASSERT_OBJ(enumType->isSingular(), enumType);
@@ -231,9 +269,13 @@ bool EnumAnalyzer::createMembers() {
   }
 
   enumType->setBaseType(intValueType);
+  return true;
+}
 
-  // Define any custom operators for this enumerated type.
-  defineOperators();
+bool EnumAnalyzer::createMembers() {
+  EnumType * enumType = cast<EnumType>(target_->typeValue());
+  const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
+  bool isFlags = enumType->isFlags();
 
   // Mark as finished so that we don't recurse when referring to members.
   enumType->passes().finish(EnumType::ScopeCreationPass);
@@ -356,11 +398,13 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   return true;
 }
 
-void EnumAnalyzer::defineOperators() {
+void EnumAnalyzer::createOperators() {
   Module * m = target_->module();
   EnumType * type = cast<EnumType>(target_->typeValue());
   Scope * parentScope = target_->definingScope();
   DASSERT(parentScope != NULL);
+
+  type->passes().finish(EnumType::OperatorCreationPass);
 
   if (type->isFlags()) {
     type->memberScope()->addMember(new EnumContainsFunction(m, type));

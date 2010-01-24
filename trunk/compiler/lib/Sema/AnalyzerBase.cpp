@@ -753,7 +753,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     }
 
     case Type::Enum:
-      return EnumAnalyzer(in).analyze();
+      return EnumAnalyzer(in).analyze(task);
 
     case Type::NAddress:
     case Type::NArray: {

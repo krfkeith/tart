@@ -116,10 +116,10 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::BinaryOpcode:
       return evalBinaryOpcode(static_cast<BinaryOpcodeExpr *>(in));
 
-#if 0
     case Expr::Compare:
       return evalCompare(static_cast<CompareExpr *>(in));
 
+#if 0
     case Expr::InstanceOf:
       return evalInstanceOf(static_cast<InstanceOfExpr *>(in));
 
@@ -128,10 +128,12 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
     case Expr::PtrDeref:
       return evalPtrDeref(static_cast<UnaryExpr *>(in));
+#endif
 
     case Expr::Not:
       return evalNot(static_cast<UnaryExpr *>(in));
 
+#if 0
     case Expr::InitVar:
       return evalInitVar(static_cast<InitVarExpr *>(in));
 
@@ -179,7 +181,9 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
 
   for (;;) {
     for (ExprList::iterator it = block->exprs().begin(); it != block->exprs().end(); ++it) {
-      evalExpr(*it);
+      if (evalExpr(*it) == NULL) {
+        return false;
+      }
     }
 
     switch (block->terminator()) {
@@ -201,7 +205,21 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
         return true;
       }
 
-      case BlockTerm_Conditional:
+      case BlockTerm_Conditional: {
+        BooleanResult bresult = asConstBoolean(block->termValue());
+        if (bresult == BOOLEAN_ERROR) {
+          return false;
+        }
+
+        int branch = 0;
+        if (bresult == BOOLEAN_FALSE) {
+          branch = 1;
+        }
+
+        block = block->succs()[branch];
+        break;
+      }
+
       case BlockTerm_Switch:
       case BlockTerm_Throw:
       case BlockTerm_ResumeUnwind:
@@ -275,6 +293,9 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
   } else  if (VariableDefn * var = dyn_cast<VariableDefn>(in->value())) {
     if (var->defnType() == Defn::Let) {
       if (var->storageClass() == Storage_Global || var->storageClass() == Storage_Static) {
+        if (var->type()->isReferenceType()) {
+          return in;
+        }
         return evalExpr(var->initValue());
       }
     }
@@ -298,8 +319,11 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
         break;
 
       case Storage_Local:
-        DFAIL("IMPLEMENT Storage_Local");
-        break;
+        if (var->defnType() == Defn::MacroArg) {
+          return evalExpr(var->initValue());
+        }
+
+        return callFrame_->getLocal(var);
 
       case Storage_Param:
         DFAIL("Invalid storage class");
@@ -374,7 +398,7 @@ void EvalPass::store(Expr * value, Expr * dest) {
           break;
 
         case Storage_Local:
-          DFAIL("IMPLEMENT Storage_Local");
+          callFrame_->setLocal(var, value);
           break;
 
         case Storage_Param:
@@ -390,6 +414,17 @@ void EvalPass::store(Expr * value, Expr * dest) {
     }
   } else {
     DFAIL("Implement");
+  }
+}
+
+Expr * EvalPass::evalNot(UnaryExpr * in) {
+  BooleanResult bresult = asConstBoolean(in->arg());
+  if (bresult == BOOLEAN_ERROR) {
+    return NULL;
+  } else if (bresult == BOOLEAN_TRUE) {
+    return ConstantInteger::getConstantBool(in->location(), false);
+  } else {
+    return ConstantInteger::getConstantBool(in->location(), true);
   }
 }
 
@@ -503,6 +538,32 @@ Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
   DFAIL("Implement");
 }
 
+Expr * EvalPass::evalCompare(CompareExpr *in) {
+  Expr * first = evalExpr(in->first());
+  Expr * second = evalExpr(in->second());
+  if (first == NULL || second == NULL) {
+    return NULL;
+  } else if (ConstantInteger * c1 = dyn_cast<ConstantInteger>(first)) {
+    if (ConstantInteger * c2 = dyn_cast<ConstantInteger>(second)) {
+      llvm::Constant * cr = llvm::ConstantExpr::getCompare(
+          in->predicate(), c1->value(), c2->value());
+      return ConstantInteger::get(in->location(), &BoolType::instance, cast<llvm::ConstantInt>(cr));
+    }
+  } else if (ConstantFloat * c1 = dyn_cast<ConstantFloat>(first)) {
+    if (ConstantFloat * c2 = dyn_cast<ConstantFloat>(second)) {
+      llvm::Constant * cr = llvm::ConstantExpr::getCompare(
+          in->predicate(), c1->value(), c2->value());
+      return ConstantInteger::get(in->location(), &BoolType::instance, cast<llvm::ConstantInt>(cr));
+    }
+  }
+
+  if (!allowPartial_) {
+    diag.fatal(in) << "Invalid comparison between " << first << " and " << second;
+  }
+
+  return NULL;
+}
+
 llvm::Constant * EvalPass::asConstNumber(ConstantExpr * e) {
   if (e == NULL) {
     return NULL;
@@ -516,6 +577,33 @@ llvm::Constant * EvalPass::asConstNumber(ConstantExpr * e) {
     diag.error(e) << "Not a number " << e;
     return NULL;
   }
+}
+
+EvalPass::BooleanResult EvalPass::asConstBoolean(Expr * in) {
+  Expr * e = evalExpr(in);
+  if (e == NULL) {
+    return BOOLEAN_ERROR;
+  } else if (ConstantInteger * ci = dyn_cast<ConstantInteger>(e)) {
+    return ci->value()->isNullValue() ? BOOLEAN_FALSE : BOOLEAN_TRUE;
+  } else if (!allowPartial_) {
+    diag.error(in) << "Constant boolean expected: " << in;
+  }
+
+  return BOOLEAN_ERROR;
+}
+
+Expr * EvalPass::CallFrame::getLocal(VariableDefn * var) {
+  VariableMap::const_iterator it = locals_.find(var);
+  if (it == locals_.end()) {
+    diag.error(var) << "Uninitialized variable: " << var;
+    return NULL;
+  }
+
+  return it->second;
+}
+
+void EvalPass::CallFrame::setLocal(VariableDefn * var, Expr * value) {
+  locals_[var] = value;
 }
 
 } // namespace tart

@@ -336,8 +336,9 @@ llvm::Constant * Reflector::emitArray(
     VariableDefn * emptyArray = cast_or_null<VariableDefn>(
         arrayType->memberScope()->lookupSingleMember("emptyArray"));
     if (emptyArray != NULL) {
-      GlobalVariable * eaVar = cast<GlobalVariable>(cg_.genVarValue(emptyArray));
-      return eaVar->getInitializer();
+      return cast<llvm::Constant>(cg_.genLetValue(emptyArray));
+      //GlobalVariable * eaVar = cast<GlobalVariable>(cg_.genVarValue(emptyArray));
+      //return eaVar->getInitializer();
     }
   }
 

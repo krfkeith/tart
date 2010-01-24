@@ -732,19 +732,19 @@ void BinaryOpcodeExpr::format(FormatStream & out) const {
 // CompareExpr
 CompareExpr::CompareExpr(const SourceLocation & loc, Predicate pred)
   : BinaryExpr(Compare, loc, &BoolType::instance)
-  , predicate(pred)
+  , predicate_(pred)
 {}
 
 /** Constructor. */
 CompareExpr::CompareExpr(const SourceLocation & loc, Predicate pred,
     Expr * f, Expr * s)
   : BinaryExpr(Compare, loc, &BoolType::instance, f, s)
-  , predicate(pred)
+  , predicate_(pred)
 {}
 
 void CompareExpr::format(FormatStream & out) const {
   const char * oper;
-  switch (getPredicate()) {
+  switch (predicate_) {
     case llvm::CmpInst::FCMP_OEQ:
     case llvm::CmpInst::FCMP_UEQ:
     case llvm::CmpInst::ICMP_EQ:

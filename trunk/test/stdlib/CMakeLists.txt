@@ -55,7 +55,7 @@ foreach(SRC_FILE ${TART_SRC})
       
   # Convert to assembly
   add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND ${LLVM_BIN_DIR}/llc -o ${ASM_FILE} ${OUT_BC_FILE}
+      COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -o ${ASM_FILE}
       DEPENDS "${OUT_BC_FILE}"
       COMMENT "Generating assembly for file ${BC_FILE}")
 

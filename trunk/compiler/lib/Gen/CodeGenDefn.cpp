@@ -47,6 +47,7 @@ bool CodeGenerator::genXDef(Defn * de) {
 
     case Defn::Macro:
     case Defn::Namespace:
+    case Defn::Property:
       return true;
 
     default:
@@ -110,7 +111,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   // Create the function
   Function * f = genFunctionValue(fdef);
 
-  if (fdef->hasBody()) {
+  if (fdef->hasBody() && f->getBasicBlockList().empty()) {
     FunctionType * ftype = fdef->functionType();
 
     if (fdef->isSynthetic()) {
@@ -245,9 +246,11 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
         irType = let->type()->irType();
       }
 
-      if (let->module() == module_) {
-        value = genConstRef(let->initValue(), let->linkageName());
-        DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
+      if (let->module() == module_ || let->isSynthetic()) {
+        value = genConstRef(let->initValue(), let->linkageName(), let->isSynthetic());
+        value = llvm::ConstantExpr::getPointerCast(
+            cast<Constant>(value), PointerType::get(irType, 0));
+        //DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
       } else {
         value = new GlobalVariable(
             *irModule_, irType, true, GlobalValue::ExternalLinkage, NULL, let->linkageName());

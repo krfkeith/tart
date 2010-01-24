@@ -9,6 +9,8 @@
 #include "tart/CFG/Constant.h"
 #endif
 
+#include "llvm/ADT/DenseMap.h"
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -22,6 +24,8 @@ public:
   static Expr * eval(Expr * in, bool allowPartial = false);
 
 private:
+
+  typedef llvm::DenseMap<VariableDefn *, Expr *> VariableMap;
 
   // Contains the parameters and local variables of a call frame.
   class CallFrame {
@@ -43,11 +47,21 @@ private:
     Expr * returnVal() const { return returnVal_; }
     void setReturnVal(Expr * value) { returnVal_ = value; }
 
+    Expr * getLocal(VariableDefn * var);
+    void setLocal(VariableDefn * var, Expr * value);
+
   private:
     FunctionDefn * function_;
     ExprList args_;
     Expr * selfArg_;
     Expr * returnVal_;
+    VariableMap locals_;
+  };
+
+  enum BooleanResult {
+    BOOLEAN_FALSE = 0,
+    BOOLEAN_TRUE = 1,
+    BOOLEAN_ERROR = -1,
   };
 
   bool allowPartial_;
@@ -66,11 +80,14 @@ private:
   Expr * evalFnCall(FnCallExpr * in);
   Expr * evalNew(NewExpr * in);
   Expr * evalAssign(AssignmentExpr * in);
+  Expr * evalNot(UnaryExpr * in);
   Expr * evalArrayLiteral(ArrayLiteralExpr * in);
   Expr * evalUnionCtorCast(CastExpr *in);
   Expr * evalBinaryOpcode(BinaryOpcodeExpr *in);
+  Expr * evalCompare(CompareExpr *in);
 
   llvm::Constant * asConstNumber(ConstantExpr * e);
+  BooleanResult asConstBoolean(Expr * in);
 
   void store(Expr * value, Expr * dest);
 

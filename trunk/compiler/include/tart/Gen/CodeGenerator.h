@@ -145,7 +145,7 @@ public:
   /** Generate an expression (an RValue). */
   llvm::Value * genExpr(const Expr * expr);
   llvm::Constant * genConstExpr(const Expr * expr);
-  llvm::GlobalVariable * genConstRef(const Expr * in, llvm::StringRef name);
+  llvm::GlobalVariable * genConstRef(const Expr * in, llvm::StringRef name, bool synthetic);
   llvm::Value * genInitVar(const InitVarExpr * in);
   llvm::Value * genBinaryOpcode(const BinaryOpcodeExpr * expr);
   llvm::Value * genCompare(const CompareExpr * in);
@@ -303,7 +303,8 @@ public:
       const Expr * sizeExpr);
 
   /** Generate a constant object. */
-  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name);
+  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name,
+      bool synthetic);
   llvm::Constant * genConstantObject(const ConstantObjectRef * obj);
 
   /** Generate a structure from the fields of a constant object. */
