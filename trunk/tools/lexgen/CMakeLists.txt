@@ -11,6 +11,7 @@ set(TARTLN_OPTIONS -disable-fp-elim -internalize -O0)
 set(TART_MODULE_PATH
     -i ${TART_SOURCE_DIR}/lib/core
     -i ${TART_SOURCE_DIR}/lib/testing
+    -i ${TART_SOURCE_DIR}/lib/opts
     -i ${SRC_ROOT}
     -i ${TEST_ROOT})
 
@@ -55,11 +56,20 @@ function(add_tart_executable Name)
       COMMENT "Assembling ${ASM_FILE}")
 endfunction(add_tart_executable)
 
-add_tart_executable(lexGenTest
+add_tart_executable(lexgenTest
   "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
   "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
   libLexGenCommon.bc
   libLexGenGen.bc 
   libLexGenTest.bc 
 )
-add_dependencies(lexGenTest libcore libtesting libLexGenCommon libLexGenGen libLexGenTest)
+add_dependencies(lexgenTest libcore libtesting libLexGenCommon libLexGenGen libLexGenTest)
+
+add_tart_executable(lexgen
+  "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+  "${PROJECT_BINARY_DIR}/lib/opts/libopts.bc"
+  libLexGenApp.bc
+  libLexGenCommon.bc
+  libLexGenGen.bc 
+)
+add_dependencies(lexgen libcore libopts libLexGenCommon libLexGenGen libLexGenApp)

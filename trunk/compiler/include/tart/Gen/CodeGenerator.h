@@ -189,10 +189,6 @@ public:
   llvm::Value * genElementAddr(const BinaryExpr * in);
 
 #if 0
-  /** Generate a type cast. */
-  llvm::Value * genCast(const SourceLocation & loc, llvm::Value * val,
-      const Type * fromType, const Type * toType);
-
   /** Generate the attributes to this declaration. */
   bool genAttrs(const Declaration * de, Attributes & declAttrs);
 #endif
@@ -262,16 +258,8 @@ public:
       information for that type. */
   RuntimeTypeInfo * getRTTypeInfo(const CompositeType * ctype);
 
-#if 0
   /** generate the module initialization function if it doesn't already exist. */
   void genModuleInitFunc();
-
-  /** Write out the module metadata. */
-  void genModuleMetadata(std::ostream & out);
-
-  /** Write out all the metadata for children of a declaration. */
-  void genChildMetadata(Declaration * parent, std::ostream & out, int nesting);
-#endif
 
   /** return a reference to the low-level _Unwind_RaiseException intrinsic. */
   llvm::Function * getUnwindRaiseException();
@@ -418,11 +406,8 @@ private:
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
 
-#if 0
-  llvm::Function * moduleInitFunc;
-  FunctionType * moduleInitFuncType;
-  llvm::BasicBlock * moduleInitBlock;
-#endif
+  llvm::Function * moduleInitFunc_;
+  llvm::BasicBlock * moduleInitBlock_;
 
   llvm::PointerType * methodPtrType_;
 

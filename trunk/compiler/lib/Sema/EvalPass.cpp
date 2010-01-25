@@ -99,7 +99,6 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
     case Expr::ImplicitCast:
     case Expr::ExplicitCast:
-    case Expr::UpCast:
     case Expr::TryCast:
     case Expr::DynamicCast:
     case Expr::Truncate:
@@ -110,6 +109,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::UnionMemberCast:
       return evalCast(static_cast<CastExpr *>(in));
 #endif
+    case Expr::UpCast:
+      return evalExpr(static_cast<CastExpr *>(in)->arg());
+
     case Expr::UnionCtorCast:
       return evalUnionCtorCast(static_cast<CastExpr *>(in));
 
@@ -160,6 +162,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
   }
 
   diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType()) << " : " << in;
+  showCallStack();
   DFAIL("Fall through");
 }
 
@@ -170,6 +173,7 @@ ConstantExpr * EvalPass::evalConstantExpr(Expr * in) {
       return ce;
     } else if (!allowPartial_) {
       diag.error(in) << "Not a constant: " << in;
+      showCallStack();
     }
   }
 
@@ -234,9 +238,18 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
 
 Expr * EvalPass::evalFnCall(FnCallExpr * in) {
   FunctionDefn * func = in->function();
-  CallFrame frame;
+  CallFrame frame(callFrame_);
   frame.setFunction(func);
-  frame.setSelfArg(evalExpr(in->selfArg()));
+  frame.setCallLocation(in->location());
+  if (in->selfArg() != NULL) {
+    Expr * selfArg = evalExpr(in->selfArg());
+    if (selfArg == NULL) {
+      return NULL;
+    }
+
+    frame.setSelfArg(selfArg);
+  }
+
   for (ExprList::iterator it = in->args().begin(); it != in->args().end(); ++it) {
     Expr * arg = evalExpr(*it);
     if (arg == NULL) {
@@ -305,18 +318,32 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
         DFAIL("IMPLEMENT Storage_Global");
         break;
 
-      case Storage_Instance:
-        DFAIL("IMPLEMENT Storage_Instance");
+      case Storage_Instance: {
+        DASSERT(in->base() != NULL);
+        Expr * base = evalExpr(in->base());
+        if (base == NULL) {
+          return NULL;
+        }
+
+        if (ConstantObjectRef * inst = dyn_cast<ConstantObjectRef>(base)) {
+          return inst->getMemberValue(var);
+        } else {
+          diag.fatal(base) << "Base not handled " << base;
+        }
         break;
+      }
 
       case Storage_Class:
         DFAIL("IMPLEMENT Storage_Class");
         break;
 
       case Storage_Static:
-        diag.debug(var) << var;
-        DFAIL("IMPLEMENT Storage_Static");
-        break;
+        if (!allowPartial_) {
+          diag.error(in) << "Not a constant: " << var;
+          showCallStack();
+        }
+
+        return NULL;
 
       case Storage_Local:
         if (var->defnType() == Defn::MacroArg) {
@@ -393,6 +420,10 @@ void EvalPass::store(Expr * value, Expr * dest) {
           break;
 
         case Storage_Static:
+          if (!allowPartial_) {
+            diag.fatal(dest) << "Not a constant: " << var;
+          }
+
           diag.debug(var) << var;
           DFAIL("IMPLEMENT Storage_Static");
           break;
@@ -604,6 +635,13 @@ Expr * EvalPass::CallFrame::getLocal(VariableDefn * var) {
 
 void EvalPass::CallFrame::setLocal(VariableDefn * var, Expr * value) {
   locals_[var] = value;
+}
+
+void EvalPass::showCallStack() {
+  // TODO: Show previous frames as well.
+  for (CallFrame * cf = callFrame_; cf != NULL; cf = cf->prev()) {
+    diag.info(cf->callLocation()) << "Called from here.";
+  }
 }
 
 } // namespace tart

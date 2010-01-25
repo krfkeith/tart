@@ -57,12 +57,10 @@ CodeGenerator::CodeGenerator(Module * mod)
     , invokeFnType_(NULL)
     , dcObjectFnType_(NULL)
     , structRet_(NULL)
+    , moduleInitFunc_(NULL)
+    , moduleInitBlock_(NULL)
     , reflector_(*this)
     , dbgFactory_(*mod->irModule())
-#if 0
-    , moduleInitFunc(NULL)
-    , moduleInitBlock(NULL)
-#endif
     , unwindTarget_(NULL)
     , unwindRaiseException_(NULL)
     , unwindResume_(NULL)
@@ -75,10 +73,6 @@ CodeGenerator::CodeGenerator(Module * mod)
   // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
   methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
-#if 0
-  std::vector<const llvm::Type *> args;
-  moduleInitFuncType = FunctionType::get(llvm::Type::VoidTy, args, false);
-#endif
 }
 
 void CodeGenerator::generate() {
@@ -112,24 +106,13 @@ void CodeGenerator::generate() {
   DefnSet & xdefs = module_->exportDefs();
   for (DefnSet::iterator it = xdefs.begin(); it != xdefs.end(); ++it) {
     Defn * de = *it;
-    /*if (de->module() != module) {
-        diag.debug("Generating external reference for %s",
-            de->qualifiedName().c_str());
-    }*/
-
     if (diag.inRecovery()) {
       diag.recovered();
     }
 
-    if (!de->isSingular()) {
-      continue;
+    if (de->isSingular()) {
+      genXDef(de);
     }
-
-    //if (ShowGen) {
-    //  diag.debug() << "Generating " << de->qualifiedName();
-    //}
-
-    genXDef(de);
   }
 
   if (reflector_.enabled() &&
@@ -140,34 +123,32 @@ void CodeGenerator::generate() {
   addTypeName(Builtins::typeObject);
   addTypeName(Builtins::typeTypeInfoBlock);
 
-#if 0
   // Finish up static constructors.
-  if (moduleInitFunc) {
+  if (moduleInitFunc_) {
     // See if any actual code was added to the init block.
-    if (moduleInitBlock->empty()) {
-      moduleInitBlock->eraseFromParent();
-      moduleInitFunc->eraseFromParent();
+    if (moduleInitBlock_->empty()) {
+      moduleInitBlock_->eraseFromParent();
+      moduleInitFunc_->eraseFromParent();
     } else {
       using namespace llvm;
-      builder_.SetInsertPoint(moduleInitBlock);
+      builder_.SetInsertPoint(moduleInitBlock_);
       builder_.CreateRet(NULL);
       builder_.ClearInsertionPoint();
 
       std::vector<Constant *> ctorMembers;
-      ctorMembers.push_back(ConstantInt::get(llvm::Type::Int32Ty, 65536));
-      ctorMembers.push_back(moduleInitFunc);
+      ctorMembers.push_back(getInt32Val(65536));
+      ctorMembers.push_back(moduleInitFunc_);
 
-      Constant * ctorStruct = ConstantStruct::get(ctorMembers);
+      Constant * ctorStruct = ConstantStruct::get(context_, ctorMembers, false);
       Constant * ctorArray = ConstantArray::get(
             ArrayType::get(ctorStruct->getType(), 1),
             &ctorStruct, 1);
       Constant * initVar = new GlobalVariable(
-        ctorArray->getType(), true,
-        GlobalValue::AppendingLinkage,
-        ctorArray, "llvm.global_ctors", irModule_);
+          *irModule_, ctorArray->getType(), true,
+          GlobalValue::AppendingLinkage,
+          ctorArray, "llvm.global_ctors");
     }
   }
-#endif
 
   if (diag.getErrorCount() == 0 && module_->entryPoint() != NULL) {
     genEntryPoint();
@@ -251,6 +232,16 @@ void CodeGenerator::outputModule() {
   }
 
   llvm::WriteBitcodeToFile(irModule_, *binOut);
+}
+
+void CodeGenerator::genModuleInitFunc() {
+  using namespace llvm;
+
+  if (moduleInitFunc_ == NULL) {
+    llvm::FunctionType * ftype = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), false);
+    moduleInitFunc_ = Function::Create(ftype, Function::InternalLinkage, ".module.init", irModule_);
+    moduleInitBlock_ = BasicBlock::Create(context_, "entry", moduleInitFunc_);
+  }
 }
 
 void CodeGenerator::genEntryPoint() {

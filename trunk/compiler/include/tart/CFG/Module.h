@@ -149,6 +149,7 @@ private:
   DefnSet importDefs_;
   DefnSet reflectedDefs_;
   DefnSet systemDefs_;
+  DefnList initDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
   ConverterMap converters_;

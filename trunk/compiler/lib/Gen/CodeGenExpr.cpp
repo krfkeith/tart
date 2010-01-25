@@ -220,6 +220,9 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
     case Expr::ConstNArray:
       return genConstantArray(static_cast<const ConstantNativeArray *>(in));
 
+    case Expr::ConstString:
+      return genStringLiteral(static_cast<const ConstantString *> (in)->value());
+
     case Expr::UnionCtorCast:
       return genConstantUnion(static_cast<const CastExpr *>(in));
 
@@ -1006,7 +1009,6 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
 
 GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj,
     llvm::StringRef name, bool synthetic) {
-  Constant * constObject = genConstantObject(obj);
   if (name != "") {
     GlobalVariable * gv = irModule_->getGlobalVariable(name, true);
     if (gv != NULL) {
@@ -1014,6 +1016,8 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
     }
   }
 
+  Constant * constObject = genConstantObject(obj);
+  DASSERT(constObject != NULL);
   return new GlobalVariable(
       *irModule_, constObject->getType(), true,
       synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,

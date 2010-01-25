@@ -378,29 +378,22 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
         gv->setInitializer(initValue);
       } else {
-        diag.debug(initExpr) << Format_Verbose << "Initialization expr not a constant: " << initExpr;
-        DFAIL("Implement");
-#if 0
         genModuleInitFunc();
 
         // Add it to the module init function
         BasicBlock * savePoint = builder_.GetInsertBlock();
-        builder_.SetInsertPoint(moduleInitBlock);
+        builder_.SetInsertPoint(moduleInitBlock_);
 
         // Generate the expression.
         Value * initValue = genExpr(initExpr);
-        if (initValue == NULL) {
-          return false;
+        if (initValue != NULL) {
+          gv->setInitializer(llvm::Constant::getNullValue(irType));
+          builder_.CreateStore(initValue, gv);
         }
-
-        // Otherwise use dynamic initialization
-        gv->setInitializer(llvm::Constant::getNullValue(irType));
-        builder_.CreateStore(initValue, gv);
 
         if (savePoint != NULL) {
           builder_.SetInsertPoint(savePoint);
         }
-#endif
       }
     } else {
       // No initializer, so set the value to zerofill.

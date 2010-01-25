@@ -116,20 +116,10 @@ public:
 
   /** Return the number of instance fields, not including the instance slot for
       the superclass. */
-  int instanceFieldCount() const {
-    int count = instanceFields_.size();
-    return super_ != NULL ? count - 1 : count;
-  }
+  int instanceFieldCount() const;
 
   /** Return the number of instance fields in this class and all superclasses. */
-  int instanceFieldCountRecursive() const {
-    int count = 0;
-    for (const CompositeType * c = this; c != NULL; c = c->super_) {
-      count += instanceFieldCount();
-    }
-
-    return count;
-  }
+  int instanceFieldCountRecursive() const;
 
   /** True if this class is an attribute. */
   bool isAttribute() const { return (classFlags_ & Attribute) != 0; }

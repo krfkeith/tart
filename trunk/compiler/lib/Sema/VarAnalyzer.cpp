@@ -242,12 +242,14 @@ bool VarAnalyzer::resolveInitializers() {
         case Storage_Global: {
           Expr * initVal = var->initValue();
           if (initVal) {
-            Expr * constInitVal = EvalPass::eval(initVal, true);
-            if (constInitVal != NULL) {
-              var->setInitValue(constInitVal);
-            } else {
-              diag.debug(initVal) << "Not a constant: " << initVal;
-              DFAIL("Implement");
+            if (var->defnType() == Defn::Let) {
+              Expr * constInitVal = EvalPass::eval(initVal, true);
+              if (constInitVal != NULL) {
+                var->setInitValue(constInitVal);
+              } else {
+                diag.debug(initVal) << "Not a constant: " << initVal;
+                DFAIL("Implement");
+              }
             }
           }
         }

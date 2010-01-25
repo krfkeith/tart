@@ -30,7 +30,10 @@ private:
   // Contains the parameters and local variables of a call frame.
   class CallFrame {
   public:
-    CallFrame() : function_(NULL), selfArg_(NULL), returnVal_(NULL) {}
+    CallFrame(CallFrame * prev) : prev_(prev), function_(NULL), selfArg_(NULL), returnVal_(NULL) {}
+
+    // Return the caller's call frame.
+    CallFrame * prev() const { return prev_; }
 
     // The function being called.
     FunctionDefn * function() const { return function_; }
@@ -50,12 +53,17 @@ private:
     Expr * getLocal(VariableDefn * var);
     void setLocal(VariableDefn * var, Expr * value);
 
+    const SourceLocation & callLocation() const { return callLocation_; }
+    void setCallLocation(const SourceLocation & loc) { callLocation_ = loc; }
+
   private:
+    CallFrame * prev_;
     FunctionDefn * function_;
     ExprList args_;
     Expr * selfArg_;
     Expr * returnVal_;
     VariableMap locals_;
+    SourceLocation callLocation_;
   };
 
   enum BooleanResult {
@@ -97,6 +105,8 @@ private:
     callFrame_ = newFrame;
     return result;
   }
+
+  void showCallStack();
 };
 
 } // namespace tart

@@ -547,13 +547,15 @@ bool ClassAnalyzer::analyzeFields() {
     if (super != NULL) {
       // The extra check is to prevent infinite recursion when analyzing class Object.
       if (!super->passes().isFinished(CompositeType::FieldPass)) {
-        ClassAnalyzer(super->typeDefn()).analyze(Task_PrepTypeComparison);
+        ClassAnalyzer(super->typeDefn()).analyze(Task_PrepConstruction);
       }
 
       // Reserve one slot for the superclass.
       type->instanceFields_.push_back(NULL);
       instanceFieldCount = 1;
       instanceFieldCountRecursive = super->instanceFieldCountRecursive();
+      DASSERT(instanceFieldCountRecursive >= 0);
+      DASSERT(type->instanceFieldCountRecursive() == instanceFieldCountRecursive);
     }
 
     Defn::DefnType dtype = target->defnType();
@@ -612,6 +614,7 @@ bool ClassAnalyzer::analyzeFields() {
     }
 
     DASSERT(type->instanceFields_.size() == size_t(instanceFieldCount));
+    DASSERT(type->instanceFieldCountRecursive() == instanceFieldCountRecursive);
     type->passes().finish(CompositeType::FieldPass);
   }
 
