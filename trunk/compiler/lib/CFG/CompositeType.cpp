@@ -73,6 +73,23 @@ CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parent
   }
 }
 
+/** Return the number of instance fields, not including the instance slot for
+    the superclass. */
+int CompositeType::instanceFieldCount() const {
+  int count = instanceFields_.size();
+  return super_ != NULL ? count - 1 : count;
+}
+
+/** Return the number of instance fields in this class and all superclasses. */
+int CompositeType::instanceFieldCountRecursive() const {
+  int count = 0;
+  for (const CompositeType * c = this; c != NULL; c = c->super_) {
+    count += c->instanceFieldCount();
+  }
+
+  return count;
+}
+
 FunctionDefn * CompositeType::defaultConstructor() const {
   const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
   if (ctors == NULL) {
