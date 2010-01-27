@@ -23,6 +23,8 @@ static llvm::cl::opt<bool>
 ShowInference("show-inference",
     llvm::cl::desc("Display debugging information for type inference"));
 
+bool unifyVerbose = false;
+
 /// -------------------------------------------------------------------
 /// CallSite
 
@@ -182,9 +184,11 @@ bool CallSite::unify(int searchDepth) {
     // unify after a unification failure.
     for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
       CallCandidate * c = *cc;
+      unifyVerbose = true;
       if (c->unify(callExpr_)) {
         canUnify = true;
       }
+      unifyVerbose = false;
     }
 
     reportErrors("No methods match calling signature: ");

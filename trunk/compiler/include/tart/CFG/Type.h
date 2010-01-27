@@ -212,7 +212,8 @@ public:
 
   /** Given two types, return the one that is more general, the higher of the two. Returns NULL
       if neither type is a specialization of the other. */
-  static const Type * selectLessSpecificType(const Type * type1, const Type * type2);
+  static const Type * selectLessSpecificType(SourceContext * source, const Type * type1,
+      const Type * type2);
 
   /** Return true if type1 and type2 are type expressions that, when finalized, will
       reduce to the same type. For example, List[T] is equivalent to List[S] if

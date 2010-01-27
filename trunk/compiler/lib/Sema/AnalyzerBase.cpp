@@ -473,7 +473,7 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();
     if (args->size() >= tsig->numRequiredArgs() && args->size() <= tsig->typeParams()->size()) {
-      // Attempt unification of pattern variables with template args.
+      // Attempt unification of type variables with template args.
       SpCandidate * spc = new SpCandidate(base, defn, args);
       SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
       if (spc->unify(&candidateSite)) {
@@ -765,7 +765,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
       // TODO: Analyze what we are pointing to.
       return true;
 
-    case Type::Pattern:
+    case Type::TypeVar:
       return true;
 
     default:

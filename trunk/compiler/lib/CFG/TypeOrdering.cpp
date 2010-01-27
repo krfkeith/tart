@@ -72,7 +72,7 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
       return compareWithPattern(static_cast<const TypeVariable *>(t1), t2);
 
     case Type::PatternVal:
-      return compareWithPatternValue(static_cast<const PatternValue *>(t1), t2);
+      return compareWithTypeBinding(static_cast<const TypeBinding *>(t1), t2);
 
     case Type::Constraint:
       return compareWithConstraint(static_cast<const TypeConstraint *>(t1), t2);
@@ -86,7 +86,7 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
       return -compareWithPattern(static_cast<const TypeVariable *>(t2), t1);
 
     case Type::PatternVal:
-      return -compareWithPatternValue(static_cast<const PatternValue *>(t2), t1);
+      return -compareWithTypeBinding(static_cast<const TypeBinding *>(t2), t1);
 
     case Type::Constraint:
       return -compareWithConstraint(static_cast<const TypeConstraint *>(t2), t1);
@@ -215,7 +215,7 @@ ComparisonResult TypeOrdering::compareWithPattern(const TypeVariable * t1, const
   return t1 == t2 ? EQUAL : UNORDERED;
 }
 
-ComparisonResult TypeOrdering::compareWithPatternValue(const PatternValue * t1, const Type * t2) {
+ComparisonResult TypeOrdering::compareWithTypeBinding(const TypeBinding * t1, const Type * t2) {
   return t1 == t2 ? EQUAL : UNORDERED;
 }
 

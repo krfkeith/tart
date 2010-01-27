@@ -71,11 +71,11 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::Alias:
       return visitTypeAlias(static_cast<const TypeAlias *>(in));
 
-    case Type::Pattern:
+    case Type::TypeVar:
       return visitTypeVariable(static_cast<const TypeVariable *>(in));
 
-    case Type::PatternVal:
-      return visitPatternValue(static_cast<const PatternValue *>(in));
+    case Type::Binding:
+      return visitTypeBinding(static_cast<const TypeBinding *>(in));
 
     case Type::ResultOf:
     case Type::ParameterOf:
@@ -176,7 +176,7 @@ const Type * TypeTransform::visitTypeVariable(const TypeVariable * in) {
   return in;
 }
 
-const Type * TypeTransform::visitPatternValue(const PatternValue * in) {
+const Type * TypeTransform::visitTypeBinding(const TypeBinding * in) {
   return in;
 }
 
@@ -197,7 +197,7 @@ const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
   return value != NULL ? visit(value) : in;
 }
 
-const Type * SubstitutionTransform::visitPatternValue(const PatternValue * in) {
+const Type * SubstitutionTransform::visitTypeBinding(const TypeBinding * in) {
   Type * result = in->value();
   return result != NULL ? result : in;
 }
@@ -271,6 +271,9 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
   return in;
 }
 
+// -------------------------------------------------------------------
+// RelabelTransform
+
 const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
   Type * value = env_.get(in);
   if (value != NULL) {
@@ -282,9 +285,20 @@ const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
     return value;
   }
 
-  PatternValue * val = new PatternValue(&vars_, in);
+  TypeBinding * val = new TypeBinding(&vars_, in);
   vars_.addSubstitution(in, val);
   return val;
 }
+
+// -------------------------------------------------------------------
+// NormalizeTransform
+
+const Type * NormalizeTransform::visitTypeBinding(const TypeBinding * in) {
+  const Type * value = in->value();
+  return value != NULL ? value : in;
+}
+
+
+
 
 } // namespace tart

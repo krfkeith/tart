@@ -108,6 +108,8 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         } else {
           diag.fatal(loc) << *it << " is not callable.";
         }
+      } else if (const FunctionType * ftype = dyn_cast<FunctionType>((*it)->type())) {
+        success &= addOverload(call, *it, ftype, args);
       }
     } else {
       diag.fatal(loc) << *it << " is not callable.";

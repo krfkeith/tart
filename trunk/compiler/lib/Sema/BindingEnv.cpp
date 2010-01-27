@@ -27,11 +27,13 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 
 namespace tart {
 
+extern bool unifyVerbose;
+
 static void assureNoTypeVars(Type * t) {
   for (size_t i = 0; i < t->numTypeParams(); ++i) {
     if (isa<TypeVariable>(t->typeParam(i))) {
       diag.fatal() << "What's a type param doing here?" << t;
-      DFAIL("Unexpected pattern var");
+      DFAIL("Unexpected type variable");
     }
   }
 
@@ -52,9 +54,9 @@ void Substitution::trace() const {
 }
 
 // -------------------------------------------------------------------
-// PatternValue
+// TypeBinding
 
-bool PatternValue::isSingular() const {
+bool TypeBinding::isSingular() const {
   if (const Type * val = value()) {
     return val->isSingular();
   }
@@ -62,7 +64,7 @@ bool PatternValue::isSingular() const {
   return false;
 }
 
-bool PatternValue::isEqual(const Type * other) const {
+bool TypeBinding::isEqual(const Type * other) const {
   if (Type * val = value()) {
     return val->isEqual(other);
   }
@@ -70,7 +72,7 @@ bool PatternValue::isEqual(const Type * other) const {
   return false;
 }
 
-bool PatternValue::isReferenceType() const {
+bool TypeBinding::isReferenceType() const {
   if (Type * val = value()) {
     return val->isReferenceType();
   }
@@ -78,7 +80,7 @@ bool PatternValue::isReferenceType() const {
   return false;
 }
 
-bool PatternValue::isSubtype(const Type * other) const {
+bool TypeBinding::isSubtype(const Type * other) const {
   if (Type * val = value()) {
     return val->isSubtype(other);
   }
@@ -86,7 +88,7 @@ bool PatternValue::isSubtype(const Type * other) const {
   return false;
 }
 
-bool PatternValue::includes(const Type * other) const {
+bool TypeBinding::includes(const Type * other) const {
   return isEqual(other);
 
   /*if (Type * val = value()) {
@@ -96,7 +98,7 @@ bool PatternValue::includes(const Type * other) const {
   return false;*/
 }
 
-ConversionRank PatternValue::convertImpl(const Conversion & conversion) const {
+ConversionRank TypeBinding::convertImpl(const Conversion & conversion) const {
   if (Type * val = value()) {
     return val->convert(conversion);
   }
@@ -104,32 +106,37 @@ ConversionRank PatternValue::convertImpl(const Conversion & conversion) const {
   return Incompatible;
 }
 
-Expr * PatternValue::nullInitValue() const {
+Expr * TypeBinding::nullInitValue() const {
   DFAIL("IllegalState");
 }
 
-void PatternValue::trace() const {
+void TypeBinding::trace() const {
   var_->mark();
 }
 
-void PatternValue::format(FormatStream & out) const {
-  out << "%%" << var_->name();
+void TypeBinding::format(FormatStream & out) const {
+  out << "%";
+  var_->format(out);
+  out << "-" << env_->index_;
   if (Type * val = value()) {
     out << "=" << val;
   }
 }
 
-const llvm::Type * PatternValue::irType() const {
+const llvm::Type * TypeBinding::irType() const {
   DFAIL("IllegalState");
 }
 
-Type * PatternValue::value() const {
+Type * TypeBinding::value() const {
+  //Type * result = env_->get(this);
   Type * result = env_->get(var_);
   return (result == this) ? NULL : result;
 }
 
 // -------------------------------------------------------------------
 // BindingEnv
+
+int BindingEnv::nextIndex_ = 1;
 
 const char * BindingEnv::str() const {
   static std::string temp;
@@ -160,14 +167,14 @@ bool BindingEnv::unify(SourceContext * source, const Type * pattern, const Type 
   //pattern = dealias(pattern);
   value = dealias(value);
 
-  if (DebugUnify) {
+  if (DebugUnify || unifyVerbose) {
     diag.debug(source) << "Unify? " << pattern << " == " << value << " with " << *this;
     diag.indent();
   }
 
   bool result = unifyImpl(source, pattern, value, variance);
 
-  if (DebugUnify) {
+  if (DebugUnify || unifyVerbose) {
     if (!result) {
       diag.debug(source) << "Unify: " << pattern << " != " << value << " with " << *this;;
     } else {
@@ -188,15 +195,15 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     return false;
   } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(pattern)) {
     return unifyPattern(source, pv, value, variance);
-  } else if (const PatternValue * pval = dyn_cast<PatternValue>(pattern)) {
+  } else if (const TypeBinding * pval = dyn_cast<TypeBinding>(pattern)) {
     if (pval->env() == this) {
       return unifyPattern(source, pval->var(), value, variance);
     } else if (pval->value() != NULL) {
       return unifyImpl(source, pval->value(), value, variance);
     } else {
-      addSubstitution(pattern, value);
-      diag.debug(source) << "Unify error: " << pval << " : " << value;
-      DFAIL("Why is there a pattern val on the lhs?");
+      //addSubstitution(pattern, value);
+      //diag.debug(source) << "Unify error: " << pval << " : " << value;
+      //DFAIL("Why is there a pattern val on the lhs?");
       //return false;
       return true;
     }
@@ -215,7 +222,7 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
       return true;
     }
     return tc->unifyWithPattern(*this, pattern);
-  } else if (const PatternValue * pval = dyn_cast<PatternValue>(value)) {
+  } else if (const TypeBinding * pval = dyn_cast<TypeBinding>(value)) {
     Type * boundValue = pval->value();
     if (boundValue != NULL) {
       return unify(source, pattern, boundValue, variance);
@@ -244,6 +251,40 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     //diag.error() << Format_Dealias << "Implement unification of " << pattern << " and " << value;
     return false;
     //DFAIL("Implement");
+  }
+}
+
+bool BindingEnv::unifySymmetric(SourceContext * source, const Type * rhs, const Type * lhs) {
+  if (lhs == rhs) {
+    return true;
+  } else if (isErrorResult(rhs) || isErrorResult(lhs)) {
+    return false;
+  } else if (const TypeBinding * tb = dyn_cast<TypeBinding>(lhs)) {
+    if (tb->value() != NULL) {
+      return unifySymmetric(source, tb->value(), rhs);
+    } else if (tb->env() == this) {
+      addSubstitution(tb, rhs);
+      return true;
+    } else {
+      return true;
+    }
+  } else if (const TypeBinding * tb = dyn_cast<TypeBinding>(rhs)) {
+    if (tb->value() != NULL) {
+      return unifySymmetric(source, lhs, tb->value());
+    } else if (tb->env() == this) {
+      addSubstitution(tb, lhs);
+      return true;
+    } else {
+      return true;
+    }
+  } else if (const TypeVariable * tv = dyn_cast<TypeVariable>(lhs)) {
+    DFAIL("Bad state - unbound type variable in type expression");
+    return false;
+  } else if (const TypeVariable * tv = dyn_cast<TypeVariable>(rhs)) {
+    DFAIL("Bad state - unbound type variable in type expression");
+    return false;
+  } else {
+    return unifyImpl(source, lhs, rhs, Invariant);
   }
 }
 
@@ -469,10 +510,11 @@ bool BindingEnv::unifyPattern(
 
     // Early out
     if (s->right() == pattern) {
+      DFAIL("Pattern bound to itself?");
       return true;
     }
 
-    if (const PatternValue * pval = dyn_cast<PatternValue>(s->right())) {
+    if (const TypeBinding * pval = dyn_cast<TypeBinding>(s->right())) {
       // If the value that is already bound is a pattern variable from some other
       // environment (it should never be from this one), then bind it to
       // this variable.
@@ -485,7 +527,7 @@ bool BindingEnv::unifyPattern(
       return true;
     }
 
-    if (isa<PatternValue>(value)) {
+    if (isa<TypeBinding>(value)) {
       // If the value that we're trying to bind is a pattern value, and we already
       // have a value, then leave the current value as is, assuming that it can
       // be bound to that pattern variable later.
@@ -515,7 +557,11 @@ bool BindingEnv::unifyPattern(
       //upperBound =
     }
 
-    const Type * commonType = Type::selectLessSpecificType(s->right(), value);
+    if (unifySymmetric(source, s->right(), value)) {
+      return true;
+    }
+
+    const Type * commonType = Type::selectLessSpecificType(source, s->right(), value);
     if (commonType == s->right()) {
       return true;
     }
@@ -558,13 +604,13 @@ bool BindingEnv::unifyPattern(
     return false;
   } else if (pattern->canBindTo(value)) {
     // Don't bother binding a pattern value to its own variable.
-    if (const PatternValue * pval = dyn_cast<PatternValue>(value)) {
+    if (const TypeBinding * pval = dyn_cast<TypeBinding>(value)) {
       if (pval->var() == pattern) {
         return true;
       }
     }
 
-    if (DebugUnify) {
+    if (DebugUnify || unifyVerbose) {
       diag.debug(source->location()) << "Unify: " << pattern << " <- " << value << " in environment " << *this;
     }
 
@@ -606,6 +652,15 @@ Type * BindingEnv::get(const TypeVariable * type) const {
   return NULL;
 }
 
+Type * BindingEnv::get(const TypeBinding * type) const {
+  Substitution * s = getSubstitutionFor(type);
+  if (s != NULL) {
+    return const_cast<Type *>(s->right());
+  }
+
+  return NULL;
+}
+
 Type * BindingEnv::dereference(Type * type) const {
   while (type != NULL) {
     if (TypeVariable * var = dyn_cast<TypeVariable>(type)) {
@@ -615,7 +670,7 @@ Type * BindingEnv::dereference(Type * type) const {
       } else {
         return NULL;
       }
-    } else if (PatternValue * val = dyn_cast<PatternValue>(type)) {
+    } else if (TypeBinding * val = dyn_cast<TypeBinding>(type)) {
       type = val->value();
       if (type == NULL) {
         return val;
@@ -635,10 +690,6 @@ const Type * BindingEnv::subst(const Type * in) const {
 
   return SubstitutionTransform(*this).transform(in);
 }
-
-/*const Type * BindingEnv::relabel(const Type * in) {
-  return RelabelTransform(*this).transform(in);
-}*/
 
 void BindingEnv::trace() const {
   GC::safeMark(substitutions_);

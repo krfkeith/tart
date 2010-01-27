@@ -75,8 +75,8 @@ const llvm::Type * PrimitiveType::createIRType() const {
 
 const Type * PrimitiveType::derefEnumType(const Type * in) {
   while (const EnumType * etype = dyn_cast<EnumType> (in)) {
-    DASSERT(etype->baseType() != NULL)
-;    in = etype->baseType();
+    DASSERT(etype->baseType() != NULL);
+    in = etype->baseType();
   }
 
   return in;

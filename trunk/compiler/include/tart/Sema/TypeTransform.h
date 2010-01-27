@@ -19,7 +19,7 @@ class EnumType;
 class UnionType;
 class UnitType;
 class TypeVariable;
-class PatternValue;
+class TypeBinding;
 class TypeConstraint;
 class TypeAlias;
 class TypeLiteralType;
@@ -44,7 +44,7 @@ public:
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);
   virtual const Type * visitTypeVariable(const TypeVariable * in);
-  virtual const Type * visitPatternValue(const PatternValue * in);
+  virtual const Type * visitTypeBinding(const TypeBinding * in);
   virtual const Type * visitTypeConstraint(const TypeConstraint * in);
 
   virtual const Type * visitTypeAlias(const TypeAlias * in);
@@ -57,7 +57,7 @@ public:
   SubstitutionTransform(const BindingEnv & env) : env_(env) {}
 
   const Type * visitTypeVariable(const TypeVariable * in);
-  const Type * visitPatternValue(const PatternValue * in);
+  const Type * visitTypeBinding(const TypeBinding * in);
   const Type * visitCompositeType(const CompositeType * in);
   const Type * visitTypeConstraint(const TypeConstraint * in);
 
@@ -74,6 +74,17 @@ public:
   const Type * visitTypeVariable(const TypeVariable * in);
 
 private:
+  BindingEnv vars_;
+};
+
+/// -------------------------------------------------------------------
+/// A transform that replaces all type bindings with their bound values.
+class NormalizeTransform : public SubstitutionTransform {
+public:
+  NormalizeTransform() : SubstitutionTransform(vars_) {}
+
+  const Type * visitTypeBinding(const TypeBinding * in);
+
   BindingEnv vars_;
 };
 
