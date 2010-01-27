@@ -225,7 +225,6 @@ private:
       const UnionType * value, Variance variance);
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
-  bool unifySymmetric(SourceContext * source, const Type * rhs, const Type * lhs);
 
   bool hasVar(const TypeVariable * var) const;
 };

@@ -254,40 +254,6 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
   }
 }
 
-bool BindingEnv::unifySymmetric(SourceContext * source, const Type * rhs, const Type * lhs) {
-  if (lhs == rhs) {
-    return true;
-  } else if (isErrorResult(rhs) || isErrorResult(lhs)) {
-    return false;
-  } else if (const TypeBinding * tb = dyn_cast<TypeBinding>(lhs)) {
-    if (tb->value() != NULL) {
-      return unifySymmetric(source, tb->value(), rhs);
-    } else if (tb->env() == this) {
-      addSubstitution(tb, rhs);
-      return true;
-    } else {
-      return true;
-    }
-  } else if (const TypeBinding * tb = dyn_cast<TypeBinding>(rhs)) {
-    if (tb->value() != NULL) {
-      return unifySymmetric(source, lhs, tb->value());
-    } else if (tb->env() == this) {
-      addSubstitution(tb, lhs);
-      return true;
-    } else {
-      return true;
-    }
-  } else if (const TypeVariable * tv = dyn_cast<TypeVariable>(lhs)) {
-    DFAIL("Bad state - unbound type variable in type expression");
-    return false;
-  } else if (const TypeVariable * tv = dyn_cast<TypeVariable>(rhs)) {
-    DFAIL("Bad state - unbound type variable in type expression");
-    return false;
-  } else {
-    return unifyImpl(source, lhs, rhs, Invariant);
-  }
-}
-
 bool BindingEnv::unifyAddressType(
     SourceContext * source, const AddressType * pat, const Type * value) {
   if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
@@ -557,7 +523,7 @@ bool BindingEnv::unifyPattern(
       //upperBound =
     }
 
-    if (unifySymmetric(source, s->right(), value)) {
+    if (unify(source, s->right(), value, Invariant)) {
       return true;
     }
 

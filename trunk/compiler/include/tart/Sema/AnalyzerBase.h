@@ -184,10 +184,12 @@ protected:
   bool findInScope(ExprList & out, const char * name, const Scope * scope, Expr * context,
       SLC & loc, MemberPreference pref);
 
-  // Special lookup function for static members of templated types.
+  // Special lookup function for static members of templated types. Since the template
+  // is never analyzed (only instances are), we need to search the ast.
   bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);
 
-  // Special lookup function for static members of templated types.
+  // Special lookup function for members of templated types. Since the template
+  // is never analyzed (only instances are), we need to search the ast.
   bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name, SLC & loc);
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
