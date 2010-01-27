@@ -339,6 +339,7 @@ bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef, 
 
 bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name,
     SLC & loc) {
+  DASSERT(typeDef->isTemplate());
   AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
   if (CompositeType * ctype = dyn_cast<CompositeType>(typeDef->typeValue())) {
     if (ctype->memberScope()->lookupMember(name, out, false)) {
@@ -352,6 +353,7 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
 
     const ASTNodeList & astBases = ast->bases();
     if (!astBases.empty()) {
+      diag.debug() << "Looking for member " << name << " in base classes of " << typeDef;
       DFAIL("Implement search of template base classes");
     }
   }

@@ -57,7 +57,7 @@ Implementation TODOS:
 * Test overloading of augmented assignment operators.
 * Override for property getters and setters. (I think that's done.)
 * Move stringify and locationOf to a different place. (where?)
-* Finish array unit tests.
+* Finish array unit tests. (One test remaining)
 * Proxy types
 * Exceptions:
   * Finally
