@@ -10,6 +10,7 @@ Bad bugs:
   -- lexGenTest segfaults.
 
 Working on currently:
+  -- Get static ctors working.
   -- BitTricks tests.
   -- New @Reflection annotation
   -- GC
@@ -55,11 +56,9 @@ Implementation TODOS:
 * Profiling.
 * Test overloading of augmented assignment operators.
 * Override for property getters and setters. (I think that's done.)
-* Move stringify and locationOf to a different place.
+* Move stringify and locationOf to a different place. (where?)
 * Finish array unit tests.
 * Proxy types
-* Preconditions.verify[%T]
-* Preconditions.checkState()
 * Exceptions:
   * Finally
     * Return

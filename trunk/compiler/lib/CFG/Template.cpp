@@ -23,8 +23,6 @@ namespace tart {
 /** The set of traits that should be copied from the template to its
     instantiation. */
 static const Defn::Traits INSTANTIABLE_TRAITS = Defn::Traits::of(
-  //Defn::Final,
-  //Defn::Abstract,
   Defn::ReadOnly
 );
 
@@ -48,7 +46,7 @@ private:
 // TypeVariable
 
 TypeVariable::TypeVariable(const SourceLocation & location, const char * name, const Type * valueType)
-  : TypeImpl(Pattern, Shape_Unset)
+  : TypeImpl(TypeVar, Shape_Unset)
   , location_(location)
   , valueType_(valueType)
   , name_(name)
@@ -101,11 +99,7 @@ void TypeVariable::trace() const {
 }
 
 void TypeVariable::format(FormatStream & out) const {
-  if (out.getShowQualifiedName()) {
-    out << name_ << "%" << name();
-  } else {
-    out << "%" << name();
-  }
+  out << "%" << name_;
 }
 
 /// -------------------------------------------------------------------
@@ -211,7 +205,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
       DASSERT(var->canBindTo(value));
     }
 
-    if (isa<PatternValue>(value)) {
+    if (isa<TypeBinding>(value)) {
       noCache = true;
     }
 

@@ -99,7 +99,7 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
     if (!param->isEqual(oparam)) {
       same = false;
       if (!param->isSubtype(oparam)) {
-        if (oparam->typeClass() != Type::Pattern) {
+        if (oparam->typeClass() != Type::TypeVar) {
           return false;
         }
 

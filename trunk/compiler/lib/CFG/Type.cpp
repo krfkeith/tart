@@ -352,7 +352,8 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   return result;
 }
 
-const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2) {
+const Type * Type::selectLessSpecificType(SourceContext * source, const Type * type1,
+    const Type * type2) {
   if (type2->includes(type1)) {
     return type2;
   } else if (type1->includes(type2)) {
@@ -382,7 +383,7 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
             return &Int64Type::instance;
           }
 
-          diag.error() << "Integer value requires " << resultBits << " bits, too large.";
+          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
           diag.info() << "p1 = " << p1;
           diag.info() << "p2 = " << p2;
           //DFAIL("Integer value too large to be represented as native type.");
@@ -397,12 +398,20 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
             return &UInt64Type::instance;
           }
 
-          diag.error() << "Integer value requires " << resultBits << " bits, too large.";
+          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
           diag.info() << "p1 = " << p1;
           diag.info() << "p2 = " << p2;
           //DFAIL("Integer value too large to be represented as native type.");
         }
       }
+    }
+
+    if (t1->typeClass() == Type::Binding) {
+      DFAIL("Deref");
+    }
+
+    if (t2->typeClass() == Type::Binding) {
+      DFAIL("Deref");
     }
 
     diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
@@ -411,14 +420,14 @@ const Type * Type::selectLessSpecificType(const Type * type1, const Type * type2
 }
 
 bool Type::equivalent(const Type * type1, const Type * type2) {
-  while (const PatternValue * pval = dyn_cast<PatternValue>(type1)) {
+  while (const TypeBinding * pval = dyn_cast<TypeBinding>(type1)) {
     type1 = pval->value();
     if (type1 == NULL) {
       return false;
     }
   }
 
-  while (const PatternValue * pval = dyn_cast<PatternValue>(type2)) {
+  while (const TypeBinding * pval = dyn_cast<TypeBinding>(type2)) {
     type2 = pval->value();
     if (type2 == NULL) {
       return false;
@@ -558,7 +567,7 @@ Type * dealiasImpl(Type * t) {
     }
   }
 
-  while (const PatternValue * pval = dyn_cast_or_null<PatternValue>(t)) {
+  while (const TypeBinding * pval = dyn_cast_or_null<TypeBinding>(t)) {
     Type * v = pval->value();
     if (v != NULL) {
       t = v;

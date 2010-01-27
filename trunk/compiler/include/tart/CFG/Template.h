@@ -52,7 +52,7 @@ public:
 
   static inline bool classof(const TypeVariable *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() == Pattern;
+    return type->typeClass() == TypeVar;
   }
 
 private:

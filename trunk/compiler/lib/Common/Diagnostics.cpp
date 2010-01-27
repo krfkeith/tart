@@ -95,6 +95,7 @@ void Diagnostics::write(const SourceLocation & loc, Severity sev,
     writer_->write(loc, sev, msg);
     if (sev == Fatal && DebugErrors) {
       printStackTrace(4);
+      abort();
     }
   }
 

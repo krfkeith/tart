@@ -50,6 +50,13 @@ class ArrayTest : Test {
 	  assertEq(3, a[2]);
 	}
 	
+	def testArrayLiteralExplicitType() {
+	  let a:ubyte[] = [1, 2, 3];
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
+	}
+	
 	def testArrayCopy() {
 	  let a = [1, 2, 3];
 	  let b = a.copy();
@@ -59,74 +66,45 @@ class ArrayTest : Test {
 	  assertEq(3, b[2]);
 	}
 	
-	// TODO: Check for out of bounds exceptions, once exceptions are actually working.
-	/*
-	@EntryPoint
-	def main() {
-	  var a:Array<int32> = Array.<int32>(4);
-	  assert(a.size == 4);
-	  
-	  var aa:Array<byte> = byte[4];
-	  assert(aa.size == 4);
-	  
-	  a[0] = 22;
-	  assert(a[0] == 22);
-	
-	  var b = Array.<int32>(a);
-	  assert(b[0] == 22);
-	
-	  // Array mutation
-	  b[0] = 13;
-	  assert(b[0] == 13);
-	  assert(a[0] == 22);
-	
-	  // Array literal
-	/*  let c = [5, 6, 7];
-	  assert(c[0] == 5);
-	  assert(c[1] == 6);
-	  assert(c[2] == 7);
-	  assert(c.size == 3);
-	
-	  // Array literal with explicit type
-	  let d:int32[] = [5, 6, 7];
-	  assert(d.size == 3);
-	
-	  // Array of strings
+	def testArrayOfStrings() {
 	  let e = ["abc", "def", "zzz"];
-	  assert(e.size == 3);
-	  assert(e[0][0] == 'a');
+	  assertEq(3, e.size);
+	  assertEq('a', e[0][0]);
+	}
 	
-	  // Array of mixed types
+	def testArrayOfMixedTypes() {
 	  let f = [int64(1), uint(2), 3];
-	  assert(f[0] == int64(1));
-	  assert(f[1] == int64(2));
-	  assert(f[2] == int64(3));
-	  assert(f.size == 3);
+	  assertEq(1, f[0]);
+	  assertEq(2, f[1]);
+	  assertEq(3, f[2]);
+	  assertEq(3, f.size);
+	}
 	
-	  // Array of arrays
-	  let g = [[1, 2, 3], [4, 5, 6]];
+	def testArrayOfArrays() {
+	  let g = [[1]];
+	 	assertEq(1, g.size);
+	 	assertEq(1, g[0].size);
+	 	assertEq(1, g[0][0]);
 	
-	  assert(g.size == 2);
-	  assert(g[0].size == 3);
-	  assert(g[1].size == 3);
-	  assert(g[0][0] == 1);
-	  assert(g[0][1] == 2);
-	  assert(g[0][2] == 3);
-	  assert(g[1][0] == 4);
-	  assert(g[1][1] == 5);
-	  assert(g[1][2] == 6);
-	
-	  // Zero-size array
-	  let h:int32[] = [];
-	  assert(h.size == 0);
+	  let h = [[1, 1]];
+	 	assertEq(1, h.size);
+	 	assertEq(2, h[0].size);
+	 	assertEq(1, h[0][0]);
 	  
-	  let i:float[] = [];
-	  assert(i.size == 0);
+	  let i = [[1], [1]];
+	 	assertEq(2, i.size);
+	 	assertEq(1, i[0].size);
+	 	assertEq(1, i[0][0]);
 	  
-	  // Array copy test
-	  let j:int32[] = int32[3];
-	  Array.copy(c, 0, j, 0, 3);
-	  assert(j[0] == 5);
-	  assert(j[1] == 6);
-	  assert(j[2] == 7);*/
+	  let k = [[1, 2, 3], [4, 5, 6]];
+	  assertEq(2, k.size);
+	  assertEq(3, k[0].size);
+	  assertEq(3, k[1].size);
+	  assertEq(1, k[0][0]);
+	  assertEq(2, k[0][1]);
+	  assertEq(3, k[0][2]);
+	  assertEq(4, k[1][0]);
+	  assertEq(5, k[1][1]);
+	  assertEq(6, k[1][2]);
+	}
 }

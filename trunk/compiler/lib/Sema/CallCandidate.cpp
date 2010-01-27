@@ -50,7 +50,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   }
 
   if (m->isTemplate() || m->isTemplateMember() || m->isPartialInstantiation()) {
-    // Normalize the return type and parameter types, replacing all pattern variables
+    // Normalize the return type and parameter types, replacing all type variables
     // with a pattern value which will eventually contain the inferred type for that
     // variable.
     for (Defn * def = m; def != NULL && !def->isSingular(); def = def->parentDefn()) {
@@ -58,12 +58,12 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       if (ts != NULL) {
         isTemplate_ = true;
         size_t numParams = ts->typeParams()->size();
-        // For each template parameter, create a PatternValue instance.
+        // For each template parameter, create a TypeBinding instance.
         for (size_t i = 0; i < numParams; ++i) {
           TypeVariable * var = ts->patternVar(i);
           Type * value = bindingEnv_.get(var);
           if (value == NULL) {
-            bindingEnv_.addSubstitution(var, new PatternValue(&bindingEnv_, var));
+            bindingEnv_.addSubstitution(var, new TypeBinding(&bindingEnv_, var));
           }
         }
       }
@@ -338,7 +338,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
         bool isUnsigned = false;
 
         // See if the parameter type is a pattern variable.
-        if (const PatternValue * pvar = dyn_cast<PatternValue>(dealias(paramType))) {
+        if (const TypeBinding * pvar = dyn_cast<TypeBinding>(dealias(paramType))) {
           if (pvar->value() == NULL) {
             // There are no constraints, so bind it to an int.
             bindingEnv_.addSubstitution(pvar->var(), &Int32Type::instance);
@@ -379,7 +379,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     TemplateSignature * ts = def->templateSignature();
     if (ts != NULL) {
       size_t numParams = ts->typeParams()->size();
-      // For each template parameter, create a PatternValue instance.
+      // For each template parameter, create a TypeBinding instance.
       for (size_t i = 0; i < numParams; ++i) {
         TypeVariable * var = ts->patternVar(i);
         Type * value = bindingEnv_.get(var);

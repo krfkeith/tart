@@ -18,8 +18,8 @@ TYPE_CLASS(TypeLiteral)   // A type of a type literal.
 
 // Non-type placeholders for types.
 TYPE_CLASS(Alias)         // A named alias for a type expression
-TYPE_CLASS(Pattern)       // A type parameter
-TYPE_CLASS(PatternVal)    // The value of a type parameter
+TYPE_CLASS(TypeVar)       // A type variable
+TYPE_CLASS(Binding)       // The value of a type variable within an environment.
 
 // Type constraints.
 TYPE_CLASS(ResultOf)      // Type constraint - result of function

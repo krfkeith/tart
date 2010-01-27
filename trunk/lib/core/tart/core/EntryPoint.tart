@@ -10,13 +10,18 @@ class EntryPoint {
   static def entry(
       argc:int32,
       argv:__Address[__Address[ubyte]],
-      func:static fn :String[] -> int32) -> int32 {
-    return 0;
+      func:static fn (:String[]) -> int32) -> int32 {
     try {
+      // Run static constructors.
+      runStaticCtors();
+      
+      // Convert command-line arguments.
       let args = String[](argc);
       for i:int32 = 0; i < argc; ++i {
         args[i] = String(argv[i], strlen(argv[i]));
       }
+      
+      // Call entry point function.
       return func(args);
     } catch t:Throwable {
       Debug.writeLn("Exception: ", t.toString());
@@ -24,5 +29,6 @@ class EntryPoint {
     }
   }
 
+	@Extern("run_static_ctors") static def runStaticCtors();
   @Extern("strlen") static def strlen(str:__Address[ubyte]) -> int32;
 }

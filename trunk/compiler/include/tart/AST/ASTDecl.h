@@ -355,7 +355,7 @@ public:
 };
 
 /// ---------------------------------------------------------------
-/// A template pattern variable
+/// A template type variable
 class ASTTypeVariable : public ASTVarDecl {
 public:
   enum ConstraintType {

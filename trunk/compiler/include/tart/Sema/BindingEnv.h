@@ -86,12 +86,12 @@ private:
 };
 
 /// -------------------------------------------------------------------
-/// A PatternValue represents the value of a TypeVariable within a
+/// A TypeBinding represents the value of a TypeVariable within a
 /// specific environment.
-class PatternValue : public Type {
+class TypeBinding : public Type {
 public:
-  PatternValue(BindingEnv * env, const TypeVariable * var)
-    : Type(PatternVal)
+  TypeBinding(BindingEnv * env, const TypeVariable * var)
+    : Type(Binding)
     , env_(env)
     , var_(var)
   {}
@@ -120,9 +120,9 @@ public:
   void format(FormatStream & out) const;
   const llvm::Type * irType() const;
 
-  static inline bool classof(const PatternValue *) { return true; }
+  static inline bool classof(const TypeBinding *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() == PatternVal;
+    return type->typeClass() == Binding;
   }
 
 private:
@@ -135,8 +135,8 @@ private:
 /// bindings.
 class BindingEnv {
 public:
-  BindingEnv() : substitutions_(NULL) {}
-  BindingEnv(const BindingEnv & env) : substitutions_(env.substitutions()) {}
+  BindingEnv() : substitutions_(NULL) { index_ = nextIndex_++; }
+  BindingEnv(const BindingEnv & env) : substitutions_(env.substitutions()) { index_ = nextIndex_++; }
 
   /** Return true if there are no variable bindings. */
   bool empty() const { return substitutions_ == NULL; }
@@ -145,22 +145,25 @@ public:
   void reset();
 
   /** If the given variable does not already have a definition in this environment,
-      then bind it to a PatternValue instance
+      then bind it to a TypeBinding instance
    */
   //void defineVar(TypeVariable * var);
 
   /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const Type * pattern, const Type * value, Variance variance);
 
-  /** Get the value for the specified pattern variable. */
+  /** Get the value for the specified type variable. */
   Type * get(const TypeVariable * type) const;
 
-  /** Get the value for the specified pattern variable. If the binding is to another
+  /** Get the value for the specified type binding. */
+  Type * get(const TypeBinding * type) const;
+
+  /** Get the value for the specified type variable. If the binding is to another
       variable, dereference that as well. */
   Type * dereference(Type * type) const;
 
   /** Given a type expression, return the equivalent expression where all
-      pattern variables have been replaced with the corresponding type
+      type variables have been replaced with the corresponding type
       bindings for this environment.
 
       This function attempts to avoid creating new type objects when
@@ -201,10 +204,13 @@ public:
     // Overrides
 
   void trace() const;
+
+  int index_;
 private:
   friend FormatStream & operator<<(FormatStream & out, const BindingEnv & env);
 
   Substitution * substitutions_;
+  static int nextIndex_;
 
   bool unifyPattern(SourceContext * source, const TypeVariable * pattern, const Type * value,
       Variance variance);
@@ -219,6 +225,7 @@ private:
       const UnionType * value, Variance variance);
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
+  bool unifySymmetric(SourceContext * source, const Type * rhs, const Type * lhs);
 
   bool hasVar(const TypeVariable * var) const;
 };

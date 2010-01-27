@@ -16,6 +16,7 @@
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/TypeTransform.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -419,10 +420,19 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
     for (size_t i = 0; i < numVars; ++i) {
       const TypeVariable * var = tsig->patternVar(i);
       const Type * value = env.get(var);
-      if (value == NULL || !value->isSingular()) {
+      if (value == NULL) {
         diag.fatal(loc) << "Unable to deduce template parameter '" << var << "' for '" <<
-            Format_Verbose << def << "'";
+            Format_Verbose << def << "' in environment " << env;
         return NULL;
+      } else if (!value->isSingular()) {
+        value = NormalizeTransform().transform(value);
+        if (!value->isSingular()) {
+          value->isSingular();
+          diag.error(loc) << "Unable to narrow template parameter '" << var << "' for '" <<
+              Format_Verbose << def << "'";
+          diag.info() << "Environment = " << env;
+          return NULL;
+        }
       }
     }
 
