@@ -1,10 +1,8 @@
 import tart.reflect.Module;
 import tart.testing.Test;
-import tart.gc.GC;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
-  GC.init();
   return Test.run(TupleTypeTest);
 }
 

@@ -20,22 +20,22 @@ import tart.reflect.Reflection;
 	  }
 
 	  def rangeCheck[%T](value:int64) {
-	    if value < T.minVal or value > T.maxVal {
-	      throw TypecastError();
-	    }
-	  }
-	
-	  def rangeCheck[%T](value:uint32) {
-	    if value > asUnsigned(T.maxVal) {
-	      throw TypecastError();
-	    }
-	  }
-	
-	  def rangeCheck[%T](value:uint64) {
-	    if value > asUnsigned(T.maxVal) {
-	      throw TypecastError();
-	    }
-	  }
+      if value < T.minVal or value > T.maxVal {
+        throw TypecastError();
+      }
+    }
+  
+    def rangeCheck[%T](value:uint32) {
+      if value > asUnsigned(T.maxVal) {
+        throw TypecastError();
+      }
+    }
+  
+    def rangeCheck[%T](value:uint64) {
+      if value > asUnsigned(T.maxVal) {
+        throw TypecastError();
+      }
+    }
 
     def rangeCheck[%T](value:char) {
       if uint32(value) > asUnsigned(T.maxVal) {
@@ -65,7 +65,7 @@ import tart.reflect.Reflection;
   }
 
   /// Convert an object containing a number to the requested number type.
-	
+  
   static def valueOf[bool](ref:Object) -> bool {
     classify ref {
       as v:ValueRef[bool]   { return v.value; }

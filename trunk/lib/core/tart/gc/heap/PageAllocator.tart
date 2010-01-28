@@ -7,7 +7,7 @@ import tart.reflect.Reflection;
 /** Manages the allocation of low-level pages of memory. */
 @Reflection(Reflection.Detail.NONE) abstract class PageAllocator {
   static {
-    let PAGE_SIZE:int = 0x10000; /// 64K Pages.
+    let PAGE_SIZE:int = 4096; /// 4K Pages.
     let PAGE_SIZE_LOG2:int = 32 - leadingZeroes(PAGE_SIZE);
   }
   

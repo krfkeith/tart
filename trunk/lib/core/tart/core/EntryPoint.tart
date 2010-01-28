@@ -1,4 +1,6 @@
 import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
+import tart.gc.GC;
 
 /** Attribute that indicates that the associated function is where
     execution of the application should start. */
@@ -7,11 +9,15 @@ class EntryPoint {
   public def construct() {}
   @Intrinsic def apply(t:tart.reflect.Type);
   
-  static def entry(
+  /** Program start function which initializes runtime system and then calls entry point. */
+  private static def programStart(
       argc:int32,
-      argv:__Address[__Address[ubyte]],
+      argv:Address[Address[ubyte]],
       func:static fn (:String[]) -> int32) -> int32 {
     try {
+      // Start the GC.
+      GC.init();
+      
       // Run static constructors.
       runStaticCtors();
       
@@ -30,5 +36,5 @@ class EntryPoint {
   }
 
 	@Extern("run_static_ctors") static def runStaticCtors();
-  @Extern("strlen") static def strlen(str:__Address[ubyte]) -> int32;
+  @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
 }

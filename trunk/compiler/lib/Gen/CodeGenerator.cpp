@@ -261,32 +261,25 @@ void CodeGenerator::genEntryPoint() {
   DASSERT(dbgContext_.isNull());
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
+  Function::arg_iterator args = mainFunc->arg_begin();
+  Value * argc = args++;
+  Value * argv = args++;
+
   // Create the entry block
   builder_.SetInsertPoint(BasicBlock::Create(context_, "main_entry", mainFunc));
-
-  // Create the exception handler block
-  BasicBlock * blkSuccess = BasicBlock::Create(context_, "success", mainFunc);
-  BasicBlock * blkFailure = BasicBlock::Create(context_, "failure", mainFunc);
 
   // Check the type signature of the entry point function
   llvm::Function * entryFunc = genFunctionValue(entryPoint);
   const llvm::FunctionType * entryType = entryFunc->getFunctionType();
-  if (entryType->getNumParams() > 1) {
-    diag.fatal(entryPoint) << "EntryPoint function must have either 0 or 1 parameters";
+  if (entryType->getNumParams() != 1) {
+    diag.error(entryPoint) << "EntryPoint function must have 1 parameter";
     return;
   }
 
-  std::vector<Value*> argv;
-  if (entryType->getNumParams() != 0) {
-    const llvm::Type * argType = entryType->getParamType(0);
-    argv.push_back(llvm::Constant::getNullValue(argType));
-    //const llvm::Type * arrayOfStrings =
-    //    llvm::ArrayType::get(StringType::get().irType(), 0)
-  }
+  Function * programStart = genFunctionValue(module_->programStartup());
+  Value * returnVal = builder_.CreateCall3(programStart, argc, argv, entryFunc, "returnVal");
 
   // Create the call to the entry point function
-  Value * returnVal = builder_.CreateInvoke(
-        entryFunc, blkSuccess, blkFailure, argv.begin(), argv.end());
   if (entryType->getReturnType() == builder_.getVoidTy()) {
     // void entry point, return 0
     returnVal = getInt32Val(0);
@@ -295,12 +288,7 @@ void CodeGenerator::genEntryPoint() {
     return;
   }
 
-  builder_.SetInsertPoint(blkSuccess);
   builder_.CreateRet(returnVal);
-
-  builder_.SetInsertPoint(blkFailure);
-  builder_.CreateRet(getInt32Val(-1));
-
   llvm::verifyFunction(*mainFunc);
 }
 
