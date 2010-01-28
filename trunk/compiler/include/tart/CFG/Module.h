@@ -70,6 +70,10 @@ public:
   FunctionDefn * entryPoint() const { return entryPoint_; }
   void setEntryPoint(FunctionDefn * value) { entryPoint_ = value; }
 
+  /** The 'programStart' function which calls 'main'. */
+  FunctionDefn * programStartup() const { return programStartup_; }
+  void setProgramStartup(FunctionDefn * value) { programStartup_ = value; }
+
   /** Return the definition corresponding to the primary symbol in this module. */
   Defn * primaryDefn() const;
   bool findPrimaryDefn();
@@ -152,6 +156,7 @@ private:
   DefnList initDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
+  FunctionDefn * programStartup_;
   ConverterMap converters_;
   short flags_;
 

@@ -25,6 +25,7 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   , IterableScope(builtinScope)
   , moduleSource_(src)
   , entryPoint_(NULL)
+  , programStartup_(NULL)
   , flags_(Module_Reflect)
   , irModule_(NULL)
 {
@@ -47,6 +48,7 @@ Module::Module(ProgramSource * src, const std::string & qual)
   , IterableScope(NULL)
   , moduleSource_(src)
   , entryPoint_(NULL)
+  , programStartup_(NULL)
   , flags_(Module_Reflect)
   , irModule_(NULL)
 {

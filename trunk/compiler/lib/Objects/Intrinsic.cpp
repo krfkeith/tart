@@ -640,12 +640,19 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, const Function
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
   FunctionDefn * fn = cast<FunctionDefn>(lval->value());
+
+  TypeDefn * entryPointType = cast<TypeDefn>(method->parentDefn());
+  FunctionDefn * programStartFn = cast<FunctionDefn>(
+      entryPointType->typeValue()->memberScope()->lookupSingleMember("programStart", false));
+  DASSERT(programStartFn != NULL);
+
   Module * module = fn->module();
   if (module->entryPoint() != NULL) {
     diag.error(fn) << "@EntryPoint attribute conflicts with earlier entry point: " <<
     module->entryPoint();
   } else {
     module->setEntryPoint(fn);
+    module->setProgramStartup(programStartFn);
   }
 
   return self;
