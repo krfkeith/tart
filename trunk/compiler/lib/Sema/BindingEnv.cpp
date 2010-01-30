@@ -523,15 +523,13 @@ bool BindingEnv::unifyPattern(
       //upperBound =
     }
 
-    if (unify(source, s->right(), value, Invariant)) {
-      return true;
+    if (!s->right()->includes(value) && !value->includes(s->right())) {
+      if (unify(source, s->right(), value, Invariant)) {
+        return true;
+      }
     }
 
     const Type * commonType = Type::selectLessSpecificType(source, s->right(), value);
-    if (commonType == s->right()) {
-      return true;
-    }
-
     /*if (variance == Invariant) {
       diag.info() << "Invariant " << pattern;
       diag.info() << "Pattern = " << pattern;
@@ -556,14 +554,23 @@ bool BindingEnv::unifyPattern(
 
     // Override the old substitution with a new one.
     if (commonType != NULL) {
-      if (commonType == value) {
-        // No need to rebind if same as before.
-        //diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+      if (commonType == s->right()) {
         return true;
       }
 
-      //diag.debug() << "Adding substitution of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
-      addSubstitution(pattern, commonType);
+      if (commonType != s->right() && commonType->isSingular()) {
+        if (unifyVerbose) {
+          diag.debug() << "Adding substitution of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+        }
+
+        addSubstitution(pattern, commonType);
+      } else {
+        // No need to rebind if same as before.
+        if (unifyVerbose) {
+          diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+        }
+      }
+
       return true;
     }
 

@@ -89,7 +89,7 @@ public class ComplexType : SimpleType {
 	        return _noArgCtor(self._alloc());
 	      }
     
-        throw InvocationError("Class does not have a no-arg constructor");
+        throw InvocationError("Class '{0}' does not have a no-arg constructor".format(name));
       }
         
       case STRUCT {

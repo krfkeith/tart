@@ -29,17 +29,17 @@ class ScannerBaseTest : Test {
   var scanner:TestScanner;
   var reader:TextReader;
   
+  def construct() {
+  }
+  
   override setUp {
-    Debug.writeLn("In setup");
-    //log = TestLogWriter();
+    log = TestLogWriter();
     //scanner = TestScanner(reader, log);
   }
   
   def testConstruct {
-    Debug.writeLn("Here");
   }
   
   def testReadChar {
-    Debug.writeLn("There");
   }
 }

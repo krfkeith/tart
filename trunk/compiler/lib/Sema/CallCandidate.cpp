@@ -193,6 +193,12 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 //  }
 
   if (same) {
+    // If this method has fewer default params than the other, then it is more
+    // specific.
+    if (method_->params().size() < other->method()->params().size()) {
+      return true;
+    }
+
     // If one is a template, than it is less specific than the other.
     // TODO: If they are both templates, choose the one with the smaller number
     // of template parameters. Although explicitly bound parameters should not count, only

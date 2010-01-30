@@ -139,6 +139,10 @@ bool AddressType::isSubtype(const Type * other) const {
   return false;
 }
 
+Expr * AddressType::nullInitValue() const {
+  return ConstantNull::get(SourceLocation(), this);
+}
+
 void AddressType::format(FormatStream & out) const {
   out << elementType_ << "^";
 }

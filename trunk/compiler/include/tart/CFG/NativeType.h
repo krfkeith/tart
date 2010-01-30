@@ -43,6 +43,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
+  Expr * nullInitValue() const;
 
   static inline bool classof(const AddressType *) { return true; }
   static inline bool classof(const Type * t) {

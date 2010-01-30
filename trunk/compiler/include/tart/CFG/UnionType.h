@@ -79,6 +79,7 @@ public:
   bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   void trace() const;
+  Expr * nullInitValue() const;
 
   static inline bool classof(const UnionType *) { return true; }
   static inline bool classof(const Type * t) {

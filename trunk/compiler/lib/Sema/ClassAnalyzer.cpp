@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/CompositeType.h"
+#include "tart/CFG/NativeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/PropertyDefn.h"
@@ -704,8 +705,9 @@ bool ClassAnalyzer::analyzeConstructors() {
         }
       }
 
-      if (!hasConstructors) {
+      if (!hasConstructors && type != Builtins::typeTypeInfoBlock) {
         createDefaultConstructor();
+        createNoArgConstructor();
       }
     }
 
@@ -1238,86 +1240,40 @@ bool ClassAnalyzer::createDefaultConstructor() {
 
   Block * constructorBody = new Block("ctor_entry");
   constructorBody->exitReturn(target->location(), NULL);
+
+  // TODO: Call the super ctor;
+  DASSERT_OBJ(superCtor == NULL, target);
+
   for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->storageClass() == Storage_Instance) {
-      if (de->defnType() == Defn::Let) {
-        VariableDefn * let = static_cast<VariableDefn *>(de);
-        //analyze(let);
+      if (de->defnType() == Defn::Let || de->defnType() == Defn::Var) {
+        VariableDefn * field = static_cast<VariableDefn *>(de);
+        analyzeVariable(field, Task_PrepConstruction);
+        Expr * initValue = getFieldInitVal(field);
 
-        // TODO: Write tests for this case (instance lets)
-        if (let->initValue() != NULL) {
-          // We need a better way to designate which lets require runtime init.
-          DFAIL("Implement me!");
-        }
-      } else if (de->defnType() == Defn::Var) {
-        VariableDefn * memberVar = static_cast<VariableDefn *>(de);
-        analyzeVariable(memberVar, Task_PrepConstruction);
-        Expr * defaultValue = memberVar->initValue();
-        const Type * memberType = memberVar->type();
-        if (defaultValue == NULL) {
-          // TODO: If this is 'final' it must be initialized here or in
-          // the constructor.
-          defaultValue = memberType->nullInitValue();
-          // TODO: Must be a constant...?
-          if (defaultValue && !defaultValue->isConstant()) {
-            defaultValue = NULL;
-          }
-        }
-
-        Expr * initVal;
-        if (memberType->typeClass() == Type::NArray) {
-          // TODO: If this array is non-zero size, we have a problem I think.
-          // Native arrays must be initialized in the constructor.
-          continue;
-        } else if (memberVar->visibility() == Public) {
-          ParameterDefn * param = new ParameterDefn(module, memberVar->name());
+        if (field->visibility() == Public) {
+          ParameterDefn * param = new ParameterDefn(module, field->name());
           param->setLocation(target->location());
-          param->setType(memberType);
-          param->setInternalType(memberType);
+          param->setType(field->type());
+          param->setInternalType(field->type());
           param->addTrait(Defn::Singular);
           param->passes().finish(VariableDefn::VariableTypePass);
-          param->setInitValue(defaultValue);
 
-          if (defaultValue != NULL) {
+          if (initValue != NULL && initValue->isConstant()) {
+            param->setInitValue(initValue);
             optionalParams.push_back(param);
           } else {
             requiredParams.push_back(param);
           }
 
-          initVal = LValueExpr::get(target->location(), NULL, param);
-        } else {
-          if (defaultValue != NULL) {
-            // TODO: This doesn't work because native pointer initializations
-            // are the wrong type.
-            initVal = defaultValue;
-          } else if (type == Builtins::typeObject) {
-            // Don't initialize fields of type Object here - allocator will do it.
-            continue;
-          } else if (memberType->typeClass() == Type::Struct) {
-            // See if the struct has a no-arg constructor.
-            ExprAnalyzer ea(module, activeScope, memberVar, NULL);
-            Expr * fieldCtorCall = ea.callConstructor(
-                memberVar->location(), memberType->typeDefn(), ASTNodeList());
-            if (fieldCtorCall != NULL) {
-              fieldCtorCall = ea.inferTypes(memberVar, fieldCtorCall, NULL, false);
-              initVal = fieldCtorCall;
-            }
-          } else if (memberType->isReferenceType()) {
-            initVal = ConstantNull::get(memberVar->location(), memberType);
-          } else {
-            // TODO: Write tests for this case (private instance variables
-            // being initialized to default values.)
-            diag.fatal(de) << "Unimplemented default initialization: " << de;
-            DFAIL("Implement");
-            continue;
-          }
+          initValue = LValueExpr::get(target->location(), NULL, param);
         }
 
-        LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, memberVar);
-        Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initVal);
-        constructorBody->append(initExpr);
-        //diag.info(de) << "Uninitialized field " << de->qualifiedName() << " with default value " << initExpr;
-        //DFAIL("Implement");
+        if (initValue != NULL) {
+          LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, field);
+          Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initValue);
+          constructorBody->append(initExpr);
+        }
       }
     }
   }
@@ -1325,6 +1281,110 @@ bool ClassAnalyzer::createDefaultConstructor() {
   // Optional params go after required params.
   ParameterList params(requiredParams);
   params.append(optionalParams.begin(), optionalParams.end());
+  createConstructorFunc(selfParam, params, constructorBody);
+  return true;
+}
+
+bool ClassAnalyzer::createNoArgConstructor() {
+  if (trace_) {
+    diag.debug() << "No-arg constructor";
+  }
+
+  // Determine if the superclass has a default constructor. If it doesn't,
+  // then we cannot make a no-arg constructor.
+  CompositeType * type = targetType();
+
+  // If the default constructor took no args, then we don't need a separate no-arg
+  // constructor.
+  if (type->noArgConstructor() != NULL) {
+    return true;
+  }
+
+  CompositeType * super = type->super();
+  FunctionDefn * superCtor = NULL;
+  if (super != NULL && super->defaultConstructor() == NULL) {
+    diag.fatal(target) << "Cannot create a no-arg constructor for '" <<
+        target << "' because super type '" << super <<
+        "' has no default constructor";
+    return false;
+  }
+
+  // List of parameters to the no-arg constructor
+  ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
+  selfParam->setType(type);
+  selfParam->setInternalType(type);
+  selfParam->addTrait(Defn::Singular);
+  selfParam->setFlag(ParameterDefn::Reference, true);
+  LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
+
+  Block * constructorBody = new Block("ctor_entry");
+  constructorBody->exitReturn(target->location(), NULL);
+
+  // TODO: Call the super ctor;
+  DASSERT_OBJ(superCtor == NULL, target);
+
+  for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
+    if (de->storageClass() == Storage_Instance) {
+      if (de->defnType() == Defn::Let || de->defnType() == Defn::Var) {
+        VariableDefn * field = static_cast<VariableDefn *>(de);
+        analyzeVariable(field, Task_PrepConstruction);
+        Expr * initValue = getFieldInitVal(field);
+        if (initValue != NULL) {
+          LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, field);
+          Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initValue);
+          constructorBody->append(initExpr);
+        }
+      }
+    }
+  }
+
+  ParameterList params;
+  createConstructorFunc(selfParam, params, constructorBody);
+  return true;
+}
+
+Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
+  const Type * fieldType = var->type();
+  if (var->initValue() != NULL) {
+    return var->initValue();
+  }
+
+  if (fieldType->nullInitValue() != NULL) {
+    return fieldType->nullInitValue();
+  }
+
+  if (fieldType->typeClass() == Type::NArray) {
+    // TODO: If this array is non-zero size, we have a problem I think.
+    // Native arrays must be initialized in the constructor.
+    const NativeArrayType * nat = static_cast<const NativeArrayType *>(fieldType);
+    if (nat->size() != 0) {
+      diag.error(var) << "Native array types cannot be default initialized";
+    }
+
+    return NULL;
+  }
+
+  if (fieldType->typeClass() == Type::Struct) {
+    // See if the struct has a no-arg constructor.
+    ExprAnalyzer ea(module, activeScope, var, NULL);
+    Expr * fieldCtorCall = ea.callConstructor(
+        var->location(), fieldType->typeDefn(), ASTNodeList());
+    if (fieldCtorCall != NULL) {
+      return ea.inferTypes(var, fieldCtorCall, NULL, false);
+    } else {
+      diag.error(var) << "'" << var << "' cannot be default initialized";
+      return NULL;
+    }
+  }
+
+  // TODO: Write tests for this case (private instance variables
+  // being initialized to default values.)
+  diag.fatal(var) << "Unimplemented default initialization: " << var;
+  DFAIL("Implement");
+}
+
+FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
+    ParameterList & params, Block * constructorBody) {
 
   FunctionType * funcType = new FunctionType(&VoidType::instance, params);
   funcType->setSelfParam(selfParam);
@@ -1360,9 +1420,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
     funcType->whyNotSingular();
   }
 
-  type->addMember(constructorDef);
+  targetType()->addMember(constructorDef);
   constructorDef->createQualifiedName(target);
-  return true;
+  return constructorDef;
 }
 
 bool ClassAnalyzer::analyzeFieldTypesRecursive() {

@@ -64,6 +64,8 @@ add_tart_executable(lexgenTest
   libLexGenTest.bc 
 )
 add_dependencies(lexgenTest libcore libtesting libLexGenCommon libLexGenGen libLexGenTest)
+add_custom_target(lexgenTest.run COMMAND ./lexgenTest)
+add_dependencies(lexgenTest.run lexgenTest)
 
 add_tart_executable(lexgen
   "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"

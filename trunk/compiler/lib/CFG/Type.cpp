@@ -406,14 +406,6 @@ const Type * Type::selectLessSpecificType(SourceContext * source, const Type * t
       }
     }
 
-    if (t1->typeClass() == Type::Binding) {
-      DFAIL("Deref");
-    }
-
-    if (t2->typeClass() == Type::Binding) {
-      DFAIL("Deref");
-    }
-
     diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
     return NULL;
   }

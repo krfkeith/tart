@@ -110,6 +110,11 @@ Implementation TODOS:
   * fork/threading primitives
 * Tartdoc
   * Requires command-line parsing lib.
+* Ranges
+  * Literals
+  * As array slice indices
+  * As tuple slice indices
+  * Indefinite ranges (n ..) and (.. n) ?
 * 'get' and 'set' should not be keywords.
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
@@ -178,12 +183,12 @@ Variadic templates:
     func(args);
   }
 
-  def func.[%T, %Args...](t:T, args:Args...) {
+  def func[%T, %Args...](t:T, args:Args...) {
     out << t;
     func(args...);
   }
 
-  def func.[%T, %Args...](t:T, args:Args...) {
+  def func[%T, %Args...](t:T, args:Args...) {
     out << t;
     func(args...);
   }
