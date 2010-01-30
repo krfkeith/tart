@@ -259,7 +259,10 @@ void CallSite::reportErrors(const char * msg) {
   Candidates & cd = callExpr_->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     CallCandidate * cc = *it;
+    unifyVerbose = true;
+    cc->unify(callExpr_);
     cc->updateConversionRank();
+    unifyVerbose = false;
     if (cc->env().empty()) {
       diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
     } else {

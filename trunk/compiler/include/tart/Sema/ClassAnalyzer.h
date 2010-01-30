@@ -50,8 +50,13 @@ public:
   FunctionDefn * findOverride(const FunctionDefn * f, const MethodList & overrides);
 
   bool createDefaultConstructor();
+  bool createNoArgConstructor();
 
 private:
+  Expr * getFieldInitVal(VariableDefn * var);
+  FunctionDefn * createConstructorFunc(ParameterDefn * selfParam,
+      ParameterList & params, Block * constructorBody);
+
   TypeDefn * target;
   bool trace_;
 };

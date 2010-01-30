@@ -1,0 +1,15 @@
+import tart.testing.Test;
+import tart.io.StringReader;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(StringReaderTest);
+}
+
+class StringReaderTest : Test {
+  var sr:StringReader;
+  
+  override setUp {
+    sr = StringReader("First\nSecond\nThird");
+  }
+}

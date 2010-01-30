@@ -237,6 +237,20 @@ bool TupleType::includes(const Type * other) const {
   return false;
 }
 
+Expr * TupleType::nullInitValue() const {
+  ExprList initializers;
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    Expr * memberInit = (*it)->nullInitValue();
+    if (memberInit == NULL) {
+      return NULL;
+    } else {
+      initializers.push_back(memberInit);
+    }
+  }
+
+  return new TupleCtorExpr(SourceLocation(), this, initializers);
+}
+
 TypeShape TupleType::typeShape() const {
   if (shape_ == Shape_Unset) {
     if (isLargeIRType(irType())) {

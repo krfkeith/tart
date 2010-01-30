@@ -189,6 +189,7 @@ public:
   bool isReferenceType() const;
   TypeShape typeShape() const;
   bool includes(const Type * other) const;
+  Expr * nullInitValue() const;
 
   static inline bool classof(const CompositeType *) { return true; }
   static inline bool classof(const Type * t) {

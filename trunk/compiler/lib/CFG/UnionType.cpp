@@ -374,6 +374,10 @@ bool UnionType::includes(const Type * other) const {
   return false;
 }
 
+Expr * UnionType::nullInitValue() const {
+  return NULL;
+}
+
 TypeShape UnionType::typeShape() const {
   if (shape_ == Shape_Unset) {
     irType();
