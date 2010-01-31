@@ -13,13 +13,13 @@ template parameters for a type are specified with a list of patterns to be match
 
 Here's a simple example of a template::
 
-  class Example<[%T]> {
+  class Example[%T] {
     var x:T;
   }
   
-  var x:Example<[String]>;
+  var x:Example[String];
 
-The two-character sequence ``<[`` starts a template parameter list, and ``]>`` terminates the list.
+Square brackets(``[`` and ``]``) denote a template argument list.
 The same syntax is used both for definition template parameters and explicitly invoking templates.
 
 Each template parameter is a pattern to be matched. Patterns can either be a type expression (which
@@ -34,10 +34,10 @@ body, the variable is used without the prefix.
 
 Pattern variables can be used within complex type expressions::
 
-  class Example2<[List<[%T]>]> {}
+  class Example2[List[%T]] {}
   
-  var x:Example2<[List<[String]>]>;
-  var x:Example2<[String]>; // ERROR -- template argument does not match.
+  var x:Example2[List[String]];
+  var x:Example2[String]; // ERROR -- template argument does not match.
   
 This example requires that the template argument be a List of some type ``T``. The ``T`` parameter
 will be bound to the element type of the list.
@@ -50,8 +50,8 @@ Explicit specialization
 A template argument list need not contain any pattern variables. This is generally only useful when
 you want to create an explicit specialization of a generic type.::
 
-  class Example3<[List<[%T]>]> { /* non-string version. */ }
-  class Example3<[List<[String]>]> { /* string version. */ }
+  class Example3[List[%T]] { /* non-string version. */ }
+  class Example3[List[String]] { /* string version. */ }
 
 In the above example, if the template argument is :class:`String` it will use the second template;
 if it is not, then it will use the first.
@@ -61,7 +61,7 @@ Function templates
 
 For functions, the syntax is similar::
 
-  def forall<[%T]>(Iterator<[T]>) { /* ... */ }
+  def forall[%T](Iterator[T]) { /* ... */ }
 
 The example shows a function that takes an iterator of some type.
 
@@ -72,7 +72,7 @@ When a template is used, its arguments can be specified either explicitly via a 
 list, or implicitly based on function arguments. For example::
 
   // Return the lesser of two values.
-  def min<[%T]>(v0:T, v1:T) -> T;
+  def min[%T](v0:T, v1:T) -> T;
 
   let x = min(1, 2);
 
@@ -85,12 +85,12 @@ have a function :func:``emptyList`` which decides what kind of list to return ba
 being assigned to::
 
   namespace Collections {
-    def emptyList<[%T]>() {
-       return List<[T]>();
+    def emptyList[%T]() {
+       return List[T]();
     }
   }
 
-  let x:List<[String]> = Collections.emptyList();
+  let x:List[String] = Collections.emptyList();
 
 Template instantiation
 ----------------------
@@ -124,9 +124,9 @@ Non-type template arguments
 
 To declare a non-type template parameter, add a type specifier just as would be used to define the type of a variable::
 
-  def func<[%N:int]>();
+  def func[%N:int]();
   
-  func<[4]>();
+  func[4]();
 
 The template argument must be a compile-time computable.
 
@@ -137,27 +137,27 @@ A guard condition is an additional restriction on the kind of value that can be 
 For example, suppose we wanted a template parameter to only bind to subclasses of "Node", so we
 define a restriction using the subclass test operator ``<:``::
 
-  class Visitor<[%T require %T <: Node]> { /* ... */ }
+  class Visitor[%T require %T <: Node] { /* ... */ }
   
 This also works with non-type arguments::
 
-  class Visitor<[%A:int require %A <= 10]> { /* ... */ }
+  class Visitor[%A:int require %A <= 10] { /* ... */ }
 
 The "require" clause must come after all of the template arguments::
 
-  class Visitor<[%A, %B require %A <: %B]> { /* ... */ }
+  class Visitor[%A, %B require %A <: %B] { /* ... */ }
 
 However, the require clause can also introduce new pattern variables. Here's a more realistic
 example, where we want to define a template that operates on all subclasses of iterators of a given
 type::
 
-  def forall<[%IterType require %IterType <: Iterator<[%T]>]>(iter:IterType);
+  def forall[%IterType require %IterType <: Iterator[%T]](iter:IterType);
 
 Because expressions like this are so common, there is a shortcut syntax which allows us to omit the
 "requires" keyword::
 
-  def forall<[%IterType <: Iterator<[%T]>]>(iter:IterType);
-  class Visitor<[%A:int <= 10]> { /* ... */ }
+  def forall[%IterType <: Iterator[%T]](iter:IterType);
+  class Visitor[%A:int <= 10] { /* ... */ }
 
 The general rule is as follows: A template argument consisting of a binary operator expression,
 where the left-hand side of the expression is a pattern variable, will be expanded to that variable
@@ -187,11 +187,11 @@ is said to *conform* to a protocol if that type possesses all of the members of 
 
 A protocol is much like an interface, and in fact the syntax for declaring them is very similar::
 
-  interface Iterator<[%T]> {
+  interface Iterator[%T] {
     def next() -> T;
   }
 
-  protocol AbstractIterator<[%T]> {
+  protocol AbstractIterator[%T] {
     def next() -> T;
   }
 
@@ -228,7 +228,7 @@ protocols have over interfaces:
 
 Protocols will most often be used in template guard conditions::
 
-  class IteratorWrapper<[%IterType <: AbstractIterator<[%T]>]> {}
+  class IteratorWrapper[%IterType <: AbstractIterator[%T]] {}
 
 What this example says is that the IteratorWrapper can only be used with types that conform to the
 AbstractIterator protocol. Since the only constraint that is imposed by ``AbstractIterator`` is that

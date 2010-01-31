@@ -63,7 +63,7 @@ The :keyword:`class` keyword defines a new class. Here is a sample of a class de
       var fillColor:Color;
 
       // A variable with parameterized type.
-      var children:List<[Shape]>;
+      var children:List[Shape];
     }
   
     // A member function.
@@ -287,10 +287,10 @@ The array constructor call is actually implemented as a call to the Array
 template class. So the example above is transformed by the compiler into this::
 
   // Allocate an array of 10 rectangles.
-  let a = Array<[Rectangle]>(10);
+  let a = Array[Rectangle](10);
 
 .. note::
-  The '<[' token is used to indicate the start of a template argument list.
+  Square brackets '[]' are used to indicate a template argument list.
 
 Extending types
 ---------------
@@ -362,7 +362,7 @@ Extensions can be templates if the class that they are extending is also a templ
 class is a template and the extension is a specialization of that template, then the extension only
 applies when using the specialization::
 
-  class Foo<[%S]> { /* ... */ }
+  class Foo[%S] { /* ... */ }
   
   // Only extended for strings
-  extend Foo<[String]> { /* ...*/ }
+  extend Foo[String] { /* ...*/ }

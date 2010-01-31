@@ -71,7 +71,7 @@ a variable-length list of initializers::
   let a1 = ImmutableList("Hydrogen", "Helium", "Lithium");
   
   // Hash set of strings, with explicitly specified type.
-  let a2 = HashSet<[String]>("Clubs", "Spades", "Hearts", "Diamonds");
+  let a2 = HashSet[String]("Clubs", "Spades", "Hearts", "Diamonds");
   
 In most cases, the type of the collection can be deduced either from the items in the initializer
 list, or the type of the variable being assigned to (if specified). However, you can also specify
@@ -85,8 +85,8 @@ In some cases, the collection takes additional parameters as keyword-only argume
 There is also a shortcut syntax, which can be used when the list type is deducible::
 
   let a0:int[] = {1, 2, 3};
-  let a1:ImmutableList<[String]> = {"Hydrogen", "Helium", "Lithium"};
-  let a1:HashSet<[String]> = {"Clubs", "Spades", "Hearts", "Diamonds"};
+  let a1:ImmutableList[String] = {"Hydrogen", "Helium", "Lithium"};
+  let a1:HashSet[String] = {"Clubs", "Spades", "Hearts", "Diamonds"};
   
 The initializer-list syntax (consisting of a comma-separated list, surrounded by braces) is
 automatically transformed by the compiler into the corresponding constructor call. This also
@@ -132,10 +132,10 @@ a function return type.
 
 This is translated by the compiler into the following code::
 
-  let f:HashMap<[String, int]> = HashMap<[String, int]>(
-    HashMap<[String, int]>.Entry("Apple", 1),
-    HashMap<[String, int]>.Entry("Cherry", 2),
-    HashMap<[String, int]>.Entry("Lemon", 3));
+  let f:HashMap[String, int] = HashMap[String, int](
+    HashMap[String, int].Entry("Apple", 1),
+    HashMap[String, int].Entry("Cherry", 2),
+    HashMap[String, int].Entry("Lemon", 3));
     
 In other words, it converts the initializer list into an array of "Entry" structures, each
 containing a key/value pair, which is then passed to the map's constructor. The collection
@@ -150,12 +150,12 @@ Generator expressions and comprehensions
 Tart supports "generator expressions" similar to those found in Python. A generator expression
 produces an iterator, which can be passed directly to the :meth:`from` method of a collection::
 
-  let s0 = ImmutableSet<[int]>.from(x * x for x in 0 .. 10);
+  let s0 = ImmutableSet[int].from(x * x for x in 0 .. 10);
   
 The initializer-list syntax is also supported, as is the map key/value operator::
   
-  let s0:ImmutableSet<[int]> = {x * x for x in 0 .. 10};
-  let m0:ImmutableMap<[int, int]> = {x -> x * x for x in 0 .. 10};
+  let s0:ImmutableSet[int] = {x * x for x in 0 .. 10};
+  let m0:ImmutableMap[int, int] = {x -> x * x for x in 0 .. 10};
 
 Sequence Unpacking
 ------------------

@@ -77,6 +77,6 @@ The example is somewhat contrived, but it does illustrate a number of important 
 * You can declare named properties which have custom getters and setters that are defined with
   :keyword:`get` and :keyword:`set`.
 
-.. note:: In real code, you would probably want to use a naming convention - such as a trailing
+.. note:: In real code, you would probably want to use a naming convention - such as a leading
   underscore - for private member variables. Such style conventions are not required by Tart,
   however, and therefore are omitted from this simple example.

@@ -22,7 +22,7 @@ expression and its associated side effects are evaluated.
 Take for example the :macro:`cond` macro, which is part of the Tart core
 library::
 
-  macro cond<[%T]>(condition:bool, trueVal:T, falseVal:T) -> T {
+  macro cond[%T](condition:bool, trueVal:T, falseVal:T) -> T {
     if condition { return trueVal; }
     else { return falseVal; }
   }
@@ -42,7 +42,7 @@ of the AST. For example, :func:`stringify` converts an AST node into its string
 representation. This is used by the :macro:`assert` macro, which is another
 part of the Tart core library::
 
-  macro assert<[%T]>(expression:T) {
+  macro assert[%T](expression:T) {
     if not expression {
       throw AssertionError(stringify(expression));
     }

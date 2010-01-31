@@ -21,7 +21,7 @@ Some examples of using the reflection functions::
 
   // Lookup a property by name
   let p:PropertyDescriptor = List.type.getProperty("length");
-  let list:List<[String]> = Collections.newArrayList();
+  let list:List[String] = Collections.newArrayList();
   let length = p.getValue(list);
   
   // List all property names

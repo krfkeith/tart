@@ -10,7 +10,7 @@ Instead, you declare these functions directly in Tart using the :attr:`Extern`
 attribute::
 
   [Extern("img_open")]
-  def OpenImage(name:NativePointer<[ubyte]>, length:int);
+  def OpenImage(name:NativePointer[ubyte], length:int);
   
 The argument to ``Extern`` is the C linkage name of the function. This causes
 the Tart compiler to emit a reference to that name in the module being
