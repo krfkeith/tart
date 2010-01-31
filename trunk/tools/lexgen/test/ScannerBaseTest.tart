@@ -3,6 +3,7 @@ import tartx.lexgen.common.ScannerBase;
 import tartx.lexgen.common.LogWriter;
 import tartx.lexgen.common.Location;
 import tart.io.TextReader;
+import tart.io.StringReader;
 
 class ScannerBaseTest : Test {
   class TestLogWriter : LogWriter {
@@ -26,18 +27,21 @@ class ScannerBaseTest : Test {
   }
   
   var log:TestLogWriter;
-  var scanner:TestScanner;
   var reader:TextReader;
-  
-  def construct() {
-  }
+  var scanner:TestScanner;
   
   override setUp {
     log = TestLogWriter();
-    //scanner = TestScanner(reader, log);
+    reader = StringReader("a");
+    scanner = TestScanner(reader, log);
   }
   
-  def testConstruct {
+  def testInitialState {
+    //assertEq("", scanner.tokenText);
+    let f = scanner.tokenLoc.file;
+    //assertEq("TestSource", f);
+    //assertEq(1, scanner.tokenLoc.col);
+    //assertEq(1, scanner.tokenLoc.line);
   }
   
   def testReadChar {

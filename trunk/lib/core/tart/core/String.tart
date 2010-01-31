@@ -234,6 +234,44 @@ public final class String : Iterable[char] {
     return String(self, beginIndex, self._size);
   }
 
+	/** Given a byte index into the string, return the character at the given index,
+			as well as the byte index of the next character. */
+  def nextCh(index:int) -> (char, int) {
+	  return Codecs.UTF_8.decodeOne(_start, index, _size);
+  }
+
+	/** Given a byte index into the string, return the character at the given index. */
+  def charAt(index:int) -> char {
+	  return Codecs.UTF_8.decodeOne(_start, index, _size)[0];
+  }
+
+	/** Copy characters from this string into a character array.
+			Parameters:
+				index - the byte index into this string.
+				dst - the destination character buffer.
+				start - the starting index in the character buffer.
+				count - the maximum number of characters to copy.
+			Returns: A tuple containing the number of characters actually copied,
+				and the byte index of the last character copied plus one.
+			Throws:
+				IndexError - if 'start' or 'index' are out of range.
+				InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
+		*/
+  def copyChars(index:int, dst:char[], start:int, count:int) -> (int, int) {
+    var copied:int = 0;
+    Preconditions.checkIndex(index >= 0 and start >= 0 and count >= 0);
+    start = Math.min(start, dst.size);
+    count = Math.min(count, dst.size - start);
+    while index < _size and copied < count {
+      var charVal, nextIndex = Codecs.UTF_8.decodeOne(_start, index, _size);
+      index = nextIndex;
+      dst[start++] = charVal;
+      copied++;
+    }
+
+    return copied, index;
+  }
+
   /** A protocol for types that have a 'toString' method. */
   protocol HasToString {
     def toString() -> String;
@@ -274,7 +312,7 @@ public final class String : Iterable[char] {
     def next -> char or void {
       var charVal:char;
       if index < str._size {
-	      charVal, index = Codecs.UTF_8.decodeOne(str._start, index, str._size);
+	      charVal, index = str.nextCh(index);
   	    return charVal;
       } else {
         return;

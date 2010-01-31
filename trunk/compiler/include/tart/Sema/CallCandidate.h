@@ -142,6 +142,7 @@ private:
   TemplateConditionList conditions_;
   SpCandidate * spCandidate_;
   bool isTemplate_;
+  bool trace_;
 };
 
 FormatStream & operator<<(FormatStream & out, const CallCandidate & cc);

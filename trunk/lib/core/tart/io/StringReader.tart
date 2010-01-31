@@ -1,5 +1,5 @@
 /** Class that reads characters from a string. */
-class StringReader : TextReader {
+final class StringReader : TextReader {
   private {
     var pos:int;
     var str:String;
@@ -30,12 +30,20 @@ class StringReader : TextReader {
 
   def readCh -> char {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
-    return 0;
+    if (pos < str.size) {
+		  var ch, nextPos = str.nextCh(pos);
+		  pos = nextPos;
+		  return ch;
+    } else {
+	    return char(-1);
+    }
   }
 
   def read(buffer:char[], start:int, length:int) -> int {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
-    return 0;
+    var count, nextPos = str.copyChars(pos, buffer, start, length);
+    pos = nextPos;
+    return count;
   }
 
   def readLn -> String {

@@ -12,4 +12,46 @@ class StringReaderTest : Test {
   override setUp {
     sr = StringReader("First\nSecond\nThird");
   }
+  
+  def testInitialState {
+    assertFalse(sr.atEnd);
+    assertTrue(sr.canRead);
+    assertFalse(sr.canWrite);
+    assertTrue(sr.canRead);
+    assertEq(0, sr.position);
+    assertEq(18, sr.size);
+  }
+
+  def testReadChar {
+    assertEq('F', sr.readCh());
+    assertEq('i', sr.readCh());
+    assertEq('r', sr.readCh());
+    assertEq('s', sr.readCh());
+    assertEq('t', sr.readCh());
+    assertEq('\n', sr.readCh());
+    assertEq(6, sr.position);
+    assertFalse(sr.atEnd);
+  }
+
+  def testReadChars {
+    var chars = char[](20);
+    var count = sr.read(chars, 0, 10);
+    assertEq(10, count);
+    assertEq('F', chars[0]);
+    assertEq('i', chars[1]);
+    assertEq('r', chars[2]);
+    assertEq('o', chars[9]);
+
+    count = sr.read(chars, 0, 10);
+    assertEq(8, count);
+    assertEq('n', chars[0]);
+  }
+
+  def testReadLine {
+  }
+
+  def testReadAll {
+    sr.readCh();
+    assertEq("irst\nSecond\nThird", sr.readAll());
+  }
 }

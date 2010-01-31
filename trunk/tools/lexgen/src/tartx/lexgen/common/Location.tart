@@ -1,11 +1,11 @@
 /** Represents a location in a source file. */
 struct Location {
-  var file:optional String;
+  var file:String;
   var line:int32;
   var col:int32;
   
   def construct() {
-    file = null;
+    file = "";
     line = col = 0;
   }
 

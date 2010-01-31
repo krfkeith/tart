@@ -35,6 +35,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
   , typeArgs_(NULL)
   , spCandidate_(spCandidate)
   , isTemplate_(false)
+  , trace_(AnalyzerBase::isTraceEnabled(m))
 {
   if (m->isCtor()) {
     resultType_ = m->functionType()->selfParam()->type();
@@ -126,6 +127,7 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType 
   , typeArgs_(NULL)
   , spCandidate_(NULL)
   , isTemplate_(false)
+  , trace_(false)
 {
   DASSERT(fnExpr->isSingular());
   DASSERT(fnType->isSingular());
@@ -161,6 +163,21 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   for (size_t i = 0; i < argCount; ++i) {
     const Type * t0 = paramType(i);
     const Type * t1 = other->paramType(i);
+
+    t0 = dealias(t0);
+    t1 = dealias(t1);
+
+    if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(t0)) {
+      if (const Type * s = tc->singularValue()) {
+        t0 = s;
+      }
+    }
+
+    if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(t1)) {
+      if (const Type * s = tc->singularValue()) {
+        t1 = s;
+      }
+    }
 
     if (!t0->isEqual(t1)) {
       if (!t0->isSubtype(t1)) {
@@ -310,7 +327,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     const Type * paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
-    if (argType->isEqual(&UnsizedIntType::instance)) {
+    if (argType->isUnsizedIntType()) {
       hasUnsizedArgs = true;
     } else if (!bindingEnv_.unify(&candidateSite, paramType, argType, Contravariant)) {
       return false;
@@ -338,7 +355,7 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
       // Do the unsized types - use the information about previously bound types to determine
       // whether or not to make the integer type signed or unsigned.
-      if (argType->isEqual(&UnsizedIntType::instance)) {
+      if (argType->isUnsizedIntType()) {
         ConstantInteger * cint = cast<ConstantInteger>(argExpr);
         const llvm::APInt & intVal = cint->value()->getValue();
         bool isUnsigned = false;

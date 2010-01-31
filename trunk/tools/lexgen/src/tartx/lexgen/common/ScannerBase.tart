@@ -25,6 +25,7 @@ class ScannerBase {
       _scanCol = 1;
       _scanLine = 1;
 	    _skipToken = false;
+	    beginToken();
       read();
     }
     

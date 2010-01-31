@@ -1,3 +1,6 @@
+import tart.collections.List;
+import tart.collections.ArrayList;
+
 /** An ordered set of character ranges, used to define a character class pattern
     such as [a-zA-Z]. */
 class CharacterClass {
@@ -22,4 +25,66 @@ class CharacterClass {
       return Hashing.hash(begin) + Hashing.hash(end);
     }
   }
+  
+	private {
+	  var ranges = ArrayList[Range]();
+	}
+
+	/** No-arg constructor. */
+	def construct() {}
+
+	/** Copy constructor. */		
+	def construct(toCopy:CharacterClass) {
+	  add(toCopy);
+	}
+	
+	/** Single character range constructor */
+	def construct(a:char) {
+	  add(a);
+	}
+
+	/** Character range constructor. */
+	def construct(low:char, high:char) {
+	  add(low, high);
+	}
+	
+	/** Return the number of ranges in this character class. */
+	def count:int { get { return ranges.size; } }
+
+	/** Return true if this character class contains no characters. */
+	def empty:bool { get { return ranges.size == 0; } }
+
+	/** Returns true if this appears to be an inverted (^) character range. */	
+	def inverted(vocabulary:Range) -> bool {
+	  return ranges.size > 1
+	  		and ranges[0].begin == vocabulary.begin
+	  		and ranges[ranges.size - 1].end == vocabulary.end;
+	}
+	
+	/** Add a single character to this character class. */
+	def add(c:char) {
+	  add(Range(c, c + 1));
+	}
+	
+	/** Add a range of characters to this class. */
+	def add(low:char, high:char) {
+	  add(Range(low, high));
+	}
+	
+	/** Add a range of characters to this class, including the high character. */
+	def addInclusive(low:char, high:char) {
+	  add(Range(low, high + 1));
+	}
+	
+	def add(toAdd:Range) {
+	}
+	
+	def add(cl:CharacterClass) {
+	}
+	
+	def remove(cl:CharacterClass) {
+	}
+	
+	def revert(vocab:Range) {
+	}
 }

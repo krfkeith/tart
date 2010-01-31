@@ -215,7 +215,11 @@ void CallSite::finish() {
   }
 
   if (remaining_ != 1) {
-    reportErrors("Ambiguous overloaded methods for call to ");
+    if (best == Incompatible) {
+      reportErrors("No method found matching arguments ");
+    } else {
+      reportErrors("Ambiguous overloaded methods for call to ");
+    }
   } else if (isConversionWarning(best)) {
     std::string msg(compatibilityError(best));
     msg.append(" attempting to call ");

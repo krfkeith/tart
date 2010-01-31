@@ -569,7 +569,7 @@ Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
 
   if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
     // TODO: Change this to 'isLValue' test.
-    if (!lval->base()->isLValue()) {
+    if (!hasAddress(lval->base())) {
       // If the base expression is not an l-value, and it's a value type, then we
       // have to use extract value instead of GEP.
       const VariableDefn * var = cast<VariableDefn>(lval->value());
