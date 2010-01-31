@@ -46,7 +46,7 @@ exception.
 
 The :func:`typecast` template function is used to do unconditional casts::
 
-  let str = typecast<[String]>(inVal);
+  let str = typecast[String](inVal);
 
 Of course, the template parameters can be omitted if the type can be deduced by the compiler::
 
@@ -77,7 +77,7 @@ The template function :func:`typecast` works similarly, except that it throws an
 object is not the correct type::
   
   var obj:Object;
-  var s = typecast<[String]>(obj); // throw exception if obj is not a String.
+  var s = typecast[String](obj); // throw exception if obj is not a String.
   var s:String = typecast(obj);   // Same as above, except return type is inferred.
 
 The :func:`typecast` function can of course be overridden for specific types.

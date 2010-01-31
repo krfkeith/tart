@@ -105,7 +105,7 @@ To make an object callable, define a member function with no name::
 You can also overload the array subscript operator. The syntax is similar to
 defining a property::
 
-  class StringMap<[%T]> {
+  class StringMap[%T] {
     def [key:String]:T {
       get { /* getter code */ }
       set { /* setter code */ }

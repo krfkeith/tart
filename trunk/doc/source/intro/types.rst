@@ -35,16 +35,20 @@ Integer Types
 ========= ================ =================================
 Bit width Signed Type Name Unsigned Type Name
 ========= ================ =================================
-8         :ctype:`byte`         :ctype:`ubyte`
-16        :ctype:`short`        :ctype:`ushort`
-32        :ctype:`int`          :ctype:`uint`, :ctype:`char`
-64        :ctype:`long`         :ctype:`ulong`
+8         :ctype:`int8`    :ctype:`uint8`
+16        :ctype:`int16`   :ctype:`uint16`
+32        :ctype:`int32`   :ctype:`uint32`, :ctype:`char`
+64        :ctype:`int64`   :ctype:`uint64`
 ========= ================ =================================
 
 The naming convention is that unsigned types always begin with the letter 'u'.
 
+Types :ctype:`int` and :ctype:`uint` are either 32 or 64 bits, depending on whether
+the target platform is a 32-bit or 64-bit processor. On a 32-bit processor, :ctype:`int`
+is an alias for :ctype:`int32`, and on a 64-bit processor it is an alias for :ctype:`int64`.
+
 The :ctype:`char` type is a 32-bit integer which represents a Unicode character, but it is not the
-same as the :ctype:`uint` type. The :ctype:`char` type is generally only used when dealing with
+same as the :ctype:`uint32` type. The :ctype:`char` type is generally only used when dealing with
 individual characters. For sequences of characters, it is more convenient to use the
 :ctype:`String` type, which stores text encoded in UTF-8.
 
@@ -97,11 +101,16 @@ happen to have one or more template parameters. For example, the :ctype:`Array` 
 a built-in type, it is a template class. (For that matter, :ctype:`Object` is not a built-in type
 either, however it is a type that the compiler knows a lot about.)
 
-There are a couple of exceptions, meaning types that are so special (or so weird) that the compiler
-has to treat them in a fundamentally different way. These types are *functions*, *disjoint types*,
-*tuples*, and *native types*. These all all derived from one or more base types, and their
-identity is determined solely by these base types - thus a tuple containing (String, int) is
-always the same type as any other tuple containing (String, int).
+There are a couple of exceptions to this rule, meaning types that are so special (or so weird)
+that the compiler has to treat them in a fundamentally different way. These types
+are *functions*, *disjoint types*, *tuples*, and *native types*. These all all derived from
+one or more base types, and their identity is determined solely by these base types - thus a
+tuple containing (String, int) is always the same type as any other tuple containing (String, int).
 
 Although the :ctype:`Array` type is just a template class, there is some special syntax for
-declaring arrays - the type expression :samp:`{type}[]` denotes an array of :samp:`{type}`.
+declaring arrays - the type expression :samp:`{type}[]` denotes an array of :samp:`{type}`,
+which is equivalent to the type expression :samp:`Array[{type}]`. In the latter case, however,
+the square brackets are used to denote a template argument list. (In type expressions, empty
+brackets always indicate an array, whereas brackets that are non-empty always indicate
+a template argument list. For non-type expressions, the compiler uses contextual information
+to distinguish the two cases.)
