@@ -140,7 +140,7 @@ bool VarAnalyzer::resolveVarType() {
           return false;
         }
 
-        if (varType->isEqual(&VoidType::instance)) {
+        if (varType->isVoidType()) {
           diag.error(target) << "Variable type cannot be void";
         } else if (FunctionType * fnType = dyn_cast<FunctionType>(varType)) {
           if (!fnType->isStatic()) {
@@ -181,7 +181,7 @@ bool VarAnalyzer::resolveVarType() {
         DASSERT_OBJ(initExpr->isSingular(), initExpr);
         target->passes().finish(VariableDefn::VariableTypePass);
         return false;
-      } else if (initExpr->type()->isEqual(&VoidType::instance)) {
+      } else if (initExpr->type()->isVoidType()) {
         diag.error(initExpr) << "Attempt to assign void expression '" << initExpr <<
             "' to variable '" << target << "'";
         target->passes().finish(VariableDefn::VariableTypePass);
@@ -190,7 +190,7 @@ bool VarAnalyzer::resolveVarType() {
         const Type * initType = initExpr->type();
         DASSERT_OBJ(initType != NULL, target);
 
-        if (initType->isEqual(&UnsizedIntType::instance)) {
+        if (initType->isUnsizedIntType()) {
           // TODO: Only if this is a var, not a let
           initType = PrimitiveType::intType();
         }

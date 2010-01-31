@@ -24,7 +24,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
   for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
     if ((*it)->isConstant()) {
       const Type * ty = (*it)->type();
-      if (!ty->isEqual(&UnsizedIntType::instance)) {
+      if (!ty->isUnsizedIntType()) {
         hasConstIntArgs = false;
       }
     } else {
@@ -50,7 +50,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
         const Type * paramType = cc->paramType(argIndex);
-        if (!paramType->isEqual(&UnsizedIntType::instance)) {
+        if (!paramType->isUnsizedIntType()) {
           exactMatch = false;
         }
       }

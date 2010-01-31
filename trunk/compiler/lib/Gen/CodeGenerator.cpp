@@ -469,7 +469,7 @@ bool CodeGenerator::hasAddress(const Expr * expr) {
 
       if (lval->value()->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(lval->value());
-        if (param->isLValue()) {
+        if (param->isLValue() || param->isReference()) {
           return true;
         }
       }

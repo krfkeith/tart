@@ -1409,7 +1409,7 @@ Expr * StmtAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
   }
 
   expr = MacroExpansionPass::run(*this, expr);
-  if (expr->type()->isEqual(&VoidType::instance)) {
+  if (expr->type()->isVoidType()) {
     return expr;
   }
 
@@ -1464,7 +1464,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     return &Expr::ErrorVal;
   }
 
-  if (testExpr->type()->isEqual(&VoidType::instance)) {
+  if (testExpr->type()->isVoidType()) {
     diag.error(test) << "invalid use of void return result: " << test;
     return &Expr::ErrorVal;
   }

@@ -1268,6 +1268,8 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
         return &Expr::ErrorVal;
       }
 
+      lvalue->setBase(base);
+
       // TODO: Handle type names and such
 
       break;

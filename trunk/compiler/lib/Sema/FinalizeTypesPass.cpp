@@ -679,7 +679,7 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
       if (e0->isEqual(t2)) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
-      } else if (t2->isEqual(&NullType::instance)) {
+      } else if (t2->isNullType()) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       }

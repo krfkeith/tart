@@ -38,7 +38,7 @@ public:
     ParameterList params;
     params.push_back(new ParameterDefn(m, "eval", type, 0));
     FunctionType * ft = new FunctionType(&BoolType::instance, params);
-    ft->setSelfParam(new ParameterDefn(m, "self", type, 0));
+    ft->setSelfParam(new ParameterDefn(m, "self", type, ParameterDefn::Reference));
     return ft;
   }
 
@@ -130,7 +130,7 @@ public:
 
   static FunctionType * createFunctionType(Module * m, EnumType * type) {
     FunctionType * ft = new FunctionType(Builtins::typeString, NULL, 0);
-    ft->setSelfParam(new ParameterDefn(m, "self", type, 0));
+    ft->setSelfParam(new ParameterDefn(m, "self", type, ParameterDefn::Reference));
     return ft;
   }
 

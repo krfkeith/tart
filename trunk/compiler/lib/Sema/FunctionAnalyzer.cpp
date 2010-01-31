@@ -250,7 +250,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
-      selfParam->setFlag(ParameterDefn::Reference, true);
+      selfParam->setFlag(ParameterDefn::Reference);
       ftype->setSelfParam(selfParam);
       target->parameterScope().addMember(selfParam);
     }

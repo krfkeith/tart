@@ -519,7 +519,7 @@ bool BindingEnv::unifyPattern(
     const Type * upperBound = value;
     const Type * lowerBound = value;
 
-    if (value->isEqual(&UnsizedIntType::instance)) {
+    if (value->isUnsizedIntType()) {
       //upperBound =
     }
 

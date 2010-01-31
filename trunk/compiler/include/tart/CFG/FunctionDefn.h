@@ -25,7 +25,6 @@ public:
     LValueParam = (1<<2),   // Allow taking address or mutating param
     KeywordOnly = (1<<3),   // A "keyword only" argument.
     ClosureEnv = (1<<4),    // A reference to a closure environment.
-    ValueType = (1<<5),     // Indicates a value type argument.
   };
 
   /** Constructor that takes a name */
@@ -89,6 +88,7 @@ public:
     }
   }
 
+  bool isReference() const { return getFlag(Reference); }
   bool isVariadic() const { return getFlag(Variadic); }
   bool isKeywordOnly() const { return getFlag(KeywordOnly); }
   bool isLValue() const { return getFlag(LValueParam); }

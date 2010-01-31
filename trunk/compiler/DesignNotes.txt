@@ -327,10 +327,9 @@ Something like [@Strict %T <: Object]
 @Unsafe @Intrinsic def reinterpretCast[%T <: Object](obj:Object);
 
 // ------------------------------------------------------------------------
+flags:
 
   static var OutputFile = StringOption("o",
       altName="output",
       varName="output file",
       help="Path to output file"); 
-
-      
