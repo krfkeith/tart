@@ -16,12 +16,12 @@ set(TART_MODULE_PATH
     -i ${TEST_ROOT})
 
 # Input files
-file(GLOB LIB_LEXGEN_COMMON_SRC RELATIVE ${SRC_ROOT}  ${SRC_ROOT}/tartx/lexgen/common/*.tart)
+file(GLOB LIB_LEXGEN_COMMON_SRC RELATIVE ${SRC_ROOT}  ${SRC_ROOT}/tartx/lexgen/shared/*.tart)
 file(GLOB LIB_LEXGEN_GEN_SRC    RELATIVE ${SRC_ROOT}  ${SRC_ROOT}/tartx/lexgen/gen/*.tart)
 file(GLOB LIB_LEXGEN_APP_SRC    RELATIVE ${SRC_ROOT}  ${SRC_ROOT}/tartx/lexgen/app/*.tart)
 file(GLOB LIB_LEXGEN_TEST_SRC   RELATIVE ${TEST_ROOT} ${TEST_ROOT}/*.tart)
 
-add_tart_library(LexGenCommon "${SRC_ROOT}" "${LIB_LEXGEN_COMMON_SRC}")
+add_tart_library(LexGenShared "${SRC_ROOT}" "${LIB_LEXGEN_COMMON_SRC}")
 add_tart_library(LexGenGen "${SRC_ROOT}" "${LIB_LEXGEN_GEN_SRC}")
 add_tart_library(LexGenApp "${SRC_ROOT}" "${LIB_LEXGEN_APP_SRC}")
 add_tart_library(LexGenTest "${TEST_ROOT}" "${LIB_LEXGEN_TEST_SRC}")
@@ -59,11 +59,11 @@ endfunction(add_tart_executable)
 add_tart_executable(lexgenTest
   "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
   "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-  libLexGenCommon.bc
+  libLexGenShared.bc
   libLexGenGen.bc 
   libLexGenTest.bc 
 )
-add_dependencies(lexgenTest libcore libtesting libLexGenCommon libLexGenGen libLexGenTest)
+add_dependencies(lexgenTest libcore libtesting libLexGenShared libLexGenGen libLexGenTest)
 add_custom_target(lexgenTest.run COMMAND ./lexgenTest)
 add_dependencies(lexgenTest.run lexgenTest)
 
@@ -71,7 +71,7 @@ add_tart_executable(lexgen
   "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
   "${PROJECT_BINARY_DIR}/lib/opts/libopts.bc"
   libLexGenApp.bc
-  libLexGenCommon.bc
+  libLexGenShared.bc
   libLexGenGen.bc 
 )
-add_dependencies(lexgen libcore libopts libLexGenCommon libLexGenGen libLexGenApp)
+add_dependencies(lexgen libcore libopts libLexGenShared libLexGenGen libLexGenApp)

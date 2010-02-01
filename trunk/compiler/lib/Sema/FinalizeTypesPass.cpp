@@ -182,7 +182,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
       // by converting it into an LValue.
       if (LValueExpr * lval = dyn_cast<LValueExpr>(selfArg)) {
         if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
-          if (param->type()->typeClass() == Type::Struct) {
+          if (param->type()->typeClass() == Type::Struct && !param->isVariadic()) {
             param->setFlag(ParameterDefn::LValueParam, true);
           }
         }

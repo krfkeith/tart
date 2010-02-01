@@ -548,6 +548,10 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
       } else if (var->defnType() == Defn::MacroArg) {
         return genLValueAddress(static_cast<const VariableDefn *>(var)->initValue());
       } else {
+        TypeShape shape = lval->type()->typeShape();
+        if (shape == Shape_Small_LValue || shape == Shape_Large_Value || shape == Shape_Reference) {
+          return genLetValue(static_cast<const VariableDefn *>(var));
+        }
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
         DFAIL("IllegalState");
       }
@@ -568,10 +572,9 @@ Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
   TypeShape baseShape = lval->base()->type()->typeShape();
 
   if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
-    // TODO: Change this to 'isLValue' test.
     if (!hasAddress(lval->base())) {
-      // If the base expression is not an l-value, and it's a value type, then we
-      // have to use extract value instead of GEP.
+      // If the base expression is an SSA value then we have to use extract value
+      // instead of GEP.
       const VariableDefn * var = cast<VariableDefn>(lval->value());
       Value * baseValue = genExpr(lval->base());
       return builder_.CreateExtractValue(baseValue, var->memberIndex(), "fieldValue");
@@ -648,6 +651,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       Value * baseAddr = genBaseAddress(lval->base(), indices, label);
       const VariableDefn * field = cast<VariableDefn>(lval->value());
 
+      DASSERT(isa<PointerType>(baseAddr->getType()));
       DASSERT_TYPE_EQ(lval->base(),
           lval->base()->type()->irType(),
           getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
@@ -749,7 +753,11 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
     switch (typeShape) {
       case Shape_Primitive:
       case Shape_Small_RValue:
+        break;
+
       case Shape_Small_LValue:
+        needsAddress = true;
+        needsDeref = true;
         break;
 
       case Shape_Large_Value:
@@ -763,6 +771,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
 
     if (lval->base() != NULL) {
       baseHasBase = true;
+    } else {
     }
   } else if (base->exprType() == Expr::PtrDeref) {
     base = static_cast<const UnaryExpr *>(base)->arg();
@@ -795,7 +804,11 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
   } else {
     // Otherwise generate a pointer value.
     labelStream << base;
-    baseAddr = genExpr(base);
+    if (needsAddress) {
+      baseAddr = genLValueAddress(base);
+    } else {
+      baseAddr = genExpr(base);
+    }
     if (needsDeref) {
       // baseAddr is of pointer type, we need to add an extra 0 to convert it
       // to the type of thing being pointed to.
@@ -811,6 +824,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
         getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
   }
 
+  DASSERT(isa<PointerType>(baseAddr->getType()));
   return baseAddr;
 }
 
