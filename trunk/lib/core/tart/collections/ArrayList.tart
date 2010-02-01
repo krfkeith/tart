@@ -50,7 +50,12 @@ final class ArrayList[%ElementType] : List[ElementType] {
     data[index] = e;
   }
 
-  def insert(position:int, e:ElementType) {
+  def insert(index:int, e:ElementType) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index <= _size);
+    grow(1);
+    ElementType[].copyElements(data, index + 1, data, index, _size - index);
+    data[index] = e;
   }
 
   def remove(index:int) {

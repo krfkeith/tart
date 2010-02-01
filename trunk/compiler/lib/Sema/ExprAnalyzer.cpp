@@ -1024,7 +1024,10 @@ Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * b
     } else if (basePtr->type()->typeClass() == Type::Struct) {
       if (LValueExpr * lval = dyn_cast<LValueExpr>(basePtr)) {
         if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
-          param->setFlag(ParameterDefn::LValueParam, true);
+          if (!param->isVariadic()) {
+            // TODO: Do we need this code in the other cases?
+            param->setFlag(ParameterDefn::LValueParam, true);
+          }
         }
       }
     }

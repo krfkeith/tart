@@ -287,8 +287,9 @@ bool ClassAnalyzer::checkNameConflicts() {
 bool ClassAnalyzer::analyzeBaseClasses() {
   CompositeType * type = targetType();
   if (type->passes().isRunning(CompositeType::BaseTypesPass)) {
-    diag.error(target) << "Circular inheritance not allowed";
-    return false;
+    //diag.error(target) << "Circular inheritance not allowed";
+    //return false;
+    return true;
   }
 
   if (!type->passes().begin(CompositeType::BaseTypesPass)) {

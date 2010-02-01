@@ -158,7 +158,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
-      const Type * paramType = param->type();
+      const Type * paramType = param->internalType();
       DASSERT_OBJ(param != NULL, fdef);
       it->setName(param->name());
       Value * paramValue = it;

@@ -1,7 +1,7 @@
 import tart.testing.Test;
-import tartx.lexgen.common.ScannerBase;
-import tartx.lexgen.common.LogWriter;
-import tartx.lexgen.common.Location;
+import tartx.lexgen.shared.ScannerBase;
+import tartx.lexgen.shared.LogWriter;
+import tartx.lexgen.shared.Location;
 import tart.io.TextReader;
 import tart.io.StringReader;
 
