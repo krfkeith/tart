@@ -1,6 +1,6 @@
 import tart.collections.List;
 import tart.collections.ArrayList;
-import tartx.lexgen.common.Location;
+import tartx.lexgen.shared.Location;
 
 /** A node in the syntax graph. */
 abstract class Node {

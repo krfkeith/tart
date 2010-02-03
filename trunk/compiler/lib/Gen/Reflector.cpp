@@ -494,7 +494,7 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
   sb.addField(emitSimpleType(Builtins::typeComplexType, type));
 
   // Pointer to TIB for this type.
-  sb.addNullField(complexType_tib.type());
+  sb.addField(cg_.getTypeInfoBlockPtr(type));
 
   // Superclass
   if (type->super() != NULL) {

@@ -1,0 +1,13 @@
+/** Represents a block of action code. */
+class CodeBlock {
+  private var code:String;
+  //private var lines:ArrayList;
+  
+  def construct(code:String) {
+    self.code = code;
+  }
+  
+  override toString() -> String {
+    return code;
+  }
+}

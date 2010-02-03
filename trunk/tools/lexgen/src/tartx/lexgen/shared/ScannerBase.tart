@@ -53,6 +53,9 @@ class ScannerBase {
   /** The text of the current token. */  
   def tokenText:String { get { return _tokenText.toString(); } }
   
+  /** The length of the current token. */  
+  def tokenLength:int { get { return _tokenText.size; } }
+  
   /** The location of the current token. */
   def tokenLoc:Location { get { return _tokenLoc; } }
 

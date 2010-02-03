@@ -83,4 +83,9 @@ class ReflectionTest : Test {
     let tclass = typecast[TestClass](ct.create());
     assertEq(484, typecast[int32](method.call(tclass, 22)));
   }
+
+  def testSubclassTest() {
+    assertTrue(ComplexType.of(ReflectionTest).isSubclass(Test));
+    assertFalse(ComplexType.of(Test).isSubclass(ReflectionTest));
+  }
 }
