@@ -1,80 +1,80 @@
 import tart.io.TextReader;
-import tartx.lexgen.common.ScannerBase;
-import tartx.lexgen.common.LogWriter;
+import tartx.lexgen.shared.ScannerBase;
+import tartx.lexgen.shared.LogWriter;
 
 class LexGenScanner : ScannerBase {
- 	public enum LState {
- 		START,
-  	STRING,
-  	ACTION,
-  	PARAMETER,
- 	}
+   public enum LState {
+     START,
+     STRING,
+     ACTION,
+     PARAMETER,
+   }
 
-	public enum LToken {
-	  EOF,
-	  ERROR,
-	  ACTION_TEXT,
-	  ALTERNATIVE,
-	  CHAR_CONSTANT,
-	  CLOSE_BRACE,
-	  CLOSE_BRACKET,
-	  CLOSE_PAREN,
-	  COLON,
-	  COMMA,
-	  COMMENT,
-	  COMPLEMENT,
-	  DOT,
-	  DOT_DOT,
-	  END_BLOCK,
-	  EOS_MARKER,
-	  ID,
-	  IMPORT,
-	  INIT,
-	  INTEGER,
-	  LEXER,
-	  ONE_OR_MORE,
-	  OPEN_BRACE,
-	  OPEN_BRACKET,
-	  OPEN_PAREN,
-	  OPTIONAL,
-	  OPTIONS,
-	  PARAM_TEXT,
-	  PARSER,
-	  PROLOGUE,
-	  QUOTE,
-	  RETURNS,
-	  SEMI,
-	  START_BLOCK,
-	  STATE,
-	  STRING,
-	  WHITESPACE,
-	  ZERO_OR_MORE,
- 	}
+  public enum LToken {
+    EOF,
+    ERROR,
+    ACTION_TEXT,
+    ALTERNATIVE,
+    CHAR_CONSTANT,
+    CLOSE_BRACE,
+    CLOSE_BRACKET,
+    CLOSE_PAREN,
+    COLON,
+    COMMA,
+    COMMENT,
+    COMPLEMENT,
+    DOT,
+    DOT_DOT,
+    END_BLOCK,
+    EOS_MARKER,
+    ID,
+    IMPORT,
+    INIT,
+    INTEGER,
+    LEXER,
+    ONE_OR_MORE,
+    OPEN_BRACE,
+    OPEN_BRACKET,
+    OPEN_PAREN,
+    OPTIONAL,
+    OPTIONS,
+    PARAM_TEXT,
+    PARSER,
+    PROLOGUE,
+    QUOTE,
+    RETURNS,
+    SEMI,
+    START_BLOCK,
+    STATE,
+    STRING,
+    WHITESPACE,
+    ZERO_OR_MORE,
+  }
 
   private {
     var _token:LToken = LToken.ERROR;
-  	var _state:LState = LState.START;
+    var _state:LState = LState.START;
     var _tabSize:int32 = 4;
 
-  	def matchAny -> bool {
-	   	return matchRange(char(1),char(65534));
-	  }
-	
-	  def matchIdentChar -> bool {
-	     return matchRange('0','9') or matchRange('A','Z') or matchChar('_') or matchRange('a','z');
-	  }
-	
-	  def matchIdentStart -> bool {
-	     return (matchRange('A','Z') or matchChar('_') or matchRange('a','z'));
-	  }
-	
-	  def matchHexDigit -> bool {
-	     return (matchRange('0','9') or matchRange('A','F') or matchRange('a','f'));
-	  }
-	
-	  def matchDigit -> bool {
-	     return (matchRange('0','9'));
-	  }
+    def matchAny -> bool {
+       return matchRange(char(1),char(65534));
+    }
+  
+    def matchIdentChar -> bool {
+       return matchRange('0','9') or matchRange('A','Z') or matchChar('_') or matchRange('a','z');
+    }
+  
+    def matchIdentStart -> bool {
+       return (matchRange('A','Z') or matchChar('_') or matchRange('a','z'));
+    }
+  
+    def matchHexDigit -> bool {
+       return (matchRange('0','9') or matchRange('A','F') or matchRange('a','f'));
+    }
+  
+    def matchDigit -> bool {
+       return (matchRange('0','9'));
+    }
   }
   
   def construct(file:String, reader:TextReader, log:LogWriter) {
@@ -83,8 +83,8 @@ class LexGenScanner : ScannerBase {
   }
 
   def state:LState {
- 		get { return _state; }
- 		set { _state = value; }
+     get { return _state; }
+     set { _state = value; }
   }
 
   def token:LToken  { get { return _token; } }
@@ -104,23 +104,23 @@ class LexGenScanner : ScannerBase {
   }
 
   protected def scan -> LToken {
-    return LToken.EOF if _ch < 0; // WRONG -- ch is unsigned
+    return LToken.EOF if _ch == TextReader.EOF; // WRONG -- ch is unsigned
     switch _state {
-	    case LState.START {
-	      return startState();
-	    }
-	    
-	    case LState.STRING {
-	      return stringState();
-	    }
+      case LState.START {
+        return startState();
+      }
+      
+      case LState.STRING {
+        return stringState();
+      }
 
-	    case LState.ACTION {
-	      return actionState();
-	    }
-	      
-     	case LState.PARAMETER {
-	      return parameterState();
-     	}
+      case LState.ACTION {
+        return actionState();
+      }
+        
+       case LState.PARAMETER {
+        return parameterState();
+       }
     }
     
     return LToken.ERROR;
@@ -266,15 +266,15 @@ class LexGenScanner : ScannerBase {
         take();
         if (matchChar('X') or matchChar('x')) {
           if (matchHexDigit()) {
-				    while (matchHexDigit()) {} // loop
-   					return LToken.INTEGER;
+            while (matchHexDigit()) {} // loop
+             return LToken.INTEGER;
           }
           matchFail("HexDigit");
           return LToken.ERROR;
         }
 
-	     	while (matchDigit()) {} // loop
- 				return LToken.INTEGER;
+         while (matchDigit()) {} // loop
+         return LToken.INTEGER;
       }
 
       case ':' {
@@ -398,8 +398,8 @@ class LexGenScanner : ScannerBase {
 
       else {
         if (matchDigit()) {
-		     	while (matchDigit()) {}// loop
-			    return LToken.INTEGER;
+           while (matchDigit()) {}// loop
+          return LToken.INTEGER;
         }
 
         if (matchIdentChar()) { return L8(); }
@@ -408,11 +408,82 @@ class LexGenScanner : ScannerBase {
       }
     }
 
-		return LToken.ERROR;
+    return LToken.ERROR;
   }
-	
+  
   def stringState -> LToken {
-        return LToken.ERROR;
+    while (_ch >= 0) {
+      if (matchChar('\"')) {
+        erase(1);
+        state = LState.START;
+        return LToken.STRING;
+      }
+      if (matchChar('\\')) {
+        switch (_ch) {
+          case '\"' {
+            take();
+            replace(2, "\"");
+            continue;
+          }
+          
+          case '\'' {
+            take();
+            replace(2, "\'");
+            continue;
+          }
+
+          case '\\' {
+            take();
+            replace(2, "\\");
+            continue;
+          }
+
+          case 'b' {
+            take();
+            replace(2, "\b");
+            continue;
+          }
+
+          case 'f' {
+            take();
+            replace(2, "\f");
+            continue;
+          }
+
+          case 'n' {
+            take();
+            replace(2, "\n");
+            continue;
+          }
+
+          case 'r' {
+            take();
+            replace(2, "\r");
+            continue;
+          }
+
+          case 't' {
+            take();
+            replace(2, "\t");
+            continue;
+          }
+
+          else {
+            erase(1);
+            take();
+            continue;
+          }
+        }
+      }
+      if ((_ch < '\t' or _ch > '\n') and (_ch < '\f' or _ch > '\r'))  {
+        take();
+        continue;
+      }
+      illegalChar();
+      return LToken.ERROR;
+    }
+    //prematureEof("?");
+    return LToken.ERROR;
   }
 
   def actionState -> LToken {
@@ -422,131 +493,68 @@ class LexGenScanner : ScannerBase {
   def parameterState -> LToken {
         return LToken.ERROR;
   }
-/*	     case LState.String:
-	        while (_ch >= 0) {
-	           if (matchChar('\"')) {
-	              erase(1);  State = LState.Start;
-	              return LToken.String;
-	           }
-	           if (matchChar('\\')) {
-	              switch (_ch) {
-	              case '\"':
-	                 take();
-	                 replace(2, "\"");
-	                 continue;
-	
-	              case '\'':
-	                 take();
-	                 replace(2, "\'");
-	                 continue;
-	
-	              case '\\':
-	                 take();
-	                 replace(2, "\\");
-	                 continue;
-	
-	              case 'b':
-	                 take();
-	                 replace(2, "\b");
-	                 continue;
-	
-	              case 'f':
-	                 take();
-	                 replace(2, "\f");
-	                 continue;
-	
-	              case 'n':
-	                 take();
-	                 replace(2, "\n");
-	                 continue;
-	
-	              case 'r':
-	                 take();
-	                 replace(2, "\r");
-	                 continue;
-	
-	              case 't':
-	                 take();
-	                 replace(2, "\t");
-	                 continue;
-	
-	              default:
-	                 erase(1);
-	                 take();
-	                 continue;
-	              }
-	           }
-	           if ((_ch < '\t' or _ch > '\n') and (_ch < '\f' or _ch > '\r'))  {
-	              take();
-	              continue;
-	           }
-	           IllegalChar();
-	           return LToken.Error;
-	        }
-	        PrematureEof("?");
-	        return LToken.Error;
-	
-	     case LState.Action:
-	        switch (_ch) {
-	        case '\n':
-	           take();
-	           nl();
-	           goto L9;
-	
-	        case '\r':
-	           take();
-	           goto L10;
-	
-	        case '\\':
-	           take();
-	           goto L11;
-	
-	        case '{':
-	           take();
-	           return LToken.StartBlock;
-	
-	        case '}':
-	           take();
-	           return LToken.EndBlock;
-	
-	        default:
-	           take();
-	           goto L9;
-	        }
-	
-	     case LState.Parameter:
-	        switch (_ch) {
-	        case '\n':
-	           take();
-	           nl();
-	           goto L12;
-	
-	        case '\r':
-	           take();
-	           goto L13;
-	
-	        case ',':
-	           take();
-	           return LToken.Comma;
-	
-	        case '[':
-	           take();
-	           return LToken.OpenBracket;
-	
-	        case ']':
-	           take();
-	           return LToken.CloseBracket;
-	
-	        default:
-	           if (matchIdentChar() or matchChar('\t') or matchChar(' ') or matchRange('$','&') or matchRange('*','+') or matchChar('-') or matchChar(':') or matchChar('=') or matchChar('@')) goto L12;
-	           IllegalChar();
-	           return LToken.Error;
-	        }
-	
-	     default {
-	        Fail("Invalid State Transition");
-	        return LToken.Error;
-	     }
+/*
+       case LState.Action:
+          switch (_ch) {
+          case '\n':
+             take();
+             nl();
+             goto L9;
+  
+          case '\r':
+             take();
+             goto L10;
+  
+          case '\\':
+             take();
+             goto L11;
+  
+          case '{':
+             take();
+             return LToken.StartBlock;
+  
+          case '}':
+             take();
+             return LToken.EndBlock;
+  
+          default:
+             take();
+             goto L9;
+          }
+  
+       case LState.Parameter:
+          switch (_ch) {
+          case '\n':
+             take();
+             nl();
+             goto L12;
+  
+          case '\r':
+             take();
+             goto L13;
+  
+          case ',':
+             take();
+             return LToken.Comma;
+  
+          case '[':
+             take();
+             return LToken.OpenBracket;
+  
+          case ']':
+             take();
+             return LToken.CloseBracket;
+  
+          default:
+             if (matchIdentChar() or matchChar('\t') or matchChar(' ') or matchRange('$','&') or matchRange('*','+') or matchChar('-') or matchChar(':') or matchChar('=') or matchChar('@')) goto L12;
+             IllegalChar();
+             return LToken.Error;
+          }
+  
+       default {
+          Fail("Invalid State Transition");
+          return LToken.Error;
+       }
     }
   }*/
 
@@ -562,11 +570,11 @@ class LexGenScanner : ScannerBase {
         }
         if (matchChar('\r')) {
           matchChar('\n');
-	        nl();
+          nl();
         } else {
-	        continue if (matchChar('\f') or matchChar(' '));
-  	      skip();
-    	    return LToken.WHITESPACE;
+          continue if (matchChar('\f') or matchChar(' '));
+          skip();
+          return LToken.WHITESPACE;
         }
      }
   }

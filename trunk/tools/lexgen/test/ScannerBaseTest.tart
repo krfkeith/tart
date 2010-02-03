@@ -1,47 +1,33 @@
 import tart.testing.Test;
 import tartx.lexgen.shared.ScannerBase;
-import tartx.lexgen.shared.LogWriter;
 import tartx.lexgen.shared.Location;
+import tartx.lexgen.shared.LogWriter;
 import tart.io.TextReader;
 import tart.io.StringReader;
 
 class ScannerBaseTest : Test {
-  class TestLogWriter : LogWriter {
-	  def fatal(loc:Location, mgs:String...) {
-	  }
-	
-	  def error(loc:Location, mgs:String...) {
-	  }
-	  
-	  def warn(loc:Location, mgs:String...) {
-	  }
-	  
-	  def info(loc:Location, mgs:String...) {
-	  }
-  }
-  
   class TestScanner : ScannerBase {
     def construct(reader:TextReader, log:LogWriter) {
       super("TestSource", reader, log);
     }
   }
   
-  var log:TestLogWriter;
+  var log:FakeLogWriter;
   var reader:TextReader;
   var scanner:TestScanner;
   
   override setUp {
-    log = TestLogWriter();
+    log = FakeLogWriter();
     reader = StringReader("a");
     scanner = TestScanner(reader, log);
   }
   
   def testInitialState {
-    //assertEq("", scanner.tokenText);
+    assertEq("", scanner.tokenText);
     let f = scanner.tokenLoc.file;
-    //assertEq("TestSource", f);
-    //assertEq(1, scanner.tokenLoc.col);
-    //assertEq(1, scanner.tokenLoc.line);
+    assertEq("TestSource", f);
+    assertEq(1, scanner.tokenLoc.col);
+    assertEq(1, scanner.tokenLoc.line);
   }
   
   def testReadChar {

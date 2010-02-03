@@ -105,7 +105,7 @@ public class ComplexType : SimpleType {
   private final def isSubclassImpl(cls:Type) -> bool {
     return true if self is cls;
     classify cls as complex:ComplexType {
-      return Memory.deref(complex._typeInfo).hasBase(_typeInfo);
+      return Memory.deref(_typeInfo).hasBase(complex._typeInfo);
     } else {
       return false;
     }
