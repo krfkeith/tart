@@ -4,10 +4,18 @@ Design TODOS:
 
 * Const-ness "const" and "const? / constable"
 * Need a way to collect all declarations that a given attribute is assigned to.
-
-Bad bugs:
-  -- ReflectionTest with optimization.
-  -- lexGenTest segfaults.
+* Collector classes:
+  * TLAB
+  * LinearAllocator
+  * Eden
+    * Linked-list of TLABs.
+    * Lock for the TLAB list.
+      * Each TLAB is 32k.
+      * Eden size is 2 + 2 * numThreads TLABS.
+      * TLABS do not need to be contiguous
+      * Thread local ptr to TLAB.
+  * SS1 and SS2. These have SSABs. = 50% Eden size.
+  * SSAB.
 
 Working on currently:
   -- Get static ctors working.
@@ -15,7 +23,6 @@ Working on currently:
   -- New @Reflection annotation
   -- GC
   -- Static If
-  -- Run all tests in module.
   -- Compile-time configuration options. @TargetProperty.
   -- Reduce number of generated strings, or eliminate dead reflection globals.
   -- Exception backtrace.
@@ -32,7 +39,6 @@ Implementation TODOS:
   * And then reduce the number of TypeDefns by allowing specializations to share the same
       TypeDefn object. Which means that a new template instance does not need a new
       TypeDefn.
-  * Find a better name for PatternValue?
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
   * Fill out TypeOrderings.h / TypeComparator.h
@@ -47,18 +53,15 @@ Implementation TODOS:
 * Garbage collector
 * Reflection
   * Struct Constructors
-  * Constructor arg tests.
   * Properties and fields.
   * Class members.
-  * Attributes
   * Find all properties/functions having some attribute
-* Stack dumps / trace
 * Profiling.
 * Test overloading of augmented assignment operators.
 * Override for property getters and setters. (I think that's done.)
-* Move stringify and locationOf to a different place. (where?)
 * Finish array unit tests. (One test remaining)
 * Proxy types
+* Integer parsing
 * Exceptions:
   * Finally
     * Return
@@ -72,12 +75,11 @@ Implementation TODOS:
   * Test struct members, params.
   * Member-wise conversions.
 * Constructors
-  * Inherit constructors from parent class if no constructors defined.
-  * Test implicit call to super() (no args) constructor if not called.
   * Insure that constructor calls aren't recursive.
   * Insure that we can't call constructors from non-constructor functions.
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
+  * Classes with create still need a default constructor? (Unless undef'd).
 * Import-as.
 * Source-level debug info.
   * Finish debug support.
@@ -115,16 +117,18 @@ Implementation TODOS:
   * As array slice indices
   * As tuple slice indices
   * Indefinite ranges (n ..) and (.. n) ?
-* 'get' and 'set' should not be keywords.
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.
+* Map literals
+* Matrix literals + Matrix class.
+* Comprehensions
+* Anonymous inner classes.
 
 Doc errors:
 
 * Fix operator overload syntax (infixX notation used now.)
 * Fix description of imports to match current functionality.
-* Fix template syntax back.
 * Array literals
 * Better explanation of unpacking
 * Revise haskell note and next note
@@ -333,3 +337,20 @@ flags:
       altName="output",
       varName="output file",
       help="Path to output file"); 
+
+abstract def foo(virtual k:Object);
+
+override Module.foo(k:String) {
+}
+
+
+class AllocationBlock {
+  private var _next:AllocationBlock;
+  private var _addrs:AddressRange;
+  
+  def hasSpace(size:int) -> bool {
+  }
+  
+  def bump(size:int) -> Address[byte] {
+  }
+}

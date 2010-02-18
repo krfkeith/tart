@@ -438,7 +438,7 @@ const Type * CallExpr::singularResultType() {
     }
 
     const Type * ty = cc->resultType();
-    if (cc->method() != NULL && cc->method()->isCtor()) {
+    if (cc->method() != NULL && exprType() == Expr::Construct && cc->method()->isCtor()) {
       ty = cc->functionType()->selfParam()->type();
     }
 
@@ -495,10 +495,12 @@ void CallExpr::format(FormatStream & out) const {
     } else {
       out << func;
     }
-  } else {
+  } else if (!candidates_.empty()) {
     FunctionDefn * func = candidates_.front()->method();
     out << func->name();
     //out << "{" << candidates_.size() << " candidates}";
+  } else {
+    out << "<no candidates>";
   }
 
   out << "(";
@@ -802,6 +804,14 @@ void IRValueExpr::format(FormatStream & out) const {
 // LocalCallExpr
 void LocalCallExpr::format(FormatStream & out) const {
   out << "local call " << target_ << " return=" << returnState_;
+}
+
+// -------------------------------------------------------------------
+// TupleCtorExpr
+void TupleCtorExpr::format(FormatStream & out) const {
+  out << "TupleCtor(";
+  formatExprList(out, args_);
+  out << ")";
 }
 
 // -------------------------------------------------------------------

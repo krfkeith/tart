@@ -13,12 +13,24 @@ struct Point {
   var x:int32;
   var y:int32;
   var z:int32 = 1;
+  
+  def construct(x:int32 = 0, y:int32 = 0, z:int32 = 1) {
+    self.x = x;
+    self.y = y;
+    self.z = z;
+  }
 }
 
 struct LargePoint {
   var x:int64;
   var y:int64;
   var z:int64 = 1;
+
+  def construct(x:int64 = 0, y:int64 = 0, z:int64 = 1) {
+    self.x = x;
+    self.y = y;
+    self.z = z;
+  }
 }
 
 struct TwoPoints {

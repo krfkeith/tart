@@ -664,6 +664,66 @@ llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
   return dcObjectFnType_;
 }
 
+llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
+  std::string proxyName(iftype->typeDefn()->linkageName());
+  proxyName.append(".type.proxy.tib");
+  llvm::GlobalVariable * proxyTib = irModule_->getGlobalVariable(proxyName, false);
+  if (proxyTib != NULL) {
+    return proxyTib;
+  }
+
+  ConstantList baseClassList;
+  ClassSet baseClassSet;
+  iftype->ancestorClasses(baseClassSet);
+
+  // Interfaces next
+  for (ClassSet::iterator it = baseClassSet.begin(); it != baseClassSet.end(); ++it) {
+    CompositeType * baseType = *it;
+    DASSERT(baseType->typeClass() == Type::Interface);
+    genCompositeType(baseType);
+    baseClassList.push_back(getTypeInfoBlockPtr(baseType));
+  }
+
+  // Null pointer at end
+  llvm::PointerType * typePointerType =
+      llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType());
+  baseClassList.push_back(ConstantPointerNull::get(typePointerType));
+
+  Constant * baseClassArray = ConstantArray::get(
+      ArrayType::get(typePointerType, baseClassList.size()),
+      baseClassList);
+  GlobalVariable * baseClassArrayPtr = new GlobalVariable(*irModule_,
+    baseClassArray->getType(), true, GlobalValue::InternalLinkage,
+    baseClassArray, iftype->typeDefn()->linkageName() + ".type.proxy.tib.bases");
+
+  // Generate the interface dispatch function
+  Function * idispatch = NULL;
+  idispatch = genInterfaceDispatchFunc(iftype);
+  DASSERT(idispatch != NULL);
+
+  std::string proxyTypeName("tart.reflect.Proxy[");
+  proxyTypeName.append(iftype->typeDefn()->linkageName());
+  proxyTypeName.append("]");
+
+  // Create the TypeInfoBlock struct
+  StructBuilder builder(*this);
+  //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
+  //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
+  builder.addField(reflector_.internSymbol(proxyTypeName));
+  builder.addField(baseClassArrayPtr);
+  builder.addField(idispatch);
+  builder.addField(genMethodArray(iftype->instanceMethods_));
+
+  Constant * tibStruct = builder.build();
+
+  proxyTib = new GlobalVariable(*irModule_,
+      tibStruct->getType(),
+      true, GlobalValue::LinkOnceODRLinkage, NULL,
+      proxyName);
+
+  return proxyTib;
+}
+
 llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
   std::string interceptName(".intercept.");
   interceptName.append(fn->linkageName());

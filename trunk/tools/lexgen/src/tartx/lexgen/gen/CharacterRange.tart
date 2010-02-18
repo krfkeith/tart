@@ -1,0 +1,58 @@
+struct CharacterRange {
+  let begin:char;
+  let end:char;
+  
+  def construct(begin:char, end:char) {
+    self.begin = begin;
+    self.end = end;
+  }
+  
+  def contains(c:char) -> bool {
+    return c >= begin and c < end;
+  }
+
+  def contains(r:CharacterRange) -> bool {
+    return r.begin >= begin and r.end <= end;
+  }
+
+  def contains(first:char, last:char) -> bool {
+    return first >= begin and last <= end;
+  }
+  
+  def computeHash() -> uint64 {
+    return Hashing.hash(begin) + Hashing.hash(end);
+  }
+
+  def format(sb:StringBuilder) {
+    if int(end) == int(begin) + 1 {
+      formatChar(sb, begin);
+    } else {
+      formatChar(sb, begin);
+      sb.append('-');
+      formatChar(sb, end - 1);
+    }
+  }
+
+  static def formatChar(sb:StringBuilder, ch:char) {
+    switch ch {
+      case '\n' { sb.append("\\n"); }
+      case '\r' { sb.append("\\r"); }
+      case '\t' { sb.append("\\t"); }
+      case '\b' { sb.append("\\b"); }
+      case ']'  { sb.append("\\]"); }
+      case '\\' { sb.append("\\\\"); }
+      case '\'' { sb.append("\\\'"); }
+      case '\"' { sb.append("\\\""); }
+      case '\-' { sb.append("\\-"); }
+      else {
+		    if ch >= 32 and ch <= 127 {
+		      sb.append(ch);
+    	  } else if ch < 256 {
+    	    // TODO: Implement
+		    } else {
+    	    // TODO: Implement
+		    }
+      }
+    }
+  }
+}

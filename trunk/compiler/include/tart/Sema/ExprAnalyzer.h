@@ -39,6 +39,9 @@ public:
   /** Similar to reduceExpr, but returns a constant. */
   Expr * reduceConstantExpr(const ASTNode * ast, Type * expected);
 
+  /** Similar to reduceExpr, but returns a constant. */
+  Expr * reduceTemplateArgExpr(const ASTNode * ast, bool doInference);
+
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
       Report an error if the cast is not possible. */
   Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
@@ -108,6 +111,10 @@ public:
 
   /** Evaluate a call to a constructor. */
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef, const ASTNodeList & args);
+
+  /** Add all overloaded constructors to the given call expression. */
+  bool addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDefn * tdef,
+      const ASTNodeList & args, SpCandidate * sp);
 
   /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert
       to 'toType'. */

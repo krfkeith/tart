@@ -12,6 +12,7 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/CFG/TypeLiteral.h"
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeTransform.h"
@@ -191,6 +192,7 @@ Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
 Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env,
     bool singular) {
   bool isPartial = false;
+  bool trace = AnalyzerBase::isTraceEnabled(value_);
 
   // Check to make sure that the parameters are of the correct type.
   ConstTypeList paramValues;
@@ -229,6 +231,10 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     if (sp != NULL) {
       return sp;
     }
+  }
+
+  if (trace) {
+    diag.debug() << "Instantiating " << value_ << " with params " << typeParams_;
   }
 
   // Create the template instance
@@ -374,6 +380,14 @@ TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templa
   , typeArgs_(templateArgs)
   , parentScope_(templateDefn->definingScope())
 {
+//  for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it) {
+//    if (const TypeBinding * tb = dyn_cast<TypeBinding>(*it)) {
+//      Type * s = tb->env()->get(tb->var());
+//      if (s != NULL) {
+//        DASSERT_OBJ(s != tb, tb);
+//      }
+//    }
+//  }
 }
 
 const Type * TemplateInstance::typeArg(int index) const {

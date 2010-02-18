@@ -262,7 +262,7 @@ bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
           attrType->lookupSingleMember("apply", true));
       if (applyMethod != NULL) {
         applyAttribute(in, attrObj, applyMethod);
-      } else {
+      } else if (!attrType->attributeInfo().isRetained()) {
         diag.info(in) << "Unhandled attribute " << attr;
       }
     }
@@ -324,7 +324,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
             attrClass->lookupSingleMember("apply", true));
         if (applyMethod != NULL) {
           applyAttribute(in, attrObj, applyMethod);
-        } else {
+        } else if (!attrClass->attributeInfo().isRetained()) {
           diag.info(in) << "Unhandled attribute " << *it;
         }
       }
@@ -600,6 +600,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
     case Type::Class:
     case Type::Interface:
       importSystemType(Builtins::typeComplexType);
+      importSystemType(Builtins::typeSimpleType);
       break;
 
     case Type::Function: {

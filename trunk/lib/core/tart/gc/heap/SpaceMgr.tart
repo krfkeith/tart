@@ -5,7 +5,7 @@ import tart.gc.AddressRange;
 
 /** Manages the global list of memory regions. */
 @Reflection(Reflection.Detail.NONE) namespace SpaceMgr {
-  // The global table of regions.
+  // The global table of spaces.
   private var _spaces:Address[Space]; // = addressOf(_initialSpaceTable[0]);
   
   /** The range of addresses covered by the spaces_ array. */
@@ -16,12 +16,30 @@ import tart.gc.AddressRange;
   
   // Region to handle memory addresses outside of the table. */
   private var _defaultSpace:Space;
+
+	// The global page allocator instance  
+  private var _pageAllocator:PageAllocator;
   
   // The initial region table. Once the number of regions grows larger than
   // the size of this table, the region table will be re-allocated into one
   // of the regions.
   private var _initialSpaceTable:NativeArray[Space, 64];
 
+	/** Initialize the global space manager. */ 
+	// TODO: Need to specify defaultSpace as well...
+  def init(pageAllocator:PageAllocator) {
+    _pageAllocator = pageAllocator;
+    _spaces = addressOf(_initialSpaceTable[0]);
+    _numSpaces = 64;
+    _spacesExtent = AddressRange();
+  }
+  
+	/** Mark the specified address range as being managed by 'space'. */  
+  def assignToSpace(space:Space, addrs:AddressRange) {
+    let beginIndex = pageIndex(addrs.first);
+    let endIndex = pageIndexMinusOne(addrs.last) + 1;
+  }
+  
   /** Given an address, return the region containing that address. */
   def spaceFor(address:Address[ubyte]) -> Space {
     return _defaultSpace if address not in _spacesExtent;
@@ -34,10 +52,10 @@ import tart.gc.AddressRange;
     return Memory.ptrDiff(address, _spacesExtent.first) >> PageAllocator.PAGE_SIZE_LOG2;
   }
 
-  def init(pageAlloc:PageAllocator) {
-    _spaces = addressOf(_initialSpaceTable[0]);
+  def pageIndexMinusOne(address:Address[ubyte]) -> int {
+    return (Memory.ptrDiff(address, _spacesExtent.first) - 1) >> PageAllocator.PAGE_SIZE_LOG2;
   }
-  
+
   def cleanup {
   }
 }

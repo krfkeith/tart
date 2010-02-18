@@ -290,6 +290,10 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
   if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
     const llvm::Type * type = ctdef->irType();
     if (ctdef->typeClass() == Type::Struct) {
+      if (ctdef->typeShape() == Shape_ZeroSize) {
+        // Don't allocate if it's zero size.
+        return ConstantPointerNull::get(PointerType::get(type, 0));
+      }
       return builder_.CreateAlloca(type, 0, ctdef->typeDefn()->name());
     } else if (ctdef->typeClass() == Type::Class) {
       Function * allocator = getTypeAllocator(ctdef);

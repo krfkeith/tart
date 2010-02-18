@@ -785,6 +785,7 @@ public:
 
   bool isConstant() const { return areArgsConstant(); }
   bool isSideEffectFree() const { return areArgsSideEffectFree(); }
+  void format(FormatStream & out) const;
 
   static inline bool classof(const TupleCtorExpr *) { return true; }
   static inline bool classof(const Expr * ex) {

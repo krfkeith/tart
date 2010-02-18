@@ -69,6 +69,7 @@ enum TypeId {
 enum TypeShape {
   Shape_Unset = 0,          // Shape hasn't been determined yet
   Shape_None,               // Can't be instantiated
+  Shape_ZeroSize,           // A type of size 0.
   Shape_Primitive,          // A primitive type
   Shape_Small_RValue,       // A small value which cannot be addressed.
   Shape_Small_LValue,       // A small value which can be addressed.

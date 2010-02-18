@@ -17,9 +17,21 @@ def sample() {
 def sample2(arg:int32) {
   savedValue = arg;
 }
+
+@Attribute(Attribute.Target.ANY, Attribute.Retention.RUNTIME)
+class RetainedAttr {
+}
   
 class TestClass {
-  def square(arg:int32) -> int32 {
+  // No-arg constructor
+  def construct {
+  }
+  
+  // Single-arg constructor
+  def construct(s:String) {
+  }
+  
+  @RetainedAttr def square(arg:int32) -> int32 {
     return arg * arg;
   }
 }
@@ -28,7 +40,7 @@ class ReflectionTest : Test {
 	def testModuleReflection() {
 	  let m = Module.thisModule();
 	  assertEq("ReflectionTest", m.name);
-	  assertEq(2, m.types.size);
+	  assertEq(3, m.types.size);
 	  assertEq(3, m.methods.size);
 	}
 	
@@ -64,7 +76,6 @@ class ReflectionTest : Test {
 	  let ty:Type = Type.of(TestClass);
 	  assertEq("tart.reflect.ComplexType", ty.__typeName);
 	  assertEq(Type.TypeKind.CLASS, ty.typeKind);
-	  assertTrue(ty isa tart.reflect.SimpleType);
 	  assertTrue(ty isa ComplexType);
 	}
 
@@ -84,8 +95,30 @@ class ReflectionTest : Test {
     assertEq(484, typecast[int32](method.call(tclass, 22)));
   }
 
+  def testConstructWithArg() {
+    let ty:ComplexType = ComplexType.of(TestClass);
+    let ctor = ty.constructors[1];
+
+    let tclass = typecast[TestClass](ty.create(ctor, "Hello"));
+    
+    //let method = typecast[Method](ty.findMethod("square"));
+    //assertEq(484, typecast[int32](method.call(tclass, 22)));
+  }
+
   def testSubclassTest() {
     assertTrue(ComplexType.of(ReflectionTest).isSubclass(Test));
     assertFalse(ComplexType.of(Test).isSubclass(ReflectionTest));
+  }
+  
+  def testRetainedAttribute {
+    let ty:Type = Type.of(TestClass);
+    let ct = typecast[ComplexType](ty);
+    let method = typecast[Method](ct.findMethod("square"));
+    assertEq(1, method.attributes.size);
+    let attr = method.findAttribute(RetainedAttr);
+    assertTrue(attr isa RetainedAttr);
+    let attr2 = method.findAttribute(String);
+    assertFalse(attr isa String);
+    //assertEq(null, attr);
   }
 }

@@ -28,6 +28,7 @@ public:
   Expr * visitFnCall(FnCallExpr * in);
   Expr * visitNew(NewExpr * in);
   Expr * visitArrayLiteral(ArrayLiteralExpr * in);
+  Expr * visitTypeLiteral(TypeLiteralExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitConstantObjectRef(ConstantObjectRef * in);
   Expr * visitCast(CastExpr * in);

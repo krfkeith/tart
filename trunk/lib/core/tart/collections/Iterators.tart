@@ -17,4 +17,31 @@ namespace Iterators {
       return false;
     }
   }
+  
+  class Enumerator[%T] : Iterator[(int, T)] {
+    let iter:Iterator[T];
+    var index:int = 0;
+    
+    def construct(iter:Iterator[T]) {
+      self.iter = iter;
+    }
+    
+    def next -> (int, T) or void {
+      classify iter.next() {
+        as value:T {
+          return index++, value;
+        } else {
+          return;
+        }
+      }
+    }
+  }
+  
+  def enumerate[%T](iter:Iterator[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter);
+  }
+
+  def enumerate[%T](iter:Iterable[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter.iterate());
+  }
 }

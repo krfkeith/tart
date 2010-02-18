@@ -39,6 +39,7 @@ target_link_libraries(unittest
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
+    dl
     )
 set_target_properties(unittest PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 

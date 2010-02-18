@@ -5,11 +5,15 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 file(GLOB TART_STDLIB_SRC
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     tart/annex/*.tart
+    tart/atomic/*.tart
     tart/core/*.tart
     tart/collections/*.tart
     tart/config/*.tart
     tart/gc/*.tart
     tart/gc/heap/*.tart
+    tart/inject/*.tart
+    tart/inject/binder/*.tart
+    tart/inject/impl/*.tart
     tart/io/*.tart
     tart/reflect/*.tart
     tart/text/encodings/*.tart)
@@ -17,7 +21,7 @@ file(GLOB TART_STDLIB_SRC
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/lib/core)  # Module search path
 set(TART_OPTIONS
-    -g
+#    -g
     -debug-errors
 #    -trace-def=asBuffer
 )

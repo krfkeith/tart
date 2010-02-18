@@ -176,6 +176,8 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     // encloses the function. For a template instance, the parent scope
     // will be the scope that defines the template variables.
     Scope * savedScope = setActiveScope(target->definingScope());
+    bool isFromTemplate =
+        target->isTemplate() || target->isTemplateMember() || target->isPartialInstantiation();
 
     if (target->isTemplate()) {
       // Get the template scope and set it as the active scope.
@@ -196,6 +198,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     if (ftype == NULL) {
       DASSERT(target->ast() != NULL);
       TypeAnalyzer ta(target->sourceModule(), activeScope);
+      ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
       ftype = ta.typeFromFunctionAST(target->functionDecl());
       if (ftype == NULL) {
         success = false;

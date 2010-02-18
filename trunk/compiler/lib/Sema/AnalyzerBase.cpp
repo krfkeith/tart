@@ -74,6 +74,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   SLC & loc = ast->location();
   bool isAbsPath = (lookupOptions & LOOKUP_ABS_PATH) != 0;
   bool isRequired = (lookupOptions & LOOKUP_REQUIRED) != 0;
+  bool doResolve = (lookupOptions & LOOKUP_NO_RESOLVE) == 0;
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
     const char * name = ident->value();
@@ -145,7 +146,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
       return false;
     }
 
-    Expr * expr = specialize(loc, lvals, spec->args());
+    Expr * expr = specialize(loc, lvals, spec->args(), doResolve);
     if (expr == NULL) {
       diag.error(spec) << "No template found matching expression: " << spec->templateExpr();
       diag.info() << "Scoped searched:";
@@ -361,7 +362,8 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
   return false;
 }
 
-Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args) {
+Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args,
+    bool inferArgTypes) {
   ConstTypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
@@ -369,7 +371,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   // so the resolution is relatively straightforward.
   ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-    Expr * cb = ea.reduceConstantExpr(*it, NULL);
+    Expr * cb = ea.reduceTemplateArgExpr(*it, inferArgTypes);
     if (isErrorResult(cb)) {
       return NULL;
     }
@@ -378,7 +380,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     if (TupleCtorExpr * tc = dyn_cast<TupleCtorExpr>(cb)) {
       const Type * ttype = getTupleTypesFromTupleExpr(cb);
       if (ttype != NULL) {
-        DASSERT(ttype->isSingular());
+        DASSERT(!inferArgTypes || ttype->isSingular());
         cb = new TypeLiteralExpr(cb->location(), ttype);
       }
     }

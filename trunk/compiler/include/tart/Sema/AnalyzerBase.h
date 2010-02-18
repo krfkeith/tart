@@ -47,6 +47,7 @@ enum LookupOptions {
   LOOKUP_DEFAULT = 0,           // Default options
   LOOKUP_ABS_PATH = (1<<0),     // Means that the input is an absolute path
   LOOKUP_REQUIRED = (1<<1),     // This is the last resort, fail otherwise.
+  LOOKUP_NO_RESOLVE = (1<<2),   // Don't try to fully resolve types.
 };
 
 /// -------------------------------------------------------------------
@@ -194,7 +195,8 @@ protected:
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
-  Expr * specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args);
+  Expr * specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args,
+      bool inferArgTypes);
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.

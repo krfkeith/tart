@@ -8,4 +8,8 @@ class DerivedType : Type {
 
   /** The list of type parameters for this type. */
   final def typeParams:Type[] { get { return _typeParams; } }
+  
+  final override toString -> String {
+    return "IMPLEMENTME";
+  }
 }

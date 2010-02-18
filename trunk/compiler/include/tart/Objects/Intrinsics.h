@@ -268,6 +268,15 @@ class MathIntrinsic2f : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// AtomicCas intrinsic
+class AtomicCasIntrinsic : public Intrinsic {
+  static AtomicCasIntrinsic instance_int;
+  static AtomicCasIntrinsic instance_ptr;
+  AtomicCasIntrinsic(const char * n) : Intrinsic(n) {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Flags.apply intrinsic
 class FlagsApplyIntrinsic : public Intrinsic {
   static FlagsApplyIntrinsic instance;
@@ -326,15 +335,6 @@ class GenerateStackTraceApplyIntrinsic : public Intrinsic {
 class UnsafeApplyIntrinsic : public Intrinsic {
   static UnsafeApplyIntrinsic instance;
   UnsafeApplyIntrinsic() : Intrinsic("tart.core.Unsafe.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
-};
-
-// -------------------------------------------------------------------
-// Nonreflective.apply intrinsic
-class NonreflectiveApplyIntrinsic : public Intrinsic {
-  static NonreflectiveApplyIntrinsic instance;
-  NonreflectiveApplyIntrinsic() : Intrinsic("tart.annex.Nonreflective.apply") {}
   Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
       const ExprList & args, Type * expectedReturn) const;
 };

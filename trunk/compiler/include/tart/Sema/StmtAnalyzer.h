@@ -74,6 +74,10 @@ public:
   bool buildContinueStmtCFG(const Stmt * st);
   bool buildLocalDeclStmtCFG(const DeclStmt * st);
 
+  /** Build a switch statement for integer types. */
+  void buildIntegerSwitchCFG(const SwitchStmt * st, Expr * testExpr);
+  void buildEqualCmpSwitchCFG(const SwitchStmt * st, Expr * testExpr);
+
   /** Infer the function return type. */
   void inferReturnType();
 
@@ -134,6 +138,9 @@ public:
   /** Set the insertion point to be the end of block 'blk'. Any instructions will be
       appended to this block; Any new blocks created will be inserted after this block. */
   void setInsertPos(Block * blk);
+
+  /** Insert 'block' at the current insertion point. */
+  void insertBlock(Block * block);
 
   /** Create a basic block in the current function. This will insert the new block at the
       current insertion point. */

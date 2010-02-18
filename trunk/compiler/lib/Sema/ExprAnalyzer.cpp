@@ -208,6 +208,30 @@ Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected) {
   return expr;
 }
 
+Expr * ExprAnalyzer::reduceTemplateArgExpr(const ASTNode * ast, bool doInference) {
+  Expr * expr = reduceExpr(ast, NULL);
+  if (doInference) {
+    expr = inferTypes(subject(), expr, NULL);
+  }
+
+  if (isErrorResult(expr)) {
+    return NULL;
+  }
+
+  Expr * letConst = LValueExpr::constValue(expr);
+  if (letConst != NULL) {
+    expr = letConst;
+  }
+
+  if (!expr->isConstant()) {
+    diag.error(expr) << "Non-constant expression: " << expr << " [" << exprTypeName(
+        expr->exprType()) << "]";
+    return NULL;
+  }
+
+  return expr;
+}
+
 Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
   return new ConstantNull(ast->location());
 }
@@ -816,7 +840,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       if (isTypeOrFunc) {
         ASTNodeList args;
         args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-        Expr * specResult = specialize(ast->location(), values, args);
+        Expr * specResult = specialize(ast->location(), values, args, true);
         if (specResult != NULL) {
           return specResult;
         } else {

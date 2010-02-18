@@ -277,6 +277,44 @@ void CallSite::reportErrors(const char * msg) {
 }
 
 /// -------------------------------------------------------------------
+/// TupleCtorSite
+
+TupleCtorSite::TupleCtorSite(TupleCtorExpr * in)
+  : expr_(in)
+  , rank_(IdenticalTypes)
+{
+}
+
+bool TupleCtorSite::unify(int cullingDepth) {
+/*  const TupleType * tt = cast<TupleType>(expr_->type());
+  size_t size = tt->size();
+  for (size_t i = 0; i < size; ++i) {
+    const Type * memberType = tt->member(i);
+    const Type * argType = expr_->arg(i)->type();
+    //rank_ = std::min(rank_, tt->member(i)->canConvert(expr_->arg(i)));
+  }
+
+  DFAIL("IMP"); */
+  return true;
+}
+
+// Update conversion rankings
+void TupleCtorSite::update() {
+  //diag.debug() << "Updating tuple ranking.";
+  rank_ = IdenticalTypes;
+  if (const TupleType * tt = dyn_cast<TupleType>(expr_->type())) {
+    size_t size = tt->size();
+    for (size_t i = 0; i < size; ++i) {
+      rank_ = std::min(rank_, tt->member(i)->canConvert(expr_->arg(i)));
+    }
+  }
+}
+
+void TupleCtorSite::reportRanks() {
+  DFAIL("IMP");
+}
+
+/// -------------------------------------------------------------------
 /// ConstraintSite
 
 void ConstraintSite::update() {
@@ -349,9 +387,9 @@ Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
 }
 
 Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
-  //if (!in->isSingular() && visited_.insert(in)) {
-  //  cstrSites_.push_back(ConstraintSite(in));
-  //}
+  if (!in->isSingular() && visited_.insert(in)) {
+    callSites_.push_back(new TupleCtorSite(in));
+  }
 
   CFGPass::visitTupleCtor(in);
   return in;
@@ -417,7 +455,7 @@ void TypeInferencePass::update() {
   // TODO: How do we get the explicit arguments?
 
   for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-    CallSite * cs = *it;
+    ChoicePoint * cs = *it;
     cs->update();
     lowestRank_ = std::min(lowestRank_, cs->rank());
     int choices = cs->remaining();
@@ -450,7 +488,9 @@ void TypeInferencePass::checkSolution() {
       bestSolutionCount_ = 1;
       bestSolutionRank_ = lowestRank_;
       for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-        (*it)->saveBest();
+        if (CullableChoicePoint * ccp = (*it)->asCullable()) {
+          ccp->saveBest();
+        }
       }
 
       if (ShowInference) {
@@ -527,22 +567,24 @@ void TypeInferencePass::cullByConversionRank() {
   if (underconstrained_) {
     int siteIndex = 1;
     for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
-      CallSite * site = *it;
+      ChoicePoint * site = *it;
       while (site->rank() < IdenticalTypes) {
         ConversionRank limit = ConversionRank(site->rank() + 1);
         if (ShowInference) {
           diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
         }
         ++searchDepth_;
-        cullCount_ = site->cullByConversionRank(limit, searchDepth_);
-        update();
+        if (CullableChoicePoint * ccp = site->asCullable()) {
+          cullCount_ = ccp->cullByConversionRank(limit, searchDepth_);
+          update();
 
-        if (ShowInference) {
-          diag.indent();
-          diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
-              " remaining:";
-          site->reportRanks();
-          diag.unindent();
+          if (ShowInference) {
+            diag.indent();
+            diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
+                " remaining:";
+            site->reportRanks();
+            diag.unindent();
+          }
         }
 
         if (overconstrained_) {
@@ -567,7 +609,9 @@ void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit) {
   ++searchDepth_;
   cullCount_ = 0;
   for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-    cullCount_ += (*it)->cullByConversionRank(lowerLimit, searchDepth_);
+    if (CullableChoicePoint * ccp = (*it)->asCullable()) {
+      cullCount_ += ccp->cullByConversionRank(lowerLimit, searchDepth_);
+    }
   }
 
   if (ShowInference) {
@@ -587,7 +631,9 @@ void TypeInferencePass::cullBySpecificity() {
     for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
       ChoicePoint * cp = *it;
       if (cp->remaining() > 1) {
-        cp->cullBySpecificity(searchDepth_);
+        if (CullableChoicePoint * ccp = cp->asCullable()) {
+          ccp->cullBySpecificity(searchDepth_);
+        }
       }
     }
 
@@ -602,7 +648,9 @@ void TypeInferencePass::cullByElimination() {
     cullByElimination(callSites_.begin(), callSites_.end());
     if (bestSolutionCount_ == 1) {
       for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-        (*it)->cullAllExceptBest(searchDepth_);
+        if (CullableChoicePoint * ccp = (*it)->asCullable()) {
+          ccp->cullAllExceptBest(searchDepth_);
+        }
       }
     }
 
@@ -614,12 +662,13 @@ void TypeInferencePass::cullByElimination(
   CallSiteList::iterator first, CallSiteList::iterator last) {
   while (first < last && underconstrained_) {
     ChoicePoint * pt = *first;
-    if (pt->remaining() <= 1) {
+    CullableChoicePoint * ccp = pt->asCullable();
+    if (pt->remaining() <= 1 || ccp == NULL) {
       ++first;
     } else {
       int numChoices = pt->count();
       for (int ch = 0; ch < numChoices; ++ch) {
-        if (pt->isCulled(ch)) {
+        if (ccp->isCulled(ch)) {
           continue;
         }
 
@@ -629,7 +678,7 @@ void TypeInferencePass::cullByElimination(
         diag.indent();
 
         ++searchDepth_;
-        pt->cullAllExcept(ch, searchDepth_);
+        ccp->cullAllExcept(ch, searchDepth_);
         cullByElimination(first + 1, last);
         backtrack();
 
@@ -650,7 +699,9 @@ void TypeInferencePass::cullAllButOne(CallSite * site, int choice) {
 
 void TypeInferencePass::backtrack() {
   for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-    (*it)->backtrack(searchDepth_);
+    if (CullableChoicePoint * ccp = (*it)->asCullable()) {
+      ccp->backtrack(searchDepth_);
+    }
   }
 
   --searchDepth_;

@@ -263,7 +263,12 @@ const llvm::Type * CompositeType::createIRType() const {
       break;
 
     case Type::Struct:
-      shape_ = isLargeIRType(finalType) ? Shape_Large_Value : Shape_Small_LValue;
+      if (fieldTypes.empty()) {
+        // An empty struct
+        shape_ = Shape_ZeroSize;
+      } else {
+        shape_ = isLargeIRType(finalType) ? Shape_Large_Value : Shape_Small_LValue;
+      }
       break;
 
     case Type::Protocol:
@@ -399,12 +404,12 @@ bool CompositeType::isSupportedBy(const Type * type) const {
 ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const CompositeType * fromClass = dyn_cast_or_null<CompositeType>(fromType)) {
-    DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
     /*if (!fromClass->passes().isFinished(BaseTypesPass)) {
       diag.error() << "While converting to " << this;
       diag.info() << "Class " << fromClass << " has not been properly analyzed.";
     }*/
-    DASSERT_OBJ(fromClass->passes().isFinished(BaseTypesPass), this);
+    DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
+    DASSERT_OBJ(fromClass->passes().isFinished(BaseTypesPass), fromClass);
     if (fromClass == this) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = cn.fromValue;

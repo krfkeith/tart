@@ -52,8 +52,9 @@ abstract class Node {
   // Unique ID of this node
 	var label:int;
 	
-	def construct(nodeType:NodeType) {
+	def construct(nodeType:NodeType, location:Location) {
 	  self.nodeType = nodeType;
+	  self.location = location;
 	}
 	
 	def append(n:Node) {

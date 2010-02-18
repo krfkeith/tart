@@ -36,7 +36,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       // Most of the work is done by lookupName. The rest is just validating
       // the result and making sure it's a type.
       ExprList typeExprs;
-      lookupName(typeExprs, ast);
+      lookupName(typeExprs, ast, lookupOptions_);
 
       if (typeExprs.empty()) {
         diag.error(loc) << "Undefined type '" << ast << "'";

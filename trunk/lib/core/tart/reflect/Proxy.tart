@@ -21,6 +21,6 @@ namespace Proxy {
 
 	// Internal class used to implement Proxy.
   private class ProxyImpl[%T] {
-    var handler:CallHandler[T];
+    var handler:InvocationHandler[T];
   }
 }

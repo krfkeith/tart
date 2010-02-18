@@ -65,6 +65,8 @@ public:
 
 private:
   CallExpr * callExpr;
+
+  const Type * candidateResultType(const CallCandidate * cc) const;
 };
 
 /// -------------------------------------------------------------------

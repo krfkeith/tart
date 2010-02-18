@@ -138,23 +138,48 @@ static const unsigned char * readEncodedSWord(const unsigned char * pos, _Unwind
   return pos;
 }
 
+static unsigned encodedValueSize(unsigned char encoding) {
+  switch (encoding) {
+    case DW_EH_PE_udata4:
+      return sizeof(uint32_t);
+    case DW_EH_PE_absptr:
+      return sizeof(_Unwind_Ptr);
+    default:
+      fprintf(stderr, "Unsupported exception encoding type %d\n", encoding);
+      abort();
+  }
+}
+
 static const unsigned char * readEncodedValue(
     _Unwind_Ptr baseAddr,
     unsigned char encoding,
     const unsigned char * pos,
     _Unwind_Ptr * out) {
+  uintptr_t result;
 
-  uint32_t offset;
+  // LLVM only emits format DW_EH_PE_udata4 and DW_EH_PE_absptr encoding.
+  switch (encoding & 0x0f) {
+    case DW_EH_PE_udata4: {
+      uint32_t offset;
+      memcpy(&offset, pos, sizeof(offset));
+      pos += sizeof(offset);
+      result = offset;
+      break;
+    }
 
-  // LLVM only emits format DW_EH_PE_udata4
-  if (encoding != DW_EH_PE_udata4) {
-    // Other encodings not implemented.
-    abort();
+    case DW_EH_PE_absptr: {
+      memcpy(&result, pos, sizeof(result));
+      pos += sizeof(result);
+      break;
+    }
+
+    default:
+      // Other encodings not implemented.
+      fprintf(stderr, "Unsupported exception encoding type %d\n", encoding);
+      abort();
   }
 
-  memcpy(&offset, pos, sizeof(offset));
-  pos += sizeof(offset);
-  *out = baseAddr + offset;
+  *out = baseAddr + (_Unwind_Ptr) result;
   return pos;
 }
 
@@ -250,21 +275,35 @@ bool findAction(
       *actionResult = actionResultIndex;
       return true;
     } else if (actionFilter > 0 && tib != NULL) {
-      // LLVM only uses DW_EH_PE_absptr encoding, anything else not supported.
-      if (lpInfo->typeTableEncoding != DW_EH_PE_absptr) {
-        abort();
-      }
 
-      // Look up the type in the type table.
-      const struct TypeInfoBlock * const * typeTable =
-          (const struct TypeInfoBlock * const *) lpInfo->typeTable;
-      const struct TypeInfoBlock * type = typeTable[-actionFilter];
+      const struct TypeInfoBlock * type;
+      actionFilter *= encodedValueSize(lpInfo->typeTableEncoding);
+      readEncodedValue(
+          //_Unwind_Ptr baseAddr,
+          0, // lpInfo->typeTable,                // base ptr
+          lpInfo->typeTableEncoding,        // encoding
+          lpInfo->typeTable - actionFilter, // position
+          (_Unwind_Ptr *) &type);
+
+      // LLVM only uses DW_EH_PE_absptr encoding, anything else not supported.
+
+//      if (lpInfo->typeTableEncoding == DW_EH_PE_absptr) {
+//      } else {
+//        fprintf(stderr, "Unsupported exception encoding type %d\n", lpInfo->typeTableEncoding);
+//        abort();
+//      }
+//
+//      // Look up the type in the type table.
+//      const struct TypeInfoBlock * const * typeTable =
+//          (const struct TypeInfoBlock * const *) lpInfo->typeTable;
+//      const struct TypeInfoBlock * type = typeTable[-actionFilter];
       if (hasBase(tib, type)) {
         *actionResult = actionResultIndex;
         return true;
       }
     } else {
       // Unsupported, for now.
+      fprintf(stderr, "Unsupported excption action %d\n", (int) actionFilter);
       abort();
     }
 

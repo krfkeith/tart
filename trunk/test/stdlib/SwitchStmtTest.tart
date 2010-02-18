@@ -58,4 +58,19 @@ class SwitchStmtTest : Test {
     assertEq("Two", switchEnum(ETEST.TWO));
     assertEq("Other", switchEnum(ETEST.THREE));
   }
+  
+  private def switchString(value:String) -> ETEST {
+    switch value {
+      case "One" { return ETEST.ONE; }
+      case "Two" case "Three" { return ETEST.TWO; }
+      else { return ETEST.THREE; }
+    }
+  }
+  
+  def testStringSwitch {
+    assertEq(ETEST.ONE, switchString("One"));
+    assertEq(ETEST.TWO, switchString("Two"));
+    assertEq(ETEST.TWO, switchString("Three"));
+    assertEq(ETEST.THREE, switchString("Other"));
+  }
 }
