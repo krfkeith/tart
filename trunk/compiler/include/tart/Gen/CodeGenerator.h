@@ -358,6 +358,9 @@ public:
   llvm::Function * genDcObjectFn(const Type * objType);
   llvm::FunctionType * getDcObjectFnType();
 
+  /** Generate a reference to the TypeInfoBlock for a proxy type. */
+  llvm::Constant * genProxyType(const CompositeType * ctype);
+
   // Generate the function that boxes arguments when a call is intercepted.
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
 private:

@@ -159,6 +159,7 @@ bool StmtAnalyzer::buildCFG() {
 }
 
 bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
+  diag.recovered();
   switch (st->nodeType()) {
     case ASTNode::Block:
       return buildBlockStmtCFG(static_cast<const BlockStmt *>(st));
@@ -688,29 +689,55 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   }
 
   const Type * testType = testExpr->type();
+  FunctionDefn * equalityTest = NULL;
+  bool useEqualityTests = false;
 
   if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(testType)) {
-    if (isIntegerTypeId(ptype->typeId())) {
-      // TODO: Implement
-    } else {
+    if (!isIntegerTypeId(ptype->typeId())) {
       diag.error(st) << "Invalid expression type for switch statement: " << testType;
     }
   } else if (const EnumType * etype = dyn_cast<EnumType>(testType)) {
     // If it's an enum, allow unqualified enum constants to be used.
-    caseValScope = new DelegatingScope(const_cast<IterableScope *>(etype->memberScope()), activeScope);
-    // TODO: Implement
+    caseValScope = new DelegatingScope(
+        const_cast<IterableScope *>(etype->memberScope()), activeScope);
   } else if (testType == Builtins::typeString.get()) {
-    // TODO: Implement
-    DFAIL("Implement");
+    DefnList defns;
+    if (TypeDefn * tdef = testType->typeDefn()) {
+      if (tdef->definingScope() != NULL) {
+        tdef->definingScope()->lookupMember("infixEQ", defns, false);
+      }
+    }
+
+    if (defns.empty()) {
+      diag.error(st) << "Invalid expression type for switch statement: " << testType;
+      return false;
+    }
+
+    for (DefnList::const_iterator it = defns.begin(); it != defns.end(); ++it) {
+      if (FunctionDefn * fn = dyn_cast<FunctionDefn>(*it)) {
+        analyzeFunction(fn, Task_PrepTypeComparison);
+        // TODO: Handle the case of multiple overloaded infix equality operators.
+        DASSERT(fn->functionType()->selfParam() == NULL);
+        DASSERT(fn->functionType()->params().size() == 2);
+        equalityTest = fn;
+      }
+    }
+
+    useEqualityTests = true;
   } else {
     diag.error(st) << "Invalid expression type for switch statement: " << testType;
   }
 
   Block * testBlock = currentBlock_;
-  testBlock->setTerminator(st->location(), BlockTerm_Switch);
-  testBlock->addCase(testExpr, NULL);
-  Block * endBlock = NULL;
+  Block * nextCaseBlock = NULL;
+  if (useEqualityTests) {
+    testExpr = SharedValueExpr::get(testExpr);
+  } else {
+    testBlock->setTerminator(st->location(), BlockTerm_Switch);
+    testBlock->addCase(testExpr, NULL);
+  }
 
+  Block * endBlock = NULL;
   ConstantExprList usedCaseVals;
 
   const Stmt * elseSt = NULL;
@@ -728,7 +755,6 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
         if (caseVal == NULL) {
           continue;
         }
-
         caseValList.push_back(caseVal);
       }
 
@@ -737,20 +763,33 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
         continue;
       }
 
-      Block * caseBody = createBlock("casebody");
+      Block * caseBody = new Block("casebody");
       for (ConstantExprList::iterator ci = caseValList.begin(); ci != caseValList.end(); ++ci) {
         ConstantExpr * caseVal = *ci;
-        testBlock->addCase(caseVal, caseBody);
         for (ConstantExprList::iterator ce = usedCaseVals.begin(); ce != usedCaseVals.end(); ++ce) {
           if (caseVal->isEqual(*ce)) {
             diag.error(caseVal) << "Duplicate case value in switch: " << caseVal;
           }
         }
         usedCaseVals.push_back(caseVal);
+
+        if (useEqualityTests) {
+          nextCaseBlock = createBlock("nextcase");
+          FnCallExpr * test = new FnCallExpr(Expr::FnCall, caseVal->location(), equalityTest, NULL);
+          test->appendArg(testExpr);
+          test->appendArg(caseVal);
+          test->setType(equalityTest->functionType()->returnType());
+          testBlock->condBranchTo(caseVal->location(), test, caseBody, nextCaseBlock);
+          testBlock = nextCaseBlock;
+        } else {
+          testBlock->addCase(caseVal, caseBody);
+        }
       }
 
       // Build the body of the case.
+      insertBlock(caseBody);
       setInsertPos(caseBody);
+      caseBody->setUnwindTarget(unwindTarget_);
       buildStmtCFG(caseSt->body());
 
       // Only generate a branch if we haven't returned or thrown.
@@ -773,8 +812,13 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   }
 
   if (elseSt != NULL) {
-    Block * elseBlock = createBlock("else");
-    testBlock->succs()[0] = elseBlock;
+    Block * elseBlock;
+    if (useEqualityTests) {
+      elseBlock = testBlock;
+    } else {
+      elseBlock = createBlock("else");
+      testBlock->succs()[0] = elseBlock;
+    }
     setInsertPos(elseBlock);
     buildStmtCFG(elseSt);
 
@@ -791,12 +835,16 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
       endBlock = new Block("endswitch");
     }
 
-    testBlock->succs()[0] = endBlock;
+    if (useEqualityTests) {
+      testBlock->branchTo(st->location(), endBlock);
+    } else {
+      testBlock->succs()[0] = endBlock;
+    }
   }
 
   if (endBlock != NULL) {
     endBlock->setUnwindTarget(unwindTarget_);
-    blocks.push_back(endBlock);
+    insertBlock(endBlock);
     setInsertPos(endBlock);
   } else {
     setInsertPos(NULL);
@@ -1546,12 +1594,16 @@ void StmtAnalyzer::setInsertPos(Block * blk) {
   }
 }
 
+void StmtAnalyzer::insertBlock(Block * block) {
+  insertPos_ = blocks.insert(insertPos_, block) + 1;
+}
+
 Block * StmtAnalyzer::createBlock(const char * name) {
   Block * block = new Block(name);
 
   // If a throw statement should occur within this block, here is where it will go.
   block->setUnwindTarget(unwindTarget_);
-  insertPos_ = blocks.insert(insertPos_, block) + 1;
+  insertBlock(block);
   return block;
 }
 

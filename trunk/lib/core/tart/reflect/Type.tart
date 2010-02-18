@@ -2,7 +2,7 @@ import tart.reflect.Reflection;
 import tart.annex.Intrinsic;
 
 /** The metatype object - the class that describes a type. */
-@Reflection(Reflection.Detail.NONE) class Type {
+@Reflection(Reflection.Detail.NONE) abstract class Type {
   enum TypeKind : ubyte {
     OPAQUE,
     PRIMITIVE,
@@ -29,6 +29,9 @@ import tart.annex.Intrinsic;
 
   /** What general kind of type this is (CLASS, STRUCT, etc.) */
   final def typeKind:TypeKind { get { return _typeKind; } }
+  
+  /** Return a string representation of this type. */
+  abstract override toString() -> String;
 
   /** Given a type literal, return the reflected type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> Type;

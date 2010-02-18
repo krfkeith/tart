@@ -307,6 +307,10 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
   if (rvalue != NULL && lvalue != NULL) {
     // TODO: We could also do this via memcpy.
     TypeShape typeShape = in->fromExpr()->canonicalType()->typeShape();
+    if (typeShape == Shape_ZeroSize) {
+      // If it's a zero-size struct then don't do the assignment at all.
+      return rvalue;
+    }
 #if FC_STRUCTS_INTERNAL
     if (typeShape == Shape_Large_Value) {
       rvalue = loadValue(rvalue, in->fromExpr(), "deref");
@@ -751,6 +755,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
 
     TypeShape typeShape = fieldType->typeShape();
     switch (typeShape) {
+      case Shape_ZeroSize:
       case Shape_Primitive:
       case Shape_Small_RValue:
         break;
@@ -781,6 +786,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
   } else {
     TypeShape typeShape = base->type()->typeShape();
     switch (typeShape) {
+      case Shape_ZeroSize:
       case Shape_Primitive:
       case Shape_Small_RValue:
       case Shape_Small_LValue:

@@ -27,7 +27,7 @@
     var _kind:MemberKind;
     var _access:Access;
     var _traits:Traits;
-    var _attributes:Attribute[];
+    var _attributes:Object[];
   }
 
   private def construct() {}
@@ -51,7 +51,25 @@
   final def traits:Traits { get { return _traits; } }
 
   /** Array of attributes for this member. */
-  final def attributes:Attribute[] { get { return _attributes; } }
+  final def attributes:Object[] { get { return _attributes; } }
+  
+  /** Return the first attribute of type 'attrType'. */
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
+    for attr in _attributes {
+      classify attr as result:T {
+        return result;
+      }
+    }
+    return null;
+  }
+
+	/** Return true if this member has an attribute of type 'attrType'. */ 
+  final def hasAttribute[%T](attrType:TypeLiteral[T]) -> bool {
+    for attr in _attributes {
+      return true if attr isa T;
+    }
+    return false;
+  }
 
   /** The class that declared this member, or null if it's a global function. */
   //let definingScope:Type;

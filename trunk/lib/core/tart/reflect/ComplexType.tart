@@ -2,13 +2,16 @@ import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 
 /** Reflection type for classes, structs, and interfaces. */
-public class ComplexType : SimpleType {
+public class ComplexType : Type {
   private {
+    var _name:String;
+    //var _scopeName:String;
+    var _size:uint32;
     var _typeInfo:Address[TypeInfoBlock];
     var _superType:optional ComplexType;
     var _interfaces:ComplexType[];
     var _typeParams:Type[];
-    var _attributes:Attribute[];
+    var _attributes:Object[];
     var _fields:Field[];
     var _properties:Property[];
     var _constructors:Method[];
@@ -23,6 +26,12 @@ public class ComplexType : SimpleType {
   /** Given a type literal, return the reflected complex type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> ComplexType;
 
+  /** Fully-qualified name of this type. */
+  final def name:String { get { return _name; } }
+
+  /** Size of this type in bytes. */
+  final def size:uint32 { get { return _size; } }
+  
   /** Pointer to this type's supertype, or null. */
   final def supertype:optional ComplexType { get { return self._superType; } }
   
@@ -33,7 +42,7 @@ public class ComplexType : SimpleType {
   final def typeParams:Type[] { get { return self._typeParams; } }
   
   /** Array of associated attributes */
-  final def attributes:Attribute[] { get { return self._attributes; } }
+  final def attributes:Object[] { get { return self._attributes; } }
   
   /** Array of field members. */
   final def fields:Field[] { get { return self._fields; } }
@@ -53,6 +62,9 @@ public class ComplexType : SimpleType {
   /** Return true if this type has a custom allocator. */
   final def hasCustomAlloc:bool { get { return self._alloc is null; } }
 
+  /** Return true if this type has a no-arg constructor. */
+  final def hasNoArgConstructor:bool { get { return self._noArgCtor is not null; } }
+
   /** Return the first method whose name is 'name'. */
   def findMethod(name:String) -> Method or void {
     for m in _methods {
@@ -65,10 +77,12 @@ public class ComplexType : SimpleType {
   }
 
   /** Allocate and initialize a new object of this type, using the specified constructor. */  
-  final def create(ctor:Method, args:Object...) -> Object {
+  final def create(ctor:Method, args:Object[]) -> Object {
     switch (typeKind) {
       case CLASS {
-        return ctor.call(self._alloc(), args);
+        let instance = self._alloc();
+        ctor.call(instance, args);
+        return instance;
       }
         
       case STRUCT {
@@ -81,12 +95,19 @@ public class ComplexType : SimpleType {
     }
   }
 
+  /** Allocate and initialize a new object of this type, using the specified constructor. */  
+  final def create(ctor:Method, args:Object...) -> Object {
+    return create(ctor, args);
+  }
+  
   /** Allocate and initialize a new object of this type, using a default constructor. */  
   final def create() -> Object {
     switch (typeKind) {
       case CLASS {
 	      if _noArgCtor is not null {
-	        return _noArgCtor(self._alloc());
+	        let instance = self._alloc();
+	        _noArgCtor(instance);
+	        return instance;
 	      }
     
         throw InvocationError("Class '{0}' does not have a no-arg constructor".format(name));
@@ -117,5 +138,20 @@ public class ComplexType : SimpleType {
 
   final def isSubclass[%T](cls:TypeLiteral[T]) -> bool {
     return isSubclassImpl(Type.of(T));
+  }
+
+  /** Return the first attribute of type 'attrType'. */
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
+    for attr in _attributes {
+      classify attr as result:T {
+        return result;
+      }
+    }
+    
+    return null;
+  }
+  
+  final override toString -> String {
+    return _name;
   }
 }

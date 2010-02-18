@@ -381,10 +381,7 @@ llvm::Constant * Reflector::emitMember(const CompositeType * structType, const V
   sb.addIntegerField(member_kind, memberKind(def));
   sb.addIntegerField(member_access, memberAccess(def));
   sb.addIntegerField(member_traits, memberTraits(def));
-  sb.addField(emitArray(
-      module->qualifiedName(),
-      member_attributes.get(),
-      ConstantList()));
+  sb.addField(emitAttributeArray(def->linkageName(), def->attrs()));
   return sb.build(Builtins::typeMember->irType());
 }
 
@@ -480,18 +477,24 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
   ReflectedMembers rfMembers;
 
   // First visit members which are explicitly declared in this module.
-  //const IterableScope * members = type->memberScope();
   visitMembers(rfMembers, type->memberScope());
-//  for (Defn * member = members->firstMember(); member != NULL; member = member->nextInScope()) {
-//    if (module()->reflectedDefs().count(member)) {
-//      visitMember(rfMembers, member);
-//    }
-//  }
 
+  TypeKind kind;
+  switch (type->typeClass()) {
+    case Type::Class: kind = CLASS; break;
+    case Type::Struct: kind = STRUCT; break;
+    case Type::Interface: kind = INTERFACE; break;
+    case Type::Protocol: kind = PROTOCOL; break;
+    default:
+      DFAIL("Invalid type");
+  }
+
+  // Type base
   StructBuilder sb(cg_);
-
-  // SimpleType base
-  sb.addField(emitSimpleType(Builtins::typeComplexType, type));
+  sb.addField(emitTypeBase(Builtins::typeComplexType, kind));
+  sb.addField(internSymbol(type->typeDefn()->linkageName()));
+  sb.addField(llvm::ConstantExpr::getTrunc(
+      llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
 
   // Pointer to TIB for this type.
   sb.addField(cg_.getTypeInfoBlockPtr(type));
@@ -514,7 +517,7 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
 
   sb.addField(emitArray(qname, complexType_interfaces.get(), interfaces));
   sb.addNullField(complexType_typeParams.type());
-  sb.addNullField(complexType_attributes.type());
+  sb.addField(emitAttributeArray(qname, type->typeDefn()->attrs()));
   sb.addField(emitArray(qname, complexType_fields.get(), rfMembers.fields));
   sb.addField(emitArray(qname, complexType_properties.get(), rfMembers.properties));
   sb.addField(emitArray(qname, complexType_ctors.get(), rfMembers.constructors));
@@ -652,10 +655,6 @@ llvm::Constant * Reflector::emitSimpleType(const Type * simpleType, const Type *
       break;
     }
 
-    case Type::Class: kind = CLASS; break;
-    case Type::Struct: kind = STRUCT; break;
-    case Type::Interface: kind = INTERFACE; break;
-    case Type::Protocol: kind = PROTOCOL; break;
     case Type::Enum: kind = ENUM; break;
 
     default:
@@ -711,6 +710,30 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
   GlobalVariable * array = new GlobalVariable(*irModule_, arrayStruct->getType(),
       true, GlobalValue::LinkOnceODRLinkage, arrayStruct, typeTupleName);
   return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
+}
+
+llvm::Constant * Reflector::emitAttributeArray(
+    const std::string & baseName, const ExprList & attrs) {
+  ConstantList attrInstances;
+  std::string attrArrayName(".attrs.");
+  attrArrayName.append(baseName);
+
+  for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
+    const Expr * e = *it;
+    const CompositeType * ctype = cast<CompositeType>(e->type());
+    DASSERT(ctype->isAttribute());
+    if (ctype->attributeInfo().isRetained()) {
+      if (const ConstantObjectRef * cobj = dyn_cast<ConstantObjectRef>(e)) {
+        llvm::Constant * attr = cg_.genConstRef(e, "", false);
+        attr = llvm::ConstantExpr::getPointerCast(attr, Builtins::typeObject->irEmbeddedType());
+        attrInstances.push_back(attr);
+      } else {
+        diag.error(e) << "Non-constant attribute (not implemented).";
+      }
+    }
+  }
+
+  return emitArray(attrArrayName, member_attributes.get(), attrInstances);
 }
 
 Reflector::Access Reflector::memberAccess(const Defn * member) {

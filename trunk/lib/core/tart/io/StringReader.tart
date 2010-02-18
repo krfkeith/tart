@@ -57,4 +57,7 @@ final class StringReader : TextReader {
     pos = str.size;
     return result;
   }
+
+  def acquire() {}
+  def release() {}
 }

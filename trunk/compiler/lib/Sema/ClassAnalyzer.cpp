@@ -174,7 +174,9 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
       type->passes().finish(CompositeType::ScopeCreationPass);
     }
 
-    return true;
+    if (target->hasUnboundTypeParams()) {
+      return true;
+    }
   }
 
   if (target->isTemplateMember()) {
@@ -335,6 +337,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   const ASTNodeList & astBases = ast->bases();
   CompositeType * primaryBase = NULL;
   TypeAnalyzer ta(moduleForDefn(target), target->definingScope());
+  ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
   if (target->isTemplate()) {
     ta.setActiveScope(&target->templateSignature()->paramScope());
   }
@@ -413,6 +416,11 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     CompositeType * baseClass = cast<CompositeType>(baseType);
     if (baseClass->isSingular()) {
       baseClass->addBaseXRefs(module);
+    }
+
+    if (baseClass->isSubclassOf(type)) {
+      diag.error(target) << "Circular inheritance not allowed";
+      return false;
     }
 
     if (isPrimary) {
@@ -707,7 +715,7 @@ bool ClassAnalyzer::analyzeConstructors() {
       }
 
       if (!hasConstructors && type != Builtins::typeTypeInfoBlock) {
-        createDefaultConstructor();
+        //createDefaultConstructor();
         createNoArgConstructor();
       }
     }

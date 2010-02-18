@@ -214,6 +214,7 @@ bool VarAnalyzer::resolveVarType() {
     target->passes().finish(VariableDefn::VariableTypePass);
   }
 
+  DASSERT(target->type() != NULL);
   DASSERT_OBJ(!target->type()->isVoidType(), target);
   return true;
 }
@@ -255,8 +256,6 @@ bool VarAnalyzer::resolveInitializers() {
         }
 
         case Storage_Instance:
-          break;
-
         case Storage_Local: {
           // Make sure that the type gets analyzed.
           if (var->type()->typeDefn() != NULL) {

@@ -201,7 +201,7 @@ void optimize(Module * module, const TargetData * targetData) {
   // Add an appropriate TargetData instance for this module...
   FunctionPassManager *FPasses = NULL;
   if (optOptimizationLevel >= O1) {
-    FunctionPassManager fpm(new ExistingModuleProvider(module));
+    FunctionPassManager fpm(module);
     if (targetData) {
       fpm.add(new TargetData(*targetData));
       fpm.doInitialization();
@@ -501,6 +501,9 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
       break;
 
     case O1:
+      optLevel = CodeGenOpt::Less;
+      break;
+
     case O2:
       optLevel = CodeGenOpt::Default;
       break;
@@ -511,8 +514,7 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
   }
 
   // Build up all of the passes that we want to do to the module.
-  ExistingModuleProvider moduleProvider(mod.get());
-  FunctionPassManager passes(&moduleProvider);
+  FunctionPassManager passes(mod.get());
 
   // Add the target data from the target machine, if it exists, or the module.
   if (const TargetData * targetData = target.getTargetData()) {
@@ -536,26 +538,23 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
       assert(0 && "Invalid file model!");
       goto fail;
 
-    case FileModel::Error:
-      errs() << "tartln: target does not support generation of this file type!\n";
-      goto fail;
-
-    case FileModel::AsmFile:
+    case TargetMachine::CGFT_AssemblyFile:
+    case TargetMachine::CGFT_ObjectFile:
       break;
 
     //case FileModel::MachOFile:
     //  emitter = AddMachOWriter(passes, *asOut.get(), target);
     //  break;
 
-    case FileModel::ElfFile:
-      emitter = AddELFWriter(passes, *asOut.get(), target);
-      break;
+    //case TargetMachine::ElfFile:
+    //  emitter = AddELFWriter(passes, *asOut.get(), target);
+    //  break;
   }
 
-  if (target.addPassesToEmitFileFinish(passes, emitter, optLevel)) {
-    errs() << "tartln: target does not support generation of this file type!\n";
-    goto fail;
-  }
+//  if (target.addPassesToEmitFileFinish(passes, emitter, optLevel)) {
+//    errs() << "tartln: target does not support generation of this file type!\n";
+//    goto fail;
+//  }
 
   passes.doInitialization();
 
@@ -576,7 +575,6 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
   }
 
   passes.doFinalization();
-  moduleProvider.releaseModule(&errMsg);
   return;
 
 fail:
@@ -753,7 +751,7 @@ int main(int argc, char **argv, char **envp) {
       generateBitcode(composite.get(), outputFilename);
     } else if (optOutputType == AssemblyFile) {
       generateAssembly(composite, outputFilename, *targetMachine.get(),
-          TargetMachine::AssemblyFile);
+          TargetMachine::CGFT_AssemblyFile);
     } else {
       printAndExit("Unsupported output type");
     }

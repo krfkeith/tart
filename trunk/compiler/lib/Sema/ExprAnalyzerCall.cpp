@@ -202,14 +202,14 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
   }
 }
 
-Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args,
+Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & args,
     const Type * expected) {
-  if (isErrorResult(func)) {
-    return func;
-  } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(func)) {
+  if (isErrorResult(callable)) {
+    return callable;
+  } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(callable)) {
     // It's a type.
     return callConstructor(loc, typeExpr->value()->typeDefn(), args);
-  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(func)) {
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(callable)) {
     CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
     call->setExpectedReturnType(expected);
     if (FunctionDefn * func = dyn_cast<FunctionDefn>(lval->value())) {
@@ -226,16 +226,49 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args,
     call->setType(reduceReturnType(call));
     return call;
 
-  } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(func)) {
-    CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
+  } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(callable)) {
+    CallExpr * call;
     const SpCandidateList & candidates = spe->candidates();
-    call->setExpectedReturnType(expected);
-    for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
-      SpCandidate * sp = *it;
-      if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->def())) {
-        addOverload(call, sp->base(), func, args, sp);
+
+    if (!candidates.empty()) {
+      SpCandidate * spFront = candidates.front();
+      if (isa<FunctionDefn>(spFront->def())) {
+        // Regular function call
+        call = new CallExpr(Expr::Call, loc, NULL);
+        call->setExpectedReturnType(expected);
+        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+          SpCandidate * sp = *it;
+          if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->def())) {
+            addOverload(call, sp->base(), func, args, sp);
+          } else {
+            diag.error(loc) << sp->def() << " is incompatible with " << spFront->def();
+          }
+        }
+      } else if (isa<TypeDefn>(spFront->def())) {
+        // Constructor call
+        call = new CallExpr(Expr::Construct, loc, NULL);
+        call->setExpectedReturnType(expected);
+        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+          SpCandidate * sp = *it;
+          if (TypeDefn * tdef = dyn_cast<TypeDefn>(sp->def())) {
+            //DASSERT(candidates.size() == 1);
+            if (!AnalyzerBase::analyzeType(tdef->typeValue(), Task_PrepConstruction)) {
+              return &Expr::ErrorVal;
+            }
+
+            // TODO: Do we need to pass in spCandidate?
+            checkAccess(loc, tdef);
+            if (!addOverloadedConstructors(loc, call, tdef, args, sp)) {
+              return &Expr::ErrorVal;
+            }
+            //return callConstructor(loc, tdef, args);
+          } else {
+            diag.error(loc) << sp->def() << " is incompatible with " << spFront->def();
+          }
+        }
       } else {
-        diag.error(loc) << sp->def() << " is not a callable expression.";
+        diag.error(loc) << spFront->def() << " is not a callable expression.";
+        return &Expr::ErrorVal;
       }
     }
 
@@ -246,7 +279,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * func, const ASTNodeList & args,
     call->setType(reduceReturnType(call));
     return call;
   } else {
-    diag.fatal(func) << Format_Verbose << "Unimplemented function type";
+    diag.fatal(callable) << Format_Verbose << "Unimplemented function type";
     DFAIL("Unimplemented");
   }
 }
@@ -312,20 +345,26 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
     return &Expr::ErrorVal;
   }
 
-  /*if (tdef->isSynthetic()) {
-    if (CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-
-    }
-  }*/
-
-  ExprList templateArgs;
-  ExprList coercedArgs;
-  FunctionDefn * constructor = NULL;
-  DefnList methods;
-
   CallExpr * call = new CallExpr(Expr::Construct, loc, tdef->asExpr());
   call->setExpectedReturnType(type);
-  if (tdef->isTemplate()) {
+
+  if (!addOverloadedConstructors(loc, call, tdef, args, NULL)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (!reduceArgList(args, call)) {
+    return &Expr::ErrorVal;
+  }
+
+  call->setType(reduceReturnType(call));
+  return call;
+}
+
+bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDefn * tdef,
+    const ASTNodeList & args, SpCandidate * sp) {
+  Type * type = tdef->typeValue();
+  DefnList methods;
+  if (tdef->isTemplate() && tdef->hasUnboundTypeParams()) {
     if (lookupTemplateMember(methods, tdef, istrings.idConstruct, loc)) {
       Expr * newExpr = new NewExpr(loc, type);
       DASSERT(!methods.empty());
@@ -337,7 +376,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
           DASSERT(cons->storageClass() == Storage_Instance);
           DASSERT(cons->isTemplate() || cons->isTemplateMember());
           cons->setFlag(FunctionDefn::Ctor);
-          addOverload(call, newExpr, cons, args);
+          addOverload(call, newExpr, cons, args, sp);
         }
       }
     } else if (lookupTemplateMember(methods, tdef, istrings.idCreate, loc)) {
@@ -348,14 +387,14 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
           if (analyzeFunction(create, Task_PrepTypeComparison)) {
             DASSERT(create->type() != NULL);
             //Type * returnType = create->returnType();
-            addOverload(call, NULL, create, args);
+            addOverload(call, NULL, create, args, sp);
           }
         }
       }
     } else {
       diag.error(loc) << "No constructors found for type " << tdef;
       DFAIL("Implement constructor inheritance for templates.");
-      return &Expr::ErrorVal;
+      return false;
     }
   } else {
     if (type->memberScope()->lookupMember(istrings.idConstruct, methods, false)) {
@@ -367,7 +406,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
         DASSERT(cons->isCtor());
         DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
-        addOverload(call, newExpr, cons, args);
+        addOverload(call, newExpr, cons, args, sp);
       }
     } else if (type->memberScope()->lookupMember(istrings.idCreate, methods, false)) {
       DASSERT(!methods.empty());
@@ -376,7 +415,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
         DASSERT(create->type() != NULL);
         if (create->storageClass() == Storage_Static) {
           //const Type * returnType = create->returnType();
-          addOverload(call, NULL, create, args);
+          addOverload(call, NULL, create, args, sp);
         }
       }
     } else if (type->memberScope()->lookupMember(istrings.idConstruct, methods, true)) {
@@ -388,11 +427,11 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
         DASSERT(cons->isCtor());
         DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
-        addOverload(call, newExpr, cons, args);
+        addOverload(call, newExpr, cons, args, sp);
       }
     } else {
       diag.error(loc) << "No constructors found for type " << tdef;
-      return &Expr::ErrorVal;
+      return false;
     }
   }
 
@@ -403,15 +442,10 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
       diag.info(*it) << Format_Verbose << *it;
     }
 
-    return &Expr::ErrorVal;
+    return false;
   }
 
-  if (!reduceArgList(args, call)) {
-    return &Expr::ErrorVal;
-  }
-
-  call->setType(reduceReturnType(call));
-  return call;
+  return true;
 }
 
 /** Attempt a coercive cast, that is, try to find a 'coerce' method that will convert

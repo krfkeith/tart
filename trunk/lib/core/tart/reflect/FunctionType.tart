@@ -36,8 +36,15 @@ class FunctionType : Type {
   /** The array of parameter types. */
   final def paramTypes:Type[] { get { return _paramTypes; } }
 
+	/** The number of parameters for this function type. */
+  final def numParams:int { get { return _paramTypes.size; } }
+
   /** Trampoline function to invoke a method of this type. */
   final def invoke(func:Address[void], obj:Object, args:Object[]) -> Object {
     return self._invoke(func, self._dcObject(obj), args);
+  }
+  
+  final override toString -> String {
+    return "FIXME";
   }
 }

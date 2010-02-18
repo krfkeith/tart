@@ -15,6 +15,8 @@
 
 namespace tart {
 
+class CullableChoicePoint;
+
 /// -------------------------------------------------------------------
 /// Represents a point in the expression hierarchy where the AST node
 /// maps to multiple possible items. The type inferencer attempts to
@@ -34,6 +36,28 @@ public:
   /** Return the current worst-case conversion rank. */
   virtual ConversionRank rank() const = 0;
 
+  /** Do unification of the operation with its arguments. */
+  virtual bool unify(int cullingDepth) = 0;
+
+  /** Generate a printable version of this choice point's expression. */
+  virtual const Expr * expr() const = 0;
+
+  // Eliminate culled candidates
+  virtual void finish() = 0;
+
+  // Report the given error message, along with the calling signature and the candidates.
+  virtual void reportErrors(const char * msg) = 0;
+
+  // Print debugging info
+  virtual void reportRanks() = 0;
+
+  /** Downcast. */
+  virtual CullableChoicePoint * asCullable() { return NULL; }
+};
+
+/// -------------------------------------------------------------------
+class CullableChoicePoint : public ChoicePoint {
+public:
   /** Return true if the specified choice has been culled. */
   virtual bool isCulled(int index) const = 0;
 
@@ -52,19 +76,16 @@ public:
   /** Eliminate from consideration any culled candidates. */
   virtual void removeCulled() = 0;
 
-  /** Generate a printable version of this choice point's expression. */
-  virtual const Expr * expr() const = 0;
+  /** Save the single best candidate. */
+  virtual void saveBest() = 0;
 
-  // Eliminate culled candidates
-  //void finish();
-
-  // Report the given error message, along with the calling signature and the candidates.
-  //void reportErrors(const char * msg);
+  /** Undo all cullings of greater than search depth. */
+  virtual void backtrack(int searchDepth) = 0;
 };
 
 /// -------------------------------------------------------------------
 /// Represents a call site within an expression.
-class CallSite : public ChoicePoint {
+class CallSite : public CullableChoicePoint {
 public:
   CallSite()
     : callExpr_(NULL)
@@ -93,6 +114,7 @@ public:
   void removeCulled();
   void backtrack(int searchDepth);
   const Expr * expr() const { return callExpr_; }
+  CullableChoicePoint * asCullable() { return this; }
 
   // Eliminate culled candidates
   void finish();
@@ -121,7 +143,7 @@ private:
   CallCandidate * best_;
 };
 
-typedef llvm::SmallVector<CallSite *, 16> CallSiteList;
+typedef llvm::SmallVector<ChoicePoint *, 16> CallSiteList;
 typedef llvm::SmallSet<const Expr *, 16> ExprSet;
 
 /// -------------------------------------------------------------------
@@ -145,6 +167,29 @@ private:
   ConstantInteger * expr_;
   int remaining_;
   ConversionRank lowestRank_;
+};
+
+/// -------------------------------------------------------------------
+/// A choice point for tuple constructors.
+class TupleCtorSite : public ChoicePoint {
+public:
+  TupleCtorSite(TupleCtorExpr * in);
+
+  // Update conversion rankings
+  void update();
+  size_t count() const { return 1; }
+  int remaining() const { return 1; }
+  ConversionRank rank() const { return rank_; }
+  bool unify(int cullingDepth);
+  void removeCulled() {}
+  void finish() {}
+  void reportErrors(const char * msg) {}
+  void reportRanks();
+  const Expr * expr() const { return expr_; }
+
+private:
+  TupleCtorExpr * expr_;
+  ConversionRank rank_;
 };
 
 /// -------------------------------------------------------------------

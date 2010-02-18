@@ -186,4 +186,7 @@ final class StdFileStream : TextReader, TextWriter {
   def close {
     IOError.checkResult(_close(_file));
   }
+  
+  def acquire() {}
+  def release() { close(); }
 }

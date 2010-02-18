@@ -1,4 +1,0 @@
-protocol Scoped {
-  def enter();
-  def exit();
-}

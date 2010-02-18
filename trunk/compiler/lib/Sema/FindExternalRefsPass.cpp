@@ -153,6 +153,13 @@ Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
   return in;
 }
 
+Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
+  if (in->value()->typeDefn() != NULL) {
+    module->addSymbol(in->value()->typeDefn());
+  }
+  return in;
+}
+
 Expr * FindExternalRefsPass::visitInstanceOf(InstanceOfExpr * in) {
   if (const CompositeType * cls = dyn_cast<CompositeType>(in->toType())) {
     addSymbol(cls->typeDefn());

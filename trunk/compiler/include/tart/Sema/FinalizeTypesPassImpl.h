@@ -42,6 +42,7 @@ private:
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitRefEq(BinaryExpr * in);
   Expr * visitTupleCtor(TupleCtorExpr * in);
+  Expr * visitTypeLiteral(TypeLiteralExpr * in);
   //Expr * visitInitVar(InitVarExpr * in);
 
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);

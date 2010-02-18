@@ -26,9 +26,15 @@ public:
   /** Constructor. */
   TypeAnalyzer(Module * mod, Scope * parent)
     : AnalyzerBase(mod, parent)
+    , lookupOptions_(LOOKUP_DEFAULT)
   {}
 
   virtual ~TypeAnalyzer() {}
+
+  /** Set the options for looking up type names. */
+  void setTypeLookupOptions(LookupOptions lookupOptions) {
+    lookupOptions_ = lookupOptions;
+  }
 
   /** Construct a type from an AST. */
   Type * typeFromAST(const ASTNode * ast);
@@ -45,6 +51,7 @@ public:
 
 protected:
   void undefinedType(const ASTNode * ast);
+  LookupOptions lookupOptions_;
 };
 
 }

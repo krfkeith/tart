@@ -585,6 +585,32 @@ MathIntrinsic1f<llvm::Intrinsic::pow>
 MathIntrinsic1f<llvm::Intrinsic::pow>::instance("tart.core.Math.pow");
 
 // -------------------------------------------------------------------
+// AtomicCasIntrinsic
+
+AtomicCasIntrinsic AtomicCasIntrinsic::instance_int("tart.atomic.AtomicInt.cas");
+AtomicCasIntrinsic AtomicCasIntrinsic::instance_ptr("tart.atomic.AtomicPtr.cas");
+
+llvm::Value * AtomicCasIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 2);
+  const Expr * self = call->selfArg();
+  const Expr * cmp = call->arg(0);
+  const Expr * val = call->arg(1);
+
+  Value * selfValue = cg.genLValueAddress(self);
+  Value * theValue = cg.builder().CreateConstInBoundsGEP2_32(selfValue, 0, 0, "value");
+  Value * cmpValue = cg.genExpr(cmp);
+  Value * valValue = cg.genExpr(val);
+
+  const llvm::Type * types[2];
+  types[0] = cmpValue->getType();
+  types[1] = theValue->getType();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(
+      cg.irModule(), llvm::Intrinsic::atomic_cmp_swap, types, 2);
+  Value * resultVal = cg.builder().CreateCall3(intrinsic, theValue, cmpValue, valValue, "");
+  return cg.builder().CreateICmpEQ(resultVal, cmpValue);
+}
+
+// -------------------------------------------------------------------
 // FlagsApplyIntrinsic
 FlagsApplyIntrinsic FlagsApplyIntrinsic::instance;
 
@@ -712,26 +738,6 @@ Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
 }
 
 // -------------------------------------------------------------------
-// NonreflectiveApplyIntrinsic
-NonreflectiveApplyIntrinsic NonreflectiveApplyIntrinsic::instance;
-
-Expr * NonreflectiveApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
-  assert(args.size() == 1);
-  if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
-    if (TypeDefn * tdef = ctype->value()->typeDefn()) {
-      tdef->addTrait(Defn::Nonreflective);
-    }
-  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
-    lval->value()->addTrait(Defn::Nonreflective);
-  } else {
-    diag.fatal(loc) << "Invalid target for @Nonreflective.";
-  }
-
-  return args[0];
-}
-
-// -------------------------------------------------------------------
 // ReflectionApplyIntrinsic
 ReflectionApplyIntrinsic ReflectionApplyIntrinsic::instance;
 
@@ -788,6 +794,8 @@ Value * ProxyCreateIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 
   // Could be a bound or unbound method.
   const Expr * handlerArg = call->arg(1);
+
+  llvm::Constant * proxyTib = cg.genProxyType(static_cast<const CompositeType *>(type));
 
   // Note: We want to make sure that we generate this only once.
 

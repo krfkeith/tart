@@ -14,7 +14,7 @@ set(TART_OPTIONS
 #  -trace-def=InterfaceTest
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
-set(TARTLN_OPTIONS -internalize -O0)
+set(TARTLN_OPTIONS -internalize -O2)
 
 set(TEST_BC_FILES)
 

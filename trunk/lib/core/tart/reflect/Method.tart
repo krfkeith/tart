@@ -4,7 +4,7 @@ import tart.core.Memory.Address;
 final class Method : Member {
   private {
 	  var _typeParams:Type[];
-    var _functionType:FunctionType;
+    var _type:FunctionType;
 	  var _params:Parameter[];
     var _methodPointer:Address[void];
   }
@@ -15,13 +15,16 @@ final class Method : Member {
   final def typeParams:Type[] { get { return _typeParams; } }
 
   /** The type of the method. */
-  final def functionType:FunctionType { get { return _functionType; } }
+  final def type:FunctionType { get { return _type; } }
 
   /** The return type of the method. */
-  final def returnType:Type { get { return _functionType.returnType; } }
+  final def returnType:Type { get { return _type.returnType; } }
 
+	/** Number of parameters for this method. */
+  final def numParams:int { get { return type.numParams; } }
+  
   /** The array of function parameter types. */
-  final def paramTypes:Type[] { get { return _functionType.paramTypes; } }
+  final def paramTypes:Type[] { get { return _type.paramTypes; } }
 
   /** The parameters of this method. */
   final def params:Parameter[] { get { return _params; } }
@@ -33,7 +36,7 @@ final class Method : Member {
    */
   final def call(obj:Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
-    return _functionType.invoke(_methodPointer, obj, args);
+    return _type.invoke(_methodPointer, obj, args);
   }
 
   /** Call this method with the given arguments.
@@ -42,6 +45,6 @@ final class Method : Member {
         args - The list of arguments to the method.
    */
   final def call(obj:Object, args:Object...) -> Object {
-    return _functionType.invoke(_methodPointer, obj, args);
+    return _type.invoke(_methodPointer, obj, args);
   }
 }

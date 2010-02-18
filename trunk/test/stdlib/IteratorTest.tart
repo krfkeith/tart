@@ -57,16 +57,25 @@ class IteratorTest : Test {
 	  assertEq(5, sum);
 	}
 	
-	def testIteratorEqual() {
+	def testIteratorEqual {
 	  assertTrue(Iterators.equal([1, 2, 3], [1, 2, 3]));
 	  assertFalse(Iterators.equal([1, 2, 3], [1, 2, 4]));
 	  assertFalse(Iterators.equal([1, 2, 3], [1, 2, 3, 4]));
 	  assertFalse(Iterators.equal([1, 2, 3], [1, 2]));
 	}
 	
-	def testForeach2() {
+	def testForeach2 {
 	  assertEq(5, sum(1,2,2));
 	  assertEq(10, sum(1,5,4));
+	}
+	
+	def testEnumerator {
+	  var total:int = 0;
+	  for i, value in Iterators.enumerate(["One", "Two", "Three"]) {
+	    total += i;
+	  }
+	  
+	  assertEq(3, total);
 	}
 }
 

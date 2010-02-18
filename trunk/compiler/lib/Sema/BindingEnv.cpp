@@ -373,31 +373,27 @@ bool BindingEnv::unifyCompositeType(
     return true;
   }
 
-  if (variance == Contravariant) {
-    Substitution * savedState = substitutions();
-    for (ClassList::const_iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
-      if (unifyCompositeType(source, pattern, *it, Invariant)) {
-        return true;
-      }
+  // See if we can find a match in the superclasses.
+  // This may produce a false positive, which will be caught later.
 
-      setSubstitutions(savedState);
+  Substitution * savedState = substitutions();
+  for (ClassList::const_iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
+    if (unifyCompositeType(source, pattern, *it, Invariant)) {
+      return true;
     }
 
-    return false;
-  } else if (variance == Covariant) {
-    Substitution * savedState = substitutions();
-    for (ClassList::const_iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
-      if (unifyCompositeType(source, *it, value, Invariant)) {
-        return true;
-      }
-
-      setSubstitutions(savedState);
-    }
-
-    return false;
-  } else {
-    return false;
+    setSubstitutions(savedState);
   }
+
+  for (ClassList::const_iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
+    if (unifyCompositeType(source, *it, value, Invariant)) {
+      return true;
+    }
+
+    setSubstitutions(savedState);
+  }
+
+  return false;
 }
 
 bool BindingEnv::unifyUnionType(

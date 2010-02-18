@@ -375,18 +375,15 @@ void CodeGenerator::genSwitch(Block * blk) {
   }
 
   size_t numCases = blk->succs().size() - 1;
-  if (switchValue->getType()->isInteger()) {
-    SwitchInst * switchInst = builder_.CreateSwitch(switchValue, defaultBlock->irBlock(), numCases);
-    for (size_t i = 0; i < numCases; ++i) {
-      Expr * caseValExpr = blk->termExprs()[i + 1];
-      Block * caseBody = blk->succs()[i + 1];
-      Constant * caseVal = genConstExpr(caseValExpr);
-      if (caseVal != NULL) {
-        switchInst->addCase(cast<ConstantInt>(caseVal), caseBody->irBlock());
-      }
+  DASSERT(switchValue->getType()->isIntegerTy());
+  SwitchInst * switchInst = builder_.CreateSwitch(switchValue, defaultBlock->irBlock(), numCases);
+  for (size_t i = 0; i < numCases; ++i) {
+    Expr * caseValExpr = blk->termExprs()[i + 1];
+    Block * caseBody = blk->succs()[i + 1];
+    Constant * caseVal = genConstExpr(caseValExpr);
+    if (caseVal != NULL) {
+      switchInst->addCase(cast<ConstantInt>(caseVal), caseBody->irBlock());
     }
-  } else {
-    DFAIL("Implement non-integer switch");
   }
 }
 

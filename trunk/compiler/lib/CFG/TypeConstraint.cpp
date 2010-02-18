@@ -35,7 +35,7 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType, const Conversi
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     ConversionRank rank = toType->canConvert(resultType);
     if (rank > best) {
       best = rank;
@@ -56,7 +56,7 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     ConversionRank rank = resultType->convert(conversion);
     if (rank > best) {
       best = rank;
@@ -79,7 +79,7 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
     if (env.unify(&candidateSite, pattern, resultType, Invariant)) {
       if (match) {
@@ -108,7 +108,7 @@ const Type * ResultOfConstraint::singularValue() const {
       return NULL;
     }
 
-    result = (*it)->resultType();
+    result = candidateResultType(*it);
   }
 
   return result;
@@ -122,7 +122,7 @@ bool ResultOfConstraint::isSubtype(const Type * other) const {
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     if (!resultType->isSubtype(other)) {
       return false;
     }
@@ -138,13 +138,21 @@ bool ResultOfConstraint::includes(const Type * other) const {
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     if (resultType->includes(other)) {
       return true;
     }
   }
 
   return false;
+}
+
+const Type * ResultOfConstraint::candidateResultType(const CallCandidate * cc) const {
+  if (callExpr->exprType() == Expr::Construct && cc->method()->isCtor()) {
+    return cc->method()->functionType()->selfParam()->type();
+  }
+
+  return cc->resultType();
 }
 
 bool ResultOfConstraint::isSingular() const {
@@ -175,7 +183,7 @@ void ResultOfConstraint::format(FormatStream & out) const {
       continue;
     }
 
-    const Type * resultType = (*it)->resultType();
+    const Type * resultType = candidateResultType(*it);
     if (!first) {
       out << "|";
     }
@@ -267,7 +275,7 @@ bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * patte
 
     const Type * paramType = (*it)->paramType(argIndex);
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, paramType, Invariant)) {
+    if (env.unify(&candidateSite, pattern, paramType, Contravariant)) {
       if (match) {
         env.setSubstitutions(saveSub);
         return true;

@@ -6,6 +6,7 @@
 #define TART_GEN_REFLECTOR_H
 
 #include "tart/Common/SourceLocation.h"
+#include "tart/CFG/CFG.h"
 
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/ADT/StringMap.h"
@@ -144,6 +145,9 @@ public:
 
   /** Generate reflection information for a Member struct. */
   llvm::Constant * emitMember(const CompositeType * structType, const ValueDefn * def);
+
+  /** Emit the array of attributes for the given defn. */
+  llvm::Constant * emitAttributeArray(const std::string & baseName, const ExprList & attrs);
 
   /** Generate an array containing reflection data supplied by the specified array. */
   llvm::Constant * emitArray(

@@ -716,17 +716,21 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
   const Type * ty = dealias(in->type());
-  const TupleType * ttype;
+/*  const TupleType * ttype;
   if (const TupleOfConstraint * toc = dyn_cast<TupleOfConstraint>(ty)) {
-    //TupleCtorExpr * tuple() const { return tuple_; }
-    DFAIL("Imp");
-  } else if ((ttype = dyn_cast<TupleType>(dealias(in->type())))) {
+    ty = toc->singularValue();
+    if (ty == NULL) {
+      DFAIL("Imp");
+    }
+  }
+
+  if ((ttype = dyn_cast<TupleType>(ty))) {
     if (in->argCount() != ttype->numTypeParams()) {
       diag.error(in->location()) << "Type of '" << in << "' does not match '" << ttype << "'";
     }
   } else {
     diag.error(in->location()) << "Type of '" << in << "' does not match '" << in->type() << "'";
-  }
+  }*/
 
   ExprList & args = in->args();
   ConstTypeList types;
@@ -737,8 +741,9 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
       arg = chooseIntSize(arg);
     }
 
-    if (ttype != NULL) {
-    }
+    DASSERT_OBJ(arg->isSingular(), arg);
+    //if (ttype != NULL) {
+    //}
 
     types.push_back(arg->type());
     *it = arg;
@@ -746,10 +751,30 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
 
   //return addCastIfNeeded()
   in->setType(TupleType::get(types));
-  DASSERT(ttype->isSingular());
+  //DASSERT(ttype->isSingular());
 
   return in;
   //return addCastIfNeeded(in, ttype);
+}
+
+Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
+  const Type * type = in->value();
+  if (const TypeBinding * tb = dyn_cast<TypeBinding>(type)) {
+    if (tb->value() != NULL) {
+      return new TypeLiteralExpr(in->location(), tb->value());
+    }
+
+    //diag.fatal(in) << "Unbound type var " << in;
+    return in;
+  }
+
+  if (isa<TypeVariable>(type)) {
+    diag.fatal(in) << "Unbound type var " << in;
+    return in;
+  }
+
+  //DASSERT_OBJ(in->isSingular(), in);
+  return in;
 }
 
 /*Expr * FinalizeTypesPassImpl::visitInitVar(InitVarExpr * in) {
@@ -784,6 +809,5 @@ Expr * FinalizeTypesPassImpl::chooseIntSize(Expr * in) {
   ptype = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
   return ptype->implicitCast(in->location(), cintVal);
 }
-
 
 } // namespace tart
