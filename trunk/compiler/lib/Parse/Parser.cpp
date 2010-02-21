@@ -2360,6 +2360,18 @@ ASTNode * Parser::unaryOperator() {
       return result;
     }
 
+    case Token_Tilde: {
+      // Negated operators
+      next();
+      SourceLocation loc = lexer.tokenLocation();
+      ASTNode * e1 = unaryOperator();
+      if (e1 == NULL)
+        return NULL;
+      ASTOper * result = new ASTOper(ASTNode::Complement, loc);
+      result->append(e1);
+      return result;
+    }
+
     case Token_Minus: {
       // Negated operators
       next();

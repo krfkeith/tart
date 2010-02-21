@@ -16,6 +16,13 @@ Design TODOS:
       * Thread local ptr to TLAB.
   * SS1 and SS2. These have SSABs. = 50% Eden size.
   * SSAB.
+  * Problems to solve:
+    Still need to know how to mark objects in different spaces.
+  
+Hard problems:
+  -- GC
+  -- Backtrace
+  -- Reflection size
 
 Working on currently:
   -- Get static ctors working.
@@ -343,14 +350,3 @@ abstract def foo(virtual k:Object);
 override Module.foo(k:String) {
 }
 
-
-class AllocationBlock {
-  private var _next:AllocationBlock;
-  private var _addrs:AddressRange;
-  
-  def hasSpace(size:int) -> bool {
-  }
-  
-  def bump(size:int) -> Address[byte] {
-  }
-}

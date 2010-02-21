@@ -163,6 +163,7 @@ public:
   llvm::Value * genRefEq(const BinaryExpr * in, bool invert);
   llvm::Value * genPtrDeref(const UnaryExpr * in);
   llvm::Value * genNot(const UnaryExpr * in);
+  llvm::Value * genComplement(const UnaryExpr * in);
   llvm::Value * genLogicalOper(const BinaryExpr * in);
   llvm::Value * genCall(const FnCallExpr * in);
   llvm::Value * genIndirectCall(const IndirectCallExpr * in);

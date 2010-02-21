@@ -72,6 +72,7 @@ NODE_TYPE(TParamDefault)
 // Unary operators
 NODE_TYPE(Negate)
 NODE_TYPE(LogicalNot)
+NODE_TYPE(Complement)
 
 // Evaluations and Invocations
 NODE_TYPE(Call)         // Function call

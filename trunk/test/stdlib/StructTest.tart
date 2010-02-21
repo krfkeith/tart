@@ -8,6 +8,7 @@ def main(args:String[]) -> int32 {
 // TODO: Arrays and native arrays of structs.
 // TODO: Struct pointers.
 // TODO: Structs in unions and tuples.
+// TODO: Zero-size struct tests, esp. as members of larger types.
 
 struct Point {
   var x:int32;

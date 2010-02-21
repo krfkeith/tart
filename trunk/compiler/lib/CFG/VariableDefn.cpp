@@ -19,6 +19,7 @@ VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr *
   , memberIndex_(0)
   , memberIndexRecursive_(0)
   , isConstant_(dtype == Defn::Let)
+  , threadLocal_(false)
 {}
 
 VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
@@ -29,6 +30,7 @@ VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
   , memberIndex_(0)
   , memberIndexRecursive_(0)
   , isConstant_(dtype == Defn::Let)
+  , threadLocal_(false)
 {}
 
 void VariableDefn::trace() const {

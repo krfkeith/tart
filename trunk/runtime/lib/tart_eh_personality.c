@@ -31,6 +31,12 @@ const char elven_magic[] = { 0x7F, 0x45, 0x4c, 0x46 };
 #define DW_EH_PE_omit 0xff
 #define DW_EH_PE_udata4 0x03
 
+#define DW_EH_PE_pcrel 0x10
+#define DW_EH_PE_textrel 0x20
+#define DW_EH_PE_datarel 0x30
+#define DW_EH_PE_funcrel 0x40
+#define DW_EH_PE_aligned 0x50
+
 // Opaque definition of a Tart type
 struct Type;
 
@@ -71,6 +77,7 @@ struct LSDAHeaderInfo {
   const unsigned char * typeTable;
   const unsigned char * actionTable;
   unsigned char typeTableEncoding;
+  _Unwind_Ptr typeTableBase;
   unsigned char callSiteEncoding;
 };
 
@@ -183,6 +190,32 @@ static const unsigned char * readEncodedValue(
   return pos;
 }
 
+_Unwind_Ptr encodedValueBase(unsigned char encoding, struct _Unwind_Context * context) {
+  switch (encoding & 0x70) {
+    case DW_EH_PE_absptr:
+    case DW_EH_PE_pcrel:
+    case DW_EH_PE_aligned:
+      return 0;
+      break;
+
+    case DW_EH_PE_textrel:
+      return _Unwind_GetTextRelBase(context);
+      break;
+
+    case DW_EH_PE_datarel:
+      return _Unwind_GetDataRelBase(context);
+      break;
+
+    case DW_EH_PE_funcrel:
+      return _Unwind_GetRegionStart(context);
+      break;
+
+    default:
+      fprintf(stderr, "invalid type table encoding\n");
+      abort();
+  }
+}
+
 // Parse the language-specific data area (LSDA) Header.
 const unsigned char * parseLDSAHeader(const unsigned char * pos, struct LSDAHeaderInfo * lpInfo) {
   _Unwind_Word offset;
@@ -279,24 +312,11 @@ bool findAction(
       const struct TypeInfoBlock * type;
       actionFilter *= encodedValueSize(lpInfo->typeTableEncoding);
       readEncodedValue(
-          //_Unwind_Ptr baseAddr,
-          0, // lpInfo->typeTable,                // base ptr
+          lpInfo->typeTableBase,            // base ptr
           lpInfo->typeTableEncoding,        // encoding
           lpInfo->typeTable - actionFilter, // position
           (_Unwind_Ptr *) &type);
 
-      // LLVM only uses DW_EH_PE_absptr encoding, anything else not supported.
-
-//      if (lpInfo->typeTableEncoding == DW_EH_PE_absptr) {
-//      } else {
-//        fprintf(stderr, "Unsupported exception encoding type %d\n", lpInfo->typeTableEncoding);
-//        abort();
-//      }
-//
-//      // Look up the type in the type table.
-//      const struct TypeInfoBlock * const * typeTable =
-//          (const struct TypeInfoBlock * const *) lpInfo->typeTable;
-//      const struct TypeInfoBlock * type = typeTable[-actionFilter];
       if (hasBase(tib, type)) {
         *actionResult = actionResultIndex;
         return true;
@@ -405,6 +425,7 @@ _Unwind_Reason_Code __tart_eh_personality_impl(
 
   // Find the call site that threw the exception.
   pos = parseLDSAHeader(langSpecData, &lpInfo);
+  lpInfo.typeTableBase = encodedValueBase(lpInfo.typeTableEncoding, context);
   pos = findCallSite(pos, &lpInfo, ip, &csInfo);
   if (csInfo.landingPad == 0) {
     return _URC_CONTINUE_UNWIND;

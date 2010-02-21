@@ -85,6 +85,7 @@ public:
   Expr * reduceTypeTest(const ASTOper * ast);
   Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
+  Expr * reduceComplement(const ASTOper * ast);
   Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
   Expr * reduceTuple(const ASTOper * ast, const Type * expected);
 

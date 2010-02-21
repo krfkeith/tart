@@ -136,6 +136,9 @@ Expr * EvalPass::evalExpr(Expr * in) {
       return evalNot(static_cast<UnaryExpr *>(in));
 
 #if 0
+    case Expr::Complement:
+      return evalComplement(static_cast<UnaryExpr *>(in));
+
     case Expr::InitVar:
       return evalInitVar(static_cast<InitVarExpr *>(in));
 
@@ -557,6 +560,9 @@ Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
   }
 
   llvm::Constant * cresult = llvm::ConstantExpr::get(in->opCode(), c0, c1);
+  if (llvm::ConstantInt * cint = dyn_cast<llvm::ConstantInt>(cresult)) {
+    return ConstantInteger::get(in->location(), in->type(), cint);
+  }
 
   switch (in->opCode()) {
     case llvm::Instruction::Add:
@@ -566,6 +572,7 @@ Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
       break;
   }
 
+  diag.debug(in) << in;
   DFAIL("Implement");
 }
 
