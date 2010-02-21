@@ -358,6 +358,15 @@ class TargetPropertyApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// ThreadLocal.apply intrinsic
+class ThreadLocalApplyIntrinsic : public Intrinsic {
+  static ThreadLocalApplyIntrinsic instance;
+  ThreadLocalApplyIntrinsic() : Intrinsic("tart.concurrent.ThreadLocal.apply") {}
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
 // Proxy.create intrinsic
 class ProxyCreateIntrinsic : public Intrinsic {
   static ProxyCreateIntrinsic instance;

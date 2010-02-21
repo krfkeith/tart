@@ -779,6 +779,26 @@ Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, const Func
 }
 
 // -------------------------------------------------------------------
+// ThreadLocalIntrinsic
+ThreadLocalApplyIntrinsic ThreadLocalApplyIntrinsic::instance;
+
+Expr * ThreadLocalApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+      if (var->storageClass() == Storage_Static || var->storageClass() == Storage_Global) {
+        var->setThreadLocal(true);
+        return args[0];
+      }
+    }
+  }
+
+  diag.error(loc) << "Invalid target for 'ThreadLocal'";
+  return args[0];
+}
+
+// -------------------------------------------------------------------
 // ProxyCreateIntrinsic
 ProxyCreateIntrinsic ProxyCreateIntrinsic::instance;
 

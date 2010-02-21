@@ -144,7 +144,10 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
       return reduceLogicalOper(static_cast<const ASTOper *> (ast));
 
     case ASTNode::LogicalNot:
-    return reduceLogicalNot(static_cast<const ASTOper *> (ast));
+      return reduceLogicalNot(static_cast<const ASTOper *> (ast));
+
+    case ASTNode::Complement:
+      return reduceComplement(static_cast<const ASTOper *> (ast));
 
     case ASTNode::ArrayLiteral:
       return reduceArrayLiteral(static_cast<const ASTOper *> (ast), expected);
@@ -699,6 +702,34 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
 
   return new UnaryExpr(
       Expr::Not, ast->location(), &BoolType::instance, value);
+}
+
+Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
+  Expr * value = reduceExpr(ast->arg(0), NULL);
+
+  if (isErrorResult(value)) {
+    return value;
+  }
+
+  if (ConstantExpr * cval = dyn_cast<ConstantExpr>(value)) {
+    if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cval)) {
+      return ConstantInteger::get(ast->location(), cint->type(),
+          cast<llvm::ConstantInt>(llvm::ConstantInt::get(
+              cint->value()->getType(),
+              ~cint->value()->getValue())));
+    }
+
+    diag.error(ast) << "Invalid argument for bitwise 'not' expression";
+    return &Expr::ErrorVal;
+  }
+
+  if (!value->type()->isIntType()) {
+    diag.error(ast) << "Invalid argument for bitwise 'not' expression";
+    return &Expr::ErrorVal;
+  }
+
+  return new UnaryExpr(
+      Expr::Complement, ast->location(), &BoolType::instance, value);
 }
 
 Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {

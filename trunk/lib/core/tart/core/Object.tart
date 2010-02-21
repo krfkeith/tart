@@ -15,8 +15,7 @@ public class Object : Hashable {
       The caller is responsible for insuring that 'size' is large enough
       to hold the resulting type.
   */
-  //[tart.config.Permissions.Require("pointer-math")]
-  @Intrinsic
+  @Intrinsic @Unsafe
   protected static def __valloc[%T](size:int) -> T;
 
   /** Compiler intrinsic used to create and initialize instances of
@@ -33,8 +32,7 @@ public class Object : Hashable {
       which will be bitcast to int. This is used in conjunction with
       'zeroPtr' to calculate the offset of a field within a data structure.
   */
-  //[tart.config.Permissions.Require("pointer-math")]
-  @Intrinsic
+  @Intrinsic @Unsafe
   protected static def __pvalloc[%T, %S](size:T) -> S;
 
   /** Return the reflected type of this object. */

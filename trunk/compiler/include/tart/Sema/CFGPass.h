@@ -53,6 +53,7 @@ public:
   virtual Expr * visitRefEq(BinaryExpr * in);
   virtual Expr * visitPtrDeref(UnaryExpr * in);
   virtual Expr * visitNot(UnaryExpr * in);
+  virtual Expr * visitComplement(UnaryExpr * in);
   virtual Expr * visitLogicalOper(BinaryExpr * in);
   virtual Expr * visitInitVar(InitVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);

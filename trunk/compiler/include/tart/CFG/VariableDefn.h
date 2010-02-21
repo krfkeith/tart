@@ -58,6 +58,12 @@ public:
   bool isConstant() const { return isConstant_; }
   void setIsConstant(bool isConstant) { isConstant_ = isConstant; }
 
+  /** True if the value of this variable is always the initializer. This will always be
+      true for 'let' variables except in the special case of 'let' variables that
+      are of instance scope and which are initialized in the constructor. */
+  bool isThreadLocal() const { return threadLocal_; }
+  void setThreadLocal(bool threadLocal) { threadLocal_ = threadLocal; }
+
   /** Return true if this variable represents a memory location in which its value
       is stored, false if it is a constant with no storage. */
   bool hasStorage() const;
@@ -83,6 +89,7 @@ private:
   int memberIndex_;
   int memberIndexRecursive_;
   bool isConstant_;
+  bool threadLocal_;
   PassMgr passes_;
 };
 

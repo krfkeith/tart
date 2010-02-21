@@ -144,6 +144,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::Or:
       return visitLogicalOper(static_cast<BinaryExpr *>(in));
 
+    case Expr::Complement:
+      return visitComplement(static_cast<UnaryExpr *>(in));
+
     case Expr::InitVar:
       return visitInitVar(static_cast<InitVarExpr *>(in));
 
@@ -295,6 +298,11 @@ Expr * CFGPass::visitLogicalOper(BinaryExpr * in) {
 }
 
 Expr * CFGPass::visitNot(UnaryExpr * in) {
+  in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitComplement(UnaryExpr * in) {
   in->setArg(visitExpr(in->arg()));
   return in;
 }

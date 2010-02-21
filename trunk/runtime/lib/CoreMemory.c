@@ -1,7 +1,10 @@
 /** Low-level memory allocation functions. */
 
-#include <stdlib.h>
 #include "config.h"
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 void * PageAllocator_allocImpl(int pageSize, int numPages) {
 #ifdef HAVE_POSIX_MEMALIGN

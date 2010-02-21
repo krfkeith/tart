@@ -339,19 +339,11 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
     linkType = Function::LinkOnceAnyLinkage;
   }
 
-#if 0
-  bool threadLocal = false;
-  bool threadLocal = var->findAttribute(Builtins::typeThreadLocalAttribute) != NULL;
-  if (threadLocal && var->storageClass() != Storage_Global &&
-      var->storageClass() != Storage_Static) {
-    diag.fatal(var->location()) <<  "Only global or static variables can be thread-local";
-  }
-#endif
-
   // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
   // the type of a global variable into a pointer anyway.
   const llvm::Type * irType = varType->irEmbeddedType();
-  gv = new GlobalVariable(*irModule_, irType, false, linkType, NULL, var->linkageName());
+  gv = new GlobalVariable(*irModule_, irType, false, linkType, NULL, var->linkageName(),
+      NULL, var->isThreadLocal());
 
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.

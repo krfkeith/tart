@@ -155,6 +155,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::Or:
       return genLogicalOper(static_cast<const BinaryExpr *>(in));
 
+    case Expr::Complement:
+      return genComplement(static_cast<const UnaryExpr *>(in));
+
     case Expr::FnCall:
     case Expr::CtorCall:
     case Expr::VTableCall:
@@ -434,13 +437,19 @@ Value * CodeGenerator::genPtrDeref(const UnaryExpr * in) {
 Value * CodeGenerator::genNot(const UnaryExpr * in) {
   switch (in->arg()->exprType()) {
     case Expr::RefEq:
-    return genRefEq(static_cast<const BinaryExpr *>(in->arg()), true);
+      return genRefEq(static_cast<const BinaryExpr *>(in->arg()), true);
 
     default: {
       Value * result = genExpr(in->arg());
       return result ? builder_.CreateNot(result) : NULL;
     }
   }
+}
+
+Value * CodeGenerator::genComplement(const UnaryExpr * in) {
+  Value * result = genExpr(in->arg());
+  Value * allOnes = llvm::ConstantInt::getAllOnesValue(result->getType());
+  return result ? builder_.CreateXor(result, allOnes) : NULL;
 }
 
 Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {

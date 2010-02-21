@@ -9,6 +9,7 @@ file(GLOB TART_STDLIB_SRC
     tart/core/*.tart
     tart/collections/*.tart
     tart/config/*.tart
+    tart/concurrent/ThreadLocal.tart
     tart/gc/*.tart
     tart/gc/heap/*.tart
     tart/inject/*.tart
@@ -23,7 +24,6 @@ set(MODPATH ${TART_SOURCE_DIR}/lib/core)  # Module search path
 set(TART_OPTIONS
 #    -g
     -debug-errors
-#    -trace-def=asBuffer
 )
 
 # Empty list of output files

@@ -5,7 +5,8 @@ if (CMAKE_COMPILER_IS_GNUCC)
       -g
       -Wall
       -Wcast-align
-      -Wpointer-arith)
+      -Wpointer-arith
+      -fno-exceptions)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -16,6 +17,6 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 
 include_directories(include)
 
-file(GLOB sources lib/*.c)
+file(GLOB sources lib/*.c lib/*.cpp)
 file(GLOB headers include/*.h)
 add_library(runtime STATIC ${sources} ${headers})

@@ -1,14 +1,14 @@
-import tart.core.BitTricks.leadingZeroes;
+import tart.core.BitTricks.log2;
 import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 import tart.gc.AddressRange;
 import tart.reflect.Reflection;
 
 /** Manages the allocation of low-level pages of memory. */
-@Reflection(Reflection.Detail.NONE) abstract class PageAllocator {
+@Reflection(Reflection.Detail.NONE) final class PageAllocator {
   static {
-    let PAGE_SIZE:int = 4096; /// 4K Pages.
-    let PAGE_SIZE_LOG2:int = 32 - leadingZeroes(PAGE_SIZE);
+    let PAGE_SIZE:int = 0x10000; /// 64K Pages.
+    let PAGE_SIZE_LOG2:int = log2(PAGE_SIZE);
   }
   
   private {
