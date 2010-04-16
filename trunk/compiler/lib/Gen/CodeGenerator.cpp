@@ -26,6 +26,7 @@
 #include "llvm/Bitcode/ReaderWriter.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Intrinsics.h"
 
 #include <memory>
 
@@ -515,6 +516,19 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   }
 #endif
   return builder_.CreateLoad(value, name);
+}
+
+void CodeGenerator::markGCRoot(Value * value, Value * metadata) {
+  using namespace llvm;
+  Function * gcroot = llvm::Intrinsic::getDeclaration(
+      irModule_, llvm::Intrinsic::gcroot, NULL, 0);
+
+  value = builder_.CreatePointerCast(
+      value, PointerType::get(PointerType::get(builder_.getInt8Ty(), 0), 0));
+  if (metadata == NULL) {
+    metadata = ConstantPointerNull::get(PointerType::get(builder_.getInt8Ty(), 0));
+  }
+  builder_.CreateCall2(gcroot, value, metadata);
 }
 
 }

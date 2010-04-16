@@ -23,10 +23,6 @@
 #define TART_EXCEPTION_CLASS 0
 //#define TART_EXCEPTION_CLASS (('T' << 56L) << ('A' << 48L) << ('R' << 40L) << ('T' << 32L))
 
-extern char __data_start[];
-
-const char elven_magic[] = { 0x7F, 0x45, 0x4c, 0x46 };
-
 #define DW_EH_PE_absptr 0x00
 #define DW_EH_PE_omit 0xff
 #define DW_EH_PE_udata4 0x03
@@ -61,7 +57,8 @@ struct StackFrame {
 
 // The Throwable class
 struct TartThrowable {
-  struct TypeInfoBlock * tib;
+  struct TartObject object;
+  //struct TypeInfoBlock * tib;
   struct StackFrame * stack;
 
   // _Unwind_Exception follows, but don't explicitly declare it because
@@ -339,30 +336,18 @@ bool findAction(
 _Unwind_Reason_Code backtraceCallback(struct _Unwind_Context * context, void * state) {
   struct BacktraceContext * ctx = (struct BacktraceContext *) state;
 
-#if HAVE_DLFCN_H
-  //extern char __data_start[];
-
-  if (ctx->dlHandle == NULL) {
-    ctx->dlHandle = dlopen(NULL, RTLD_LAZY);
-  }
-
-  void * dataStart;
-  dataStart = dlsym(ctx->dlHandle, "__data_start");
-  if (dataStart != NULL) {
-    fprintf(stderr, "Found __data_start\n");
-  }
-#endif
-
   (void)ctx;
   _Unwind_Ptr ip = _Unwind_GetIP(context);
+  _Unwind_Ptr rs = _Unwind_GetRegionStart(context);
+  _Unwind_Ptr cf = _Unwind_GetCFA(context);
 
   #if 1 // HAVE_DLADDR
     Dl_info dlinfo;
-    dladdr((void *)ip, &dlinfo);
+    dladdr((void *)rs, &dlinfo);
     if (dlinfo.dli_sname != NULL) {
       fprintf(stderr, "Function %s\n", dlinfo.dli_sname);
     } else {
-      fprintf(stderr, "Backtrace callback %p\n", (void *)ip);
+      fprintf(stderr, "Backtrace callback %p - %p (%p)\n", (void *)rs, (void *)ip, (void *)cf);
     }
   #endif
 
@@ -391,19 +376,6 @@ _Unwind_Reason_Code __tart_eh_personality_impl(
   }
 
   if (traceRequested) {
-    if (memcmp(__data_start, elven_magic, 4) == 0) {
-      fprintf(stderr, "It's an elf! %d\n", actions);
-    } else {
-      char * data = __data_start;
-      int row, col;
-      for (row = 0; row < 4; row++) {
-        for (col = 0; col < 16; col++) {
-          fprintf(stderr, "%2.2x ", (unsigned char) *data++);
-        }
-        fprintf(stderr, "\n");
-      }
-    }
-
     ip = _Unwind_GetIP(context) - 1;
     fprintf(stderr, "Begin Backtrace %d\n", actions);
     struct BacktraceContext ctx;
@@ -435,7 +407,7 @@ _Unwind_Reason_Code __tart_eh_personality_impl(
 
   // Find the action record for the given exception and call site.
   int action;
-  if (findAction(&lpInfo, &csInfo, forceUnwind ? NULL : throwable->tib, &action)) {
+  if (findAction(&lpInfo, &csInfo, forceUnwind ? NULL : throwable->object.tib, &action)) {
     if (actions == _UA_SEARCH_PHASE) {
       return _URC_HANDLER_FOUND;
     } else if (actions == (_UA_CLEANUP_PHASE | _UA_HANDLER_FRAME)) {

@@ -80,6 +80,7 @@ add_executable(tartln
     tartln/ReflectorPass.cpp
     tartln/ReflectionSizePass.cpp)
 target_link_libraries(tartln
+    gcstrategy
     ${LLVM_ALPHA_ASM_PRINTER}
     ${LLVM_ALPHA_CODE_GEN}
     ${LLVM_ALPHA_INFO}

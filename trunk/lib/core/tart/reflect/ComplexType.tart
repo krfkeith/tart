@@ -65,6 +65,17 @@ public class ComplexType : Type {
   /** Return true if this type has a no-arg constructor. */
   final def hasNoArgConstructor:bool { get { return self._noArgCtor is not null; } }
 
+	/** If 'obj' is castable to this type, do the cast and return the raw address,
+			otherwise throw a typecast exception. */
+  @Unsafe final override downCast(obj:Object) -> Address[void] {
+    if obj is not null {
+    	if obj.__typeHasBase(_typeInfo) {
+    	  return Memory.reinterpretPtr(Memory.objectAddress(obj));
+    	}
+    }
+   	throw TypecastError(obj, self);
+  }
+  
   /** Return the first method whose name is 'name'. */
   def findMethod(name:String) -> Method or void {
     for m in _methods {
@@ -122,7 +133,7 @@ public class ComplexType : Type {
       }
     }
   }
-  
+
   private final def isSubclassImpl(cls:Type) -> bool {
     return true if self is cls;
     classify cls as complex:ComplexType {

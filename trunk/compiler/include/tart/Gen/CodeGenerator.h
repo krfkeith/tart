@@ -318,7 +318,7 @@ public:
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
 
-    /** Return the debug compile unit for the specified source file. */
+  /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
   llvm::DICompileUnit genDICompileUnit(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
@@ -357,7 +357,6 @@ public:
 
   // Generate the function that down-casts the 'self' argument in a reflected call.
   llvm::Function * genDcObjectFn(const Type * objType);
-  llvm::FunctionType * getDcObjectFnType();
 
   /** Generate a reference to the TypeInfoBlock for a proxy type. */
   llvm::Constant * genProxyType(const CompositeType * ctype);
@@ -396,6 +395,8 @@ private:
   void checkCallingArgs(const llvm::Value * fn,
       ValueList::const_iterator first, ValueList::const_iterator last);
   llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
+
+  void markGCRoot(llvm::Value * value, llvm::Value * metadata);
 
   llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
 

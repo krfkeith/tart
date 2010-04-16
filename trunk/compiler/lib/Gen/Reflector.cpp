@@ -62,7 +62,6 @@ SystemClassMember<VariableDefn> functionType_returnType(Builtins::typeFunctionTy
 SystemClassMember<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
 SystemClassMember<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
 SystemClassMember<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
-SystemClassMember<VariableDefn> functionType_dcObject(Builtins::typeFunctionType, "_dcObject");
 SystemClassMember<FunctionDefn> functionType_invokeFn(Builtins::typeFunctionType, "invoke");
 SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
 SystemClassMember<FunctionDefn> functionType_ignoreObj(Builtins::typeFunctionType, "ignoreObjectPtr");
@@ -579,14 +578,11 @@ llvm::Constant * Reflector::emitFunctionType(const FunctionType * type) {
     // For now, we only support reflection of classes and interfaces.
     if (selfType->typeClass() == Type::Class || selfType->typeClass() == Type::Interface) {
       sb.addField(cg_.genInvokeFn(type));
-      sb.addField(cg_.genDcObjectFn(selfType));
     } else {
       sb.addNullField(functionType_invoke.type());
-      sb.addNullField(functionType_dcObject.type());
     }
   } else {
     sb.addField(cg_.genInvokeFn(type));
-    sb.addField(cg_.genFunctionValue(functionType_ignoreObj.get()));
   }
 
   return sb.build(Builtins::typeFunctionType->irType());

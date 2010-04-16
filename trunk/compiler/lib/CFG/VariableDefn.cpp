@@ -45,8 +45,14 @@ bool VariableDefn::hasStorage() const {
   }
 
   // Local and parameter let-variables are not considered to have storage because
-  // their values are normally held in SSA variables.
-  if (storageClass() == Storage_Local || storageClass() == Storage_Param) {
+  // their values are normally held in SSA variables. However, reference types need
+  // memory locations so that they can be traced.
+  if (storageClass() == Storage_Local) {
+    return type()->isReferenceType();
+    //return false;
+  }
+
+  if (storageClass() == Storage_Param) {
     return false;
   }
 

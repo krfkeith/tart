@@ -275,7 +275,7 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
     return NULL;
   }
 
-  if (var->defnType() == Defn::Let) {
+  if (!var->hasStorage()) {
     // Bind the initValue to the variable. Large value types will be allocas.
     DASSERT_OBJ(var->initValue() == NULL, var);
     DASSERT_OBJ(initValue != NULL, var);
@@ -283,13 +283,11 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
     var->setIRValue(initValue);
   } else {
     // Store the initValue to the variable.
-#if FC_STRUCTS_INTERNAL
     DASSERT_TYPE_EQ(in->initExpr(), var->type()->irParameterType(), initValue->getType());
     if (typeShape == Shape_Large_Value) {
       initValue = loadValue(initValue, in->initExpr(), "deref");
     }
     DASSERT_TYPE_EQ(in->initExpr(), var->type()->irEmbeddedType(), initValue->getType());
-#endif
 
     DASSERT_TYPE_EQ_MSG(in->initExpr(),
         var->irValue()->getType()->getContainedType(0),
@@ -493,21 +491,18 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     Value * letValue = genLetValue(let);
 
     // If this is a let-value that has actual storage
-#if FC_STRUCTS_INTERNAL
-    if (let->hasStorage() && typeShape != Shape_Large_Value && typeShape != Shape_Reference) {
+    if (let->hasStorage() && typeShape != Shape_Large_Value
+        && (typeShape != Shape_Reference || let->storageClass() == Storage_Local)) {
       letValue = loadValue(letValue, lval, var->name());
     }
-#endif
 
     DASSERT_TYPE_EQ(lval, let->type()->irParameterType(), letValue->getType());
     return letValue;
   } else if (var->defnType() == Defn::Var) {
     Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
-#if FC_STRUCTS_INTERNAL
     if (typeShape == Shape_Large_Value) {
       return varValue;
     }
-#endif
 
     varValue = loadValue(varValue, lval, var->name());
     DASSERT_TYPE_EQ(lval, var->type()->irEmbeddedType(), varValue->getType());
@@ -561,9 +556,13 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
       } else if (var->defnType() == Defn::MacroArg) {
         return genLValueAddress(static_cast<const VariableDefn *>(var)->initValue());
       } else {
+        const VariableDefn * v = static_cast<const VariableDefn *>(var);
+        if (v->hasStorage()) {
+          return genVarValue(v);
+        }
         TypeShape shape = lval->type()->typeShape();
         if (shape == Shape_Small_LValue || shape == Shape_Large_Value || shape == Shape_Reference) {
-          return genLetValue(static_cast<const VariableDefn *>(var));
+          return genLetValue(v);
         }
         diag.fatal(lval) << Format_Type << "Can't take address of non-lvalue " << lval;
         DFAIL("IllegalState");
@@ -889,6 +888,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   // Object type members
   std::vector<Constant *> objMembers;
   objMembers.push_back(getTypeInfoBlockPtr(strType));
+  objMembers.push_back(getIntVal(0));
 
   // String type members
   std::vector<Constant *> members;
@@ -1077,6 +1077,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
     }
 
     fieldValues.push_back(tibPtr);
+    fieldValues.push_back(getIntVal(0));
   } else {
     // Generate the superclass fields.
     if (type->super() != NULL) {

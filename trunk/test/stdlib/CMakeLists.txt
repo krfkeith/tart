@@ -43,8 +43,12 @@ foreach(SRC_FILE ${TART_SRC})
   set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
 
   # Link with libcore
-  add_custom_command(OUTPUT ${OUT_BC_FILE}
-      COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
+  add_custom_command(OUTPUT ${ASM_FILE}
+#  add_custom_command(OUTPUT ${OUT_BC_FILE}
+#      COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
+#          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+#          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+      COMMAND tartln -disable-fp-elim -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
           "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
           "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
       MAIN_DEPENDENCY "${BC_FILE}" 
@@ -54,10 +58,10 @@ foreach(SRC_FILE ${TART_SRC})
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
       
   # Convert to assembly
-  add_custom_command(OUTPUT ${ASM_FILE}
-      COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -o ${ASM_FILE}
-      DEPENDS "${OUT_BC_FILE}"
-      COMMENT "Generating assembly for file ${BC_FILE}")
+  #add_custom_command(OUTPUT ${ASM_FILE}
+  #    COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -disable-fp-elim -o ${ASM_FILE}
+  #    DEPENDS "${OUT_BC_FILE}"
+  #    COMMENT "Generating assembly for file ${BC_FILE}")
 
   # Assemble and run
   string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")

@@ -614,6 +614,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   return invokeFn;
 }
 
+#if 0
 llvm::Function * CodeGenerator::genDcObjectFn(const Type * objType) {
   std::string dcObjectName = ".downcast.";
   typeLinkageName(dcObjectName, objType);
@@ -647,7 +648,9 @@ llvm::Function * CodeGenerator::genDcObjectFn(const Type * objType) {
   return cast<Function>(llvm::ConstantExpr::getPointerCast(
       dcObjectFn, llvm::PointerType::get(dcObjectFnType_, 0)));
 }
+#endif
 
+#if 0
 llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
   if (dcObjectFnType_ == NULL) {
     const Type * dcObjectType = functionType_dcObject.type();
@@ -663,6 +666,7 @@ llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
 
   return dcObjectFnType_;
 }
+#endif
 
 llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
   std::string proxyName(iftype->typeDefn()->linkageName());

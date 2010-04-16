@@ -1,42 +1,6 @@
-import tart.concurrent.ThreadLocal;
-import tart.core.Memory.Address;
-import tart.gc.heap.PageAllocator;
-//import tart.gc.heap.SpaceMgr;
+import Memory.Address;
 
-class GC {
-  private {
-    //var pageAlloc:PageAllocator;
-
-	  //static var instance:GC;
-
-	  //@ThreadLocal static var localAlloc:AllocationBlock;
-	  //@ThreadLocal static var localAlloc:Address[ubyte];
-
-	  //static def allocImpl(size:int, localAlloc:Address[ubyte]) -> Address[ubyte];
-  }
-  
-  def construct() {
-    //pageAlloc = PageAllocator();
-    //localAlloc = null;
-    //SpaceMgr.init(pageAlloc);
-  }
-
-  static def init {
-    alloc(4);
-    //instance = GC();
-  }
-  
-  static def cleanup {
-    //SpaceMgr.cleanup();
-  }
-  
-  /*static def alloc(size:int) -> Address[ubyte] {
-    size = (size + 7) & ~7;
-    if localAlloc.canFit(size) {
-      return localAlloc.bump(size);
-    }
-    return null;
-  }*/
-
-  @Extern("GC_alloc") static def alloc(size:int) -> Object;
+namespace GC {
+  @Extern("GC_init") def init(safepointMap:Address[int]);
+  @Extern("GC_alloc") def alloc(size:int) -> Object;
 }

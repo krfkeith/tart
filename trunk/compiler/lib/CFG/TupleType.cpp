@@ -251,6 +251,16 @@ Expr * TupleType::nullInitValue() const {
   return new TupleCtorExpr(SourceLocation(), this, initializers);
 }
 
+bool TupleType::containsReferenceType() const {
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    if ((*it)->containsReferenceType()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 TypeShape TupleType::typeShape() const {
   if (shape_ == Shape_Unset) {
     if (isLargeIRType(irType())) {

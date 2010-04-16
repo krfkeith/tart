@@ -172,6 +172,9 @@ public:
   /** Return true if this type can be boxed. */
   bool isBoxableType() const;
 
+  /** Return true if this type requires GC tracing. */
+  virtual bool containsReferenceType() const { return false; }
+
   /** Return information about the representation of this type. */
   virtual TypeShape typeShape() const = 0;
 

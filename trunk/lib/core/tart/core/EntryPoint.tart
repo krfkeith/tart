@@ -16,7 +16,7 @@ class EntryPoint {
       func:static fn (:String[]) -> int32) -> int32 {
     try {
       // Start the GC.
-      GC.init();
+      GC.init(Memory.addressOf(gcSafepointMap[0]));
       
       // Run static constructors.
       runStaticCtors();
@@ -35,6 +35,7 @@ class EntryPoint {
     }
   }
 
+  @Extern("gc_safepoint_map") static var gcSafepointMap:NativeArray[int, 0];
 	@Extern("run_static_ctors") static def runStaticCtors();
   @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
 }

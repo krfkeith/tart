@@ -25,11 +25,26 @@ void CodeGenerator::genLocalStorage(BlockList & blocks, LocalScopeList & lsl) {
   for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
-      if (de->defnType() == Defn::Var) {
-        genLocalVar(static_cast<VariableDefn *>(de));
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        if (var->hasStorage()) {
+          genLocalVar(static_cast<VariableDefn *>(de));
+        }
       }
     }
   }
+
+#if 0
+  for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
+    LocalScope * lscope = *it;
+    for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        if (var->type()->isReferenceType()) {
+          // Initialize to zero...
+        }
+      }
+    }
+  }
+#endif
 }
 
 void CodeGenerator::genLocalVar(VariableDefn * var) {
@@ -45,6 +60,11 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
+  if (varType->isReferenceType()) {
+    markGCRoot(lValue, NULL);
+  } else if (varType->containsReferenceType()) {
+    // mark it as a root, but with a different metadata.
+  }
   var->setIRValue(lValue);
 }
 
