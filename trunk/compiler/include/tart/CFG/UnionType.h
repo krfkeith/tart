@@ -80,6 +80,7 @@ public:
   void format(FormatStream & out) const;
   void trace() const;
   Expr * nullInitValue() const;
+  bool containsReferenceType() const;
 
   static inline bool classof(const UnionType *) { return true; }
   static inline bool classof(const Type * t) {

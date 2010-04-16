@@ -19,6 +19,9 @@ import tart.reflect.Type;
   /** Compiler-generated function to lookup the specified interface method. */
   readonly var idispatch:static fn(iid:String, methodIndex:int32) -> void^;
 
+	/** The table of offsets that specify where in the type are embedded object references. */
+  // readonly var traceOffsets:Address[uint16];
+
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[Address[void], 0];
   

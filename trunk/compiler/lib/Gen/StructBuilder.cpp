@@ -22,6 +22,7 @@ StructBuilder::StructBuilder(CodeGenerator & gen) : gen_(gen) {}
 StructBuilder & StructBuilder::createObjectHeader(const Type * type) {
   ConstantList objMembers;
   objMembers.push_back(gen_.getTypeInfoBlockPtr(cast<CompositeType>(type)));
+  objMembers.push_back(gen_.getIntVal(0));
   members_.push_back(ConstantStruct::get(gen_.context(), objMembers, false));
   return *this;
 }

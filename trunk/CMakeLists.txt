@@ -36,6 +36,7 @@ check_include_file_cxx(ctime HAVE_CTIME)
 check_include_file_cxx(cxxabi.h HAVE_CXXABI_H)
 check_include_file_cxx(dlfcn.h HAVE_DLFCN_H)
 check_include_file_cxx(unwind.h HAVE_UNWIND_H)
+check_include_file_cxx(libunwind.h HAVE_LIBUNWIND_H)
 
 if (CMAKE_USE_PTHREADS_INIT)
     set (HAVE_PTHREADS ON)
@@ -46,6 +47,7 @@ set(CMAKE_REQUIRED_DEFINITIONS -D__USE_GNU)
 check_function_exists(backtrace HAVE_BACKTRACE)
 check_function_exists(dladdr HAVE_DLADDR)
 check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+check_function_exists(valloc HAVE_VALLOC)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
@@ -61,6 +63,11 @@ check_cxx_source_compiles(
         __sync_bool_compare_and_swap(&f, 1, 0);
     }"
     HAVE_GCC_ATOMICS)
+
+# Check for GCC thread local support
+check_cxx_source_compiles(
+    "__thread int i; int main() { return 0; }"
+    HAVE_GCC_THREAD_LOCAL)
 
 # Check for type sizes
 check_type_size(int SIZEOF_INT)
@@ -83,6 +90,7 @@ configure_file(
 # Include directory paths
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${TART_SOURCE_DIR}/compiler/include)
+include_directories(${TART_SOURCE_DIR}/linker/include)
 include_directories(${LLVM_INCLUDE_DIR})
 
 # Definitions needed by LLVM headers
@@ -116,6 +124,7 @@ add_custom_target(check)
 
 # Subdirs to compile
 add_subdirectory(compiler)
+add_subdirectory(linker)
 add_subdirectory(tools)
 add_subdirectory(runtime)
 add_subdirectory(third-party)

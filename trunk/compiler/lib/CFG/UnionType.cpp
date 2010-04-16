@@ -378,6 +378,10 @@ Expr * UnionType::nullInitValue() const {
   return NULL;
 }
 
+bool UnionType::containsReferenceType() const {
+  return numReferenceTypes_ > 0;
+}
+
 TypeShape UnionType::typeShape() const {
   if (shape_ == Shape_Unset) {
     irType();

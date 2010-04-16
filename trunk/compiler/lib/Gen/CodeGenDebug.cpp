@@ -150,22 +150,22 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
     for (LocalScopeList::const_iterator it = lsl.begin(); it != lsl.end(); ++it) {
       LocalScope * lscope = *it;
       for (const Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
-        if (de->defnType() == Defn::Var) {
-          /// CreateVariable - Create a new descriptor for the specified variable.
-          const VariableDefn * var = static_cast<const VariableDefn *>(de);
-          DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
-              var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
-              genDIEmbeddedType(var->type()));
-          setDebugLocation(var->location());
-          dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
-        } else if (de->defnType() == Defn::Let) {
-          // Currently we can only handle vars that point to an alloca.
-          const VariableDefn * var = static_cast<const VariableDefn *>(de);
-          if (isa<CompositeType>(var->type())) {
+        if (const VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+          if (var->hasStorage()) {
+            /// CreateVariable - Create a new descriptor for the specified variable.
             DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
                 var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
-                genDIType(var->type()));
+                genDIEmbeddedType(var->type()));
             setDebugLocation(var->location());
+            dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
+//          } else {
+//            // Currently we can only handle vars that point to an alloca.
+//            if (isa<CompositeType>(var->type())) {
+//              DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
+//                  var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
+//                  genDIType(var->type()));
+//              setDebugLocation(var->location());
+//            }
           }
         }
       }

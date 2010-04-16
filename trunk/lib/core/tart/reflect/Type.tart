@@ -1,5 +1,6 @@
 import tart.reflect.Reflection;
 import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
 
 /** The metatype object - the class that describes a type. */
 @Reflection(Reflection.Detail.NONE) abstract class Type {
@@ -29,16 +30,16 @@ import tart.annex.Intrinsic;
 
   /** What general kind of type this is (CLASS, STRUCT, etc.) */
   final def typeKind:TypeKind { get { return _typeKind; } }
+
+	/** If 'obj' is castable to this type, do the cast and return the raw address,
+			otherwise throw a typecast exception. */
+  @Unsafe def downCast(obj:Object) -> Address[void] {
+    throw TypecastError(obj, self);
+  }
   
   /** Return a string representation of this type. */
   abstract override toString() -> String;
 
   /** Given a type literal, return the reflected type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> Type;
-
-  /** True if this is an aggregate type. */
-  //final def isAggregate:bool { get { return false; } }
-  
-  /** True if this is a reference type. */
-  //final def isByReference:bool { get { return typeKind == CLASS or kind == INTERFACE; } }
 }

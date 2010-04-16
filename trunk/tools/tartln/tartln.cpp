@@ -44,6 +44,10 @@
 
 using namespace llvm;
 
+namespace tart {
+extern void addTartGC();
+}
+
 enum OutputType {
   Unset = 0,
   BitcodeFile,
@@ -625,6 +629,8 @@ int main(int argc, char **argv, char **envp) {
 
   LLVMContext &context = getGlobalContext();
   llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
+
+  tart::addTartGC();
 
   // Initialize targets first, so that --version shows registered targets.
   InitializeAllTargets();

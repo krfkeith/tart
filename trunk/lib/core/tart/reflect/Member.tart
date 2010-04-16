@@ -65,6 +65,7 @@
 
 	/** Return true if this member has an attribute of type 'attrType'. */ 
   final def hasAttribute[%T](attrType:TypeLiteral[T]) -> bool {
+	  //return any(_attributes, fn attr { attr isa T; });
     for attr in _attributes {
       return true if attr isa T;
     }

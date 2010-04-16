@@ -60,6 +60,7 @@ public:
   size_t numTypeParams() const { return members_.size(); }
   const Type * typeParam(int index) const { return members_[index]; }
   Expr * nullInitValue() const;
+  bool containsReferenceType() const;
 
   static inline bool classof(const TupleType *) { return true; }
   static inline bool classof(const Type * t) {

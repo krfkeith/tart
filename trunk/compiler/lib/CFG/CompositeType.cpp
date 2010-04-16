@@ -491,6 +491,24 @@ Expr * CompositeType::nullInitValue() const {
   return NULL;
 }
 
+bool CompositeType::containsReferenceType() const {
+  if (typeClass() == Class || typeClass() == Interface) {
+    return true;
+  }
+
+  if (typeClass() == Struct) {
+    for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
+      if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
+        if (var->type() != NULL && var->type()->containsReferenceType()) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 void CompositeType::ancestorClasses(ClassSet & out) const {
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     CompositeType * baseType = *it;

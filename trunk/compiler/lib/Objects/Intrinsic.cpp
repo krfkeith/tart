@@ -631,7 +631,7 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
-  const ConstantString * extName = dyn_cast<ConstantString>(selfObj->members()[1]);
+  const ConstantString * extName = dyn_cast<ConstantString>(selfObj->members()[2]);
   DASSERT_OBJ(extName != NULL, self);
 
   LValueExpr * lval = cast<LValueExpr>(args[0]);
@@ -650,7 +650,7 @@ Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, const Functio
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
-  const ConstantString * linkName = cast<ConstantString>(selfObj->members()[1]);
+  const ConstantString * linkName = cast<ConstantString>(selfObj->members()[2]);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
   lval->value()->setLinkageName(linkName->value());
   return self;

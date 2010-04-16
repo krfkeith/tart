@@ -1,29 +1,257 @@
-#include "config.h"
+/* ================================================================ *
+    TART - A Sweet Programming Language.
+ * ================================================================ */
 
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
+/* Tart Garbage collection functions. */
 
-#if HAVE_STDIO_H
-#include <stdio.h>
+#include "gc.h"
+#include "Tracer.h"
+#include "tart_object.h"
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 extern "C" {
-  void * GC_alloc(size_t size, void * localAlloc);
+  void GC_init(size_t *);
+  LocalAllocState * GC_getLocalAllocState();
+  char * GC_alloc(size_t size);
+  void GC_sync();
+  void GC_syncStart();
+  void GC_syncEnd();
 }
 
-struct AllocationBlock {
-  AllocationBlock * next;
-  uintptr_t start;
-  uintptr_t end;
-  uintptr_t pos;
+static size_t pageSize;
+static Segment * edenSegments = NULL;
+static Segment * nextLasSegment = NULL;
+static char * nextLasChar = NULL;
+static SurvivorSpace ss[2];
+static size_t numSafePoints;
+static SafePointEntry * safePointTable;
+
+//static SurvivorSpace * ssTo = &ss[0];
+//static SurvivorSpace * ssFrom = &ss[1];
+
+#if HAVE_GCC_THREAD_LOCAL
+  __thread LocalAllocState * las;
+#endif
+
+inline size_t GC_align(size_t size) {
+  return (size + (MEM_ALIGN_SIZE - 1)) & ~(MEM_ALIGN_SIZE - 1);
+}
+
+void * GC_getPages(size_t size) {
+  #ifdef HAVE_POSIX_MEMALIGN
+    void * memptr;
+    if (posix_memalign(&memptr, pageSize, size) == 0) {
+      return memptr;
+    }
+
+    fprintf(stderr, "posix_memalign failed\n");
+    abort();
+    return NULL;
+  #elif HAVE_VALLOC
+    return valloc(size);
+  #else
+    #error("Missing aligned memory allocator for platform.")
+    (void)pageSize;
+    (void)numPages;
+    return NULL;
+  #endif
+}
+
+void GC_addSegments(size_t size, Segment ** seglist) {
+  AddressRange newRange;
+  newRange.first = (char *) GC_getPages(size);
+  newRange.last = newRange.first + size;
+
+  for (Segment ** sptr = seglist;;) {
+    Segment * s = *sptr;
+    if (s == NULL || s->range.first > newRange.last) {
+      // Insert new segment before current segment
+      Segment * newSeg = (Segment *) malloc(sizeof (Segment));
+      newSeg->range.first = newRange.first;
+      newSeg->range.last = newRange.last;
+      newSeg->next = s;
+      *sptr = newSeg;
+      break;
+    } else if (s->range.first == newRange.last) {
+      // Expand current segment to include new segment
+      s->range.first = newRange.first;
+      break;
+    } else if (s->range.last == newRange.first) {
+      // Expand current segment to include new segment
+      s->range.last = newRange.last;
+
+      // And next segment if the new segment fills the hole between them.
+      if (s->next != NULL && s->next->range.first == newRange.first) {
+        Segment * next = s->next;
+        s->range.last = next->range.last;
+        s->next = next->next;
+        free(next);
+      }
+
+      break;
+    } else if (s->range.last < newRange.first) {
+      // Go to next segment
+      sptr = &(*sptr)->next;
+    } else {
+      fprintf(stderr, "Invalid segment overlap: %p-%p, %p-%p\n",
+          newRange.first, newRange.last,
+          s->range.first, s->range.last);
+      abort();
+    }
+  }
+}
+
+void GC_init(size_t * safepointMap) {
+  pageSize = sysconf(_SC_PAGESIZE);
+
+  // Alloc survivor spaces
+  ss[0].range.first = ss[0].pos = (char *) GC_getPages(0x8000);
+  ss[0].range.last = ss[0].range.first + 0x8000;
+  ss[1].range.first = ss[1].pos = (char *) GC_getPages(0x8000);
+  ss[1].range.last = ss[1].range.first + 0x8000;
+
+  // Alloc eden
+  GC_addSegments(0x10000, &edenSegments);
+  nextLasSegment = edenSegments;
+  nextLasChar = edenSegments->range.first;
+
+  // get list of safe points
+  numSafePoints = *safepointMap;
+  safePointTable = (SafePointEntry *)(safepointMap + 1);
+
+  GC_alloc(4);
+  GC_alloc(5);
+  GC_alloc(6);
+}
+
+LocalAllocState * GC_getLocalAllocState() {
+  #if HAVE_GCC_THREAD_LOCAL
+    if (las == NULL) {
+      las = (LocalAllocState *)malloc(sizeof(LocalAllocState));
+      las->pos = las->end = NULL;
+    }
+    return las;
+  #else
+    #error No thread-local support for platform.
+    return NULL;
+  #endif
+}
+
+void GC_syncImpl(LocalAllocState * las) {
+  CallFrame * framePtr;
+  __asm__("movq %%rbp, %0" :"=r"(framePtr));
+
+  while (framePtr != NULL) {
+    //void * fp = _Unwind_FindEnclosingFunction(framePtr->returnAddr);
+    fprintf(stderr, "RBP: %p, %p\n", (void *)framePtr, framePtr->returnAddr);
+    framePtr = framePtr->prevFrame;
+  }
+
+  fprintf(stderr, "\n");
+  (void)las;
+}
+
+void GC_syncStartImpl(LocalAllocState * las) {
+  (void)las;
+}
+
+void GC_syncEndImpl(LocalAllocState * las) {
+  (void)las;
+}
+
+char * GC_alloc2(size_t size, LocalAllocState * las) {
+  GC_syncImpl(las);
+
+  size_t sizeAligned = GC_align(size);
+  if (sizeAligned > MAX_EDEN_SIZE) {
+    fprintf(stderr, "Alloc too large: %d\n", int(size));
+    abort();
+  }
+
+  // See if it will fit in the current local block.
+  if (las->pos + sizeAligned <= las->end) {
+    char * result = las->pos;
+    las->pos += sizeAligned;
+    return result;
+  }
+
+  // If not, see if we can allocate another local block.
+  // TODO: Need locking here.
+  if (nextLasSegment != NULL) {
+    size_t lasSize = nextLasSegment->range.last - nextLasChar;
+    if (lasSize > MAX_LAS_SIZE) {
+      lasSize = MAX_LAS_SIZE;
+    }
+
+    las->pos = nextLasChar;
+    nextLasChar += lasSize;
+    las->end = nextLasChar;
+
+    // TODO: Unlock.
+
+    if (las->pos + sizeAligned <= las->end) {
+      char * result = las->pos;
+      las->pos += sizeAligned;
+      return result;
+    }
+  }
+
+  // TODO: Run a collection.
+  // Stop the world.
+
+  fprintf(stderr, "Not enough room for alloc: %d\n", int(size));
+  abort();
+}
+
+char * GC_alloc(size_t size) {
+  return GC_alloc2(size, GC_getLocalAllocState());
+}
+
+void GC_sync() {
+  GC_syncImpl(GC_getLocalAllocState());
+}
+
+void GC_syncStart() {
+  GC_syncStartImpl(GC_getLocalAllocState());
+}
+
+void GC_syncEnd() {
+  GC_syncEndImpl(GC_getLocalAllocState());
+}
+
+void GC_threadEnter() {
+}
+
+void GC_threadExit() {
+}
+
+class ObjectPrinter {
+public:
+  void operator()(tart_object ** obj) {
+    (void)obj;
+  }
 };
 
-//__thread AllocationBlock * localAlloc;
+void GC_collect() {
+  tart::Tracer<ObjectPrinter> tracer;
 
-void * GC_alloc(size_t size) {
-  // First thing to do: Align.
+  CallFrame * framePtr;
+  __asm__("movq %%rbp, %0" :"=r"(framePtr));
 
-  //fprintf(stderr, "Alloc size: %d, %p\n", int(size), localAlloc);
-  return NULL;
+  while (framePtr != NULL) {
+    framePtr = framePtr->prevFrame;
+    // given return address, find instruction list.
+    // Call tracer.execute() on this list.
+  }
+
+  fprintf(stderr, "\n");
+  (void)las;
+}
+
+void GC_trace(uint8_t * basePtr, intptr_t * traceTable, void * ctx) {
+  tart::TracerBase * tpBase = static_cast<tart::TracerBase *>(ctx);
+  tpBase->execute(basePtr, traceTable);
 }
