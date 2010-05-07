@@ -14,23 +14,21 @@ namespace tart {
 VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value)
   : ValueDefn(dtype, m, name)
   , type_(value ? value->type() : NULL)
+  , flags_(dtype == Defn::Let ? Constant : 0)
   , initValue_(value)
   , irValue_(NULL)
   , memberIndex_(0)
   , memberIndexRecursive_(0)
-  , isConstant_(dtype == Defn::Let)
-  , threadLocal_(false)
 {}
 
 VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
   : ValueDefn(dtype, m, de)
   , type_(NULL)
+  , flags_(dtype == Defn::Let ? Constant : 0)
   , initValue_(NULL)
   , irValue_(NULL)
   , memberIndex_(0)
   , memberIndexRecursive_(0)
-  , isConstant_(dtype == Defn::Let)
-  , threadLocal_(false)
 {}
 
 void VariableDefn::trace() const {

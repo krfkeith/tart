@@ -60,27 +60,58 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
-  if (varType->isReferenceType()) {
+  genGCRoot(lValue, varType);
+/*  if (varType->isReferenceType()) {
     markGCRoot(lValue, NULL);
   } else if (varType->containsReferenceType()) {
+    if (varType->typeClass() == Type::Struct) {
+      const CompositeType * ctype = static_cast<const CompositeType *>(varType);
+      for (DefnList::const_iterator it = ctype->instanceFields().begin();
+          it != ctype->instanceFields().end(); ++it) {
+        const VariableDefn * var = static_cast<const VariableDefn *>(*it);
+      }
+      //for (const Defn * member = ctype->firstMember();  )
+
+    } else {
+      diag.error(var->location()) << "GC roots not implemented for " << var;
+    }
     // mark it as a root, but with a different metadata.
-  }
+    // Need to get the metadata for this type.
+    //markGCRoot(lValue, NULL);
+  }*/
+
   var->setIRValue(lValue);
 }
 
-void CodeGenerator::genBlocks(BlockList & blocks) {
-
-  // Generate the list of predecessor blocks for each block.
-#if 0
-  for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
-    Block * blk = *b;
-    BlockList & succs = blk->succs();
-    for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
-      (*s)->preds().push_back(blk);
+void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
+  if (varType->isReferenceType()) {
+    markGCRoot(lValue, NULL);
+  } else if (varType->containsReferenceType()) {
+    if (varType->typeClass() == Type::Struct) {
+      //markGCRoot(lValue, NULL);
+/*      DASSERT(varType->typeShape() == Shape_Small_LValue ||
+          varType->typeShape() == Shape_Large_Value);
+      const CompositeType * ctype = static_cast<const CompositeType *>(varType);
+      for (DefnList::const_iterator it = ctype->instanceFields().begin();
+          it != ctype->instanceFields().end(); ++it) {
+        const VariableDefn * field = static_cast<const VariableDefn *>(*it);
+        const Type * fieldType = field->type();
+        if (fieldType->isReferenceType() || fieldType->containsReferenceType()) {
+          genGCRoot(
+              builder_.CreateConstInBoundsGEP1_32(lValue, field->memberIndex(), field->name()),
+              fieldType);
+        }
+      }*/
+    } else {
+      //diag.error() << "GC roots not implemented for " << varType;
     }
+    // mark it as a root, but with a different metadata.
+    // Need to get the metadata for this type.
+    //markGCRoot(lValue, NULL);
   }
-#endif
+}
 
+void CodeGenerator::genBlocks(BlockList & blocks) {
   // Generate the code for each Block.
   for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
     Block * blk = *b;
@@ -103,10 +134,10 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 }
 
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
-  if (debug_ && loc != dbgLocation_ && !dbgContext_.isNull()) {
+  if (debug_ && loc != dbgLocation_ && dbgContext_.isScope()) {
     dbgLocation_ = loc;
     if (loc.file == NULL) {
-      builder_.SetCurrentDebugLocation(NULL);
+      builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else if (loc.file == module_->moduleSource()) {
       TokenPosition pos = tokenPosition(loc);
       DILocation diLoc = dbgFactory_.CreateLocation(
@@ -114,7 +145,7 @@ void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
           pos.beginCol,
           dbgContext_,
           DILocation(NULL));
-      builder_.SetCurrentDebugLocation(diLoc.getNode());
+      builder_.SetCurrentDebugLocation(DebugLoc::getFromDILocation(diLoc.getNode()));
     }
   }
 }

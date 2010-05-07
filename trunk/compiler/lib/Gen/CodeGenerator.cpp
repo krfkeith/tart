@@ -56,7 +56,6 @@ CodeGenerator::CodeGenerator(Module * mod)
     , irModule_(mod->irModule())
     , currentFn_(NULL)
     , invokeFnType_(NULL)
-    , dcObjectFnType_(NULL)
     , structRet_(NULL)
     , moduleInitFunc_(NULL)
     , moduleInitBlock_(NULL)
@@ -259,7 +258,7 @@ void CodeGenerator::genEntryPoint() {
 
   // Create the function type
   llvm::FunctionType * functype = llvm::FunctionType::get(builder_.getInt32Ty(), mainArgs, false);
-  DASSERT(dbgContext_.isNull());
+  DASSERT(dbgContext_.getNode() == NULL);
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
   Function::arg_iterator args = mainFunc->arg_begin();
@@ -518,7 +517,7 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   return builder_.CreateLoad(value, name);
 }
 
-void CodeGenerator::markGCRoot(Value * value, Value * metadata) {
+void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata) {
   using namespace llvm;
   Function * gcroot = llvm::Intrinsic::getDeclaration(
       irModule_, llvm::Intrinsic::gcroot, NULL, 0);

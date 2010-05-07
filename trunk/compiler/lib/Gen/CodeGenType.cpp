@@ -30,7 +30,6 @@ using namespace llvm;
 
 extern SystemClassMember<VariableDefn> functionType_invoke;
 extern SystemClassMember<FunctionDefn> functionType_invokeFn;
-extern SystemClassMember<VariableDefn> functionType_dcObject;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
 // Members of tart.core.TypeInfoBlock.
@@ -267,8 +266,8 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   argTypes.push_back(llvm::PointerType::get(Builtins::typeString.irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
-  DASSERT(dbgContext_.isNull());
-  DASSERT(builder_.getCurrentDebugLocation() == NULL);
+  DASSERT(dbgContext_.getNode() == NULL);
+  DASSERT(builder_.getCurrentDebugLocation().isUnknown());
   Function * idispatch = Function::Create(
       functype, Function::InternalLinkage,
       type->typeDefn()->linkageName() + ".type.idispatch",
@@ -525,7 +524,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   const llvm::FunctionType * invokeFnType = cast<llvm::FunctionType>(
       functionType_invoke.type()->irType());
-    DASSERT(dbgContext_.isNull());
+  DASSERT(dbgContext_.getNode() == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);
   DASSERT(currentFn_ == NULL);
@@ -614,60 +613,6 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   return invokeFn;
 }
 
-#if 0
-llvm::Function * CodeGenerator::genDcObjectFn(const Type * objType) {
-  std::string dcObjectName = ".downcast.";
-  typeLinkageName(dcObjectName, objType);
-  llvm::Function * dcObjectFn = irModule_->getFunction(dcObjectName);
-  if (dcObjectFn != NULL) {
-    return dcObjectFn;
-  }
-
-  DASSERT(currentFn_ == NULL);
-
-  //size_t numParams = fnType->params().size();
-  const llvm::FunctionType * dcObjectFnType = getDcObjectFnType();
-  DASSERT(dbgContext_.isNull());
-  dcObjectFn = Function::Create(
-      dcObjectFnType, Function::LinkOnceODRLinkage, dcObjectName, irModule_);
-  BasicBlock * blk = BasicBlock::Create(context_, "dc_entry", dcObjectFn);
-  currentFn_ = dcObjectFn;
-  builder_.SetInsertPoint(blk);
-
-  Function::arg_iterator it = dcObjectFn->arg_begin();
-  Value * result = genCast(it, Builtins::typeObject, objType);
-  if (result == NULL) {
-    currentFn_ = NULL;
-    return NULL;
-  }
-
-  Value * returnVal = builder_.CreatePointerCast(
-      result, cast<llvm::PointerType>(dcObjectFnType->getReturnType()));
-  builder_.CreateRet(returnVal);
-  currentFn_ = NULL;
-  return cast<Function>(llvm::ConstantExpr::getPointerCast(
-      dcObjectFn, llvm::PointerType::get(dcObjectFnType_, 0)));
-}
-#endif
-
-#if 0
-llvm::FunctionType * CodeGenerator::getDcObjectFnType() {
-  if (dcObjectFnType_ == NULL) {
-    const Type * dcObjectType = functionType_dcObject.type();
-    const FunctionType * fnType = cast<FunctionType>(dcObjectType);
-
-    // Types of the function parameters.
-    std::vector<const llvm::Type *> paramTypes;
-    paramTypes.push_back(fnType->params()[0]->type()->irParameterType());
-
-    dcObjectFnType_ = llvm::FunctionType::get(
-        fnType->returnType()->irReturnType(), paramTypes, false);
-  }
-
-  return dcObjectFnType_;
-}
-#endif
-
 llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
   std::string proxyName(iftype->typeDefn()->linkageName());
   proxyName.append(".type.proxy.tib");
@@ -738,7 +683,7 @@ llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
 
   const FunctionType * fnType = fn->functionType();
   const llvm::FunctionType * interceptFnType = cast<llvm::FunctionType>(fnType->irType());
-  DASSERT(dbgContext_.isNull());
+  DASSERT(dbgContext_.getNode() == NULL);
   interceptFn = Function::Create(
       interceptFnType, Function::LinkOnceODRLinkage, interceptName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", interceptFn);

@@ -59,8 +59,8 @@ target_link_libraries(tartc
     ${LLVM_ARCHIVE}
     ${LLVM_BIT_READER}
     ${LLVM_BIT_WRITER}
-    ${LLVM_ASM_PARSER}
     ${LLVM_ASM_PRINTER}
+    ${LLVM_ASM_PARSER}
     ${LLVM_CODE_GEN}
     ${LLVM_SCALAR_OPTS}
     ${LLVM_IPA}
@@ -117,8 +117,8 @@ target_link_libraries(tartln
     ${LLVM_SYSTEMZ_ASM_PRINTER}
     ${LLVM_SYSTEMZ_CODE_GEN}
     ${LLVM_SYSTEMZ_INFO}
-    ${LLVM_X86_ASM_PARSER}
     ${LLVM_X86_ASM_PRINTER}
+    ${LLVM_X86_ASM_PARSER}
     ${LLVM_X86_CODE_GEN}
     ${LLVM_X86_DISASSEMBLER}
     ${LLVM_X86_INFO}
@@ -131,8 +131,9 @@ target_link_libraries(tartln
     ${LLVM_ARCHIVE}
     ${LLVM_BIT_READER}
     ${LLVM_BIT_WRITER}
-    ${LLVM_ASM_PARSER}
     ${LLVM_ASM_PRINTER}
+    ${LLVM_MC_PARSER}
+    ${LLVM_ASM_PARSER}
     ${LLVM_CODE_GEN}
     ${LLVM_SCALAR_OPTS}
     ${LLVM_INSTCOMBINE}

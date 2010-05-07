@@ -23,6 +23,12 @@ public:
     PassCount
   };
 
+  enum VariableFlag {
+    Constant = (1<<0),          // Variable is immutable
+    ThreadLocal = (1<<1),       // Variable is thread local
+    Extern = (1<<2),            // Variable is external to this module
+  };
+
   typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
   typedef PassMgr::PassSet PassSet;
 
@@ -52,17 +58,29 @@ public:
   /** Set the type of this variable. */
   void setType(const Type * ty) { type_= ty; }
 
-  /** True if the value of this variable is always the initializer. This will always be
-      true for 'let' variables except in the special case of 'let' variables that
-      are of instance scope and which are initialized in the constructor. */
-  bool isConstant() const { return isConstant_; }
-  void setIsConstant(bool isConstant) { isConstant_ = isConstant; }
+  /** Variable flags. */
+  uint32_t flags() const { return flags_; }
+  bool getFlag(uint32_t flag) const { return (flags_ & flag) != 0; }
+  void setFlag(uint32_t flag, bool set = true) {
+    if (set) {
+      flags_ |= flag;
+    } else {
+      flags_ &= ~flag;
+    }
+  }
 
   /** True if the value of this variable is always the initializer. This will always be
       true for 'let' variables except in the special case of 'let' variables that
       are of instance scope and which are initialized in the constructor. */
-  bool isThreadLocal() const { return threadLocal_; }
-  void setThreadLocal(bool threadLocal) { threadLocal_ = threadLocal; }
+  bool isConstant() const { return getFlag(Constant); }
+  void setIsConstant(bool isConstant) { setFlag(Constant, isConstant); }
+
+  /** True if this is a thread-local variable. */
+  bool isThreadLocal() const { return getFlag(ThreadLocal); }
+  void setThreadLocal(bool threadLocal) { setFlag(ThreadLocal, threadLocal); }
+
+  /** True if this variable is external to this module. */
+  bool isExtern() const { return getFlag(Extern); }
 
   /** Return true if this variable represents a memory location in which its value
       is stored, false if it is a constant with no storage. */
@@ -84,12 +102,11 @@ public:
 
 private:
   const Type * type_;
+  uint32_t flags_;
   Expr * initValue_;
   mutable llvm::Value * irValue_;
   int memberIndex_;
   int memberIndexRecursive_;
-  bool isConstant_;
-  bool threadLocal_;
   PassMgr passes_;
 };
 

@@ -235,6 +235,17 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
     }
   }
 
+  if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
+    for (Defn * local = blockScope->firstMember(); local != NULL; local = local->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
+        if (var->type()->isReferenceType()) {
+          // Zero out any garbage-collectible locals.
+          diag.debug() << "Exiting scope of " << local;
+        }
+      }
+    }
+  }
+
   setActiveScope(savedScope);
   return success;
 }
