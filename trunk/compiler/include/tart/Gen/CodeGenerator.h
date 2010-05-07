@@ -129,6 +129,7 @@ public:
     /** Generate the code that allocates storage for locals on the stack. */
   void genLocalStorage(BlockList & blocks, LocalScopeList & lsl);
   void genLocalVar(VariableDefn * var);
+  void genGCRoot(llvm::Value * lValue, const Type * varType);
 
   /** Generate the function body from the basic block list. */
   void genBlocks(BlockList & blocks);
@@ -321,6 +322,8 @@ public:
   /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
   llvm::DICompileUnit genDICompileUnit(const Defn * defn);
+  llvm::DIFile genDIFile(const ProgramSource * source);
+  llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
   void genDIGlobalVariable(const VariableDefn * var, llvm::GlobalVariable * gv);
@@ -355,9 +358,6 @@ public:
   // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genInvokeFn(const FunctionType * fnType);
 
-  // Generate the function that down-casts the 'self' argument in a reflected call.
-  llvm::Function * genDcObjectFn(const Type * objType);
-
   /** Generate a reference to the TypeInfoBlock for a proxy type. */
   llvm::Constant * genProxyType(const CompositeType * ctype);
 
@@ -365,6 +365,7 @@ public:
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
+  typedef llvm::DenseMap<const ProgramSource *, llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;
 
   /** Find a static method of the given class, and also generate an external reference
@@ -396,7 +397,7 @@ private:
       ValueList::const_iterator first, ValueList::const_iterator last);
   llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
 
-  void markGCRoot(llvm::Value * value, llvm::Value * metadata);
+  void markGCRoot(llvm::Value * value, llvm::Constant * metadata);
 
   llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
 
@@ -407,7 +408,6 @@ private:
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
   llvm::FunctionType * invokeFnType_;
-  llvm::FunctionType * dcObjectFnType_;
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
 
@@ -420,9 +420,11 @@ private:
 
   // Debug information
   CompileUnitMap dbgCompileUnits_;
+  DIFileMap dbgFiles_;
   SubprogramMap dbgSubprograms_;
   llvm::DIFactory dbgFactory_;
   llvm::DICompileUnit dbgCompileUnit_;
+  llvm::DIFile dbgFile_;
   llvm::DIScope dbgContext_;
   DITypeMap dbgTypeMap_;
   SourceLocation dbgLocation_;

@@ -6,13 +6,13 @@
 #include "llvm/Linker.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
-#include "llvm/ModuleProvider.h"
+//#include "llvm/ModuleProvider.h"
 #include "llvm/PassManager.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Bitcode/ReaderWriter.h"
-#include "llvm/CodeGen/FileWriters.h"
+//#include "llvm/CodeGen/FileWriters.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileUtilities.h"
 #include "llvm/Support/FormattedStream.h"
@@ -532,7 +532,7 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
   }
 
   // Ask the target to add backend passes as necessary.
-  ObjectCodeEmitter * emitter = 0;
+  //ObjectCodeEmitter * emitter = 0;
 
   // Override default to generate verbose assembly.
   target.setAsmVerbosityDefault(true);

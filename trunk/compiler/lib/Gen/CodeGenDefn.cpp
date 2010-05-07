@@ -29,6 +29,7 @@ using namespace llvm;
 bool CodeGenerator::genXDef(Defn * de) {
   if (debug_) {
     dbgCompileUnit_ = genDICompileUnit(de);
+    dbgFile_ = genDIFile(de);
   }
 
   switch (de->defnType()) {
@@ -69,7 +70,6 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->isSingular(), fdef);
   DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ParameterTypePass), fdef);
   DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ReturnTypePass), fdef);
-  //DASSERT_OBJ(fdef->hasBody() || fdef->isExtern(), fdef);
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
 
   // If it's a function from a different module...
@@ -212,7 +212,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     dbgContext_ = DISubprogram();
     builder_.ClearInsertionPoint();
-    builder_.SetCurrentDebugLocation(NULL);
+    builder_.SetCurrentDebugLocation(llvm::DebugLoc());
   }
 
   return true;
@@ -389,7 +389,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
           builder_.SetInsertPoint(savePoint);
         }
       }
-    } else {
+    } else if (!var->isExtern()) {
       // No initializer, so set the value to zerofill.
       gv->setInitializer(llvm::Constant::getNullValue(irType));
     }

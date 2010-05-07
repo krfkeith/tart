@@ -19,6 +19,7 @@ extern "C" {
   void GC_sync();
   void GC_syncStart();
   void GC_syncEnd();
+  void GC_collect();
 }
 
 static size_t pageSize;
@@ -122,8 +123,10 @@ void GC_init(size_t * safepointMap) {
   numSafePoints = *safepointMap;
   safePointTable = (SafePointEntry *)(safepointMap + 1);
 
-  GC_alloc(4);
-  GC_alloc(5);
+  printf("Num safe points: %ld\n", numSafePoints);
+
+//  GC_alloc(4);
+//  GC_alloc(5);
   GC_alloc(6);
 }
 
@@ -236,19 +239,42 @@ public:
 };
 
 void GC_collect() {
+  printf("Checking for safe points\n");
   tart::Tracer<ObjectPrinter> tracer;
 
   CallFrame * framePtr;
   __asm__("movq %%rbp, %0" :"=r"(framePtr));
 
+  SafePointEntry * spEnd = &safePointTable[numSafePoints];
   while (framePtr != NULL) {
+    void * returnAddr = framePtr->returnAddr;
     framePtr = framePtr->prevFrame;
+
+    printf("\nFound frame %p, return %p\n", framePtr, returnAddr);
+    SafePointEntry * sp = safePointTable;
+    while (sp < spEnd) {
+      if (sp->safePoint == returnAddr) {
+        uintptr_t baseAddr = uintptr_t(framePtr);
+        intptr_t * sdesc = sp->stackDescriptor;
+        intptr_t offset;
+        while ((offset = *sdesc++) != tart::TRACE_ENTRY_END) {
+          uint8_t ** addr = (uint8_t **)(baseAddr + offset);
+          printf("Found var in frame %p, offset %04ld addr %p value %p\n",
+              framePtr, offset, addr, *addr);
+        }
+        //printf("Found safe point\n");
+        break;
+      }
+
+      sp++;
+    }
+
     // given return address, find instruction list.
     // Call tracer.execute() on this list.
   }
 
-  fprintf(stderr, "\n");
-  (void)las;
+  fprintf(stderr, "Finished checking for safe points\n");
+  //(void)las;
 }
 
 void GC_trace(uint8_t * basePtr, intptr_t * traceTable, void * ctx) {

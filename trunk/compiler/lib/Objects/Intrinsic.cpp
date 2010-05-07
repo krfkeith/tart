@@ -438,28 +438,22 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
       llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType()),
       length->getType());
 
-  const llvm::Type * types[1];
-  types[0] = length->getType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types, 1);
+  const llvm::Type * int8PtrType = llvm::PointerType::getUnqual(cg.builder().getInt8Ty());
 
-  Value * idx[1];
-  idx[0] = ConstantInt::getSigned(length->getType(), 0);
+  const llvm::Type * types[3];
+  types[0] = int8PtrType;
+  types[1] = int8PtrType;
+  types[2] = length->getType();
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types, 3);
 
-  Value * args[4];
-  args[0] = cg.builder().CreatePointerCast(
-      dstPtr,
-      //cg.builder().CreateInBoundsGEP(dstPtr, &idx[0], &idx[1], "dst"),
-      llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
-
-  args[1] = cg.builder().CreatePointerCast(
-      srcPtr,
-      //cg.builder().CreateInBoundsGEP(srcPtr, &idx[0], &idx[1], "src"),
-      llvm::PointerType::getUnqual(cg.builder().getInt8Ty()));
-
+  Value * args[5];
+  args[0] = cg.builder().CreatePointerCast(dstPtr, int8PtrType);
+  args[1] = cg.builder().CreatePointerCast(srcPtr, int8PtrType);
   args[2] = cg.builder().CreateMul(length, elemSize);
-  args[3] = cg.getInt32Val(0);
+  args[3] = cg.getInt32Val(0); // TODO: Better alignment
+  args[4] = llvm::ConstantInt::getFalse(cg.context()); // TODO: isVolatile
 
-  return cg.builder().CreateCall(intrinsic, &args[0], &args[4]);
+  return cg.builder().CreateCall(intrinsic, &args[0], &args[5]);
 }
 
 // -------------------------------------------------------------------
@@ -638,6 +632,11 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
   if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
     fn->setFlag(FunctionDefn::Extern);
     fn->setLinkageName(extName->value());
+  } else if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+    var->setFlag(VariableDefn::Extern);
+    var->setLinkageName(extName->value());
+  } else {
+    diag.error(loc) << "Invalid target for 'Extern' attribute.";
   }
   return self;
 }
