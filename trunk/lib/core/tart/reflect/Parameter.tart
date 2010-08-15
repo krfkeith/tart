@@ -1,6 +1,9 @@
+import tart.reflect.Reflection;
+
 /** Reflection class for a method parameter. This structure is shared by all parameters
     that have the same name, unless the list of attributes is non-empty.
-    */
+  */
+@Reflection(Reflection.Detail.NONE)
 class Parameter {
   private {
     /** The unqualified member name. */

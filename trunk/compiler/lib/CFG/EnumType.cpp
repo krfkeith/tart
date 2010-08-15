@@ -55,6 +55,19 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
     }
   }
 
+  // An integer can be coerced to an enum.
+  if (cn.getFromType()->isIntType() && (cn.options & Conversion::Coerce)) {
+    ConversionRank rank = baseType_->convertImpl(cn);
+    if (rank != Incompatible) {
+      if (cn.resultValue != NULL) {
+        *cn.resultValue = new CastExpr(Expr::BitCast, cn.fromValue->location(), this,
+            cn.fromValue);
+      }
+      return rank;
+    }
+  }
+
+  // Unboxing
   if ((cn.options & Conversion::Checked) && cn.getFromType()->isReferenceType()) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),

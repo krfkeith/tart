@@ -49,6 +49,7 @@ SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperat
 SystemClass Builtins::typeType("tart.reflect.Type");
 SystemClass Builtins::typeSimpleType("tart.reflect.SimpleType");
 SystemClass Builtins::typeComplexType("tart.reflect.ComplexType");
+SystemClass Builtins::typeEnumInfoBlock("tart.reflect.EnumInfoBlock");
 SystemClass Builtins::typeEnumType("tart.reflect.EnumType");
 SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
 SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
@@ -58,7 +59,9 @@ SystemClass Builtins::typeParameter("tart.reflect.Parameter");
 SystemClass Builtins::typeProperty("tart.reflect.Property");
 SystemClass Builtins::typeMethod("tart.reflect.Method");
 SystemClass Builtins::typeModule("tart.reflect.Module");
+SystemClass Builtins::typeNameTable("tart.reflect.NameTable");
 SystemClass Builtins::typePackage("tart.reflect.Package");
+SystemClass Builtins::typeReflectionMetadata("tart.reflect.ReflectionMetadata");
 
 SystemClass Builtins::typeAttribute("tart.core.Attribute");
 SystemClass Builtins::typeIntrinsicAttribute("tart.annex.Intrinsic");

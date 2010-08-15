@@ -268,7 +268,8 @@ void CallSite::reportErrors(const char * msg) {
     cc->updateConversionRank();
     unifyVerbose = false;
     if (cc->env().empty()) {
-      diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
+      diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "*"
+          << cc->conversionCount() << "]";
     } else {
       diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
           Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";

@@ -252,6 +252,7 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 
 ConversionRank CallCandidate::updateConversionRank() {
   conversionRank_ = IdenticalTypes;
+  conversionCount_ = 0;
 
   for (TemplateConditionList::const_iterator it = conditions_.begin();
       it != conditions_.end(); ++it) {
@@ -265,14 +266,16 @@ ConversionRank CallCandidate::updateConversionRank() {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     const Type * paramType = this->paramType(argIndex);
-    conversionRank_ = std::min(conversionRank_, paramType->canConvert(argExpr, Conversion::Coerce));
+    combineConversionRanks(paramType->canConvert(argExpr, Conversion::Coerce));
+//    conversionRank_ = std::min(conversionRank_, paramType->canConvert(argExpr, Conversion::Coerce));
   }
 
   const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
-    conversionRank_ = std::min(
-        conversionRank_,
-        expectedReturnType->canConvert(resultType_, Conversion::Coerce));
+    combineConversionRanks(expectedReturnType->canConvert(resultType_, Conversion::Coerce));
+//    conversionRank_ = std::min(
+//        conversionRank_,
+//        expectedReturnType->canConvert(resultType_, Conversion::Coerce));
   }
 
   // If there are explicit specializations, then check those too.
@@ -291,6 +294,17 @@ ConversionRank CallCandidate::updateConversionRank() {
   }
 
   return conversionRank_;
+}
+
+void CallCandidate::combineConversionRanks(ConversionRank newRank) {
+  // conversionCount_ is the number of conversions that took place
+  // at the specified ranking level.
+  if (conversionRank_ == newRank) {
+    ++conversionCount_;
+  } else if (newRank < conversionRank_) {
+    conversionRank_ = newRank;
+    conversionCount_ = 1;
+  }
 }
 
 bool CallCandidate::unify(CallExpr * callExpr) {

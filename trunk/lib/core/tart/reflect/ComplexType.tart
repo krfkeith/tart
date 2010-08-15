@@ -4,11 +4,10 @@ import tart.core.Memory.Address;
 /** Reflection type for classes, structs, and interfaces. */
 public class ComplexType : Type {
   private {
-    var _name:String;
-    //var _scopeName:String;
+    var _meta:ReflectionMetadata;
     var _size:uint32;
     var _typeInfo:Address[TypeInfoBlock];
-    var _superType:optional ComplexType;
+    var _supertype:optional ComplexType;
     var _interfaces:ComplexType[];
     var _typeParams:Type[];
     var _attributes:Object[];
@@ -21,20 +20,38 @@ public class ComplexType : Type {
     var _noArgCtor:static fn :Object -> Object;
   }
 
-  undef construct();
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
+    super(typeKind);
+    self._typeInfo = typeInfo;
+    self._meta = typeInfo._meta;
+  }
 
   /** Given a type literal, return the reflected complex type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> ComplexType;
 
   /** Fully-qualified name of this type. */
-  final def name:String { get { return _name; } }
+  final def name:String { get { return _meta.localName; } }
+
+  /** Fully-qualified name of this type. */
+  final def qualifiedName:String { get { return _meta.qualifiedName; } }
+
+  /** Fully-qualified name of the scope in which this type is defined. */
+  final def scopeName:String { get { return _meta.scopeName; } }
 
   /** Size of this type in bytes. */
   final def size:uint32 { get { return _size; } }
   
   /** Pointer to this type's supertype, or null. */
-  final def supertype:optional ComplexType { get { return self._superType; } }
+  final def supertype:optional ComplexType {
+    get {
+      if _supertype is null {
+        _supertype = _meta.readBaseClass();
+      }
   
+      return _supertype;
+  	}
+  }
+
   /** Array of inherited interfaces. */
   final def interfaces:ComplexType[] { get { return self._interfaces; } }
   
@@ -121,7 +138,7 @@ public class ComplexType : Type {
 	        return instance;
 	      }
     
-        throw InvocationError("Class '{0}' does not have a no-arg constructor".format(name));
+        throw InvocationError("Class '{0}' does not have a no-arg constructor".format(qualifiedName));
       }
         
       case STRUCT {
@@ -163,6 +180,15 @@ public class ComplexType : Type {
   }
   
   final override toString -> String {
-    return _name;
+    return qualifiedName;
   }
+  
+  def test() {
+    _meta.readBaseClass();
+    _meta.readInterfaces();
+ 	  _meta.readTypeParams();
+ 	  _meta.readFields();
+ 	  _meta.readConstructors();
+ 	  _meta.readMethods();
+   }
 }

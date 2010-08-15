@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #ifndef TART_RUNTIME_TART_STRING_H
 #define TART_RUNTIME_TART_STRING_H
 
@@ -14,7 +14,7 @@
 /** Tart string class. */
 typedef struct TartString {
   struct TartObject object;
-  int length;
+  intptr_t length;
   struct TartString * source;
   char * start;
   char chars[1];

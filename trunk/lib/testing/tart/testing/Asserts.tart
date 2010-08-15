@@ -3,23 +3,23 @@ import tart.core.Debug.locationOf;
 
 namespace Asserts {
   def assertionFailed(loc:String, msg:String) {
-    throw AssertionFailureException(String.concat(loc, ": ", msg));
+    throw AssertionFailureException(String.concat(loc, " ", msg));
   }
 
   def assertionFailed(loc:String, a0:String, a1:String) {
-    throw AssertionFailureException(String.concat(loc, ": ", a0, a1));
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1));
   }
 
   def assertionFailed(loc:String, a0:String, a1:String, a2:String) {
-    throw AssertionFailureException(String.concat(loc, ": ", a0, a1, a2));
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2));
   }
 
   def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String) {
-    throw AssertionFailureException(String.concat(loc, ": ", a0, a1, a2, a3));
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3));
   }
 
   def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String, a4:String) {
-    throw AssertionFailureException(String.concat(loc, ": ", a0, a1, a2, a3, a4));
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3, a4));
   }
 
   macro fail(msg:String) {

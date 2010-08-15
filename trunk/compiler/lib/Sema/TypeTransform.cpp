@@ -108,7 +108,7 @@ const Type * TypeTransform::visitUnionType(const UnionType * in) {
   const TupleType * members = cast<TupleType>(visit(&in->members()));
   if (members != &in->members()) {
     // TODO: Need to sort the members.
-    return UnionType::get(in->location(), members->members());
+    return UnionType::get(members->members());
   }
 
   return in;

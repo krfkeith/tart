@@ -568,10 +568,10 @@ void CompositeType::addStaticDefsToModule(Module * module) {
 
 void CompositeType::addFieldTypesToModule(Module * module) const {
   // Make certain that every method that is referred to from the TIB is XRef'd.
-  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
-    FunctionDefn * method = *m;
-    module->addSymbol(method);
-  }
+//  for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
+//    FunctionDefn * method = *m;
+//    module->addSymbol(method);
+//  }
 
   for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
     if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {

@@ -33,9 +33,15 @@ extern SystemClassMember<FunctionDefn> functionType_invokeFn;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
 // Members of tart.core.TypeInfoBlock.
-SystemClassMember<VariableDefn> tib_name(Builtins::typeTypeInfoBlock, "name");
+
+SystemClassMember<VariableDefn> tib_meta(Builtins::typeTypeInfoBlock, "_meta");
 SystemClassMember<VariableDefn> tib_bases(Builtins::typeTypeInfoBlock, "bases");
 SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
+
+// Members of tart.reflect.EnumInfoBlock.
+SystemClassMember<VariableDefn> eib_meta(Builtins::typeEnumInfoBlock, "_meta");
+SystemClassMember<VariableDefn> eib_encodedDefn(Builtins::typeEnumInfoBlock, "_encodedDefn");
+SystemClassMember<VariableDefn> eib_type(Builtins::typeEnumInfoBlock, "_type");
 
 const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
@@ -202,7 +208,12 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   //ConstantList tibMembers;
   //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
   //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
-  builder.addField(reflector_.internSymbol(type->typeDefn()->linkageName()));
+  if (!type->typeDefn()->isNonreflective()) {
+    builder.addField(reflector_.getReflectedScope(type->typeDefn())->var());
+  } else {
+    builder.addNullField(tib_meta.type());
+  }
+
   builder.addField(baseClassArrayPtr);
   if (type->typeClass() == Type::Class) {
     builder.addField(idispatch);
@@ -266,7 +277,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   argTypes.push_back(llvm::PointerType::get(Builtins::typeString.irType(), 0));
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
-  DASSERT(dbgContext_.getNode() == NULL);
+  DASSERT((MDNode *)dbgContext_ == NULL);
   DASSERT(builder_.getCurrentDebugLocation().isUnknown());
   Function * idispatch = Function::Create(
       functype, Function::InternalLinkage,
@@ -404,6 +415,25 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
   return rtype;
 }
 
+GlobalVariable * CodeGenerator::getEnumInfoBlock(const EnumType * etype) {
+  std::string eibName(etype->typeDefn()->linkageName() + ".type.eib");
+  llvm::GlobalVariable * eibVar = irModule_->getGlobalVariable(eibName, false);
+  if (eibVar != NULL) {
+    return eibVar;
+  }
+
+  const llvm::Type * enumInfoBlockType = Builtins::typeEnumInfoBlock.irType();
+  StructBuilder sb(*this);
+  //sb.addField(reflector_.getReflectedScope(etype->typeDefn())->var());
+  sb.addNullField(eib_meta.type());
+  sb.addNullField(eib_encodedDefn.type());
+  sb.addNullField(eib_type.type());
+  llvm::Constant * eib = sb.build(enumInfoBlockType);
+
+  return new GlobalVariable(*irModule_, eib->getType(), true, GlobalValue::LinkOnceODRLinkage,
+      eib, eibName);
+}
+
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   TypeDefn * enumDef = type->typeDefn();
   GlobalValue::LinkageTypes linkage = GlobalValue::ExternalLinkage;
@@ -416,10 +446,10 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   }
 
   // TODO: Implement valueOf
-  DefnList enumConstants;
+  DefnList enumMembers;
   for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-      enumConstants.push_back(var);
+      enumMembers.push_back(var);
     }
   }
 
@@ -427,36 +457,40 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       cast_or_null<FunctionDefn>(type->memberScope()->lookupSingleMember("toString"));
 
   if (type->isFlags()) {
-  } else if (!enumConstants.empty()) {
+  } else if (!enumMembers.empty()) {
+    const Type * baseType = type->baseType();
     VariableDefn * minVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("minVal"));
     VariableDefn * maxVal = cast<VariableDefn>(type->memberScope()->lookupSingleMember("maxVal"));
     APInt minValInt = cast<ConstantInteger>(minVal->initValue())->intValue();
     APInt maxValInt = cast<ConstantInteger>(maxVal->initValue())->intValue();
+    llvm::Constant * nullStrPtr = ConstantPointerNull::getNullValue(
+        Builtins::typeString->irEmbeddedType());
 
     // TODO: What if the spread is greater than 2^63?
-    int64_t spread = (maxValInt - minValInt).getSExtValue();
+    int64_t spread = baseType->isUnsignedType() ?
+        (maxValInt - minValInt).getZExtValue() :
+        (maxValInt - minValInt).getSExtValue();
     DASSERT(spread >= 0);
-    if ((spread < 16 || spread < int64_t(enumConstants.size()) * 2) && spread < 0x10000) {
+    if ((spread < 16 || spread < int64_t(enumMembers.size()) * 2) && spread < 0x10000) {
       ConstantList enumConstants;
       enumConstants.resize(spread + 1);
       std::fill(enumConstants.begin(), enumConstants.end(), (llvm::Constant *) NULL);
-      for (Defn * de = type->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
-        if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-          if (var != minVal && var != maxVal) {
-            ConstantInteger * valInt = cast<ConstantInteger>(var->initValue());
-            int64_t offset = (valInt->intValue() - minValInt).getSExtValue();
-            DASSERT(offset >= 0);
-            DASSERT(offset < int64_t(enumConstants.size()));
-            if (enumConstants[offset] == NULL) {
-              enumConstants[offset] = reflector_.internSymbol(var->name());
-            }
+      for (DefnList::const_iterator it = enumMembers.begin(); it != enumMembers.end(); ++it) {
+        VariableDefn * var = cast<VariableDefn>(*it);
+        if (var != minVal && var != maxVal) {
+          ConstantInteger * valInt = cast<ConstantInteger>(var->initValue());
+          int64_t offset = (valInt->intValue() - minValInt).getSExtValue();
+          DASSERT(offset >= 0);
+          DASSERT(offset < int64_t(enumConstants.size()));
+          if (enumConstants[offset] == NULL) {
+            enumConstants[offset] = reflector_.internSymbol(var->name());
           }
         }
       }
 
       for (ConstantList::iterator it = enumConstants.begin(); it != enumConstants.end(); ++it) {
         if (*it == NULL) {
-          *it = ConstantPointerNull::getNullValue(Builtins::typeString->irEmbeddedType());
+          *it = nullStrPtr;
         }
       }
 
@@ -508,7 +542,49 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
         exit(-1);
       }*/
     } else {
-      DFAIL("Implement sparse enum tables");
+      // Create the toString function using a switch statement.
+      Function * toStringFn = cast<Function>(irModule_->getOrInsertFunction(
+          toString->linkageName(),
+          cast<llvm::FunctionType>(toString->functionType()->irType())));
+      toStringFn->setLinkage(linkage);
+      DASSERT(toStringFn->arg_size() == 1);
+      llvm::Argument * selfArg = toStringFn->arg_begin();
+      selfArg->setName("self");
+
+      BasicBlock * blk = BasicBlock::Create(context_, "ts_entry", toStringFn);
+      BasicBlock * defaultBlk = BasicBlock::Create(context_, "ts_default", toStringFn);
+
+      DASSERT(currentFn_ == NULL);
+      currentFn_ = toStringFn;
+      builder_.SetInsertPoint(blk);
+
+      SwitchInst * sw = builder_.CreateSwitch(selfArg, defaultBlk, enumMembers.size());
+
+      for (DefnList::const_iterator it = enumMembers.begin(); it != enumMembers.end(); ++it) {
+        VariableDefn * var = cast<VariableDefn>(*it);
+        if (var != minVal && var != maxVal) {
+          ConstantInteger * valInt = cast<ConstantInteger>(var->initValue());
+          BasicBlock * blk = BasicBlock::Create(
+              context_, StringRef("ts_") + var->name(), toStringFn);
+          // TODO: Avoid dups?
+          sw->addCase(valInt->value(), blk);
+
+          builder_.SetInsertPoint(blk);
+          llvm::Constant * strVal = reflector_.internSymbol(var->name());
+          builder_.CreateRet(strVal);
+        }
+      }
+
+      builder_.SetInsertPoint(defaultBlk);
+      builder_.CreateRet(nullStrPtr);
+
+      currentFn_ = NULL;
+
+      // Verify the function
+      if (verifyFunction(*toStringFn, PrintMessageAction)) {
+        toStringFn->dump();
+        exit(-1);
+      }
     }
   }
 
@@ -524,7 +600,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
 
   const llvm::FunctionType * invokeFnType = cast<llvm::FunctionType>(
       functionType_invoke.type()->irType());
-  DASSERT(dbgContext_.getNode() == NULL);
+  DASSERT((MDNode *)dbgContext_ == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);
   DASSERT(currentFn_ == NULL);
@@ -683,7 +759,7 @@ llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
 
   const FunctionType * fnType = fn->functionType();
   const llvm::FunctionType * interceptFnType = cast<llvm::FunctionType>(fnType->irType());
-  DASSERT(dbgContext_.getNode() == NULL);
+  DASSERT((MDNode *)dbgContext_ == NULL);
   interceptFn = Function::Create(
       interceptFnType, Function::LinkOnceODRLinkage, interceptName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", interceptFn);

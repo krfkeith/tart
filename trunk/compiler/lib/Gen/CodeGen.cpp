@@ -84,18 +84,22 @@ void CodeGenerator::generate() {
 
   // Generate debugging information
   if (debug_) {
-    genDICompileUnit(module_);
+    dbgCompileUnit_ = genDICompileUnit(module_->moduleSource());
+    dbgFile_ = genDIFile(module_->moduleSource());
   }
 
   addTypeName(Builtins::typeObject);
   addTypeName(Builtins::typeTypeInfoBlock);
   if (reflector_.enabled() && Builtins::typeModule.peek() != NULL) {
     addTypeName(Builtins::typeModule);
+    addTypeName(Builtins::typeNameTable);
+    addTypeName(Builtins::typeReflectionMetadata);
     addTypeName(Builtins::typeType);
     addTypeName(Builtins::typeSimpleType);
     addTypeName(Builtins::typeDerivedType);
     addTypeName(Builtins::typeComplexType);
     addTypeName(Builtins::typeEnumType);
+    addTypeName(Builtins::typeEnumInfoBlock);
     addTypeName(Builtins::typeFunctionType);
   }
 
@@ -258,7 +262,7 @@ void CodeGenerator::genEntryPoint() {
 
   // Create the function type
   llvm::FunctionType * functype = llvm::FunctionType::get(builder_.getInt32Ty(), mainArgs, false);
-  DASSERT(dbgContext_.getNode() == NULL);
+  DASSERT((MDNode *)dbgContext_ == NULL);
   Function * mainFunc = Function::Create(functype, Function::ExternalLinkage, "main", irModule_);
 
   Function::arg_iterator args = mainFunc->arg_begin();

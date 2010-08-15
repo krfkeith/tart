@@ -31,7 +31,7 @@ namespace tart {
 
 #define DASSERT_MSG(expression, msg) \
   if (!(expression)) { \
-    diag.assertionFailedMsg(msg, __FILE__, __LINE__); \
+    diag.assertionFailed(msg, __FILE__, __LINE__); \
   } else (void)0
 
 #define DASSERT_OBJ(expression, ctx) \

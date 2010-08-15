@@ -9,24 +9,27 @@ final class ImmutableList[%ElementType] : List[ElementType] {
   }
 
   /** Create an empty ImmutableList. */
-  def construct() {
+  private def construct() {
     self.data = [];
   }
 
   /** Create an ImmutableList from the elements given. */
-  def construct(data:ElementType[]) {
-    self.data = data;
-  }
-
-  /** Create an ImmutableList from the elements given. */
-  def construct(data:ElementType...) {
+  private def construct(data:ElementType[]) {
     self.data = data;
   }
 
   // TODO: Test
-  undef add(e:ElementType);
-  undef insert(position:int, e:ElementType);
-  undef remove(index:int);
+  def add(e:ElementType) {
+    throw UnsupportedOperationError();
+  }
+
+  def insert(position:int, e:ElementType) {
+    throw UnsupportedOperationError();
+  }
+
+  def remove(index:int) {
+    throw UnsupportedOperationError();
+  }
 
   def [index:int]:ElementType {
     get {
@@ -34,15 +37,47 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     }
     
     set {
-      throw UnsupportedOperationException();
+      throw UnsupportedOperationError();
     }
+  }
+  
+  def clear {
+    throw UnsupportedOperationError();
   }
   
   def size:int {
     get { return self.data.size; }
   }
 
+  def isEmpty:bool {
+    get { return self.data.size == 0; }
+  }
+  
+  def contains(el:ElementType) -> bool {
+    for i = 0; i < self.data.size; ++i {
+			return true if self.data[i] == el;
+    }
+    return false;
+  }
+
   def iterate -> Iterator[ElementType] {
     return self.data.iterate();
+  }
+
+  static def of(elements:ElementType...) -> ImmutableList {
+    return ImmutableList(elements);
+  }
+
+  static def copyOf(elements:ElementType[]) -> ImmutableList {
+    return ImmutableList(elements.copy());
+  }
+
+  static def copyOf(elements:Collection[ElementType]) -> ImmutableList {
+    let data = Array[ElementType](elements.size);
+    var index = 0;
+    for element in elements {
+      data[index++] = element;
+    }
+    return ImmutableList(data);
   }
 }

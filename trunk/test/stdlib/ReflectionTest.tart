@@ -21,7 +21,7 @@ def sample2(arg:int32) {
 @Attribute(Attribute.Target.ANY, Attribute.Retention.RUNTIME)
 class RetainedAttr {
 }
-  
+
 class TestClass {
   // No-arg constructor
   def construct {
@@ -35,13 +35,22 @@ class TestClass {
     return arg * arg;
   }
 }
-  
+
 class ReflectionTest : Test {
 	def testModuleReflection() {
 	  let m = Module.thisModule();
 	  assertEq("ReflectionTest", m.name);
+	  assertEq("ReflectionTest", m.qualifiedName);
+	  assertEq("", m.packageName);
 	  assertEq(3, m.types.size);
 	  assertEq(3, m.methods.size);
+	}
+	
+	def testModuleQualifiedName() {
+	  let m = Module.of(String);
+	  assertEq("String", m.name);
+	  assertEq("tart.core.String", m.qualifiedName);
+	  assertEq("tart.core", m.packageName);
 	}
 	
 	def testModuleMethods() {
@@ -74,7 +83,7 @@ class ReflectionTest : Test {
 	
 	def testFindClass() {
 	  let ty:Type = Type.of(TestClass);
-	  assertEq("tart.reflect.ComplexType", ty.__typeName);
+	  //assertEq("tart.reflect.ComplexType", ty.__typeName);
 	  assertEq(Type.TypeKind.CLASS, ty.typeKind);
 	  assertTrue(ty isa ComplexType);
 	}
@@ -109,7 +118,7 @@ class ReflectionTest : Test {
     assertTrue(ComplexType.of(ReflectionTest).isSubclass(Test));
     assertFalse(ComplexType.of(Test).isSubclass(ReflectionTest));
   }
-  
+
   def testRetainedAttribute {
     let ty:Type = Type.of(TestClass);
     let ct = typecast[ComplexType](ty);
@@ -120,5 +129,20 @@ class ReflectionTest : Test {
     let attr2 = method.findAttribute(String);
     assertFalse(attr isa String);
     //assertEq(null, attr);
+  }
+  
+  def testTypeOfString {
+    let ty = "".type;
+	  assertEq("String", ty.name);
+	  assertEq("tart.core", ty.scopeName);
+	  assertEq("tart.core.String", ty.qualifiedName);
+	  assertEq("Object", ty.supertype.name);
+  }
+
+  def testGetStrings {
+    let m = Module.thisModule();
+    let ty:ComplexType = ComplexType.of(TestClass);
+    ty.test();
+    //let s = m.strings;
   }
 }

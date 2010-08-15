@@ -23,6 +23,7 @@
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/MacroExpansionPass.h"
+#include "tart/Sema/PropertyAccessorPass.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/EvalPass.h"
 
@@ -141,6 +142,9 @@ bool StmtAnalyzer::buildCFG() {
     optimizeBranches();
     removeDeadBlocks();
 
+    // Convert all property accesses to getters and setters.
+    expandPropertyAccessors();
+
     // Add a return statement at the end if it is needed.
     // Note that this may be removed during dead code deletion if there is no way to
     // get to the block.
@@ -235,7 +239,7 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
     }
   }
 
-  if (currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
+  if (success && currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
     for (Defn * local = blockScope->firstMember(); local != NULL; local = local->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
         if (var->type()->isReferenceType()) {
@@ -1707,6 +1711,21 @@ FunctionDefn * StmtAnalyzer::findInterfaceMethod(const CompositeType * type, con
   }
 
   return NULL;
+}
+
+void StmtAnalyzer::expandPropertyAccessors() {
+  for (BlockList::iterator bi = blocks.begin(); bi != blocks.end(); ++bi) {
+    Block * blk = *bi;
+    for (ExprList::iterator ei = blk->exprs().begin(); ei != blk->exprs().end(); ++ei) {
+      *ei = PropertyAccessorPass::run(module, subject(), *ei);
+    }
+
+    for (ExprList::iterator ei = blk->termExprs().begin(); ei != blk->termExprs().end(); ++ei) {
+      if (*ei != NULL) {
+        *ei = PropertyAccessorPass::run(module, subject(), *ei);
+      }
+    }
+  }
 }
 
 void StmtAnalyzer::flattenLocalProcedureCalls() {

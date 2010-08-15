@@ -661,6 +661,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       // In this case, lvalue refers to a member of the base expression.
       const LValueExpr * lval = static_cast<const LValueExpr *>(expr);
       Value * baseAddr = genBaseAddress(lval->base(), indices, label);
+      DASSERT_OBJ(isa<VariableDefn>(lval->value()), lval);
       const VariableDefn * field = cast<VariableDefn>(lval->value());
 
       DASSERT(isa<PointerType>(baseAddr->getType()));
@@ -893,7 +894,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   // String type members
   std::vector<Constant *> members;
   members.push_back(ConstantStruct::get(context_, objMembers, false));
-  members.push_back(getInt32Val(strval.size()));
+  members.push_back(getIntVal(strval.size()));
   members.push_back(strSource);
   members.push_back(strDataStart);
   members.push_back(ConstantArray::get(context_, strval, false));
@@ -1046,7 +1047,10 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
   }
 
   Constant * constObject = genConstantObject(obj);
-  DASSERT(constObject != NULL);
+  if (constObject == NULL) {
+    return NULL;
+  }
+
   return new GlobalVariable(
       *irModule_, constObject->getType(), true,
       synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,

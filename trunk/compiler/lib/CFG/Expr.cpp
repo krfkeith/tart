@@ -643,11 +643,7 @@ CastExpr * CastExpr::dynamicCast(Expr * value, const Type * toType) {
 }
 
 void CastExpr::format(FormatStream & out) const {
-  if (exprType() == ImplicitCast) {
-    out << "implicitCast<" << type() << ">(" << arg() << ")";
-  } else {
-    out << "cast<" << type() << ">(" << arg() << ")";
-  }
+  out << exprTypeName(exprType()) << "<" << type() << ">(" << arg() << ")";
 }
 
 /// -------------------------------------------------------------------

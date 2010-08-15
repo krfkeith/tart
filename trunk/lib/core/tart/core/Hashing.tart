@@ -83,12 +83,12 @@ namespace Hashing {
     return murmurHash(Memory.ptrToInt(key));
   }
 
-  /** Hash a region of memory. */
+  /** Hash a byte buffer segment. */
   def murmurHash(buffer:Memory.Buffer[ubyte], seed:uint32 = 0) -> uint64 {
     return murmurHash(buffer.begin, buffer.end, seed);
   }
 
-  /** Hash a byte buffer segment. */
+  /** Hash a region of memory. */
   def murmurHash(first:Address[ubyte], last:Address[ubyte], seed:uint32 = 0) -> uint64 {
     if true {  // TODO: Change to config.allowUnalignedRead
       let R:uint64 = 47;

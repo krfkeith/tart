@@ -2486,6 +2486,10 @@ ASTNode * Parser::primaryExpression() {
       result = arrayLiteral();
       break;
 
+    case Token_Optional:
+    case Token_Static:
+      return typeExprPrimary();
+
     default:
       if (token >= Token_BoolType && token <= Token_UIntpType) {
         result = builtInTypeName(token);

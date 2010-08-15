@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
@@ -243,7 +244,8 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
-  if (passesToRun.contains(CompositeType::RecursiveFieldTypePass) && !analyzeFieldTypesRecursive()) {
+  if (passesToRun.contains(CompositeType::RecursiveFieldTypePass) &&
+      !analyzeFieldTypesRecursive()) {
     return false;
   }
 
@@ -575,6 +577,10 @@ bool ClassAnalyzer::analyzeFields() {
         case Defn::Let: {
           VariableDefn * field = static_cast<VariableDefn *>(member);
           //field->copyTrait(target, Defn::Final);
+
+          if (field->passes().isRunning(VariableDefn::VariableTypePass)) {
+            continue;
+          }
 
           analyzeVariable(field, Task_PrepTypeComparison);
           DASSERT(field->type() != NULL);
@@ -1383,6 +1389,13 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
     } else {
       diag.error(var) << "'" << var << "' cannot be default initialized";
       return NULL;
+    }
+  }
+
+  if (const UnionType * utype = dyn_cast<UnionType>(fieldType)) {
+    if (utype->isSingleOptionalType()) {
+      const Type * nonNullType = utype->getFirstNonVoidType();
+      return nonNullType->nullInitValue();
     }
   }
 

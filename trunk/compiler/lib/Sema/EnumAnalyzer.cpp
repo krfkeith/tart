@@ -19,6 +19,37 @@
 
 namespace tart {
 
+class EnumConstructor : public FunctionDefn {
+public:
+  EnumConstructor(Module * m, EnumType * type)
+    : FunctionDefn(m, istrings.idCreate, createFunctionType(m, type))
+    , type_(type)
+  {
+    addTrait(Defn::Synthetic);
+    addTrait(Defn::Singular);
+    addTrait(Defn::Nonreflective);
+    setFlag(Final);
+    setStorageClass(Storage_Static);
+    setParentDefn(type->typeDefn());
+    createQualifiedName(type->typeDefn());
+  }
+
+  static FunctionType * createFunctionType(Module * m, EnumType * type) {
+    ParameterList params;
+    params.push_back(new ParameterDefn(m, "value", type->baseType(), 0));
+    FunctionType * ft = new FunctionType(type, params);
+    return ft;
+  }
+
+  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+    DASSERT(args.size() == 1);
+    return type_->explicitCast(loc, args[0], Conversion::Coerce);
+  }
+
+private:
+  EnumType * type_;
+};
+
 class EnumContainsFunction : public FunctionDefn {
 public:
   EnumContainsFunction(Module * m, EnumType * type)
@@ -321,7 +352,9 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   }
 
   EnumType * enumType = cast<EnumType>(target_->typeValue());
+  const llvm::Type * irType = enumType->irType();
   bool isFlags = enumType->isFlags();
+  bool isSigned = !enumType->baseType()->isUnsignedType();
   VariableDefn * ec = new VariableDefn(Defn::Let, module, ast);
   ConstantInteger * value = NULL;
   if (ast->value() != NULL) {
@@ -336,8 +369,10 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
       diag.fatal(ast) << "Not an integer constant " << enumValue;
     }
 
-    value = ConstantInteger::get(ast->location(), enumType,
-        static_cast<ConstantInteger *>(enumValue)->value());
+    llvm::ConstantInt * enumIntVal = static_cast<ConstantInteger *>(enumValue)->value();
+    enumIntVal = cast<llvm::ConstantInt>(
+        llvm::ConstantExpr::getIntegerCast(enumIntVal, irType, isSigned));
+    value = ConstantInteger::get(ast->location(), enumType, enumIntVal);
     assert(value->value() != NULL);
   } else {
     // No explicit value, use the previous value.
@@ -348,7 +383,6 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
     } else {
       // Calculate the successor value.
       llvm::ConstantInt * irVal = prevValue_->value();
-      const llvm::Type * irType = irVal->getType();
       if (isFlags) {
         // TODO: Also want to mask out any low-order bits.
         if (irVal->isNullValue()) {
@@ -406,6 +440,7 @@ void EnumAnalyzer::createOperators() {
 
   type->passes().finish(EnumType::OperatorCreationPass);
 
+  type->memberScope()->addMember(new EnumConstructor(m, type));
   if (type->isFlags()) {
     type->memberScope()->addMember(new EnumContainsFunction(m, type));
     parentScope->addMember(

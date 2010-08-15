@@ -31,20 +31,20 @@ final class Method : Member {
   
   /** Call this method with the given arguments.
       Parameters:
-        obj - The 'self' argument, or Null if this is a static method.
+        obj - The 'self' argument, or null if this is a static method.
         args - The list of arguments to the method.
    */
-  final def call(obj:Object, args:Object[]) -> Object {
+  final def call(obj:optional Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
     return _type.invoke(_methodPointer, obj, args);
   }
 
   /** Call this method with the given arguments.
       Parameters:
-        obj - The 'self' argument, or Null if this is a static method.
+        obj - The 'self' argument, or null if this is a static method.
         args - The list of arguments to the method.
    */
-  final def call(obj:Object, args:Object...) -> Object {
+  final def call(obj:optional Object, args:Object...) -> Object {
     return _type.invoke(_methodPointer, obj, args);
   }
 }

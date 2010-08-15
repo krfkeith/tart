@@ -1,7 +1,7 @@
 
 /** A member of a type */
 @Reflection(Reflection.Detail.NONE) class Member {
-  enum Access : ubyte {
+  enum Visibility : ubyte {
     PUBLIC,
     PROTECTED,
     PRIVATE,
@@ -22,15 +22,30 @@
   }
 
   private {
+    //var _meta:ReflectionMetadata;
     var _name:String;
     var _scopeName:String;
     var _kind:MemberKind;
-    var _access:Access;
+    var _visibility:Visibility;
     var _traits:Traits;
     var _attributes:Object[];
   }
 
   private def construct() {}
+  protected def construct(
+      name:String,
+      //qualifiedName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[]) {
+    self._name = name;
+    //self.qualifiedName_ = qualifiedName;
+    self._kind = kind;
+    self._visibility = visibility;
+    self._traits = traits;
+    self._attributes = attributes;
+  }
 
   /** The unqualified member name. */
   final def name:String { get { return _name; } }
@@ -45,14 +60,14 @@
   final def kind:MemberKind { get { return _kind; } }
   
   /** Accessibility of this member. */
-  final def access:Access { get { return _access; } }
+  final def visibility:Visibility { get { return _visibility; } }
   
   /** Various member flags. */
   final def traits:Traits { get { return _traits; } }
 
   /** Array of attributes for this member. */
   final def attributes:Object[] { get { return _attributes; } }
-  
+
   /** Return the first attribute of type 'attrType'. */
   final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
     for attr in _attributes {

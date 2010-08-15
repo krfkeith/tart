@@ -7,6 +7,7 @@
 
 #include "tart/Common/SourceLocation.h"
 #include "tart/Common/Formattable.h"
+#include "tart/Meta/NameTable.h"
 #include "tart/Gen/Reflector.h"
 
 #include "llvm/Support/IRBuilder.h"
@@ -87,8 +88,7 @@ class CodeGenerator {
 public:
   // Field indices for TypeInfoBlock
   enum TIBFields {
-    //TIB_TYPE = 0,
-    TIN_NAME = 0,
+    TIB_META = 0,
     TIB_BASES,
     TIB_IDISPATCH,
     TIB_METHOD_TABLE,
@@ -98,6 +98,9 @@ public:
 
   /** Return the builder object. */
   llvm::IRBuilder<true> & builder() { return builder_; }
+
+  /** Return the object containing the module constants table. */
+  NameTable & nameTable() { return nameTable_; }
 
   /** Function to generate the module code. */
   void generate();
@@ -247,6 +250,9 @@ public:
   /** Generate the code to initialize the vtable pointer of a newly-allocated class instance. */
   void genInitObjVTable(const CompositeType * tdef, llvm::Value * instance);
 
+  /** Generate a descriptor block for an enumerated type. */
+  llvm::GlobalVariable * getEnumInfoBlock(const EnumType * etype);
+
   /** Given a type, generate a constant representing the size of that type.
       'memberSize' - return how much space the type would consume as a member of another
       type (which will be equal to the size of a reference for reference types.)
@@ -321,7 +327,6 @@ public:
 
   /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
-  llvm::DICompileUnit genDICompileUnit(const Defn * defn);
   llvm::DIFile genDIFile(const ProgramSource * source);
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
@@ -364,7 +369,6 @@ public:
   // Generate the function that boxes arguments when a call is intercepted.
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
 private:
-  typedef llvm::DenseMap<const ProgramSource *, llvm::DICompileUnit> CompileUnitMap;
   typedef llvm::DenseMap<const ProgramSource *, llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;
 
@@ -417,9 +421,9 @@ private:
   llvm::PointerType * methodPtrType_;
 
   Reflector reflector_;
+  NameTable nameTable_;
 
   // Debug information
-  CompileUnitMap dbgCompileUnits_;
   DIFileMap dbgFiles_;
   SubprogramMap dbgSubprograms_;
   llvm::DIFactory dbgFactory_;

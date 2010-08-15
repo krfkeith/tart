@@ -34,9 +34,8 @@ typedef llvm::SmallVector<CompositeType *, 4> ClassList;
 typedef llvm::SetVector<CompositeType *> ClassSet;
 
 /// -------------------------------------------------------------------
-/// Analysis passes
-/// -------------------------------------------------------------------
 /// Composite types - class, struct, interface
+
 class CompositeType : public DeclaredType {
   friend class CodeGenerator;
   friend class RuntimeTypeInfo;

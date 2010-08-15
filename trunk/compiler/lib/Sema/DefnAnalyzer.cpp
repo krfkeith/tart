@@ -21,7 +21,6 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/FindExternalRefsPass.h"
@@ -125,7 +124,8 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   importSystemType(Builtins::typeModule);
-  importSystemType(Builtins::typePackage);
+  //importSystemType(Builtins::typeModuleConstants);
+  //importSystemType(Builtins::typePackage);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
 
@@ -150,7 +150,9 @@ bool DefnAnalyzer::analyzeModule() {
         analyzeDefn(de, Task_PrepReflection);
       }
 
-      FindExternalRefsPass::run(module, de);
+      if (isExport) {
+        FindExternalRefsPass::run(module, de);
+      }
     } else {
       success = false;
       diag.recovered();
@@ -533,6 +535,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Enum:
         if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
           importSystemType(Builtins::typeEnumType);
+          importSystemType(Builtins::typeEnumInfoBlock);
         }
         break;
 

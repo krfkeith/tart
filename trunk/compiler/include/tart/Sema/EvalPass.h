@@ -89,6 +89,7 @@ private:
   Expr * evalNew(NewExpr * in);
   Expr * evalAssign(AssignmentExpr * in);
   Expr * evalNot(UnaryExpr * in);
+  Expr * evalComplement(UnaryExpr * in);
   Expr * evalArrayLiteral(ArrayLiteralExpr * in);
   Expr * evalUnionCtorCast(CastExpr *in);
   Expr * evalBinaryOpcode(BinaryOpcodeExpr *in);

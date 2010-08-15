@@ -1,3 +1,5 @@
+import tart.reflect.ComplexType;
+import tart.reflect.ReflectionMetadata;
 import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.reflect.Type;
@@ -6,11 +8,8 @@ import tart.reflect.Type;
     pointer to the type object and the method table.
  */
 @Reflection(Reflection.Detail.NONE) struct TypeInfoBlock {
-  /** Reference to the type object for this type. */
-  //readonly var type:Type;
-
-  /** The fully-qualified name of this type. */
-  readonly var name:String;
+  /** Pointer to the compressed reflection data for this type. */
+  readonly var _meta:ReflectionMetadata;
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
@@ -24,11 +23,11 @@ import tart.reflect.Type;
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:NativeArray[Address[void], 0];
-  
+
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used
       by the compiler to do 'isa', 'as' and 'catch' tests. */
-  public final def hasBase(toType:Address[TypeInfoBlock]) -> bool {
+  final def hasBase(toType:Address[TypeInfoBlock]) -> bool {
     return true if Memory.addressOf(self) is toType;
     var i = 0;
     while let base:Address[TypeInfoBlock] = self.bases[i++] {
@@ -39,7 +38,15 @@ import tart.reflect.Type;
   }
 
   /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
-  public static def typecastError() {
+  static def typecastError() {
     throw TypecastError();
   }
+  
+  def qualifiedName:String { get {
+    if _meta is not null {
+      return _meta.qualifiedName;
+    }
+    
+    return "<unnamed>";
+  } }
 }

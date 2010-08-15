@@ -58,7 +58,8 @@ public:
   {}
 
   /** Constructor that takes a name and a type (for static decls.) */
-  ParameterDefn(Module * m, const char * name, Type * ty, int paramFlags, Expr * defaultVal = NULL)
+  ParameterDefn(Module * m, const char * name, const Type * ty, int paramFlags,
+      Expr * defaultVal = NULL)
     : VariableDefn(Parameter, m, name, defaultVal)
     , internalType_(ty)
     , variance_(Contravariant)

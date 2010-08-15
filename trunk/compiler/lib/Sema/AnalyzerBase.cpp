@@ -346,17 +346,6 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, cons
     if (ctype->memberScope()->lookupMember(name, out, false)) {
       return true;
     }
-
-    const ASTTypeDecl * ast = cast_or_null<const ASTTypeDecl>(ctype->typeDefn()->ast());
-    if (ast == NULL) {
-      return false;
-    }
-
-    const ASTNodeList & astBases = ast->bases();
-    if (!astBases.empty()) {
-      diag.debug() << "Looking for member " << name << " in base classes of " << typeDef;
-      DFAIL("Implement search of template base classes");
-    }
   }
 
   return false;

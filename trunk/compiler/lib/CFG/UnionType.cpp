@@ -11,45 +11,33 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 
-#if HAVE_STDARG_H
-#include <stdarg.h>
-#endif
-
 namespace tart {
+
+namespace {
+  typedef llvm::DenseMap<const Type *, UnionType *, Type::KeyInfo> UnionTypeMap;
+
+  UnionTypeMap uniqueValues_;
+  bool initFlag = false;
+
+  class CleanupHook : public GC::Callback {
+    void call() {
+      uniqueValues_.clear();
+      initFlag = false;
+    }
+  };
+
+  CleanupHook hook;
+}
 
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::get(const SourceLocation & loc, const ConstTypeList & members) {
-  return new UnionType(loc, members);
-}
-
-UnionType * UnionType::get(const SourceLocation & loc, ...) {
-  ConstTypeList members;
-
-  va_list args;
-  va_start(args, loc);
-  for (;;) {
-    const Type * arg = va_arg(args, const Type *);
-    if (arg == NULL) {
-      break;
-    }
-
-    members.push_back(arg);
+UnionType * UnionType::get(const ConstTypeList & members) {
+  if (!initFlag) {
+    initFlag = true;
+    GC::registerUninitCallback(&hook);
   }
-  va_end(args);
 
-  return new UnionType(loc, members);
-}
-
-UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
-  : TypeImpl(Union, Shape_Unset)
-  , loc_(loc)
-  , numValueTypes_(0)
-  , numReferenceTypes_(0)
-  , hasVoidType_(false)
-  , hasNullType_(false)
-{
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
   TypeList combined;
@@ -75,11 +63,31 @@ UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
 
   std::sort(combined.begin(), combined.end(), LexicalTypeOrdering());
 
-  for (TypeList::const_iterator it = combined.begin(); it != combined.end(); ++it) {
+  TupleType * membersTuple = TupleType::get(combined);
+
+  UnionTypeMap::iterator it = uniqueValues_.find(membersTuple);
+  if (it != uniqueValues_.end()) {
+    return it->second;
+  }
+
+  UnionType * utype = new UnionType(membersTuple);
+  uniqueValues_[membersTuple] = utype;
+  return utype;
+}
+
+UnionType::UnionType(TupleType * members)
+  : TypeImpl(Union, Shape_Unset)
+  , members_(members)
+  , numValueTypes_(0)
+  , numReferenceTypes_(0)
+  , hasVoidType_(false)
+  , hasNullType_(false)
+{
+  for (ConstTypeList::const_iterator it = members->begin(); it != members->end(); ++it) {
     const Type * memberType = dealias(*it);
-    if (memberType == &VoidType::instance) {
+    if (memberType->isVoidType()) {
       hasVoidType_ = true;
-    } else if (memberType == &NullType::instance) {
+    } else if (memberType->isNullType()) {
       hasNullType_ = true;
     } else if (memberType->isReferenceType()) {
       numReferenceTypes_ += 1;
@@ -87,8 +95,6 @@ UnionType::UnionType(const SourceLocation & loc, const ConstTypeList & members)
       numValueTypes_ += 1;
     }
   }
-
-  members_ = TupleType::get(combined);
 }
 
 size_t UnionType::numTypeParams() const {
@@ -125,6 +131,42 @@ const Type * UnionType::getFirstNonVoidType() const {
 }
 
 const llvm::Type * UnionType::createIRType() const {
+#if LLVM_UNION_SUPPORT
+  //shape_ = Shape_Small_RValue;
+  shape_ = Shape_Large_Value;
+
+  if (!hasRefTypesOnly()) {
+    for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+      const Type * type = dealias(*it);
+
+      if (!type->isVoidType()) {
+        irTypes_.push_back(type->irEmbeddedType());
+      }
+
+      if (type->typeShape() == Shape_Large_Value) {
+        shape_ = Shape_Large_Value;
+      }
+    }
+
+    const llvm::Type * discriminatorType = getDiscriminatorType();
+    std::vector<const llvm::Type *> unionMembers;
+    unionMembers.push_back(discriminatorType);
+    if (irTypes_.size() == 1) {
+      unionMembers.push_back(irTypes_[0]);
+    } else {
+      unionMembers.push_back(llvm::UnionType::get(&irTypes_[0], irTypes_.size()));
+    }
+    return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
+
+  } else if (hasNullType_ && numReferenceTypes_ == 1) {
+    // If it's Null or some reference type, then use the reference type.
+    shape_ = Shape_Primitive;
+    return getFirstNonVoidType()->irEmbeddedType();
+  } else {
+    shape_ = Shape_Primitive;
+    return Builtins::typeObject->irParameterType();
+  }
+#else
   // Since LLVM does not support unions as first-class types, what we'll do is to find the
   // "largest" type and use that as the base representation. (Plus the discriminator field,
   // of course). However, we don't know what the size of a pointer is yet, so we'll calculate
@@ -165,9 +207,9 @@ const llvm::Type * UnionType::createIRType() const {
   }
 
   if (largestType32 != largestType64) {
-    diag.error(loc_) << "Internal error: conflict generating union type:";
-    diag.info(loc_) << "  Largest type on 32-bit system is " << largestType32;
-    diag.info(loc_) << "  Largest type on 64-bit system is " << largestType64;
+    diag.error() << "Internal error: conflict generating union type:";
+    diag.info() << "  Largest type on 32-bit system is " << largestType32;
+    diag.info() << "  Largest type on 64-bit system is " << largestType64;
   }
 
   if (numValueTypes_ > 0 || hasVoidType_) {
@@ -188,6 +230,7 @@ const llvm::Type * UnionType::createIRType() const {
     shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();
   }
+#endif
 }
 
 const llvm::Type * UnionType::irParameterType() const {
@@ -322,6 +365,7 @@ ConversionRank UnionType::convertTo(const Type * toType, const Conversion & cn) 
 }
 
 bool UnionType::isEqual(const Type * other) const {
+  other = dealias(other);
   if (other == this) {
     return true;
   }
@@ -395,7 +439,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 
   // If it only has reference types, then use subclass tests instead of
   // a discriminator field.
-  if (numValueTypes_ == 0 && !hasVoidType_) {
+  if (hasRefTypesOnly()) {
     return 0;
   }
 
@@ -412,10 +456,52 @@ int UnionType::getTypeIndex(const Type * type) const {
   return -1;
 }
 
+int UnionType::getNonVoidTypeIndex(const Type * type) const {
+  type = dealias(type);
+
+  // If it only has reference types, then use subclass tests instead of
+  // a discriminator field.
+  if (hasRefTypesOnly()) {
+    return 0;
+  }
+
+  // Otherwise, calculate the type index.
+  int index = 0;
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (!type->isVoidType()) {
+      if (type->isEqual(*it)) {
+        return index;
+      }
+
+      ++index;
+    }
+  }
+
+  return -1;
+}
+
 Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   const Type * fromType = dealias(from->type());
   if (toType->isEqual(fromType)) {
     return from;
+  }
+
+  // Logic for reference-only unions.
+  if (hasRefTypesOnly() && toType->isReferenceType()) {
+    if (hasNullType() && toType->isNullType()) {
+      // If toType is the null type, then do a test for null.
+      return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
+    } else if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
+      // If it's a common supertype of all members, then no need for a checked cast.
+      if (!hasNullType() && isSupertypeOfAllMembers(cto)) {
+        return new CastExpr(Expr::UnionMemberCast, from->location(), toType, from);
+      }
+
+      // If it's a subtype of any member, then do a checked cast.
+      if (isSubtypeOfAnyMembers(cto)) {
+        return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
+      }
+    }
   }
 
   // Determine all of the possible member types that could represent an object of
@@ -430,7 +516,34 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 
   diag.warn(from->location()) << "Union member cast from type '" << fromType << "' to '" <<
       toType << "' can never succeed.";
-  return ConstantInteger::getConstantBool(from->location(), false);
+  return &Expr::ErrorVal;
+}
+
+bool UnionType::isSubtypeOfAnyMembers(const CompositeType * toType) const {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(*it)) {
+      if (toType->isSubclassOf(ctype)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+bool UnionType::isSupertypeOfAllMembers(const CompositeType * toType) const {
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    const Type * memberType = *it;
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(memberType)) {
+      if (!ctype->isSubclassOf(toType)) {
+        return false;
+      }
+    } else if (!memberType->isNullType()) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void UnionType::format(FormatStream & out) const {

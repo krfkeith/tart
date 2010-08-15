@@ -25,7 +25,7 @@ class Test {
     for type in mod.types {
       classify type as cls:ComplexType {
 	      if cls.isSubclass(Test) {
-	        Debug.writeLn("Test Class: ", cls.name);
+	        Debug.writeLn("Test Class: ", cls.qualifiedName);
 			    var testInstance = typecast[Test](cls.create());
     			return testInstance.runTests(cls);
 	      }

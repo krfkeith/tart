@@ -196,8 +196,9 @@ Value * ThisModuleIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 ModuleOfIntrinsic ModuleOfIntrinsic::instance;
 
 Value * ModuleOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  DFAIL("Implement");
-  return cg.createModuleObjectPtr();
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
+  return cg.createModuleObjectPtr(type->value()->typeDefn()->module());
 }
 
 // -------------------------------------------------------------------
