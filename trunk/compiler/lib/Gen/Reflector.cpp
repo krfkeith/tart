@@ -52,19 +52,19 @@ SystemClassMember<VariableDefn> simpleType_size(Builtins::typeSimpleType, "_size
 // Members of tart.reflect.DerivedType.
 SystemClassMember<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
 
-// Members of tart.reflect.ComplexType.
-SystemClassMember<VariableDefn> complexType_tib(Builtins::typeComplexType, "_typeInfo");
-SystemClassMember<VariableDefn> complexType_superType(Builtins::typeComplexType, "_supertype");
-SystemClassMember<VariableDefn> complexType_interfaces(Builtins::typeComplexType, "_interfaces");
-SystemClassMember<VariableDefn> complexType_typeParams(Builtins::typeComplexType, "_typeParams");
-SystemClassMember<VariableDefn> complexType_attributes(Builtins::typeComplexType, "_attributes");
-SystemClassMember<VariableDefn> complexType_fields(Builtins::typeComplexType, "_fields");
-SystemClassMember<VariableDefn> complexType_properties(Builtins::typeComplexType, "_properties");
-SystemClassMember<VariableDefn> complexType_ctors(Builtins::typeComplexType, "_constructors");
-SystemClassMember<VariableDefn> complexType_methods(Builtins::typeComplexType, "_methods");
-SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeComplexType, "_innerTypes");
-SystemClassMember<VariableDefn> complexType_alloc(Builtins::typeComplexType, "_alloc");
-SystemClassMember<VariableDefn> complexType_noArgCtor(Builtins::typeComplexType, "_noArgCtor");
+// Members of tart.reflect.CompositeType.
+SystemClassMember<VariableDefn> complexType_tib(Builtins::typeCompositeType, "_typeInfo");
+SystemClassMember<VariableDefn> complexType_superType(Builtins::typeCompositeType, "_supertype");
+SystemClassMember<VariableDefn> complexType_interfaces(Builtins::typeCompositeType, "_interfaces");
+SystemClassMember<VariableDefn> complexType_typeParams(Builtins::typeCompositeType, "_typeParams");
+SystemClassMember<VariableDefn> complexType_attributes(Builtins::typeCompositeType, "_attributes");
+SystemClassMember<VariableDefn> complexType_fields(Builtins::typeCompositeType, "_fields");
+SystemClassMember<VariableDefn> complexType_properties(Builtins::typeCompositeType, "_properties");
+SystemClassMember<VariableDefn> complexType_ctors(Builtins::typeCompositeType, "_constructors");
+SystemClassMember<VariableDefn> complexType_methods(Builtins::typeCompositeType, "_methods");
+SystemClassMember<VariableDefn> complexType_innerTypes(Builtins::typeCompositeType, "_innerTypes");
+SystemClassMember<VariableDefn> complexType_alloc(Builtins::typeCompositeType, "_alloc");
+SystemClassMember<VariableDefn> complexType_noArgCtor(Builtins::typeCompositeType, "_noArgCtor");
 
 // Members of tart.reflect.EnumType.
 SystemClassMember<VariableDefn> enumType_superType(Builtins::typeEnumType, "_supertype");
@@ -146,7 +146,7 @@ struct TypeOrder {
       const ReflectedScope::TypeArrayElement & t0,
       const ReflectedScope::TypeArrayElement & t1) {
     if (t0.second.useCount > t1.second.useCount) return true;
-    if (t0.second.useCount > t1.second.useCount) return false;
+    if (t0.second.useCount < t1.second.useCount) return false;
     return LexicalTypeOrdering::compare(t0.first, t1.first) > 0;
   }
 };
@@ -307,16 +307,19 @@ void ReflectedScope::assignIndices() {
   std::sort(derivedTypeRefs_.begin(), derivedTypeRefs_.end(), TypeOrder());
   for (unsigned i = 0; i < derivedTypeRefs_.size(); ++i) {
     derivedTypeRefs_[i].second.index = i;
+    types_[derivedTypeRefs_[i].first].index = i;
   }
 
   std::sort(compositeTypeRefs_.begin(), compositeTypeRefs_.end(), TypeOrder());
   for (unsigned i = 0; i < compositeTypeRefs_.size(); ++i) {
     compositeTypeRefs_[i].second.index = i;
+    types_[compositeTypeRefs_[i].first].index = i;
   }
 
   std::sort(enumTypeRefs_.begin(), enumTypeRefs_.end(), TypeOrder());
   for (unsigned i = 0; i < enumTypeRefs_.size(); ++i) {
     enumTypeRefs_[i].second.index = i;
+    types_[enumTypeRefs_[i].first].index = i;
   }
 
 #if 1
@@ -324,7 +327,8 @@ void ReflectedScope::assignIndices() {
     diag.debug() << derivedTypeRefs_.size() << " unique derived types added";
     diag.indent();
     for (TypeArray::iterator it = derivedTypeRefs_.begin(); it != derivedTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first;
+      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
+          " (" << it->second.index << ")";
     }
     diag.unindent();
   }
@@ -333,7 +337,8 @@ void ReflectedScope::assignIndices() {
     diag.debug() << compositeTypeRefs_.size() << " unique compound types added";
     diag.indent();
     for (TypeArray::iterator it = compositeTypeRefs_.begin(); it != compositeTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first;
+      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
+          " (" << it->second.index << ")";
     }
     diag.unindent();
   }
@@ -342,7 +347,8 @@ void ReflectedScope::assignIndices() {
     diag.debug() << enumTypeRefs_.size() << " unique enum types added";
     diag.indent();
     for (TypeArray::iterator it = enumTypeRefs_.begin(); it != enumTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first;
+      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
+          " (" << it->second.index << ")";
     }
     diag.unindent();
   }
@@ -481,6 +487,7 @@ void ReflectedScope::encodeTypeRef(const Type * type, llvm::raw_ostream & out) {
   TypeMap::iterator it = types_.find(type);
   if (isa<CompositeType>(type)) {
     DASSERT_OBJ(it != types_.end(), type);
+    DASSERT_OBJ(it->first == type, type);
     unsigned index = it->second.index;
 
     if (index < 64) {
@@ -988,16 +995,16 @@ void Reflector::emitReflectedDefn(ReflectedScope * rs, const Defn * def) {
 
   // Generate the table of TypeInfoBlocks referred to by this module.
   ConstantList classRefList;
-  const NameTable::TypeArray & compositeTypes = rs->compositeTypeRefs();
-  for (NameTable::TypeArray::const_iterator it = compositeTypes.begin();
+  const ReflectedScope::TypeArray & compositeTypes = rs->compositeTypeRefs();
+  for (ReflectedScope::TypeArray::const_iterator it = compositeTypes.begin();
       it != compositeTypes.end(); ++it) {
     classRefList.push_back(cg_.getTypeInfoBlockPtr(cast<CompositeType>(it->first)));
   }
 
   // Generate the table of TypeInfoBlocks referred to by this module.
   ConstantList enumRefList;
-  const NameTable::TypeArray & enumTypes = rs->enumTypeRefs();
-  for (NameTable::TypeArray::const_iterator it = enumTypes.begin();
+  const ReflectedScope::TypeArray & enumTypes = rs->enumTypeRefs();
+  for (ReflectedScope::TypeArray::const_iterator it = enumTypes.begin();
       it != enumTypes.end(); ++it) {
     enumRefList.push_back(cg_.getEnumInfoBlock(cast<EnumType>(it->first)));
   }
@@ -1313,6 +1320,9 @@ void Reflector::emitMethodDefn(ReflectedScope * rs, const FunctionDefn * fn, raw
   if (fn->isFinal()) {
     out << char(TAG_DEFMOD_FINAL);
   }
+  if (fn->isAbstract()) {
+    out << char(TAG_DEFMOD_ABSTRACT);
+  }
   if (fn->storageClass() == Storage_Static || fn->storageClass() == Storage_Global) {
     out << char(TAG_DEFMOD_STATIC);
   }
@@ -1322,8 +1332,6 @@ void Reflector::emitMethodDefn(ReflectedScope * rs, const FunctionDefn * fn, raw
 
   // Return type and parameter types.
   rs->encodeTypeRef(fn->functionType(), out);
-  //rs->encodeTypeRef(fn->returnType(), out);
-  //rs->encodeTypeRef(fn->functionType()->paramTypes(), out);
 
   // Declare parameters
   const ParameterList & params = fn->functionType()->params();
@@ -1574,7 +1582,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
               " but it has not been imported into the module.";
         }
 
-        return Builtins::typeComplexType->irType();
+        return Builtins::typeCompositeType->irType();
       }
 
     case Type::Enum:
@@ -1606,7 +1614,7 @@ llvm::Constant * Reflector::emitType(const Type * type) {
       if (type->typeDefn()->isNonreflective()) {
         return emitOpaqueType(type);
       } else {
-        return emitComplexType(static_cast<const CompositeType *>(type));
+        return emitCompositeType(static_cast<const CompositeType *>(type));
       }
 
     case Type::Enum:
@@ -1626,7 +1634,7 @@ llvm::Constant * Reflector::emitType(const Type * type) {
   }
 }
 
-llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
+llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
   DASSERT_OBJ(!type->typeDefn()->isNonreflective(), type);
   if (type->typeDefn()->isSynthetic() &&
       module()->exportDefs().count(type->typeDefn()) == 0) {
@@ -1657,7 +1665,7 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
 
   // Type base
   StructBuilder sb(cg_);
-  sb.addField(emitTypeBase(Builtins::typeComplexType, kind));
+  sb.addField(emitTypeBase(Builtins::typeCompositeType, kind));
   sb.addField(getReflectedScope(type->typeDefn())->var());
   sb.addField(llvm::ConstantExpr::getTrunc(
       llvm::ConstantExpr::getSizeOf(type->irType()), builder_.getInt32Ty()));
@@ -1718,7 +1726,7 @@ llvm::Constant * Reflector::emitComplexType(const CompositeType * type) {
     sb.addNullField(complexType_noArgCtor.type());
   }
 
-  return sb.build(Builtins::typeComplexType->irType());
+  return sb.build(Builtins::typeCompositeType->irType());
 }
 
 llvm::Constant * Reflector::emitEnumType(const EnumType * type) {

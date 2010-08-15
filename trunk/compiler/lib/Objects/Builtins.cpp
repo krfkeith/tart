@@ -48,7 +48,7 @@ SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperat
 
 SystemClass Builtins::typeType("tart.reflect.Type");
 SystemClass Builtins::typeSimpleType("tart.reflect.SimpleType");
-SystemClass Builtins::typeComplexType("tart.reflect.ComplexType");
+SystemClass Builtins::typeCompositeType("tart.reflect.CompositeType");
 SystemClass Builtins::typeEnumInfoBlock("tart.reflect.EnumInfoBlock");
 SystemClass Builtins::typeEnumType("tart.reflect.EnumType");
 SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");

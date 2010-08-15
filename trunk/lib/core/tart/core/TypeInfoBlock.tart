@@ -1,4 +1,4 @@
-import tart.reflect.ComplexType;
+import tart.reflect.CompositeType;
 import tart.reflect.ReflectionMetadata;
 import tart.reflect.Reflection;
 import tart.core.Memory.Address;

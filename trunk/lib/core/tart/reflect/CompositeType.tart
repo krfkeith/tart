@@ -2,13 +2,13 @@ import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 
 /** Reflection type for classes, structs, and interfaces. */
-public class ComplexType : Type {
+public class CompositeType : Type {
   private {
     var _meta:ReflectionMetadata;
     var _size:uint32;
     var _typeInfo:Address[TypeInfoBlock];
-    var _supertype:optional ComplexType;
-    var _interfaces:ComplexType[];
+    var _supertype:optional CompositeType;
+    var _interfaces:CompositeType[];
     var _typeParams:Type[];
     var _attributes:Object[];
     var _fields:Field[];
@@ -27,7 +27,7 @@ public class ComplexType : Type {
   }
 
   /** Given a type literal, return the reflected complex type object. */
-  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> ComplexType;
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
 
   /** Fully-qualified name of this type. */
   final def name:String { get { return _meta.localName; } }
@@ -42,7 +42,7 @@ public class ComplexType : Type {
   final def size:uint32 { get { return _size; } }
   
   /** Pointer to this type's supertype, or null. */
-  final def supertype:optional ComplexType {
+  final def supertype:optional CompositeType {
     get {
       if _supertype is null {
         _supertype = _meta.readBaseClass();
@@ -53,7 +53,7 @@ public class ComplexType : Type {
   }
 
   /** Array of inherited interfaces. */
-  final def interfaces:ComplexType[] { get { return self._interfaces; } }
+  final def interfaces:CompositeType[] { get { return self._interfaces; } }
   
   /** Array of type parameters. */
   final def typeParams:Type[] { get { return self._typeParams; } }
@@ -153,7 +153,7 @@ public class ComplexType : Type {
 
   private final def isSubclassImpl(cls:Type) -> bool {
     return true if self is cls;
-    classify cls as complex:ComplexType {
+    classify cls as complex:CompositeType {
       return Memory.deref(_typeInfo).hasBase(complex._typeInfo);
     } else {
       return false;

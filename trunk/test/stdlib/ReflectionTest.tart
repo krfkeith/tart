@@ -1,7 +1,7 @@
 import tart.reflect.Module;
 import tart.reflect.Method;
 import tart.reflect.Type;
-import tart.reflect.ComplexType;
+import tart.reflect.CompositeType;
 import tart.testing.Test;
 
 @EntryPoint
@@ -83,14 +83,14 @@ class ReflectionTest : Test {
 	
 	def testFindClass() {
 	  let ty:Type = Type.of(TestClass);
-	  //assertEq("tart.reflect.ComplexType", ty.__typeName);
+	  //assertEq("tart.reflect.CompositeType", ty.__typeName);
 	  assertEq(Type.TypeKind.CLASS, ty.typeKind);
-	  assertTrue(ty isa ComplexType);
+	  assertTrue(ty isa CompositeType);
 	}
 
 	def testCallInstanceMethod() {
 	  let ty:Type = Type.of(TestClass);
-	  let ct = typecast[ComplexType](ty);
+	  let ct = typecast[CompositeType](ty);
 	  let method = typecast[Method](ct.findMethod("square"));
 	  let tclass = TestClass();
 	  assertEq(484, typecast[int32](method.call(tclass, 22)));
@@ -98,14 +98,14 @@ class ReflectionTest : Test {
 
   def testConstruct() {
     let ty:Type = Type.of(TestClass);
-    let ct = typecast[ComplexType](ty);
+    let ct = typecast[CompositeType](ty);
     let method = typecast[Method](ct.findMethod("square"));
     let tclass = typecast[TestClass](ct.create());
     assertEq(484, typecast[int32](method.call(tclass, 22)));
   }
 
   def testConstructWithArg() {
-    let ty:ComplexType = ComplexType.of(TestClass);
+    let ty:CompositeType = CompositeType.of(TestClass);
     let ctor = ty.constructors[1];
 
     let tclass = typecast[TestClass](ty.create(ctor, "Hello"));
@@ -115,13 +115,13 @@ class ReflectionTest : Test {
   }
 
   def testSubclassTest() {
-    assertTrue(ComplexType.of(ReflectionTest).isSubclass(Test));
-    assertFalse(ComplexType.of(Test).isSubclass(ReflectionTest));
+    assertTrue(CompositeType.of(ReflectionTest).isSubclass(Test));
+    assertFalse(CompositeType.of(Test).isSubclass(ReflectionTest));
   }
 
   def testRetainedAttribute {
     let ty:Type = Type.of(TestClass);
-    let ct = typecast[ComplexType](ty);
+    let ct = typecast[CompositeType](ty);
     let method = typecast[Method](ct.findMethod("square"));
     assertEq(1, method.attributes.size);
     let attr = method.findAttribute(RetainedAttr);
@@ -141,7 +141,7 @@ class ReflectionTest : Test {
 
   def testGetStrings {
     let m = Module.thisModule();
-    let ty:ComplexType = ComplexType.of(TestClass);
+    let ty:CompositeType = CompositeType.of(TestClass);
     ty.test();
     //let s = m.strings;
   }
