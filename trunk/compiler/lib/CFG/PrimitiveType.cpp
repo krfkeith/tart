@@ -191,6 +191,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
       } else if (isFloatingTypeId(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           //return new CastExpr(llvm::Instruction::FPToSI, expr, this);
+          diag.debug() << cn.fromValue;
           DFAIL("Implement");
         }
 
@@ -198,6 +199,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
       } else if (srcId == TypeId_Bool) {
         if (cn.fromValue && cn.resultValue) {
           //return new CastExpr(llvm::Instruction::SExt, expr, this);
+          diag.debug() << cn.fromValue;
           DFAIL("Implement");
         }
 
@@ -326,9 +328,8 @@ ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, 
   bool dstIsSigned = isSignedIntegerTypeId(typeId());
 
   // Number of bits needed to hold the integer constant.
-  uint32_t bitsNeeded = dstIsSigned
-  ? cint->value()->getValue().getMinSignedBits()
-  : cint->value()->getValue().getActiveBits();
+  uint32_t bitsNeeded = dstIsSigned ? cint->value()->getValue().getMinSignedBits()
+      : cint->value()->getValue().getActiveBits();
   uint32_t srcBits = cint->value()->getBitWidth();
   ConversionRank rank;
   unsigned castOp;
@@ -980,7 +981,9 @@ template<> Expr * Int64Type::nullInitValue() const {
 
 template<> TypeDefn UInt8Type::typedefn(&Builtins::module, "uint8", &UInt8Type::instance);
 template<> TypeIdSet UInt8Type::MORE_GENERAL =
-TypeIdSet::of(TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
+    TypeIdSet::of(
+        TypeId_SInt16, TypeId_SInt32, TypeId_SInt64,
+        TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
 template<> TypeIdSet UInt8Type::INCLUDES = TypeIdSet::noneOf();
 
 template<> void UInt8Type::init() {
@@ -1021,7 +1024,8 @@ template<> Expr * UInt8Type::nullInitValue() const {
 /// Primitive type: UShort
 
 template<> TypeDefn UInt16Type::typedefn(&Builtins::module, "uint16", &UInt16Type::instance);
-template<> TypeIdSet UInt16Type::MORE_GENERAL = TypeIdSet::of(TypeId_UInt32, TypeId_UInt64);
+template<> TypeIdSet UInt16Type::MORE_GENERAL = TypeIdSet::of(
+    TypeId_SInt32, TypeId_SInt64, TypeId_UInt32, TypeId_UInt64);
 template<> TypeIdSet UInt16Type::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 
 template<> void UInt16Type::init() {
@@ -1062,7 +1066,7 @@ template<> Expr * UInt16Type::nullInitValue() const {
 /// Primitive type: UInt
 
 template<> TypeDefn UInt32Type::typedefn(&Builtins::module, "uint32", &UInt32Type::instance);
-template<> TypeIdSet UInt32Type::MORE_GENERAL = TypeIdSet::of(TypeId_UInt64);
+template<> TypeIdSet UInt32Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64, TypeId_UInt64);
 template<> TypeIdSet UInt32Type::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UInt16);
 
 template<> void UInt32Type::init() {

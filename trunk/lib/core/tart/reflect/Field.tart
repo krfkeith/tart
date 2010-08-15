@@ -1,7 +1,12 @@
 /** Description of a class field. */
 final class Field : Member {
+  private {
+    var _type:Type;
+    // static or instance?
+  }
   //@Extern
-  //final def call(obj:Object, args:Object[]);
+  //final def getValue(self:Object) -> Object;
+  //final def setValue(self:Object, value:Object);
   
   // resultType
   // argumentTypes

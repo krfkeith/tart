@@ -2,7 +2,7 @@ import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 
 final class UTF8 : Codec {
-  private static let lengthTable:int32[] = [
+  private static let lengthTable:int8[] = [
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

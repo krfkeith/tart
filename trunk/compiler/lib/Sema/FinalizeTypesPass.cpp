@@ -431,6 +431,8 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
           diag.error(loc) << "Unable to narrow template parameter '" << var << "' for '" <<
               Format_Verbose << def << "'";
           diag.info() << "Environment = " << env;
+          diag.info() << Format_Type << "Value = " << value;
+          DFAIL("???");
           return NULL;
         }
       }

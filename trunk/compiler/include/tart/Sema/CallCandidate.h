@@ -79,6 +79,9 @@ public:
   /** The compatibility rank for the least compatible argument. */
   ConversionRank conversionRank() const { return conversionRank_; }
 
+  /** The number of conversions that occurred at the least compatible rank. */
+  int conversionCount() const { return conversionCount_; }
+
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
 
@@ -127,10 +130,13 @@ public:
   void trace() const;
 
 private:
+  void combineConversionRanks(ConversionRank newRank);
+
   CallExpr * callExpr_;
   Expr * base_;
   FunctionDefn * method_;
   ConversionRank conversionRank_;
+  int conversionCount_;
   int pruningDepth_;
   ParameterAssignments paramAssignments_;
   BindingEnv bindingEnv_;

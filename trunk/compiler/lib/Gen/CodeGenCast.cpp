@@ -304,11 +304,56 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
               builder_.CreateBitCast(value, unionTypeForMember), 0, 1));
 #else
       const llvm::Type * fieldType = toType->irEmbeddedType();
+
       if (toType->typeShape() == Shape_Large_Value) {
+        #if LLVM_UNION_SUPPORT
+          DASSERT(value->getType()->getTypeID() == llvm::Type::PointerTyID);
+          DASSERT(value->getType()->getContainedType(0)->getTypeID() == llvm::Type::StructTyID);
+          const llvm::Type * rawUnionType =
+              value->getType()->getContainedType(0)->getContainedType(1);
+          if (rawUnionType->getTypeID() == llvm::Type::UnionTyID) {
+            DFAIL("Implement");
+          } else {
+            DASSERT(rawUnionType == fieldType);
+            return builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr");
+          }
+        #endif
+
         return builder_.CreateBitCast(
             builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
             llvm::PointerType::get(fieldType, 0));
       }
+
+      #if LLVM_UNION_SUPPORT
+        DASSERT(value->getType()->getTypeID() == llvm::Type::PointerTyID);
+        DASSERT(value->getType()->getContainedType(0)->getTypeID() == llvm::Type::StructTyID);
+        const llvm::Type * rawUnionType =
+            value->getType()->getContainedType(0)->getContainedType(1);
+        if (rawUnionType->getTypeID() == llvm::Type::UnionTyID) {
+          int index = utype->getNonVoidTypeIndex(toType);
+          if (index == -1) {
+            // There's no such type in the union, above check should have failed.
+            // Return a dummy value.
+            return builder_.CreateLoad(
+                builder_.CreateBitCast(
+                    builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
+                    llvm::PointerType::get(fieldType, 0)), "union_val");
+          }
+
+          Value * indices[3];
+          indices[0] = getInt32Val(0);
+          indices[1] = getInt32Val(1);
+          indices[2] = getInt32Val(index);
+          return builder_.CreateLoad(
+              builder_.CreateInBoundsGEP(value, &indices[0], &indices[3], "union_val_ptr"),
+              "union_val");
+        } else {
+          DASSERT(rawUnionType == fieldType);
+          return builder_.CreateLoad(
+              builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
+              "union_val");
+        }
+      #endif
 
       return builder_.CreateLoad(
           builder_.CreateBitCast(
@@ -323,28 +368,28 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
 
       if (checked) {
         if (utype->hasNullType()) {
-          if (utype->isSingleOptionalType()) { // Null counts as a ref type.
-            // Compare with null pointer.
-            Value * test;
-            if (toType->isNullType()) {
-              test = builder_.CreateICmpEQ(
-                  refTypeVal,
-                  ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
-                  "null_cmp");
-            } else {
-              test = builder_.CreateICmpNE(
-                  refTypeVal,
-                  ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
-                  "null_cmp");
-            }
+          if (toType->isNullType()) {
+            Value * test = builder_.CreateICmpEQ(
+                refTypeVal,
+                ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+                "null_cmp");
             throwCondTypecastError(test);
           } else {
-            DFAIL("Implement Null + multiple types union");
+            Value * test = builder_.CreateICmpNE(
+                refTypeVal,
+                ConstantPointerNull::get(cast<PointerType>(toType->irEmbeddedType())),
+                "null_cmp");
+            throwCondTypecastError(test);
+          }
+        }
+
+        if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
+          if (!utype->isSupertypeOfAllMembers(cto)) {
+            Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+            throwCondTypecastError(test);
           }
         } else {
-          const CompositeType * cto = cast<CompositeType>(toType);
-          Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
-          throwCondTypecastError(test);
+          DFAIL("Illegal state");
         }
       }
 

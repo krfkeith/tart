@@ -40,8 +40,7 @@ struct Type;
 // method table and other type information. The list of base classes is a NULL-terminated
 // list of type pointers.
 struct TypeInfoBlock {
-  //const struct Type * type;
-  const void * name;
+  void * meta;
   const struct TypeInfoBlock * const * bases;
   void ** methodTable;
 };

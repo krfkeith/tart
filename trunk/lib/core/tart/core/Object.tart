@@ -1,5 +1,7 @@
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
+import tart.reflect.ComplexType;
+import tart.reflect.ReflectionMetadata;
 
 /** Base class of all reference types. */
 public class Object : Hashable {
@@ -64,16 +66,21 @@ public class Object : Hashable {
   //final def removeFinalizer(finalizer:fn) {}
 
   /** Return the fully-qualified name of this object's class. */
-  final def __typeName:String { get { return __tib.name; } }
+  final def __typeName:String { get { return __tib.qualifiedName; } }
+
+	/** Return the reflected type of this object. */
+  final def type:ComplexType { get {
+    return ReflectionMetadata.getComplexType(__tib);
+  } }
 
 	/** Return true if the type of this object is (or is a subtype of) 'baseType'. */
   final def __typeHasBase(baseType:Address[TypeInfoBlock]) -> bool {
     return Memory.deref(__tib).hasBase(baseType);
   }
-  
+
   /** Return a string representation of this object. */
   def toString() -> String {
-    return String.concat("<", __tib.name, ">");
+    return String.concat("<", __tib.qualifiedName, ">");
   }
 
   /** Return a hash value for this object. The base version hashes the object address. */

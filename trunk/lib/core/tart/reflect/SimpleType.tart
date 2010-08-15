@@ -1,4 +1,4 @@
-/** Reflection type class for named types. */
+/** Reflection type class for primitive and enum types. */
 class SimpleType : Type {
   enum SubtypeId : ubyte {
     NONE = 0,
@@ -25,6 +25,13 @@ class SimpleType : Type {
     var _size:uint32;
   }
 
+  def construct(kind:TypeKind, subtype:SubtypeId, name:String, size:uint32) {
+    super(kind);
+    self._subtype = subtype;
+    self._name = name;
+    self._size = size;
+  }
+
   /** Size of this type in bits. */
   final def subtype:SubtypeId { get { return self._subtype; } }
 
@@ -35,7 +42,7 @@ class SimpleType : Type {
   final def size:uint32 { get { return self._size; } }
 
   final override toString() -> String {
-    return "FIXME";
+    return _name;
     /*switch _subtype {
       case VOID { return "void"; }
       case NULL { return "Null"; }
@@ -54,6 +61,4 @@ class SimpleType : Type {
       else { return "<invalid type>"; }
     }*/
   }
-
-  undef construct();
 }

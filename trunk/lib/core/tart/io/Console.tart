@@ -11,17 +11,9 @@ public namespace Console {
     
     @Extern("get_std_stream") def getStdStream(id:StreamID) -> Address[StdFileStream.FILE];
 
-    var _cin:TextReader or Null = null;
-    var _cout:TextWriter or Null = null;
-    var _cerr:TextWriter or Null = null;
-    
-    macro lazyEval[%T](lval:T or Null, init:T) -> T {
-      if lval is null {
-        lval = init;
-      }
-      
-      return typecast[T](lval);
-    }
+    var _cin:optional TextReader;
+    var _cout:optional TextWriter;
+    var _cerr:optional TextWriter;
   }
 
   /** Return the input stream for stdin. */

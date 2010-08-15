@@ -152,9 +152,9 @@ TEST(TypeTest, SpecificityTests) {
   EXPECT_FALSE(UInt8Type::instance.isSubtype(&BoolType::instance));
   EXPECT_FALSE(UInt8Type::instance.isSubtype(&CharType::instance));
   EXPECT_FALSE(UInt8Type::instance.isSubtype(&Int8Type::instance));
-  EXPECT_FALSE(UInt8Type::instance.isSubtype(&Int16Type::instance));
-  EXPECT_FALSE(UInt8Type::instance.isSubtype(&Int32Type::instance));
-  EXPECT_FALSE(UInt8Type::instance.isSubtype(&Int64Type::instance));
+  EXPECT_TRUE(UInt8Type::instance.isSubtype(&Int16Type::instance));
+  EXPECT_TRUE(UInt8Type::instance.isSubtype(&Int32Type::instance));
+  EXPECT_TRUE(UInt8Type::instance.isSubtype(&Int64Type::instance));
   EXPECT_TRUE(UInt8Type::instance.isSubtype(&UInt8Type::instance));
   EXPECT_TRUE(UInt8Type::instance.isSubtype(&UInt16Type::instance));
   EXPECT_TRUE(UInt8Type::instance.isSubtype(&UInt32Type::instance));
@@ -167,8 +167,8 @@ TEST(TypeTest, SpecificityTests) {
   EXPECT_FALSE(UInt16Type::instance.isSubtype(&CharType::instance));
   EXPECT_FALSE(UInt16Type::instance.isSubtype(&Int8Type::instance));
   EXPECT_FALSE(UInt16Type::instance.isSubtype(&Int16Type::instance));
-  EXPECT_FALSE(UInt16Type::instance.isSubtype(&Int32Type::instance));
-  EXPECT_FALSE(UInt16Type::instance.isSubtype(&Int64Type::instance));
+  EXPECT_TRUE(UInt16Type::instance.isSubtype(&Int32Type::instance));
+  EXPECT_TRUE(UInt16Type::instance.isSubtype(&Int64Type::instance));
   EXPECT_FALSE(UInt16Type::instance.isSubtype(&UInt8Type::instance));
   EXPECT_TRUE(UInt16Type::instance.isSubtype(&UInt16Type::instance));
   EXPECT_TRUE(UInt16Type::instance.isSubtype(&UInt32Type::instance));
@@ -182,7 +182,7 @@ TEST(TypeTest, SpecificityTests) {
   EXPECT_FALSE(UInt32Type::instance.isSubtype(&Int8Type::instance));
   EXPECT_FALSE(UInt32Type::instance.isSubtype(&Int16Type::instance));
   EXPECT_FALSE(UInt32Type::instance.isSubtype(&Int32Type::instance));
-  EXPECT_FALSE(UInt32Type::instance.isSubtype(&Int64Type::instance));
+  EXPECT_TRUE(UInt32Type::instance.isSubtype(&Int64Type::instance));
   EXPECT_FALSE(UInt32Type::instance.isSubtype(&UInt8Type::instance));
   EXPECT_FALSE(UInt32Type::instance.isSubtype(&UInt16Type::instance));
   EXPECT_TRUE(UInt32Type::instance.isSubtype(&UInt32Type::instance));

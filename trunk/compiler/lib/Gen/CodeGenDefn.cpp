@@ -28,7 +28,6 @@ using namespace llvm;
 
 bool CodeGenerator::genXDef(Defn * de) {
   if (debug_) {
-    dbgCompileUnit_ = genDICompileUnit(de);
     dbgFile_ = genDIFile(de);
   }
 
@@ -250,6 +249,9 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 
       if (let->module() == module_ || let->isSynthetic()) {
         value = genConstRef(let->initValue(), let->linkageName(), let->isSynthetic());
+        if (value == NULL) {
+          return NULL;
+        }
         value = llvm::ConstantExpr::getPointerCast(
             cast<Constant>(value), PointerType::get(irType, 0));
         //DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));

@@ -145,7 +145,7 @@ void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
           pos.beginCol,
           dbgContext_,
           DILocation(NULL));
-      builder_.SetCurrentDebugLocation(DebugLoc::getFromDILocation(diLoc.getNode()));
+      builder_.SetCurrentDebugLocation(DebugLoc::getFromDILocation(diLoc));
     }
   }
 }

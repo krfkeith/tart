@@ -6,7 +6,6 @@ import tart.core.Memory.Address;
 import tart.core.Math.min;
 
 /** Built-in array class */
-@Reflection(Reflection.Detail.MINIMAL)
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
     var _size:int;
@@ -18,8 +17,9 @@ public final class Array[%ElementType] : Iterable[ElementType] {
       self._size = size;
       return self;
     }
-    
-    def __gcTrace(traceFn:fn(:Address[Address[Object]])) {
+
+		@Reflection(Reflection.Detail.NONE)
+    def __gcTrace(traceFn:static fn(:Address[Address[Object]])) {
 			//Object.__trace(addressOf(_data[0]), _size, traceFn);
       for i = 0; i < _size; ++i {
         //_data[i].__gcTrace(traceFn);

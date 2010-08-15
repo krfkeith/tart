@@ -29,7 +29,8 @@ add_executable(unittest
   ParameterAssignmentsTest.cpp
   TypeInferenceTest.cpp
   UnionTest.cpp
-  UnifyTest.cpp)
+  UnifyTest.cpp
+  NameTableTest.cpp)
 target_link_libraries(unittest
     gtest gmock compiler
     ${LLVM_BIT_WRITER}

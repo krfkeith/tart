@@ -81,7 +81,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::LogicalOr: {
       ConstTypeList unionTypes;
       if (getUnionTypes(ast, unionTypes)) {
-        return UnionType::get(ast->location(), unionTypes);
+        return UnionType::get(unionTypes);
       }
 
       return &BadType::instance;

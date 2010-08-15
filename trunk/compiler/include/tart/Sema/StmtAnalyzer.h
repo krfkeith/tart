@@ -170,6 +170,9 @@ public:
   /** Convert local calls and local returns to branches. */
   void flattenLocalProcedureCalls();
 
+  /** Convert all property accesses to getter and setter calls. */
+  void expandPropertyAccessors();
+
 private:
 
   // Struct to keep track of "finally" and other statements that define a cleanup.

@@ -1,6 +1,6 @@
 /** List interface */
-interface List[%ElementType] : Iterable[ElementType] {
-  
+interface List[%ElementType] : Collection[ElementType] {
+
   /** Append an item to the end of the list. */
   def add(e:ElementType);
 
@@ -12,10 +12,10 @@ interface List[%ElementType] : Iterable[ElementType] {
 
   /** Remove all items from the list. */
   def clear();
-  
+
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }
-  
+
   /** The number of items in the list. */
   def size:int { get; }
 }

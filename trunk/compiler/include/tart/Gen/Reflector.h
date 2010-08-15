@@ -21,6 +21,8 @@ class Defn;
 class ValueDefn;
 class VariableDefn;
 class FunctionDefn;
+class NamespaceDefn;
+class PropertyDefn;
 class CompositeType;
 class CodeGenerator;
 class EnumType;
@@ -54,11 +56,93 @@ struct ReflectedMembers {
 };
 
 /// -------------------------------------------------------------------
+/// Represents a unique method signature.
+
+class UniqueMethodKey {
+public:
+  UniqueMethodKey(
+      const char * name, const Type * returnType, const TupleType * paramTypes, bool isStatic)
+    : name_(name)
+    , returnType_(returnType)
+    , paramTypes_(paramTypes)
+    , isStatic_(isStatic)
+  {}
+
+  struct KeyInfo {
+    static inline const UniqueMethodKey getEmptyKey() {
+      return UniqueMethodKey(NULL, NULL, NULL, false);
+    }
+    static inline const UniqueMethodKey getTombstoneKey() {
+      return UniqueMethodKey(NULL, NULL, NULL, true);
+    }
+
+    static unsigned getHashValue(const UniqueMethodKey & key);
+    static bool isEqual(const UniqueMethodKey & lhs, const UniqueMethodKey & rhs);
+    static bool isPod() { return true; }
+  };
+
+private:
+  const char * name_;
+  const Type * returnType_;
+  const TupleType * paramTypes_;
+  bool isStatic_;
+};
+
+struct MethodTagInfo : public TagInfo {
+  FunctionDefn * method;
+};
+
+/// -------------------------------------------------------------------
+/// Represents a single scope and all of the members within it.
+
+class ReflectedScope {
+public:
+  typedef std::pair<const Type *, TagInfo> TypeArrayElement;
+  typedef std::vector<TypeArrayElement > TypeArray;
+  typedef llvm::DenseMap<const Type *, TagInfo, Type::KeyInfo> TypeMap;
+  typedef llvm::DenseMap<UniqueMethodKey, MethodTagInfo, UniqueMethodKey::KeyInfo> MethodMap;
+
+  ReflectedScope(NameTable & names) : names_(names), var_(NULL), strm_(strmData_) {}
+  ~ReflectedScope();
+
+  void addTypeRef(const Type * type);
+  void addASTDecl(const ASTDecl * ast);
+
+  llvm::GlobalVariable * var() const { return var_; }
+  void setVar(llvm::GlobalVariable * var) { var_ = var; }
+
+  // Sort all of the types by popularity and assign IDs.
+  void assignIndices();
+
+  void encodeTypesTable(llvm::raw_ostream & out);
+  void encodeTypeRef(const Type * type, llvm::raw_ostream & out);
+  void encodeType(const Type * type, llvm::raw_ostream & out);
+
+  llvm::raw_string_ostream & strm() { return strm_; }
+  std::string & strmData() { return strmData_; }
+
+  const TypeArray & derivedTypeRefs() const { return compositeTypeRefs_; }
+  const TypeArray & compositeTypeRefs() const { return compositeTypeRefs_; }
+  const TypeArray & enumTypeRefs() const { return enumTypeRefs_; }
+
+private:
+  NameTable & names_;
+  TypeMap types_;
+  llvm::GlobalVariable * var_;
+  std::string strmData_;
+  llvm::raw_string_ostream strm_;
+
+  TypeArray derivedTypeRefs_;
+  TypeArray compositeTypeRefs_;
+  TypeArray enumTypeRefs_;
+};
+
+/// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
 class Reflector {
 public:
   // Keep these enums in sync with Member.tart
-  enum Access {
+  enum Visibility {
     PUBLIC,
     PROTECTED,
     PRIVATE,
@@ -116,6 +200,7 @@ public:
   };
 
   Reflector(CodeGenerator & cg);
+  ~Reflector();
 
   /** Whether reflection is enabled. */
   bool enabled() const { return enabled_; }
@@ -128,14 +213,57 @@ public:
   /** Generate a pointer to a module's reflection info. */
   llvm::GlobalVariable * getModulePtr(Module * module);
 
+  llvm::GlobalVariable * getNameTablePtr(Module * module);
+
   /** Generate a pointer to the package reflection info. */
   llvm::GlobalVariable * getPackagePtr(Module * module);
 
   /** Generate a pointer to a type's reflection info. */
   llvm::GlobalVariable * getTypePtr(const Type * type);
 
+  /** Return the reflected symbol data for a given definition. */
+  ReflectedScope * getReflectedScope(const Defn * def);
+
   /** Generate reflection information for a module. */
   void emitModule(Module * module);
+
+  /** Generate the name table which contains tables of names used by the module
+      and the definitions within it. */
+  void emitNameTable(Module * module);
+
+  /** Add a definition to the list of reflected members. */
+  void addDefn(const Defn * def);
+
+  /** Add all of the members of the given scope to the reflected scope. */
+  void addMembers(const IterableScope * scope, ReflectedScope * rs);
+
+  /** Add the member to the reflected scope. */
+  void addMember(const Defn * def, ReflectedScope * rs);
+
+  /** Generate reflection information for a definition in this module. */
+  void buildRMD(const Defn * def);
+
+  /** Write out reflection information for a definition in this module. */
+  void emitReflectedSymbol(const Defn * defn);
+
+  /** Write out reflection information for a definition in this module. */
+  void emitReflectedDefn(ReflectedScope * rs, const Defn * def);
+
+  /** Write out the reflection data for the contents of a definition. */
+  void emitReflectedMembers(ReflectedScope * rs, const IterableScope * scope);
+
+  /** Emitters for various sections. */
+  void emitTypeParamSection(ReflectedScope * rs, const Defn * def);
+  void emitBaseClassSection(ReflectedScope * rs, const CompositeType * type);
+  void emitInterfacesSection(ReflectedScope * rs, const CompositeType * type);
+  void emitAttributeSection(ReflectedScope * rs, const ExprList & attrs);
+
+  /** Emitters for various definition types. */
+  void emitNamespaceDefn(ReflectedScope * rs, const NamespaceDefn * def, llvm::raw_ostream & out);
+  void emitFieldDefn(ReflectedScope * rs, const VariableDefn * def, llvm::raw_ostream & out);
+  void emitConstructorDefn(ReflectedScope * rs, const FunctionDefn * def, llvm::raw_ostream & out);
+  void emitMethodDefn(ReflectedScope * rs, const FunctionDefn * def, llvm::raw_ostream & out);
+  void emitPropertyDefn(ReflectedScope * rs, const PropertyDefn * def, llvm::raw_ostream & out);
 
   /** Generate reflection information for a type definition in this module. */
   llvm::GlobalVariable * emitTypeDefn(const TypeDefn * td);
@@ -174,10 +302,12 @@ public:
   llvm::FunctionType * getInvokeFnType();
 
 private:
+  typedef llvm::DenseMap<const Defn *, ReflectedScope *> ReflectedSymbolMap;
+
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);
   bool visitMember(ReflectedMembers & rm, const Defn * member);
 
-  Access memberAccess(const Defn * member);
+  Visibility memberVisibility(const Defn * member);
   MemberKind memberKind(const Defn * member);
   Traits memberTraits(const Defn * member);
 
@@ -188,8 +318,9 @@ private:
   llvm::LLVMContext & context_;
   llvm::IRBuilder<true> builder_;    // LLVM builder
   llvm::Module * irModule_;
-  llvm::GlobalVariable * moduleTable_;
+  llvm::GlobalVariable * nameTableVar_;
 
+  ReflectedSymbolMap rsymMap_;
   GlobalVarMap globals_;
 };
 

@@ -19,7 +19,6 @@ using namespace tart;
 
 class UnionTest : public testing::Test {
 protected:
-  SourceLocation loc;
   SourceFile testSource;
   Module testModule;
   Type * testClass;
@@ -37,23 +36,8 @@ TEST_F(UnionTest, CreateUnion) {
   ConstTypeList memberTypes;
   memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(&FloatType::instance);
-  UnionType * utype = UnionType::get(loc, memberTypes);
+  UnionType * utype = UnionType::get(memberTypes);
 
-  ASSERT_EQ(2u, utype->members().size());
-  ASSERT_EQ(2u, utype->typeArgs()->size());
-  ASSERT_EQ(2u, utype->numTypeParams());
-  ASSERT_EQ(&Int32Type::instance, utype->typeParam(0));
-  ASSERT_EQ(&FloatType::instance, utype->typeParam(1));
-  ASSERT_FALSE(utype->hasVoidType());
-  ASSERT_FALSE(utype->hasNullType());
-  ASSERT_FALSE(utype->isSingleOptionalType());
-  ASSERT_FALSE(utype->hasRefTypesOnly());
-  ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
-  ASSERT_TRUE(utype->isSingular());
-}
-
-TEST_F(UnionTest, CreateUnionVarargs) {
-  UnionType * utype = UnionType::get(loc, &Int32Type::instance, &FloatType::instance, NULL);
   ASSERT_EQ(2u, utype->members().size());
   ASSERT_EQ(2u, utype->typeArgs()->size());
   ASSERT_EQ(2u, utype->numTypeParams());
@@ -68,21 +52,30 @@ TEST_F(UnionTest, CreateUnionVarargs) {
 }
 
 TEST_F(UnionTest, GetTypeIndex) {
-  UnionType * utype = UnionType::get(loc, &Int32Type::instance, &FloatType::instance, NULL);
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&Int32Type::instance);
+  memberTypes.push_back(&FloatType::instance);
+  UnionType * utype = UnionType::get(memberTypes);
   ASSERT_EQ(0, utype->getTypeIndex(&Int32Type::instance));
   ASSERT_EQ(1, utype->getTypeIndex(&FloatType::instance));
   ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
 }
 
 TEST_F(UnionTest, GetTypeSorting) {
-  UnionType * utype = UnionType::get(loc, &FloatType::instance, &Int32Type::instance, NULL);
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&FloatType::instance);
+  memberTypes.push_back(&Int32Type::instance);
+  UnionType * utype = UnionType::get(memberTypes);
   ASSERT_EQ(0, utype->getTypeIndex(&Int32Type::instance));
   ASSERT_EQ(1, utype->getTypeIndex(&FloatType::instance));
   ASSERT_EQ(&Int32Type::instance, utype->getFirstNonVoidType());
 }
 
-TEST_F(UnionTest, IntOrVoidUnion) {
-  UnionType * utype = UnionType::get(loc, &FloatType::instance, &VoidType::instance, NULL);
+TEST_F(UnionTest, FloatOrVoidUnion) {
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&FloatType::instance);
+  memberTypes.push_back(&VoidType::instance);
+  UnionType * utype = UnionType::get(memberTypes);
   ASSERT_TRUE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_TRUE(utype->isSingleOptionalType());
@@ -92,7 +85,10 @@ TEST_F(UnionTest, IntOrVoidUnion) {
 }
 
 TEST_F(UnionTest, IntOrRefTypeUnion) {
-  UnionType * utype = UnionType::get(loc, &Int32Type::instance, testClass, NULL);
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&Int32Type::instance);
+  memberTypes.push_back(testClass);
+  UnionType * utype = UnionType::get(memberTypes);
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_FALSE(utype->isSingleOptionalType());
@@ -102,13 +98,25 @@ TEST_F(UnionTest, IntOrRefTypeUnion) {
 }
 
 TEST_F(UnionTest, NullOrRefTypeUnion) {
-  UnionType * utype = UnionType::get(loc, &NullType::instance, testClass, NULL);
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&NullType::instance);
+  memberTypes.push_back(testClass);
+  UnionType * utype = UnionType::get(memberTypes);
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_TRUE(utype->hasNullType());
   ASSERT_TRUE(utype->isSingleOptionalType());
   ASSERT_TRUE(utype->hasRefTypesOnly());
   ASSERT_EQ(testClass, utype->getFirstNonVoidType());
   ASSERT_TRUE(utype->isSingular());
+}
+
+TEST_F(UnionTest, Coalesce) {
+  ConstTypeList memberTypes;
+  memberTypes.push_back(&Int32Type::instance);
+  memberTypes.push_back(&FloatType::instance);
+  UnionType * utype1 = UnionType::get(memberTypes);
+  UnionType * utype2 = UnionType::get(memberTypes);
+  ASSERT_TRUE(utype1 == utype2);
 }
 
 }

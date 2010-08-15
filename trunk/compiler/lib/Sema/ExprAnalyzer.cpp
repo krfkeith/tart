@@ -375,17 +375,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
 
   Expr * newValue = reduceExpr(ast->arg(1), lvalue->type());
 
-  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
-    // If it's a property reference, convert it into a method call.
-    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-      Expr * setProp = reduceSetPropertyValue(ast->location(), lvalueBase(lval), prop, newValue);
-      if (isErrorResult(setProp)) {
-        return &Expr::ErrorVal;
-      }
-
-      DFAIL("Implement PostAssign of property");
-    }
-  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
         Expr * setProp = reduceSetParamPropertyValue(ast->location(), call, newValue);
@@ -528,13 +518,7 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
 
   DASSERT_OBJ(lvalue->type() != NULL, lvalue);
 
-  if (LValueExpr * lval = dyn_cast<LValueExpr>(lvalue)) {
-    // If it's a property reference, convert it into a method call.
-    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-      checkAccess(ast->location(), prop);
-      return reduceGetPropertyValue(ast->location(), lvalueBase(lval), prop);
-    }
-  } else if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
+  if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
         checkAccess(ast->location(), prop);
@@ -551,10 +535,7 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
 Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Expr * rhs) {
   if (LValueExpr * lval = dyn_cast<LValueExpr>(lhs)) {
     // If it's a property reference, convert it into a method call.
-    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-      checkAccess(loc, prop);
-      return reduceSetPropertyValue(loc, lvalueBase(lval), prop, rhs);
-    } else if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
       // The only time we may assign to a 'let' variable is in a constructor, and only
       // if the variable is an instance member of that class.
       if (var->defnType() == Defn::Let) {
@@ -567,6 +548,55 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Ex
         }
 
         diag.error(loc) << "Assignment to immutable value '" << var << "'";
+      } else if (var->defnType() == Defn::MacroArg) {
+        // Special case for macro arguments which may be lvalues but weren't evaluated that way.
+        Expr * macroVal = var->initValue();
+        switch (macroVal->exprType()) {
+          case Expr::LValue:
+            break;
+
+          case Expr::FnCall: {
+            // Transform a property get into a property set.
+            FnCallExpr * fnCall = static_cast<FnCallExpr *>(macroVal);
+            FunctionDefn * fn = fnCall->function();
+            if (PropertyDefn * prop = dyn_cast<PropertyDefn>(fn->parentDefn())) {
+              DASSERT(fn == prop->getter());
+              if (prop->setter() != NULL) {
+                FnCallExpr * setterCall = new FnCallExpr(
+                    fnCall->exprType(),
+                    fnCall->location(),
+                    prop->setter(),
+                    fnCall->selfArg());
+                setterCall->setType(&VoidType::instance);
+                setterCall->args().append(fnCall->args().begin(), fnCall->args().end());
+                setterCall->args().push_back(rhs);
+                return setterCall;
+              }
+            } else if (IndexerDefn * idx = dyn_cast<IndexerDefn>(fn->parentDefn())) {
+              DASSERT(fn == idx->getter());
+              if (idx->setter() != NULL) {
+                FnCallExpr * setterCall = new FnCallExpr(
+                    fnCall->exprType(),
+                    fnCall->location(),
+                    idx->setter(),
+                    fnCall->selfArg());
+                setterCall->setType(&VoidType::instance);
+                setterCall->args().append(fnCall->args().begin(), fnCall->args().end());
+                setterCall->args().push_back(rhs);
+                return setterCall;
+              }
+            }
+
+            diag.error(lval) << "Not an l-value: " << macroVal;
+            break;
+          }
+
+          default:
+            diag.error() << "Macro param expr type not handled: " <<
+                exprTypeName(macroVal->exprType());
+            DASSERT(false);
+            break;
+        }
       }
     }
   } else if (CallExpr * call = dyn_cast<CallExpr>(lhs)) {
@@ -729,7 +759,7 @@ Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
   }
 
   return new UnaryExpr(
-      Expr::Complement, ast->location(), &BoolType::instance, value);
+      Expr::Complement, ast->location(), value->type(), value);
 }
 
 Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
@@ -804,12 +834,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
   lookupName(values, ast, LOOKUP_REQUIRED);
 
   if (values.size() == 0) {
-    //diag.error(ast) << "Undefined symbol " << ast;
-    //if (ast->nodeType() != ASTNode::Member) {
-      //diag.writeLnIndent("Scopes searched:");
-      //dumpScopeHierarchy();
-    //}
-
+    // Undefined symbol (error already reported).
     return &Expr::ErrorVal;
   } else if (values.size() > 1) {
     diag.error(ast) << "Multiply defined symbol " << ast;
@@ -832,13 +857,20 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   // TODO: We might want to support more than 1 array index.
   DASSERT_OBJ(ast->count() >= 1, ast);
   if (ast->count() == 1) {
-    Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
-    if (TypeLiteralExpr * elementType = dyn_cast_or_null<TypeLiteralExpr>(elementExpr)) {
-      return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elementType->value()));
+    TypeAnalyzer ta(module, activeScope);
+    Type * elemType = ta.typeFromAST(ast->arg(0));
+    if (elemType == NULL) {
+      return &Expr::ErrorVal;
     }
-
-    diag.error(ast) << "Type expression expected before []";
-    return &Expr::ErrorVal;
+    return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elemType));
+//    Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
+//    if (TypeLiteralExpr * elementType = dyn_cast_or_null<TypeLiteralExpr>(elementExpr)) {
+//      return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elementType->value()));
+//    }
+//
+//    diag.debug(ast) << "Preceding expression was " << elementExpr;
+//    diag.error(ast) << "Type expression expected before []";
+//    return &Expr::ErrorVal;
   }
 
   // If it's a name, see if it's a specializable name.
@@ -1042,101 +1074,6 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   call->args().append(args.begin(), args.end());
   call->setType(indexer->type());
   return call;
-}
-
-Expr * ExprAnalyzer::reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr,
-    PropertyDefn * prop) {
-
-  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
-    return &Expr::ErrorVal;
-  }
-
-  DASSERT_OBJ(prop->isSingular(), prop);
-  DASSERT_OBJ(prop->getter()->isSingular(), prop);
-
-  FunctionDefn * getter = prop->getter();
-  if (getter == NULL) {
-    diag.fatal(prop) << "No getter for property '" << prop->name() << "'";
-    return &Expr::ErrorVal;
-  }
-
-  if (!analyzeFunction(getter, Task_PrepMemberLookup)) {
-    return &Expr::ErrorVal;
-  }
-
-  //ExprList callingArgs;
-  // TODO: Compile-time evaluation if possible.
-  /*Expr * expr = getter->eval(in->location(), callingArgs);
-   if (expr != NULL) {
-   return expr;
-   }*/
-
-  Expr::ExprType callType = Expr::FnCall;
-  if (basePtr != NULL) {
-    if (basePtr->type()->typeClass() == Type::Interface ||
-        (basePtr->type()->typeClass() == Type::Class && !getter->isFinal())) {
-      callType = Expr::VTableCall;
-    } else if (basePtr->type()->typeClass() == Type::Struct) {
-      if (LValueExpr * lval = dyn_cast<LValueExpr>(basePtr)) {
-        if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
-          if (!param->isVariadic()) {
-            // TODO: Do we need this code in the other cases?
-            param->setFlag(ParameterDefn::LValueParam, true);
-          }
-        }
-      }
-    }
-  }
-
-  FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
-  getterCall->setType(prop->type());
-  module->addSymbol(getter);
-  return getterCall;
-}
-
-Expr * ExprAnalyzer::reduceSetPropertyValue(const SourceLocation & loc,
-    Expr * basePtr, PropertyDefn * prop, Expr * value) {
-
-  DASSERT(value != NULL);
-  if (!analyzeProperty(prop, Task_PrepTypeComparison)) {
-    return &Expr::ErrorVal;
-  }
-
-  FunctionDefn * setter = prop->setter();
-  if (setter == NULL) {
-    diag.error(loc) << "Attempt to set value of read-only property '" << prop << "'";
-    return &Expr::ErrorVal;
-  }
-
-  DASSERT_OBJ(prop->isSingular(), prop);
-  DASSERT_OBJ(setter->isSingular(), prop);
-
-  if (!analyzeFunction(setter, Task_PrepTypeComparison)) {
-    return &Expr::ErrorVal;
-  }
-
-  //ExprList callingArgs;
-  //callingArgs.push_back(value);
-
-  // TODO: Compile-time evaluation if possible.
-  /*Expr * expr = getter->eval(in->location(), callingArgs);
-   if (expr != NULL) {
-   return expr;
-   }*/
-
-  Expr::ExprType callType = Expr::FnCall;
-  if (basePtr != NULL) {
-    if (basePtr->type()->typeClass() == Type::Interface ||
-        (basePtr->type()->typeClass() == Type::Class && !setter->isFinal())) {
-      callType = Expr::VTableCall;
-    }
-  }
-
-  FnCallExpr * setterCall = new FnCallExpr(callType, loc, setter, basePtr);
-  setterCall->setType(prop->type());
-  setterCall->appendArg(value);
-  module->addSymbol(setter);
-  return setterCall;
 }
 
 Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call) {
@@ -1343,15 +1280,6 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
     lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
         lvalue->base()->type()->typeParam(0), lvalue->base()));
-  }
-
-  // If it's not a store, and it's a property access, then dereference into getter calls.
-  // (If it is a store, then do nothing - that can only be handled once we know what it
-  // is we are storing.)
-  if (!store) {
-    if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lvalue->value())) {
-      return reduceGetPropertyValue(lvalue->location(), lvalueBase(lvalue), prop);
-    }
   }
 
   return lvalue;

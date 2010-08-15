@@ -1,0 +1,307 @@
+import tart.core.Memory.Address;
+import tart.collections.ArrayList;
+import tart.collections.ImmutableList;
+
+/** The compressed and encoded reflection data for a type, namespace or module. */
+@Reflection(Reflection.Detail.NONE) final class ReflectionMetadata {
+  /** Tags used to represent the start of a definition. */
+	enum DefnTag : uint8 {
+    SCOPE_END = 0,    // End of scope
+    MODULE,           // A module definition
+    NAMESPACE,        // A namespace definition
+    CLASS,            // A class definition
+    STRUCT,           // A struct definition
+    INTERFACE,        // An interface definitions
+    PROTOCOL,         // A protocol definition
+    METHOD,           // A method definition
+    UNDEF,            // A method un-definition
+    OVERRIDE,         // A method override
+    CONSTRUCTOR,      // A constructor definition
+    MACRO,            // A macro definition
+    INDEXER,          // An indexer definition
+    PROPERTY,         // A property definition
+    VARIABLE,         // A variable definition
+    LET,              // An immutable constant
+    ENUM,             // An enumeration type
+    IMPORT,           // An import definition
+    TYPEALIAS,        // A type alias
+    PARAM,            // A parameter definition within a method
+    TYPE_PARAM,       // A template parameter definition
+  
+    // Modifier tags which affect the containing scope.
+  
+    MOD_ATTRIBUTE = 32,// Modifies a declaration to add an attribute.
+    MOD_STATIC,        // Modifies a declaration to have static storage class
+    MOD_FINAL,         // Modifies a class or method to be final
+    MOD_ABSTRACT,      // Modifies a class or method to be abstract
+    MOD_VARIADIC,      // Modifies a parameter to be variadic
+    MOD_KEYWORD_ONLY,  // Modifies a parameter to be keyword-only
+  
+    // Upper bits representing visibility.
+  
+    FLAG_PROTECTED = 0x40, // A protected declaration
+    FLAG_PRIVATE = 0x80,   // A private declaration
+	}
+
+	/** Tags used to define types. */
+  enum TypeTag : uint8 {
+  	VOID = 0,
+    BOOL,
+    CHAR,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    FLOAT,
+    DOUBLE,
+    NULL,
+    UNSIZED_INT,
+
+    // Derived types
+  
+    FUNCTION = 16,   // Function type (flags, return-type, params...)
+    BOUND_METHOD,    // Bound method (flags, return-type, params...)
+    TUPLE,           // Tuple table index follows
+    UNION,           // Tuple table index follows
+    UNIT,            // ??
+    ADDRESS,         // Type table index follows
+    NARRAY,          // Type table index and length follows
+    TYPEVAR,         // variable name index follows (? should be index ?)
+    TYPELITERAL,     // Literal reference to a type
+    VARIADIC,        // Type follows
+  
+    // Indirect type tags - tag byte is followed by varint table index.
+  
+    COMPOSITE = 32,   // Followed by index into composite type table.
+    DERIVED = 33,     // Followed by index into derived type table.
+    ENUM = 34,        // Followed by index into enum type table.
+  
+    // Immediate-mode tags, tag data is in low bits of tag byte.
+  
+    ENUM_IMM = 48,       // Low 4 bits are index into enum type table.
+    COMPOSITE_IMM = 64,  // Low 6 bits are index into composite type table.
+    DERIVED_IMM = 128,   // Low 7 bits are index into derived type table.
+  }
+
+  enum SectionTag : uint8 {
+    END = 0,
+	  TYPE_PARAMS = 1,
+  	BASE_CLASS = 2,
+  	INTERFACES = 3,
+  	ATTRIBUTES = 4,
+  	INNER_TYPES = 5,
+  	NAMESPACES = 6,
+  	FIELDS = 7,
+  	CONSTRUCTORS = 8,
+  	METHODS = 9,
+  	PROPERTIES = 10,
+  }
+  
+  private {
+    var _value:optional Object;
+  	var _names:NameTable;
+  	var _strmTypeRefs:Address[ubyte];
+  	var _strmDefns:Address[ubyte];
+    var _nameIndex:int16;
+    var _defnType:DefnTag;
+    var _traits:Member.Traits;
+  	var _derivedTypes:optional Type[];
+  	var _compositeTypes:Address[Address[TypeInfoBlock]];
+  	var _enumTypes:Address[Address[EnumInfoBlock]];
+  	var _invokeFns:Address[Address[ubyte]];
+  	// field offsets
+  	// methods.
+  	// globals
+  }
+  
+  undef construct;
+
+  private def decodeTypeRef(decoder:StreamDecoder) -> Type {
+    return PrimitiveType.VOID;
+  }
+  
+  private def decodeType(decoder:StreamDecoder) -> Type {
+    let typeId = TypeTag(decoder.readByte());
+    switch typeId {
+      case VOID 	{ return PrimitiveType.VOID; }
+      case BOOL 	{ return PrimitiveType.BOOL; }
+      case CHAR 	{ return PrimitiveType.CHAR; }
+      case INT8 	{ return PrimitiveType.INT8; }
+      case INT16 	{ return PrimitiveType.INT16; }
+      case INT32 	{ return PrimitiveType.INT32; }
+      case INT64 	{ return PrimitiveType.INT64; }
+      case UINT8 	{ return PrimitiveType.UINT8; }
+      case UINT16 { return PrimitiveType.UINT16; }
+      case UINT32 { return PrimitiveType.UINT32; }
+      case UINT64 { return PrimitiveType.UINT64; }
+      case FLOAT 	{ return PrimitiveType.FLOAT; }
+      case DOUBLE { return PrimitiveType.DOUBLE; }
+      //case NULL 	{ return PrimitiveType.VOID; }
+      //case UNSIZED_INT { return PrimitiveType.VOID; }
+
+      case FUNCTION {
+        Debug.fail("Implement FUNCTION");
+      }
+
+      case BOUND_METHOD {
+        Debug.fail("Implement BOUND_METHOD");
+      }
+
+      case TUPLE {
+        Debug.fail("Implement TUPLE");
+      }
+
+      case UNION {
+        Debug.fail("Implement UNION");
+      }
+
+      case UNIT {
+        Debug.fail("Implement UNIT");
+      }
+
+      case ADDRESS {
+        Debug.fail("Implement ADDRESS");
+      }
+
+      case NARRAY {
+        Debug.fail("Implement FUNCTION");
+      }
+
+      case TYPEVAR {
+        Debug.fail("Implement TYPEVAR");
+      }
+
+      case TYPELITERAL {
+        Debug.fail("Implement TYPELITERAL");
+      }
+
+      case VARIADIC {
+        Debug.fail("Implement VARIADIC");
+      }
+      
+		  case COMPOSITE {
+        Debug.fail("Implement COMPOSITE");
+		  }
+		  
+		  case DERIVED {
+        Debug.fail("Implement DERIVED");
+		  }
+
+			case ENUM {
+        Debug.fail("Implement ENUM");
+			}
+			
+			else {
+			  if typeId >= TypeTag.DERIVED_IMM {
+	        Debug.fail("Implement DERIVED_IMM");
+			  } else if typeId >= TypeTag.COMPOSITE_IMM {
+			    var index = int(typeId) & 0x3f;
+			  	var tib = _compositeTypes[index];
+			    return getComplexType(tib);
+			  } else if typeId >= TypeTag.ENUM_IMM {
+	        Debug.fail("Implement ENUM_IMM");
+			  } else {
+	        Debug.fail("Invalid type id: ", typeId.toString());
+			  }
+			}
+    }
+
+    return PrimitiveType.VOID;
+  }
+
+  private def decodeDerivedTypes() -> Type[] {
+    var decoder = StreamDecoder(_strmTypeRefs);
+    var count = decoder.readVarInt();
+    Debug.writeLn("Number of derived types: ", String(count));
+    return Type[](1);
+  }
+
+  def names:NameTable { get { return _names; } }
+
+  def qualifiedName:String { get { return _names.getQualifiedName(_nameIndex); } }
+  def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
+  def localName:String { get { return _names.getLocalName(_nameIndex); } }
+  
+  def derivedTypes:Type[] { get { return lazyEval(_derivedTypes, decodeDerivedTypes()); } }
+
+  // readModule
+  // readType
+  // readNamespace
+  
+  def readBaseClass -> optional ComplexType {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.BASE_CLASS);
+    if length != 0 {
+	  	return typecast[ComplexType](decodeType(decoder));
+    }
+    
+    return null;
+  }
+
+  def readInterfaces() {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.INTERFACES);
+    if length != 0 {
+    	Debug.writeLn("Length of interfaces section = ", length.toString());
+    }
+  }
+
+  def readTypeParams() {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.TYPE_PARAMS);
+    if length != 0 {
+    	Debug.writeLn("Length of type params section = ", length.toString());
+    }
+  }
+
+  def readFields() {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.FIELDS);
+    if length != 0 {
+    	Debug.writeLn("Length of field section = ", length.toString());
+    }
+  }
+
+  def readConstructors() {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.CONSTRUCTORS);
+    if length != 0 {
+    	Debug.writeLn("Length of constructor section = ", length.toString());
+    }
+  }
+
+  def readMethods() {
+    var decoder = StreamDecoder(_strmDefns);
+    var length = decoder.seekToSection(SectionTag.METHODS);
+    if length != 0 {
+    	Debug.writeLn("Length of method section = ", length.toString());
+    }
+  }
+
+  static def getComplexType(tib:Address[TypeInfoBlock]) -> ComplexType {
+    var meta = tib._meta;
+    if meta is null {
+      // TODO - throw an exception?
+    }
+    
+    if meta._value is not null {
+      return typecast[ComplexType](meta._value);
+    }
+    
+    var type:ComplexType;
+		switch (meta._defnType) {
+		  case CLASS { type = ComplexType(Type.TypeKind.CLASS, tib); }
+		  case STRUCT { type = ComplexType(Type.TypeKind.STRUCT, tib); }
+		  case INTERFACE { type = ComplexType(Type.TypeKind.INTERFACE, tib); }
+		  case PROTOCOL { type = ComplexType(Type.TypeKind.PROTOCOL, tib); }
+		  else { throw ArgumentError("Invalid reflection metadata for type"); }
+		}
+		
+		meta._value = type;
+		return type;
+  }
+}

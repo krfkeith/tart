@@ -13,7 +13,6 @@
 #include "tart/CFG/Template.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Objects/Builtins.h"
 
 namespace tart {

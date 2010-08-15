@@ -19,6 +19,8 @@
 
 namespace tart {
 
+static ConstantNull nullValue = ConstantNull(SourceLocation());
+
 /// -------------------------------------------------------------------
 /// EvalPass
 
@@ -135,10 +137,10 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::Not:
       return evalNot(static_cast<UnaryExpr *>(in));
 
-#if 0
     case Expr::Complement:
       return evalComplement(static_cast<UnaryExpr *>(in));
 
+#if 0
     case Expr::InitVar:
       return evalInitVar(static_cast<InitVarExpr *>(in));
 
@@ -171,7 +173,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
 
 ConstantExpr * EvalPass::evalConstantExpr(Expr * in) {
   Expr * e = evalExpr(in);
-  if (e != NULL) {
+  if (!isErrorResult(e)) {
     if (ConstantExpr * ce = dyn_cast<ConstantExpr>(e)) {
       return ce;
     } else if (!allowPartial_) {
@@ -206,7 +208,7 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
         if (block->termValue() != NULL) {
           callFrame_->setReturnVal(evalExpr(block->termValue()));
         } else {
-          callFrame_->setReturnVal(NULL);
+          callFrame_->setReturnVal(&nullValue);
         }
 
         return true;
@@ -460,6 +462,21 @@ Expr * EvalPass::evalNot(UnaryExpr * in) {
   } else {
     return ConstantInteger::getConstantBool(in->location(), true);
   }
+}
+
+Expr * EvalPass::evalComplement(UnaryExpr * in) {
+  llvm::Constant * value = asConstNumber(evalConstantExpr(in->arg()));
+  if (value == NULL) {
+    return NULL;
+  }
+
+  value = llvm::ConstantExpr::getNot(value);
+  if (llvm::ConstantInt * cint = dyn_cast<llvm::ConstantInt>(value)) {
+    return ConstantInteger::get(in->location(), in->type(), cint);
+  }
+
+  diag.debug(in) << in;
+  DFAIL("Implement");
 }
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {

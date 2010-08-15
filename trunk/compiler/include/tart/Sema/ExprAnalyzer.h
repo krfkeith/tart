@@ -66,9 +66,9 @@ public:
   Expr * reduceSymbolRef(const ASTNode * ast, bool store);
   Expr * reduceElementRef(const ASTOper * ast, bool store);
   Expr * reduceLValueExpr(LValueExpr * lvalue, bool store);
-  Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop);
-  Expr * reduceSetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop,
-      Expr * value);
+//  Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop);
+//  Expr * reduceSetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop,
+//      Expr * value);
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
 

@@ -55,6 +55,9 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern()) {
       visit(fn);
+      if (!fn->isNonreflective()) {
+        addTypeRef(fn->type());
+      }
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (var->initValue()) {
@@ -84,6 +87,11 @@ void FindExternalRefsPass::addSymbol(Defn * de) {
 bool FindExternalRefsPass::addTypeRef(const Type * type) {
   if (type->typeDefn() != NULL) {
     return module->addSymbol(type->typeDefn());
+  } else if (const FunctionType * fnType = dyn_cast<FunctionType>(type)) {
+    for (ParameterList::const_iterator it = fnType->params().begin(); it != fnType->params().end();
+        ++it) {
+      addTypeRef((*it)->type());
+    }
   }
 
   return false;

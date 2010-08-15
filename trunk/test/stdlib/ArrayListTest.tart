@@ -1,5 +1,4 @@
 import tart.collections.ArrayList;
-import tart.reflect.ComplexType;
 import tart.testing.Test;
 
 @EntryPoint

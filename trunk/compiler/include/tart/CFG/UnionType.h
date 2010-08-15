@@ -11,15 +11,16 @@
 
 namespace tart {
 
+#define LLVM_UNION_SUPPORT 0
+
 typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
 
 // -------------------------------------------------------------------
 // Disjoint or union type.
-class UnionType : public TypeImpl, public Locatable {
+class UnionType : public TypeImpl {
 public:
   /** Return a union of the given element types. */
-  static UnionType * get(const SourceLocation & loc, const ConstTypeList & members);
-  static UnionType * get(const SourceLocation & loc, ...); // END_WITH_NULL
+  static UnionType * get(const ConstTypeList & members);
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }
@@ -34,10 +35,13 @@ public:
   const Type * typeParam(int index) const;
 
   /** Where in the source file this expression comes from. */
-  const SourceLocation & location() const { return loc_; }
+//  const SourceLocation & location() const { return loc_; }
 
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;
+
+  /** Given a type, return the index of this type (not counting void types). */
+  int getNonVoidTypeIndex(const Type * type) const;
 
   /** The number of reference types in the union. */
   //size_t numRefTypes() const { return numReferenceTypes_; }
@@ -64,6 +68,13 @@ public:
   /** Create a typecast from this type to the desired type. */
   Expr * createDynamicCast(Expr * from, const Type * toType) const;
 
+  /** Return true if the composite type 'toType' is a subclass of any of the member types. */
+  bool isSubtypeOfAnyMembers(const CompositeType * toType) const;
+
+  /** Return true if the composite type 'toType' is a subclass of all members not counting
+      the null type. */
+  bool isSupertypeOfAllMembers(const CompositeType * toType) const;
+
   // Overrides
 
   const llvm::Type * createIRType() const;
@@ -89,12 +100,11 @@ public:
 
 protected:
   /** Construct a disjoint union type */
-  UnionType(const SourceLocation & loc, const ConstTypeList & members);
+  UnionType(TupleType * members);
 
   // Given an IR type, return an estimate of the size of this type.
   static size_t estimateTypeSize(const llvm::Type * type, size_t ptrSize);
 
-  SourceLocation loc_;
   TupleType * members_;
   size_t numValueTypes_;
   size_t numReferenceTypes_;

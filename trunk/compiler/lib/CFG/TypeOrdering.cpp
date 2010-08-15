@@ -251,11 +251,40 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
     case Type::Interface:
     case Type::Protocol:
     case Type::Enum: {
+      if (t0 == t1) {
+        return 0;
+      }
+
       int result = t0->typeDefn()->qualifiedName().compare(t1->typeDefn()->qualifiedName());
       if (result != 0) {
         return result;
       }
 
+      if (t0->typeDefn()->isTemplateInstance()) {
+        if (t1->typeDefn()->isTemplateInstance()) {
+          return compare(
+              t0->typeDefn()->templateInstance()->typeArgs(),
+              t1->typeDefn()->templateInstance()->typeArgs());
+        } else {
+          return -1;
+        }
+      } else if (t1->typeDefn()->isTemplateInstance()) {
+        return 1;
+      }
+
+      if (t0->typeDefn()->isTemplate()) {
+        if (t1->typeDefn()->isTemplate()) {
+          return compare(
+              t0->typeDefn()->templateSignature()->typeParams(),
+              t1->typeDefn()->templateSignature()->typeParams());
+        } else {
+          return -1;
+        }
+      } else if (t1->typeDefn()->isTemplate()) {
+        return 1;
+      }
+
+      diag.debug() << Format_Type << "Unimplemented comparison between " << t0 << " and " << t1;
       DFAIL("Implement");
     }
 
