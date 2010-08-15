@@ -201,7 +201,7 @@ import tart.collections.ImmutableList;
 			  } else if typeId >= TypeTag.COMPOSITE_IMM {
 			    var index = int(typeId) & 0x3f;
 			  	var tib = _compositeTypes[index];
-			    return getComplexType(tib);
+			    return getCompositeType(tib);
 			  } else if typeId >= TypeTag.ENUM_IMM {
 	        Debug.fail("Implement ENUM_IMM");
 			  } else {
@@ -232,11 +232,11 @@ import tart.collections.ImmutableList;
   // readType
   // readNamespace
   
-  def readBaseClass -> optional ComplexType {
+  def readBaseClass -> optional CompositeType {
     var decoder = StreamDecoder(_strmDefns);
     var length = decoder.seekToSection(SectionTag.BASE_CLASS);
     if length != 0 {
-	  	return typecast[ComplexType](decodeType(decoder));
+	  	return typecast[CompositeType](decodeType(decoder));
     }
     
     return null;
@@ -282,22 +282,22 @@ import tart.collections.ImmutableList;
     }
   }
 
-  static def getComplexType(tib:Address[TypeInfoBlock]) -> ComplexType {
+  static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
     var meta = tib._meta;
     if meta is null {
       // TODO - throw an exception?
     }
     
     if meta._value is not null {
-      return typecast[ComplexType](meta._value);
+      return typecast[CompositeType](meta._value);
     }
     
-    var type:ComplexType;
+    var type:CompositeType;
 		switch (meta._defnType) {
-		  case CLASS { type = ComplexType(Type.TypeKind.CLASS, tib); }
-		  case STRUCT { type = ComplexType(Type.TypeKind.STRUCT, tib); }
-		  case INTERFACE { type = ComplexType(Type.TypeKind.INTERFACE, tib); }
-		  case PROTOCOL { type = ComplexType(Type.TypeKind.PROTOCOL, tib); }
+		  case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
+		  case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
+		  case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
+		  case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
 		  else { throw ArgumentError("Invalid reflection metadata for type"); }
 		}
 		

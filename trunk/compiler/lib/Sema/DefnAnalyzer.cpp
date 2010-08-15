@@ -510,7 +510,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           }
 
           importSystemType(Builtins::typeType);
-          importSystemType(Builtins::typeComplexType);
+          importSystemType(Builtins::typeCompositeType);
         } else if (enableReflection) {
           module->addSymbol(tdef);
           module->reflectedDefs().insert(tdef);
@@ -524,7 +524,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Struct:
         if (enableReflectionDetail && module->reflectedDefs().insert(tdef)) {
           module->addSymbol(tdef);
-          importSystemType(Builtins::typeComplexType);
+          importSystemType(Builtins::typeCompositeType);
         }
 
         break;
@@ -602,7 +602,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
     case Type::Class:
     case Type::Interface:
-      importSystemType(Builtins::typeComplexType);
+      importSystemType(Builtins::typeCompositeType);
       importSystemType(Builtins::typeSimpleType);
       break;
 

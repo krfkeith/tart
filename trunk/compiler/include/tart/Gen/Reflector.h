@@ -289,7 +289,7 @@ public:
 
   /** Generate a Type object and return a pointer to it. */
   llvm::Constant * emitType(const Type * type);
-  llvm::Constant * emitComplexType(const CompositeType * type);
+  llvm::Constant * emitCompositeType(const CompositeType * type);
   llvm::Constant * emitEnumType(const EnumType * type);
   llvm::Constant * emitFunctionType(const FunctionType * type);
   llvm::Constant * emitDerivedType(const Type * type);
