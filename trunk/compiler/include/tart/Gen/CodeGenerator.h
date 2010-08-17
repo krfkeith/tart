@@ -363,6 +363,9 @@ public:
   // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genInvokeFn(const FunctionType * fnType);
 
+  // Generate the the type of an invoke function.
+  const llvm::FunctionType * getInvokeFnType();
+
   /** Generate a reference to the TypeInfoBlock for a proxy type. */
   llvm::Constant * genProxyType(const CompositeType * ctype);
 
@@ -411,7 +414,7 @@ private:
   Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
-  llvm::FunctionType * invokeFnType_;
+  const llvm::FunctionType * invokeFnType_;
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
 

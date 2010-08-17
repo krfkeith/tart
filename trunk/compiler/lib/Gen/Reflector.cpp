@@ -132,6 +132,9 @@ SystemClassMember<VariableDefn> rmd_enumTypes(
 SystemClassMember<VariableDefn> rmd_invokeFns(
     Builtins::typeReflectionMetadata, "_invokeFns");
 
+SystemClassMember<TypeDefn> rmd_InvokeFnType(
+    Builtins::typeReflectionMetadata, "InvokeFn");
+
 // Members of tart.reflect.Package.
 SystemClassMember<VariableDefn> package_name(Builtins::typePackage, "_name");
 SystemClassMember<VariableDefn> package_modules(Builtins::typePackage, "_modules");
@@ -458,7 +461,9 @@ void ReflectedScope::encodeType(const Type * type, llvm::raw_ostream & out) {
               selfType->typeClass() == Type::Interface) {
         UniqueMethodKey key(".invoke", ftype);
         InvokeMap::iterator it = invokeMap_.find(key);
-        //InvokeInfo & info = invokeMap_[key];
+        if (it != invokeMap_.end()) {
+          invokeIndex = it->second.index;
+        }
       }
 
       out << VarInt(invokeIndex);
@@ -581,11 +586,12 @@ void ReflectedScope::encodeTypeRef(const Type * type, llvm::raw_ostream & out) {
 /// Reflector
 
 Reflector::Reflector(CodeGenerator & cg)
-    : cg_(cg)
-    , context_(cg.context())
-    , builder_(cg.builder())
-    , irModule_(cg.irModule())
-    , nameTableVar_(NULL)
+  : cg_(cg)
+  , context_(cg.context())
+  , builder_(cg.builder())
+  , irModule_(cg.irModule())
+  , nameTableVar_(NULL)
+  , invokeFnTableVar_(NULL)
 {
 }
 
@@ -654,18 +660,6 @@ void Reflector::emitModule(Module * module) {
     if (!(*it)->isNonreflective()) {
       hasReflectedDefns = true;
       break;
-    }
-  }
-
-  if (!hasReflectedDefns) {
-    bool hasRefsToNameTable = false;
-    for (DefnSet::const_iterator it = module->exportDefs().begin();
-        it != module->exportDefs().end(); ++it) {
-      const Defn * de = *it;
-      if (de->defnType() == Defn::Typedef && de->isSynthetic()) {
-        //emitNameTable(module);
-        break;
-      }
     }
   }
 
@@ -745,6 +739,7 @@ void Reflector::emitModule(Module * module) {
   }
 
   emitNameTable(module);
+  emitInvokeFnTable(module);
 
   for (ReflectedSymbolMap::const_iterator it = rsymMap_.begin(); it != rsymMap_.end(); ++it) {
     emitReflectedDefn(it->second, it->first);
@@ -800,6 +795,35 @@ void Reflector::emitNameTable(Module * module) {
 
     nameTablePtr->setInitializer(sb.build(Builtins::typeNameTable->irType()));
   }
+}
+
+void Reflector::emitInvokeFnTable(Module * module) {
+  std::string invokeTableSymbol;
+  if (invokeRefs_.empty()) {
+    invokeTableSymbol = ".invoke_fns.empty";
+  } else {
+    invokeTableSymbol = ".invoke_fns." + module->linkageName();
+  }
+
+  const llvm::Type * invokeFnType = cg_.getInvokeFnType();
+  const llvm::PointerType * invokeFnPtrType = llvm::PointerType::getUnqual(cg_.getInvokeFnType());
+
+  ConstantList invokeFnList;
+  invokeFnList.push_back(llvm::ConstantPointerNull::get(invokeFnPtrType));
+  for (InvokeArray::const_iterator it = invokeRefs_.begin(); it != invokeRefs_.end(); ++it) {
+    invokeFnList.push_back(it->second.fn);
+  }
+
+  Constant * invokeFnArray = ConstantArray::get(
+      ArrayType::get(invokeFnPtrType, invokeFnList.size()),
+      invokeFnList);
+  GlobalVariable * invokeFnListPtr = new GlobalVariable(*irModule_,
+      invokeFnArray->getType(), true, GlobalValue::LinkOnceODRLinkage,
+      invokeFnArray, invokeTableSymbol);
+  llvm::Constant * gepIndices[2];
+  gepIndices[0] = gepIndices[1] = cg_.getInt32Val(0);
+  invokeFnTableVar_ = llvm::ConstantExpr::getInBoundsGetElementPtr(
+      invokeFnListPtr, &gepIndices[0], 2);
 }
 
 void Reflector::addDefn(const Defn * def) {
@@ -1167,7 +1191,7 @@ void Reflector::emitReflectedDefn(ReflectedScope * rs, const Defn * def) {
     sb.addNullField(rmd_enumTypes.type());
   }
 
-  sb.addNullField(rmd_invokeFns.type());
+  sb.addField(invokeFnTableVar_);
   rs->var()->setInitializer(sb.build(Builtins::typeReflectionMetadata->irType()));
 }
 

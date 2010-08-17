@@ -54,6 +54,10 @@ void ASTTypeDecl::format(FormatStream & out) const {
       out << "enum ";
       break;
 
+    case TypeAlias:
+      out << "typealias ";
+      break;
+
     default:
       DFAIL("Illegal state");
   }

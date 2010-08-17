@@ -106,6 +106,8 @@ import tart.collections.ImmutableList;
   	PROPERTIES = 10,
   }
   
+  typealias InvokeFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+
   private {
     var _value:optional Object;
   	var _names:NameTable;
@@ -117,7 +119,7 @@ import tart.collections.ImmutableList;
   	var _derivedTypes:optional Type[];
   	var _compositeTypes:Address[Address[TypeInfoBlock]];
   	var _enumTypes:Address[Address[EnumInfoBlock]];
-  	var _invokeFns:Address[static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object];
+  	var _invokeFns:Address[InvokeFn];
   	// field offsets
   	// methods.
   	// globals

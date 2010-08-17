@@ -522,6 +522,9 @@ bool AnalyzerBase::getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * cont
 
 Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
+    if (tdef->typeValue()->typeClass() == Type::Alias) {
+      analyzeTypeDefn(tdef, Task_PrepTypeComparison);
+    }
     return tdef->asExpr();
   } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
     if (vdef->storageClass() == Storage_Instance && context == NULL) {
@@ -754,9 +757,20 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
       return true;
     }
 
-    case Type::Alias:
-      // TODO: Analyze what we are pointing to.
+    case Type::Alias: {
+      TypeAlias * ta = cast<TypeAlias>(type);
+      if (ta->value() == NULL) {
+        Type * targetType = TypeAnalyzer(in->module(), in->definingScope())
+            .typeFromAST(cast<ASTTypeDecl>(in->ast())->bases().front());
+        if (isErrorResult(targetType)) {
+          return false;
+        }
+
+        ta->setValue(targetType);
+      }
+
       return true;
+    }
 
     case Type::TypeVar:
       return true;
