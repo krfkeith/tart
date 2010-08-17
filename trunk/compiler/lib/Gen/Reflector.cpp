@@ -34,6 +34,7 @@
 
 #include "llvm/Module.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/StringExtras.h"
 
 namespace tart {
 
@@ -157,21 +158,58 @@ struct DefnOrder {
   }
 };
 
+struct InvokeTypeOrder {
+  bool operator()(const InvokeArrayElement & k0, const InvokeArrayElement & k1) {
+    if (k0.second.useCount != k1.second.useCount) {
+      return k0.second.useCount > k1.second.useCount;
+    }
+
+    int cmp = StringRef(k0.first.name()).compare(k1.first.name());
+    if (cmp != 0) {
+      return cmp < 0;
+    }
+
+    return LexicalTypeOrdering::compare(k0.first.type(), k1.first.type());
+  }
+};
+
+}
+
+/// -------------------------------------------------------------------
+/// UniqueMethodKey
+
+UniqueMethodKey::UniqueMethodKey(const char * name, const FunctionType * fnType)
+  : name_(name)
+  , type_(fnType)
+{}
+
+const UniqueMethodKey UniqueMethodKey::KeyInfo::getEmptyKey() {
+  return UniqueMethodKey("#empty", NULL);
+}
+
+const UniqueMethodKey UniqueMethodKey::KeyInfo::getTombstoneKey() {
+  return UniqueMethodKey("#tombstone", NULL);
 }
 
 unsigned UniqueMethodKey::KeyInfo::getHashValue(const UniqueMethodKey & key) {
-  unsigned result = Type::KeyInfo::getHashValue(key.returnType_);
-  result *= 0x5bd1e995;
-  result ^= result >> 24;
-  result ^= Type::KeyInfo::getHashValue(key.paramTypes_) + (key.isStatic_ ? 1 : 0);
+  unsigned result = llvm::HashString(StringRef(key.name()));
+
+  if (key.type_ != NULL) {
+    result *= 0x5bd1e995;
+    result ^= result >> 24;
+    result ^= Type::KeyInfo::getHashValue(key.type_);
+  }
   return result;
 }
 
 bool UniqueMethodKey::KeyInfo::isEqual(const UniqueMethodKey & lhs, const UniqueMethodKey & rhs) {
-  return llvm::StringRef(lhs.name_).equals(rhs.name_) &&
-      lhs.isStatic_ == rhs.isStatic_ &&
-      lhs.returnType_->isEqual(rhs.returnType_) &&
-      lhs.paramTypes_->isEqual(rhs.paramTypes_);
+  if (lhs.type_ == NULL) {
+    return rhs.type_ == NULL;
+  } else if (rhs.type_ == NULL) {
+    return false;
+  }
+
+  return llvm::StringRef(lhs.name_).equals(rhs.name_) && lhs.type_->isEqual(rhs.type_);
 }
 
 /// -------------------------------------------------------------------
@@ -410,7 +448,20 @@ void ReflectedScope::encodeType(const Type * type, llvm::raw_ostream & out) {
 
     case Type::Function: {
       const FunctionType * ftype = static_cast<const FunctionType *>(type);
-      out << char(TAG_TYPE_FUNCTION);
+      out << char(ftype->isStatic() ? TAG_TYPE_FUNCTION_STATIC : TAG_TYPE_FUNCTION);
+
+      // For now, we only support reflected invocation of global, class, or interface methods.
+      const Type * selfType = ftype->selfParam() != NULL ? ftype->selfParam()->type() : NULL;
+      int invokeIndex = 0;
+      if (selfType == NULL ||
+              selfType->typeClass() == Type::Class ||
+              selfType->typeClass() == Type::Interface) {
+        UniqueMethodKey key(".invoke", ftype);
+        InvokeMap::iterator it = invokeMap_.find(key);
+        //InvokeInfo & info = invokeMap_[key];
+      }
+
+      out << VarInt(invokeIndex);
       encodeTypeRef(ftype->returnType(), out);
       encodeTypeRef(ftype->paramTypes(), out);
       break;
@@ -665,6 +716,27 @@ void Reflector::emitModule(Module * module) {
     nameTable.assignIndices();
   }
 
+  if (!invokeMap_.empty()) {
+    for (InvokeMap::iterator it = invokeMap_.begin(); it != invokeMap_.end(); ++it) {
+      it->second.fn = cg_.genInvokeFn(it->first.type());
+      invokeRefs_.push_back(*it);
+    }
+
+    std::sort(invokeRefs_.begin(), invokeRefs_.end(), InvokeTypeOrder());
+    for (unsigned i = 0; i < invokeRefs_.size(); ++i) {
+      invokeRefs_[i].second.index = i + 1;
+      invokeMap_[invokeRefs_[i].first].index = i + 1;
+    }
+
+#if 1
+    diag.debug() << invokeMap_.size() << " unique invoke map entries added";
+    for (InvokeArray::iterator it = invokeRefs_.begin(); it != invokeRefs_.end(); ++it) {
+      diag.debug() << "   " << it->second.useCount << " " << it->first.type() <<
+          (it->first.type()->isStatic() ? " [static]" : "");
+    }
+#endif
+  }
+
   for (DefnSet::iterator it = module->reflectedDefs().begin();
       it != module->reflectedDefs().end(); ++it) {
     if (const TypeDefn * td = dyn_cast<TypeDefn>(*it)) {
@@ -819,7 +891,9 @@ void Reflector::addDefn(const Defn * def) {
 
 void Reflector::addMembers(const IterableScope * scope, ReflectedScope * rs) {
   for (const Defn * m = scope->firstMember(); m != NULL; m = m->nextInScope()) {
-    addMember(m, rs);
+    if (!m->isNonreflective()) {
+      addMember(m, rs);
+    }
   }
 }
 
@@ -883,16 +957,32 @@ void Reflector::addMember(const Defn * def, ReflectedScope * rs) {
     case Defn::Function:
     case Defn::Macro: {
       const FunctionDefn * fn = static_cast<const FunctionDefn *>(def);
-      if (!fn->isIntrinsic()) {
+      const FunctionType * fnType = fn->functionType();
+      if (!fn->isIntrinsic() && !fn->isNonreflective()) {
         cg_.nameTable().addName(fn->name())->use();
         DASSERT(fn->functionType());
-        rs->addTypeRef(fn->functionType());
+        rs->addTypeRef(fnType);
         for (ParameterList::const_iterator it = fn->functionType()->params().begin();
             it != fn->functionType()->params().end(); ++it) {
           const ParameterDefn * p = *it;
           //rs->addTypeRef(p->type());
           cg_.nameTable().addName(p->name())->use();
         }
+
+        const Type * selfType = fnType->selfParam() != NULL ? fnType->selfParam()->type() : NULL;
+        // For now, we only support reflected invocation of global, class, or interface methods.
+        if (fn->isSingular() && !fn->isUnsafe() &&
+            (selfType == NULL ||
+                selfType->typeClass() == Type::Class ||
+                selfType->typeClass() == Type::Interface)) {
+          UniqueMethodKey key(".invoke", fnType);
+          InvokeInfo & info = invokeMap_[key];
+          info.useCount++;
+          if (info.fn == NULL) {
+            info.fn = cg_.genInvokeFn(fnType);
+          }
+        }
+
         diag.debug() << "Emitting metadata for method " << def;
       }
       break;
@@ -914,7 +1004,7 @@ ReflectedScope * Reflector::getReflectedScope(const Defn * def) {
     return it->second;
   }
 
-  ReflectedScope * rsym = new ReflectedScope(cg_.nameTable());
+  ReflectedScope * rsym = new ReflectedScope(cg_.nameTable(), invokeMap_);
   std::string metaVarName(".meta." + def->linkageName());
   if (def->defnType() == Defn::Mod) {
     metaVarName = ".meta.module." + def->linkageName();
@@ -1303,35 +1393,37 @@ void Reflector::emitMethodDefn(ReflectedScope * rs, const FunctionDefn * fn, raw
     tag = TAG_DEF_UNDEF;
   }
 
+  char flags = 0;
   if (fn->visibility() == Private) {
-    tag |= TAG_DEFFLAG_PRIVATE;
+    flags |= DEFNFLAG_PRIVATE;
   } else if (fn->visibility() == Protected) {
-    tag |= TAG_DEFFLAG_PROTECTED;
+    flags |= DEFNFLAG_PROTECTED;
+  }
+
+  // Definition modifiers
+  if (fn->isFinal()) {
+    flags |= DEFNFLAG_FINAL;
+  }
+
+  if (fn->isAbstract()) {
+    flags |= DEFNFLAG_ABSTRACT;
+  }
+
+  if (fn->storageClass() == Storage_Static) {
+    flags |= DEFNFLAG_STATIC;
   }
 
   NameTable::Name * name = cg_.nameTable().getName(fn->name());
   DASSERT_OBJ(name != NULL, fn);
 
-//  TAG_DEFMOD_ABSTRACT,      // Modifies a class or method to be abstract
-//  TAG_DEFMOD_VARIADIC,      // Modifies a parameter to be variadic
-//  TAG_DEFMOD_KEYWORD_ONLY,  // Modifies a parameter to be keyword-only
-
-  // Definition modifiers
-  if (fn->isFinal()) {
-    out << char(TAG_DEFMOD_FINAL);
-  }
-  if (fn->isAbstract()) {
-    out << char(TAG_DEFMOD_ABSTRACT);
-  }
-  if (fn->storageClass() == Storage_Static || fn->storageClass() == Storage_Global) {
-    out << char(TAG_DEFMOD_STATIC);
-  }
-
   // Definition tag and name
-  out << tag << VarInt(name->encodedIndex());
+  out << tag << flags << VarInt(name->encodedIndex());
 
   // Return type and parameter types.
   rs->encodeTypeRef(fn->functionType(), out);
+
+  if (fn->dispatchIndex() != -1) {
+  }
 
   // Declare parameters
   const ParameterList & params = fn->functionType()->params();

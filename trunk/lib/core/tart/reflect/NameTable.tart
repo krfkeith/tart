@@ -70,14 +70,19 @@ import tart.collections.ImmutableList;
     }
   }
 
-	/** Return the fully-qualified name for the given name id. */
-  def getQualifiedName(i:int) -> String {
+	/** Return the complete name for the given name id. */
+  def getName(i:int) -> String {
     var index = i >> 1;
     if (i & COMPOUND_NAME_FLAG) != 0 {
       return getCompoundName(index);
     } else {
       return strings[index];
     }
+  }
+  
+	/** Return the fully-qualified name for the given name id. */
+  def getQualifiedName(i:int) -> String {
+    return getName(i);
   }
   
 	/** Return the scope part of the name associated with a given name id. */

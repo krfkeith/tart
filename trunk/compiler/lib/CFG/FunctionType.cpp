@@ -306,6 +306,12 @@ void FunctionType::whyNotSingular() const {
 }
 
 ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
+  if (isEqual(cn.fromType)) {
+    if (cn.resultValue != NULL) {
+      *cn.resultValue = cn.fromValue;
+    }
+    return IdenticalTypes;
+  }
   return Incompatible;
 }
 

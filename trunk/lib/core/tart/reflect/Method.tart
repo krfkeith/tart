@@ -9,7 +9,20 @@ final class Method : Member {
     var _methodPointer:Address[void];
   }
 
-  undef construct();
+  protected def construct(
+      name:String,
+      scopeName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[],
+      typeParams:Type[],
+      type:FunctionType,
+      params:Parameter[],
+      methodPointer:Address[void]) {
+    super(name, scopeName, kind, visibility, traits, attributes);
+    self._typeParams = typeParams;
+  }
 
   /** Array of type parameters. */
   final def typeParams:Type[] { get { return _typeParams; } }

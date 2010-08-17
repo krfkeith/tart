@@ -83,6 +83,17 @@ enum DefnTag {
 };
 
 /// -------------------------------------------------------------------
+/// Tag definitions for defn flags.
+
+enum DefnFlag {
+  DEFNFLAG_STATIC       = (1<<0),
+  DEFNFLAG_ABSTRACT     = (1<<1),
+  DEFNFLAG_FINAL        = (1<<2),
+  DEFNFLAG_PROTECTED    = (1<<3),
+  DEFNFLAG_PRIVATE      = (1<<4),
+};
+
+/// -------------------------------------------------------------------
 /// Tag definitions for module types.
 
 enum TypeTag {
@@ -108,6 +119,7 @@ enum TypeTag {
   // Derived types
 
   TAG_TYPE_FUNCTION = 16,   // Function type (flags, return-type, params...)
+  TAG_TYPE_FUNCTION_STATIC, // Function with no 'self' param.
   TAG_TYPE_BOUND_METHOD,    // Bound method (flags, return-type, params...)
   TAG_TYPE_TUPLE,           // Tuple table index follows
   TAG_TYPE_UNION,           // Tuple table index follows

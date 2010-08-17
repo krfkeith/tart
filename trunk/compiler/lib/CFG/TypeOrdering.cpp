@@ -295,8 +295,11 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
       if (result != 0) {
         return result;
       }
-      DFAIL("Implement");
-      //return compare(
+      result = compare(ft0->returnType(), ft1->returnType());
+      if (result != 0) {
+        return result;
+      }
+      return int(ft0->isStatic()) - int(ft1->isStatic());
     }
 
     case Type::BoundMethod: {

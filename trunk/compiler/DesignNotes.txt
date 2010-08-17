@@ -356,4 +356,7 @@ object
   .(field1 = value)
   .(field2 = value)
   .build()
- 
+
+Getting invoke functions for FunctionType from metadata.
+
+What are the keys to an invoke function?
