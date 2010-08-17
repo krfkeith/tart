@@ -216,17 +216,22 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
-        //} else if (param->type()->typeClass() == Type::NArray) {
-        //  diag.error(param) << "Invalid parameter type (native array)";
-        } else if (param->isVariadic() && param->type()->isSingular()) {
-          if (trace) {
-            diag.debug(target) << Format_Type << "  Analyzing variadic param " << param;
+        } else {
+          if (param->isVariadic() && param->type()->isSingular()) {
+            if (trace) {
+              diag.debug(target) << Format_Type << "  Analyzing variadic param " << param;
+            }
+            analyzeType(param->type(), Task_PrepTypeComparison);
+            param->setInternalType(getArrayTypeForElement(param->type()));
+            DASSERT_OBJ(param->internalType()->isSingular(), param);
+            analyzeType(param->internalType(), Task_PrepConstruction);
+            module->addSymbol(param->internalType()->typeDefn());
           }
-          analyzeType(param->type(), Task_PrepTypeComparison);
-          param->setInternalType(getArrayTypeForElement(param->type()));
-          DASSERT_OBJ(param->internalType()->isSingular(), param);
-          analyzeType(param->internalType(), Task_PrepConstruction);
-          module->addSymbol(param->internalType()->typeDefn());
+
+          // TODO: Check for other unsafe types.
+          if (param->type()->typeClass() == Type::NAddress) {
+            target->addTrait(Defn::Unsafe);
+          }
         }
 
         // TODO: Should only add the param as a member if we "own" it.
@@ -533,6 +538,10 @@ bool FunctionAnalyzer::resolveReturnType() {
     }
 
     DASSERT_OBJ(returnType != &NullType::instance, returnType);
+    // TODO: Check for other unsafe types.
+    if (returnType->typeClass() == Type::NAddress) {
+      target->addTrait(Defn::Unsafe);
+    }
 
     // Add implicit casts to return statements if needed.
     BlockList & blocks = target->blocks();

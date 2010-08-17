@@ -60,37 +60,40 @@ struct ReflectedMembers {
 
 class UniqueMethodKey {
 public:
-  UniqueMethodKey(
-      const char * name, const Type * returnType, const TupleType * paramTypes, bool isStatic)
-    : name_(name)
-    , returnType_(returnType)
-    , paramTypes_(paramTypes)
-    , isStatic_(isStatic)
-  {}
+  UniqueMethodKey(const char * name, const FunctionType * fnType);
 
   struct KeyInfo {
-    static inline const UniqueMethodKey getEmptyKey() {
-      return UniqueMethodKey(NULL, NULL, NULL, false);
-    }
-    static inline const UniqueMethodKey getTombstoneKey() {
-      return UniqueMethodKey(NULL, NULL, NULL, true);
-    }
-
+    static const UniqueMethodKey getEmptyKey();
+    static const UniqueMethodKey getTombstoneKey();
     static unsigned getHashValue(const UniqueMethodKey & key);
     static bool isEqual(const UniqueMethodKey & lhs, const UniqueMethodKey & rhs);
     static bool isPod() { return true; }
   };
 
+  const char * name() const { return name_; }
+  const FunctionType * type() const { return type_; }
+
 private:
   const char * name_;
-  const Type * returnType_;
-  const TupleType * paramTypes_;
-  bool isStatic_;
+  const FunctionType * type_;
 };
 
 struct MethodTagInfo : public TagInfo {
   FunctionDefn * method;
 };
+
+struct InvokeInfo : public TagInfo {
+  llvm::Function * fn;
+
+  InvokeInfo() : fn(NULL) {}
+};
+
+/// -------------------------------------------------------------------
+/// Map of invocation wrappers.
+
+typedef std::pair<UniqueMethodKey, InvokeInfo> InvokeArrayElement;
+typedef std::vector<InvokeArrayElement> InvokeArray;
+typedef llvm::DenseMap<UniqueMethodKey, InvokeInfo, UniqueMethodKey::KeyInfo> InvokeMap;
 
 /// -------------------------------------------------------------------
 /// Represents a single scope and all of the members within it.
@@ -98,11 +101,19 @@ struct MethodTagInfo : public TagInfo {
 class ReflectedScope {
 public:
   typedef std::pair<const Type *, TagInfo> TypeArrayElement;
-  typedef std::vector<TypeArrayElement > TypeArray;
+
+  typedef std::vector<TypeArrayElement> TypeArray;
+
   typedef llvm::DenseMap<const Type *, TagInfo, Type::KeyInfo> TypeMap;
   typedef llvm::DenseMap<UniqueMethodKey, MethodTagInfo, UniqueMethodKey::KeyInfo> MethodMap;
 
-  ReflectedScope(NameTable & names) : names_(names), var_(NULL), strm_(strmData_) {}
+  ReflectedScope(NameTable & names, InvokeMap & invokeMap)
+    : names_(names)
+    , invokeMap_(invokeMap)
+    , var_(NULL)
+    , strm_(strmData_)
+  {}
+
   ~ReflectedScope();
 
   void addTypeRef(const Type * type);
@@ -128,6 +139,8 @@ public:
 private:
   NameTable & names_;
   TypeMap types_;
+  InvokeMap & invokeMap_;
+
   llvm::GlobalVariable * var_;
   std::string strmData_;
   llvm::raw_string_ostream strm_;
@@ -322,6 +335,9 @@ private:
 
   ReflectedSymbolMap rsymMap_;
   GlobalVarMap globals_;
+
+  InvokeMap invokeMap_;
+  InvokeArray invokeRefs_;
 };
 
 }

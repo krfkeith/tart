@@ -1,6 +1,7 @@
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 import tart.reflect.CompositeType;
+import tart.reflect.Reflection;
 import tart.reflect.ReflectionMetadata;
 
 /** Base class of all reference types. */

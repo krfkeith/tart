@@ -4,6 +4,18 @@ final class Field : Member {
     var _type:Type;
     // static or instance?
   }
+  
+  def construct(
+      name:String,
+      scopeName:String,
+      //qualifiedName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[]) {
+    super(name, scopeName, kind, visibility, traits, attributes);
+  }
+
   //@Extern
   //final def getValue(self:Object) -> Object;
   //final def setValue(self:Object, value:Object);

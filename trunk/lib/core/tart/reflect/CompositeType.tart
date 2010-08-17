@@ -189,6 +189,6 @@ public class CompositeType : Type {
  	  _meta.readTypeParams();
  	  _meta.readFields();
  	  _meta.readConstructors();
- 	  _meta.readMethods();
-   }
+ 	  _meta.readMethods(self);
+  }
 }
