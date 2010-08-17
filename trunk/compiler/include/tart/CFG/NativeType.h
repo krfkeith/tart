@@ -44,6 +44,7 @@ public:
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   Expr * nullInitValue() const;
+  unsigned getHashValue() const;
 
   static inline bool classof(const AddressType *) { return true; }
   static inline bool classof(const Type * t) {
@@ -98,6 +99,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
+  unsigned getHashValue() const;
 
   static inline bool classof(const NativeArrayType *) { return true; }
   static inline bool classof(const Type * t) {

@@ -32,6 +32,8 @@ extern SystemClassMember<VariableDefn> functionType_invoke;
 extern SystemClassMember<FunctionDefn> functionType_invokeFn;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
+extern SystemClassMember<TypeDefn> rmd_InvokeFnType;
+
 // Members of tart.core.TypeInfoBlock.
 
 SystemClassMember<VariableDefn> tib_meta(Builtins::typeTypeInfoBlock, "_meta");
@@ -591,6 +593,15 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
 }
 
+const llvm::FunctionType * CodeGenerator::getInvokeFnType() {
+  if (invokeFnType_ == NULL) {
+    const Type * invokeTypeDefn = rmd_InvokeFnType.get()->typeValue();
+    invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
+  }
+
+  return invokeFnType_;
+}
+
 llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
   const std::string & invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
@@ -598,8 +609,7 @@ llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
     return invokeFn;
   }
 
-  const llvm::FunctionType * invokeFnType = cast<llvm::FunctionType>(
-      functionType_invoke.type()->irType());
+  const llvm::FunctionType * invokeFnType = getInvokeFnType();
   DASSERT((MDNode *)dbgContext_ == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);

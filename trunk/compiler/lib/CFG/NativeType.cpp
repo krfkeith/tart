@@ -143,6 +143,12 @@ Expr * AddressType::nullInitValue() const {
   return ConstantNull::get(SourceLocation(), this);
 }
 
+unsigned AddressType::getHashValue() const {
+  unsigned result = elementType_->getHashValue();
+  result ^= Type::NAddress;
+  return result;
+}
+
 void AddressType::format(FormatStream & out) const {
   out << elementType_ << "^";
 }
@@ -254,6 +260,12 @@ bool NativeArrayType::isEqual(const Type * other) const {
   }
 
   return false;
+}
+
+unsigned NativeArrayType::getHashValue() const {
+  unsigned result = elementType()->getHashValue();
+  result ^= Type::NArray;
+  return result;
 }
 
 void NativeArrayType::format(FormatStream & out) const {

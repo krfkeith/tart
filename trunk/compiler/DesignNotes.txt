@@ -357,6 +357,12 @@ object
   .(field2 = value)
   .build()
 
-Getting invoke functions for FunctionType from metadata.
+// ------------------------------------------------------------------------
 
-What are the keys to an invoke function?
+_data:Epilogue[char]
+
+_data:ArrayStart[char];
+_data:VariableLengthArray[char];
+
+// Redo Type::getHashCode();
+// Make function types canonical without paramters.

@@ -30,6 +30,8 @@
 
 namespace tart {
 
+extern SystemClassMember<TypeDefn> rmd_InvokeFnType;
+
 class TemplateParamAnalyzer : public TypeAnalyzer {
 public:
   TemplateParamAnalyzer(Defn * de)
@@ -128,6 +130,7 @@ bool DefnAnalyzer::analyzeModule() {
   //importSystemType(Builtins::typePackage);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+  analyzeDefn(rmd_InvokeFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to

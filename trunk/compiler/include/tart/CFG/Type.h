@@ -207,6 +207,11 @@ public:
       this type cannot be null-initialized. */
   virtual Expr * nullInitValue() const { return NULL; }
 
+  /** Compute a hash value for this type. */
+  virtual unsigned getHashValue() const {
+    return (uintptr_t(this) >> 4) ^ (uintptr_t(this) >> 9);
+  }
+
   // Overrides
 
   void trace() const;
@@ -230,8 +235,7 @@ public:
     static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
 
     static unsigned getHashValue(const Type * val) {
-      // TODO: Replace with hash of canonical type.
-      return (uintptr_t(val) >> 4) ^ (uintptr_t(val) >> 9);
+      return val != NULL ? val->getHashValue() : 0;
     }
 
     static bool isEqual(const Type * lhs, const Type * rhs) {

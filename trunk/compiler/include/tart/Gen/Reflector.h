@@ -244,6 +244,9 @@ public:
       and the definitions within it. */
   void emitNameTable(Module * module);
 
+  /** Generate the table of invocation functions. */
+  void emitInvokeFnTable(Module * module);
+
   /** Add a definition to the list of reflected members. */
   void addDefn(const Defn * def);
 
@@ -332,6 +335,7 @@ private:
   llvm::IRBuilder<true> builder_;    // LLVM builder
   llvm::Module * irModule_;
   llvm::GlobalVariable * nameTableVar_;
+  llvm::Constant * invokeFnTableVar_;
 
   ReflectedSymbolMap rsymMap_;
   GlobalVarMap globals_;

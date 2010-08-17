@@ -247,6 +247,15 @@ bool FunctionType::isReferenceType() const {
   return true; // TODO: Should be false
 }
 
+unsigned FunctionType::getHashValue() const {
+  unsigned result = returnType_->getHashValue();
+  result *= 0x5bd1e995;
+  result ^= result >> 24;
+  result ^= paramTypes()->getHashValue();
+
+  return result;
+}
+
 TypeShape FunctionType::typeShape() const {
   // It's a primitive when used as a function pointer
   return Shape_Primitive;

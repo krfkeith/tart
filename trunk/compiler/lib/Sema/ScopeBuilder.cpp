@@ -287,7 +287,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
     case ASTDecl::Alias:
       break;
 
-#endif
+    #endif
 
     case ASTDecl::Let:
       return new VariableDefn(Defn::Let, m, static_cast<const ASTDecl *>(ast));
@@ -312,6 +312,12 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
 
     case ASTDecl::Namespace:
       return new NamespaceDefn(m, ast);
+
+    case ASTDecl::TypeAlias: {
+      TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
+      tdef->setTypeValue(new TypeAlias(NULL));
+      return tdef;
+    }
 
     default:
       diag.fatal(ast) << "Can't create member " << nodeTypeName(ast->nodeType());
