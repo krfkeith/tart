@@ -378,6 +378,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
       case Type::Class:
         if (baseKind == Type::Class) {
           if (primaryBase == NULL) {
+            // TODO: Insure last field of base isn't a flexible array.
             isPrimary = true;
           } else {
             diag.error(target) << "classes can only have a single concrete supertype";
@@ -632,6 +633,16 @@ bool ClassAnalyzer::analyzeFields() {
     DASSERT(type->instanceFields_.size() == size_t(instanceFieldCount));
     DASSERT(type->instanceFieldCountRecursive() == instanceFieldCountRecursive);
     type->passes().finish(CompositeType::FieldPass);
+
+    for (size_t i = 0; i + 1 < type->instanceFields_.size(); ++i) {
+      VariableDefn * field = cast_or_null<VariableDefn>(type->instanceFields_[i]);
+      if (field != NULL) {
+        const Type * fieldType = dealias(field->type());
+        if (fieldType->typeClass() == Type::FlexibleArray) {
+          diag.error(field) << "Member of type FlexibleArray must be the last member.";
+        }
+      }
+    }
   }
 
   return true;
@@ -1376,6 +1387,10 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
       diag.error(var) << "Native array types cannot be default initialized";
     }
 
+    return NULL;
+  }
+
+  if (fieldType->typeClass() == Type::FlexibleArray) {
     return NULL;
   }
 

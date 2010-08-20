@@ -22,7 +22,7 @@ import tart.reflect.Type;
   // readonly var traceOffsets:Address[uint16];
 
   /** Compiler-generated table of class methods. */
-  readonly var methodTable:NativeArray[Address[void], 0];
+  readonly var methodTable:FlexibleArray[Address[void]];
 
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used

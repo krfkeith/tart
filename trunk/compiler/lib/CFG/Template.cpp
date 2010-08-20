@@ -325,6 +325,7 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   Type * proto = tdef->typeValue();
   if (proto->typeClass() != Type::NAddress &&
       proto->typeClass() != Type::NArray &&
+      proto->typeClass() != Type::FlexibleArray &&
       proto->typeClass() != Type::TypeLiteral) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
     return tdef->typeValue();
@@ -359,6 +360,9 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 
     case Type::NArray:
       return NativeArrayType::get(TupleType::get(paramValues));
+
+    case Type::FlexibleArray:
+      return FlexibleArrayType::get(TupleType::get(paramValues));
 
     case Type::TypeLiteral:
       return TypeLiteralType::get(paramValues[0]);

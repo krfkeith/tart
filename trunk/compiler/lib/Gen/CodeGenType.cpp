@@ -4,6 +4,7 @@
 
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/StructBuilder.h"
+#include "tart/Gen/ReflectionMetadata.h"
 #include "tart/Gen/RuntimeTypeInfo.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -32,7 +33,7 @@ extern SystemClassMember<VariableDefn> functionType_invoke;
 extern SystemClassMember<FunctionDefn> functionType_invokeFn;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
-extern SystemClassMember<TypeDefn> rmd_InvokeFnType;
+extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
 
 // Members of tart.core.TypeInfoBlock.
 
@@ -211,7 +212,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
   //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
   if (!type->typeDefn()->isNonreflective()) {
-    builder.addField(reflector_.getReflectedScope(type->typeDefn())->var());
+    builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
   } else {
     builder.addNullField(tib_meta.type());
   }
@@ -593,23 +594,23 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
 }
 
-const llvm::FunctionType * CodeGenerator::getInvokeFnType() {
+const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
-    const Type * invokeTypeDefn = rmd_InvokeFnType.get()->typeValue();
+    const Type * invokeTypeDefn = rmd_CallAdapterFnType.get()->typeValue();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
   }
 
   return invokeFnType_;
 }
 
-llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
+llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
   const std::string & invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
   if (invokeFn != NULL) {
     return invokeFn;
   }
 
-  const llvm::FunctionType * invokeFnType = getInvokeFnType();
+  const llvm::FunctionType * invokeFnType = getCallAdapterFnType();
   DASSERT((MDNode *)dbgContext_ == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);

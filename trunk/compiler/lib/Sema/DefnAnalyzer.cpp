@@ -30,7 +30,7 @@
 
 namespace tart {
 
-extern SystemClassMember<TypeDefn> rmd_InvokeFnType;
+extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
 
 class TemplateParamAnalyzer : public TypeAnalyzer {
 public:
@@ -130,7 +130,7 @@ bool DefnAnalyzer::analyzeModule() {
   //importSystemType(Builtins::typePackage);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
-  analyzeDefn(rmd_InvokeFnType.get(), Task_PrepCodeGeneration);
+  analyzeDefn(rmd_CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
@@ -497,7 +497,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
     switch (tdef->typeValue()->typeClass()) {
       case Type::Primitive:
         if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
-          importSystemType(Builtins::typeSimpleType);
+          importSystemType(Builtins::typeType);
         }
         break;
 
@@ -518,7 +518,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           module->addSymbol(tdef);
           module->reflectedDefs().insert(tdef);
           importSystemType(Builtins::typeType);
-          importSystemType(Builtins::typeSimpleType);
+          importSystemType(Builtins::typePrimitiveType);
         }
 
         break;
@@ -596,7 +596,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
   switch (type->typeClass()) {
     case Type::Primitive:
-      importSystemType(Builtins::typeSimpleType);
+      importSystemType(Builtins::typePrimitiveType);
       break;
 
     case Type::Enum:
@@ -606,7 +606,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
     case Type::Class:
     case Type::Interface:
       importSystemType(Builtins::typeCompositeType);
-      importSystemType(Builtins::typeSimpleType);
+      importSystemType(Builtins::typePrimitiveType);
       break;
 
     case Type::Function: {

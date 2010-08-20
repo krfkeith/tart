@@ -62,6 +62,9 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::NArray:
       return visitNativeArrayType(static_cast<const NativeArrayType *>(in));
 
+    case Type::FlexibleArray:
+      return visitFlexibleArrayType(static_cast<const FlexibleArrayType *>(in));
+
     case Type::TypeLiteral:
       return visitTypeLiteralType(static_cast<const TypeLiteralType *>(in));
 
@@ -150,6 +153,15 @@ const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {
   const TupleType * typeArgs = cast<TupleType>(visit(in->typeArgs()));
   if (typeArgs != in->typeArgs()) {
     return NativeArrayType::get(typeArgs);
+  }
+
+  return in;
+}
+
+const Type * TypeTransform::visitFlexibleArrayType(const FlexibleArrayType * in) {
+  const TupleType * typeArgs = cast<TupleType>(visit(in->typeArgs()));
+  if (typeArgs != in->typeArgs()) {
+    return FlexibleArrayType::get(typeArgs);
   }
 
   return in;

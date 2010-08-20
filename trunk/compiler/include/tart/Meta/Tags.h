@@ -31,9 +31,8 @@ enum SectionTag {
   TAG_SECTION_INNER_TYPES = 5,
   TAG_SECTION_NAMESPACES = 6,
   TAG_SECTION_FIELDS = 7,
-  TAG_SECTION_CONSTRUCTORS = 8,
-  TAG_SECTION_METHODS = 9,
-  TAG_SECTION_PROPERTIES = 10,
+  TAG_SECTION_METHODS = 8,
+  TAG_SECTION_PROPERTIES = 9,
 };
 
 /// -------------------------------------------------------------------

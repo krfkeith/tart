@@ -56,6 +56,7 @@ class FunctionType;
 class PrimitiveType;
 class AddressType;
 class NativeArrayType;
+class FlexibleArrayType;
 class UnionType;
 class TupleType;
 class BoundMethodType;
@@ -341,6 +342,7 @@ public:
   llvm::DICompositeType genDICompositeType(const CompositeType * type);
   llvm::DIType genDIEnumType(const EnumType * type);
   llvm::DICompositeType genDINativeArrayType(const NativeArrayType * type);
+  llvm::DICompositeType genDIFlexibleArrayType(const FlexibleArrayType * type);
   llvm::DIDerivedType genDIAddressType(const AddressType * type);
   llvm::DICompositeType genDIUnionType(const UnionType * type);
   llvm::DICompositeType genDITupleType(const TupleType * type);
@@ -361,10 +363,10 @@ public:
   llvm::Constant * createTypeObjectPtr(const Type * type);
 
   // Generate the function that unboxes arguments from reflection interfaces.
-  llvm::Function * genInvokeFn(const FunctionType * fnType);
+  llvm::Function * genCallAdapterFn(const FunctionType * fnType);
 
   // Generate the the type of an invoke function.
-  const llvm::FunctionType * getInvokeFnType();
+  const llvm::FunctionType * getCallAdapterFnType();
 
   /** Generate a reference to the TypeInfoBlock for a proxy type. */
   llvm::Constant * genProxyType(const CompositeType * ctype);

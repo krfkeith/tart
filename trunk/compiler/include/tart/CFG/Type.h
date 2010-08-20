@@ -235,11 +235,29 @@ public:
     static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
 
     static unsigned getHashValue(const Type * val) {
+      return (uintptr_t(val) >> 4) * 0x5bd1e995;
+    }
+
+    static bool isEqual(const Type * lhs, const Type * rhs) {
+      return lhs == rhs;
+    }
+
+    static bool isPod() { return true; }
+  };
+
+  // Structure used when using type pointers as a key.
+  struct CanonicalKeyInfo {
+    static inline const Type * getEmptyKey() { return reinterpret_cast<const Type *>(0); }
+    static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
+
+    static unsigned getHashValue(const Type * val) {
       return val != NULL ? val->getHashValue() : 0;
     }
 
     static bool isEqual(const Type * lhs, const Type * rhs) {
-      // TODO: Replace with canonical comparison
+      if (lhs != NULL && rhs != NULL && lhs != getTombstoneKey() && rhs != getTombstoneKey()) {
+        return lhs->isEqual(rhs);
+      }
       return lhs == rhs;
     }
 
