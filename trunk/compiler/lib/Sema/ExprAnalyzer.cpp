@@ -1008,6 +1008,31 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
   }
 
+  // Handle flexible arrays.
+  if (const FlexibleArrayType * faType = dyn_cast<FlexibleArrayType>(arrayType)) {
+    if (!AnalyzerBase::analyzeType(faType, Task_PrepTypeComparison)) {
+      return &Expr::ErrorVal;
+    }
+
+    const Type * elemType = faType->typeParam(0);
+    DASSERT_OBJ(elemType != NULL, faType);
+
+    if (args.size() != 1) {
+      diag.fatal(ast) << "Incorrect number of array subscripts";
+      return &Expr::ErrorVal;
+    }
+
+    Expr * indexExpr = args[0];
+    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+      diag.fatal(ast) << "Flexible array subscript must be integer type, but is " <<
+          indexExpr->type();
+      return &Expr::ErrorVal;
+    }
+
+    // TODO: Attempt to cast arg to an integer type of known size.
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
+  }
+
   // Handle tuples
   if (const TupleType * tt = dyn_cast<TupleType>(arrayType)) {
     if (args.size() != 1) {
@@ -1422,6 +1447,7 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(!type->isReferenceType());
   DASSERT(type->typeClass() != Type::NAddress);
   DASSERT(type->typeClass() != Type::NArray);
+  DASSERT(type->typeClass() != Type::FlexibleArray);
   DASSERT(type->isSingular());
 
   TypePair conversionKey(type, Builtins::typeObject.get());

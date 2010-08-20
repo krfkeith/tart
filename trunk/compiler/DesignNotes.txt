@@ -18,10 +18,11 @@ Design TODOS:
   * SSAB.
   * Problems to solve:
     Still need to know how to mark objects in different spaces.
+  * Some way to import C++ data structures into Tart - for things like pthreads.
   
 Hard problems:
   -- GC
-  -- Backtrace
+  -- Exception backtrace
   -- Reflection size
 
 Working on currently:
@@ -31,12 +32,14 @@ Working on currently:
   -- GC
   -- Static If
   -- Compile-time configuration options. @TargetProperty.
-  -- Reduce number of generated strings, or eliminate dead reflection globals.
+  -- Reduce number of generated strings, or eliminate dead reflection globals. (working on it)
   -- Exception backtrace.
   -- Hashing of integers
 
 Implementation TODOS:
 
+* Need a generic hashing class in tart/Common.
+* Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * See if we can move template stuff into the type (CompositeType and FunctionType)
@@ -52,8 +55,8 @@ Implementation TODOS:
   * Unit tests for lexical type ordering.
 * I/O library.
 * Win32
-  * Find an assembler
-* Link-time coalescing
+  * Find an assembler.
+* Link-time coalescing (use LLVM plugin)
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
 * Closures - Closure cells.
@@ -131,6 +134,7 @@ Implementation TODOS:
 * Matrix literals + Matrix class.
 * Comprehensions
 * Anonymous inner classes.
+* Insure typealiases aren't circular.
 
 Doc errors:
 
@@ -207,10 +211,6 @@ Variadic templates:
 // ------------------------------------------------------------------------
 
 Link-time code generation.
-
-[Inject]
-def construct(s:Someclass) {
-}
 
 var s:SomeClass = injector.create();
 
@@ -359,10 +359,19 @@ object
 
 // ------------------------------------------------------------------------
 
-_data:Epilogue[char]
+Field:
+  StaticVar
+  InstanceVar
+  Constant
 
-_data:ArrayStart[char];
-_data:VariableLengthArray[char];
+// ------------------------------------------------------------------------
 
 // Redo Type::getHashCode();
-// Make function types canonical without paramters.
+// Make function types canonical without paramters. (Can that be done?)
+
+Why can't we remove the names of the parameters from FunctionType? Here's an example:
+
+  closures[index](arg=10);
+  
+  The type of 'closures' is: fn (arg:int)[]
+

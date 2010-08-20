@@ -101,12 +101,13 @@ import tart.collections.ImmutableList;
   	INNER_TYPES = 5,
   	NAMESPACES = 6,
   	FIELDS = 7,
-  	CONSTRUCTORS = 8,
-  	METHODS = 9,
-  	PROPERTIES = 10,
+  	METHODS = 8,
+  	PROPERTIES = 9,
   }
-  
-  typealias InvokeFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+
+  typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+  //typealias GetAdapterFn:static fn (func:Address[void], obj:Address[void]) -> Object;
+  //typealias SetAdapterFn:static fn (func:Address[void], obj:Address[void], value:Object);
 
   private {
     var _value:optional Object;
@@ -119,9 +120,9 @@ import tart.collections.ImmutableList;
   	var _derivedTypes:optional Type[];
   	var _compositeTypes:Address[Address[TypeInfoBlock]];
   	var _enumTypes:Address[Address[EnumInfoBlock]];
-  	var _invokeFns:Address[InvokeFn];
+  	var _invokeFns:Address[CallAdapterFn];
+  	var _methods:Address[Address[void]];
   	// field offsets
-  	// methods.
   	// globals
   }
   
@@ -193,14 +194,6 @@ import tart.collections.ImmutableList;
     let length = decoder.seekToSection(SectionTag.FIELDS);
     if length != 0 {
     	Debug.writeLn("Length of field section = ", length.toString());
-    }
-  }
-
-  def readConstructors() {
-    let decoder = StreamDecoder(_strmDefns);
-    let length = decoder.seekToSection(SectionTag.CONSTRUCTORS);
-    if length != 0 {
-    	Debug.writeLn("Length of constructor section = ", length.toString());
     }
   }
 

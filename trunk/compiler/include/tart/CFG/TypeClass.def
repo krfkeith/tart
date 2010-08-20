@@ -12,6 +12,7 @@ TYPE_CLASS(Tuple)         // A tuple type
 TYPE_CLASS(Union)         // A disjoint type
 TYPE_CLASS(NAddress)      // A machine address
 TYPE_CLASS(NArray)        // A primitive array of values
+TYPE_CLASS(FlexibleArray) // Zero-length array for object epilogue
 TYPE_CLASS(Unit)          // A type which consists of a single constant value
 TYPE_CLASS(CVQual)        // A const/volatile qualified type
 TYPE_CLASS(TypeLiteral)   // A type of a type literal.

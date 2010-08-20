@@ -20,7 +20,7 @@ public final class String : Iterable[char] {
     
     /** For non-slice strings, this is the array of bytes immediately
         following the string instance in memory. */
-    var _data:NativeArray[ubyte, 0];
+    var _data:FlexibleArray[ubyte];
 
     /** Custom allocation function for strings. */
     static def alloc(len:int) -> String {

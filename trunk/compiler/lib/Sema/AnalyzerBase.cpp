@@ -415,6 +415,8 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
         addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, typeArgs);
       } else if (const NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, typeArgs);
+      } else if (const FlexibleArrayType * np = dyn_cast<FlexibleArrayType>(type)) {
+        addSpecCandidate(loc, candidates, NULL, &FlexibleArrayType::typedefn, typeArgs);
       } else if (const TypeLiteralType * np = dyn_cast<TypeLiteralType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &TypeLiteralType::typedefn, typeArgs);
       }
@@ -653,6 +655,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
 
       case Type::NAddress:
       case Type::NArray:
+      case Type::FlexibleArray:
       case Type::Union:
       case Type::Tuple: {
         size_t numTypes = in->numTypeParams();
@@ -752,7 +755,8 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
       return EnumAnalyzer(in).analyze(task);
 
     case Type::NAddress:
-    case Type::NArray: {
+    case Type::NArray:
+    case Type::FlexibleArray: {
       analyzeType(type->typeParam(0), task);
       return true;
     }

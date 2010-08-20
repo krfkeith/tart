@@ -237,6 +237,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDINativeArrayType(static_cast<const NativeArrayType *>(type));
       break;
 
+    case Type::FlexibleArray:
+      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(type));
+      break;
+
     case Type::NAddress:
       result = genDIAddressType(static_cast<const AddressType *>(type));
       break;
@@ -443,6 +447,21 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
 
 DICompositeType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, type->size());
+  return dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_array_type,
+      dbgCompileUnit_,
+      "",
+      dbgFile_,
+      0,
+      getSizeOfInBits(type->irEmbeddedType()),
+      getAlignOfInBits(type->irEmbeddedType()),
+      getInt64Val(0), 0,
+      DIType(),
+      dbgFactory_.GetOrCreateArray(&subrange, 1));
+}
+
+DICompositeType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
+  DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, 0);
   return dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_array_type,
       dbgCompileUnit_,

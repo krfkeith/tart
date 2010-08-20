@@ -11,6 +11,7 @@
 #include "tart/Sema/TypeAnalyzer.h"
 
 #include "tart/Common/Diagnostics.h"
+#include "tart/Common/Hashing.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -248,12 +249,11 @@ bool FunctionType::isReferenceType() const {
 }
 
 unsigned FunctionType::getHashValue() const {
-  unsigned result = returnType_->getHashValue();
-  result *= 0x5bd1e995;
-  result ^= result >> 24;
-  result ^= paramTypes()->getHashValue();
-
-  return result;
+  IncrementalHash hash;
+  hash.add(returnType_->getHashValue());
+  hash.add(paramTypes()->getHashValue());
+  hash.add(isStatic());
+  return hash.end();
 }
 
 TypeShape FunctionType::typeShape() const {

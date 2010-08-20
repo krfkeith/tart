@@ -35,7 +35,7 @@ class EntryPoint {
     }
   }
 
-  @Extern("gc_safepoint_map") static var gcSafepointMap:NativeArray[int, 0];
+  @Extern("gc_safepoint_map") static var gcSafepointMap:FlexibleArray[int];
 	@Extern("run_static_ctors") static def runStaticCtors();
   @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
 }

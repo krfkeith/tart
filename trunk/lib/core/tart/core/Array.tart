@@ -9,7 +9,7 @@ import tart.core.Math.min;
 public final class Array[%ElementType] : Iterable[ElementType] {
   private {
     var _size:int;
-    var _data:NativeArray[ElementType, 0];
+    var _data:FlexibleArray[ElementType];
 
     /** Array allocator function */
     static def alloc(size:int) -> Array {
