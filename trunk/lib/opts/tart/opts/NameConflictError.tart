@@ -1,0 +1,10 @@
+/** Exception thrown when there is a naming conflict between two program arguments. */
+public class NameConflictError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

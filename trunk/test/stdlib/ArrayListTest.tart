@@ -1,0 +1,58 @@
+import tart.collections.ArrayList;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ArrayListTest);
+}
+
+class ArrayListTest : Test {
+  def testConstruct() {
+    let a = ArrayList[int32](1, 2, 3);
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+	
+  def testImplicitType() {
+    let a = ArrayList(1, 2, 3);
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+	
+	def testOutOfRange() {
+	  let a = ArrayList[int32](1, 2, 3);
+	  try {
+	    let s = a[4];
+	    fail("Out of range access");
+	  } catch :IndexError {
+	  }
+	
+	  try {
+	    let s = a[-1];
+	    fail("Out of range access");
+	  } catch :IndexError {
+	  }
+	}
+	
+	def testAdd() {
+	  let a = ArrayList[int32](1, 2, 3);
+	  a.add(4);
+	  assertEq(4, a.size);
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
+	  assertEq(4, a[3]);
+	}
+	
+	def testRemove() {
+	  let a = ArrayList[int32](1, 2, 3);
+	  a.remove(1);
+	  assertEq(2, a.size);
+	  assertEq(1, a[0]);
+	  assertEq(3, a[1]);
+	}
+}

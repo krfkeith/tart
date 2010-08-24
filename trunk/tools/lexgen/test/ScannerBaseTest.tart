@@ -1,0 +1,35 @@
+import tart.testing.Test;
+import tartx.lexgen.shared.ScannerBase;
+import tartx.lexgen.shared.Location;
+import tartx.lexgen.shared.LogWriter;
+import tart.io.TextReader;
+import tart.io.StringReader;
+
+class ScannerBaseTest : Test {
+  class TestScanner : ScannerBase {
+    def construct(reader:TextReader, log:LogWriter) {
+      super("TestSource", reader, log);
+    }
+  }
+  
+  var log:FakeLogWriter;
+  var reader:TextReader;
+  var scanner:TestScanner;
+  
+  override setUp {
+    log = FakeLogWriter();
+    reader = StringReader("a");
+    scanner = TestScanner(reader, log);
+  }
+  
+  def testInitialState {
+    assertEq("", scanner.tokenText);
+    let f = scanner.tokenLoc.file;
+    assertEq("TestSource", f);
+    assertEq(1, scanner.tokenLoc.col);
+    assertEq(1, scanner.tokenLoc.line);
+  }
+  
+  def testReadChar {
+  }
+}

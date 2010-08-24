@@ -1,0 +1,47 @@
+/** Useful functions on iterators. */
+namespace Iterators {
+  /** Return true if both iterable sequences are the same. */
+  def equal[%T](a0:Iterable[T], a1:Iterable[T]) -> bool {
+    let iter0 = a0.iterate();
+    let iter1 = a1.iterate();
+    repeat {
+      let v0 = iter0.next();
+      let v1 = iter1.next();
+      return true if v0 isa void and v1 isa void;
+      classify v0 as t0:T {
+        classify v1 as t1:T {
+          continue if t0 == t1;
+        }
+      }
+      
+      return false;
+    }
+  }
+  
+  class Enumerator[%T] : Iterator[(int, T)] {
+    let iter:Iterator[T];
+    var index:int = 0;
+    
+    def construct(iter:Iterator[T]) {
+      self.iter = iter;
+    }
+    
+    def next -> (int, T) or void {
+      classify iter.next() {
+        as value:T {
+          return index++, value;
+        } else {
+          return;
+        }
+      }
+    }
+  }
+  
+  def enumerate[%T](iter:Iterator[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter);
+  }
+
+  def enumerate[%T](iter:Iterable[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter.iterate());
+  }
+}

@@ -1,0 +1,23 @@
+import tart.testing.Test;
+import tart.io.StringReader;
+import tartx.lexgen.gen.LexGenParser;
+import tartx.lexgen.gen.LexGenScanner.LToken;
+import tartx.lexgen.gen.LexGenScanner.LState;
+
+class LexGenParserTest : Test {
+  def createParser(s:String) -> LexGenParser {
+    return LexGenParser("", StringReader(s), FakeLogWriter());
+  }
+  
+  def testEmptyInput {
+    let lg = createParser("");
+    assertTrue(lg.matchToken(LToken.EOF));
+    //assertEq(LexGenScanner
+  }
+
+  def testParseCodeBlock {
+    let lg = createParser("{a{b}} xxx");
+    let cb = lg.parseCodeBlock();
+    assertEq("{a{b}}", cb.toString());
+  }
+}

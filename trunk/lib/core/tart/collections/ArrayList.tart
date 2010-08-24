@@ -1,0 +1,130 @@
+import tart.core.Math.max;
+
+/** Array-backed list type. */
+final class ArrayList[%ElementType] : List[ElementType] {
+  private {
+    var _data:ElementType[];
+    var _size:int;
+
+    def grow(amount:int) {
+      let nsize = self._size + amount;
+      if _data.size < nsize {
+        let ndata = ElementType[](nsize + nsize / 2 + 16);
+        ElementType[].copyElements(ndata, 0, _data, 0, self._size);
+        self._data = ndata;
+      }
+
+      self._size = nsize;
+    }
+  }
+
+  /** Construct a new ArrayList from a variable number of input arguments.
+      Parameters:
+          data: The list of values to store in the ArrayList.
+          initialCapacity: This optional parameter, if present, indicates
+              how much initial space to reserve.
+   */
+  def construct(data:ElementType...; initialCapacity:int = 0) {
+    initialCapacity = max(initialCapacity, data.size);
+    self._data = ElementType[](initialCapacity);
+    ElementType[].copyElements(self._data, 0, data, 0, data.size);
+    _size = data.size;
+  }
+
+  /** Construct a new ArrayList from an array.
+      Parameters:
+          data: The array of values to store in the ArrayList.
+          initialCapacity: This optional parameter, if present, indicates
+              how much initial space to reserve.
+   */
+  def construct(data:Array[ElementType], initialCapacity:int = 0) {
+    initialCapacity = max(initialCapacity, data.size);
+    self._data = ElementType[](initialCapacity);
+    ElementType[].copyElements(self._data, 0, data, 0, data.size);
+    _size = data.size;
+  }
+
+  def add(e:ElementType) {
+    let index = _size;
+    grow(1);
+    _data[index] = e;
+  }
+
+  def insert(index:int, e:ElementType) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index <= _size);
+    grow(1);
+    ElementType[].copyElements(_data, index + 1, _data, index, _size - index);
+    _data[index] = e;
+  }
+
+  def remove(index:int) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index < _size);
+    ElementType[].copyElements(_data, index, _data, index + 1, _size - index - 1);
+    --_size;
+  }
+  
+  def clear() {
+    _size = 0;
+  }
+
+  def [index:int]:ElementType {
+    get {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _size);
+      return _data[index];
+    }
+
+    set {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _size);
+      _data[index] = value;
+    }
+  }
+  
+  def size:int {
+    get { return _size; }
+  }
+
+  def isEmpty:bool {
+    get { return _size == 0; }
+  }
+  
+  def contains(e:ElementType) -> bool {
+    for i = 0; i < _size; ++i {
+			return true if _data[i] == e;
+    }
+    return false;
+  }
+
+  /** The amount of space currently reserved. */
+  def capacity:int {
+    get { return _data.size; }
+  }
+
+  def iterate -> Iterator[ElementType] {
+    return ArrayListIterator(self);
+  }
+
+  /** Iterator class for ArrayList. */
+  private final class ArrayListIterator : Iterator[ElementType], HasLength {
+    private var list:ArrayList;
+    private var index:int;
+    
+    def construct(list:ArrayList) {
+      self.list = list;
+      self.index = 0;
+    }
+    
+    def next -> ElementType or void {
+      if (self.index < self.list.size) {
+        return self.list._data[self.index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:int { get { return list.size; } }
+  }
+}

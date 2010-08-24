@@ -1,0 +1,7 @@
+import Memory.Address;
+
+namespace GC {
+  @Extern("GC_init") def init(safepointMap:Address[int]);
+  @Extern("GC_alloc") def alloc(size:int) -> Object;
+  @Extern("GC_collect") def collect();
+}

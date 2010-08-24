@@ -1,0 +1,76 @@
+// Definition of all CFG expression types
+
+EXPR_TYPE(Invalid)        // An error node
+EXPR_TYPE(NoOp)           // A do-nothing expression that returns void
+
+// Constants
+EXPR_TYPE(ConstInt)       // An integer constant
+EXPR_TYPE(ConstFloat)     // A float constant
+EXPR_TYPE(ConstString)    // A string constant
+EXPR_TYPE(ConstNull)      // The null value
+EXPR_TYPE(ConstObjRef)    // A constant object
+EXPR_TYPE(ConstNArray)    // A constant native array
+EXPR_TYPE(TypeName)       // A reference to a type name
+EXPR_TYPE(TypeLiteral)    // A reference to a type
+
+// Definitions
+EXPR_TYPE(LValue)         // A reference to a variable or field
+EXPR_TYPE(ScopeName)      // A reference to a scope name
+EXPR_TYPE(ElementRef)     // A reference to an element in a native array
+EXPR_TYPE(PatternVar)     // A pattern variable
+
+// Operators
+EXPR_TYPE(Assign)         // Assignment
+EXPR_TYPE(PostAssign)     // Assign, return value before assignment
+EXPR_TYPE(MultiAssign)    // Multiple assignments which occur simultaneously.
+EXPR_TYPE(InitVar)        // Local variable initialization
+EXPR_TYPE(New)            // A call to allocate storage for an object
+EXPR_TYPE(BinaryOpcode)   // A binary IR opcode
+EXPR_TYPE(Compare)        // A binary comparison instruction
+EXPR_TYPE(InstanceOf)     // IsInstanceOf test
+EXPR_TYPE(RefEq)          // Reference equals
+EXPR_TYPE(Not)            // Logical Not
+EXPR_TYPE(And)            // Logical And
+EXPR_TYPE(Or)             // Logical Or
+EXPR_TYPE(Complement)     // Bitwise Complement
+EXPR_TYPE(PtrDeref)       // Pointer dereference
+EXPR_TYPE(Prog2)          // Two exressions, eval both, take second
+
+// Function calls (high-level)
+EXPR_TYPE(Call)           // General call
+EXPR_TYPE(ExactCall)      // Call an exact method (no vtable lookup)
+EXPR_TYPE(Construct)      // Constructor call
+EXPR_TYPE(Specialize)     // Call to a template with type arguments.
+
+// Function calls (implementation)
+EXPR_TYPE(FnCall)         // Function call
+EXPR_TYPE(VTableCall)     // Virtual method call
+EXPR_TYPE(CtorCall)       // Constructor call (returns 1st arg)
+EXPR_TYPE(IndirectCall)   // Indirect call
+EXPR_TYPE(TupleCtor)      // Tuple constructor.
+
+// Casts
+EXPR_TYPE(ImplicitCast)   // Implicit cast
+EXPR_TYPE(ExplicitCast)   // Explicit cast
+EXPR_TYPE(UpCast)         // Cast from subclass to base/iface
+EXPR_TYPE(TryCast)        // Cast from base/iface to subclass, throw if fail
+EXPR_TYPE(DynamicCast)    // Cast from base/iface to subclass, null if fail
+EXPR_TYPE(UnionCtorCast)  // Cast to a union type.
+EXPR_TYPE(UnionMemberCast)// Cast from a union type.
+EXPR_TYPE(CheckedUnionMemberCast)// Cast from a union type, with type check.
+EXPR_TYPE(UnboxCast)      // Cast from object to primitive type
+EXPR_TYPE(Truncate)       // Number truncation
+EXPR_TYPE(SignExtend)     // Extend signed number
+EXPR_TYPE(ZeroExtend)     // Extend unsigned number
+EXPR_TYPE(IntToFloat)     // Integer to float.
+EXPR_TYPE(BitCast)        // Reinterpret cast
+
+// Special objects
+EXPR_TYPE(IRValue)        // An IR-level value.
+EXPR_TYPE(LocalCall)      // A jump to a local subroutine.
+EXPR_TYPE(ArrayLiteral)   // An array literal
+EXPR_TYPE(BoundMethod)    // A reference to a method and a base object
+EXPR_TYPE(ClosureEnv)     // A reference to a closure environment.
+
+// Structural
+EXPR_TYPE(SharedValue)    // Expression referenced multiple times but eval'd once.

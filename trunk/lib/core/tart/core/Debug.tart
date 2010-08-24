@@ -1,0 +1,71 @@
+import tart.annex.Intrinsic;
+
+/** Simple debug printing facility for testing the compiler. */
+namespace Debug {
+  @Intrinsic
+  def stringify[%T](expr:T) -> String;
+
+  @Intrinsic
+  def locationOf[%T](expr:T) -> String;
+
+  @Extern("Debug_write")
+  def write(msg:String);
+
+  def write(msgs:String...) {
+    write(String.concat(msgs));
+  }
+  
+  @Extern("Debug_writeLn")
+  def writeLn(msg:String);
+  
+  def writeLn(msgs:String...) {
+    writeLn(String.concat(msgs));
+  }
+  
+  @Extern("Debug_fail")
+  def fail(msg:String);
+
+  def fail(msgs:String...) {
+    fail(String.concat(msgs));
+  }
+  
+  def assertTrueFailed(loc:String, cond:String) {
+    fail(loc, " Assertion failed: ", cond);
+  }
+  
+  def assertFalseFailed(loc:String, cond:String) {
+    fail(loc, " Assertion failed, expected false: ", cond);
+  }
+  
+  def assertEqFailed(loc:String, expected:String, actual:String) {
+    fail(loc, " Assertion failure, expected: ", expected, ", actual value: ", actual);
+  }
+  
+  def assertNeFailed(loc:String, expected:String, actual:String) {
+    fail(loc, " Assertion failure: ", expected, " not expected to equal ", actual);
+  }
+  
+  macro assertTrue(cond:bool) {
+    if not cond {
+  		assertTrueFailed(locationOf(cond), stringify(cond));
+    }
+  }
+
+  macro assertFalse(cond:bool) {
+    if cond {
+  		assertFalseFailed(locationOf(cond), stringify(cond));
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T) {
+    if expected != actual {
+			assertEqFailed(locationOf(actual), stringify(expected), actual.toString());
+    }
+  }
+
+  macro assertNe[%T](expected:T, actual:T) {
+    if expected == actual {
+			assertNeFailed(locationOf(actual), stringify(expected), actual.toString());
+    }
+  }
+}

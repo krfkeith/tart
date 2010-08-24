@@ -1,0 +1,52 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.ptrDiff;
+import tart.core.Memory.zeroPtr;
+import tart.reflect.Reflection;
+
+/** A value type representing a range of addresses. */
+@Reflection(Reflection.Detail.NONE) struct AddressRange {
+  private {
+    var _first:Address[ubyte];
+    var _last:Address[ubyte];
+  }
+  
+  def construct() {
+    _first = _last = null;
+  }
+  
+  def construct(first:Address[ubyte], last:Address[ubyte]) {
+    self._first = first;
+    self._last = last;
+  }
+
+  def construct(base:Address[ubyte], size:int) {
+    self._first = base;
+    self._last = Memory.addressOf(base[size]);
+  }
+  
+  def first:Address[ubyte] {
+    get { return _first; }
+    set { _first = value; }
+  }
+
+  def last:Address[ubyte] {
+    get { return _last; }
+    set { _last = value; }
+  }
+
+  //def first[%T]:Address[T] { get { return ???; } }
+  //def last[%T]:Address[T] { get { return ???; } }
+  def size:int { get { return ptrDiff(_first, _last); } }
+  def contains(a:Address[ubyte]) -> bool {
+    //
+    return true;
+  }
+  
+  def toString() -> String {
+    return "";
+  }
+}
+
+@Reflection(Reflection.Detail.NONE) def infixEQ(a0:AddressRange, a1:AddressRange) -> bool {
+  return a0.first is a1.first and a0.last is a1.last;
+}

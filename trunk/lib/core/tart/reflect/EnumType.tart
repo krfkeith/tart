@@ -1,0 +1,17 @@
+import tart.core.Memory.Address;
+
+/** Interface type for enums. */
+public class EnumType : SimpleType {
+  private {
+    var _supertype:Type;
+    var _values:Field[];
+  }
+
+  undef construct();
+
+  /** Pointer to this type's supertype, or null. */
+  final def supertype:Type /* or void */ { get { return self._supertype; } }
+  
+  /** Array of enumeration constants. */
+  final def values:Field[] { get { return self._values; } }
+}

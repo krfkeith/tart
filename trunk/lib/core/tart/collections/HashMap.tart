@@ -1,0 +1,297 @@
+import tart.collections.KeyError;
+
+/** A quadratically-probed hash map. */
+final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : Map[KeyType, ValueType] {
+  private {
+    enum EntryState : uint8 {
+      EMPTY,
+      DELETED,
+      OCCUPIED
+    }
+    
+    struct Entry {
+      var key:KeyType;
+      var value:ValueType;
+      var state:EntryState;
+      
+      def construct(key:KeyType, value:ValueType) {
+        self.key = key;
+        self.value = value;
+        self.state = EntryState.OCCUPIED;
+      }
+    }
+    
+    var _data:Entry[];
+    var _size:int;
+    let _hashFn:HashFn;
+
+    def findEntry(key:KeyType) -> int {
+      if _data.size > 16 {
+        let mask = _data.size - 1;
+        var index = int(_hashFn.hash(key)) & mask;
+        var probe = 1;
+      
+        // First, see if the item is already in the table
+        while probe <= 4 {
+          let st = self._data[index].state;
+          return -1 if st == EntryState.EMPTY;
+          return index if st == EntryState.OCCUPIED and self._data[index].key == key;
+          index = (index + probe) & mask;
+          probe += 1;
+        }
+        
+        return -1;
+      } else if _data.size > 0 {
+        for i = 0; i < _size; ++i {
+          if _data[i].key == key {
+            return i;
+          }
+        }
+  
+        return -1;
+      } else {
+        return -1;
+      }
+    }
+
+    def rehash(oldItems:Entry[], oldLength:int, newLength:int) {
+      let mask = newLength - 1;
+      self._data = Entry[](newLength);
+      for i = 0; i < oldLength; ++i {
+        if oldItems[i].state == EntryState.OCCUPIED {
+          let key = oldItems[i].key;
+          var index = int(_hashFn.hash(key)) & mask;
+          var probe = 1;
+          // Rehashing presumes that all keys are already unique.
+          while self._data[index].state == EntryState.OCCUPIED {
+            index = (index + probe) & mask;
+            probe += 1;
+            if probe > 4 {
+              // If it takes more than 4 probes, then expand the table again and
+              // start the rehashing over.
+              rehash(oldItems, oldLength, newLength * 2);
+              return;
+            }
+          }
+          
+          _data[index] = Entry(key, oldItems[i].value);
+        }
+      }
+    }
+  }
+
+  def construct() {
+    self._data = Entry[](0);
+    self._size = 0;
+    self._hashFn = HashFn();
+  }
+
+  def setValue(key:KeyType, value:ValueType) {
+    repeat {
+      if _data.size > 16 {
+        // Compute the hash of the item
+        let mask = _data.size - 1;
+        var index = int(_hashFn.hash(key)) & mask;
+        var probe:int = 1;
+        
+        // First, see if the item is already in the table
+        while probe <= 4 {
+          switch self._data[index].state {
+            case EMPTY
+            case DELETED {
+            _data[index] = Entry(key, value);
+            _size++;
+            return;
+            }
+            
+            case OCCUPIED {
+              if self._data[index].key == key {
+                _data[index] = Entry(key, value);
+                return;
+              }
+            }
+          }
+  
+          index = (index + probe) & mask;
+          probe += 1;
+        }
+        
+        // Fall through an rehash
+      } else if _data.size > 0 {
+        for i = 0; i < _size; ++i {
+          if _data[i].key == key {
+            _data[i] = Entry(key, value);
+            return;
+          }
+        }
+  
+        if _size < 16 {
+          _data[_size] = Entry(key, value);
+          _size++;
+          return;
+        }
+      } else {
+        _data = Entry[](16);
+        _data[0] = Entry(key, value);
+        _size = 1;
+        return;
+      }
+
+      // Rehash and try again
+      rehash(_data, _data.size, _data.size * 2);
+    }
+  }
+
+  /** Access a value by key. */
+  def [key:KeyType]:ValueType {
+    get {
+      var index:int = findEntry(key);
+      if index < 0 {
+        throw KeyError();
+      }
+
+      return _data[index].value;
+    }
+
+    set {
+      setValue(key, value);
+    }
+  }
+  
+  def size:int { get { return _size; } }
+
+  def isEmpty:bool { get { return _size == 0; } }
+
+  def contains(key:KeyType) -> bool {
+    return findEntry(key) >= 0;
+  }
+
+  def clear() {
+    _data = Entry[](0);
+    _size = 0;
+  }
+
+  def iterate -> Iterator[(KeyType, ValueType)] {
+    return EntryIterator(self);
+  }
+
+  def keys:Iterator[KeyType] { get { return KeyIterator(self); } }
+  def values:Iterator[ValueType] { get { return ValueIterator(self); } }
+  
+  def add(entry:(KeyType, ValueType)) {
+    setValue(entry[0], entry[1]);
+  }
+
+  def addAll(entries:(KeyType, ValueType)...) {
+    addAll(entries);
+  }
+
+  def addAll(entries:Iterable[(KeyType, ValueType)]) {
+    addAll(entries.iterate());
+  }
+
+  def addAll(entries:Iterator[(KeyType, ValueType)]) {
+    for entry in entries {
+      add(entry);
+    }
+  }
+
+  def remove(key:KeyType) -> bool {
+    if _data.size > 16 {
+      var index:int = findEntry(key);
+      if index >= 0 {
+        //throw KeyError();
+      }
+  
+      return false;
+    } else if _data.size > 0 {
+      for i = 0; i < _size; ++i {
+        if _data[i].key == key {
+          Memory.arrayMove(_data.elementAddress(i), _data.elementAddress(i+1), _size - i - 1);
+          --_size;
+          return true;
+        }
+      }
+
+      return false;
+    } else {
+      return false;
+    }
+  }
+  
+  def removeAll(keys:KeyType...) {
+    removeAll(keys);
+  }
+
+  def removeAll(keys:Iterable[KeyType]) {
+    removeAll(keys.iterate());
+  }
+  
+  def removeAll(keys:Iterator[KeyType]) {
+    for key in keys {
+      remove(key);
+    }
+  }
+  
+  private class MapIteratorBase {
+    protected {
+      var _entries:Entry[];
+      var _index:int;
+      var _maxIndex:int;
+    }
+    
+    protected def construct(map:HashMap) {
+      self._entries = map._data;
+      self._index = 0;
+      self._maxIndex = cond(_entries.size <= 16, map._size, _entries.size);
+    }
+  }
+  
+  private final class KeyIterator : MapIteratorBase, Iterator[KeyType] {
+    def construct(map:HashMap) {
+      super(map);
+    }
+
+    def next -> KeyType or void {
+      while _index < _maxIndex {
+        let pos = _index++;
+        return _entries[pos].key if _entries[pos].state == EntryState.OCCUPIED;
+      }
+      
+      return;
+    }
+  }
+  
+  private final class ValueIterator : MapIteratorBase, Iterator[ValueType] {
+    def construct(map:HashMap) {
+      super(map);
+    }
+
+    def next -> ValueType or void {
+      while _index < _maxIndex {
+        let pos = _index++;
+        return _entries[pos].value if _entries[pos].state == EntryState.OCCUPIED;
+      }
+      
+      return;
+    }
+  }
+  
+  private final class EntryIterator : MapIteratorBase, Iterator[(KeyType, ValueType)] {
+    def construct(map:HashMap) {
+      super(map);
+    }
+
+    def next -> (KeyType, ValueType) or void {
+      while _index < _maxIndex {
+        let pos = _index++;
+        return (_entries[pos].key, _entries[pos].value)
+            if _entries[pos].state == EntryState.OCCUPIED;
+      }
+      
+      return;
+    }
+  }
+  
+  // TODO: Add equals, computeHash (for immutable collections only).
+}

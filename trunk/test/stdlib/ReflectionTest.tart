@@ -1,0 +1,148 @@
+import tart.reflect.Module;
+import tart.reflect.Method;
+import tart.reflect.Type;
+import tart.reflect.ComplexType;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ReflectionTest);
+}
+
+var savedValue:int32;
+
+def sample() {
+}
+
+def sample2(arg:int32) {
+  savedValue = arg;
+}
+
+@Attribute(Attribute.Target.ANY, Attribute.Retention.RUNTIME)
+class RetainedAttr {
+}
+
+class TestClass {
+  // No-arg constructor
+  def construct {
+  }
+  
+  // Single-arg constructor
+  def construct(s:String) {
+  }
+  
+  @RetainedAttr def square(arg:int32) -> int32 {
+    return arg * arg;
+  }
+}
+
+class ReflectionTest : Test {
+	def testModuleReflection() {
+	  let m = Module.thisModule();
+	  assertEq("ReflectionTest", m.name);
+	  assertEq("ReflectionTest", m.qualifiedName);
+	  assertEq("", m.packageName);
+	  assertEq(3, m.types.size);
+	  assertEq(3, m.methods.size);
+	}
+	
+	def testModuleQualifiedName() {
+	  let m = Module.of(String);
+	  assertEq("String", m.name);
+	  assertEq("tart.core.String", m.qualifiedName);
+	  assertEq("tart.core", m.packageName);
+	}
+	
+	def testModuleMethods() {
+	  let m = Module.thisModule();
+	  var foundSample = false;
+	  for method in m.methods {
+	    if method.name == "sample" {
+	      foundSample = true;
+	    }
+	  } 
+	
+	  assertTrue(foundSample);
+	}
+	
+	def testFindMethod() {
+	  let m = Module.thisModule();
+	  let f1 = m.findMethod("sample");
+	  assertTrue(f1 isa Method);
+	  let f2 = m.findMethod("ample");
+	  assertFalse(f2 isa Method);
+	}
+	
+	def testCallMethod() {
+	  let m = Module.thisModule();
+	  let method = typecast[Method](m.findMethod("sample2"));
+		savedValue = 0;
+		method.call(m, 77);
+		assertEq(77, savedValue);
+	}
+	
+	def testFindClass() {
+	  let ty:Type = Type.of(TestClass);
+	  //assertEq("tart.reflect.ComplexType", ty.__typeName);
+	  assertEq(Type.TypeKind.CLASS, ty.typeKind);
+	  assertTrue(ty isa ComplexType);
+	}
+
+	def testCallInstanceMethod() {
+	  let ty:Type = Type.of(TestClass);
+	  let ct = typecast[ComplexType](ty);
+	  let method = typecast[Method](ct.findMethod("square"));
+	  let tclass = TestClass();
+	  assertEq(484, typecast[int32](method.call(tclass, 22)));
+	}
+
+  def testConstruct() {
+    let ty:Type = Type.of(TestClass);
+    let ct = typecast[ComplexType](ty);
+    let method = typecast[Method](ct.findMethod("square"));
+    let tclass = typecast[TestClass](ct.create());
+    assertEq(484, typecast[int32](method.call(tclass, 22)));
+  }
+
+  def testConstructWithArg() {
+    let ty:ComplexType = ComplexType.of(TestClass);
+    let ctor = ty.constructors[1];
+
+    let tclass = typecast[TestClass](ty.create(ctor, "Hello"));
+    
+    //let method = typecast[Method](ty.findMethod("square"));
+    //assertEq(484, typecast[int32](method.call(tclass, 22)));
+  }
+
+  def testSubclassTest() {
+    assertTrue(ComplexType.of(ReflectionTest).isSubclass(Test));
+    assertFalse(ComplexType.of(Test).isSubclass(ReflectionTest));
+  }
+
+  def testRetainedAttribute {
+    let ty:Type = Type.of(TestClass);
+    let ct = typecast[ComplexType](ty);
+    let method = typecast[Method](ct.findMethod("square"));
+    assertEq(1, method.attributes.size);
+    let attr = method.findAttribute(RetainedAttr);
+    assertTrue(attr isa RetainedAttr);
+    let attr2 = method.findAttribute(String);
+    assertFalse(attr isa String);
+    //assertEq(null, attr);
+  }
+  
+  def testTypeOfString {
+    let ty = "".type;
+	  assertEq("String", ty.name);
+	  assertEq("tart.core", ty.scopeName);
+	  assertEq("tart.core.String", ty.qualifiedName);
+	  assertEq("Object", ty.supertype.name);
+  }
+
+  def testGetStrings {
+    let m = Module.thisModule();
+    let ty:ComplexType = ComplexType.of(TestClass);
+    ty.test();
+    //let s = m.strings;
+  }
+}

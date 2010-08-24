@@ -1,0 +1,90 @@
+import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
+import tart.reflect.ComplexType;
+import tart.reflect.ReflectionMetadata;
+
+/** Base class of all reference types. */
+public class Object : Hashable {
+  private var __tib:Address[TypeInfoBlock];
+  private var __gcstate:int;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length types.
+    
+      '__valloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It returns the
+      memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+  */
+  @Intrinsic @Unsafe
+  protected static def __valloc[%T](size:int) -> T;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length object types.
+    
+      '__pvalloc' allocates a block of memory given by 'size', then
+      initializes its vtable pointer to the pointer for 'T'. It then
+      returns the memory block, bitcast to type T.
+    
+      The caller is responsible for insuring that 'size' is large enough
+      to hold the resulting type.
+      
+      This version is similar to '__valloc', except that 'size' is a pointer
+      which will be bitcast to int. This is used in conjunction with
+      'zeroPtr' to calculate the offset of a field within a data structure.
+  */
+  @Intrinsic @Unsafe
+  protected static def __pvalloc[%T, %S](size:T) -> S;
+
+  //@Intrinsic @Unsafe
+  //public static def __trace[%T](obj:Address[T], count:int, traceOp:Address[ubyte]);
+
+  //@Extern("GC_traceRef") private static def __traceImpl[%T](
+  //    obj:Address[Object], count:int, traceOp:Address[ubyte]);
+
+  //@Extern("GC_traceStruct16") private static def __traceImpl[%T](
+  //    obj:Address[T], offsets:Address[int16], count:int, traceOp:Address[ubyte]);
+
+  /** Return the reflected type of this object. */
+  //def type:tart.reflect.Type { get { return self.__tib.type; } }
+
+  /** Default constructor. */
+  def construct() {}
+
+  /** Implicitly convert non-object values to Boxed types. */
+  static def coerce[%T] (value:T) -> Object { return ValueRef[T](value); }
+  static def coerce(value:Object) -> Object { return value; }
+
+  /** Set a finalization callback to be called when this object has been deleted.
+      Note that the finalizer must *not* hold a reference to the object or it
+      will never be deleted. */
+  //final def addFinalizer(finalizer:fn) {}
+
+  /** Remove a finalizer that was registered via addFinalizer. */
+  //final def removeFinalizer(finalizer:fn) {}
+
+  /** Return the fully-qualified name of this object's class. */
+  final def __typeName:String { get { return __tib.qualifiedName; } }
+
+	/** Return the reflected type of this object. */
+  final def type:ComplexType { get {
+    return ReflectionMetadata.getComplexType(__tib);
+  } }
+
+	/** Return true if the type of this object is (or is a subtype of) 'baseType'. */
+  final def __typeHasBase(baseType:Address[TypeInfoBlock]) -> bool {
+    return Memory.deref(__tib).hasBase(baseType);
+  }
+
+  /** Return a string representation of this object. */
+  def toString() -> String {
+    return String.concat("<", __tib.qualifiedName, ">");
+  }
+
+  /** Return a hash value for this object. The base version hashes the object address. */
+  def computeHash -> uint64 {
+    return Hashing.hash(Memory.objectAddress(self));
+  }
+}
