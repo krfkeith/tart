@@ -10,6 +10,8 @@ namespace tart {
 
 class TracerBase {
 public:
+  virtual ~TracerBase() {}
+
   // Can't use pure virtual because we're not linking with the cpp lib.
   virtual void execute(uint8_t * basePtr, intptr_t * traceTable) {
     (void)basePtr;
@@ -17,7 +19,7 @@ public:
   };
 };
 
-template <class TraceAction> class Tracer : public TracerBase {
+template <class TraceAction> class TracerX : public TracerBase {
 private:
   TraceAction action;
 

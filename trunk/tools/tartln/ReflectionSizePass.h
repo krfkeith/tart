@@ -13,7 +13,7 @@ public:
   static char ID;
 
   ReflectionSizePass()
-    : ModulePass(&ID)
+    : ModulePass(ID)
     , globalSize_(0)
     , stringSize_(0)
     , methodCount_(0)

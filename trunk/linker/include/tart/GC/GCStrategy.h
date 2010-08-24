@@ -42,14 +42,17 @@ struct StackTraceTable : public llvm::FoldingSetNode {
   StackTraceTable() {}
   StackTraceTable(const EntryList & srcEntries)
     : entries(srcEntries)
+    , label(NULL)
   {}
 
   StackTraceTable(const StackTraceTable & src)
-    : entries(src.entries)
+    : llvm::FoldingSetNode(src)
+    , entries(src.entries)
     , label(src.label)
   {}
 
   void operator=(const StackTraceTable & src) {
+    llvm::FoldingSetNode::operator=(src);
     entries = src.entries;
     label = src.label;
   }

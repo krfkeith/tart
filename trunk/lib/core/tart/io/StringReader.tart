@@ -4,7 +4,7 @@ final class StringReader : TextReader {
     var pos:int;
     var str:String;
   }
-  
+
   def construct(str:String) {
     self.str = str;
     self.pos = 0;
@@ -14,11 +14,11 @@ final class StringReader : TextReader {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
     if from is SeekFrom.CURRENT { offset += pos; }
     else if from is SeekFrom.END { offset += str.size; }
-    
-    pos = Math.min(str.size, offset);
+
+    pos = int(Math.min(str.size, offset));
     return pos;
   }
-  
+
   def atEnd: bool { get { return pos >= str.size; } }
   def canRead:bool { get { return true; } }
   def canWrite:bool { get { return false; } }

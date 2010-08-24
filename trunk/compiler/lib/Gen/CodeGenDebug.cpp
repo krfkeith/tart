@@ -297,7 +297,7 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
 
 DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
-  DASSERT(di.Verify());
+  //DASSERT(di.Verify());
   if (type->typeClass() == Type::Class) {
     di = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_pointer_type,
@@ -318,7 +318,6 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
 DIType CodeGenerator::genDIParameterType(const Type * type) {
   // TODO: Need to take 'shape' into account.
   DIType di = genDIType(type);
-  DASSERT(di.Verify());
   if (type->typeClass() == Type::Class || type->typeClass() == Type::TypeLiteral) {
     di = dbgFactory_.CreateDerivedTypeEx(
         dwarf::DW_TAG_pointer_type,
@@ -378,18 +377,7 @@ DIDerivedType CodeGenerator::genDITypeMember(const Type * type, const StructType
 }
 
 DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
-  DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
-      dwarf::DW_TAG_structure_type,
-      dbgCompileUnit_,
-      type->typeDefn()->linkageName().c_str(),
-      genDIFile(type->typeDefn()),
-      getSourceLineNumber(type->typeDefn()->location()),
-      getSizeOfInBits(type->irType()),
-      getAlignOfInBits(type->irType()),
-      getInt64Val(0), 0,
-      DIType(),
-      DIArray());
-
+  DIType placeHolder = dbgFactory_.CreateTemporaryType();
   dbgTypeMap_[type] = placeHolder;
 
   const DefnList & fields = type->instanceFields();

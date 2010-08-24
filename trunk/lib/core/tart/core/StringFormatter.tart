@@ -27,7 +27,7 @@ class StringFormatter {
   
   def build() -> String {
     let it = formatString.iterate();
-    var prevCh = 0;
+    var prevCh:char = 0;
     var state = State.TEXT;
     var fieldIndex = 0;
     repeat {

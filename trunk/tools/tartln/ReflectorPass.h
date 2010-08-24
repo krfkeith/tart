@@ -56,7 +56,7 @@ public:
   static char ID;
 
   ReflectorPass()
-    : ModulePass(&ID)
+    : ModulePass(ID)
   {}
 
   ~ReflectorPass();

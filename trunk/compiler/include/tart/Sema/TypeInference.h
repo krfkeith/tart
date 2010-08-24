@@ -24,6 +24,8 @@ class CullableChoicePoint;
 class ChoicePoint {
 public:
 
+  virtual ~ChoicePoint() {}
+
   // Update conversion rankings
   virtual void update() = 0;
 

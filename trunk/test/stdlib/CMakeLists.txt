@@ -74,12 +74,12 @@ foreach(SRC_FILE ${TART_SRC})
 
   # Generate debugging symbols
   # TODO(talin): This doesn't work and I have no idea why
-  if ($DSYMUTIL)
+  #if ($DSYMUTIL)
     add_custom_command(OUTPUT "${EXE_FILE}.dSYM/Contents/Resources/DWARF/${EXE_FILE}"
         COMMAND ${DSYMUTIL} ${EXE_FILE}
         MAIN_DEPENDENCY "${EXE_FILE}"
         COMMENT "Generating debug symbols for ${EXE_FILE}")
-  endif ($DSYMUTIL)
+  #endif ($DSYMUTIL)
 
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
   add_dependencies("${EXE_FILE}.run" libcore libtesting)

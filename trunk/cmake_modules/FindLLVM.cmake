@@ -134,7 +134,7 @@ if (NOT MSVC)
   find_llvm_library(MIPS_INFO LLVMMipsInfo)
 
   # Architecture: PIC16
-  find_llvm_library(PIC16 LLVMPIC16)
+  find_llvm_library(PIC16_CODE_GEN LLVMPIC16CodeGen)
   find_llvm_library(PIC16_ASM_PRINTER LLVMPIC16AsmPrinter)
   find_llvm_library(PIC16_INFO LLVMPIC16Info)
 
@@ -163,7 +163,7 @@ find_llvm_library(X86_INFO LLVMX86Info)
 
 if (NOT MSVC)
   # Architecture: XCore
-  find_llvm_library(XCORE LLVMXCore)
+  find_llvm_library(XCORE_CODE_GEN LLVMXCoreCodeGen)
   find_llvm_library(XCORE_ASM_PRINTER LLVMXCoreAsmPrinter)
   find_llvm_library(XCORE_INFO LLVMXCoreInfo)
 endif (NOT MSVC)

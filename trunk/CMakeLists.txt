@@ -73,6 +73,7 @@ check_cxx_source_compiles(
 check_type_size(int SIZEOF_INT)
 check_type_size(long SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
+check_type_size("void*" SIZEOF_VOID_PTR)
 
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)

@@ -35,18 +35,24 @@
 /** Whether GCC builtin atomic functions are available. */
 #cmakedefine HAVE_GCC_ATOMICS 1
 
+<<<<<<< local
+=======
 /** Whether GCC thread local support is available. */
 #cmakedefine HAVE_GCC_THREAD_LOCAL 1
 
+>>>>>>> other
 /** Whether the posix_memalign() function is available. */
 #cmakedefine HAVE_POSIX_MEMALIGN 1
 
 /** Whether the valloc() function is available. */
 #cmakedefine HAVE_VALLOC 1
 
+<<<<<<< local
+=======
 /** Whether pthreads is available. */
 #cmakedefine HAVE_PTHREADS 1
 
+>>>>>>> other
 #if _MSC_VER
   #define snprintf _snprintf
 #endif

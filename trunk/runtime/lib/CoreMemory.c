@@ -18,7 +18,7 @@ void * PageAllocator_allocImpl(int pageSize, int numPages) {
 #elif HAVE_VALLOC
   return valloc(pageSize * numPages);
 #else
-  #error("Missing aligned memory allocator for platform.")
+  //#error("Missing aligned memory allocator for platform.")
   (void)pageSize;
   (void)numPages;
   return NULL;
@@ -33,9 +33,7 @@ void PageAllocator_freeImpl(void * mem, int size) {
   free(mem);
   (void)size;
 #else
-  #error("Missing aligned memory allocator for platform.")
-  (void)pageSize;
-  (void)numPages;
-  return NULL;
+  (void)mem;
+  (void)size;
 #endif
 }

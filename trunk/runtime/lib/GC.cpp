@@ -12,6 +12,13 @@
 #include <unistd.h>
 #endif
 
+#define USE_PTHREAD_THREAD_LOCAL 0
+#if !HAVE_GCC_THREAD_LOCAL && HAVE_PTHREADS
+  #include <pthread.h>
+  #undef USE_PTHREAD_THREAD_LOCAL
+  #define USE_PTHREAD_THREAD_LOCAL 1
+#endif
+
 extern "C" {
   void GC_init(size_t *);
   LocalAllocState * GC_getLocalAllocState();
@@ -34,7 +41,11 @@ static SafePointEntry * safePointTable;
 //static SurvivorSpace * ssFrom = &ss[1];
 
 #if HAVE_GCC_THREAD_LOCAL
-  __thread LocalAllocState * las;
+  __thread LocalAllocState * tldLas;
+#endif
+
+#if USE_PTHREAD_THREAD_LOCAL
+  pthread_key_t lasKey;
 #endif
 
 inline size_t GC_align(size_t size) {
@@ -108,6 +119,10 @@ void GC_addSegments(size_t size, Segment ** seglist) {
 void GC_init(size_t * safepointMap) {
   pageSize = sysconf(_SC_PAGESIZE);
 
+  #if USE_PTHREAD_THREAD_LOCAL
+    pthread_key_create(&lasKey, NULL);
+  #endif
+
   // Alloc survivor spaces
   ss[0].range.first = ss[0].pos = (char *) GC_getPages(0x8000);
   ss[0].range.last = ss[0].range.first + 0x8000;
@@ -132,9 +147,19 @@ void GC_init(size_t * safepointMap) {
 
 LocalAllocState * GC_getLocalAllocState() {
   #if HAVE_GCC_THREAD_LOCAL
+    // TODO: Get rid of this check, instead create LocalAllocState on thread startup.
+    if (tldLas == NULL) {
+      tldLas = (LocalAllocState *)malloc(sizeof(LocalAllocState));
+      tldLas->pos = tldLas->end = NULL;
+    }
+    return las;
+  #elif USE_PTHREAD_THREAD_LOCAL
+    LocalAllocState * las = (LocalAllocState *)pthread_getspecific(lasKey);
+    // TODO: Get rid of this check, instead create LocalAllocState on thread startup.
     if (las == NULL) {
       las = (LocalAllocState *)malloc(sizeof(LocalAllocState));
       las->pos = las->end = NULL;
+      pthread_setspecific(lasKey, las);
     }
     return las;
   #else
@@ -145,7 +170,11 @@ LocalAllocState * GC_getLocalAllocState() {
 
 void GC_syncImpl(LocalAllocState * las) {
   CallFrame * framePtr;
-  __asm__("movq %%rbp, %0" :"=r"(framePtr));
+  #if SIZEOF_VOID_PTR == 8
+    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+  #else
+    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #endif
 
   while (framePtr != NULL) {
     //void * fp = _Unwind_FindEnclosingFunction(framePtr->returnAddr);
@@ -240,10 +269,15 @@ public:
 
 void GC_collect() {
   printf("Checking for safe points\n");
-  tart::Tracer<ObjectPrinter> tracer;
+  //tart::Tracer<ObjectPrinter> tracer;
 
   CallFrame * framePtr;
-  __asm__("movq %%rbp, %0" :"=r"(framePtr));
+  #if SIZEOF_VOID_PTR == 8
+    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+  #else
+    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #endif
+
 
   SafePointEntry * spEnd = &safePointTable[numSafePoints];
   while (framePtr != NULL) {

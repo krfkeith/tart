@@ -34,7 +34,7 @@ target_link_libraries(tartc
     ${LLVM_MSP430_CODE_GEN}
     ${LLVM_MSP430_INFO}
     ${LLVM_PIC16_ASM_PRINTER}
-    ${LLVM_PIC16}
+    ${LLVM_PIC16_CODE_GEN}
     ${LLVM_PIC16_INFO}
     ${LLVM_POWERPC_ASM_PRINTER}
     ${LLVM_POWERPC_CODE_GEN}
@@ -50,7 +50,7 @@ target_link_libraries(tartc
     ${LLVM_X86_CODE_GEN}
     ${LLVM_X86_DISASSEMBLER}
     ${LLVM_X86_INFO}
-    ${LLVM_XCORE}
+    ${LLVM_XCORE_CODE_GEN}
     ${LLVM_XCORE_ASM_PRINTER}
     ${LLVM_XCORE_INFO}
     ${LLVM_IPO}
@@ -106,7 +106,7 @@ target_link_libraries(tartln
     ${LLVM_MSP430_CODE_GEN}
     ${LLVM_MSP430_INFO}
     ${LLVM_PIC16_ASM_PRINTER}
-    ${LLVM_PIC16}
+    ${LLVM_PIC16_CODE_GEN}
     ${LLVM_PIC16_INFO}
     ${LLVM_POWERPC_ASM_PRINTER}
     ${LLVM_POWERPC_CODE_GEN}
@@ -122,7 +122,7 @@ target_link_libraries(tartln
     ${LLVM_X86_CODE_GEN}
     ${LLVM_X86_DISASSEMBLER}
     ${LLVM_X86_INFO}
-    ${LLVM_XCORE}
+    ${LLVM_XCORE_CODE_GEN}
     ${LLVM_XCORE_ASM_PRINTER}
     ${LLVM_XCORE_INFO}
     ${LLVM_IPO}

@@ -16,5 +16,3 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 # Mock framework
 add_library(gmock STATIC
     ${TART_SOURCE_DIR}/third-party/gmock-1.1.0/src/gmock-all.cc)
-
-#add_subdirectory(scarcity)
