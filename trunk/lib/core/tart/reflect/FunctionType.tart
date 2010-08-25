@@ -25,7 +25,7 @@ class FunctionType : Type {
 
   def construct(
   		returnType:Type,
-  		selfType:Type,
+  		selfType:optional Type,
   		paramTypes:Type[],
     	invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
     super(TypeKind.FUNCTION);
@@ -61,12 +61,20 @@ class FunctionType : Type {
   
   final override toString -> String {
     let sb = StringBuilder("fn ");
-    sb.append(paramTypes.toString());
+    if not paramTypes.isEmpty {
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in paramTypes {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("({0})", ",".join(typeStrings)));
+    }
+
     if returnType is not PrimitiveType.VOID {
       sb.append(" -> ");
 	    sb.append(returnType.toString());
     }
-    
+
     return sb.toString();
   }
 }

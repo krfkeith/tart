@@ -28,6 +28,7 @@ import tart.collections.ImmutableList;
     PARAM,            // A parameter definition within a method
     TYPE_PARAM,       // A template parameter definition
     ATTRIBUTE,				// An attribute (applies to current scope).
+    TEMPLATE_INST,		// A template instantiation
   
     // Modifier tags which affect the containing scope.
   
@@ -43,6 +44,7 @@ import tart.collections.ImmutableList;
 	  STATIC,
 	  ABSTRACT,
 	  FINAL,
+	  UNSAFE,
 	  PROTECTED,
 	  PRIVATE,
 	}
@@ -109,6 +111,8 @@ import tart.collections.ImmutableList;
   //typealias GetAdapterFn:static fn (func:Address[void], obj:Address[void]) -> Object;
   //typealias SetAdapterFn:static fn (func:Address[void], obj:Address[void], value:Object);
 
+  typealias MethodPtr:Address[void];
+
   private {
     var _value:optional Object;
   	var _names:NameTable;
@@ -121,7 +125,7 @@ import tart.collections.ImmutableList;
   	var _compositeTypes:Address[Address[TypeInfoBlock]];
   	var _enumTypes:Address[Address[EnumInfoBlock]];
   	var _invokeFns:Address[CallAdapterFn];
-  	var _methods:Address[Address[void]];
+  	var _methods:Address[MethodPtr];
   	// field offsets
   	// globals
   }
@@ -134,27 +138,33 @@ import tart.collections.ImmutableList;
   def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
   def localName:String { get { return _names.getLocalName(_nameIndex); } }
   
-  def derivedTypes:Type[] { get { return lazyEval(_derivedTypes, decodeDerivedTypes()); } }
+  def derivedTypes:Type[] { get { return getDerivedTypes(); } }
 
   static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
     var meta = tib._meta;
     if meta is null {
       // TODO - throw an exception?
     }
-    
+
     if meta._value is not null {
       return typecast[CompositeType](meta._value);
     }
-    
+
     var type:CompositeType;
+    Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
 		switch (meta._defnType) {
 		  case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
 		  case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
 		  case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
 		  case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
-		  else { throw ArgumentError("Invalid reflection metadata for type"); }
+		  case TEMPLATE_INST {
+		    // TODO: Implement template instantiations.
+		    type = CompositeType(Type.TypeKind.PROTOCOL, tib);
+		  }
+		  else { throw ArgumentError(
+		    String.concat("Invalid reflection metadata for type ", meta._defnType.toString())); }
 		}
-		
+
 		meta._value = type;
 		return type;
   }
@@ -163,11 +173,11 @@ import tart.collections.ImmutableList;
   // readType
   // readNamespace
   
-  def readBaseClass -> optional CompositeType {
+  def readBaseClass(selfType:Type) -> optional CompositeType {
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.BASE_CLASS);
     if length != 0 {
-	  	return typecast[CompositeType](decodeType(decoder));
+	  	return typecast[CompositeType](decodeType(decoder, selfType));
     }
     
     return null;
@@ -197,35 +207,69 @@ import tart.collections.ImmutableList;
     }
   }
 
-  def readMethods(selfType:Type) {
+  def readMethods(selfType:Type) -> (Method[], Method[]) {
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.METHODS);
+    let methods = ArrayList[Method]();
+    let constructors = ArrayList[Method]();
     if length != 0 {
     	Debug.writeLn("Length of method section = ", length.toString());
     	let endPos = decoder.position + length;
+    	var methodIndex = 0;
     	while decoder.position < endPos {
-		  	decodeMethod(decoder, selfType);
-		  	break;
+		  	let m = decodeMethod(decoder, selfType, methodIndex++);
+		  	if m.kind == Member.MemberKind.CONSTRUCTOR {
+		  	  constructors.add(m);
+		  	} else {
+		  	  methods.add(m);
+		  	}
     	}
     }
+
+   	return Array.copyOf(constructors), Array.copyOf(methods);
   }
 
-  private def decodeMethod(decoder:StreamDecoder, selfType:Type) {
+  private def decodeMethod(decoder:StreamDecoder, selfType:Type, methodIndex:int) -> Method {
     let tag = DefnTag(decoder.readByte());
     let flags = DefnFlags(decoder.readByte());
     let name = decodeFieldName(decoder);
-    let methodType = decodeType(decoder);
+    let methodType = typecast[FunctionType](decodeType(decoder, selfType));
+    let methodPtr = _methods[methodIndex];
 
-    Debug.writeLn("decodeMethod: ", name);
-
+    var visibility = Member.Visibility.PUBLIC;
+    var traits:Method.Traits = 0;
 		var kind:Member.MemberKind = Member.MemberKind.METHOD;
+    
+    if DefnFlags.FINAL in flags {
+      traits |= Method.Traits.FINAL;
+    }
+
+    if DefnFlags.ABSTRACT in flags {
+      traits |= Method.Traits.ABSTRACT;
+    }
+
+    if DefnFlags.STATIC in flags {
+      traits |= Method.Traits.STATIC;
+    }
+
+    if DefnFlags.UNSAFE in flags {
+      traits |= Method.Traits.UNSAFE;
+    }
+
+    if DefnFlags.PRIVATE in flags {
+      visibility = Member.Visibility.PRIVATE;
+    } else if (DefnFlags.PROTECTED in flags) {
+      visibility = Member.Visibility.PROTECTED;
+    }
+
     switch tag {
       case METHOD {
+        // Nothing to do here.
       }
-      
+
   	  case UNDEF {
   	  }
-  	  
+
     	case OVERRIDE {
     	}
 
@@ -260,27 +304,42 @@ import tart.collections.ImmutableList;
         }
       }
     }
+    
+    let attributes = Object[](0);
+    let typeParams = Type[](0);
+    let params = Parameter[](0);
+    return Method(name, "", kind, visibility, traits, attributes, typeParams, methodType,
+      params, methodPtr);
   }
 
-  private def decodeDerivedTypes() -> Type[] {
+  private def getDerivedTypes() -> Type[] {
+    if _derivedTypes is not null {
+      return typecast[Type[]](_derivedTypes);
+    }
+
     let decoder = StreamDecoder(_strmTypeRefs);
     let count = decoder.readVarInt();
+    var types = Type[](count);
+    _derivedTypes = types;
     Debug.writeLn("Number of derived types: ", String(count));
-    return Type[](1);
+    for i in range(count) {
+      types[i] = decodeType(decoder, null);
+    }
+    return types;
   }
 
-  private def decodeTypeList(decoder:StreamDecoder) -> Type[] {
+  private def decodeTypeList(decoder:StreamDecoder, selfType:optional Type) -> Type[] {
     let count = decoder.readVarInt();
     let result = Type[](count);
-    for i = 0; i < count; ++i {
-      let memberType = decodeType(decoder);
+    for i in range(count) {
+      let memberType = decodeType(decoder, selfType);
       result[i] = memberType;
     }
     
     return result;
   }
-
-  private def decodeType(decoder:StreamDecoder) -> Type {
+  
+  private def decodeType(decoder:StreamDecoder, selfType:optional Type) -> Type {
     let typeId = TypeTag(decoder.readByte());
     switch typeId {
       case VOID 	{ return PrimitiveType.VOID; }
@@ -300,20 +359,15 @@ import tart.collections.ImmutableList;
       //case UNSIZED_INT { return PrimitiveType.VOID; }
 
       case FUNCTION case FUNCTION_STATIC {
-        // selfType?
-        
-  		//returnType:Type,
-  		//selfType:Type,
-  		//paramTypes:Type[],
-    	//invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
-
 				let isStatic = (typeId == TypeTag.FUNCTION_STATIC);
         let invokeIndex = decoder.readVarInt();
-        let returnType = decodeType(decoder);
-        let paramTypes = decodeType(decoder);
-
-        //return FunctionType(typeKind:
-        return PrimitiveType.VOID;
+        let returnType = decodeType(decoder, selfType);
+        let paramTypes = typecast[DerivedType](decodeType(decoder, selfType)).typeParams;
+				return FunctionType(
+						returnType,
+						cond(isStatic, selfType, null),
+						paramTypes,
+						_invokeFns[invokeIndex]);
       }
 
       case BOUND_METHOD {
@@ -321,11 +375,11 @@ import tart.collections.ImmutableList;
       }
 
       case TUPLE {
-        return DerivedType(Type.TypeKind.TUPLE, decodeTypeList(decoder));
+        return DerivedType(Type.TypeKind.TUPLE, decodeTypeList(decoder, selfType));
       }
 
       case UNION {
-        return DerivedType(Type.TypeKind.UNION, decodeTypeList(decoder));
+        return DerivedType(Type.TypeKind.UNION, decodeTypeList(decoder, selfType));
       }
 
       case UNIT {
@@ -366,7 +420,12 @@ import tart.collections.ImmutableList;
 			
 			else {
 			  if typeId >= TypeTag.DERIVED_IMM {
-	        Debug.fail("Implement DERIVED_IMM");
+			    let index = int(typeId) & 0x7f;
+			    Debug.writeLnFmt("Derived type index: {0} {1}", index, derivedTypes.size);
+			    if derivedTypes[index] is null {
+			      Debug.writeLn("Null derived type!");
+			    }
+			    return derivedTypes[index];
 			  } else if typeId >= TypeTag.COMPOSITE_IMM {
 			    let index = int(typeId) & 0x3f;
 			  	let tib = _compositeTypes[index];

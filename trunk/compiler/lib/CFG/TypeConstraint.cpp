@@ -359,7 +359,16 @@ ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversio
       return Incompatible;
     }
 
-    DFAIL("Implement");
+    if (cn.resultValue != NULL) {
+      DFAIL("Implement");
+    }
+
+    for (size_t i = 0; i < tuple_->argCount(); ++i) {
+      Conversion argCn(tuple_->arg(i));
+      rank = std::min(rank, ttype->members()[i]->convert(argCn));
+    }
+
+    return rank;
   } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(toType)) {
     if (ttype->numTypeParams() != tuple_->argCount()) {
       return Incompatible;

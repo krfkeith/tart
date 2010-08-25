@@ -38,7 +38,6 @@ Working on currently:
 
 Implementation TODOS:
 
-* Need a generic hashing class in tart/Common.
 * Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
@@ -375,3 +374,7 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
   
   The type of 'closures' is: fn (arg:int)[]
 
+// Redo pvalloc as flexAlloc. And also tie into tracer somehow (need to know length).
+
+// CountingIterator is really inefficient. Why?
+// Derived types for reflection can be deserialized in random order.

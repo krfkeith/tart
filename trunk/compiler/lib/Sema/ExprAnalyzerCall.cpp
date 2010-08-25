@@ -175,9 +175,23 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const AST
 
         // TODO: Also include overrides
         // TODO: Refactor
-        Defn * argTypeDefn = argType->typeDefn();
+        TypeDefn * argTypeDefn = argType->typeDefn();
         if (argTypeDefn != NULL && argTypeDefn->definingScope() != NULL) {
-          argTypeDefn->definingScope()->lookupMember(name, defns, true);
+          if (!argTypeDefn->definingScope()->lookupMember(name, defns, true)) {
+            // If nothing was found, also check ancestor clases
+            if (const CompositeType * ctype = dyn_cast<CompositeType>(argType)) {
+              ClassSet ancestors;
+              ctype->ancestorClasses(ancestors);
+              for (ClassSet::const_iterator it = ancestors.begin(); it != ancestors.end(); ++it) {
+                if (typesSearched.insert(*it)) {
+                  TypeDefn * ancestorDefn = (*it)->typeDefn();
+                  if (ancestorDefn != NULL && ancestorDefn->definingScope() != NULL) {
+                    ancestorDefn->definingScope()->lookupMember(name, defns, true);
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

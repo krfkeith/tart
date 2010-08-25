@@ -138,8 +138,8 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
 
 Value * CodeGenerator::genUpCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
+  const Type * fromType = dealias(in->arg()->type());
+  const Type * toType = dealias(in->type());
 
   if (value != NULL && fromType != NULL && toType != NULL) {
     return genUpCastInstr(value, fromType, toType);

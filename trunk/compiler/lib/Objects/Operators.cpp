@@ -454,12 +454,6 @@ public:
 template<int typ>
 PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
-//static SourceString infixEqSrc(
-//    " @tart.annex.Intrinsic"
-//    " def infixEQ[%T](:T, :T) -> bool;"
-//    " @tart.annex.Intrinsic"
-//    " def infixNE[%T](:T, :T) -> bool;");
-
 static SourceString infixEqSrc(
     " @tart.annex.Intrinsic"
     " def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"

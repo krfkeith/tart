@@ -33,6 +33,7 @@ public:
     : names_(names)
     , invokeMap_(invokeMap)
     , var_(NULL)
+    , methodTable_(NULL)
     , strm_(strmData_)
   {}
 
@@ -43,6 +44,9 @@ public:
 
   llvm::GlobalVariable * var() const { return var_; }
   void setVar(llvm::GlobalVariable * var) { var_ = var; }
+
+  std::vector<llvm::Constant *> & methodTable() { return methodTable_; }
+  const std::vector<llvm::Constant *> & methodTable() const { return methodTable_; }
 
   // Sort all of the types by popularity and assign IDs.
   void assignIndices();
@@ -64,6 +68,7 @@ private:
   TypeMap & invokeMap_;
 
   llvm::GlobalVariable * var_;
+  std::vector<llvm::Constant *> methodTable_;
   std::string strmData_;
   llvm::raw_string_ostream strm_;
 

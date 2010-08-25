@@ -153,16 +153,19 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
         setDebugLocation(p->location());
         dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
       } else {
-#if 0
+#if 1
         /// CreateVariable - Create a new descriptor for the specified variable.
         DIVariable argVar = dbgFactory_.CreateVariable(
             dwarf::DW_TAG_arg_variable, dbgContext_,
-            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+            p->name(), dbgFile_, getSourceLineNumber(p->location()),
             genDIParameterType(p->type()));
+        dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+#if 0
         dbgFactory_.InsertDbgValueIntrinsic(
             p->irValue(), llvm::Value *Offset,
             argVar, builder_.GetInsertBlock());
         //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+#endif
 #endif
       }
     }

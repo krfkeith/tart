@@ -22,6 +22,10 @@ namespace Debug {
     writeLn(String.concat(msgs));
   }
   
+  def writeLnFmt(fmt:String, args:Object...) {
+    writeLn(String.format(fmt, args));
+  }
+  
   @Extern("Debug_fail")
   def fail(msg:String);
 
