@@ -16,6 +16,9 @@ interface List[%ElementType] : Collection[ElementType] {
   /** Access a list element by index. */
   def [index:int]:ElementType { get; set; }
 
+  /** Return true if the specified item is in the collection. */
+  def contains(item:ElementType) -> bool;
+
   /** The number of items in the list. */
   def size:int { get; }
 }

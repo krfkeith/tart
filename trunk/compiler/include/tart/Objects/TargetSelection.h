@@ -7,6 +7,7 @@
 
 #include "llvm/ADT/Triple.h"
 #include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetMachine.h"
 
 namespace tart {
 

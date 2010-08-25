@@ -33,7 +33,6 @@
   protected def construct(
       name:String,
       scopeName:String,
-      //qualifiedName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
@@ -54,7 +53,7 @@
   final def scopeName:String { get { return _scopeName; } }
   
   /** The qualified member name. */
-  //final def fullName:String { get { return _fullName; } }
+  //final def qualifiedName:String { get { return _fullName; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
   final def kind:MemberKind { get { return _kind; } }

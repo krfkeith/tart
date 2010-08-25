@@ -89,3 +89,9 @@ public class Object : Hashable {
     return Hashing.hash(Memory.objectAddress(self));
   }
 }
+
+
+/** Default comparison for all classes. */
+public def infixEQ(o1:Object, o2:Object) -> bool {
+  return o1 is o2;
+}

@@ -20,6 +20,8 @@ Expr * MacroExpansionPass::runImpl(Expr * in) {
 }
 
 Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
+  in->setSelfArg(visitExpr(in->selfArg()));
+  visitExprArgs(in);
   if (in->function()->defnType() == Defn::Macro) {
     FunctionDefn * macro = in->function();
     FunctionType * mtype = macro->functionType();

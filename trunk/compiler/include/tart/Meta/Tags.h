@@ -65,6 +65,9 @@ enum DefnTag {
   TAG_DEF_TYPEALIAS,        // A type alias
   TAG_DEF_PARAM,            // A parameter definition within a method
   TAG_DEF_TYPE_PARAM,       // A template parameter definition
+  TAG_DEF_ATTRIBUTE,        // An attribute (applies to current scope).
+  TAG_DEF_TEMPLATE_INST,    // A template instantiation
+
 
   // Modifier tags which affect the containing scope.
 
@@ -88,8 +91,9 @@ enum DefnFlag {
   DEFNFLAG_STATIC       = (1<<0),
   DEFNFLAG_ABSTRACT     = (1<<1),
   DEFNFLAG_FINAL        = (1<<2),
-  DEFNFLAG_PROTECTED    = (1<<3),
-  DEFNFLAG_PRIVATE      = (1<<4),
+  DEFNFLAG_UNSAFE       = (1<<3),
+  DEFNFLAG_PROTECTED    = (1<<4),
+  DEFNFLAG_PRIVATE      = (1<<5),
 };
 
 /// -------------------------------------------------------------------

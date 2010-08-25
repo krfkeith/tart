@@ -13,8 +13,8 @@ public class CompositeType : Type {
     var _attributes:Object[];
     var _fields:Field[];
     var _properties:Property[];
-    var _constructors:Method[];
-    var _methods:Method[];
+    var _constructors:optional Method[];
+    var _methods:optional Method[];
     var _innerTypes:Type[];
     var _alloc:static fn -> Object;
     var _noArgCtor:static fn :Object -> Object;
@@ -45,7 +45,7 @@ public class CompositeType : Type {
   final def supertype:optional CompositeType {
     get {
       if _supertype is null {
-        _supertype = _meta.readBaseClass();
+        _supertype = _meta.readBaseClass(self);
       }
   
       return _supertype;
@@ -68,10 +68,10 @@ public class CompositeType : Type {
   final def properties:Property[] { get { return self._properties; } }
   
   /** Array of constructor members. */
-  final def constructors:Method[] { get { return self._constructors; } }
-  
+  final def constructors:Method[] { get { decodeMethods(); return _constructors; } }
+
   /** Array of methods. */
-  final def methods:Method[] { get { return self._methods; } }
+  final def methods:Method[] { get { decodeMethods(); return _methods; } }
 
   /** Array of types defined within this type. */
   final def innerTypes:Type[] { get { return self._innerTypes; } }
@@ -94,14 +94,14 @@ public class CompositeType : Type {
   }
   
   /** Return the first method whose name is 'name'. */
-  def findMethod(name:String) -> Method or void {
-    for m in _methods {
+  def findMethod(name:String) -> optional Method {
+    for m in methods {
       if m.name == name {
         return m;
       }
     }
 
-    return;
+    return null;
   }
 
   /** Allocate and initialize a new object of this type, using the specified constructor. */  
@@ -175,16 +175,21 @@ public class CompositeType : Type {
         return result;
       }
     }
-    
+
     return null;
   }
-  
+
   final override toString -> String {
     return qualifiedName;
   }
   
+  private final def decodeMethods {
+    if self._methods is null {
+	    self._constructors, self._methods = _meta.readMethods(self);
+    }
+  }
+
   def test() {
-    _meta.readBaseClass();
     _meta.readInterfaces();
  	  _meta.readTypeParams();
  	  _meta.readFields();

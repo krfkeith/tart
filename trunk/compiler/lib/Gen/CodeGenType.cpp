@@ -114,6 +114,12 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 }
 
 Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
+  if (type->typeDefn()->isTemplate()) {
+    return createTypeInfoBlockPtr(getRTTypeInfo(type));
+  } else if (type->typeDefn()->isPartialInstantiation()) {
+    return createTypeInfoBlockPtr(getRTTypeInfo(type));
+  }
+
   if (type->typeDefn()->isSynthetic() &&
       module_->exportDefs().count(type->typeDefn()) == 0) {
     diag.fatal() << "Attempting to use TIB of synthetic type " << type <<

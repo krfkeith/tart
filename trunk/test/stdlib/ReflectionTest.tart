@@ -137,6 +137,8 @@ class ReflectionTest : Test {
 	  assertEq("tart.core", ty.scopeName);
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  assertEq("Object", ty.supertype.name);
+	  //let method = ty.findMethod("toString");
+	  //assertNotNull(method);
   }
 
   def testGetStrings {
