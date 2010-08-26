@@ -921,7 +921,8 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   indices[0] = getInt32Val(0);
   indices[1] = getInt32Val(4);
 
-  strDataStart->replaceAllUsesWith(llvm::ConstantExpr::getGetElementPtr(strConstant, indices, 2));
+  strDataStart->replaceAllUsesWith(
+      llvm::ConstantExpr::getInBoundsGetElementPtr(strConstant, indices, 2));
   strSource->replaceAllUsesWith(strConstant);
 
   stringLiteralMap_[strval] = strConstant;

@@ -1,17 +1,31 @@
 import tart.core.Memory.Address;
 
 /** Interface type for enums. */
-public class EnumType : SimpleType {
+public final class EnumType : Type {
   private {
+    var _meta:ReflectionMetadata;
+    var _nameIndex:int;
     var _supertype:Type;
-    var _values:Field[];
+    var _values:optional Field[];
   }
 
-  undef construct();
+  def construct(
+      meta:ReflectionMetadata,
+      nameIndex:int,
+      supertype:Type) {
+    super(TypeKind.ENUM);
+    self._meta = meta;
+    self._nameIndex = nameIndex;
+    self._supertype = supertype;
+  }
 
-  /** Pointer to this type's supertype, or null. */
-  final def supertype:Type /* or void */ { get { return self._supertype; } }
+  /** Pointer to this type's supertype. */
+  def supertype:Type { get { return self._supertype; } }
   
   /** Array of enumeration constants. */
-  final def values:Field[] { get { return self._values; } }
+  //final def values:Field[] { get { return self._values; } }
+  
+  def toString -> String {
+    return _meta.names.getName(_nameIndex);
+  }
 }

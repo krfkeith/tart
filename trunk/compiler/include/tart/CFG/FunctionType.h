@@ -83,6 +83,8 @@ public:
   TypeShape typeShape() const;
   void trace() const;
   void format(FormatStream & out) const;
+  unsigned getHashValue() const;
+
   static inline bool classof(const FunctionType *) { return true; }
   static inline bool classof(const Type * type) {
     return type->typeClass() == Function;

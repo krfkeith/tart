@@ -23,7 +23,9 @@ ConstructorAnalyzer::ConstructorAnalyzer(CompositeType * cls)
     if (*it != NULL) {
       VariableDefn * var = cast<VariableDefn>(*it);
       // TODO: Handle memberwise initialization of structs later.
-      if (var->type()->typeClass() != Type::Struct && var->type()->typeClass() != Type::NArray) {
+      if (var->type()->typeClass() != Type::Struct &&
+          var->type()->typeClass() != Type::NArray &&
+          var->type()->typeClass() != Type::FlexibleArray) {
         varIndices_[var] = varCount_++;
       }
     }
@@ -208,7 +210,9 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
 
     VariableDefn * field = cast<VariableDefn>(*it);
     // TODO: Handle memberwise initialization of structs later.
-    if (field->type()->typeClass() == Type::Struct || field->type()->typeClass() == Type::NArray) {
+    if (field->type()->typeClass() == Type::Struct ||
+        field->type()->typeClass() == Type::NArray ||
+        field->type()->typeClass() == Type::FlexibleArray) {
       continue;
     }
 

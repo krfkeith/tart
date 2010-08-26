@@ -17,7 +17,7 @@ namespace Iterators {
       return false;
     }
   }
-  
+
   class Enumerator[%T] : Iterator[(int, T)] {
     let iter:Iterator[T];
     var index:int = 0;
@@ -36,12 +36,40 @@ namespace Iterators {
       }
     }
   }
-  
+
+	/** Given an iterator, return an iterator that returns each item as a tuple containing
+			the original item and its ordinal index. */  
   def enumerate[%T](iter:Iterator[T]) -> Iterator[(int, T)] {
     return Enumerator(iter);
   }
 
+	/** Given an iterable, return an iterator that returns each item as a tuple containing
+			the original item and its ordinal index. */  
   def enumerate[%T](iter:Iterable[T]) -> Iterator[(int, T)] {
     return Enumerator(iter.iterate());
+  }
+  
+	/** An iterator that returns the integers 0..N-1, for some N. */  
+  class CountingIterator : Iterator[int] {
+    var index:int;
+    let end:int;
+    
+    def construct(end:int) {
+      self.index = 0;
+      self.end = end;
+    }
+
+    def construct(start:int, end:int) {
+      self.index = start;
+      self.end = end;
+    }
+
+    def next -> int or void {
+      if index < end {
+        return index++;
+      } else {
+        return;
+      }
+    }
   }
 }

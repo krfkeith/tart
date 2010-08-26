@@ -77,6 +77,22 @@ class IteratorTest : Test {
 	  
 	  assertEq(3, total);
 	}
+	
+	def testRange {
+	  var sum = 0;
+	  for i in range(5) {
+	    sum += 1;
+	  }
+	  assertEq(5, sum);
+	}
+
+	def testRangeStart {
+	  var sum = 0;
+	  for i in range(4, 5) {
+	    sum += 1;
+	  }
+	  assertEq(1, sum);
+	}
 }
 
 def sum(nums:int32...) -> int32 {

@@ -211,6 +211,8 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     return unifyAddressType(source, npp, value);
   } else if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
     return unifyNativeArrayType(source, nap, value);
+  } else if (const FlexibleArrayType * nap = dyn_cast<FlexibleArrayType>(pattern)) {
+    return unifyFlexibleArrayType(source, nap, value);
   } else if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(pattern)) {
     return unifyTypeLiteralType(source, npp, value);
   } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(value)) {
@@ -289,6 +291,25 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, const NativeArrayT
     }
 
     return unify(source, pat->typeParam(0), nav->typeParam(0), Invariant);
+  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+    return tc->unifyWithPattern(*this, pat);
+  } else {
+    return false;
+  }
+}
+
+bool BindingEnv::unifyFlexibleArrayType(SourceContext * source, const FlexibleArrayType * pat,
+    const Type * value) {
+  if (!AnalyzerBase::analyzeType(pat, Task_PrepTypeComparison)) {
+    return false;
+  }
+
+  if (const FlexibleArrayType * fav = dyn_cast<FlexibleArrayType>(value)) {
+    if (!AnalyzerBase::analyzeType(fav, Task_PrepTypeComparison)) {
+      return false;
+    }
+
+    return unify(source, pat->typeParam(0), fav->typeParam(0), Invariant);
   } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
     return tc->unifyWithPattern(*this, pat);
   } else {

@@ -29,10 +29,10 @@ class TypeOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// ComplexType.of intrinsic
-class ComplexTypeOfIntrinsic : public Intrinsic {
-  static ComplexTypeOfIntrinsic instance;
-  ComplexTypeOfIntrinsic() : Intrinsic("tart.reflect.ComplexType.of") {}
+// CompositeType.of intrinsic
+class CompositeTypeOfIntrinsic : public Intrinsic {
+  static CompositeTypeOfIntrinsic instance;
+  CompositeTypeOfIntrinsic() : Intrinsic("tart.reflect.CompositeType.of") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 

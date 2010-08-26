@@ -4,6 +4,7 @@
 
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/StructBuilder.h"
+#include "tart/Gen/ReflectionMetadata.h"
 #include "tart/Gen/RuntimeTypeInfo.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -31,6 +32,8 @@ using namespace llvm;
 extern SystemClassMember<VariableDefn> functionType_invoke;
 extern SystemClassMember<FunctionDefn> functionType_invokeFn;
 extern SystemClassMember<FunctionDefn> functionType_checkArgs;
+
+extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
 
 // Members of tart.core.TypeInfoBlock.
 
@@ -111,6 +114,12 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 }
 
 Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
+  if (type->typeDefn()->isTemplate()) {
+    return createTypeInfoBlockPtr(getRTTypeInfo(type));
+  } else if (type->typeDefn()->isPartialInstantiation()) {
+    return createTypeInfoBlockPtr(getRTTypeInfo(type));
+  }
+
   if (type->typeDefn()->isSynthetic() &&
       module_->exportDefs().count(type->typeDefn()) == 0) {
     diag.fatal() << "Attempting to use TIB of synthetic type " << type <<
@@ -209,7 +218,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
   //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
   if (!type->typeDefn()->isNonreflective()) {
-    builder.addField(reflector_.getReflectedScope(type->typeDefn())->var());
+    builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
   } else {
     builder.addNullField(tib_meta.type());
   }
@@ -591,15 +600,23 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
 }
 
-llvm::Function * CodeGenerator::genInvokeFn(const FunctionType * fnType) {
+const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
+  if (invokeFnType_ == NULL) {
+    const Type * invokeTypeDefn = rmd_CallAdapterFnType.get()->typeValue();
+    invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
+  }
+
+  return invokeFnType_;
+}
+
+llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
   const std::string & invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
   if (invokeFn != NULL) {
     return invokeFn;
   }
 
-  const llvm::FunctionType * invokeFnType = cast<llvm::FunctionType>(
-      functionType_invoke.type()->irType());
+  const llvm::FunctionType * invokeFnType = getCallAdapterFnType();
   DASSERT((MDNode *)dbgContext_ == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);

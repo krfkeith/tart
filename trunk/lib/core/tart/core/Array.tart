@@ -1,30 +1,22 @@
-import tart.reflect.Reflection;
+import tart.collections.Collection;
 import tart.core.Memory.zeroPtr;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 import tart.core.Memory.Address;
 import tart.core.Math.min;
+import tart.reflect.Reflection;
 
 /** Built-in array class */
-public final class Array[%ElementType] : Iterable[ElementType] {
+public final class Array[%ElementType] : Collection[ElementType] {
   private {
     var _size:int;
-    var _data:NativeArray[ElementType, 0];
+    var _data:FlexibleArray[ElementType];
 
     /** Array allocator function */
     static def alloc(size:int) -> Array {
       let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[size]);
       self._size = size;
       return self;
-    }
-
-		@Reflection(Reflection.Detail.NONE)
-    def __gcTrace(traceFn:static fn(:Address[Address[Object]])) {
-			//Object.__trace(addressOf(_data[0]), _size, traceFn);
-      for i = 0; i < _size; ++i {
-        //_data[i].__gcTrace(traceFn);
-				//Object.__trace(addressOf(_data[i]));
-      }
     }
 
     //def asBuffer() {
@@ -52,6 +44,21 @@ public final class Array[%ElementType] : Iterable[ElementType] {
       variadic parameters to build an Array. */
   static def of(elements:ElementType...) -> Array {
     return elements;
+  }
+  
+  static def copyOf(collection:Collection[ElementType]) -> Array {
+    let size = collection.size;
+    if size == 0 {
+      return emptyArray;
+    }
+    
+    let result:Array = alloc(size);
+    var index = 0;
+    for el in collection {
+      result._data[index++] = el;
+    }
+
+		return result;    
   }
 
   /** True if the array is zero size. */

@@ -95,9 +95,8 @@ void CodeGenerator::generate() {
     addTypeName(Builtins::typeNameTable);
     addTypeName(Builtins::typeReflectionMetadata);
     addTypeName(Builtins::typeType);
-    addTypeName(Builtins::typeSimpleType);
     addTypeName(Builtins::typeDerivedType);
-    addTypeName(Builtins::typeComplexType);
+    addTypeName(Builtins::typeCompositeType);
     addTypeName(Builtins::typeEnumType);
     addTypeName(Builtins::typeEnumInfoBlock);
     addTypeName(Builtins::typeFunctionType);

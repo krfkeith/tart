@@ -1,7 +1,7 @@
 import tart.reflect.Method;
 import tart.reflect.Module;
 import tart.reflect.Package;
-import tart.reflect.ComplexType;
+import tart.reflect.CompositeType;
 import tart.reflect.Type;
 
 class Test {
@@ -23,7 +23,7 @@ class Test {
   /** Run all of the test cases in the specified module. */
   static def runAllTests(mod:Module) -> int32 {
     for type in mod.types {
-      classify type as cls:ComplexType {
+      classify type as cls:CompositeType {
 	      if cls.isSubclass(Test) {
 	        Debug.writeLn("Test Class: ", cls.qualifiedName);
 			    var testInstance = typecast[Test](cls.create());
@@ -37,7 +37,7 @@ class Test {
 
 	/** Run all tests in this class. */  
   static def run[%T](testType:TypeLiteral[T]) -> int32 {
-    var testClass:ComplexType = ComplexType.of(T);
+    var testClass:CompositeType = CompositeType.of(T);
     var testInstance = typecast[Test](testClass.create());
     return testInstance.runTests(testClass);
   }
@@ -49,10 +49,10 @@ class Test {
   def tearDown() {}
   
   final def runTests[%T](testType:TypeLiteral[T]) -> int32 {
-    return runTests(ComplexType.of(T));
+    return runTests(CompositeType.of(T));
   }
 
-  final def runTests(testClass:ComplexType) -> int32 {
+  final def runTests(testClass:CompositeType) -> int32 {
     for method in testClass.methods {
       if method.name.startsWith("test") {
         Debug.writeLn("[Running] ", self.__typeName, ".", method.name);

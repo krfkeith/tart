@@ -59,6 +59,24 @@ class StringTest : Test {
 	  assertEq("ThisIsATest", s);
 	}
 	
+	def testStringJoin() {
+	  let s = ", ".join("This", "Is", "A", "Test");
+	  assertEq("This, Is, A, Test", s);
+	  let s2 = ", ".join();
+	  assertEq("", s2);
+	  let s3 = ", ".join("This");
+	  assertEq("This", s3);
+	}
+	
+	def testIterableStringJoin() {
+	  let a = tart.collections.ArrayList[String]();
+	  a.add("One");
+	  a.add("Two");
+	  a.add("Three");
+	  let s = ", ".join(a);
+	  assertEq("One, Two, Three", s);
+	}
+	
 	def testUnicode() {
 	  assertEq(2, "\u0200".size);
 	  assertEq(1, "\u0200".charLength());

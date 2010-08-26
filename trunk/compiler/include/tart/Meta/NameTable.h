@@ -99,9 +99,6 @@ public:
 
   ~NameTable();
 
-  typedef std::pair<const Type *, TagInfo> TypeArrayElement;
-  typedef std::vector<TypeArrayElement > TypeArray;
-
   Name * getName(const llvm::StringRef name) const;
   Name * getName(Name * scope, Name * member) const;
   Name * getQualifiedName(llvm::StringRef name) const;

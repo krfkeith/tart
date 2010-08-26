@@ -146,6 +146,11 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
           static_cast<const NativeArrayType *>(t1),
           static_cast<const NativeArrayType *>(t2));
 
+    case Type::FlexibleArray:
+      return compare(
+          static_cast<const FlexibleArrayType *>(t1),
+          static_cast<const FlexibleArrayType *>(t2));
+
     case Type::Unit:
       return compare(
           static_cast<const UnitType *>(t1),
@@ -201,6 +206,10 @@ ComparisonResult TypeOrdering::compare(const AddressType * t1, const AddressType
 ComparisonResult TypeOrdering::compare(const NativeArrayType * t1, const NativeArrayType * t2) {
   return t1 == t2 ? EQUAL :
       compare(t1->typeParam(0), t2->typeParam(0)) + compare(t1->typeParam(1), t2->typeParam(1));
+}
+
+ComparisonResult TypeOrdering::compare(const FlexibleArrayType * t1, const FlexibleArrayType * t2) {
+  return t1 == t2 ? EQUAL : compare(t1->typeParam(0), t2->typeParam(0));
 }
 
 ComparisonResult TypeOrdering::compare(const UnitType * t1, const UnitType * t2) {
@@ -295,8 +304,11 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
       if (result != 0) {
         return result;
       }
-      DFAIL("Implement");
-      //return compare(
+      result = compare(ft0->returnType(), ft1->returnType());
+      if (result != 0) {
+        return result;
+      }
+      return int(ft0->isStatic()) - int(ft1->isStatic());
     }
 
     case Type::BoundMethod: {
@@ -342,6 +354,12 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
       return compare(
           static_cast<const NativeArrayType *>(t0),
           static_cast<const NativeArrayType *>(t1));
+
+    case Type::FlexibleArray:
+      DFAIL("Implement");
+      return compare(
+          static_cast<const FlexibleArrayType *>(t0),
+          static_cast<const FlexibleArrayType *>(t1));
 
     case Type::Unit: {
       const ConstantExpr * v0 = static_cast<const UnitType *>(t0)->value();
