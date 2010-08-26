@@ -42,6 +42,7 @@ public:
   virtual const Type * visitAddressType(const AddressType * in);
   virtual const Type * visitTypeLiteralType(const TypeLiteralType * in);
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
+  virtual const Type * visitFlexibleArrayType(const FlexibleArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);
   virtual const Type * visitTypeVariable(const TypeVariable * in);
   virtual const Type * visitTypeBinding(const TypeBinding * in);

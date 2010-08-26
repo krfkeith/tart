@@ -153,16 +153,19 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
         setDebugLocation(p->location());
         dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
       } else {
-#if 0
+#if 1
         /// CreateVariable - Create a new descriptor for the specified variable.
         DIVariable argVar = dbgFactory_.CreateVariable(
             dwarf::DW_TAG_arg_variable, dbgContext_,
-            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
+            p->name(), dbgFile_, getSourceLineNumber(p->location()),
             genDIParameterType(p->type()));
+        dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+#if 0
         dbgFactory_.InsertDbgValueIntrinsic(
             p->irValue(), llvm::Value *Offset,
             argVar, builder_.GetInsertBlock());
         //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
+#endif
 #endif
       }
     }
@@ -235,6 +238,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
     case Type::NArray:
       result = genDINativeArrayType(static_cast<const NativeArrayType *>(type));
+      break;
+
+    case Type::FlexibleArray:
+      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(type));
       break;
 
     case Type::NAddress:
@@ -431,6 +438,21 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
 
 DICompositeType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, type->size());
+  return dbgFactory_.CreateCompositeTypeEx(
+      dwarf::DW_TAG_array_type,
+      dbgCompileUnit_,
+      "",
+      dbgFile_,
+      0,
+      getSizeOfInBits(type->irEmbeddedType()),
+      getAlignOfInBits(type->irEmbeddedType()),
+      getInt64Val(0), 0,
+      DIType(),
+      dbgFactory_.GetOrCreateArray(&subrange, 1));
+}
+
+DICompositeType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
+  DIDescriptor subrange = dbgFactory_.GetOrCreateSubrange(0, 0);
   return dbgFactory_.CreateCompositeTypeEx(
       dwarf::DW_TAG_array_type,
       dbgCompileUnit_,
@@ -650,18 +672,7 @@ DICompositeType CodeGenerator::genDIBoundMethodType(const BoundMethodType * type
   std::string typeName(".fnref.");
   typeLinkageName(typeName, fnType);
 
-  DICompositeType placeHolder = dbgFactory_.CreateCompositeTypeEx(
-      dwarf::DW_TAG_structure_type,
-      dbgCompileUnit_,
-      typeName.c_str(),
-      dbgFile_,
-      0,
-      getSizeOfInBits(type->irType()),
-      getAlignOfInBits(type->irType()),
-      getInt64Val(0), 0,
-      DIType(),
-      DIArray());
-
+  DIType placeHolder = dbgFactory_.CreateTemporaryType();
   dbgTypeMap_[type] = placeHolder;
 
   //const DefnList & fields = type->instanceFields();

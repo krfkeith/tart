@@ -97,12 +97,10 @@ public:
   ASTDecl * declareVariable(const DeclModifiers & mods, TokenType tok);
 
   /** Parse a function or property declaration. */
-  ASTDecl * declareDef(const DeclModifiers & mods,
-      TokenType tok);
+  ASTDecl * declareDef(const DeclModifiers & mods, TokenType tok);
 
   /** Parse a macro or intrinsic declaration. */
-  ASTDecl * declareMacro(const DeclModifiers & mods,
-      TokenType tok);
+  ASTDecl * declareMacro(const DeclModifiers & mods, TokenType tok);
 
   /** Parse a type declaration. */
   ASTDecl * declareType(const DeclModifiers & mods, TokenType tok);

@@ -148,6 +148,9 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::TypeVar:
       return reduceTypeVariable(static_cast<const ASTTypeVariable *>(ast));
 
+    case ASTNode::TypeAlias:
+      DFAIL("Implement");
+
     default:
       diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
       DFAIL("Unsupported node type");

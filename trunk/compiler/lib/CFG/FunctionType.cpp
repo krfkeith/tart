@@ -11,6 +11,7 @@
 #include "tart/Sema/TypeAnalyzer.h"
 
 #include "tart/Common/Diagnostics.h"
+#include "tart/Common/Hashing.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -247,6 +248,14 @@ bool FunctionType::isReferenceType() const {
   return true; // TODO: Should be false
 }
 
+unsigned FunctionType::getHashValue() const {
+  IncrementalHash hash;
+  hash.add(returnType_->getHashValue());
+  hash.add(paramTypes()->getHashValue());
+  hash.add(isStatic());
+  return hash.end();
+}
+
 TypeShape FunctionType::typeShape() const {
   // It's a primitive when used as a function pointer
   return Shape_Primitive;
@@ -306,6 +315,12 @@ void FunctionType::whyNotSingular() const {
 }
 
 ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
+  if (isEqual(cn.fromType)) {
+    if (cn.resultValue != NULL) {
+      *cn.resultValue = cn.fromValue;
+    }
+    return IdenticalTypes;
+  }
   return Incompatible;
 }
 

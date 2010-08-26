@@ -1,4 +1,3 @@
-
 /** A member of a type */
 @Reflection(Reflection.Detail.NONE) class Member {
   enum Visibility : ubyte {
@@ -31,15 +30,15 @@
     var _attributes:Object[];
   }
 
-  private def construct() {}
   protected def construct(
       name:String,
-      //qualifiedName:String,
+      scopeName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
       attributes:Object[]) {
     self._name = name;
+    self._scopeName = scopeName;
     //self.qualifiedName_ = qualifiedName;
     self._kind = kind;
     self._visibility = visibility;
@@ -54,7 +53,7 @@
   final def scopeName:String { get { return _scopeName; } }
   
   /** The qualified member name. */
-  //final def fullName:String { get { return _fullName; } }
+  //final def qualifiedName:String { get { return _fullName; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
   final def kind:MemberKind { get { return _kind; } }

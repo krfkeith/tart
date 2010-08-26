@@ -152,7 +152,7 @@ LocalAllocState * GC_getLocalAllocState() {
       tldLas = (LocalAllocState *)malloc(sizeof(LocalAllocState));
       tldLas->pos = tldLas->end = NULL;
     }
-    return las;
+    return tldLas;
   #elif USE_PTHREAD_THREAD_LOCAL
     LocalAllocState * las = (LocalAllocState *)pthread_getspecific(lasKey);
     // TODO: Get rid of this check, instead create LocalAllocState on thread startup.
@@ -170,10 +170,10 @@ LocalAllocState * GC_getLocalAllocState() {
 
 void GC_syncImpl(LocalAllocState * las) {
   CallFrame * framePtr;
-  #if SIZEOF_VOID_PTR == 8
-    __asm__("movq %%rbp, %0" :"=r"(framePtr));
-  #else
+  #if SIZEOF_VOID_PTR == 4
     __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #else
+    __asm__("movq %%rbp, %0" :"=r"(framePtr));
   #endif
 
   while (framePtr != NULL) {
@@ -272,10 +272,10 @@ void GC_collect() {
   //tart::Tracer<ObjectPrinter> tracer;
 
   CallFrame * framePtr;
-  #if SIZEOF_VOID_PTR == 8
-    __asm__("movq %%rbp, %0" :"=r"(framePtr));
-  #else
+  #if SIZEOF_VOID_PTR == 4
     __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #else
+    __asm__("movq %%rbp, %0" :"=r"(framePtr));
   #endif
 
 

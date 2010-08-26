@@ -225,14 +225,14 @@ class ValueRefTest : Test {
 	    let n = Ref.valueOf[T](actual);
 	    assertEq(expected, n);
 	  } catch e:TypecastError {
-	    failf("Typecast exception unboxing {0} [{1} .. {2}]", actual, T.minVal, T.maxVal);
+	    failFmt("Typecast exception unboxing {0} [{1} .. {2}]", actual, T.minVal, T.maxVal);
 	  }
 	}
 	
 	final def expectFailure[%T](o:Object) {
 	  try {
 	    let n = Ref.valueOf[T](o);
-	    failf("Typecast exception expected unboxing {0} [{1} .. {2}]", o, T.minVal, T.maxVal);
+	    failFmt("Typecast exception expected unboxing {0} [{1} .. {2}]", o, T.minVal, T.maxVal);
 	  } catch e:TypecastError {
 	    return;
 	  }

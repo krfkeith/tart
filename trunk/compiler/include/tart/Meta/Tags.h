@@ -31,9 +31,8 @@ enum SectionTag {
   TAG_SECTION_INNER_TYPES = 5,
   TAG_SECTION_NAMESPACES = 6,
   TAG_SECTION_FIELDS = 7,
-  TAG_SECTION_CONSTRUCTORS = 8,
-  TAG_SECTION_METHODS = 9,
-  TAG_SECTION_PROPERTIES = 10,
+  TAG_SECTION_METHODS = 8,
+  TAG_SECTION_PROPERTIES = 9,
 };
 
 /// -------------------------------------------------------------------
@@ -66,6 +65,9 @@ enum DefnTag {
   TAG_DEF_TYPEALIAS,        // A type alias
   TAG_DEF_PARAM,            // A parameter definition within a method
   TAG_DEF_TYPE_PARAM,       // A template parameter definition
+  TAG_DEF_ATTRIBUTE,        // An attribute (applies to current scope).
+  TAG_DEF_TEMPLATE_INST,    // A template instantiation
+
 
   // Modifier tags which affect the containing scope.
 
@@ -80,6 +82,18 @@ enum DefnTag {
 
   TAG_DEFFLAG_PRIVATE = 0x80,   // A private declaration
   TAG_DEFFLAG_PROTECTED = 0x40, // A protected declaration
+};
+
+/// -------------------------------------------------------------------
+/// Tag definitions for defn flags.
+
+enum DefnFlag {
+  DEFNFLAG_STATIC       = (1<<0),
+  DEFNFLAG_ABSTRACT     = (1<<1),
+  DEFNFLAG_FINAL        = (1<<2),
+  DEFNFLAG_UNSAFE       = (1<<3),
+  DEFNFLAG_PROTECTED    = (1<<4),
+  DEFNFLAG_PRIVATE      = (1<<5),
 };
 
 /// -------------------------------------------------------------------
@@ -108,6 +122,7 @@ enum TypeTag {
   // Derived types
 
   TAG_TYPE_FUNCTION = 16,   // Function type (flags, return-type, params...)
+  TAG_TYPE_FUNCTION_STATIC, // Function with no 'self' param.
   TAG_TYPE_BOUND_METHOD,    // Bound method (flags, return-type, params...)
   TAG_TYPE_TUPLE,           // Tuple table index follows
   TAG_TYPE_UNION,           // Tuple table index follows

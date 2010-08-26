@@ -181,6 +181,7 @@ public:
   virtual bool isSingular() const { return traits_.contains(Singular); }
   bool isSynthetic() const { return traits_.contains(Synthetic); }
   bool isNonreflective() const { return traits_.contains(Nonreflective); }
+  bool isUnsafe() const { return traits_.contains(Unsafe); }
 
   void setSingular(bool t) {
     if (t) {

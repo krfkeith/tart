@@ -143,6 +143,12 @@ Expr * AddressType::nullInitValue() const {
   return ConstantNull::get(SourceLocation(), this);
 }
 
+unsigned AddressType::getHashValue() const {
+  unsigned result = elementType_->getHashValue();
+  result ^= Type::NAddress;
+  return result;
+}
+
 void AddressType::format(FormatStream & out) const {
   out << elementType_ << "^";
 }
@@ -256,8 +262,122 @@ bool NativeArrayType::isEqual(const Type * other) const {
   return false;
 }
 
+unsigned NativeArrayType::getHashValue() const {
+  unsigned result = elementType()->getHashValue();
+  result ^= Type::NArray;
+  return result;
+}
+
 void NativeArrayType::format(FormatStream & out) const {
   out << "NativeArray[" << elementType() << ", " << size() << "]";
+}
+
+// -------------------------------------------------------------------
+// FlexibleArrayType
+
+FlexibleArrayType FlexibleArrayType::prototype;
+TypeDefn FlexibleArrayType::typedefn(&Builtins::module, "FlexibleArray", NULL);
+FlexibleArrayType::TypeMap FlexibleArrayType::uniqueTypes_;
+
+void FlexibleArrayType::initBuiltin() {
+  TypeList typeParams;
+  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
+
+  // Create type parameters
+  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
+  tsig->setTypeParams(TupleType::get(typeParams));
+
+  // Add to builtin name space
+  Builtins::module.addMember(&typedefn);
+  typedefn.setQualifiedName(typedefn.name());
+  typedefn.setTypeValue(&prototype);
+  typedefn.addTrait(Defn::Unsafe);
+
+  prototype.typeArgs_ = tsig->typeParams();
+}
+
+FlexibleArrayType * FlexibleArrayType::get(const TupleType * typeArgs) {
+  TypeMap::iterator it = uniqueTypes_.find(typeArgs);
+  if (it != uniqueTypes_.end()) {
+    return it->second;
+  }
+
+  FlexibleArrayType * arrayType = new FlexibleArrayType(typeArgs);
+  uniqueTypes_[typeArgs] = arrayType;
+  return arrayType;
+}
+
+FlexibleArrayType::FlexibleArrayType(const TupleType * typeArgs)
+  : TypeImpl(Type::FlexibleArray, Shape_Large_Value)
+  , typeArgs_(typeArgs)
+{
+  DASSERT(!isa<UnitType>((*typeArgs)[0]));
+}
+
+FlexibleArrayType::FlexibleArrayType() : TypeImpl(Type::FlexibleArray, Shape_Large_Value) {}
+
+const Type * FlexibleArrayType::typeParam(int index) const {
+  return (*typeArgs_)[index];
+}
+
+const Type * FlexibleArrayType::elementType() const {
+  return (*typeArgs_)[0];
+}
+
+const llvm::Type * FlexibleArrayType::createIRType() const {
+  return llvm::ArrayType::get(elementType()->irEmbeddedType(), 0);
+}
+
+ConversionRank FlexibleArrayType::convertImpl(const Conversion & cn) const {
+  const Type * fromType = cn.getFromType();
+  if (const FlexibleArrayType * naFrom =
+      dyn_cast<FlexibleArrayType>(fromType)) {
+    const Type * fromElementType = naFrom->elementType();
+    if (fromElementType == NULL) {
+      DFAIL("No element type");
+    }
+
+    // Check conversion on element types
+    Conversion elementConversion(dealias(fromElementType));
+    if (elementType()->convert(elementConversion) == IdenticalTypes) {
+      if (cn.resultValue) {
+        *cn.resultValue = cn.fromValue;
+      }
+
+      return IdenticalTypes;
+    }
+
+    diag.fatal() << Format_Verbose << "Wants to convert from " << fromType << " to " << this;
+    return Incompatible;
+  } else {
+    return Incompatible;
+  }
+}
+
+bool FlexibleArrayType::isSingular() const {
+  return typeArgs_->isSingular();
+}
+
+bool FlexibleArrayType::isSubtype(const Type * other) const {
+  return isEqual(other);
+}
+
+bool FlexibleArrayType::isEqual(const Type * other) const {
+  if (const FlexibleArrayType * na = dyn_cast<FlexibleArrayType>(other)) {
+    return typeArgs_ == na->typeArgs_;
+  }
+
+  return false;
+}
+
+unsigned FlexibleArrayType::getHashValue() const {
+  unsigned result = elementType()->getHashValue();
+  result ^= Type::FlexibleArray;
+  return result;
+}
+
+void FlexibleArrayType::format(FormatStream & out) const {
+  out << "FlexibleArray[" << elementType() << "]";
 }
 
 } // namespace tart

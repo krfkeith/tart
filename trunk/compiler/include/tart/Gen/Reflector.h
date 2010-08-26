@@ -31,6 +31,7 @@ class FunctionType;
 class IterableScope;
 class TypeDefn;
 class TupleType;
+class ReflectionMetadata;
 
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
@@ -58,89 +59,36 @@ struct ReflectedMembers {
 /// -------------------------------------------------------------------
 /// Represents a unique method signature.
 
+#if 0
 class UniqueMethodKey {
 public:
-  UniqueMethodKey(
-      const char * name, const Type * returnType, const TupleType * paramTypes, bool isStatic)
-    : name_(name)
-    , returnType_(returnType)
-    , paramTypes_(paramTypes)
-    , isStatic_(isStatic)
-  {}
+  UniqueMethodKey(const char * name, const FunctionType * fnType);
 
   struct KeyInfo {
-    static inline const UniqueMethodKey getEmptyKey() {
-      return UniqueMethodKey(NULL, NULL, NULL, false);
-    }
-    static inline const UniqueMethodKey getTombstoneKey() {
-      return UniqueMethodKey(NULL, NULL, NULL, true);
-    }
-
+    static const UniqueMethodKey getEmptyKey();
+    static const UniqueMethodKey getTombstoneKey();
     static unsigned getHashValue(const UniqueMethodKey & key);
     static bool isEqual(const UniqueMethodKey & lhs, const UniqueMethodKey & rhs);
     static bool isPod() { return true; }
   };
 
+  const char * name() const { return name_; }
+  const FunctionType * type() const { return type_; }
+
 private:
   const char * name_;
-  const Type * returnType_;
-  const TupleType * paramTypes_;
-  bool isStatic_;
+  const FunctionType * type_;
 };
-
-struct MethodTagInfo : public TagInfo {
-  FunctionDefn * method;
-};
-
-/// -------------------------------------------------------------------
-/// Represents a single scope and all of the members within it.
-
-class ReflectedScope {
-public:
-  typedef std::pair<const Type *, TagInfo> TypeArrayElement;
-  typedef std::vector<TypeArrayElement > TypeArray;
-  typedef llvm::DenseMap<const Type *, TagInfo, Type::KeyInfo> TypeMap;
-  typedef llvm::DenseMap<UniqueMethodKey, MethodTagInfo, UniqueMethodKey::KeyInfo> MethodMap;
-
-  ReflectedScope(NameTable & names) : names_(names), var_(NULL), strm_(strmData_) {}
-  ~ReflectedScope();
-
-  void addTypeRef(const Type * type);
-  void addASTDecl(const ASTDecl * ast);
-
-  llvm::GlobalVariable * var() const { return var_; }
-  void setVar(llvm::GlobalVariable * var) { var_ = var; }
-
-  // Sort all of the types by popularity and assign IDs.
-  void assignIndices();
-
-  void encodeTypesTable(llvm::raw_ostream & out);
-  void encodeTypeRef(const Type * type, llvm::raw_ostream & out);
-  void encodeType(const Type * type, llvm::raw_ostream & out);
-
-  llvm::raw_string_ostream & strm() { return strm_; }
-  std::string & strmData() { return strmData_; }
-
-  const TypeArray & derivedTypeRefs() const { return compositeTypeRefs_; }
-  const TypeArray & compositeTypeRefs() const { return compositeTypeRefs_; }
-  const TypeArray & enumTypeRefs() const { return enumTypeRefs_; }
-
-private:
-  NameTable & names_;
-  TypeMap types_;
-  llvm::GlobalVariable * var_;
-  std::string strmData_;
-  llvm::raw_string_ostream strm_;
-
-  TypeArray derivedTypeRefs_;
-  TypeArray compositeTypeRefs_;
-  TypeArray enumTypeRefs_;
-};
+#endif
 
 /// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
 class Reflector {
 public:
+  typedef std::pair<const Type *, TagInfo> TypeArrayElement;
+  typedef std::vector<TypeArrayElement> TypeArray;
+  typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
+
   // Keep these enums in sync with Member.tart
   enum Visibility {
     PUBLIC,
@@ -178,7 +126,7 @@ public:
     //SingleValue
   };
 
-  // Keep this enum in sync with SimpleType.tart
+  // Keep this enum in sync with PrimitiveType.tart
   enum SubtypeId {
     NONE = 0,
     VOID,
@@ -222,7 +170,7 @@ public:
   llvm::GlobalVariable * getTypePtr(const Type * type);
 
   /** Return the reflected symbol data for a given definition. */
-  ReflectedScope * getReflectedScope(const Defn * def);
+  ReflectionMetadata * getReflectionMetadata(const Defn * def);
 
   /** Generate reflection information for a module. */
   void emitModule(Module * module);
@@ -231,14 +179,17 @@ public:
       and the definitions within it. */
   void emitNameTable(Module * module);
 
+  /** Generate the table of invocation functions. */
+  void emitCallAdapterFnTable(Module * module);
+
   /** Add a definition to the list of reflected members. */
   void addDefn(const Defn * def);
 
   /** Add all of the members of the given scope to the reflected scope. */
-  void addMembers(const IterableScope * scope, ReflectedScope * rs);
+  void addMembers(const IterableScope * scope, ReflectionMetadata * rs);
 
   /** Add the member to the reflected scope. */
-  void addMember(const Defn * def, ReflectedScope * rs);
+  void addMember(const Defn * def, ReflectionMetadata * rs);
 
   /** Generate reflection information for a definition in this module. */
   void buildRMD(const Defn * def);
@@ -247,23 +198,25 @@ public:
   void emitReflectedSymbol(const Defn * defn);
 
   /** Write out reflection information for a definition in this module. */
-  void emitReflectedDefn(ReflectedScope * rs, const Defn * def);
+  void emitReflectedDefn(ReflectionMetadata * rs, const Defn * def);
 
   /** Write out the reflection data for the contents of a definition. */
-  void emitReflectedMembers(ReflectedScope * rs, const IterableScope * scope);
+  void emitReflectedMembers(ReflectionMetadata * rs, const IterableScope * scope);
 
   /** Emitters for various sections. */
-  void emitTypeParamSection(ReflectedScope * rs, const Defn * def);
-  void emitBaseClassSection(ReflectedScope * rs, const CompositeType * type);
-  void emitInterfacesSection(ReflectedScope * rs, const CompositeType * type);
-  void emitAttributeSection(ReflectedScope * rs, const ExprList & attrs);
+  void emitTypeParamSection(ReflectionMetadata * rs, const Defn * def);
+  void emitBaseClassSection(ReflectionMetadata * rs, const CompositeType * type);
+  void emitInterfacesSection(ReflectionMetadata * rs, const CompositeType * type);
+  void emitAttributeSection(ReflectionMetadata * rs, const ExprList & attrs);
 
   /** Emitters for various definition types. */
-  void emitNamespaceDefn(ReflectedScope * rs, const NamespaceDefn * def, llvm::raw_ostream & out);
-  void emitFieldDefn(ReflectedScope * rs, const VariableDefn * def, llvm::raw_ostream & out);
-  void emitConstructorDefn(ReflectedScope * rs, const FunctionDefn * def, llvm::raw_ostream & out);
-  void emitMethodDefn(ReflectedScope * rs, const FunctionDefn * def, llvm::raw_ostream & out);
-  void emitPropertyDefn(ReflectedScope * rs, const PropertyDefn * def, llvm::raw_ostream & out);
+  void emitNamespaceDefn(ReflectionMetadata * rs, const NamespaceDefn * def,
+      llvm::raw_ostream & out);
+  void emitFieldDefn(ReflectionMetadata * rs, const VariableDefn * def, llvm::raw_ostream & out);
+  void emitConstructorDefn(ReflectionMetadata * rs, const FunctionDefn * def,
+      llvm::raw_ostream & out);
+  void emitMethodDefn(ReflectionMetadata * rs, const FunctionDefn * def, llvm::raw_ostream & out);
+  void emitPropertyDefn(ReflectionMetadata * rs, const PropertyDefn * def, llvm::raw_ostream & out);
 
   /** Generate reflection information for a type definition in this module. */
   llvm::GlobalVariable * emitTypeDefn(const TypeDefn * td);
@@ -289,7 +242,7 @@ public:
 
   /** Generate a Type object and return a pointer to it. */
   llvm::Constant * emitType(const Type * type);
-  llvm::Constant * emitComplexType(const CompositeType * type);
+  llvm::Constant * emitCompositeType(const CompositeType * type);
   llvm::Constant * emitEnumType(const EnumType * type);
   llvm::Constant * emitFunctionType(const FunctionType * type);
   llvm::Constant * emitDerivedType(const Type * type);
@@ -299,10 +252,10 @@ public:
   llvm::Constant * emitTupleType(const TupleType * types);
 
   /** Return the type of the 'invoke' function for a function type. */
-  llvm::FunctionType * getInvokeFnType();
+  llvm::FunctionType * getCallAdapterFnType();
 
 private:
-  typedef llvm::DenseMap<const Defn *, ReflectedScope *> ReflectedSymbolMap;
+  typedef llvm::DenseMap<const Defn *, ReflectionMetadata *> ReflectedSymbolMap;
 
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);
   bool visitMember(ReflectedMembers & rm, const Defn * member);
@@ -319,9 +272,13 @@ private:
   llvm::IRBuilder<true> builder_;    // LLVM builder
   llvm::Module * irModule_;
   llvm::GlobalVariable * nameTableVar_;
+  llvm::Constant * invokeFnTableVar_;
 
   ReflectedSymbolMap rsymMap_;
   GlobalVarMap globals_;
+
+  TypeMap invokeMap_;
+  TypeArray invokeRefs_;
 };
 
 }

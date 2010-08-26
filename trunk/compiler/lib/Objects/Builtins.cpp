@@ -47,12 +47,12 @@ Type * Builtins::typeIterator;
 SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperationError");
 
 SystemClass Builtins::typeType("tart.reflect.Type");
-SystemClass Builtins::typeSimpleType("tart.reflect.SimpleType");
-SystemClass Builtins::typeComplexType("tart.reflect.ComplexType");
+SystemClass Builtins::typeCompositeType("tart.reflect.CompositeType");
 SystemClass Builtins::typeEnumInfoBlock("tart.reflect.EnumInfoBlock");
 SystemClass Builtins::typeEnumType("tart.reflect.EnumType");
 SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
 SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
+SystemClass Builtins::typePrimitiveType("tart.reflect.PrimitiveType");
 SystemClass Builtins::typeMember("tart.reflect.Member");
 SystemClass Builtins::typeField("tart.reflect.Field");
 SystemClass Builtins::typeParameter("tart.reflect.Parameter");
@@ -86,6 +86,7 @@ void Builtins::init() {
   // Other built-in types
   AddressType::initBuiltin();
   NativeArrayType::initBuiltin();
+  FlexibleArrayType::initBuiltin();
   TypeLiteralType::initBuiltin();
 
   DASSERT(module.module() != NULL);

@@ -107,10 +107,10 @@ Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
 }
 
 // -------------------------------------------------------------------
-// ComplexTypeOfIntrinsic
-ComplexTypeOfIntrinsic ComplexTypeOfIntrinsic::instance;
+// CompositeTypeOfIntrinsic
+CompositeTypeOfIntrinsic CompositeTypeOfIntrinsic::instance;
 
-Value * ComplexTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
   const Type * type = typeLiteral->value();
@@ -119,7 +119,7 @@ Value * ComplexTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * 
   }
 
   return cg.builder().CreateBitCast(
-      cg.createTypeObjectPtr(type), Builtins::typeComplexType->irEmbeddedType(), "bitcast");
+      cg.createTypeObjectPtr(type), Builtins::typeCompositeType->irEmbeddedType(), "bitcast");
 }
 
 // -------------------------------------------------------------------

@@ -25,6 +25,7 @@ class TypeVariable;
 class AddressType;
 class TypeLiteralType;
 class NativeArrayType;
+class FlexibleArrayType;
 class UnionType;
 
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
@@ -216,6 +217,8 @@ private:
       Variance variance);
   bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * pattern,
+      const Type * value);
+  bool unifyFlexibleArrayType(SourceContext * source, const FlexibleArrayType * pattern,
       const Type * value);
   bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * pattern,
       const Type * value);

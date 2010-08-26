@@ -106,6 +106,11 @@ if (NOT MSVC)
   find_llvm_library(BLACKFIN_CODE_GEN LLVMBlackfinCodeGen)
   find_llvm_library(BLACKFIN_INFO LLVMBlackfinInfo)
 
+  # Architecture: Blaze
+  find_llvm_library(MBLAZE_ASM_PRINTER LLVMMBlazeAsmPrinter)
+  find_llvm_library(MBLAZE_CODE_GEN LLVMMBlazeCodeGen)
+  find_llvm_library(MBLAZE_INFO LLVMMBlazeInfo)
+
   # Architecture: CBackend
   find_llvm_library(CBACKEND LLVMCBackend)
   find_llvm_library(CBACKEND_INFO LLVMCBackendInfo)

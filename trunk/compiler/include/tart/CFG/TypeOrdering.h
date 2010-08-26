@@ -21,6 +21,7 @@ class UnionType;
 class TupleType;
 class AddressType;
 class NativeArrayType;
+class FlexibleArrayType;
 class UnitType;
 class TypeVariable;
 class TypeBinding;
@@ -55,6 +56,7 @@ class TypeOrdering {
   virtual ComparisonResult compare(const TupleType * t1, const TupleType * t2);
   virtual ComparisonResult compare(const AddressType * t1, const AddressType * t2);
   virtual ComparisonResult compare(const NativeArrayType * t1, const NativeArrayType * t2);
+  virtual ComparisonResult compare(const FlexibleArrayType * t1, const FlexibleArrayType * t2);
   virtual ComparisonResult compare(const UnitType * t1, const UnitType * t2);
 
   virtual ComparisonResult compareDissimilar(const Type * t1, const Type * t2);

@@ -792,6 +792,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
 }
 
 ASTDecl * Parser::declareTypealias(const DeclModifiers & mods) {
+  SourceLocation loc = tokenLoc;
   const char * declName = matchIdent();
   if (declName == NULL) {
     expectedIdentifier();
@@ -807,7 +808,22 @@ ASTDecl * Parser::declareTypealias(const DeclModifiers & mods) {
     diag.warn(lexer.tokenLocation()) << "Modifier 'abstract' not applicable to typealias.";
   }
 
-  DFAIL("Implement");
+  if (!match(Token_Colon)) {
+    expected("':'");
+  }
+
+  ASTNode * type = typeExpression();
+  if (type == NULL) {
+    return NULL;
+  }
+
+  if (!match(Token_Semi)) {
+    expectedSemicolon();
+  }
+
+  ASTNodeList bases;
+  bases.push_back(type);
+  return new ASTTypeDecl(ASTNode::TypeAlias, loc, declName, bases, mods);
 }
 
 bool Parser::accessorMethodList(ASTPropertyDecl * parent,

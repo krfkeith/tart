@@ -16,14 +16,24 @@ class FunctionType : Type {
 	      throw InvocationError("Incorrect number of arguments");
 	    }
 	  }
-	
+
 	  /** Helper function to ensure that the object pointer is null. */
 	  static def ignoreObjectPtr(obj:Object) -> Address[void] {
 	    return null;
 	  }
   }
 
-  undef construct();
+  def construct(
+  		returnType:Type,
+  		selfType:optional Type,
+  		paramTypes:Type[],
+    	invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
+    super(TypeKind.FUNCTION);
+    self._returnType = returnType;
+    self._selfType = selfType;
+    self._paramTypes = paramTypes;
+    self._invoke = invoke;
+  }
 
   /** The return type of the method. */
   final def returnType:Type { get { return _returnType; } }
@@ -50,6 +60,21 @@ class FunctionType : Type {
   }
   
   final override toString -> String {
-    return "FIXME";
+    let sb = StringBuilder("fn ");
+    if not paramTypes.isEmpty {
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in paramTypes {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("({0})", ",".join(typeStrings)));
+    }
+
+    if returnType is not PrimitiveType.VOID {
+      sb.append(" -> ");
+	    sb.append(returnType.toString());
+    }
+
+    return sb.toString();
   }
 }

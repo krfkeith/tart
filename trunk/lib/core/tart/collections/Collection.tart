@@ -1,8 +1,5 @@
 /** Collection interface */
 interface Collection[%ItemType] : Iterable[ItemType] {
-  /** Return true if the specified item is in the collection. */
-  def contains(item:ItemType) -> bool;
-
   /** Return the number of items in the collection. */
   def size:int { get; }
 

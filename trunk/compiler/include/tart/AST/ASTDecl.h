@@ -188,7 +188,7 @@ public:
   static inline bool classof(const ASTTypeDecl *) { return true; }
   static inline bool classof(const ASTNode * e) {
       return e->nodeType() >= ASTNode::Class &&
-          e->nodeType() <= ASTNode::Enum;
+          e->nodeType() <= ASTNode::TypeAlias;
   }
 };
 
