@@ -86,6 +86,18 @@ struct TokenPosition {
   uint32_t        beginCol;
   uint32_t        endLine;
   uint32_t        endCol;
+
+  TokenPosition() : beginLine(0), beginCol(0), endLine(0), endCol(0) {}
+  TokenPosition(const TokenPosition & src)
+    : beginLine(src.beginLine), beginCol(src.beginCol), endLine(src.endLine), endCol(src.endCol) {}
+
+  TokenPosition & operator=(const TokenPosition & src) {
+    beginLine = src.beginLine;
+    beginCol = src.beginCol;
+    endLine = src.endLine;
+    endCol = src.endCol;
+    return *this;
+  }
 };
 
 /// -------------------------------------------------------------------

@@ -36,6 +36,9 @@ TokenPosition ProgramSource::tokenPosition(const SourceLocation & loc) {
   result.beginCol = loc.begin - *itBegin;
   result.endLine = itEnd - lineOffsets.begin() + 1;
   result.endCol = loc.end - *itEnd;
+
+  DASSERT(int32_t(result.beginLine) >= 0);
+  DASSERT(int32_t(result.beginCol) >= 0);
   return result;
 }
 
