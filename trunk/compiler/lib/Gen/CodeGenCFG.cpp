@@ -122,11 +122,9 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 
     ExprList & exprs = blk->exprs();
     for (ExprList::iterator it = exprs.begin(); it != exprs.end(); ++it) {
-      setDebugLocation((*it)->location());
       genStmt(*it);
     }
 
-    setDebugLocation(blk->termLocation());
     genBlockTerminator(blk);
   }
 
@@ -134,27 +132,26 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 }
 
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
-  if (debug_ && loc != dbgLocation_ && dbgContext_.isScope()) {
+  if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
     if (loc.file == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
-    } else if (loc.file == module_->moduleSource()) {
+    } else {
       TokenPosition pos = tokenPosition(loc);
-      DILocation diLoc = dbgFactory_.CreateLocation(
-          pos.beginLine,
-          pos.beginCol,
-          dbgContext_,
-          DILocation(NULL));
-      builder_.SetCurrentDebugLocation(DebugLoc::getFromDILocation(diLoc));
+      DASSERT(pos.beginLine);
+      builder_.SetCurrentDebugLocation(
+          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.file)));
     }
   }
 }
 
 void CodeGenerator::genStmt(Expr * in) {
+  setDebugLocation(in->location());
   genExpr(in);
 }
 
 void CodeGenerator::genBlockTerminator(Block * blk) {
+  setDebugLocation(blk->termLocation());
   switch (blk->terminator()) {
     case BlockTerm_Return:
       genReturn(blk->termValue());
