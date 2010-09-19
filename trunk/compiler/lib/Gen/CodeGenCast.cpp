@@ -233,7 +233,7 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1, "union_val_ptr"),
-                llvm::PointerType::get(fieldType, 0)));
+                fieldType->getPointerTo()));
       }
 
       if (utype->typeShape() == Shape_Large_Value) {
@@ -296,8 +296,8 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
 
 #if 0
       const llvm::Type * fieldType = toType->irEmbeddedType();
-      const llvm::Type * unionTypeForMember = llvm::PointerType::get(llvm::StructType::get(
-          context_, utype->getDiscriminatorType(), fieldType, NULL), 0);
+      const llvm::Type * unionTypeForMember = llvm::StructType::get(
+          context_, utype->getDiscriminatorType(), fieldType, NULL)->getPointerTo();
 
       return builder_.CreateLoad(
           builder_.CreateConstInBoundsGEP2_32(
@@ -321,7 +321,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
 
         return builder_.CreateBitCast(
             builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
-            llvm::PointerType::get(fieldType, 0));
+            fieldType->getPointerTo());
       }
 
       #if LLVM_UNION_SUPPORT
@@ -337,7 +337,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
             return builder_.CreateLoad(
                 builder_.CreateBitCast(
                     builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
-                    llvm::PointerType::get(fieldType, 0)), "union_val");
+                    fieldType->getPointerTo()), "union_val");
           }
 
           Value * indices[3];
@@ -358,7 +358,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
       return builder_.CreateLoad(
           builder_.CreateBitCast(
               builder_.CreateConstInBoundsGEP2_32(value, 0, 1, "union_val_ptr"),
-              llvm::PointerType::get(fieldType, 0)), "union_val");
+              fieldType->getPointerTo()), "union_val");
 #endif
     } else {
       // The union contains only pointer types, so we know that its representation is simply
@@ -422,7 +422,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
 
   // If it's an interface, then we'll need to simply bit-cast it.
   if (toType->typeClass() == Type::Interface) {
-    return builder_.CreateBitCast(val, llvm::PointerType::get(toType->irType(), 0), "intf_ptr");
+    return builder_.CreateBitCast(val, toType->irType()->getPointerTo(), "intf_ptr");
   }
 
   // List of GetElementPtr indices
@@ -452,7 +452,7 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
 
   // Bitcast to object type
   Value * valueAsObjType = builder_.CreateBitCast(val,
-      llvm::PointerType::getUnqual(Builtins::typeObject->irType()));
+      Builtins::typeObject->irType()->getPointerTo());
 
   // Upcast to type 'object' and load the TIB pointer.
   ValueList indices;

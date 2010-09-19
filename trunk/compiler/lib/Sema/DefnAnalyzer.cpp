@@ -129,6 +129,7 @@ bool DefnAnalyzer::analyzeModule() {
   //importSystemType(Builtins::typeModuleConstants);
   //importSystemType(Builtins::typePackage);
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
+  analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
   analyzeDefn(rmd_CallAdapterFnType.get(), Task_PrepCodeGeneration);
 

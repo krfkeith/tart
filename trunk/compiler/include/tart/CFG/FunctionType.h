@@ -79,6 +79,7 @@ public:
   bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
+  Expr * nullInitValue() const;
   bool isSingular() const;
   TypeShape typeShape() const;
   void trace() const;
@@ -126,6 +127,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const;
   bool isSingular() const;
+  bool containsReferenceType() const { return true; }
   void trace() const;
   void format(FormatStream & out) const;
   TypeShape typeShape() const { return Shape_Small_RValue; }

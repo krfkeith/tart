@@ -212,7 +212,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   switch (in->exprType()) {
     case Expr::ConstNull:
-      return ConstantPointerNull::getNullValue(PointerType::get(in->type()->irType(), 0));
+      return ConstantPointerNull::getNullValue(in->type()->irType()->getPointerTo());
 
     case Expr::ConstInt:
       return static_cast<const ConstantInteger *>(in)->value();
@@ -898,8 +898,8 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   llvm::Type * charDataType = ArrayType::get(builder_.getInt8Ty(), 0);
 
   // Self-referential member values
-  UndefValue * strDataStart = UndefValue::get(llvm::PointerType::getUnqual(charDataType));
-  UndefValue * strSource = UndefValue::get(llvm::PointerType::getUnqual(irType));
+  UndefValue * strDataStart = UndefValue::get(charDataType->getPointerTo());
+  UndefValue * strSource = UndefValue::get(irType->getPointerTo());
 
   // Object type members
   std::vector<Constant *> objMembers;
@@ -930,7 +930,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   Constant * strConstant = llvm::ConstantExpr::getPointerCast(
       new GlobalVariable(*irModule_,
           strStruct->getType(), true, linkage, strStruct, name),
-      llvm::PointerType::getUnqual(irType));
+      irType->getPointerTo());
 
   Constant * indices[2];
   indices[0] = getInt32Val(0);
@@ -991,7 +991,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
 }
 
 Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
-  return llvm::ConstantPointerNull::get(llvm::PointerType::get(in->type()->irType(), 0));
+  return llvm::ConstantPointerNull::get(in->type()->irType()->getPointerTo());
 }
 
 llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
@@ -1000,12 +1000,12 @@ llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
 
   const llvm::Type * irType = type->irType();
   if (memberSize && type->isReferenceType()) {
-    irType = llvm::PointerType::get(irType, 0);
+    irType = irType->getPointerTo();
   }
 
   return llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(llvm::PointerType::get(irType, 0)),
+          ConstantPointerNull::get(irType->getPointerTo()),
           &indices[0], 1),
       builder_.getInt32Ty());
 }
@@ -1019,7 +1019,7 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
   }
 
   const llvm::Type * resultType = objType->irType();
-  resultType = llvm::PointerType::get(resultType, 0);
+  resultType = resultType->getPointerTo();
 
   Value * sizeValue;
   switch (sizeExpr->exprType()) {
@@ -1032,6 +1032,14 @@ Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
       sizeValue = genExpr(sizeExpr);
       break;
   }
+
+  return genVarSizeAlloc(objType, sizeValue);
+}
+
+Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) {
+
+  const llvm::Type * resultType = objType->irType();
+  resultType = resultType->getPointerTo();
 
   if (isa<llvm::PointerType>(sizeValue->getType())) {
     if (Constant * c = dyn_cast<Constant>(sizeValue)) {
@@ -1178,7 +1186,7 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
-                llvm::PointerType::get(fieldType, 0)));
+                fieldType->getPointerTo()));
       }
 
       return builder_.CreateLoad(uvalue);

@@ -39,9 +39,19 @@ struct AddressRange {
   size_t size() const { return last - first; }
 };
 
+struct TraceDescriptor {
+  uint16_t last;
+  uint16_t fieldCount;
+  int32_t offset;
+  union {
+    intptr_t * fieldOffsets;
+    void (*traceMethod)(void * baseAddr, tart_object * traceAction);
+  };
+};
+
 struct SafePointEntry {
   void * safePoint;
-  intptr_t * stackDescriptor;
+  TraceDescriptor * traceTable;
 };
 
 struct Segment {

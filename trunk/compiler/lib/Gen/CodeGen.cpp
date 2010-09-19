@@ -72,7 +72,7 @@ CodeGenerator::CodeGenerator(Module * mod)
   // Turn on reflection if (a) it's enabled on the command-line, and (b) there were
   // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
-  methodPtrType_ = llvm::PointerType::getUnqual(llvm::OpaqueType::get(context_));
+  methodPtrType_ = llvm::OpaqueType::get(context_)->getPointerTo();
 }
 
 void CodeGenerator::generate() {
@@ -81,6 +81,7 @@ void CodeGenerator::generate() {
   // Add target selection info
   TargetSelection::instance.addToModule(irModule_);
   targetData_ = TargetSelection::instance.targetData();
+  intPtrType_ = targetData_->getIntPtrType(context_);
 
   // Generate debugging information
   if (debug_) {
@@ -173,7 +174,12 @@ void CodeGenerator::generate() {
 
 llvm::ConstantInt * CodeGenerator::getIntVal(int value) {
   using namespace llvm;
-  return ConstantInt::get(targetData_->getIntPtrType(context_), value, true);
+  return ConstantInt::get(intPtrType_, value, true);
+}
+
+llvm::ConstantInt * CodeGenerator::getInt16Val(int value) {
+  using namespace llvm;
+  return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt16Ty()), value, true);
 }
 
 llvm::ConstantInt * CodeGenerator::getInt32Val(int value) {
@@ -255,9 +261,7 @@ void CodeGenerator::genEntryPoint() {
   // Generate the main method
   std::vector<const llvm::Type *> mainArgs;
   mainArgs.push_back(builder_.getInt32Ty());
-  mainArgs.push_back(
-      llvm::PointerType::get(
-          llvm::PointerType::get(builder_.getInt8Ty(), 0), 0));
+  mainArgs.push_back(builder_.getInt8Ty()->getPointerTo()->getPointerTo());
 
   // Create the function type
   llvm::FunctionType * functype = llvm::FunctionType::get(builder_.getInt32Ty(), mainArgs, false);
@@ -301,7 +305,7 @@ llvm::Function * CodeGenerator::getUnwindRaiseException() {
   if (unwindRaiseException_ == NULL) {
     const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
     std::vector<const llvm::Type *> parameterTypes;
-    parameterTypes.push_back(llvm::PointerType::getUnqual(unwindExceptionType));
+    parameterTypes.push_back(unwindExceptionType->getPointerTo());
     const llvm::FunctionType * ftype =
         llvm::FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
     unwindRaiseException_ = cast<Function>(
@@ -318,7 +322,7 @@ llvm::Function * CodeGenerator::getUnwindResume() {
   if (unwindResume_ == NULL) {
     const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
     std::vector<const llvm::Type *> parameterTypes;
-    parameterTypes.push_back(llvm::PointerType::getUnqual(unwindExceptionType));
+    parameterTypes.push_back(unwindExceptionType->getPointerTo());
     const llvm::FunctionType * ftype =
         llvm::FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
     unwindResume_ = cast<Function>(
@@ -339,8 +343,8 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
     parameterTypes.push_back(builder_.getInt32Ty());
     parameterTypes.push_back(builder_.getInt32Ty());
     parameterTypes.push_back(builder_.getInt64Ty());
-    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
-    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
+    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
     const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
 
     exceptionPersonality_ = cast<Function>(
@@ -361,8 +365,8 @@ llvm::Function * CodeGenerator::getExceptionTracePersonality() {
     parameterTypes.push_back(builder_.getInt32Ty());
     parameterTypes.push_back(builder_.getInt32Ty());
     parameterTypes.push_back(builder_.getInt64Ty());
-    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
-    parameterTypes.push_back(llvm::PointerType::get(builder_.getInt8Ty(), 0));
+    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
+    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
     const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
 
     exceptionTracePersonality_ = cast<Function>(
@@ -382,7 +386,7 @@ llvm::Function * CodeGenerator::getGlobalAlloc() {
     std::vector<const Type *> parameterTypes;
     parameterTypes.push_back(builder_.getInt64Ty());
     const FunctionType * ftype = FunctionType::get(
-        llvm::PointerType::get(builder_.getInt8Ty(), 0),
+        builder_.getInt8Ty()->getPointerTo(),
         parameterTypes,
         false);
 
@@ -525,10 +529,12 @@ void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata) {
   Function * gcroot = llvm::Intrinsic::getDeclaration(
       irModule_, llvm::Intrinsic::gcroot, NULL, 0);
 
-  value = builder_.CreatePointerCast(
-      value, PointerType::get(PointerType::get(builder_.getInt8Ty(), 0), 0));
+  value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
   if (metadata == NULL) {
-    metadata = ConstantPointerNull::get(PointerType::get(builder_.getInt8Ty(), 0));
+    DASSERT(isa<PointerType>(value->getType()->getContainedType(0)));
+    metadata = ConstantPointerNull::get(builder_.getInt8PtrTy());
+  } else {
+    metadata = llvm::ConstantExpr::getPointerCast(metadata, builder_.getInt8PtrTy());
   }
   builder_.CreateCall2(gcroot, value, metadata);
 }

@@ -25,7 +25,7 @@ public final class String : Iterable[char] {
     /** Custom allocation function for strings. */
     static def alloc(len:int) -> String {
       // The 'offsetof' trick for calculating the size.
-      let s:String = __pvalloc(zeroPtr[String]()._data[len]);
+      let s:String = __flexAlloc(len);
       s._size = len;
       s._source = s;
       s._start = addressOf(s._data[0]);
@@ -73,7 +73,7 @@ public final class String : Iterable[char] {
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, str.size);
     count = Math.min(count, str.size - start);
-    let self:String = __pvalloc(zeroPtr[String]()._data[0]);
+    let self:String = __flexAlloc(0);
     self._size = count;
     self._start = addressOf(str._data[start]);
     self._source = str._source;

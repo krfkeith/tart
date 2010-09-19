@@ -73,6 +73,9 @@ public:
   static SystemClass typeAttribute;
   static SystemClass typeIntrinsicAttribute;
 
+  // System types - gc
+  static SystemClass typeTraceAction;
+
   // System types - lazily loaded
   static SystemClass typeRef;
   static SystemClass typeValueRef;

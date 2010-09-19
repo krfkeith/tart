@@ -369,7 +369,7 @@ void Reflector::emitModule(Module * module) {
       invokeMap_[invokeRefs_[i].first].index = i + 1;
     }
 
-#if 1
+#if 0
     diag.debug() << invokeMap_.size() << " unique invoke map entries added";
     for (TypeArray::iterator it = invokeRefs_.begin(); it != invokeRefs_.end(); ++it) {
       diag.debug() << Format_Type << "   " << it->second.useCount << " " << it->first <<
@@ -454,7 +454,7 @@ void Reflector::emitCallAdapterFnTable(Module * module) {
 
   const llvm::Type * invokeFnType = cg_.getCallAdapterFnType();
   const llvm::PointerType * invokeFnPtrType =
-      llvm::PointerType::getUnqual(cg_.getCallAdapterFnType());
+      cg_.getCallAdapterFnType()->getPointerTo();
 
   ConstantList invokeFnList;
   invokeFnList.push_back(llvm::ConstantPointerNull::get(invokeFnPtrType));
@@ -807,8 +807,8 @@ void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
 
   // Write out the list of TIB references
   if (!classRefList.empty()) {
-    llvm::PointerType * tibPointerType =
-        llvm::PointerType::getUnqual(Builtins::typeTypeInfoBlock.irType());
+    const llvm::PointerType * tibPointerType =
+        Builtins::typeTypeInfoBlock.irType()->getPointerTo();
     Constant * compositeTypeArray = ConstantArray::get(
         ArrayType::get(tibPointerType, classRefList.size()),
         classRefList);
@@ -818,15 +818,15 @@ void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
         compositeTypeArray, encodedCompositesSymbol);
 
     sb.addField(llvm::ConstantExpr::getPointerCast(
-        classRefListPtr, llvm::PointerType::getUnqual(tibPointerType)));
+        classRefListPtr, tibPointerType->getPointerTo()));
   } else {
     sb.addNullField(rmd_compositeTypes.type());
   }
 
   // Write out the list of EIB references
   if (!enumRefList.empty()) {
-    llvm::PointerType * eibPointerType =
-        llvm::PointerType::getUnqual(Builtins::typeEnumInfoBlock.irType());
+    const llvm::PointerType * eibPointerType =
+        Builtins::typeEnumInfoBlock.irType()->getPointerTo();
     Constant * enumTypeArray = ConstantArray::get(
         ArrayType::get(eibPointerType, enumRefList.size()),
         enumRefList);
@@ -836,7 +836,7 @@ void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
         enumTypeArray, encodedEnumSymbol);
 
     sb.addField(llvm::ConstantExpr::getPointerCast(
-        enumRefListPtr, llvm::PointerType::getUnqual(eibPointerType)));
+        enumRefListPtr, eibPointerType->getPointerTo()));
   } else {
     sb.addNullField(rmd_enumTypes.type());
   }

@@ -555,7 +555,7 @@ Expr * EvalPass::evalUnionCtorCast(CastExpr *in) {
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
-                llvm::PointerType::get(fieldType, 0)));
+                fieldType->getPointerTo()));
       }
 
       return builder_.CreateLoad(uvalue);

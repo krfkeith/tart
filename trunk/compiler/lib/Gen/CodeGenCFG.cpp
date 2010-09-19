@@ -6,6 +6,7 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/UnionType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
@@ -61,53 +62,48 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
   genGCRoot(lValue, varType);
-/*  if (varType->isReferenceType()) {
-    markGCRoot(lValue, NULL);
-  } else if (varType->containsReferenceType()) {
-    if (varType->typeClass() == Type::Struct) {
-      const CompositeType * ctype = static_cast<const CompositeType *>(varType);
-      for (DefnList::const_iterator it = ctype->instanceFields().begin();
-          it != ctype->instanceFields().end(); ++it) {
-        const VariableDefn * var = static_cast<const VariableDefn *>(*it);
-      }
-      //for (const Defn * member = ctype->firstMember();  )
-
-    } else {
-      diag.error(var->location()) << "GC roots not implemented for " << var;
-    }
-    // mark it as a root, but with a different metadata.
-    // Need to get the metadata for this type.
-    //markGCRoot(lValue, NULL);
-  }*/
-
   var->setIRValue(lValue);
 }
 
 void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
-  if (varType->isReferenceType()) {
-    markGCRoot(lValue, NULL);
-  } else if (varType->containsReferenceType()) {
-    if (varType->typeClass() == Type::Struct) {
-      //markGCRoot(lValue, NULL);
-/*      DASSERT(varType->typeShape() == Shape_Small_LValue ||
-          varType->typeShape() == Shape_Large_Value);
-      const CompositeType * ctype = static_cast<const CompositeType *>(varType);
-      for (DefnList::const_iterator it = ctype->instanceFields().begin();
-          it != ctype->instanceFields().end(); ++it) {
-        const VariableDefn * field = static_cast<const VariableDefn *>(*it);
-        const Type * fieldType = field->type();
-        if (fieldType->isReferenceType() || fieldType->containsReferenceType()) {
-          genGCRoot(
-              builder_.CreateConstInBoundsGEP1_32(lValue, field->memberIndex(), field->name()),
-              fieldType);
+  switch (varType->typeClass()) {
+    case Type::Class:
+      markGCRoot(lValue, NULL);
+      break;
+
+    case Type::Struct:
+    case Type::Tuple:
+      if (varType->containsReferenceType()) {
+        if (varType->typeShape() != Shape_Small_LValue &&
+            varType->typeShape() != Shape_Large_Value) {
+          diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
         }
-      }*/
-    } else {
-      //diag.error() << "GC roots not implemented for " << varType;
-    }
-    // mark it as a root, but with a different metadata.
-    // Need to get the metadata for this type.
-    //markGCRoot(lValue, NULL);
+        markGCRoot(lValue, getTraceTable(varType));
+      }
+      break;
+
+    case Type::Union:
+      if (varType->containsReferenceType()) {
+        const UnionType * utype = static_cast<const UnionType *>(varType);
+        if (utype->hasRefTypesOnly()) {
+          markGCRoot(lValue, NULL);
+          break;
+        }
+
+        if (varType->typeShape() != Shape_Small_LValue &&
+            varType->typeShape() != Shape_Large_Value) {
+          diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
+        }
+        markGCRoot(lValue, getTraceTable(varType));
+      }
+      break;
+
+    case Type::BoundMethod:
+      markGCRoot(lValue, getTraceTable(varType));
+      break;
+
+    default:
+      break;
   }
 }
 
@@ -207,6 +203,11 @@ void CodeGenerator::genReturn(Expr * returnVal) {
     if (returnShape == Shape_Large_Value) {
       value = loadValue(value, returnVal);
     }
+    if (returnType->irEmbeddedType() != value->getType()) {
+      returnType->irEmbeddedType()->dump(irModule_);
+      value->getType()->dump(irModule_);
+      DASSERT(false);
+    }
     DASSERT_TYPE_EQ(returnVal, returnType->irEmbeddedType(), value->getType());
 #else
     if ((returnShape == Shape_Large_Value || returnShape == Shape_Small_LValue)) {
@@ -289,7 +290,7 @@ void CodeGenerator::genThrow(Block * blk) {
         irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
     unwindInfo = builder_.CreateBitCast(
         builder_.CreateCall(ehException, "eh_ptr"),
-        llvm::PointerType::get(throwableType->getContainedType(2), 0));
+        throwableType->getContainedType(2)->getPointerTo());
   } else if (exceptVal != NULL) {
     // Construct the exception object
     Value * exception = genExpr(exceptVal);
@@ -300,7 +301,7 @@ void CodeGenerator::genThrow(Block * blk) {
     const llvm::Type * throwableType = Builtins::typeThrowable->irType();
     irModule_->addTypeName("tart.core.Throwable", throwableType);
 
-    throwable = builder_.CreateBitCast(exception, llvm::PointerType::getUnqual(throwableType));
+    throwable = builder_.CreateBitCast(exception, throwableType->getPointerTo());
     unwindInfo = builder_.CreateStructGEP(throwable, 2);
   } else {
     diag.warn(blk->termLocation()) << "Unimplemented re-throw of exception.";
@@ -356,7 +357,7 @@ void CodeGenerator::genCatch(Block * blk) {
   ValueList args;
   args.push_back(ehPtr);
   args.push_back(builder_.CreateBitCast(
-      personality, llvm::PointerType::get(builder_.getInt8Ty(), 0)));
+      personality, builder_.getInt8Ty()->getPointerTo()));
 
   // Add an argument for each catch block, or the finally block if there is one.
   size_t numSelectors = blk->termExprs().size() - 1;
@@ -383,7 +384,7 @@ void CodeGenerator::genCatch(Block * blk) {
   const llvm::Type * throwableType = Builtins::typeThrowable->irType();
   llvm::Constant * unwindInfoOffset = llvm::ConstantExpr::getPtrToInt(
       llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(llvm::PointerType::get(throwableType, 0)),
+          ConstantPointerNull::get(throwableType->getPointerTo()),
           gepIndices, 2),
       builder_.getInt32Ty());
 

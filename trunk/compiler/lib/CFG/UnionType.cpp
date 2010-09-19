@@ -216,7 +216,7 @@ const llvm::Type * UnionType::createIRType() const {
     const llvm::Type * discriminatorType = getDiscriminatorType();
     const llvm::Type * largestType = largestType32->irType();
     if (largestType32->isReferenceType()) {
-      largestType = llvm::PointerType::get(largestType, 0);
+      largestType = largestType->getPointerTo();
     }
     std::vector<const llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
@@ -236,7 +236,7 @@ const llvm::Type * UnionType::createIRType() const {
 const llvm::Type * UnionType::irParameterType() const {
   const llvm::Type * type = irType();
   if (shape_ == Shape_Large_Value) {
-    type = llvm::PointerType::get(type, 0);
+    type = type->getPointerTo();
   }
 
   return type;
@@ -423,7 +423,17 @@ Expr * UnionType::nullInitValue() const {
 }
 
 bool UnionType::containsReferenceType() const {
-  return numReferenceTypes_ > 0;
+  if (numReferenceTypes_ > 0) {
+    return true;
+  }
+
+  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
+    if ((*it)->containsReferenceType()) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 TypeShape UnionType::typeShape() const {

@@ -172,7 +172,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
   if (selfType != NULL) {
     const llvm::Type * argType = selfType->irType();
     if (!isa<PrimitiveType>(selfType) && selfType->typeClass() != Type::Enum) {
-      argType = PointerType::getUnqual(argType);
+      argType = argType->getPointerTo();
     }
 
     parameterTypes.push_back(argType);
@@ -197,7 +197,7 @@ void FunctionType::trace() const {
 }
 
 const llvm::Type * FunctionType::irEmbeddedType() const {
-  return llvm::PointerType::get(irType(), 0);
+  return irType()->getPointerTo();
 //  if (isStatic()) {
 //  } else {
 //    DFAIL("Plain function type cannot be embedded");
@@ -206,7 +206,7 @@ const llvm::Type * FunctionType::irEmbeddedType() const {
 
 const llvm::Type * FunctionType::irParameterType() const {
   if (isStatic()) {
-    return llvm::PointerType::get(irType(), 0);
+    return irType()->getPointerTo();
   } else {
     DFAIL("Plain function type cannot be passed as a parameter");
   }
@@ -254,6 +254,10 @@ unsigned FunctionType::getHashValue() const {
   hash.add(paramTypes()->getHashValue());
   hash.add(isStatic());
   return hash.end();
+}
+
+Expr * FunctionType::nullInitValue() const {
+  return ConstantNull::get(SourceLocation(), this);
 }
 
 TypeShape FunctionType::typeShape() const {
@@ -357,7 +361,7 @@ const llvm::Type * BoundMethodType::createIRType() const {
       Builtins::typeObject, fnType_->params(), fnType_->returnType());
 
   std::vector<const llvm::Type *> fieldTypes;
-  fieldTypes.push_back(llvm::PointerType::get(irFnType, 0));
+  fieldTypes.push_back(irFnType->getPointerTo());
   fieldTypes.push_back(Builtins::typeObject->irEmbeddedType());
   return llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
 }

@@ -14,9 +14,15 @@ public final class Array[%ElementType] : Collection[ElementType] {
 
     /** Array allocator function */
     static def alloc(size:int) -> Array {
-      let self:Array =  __pvalloc(zeroPtr[Array[ElementType]]()._data[size]);
+      let self:Array =  __flexAlloc(size);
       self._size = size;
       return self;
+    }
+    
+    def __trace(op:Address[void]) {
+      for i = 0; i < _size; ++i {
+        //GC.trace(op, addressOf[_data[i]]);
+      }
     }
 
     //def asBuffer() {

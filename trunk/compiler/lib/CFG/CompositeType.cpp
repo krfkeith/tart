@@ -236,7 +236,7 @@ const llvm::Type * CompositeType::createIRType() const {
   }
 
   if (typeClass() == Type::Interface) {
-    fieldTypes.push_back(PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0));
+    fieldTypes.push_back(Builtins::typeTypeInfoBlock.irType()->getPointerTo());
   }
 
   for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
@@ -286,7 +286,7 @@ const llvm::Type * CompositeType::createIRType() const {
 const llvm::Type * CompositeType::irEmbeddedType() const {
   const llvm::Type * type = irType();
   if (isReferenceType()) {
-    return llvm::PointerType::get(type, 0);
+    return type->getPointerTo();
   } else {
     return type;
   }
@@ -295,7 +295,7 @@ const llvm::Type * CompositeType::irEmbeddedType() const {
 const llvm::Type * CompositeType::irParameterType() const {
   const llvm::Type * type = irType();
   if (isReferenceType() || typeShape() == Shape_Large_Value) {
-    return llvm::PointerType::get(type, 0);
+    return type->getPointerTo();
   } else {
     return type;
   }
@@ -304,7 +304,7 @@ const llvm::Type * CompositeType::irParameterType() const {
 const llvm::Type * CompositeType::irReturnType() const {
   const llvm::Type * type = irType();
   if (isReferenceType() || typeShape() == Shape_Large_Value) {
-    return llvm::PointerType::get(type, 0);
+    return type->getPointerTo();
   } else {
     return type;
   }

@@ -187,7 +187,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   // Get the TIB
   Value * tib = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
-  //DASSERT_TYPE_EQ(llvm::PointerType::get(Builtins::typeTypeInfoBlock.irType(), 0), tib->getType());
+  //DASSERT_TYPE_EQ(Builtins::typeTypeInfoBlock.irType()->getPointerTo(), tib->getType());
 
   indices.clear();
   indices.push_back(getInt32Val(0));
@@ -195,7 +195,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   indices.push_back(getInt32Val(methodIndex));
   Value * fptr = builder_.CreateLoad(
       builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
-  return builder_.CreateBitCast(fptr, llvm::PointerType::getUnqual(method->type()->irType()));
+  return builder_.CreateBitCast(fptr, method->type()->irType()->getPointerTo());
 }
 
 Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -232,7 +232,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   args.push_back(getInt32Val(methodIndex));
   Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
   return builder_.CreateBitCast(
-      methodPtr, llvm::PointerType::getUnqual(method->type()->irType()), "method");
+      methodPtr, method->type()->irType()->getPointerTo(), "method");
 }
 
 /** Get the address of a value. */
@@ -282,7 +282,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   builder_.CreateStore(fnVal, builder_.CreateConstInBoundsGEP2_32(result, 0, 0, "method"));
   builder_.CreateStore(selfArg, builder_.CreateConstInBoundsGEP2_32(result, 0, 1, "self"));
   result = builder_.CreateLoad(
-      builder_.CreateBitCast(result, llvm::PointerType::get(type->irType(), 0)));
+      builder_.CreateBitCast(result, type->irType()->getPointerTo()));
   return result;
 }
 
@@ -292,7 +292,7 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
     if (ctdef->typeClass() == Type::Struct) {
       if (ctdef->typeShape() == Shape_ZeroSize) {
         // Don't allocate if it's zero size.
-        return ConstantPointerNull::get(PointerType::get(type, 0));
+        return ConstantPointerNull::get(type->getPointerTo());
       }
       return builder_.CreateAlloca(type, 0, ctdef->typeDefn()->name());
     } else if (ctdef->typeClass() == Type::Class) {
