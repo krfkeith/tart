@@ -90,6 +90,7 @@ public:
   // Field indices for TypeInfoBlock
   enum TIBFields {
     TIB_META = 0,
+    TIB_TRACE_TABLE,
     TIB_BASES,
     TIB_IDISPATCH,
     TIB_METHOD_TABLE,
@@ -251,6 +252,15 @@ public:
   /** Generate the code to initialize the vtable pointer of a newly-allocated class instance. */
   void genInitObjVTable(const CompositeType * tdef, llvm::Value * instance);
 
+  /** Generate the table of pointer offsets for this type. */
+  llvm::GlobalVariable * getTraceTable(const Type * type);
+  llvm::GlobalVariable * createTraceTable(const Type * type);
+  void createTraceTableEntries(const Type * type, llvm::Constant * basePtr,
+      ConstantList & traceTable, ConstantList & fieldOffsets, ConstantList & indices);
+  void createCompositeTraceTableEntries(const CompositeType * type, llvm::Constant * basePtr,
+      ConstantList & traceTable, ConstantList & fieldOffsets, ConstantList & indices);
+  llvm::Function * getUnionTraceMethod(const UnionType * utype);
+
   /** Generate a descriptor block for an enumerated type. */
   llvm::GlobalVariable * getEnumInfoBlock(const EnumType * etype);
 
@@ -299,6 +309,9 @@ public:
   llvm::Value * genVarSizeAlloc(const SourceLocation & loc, const Type * objType,
       const Expr * sizeExpr);
 
+  /** Generate code to allocate an object, where the object size is not a compile-time constant. */
+  llvm::Value * genVarSizeAlloc(const Type * objType, llvm::Value * sizeValue);
+
   /** Generate a constant object. */
   llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name,
       bool synthetic);
@@ -319,6 +332,9 @@ public:
 
   /** Return a constant integer with the specified value. */
   llvm::ConstantInt * getIntVal(int value);
+
+  /** Return a 16-bit constant integer with the specified value. */
+  llvm::ConstantInt * getInt16Val(int value);
 
   /** Return a 32-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt32Val(int value);
@@ -376,6 +392,8 @@ public:
 private:
   typedef llvm::DenseMap<const ProgramSource *, llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;
+  typedef llvm::DenseMap<const Type *, llvm::GlobalVariable *> TraceTableMap;
+  typedef llvm::DenseMap<const Type *, llvm::Function *> TraceMethodMap;
 
   /** Find a static method of the given class, and also generate an external reference
       to it from this module. If it's a template, then also instantiate it. This is used
@@ -419,11 +437,12 @@ private:
   const llvm::FunctionType * invokeFnType_;
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
+  const llvm::IntegerType * intPtrType_;
 
   llvm::Function * moduleInitFunc_;
   llvm::BasicBlock * moduleInitBlock_;
 
-  llvm::PointerType * methodPtrType_;
+  const llvm::PointerType * methodPtrType_;
 
   Reflector reflector_;
   NameTable nameTable_;
@@ -448,6 +467,8 @@ private:
   RTTypeMap compositeTypeMap_;
   StringLiteralMap stringLiteralMap_;
   ConstantObjectMap constantObjectMap_;
+  TraceTableMap traceTableMap_;
+  TraceMethodMap traceMethodMap_;
 
   bool debug_;
 };

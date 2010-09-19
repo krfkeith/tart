@@ -3,13 +3,18 @@ import tart.reflect.ReflectionMetadata;
 import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.reflect.Type;
+import tart.gc.TraceDescriptor;
 
 /** All objects contain a pointer to a TypeInfoBlock, which contains the
     pointer to the type object and the method table.
  */
 @Reflection(Reflection.Detail.NONE) struct TypeInfoBlock {
   /** Pointer to the compressed reflection data for this type. */
-  readonly var _meta:ReflectionMetadata;
+  readonly var meta:ReflectionMetadata;
+
+	/** The table of offsets that specify where in the type are embedded object references. NULL
+			if this type has no embedded object references. */
+  readonly var traceTable:Address[TraceDescriptor];
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
@@ -17,9 +22,6 @@ import tart.reflect.Type;
 
   /** Compiler-generated function to lookup the specified interface method. */
   readonly var idispatch:static fn(iid:String, methodIndex:int32) -> void^;
-
-	/** The table of offsets that specify where in the type are embedded object references. */
-  // readonly var traceOffsets:Address[uint16];
 
   /** Compiler-generated table of class methods. */
   readonly var methodTable:FlexibleArray[Address[void]];
@@ -43,8 +45,8 @@ import tart.reflect.Type;
   }
   
   def qualifiedName:String { get {
-    if _meta is not null {
-      return _meta.qualifiedName;
+    if meta is not null {
+      return meta.qualifiedName;
     }
     
     return "<unnamed>";

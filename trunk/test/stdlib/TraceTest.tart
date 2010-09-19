@@ -1,0 +1,83 @@
+import Memory.Address;
+import Memory.deref;
+import tart.testing.Test;
+import tart.gc.TraceAction;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(TraceTest);
+}
+
+/** TraceAction that counts the number of non-null pointers. */
+class TraceCounter : TraceAction {
+  private var _count:int = 0;
+  def tracePointer(ptrAddr:Address[Address[ubyte]]) {
+    if deref(ptrAddr) is not null {
+      ++_count;
+    }
+  }
+
+  def count:int { get { return _count; } }
+  def reset { _count = 0; }
+}
+
+class ClassWithPointers {
+  var a:String;
+  var b:String;
+  var c:String;
+}
+
+class ClassWithUnion {
+  var u:String or int8;
+  
+  def construct {
+    u = 0;
+  }
+}
+
+class TraceTest : Test {
+  def testTraceString {
+    var counter = TraceCounter();
+    counter.traceObject("Hello");
+    assertEq(1, counter.count);
+  }
+
+  def testTraceClassWithPointers {
+    var counter = TraceCounter();
+    var obj = ClassWithPointers();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+    
+    obj.a = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.b = ", ";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+
+    obj.c = "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(3, counter.count);
+  }
+
+  def testTraceClassWithUnion {
+    var counter = TraceCounter();
+    var obj = ClassWithUnion();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.u = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.u = 1;
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+  }
+}

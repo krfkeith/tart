@@ -41,8 +41,10 @@ struct Type;
 // list of type pointers.
 struct TypeInfoBlock {
   void * meta;
+  void * traceTable;
   const struct TypeInfoBlock * const * bases;
-  void ** methodTable;
+  void ** interfaceTable;
+  // void ** methodTable;
 };
 
 // Description of a stack frame.
@@ -51,7 +53,7 @@ struct StackFrame {
   struct StackFrame * caller;
   struct TartString * function;
   struct TartString * sourceFile;
-  unsigned int sourceLine;
+  unsigned sourceLine;
 };
 
 // The Throwable class

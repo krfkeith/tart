@@ -37,6 +37,14 @@ class CompositeTypeOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// TraceTable.of intrinsic
+class TraceTableOfIntrinsic : public Intrinsic {
+  static TraceTableOfIntrinsic instance;
+  TraceTableOfIntrinsic() : Intrinsic("tart.gc.GC.traceTableOf") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Debug.stringify intrinsic
 class StringifyIntrinsic : public Intrinsic {
   static StringifyIntrinsic instance;
@@ -109,6 +117,14 @@ class VAllocIntrinsic : public Intrinsic {
 class PVAllocIntrinsic : public Intrinsic {
   static PVAllocIntrinsic instance;
   PVAllocIntrinsic() : Intrinsic("tart.core.Object.__pvalloc") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
+// Object.__flexAlloc intrinsic
+class FlexAllocIntrinsic : public Intrinsic {
+  static FlexAllocIntrinsic instance;
+  FlexAllocIntrinsic() : Intrinsic("tart.core.Object.__flexAlloc") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 

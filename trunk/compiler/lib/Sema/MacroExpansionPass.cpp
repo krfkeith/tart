@@ -9,6 +9,7 @@
 #include "tart/AST/Stmt.h"
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Common/Diagnostics.h"
+#include "tart/Common/InternedString.h"
 
 namespace tart {
 
@@ -42,6 +43,17 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     LocalScope paramScope(macro->definingScope());
     paramScope.setScopeName("macro-params");
+
+    if (in->selfArg() != NULL) {
+      // TODO: Do we really want to re-evaluate 'self' each time we access a member var?
+      VariableDefn * binding = new VariableDefn(Defn::MacroArg, NULL, istrings.idSelf);
+      binding->createQualifiedName(NULL);
+      binding->setInitValue(in->selfArg());
+      binding->setType(in->selfArg()->type());
+      binding->setStorageClass(Storage_Local);
+      paramScope.addMember(binding);
+    }
+
     size_t argCount = in->argCount();
     for (size_t i = 0; i < argCount; ++i) {
       ParameterDefn * param = macro->params()[i];

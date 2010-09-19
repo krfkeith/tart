@@ -141,7 +141,7 @@ import tart.collections.ImmutableList;
   def derivedTypes:Type[] { get { return getDerivedTypes(); } }
 
   static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
-    var meta = tib._meta;
+    var meta = tib.meta;
     if meta is null {
       // TODO - throw an exception?
     }

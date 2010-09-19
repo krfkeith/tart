@@ -1,7 +1,11 @@
 import Memory.Address;
+import tart.annex.Intrinsic;
 
 namespace GC {
   @Extern("GC_init") def init(safepointMap:Address[int]);
   @Extern("GC_alloc") def alloc(size:int) -> Object;
   @Extern("GC_collect") def collect();
+
+	/** Return the list of trace descriptors for the given type. */
+  @Intrinsic static def traceTableOf[%T](typeName:TypeLiteral[T]) -> Address[TraceDescriptor];
 }

@@ -66,7 +66,7 @@ TypeLiteralType::~TypeLiteralType() {
 const llvm::Type * TypeLiteralType::createIRType() const {
 //  DASSERT_OBJ(literalType_ != NULL, this);
 //  const llvm::Type * type = literalType_->irEmbeddedType();
-//  return llvm::PointerType::getUnqual(type);
+//  return type->getPointerTo();
   //DFAIL("Implement");
   return Builtins::typeType.irEmbeddedType();
 }

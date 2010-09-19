@@ -196,7 +196,7 @@ void ReflectionMetadata::assignIndices() {
     types_[enumTypeRefs_[i].first].index = i;
   }
 
-#if 1
+#if 0
   if (!derivedTypeRefs_.empty()) {
     diag.debug() << derivedTypeRefs_.size() << " unique derived types added";
     diag.indent();

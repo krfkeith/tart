@@ -5,7 +5,6 @@
 /* Tart Garbage collection functions. */
 
 #include "gc.h"
-#include "Tracer.h"
 #include "tart_object.h"
 
 #if HAVE_UNISTD_H
@@ -289,14 +288,28 @@ void GC_collect() {
     while (sp < spEnd) {
       if (sp->safePoint == returnAddr) {
         uintptr_t baseAddr = uintptr_t(framePtr);
-        intptr_t * sdesc = sp->stackDescriptor;
-        intptr_t offset;
-        while ((offset = *sdesc++) != tart::TRACE_ENTRY_END) {
-          uint8_t ** addr = (uint8_t **)(baseAddr + offset);
-          printf("Found var in frame %p, offset %04ld addr %p value %p\n",
-              framePtr, offset, addr, *addr);
+        if (sp->traceTable != NULL) {
+          TraceDescriptor * desc = sp->traceTable;
+          for (;; desc++) {
+            if (desc->fieldCount != 0) {
+              for (int i = 0; i < desc->fieldCount; ++i) {
+                intptr_t offset = desc->offset + desc->fieldOffsets[i];
+                uint8_t ** addr = (uint8_t **)(baseAddr + offset);
+                if (*addr != NULL) {
+                  printf("Found var in frame %p, offset %04ld addr %p value %p\n",
+                      framePtr, offset, addr, *addr);
+                }
+              }
+            } else {
+              uint8_t ** addr = (uint8_t **)(baseAddr + desc->offset);
+              //(*desc->traceMethod)(addr, action);
+              //assert(false && "trace methods not supported just yet");
+            }
+            if (desc->last) {
+              break;
+            }
+          }
         }
-        //printf("Found safe point\n");
         break;
       }
 
@@ -311,7 +324,10 @@ void GC_collect() {
   //(void)las;
 }
 
-void GC_trace(uint8_t * basePtr, intptr_t * traceTable, void * ctx) {
-  tart::TracerBase * tpBase = static_cast<tart::TracerBase *>(ctx);
-  tpBase->execute(basePtr, traceTable);
+void GC_trace(uint8_t * basePtr, TraceDescriptor * traceTable, tart_object * traceAction) {
+  (void)basePtr;
+  (void)traceTable;
+  (void)traceAction;
+//  tart::TracerBase * tpBase = static_cast<tart::TracerBase *>(ctx);
+//  tpBase->execute(basePtr, traceTable);
 }

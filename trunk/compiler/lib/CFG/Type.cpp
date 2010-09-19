@@ -153,6 +153,9 @@ void typeLinkageName(std::string & out, const Type * ty) {
       out.append("->");
       typeLinkageName(out, ftype->returnType());
     }
+  } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(ty)) {
+    out.append(".bm."); // I dunno what to use here.
+    typeLinkageName(out, bmt->fnType());
   } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
     out.append("(");
     for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {

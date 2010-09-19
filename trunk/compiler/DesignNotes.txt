@@ -183,7 +183,7 @@ cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=/Users/talin/Proje
 
 cmake -G "Visual Studio 9 2008" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
 
-cmake -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
+cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
 
 // ------------------------------------------------------------------------
 Templates:
@@ -378,3 +378,4 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
 
 // CountingIterator is really inefficient. Why?
 // Derived types for reflection can be deserialized in random order.
+

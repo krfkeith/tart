@@ -23,7 +23,7 @@ public class CompositeType : Type {
   def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
     super(typeKind);
     self._typeInfo = typeInfo;
-    self._meta = typeInfo._meta;
+    self._meta = typeInfo.meta;
   }
 
   /** Given a type literal, return the reflected complex type object. */

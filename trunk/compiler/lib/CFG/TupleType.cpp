@@ -121,14 +121,22 @@ const llvm::Type * TupleType::createIRType() const {
   }
 
   llvm::Type * result = llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
-  shape_ = isLargeIRType(result) ? Shape_Large_Value : Shape_Small_RValue;
+  if (isLargeIRType(result)) {
+    shape_ = Shape_Large_Value;
+  } else if (containsReferenceType()) {
+    // TODO: Should be small l-value but that's not working for some reason.
+    //shape_ = Shape_Small_LValue;
+    shape_ = Shape_Large_Value;
+  } else {
+    shape_ = Shape_Small_RValue;
+  }
   return result;
 }
 
 const llvm::Type * TupleType::irParameterType() const {
   const llvm::Type * type = irType();
   if (shape_ == Shape_Large_Value) {
-    return llvm::PointerType::get(type, 0);
+    return type->getPointerTo();
   } else {
     return type;
   }

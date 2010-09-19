@@ -1211,7 +1211,7 @@ template<> TypeIdSet NullType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet NullType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void NullType::init() {
-  irType_ = llvm::PointerType::get(llvm::StructType::get(llvm::getGlobalContext(), false), 0);
+  irType_ = llvm::StructType::get(llvm::getGlobalContext(), false)->getPointerTo();
 }
 
 template<> uint32_t NullType::numBits() const {

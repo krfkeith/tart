@@ -66,6 +66,8 @@ SystemClass Builtins::typeReflectionMetadata("tart.reflect.ReflectionMetadata");
 SystemClass Builtins::typeAttribute("tart.core.Attribute");
 SystemClass Builtins::typeIntrinsicAttribute("tart.annex.Intrinsic");
 
+SystemClass Builtins::typeTraceAction("tart.gc.TraceAction");
+
 SystemClass Builtins::typeRef("tart.core.Ref");
 SystemClass Builtins::typeValueRef("tart.core.ValueRef");
 
@@ -141,6 +143,7 @@ void Builtins::loadSystemClasses() {
   typeThrowable.get();
   typeUnsupportedOperationError.get();
   typeIntrinsicAttribute.get();
+  typeTraceAction.get();
 
   // Analyze class Object.
   AnalyzerBase::analyzeType(typeObject, Task_PrepMemberLookup);

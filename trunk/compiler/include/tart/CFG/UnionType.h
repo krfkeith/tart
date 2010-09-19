@@ -31,11 +31,14 @@ public:
   /** Return the number of type parameters of this type. */
   size_t numTypeParams() const;
 
+  /** Return the number of type parameters of this type that are value types. */
+  size_t numValueTypes() const { return numValueTypes_; }
+
+  /** Return the number of type parameters of this type that are reference types. */
+  size_t numReferenceTypes() const { return numReferenceTypes_; }
+
   /** Return the Nth type parameter. */
   const Type * typeParam(int index) const;
-
-  /** Where in the source file this expression comes from. */
-//  const SourceLocation & location() const { return loc_; }
 
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;

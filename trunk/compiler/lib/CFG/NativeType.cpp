@@ -74,7 +74,7 @@ AddressType::~AddressType() {
 const llvm::Type * AddressType::createIRType() const {
   DASSERT_OBJ(elementType_ != NULL, this);
   const llvm::Type * type = elementType_->irEmbeddedType();
-  return llvm::PointerType::getUnqual(type);
+  return type->getPointerTo();
 }
 
 ConversionRank AddressType::convertImpl(const Conversion & cn) const {

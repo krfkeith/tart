@@ -123,6 +123,17 @@ Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
 }
 
 // -------------------------------------------------------------------
+// TraceTableOfIntrinsic
+TraceTableOfIntrinsic TraceTableOfIntrinsic::instance;
+
+Value * TraceTableOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
+  const Type * type = typeLiteral->value();
+  return cg.getTraceTable(type);
+}
+
+// -------------------------------------------------------------------
 // StringifyIntrinsic
 StringifyIntrinsic StringifyIntrinsic::instance;
 
@@ -237,13 +248,55 @@ Value * PVAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) 
 }
 
 // -------------------------------------------------------------------
+// FlexAllocIntrinsic
+FlexAllocIntrinsic FlexAllocIntrinsic::instance;
+
+Value * FlexAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Type * objType = dealias(call->type());
+  if (objType->typeClass() != Type::Class) {
+    diag.fatal(call->location()) << "__flexAalloc can only be used with classes.";
+    return NULL;
+  }
+
+  const CompositeType * ctype = cast<CompositeType>(objType);
+  Value * count = cg.genExpr(call->arg(0));
+  if (count == NULL) {
+    return NULL;
+  }
+
+  if (ctype->instanceFields().empty()) {
+    diag.fatal(call->location()) << "Type " << ctype << " has no FlexibleArray member";
+    return NULL;
+  }
+
+  size_t lastMemberIndex = ctype->instanceFields().size() - 1;
+  VariableDefn * lastField = cast<VariableDefn>(ctype->instanceFields().back());
+  if (lastField->type()->typeClass() != Type::FlexibleArray) {
+    diag.fatal(call->location()) << "Last member of type " << ctype <<
+        " must be of type FlexibleArray";
+    return NULL;
+  }
+
+  Constant * zero = cg.getInt32Val(0);
+  Value * zeroPtr = llvm::ConstantExpr::getIntToPtr(zero, ctype->irEmbeddedType());
+
+  Value * indices[3];
+  indices[0] = zero;
+  indices[1] = cg.getInt32Val(lastMemberIndex);
+  indices[2] = count;
+  Value * size = cg.builder().CreateGEP(zeroPtr, &indices[0], &indices[3], "flexSize");
+
+  return cg.genVarSizeAlloc(objType, size);
+}
+
+// -------------------------------------------------------------------
 // ZeroPtrIntrinsic
 ZeroPtrIntrinsic ZeroPtrIntrinsic::instance;
 
 Value * ZeroPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Type * retType = dealias(call->type());
   const llvm::Type * type = retType->irType();
-  return ConstantPointerNull::get(llvm::PointerType::getUnqual(type));
+  return ConstantPointerNull::get(type->getPointerTo());
 }
 
 // -------------------------------------------------------------------
@@ -439,7 +492,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
       llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType()),
       length->getType());
 
-  const llvm::Type * int8PtrType = llvm::PointerType::getUnqual(cg.builder().getInt8Ty());
+  const llvm::Type * int8PtrType = cg.builder().getInt8Ty()->getPointerTo();
 
   const llvm::Type * types[3];
   types[0] = int8PtrType;
