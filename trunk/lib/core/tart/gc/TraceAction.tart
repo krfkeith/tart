@@ -19,6 +19,7 @@ abstract class TraceAction {
   }
 
 	/** Trace an object given a list of trace descriptor structures. */
+  @LinkageName("TraceAction_traceDescriptors")
   final def traceDescriptors(
   		baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
     if descriptorList is not null {

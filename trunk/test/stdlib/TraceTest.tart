@@ -2,6 +2,7 @@ import Memory.Address;
 import Memory.deref;
 import tart.testing.Test;
 import tart.gc.TraceAction;
+import tart.gc.GC;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
@@ -33,6 +34,10 @@ class ClassWithUnion {
   def construct {
     u = 0;
   }
+}
+
+class ClassWithTuple {
+  var t:(int,String,String);
 }
 
 class TraceTest : Test {
@@ -79,5 +84,45 @@ class TraceTest : Test {
     counter.reset();
     counter.traceObject(obj);
     assertEq(0, counter.count);
+  }
+
+  def testTraceClassWithTuple {
+    var counter = TraceCounter();
+    var obj = ClassWithTuple();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.t = 0, "Hello", "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+  }
+
+  def testTraceStack {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    assertTrue(counter.count > 0);
+  }
+
+  def testTraceStackNullPtr {
+    var counter = TraceCounter();
+    var s:String = Memory.zeroPtr();
+    GC.traceStack(counter);
+    var baseCount = counter.count;
+    s = "Hello";
+    counter.reset();
+    GC.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
+  }
+
+  def testTraceStackUnion {
+    var counter = TraceCounter();
+    var value:String or void;
+    GC.traceStack(counter);
+    var baseCount = counter.count;
+    value = "Hello";
+    counter.reset();
+    GC.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
   }
 }

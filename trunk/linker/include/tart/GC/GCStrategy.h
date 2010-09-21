@@ -106,7 +106,13 @@ public:
   void finishAssembly(AsmPrinter &AP);
 
 private:
+  /** Convert a complex constant to a plain integer. */
   int64_t toInt(llvm::Constant * c, TargetMachine & tm);
+
+  /** Given a reference (possibly bit-casted) global variable, return
+      the initializer of that variable. */
+  llvm::Constant * getGlobalValue(const llvm::Constant * c);
+
 
   llvm::FoldingSet<StackTraceTable> traceTables;
 };
