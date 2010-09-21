@@ -26,6 +26,9 @@ extern "C" {
   void GC_syncStart();
   void GC_syncEnd();
   void GC_collect();
+  void GC_traceStack(tart_object * action);
+  extern void TraceAction_traceDescriptors(tart_object * action,
+      void * baseAddr, TraceDescriptor * traceTable);
 }
 
 static size_t pageSize;
@@ -301,7 +304,7 @@ void GC_collect() {
                 }
               }
             } else {
-              uint8_t ** addr = (uint8_t **)(baseAddr + desc->offset);
+              //uint8_t ** addr = (uint8_t **)(baseAddr + desc->offset);
               //(*desc->traceMethod)(addr, action);
               //assert(false && "trace methods not supported just yet");
             }
@@ -322,6 +325,32 @@ void GC_collect() {
 
   fprintf(stderr, "Finished checking for safe points\n");
   //(void)las;
+}
+
+void GC_traceStack(tart_object * traceAction) {
+  CallFrame * framePtr;
+  #if SIZEOF_VOID_PTR == 4
+    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #else
+    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+  #endif
+
+  SafePointEntry * spEnd = &safePointTable[numSafePoints];
+  while (framePtr != NULL) {
+    void * returnAddr = framePtr->returnAddr;
+    framePtr = framePtr->prevFrame;
+
+    // TODO: Something better than a linear search.
+    SafePointEntry * sp = safePointTable;
+    while (sp < spEnd) {
+      if (sp->safePoint == returnAddr) {
+        TraceAction_traceDescriptors(traceAction, (void *)framePtr, sp->traceTable);
+        break;
+      }
+
+      sp++;
+    }
+  }
 }
 
 void GC_trace(uint8_t * basePtr, TraceDescriptor * traceTable, tart_object * traceAction) {

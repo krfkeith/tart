@@ -228,6 +228,7 @@ void optimize(Module * module, const TargetData * targetData) {
       std::vector<const char *> externs;
       externs.push_back("main");
       externs.push_back("String_create");
+      externs.push_back("TraceAction_traceDescriptors");
       passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
     }
   }
