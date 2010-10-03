@@ -106,6 +106,13 @@ TupleType::TupleType(TupleType::const_iterator first, TupleType::const_iterator 
   : TypeImpl(Tuple, Shape_Unset)
   , members_(first, last)
 {
+  containsReferenceType_ = false;
+  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    if ((*it)->containsReferenceType()) {
+      containsReferenceType_ = true;
+      break;
+    }
+  }
 }
 
 const llvm::Type * TupleType::createIRType() const {
@@ -123,7 +130,7 @@ const llvm::Type * TupleType::createIRType() const {
   llvm::Type * result = llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
   if (isLargeIRType(result)) {
     shape_ = Shape_Large_Value;
-  } else if (containsReferenceType()) {
+  } else if (containsReferenceType_) {
     // TODO: Should be small l-value but that's not working for some reason.
     //shape_ = Shape_Small_LValue;
     shape_ = Shape_Large_Value;
@@ -257,16 +264,6 @@ Expr * TupleType::nullInitValue() const {
   }
 
   return new TupleCtorExpr(SourceLocation(), this, initializers);
-}
-
-bool TupleType::containsReferenceType() const {
-  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
-    if ((*it)->containsReferenceType()) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 TypeShape TupleType::typeShape() const {

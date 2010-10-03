@@ -710,7 +710,8 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
             Builtins::typeTraceAction, actionPtr);
         ValueList args;
         args.push_back(actionPtr);
-        args.push_back(unionValuePtr);
+        args.push_back(builder_.CreatePointerCast(unionValuePtr,
+            Builtins::typeObject->irEmbeddedType()->getPointerTo()->getPointerTo()));
         genCallInstr(fnValue, args.begin(), args.end(), "trace");
         builder_.CreateBr(blkExit);
       } else {

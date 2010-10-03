@@ -53,15 +53,6 @@ public class Object : Hashable {
   @Intrinsic @Unsafe
   protected static def __flexAlloc[%T](count:int) -> T;
 
-  //@Intrinsic @Unsafe
-  //public static def __trace[%T](obj:Address[T], count:int, traceOp:Address[ubyte]);
-
-  //@Extern("GC_traceRef") private static def __traceImpl[%T](
-  //    obj:Address[Object], count:int, traceOp:Address[ubyte]);
-
-  //@Extern("GC_traceStruct16") private static def __traceImpl[%T](
-  //    obj:Address[T], offsets:Address[int16], count:int, traceOp:Address[ubyte]);
-
   /** Return the reflected type of this object. */
   //def type:tart.reflect.Type { get { return self.__tib.type; } }
 

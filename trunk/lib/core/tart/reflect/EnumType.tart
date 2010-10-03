@@ -3,9 +3,9 @@ import tart.core.Memory.Address;
 /** Interface type for enums. */
 public final class EnumType : Type {
   private {
-    var _meta:ReflectionMetadata;
+    let _meta:ReflectionMetadata;
     var _nameIndex:int;
-    var _supertype:Type;
+    let _supertype:Type;
     var _values:optional Field[];
   }
 

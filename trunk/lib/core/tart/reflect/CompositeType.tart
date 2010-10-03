@@ -4,9 +4,9 @@ import tart.core.Memory.Address;
 /** Reflection type for classes, structs, and interfaces. */
 public class CompositeType : Type {
   private {
-    var _meta:ReflectionMetadata;
+    let _meta:ReflectionMetadata;
     var _size:uint32;
-    var _typeInfo:Address[TypeInfoBlock];
+    let _typeInfo:Address[TypeInfoBlock];
     var _supertype:optional CompositeType;
     var _interfaces:CompositeType[];
     var _typeParams:Type[];

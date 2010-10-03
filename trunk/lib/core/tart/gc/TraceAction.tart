@@ -7,8 +7,8 @@ import GC;
 /** Handles the logic of a tracing pass. */
 abstract class TraceAction {
   /** Trace a single pointer. */
-  protected abstract def tracePointer(ptrAddr:Address[Address[ubyte]]);
-  
+  protected abstract def tracePointer(ptrAddr:Address[Address[Object]]);
+
   /** Trace a list of pointers as specified by offsets from a base address. TraceAction subclasses
   		should probably re-implement this for effiency and inline the call to 'tracePointer()'.
    */
@@ -22,22 +22,26 @@ abstract class TraceAction {
   @LinkageName("TraceAction_traceDescriptors")
   final def traceDescriptors(
   		baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
+  	//Debug.writeLn("**traceDescriptors");
     if descriptorList is not null {
+      var methodDescriptorList:Address[TraceMethodDescriptor] =
+          reinterpretPtr(addressOf(descriptorList));
       var i = 0;
       repeat {
         var fieldAddr = addressOf(baseAddr[descriptorList[i].offset]);
         var fieldCount = descriptorList[i].fieldCount;
         if fieldCount != 0 {
+			  	//Debug.writeLn("  tracePointers ", String(fieldCount));
           tracePointers(fieldAddr, descriptorList[i].fieldOffsets, fieldCount);
         } else {
-          var methodDescriptorList:Address[TraceMethodDescriptor] =
-          		reinterpretPtr(addressOf(descriptorList));
+			  	//Debug.writeLn("  methodDesc");
           methodDescriptorList[i].method(fieldAddr, self);
         }
         break if descriptorList[i].endList != 0;
         ++i;
       }
     }
+  	//Debug.writeLn("**endTraceDescriptors");
   }
   
   final def traceObject(v:Object) {

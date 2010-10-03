@@ -38,7 +38,9 @@ void VariableDefn::trace() const {
 }
 
 bool VariableDefn::hasStorage() const {
-  if (defnType() != Defn::Let) {
+  if (defnType() == Defn::Parameter) {
+    return false;
+  } else if (defnType() != Defn::Let) {
     return true;
   }
 
@@ -46,12 +48,8 @@ bool VariableDefn::hasStorage() const {
   // their values are normally held in SSA variables. However, reference types need
   // memory locations so that they can be traced.
   if (storageClass() == Storage_Local) {
-    return type()->isReferenceType();
+    return type()->containsReferenceType();
     //return false;
-  }
-
-  if (storageClass() == Storage_Param) {
-    return false;
   }
 
   // A 'let' expression needs storage if the initializer expression is not a constant,

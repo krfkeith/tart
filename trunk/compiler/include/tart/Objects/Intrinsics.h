@@ -169,6 +169,14 @@ class ObjectAddressIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Memory.objectReference intrinsic
+class ObjectReferenceIntrinsic : public Intrinsic {
+  static ObjectReferenceIntrinsic instance;
+  ObjectReferenceIntrinsic() : Intrinsic("tart.core.Memory.objectReference") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // Memory.ptrDiff intrinsic
 class PointerDiffIntrinsic : public Intrinsic {
   static PointerDiffIntrinsic instance;

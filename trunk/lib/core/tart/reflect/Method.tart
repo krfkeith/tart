@@ -3,10 +3,10 @@ import tart.core.Memory.Address;
 /** Description of a callable method. */
 final class Method : Member {
   private {
-	  var _typeParams:Type[];
-    var _type:FunctionType;
-	  var _params:Parameter[];
-    var _methodPointer:Address[void];
+	  let _typeParams:Type[];
+    let _type:FunctionType;
+	  let _params:Parameter[];
+    let _methodPointer:Address[void];
   }
 
   public def construct(
@@ -37,7 +37,7 @@ final class Method : Member {
   def returnType:Type { get { return _type.returnType; } }
 
 	/** Number of parameters for this method. */
-  def numParams:int { get { return type.numParams; } }
+  def numParams:int { get { return _type.numParams; } }
   
   /** The array of function parameter types. */
   def paramTypes:Type[] { get { return _type.paramTypes; } }

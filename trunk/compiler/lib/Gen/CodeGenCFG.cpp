@@ -21,31 +21,30 @@
 namespace tart {
 using namespace llvm;
 
-void CodeGenerator::genLocalStorage(BlockList & blocks, LocalScopeList & lsl) {
-  builder_.SetInsertPoint(blocks.front()->irBlock());
+void CodeGenerator::genLocalStorage(LocalScopeList & lsl) {
   for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
         if (var->hasStorage()) {
-          genLocalVar(static_cast<VariableDefn *>(de));
+          genLocalVar(var);
         }
       }
     }
   }
+}
 
-#if 0
+void CodeGenerator::genLocalRoots(LocalScopeList & lsl) {
   for (LocalScopeList::iterator it = lsl.begin(); it != lsl.end(); ++it) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-        if (var->type()->isReferenceType()) {
-          // Initialize to zero...
+        if (var->hasStorage() && var->type()->containsReferenceType()) {
+          genGCRoot(var->irValue(), var->type());
         }
       }
     }
   }
-#endif
 }
 
 void CodeGenerator::genLocalVar(VariableDefn * var) {
@@ -61,14 +60,27 @@ void CodeGenerator::genLocalVar(VariableDefn * var) {
 
   // Allocate space for the variable on the stack
   Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
-  genGCRoot(lValue, varType);
   var->setIRValue(lValue);
 }
 
-void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
+void CodeGenerator::initGCRoot(Value * rootValue) {
+  AllocaInst * alloca = cast<AllocaInst>(rootValue);
+  const llvm::Type * rootType = alloca->getAllocatedType();
+  if (const PointerType * ptype = dyn_cast<PointerType>(rootType)) {
+    builder_.CreateStore(
+        ConstantPointerNull::get(ptype),
+        alloca);
+  } else {
+    builder_.CreateStore(
+        ConstantAggregateZero::get(rootType),
+        alloca);
+  }
+}
+
+void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
   switch (varType->typeClass()) {
     case Type::Class:
-      markGCRoot(lValue, NULL);
+      markGCRoot(allocaValue, NULL);
       break;
 
     case Type::Struct:
@@ -78,7 +90,7 @@ void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
             varType->typeShape() != Shape_Large_Value) {
           diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
         }
-        markGCRoot(lValue, getTraceTable(varType));
+        markGCRoot(allocaValue, getTraceTable(varType));
       }
       break;
 
@@ -86,7 +98,7 @@ void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
       if (varType->containsReferenceType()) {
         const UnionType * utype = static_cast<const UnionType *>(varType);
         if (utype->hasRefTypesOnly()) {
-          markGCRoot(lValue, NULL);
+          markGCRoot(allocaValue, NULL);
           break;
         }
 
@@ -94,12 +106,12 @@ void CodeGenerator::genGCRoot(Value * lValue, const Type * varType) {
             varType->typeShape() != Shape_Large_Value) {
           diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
         }
-        markGCRoot(lValue, getTraceTable(varType));
+        markGCRoot(allocaValue, getTraceTable(varType));
       }
       break;
 
     case Type::BoundMethod:
-      markGCRoot(lValue, getTraceTable(varType));
+      markGCRoot(allocaValue, getTraceTable(varType));
       break;
 
     default:
@@ -154,6 +166,7 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
       break;
 
     case BlockTerm_Branch:
+      //clearDeadRoots(blk->deadRoots());
       builder_.CreateBr(blk->succIRBlock(0));
       break;
 

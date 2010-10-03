@@ -57,6 +57,10 @@ namespace Memory {
   @Intrinsic
   def objectAddress(value:Object) -> Address[Object];
 
+  /** Convert a native address into an object reference. */
+  @Intrinsic
+  def objectReference[%T <: Object](value:Address[T]) -> T;
+
   /** Return the difference between two pointers. Subtracts the pointer
       values, and then divides by the size of 'T'. Raises an exception if
       the value is too large to be contained within a signed integer.

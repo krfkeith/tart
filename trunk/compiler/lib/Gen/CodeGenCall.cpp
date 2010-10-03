@@ -18,12 +18,15 @@ using namespace llvm;
 Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   const FunctionDefn * fn = in->function();
   const FunctionType * fnType = fn->functionType();
+  bool saveIntermediateStackRoots = true;
 
   if (fn->isIntrinsic()) {
     return fn->intrinsic()->generate(*this, in);
   }
 
   ValueList args;
+  ValueList savedTempRoots;
+  std::swap(tempRoots_, savedTempRoots);
 
   fnType->irType(); // Need to know the irType for isStructReturn.
   Value * retVal = NULL;
@@ -43,7 +46,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
         selfArg = genLValueAddress(in->selfArg());
       }
     } else {
-      selfArg = genExpr(in->selfArg());
+      selfArg = genArgExpr(in->selfArg(), saveIntermediateStackRoots);
     }
 
     DASSERT_OBJ(selfArg != NULL, in->selfArg());
@@ -63,8 +66,9 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     const Expr * arg = *it;
     const Type * argType = arg->canonicalType();
+
     TypeShape argTypeShape = argType->typeShape();
-    Value * argVal = genExpr(arg);
+    Value * argVal = genArgExpr(arg, saveIntermediateStackRoots);
     if (argVal == NULL) {
       return NULL;
     }
@@ -101,29 +105,38 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     }
 #endif
 
-    return selfArg;
+    result = selfArg;
   } else if (fnType->isStructReturn()) {
-    return retVal;
+    result = retVal;
 #if !FC_STRUCTS_INTERNAL
   } else if (fn->returnType()->typeShape() == Shape_Small_LValue) {
     retVal = builder_.CreateAlloca(fnType->returnType()->irType(), NULL, "retval");
     builder_.CreateStore(result, retVal);
-    return retVal;
+    result = retVal;
 #endif
-  } else {
-    return result;
   }
+
+  // Clear out all the temporary roots
+  std::swap(tempRoots_, savedTempRoots);
+  for (ValueList::iterator it = savedTempRoots.begin(); it != savedTempRoots.end(); ++it) {
+    initGCRoot(*it);
+  }
+
+  return result;
 }
 
 Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
   const Expr * fn = in->function();
   const Type * fnType = fn->type();
+  bool saveIntermediateStackRoots = true;
 
   Value * fnValue;
   ValueList args;
+  ValueList savedTempRoots;
+  std::swap(tempRoots_, savedTempRoots);
 
   if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
-    fnValue = genExpr(fn);
+    fnValue = genArgExpr(fn, saveIntermediateStackRoots);
     if (fnValue != NULL) {
       if (ft->isStatic()) {
         //fnValue = builder_.CreateLoad(fnValue);
@@ -132,7 +145,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
       }
     }
   } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
-    Value * fnref = genExpr(fn);
+    Value * fnref = genArgExpr(fn, saveIntermediateStackRoots);
     if (fnref == NULL) {
       return NULL;
     }
@@ -151,7 +164,8 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
 
   const ExprList & inArgs = in->args();
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
-    Value * argVal = genExpr(*it);
+    Expr * arg = *it;
+    Value * argVal = genArgExpr(arg, saveIntermediateStackRoots);
     if (argVal == NULL) {
       return NULL;
     }
@@ -159,7 +173,15 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
     args.push_back(argVal);
   }
 
-  return genCallInstr(fnValue, args.begin(), args.end(), "indirect");
+  llvm::Value * result = genCallInstr(fnValue, args.begin(), args.end(), "indirect");
+
+  // Clear out all the temporary roots
+  std::swap(tempRoots_, savedTempRoots);
+  for (ValueList::iterator it = savedTempRoots.begin(); it != savedTempRoots.end(); ++it) {
+    initGCRoot(*it);
+  }
+
+  return result;
 }
 
 Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -235,7 +257,6 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
       methodPtr, method->type()->irType()->getPointerTo(), "method");
 }
 
-/** Get the address of a value. */
 Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   const BoundMethodType * type = cast<BoundMethodType>(in->type());
   const FunctionDefn * fn = in->method();
@@ -348,6 +369,188 @@ void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
     }
   }
 #endif
+}
+
+llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateStackRoots) {
+  const Type * argType = in->type();
+  if (saveIntermediateStackRoots && argType->containsReferenceType()) {
+    switch (in->exprType()) {
+      // Operations which are known not to generate a stack root.
+      case Expr::ConstInt:
+      case Expr::ConstFloat:
+      case Expr::ConstString:
+      case Expr::ConstNull:
+      case Expr::ConstObjRef:
+      case Expr::Truncate:
+      case Expr::SignExtend:
+      case Expr::ZeroExtend:
+      case Expr::IntToFloat:
+      case Expr::Compare:
+      case Expr::InstanceOf:
+      case Expr::RefEq:
+      case Expr::Not:
+      case Expr::And:
+      case Expr::Or:
+      case Expr::Complement:
+      case Expr::TypeLiteral:
+      case Expr::NoOp:
+      case Expr::ClearVar:
+        return genExpr(in);
+
+      case Expr::LValue: {
+        const LValueExpr * lval = static_cast<const LValueExpr *>(in);
+        const ValueDefn * value = lval->value();
+        if (const ParameterDefn * param = dyn_cast<ParameterDefn>(value)) {
+          if (!param->isLValue()) {
+            return genExpr(in);
+          } else {
+            break;
+          }
+        }
+
+        switch (value->storageClass()) {
+          case Storage_Local:
+            return genExpr(in);
+
+          case Storage_Static:
+          case Storage_Global:
+            if (value->defnType() == Defn::Let) {
+              return genExpr(in);
+            }
+            break;
+
+          case Storage_Instance:
+            if (value->defnType() == Defn::Let && lval->base() != NULL) {
+              if (const LValueExpr * baseLVal = dyn_cast<LValueExpr>(lval->base())) {
+                if (const ParameterDefn * param = dyn_cast<ParameterDefn>(baseLVal->value())) {
+                  if (!param->isLValue()) {
+                    return genExpr(in);
+                  } else {
+                    break;
+                  }
+                }
+              }
+            }
+            break;
+
+          default:
+            break;
+        }
+
+        break;
+      }
+
+      case Expr::SharedValue: {
+        const SharedValueExpr * svExpr = static_cast<const SharedValueExpr *>(in);
+        if (svExpr->value() == NULL) {
+          svExpr->setValue(genArgExpr(svExpr->arg(), saveIntermediateStackRoots));
+        }
+
+        return svExpr->value();
+      }
+
+      case Expr::New:
+      case Expr::ElementRef:
+      case Expr::ArrayLiteral:
+      case Expr::FnCall:
+      case Expr::CtorCall:
+      case Expr::VTableCall:
+      case Expr::IndirectCall:
+        // These definitely needs to be saved...
+        break;
+//        return genExpr(in);
+
+      default:
+        break;
+
+      case Expr::InitVar:
+        // TODO: Handle constructors as a special case?
+        //return genInitVar(static_cast<const InitVarExpr *>(in));
+        break;
+
+#if 0
+
+      case Expr::BoundMethod:
+        //return genBoundMethod(static_cast<const BoundMethodExpr *>(in));
+        break;
+
+      case Expr::BinaryOpcode:
+        return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
+#endif
+
+      case Expr::UpCast:
+        return genUpCast(static_cast<const CastExpr *>(in), true);
+
+      case Expr::TryCast:
+        return genDynamicCast(static_cast<const CastExpr *>(in), true, true);
+
+      case Expr::DynamicCast:
+        return genDynamicCast(static_cast<const CastExpr *>(in), false, true);
+
+      case Expr::BitCast:
+        return genBitCast(static_cast<const CastExpr *>(in), true);
+
+      case Expr::UnionCtorCast:
+        return genUnionCtorCast(static_cast<const CastExpr *>(in), true);
+#if 0
+
+      case Expr::UnionMemberCast:
+      case Expr::CheckedUnionMemberCast:
+        return genUnionMemberCast(static_cast<const CastExpr *>(in));
+
+      case Expr::TupleCtor:
+        return genTupleCtor(static_cast<const TupleCtorExpr *>(in));
+
+      case Expr::Assign:
+      case Expr::PostAssign:
+        return genAssignment(static_cast<const AssignmentExpr *>(in));
+
+      case Expr::MultiAssign:
+        return genMultiAssign(static_cast<const MultiAssignExpr *>(in));
+
+      case Expr::PtrDeref:
+        return genPtrDeref(static_cast<const UnaryExpr *>(in));
+
+      case Expr::Prog2: {
+        const BinaryExpr * binOp = static_cast<const BinaryExpr *>(in);
+        genExpr(binOp->first());
+        return genExpr(binOp->second());
+      }
+
+      case Expr::IRValue: {
+        const IRValueExpr * irExpr = static_cast<const IRValueExpr *>(in);
+        DASSERT_OBJ(irExpr->value() != NULL, irExpr);
+        return irExpr->value();
+      }
+
+      case Expr::ClosureEnv:
+        return genClosureEnv(static_cast<const ClosureEnvExpr *>(in));
+#endif
+    }
+
+    Value * argVal = genExpr(in);
+    if (isa<llvm::Constant>(argVal)) {
+      return argVal;
+    }
+
+    // Save the current insertion point
+    IRBuilderBase::InsertPoint savePt = builder_.saveIP();
+
+    // Try set the insertion point at the first block.
+    builder_.SetInsertPoint(&currentFn_->getBasicBlockList().front());
+    llvm::Value * tempRoot = builder_.CreateAlloca(argVal->getType(), NULL, "gc_root");
+    genGCRoot(tempRoot, in->type());
+    //initGCRoot(tempRoot);
+
+    builder_.restoreIP(savePt);
+    builder_.CreateStore(argVal, tempRoot, false);
+    tempRoots_.push_back(tempRoot);
+
+    //diag.debug(in) << "Temporary root: " << in;
+    return argVal;
+  } else {
+    return genExpr(in);
+  }
 }
 
 } // namespace tart

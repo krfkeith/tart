@@ -1,5 +1,7 @@
 import Memory.Address;
 import Memory.deref;
+import Memory.reinterpretPtr;
+import Memory.objectReference;
 import tart.testing.Test;
 import tart.gc.TraceAction;
 import tart.gc.GC;
@@ -12,9 +14,16 @@ def main(args:String[]) -> int32 {
 /** TraceAction that counts the number of non-null pointers. */
 class TraceCounter : TraceAction {
   private var _count:int = 0;
-  def tracePointer(ptrAddr:Address[Address[ubyte]]) {
-    if deref(ptrAddr) is not null {
+  def tracePointer(ptrAddr:Address[Address[Object]]) {
+    var ptr:Address[Object] = deref(ptrAddr);
+    var obj:Object = objectReference(ptr);
+    if obj is not null {
       ++_count;
+      var s = obj.__typeName;
+      Debug.assertTrue(s.size > 0);
+      //Debug.writeLn(obj.__typeName);
+    } else {
+      //Debug.writeLn("<null>");
     }
   }
 
@@ -124,5 +133,49 @@ class TraceTest : Test {
     counter.reset();
     GC.traceStack(counter);
     assertEq(baseCount + 1, counter.count);
+  }
+  
+  def testTraceIntermediateValue {
+    // Insure that intermediate values to a function are marked as roots.
+    var c1 = getCountForNoValues();
+    var c2 = getCountForNoValues();
+    var c3 = getCountForIntermediateValues(String("Hello"), String("World"));
+    assertEq(c1, c2);
+    assertEq(c1 + 2, c3);
+  }
+
+  def getCountForNoValues() -> int {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    return counter.count;
+  }
+  
+  def getCountForIntermediateValues(s0:String, s1:String) -> int {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    return counter.count;
+  }
+  
+  def testTraceLocalScopeVar {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    var c1 = counter.count;
+    var c2:int;
+    var c3:int;
+    
+    if true {
+      var s1 = String("Hello");
+      counter.reset();
+	    GC.traceStack(counter);
+    	c2 = counter.count;
+    }
+    
+    counter.reset();
+    GC.traceStack(counter);
+  	c3 = counter.count;
+
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
   }
 }

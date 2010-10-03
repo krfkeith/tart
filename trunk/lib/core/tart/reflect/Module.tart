@@ -6,7 +6,7 @@ import tart.core.Memory.Address;
 /** Description of a compiled module. */
 @Reflection(Reflection.Detail.NONE) final class Module {
   private {
-    var _meta:ReflectionMetadata;
+    let _meta:ReflectionMetadata;
     //var _encodedTypeExports:Address[ubyte];
     //var _encodedMethodExports:Address[ubyte];
     var _nameIndex:int16;

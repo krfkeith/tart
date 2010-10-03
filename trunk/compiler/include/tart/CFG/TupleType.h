@@ -60,7 +60,7 @@ public:
   size_t numTypeParams() const { return members_.size(); }
   const Type * typeParam(int index) const { return members_[index]; }
   Expr * nullInitValue() const;
-  bool containsReferenceType() const;
+  bool containsReferenceType() const { return containsReferenceType_; }
 
   static inline bool classof(const TupleType *) { return true; }
   static inline bool classof(const Type * t) {
@@ -72,6 +72,7 @@ protected:
   TupleType(const_iterator first, const_iterator last);
 
   ConstTypeList members_;
+  bool containsReferenceType_;
 };
 
 } // namespace tart

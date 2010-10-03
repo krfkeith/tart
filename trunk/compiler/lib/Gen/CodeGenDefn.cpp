@@ -124,6 +124,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       setDebugLocation(fdef->location());
     }
 
+    BasicBlock * prologue = BasicBlock::Create(context_, "prologue", f);
+
     // Create the LLVM Basic Blocks corresponding to each high level BB.
     BlockList & blocks = fdef->blocks();
     for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
@@ -131,7 +133,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
     }
 
-    builder_.SetInsertPoint(blocks.front()->irBlock());
+    builder_.SetInsertPoint(prologue);
 
     // Handle the explicit parameters
     unsigned param_index = 0;
@@ -187,12 +189,18 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       assert(false);
     } else {
 #endif
-      genLocalStorage(fdef->blocks(), fdef->localScopes());
+      genLocalStorage(fdef->localScopes());
       genDISubprogramStart(fdef);
+      genLocalRoots(fdef->localScopes());
+
+      builder_.SetInsertPoint(blocks.front()->irBlock());
       genBlocks(fdef->blocks());
 #if 0
     }
 #endif
+
+    builder_.SetInsertPoint(prologue);
+    builder_.CreateBr(blocks.front()->irBlock());
 
     currentFn_ = saveFn;
     structRet_ = saveStructRet;

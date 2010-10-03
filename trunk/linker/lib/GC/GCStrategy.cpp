@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/GC/GCStrategy.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Function.h"
 #include "llvm/Target/Mangler.h"
 #include "llvm/Target/TargetMachine.h"
@@ -20,6 +21,8 @@ namespace tart {
 
 using namespace llvm;
 
+typedef llvm::SmallVector<std::pair<MCSymbol *, MCSymbol *>, 64> SafePointList;
+
 GCRegistry::Add<TartGCStrategy>
 AddTartGC("tart-gc", "Tart garbage collector.");
 
@@ -28,11 +31,124 @@ AddTartGCPrinter("tart-gc", "Tart garbage collector.");
 
 void addTartGC() {}
 
+// -------------------------------------------------------------------
+// TartGCStrategy
+
+bool TartGCStrategy::performCustomLowering(Function & fn) {
+  bool madeChange = false;
+  SmallVector<AllocaInst*, 32> roots;
+
+  for (Function::iterator bb = fn.begin(), bbEnd = fn.end(); bb != bbEnd; ++bb) {
+    for (BasicBlock::iterator II = bb->begin(), E = bb->end(); II != E; ) {
+      if (IntrinsicInst * CI = dyn_cast<IntrinsicInst>(II++)) {
+        if (Function * F = CI->getCalledFunction()) {
+          switch (F->getIntrinsicID()) {
+          case Intrinsic::gcwrite:
+            // Handle llvm.gcwrite.
+            //CI->eraseFromParent();
+            //MadeChange = true;
+            break;
+          case Intrinsic::gcread:
+            // Handle llvm.gcread.
+            //CI->eraseFromParent();
+            //MadeChange = true;
+            break;
+          case Intrinsic::gcroot:
+            // Initialize the GC root, but do not delete the intrinsic. The
+            // backend needs the intrinsic to flag the stack slot.
+            roots.push_back(cast<AllocaInst>(
+                CI->getArgOperand(0)->stripPointerCasts()));
+            madeChange = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (roots.size()) {
+    madeChange |= insertRootInitializers(fn, roots.begin(), roots.size());
+  }
+
+  return madeChange;
+}
+
+bool TartGCStrategy::insertRootInitializers(Function & fn, AllocaInst ** roots, unsigned count) {
+  // Scroll past alloca instructions.
+  BasicBlock::iterator ip = fn.getEntryBlock().begin();
+  while (isa<AllocaInst>(ip)) {
+    ++ip;
+  }
+
+  // Search for initializers in the initial BB.
+  SmallPtrSet<AllocaInst*,16> initedRoots;
+  for (; !couldBecomeSafePoint(ip); ++ip) {
+    if (StoreInst * si = dyn_cast<StoreInst>(ip)) {
+      if (AllocaInst * ai = dyn_cast<AllocaInst>(si->getOperand(1)->stripPointerCasts())) {
+        initedRoots.insert(ai);
+      }
+    }
+  }
+
+  // Add root initializers.
+  bool madeChange = false;
+
+  // Initialize each root to null.
+  for (AllocaInst ** ai = roots, ** E = roots + count; ai != E; ++ai) {
+    if (!initedRoots.count(*ai)) {
+      const Type * type = cast<PointerType>((*ai)->getType())->getElementType();
+      StoreInst * storeInst;
+      if (const PointerType * ptype = dyn_cast<PointerType>(type)) {
+        storeInst = new StoreInst(ConstantPointerNull::get(ptype), *ai);
+      } else {
+        storeInst = new StoreInst(ConstantAggregateZero::get(type), *ai);
+      }
+      storeInst->insertAfter(*ai);
+      madeChange = true;
+    }
+  }
+
+  return madeChange;
+}
+
+// CouldBecomeSafePoint - Predicate to conservatively determine whether the
+// instruction could introduce a safe point.
+bool TartGCStrategy::couldBecomeSafePoint(Instruction * inst) {
+  // The natural definition of instructions which could introduce safe points
+  // are:
+  //
+  //   - call, invoke (AfterCall, BeforeCall)
+  //   - phis (Loops)
+  //   - invoke, ret, unwind (Exit)
+  //
+  // However, instructions as seemingly inoccuous as arithmetic can become
+  // libcalls upon lowering (e.g., div i64 on a 32-bit platform), so instead
+  // it is necessary to take a conservative approach.
+
+  if (isa<AllocaInst>(inst) || isa<GetElementPtrInst>(inst) ||
+      isa<StoreInst>(inst) || isa<LoadInst>(inst))
+    return false;
+
+  // llvm.gcroot is safe because it doesn't do anything at runtime.
+  if (CallInst * callInst = dyn_cast<CallInst>(inst)) {
+    if (Function * calledFn = callInst->getCalledFunction()) {
+      if (unsigned iid = calledFn->getIntrinsicID()) {
+        if (iid == Intrinsic::gcroot) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 void TartGCPrinter::beginAssembly(AsmPrinter &AP) {
   // Nothing to do.
 }
 
-typedef llvm::SmallVector<std::pair<MCSymbol *, MCSymbol *>, 64> SafePointList;
+// -------------------------------------------------------------------
+// TartGCPrinter
 
 void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
   unsigned nextLabel = 1;
@@ -80,6 +196,8 @@ void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
             if (fieldCount->isZero()) {
               // A zero field count means that this is a trace method descriptor.
               const Constant * traceMethod = descriptor->getOperand(3);
+              assert(offset > -1000 && offset < 1000);
+              assert(dscOffset > -1000 && dscOffset < 1000);
               traceMethods.push_back(TraceMethodEntry(offset + dscOffset, traceMethod));
             } else {
               // Otherwise it's a field offset descriptor.

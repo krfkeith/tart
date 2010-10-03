@@ -23,6 +23,7 @@ namespace tart {
 
 using namespace llvm;
 
+// TODO: Determine if we need to save any GC roots here.
 Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * toType) {
   // If types are the same, no need for a cast.
   if (fromType->isEqual(toType)) {
@@ -136,8 +137,8 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genUpCast(const CastExpr * in) {
-  Value * value = genExpr(in->arg());
+Value * CodeGenerator::genUpCast(const CastExpr * in, bool saveRoots) {
+  Value * value = genArgExpr(in->arg(), saveRoots);
   const Type * fromType = dealias(in->arg()->type());
   const Type * toType = dealias(in->type());
 
@@ -148,15 +149,15 @@ Value * CodeGenerator::genUpCast(const CastExpr * in) {
   return NULL;
 }
 
-Value * CodeGenerator::genDynamicCast(const CastExpr * in, bool throwOnFailure) {
-  Value * value = genExpr(in->arg());
+Value * CodeGenerator::genDynamicCast(const CastExpr * in, bool throwOnFailure, bool saveRoots) {
+  Value * value = genArgExpr(in->arg(), saveRoots);
   const CompositeType * fromCls = cast<CompositeType>(in->arg()->type());
   const CompositeType * toCls = cast<CompositeType>(in->type());
   return genCompositeCast(value, fromCls, toCls, throwOnFailure);
 }
 
-Value * CodeGenerator::genBitCast(const CastExpr * in) {
-  Value * value = genExpr(in->arg());
+Value * CodeGenerator::genBitCast(const CastExpr * in, bool saveRoots) {
+  Value * value = genArgExpr(in->arg(), saveRoots);
   const Type * toType = in->type();
 
   if (value != NULL && toType != NULL) {
@@ -190,13 +191,13 @@ Value * CodeGenerator::genCompositeCast(Value * in,
   DFAIL("Implement");
 }
 
-Value * CodeGenerator::genUnionCtorCast(const CastExpr * in) {
+Value * CodeGenerator::genUnionCtorCast(const CastExpr * in, bool saveRoots) {
   const Type * fromType = in->arg()->type();
   const Type * toType = in->type();
   Value * value = NULL;
 
   if (!fromType->isVoidType()) {
-    value = genExpr(in->arg());
+    value = genArgExpr(in->arg(), true);
     if (value == NULL) {
       return NULL;
     }
