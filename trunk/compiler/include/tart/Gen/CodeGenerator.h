@@ -35,6 +35,7 @@ class UnaryExpr;
 class CompareExpr;
 class InstanceOfExpr;
 class InitVarExpr;
+class ClearVarExpr;
 class FnCallExpr;
 class IndirectCallExpr;
 class ArrayLiteralExpr;
@@ -132,9 +133,11 @@ public:
   const llvm::Type * genEnumType(EnumType * tdef);
 
     /** Generate the code that allocates storage for locals on the stack. */
-  void genLocalStorage(BlockList & blocks, LocalScopeList & lsl);
+  void genLocalStorage(LocalScopeList & lsl);
+  void genLocalRoots(LocalScopeList & lsl);
   void genLocalVar(VariableDefn * var);
   void genGCRoot(llvm::Value * lValue, const Type * varType);
+  void initGCRoot(llvm::Value * allocaValue);
 
   /** Generate the function body from the basic block list. */
   void genBlocks(BlockList & blocks);
@@ -153,14 +156,15 @@ public:
   llvm::Constant * genConstExpr(const Expr * expr);
   llvm::GlobalVariable * genConstRef(const Expr * in, llvm::StringRef name, bool synthetic);
   llvm::Value * genInitVar(const InitVarExpr * in);
+  llvm::Value * genClearVar(const ClearVarExpr * in);
   llvm::Value * genBinaryOpcode(const BinaryOpcodeExpr * expr);
   llvm::Value * genCompare(const CompareExpr * in);
   llvm::Value * genCast(llvm::Value * in, const Type * fromType, const Type * toType);
   llvm::Value * genNumericCast(const CastExpr * in);
-  llvm::Value * genUpCast(const CastExpr * in);
-  llvm::Value * genDynamicCast(const CastExpr * in, bool throwOnFailure);
-  llvm::Value * genBitCast(const CastExpr * in);
-  llvm::Value * genUnionCtorCast(const CastExpr * in);
+  llvm::Value * genUpCast(const CastExpr * in, bool saveRoots);
+  llvm::Value * genDynamicCast(const CastExpr * in, bool throwOnFailure, bool saveRoots);
+  llvm::Value * genBitCast(const CastExpr * in, bool saveRoots);
+  llvm::Value * genUnionCtorCast(const CastExpr * in, bool saveRoots);
   llvm::Value * genUnionMemberCast(const CastExpr * in);
   llvm::Value * genTupleCtor(const TupleCtorExpr * in);
   llvm::Value * genAssignment(const AssignmentExpr * in);
@@ -423,6 +427,7 @@ private:
   void checkCallingArgs(const llvm::Value * fn,
       ValueList::const_iterator first, ValueList::const_iterator last);
   llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
+  llvm::Value * genArgExpr(const Expr * arg, bool saveIntermediateStackRoots);
 
   void markGCRoot(llvm::Value * value, llvm::Constant * metadata);
 
@@ -469,6 +474,9 @@ private:
   ConstantObjectMap constantObjectMap_;
   TraceTableMap traceTableMap_;
   TraceMethodMap traceMethodMap_;
+
+  // Temporary roots generated for GC
+  ValueList tempRoots_;
 
   bool debug_;
 };

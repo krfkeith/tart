@@ -98,6 +98,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
     case Expr::InitVar:
       return genInitVar(static_cast<const InitVarExpr *>(in));
 
+    case Expr::ClearVar:
+      return genClearVar(static_cast<const ClearVarExpr *>(in));
+
     case Expr::BinaryOpcode:
       return genBinaryOpcode(static_cast<const BinaryOpcodeExpr *>(in));
 
@@ -108,19 +111,19 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genNumericCast(static_cast<const CastExpr *>(in));
 
     case Expr::UpCast:
-      return genUpCast(static_cast<const CastExpr *>(in));
+      return genUpCast(static_cast<const CastExpr *>(in), false);
 
     case Expr::TryCast:
-      return genDynamicCast(static_cast<const CastExpr *>(in), true);
+      return genDynamicCast(static_cast<const CastExpr *>(in), true, false);
 
     case Expr::DynamicCast:
-      return genDynamicCast(static_cast<const CastExpr *>(in), false);
+      return genDynamicCast(static_cast<const CastExpr *>(in), false, false);
 
     case Expr::BitCast:
-      return genBitCast(static_cast<const CastExpr *>(in));
+      return genBitCast(static_cast<const CastExpr *>(in), false);
 
     case Expr::UnionCtorCast:
-      return genUnionCtorCast(static_cast<const CastExpr *>(in));
+      return genUnionCtorCast(static_cast<const CastExpr *>(in), false);
 
     case Expr::UnionMemberCast:
     case Expr::CheckedUnionMemberCast:
@@ -267,7 +270,7 @@ llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef nam
 }
 
 Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
-  VariableDefn * var = in->getVar();
+  VariableDefn * var = in->var();
   TypeShape typeShape = var->canonicalType()->typeShape();
   const Type * initExprType = in->initExpr()->canonicalType();
   Value * initValue = genExpr(in->initExpr());
@@ -297,6 +300,11 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   }
 
   return initValue;
+}
+
+Value * CodeGenerator::genClearVar(const ClearVarExpr * in) {
+  initGCRoot(in->var()->irValue());
+  return in->var()->irValue();
 }
 
 Value * CodeGenerator::genAssignment(const AssignmentExpr * in) {

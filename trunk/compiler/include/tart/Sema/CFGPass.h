@@ -56,6 +56,7 @@ public:
   virtual Expr * visitComplement(UnaryExpr * in);
   virtual Expr * visitLogicalOper(BinaryExpr * in);
   virtual Expr * visitInitVar(InitVarExpr * in);
+  virtual Expr * visitClearVar(ClearVarExpr * in);
   virtual Expr * visitProg2(BinaryExpr * in);
   virtual Expr * visitArrayLiteral(ArrayLiteralExpr * in);
   virtual Expr * visitTupleCtor(TupleCtorExpr * in);

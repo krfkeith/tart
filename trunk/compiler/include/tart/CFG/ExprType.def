@@ -24,6 +24,7 @@ EXPR_TYPE(Assign)         // Assignment
 EXPR_TYPE(PostAssign)     // Assign, return value before assignment
 EXPR_TYPE(MultiAssign)    // Multiple assignments which occur simultaneously.
 EXPR_TYPE(InitVar)        // Local variable initialization
+EXPR_TYPE(ClearVar)       // Zero out a local var (stack root).
 EXPR_TYPE(New)            // A call to allocate storage for an object
 EXPR_TYPE(BinaryOpcode)   // A binary IR opcode
 EXPR_TYPE(Compare)        // A binary comparison instruction

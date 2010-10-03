@@ -340,6 +340,16 @@ Value * ObjectAddressIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * 
 }
 
 // -------------------------------------------------------------------
+// ObjectReferenceIntrinsic
+ObjectReferenceIntrinsic ObjectReferenceIntrinsic::instance;
+
+Value * ObjectReferenceIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreatePointerCast(val, call->type()->irEmbeddedType(), "objectReference");
+}
+
+// -------------------------------------------------------------------
 // PointerDiffIntrinsic
 PointerDiffIntrinsic PointerDiffIntrinsic::instance;
 

@@ -1296,7 +1296,6 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     }
 
     case Storage_Class:
-    case Storage_Param:
     case Storage_Closure:
     default:
       DFAIL("Invalid storage class");

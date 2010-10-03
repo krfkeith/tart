@@ -132,6 +132,10 @@ public:
       Do not yet set it as the current active scope. */
   LocalScope * createLocalScope(const char * scopeName);
 
+  /** We're exiting a local scope, so zero out any stack roots which are going out
+      of scope. */
+  void exitLocalScope(LocalScope * scope);
+
   /** Return the current block. */
   Block * insertionBlock() const { return currentBlock_; }
 

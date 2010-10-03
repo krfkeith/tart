@@ -352,19 +352,36 @@ MultiAssignExpr::MultiAssignExpr(const SourceLocation & loc, const Type * type)
 InitVarExpr::InitVarExpr(
     const SourceLocation & loc, VariableDefn * v, Expr * expr)
   : Expr(InitVar, loc, v->type())
-  , var(v)
+  , var_(v)
   , initExpr_(expr)
 {
   DASSERT_OBJ(expr != NULL, expr);
-  DASSERT_OBJ(var->initValue() == NULL, var);
+  DASSERT_OBJ(var_->initValue() == NULL, var_);
 }
 
 bool InitVarExpr::isSingular() const {
-  return initExpr_->isSingular() && var->isSingular();
+  return initExpr_->isSingular() && var_->isSingular();
 }
 
 void InitVarExpr::format(FormatStream & out) const {
-  out << var << " = " << initExpr_;
+  out << var_ << " = " << initExpr_;
+}
+
+// -------------------------------------------------------------------
+// ClearVarExpr
+
+ClearVarExpr::ClearVarExpr(VariableDefn * v)
+  : Expr(ClearVar, v->location(), v->type())
+  , var_(v)
+{
+}
+
+bool ClearVarExpr::isSingular() const {
+  return var_->isSingular();
+}
+
+void ClearVarExpr::format(FormatStream & out) const {
+  out << "clear " << var_;
 }
 
 // -------------------------------------------------------------------

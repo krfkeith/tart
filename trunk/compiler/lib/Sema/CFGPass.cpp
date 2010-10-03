@@ -150,6 +150,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::InitVar:
       return visitInitVar(static_cast<InitVarExpr *>(in));
 
+    case Expr::ClearVar:
+      return visitClearVar(static_cast<ClearVarExpr *>(in));
+
     case Expr::Prog2:
       return visitProg2(static_cast<BinaryExpr *>(in));
 
@@ -308,7 +311,13 @@ Expr * CFGPass::visitComplement(UnaryExpr * in) {
 }
 
 Expr * CFGPass::visitInitVar(InitVarExpr * in) {
-  in->setInitExpr(visitExpr(in->initExpr()));
+  Expr * e = visitExpr(in->initExpr());
+  DASSERT(e != NULL);
+  in->setInitExpr(e);
+  return in;
+}
+
+Expr * CFGPass::visitClearVar(ClearVarExpr * in) {
   return in;
 }
 

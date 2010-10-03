@@ -5,6 +5,7 @@
 #ifndef TART_GC_GCSTRATEGY_H
 #define TART_GC_GCSTRATEGY_H
 
+#include "llvm/IntrinsicInst.h"
 #include "llvm/CodeGen/GCStrategy.h"
 #include "llvm/CodeGen/GCMetadata.h"
 #include "llvm/CodeGen/GCMetadataPrinter.h"
@@ -95,9 +96,14 @@ class TartGCStrategy : public GCStrategy {
 public:
   TartGCStrategy() {
     InitRoots = false;
+    CustomRoots = true;
     UsesMetadata = true;
     NeededSafePoints = 1 << GC::PostCall;
   }
+
+  bool performCustomLowering(llvm::Function &F);
+  bool insertRootInitializers(llvm::Function & fn, llvm::AllocaInst ** roots, unsigned count);
+  bool couldBecomeSafePoint(llvm::Instruction * inst);
 };
 
 class TartGCPrinter : public llvm::GCMetadataPrinter {

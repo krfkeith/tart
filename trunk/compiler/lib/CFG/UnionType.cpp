@@ -427,13 +427,7 @@ bool UnionType::containsReferenceType() const {
     return true;
   }
 
-  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if ((*it)->containsReferenceType()) {
-      return true;
-    }
-  }
-
-  return false;
+  return members_->containsReferenceType();
 }
 
 TypeShape UnionType::typeShape() const {

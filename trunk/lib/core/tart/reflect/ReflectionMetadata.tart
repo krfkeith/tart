@@ -115,7 +115,7 @@ import tart.collections.ImmutableList;
 
   private {
     var _value:optional Object;
-  	var _names:NameTable;
+  	let _names:NameTable;
   	var _strmTypeRefs:Address[ubyte];
   	var _strmDefns:Address[ubyte];
     var _nameIndex:int16;

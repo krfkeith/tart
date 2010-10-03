@@ -337,7 +337,7 @@ public:
 /// An initialization of a local variable
 class InitVarExpr : public Expr {
 private:
-  VariableDefn * var;
+  VariableDefn * var_;
   Expr * initExpr_;
 
 public:
@@ -345,7 +345,7 @@ public:
 
   Expr * initExpr() const { return initExpr_; }
   void setInitExpr(Expr * e) { initExpr_ = e; }
-  VariableDefn * getVar() const { return var; }
+  VariableDefn * var() const { return var_; }
 
   // Overrides
 
@@ -356,6 +356,29 @@ public:
   static inline bool classof(const InitVarExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
     return ex->exprType() == InitVar;
+  }
+};
+
+/// -------------------------------------------------------------------
+/// Clear a local stack root
+class ClearVarExpr : public Expr {
+private:
+  VariableDefn * var_;
+
+public:
+  ClearVarExpr(VariableDefn * var);
+
+  VariableDefn * var() const { return var_; }
+
+  // Overrides
+
+  bool isSideEffectFree() const { return false; }
+  bool isSingular() const;
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const ClearVarExpr *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == ClearVar;
   }
 };
 

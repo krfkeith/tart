@@ -239,15 +239,8 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
     }
   }
 
-  if (success && currentBlock_ != NULL && !currentBlock_->hasTerminator()) {
-    for (Defn * local = blockScope->firstMember(); local != NULL; local = local->nextInScope()) {
-      if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
-        if (var->type()->isReferenceType()) {
-          // Zero out any garbage-collectible locals.
-          diag.debug() << "Exiting scope of " << local;
-        }
-      }
-    }
+  if (success && currentBlock_ != NULL && st != function->functionDecl()->body()) {
+    exitLocalScope(blockScope);
   }
 
   setActiveScope(savedScope);
@@ -319,7 +312,10 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
 
   // Continue at the 'done' block if there was one.
   setInsertPos(blkDone);
-  setActiveScope(savedScope);
+  if (savedScope != activeScope) {
+    exitLocalScope(activeScope->asLocalScope());
+    setActiveScope(savedScope);
+  }
   return true;
 }
 
@@ -367,7 +363,10 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   }
 
   setInsertPos(blkDone);
-  setActiveScope(savedScope);
+  if (savedScope != activeScope) {
+    exitLocalScope(activeScope->asLocalScope());
+    setActiveScope(savedScope);
+  }
   return true;
 }
 
@@ -412,7 +411,10 @@ bool StmtAnalyzer::buildDoWhileStmtCFG(const DoWhileStmt * st) {
   }
 
   setInsertPos(blkDone);
-  setActiveScope(savedScope);
+  if (savedScope != activeScope) {
+    exitLocalScope(activeScope->asLocalScope());
+    setActiveScope(savedScope);
+  }
   return true;
 }
 
@@ -524,6 +526,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
 
   // Continue at the 'done' block.
   setInsertPos(blkDone);
+  exitLocalScope(forScope);
   setActiveScope(savedScope);
   return true;
 }
@@ -685,6 +688,7 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
 
   // Continue at the 'done' block.
   setInsertPos(blkDone);
+  exitLocalScope(forScope);
   setActiveScope(savedScope);
   return true;
 }
@@ -865,7 +869,10 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     setInsertPos(NULL);
   }
 
-  setActiveScope(savedScope);
+  if (savedScope != activeScope) {
+    exitLocalScope(activeScope->asLocalScope());
+    setActiveScope(savedScope);
+  }
   return true;
 }
 
@@ -990,6 +997,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
           currentBlock_->branchTo(st->location(), endBlock);
         }
 
+        exitLocalScope(caseScope);
         setActiveScope(prevScope);
       } else {
         DFAIL("Bad case expression");
@@ -1035,7 +1043,10 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
     setInsertPos(NULL);
   }
 
-  setActiveScope(savedScope);
+  if (savedScope != activeScope) {
+    exitLocalScope(activeScope->asLocalScope());
+    setActiveScope(savedScope);
+  }
   return true;
 }
 
@@ -1180,6 +1191,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
 
       // Generate the catch body
       buildStmtCFG(cst->body());
+      exitLocalScope(catchScope);
       setActiveScope(savedScope);
 
       // If the catch body fell through, then jump to finally or end
@@ -1599,6 +1611,37 @@ LocalScope * StmtAnalyzer::createLocalScope(const char * scopeName) {
 
   function->localScopes().push_back(newScope);
   return newScope;
+}
+
+void StmtAnalyzer::exitLocalScope(LocalScope * scope) {
+  // If we're exiting the function then we don't need to clear roots.
+  if (currentBlock_->terminator() == BlockTerm_Return) {
+    return;
+  }
+
+  ExprList rootsToClear;
+
+  for (Defn * local = scope->firstMember(); local != NULL; local = local->nextInScope()) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
+      if (var->type()->containsReferenceType()) {
+        // Zero out any garbage-collectible locals.
+        rootsToClear.push_back(new ClearVarExpr(var));
+      }
+    }
+  }
+
+  if (!rootsToClear.empty()) {
+    // If there are no terminator expressions, then we can just append the
+    // list of roots to clear to the regular expression list.
+    if (currentBlock_->termExprs().empty()) {
+      currentBlock_->exprs().append(rootsToClear.begin(), rootsToClear.end());
+    } else {
+      for (ExprList::const_iterator it = rootsToClear.begin(); it != rootsToClear.end(); ++it) {
+        diag.debug(*it) << "Exiting scope of " << *it;
+      }
+      DFAIL("Implement");
+    }
+  }
 }
 
 void StmtAnalyzer::setInsertPos(Block * blk) {
