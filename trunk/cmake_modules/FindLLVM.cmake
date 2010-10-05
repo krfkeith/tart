@@ -62,6 +62,15 @@ macro(find_llvm_library Name LibName)
   mark_as_advanced(LLVM_${Name})
 endmacro(find_llvm_library)
 
+set(LLVM_ALL_BACKENDS)
+
+# Find a LLVM libraries
+macro(find_llvm_backend_library Name LibName)
+  find_library(LLVM_${Name} ${LibName} PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
+  mark_as_advanced(LLVM_${Name})
+  set(LLVM_ALL_BACKENDS ${LLVM_ALL_BACKENDS} ${LLVM_${Name}})
+endmacro(find_llvm_backend_library)
+
 # LLVM Libraries
 find_llvm_library(ANALYSIS LLVMAnalysis)
 find_llvm_library(ARCHIVE LLVMArchive)
@@ -92,85 +101,86 @@ find_llvm_library(TRANSFORM_UTILS LLVMTransformUtils)
 
 if (NOT MSVC)
   # Architecture: ARM
-  find_llvm_library(ARM_ASM_PRINTER LLVMARMAsmPrinter)
-  find_llvm_library(ARM_CODE_GEN LLVMARMCodeGen)
-  find_llvm_library(ARM_INFO LLVMARMInfo)
+  find_llvm_backend_library(ARM_ASM_PARSER LLVMARMAsmParser)
+  find_llvm_backend_library(ARM_CODE_GEN LLVMARMCodeGen)
+  find_llvm_backend_library(ARM_ASM_PRINTER LLVMARMAsmPrinter)
+  find_llvm_backend_library(ARM_INFO LLVMARMInfo)
 
   # Architecture: Alpha
-  find_llvm_library(ALPHA_ASM_PRINTER LLVMAlphaAsmPrinter)
-  find_llvm_library(ALPHA_CODE_GEN LLVMAlphaCodeGen)
-  find_llvm_library(ALPHA_INFO LLVMAlphaInfo)
+  find_llvm_backend_library(ALPHA_ASM_PRINTER LLVMAlphaAsmPrinter)
+  find_llvm_backend_library(ALPHA_CODE_GEN LLVMAlphaCodeGen)
+  find_llvm_backend_library(ALPHA_INFO LLVMAlphaInfo)
 
   # Architecture: Blackfin
-  find_llvm_library(BLACKFIN_ASM_PRINTER LLVMBlackfinAsmPrinter)
-  find_llvm_library(BLACKFIN_CODE_GEN LLVMBlackfinCodeGen)
-  find_llvm_library(BLACKFIN_INFO LLVMBlackfinInfo)
+  find_llvm_backend_library(BLACKFIN_ASM_PRINTER LLVMBlackfinAsmPrinter)
+  find_llvm_backend_library(BLACKFIN_CODE_GEN LLVMBlackfinCodeGen)
+  find_llvm_backend_library(BLACKFIN_INFO LLVMBlackfinInfo)
 
   # Architecture: Blaze
-  find_llvm_library(MBLAZE_ASM_PRINTER LLVMMBlazeAsmPrinter)
-  find_llvm_library(MBLAZE_CODE_GEN LLVMMBlazeCodeGen)
-  find_llvm_library(MBLAZE_INFO LLVMMBlazeInfo)
+  find_llvm_backend_library(MBLAZE_ASM_PRINTER LLVMMBlazeAsmPrinter)
+  find_llvm_backend_library(MBLAZE_CODE_GEN LLVMMBlazeCodeGen)
+  find_llvm_backend_library(MBLAZE_INFO LLVMMBlazeInfo)
 
   # Architecture: CBackend
-  find_llvm_library(CBACKEND LLVMCBackend)
-  find_llvm_library(CBACKEND_INFO LLVMCBackendInfo)
+  find_llvm_backend_library(CBACKEND LLVMCBackend)
+  find_llvm_backend_library(CBACKEND_INFO LLVMCBackendInfo)
 
   # Architecture: CellSPU
-  find_llvm_library(CELLSPU_ASM_PRINTER LLVMCellSPUAsmPrinter)
-  find_llvm_library(CELLSPU_CODE_GEN LLVMCellSPUCodeGen)
-  find_llvm_library(CELLSPU_INFO LLVMCellSPUInfo)
+  find_llvm_backend_library(CELLSPU_ASM_PRINTER LLVMCellSPUAsmPrinter)
+  find_llvm_backend_library(CELLSPU_CODE_GEN LLVMCellSPUCodeGen)
+  find_llvm_backend_library(CELLSPU_INFO LLVMCellSPUInfo)
 
   # Architecture: CppBackend
-  find_llvm_library(CPPBACKEND LLVMCppBackend)
-  find_llvm_library(CPPBACKEND_INFO LLVMCppBackendInfo)
+  find_llvm_backend_library(CPPBACKEND LLVMCppBackend)
+  find_llvm_backend_library(CPPBACKEND_INFO LLVMCppBackendInfo)
 
   # Architecture: MSIL
-  find_llvm_library(MSIL LLVMMSIL)
-  find_llvm_library(MSIL_INFO LLVMMSILInfo)
+  find_llvm_backend_library(MSIL LLVMMSIL)
+  find_llvm_backend_library(MSIL_INFO LLVMMSILInfo)
 
   # Architecture: MSP430
-  find_llvm_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
-  find_llvm_library(MSP430_CODE_GEN LLVMMSP430CodeGen)
-  find_llvm_library(MSP430_INFO LLVMMSP430Info)
+  find_llvm_backend_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
+  find_llvm_backend_library(MSP430_CODE_GEN LLVMMSP430CodeGen)
+  find_llvm_backend_library(MSP430_INFO LLVMMSP430Info)
 
   # Architecture: Mips
-  find_llvm_library(MIPS_ASM_PRINTER LLVMMipsAsmPrinter)
-  find_llvm_library(MIPS_CODE_GEN LLVMMipsCodeGen)
-  find_llvm_library(MIPS_INFO LLVMMipsInfo)
+  find_llvm_backend_library(MIPS_ASM_PRINTER LLVMMipsAsmPrinter)
+  find_llvm_backend_library(MIPS_CODE_GEN LLVMMipsCodeGen)
+  find_llvm_backend_library(MIPS_INFO LLVMMipsInfo)
 
   # Architecture: PIC16
-  find_llvm_library(PIC16_CODE_GEN LLVMPIC16CodeGen)
-  find_llvm_library(PIC16_ASM_PRINTER LLVMPIC16AsmPrinter)
-  find_llvm_library(PIC16_INFO LLVMPIC16Info)
+  find_llvm_backend_library(PIC16_ASM_PRINTER LLVMPIC16AsmPrinter)
+  find_llvm_backend_library(PIC16_CODE_GEN LLVMPIC16CodeGen)
+  find_llvm_backend_library(PIC16_INFO LLVMPIC16Info)
 
   # Architecture: PowerPC
-  find_llvm_library(POWERPC_ASM_PRINTER LLVMPowerPCAsmPrinter)
-  find_llvm_library(POWERPC_CODE_GEN LLVMPowerPCCodeGen)
-  find_llvm_library(POWERPC_INFO LLVMPowerPCInfo)
+  find_llvm_backend_library(POWERPC_ASM_PRINTER LLVMPowerPCAsmPrinter)
+  find_llvm_backend_library(POWERPC_CODE_GEN LLVMPowerPCCodeGen)
+  find_llvm_backend_library(POWERPC_INFO LLVMPowerPCInfo)
 
   # Architecture: Sparc
-  find_llvm_library(SPARC_ASM_PRINTER LLVMSparcAsmPrinter)
-  find_llvm_library(SPARC_CODE_GEN LLVMSparcCodeGen)
-  find_llvm_library(SPARC_INFO LLVMSparcInfo)
+  find_llvm_backend_library(SPARC_ASM_PRINTER LLVMSparcAsmPrinter)
+  find_llvm_backend_library(SPARC_CODE_GEN LLVMSparcCodeGen)
+  find_llvm_backend_library(SPARC_INFO LLVMSparcInfo)
 
   # Architecture: SystemZ
-  find_llvm_library(SYSTEMZ_ASM_PRINTER LLVMSystemZAsmPrinter)
-  find_llvm_library(SYSTEMZ_CODE_GEN LLVMSystemZCodeGen)
-  find_llvm_library(SYSTEMZ_INFO LLVMSystemZInfo)
+  find_llvm_backend_library(SYSTEMZ_ASM_PRINTER LLVMSystemZAsmPrinter)
+  find_llvm_backend_library(SYSTEMZ_CODE_GEN LLVMSystemZCodeGen)
+  find_llvm_backend_library(SYSTEMZ_INFO LLVMSystemZInfo)
 endif (NOT MSVC)
 
 # Architecture: X86
-find_llvm_library(X86_ASM_PARSER LLVMX86AsmParser)
-find_llvm_library(X86_ASM_PRINTER LLVMX86AsmPrinter)
-find_llvm_library(X86_CODE_GEN LLVMX86CodeGen)
-find_llvm_library(X86_DISASSEMBLER LLVMX86Disassembler)
-find_llvm_library(X86_INFO LLVMX86Info)
+find_llvm_backend_library(X86_DISASSEMBLER LLVMX86Disassembler)
+find_llvm_backend_library(X86_CODE_GEN LLVMX86CodeGen)
+find_llvm_backend_library(X86_ASM_PARSER LLVMX86AsmParser)
+find_llvm_backend_library(X86_ASM_PRINTER LLVMX86AsmPrinter)
+find_llvm_backend_library(X86_INFO LLVMX86Info)
 
 if (NOT MSVC)
   # Architecture: XCore
-  find_llvm_library(XCORE_CODE_GEN LLVMXCoreCodeGen)
-  find_llvm_library(XCORE_ASM_PRINTER LLVMXCoreAsmPrinter)
-  find_llvm_library(XCORE_INFO LLVMXCoreInfo)
+  find_llvm_backend_library(XCORE_CODE_GEN LLVMXCoreCodeGen)
+  find_llvm_backend_library(XCORE_ASM_PRINTER LLVMXCoreAsmPrinter)
+  find_llvm_backend_library(XCORE_INFO LLVMXCoreInfo)
 endif (NOT MSVC)
 
 # handle the QUIETLY and REQUIRED arguments and set LLVM_FOUND to TRUE if 
