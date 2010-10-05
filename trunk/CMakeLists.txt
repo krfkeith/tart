@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 2.6)
 project(TART)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+set(PROFILE_TARTC 0)
+set(PROFILE_TARTLN 0)
 
 # Macros we'll need
 include(CheckIncludeFile)
