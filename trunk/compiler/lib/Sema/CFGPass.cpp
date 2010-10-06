@@ -3,6 +3,8 @@
  * ================================================================ */
 
 #include "tart/Sema/CFGPass.h"
+
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/Block.h"

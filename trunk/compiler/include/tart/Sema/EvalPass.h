@@ -13,6 +13,15 @@
 
 namespace tart {
 
+class LValueExpr;
+class FnCallExpr;
+class NewExpr;
+class AssignmentExpr;
+class CastExpr;
+class ArrayLiteralExpr;
+class BinaryOpcodeExpr;
+class CompareExpr;
+
 /// -------------------------------------------------------------------
 /// Pass which evalutes a compile-time expression.
 class EvalPass {

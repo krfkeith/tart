@@ -15,6 +15,8 @@ namespace tart {
 
 class PrimitiveType;
 class NativeArrayType;
+class CompositeType;
+class VariableDefn;
 
 // Note that the names of these classes has been chosen not to collide
 // with the LLVM constant classes.

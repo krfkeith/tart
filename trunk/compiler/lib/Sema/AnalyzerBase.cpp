@@ -15,6 +15,7 @@
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/SpCandidate.h"
 
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/NamespaceDefn.h"

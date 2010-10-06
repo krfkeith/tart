@@ -15,6 +15,7 @@ namespace tart {
 class CallExpr;
 class BindingEnv;
 class CallCandidate;
+class TupleCtorExpr;
 
 /// -------------------------------------------------------------------
 /// Abstract base class for type constraints. A type constraint represents

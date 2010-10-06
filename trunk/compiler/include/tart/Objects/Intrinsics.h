@@ -9,6 +9,10 @@
 #include "tart/Objects/Intrinsic.h"
 #endif
 
+#ifndef TART_CFG_EXPRS_H
+#include "tart/CFG/Exprs.h"
+#endif
+
 namespace tart {
 
 // -------------------------------------------------------------------
