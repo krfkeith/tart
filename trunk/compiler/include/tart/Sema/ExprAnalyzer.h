@@ -11,6 +11,10 @@
 
 namespace tart {
 
+class LValueExpr;
+class CallExpr;
+class SpecializeExpr;
+
 /// -------------------------------------------------------------------
 /// Expression analyzer
 class ExprAnalyzer : public AnalyzerBase {

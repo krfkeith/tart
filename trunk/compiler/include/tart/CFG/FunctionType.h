@@ -13,6 +13,8 @@
 #include "tart/CFG/Defn.h"
 #endif
 
+#include "llvm/DerivedTypes.h"
+
 namespace tart {
 
 class FunctionDefn;

@@ -12,6 +12,24 @@
 namespace tart {
 
 class ClosureEnvExpr;
+class LValueExpr;
+class BoundMethodExpr;
+class ScopeNameExpr;
+class AssignmentExpr;
+class MultiAssignExpr;
+class CallExpr;
+class FnCallExpr;
+class NewExpr;
+class CastExpr;
+class BinaryOpcodeExpr;
+class CompareExpr;
+class InstanceOfExpr;
+class InitVarExpr;
+class ClearVarExpr;
+class ArrayLiteralExpr;
+class TupleCtorExpr;
+class ClosureEnvExpr;
+class SharedValueExpr;
 
 /// -------------------------------------------------------------------
 /// Mixin class that handles iteration over the CFG expression tree and

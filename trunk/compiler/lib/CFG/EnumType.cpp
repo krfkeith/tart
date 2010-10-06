@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/EnumType.h"
+#include "tart/CFG/Exprs.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {

@@ -2,17 +2,21 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Sema/EnumAnalyzer.h"
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/Module.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
+#include "tart/Sema/EnumAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
+
 #include "tart/Objects/Builtins.h"
 
 #include "llvm/Instructions.h"

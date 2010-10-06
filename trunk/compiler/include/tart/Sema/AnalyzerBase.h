@@ -26,6 +26,9 @@ class FunctionDefn;
 class ArrayLiteralExpr;
 struct SourceLocation;
 
+typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
+typedef llvm::SmallVector<SpCandidate *, 8> SpCandidateList;
+
 /// -------------------------------------------------------------------
 /// Represents the set of possible operations that are done on a definition.
 /// Since definitions are evaluated lazily, we need to ensure that the
