@@ -64,9 +64,9 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
   return compileUnit;
 }
 
-DIFile CodeGenerator::genDIFile(const ProgramSource * source) {
+DIFile CodeGenerator::genDIFile(const SourceRegion * source) {
   using namespace llvm;
-  DIFile & file = dbgFiles_[source];
+  DIFile & file = dbgFiles_[source->getFilePath()];
   if ((MDNode *)file == NULL) {
     if (source != NULL) {
       sys::Path srcPath(source->getFilePath());
@@ -88,11 +88,11 @@ DIFile CodeGenerator::genDIFile(const ProgramSource * source) {
 }
 
 DIFile CodeGenerator::genDIFile(const Defn * defn) {
-  if (defn == NULL || defn->location().file == NULL) {
+  if (defn == NULL || defn->location().region == NULL) {
     return dbgFile_;
   }
 
-  return genDIFile(defn->location().file);
+  return genDIFile(defn->location().region);
 }
 
 DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {

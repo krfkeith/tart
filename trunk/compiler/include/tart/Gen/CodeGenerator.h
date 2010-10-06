@@ -348,7 +348,7 @@ public:
 
   /** Return the debug compile unit for the specified source file. */
   llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
-  llvm::DIFile genDIFile(const ProgramSource * source);
+  llvm::DIFile genDIFile(const SourceRegion * source);
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
@@ -394,7 +394,7 @@ public:
   // Generate the function that boxes arguments when a call is intercepted.
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
 private:
-  typedef llvm::DenseMap<const ProgramSource *, llvm::DIFile> DIFileMap;
+  typedef llvm::StringMap<llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;
   typedef llvm::DenseMap<const Type *, llvm::GlobalVariable *> TraceTableMap;
   typedef llvm::DenseMap<const Type *, llvm::Function *> TraceMethodMap;
