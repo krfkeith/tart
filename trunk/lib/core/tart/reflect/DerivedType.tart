@@ -1,0 +1,43 @@
+/** Reflection type class for pointers, unions, tuples, and so on. */
+class DerivedType : Type {
+  private {
+    var _typeParams:Type[];
+  }
+
+  def construct(typeKind:TypeKind, typeParams:Type[]) {
+    super(typeKind);
+    self._typeParams = typeParams;
+  }
+
+  /** The list of type parameters for this type. */
+  final def typeParams:Type[] { get { return _typeParams; } }
+  
+  final override toString -> String {
+    let typeStrings = tart.collections.ArrayList[String]();
+    for type in typeParams {
+      typeStrings.add(type.toString());
+    }
+
+    switch typeKind {
+      case TUPLE {
+        return String.format("({0})", ",".join(typeStrings));
+      }
+
+      case UNION {
+        return " or ".join(typeStrings);
+      }
+
+      case ADDRESS {
+      }
+
+      case NATIVE_ARRAY {
+      }
+      
+      else {
+        return "<bad type>";
+      }
+    }
+
+    return "IMPLEMENTME";
+  }
+}

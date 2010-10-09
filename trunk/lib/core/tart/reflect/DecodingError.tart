@@ -1,0 +1,16 @@
+/** Exception which indicates that the reflection metadata could not be decoded. */
+class DecodingError : Exception {
+  private var msg:String;
+
+  def construct(msg:String) {
+    self.msg = msg;
+  }
+
+  def construct(msg:String...) {
+    self.msg = String.concat(msg);
+  }
+
+  override toString -> String {
+    return String.concat("tart.reflect.DecodingError: ", msg);
+  }
+}

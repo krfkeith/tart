@@ -1,0 +1,384 @@
+struct ParseState {
+  var s:String;
+  var pos:int;
+  var end:int;
+}
+
+struct ConversionSpec {
+  enum Alignment {
+    DEFAULT,
+    LEFT,
+    RIGHT,
+    CENTER,
+    SIGN,   // Padding between sign and digits.
+  }
+  
+  enum Sign {
+    ALWAYS,
+    SPACE_IF_POSITIVE,
+    IF_NEGATIVE,
+  }
+  
+  var fill:char = ' ';
+  var align:Alignment = Alignment.DEFAULT;
+  var sign:Sign = Sign.IF_NEGATIVE;
+  var altForm:bool = false;
+  var zeroPad:bool = false;
+  var width:int;
+  var precision:int = 0;
+  var type:char;
+
+  def construct() {}
+  
+  static def parse(in:String) -> ConversionSpec {
+    return parse(in, 0, in.length);
+  }
+
+  static def parse(in:String, start:int, length:int) -> ConversionSpec {
+    let end = Math.min(in.length, start + length);
+    var c:char;
+    ConversionSpec result;
+
+    if (start < end) {
+    }
+  }
+}
+
+class StringConverter {
+  def convert(value:Object) -> String {
+    classify value {
+    }
+  }
+}
+
+class StringFormatter {
+  private {
+	  enum State {
+	    LITERAL_TEXT,
+	    FIELD_BEGIN,
+	    FIELD_INDEX,
+	    FIELD_CONVERSION,
+	  }
+	  
+	  var _formatStr:char[];
+  }
+  
+  def format(args:Object[]) -> String {
+    var pos:int = 0;
+    var result = StringBuilder();
+    var state = LITERAL_TEXT;
+    var fieldIndex:uint = 0;
+    var conversionSpec:StringBuilder;
+    while _pos < _formatStr.length {
+      let c = _formatStr[pos++];
+      switch (state) {
+        case LITERAL_TEXT {
+          if c == '{' {
+            state_ = FIELD_BEGIN;
+          } else {
+          }
+        }
+        
+        case FIELD_BEGIN {
+          if c == '{' {
+            result.append('{');
+          } else if c >= '0' and c <= '9' {
+            state = FIELD_INDEX;
+            fieldIndex = uint(c - '0');
+          } else {
+            throw StringFormatException("Field index expected after '{' at ", pos - 1);
+          }
+        }
+        
+        case FIELD_INDEX {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], "");
+            _state = LITERAL_TEXT;
+          } else if c == ':' {
+            conversionSpec = StringBuilder();
+            state = FIELD_CONVERSION;
+          } else if c >= '0' and c <= '9' {
+            fieldIndex = fieldIndex * 10 + uint(c - '0');
+          } else {
+            throw StringFormatException("Invalid field index at ", (pos - 1).toString());
+          }
+        }
+
+        case CONVERSION_SPEC {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], conversionSpec.toString());
+            state = LITERAL_TEXT;
+          } else {
+            conversionSpec.append(c);
+          }
+        }
+      }
+    }
+    
+    switch (state_) {
+      case FIELD_BEGIN {
+        result.append('{');
+      }
+      
+      case FIELD_INDEX
+      case CONVERSION_SPEC {
+        throw StringFormatException("Unexpected end of string");
+      }
+    }
+    
+    return result_.toString();
+  }
+
+  def convertAndAppend(arg:Object, conversionSpec:String) {
+  }
+}
+
+interface ContextHandler {
+  def enter();
+  def exit(e:Exception or Nothing) -> Exception or Nothing;
+
+  def exit();
+  def exit(e:Exception);
+}
+
+struct Vector4D[%T] require T issubtype Number {
+  private var data:NativeArray[T, 4];
+
+  def x:T {
+    get { return data[0]; }
+    set { data[0] = value; }
+  }
+
+  def y:T {
+    get { return data[1]; }
+    set { data[1] = value; }
+  }
+
+  def z:T {
+    get { return data[2]; }
+    set { data[2] = value; }
+  }
+
+  def w:T {
+    get { return data[3]; }
+    set { data[3] = value; }
+  }
+
+  def [index:int]:T {
+    get {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      return data[index];
+    }
+    set {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      data[index] = value;
+    }
+  }
+}
+
+struct Matrix[%T, %Rows:int, %Cols:int] require T issubtype Number {
+  private var data:NativeArray[T, Rows * Cols];
+
+  def [row:int, col:int]:T {
+    get {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      return data[row * Cols + col];
+    }
+    set {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      data[row * Cols + col] = value;
+    }
+  }
+  
+  def construct() {
+    for i = 0; i < Rows * Cols; ++i {
+      data[i] = 0;
+    }
+  }
+}
+
+typealias Matrix4f:Matrix<[float, 4, 4]>;
+typealias Matrix4d:Matrix<[double, 4, 4]>;
+
+class Transform {
+  private var m:Matrix4d;
+}
+
+
+class DocParser {
+public:
+  enum Token {
+    Token_End,
+    Token_Paragraph,
+    Token_Preformatted,
+    Token_Indent,
+    Token_Dedent,
+    
+  };
+
+  DocParser(const std::string & docString);
+  
+  
+};
+
+class DocNode {
+  enum NodeType {
+    Section,
+    Paragraph,
+    Preformatted,
+    ListItem,
+    Definition,
+    Link,
+  };
+  
+  enum DefinitionType {
+    Parameter,
+    Return,
+    Exception,
+  }
+};
+
+class Paragraph {
+};
+
+class Doc {
+public:
+  const std::string & name() const;
+  const std::string & qualifiedName() const;
+private:
+};
+
+class ProgramElementDoc : public Doc {
+public:
+  const ASTDecl * decl() const { return decl_; }
+
+private:
+  const ASTDecl * decl_;
+};
+
+class ClassDoc : public ProgramElementDoc {
+};
+
+class ConstructorDoc : public ProgramElementDoc {
+};
+
+class FieldDoc : public ProgramElementDoc {
+};
+
+class PropertyDoc : public ProgramElementDoc {
+};
+
+class MethodDoc : public ProgramElementDoc {
+};
+
+class PackageDoc : public ProgramElementDoc {
+};
+
+class NamespaceDoc : public ProgramElementDoc {
+};
+
+
+depends "tart/core/String.tart"; 
+depends "tart/core/Iterator.tart";
+
+import tart.core.String = 1;
+import tart.core.Iterator[char] = 2;
+
+// Compiled module format
+public final class StringBuilder : %2 {
+  private var value:char[];
+  private var _length:int;
+  private def grow(amount:int);
+  private static def insertionCount(inputLength:int, start:int, count:int) -> int;
+  public def construct();
+  public def construct(s:%1, start:int = 0, count:int = int.maxVal);
+  public def construct(c:char[], start:int = 0, count:int = int.maxVal);
+  public def length:int { get; }
+  public def append(c:char);
+  public def append(c:char[], start:int = 0, count:int = int.maxVal);
+  public def append(s:%1, start:int = 0, count:int = int.maxVal);
+  public def append(s:%2);
+  public def insert(n:int, c:char);
+  public def insert(n:int, c:char[], start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:String, start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:%2);
+  public def remove(n:int);
+  public def remove(n:int, count:int);
+  public def clear();
+}
+
+// -------------------------------------------------------------
+
+interface OptionParserBase {
+  enum ParseError {
+    BAD_FORMAT,
+  }
+
+  def parse -> Object or ParseError;
+}
+
+interface OptionParser[%T] : OptionParserBase {
+  def parse -> Object or ParseError;
+}
+
+class Option[bool] : OptionBase[bool] {
+  private {
+    var name:String;
+  }
+  
+  def value:bool {
+    get {}
+  }
+  
+  def isPresent {
+    get { return present; }
+  }
+}
+
+class Option[%T, %Parser=OptionParsers[T]] {
+  
+}
+
+  var debug = Option[bool](
+      name = "debug",
+      help = "Enable debugging");
+
+class Option[%T] {
+  private {
+    var name:String;
+    var help:String;
+    var value:optional T;
+    var present:bool;
+    var parser = OptionParser[T]();
+    
+    static var options:Map[String, Option];
+  }
+
+  def construct(name:String = "", help:String = "") {
+    self.name = name;
+    self.help = help;
+    self.value = value;
+    self.present = false;
+
+    if name in options {
+      // Duplicate option definition 'name'.
+    } else {
+      options[name] = self;
+    }
+  }
+
+  def setDefault(value:T) -> Option {
+    self.value = value;
+    return self;
+  }
+
+  def parse(s:String) {
+    let v = parser.parse(s);
+    present = true;
+    
+  }
+
+  def isPresent { get { return present; } }
+}

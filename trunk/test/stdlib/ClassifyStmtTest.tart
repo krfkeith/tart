@@ -1,0 +1,85 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ClassifyStmtTest);
+}
+
+class ClassifyStmtTest : Test {
+	def testClassifySucceed {
+	  let e:Object = "H";
+	  classify e as s:String {
+	    return;
+	  }
+	  
+	  fail("Invalid classification");
+	}
+	
+	def testClassifyFallThrough {
+	  let e:Object = "H";
+	  classify e as s:Exception {
+	    fail("Invalid classification");
+	  }
+	}
+	
+	def testClassifyElse {
+	  let e:Object = "H";
+	  classify e as s:Exception {
+	    fail("Invalid classification");
+	  } else {
+	    return;
+	  }
+	
+	  fail("Invalid control flow");
+	}
+	
+	def testClassifyComplex {
+	  let e:Object = "H";
+	  classify e {
+	    as s:Exception {
+	      fail("Invalid classification");
+	    }
+	    
+	    as a:int32[] {
+	      fail("Invalid classification");
+	    }
+	    
+	    else {
+	      return;
+	    }
+	  }
+	
+	  fail("Invalid control flow");
+	}
+	
+	// These test requires union support in LLVM.
+	def testClassifyUnion {
+	  var n:int32 or float = 1;
+	  classify n {
+	    as i:int32 {
+	      return;
+	    }
+	    
+	    as f:float {
+	      fail("Invalid classification");
+	    }
+	  }
+	
+	  fail("Invalid control flow");
+	}
+	
+	def testClassifyMulti {
+	  let n:int32 or float = 1.0;
+	  classify n {
+	    as i:int32 {
+	      fail("Invalid classification");
+	    }
+	    
+	    as f:float {
+	      return;
+	    }
+	  }
+	
+	  fail("Invalid control flow");
+	}
+}

@@ -1,0 +1,168 @@
+# CMake build file for Tart/tools
+
+cmake_policy(SET CMP0008 NEW)
+
+# Create a command for each source file
+set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
+
+add_executable(tartc tartc/tartc.cpp)
+add_dependencies(tartc compiler)
+target_link_libraries(tartc
+    compiler
+    ${LLVM_ALPHA_ASM_PRINTER}
+    ${LLVM_ALPHA_CODE_GEN}
+    ${LLVM_ALPHA_INFO}
+    ${LLVM_ARM_ASM_PRINTER}
+    ${LLVM_ARM_CODE_GEN}
+    ${LLVM_ARM_INFO}
+    ${LLVM_BLACKFIN_ASM_PRINTER}
+    ${LLVM_BLACKFIN_CODE_GEN}
+    ${LLVM_BLACKFIN_INFO}
+    ${LLVM_CBACKEND}
+    ${LLVM_CBACKEND_INFO}
+    ${LLVM_CELLSPU_ASM_PRINTER}
+    ${LLVM_CELLSPU_CODE_GEN}
+    ${LLVM_CELLSPU_INFO}
+    ${LLVM_CPPBACKEND}
+    ${LLVM_CPPBACKEND_INFO}
+    ${LLVM_MBLAZE_ASM_PRINTER}
+    ${LLVM_MBLAZE_CODE_GEN}
+    ${LLVM_MBLAZE_INFO}
+    ${LLVM_MIPS_ASM_PRINTER}
+    ${LLVM_MIPS_CODE_GEN}
+    ${LLVM_MIPS_INFO}
+    ${LLVM_MSIL}
+    ${LLVM_MSIL_INFO}
+    ${LLVM_MSP430_ASM_PRINTER}
+    ${LLVM_MSP430_CODE_GEN}
+    ${LLVM_MSP430_INFO}
+    ${LLVM_PIC16_ASM_PRINTER}
+    ${LLVM_PIC16_CODE_GEN}
+    ${LLVM_PIC16_INFO}
+    ${LLVM_POWERPC_ASM_PRINTER}
+    ${LLVM_POWERPC_CODE_GEN}
+    ${LLVM_POWERPC_INFO}
+    ${LLVM_SPARC_ASM_PRINTER}
+    ${LLVM_SPARC_CODE_GEN}
+    ${LLVM_SPARC_INFO}
+    ${LLVM_SYSTEMZ_ASM_PRINTER}
+    ${LLVM_SYSTEMZ_CODE_GEN}
+    ${LLVM_SYSTEMZ_INFO}
+    ${LLVM_X86_ASM_PARSER}
+    ${LLVM_X86_ASM_PRINTER}
+    ${LLVM_X86_CODE_GEN}
+    ${LLVM_X86_DISASSEMBLER}
+    ${LLVM_X86_INFO}
+    ${LLVM_XCORE_CODE_GEN}
+    ${LLVM_XCORE_ASM_PRINTER}
+    ${LLVM_XCORE_INFO}
+    ${LLVM_IPO}
+    ${LLVM_LINKER}
+    ${LLVM_SELECTION_DAG}
+    ${LLVM_ARCHIVE}
+    ${LLVM_BIT_READER}
+    ${LLVM_BIT_WRITER}
+    ${LLVM_ASM_PRINTER}
+    ${LLVM_ASM_PARSER}
+    ${LLVM_CODE_GEN}
+    ${LLVM_SCALAR_OPTS}
+    ${LLVM_IPA}
+    ${LLVM_TRANSFORM_UTILS}
+    ${LLVM_ANALYSIS}
+    ${LLVM_TARGET}
+    ${LLVM_MC}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
+set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+add_executable(tartln
+    tartln/tartln.cpp
+    tartln/ConstantBuilder.cpp
+    tartln/ReflectorPass.cpp
+    tartln/ReflectionSizePass.cpp)
+target_link_libraries(tartln
+    gcstrategy
+    ${LLVM_ALPHA_ASM_PRINTER}
+    ${LLVM_ALPHA_CODE_GEN}
+    ${LLVM_ALPHA_INFO}
+    ${LLVM_ARM_CODE_GEN}
+    ${LLVM_ARM_ASM_PRINTER}
+    ${LLVM_ARM_INFO}
+    ${LLVM_BLACKFIN_ASM_PRINTER}
+    ${LLVM_BLACKFIN_CODE_GEN}
+    ${LLVM_BLACKFIN_INFO}
+    ${LLVM_MBLAZE_ASM_PRINTER}
+    ${LLVM_MBLAZE_CODE_GEN}
+    ${LLVM_MBLAZE_INFO}
+    ${LLVM_CBACKEND}
+    ${LLVM_CBACKEND_INFO}
+    ${LLVM_CELLSPU_ASM_PRINTER}
+    ${LLVM_CELLSPU_CODE_GEN}
+    ${LLVM_CELLSPU_INFO}
+    ${LLVM_CPPBACKEND}
+    ${LLVM_CPPBACKEND_INFO}
+    ${LLVM_MIPS_ASM_PRINTER}
+    ${LLVM_MIPS_CODE_GEN}
+    ${LLVM_MIPS_INFO}
+    ${LLVM_MSIL}
+    ${LLVM_MSIL_INFO}
+    ${LLVM_MSP430_ASM_PRINTER}
+    ${LLVM_MSP430_CODE_GEN}
+    ${LLVM_MSP430_INFO}
+    ${LLVM_PIC16_ASM_PRINTER}
+    ${LLVM_PIC16_CODE_GEN}
+    ${LLVM_PIC16_INFO}
+    ${LLVM_POWERPC_ASM_PRINTER}
+    ${LLVM_POWERPC_CODE_GEN}
+    ${LLVM_POWERPC_INFO}
+    ${LLVM_SPARC_ASM_PRINTER}
+    ${LLVM_SPARC_CODE_GEN}
+    ${LLVM_SPARC_INFO}
+    ${LLVM_SYSTEMZ_ASM_PRINTER}
+    ${LLVM_SYSTEMZ_CODE_GEN}
+    ${LLVM_SYSTEMZ_INFO}
+    ${LLVM_X86_ASM_PARSER}
+    ${LLVM_X86_CODE_GEN}
+    ${LLVM_X86_ASM_PRINTER}
+    ${LLVM_X86_DISASSEMBLER}
+    ${LLVM_X86_INFO}
+    ${LLVM_XCORE_CODE_GEN}
+    ${LLVM_XCORE_ASM_PRINTER}
+    ${LLVM_XCORE_INFO}
+    ${LLVM_IPO}
+    ${LLVM_LINKER}
+    ${LLVM_SELECTION_DAG}
+    ${LLVM_ARCHIVE}
+    ${LLVM_BIT_READER}
+    ${LLVM_BIT_WRITER}
+    ${LLVM_ASM_PRINTER}
+    ${LLVM_MC_PARSER}
+    ${LLVM_ASM_PARSER}
+    ${LLVM_CODE_GEN}
+    ${LLVM_SCALAR_OPTS}
+    ${LLVM_INSTCOMBINE}
+    ${LLVM_IPA}
+    ${LLVM_TRANSFORM_UTILS}
+    ${LLVM_ANALYSIS}
+    ${LLVM_TARGET}
+    ${LLVM_MC}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
+set_target_properties(tartln PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+add_executable(gendeps gendeps/gendeps.cpp)
+target_link_libraries(gendeps
+    ${LLVM_BIT_READER}
+    ${LLVM_ASM_PARSER}
+    ${LLVM_TARGET}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
+set_target_properties(gendeps PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+add_subdirectory(lexgen)

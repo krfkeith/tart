@@ -1,0 +1,10 @@
+/** Exception thrown when an assertion fails. */
+public class AssertionFailureException : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

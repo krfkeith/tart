@@ -1,0 +1,85 @@
+import tart.core.Memory.Address;
+
+/** Description of a callable method. */
+final class Method : Member {
+  private {
+	  let _typeParams:Type[];
+    let _type:FunctionType;
+	  let _params:Parameter[];
+    let _methodPointer:Address[void];
+  }
+
+  public def construct(
+      name:String,
+      scopeName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[],
+      typeParams:Type[],
+      type:FunctionType,
+      params:Parameter[],
+      methodPointer:Address[void]) {
+    super(name, scopeName, kind, visibility, traits, attributes);
+    self._typeParams = typeParams;
+    self._type = type;
+    self._params = params;
+    self._methodPointer = methodPointer;
+  }
+
+  /** Array of type parameters. */
+  def typeParams:Type[] { get { return _typeParams; } }
+
+  /** The type of the method. */
+  def type:FunctionType { get { return _type; } }
+
+  /** The return type of the method. */
+  def returnType:Type { get { return _type.returnType; } }
+
+	/** Number of parameters for this method. */
+  def numParams:int { get { return _type.numParams; } }
+  
+  /** The array of function parameter types. */
+  def paramTypes:Type[] { get { return _type.paramTypes; } }
+
+  /** The parameters of this method. */
+  def params:Parameter[] { get { return _params; } }
+  
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or null if this is a static method.
+        args - The list of arguments to the method.
+   */
+  def call(obj:optional Object, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return _type.invoke(_methodPointer, obj, args);
+  }
+
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or null if this is a static method.
+        args - The list of arguments to the method.
+   */
+  def call(obj:optional Object, args:Object...) -> Object {
+    return _type.invoke(_methodPointer, obj, args);
+  }
+
+  override toString -> String {
+    let sb = StringBuilder(name);
+    if not _type.paramTypes.isEmpty or _type.returnType is PrimitiveType.VOID {
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in _type.paramTypes {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("({0})", ",".join(typeStrings)));
+    }
+    
+    if _type.returnType is not PrimitiveType.VOID {
+      sb.append(" -> ");
+	    sb.append(_type.returnType.toString());
+    }
+    
+    return sb.toString();
+  }
+}
