@@ -68,7 +68,9 @@ set(LLVM_ALL_BACKENDS)
 macro(find_llvm_backend_library Name LibName)
   find_library(LLVM_${Name} ${LibName} PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
   mark_as_advanced(LLVM_${Name})
-  set(LLVM_ALL_BACKENDS ${LLVM_ALL_BACKENDS} ${LLVM_${Name}})
+  if (LLVM_${Name})
+    set(LLVM_ALL_BACKENDS ${LLVM_ALL_BACKENDS} ${LLVM_${Name}})
+  endif (LLVM_${Name})
 endmacro(find_llvm_backend_library)
 
 # LLVM Libraries
