@@ -552,7 +552,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
         if (memberType->isReferenceType()) {
           indices.push_back(getInt32Val(memberIndex));
           llvm::Constant * fieldOffset = llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr,
-              indices.data(), indices.size());
+              &indices[0], indices.size());
           fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
           fieldOffsets.push_back(fieldOffset);
           indices.resize(indicesSize);
@@ -570,7 +570,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
       if (ut->hasRefTypesOnly()) {
         // If it only contains reference types, then it's just a pointer.
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices.data(), indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
         fieldOffsets.push_back(fieldOffset);
         break;
@@ -578,7 +578,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
         llvm::Function * traceMethod = getUnionTraceMethod(ut);
         DASSERT(traceMethod != NULL);
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices.data(), indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, builder_.getInt32Ty());
         const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
 
@@ -599,7 +599,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
       size_t indicesSize = indices.size();
       indices.push_back(getInt32Val(1));
       llvm::Constant * fieldOffset =
-          llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices.data(), indices.size());
+          llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
       fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
       fieldOffsets.push_back(fieldOffset);
       indices.resize(indicesSize);
@@ -635,7 +635,7 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
         //basePtr->getType()->dump(irModule_);
         indices.push_back(getInt32Val(var->memberIndex()));
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices.data(), indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
         fieldOffsets.push_back(fieldOffset);
         indices.resize(indicesSize);
