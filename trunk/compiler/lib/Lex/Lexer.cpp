@@ -187,7 +187,7 @@ Lexer::Lexer(ProgramSource * src)
   ch_ = 0;
   readCh();
   lineStartOffset_ = tokenStartOffset_ = currentOffset_ = 0;
-  tokenLocation_.file = srcFile_->get();
+  tokenLocation_.region = srcFile_;
   tokenLocation_.begin = 0;
   tokenLocation_.end = 0;
   lineIndex_ = 1;

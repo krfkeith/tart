@@ -12,15 +12,15 @@
 namespace tart {
 
 void SourceLocation::trace() const {
-  if (file != NULL) {
-    file->mark();
+  if (region != NULL) {
+    region->mark();
   }
 }
 
 void SourceLocation::dump() const {
-  if (file != NULL && !file->getFilePath().empty()) {
-    TokenPosition pos = file->tokenPosition(*this);
-    fprintf(stderr, "%s:%d\n", file->getFilePath().c_str(), pos.beginLine);
+  if (region != NULL && !region->getFilePath().empty()) {
+    TokenPosition pos = region->tokenPosition(*this);
+    fprintf(stderr, "%s:%d\n", region->getFilePath().c_str(), pos.beginLine);
   }
 }
 

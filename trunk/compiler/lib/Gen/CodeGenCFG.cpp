@@ -2,15 +2,19 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/CompositeType.h"
+
 #include "tart/Gen/CodeGenerator.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
+
 #include "tart/Objects/Builtins.h"
 
 #include "tart/CFG/Block.h"
@@ -142,13 +146,13 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
-    if (loc.file == NULL) {
+    if (true || loc.region == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else {
       TokenPosition pos = tokenPosition(loc);
       DASSERT(pos.beginLine);
       builder_.SetCurrentDebugLocation(
-          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.file)));
+          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.region)));
     }
   }
 }
