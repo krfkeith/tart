@@ -1,0 +1,4 @@
+/** An interface for reference types that have a 'length' property. */
+interface HasLength {
+  def length:int { get; }
+}

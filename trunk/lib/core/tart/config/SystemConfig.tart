@@ -1,0 +1,44 @@
+import tart.annex.Intrinsic;
+import tart.annex.TargetProperty;
+
+/** Information about the host platform. */
+namespace SystemConfig {
+  // TODO: Add more OSs and CPUs.
+  
+  /** Operating system type. */
+  enum OS {
+    CYGWIN,
+    DARWIN,
+    FREEBSD,
+    LINUX,
+    NETBSD,
+    OPENBSD,
+    SOLARIS,
+    WINDOWS,
+  }
+
+	/** CPU type. */  
+  enum CPU {
+    ALPHA,
+    ARM,
+    PPC,
+    PPC_64,
+    X86,
+    X86_64,
+  }
+
+  /** Operating system type of the target platform. */  
+  @TargetProperty var os:OS;
+  
+  /** Operating system type of the target platform. */  
+  @TargetProperty var cpu:CPU;
+  
+  /** Whether this processor allows unaligned reads. */  
+  @TargetProperty var allowUnalignedMemoryAccess:bool;
+  
+  /** Size of a pointer field in memory, in bits. */
+  @TargetProperty var sizeOfPointer:int32;
+
+  /** True if the target platform is little endian. */ 
+  @TargetProperty var isLittleEndian:bool;
+}

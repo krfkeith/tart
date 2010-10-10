@@ -1,0 +1,212 @@
+import Memory.Address;
+import Memory.deref;
+import Memory.reinterpretPtr;
+import Memory.objectReference;
+import tart.testing.Test;
+import tart.gc.TraceAction;
+import tart.gc.GC;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(TraceTest);
+}
+
+/** TraceAction that counts the number of non-null pointers. */
+class TraceCounter : TraceAction {
+  private var _count:int = 0;
+  def tracePointer(ptrAddr:Address[Address[Object]]) {
+    var ptr:Address[Object] = deref(ptrAddr);
+    var obj:Object = objectReference(ptr);
+    if obj is not null {
+      ++_count;
+      var s = obj.__typeName;
+      Debug.assertTrue(s.size > 0);
+      //Debug.writeLn(obj.__typeName);
+    } else {
+      //Debug.writeLn("<null>");
+    }
+  }
+
+  def count:int { get { return _count; } }
+  def reset { _count = 0; }
+}
+
+class ClassWithPointers {
+  var a:String;
+  var b:String;
+  var c:String;
+}
+
+class ClassWithUnion {
+  var u:String or int8;
+  
+  def construct {
+    u = 0;
+  }
+}
+
+class ClassWithTuple {
+  var t:(int,String,String);
+}
+
+class StructWithPointer {
+  var a:String;
+  
+  def construct(a:String) {
+    self.a = a;
+  }
+}
+
+class TraceTest : Test {
+  def testTraceString {
+    var counter = TraceCounter();
+    counter.traceObject("Hello");
+    assertEq(1, counter.count);
+  }
+
+  def testTraceClassWithPointers {
+    var counter = TraceCounter();
+    var obj = ClassWithPointers();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+    
+    obj.a = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.b = ", ";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+
+    obj.c = "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(3, counter.count);
+  }
+
+  def testTraceClassWithUnion {
+    var counter = TraceCounter();
+    var obj = ClassWithUnion();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.u = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.u = 1;
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+  }
+
+  def testTraceClassWithTuple {
+    var counter = TraceCounter();
+    var obj = ClassWithTuple();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.t = 0, "Hello", "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+  }
+
+  def testTraceStack {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    assertTrue(counter.count > 0);
+  }
+
+  def testTraceStackNullPtr {
+    var counter = TraceCounter();
+    var s:String = Memory.zeroPtr();
+    GC.traceStack(counter);
+    var baseCount = counter.count;
+    s = "Hello";
+    counter.reset();
+    GC.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
+  }
+
+  def testTraceStackUnion {
+    var counter = TraceCounter();
+    var value:String or void;
+    GC.traceStack(counter);
+    var baseCount = counter.count;
+    value = "Hello";
+    counter.reset();
+    GC.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
+  }
+  
+  def testTraceIntermediateValue {
+    // Insure that intermediate values to a function are marked as roots.
+    var c1 = getCountForNoValues();
+    var c2 = getCountForNoValues();
+    var c3 = getCountForIntermediateValues(String("Hello"), String("World"));
+    assertEq(c1, c2);
+    assertEq(c1 + 2, c3);
+  }
+
+  def getCountForNoValues() -> int {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    return counter.count;
+  }
+  
+  def getCountForIntermediateValues(s0:String, s1:String) -> int {
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    return counter.count;
+  }
+  
+  def testTraceLocalScopeVar {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    var c1 = counter.count;
+    var c2:int;
+    var c3:int;
+    
+    if true {
+      var s1 = String("Hello");
+      counter.reset();
+	    GC.traceStack(counter);
+    	c2 = counter.count;
+    }
+    
+    counter.reset();
+    GC.traceStack(counter);
+  	c3 = counter.count;
+
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
+  }
+
+  def testTraceLocalScopeStructVar {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    GC.traceStack(counter);
+    var c1 = counter.count;
+    var c2:int;
+    var c3:int;
+    
+    if true {
+      var s1 = StructWithPointer("Hello");
+      counter.reset();
+	    GC.traceStack(counter);
+    	c2 = counter.count;
+    }
+    
+    counter.reset();
+    GC.traceStack(counter);
+  	c3 = counter.count;
+
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
+  }
+}

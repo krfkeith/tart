@@ -1,0 +1,16 @@
+import Memory.Address;
+
+/** Struct containing information on how to trace a type. */
+struct TraceDescriptor {
+  /** If non-zero, it means that this is the last descriptor in the list. */
+  readonly var endList:uint16;
+
+  /** Number of fields in the field offset table. 0 = method descriptor. */
+  readonly var fieldCount:uint16;
+
+  /** Offset from base for this descriptor. */
+  readonly var offset:uint32;
+
+  /** Table of field offsets. */
+  readonly var fieldOffsets:Address[uint];
+}

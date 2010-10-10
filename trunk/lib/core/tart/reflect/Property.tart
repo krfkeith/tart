@@ -1,0 +1,25 @@
+class Property : Member {
+  var getter:int32;
+  
+  def construct(
+      name:String,
+      scopeName:String,
+      //qualifiedName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[]) {
+    super(name, scopeName, kind, visibility, traits, attributes);
+  }
+
+  /*
+  private var getter = static fn (obj:Object) -> Object;
+  private var setter = static fn (obj:Object, value:Object);
+  
+  def isReadable:bool;
+  def isWriteable:bool;
+  
+  def getValue(obj:Object) -> Object;
+  def setValue(obj:Object, value:Object);
+  */
+}

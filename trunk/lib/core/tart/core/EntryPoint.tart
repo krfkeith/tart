@@ -1,0 +1,41 @@
+import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
+import tart.gc.GC;
+
+/** Attribute that indicates that the associated function is where
+    execution of the application should start. */
+@Attribute(Attribute.Target.FUNCTION)
+class EntryPoint {
+  public def construct() {}
+  @Intrinsic def apply(t:tart.reflect.Type);
+  
+  /** Program start function which initializes runtime system and then calls entry point. */
+  private static def programStart(
+      argc:int32,
+      argv:Address[Address[ubyte]],
+      func:static fn (:String[]) -> int32) -> int32 {
+    try {
+      // Start the GC.
+      GC.init(Memory.addressOf(gcSafepointMap[0]));
+      
+      // Run static constructors.
+      runStaticCtors();
+      
+      // Convert command-line arguments.
+      let args = String[](argc);
+      for i:int32 = 0; i < argc; ++i {
+        args[i] = String(argv[i], strlen(argv[i]));
+      }
+      
+      // Call entry point function.
+      return func(args);
+    } catch t:Throwable {
+      Debug.writeLn("Exception: ", t.toString());
+      return 1;
+    }
+  }
+
+  @Extern("gc_safepoint_map") static var gcSafepointMap:FlexibleArray[int];
+	@Extern("run_static_ctors") static def runStaticCtors();
+  @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
+}

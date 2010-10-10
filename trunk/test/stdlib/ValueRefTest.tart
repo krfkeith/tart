@@ -1,0 +1,274 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ValueRefTest);
+}
+
+class ValueRefTest : Test {
+	def testManualBoxing() {
+	  let b = ValueRef(3);
+	  assertTrue(b isa ValueRef[int32]);
+	  assertEq(3, b.value);
+	}
+	
+	def testManualUnboxing() {
+	  let b = ValueRef(true);
+	  let c = Ref.valueOf[bool](b);
+	  assertTrue(c);
+	
+	  // Boolean tests
+	  assertTrue(Ref.valueOf[bool](true));
+	  assertFalse(Ref.valueOf[bool](false));
+	
+	  // char
+	  tryUnbox[char]('a', 'a');
+	  tryUnbox[char]('a', int8(97));
+	  tryUnbox[char]('a', int16(97));
+	  tryUnbox[char]('a', int32(97));
+	  tryUnbox[char]('a', int64(97));
+	  tryUnbox[char]('a', uint8(97));
+	  tryUnbox[char]('a', uint16(97));
+	  tryUnbox[char]('a', uint32(97));
+	  tryUnbox[char]('a', uint64(97));
+	
+	  // int8
+	  tryUnbox[int8](1, int8(1));
+	  tryUnbox[int8](1, int16(1));
+	  tryUnbox[int8](1, int32(1));
+	  tryUnbox[int8](1, int64(1));
+	  tryUnbox[int8](1, uint8(1));
+	  tryUnbox[int8](1, uint16(1));
+	  tryUnbox[int8](1, uint32(1));
+	  tryUnbox[int8](1, uint64(1));
+	  tryUnbox[int8](97, 'a');
+	
+	  // int16
+	  tryUnbox[int16](1, int8(1));
+	  tryUnbox[int16](1, int16(1));
+	  tryUnbox[int16](1, int32(1));
+	  tryUnbox[int16](1, int64(1));
+	  tryUnbox[int16](1, uint8(1));
+	  tryUnbox[int16](1, uint16(1));
+	  tryUnbox[int16](1, uint32(1));
+	  tryUnbox[int16](1, uint64(1));
+	  tryUnbox[int16](97, 'a');
+	
+	  // int32
+	  tryUnbox[int32](1, int8(1));
+	  tryUnbox[int32](1, int16(1));
+	  tryUnbox[int32](1, int32(1));
+	  tryUnbox[int32](1, int64(1));
+	  tryUnbox[int32](1, uint8(1));
+	  tryUnbox[int32](1, uint16(1));
+	  tryUnbox[int32](1, uint32(1));
+	  tryUnbox[int32](1, uint64(1));
+	  tryUnbox[int32](97, 'a');
+	
+	  // int64
+	  tryUnbox[int64](1, int8(1));
+	  tryUnbox[int64](1, int16(1));
+	  tryUnbox[int64](1, int32(1));
+	  tryUnbox[int64](1, int64(1));
+	  tryUnbox[int64](1, uint8(1));
+	  tryUnbox[int64](1, uint16(1));
+	  tryUnbox[int64](1, uint32(1));
+	  tryUnbox[int64](1, uint64(1));
+	  tryUnbox[int64](97, 'a');
+	
+	  // uint8
+	  tryUnbox[uint8](1, int8(1));
+	  tryUnbox[uint8](1, int16(1));
+	  tryUnbox[uint8](1, int32(1));
+	  tryUnbox[uint8](1, int64(1));
+	  tryUnbox[uint8](1, uint8(1));
+	  tryUnbox[uint8](1, uint16(1));
+	  tryUnbox[uint8](1, uint32(1));
+	  tryUnbox[uint8](1, uint64(1));
+	  tryUnbox[uint8](97, 'a');
+	
+	  // uint16
+	  tryUnbox[uint16](1, int8(1));
+	  tryUnbox[uint16](1, int16(1));
+	  tryUnbox[uint16](1, int32(1));
+	  tryUnbox[uint16](1, int64(1));
+	  tryUnbox[uint16](1, uint8(1));
+	  tryUnbox[uint16](1, uint16(1));
+	  tryUnbox[uint16](1, uint32(1));
+	  tryUnbox[uint16](1, uint64(1));
+	  tryUnbox[uint16](97, 'a');
+	
+	  // uint32
+	  tryUnbox[uint32](1, int8(1));
+	  tryUnbox[uint32](1, int16(1));
+	  tryUnbox[uint32](1, int32(1));
+	  tryUnbox[uint32](1, int64(1));
+	  tryUnbox[uint32](1, uint8(1));
+	  tryUnbox[uint32](1, uint16(1));
+	  tryUnbox[uint32](1, uint32(1));
+	  tryUnbox[uint32](1, uint64(1));
+	  tryUnbox[uint32](97, 'a');
+	
+	  // uint64
+	  tryUnbox[uint64](1, int8(1));
+	  tryUnbox[uint64](1, int16(1));
+	  tryUnbox[uint64](1, int32(1));
+	  tryUnbox[uint64](1, int64(1));
+	  tryUnbox[uint64](1, uint8(1));
+	  tryUnbox[uint64](1, uint16(1));
+	  tryUnbox[uint64](1, uint32(1));
+	  tryUnbox[uint64](1, uint64(1));
+	  tryUnbox[uint64](97, 'a');
+	
+	  // float
+	  assertEq(1.0f, Ref.valueOf[float](int8(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int16(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int32(1)));
+	  assertEq(1.0f, Ref.valueOf[float](int64(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint8(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint16(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint32(1)));
+	  assertEq(1.0f, Ref.valueOf[float](uint64(1)));
+	  assertEq(1.0f, Ref.valueOf[float](float(1.0)));
+	  assertEq(1.0f, Ref.valueOf[float](double(1.0)));
+	
+	  // double
+	  assertEq(1.0, Ref.valueOf[double](int8(1)));
+	  assertEq(1.0, Ref.valueOf[double](int16(1)));
+	  assertEq(1.0, Ref.valueOf[double](int32(1)));
+	  assertEq(1.0, Ref.valueOf[double](int64(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint8(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint16(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint32(1)));
+	  assertEq(1.0, Ref.valueOf[double](uint64(1)));
+	  assertEq(1.0, Ref.valueOf[double](float(1.0)));
+	  assertEq(1.0, Ref.valueOf[double](double(1.0)));
+	}
+	
+	def testUnboxingFailure() {
+	  // char
+	  expectFailure[char](int8(-1));
+	  expectFailure[char](int16(-1));
+	  expectFailure[char](int32(-1));
+	  expectFailure[char](int64(-1));
+	  expectFailure[char](int64.maxVal);
+	
+	  // int8
+	  expectFailure[int8](int16(1000));
+	  expectFailure[int8](int16(-1000));
+	  expectFailure[int8](int32(1000));
+	  expectFailure[int8](int32(-1000));
+	  expectFailure[int8](int64(1000));
+	  expectFailure[int8](int64(-1000));
+	  expectFailure[int8](uint8(0xff));
+	  expectFailure[int8](uint16(0xff));
+	  expectFailure[int8](uint32(0xff));
+	  expectFailure[int8](uint64(0xff));
+	
+	  // int16
+	  expectFailure[int16](int32(0xffff));
+	  expectFailure[int16](int32(-0xffff));
+	  expectFailure[int16](int64(0xffff));
+	  expectFailure[int16](int64(-0xffff));
+	  expectFailure[int16](uint16(0xffff));
+	  expectFailure[int16](uint32(0xffff));
+	  expectFailure[int16](uint64(0xffff));
+	
+	  // int32
+	  expectFailure[int32](int64(0xffffffff));
+	  expectFailure[int32](int64(-0xffffffff));
+	  expectFailure[int32](uint32(0xffffffff));
+	  expectFailure[int32](uint64(0xffffffff));
+	
+	  // int32
+	  expectFailure[int32](uint64(0x1ffffffff));
+	
+	  // uint8
+	  expectFailure[uint8](int8(-1));
+	  expectFailure[uint8](int16(0x100));
+	  expectFailure[uint8](int16(-1));
+	  expectFailure[uint8](int32(0x100));
+	  expectFailure[uint8](int32(-1));
+	  expectFailure[uint8](int64(0x100));
+	  expectFailure[uint8](int64(-1));
+	  expectFailure[uint8](uint16(0x100));
+	  expectFailure[uint8](uint32(0x100));
+	  expectFailure[uint8](uint64(0x100));
+	
+	  // uint16
+	  expectFailure[uint16](int8(-1));
+	  expectFailure[uint16](int16(-1));
+	  expectFailure[uint16](int32(0x10000));
+	  expectFailure[uint16](int32(-1));
+	  expectFailure[uint16](int64(0x10000));
+	  expectFailure[uint16](int64(-1));
+	  expectFailure[uint16](uint32(0x10000));
+	  expectFailure[uint16](uint64(0x10000));
+	
+	  // uint32
+	  expectFailure[uint16](int8(-1));
+	  expectFailure[uint16](int16(-1));
+	  expectFailure[uint16](int32(-1));
+	  expectFailure[uint16](int64(0x100000000));
+	  expectFailure[uint16](int64(-1));
+	  expectFailure[uint16](uint64(0x100000000));
+	
+	  // uint64
+	  expectFailure[uint16](int8(-1));
+	  expectFailure[uint16](int16(-1));
+	  expectFailure[uint16](int32(-1));
+	  expectFailure[uint16](int64(-1));
+	}
+	
+	final def tryUnbox[%T](expected:T, actual:Object) {
+	  try {
+	    let n = Ref.valueOf[T](actual);
+	    assertEq(expected, n);
+	  } catch e:TypecastError {
+	    failFmt("Typecast exception unboxing {0} [{1} .. {2}]", actual, T.minVal, T.maxVal);
+	  }
+	}
+	
+	final def expectFailure[%T](o:Object) {
+	  try {
+	    let n = Ref.valueOf[T](o);
+	    failFmt("Typecast exception expected unboxing {0} [{1} .. {2}]", o, T.minVal, T.maxVal);
+	  } catch e:TypecastError {
+	    return;
+	  }
+	}
+	
+	def testTypecast() {
+	  // typecast of Object -> primitive type is similar to valueOf, except that the
+	  // input isn't coerced to an object - that is, if both the input and result
+	  // types are the same, then no conversion is done at all.
+	  assertTrue(typecast[bool](true));
+	  assertFalse(typecast[bool](false));
+	  assertTrue(typecast[bool](ValueRef(true)));
+	  assertEq(1, typecast[int32](ValueRef(1)));
+	  assertNe(1, typecast[int32](ValueRef(2)));
+	}
+	
+	def testAutoBoxing() {
+	  let b = echo(3);
+	  assertTrue(b isa ValueRef[int32]);
+	  let c = echo2(3);
+	  assertTrue(c isa ValueRef[int32]);
+	  let d = echo3(1, 2, 3);
+	  assertTrue(d[0] isa ValueRef[int32]);
+	  assertTrue(d[1] isa ValueRef[int32]);
+	  assertTrue(d[2] isa ValueRef[int32]);
+	}
+	
+	private final def echo(v:Object) -> Object {
+	  return v;
+	}
+	
+	private final def echo2(v:int32) -> Object {
+	  return v;
+	}
+	
+	private final def echo3(v:Object...) -> Object[] {
+	  return v;
+	}
+}

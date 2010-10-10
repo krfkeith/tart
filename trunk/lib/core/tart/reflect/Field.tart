@@ -1,0 +1,30 @@
+/** Description of a class field. */
+class Field : Member {
+  private {
+    var _type:Type;
+    //var _offset:int; // For instance vars.
+    //var _value:Address[void]; // for global vars.
+    //var _value:Object // for constants.
+  }
+
+  def construct(
+      name:String,
+      scopeName:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[],
+      type:Type) {
+    super(name, scopeName, kind, visibility, traits, attributes);
+    self._type = type;
+  }
+
+  /** The type of the method. */
+  final def type:Type { get { return _type; } }
+
+  //@Extern
+  //final def getValue(self:Object) -> Object;
+  //final def setValue(self:Object, value:Object);
+  
+  // flags
+}

@@ -1,0 +1,7 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that is used to indicate a thread-local variable. */
+@Attribute(Attribute.Target.VARIABLE)
+class ThreadLocal {
+  @Intrinsic def apply(f:tart.reflect.Field);
+}

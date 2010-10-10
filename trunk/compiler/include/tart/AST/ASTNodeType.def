@@ -1,0 +1,107 @@
+// Definition of all node types
+
+NODE_TYPE(Invalid)
+
+// Terminals
+NODE_TYPE(Null)
+NODE_TYPE(Id)
+NODE_TYPE(Super)
+NODE_TYPE(LitBool)
+NODE_TYPE(LitChar)
+NODE_TYPE(LitInt)
+NODE_TYPE(LitFloat)
+NODE_TYPE(LitDouble)
+NODE_TYPE(LitString)
+NODE_TYPE(BuiltIn)
+
+// Other literals
+NODE_TYPE(ArrayLiteral)
+
+// Declarations
+NODE_TYPE(Class)
+NODE_TYPE(Struct)
+NODE_TYPE(Interface)
+NODE_TYPE(Protocol)
+NODE_TYPE(Enum)
+NODE_TYPE(TypeAlias)
+NODE_TYPE(Alias)
+NODE_TYPE(Let)
+NODE_TYPE(Var)
+NODE_TYPE(VarList)
+NODE_TYPE(Function)
+NODE_TYPE(Macro)
+NODE_TYPE(Prop)
+NODE_TYPE(Idx)
+NODE_TYPE(Param)
+NODE_TYPE(Template)
+NODE_TYPE(TParam)
+NODE_TYPE(TypeVar)
+NODE_TYPE(Namespace)
+
+// Type modifiers
+NODE_TYPE(AnonFn)
+NODE_TYPE(Array)
+NODE_TYPE(Pointer)
+NODE_TYPE(NativePointer)
+NODE_TYPE(NativeArray)
+
+// Binary operators
+NODE_TYPE(Assign)
+NODE_TYPE(AssignAdd)
+NODE_TYPE(AssignSub)
+NODE_TYPE(AssignMul)
+NODE_TYPE(AssignDiv)
+NODE_TYPE(AssignMod)
+NODE_TYPE(AssignBitAnd)
+NODE_TYPE(AssignBitOr)
+NODE_TYPE(AssignBitXor)
+NODE_TYPE(AssignRSh)
+NODE_TYPE(AssignLSh)
+NODE_TYPE(PostAssign)
+NODE_TYPE(LogicalAnd)
+NODE_TYPE(LogicalOr)
+NODE_TYPE(Range)
+NODE_TYPE(Tuple)
+NODE_TYPE(AsType)
+NODE_TYPE(Is)
+NODE_TYPE(IsNot)
+NODE_TYPE(In)
+NODE_TYPE(NotIn)
+NODE_TYPE(IsInstanceOf)
+NODE_TYPE(TParamDefault)
+
+// Unary operators
+NODE_TYPE(Negate)
+NODE_TYPE(LogicalNot)
+NODE_TYPE(Complement)
+
+// Evaluations and Invocations
+NODE_TYPE(Call)         // Function call
+NODE_TYPE(Specialize)   // Explicit template specialization
+NODE_TYPE(Member)       // Reference to member (a.b)
+NODE_TYPE(GetElement)   // Reference to array element (a[b])
+
+// Argument keyword
+NODE_TYPE(Keyword)
+
+// Statements
+NODE_TYPE(Block)
+NODE_TYPE(Expression)
+NODE_TYPE(If)
+NODE_TYPE(While)
+NODE_TYPE(DoWhile)
+NODE_TYPE(For)
+NODE_TYPE(ForEach)
+NODE_TYPE(Throw)
+NODE_TYPE(Try)
+NODE_TYPE(Catch)
+NODE_TYPE(Return)
+NODE_TYPE(Yield)
+NODE_TYPE(Break)
+NODE_TYPE(Continue)
+NODE_TYPE(LocalDecl)
+NODE_TYPE(Intrinsic)
+NODE_TYPE(Import)
+NODE_TYPE(Switch)
+NODE_TYPE(Case)
+NODE_TYPE(Classify)

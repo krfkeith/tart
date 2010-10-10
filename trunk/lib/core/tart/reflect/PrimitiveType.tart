@@ -1,0 +1,62 @@
+/** Reflection type class for primitive and enum types. */
+class PrimitiveType : Type {
+  enum SubtypeId : ubyte {
+    NONE = 0,
+    VOID,
+    NULL,
+    BOOL,
+    CHAR,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    FLOAT,
+    DOUBLE,
+  }
+
+  private {
+    var _subtype:SubtypeId;
+    var _name:String;
+    //var _scopeName:String;
+    var _size:uint32;
+  }
+
+  def construct(kind:TypeKind, subtype:SubtypeId, name:String, size:uint32) {
+    super(kind);
+    self._subtype = subtype;
+    self._name = name;
+    self._size = size;
+  }
+
+  static let VOID = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.VOID, "void", 0);
+  static let NULL = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.NULL, "Null", 0);
+  static let BOOL = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.BOOL, "bool", 1);
+  static let CHAR = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.CHAR, "char", 4);
+  static let INT8 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT8, "int8", 1);
+  static let INT16 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT16, "int16", 2);
+  static let INT32 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT32, "int32", 4);
+  static let INT64 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT64, "int64", 8);
+  static let UINT8 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT8, "uint8", 1);
+  static let UINT16 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT16, "uint16", 2);
+  static let UINT32 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT32, "uint32", 4);
+  static let UINT64 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT64, "uint64", 8);
+  static let FLOAT = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.FLOAT, "float", 4);
+  static let DOUBLE = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.DOUBLE, "double", 8);
+
+  /** Size of this type in bits. */
+  final def subtype:SubtypeId { get { return self._subtype; } }
+
+  /** Fully-qualified name of this type. */
+  final def name:String { get { return self._name; } }
+
+  /** Size of this type in bytes. */
+  final def size:uint32 { get { return self._size; } }
+
+  final override toString() -> String {
+    return _name;
+  }
+}
