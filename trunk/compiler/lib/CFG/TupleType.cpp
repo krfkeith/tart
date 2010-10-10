@@ -2,8 +2,11 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/TupleType.h"
 #include "tart/Common/Diagnostics.h"
+
+#include "llvm/DerivedTypes.h"
 
 namespace tart {
 

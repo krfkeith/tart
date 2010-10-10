@@ -9,6 +9,7 @@
 #include "tart/Common/InternedString.h"
 
 #include "tart/CFG/Module.h"
+#include "tart/CFG/Exprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionDefn.h"

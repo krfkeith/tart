@@ -186,9 +186,9 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 
   const Expr * arg = derefMacroParam(call->arg(0));
   SourceLocation loc = arg->location();
-  if (loc.file != NULL) {
-    TokenPosition pos = loc.file->tokenPosition(loc);
-    sstream << loc.file->getFilePath() << ":" << pos.beginLine << ":";
+  if (loc.region != NULL) {
+    TokenPosition pos = loc.region->tokenPosition(loc);
+    sstream << loc.region->getFilePath() << ":" << pos.beginLine << ":";
   }
 
   return cg.genStringLiteral(sstream.str());

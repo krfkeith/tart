@@ -29,7 +29,7 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   , flags_(Module_Reflect)
   , irModule_(NULL)
 {
-  loc.file = src;
+  loc.region = src;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
@@ -52,7 +52,7 @@ Module::Module(ProgramSource * src, const std::string & qual)
   , flags_(Module_Reflect)
   , irModule_(NULL)
 {
-  loc.file = src;
+  loc.region = src;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));

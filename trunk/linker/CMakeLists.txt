@@ -6,7 +6,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Woverloaded-virtual
       -fno-operator-names -ffor-scope
       )
-   set(LINK_FLAGS -pg)
+   if ($PROFILE_TARTLN)
+     add_definitions(-pg)
+     set(CMAKE_EXE_LINKER_FLAGS -pg)
+   endif ($PROFILE_TARTLN)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 file(GLOB GC_SOURCES lib/GC/*.cpp)

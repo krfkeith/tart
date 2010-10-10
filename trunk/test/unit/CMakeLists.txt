@@ -6,7 +6,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Woverloaded-virtual
       -fno-operator-names -ffor-scope
       )
-   set(LINK_FLAGS -pg)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 include_directories(${TART_SOURCE_DIR}/third-party/gtest-1.3.0/include)
