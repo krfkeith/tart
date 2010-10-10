@@ -146,7 +146,7 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
-    if (true || loc.region == NULL) {
+    if (loc.region == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else {
       TokenPosition pos = tokenPosition(loc);
@@ -170,7 +170,6 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
       break;
 
     case BlockTerm_Branch:
-      //clearDeadRoots(blk->deadRoots());
       builder_.CreateBr(blk->succIRBlock(0));
       break;
 
