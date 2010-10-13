@@ -300,7 +300,9 @@ void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
 
   // Finally, generate the safe point map.
   outStream.AddBlankLine();
-  outStream.EmitLabel(AP.GetExternalSymbolSymbol("gc_safepoint_map"));
+  MCSymbol * gcSafepointSymbol = AP.GetExternalSymbolSymbol("gc_safepoint_map");
+  outStream.EmitSymbolAttribute(gcSafepointSymbol, MCSA_Global);
+  outStream.EmitLabel(gcSafepointSymbol);
   outStream.EmitIntValue(safePoints.size(), pointerSize, 0);
   for (SafePointList::const_iterator it = safePoints.begin(); it != safePoints.end(); ++it) {
     outStream.EmitSymbolValue(it->first, pointerSize, 0);
