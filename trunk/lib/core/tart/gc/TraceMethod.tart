@@ -1,0 +1,7 @@
+import tart.annex.Intrinsic;
+
+/** Indicates that the associated method is a garbage collector tracing helper function. */
+@Attribute(Attribute.Target.FUNCTION)
+class TraceMethod {
+  //@Intrinsic def apply(t:tart.reflect.Type);
+}

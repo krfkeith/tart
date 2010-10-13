@@ -1,0 +1,68 @@
+import tart.testing.Test;
+import tartx.lexgen.gen.CharacterClass;
+
+class CharacterClassTest : Test {
+  def testEmptyRange {
+    let cc = CharacterClass();
+    assertEq(0, cc.count);
+    assertTrue(cc.empty);
+    assertFalse('a' in cc);
+  }
+
+  def testAddChar {
+    let cc = CharacterClass();
+    cc.add('b');
+    assertEq(1, cc.count);
+    assertFalse('a' in cc);
+    assertTrue('b' in cc);
+    assertFalse('c' in cc);
+
+		// Add the same char again
+    cc.add('b');
+    assertEq(1, cc.count);
+
+		// Add a char at a different position
+    cc.add('f');
+    assertEq(2, cc.count);
+
+		// Expand lower range
+    cc.add('c');
+    assertEq(2, cc.count);
+
+		// Expand upper range
+    cc.add('e');
+    assertEq(2, cc.count);
+
+		// Merge the ranges
+    cc.add('d');
+    assertEq(1, cc.count);
+  }
+  
+  def testAddRange {
+    let cc = CharacterClass();
+    cc.add('a', 'f');
+    assertEq(1, cc.count);
+
+    cc.add('e', 'g');
+    assertEq(1, cc.count);
+
+    cc.add('m', 'n');
+    assertEq(2, cc.count);
+  }
+
+  def testToString {
+    let cc = CharacterClass('a', 'f');
+    assertEq("a-e", cc.toString());
+    cc.add('m', 'n');
+    assertEq("a-em", cc.toString());
+    cc.add('\"');
+    assertEq("\\\"a-em", cc.toString());
+  }
+
+  def testAddCharacterClass {
+    let cc = CharacterClass('a', 'f');
+    let cc2 = CharacterClass('a', 'f');
+    cc.add(cc2);
+    assertEq(1, cc.count);
+  }
+}

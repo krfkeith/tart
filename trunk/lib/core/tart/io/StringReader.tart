@@ -1,0 +1,63 @@
+/** Class that reads characters from a string. */
+final class StringReader : TextReader {
+  private {
+    var pos:int;
+    var str:String;
+  }
+
+  def construct(str:String) {
+    self.str = str;
+    self.pos = 0;
+  }
+
+  def seek(from:SeekFrom, offset:int64) -> int64 {
+    Preconditions.checkIndex(pos >= 0 and pos <= str.size);
+    if from is SeekFrom.CURRENT { offset += pos; }
+    else if from is SeekFrom.END { offset += str.size; }
+
+    pos = int(Math.min(str.size, offset));
+    return pos;
+  }
+
+  def atEnd: bool { get { return pos >= str.size; } }
+  def canRead:bool { get { return true; } }
+  def canWrite:bool { get { return false; } }
+  def canSeek:bool { get { return true; } }
+  def position:int64 { get { return pos; } }
+  def size:int64 { get { return str.size; } }
+  def flush {}
+  def close {}
+
+  def readCh -> char {
+    Preconditions.checkIndex(pos >= 0 and pos <= str.size);
+    if (pos < str.size) {
+		  var ch, nextPos = str.nextCh(pos);
+		  pos = nextPos;
+		  return ch;
+    } else {
+	    return char(-1);
+    }
+  }
+
+  def read(buffer:char[], start:int, length:int) -> int {
+    Preconditions.checkIndex(pos >= 0 and pos <= str.size);
+    var count, nextPos = str.copyChars(pos, buffer, start, length);
+    pos = nextPos;
+    return count;
+  }
+
+  def readLn -> String {
+    Preconditions.checkIndex(pos >= 0 and pos <= str.size);
+    return "";
+  }
+
+  def readAll -> String {
+    Preconditions.checkIndex(pos >= 0 and pos <= str.size);
+    let result = str.substr(pos);
+    pos = str.size;
+    return result;
+  }
+
+  def acquire() {}
+  def release() {}
+}

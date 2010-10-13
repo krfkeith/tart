@@ -1,0 +1,186 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return ExceptionTest().runTests(ExceptionTest);
+}
+
+def throwSomething() {
+  throw Exception("Message");
+}
+
+class ExceptionTest : Test {
+	def testTryBlock() {
+	  var visitedTry = false;
+	  try {
+	    visitedTry = true;
+	  }
+	  
+	  assertTrue(visitedTry);
+	}
+	
+	def testTryCatchBlock() {
+	  var visitedTry = false;
+	  try {
+	    visitedTry = true;
+	  } catch t:Throwable {
+	    fail("testTryCatchBlock: invalid catch");
+	  }
+	
+	  assertTrue(visitedTry);
+	}
+	
+	def testTryAndReturn() {
+	  try {
+	    return;
+	  } catch t:Throwable {
+	    fail("testTryAndReturn: invalid catch");
+	  }
+	  
+	  fail("return failed");
+	}
+	
+	def testThrowAndCatch() {
+	  try {
+	    throw Exception();
+	    fail("exception not thrown");
+	  } catch t:Throwable {
+	    return;
+	  }
+	  
+	  fail("exception not caught");
+	}
+	
+	def testUnwindAndCatch() {
+	  var v = false;
+	  try {
+	    throwSomething();
+	    fail("exception not thrown");
+	  } catch t:Throwable {
+	    assertTrue(t isa Throwable);
+	    assertTrue(t isa Exception);
+	    v = true;
+	  }
+	
+	  assertTrue(v);
+	}
+	
+	def testUnwindAndCatch2() {
+	  var v = false;
+	  try {
+	    throwSomething();
+	    fail("exception not thrown");
+	  } catch t:ArgumentError{
+	    fail("testUnwindAndCatch2: invalid catch");
+	  } catch t:Throwable {
+	    assertTrue(t isa Throwable);
+	    assertTrue(t isa Exception);
+	    v = true;
+	  }
+	
+	  assertTrue(v);
+	}
+	
+	def testExceptionMsg() {
+	  var v = false;
+	  try {
+	    throwSomething();
+	    fail("exception not thrown");
+	  } catch e:Exception {
+	    assertEq("Message", e.message);
+	    v = true;
+	  }
+	
+	  assertTrue(v);
+	}
+	
+	def testNestedTry() {
+	  var v = false;
+	  try {
+	    try {
+	      throw Exception();
+	    } catch e:Exception {
+	      v = true;
+	    }
+	  } catch t:ArgumentError {
+	    fail("testNestedTry: invalid catch InvalidArgumentException");
+	  } catch t:Throwable {
+	    fail("testNestedTry: invalid catch Throwable");
+	  }
+	
+	  assertTrue(v);
+	}
+	
+	def testNestedTry2() {
+	  var v = false;
+	  try {
+	    try {
+	      throw Exception();
+	    } catch e:ArgumentError {
+	      fail("testNestedTry2: invalid catch 2");
+	    }
+	  } catch t:Exception {
+	    v = true;
+	  } catch t:Throwable {
+	    fail("testNestedTry2: invalid catch 3");
+	  }
+	
+	  assertTrue(v);
+	}
+	
+	def testTryFinally() {
+	  var visitedTry = false;
+	  var visitedFinally = false;
+	  try {
+	    visitedTry = true;
+	  } finally {
+	    visitedFinally = true;
+	  }
+	  
+	  assertTrue(visitedTry);
+	  assertTrue(visitedFinally);
+	}
+	
+	def testTryCatchFinally() {
+	  var visitedCatch = false;
+	  var visitedFinally = false;
+	  try {
+	    throw Exception();
+	  } catch t:Exception {
+	    visitedCatch = true;
+	  } finally {
+	    visitedFinally = true;
+	  }
+	  
+	  assertTrue(visitedCatch);
+	  assertTrue(visitedFinally);
+	}
+	
+	/*def testTryReturnFinaFlly() {
+	  var visitedFinally = false;
+	  try {
+	    return;
+	  } catch t:Exception {
+	  } finally {
+	    visitedFinally = true;
+	  }
+	  
+	  fail("failed to return");
+	}
+	*/
+	
+	def testStackTrace() {
+	  try {
+	    throwSomething();
+	  } catch @tart.annex.GenerateStackTrace t:Exception {
+	    Debug.writeLn(t.toString());
+	  }
+	}
+
+	def testExceptionToString() {
+	  assertEq("tart.core.ArgumentError", ArgumentError().toString());
+	  assertEq("tart.core.ArgumentError: out of range",
+	      ArgumentError("out of range").toString());
+	}
+}

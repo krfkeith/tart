@@ -1,0 +1,13 @@
+/** A reference type used to contain a value type. */
+class ValueRef[%T] : Ref {
+  let value:T;
+  
+  def construct(value:T) {
+    self.value = value;
+  }
+
+  /** Return a string representation of the contained value. */
+  override toString() -> String {
+    return String(self.value);
+  }
+}

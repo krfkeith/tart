@@ -1,0 +1,57 @@
+import tart.testing.Test;
+
+// TODO: Add tests for bitwise combinations of flags.
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(EnumTest);
+}
+
+class EnumTest : Test {
+  enum Test {
+    Rock = 1,
+    Paper,
+    Scissors = Rock + 1
+  }
+
+  def testEnumConstants {
+    assertTrue(Test.Rock == 1);
+    assertEq(Test.Paper, 2);
+    assertEq(Test.Scissors, 2);
+    assertEq(Test.minVal, 1);
+    assertEq(Test.maxVal, 2);
+    
+    let a = Test.Rock;
+    assertEq(a, 1);
+    
+    assertEq(FlagTest.Waving, 1);
+    assertEq(FlagTest.Fluttering, 2);
+    assertEq(FlagTest.GallantlyStreaming, 4);
+    assertEq(FlagTest.All, 7);
+  }
+  
+  def testImplicitScoping {
+    let b:Test = Rock;
+    assertEq(b, 1);
+  }
+  
+  def testContainsOperator {
+    let v = FlagTest.Waving;
+    assertTrue(FlagTest.Waving in v);
+    assertTrue(FlagTest.Fluttering not in v);
+  }
+  
+  def testToString {
+    let b:Test = Rock;
+    assertEq("Paper", Test.Paper.toString());
+    assertEq("Rock", b.toString());
+  }
+}
+
+@Flags
+enum FlagTest {
+  Waving,
+  Fluttering,
+  GallantlyStreaming,
+  All = Waving | Fluttering | GallantlyStreaming
+}

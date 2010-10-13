@@ -1,0 +1,17 @@
+/** Set interface */
+interface Set[%ItemType] : Collection[ItemType] {
+
+  /** Return true if the specified item is in the collection. */
+  def contains(item:ItemType) -> bool;
+
+  /** Return true if this set contains all of the specified items. */
+  def containsAll(items:Iterable[ItemType]) -> bool;
+  def containsAll(items:Iterator[ItemType]) -> bool;
+  
+  /** Return true if this set contains any of the specified items. */
+  def containsAny(items:Iterable[ItemType]) -> bool;
+  def containsAny(items:Iterator[ItemType]) -> bool;
+  
+  // TODO: Add equals, computeHash (for immutable sets only).
+  // TODO: Add Sets.union, intersection, difference.
+}

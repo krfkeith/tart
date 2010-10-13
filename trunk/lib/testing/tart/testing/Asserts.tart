@@ -1,0 +1,183 @@
+import tart.core.Debug.stringify;
+import tart.core.Debug.locationOf;
+
+namespace Asserts {
+  def assertionFailed(loc:String, msg:String) {
+    throw AssertionFailureException(String.concat(loc, " ", msg));
+  }
+
+  def assertionFailed(loc:String, a0:String, a1:String) {
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1));
+  }
+
+  def assertionFailed(loc:String, a0:String, a1:String, a2:String) {
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2));
+  }
+
+  def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String) {
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3));
+  }
+
+  def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String, a4:String) {
+    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3, a4));
+  }
+
+  macro fail(msg:String) {
+	  assertionFailed(locationOf(msg), msg);
+  }
+
+  macro failFmt(format:String, args:Object...) {
+	  assertionFailed(locationOf(format), format.format(args));
+  }
+
+  macro assertTrue(cond:bool) {
+    if not cond {
+		  assertionFailed(locationOf(cond), stringify(cond));
+    }
+  }
+  
+  macro assertTrue(cond:bool, msg:String) {
+    if not cond {
+      assertionFailed(locationOf(cond), msg);
+    }
+  }
+
+  macro assertFalse(cond:bool) {
+    if cond {
+		  assertionFailed(locationOf(cond), " not ", stringify(cond));
+    }
+  }
+
+  macro assertFalse(cond:bool, msg:String) {
+    if cond {
+      assertionFailed(locationOf(cond), msg);
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T, msg:String) {
+    if expected != actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertEq[%T](expected:T, actual:T) {
+    if expected != actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), ">, actual value <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertNe[%T](expected:T, actual:T, msg:String) {
+    if expected == actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertNe[%T](expected:T, actual:T) {
+    if expected == actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), ">, != actual <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertGreater[%T](expected:T, actual:T, msg:String) {
+    if not expected > actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertGreater[%T](expected:T, actual:T) {
+    if not expected > actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), "> greater than <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertGreaterOrEqual[%T](expected:T, actual:T, msg:String) {
+    if not expected >= actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertGreaterOrEqual[%T](expected:T, actual:T) {
+    if not expected >= actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), "> >= <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertLess[%T](expected:T, actual:T, msg:String) {
+    if not expected < actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertLess[%T](expected:T, actual:T) {
+    if not expected < actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), "> less than <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertLessOrEqual[%T](expected:T, actual:T, msg:String) {
+    if not expected >= actual {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertLessOrEqual[%T](expected:T, actual:T) {
+    if not expected >= actual {
+      assertionFailed(locationOf(actual), "expected <", expected.toString(), "> <= <",
+      	actual.toString(), ">");
+    }
+  }
+
+  macro assertNotNull[%T <: Object](actual:T) {
+    if actual is null {
+		  assertionFailed(locationOf(actual),
+		  	"expected {0} is not null".format(stringify(actual)));
+    }
+  }
+  
+  macro assertNotNull[%T <: Object](actual:T, msg:String) {
+    if actual is null {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertNotNull[%T <: Object](actual:optional T) {
+    if actual is null {
+		  assertionFailed(locationOf(actual),
+		  	"expected {0} is not null".format(stringify(actual)));
+    }
+  }
+  
+  macro assertNotNull[%T <: Object](actual:optional T, msg:String) {
+    if actual is null {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertNull[%T <: Object](actual:optional T) {
+    if actual is not null {
+		  assertionFailed(locationOf(actual),
+		  	"expected {0} is null".format(stringify(actual)));
+    }
+  }
+  
+  macro assertNull[%T <: Object](actual:optional T, msg:String) {
+    if actual is not null {
+      assertionFailed(locationOf(actual), msg);
+    }
+  }
+
+  macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
+    if not Iterators.equal(expected, actual) {
+      throw AssertionFailureException(
+        // TODO: Replace with String.format.
+        String.concat("expected: ", expected.toString(), ", actual: ", actual.toString()));
+    }
+  }
+  
+  // assertContentsAnyOrder
+}

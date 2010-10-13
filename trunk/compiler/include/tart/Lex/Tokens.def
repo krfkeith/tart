@@ -1,0 +1,180 @@
+/* ================================================================ *
+    TART - A Sweet Programming Language.
+ * ================================================================ */
+ 
+// Definition of all tokens. We define them this way so that we
+// can stringify them for debugging purposes.
+
+// EOF marker
+DEFINE_TOKEN(End)
+
+// Error marker
+DEFINE_TOKEN(Error)
+
+// Fundamentals
+DEFINE_TOKEN(Ident)
+DEFINE_TOKEN(Integer)
+DEFINE_TOKEN(Float)
+DEFINE_TOKEN(String)
+DEFINE_TOKEN(Char)
+
+// Grouping tokens
+DEFINE_TOKEN(LBrace)
+DEFINE_TOKEN(RBrace)
+DEFINE_TOKEN(LParen)
+DEFINE_TOKEN(RParen)
+DEFINE_TOKEN(LBracket)
+DEFINE_TOKEN(RBracket)
+
+// Delimiters
+DEFINE_TOKEN(Semi)
+DEFINE_TOKEN(Colon)
+DEFINE_TOKEN(Comma)
+DEFINE_TOKEN(AtSign)
+
+// Operator tokens
+DEFINE_TOKEN(Assign)
+DEFINE_TOKEN(AssignPlus)
+DEFINE_TOKEN(AssignMinus)
+DEFINE_TOKEN(AssignStar)
+DEFINE_TOKEN(AssignSlash)
+DEFINE_TOKEN(AssignPercent)
+DEFINE_TOKEN(AssignAmpersand)
+DEFINE_TOKEN(AssignBar)
+DEFINE_TOKEN(AssignCaret)
+DEFINE_TOKEN(AssignTilde)
+DEFINE_TOKEN(AssignLShift)
+DEFINE_TOKEN(AssignRShift)
+DEFINE_TOKEN(ReturnType)
+DEFINE_TOKEN(Plus)
+DEFINE_TOKEN(Minus)
+DEFINE_TOKEN(Star)
+DEFINE_TOKEN(Slash)
+DEFINE_TOKEN(Ampersand)
+DEFINE_TOKEN(Percent)
+DEFINE_TOKEN(Bar)
+DEFINE_TOKEN(Caret)
+DEFINE_TOKEN(Tilde)
+DEFINE_TOKEN(Exclam)
+DEFINE_TOKEN(QMark)
+DEFINE_TOKEN(Increment)
+DEFINE_TOKEN(Decrement)
+DEFINE_TOKEN(DoubleAmp)
+DEFINE_TOKEN(DoubleBar)
+DEFINE_TOKEN(DoubleColon)
+DEFINE_TOKEN(DollarSign)
+
+// Relational operators
+DEFINE_TOKEN(Less)
+DEFINE_TOKEN(Greater)
+DEFINE_TOKEN(LessEqual)
+DEFINE_TOKEN(GreaterEqual)
+DEFINE_TOKEN(PossLess)
+DEFINE_TOKEN(PossGreater)
+DEFINE_TOKEN(PossLessEqual)
+DEFINE_TOKEN(PossGreaterEqual)
+DEFINE_TOKEN(Equal)
+DEFINE_TOKEN(NotEqual)
+DEFINE_TOKEN(RefEqual)
+DEFINE_TOKEN(IsSuperclass)
+DEFINE_TOKEN(IsSubclass)
+
+DEFINE_TOKEN(LShift)
+DEFINE_TOKEN(RShift)
+
+// Joiners
+DEFINE_TOKEN(Dot)
+DEFINE_TOKEN(Range)
+DEFINE_TOKEN(Ellipsis)
+
+// Operator keywords
+DEFINE_TOKEN(LogicalAnd)
+DEFINE_TOKEN(LogicalOr)
+DEFINE_TOKEN(LogicalNot)
+DEFINE_TOKEN(Is)
+DEFINE_TOKEN(In)
+DEFINE_TOKEN(Isa)
+
+// Access Keywords
+DEFINE_TOKEN(Public)
+DEFINE_TOKEN(Private)
+DEFINE_TOKEN(Protected)
+
+// Modifier Keywords
+DEFINE_TOKEN(Static)
+DEFINE_TOKEN(Final)
+DEFINE_TOKEN(Abstract)
+DEFINE_TOKEN(Readonly)
+DEFINE_TOKEN(Const)
+DEFINE_TOKEN(Optional)
+
+// Primitive types
+DEFINE_TOKEN(BoolType)
+DEFINE_TOKEN(CharType)
+DEFINE_TOKEN(ByteType)
+DEFINE_TOKEN(ShortType)
+DEFINE_TOKEN(IntType)
+DEFINE_TOKEN(LongType)
+DEFINE_TOKEN(UByteType)
+DEFINE_TOKEN(UShortType)
+DEFINE_TOKEN(UIntType)
+DEFINE_TOKEN(ULongType)
+DEFINE_TOKEN(FloatType)
+DEFINE_TOKEN(DoubleType)
+DEFINE_TOKEN(VoidType)
+DEFINE_TOKEN(IntpType)
+DEFINE_TOKEN(UIntpType)
+
+// Language constants
+DEFINE_TOKEN(True)
+DEFINE_TOKEN(False)
+DEFINE_TOKEN(Null)
+
+// Metatypes
+DEFINE_TOKEN(Namespace)
+DEFINE_TOKEN(Class)
+DEFINE_TOKEN(Struct)
+DEFINE_TOKEN(Interface)
+DEFINE_TOKEN(Protocol)
+DEFINE_TOKEN(Enum)
+DEFINE_TOKEN(Let)
+DEFINE_TOKEN(Var)
+DEFINE_TOKEN(Def)
+DEFINE_TOKEN(Override)
+DEFINE_TOKEN(Redef)
+DEFINE_TOKEN(Undef)
+DEFINE_TOKEN(Function)
+DEFINE_TOKEN(Get)
+DEFINE_TOKEN(Set)
+DEFINE_TOKEN(Macro)
+DEFINE_TOKEN(Typealias)
+
+DEFINE_TOKEN(Module)
+DEFINE_TOKEN(Import)
+
+// Statement keywords
+DEFINE_TOKEN(If)
+DEFINE_TOKEN(Else)
+DEFINE_TOKEN(Repeat)
+DEFINE_TOKEN(For)
+DEFINE_TOKEN(While)
+DEFINE_TOKEN(Do)
+DEFINE_TOKEN(Return)
+DEFINE_TOKEN(Yield)
+DEFINE_TOKEN(Throw)
+DEFINE_TOKEN(Break)
+DEFINE_TOKEN(Continue)
+DEFINE_TOKEN(Where)
+DEFINE_TOKEN(Switch)
+DEFINE_TOKEN(Case)
+DEFINE_TOKEN(Classify)
+DEFINE_TOKEN(As)
+
+// Exception handling
+DEFINE_TOKEN(Try)
+DEFINE_TOKEN(Catch)
+DEFINE_TOKEN(Finally)
+
+// Special symbols
+DEFINE_TOKEN(Super)
+DEFINE_TOKEN(Typecast)

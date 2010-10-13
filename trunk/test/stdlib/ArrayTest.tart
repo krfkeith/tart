@@ -1,0 +1,110 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ArrayTest);
+}
+
+class ArrayTest : Test {
+	def testZeroLengthArray() {
+	  let a = int32[](0);
+	  assertTrue(a.isEmpty);
+	  assertTrue(a.size == 0);
+	  let a2:int32[] = [];
+	  assertTrue(a2.isEmpty);
+	  assertTrue(a2.size == 0);
+	}
+	
+	def testSimpleArray() {
+	  let a = int32[](5);
+	  assertFalse(a.isEmpty);
+	  assertEq(5, a.size);
+	
+	  a[0] = 22;
+	  assertEq(22, a[0]);
+	
+	  let b = Array[int32](5);
+    assertFalse(b.isEmpty);
+    assertEq(5, b.size);
+  
+    //let c:Array[int32] = Array(5);
+    //assertFalse(c.isEmpty);
+    //assertTrue(c.size == 5);
+  
+    let d = Array[String](5);
+    assertFalse(d.isEmpty);
+    assertEq(5, d.size);
+  }
+  
+  def testArrayOf() {
+    let a = Array.of(1, 2, 3);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+  
+  def testArrayLiteral() {
+    let a = [1, 2, 3];
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+  
+  def testArrayLiteralExplicitType() {
+    let a:ubyte[] = [1, 2, 3];
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+  
+  def testArrayCopy() {
+    let a = [1, 2, 3];
+    let b = a.copy();
+    assertFalse(a is b);
+    assertEq(1, b[0]);
+    assertEq(2, b[1]);
+    assertEq(3, b[2]);
+  }
+  
+  def testArrayOfStrings() {
+    let e = ["abc", "def", "zzz"];
+    assertEq(3, e.size);
+    assertEq('a', e[0][0]);
+  }
+  
+  def testArrayOfMixedTypes() {
+    let f = [int64(1), uint(2), 3];
+    assertEq(1, f[0]);
+    assertEq(2, f[1]);
+    assertEq(3, f[2]);
+    assertEq(3, f.size);
+  }
+  
+  def testArrayOfArrays() {
+    let g = [[1]];
+     assertEq(1, g.size);
+     assertEq(1, g[0].size);
+     assertEq(1, g[0][0]);
+  
+    let h = [[1, 1]];
+    assertEq(1, h.size);
+    assertEq(2, h[0].size);
+    assertEq(1, h[0][0]);
+    
+    let i = [[1], [1]];
+    assertEq(2, i.size);
+    assertEq(1, i[0].size);
+    assertEq(1, i[0][0]);
+    
+    let k = [[1, 2, 3], [4, 5, 6]];
+    assertEq(2, k.size);
+    assertEq(3, k[0].size);
+    assertEq(3, k[1].size);
+    assertEq(1, k[0][0]);
+    assertEq(2, k[0][1]);
+    assertEq(3, k[0][2]);
+    assertEq(4, k[1][0]);
+    assertEq(5, k[1][1]);
+    assertEq(6, k[1][2]);
+  }
+}
