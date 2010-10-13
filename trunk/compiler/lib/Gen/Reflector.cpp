@@ -892,7 +892,7 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
         break;
 
       case Defn::Typedef:
-        innerTypes.push_back(static_cast<const TypeDefn *>(de)->typeValue());
+        innerTypes.push_back(static_cast< TypeDefn * const>(de)->typeValue());
         break;
 
       case Defn::Property:

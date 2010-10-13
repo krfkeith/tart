@@ -24,6 +24,10 @@
 #include <errno.h>
 #endif
 
+#if WIN32
+  #define bool int
+#endif
+
 enum StreamID {
   STDIN,
   STDOUT,

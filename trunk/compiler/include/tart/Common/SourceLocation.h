@@ -78,7 +78,11 @@ struct SourceLocation {
 
   void trace() const;
 
+#if __GNUG__
   void dump() const __attribute__ ((noinline));
+#else
+  void dump() const;
+#endif
 };
 
 // Because 'const SourceLocation' occurs so much, an abbreviation is useful
