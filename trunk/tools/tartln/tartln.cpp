@@ -714,6 +714,8 @@ int main(int argc, char **argv, char **envp) {
           optOutputType = BitcodeFile;
         } else if (suffix == "s") {
           optOutputType = AssemblyFile;
+        } else if (suffix == "o" || suffix == "obj") {
+        	optOutputType = ObjectFile;
         } else {
           errs() << "tartln: unknown output file type suffix '" <<
           suffix << "'.\n";
@@ -735,6 +737,14 @@ int main(int argc, char **argv, char **envp) {
         case BitcodeFile:
           outputFilename.appendSuffix("bc");
           break;
+        
+        case ObjectFile:
+          #if defined(_WIN32) || defined(__CYGWIN__)
+          outputFilename.appendSuffix("obj");
+          #else
+          outputFilename.appendSuffix("o");
+          #endif
+        	break;
 
         case ExecutableFile:
           #if defined(_WIN32) || defined(__CYGWIN__)
@@ -756,6 +766,9 @@ int main(int argc, char **argv, char **envp) {
     } else if (optOutputType == AssemblyFile) {
       generateAssembly(composite, outputFilename, *targetMachine.get(),
           TargetMachine::CGFT_AssemblyFile);
+    } else if (optOutputType == ObjectFile) {
+      generateAssembly(composite, outputFilename, *targetMachine.get(),
+          TargetMachine::CGFT_ObjectFile);
     } else {
       printAndExit("Unsupported output type");
     }
