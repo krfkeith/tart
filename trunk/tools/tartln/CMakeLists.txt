@@ -13,10 +13,10 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 
 add_executable(tartln
     tartln.cpp
-    ConstantBuilder.cpp
-    ReflectorPass.cpp
     ReflectionSizePass.cpp)
 target_link_libraries(tartln
+	linker_reflect
+	linker_common
     gcstrategy
     ${LLVM_ALL_BACKENDS}
     ${LLVM_IPO}

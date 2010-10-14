@@ -1,6 +1,6 @@
 /** Similar to StructBuilder, but works purely with LLVM types. */
 
-#include "ConstantBuilder.h"
+#include "tart/Common/ConstantBuilder.h"
 
 namespace tart {
 

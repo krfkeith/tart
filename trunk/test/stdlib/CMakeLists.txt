@@ -18,6 +18,8 @@ set(TARTLN_OPTIONS -internalize -O2)
 
 set(TEST_BC_FILES)
 
+set(GENERATE_ASM 0)
+
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
 # Create and run a test executable for each source file
@@ -26,6 +28,7 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" ".out.bc" OUT_BC_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
+  string(REGEX REPLACE ".tart\$" "${CMAKE_CXX_OUTPUT_EXTENSION}" OBJ_FILE "${SRC_FILE}")  
 
   # Generate the deps variable name
   string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
@@ -43,34 +46,54 @@ foreach(SRC_FILE ${TART_SRC})
   set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
 
   # Link with libcore
-  add_custom_command(OUTPUT ${ASM_FILE}
-#  add_custom_command(OUTPUT ${OUT_BC_FILE}
-#      COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
-#          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
-#          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-      COMMAND tartln -disable-fp-elim -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
-          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
-          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-      MAIN_DEPENDENCY "${BC_FILE}" 
-      DEPENDS
-          "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
-          "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-      COMMENT "Linking Tart bitcode file ${BC_FILE}")
+  if (GENERATE_ASM)
+    add_custom_command(OUTPUT ${ASM_FILE}
+#    add_custom_command(OUTPUT ${OUT_BC_FILE}
+#        COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
+#            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+#            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        COMMAND tartln -disable-fp-elim -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        MAIN_DEPENDENCY "${BC_FILE}" 
+        DEPENDS
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        COMMENT "Linking Tart bitcode file ${BC_FILE}")
       
-  # Convert to assembly
-  #add_custom_command(OUTPUT ${ASM_FILE}
-  #    COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -disable-fp-elim -o ${ASM_FILE}
-  #    DEPENDS "${OUT_BC_FILE}"
-  #    COMMENT "Generating assembly for file ${BC_FILE}")
+    # Convert to assembly
+    #add_custom_command(OUTPUT ${ASM_FILE}
+    #    COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -disable-fp-elim -o ${ASM_FILE}
+    #    DEPENDS "${OUT_BC_FILE}"
+    #    COMMENT "Generating assembly for file ${BC_FILE}")
 
-  # Assemble and run
-  string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
-  add_custom_command(OUTPUT ${EXE_FILE}
-      COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
-      COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
-      MAIN_DEPENDENCY "${ASM_FILE}"
-      DEPENDS runtime
-      COMMENT "Assembling ${ASM_FILE}")
+    # Assemble and run
+    string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
+    add_custom_command(OUTPUT ${EXE_FILE}
+        COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
+        COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
+        MAIN_DEPENDENCY "${ASM_FILE}"
+        DEPENDS runtime
+        COMMENT "Assembling ${ASM_FILE}")
+  else (GENERATE_ASM)
+    add_custom_command(OUTPUT ${OBJ_FILE}
+        COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        MAIN_DEPENDENCY "${BC_FILE}" 
+        DEPENDS
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        COMMENT "Linking Tart bitcode file ${BC_FILE}")
+
+    # Assemble and run
+    string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
+    add_custom_command(OUTPUT ${EXE_FILE}
+        COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${OBJ_FILE} -lruntime -ldl
+        MAIN_DEPENDENCY "${OBJ_FILE}"
+        DEPENDS runtime
+        COMMENT "Linking ${OBJ_FILE}")
+  endif (GENERATE_ASM)
 
   # Generate debugging symbols
   # TODO(talin): This doesn't work and I have no idea why
