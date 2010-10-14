@@ -5,7 +5,7 @@
 #include "llvm/DerivedTypes.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "ReflectorPass.h"
+#include "tart/Reflect/ReflectorPass.h"
 
 #include <algorithm>
 

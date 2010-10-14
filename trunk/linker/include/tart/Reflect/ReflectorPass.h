@@ -7,7 +7,7 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Target/TargetData.h"
 
-#include "ConstantBuilder.h"
+#include "tart/Common/ConstantBuilder.h"
 
 namespace tart {
 using namespace llvm;

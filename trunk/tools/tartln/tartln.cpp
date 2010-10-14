@@ -34,7 +34,7 @@
 #include "llvm/Transforms/Scalar.h"
 
 #include "ReflectionSizePass.h"
-#include "ReflectorPass.h"
+#include "tart/Reflect/ReflectorPass.h"
 
 #include <memory>
 #include <cstring>
@@ -92,6 +92,9 @@ static cl::list<std::string> optFrameworks("framework",
 
 static cl::opt<bool> optDumpAsm("dump-asm",
     cl::desc("Print resulting IR"));
+
+static cl::opt<bool> optDumpDebug("dump-debug",
+    cl::desc("Print debugging information"));
 
 static cl::opt<bool> optShowSizes("show-size",
     cl::desc("Print size of debugging and reflection data"));
@@ -174,15 +177,6 @@ static void printAndExit(const std::string &Message, int errcode = 1) {
   exit(errcode);
 }
 
-static void printCommand(const std::vector<const char*> &args) {
-  for (std::vector<const char*>::const_iterator it = args.begin(); it != args.end(); ++it) {
-    if (*it) outs() << "'" << *it << "'" << " ";
-  }
-
-  outs() << "\n";
-  outs().flush();
-}
-
 // A utility function that adds a pass to the pass manager but will also add
 // a verifier pass after if we're supposed to verify.
 static inline void addPass(PassManager & pm, Pass * pass) {
@@ -258,6 +252,8 @@ void optimize(Module * module, const TargetData * targetData) {
   // that we are supporting; they alias -strip-all and -strip-debug.
   if (optStrip || optStripDebug) {
     addPass(passes, createStripSymbolsPass(optStripDebug && !optStrip));
+  } else {
+    //passes.add(createStripDeadDebugInfoPass());
   }
 
   // The user's passes may leave cruft around. Clean up after them them but
@@ -282,6 +278,10 @@ void optimize(Module * module, const TargetData * targetData) {
     passes.add(rsPass);
   }
 
+  if (optDumpDebug) {
+    passes.add(createDbgInfoPrinterPass());
+  }
+
   // Run our queue of passes all at once now, efficiently.
   passes.run(*module);
 
@@ -290,6 +290,7 @@ void optimize(Module * module, const TargetData * targetData) {
   }
 }
 
+#if 0
 /// copyEnv - This function takes an array of environment variables and makes a
 /// copy of it.  This copy can then be manipulated any way the caller likes
 /// without affecting the process's real environment.
@@ -369,6 +370,7 @@ static void removeEnv(const char * name, char ** const envp) {
 
   return;
 }
+#endif
 
 std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
   // If we are supposed to override the target triple, do so now.
@@ -740,9 +742,9 @@ int main(int argc, char **argv, char **envp) {
         
         case ObjectFile:
           #if defined(_WIN32) || defined(__CYGWIN__)
-          outputFilename.appendSuffix("obj");
+            outputFilename.appendSuffix("obj");
           #else
-          outputFilename.appendSuffix("o");
+            outputFilename.appendSuffix("o");
           #endif
         	break;
 

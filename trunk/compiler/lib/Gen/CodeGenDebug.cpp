@@ -111,7 +111,13 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
         getSourceLineNumber(fn->location()),
         dbgFuncType,
         fn->isSynthetic() /* isLocalToUnit */,
-        true /* isDefinition */);
+        fn->hasBody() /* isDefinition */,
+        0 /* VK */,
+        0 /* VIndex */,
+        DIType() /* DIType */,
+        0 /* Flags */,
+        false /* isOptimized */,
+        genFunctionValue(fn));
     if (!sp.Verify()) {
       sp.Verify();
       DFAIL("Bad DBG");

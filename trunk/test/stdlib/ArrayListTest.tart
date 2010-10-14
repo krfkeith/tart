@@ -14,7 +14,7 @@ class ArrayListTest : Test {
     assertEq(2, a[1]);
     assertEq(3, a[2]);
   }
-	
+
   def testImplicitType() {
     let a = ArrayList(1, 2, 3);
     assertEq(3, a.size);
@@ -22,7 +22,7 @@ class ArrayListTest : Test {
     assertEq(2, a[1]);
     assertEq(3, a[2]);
   }
-	
+
 	def testOutOfRange() {
 	  let a = ArrayList[int32](1, 2, 3);
 	  try {
@@ -30,14 +30,14 @@ class ArrayListTest : Test {
 	    fail("Out of range access");
 	  } catch :IndexError {
 	  }
-	
+
 	  try {
 	    let s = a[-1];
 	    fail("Out of range access");
 	  } catch :IndexError {
 	  }
 	}
-	
+
 	def testAdd() {
 	  let a = ArrayList[int32](1, 2, 3);
 	  a.add(4);
@@ -47,7 +47,7 @@ class ArrayListTest : Test {
 	  assertEq(3, a[2]);
 	  assertEq(4, a[3]);
 	}
-	
+
 	def testRemove() {
 	  let a = ArrayList[int32](1, 2, 3);
 	  a.remove(1);
