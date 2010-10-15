@@ -38,16 +38,10 @@ Working on currently:
 
 Implementation TODOS:
 
+* Call gc_alloc instead of malloc.
 * Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
-  * See if we can move template stuff into the type (CompositeType and FunctionType)
-  * Separate the Type from the type members, so that Type can be a true constant.
-  * And then make a new kind of object that represents an exported module symbol, that can
-      point to either a constant or a function.
-  * And then reduce the number of TypeDefns by allowing specializations to share the same
-      TypeDefn object. Which means that a new template instance does not need a new
-      TypeDefn.
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
   * Fill out TypeOrderings.h / TypeComparator.h
@@ -114,7 +108,6 @@ Implementation TODOS:
 * Class "extension"
 * Finish writing out and parsing metadata so that we don't have to compile everything
   multiple times.
-* Call gc_alloc instead of malloc.
 * Statements:
   * with (what interface for using?)
   * yield
@@ -165,7 +158,6 @@ o  'virtual' arguments. (Or 'dispatched')
   o  explicit convert
   o  dynamic convert
 o  Implement overriding struct assignment.
-o  GC Trace functions. (Auto-generated and explicit. Also don't take the name 'trace')
 
 o  Type conversions of non-constants.
 
