@@ -25,11 +25,6 @@
 
 namespace tart {
 
-extern SystemClassMember<VariableDefn> functionType_invoke;
-extern SystemClassMember<VariableDefn> functionType_paramTypes;
-extern SystemClassMember<VariableDefn> method_typeParams;
-extern SystemClassMember<VariableDefn> member_attributes;
-
 static const FunctionDefn::PassSet PASS_SET_RESOLVETYPE = FunctionDefn::PassSet::of(
   FunctionDefn::AttributePass,
   FunctionDefn::ParameterTypePass,

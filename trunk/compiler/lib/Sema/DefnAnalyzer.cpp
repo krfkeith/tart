@@ -110,6 +110,7 @@ bool DefnAnalyzer::analyzeModule() {
   for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isTemplate()) {
       analyzeTemplateSignature(de);
+      module->addTemplateSymbol(de);
     }
 
     if (!de->hasUnboundTypeParams()) {
@@ -527,14 +528,12 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       }
 
       case Type::Struct:
+      case Type::Protocol:
         if (enableReflectionDetail && module->reflectedDefs().insert(tdef)) {
           module->addSymbol(tdef);
           importSystemType(Builtins::typeCompositeType);
         }
 
-        break;
-
-      case Type::Protocol:
         break;
 
       case Type::Enum:

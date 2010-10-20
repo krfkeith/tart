@@ -164,6 +164,9 @@ void NameTable::writeStringTable(llvm::raw_ostream & out) {
   for (SimpleNameArray::iterator it = sortedSimpleNames_.begin(); it != sortedSimpleNames_.end();
       ++it) {
     StringRef name = (*it)->value();
+#if 0
+    diag.debug() << "Simple name: " << name << " " << (*it)->index();
+#endif
     out << VarInt(name.size()) << name;
   }
   out.flush();

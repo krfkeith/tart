@@ -242,6 +242,7 @@ public:
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
   llvm::Constant * createTypeInfoBlockPtr(RuntimeTypeInfo * rtype);
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
+  bool createTemplateTypeInfoBlock(const CompositeType * type);
 
   /** Generate a reference to the allocator function for this type. */
   llvm::Function * getTypeAllocator(const CompositeType * tdef);

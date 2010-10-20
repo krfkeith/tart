@@ -202,6 +202,31 @@ bool Module::addSymbol(Defn * de) {
   return false;
 }
 
+bool Module::addTemplateSymbol(Defn * de) {
+  if (isPassFinished(Pass_ResolveModuleMembers)) {
+    diag.fatal(de) << Format_Verbose << "Too late to add symbol '" << de <<
+        "', analysis for module '" << this << "' has already finished.";
+  }
+
+  if (de->defnType() == Defn::ExplicitImport) {
+    return false;
+  }
+
+  DASSERT_OBJ(de->isTemplate(), de);
+  if (de->module() == this) {
+    if (exportDefs_.insert(de)) {
+      DASSERT_OBJ(!importDefs_.count(de), de);
+      //defsToAnalyze_.append(de);
+      if (isDebug()) {
+        diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
 Defn * Module::nextDefToAnalyze() {
   if (!defsToAnalyze_.empty()) {
     return defsToAnalyze_.next();

@@ -5,6 +5,7 @@
 #ifndef TART_GEN_REFLECTIONMETADATA_H
 #define TART_GEN_REFLECTIONMETADATA_H
 
+#include "tart/Common/Agenda.h"
 #include "tart/CFG/Type.h"
 
 #include "tart/Meta/NameTable.h"
@@ -21,7 +22,30 @@ class Module;
 class ASTDecl;
 
 /// -------------------------------------------------------------------
-/// Class used to build the module constants object.
+/// List of reflected defns exported by a module.
+
+class ModuleMetadata {
+public:
+  typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
+
+  ModuleMetadata(NameTable & names)
+    : names_(names)
+  {}
+
+  NameTable & names() const { return names_; }
+  const Agenda<const Defn> & defnsToExport() const { return defnsToExport_; }
+  Agenda<const Defn> & defnsToExport() { return defnsToExport_; }
+  const TypeMap & invokeMap() const { return invokeMap_; }
+  TypeMap & invokeMap() { return invokeMap_; }
+
+private:
+  NameTable & names_;
+  Agenda<const Defn> defnsToExport_;
+  TypeMap invokeMap_;
+};
+
+/// -------------------------------------------------------------------
+/// Class used to build the reflection metadata for a module or class.
 
 class ReflectionMetadata {
 public:
@@ -29,9 +53,8 @@ public:
   typedef std::vector<TypeArrayElement> TypeArray;
   typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
 
-  ReflectionMetadata(NameTable & names, TypeMap & invokeMap)
-    : names_(names)
-    , invokeMap_(invokeMap)
+  ReflectionMetadata(ModuleMetadata & mmd)
+    : mmd_(mmd)
     , var_(NULL)
     , methodTable_(NULL)
     , strm_(strmData_)
@@ -62,10 +85,11 @@ public:
   const TypeArray & compositeTypeRefs() const { return compositeTypeRefs_; }
   const TypeArray & enumTypeRefs() const { return enumTypeRefs_; }
 
+  ModuleMetadata & mmd() { return mmd_; }
+
 private:
-  NameTable & names_;
+  ModuleMetadata & mmd_;
   TypeMap types_;
-  TypeMap & invokeMap_;
 
   llvm::GlobalVariable * var_;
   std::vector<llvm::Constant *> methodTable_;
@@ -77,6 +101,8 @@ private:
   TypeArray enumTypeRefs_;
 };
 
-} // namespace tart
+}
+
+ // namespace tart
 
 #endif // TART_META_METADATAWRITER_H

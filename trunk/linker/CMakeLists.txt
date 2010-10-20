@@ -26,3 +26,9 @@ source_group(GC REGULAR_EXPRESSION lib/GC/*)
 add_library(linker_common STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
 add_library(gcstrategy STATIC ${GC_SOURCES} ${GC_HEADERS})
 add_library(linker_reflect STATIC ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
+
+add_library(tartln_plugin SHARED lib/plugin.cpp)
+target_link_libraries(tartln_plugin
+    linker_reflect
+    linker_common
+    gcstrategy)

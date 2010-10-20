@@ -15,6 +15,7 @@ set(TART_OPTIONS
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 set(TARTLN_OPTIONS -internalize -O2)
+#set(TARTLN_OPTIONS -O2)
 
 set(TEST_BC_FILES)
 
@@ -89,7 +90,7 @@ foreach(SRC_FILE ${TART_SRC})
     # Assemble and run
     string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
     add_custom_command(OUTPUT ${EXE_FILE}
-        COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${OBJ_FILE} -lruntime -ldl
+        COMMAND gcc -g -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${OBJ_FILE} -lruntime -ldl
         MAIN_DEPENDENCY "${OBJ_FILE}"
         DEPENDS runtime
         COMMENT "Linking ${OBJ_FILE}")

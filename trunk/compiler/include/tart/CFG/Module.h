@@ -99,6 +99,9 @@ public:
   */
   bool addSymbol(Defn * de);
 
+  /** Add a template to the list of symbols to be exported. */
+  bool addTemplateSymbol(Defn * de);
+
   /** Return the next xref that has not been analyzed. */
   Defn * nextDefToAnalyze();
 

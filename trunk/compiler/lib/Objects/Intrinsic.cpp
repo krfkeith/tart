@@ -123,6 +123,23 @@ Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
 }
 
 // -------------------------------------------------------------------
+// CompositeTypeOfIntrinsic
+CompositeTypeOf2Intrinsic CompositeTypeOf2Intrinsic::instance;
+
+Value * CompositeTypeOf2Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
+  const CompositeType * type = cast<CompositeType>(typeLiteral->value());
+  Constant * tib = cg.getTypeInfoBlockPtr(type);
+
+  ValueList args;
+  args.push_back(tib);
+  Function * getType = cg.genFunctionValue(Builtins::funcGetType);
+  Value * result = cg.builder().CreateCall(getType, args.begin(), args.end());
+  return result;
+}
+
+// -------------------------------------------------------------------
 // TraceTableOfIntrinsic
 TraceTableOfIntrinsic TraceTableOfIntrinsic::instance;
 

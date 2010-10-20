@@ -64,20 +64,14 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
+    case Type::Protocol:
       return genCompositeType(static_cast<CompositeType *>(type));
 
     case Type::Enum:
       return genEnumType(static_cast<EnumType *>(type));
 
-    //case Defn::NArray:
-    //case Defn::NativePointer:
-
     case Type::Alias:
       // No need to generate this.
-      return NULL;
-
-    case Type::Protocol:
-      // Protocols have no runtime representation.
       return NULL;
 
     default:
@@ -145,10 +139,10 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
   if (rtype->getTypeInfoPtr() == NULL) {
     // Create the global variable for the type info block.
     const CompositeType * type = rtype->getType();
-    if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
-      rtype->setTypeInfoPtr(ConstantPointerNull::get(
-          Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
-    } else {
+//    if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
+//      rtype->setTypeInfoPtr(ConstantPointerNull::get(
+//          Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
+//    } else {
       DASSERT(rtype->getTypeInfoBlock() == NULL);
       rtype->setTypeInfoBlock(
           new GlobalVariable(*irModule_,
@@ -160,7 +154,7 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
           llvm::ConstantExpr::getBitCast(
               rtype->getTypeInfoBlock(),
               Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
-    }
+//    }
   }
 
   return rtype->getTypeInfoPtr();
@@ -169,9 +163,9 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
 
-  if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
-    return true;
-  }
+//  if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
+//    return true;
+//  }
 
   if (rtype->getTypeInfoPtr() == NULL) {
     createTypeInfoBlockPtr(rtype);
@@ -198,7 +192,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   for (ClassSet::iterator it = baseClassSet.begin(); it != baseClassSet.end(); ++it) {
     CompositeType * baseType = *it;
     if (baseType->typeClass() == Type::Interface) {
-      genCompositeType(baseType);
+      //genCompositeType(baseType);
       baseClassList.push_back(getTypeInfoBlockPtr(baseType));
     }
   }
@@ -228,9 +222,13 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     builder.addNullField(tib_meta.type());
   }
 
-  llvm::GlobalVariable * traceTable = getTraceTable(type);
-  if (traceTable != NULL) {
-    builder.addField(traceTable);
+  if (type->typeClass() == Type::Class) {
+    llvm::GlobalVariable * traceTable = getTraceTable(type);
+    if (traceTable != NULL) {
+      builder.addField(traceTable);
+    } else {
+      builder.addNullField(tib_traceTable.type());
+    }
   } else {
     builder.addNullField(tib_traceTable.type());
   }
@@ -245,6 +243,36 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   }
 
   // ConstantStruct::get(context_, tibMembers, false);
+  Constant * tibStruct = builder.build();
+
+  // Assign the TIB value to the tib global variable.
+  GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
+  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(tibStruct->getType());
+  tibPtr->setInitializer(tibStruct);
+  tibPtr->setLinkage(rtype->getLinkageType());
+  return true;
+}
+
+bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
+//  if (type->typeClass() == Type::Struct) {
+//    return true;
+//  }
+
+  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
+
+  if (rtype->getTypeInfoPtr() == NULL) {
+    createTypeInfoBlockPtr(rtype);
+  } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
+    return true;
+  }
+
+  // Create the TypeInfoBlock struct
+  StructBuilder builder(*this);
+  builder.addNullField(tib_meta.type());
+  builder.addNullField(tib_traceTable.type());
+  builder.addNullField(tib_bases.type());
+  builder.addNullField(tib_idispatch.type());
+  builder.addField(genMethodArray(MethodList()));
   Constant * tibStruct = builder.build();
 
   // Assign the TIB value to the tib global variable.

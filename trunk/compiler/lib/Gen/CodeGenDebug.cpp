@@ -40,6 +40,10 @@ static unsigned typeEncoding(TypeId id) {
     return dwarf::DW_ATE_signed;
   } else if (isUnsignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_unsigned;
+  } else if (id == TypeId_Void) {
+    return dwarf::DW_ATE_boolean;
+  } else if (id == TypeId_Null) {
+    return dwarf::DW_ATE_address;
   }
 
   return 0;
@@ -623,16 +627,16 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   if (type->selfParam() != NULL) {
     const ParameterDefn * param = type->selfParam();
     DIType ptype = genDIParameterType(param->type());
-    ptype = dbgFactory_.CreateDerivedTypeEx(
-        dwarf::DW_TAG_formal_parameter,
-        dbgCompileUnit_,
-        "self",
-        genDIFile(param),
-        getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->type()->irType()->getPointerTo()),
-        getInt64Val(0),
-        getInt64Val(0), 0,
-        ptype);
+//    ptype = dbgFactory_.CreateDerivedTypeEx(
+//        dwarf::DW_TAG_formal_parameter,
+//        dbgCompileUnit_,
+//        "self",
+//        genDIFile(param),
+//        getSourceLineNumber(param->location()),
+//        getSizeOfInBits(param->type()->irType()->getPointerTo()),
+//        getInt64Val(0),
+//        getInt64Val(0), 0,
+//        ptype);
     DASSERT(ptype.Verify());
     args.push_back(ptype);
   }
@@ -641,16 +645,16 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
     DIType ptype = genDIParameterType(param->type());
-    ptype = dbgFactory_.CreateDerivedTypeEx(
-        dwarf::DW_TAG_formal_parameter,
-        dbgCompileUnit_,
-        param->name() != NULL ? param->name() : "",
-        genDIFile(param),
-        getSourceLineNumber(param->location()),
-        getSizeOfInBits(param->internalType()->irParameterType()),
-        getInt64Val(0),
-        getInt64Val(0), 0,
-        ptype);
+//    ptype = dbgFactory_.CreateDerivedTypeEx(
+//        dwarf::DW_TAG_formal_parameter,
+//        dbgCompileUnit_,
+//        param->name() != NULL ? param->name() : "",
+//        genDIFile(param),
+//        getSourceLineNumber(param->location()),
+//        getSizeOfInBits(param->internalType()->irParameterType()),
+//        getInt64Val(0),
+//        getInt64Val(0), 0,
+//        ptype);
     DASSERT(ptype.Verify());
     args.push_back(ptype);
   }

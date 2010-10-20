@@ -29,6 +29,9 @@ public class CompositeType : Type {
   /** Given a type literal, return the reflected complex type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
 
+  /** Given a type literal, return the reflected complex type object. */
+  @Intrinsic static def of2[%T](typeName:TypeLiteral[T]) -> CompositeType;
+
   /** Fully-qualified name of this type. */
   final def name:String { get { return _meta.localName; } }
 
@@ -45,7 +48,9 @@ public class CompositeType : Type {
   final def supertype:optional CompositeType {
     get {
       if _supertype is null {
-        _supertype = _meta.readBaseClass(self);
+        Debug.writeLn("getting _super");
+        self._supertype = _meta.readBaseClass(self);
+        Debug.writeLn("_super defined");
       }
   
       return _supertype;
@@ -56,7 +61,7 @@ public class CompositeType : Type {
   final def interfaces:CompositeType[] { get { return self._interfaces; } }
   
   /** Array of type parameters. */
-  final def typeParams:Type[] { get { return self._typeParams; } }
+  final def typeParams:Type[] { get { decodeTypeParams(); return self._typeParams; } }
   
   /** Array of associated attributes */
   final def attributes:Object[] { get { return self._attributes; } }
@@ -180,12 +185,31 @@ public class CompositeType : Type {
   }
 
   final override toString -> String {
-    return qualifiedName;
+    // TODO: Should have a flag indicating whether this is a template instance, template, etc.
+    var params = typeParams;
+    if not params.isEmpty {
+	    let sb = StringBuilder(qualifiedName);
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in params {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("[{0}]", ",".join(typeStrings)));
+	    return sb.toString();
+    } else {
+	    return qualifiedName;
+    }
   }
   
   private final def decodeMethods {
     if self._methods is null {
 	    self._constructors, self._methods = _meta.readMethods(self);
+    }
+  }
+
+  private final def decodeTypeParams {
+    if self._typeParams is null {
+	    self._typeParams = _meta.readTypeParams();
     }
   }
 

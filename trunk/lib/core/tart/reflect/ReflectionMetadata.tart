@@ -105,6 +105,8 @@ import tart.collections.ImmutableList;
   	FIELDS = 7,
   	METHODS = 8,
   	PROPERTIES = 9,
+  	BASE_TEMPLATE = 10,
+	  TEMPLATE_PARAMS = 11,
   }
 
   typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
@@ -141,6 +143,7 @@ import tart.collections.ImmutableList;
   def derivedTypes:Type[] { get { return getDerivedTypes(); } }
 
   static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
+    Preconditions.checkArgument(tib is not null);
     var meta = tib.meta;
     if meta is null {
       // TODO - throw an exception?
@@ -177,7 +180,9 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.BASE_CLASS);
     if length != 0 {
-	  	return typecast[CompositeType](decodeType(decoder, selfType));
+	  	var base = typecast[CompositeType](decodeType(decoder, selfType));
+	  	Debug.writeLn("Base = ", base.name);
+	  	return base;
     }
     
     return null;
@@ -191,9 +196,23 @@ import tart.collections.ImmutableList;
     }
   }
 
-  def readTypeParams() {
+  def readTypeParams() -> Type[] {
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.TYPE_PARAMS);
+    let params = ArrayList[Type]();
+    if length != 0 {
+    	let endPos = decoder.position + length;
+    	while decoder.position < endPos {
+		  	params.add(decodeType(decoder, null));
+    	}
+    }
+    
+   	return Array.copyOf(params);
+  }
+
+  def readTemplateParams() {
+    let decoder = StreamDecoder(_strmDefns);
+    let length = decoder.seekToSection(SectionTag.TEMPLATE_PARAMS);
     if length != 0 {
     	Debug.writeLn("Length of type params section = ", length.toString());
     }
@@ -226,6 +245,7 @@ import tart.collections.ImmutableList;
     	}
     }
 
+   	Debug.writeLnFmt("Returing {0} constructors {1} methods", constructors.size, methods.size);
    	return Array.copyOf(constructors), Array.copyOf(methods);
   }
 
@@ -233,9 +253,10 @@ import tart.collections.ImmutableList;
     let tag = DefnTag(decoder.readByte());
     let flags = DefnFlags(decoder.readByte());
     let name = decodeFieldName(decoder);
+    Debug.writeLnFmt("Decoding type for method '{0}', method index {1}", name, methodIndex);
     let methodType = typecast[FunctionType](decodeType(decoder, selfType));
     let methodPtr = _methods[methodIndex];
-
+    
     var visibility = Member.Visibility.PUBLIC;
     var traits:Method.Traits = 0;
 		var kind:Member.MemberKind = Member.MemberKind.METHOD;
@@ -285,6 +306,7 @@ import tart.collections.ImmutableList;
     	}
     }
 
+		var isVariadic = false;
     repeat {
       let tag = DefnTag(decoder.readByte());
       switch tag {
@@ -297,6 +319,11 @@ import tart.collections.ImmutableList;
         
         case PARAM {
 			    let paramName = decodeFieldName(decoder);
+					isVariadic = false;
+        }
+        
+        case MOD_VARIADIC {
+					isVariadic = true;
         }
 
         else {
@@ -308,6 +335,9 @@ import tart.collections.ImmutableList;
     let attributes = Object[](0);
     let typeParams = Type[](0);
     let params = Parameter[](0);
+
+    Debug.writeLnFmt("Decoding method named '{0}', type {1}", name, methodType);
+
     return Method(name, "", kind, visibility, traits, attributes, typeParams, methodType,
       params, methodPtr);
   }
@@ -323,7 +353,9 @@ import tart.collections.ImmutableList;
     _derivedTypes = types;
     Debug.writeLn("Number of derived types: ", String(count));
     for i in range(count) {
-      types[i] = decodeType(decoder, null);
+      let ty = decodeType(decoder, null);
+      Debug.writeLnFmt("{0}. Decoded: {1}", i, ty.toString());
+      types[i] = ty;
     }
     return types;
   }
@@ -333,6 +365,7 @@ import tart.collections.ImmutableList;
     let result = Type[](count);
     for i in range(count) {
       let memberType = decodeType(decoder, selfType);
+      Debug.writeLnFmt("{0}. Decoded member type: {1}", i, memberType.toString());
       result[i] = memberType;
     }
     
@@ -421,13 +454,14 @@ import tart.collections.ImmutableList;
 			else {
 			  if typeId >= TypeTag.DERIVED_IMM {
 			    let index = int(typeId) & 0x7f;
-			    Debug.writeLnFmt("Derived type index: {0} {1}", index, derivedTypes.size);
+			    Debug.writeLnFmt("Derived type index: {0} out of {1}", index, derivedTypes.size);
 			    if derivedTypes[index] is null {
 			      Debug.writeLn("Null derived type!");
 			    }
 			    return derivedTypes[index];
 			  } else if typeId >= TypeTag.COMPOSITE_IMM {
 			    let index = int(typeId) & 0x3f;
+			    Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
 			  	let tib = _compositeTypes[index];
 			    return getCompositeType(tib);
 			  } else if typeId >= TypeTag.ENUM_IMM {
@@ -439,6 +473,95 @@ import tart.collections.ImmutableList;
     }
 
     return PrimitiveType.VOID;
+  }
+
+  private def skipTypeList(decoder:StreamDecoder) {
+    let count = decoder.readVarInt();
+    for i in range(count) {
+      skipType(decoder);
+    }
+  }
+  
+  private def skipType(decoder:StreamDecoder) {
+    let typeId = TypeTag(decoder.readByte());
+    switch typeId {
+      case VOID
+      case BOOL
+      case CHAR
+      case INT8
+      case INT16
+      case INT32
+      case INT64
+      case UINT8
+      case UINT16
+      case UINT32
+      case UINT64
+      case FLOAT
+      case DOUBLE
+      //case NULL
+      //case UNSIZED_INT
+
+      case FUNCTION case FUNCTION_STATIC {
+        decoder.readVarInt();
+        skipType(decoder); // Return type
+        skipType(decoder); // Param types
+      }
+
+      case BOUND_METHOD {
+        Debug.fail("Implement BOUND_METHOD");
+      }
+
+      case TUPLE
+      case UNION {
+        skipTypeList(decoder);
+      }
+
+      case UNIT {
+        Debug.fail("Implement UNIT");
+      }
+
+      case ADDRESS {
+        Debug.fail("Implement ADDRESS");
+      }
+
+      case NARRAY {
+        Debug.fail("Implement FUNCTION");
+      }
+
+      case TYPEVAR {
+        Debug.fail("Implement TYPEVAR");
+      }
+
+      case TYPELITERAL {
+        Debug.fail("Implement TYPELITERAL");
+      }
+
+      case VARIADIC {
+        Debug.fail("Implement VARIADIC");
+      }
+      
+		  case COMPOSITE {
+        Debug.fail("Implement COMPOSITE");
+		  }
+		  
+		  case DERIVED {
+        Debug.fail("Implement DERIVED");
+		  }
+
+			case ENUM {
+        Debug.fail("Implement ENUM");
+			}
+			
+			else {
+			  if typeId >= TypeTag.DERIVED_IMM {
+			  } else if typeId >= TypeTag.COMPOSITE_IMM {
+			  } else if typeId >= TypeTag.ENUM_IMM {
+	        Debug.fail("Implement ENUM_IMM");
+			  } else {
+	        Debug.fail("Invalid type id: ", typeId.toString());
+			  }
+			}
+    }
   }
 
   private def decodeFieldName(decoder:StreamDecoder) -> String {

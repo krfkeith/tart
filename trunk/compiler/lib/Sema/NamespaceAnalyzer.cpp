@@ -92,6 +92,7 @@ bool NamespaceAnalyzer::resolveStaticInitializers() {
     for (Defn * m = target->memberScope().firstMember(); m != NULL; m = m->nextInScope()) {
       if (m->isTemplate()) {
         analyzeTemplateSignature(m);
+        module->addTemplateSymbol(m);
       } else if (analyzeCompletely(m) && m->isSingular()) {
         //diag.debug(m) << "Analyzing " << m;
         target->module()->addSymbol(m);
