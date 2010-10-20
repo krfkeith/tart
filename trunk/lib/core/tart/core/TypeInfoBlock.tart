@@ -38,7 +38,11 @@ import tart.gc.TraceDescriptor;
 
     return false;
   }
-
+  
+  final def getType() -> CompositeType {
+    return ReflectionMetadata.getCompositeType(Memory.addressOf(self));
+  }
+  
   /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
   static def typecastError() {
     throw TypecastError();

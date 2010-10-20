@@ -33,6 +33,8 @@ enum SectionTag {
   TAG_SECTION_FIELDS = 7,
   TAG_SECTION_METHODS = 8,
   TAG_SECTION_PROPERTIES = 9,
+  TAG_SECTION_BASE_TEMPLATE = 10,
+  TAG_SECTION_TEMPLATE_PARAMS = 11,
 };
 
 /// -------------------------------------------------------------------
@@ -72,9 +74,9 @@ enum DefnTag {
   // Modifier tags which affect the containing scope.
 
   TAG_DEFMOD_ATTRIBUTE = 32,// Modifies a declaration to add an attribute.
-  TAG_DEFMOD_STATIC,        // Modifies a declaration to have static storage class
-  TAG_DEFMOD_FINAL,         // Modifies a class or method to be final
-  TAG_DEFMOD_ABSTRACT,      // Modifies a class or method to be abstract
+//  TAG_DEFMOD_STATIC,        // Modifies a declaration to have static storage class
+//  TAG_DEFMOD_FINAL,         // Modifies a class or method to be final
+//  TAG_DEFMOD_ABSTRACT,      // Modifies a class or method to be abstract
   TAG_DEFMOD_VARIADIC,      // Modifies a parameter to be variadic
   TAG_DEFMOD_KEYWORD_ONLY,  // Modifies a parameter to be keyword-only
 

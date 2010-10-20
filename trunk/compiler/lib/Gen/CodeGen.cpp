@@ -117,6 +117,10 @@ void CodeGenerator::generate() {
 
     if (de->isSingular()) {
       genXDef(de);
+    } else if (de->isTemplate()) {
+      if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
+        createTemplateTypeInfoBlock(cast<CompositeType>(td->typeValue()));
+      }
     }
   }
 

@@ -141,9 +141,9 @@ if (NOT MSVC)
   find_llvm_backend_library(MSIL_INFO LLVMMSILInfo)
 
   # Architecture: MSP430
-  find_llvm_backend_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
   find_llvm_backend_library(MSP430_CODE_GEN LLVMMSP430CodeGen)
   find_llvm_backend_library(MSP430_INFO LLVMMSP430Info)
+  find_llvm_backend_library(MSP430_ASM_PRINTER LLVMMSP430AsmPrinter)
 
   # Architecture: Mips
   find_llvm_backend_library(MIPS_ASM_PRINTER LLVMMipsAsmPrinter)
@@ -159,6 +159,11 @@ if (NOT MSVC)
   find_llvm_backend_library(POWERPC_ASM_PRINTER LLVMPowerPCAsmPrinter)
   find_llvm_backend_library(POWERPC_CODE_GEN LLVMPowerPCCodeGen)
   find_llvm_backend_library(POWERPC_INFO LLVMPowerPCInfo)
+
+  # Architecture: PTX
+  find_llvm_backend_library(PTX_ASM_PRINTER LLVMPTXAsmPrinter)
+  find_llvm_backend_library(PTX_CODE_GEN LLVMPTXCodeGen)
+  find_llvm_backend_library(PTX_INFO LLVMPTXInfo)
 
   # Architecture: Sparc
   find_llvm_backend_library(SPARC_ASM_PRINTER LLVMSparcAsmPrinter)

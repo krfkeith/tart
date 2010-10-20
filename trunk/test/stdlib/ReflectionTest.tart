@@ -131,13 +131,27 @@ class ReflectionTest : Test {
     //assertEq(null, attr);
   }
   
-  def testTypeOfString {
+  def testTypeOfStringClass {
+    let ty = CompositeType.of2(String);
+	  assertEq("String", ty.name);
+	  assertEq("tart.core", ty.scopeName);
+	  assertEq("tart.core.String", ty.qualifiedName);
+	  var st = ty.supertype;
+	  Debug.writeLn("Got super");
+	  assertEq("Object", ty.supertype.name);
+	  Debug.writeLn("Calling findMethod");
+	  let method = ty.findMethod("toString");
+//	  assertNotNull(method);
+  }
+
+  def testTypeOfStringInstance {
     let ty = "".type;
 	  assertEq("String", ty.name);
 	  assertEq("tart.core", ty.scopeName);
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  assertEq("Object", ty.supertype.name);
-//	  let method = ty.findMethod("toString");
+	  Debug.writeLn("Calling findMethod");
+	  let method = ty.findMethod("toString");
 //	  assertNotNull(method);
   }
 

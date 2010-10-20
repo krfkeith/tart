@@ -15,8 +15,8 @@ add_executable(tartln
     tartln.cpp
     ReflectionSizePass.cpp)
 target_link_libraries(tartln
-	linker_reflect
-	linker_common
+    linker_reflect
+    linker_common
     gcstrategy
     ${LLVM_ALL_BACKENDS}
     ${LLVM_IPO}

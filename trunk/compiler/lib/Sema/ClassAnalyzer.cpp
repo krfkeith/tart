@@ -10,6 +10,7 @@
 #include "tart/CFG/PropertyDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/UnionType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
@@ -22,7 +23,6 @@
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Sema/EvalPass.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -205,6 +205,20 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     if (!resolveAttributes(target)) {
       return false;
     }
+
+    // Special case for non-reflective types: Any type that takes a non-reflective type
+    // as a type argument is also non-reflective.
+//    if (target->isTemplateInstance()) {
+//      const TupleType * typeParams = target->templateInstance()->typeArgs();
+//      for (TupleType::const_iterator it = typeParams->begin(); it != typeParams->end(); ++it) {
+//        const Type * typeParam = *it;
+//        analyzeType(typeParam, Task_PrepMemberLookup);
+//        if (typeParam->typeDefn() != NULL && typeParam->typeDefn()->isNonreflective()) {
+//          target->addTrait(Defn::Nonreflective);
+//          break;
+//        }
+//      }
+//    }
 
     type->passes().finish(CompositeType::AttributePass);
   }

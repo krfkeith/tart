@@ -170,7 +170,6 @@ void CodeGenerator::genBlockTerminator(Block * blk) {
       break;
 
     case BlockTerm_Branch:
-      //clearDeadRoots(blk->deadRoots());
       builder_.CreateBr(blk->succIRBlock(0));
       break;
 

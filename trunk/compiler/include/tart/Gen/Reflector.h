@@ -6,7 +6,10 @@
 #define TART_GEN_REFLECTOR_H
 
 #include "tart/Common/SourceLocation.h"
+
 #include "tart/CFG/CFG.h"
+
+#include "tart/Gen/ReflectionMetadata.h"
 
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/ADT/StringMap.h"
@@ -195,19 +198,18 @@ public:
   void buildRMD(const Defn * def);
 
   /** Write out reflection information for a definition in this module. */
-  void emitReflectedSymbol(const Defn * defn);
-
-  /** Write out reflection information for a definition in this module. */
   void emitReflectedDefn(ReflectionMetadata * rs, const Defn * def);
 
   /** Write out the reflection data for the contents of a definition. */
   void emitReflectedMembers(ReflectionMetadata * rs, const IterableScope * scope);
 
   /** Emitters for various sections. */
-  void emitTypeParamSection(ReflectionMetadata * rs, const Defn * def);
+  void emitTypeParamsSection(ReflectionMetadata * rs, const Defn * def);
+  void emitTemplateParamsSection(ReflectionMetadata * rs, const Defn * def);
   void emitBaseClassSection(ReflectionMetadata * rs, const CompositeType * type);
   void emitInterfacesSection(ReflectionMetadata * rs, const CompositeType * type);
   void emitAttributeSection(ReflectionMetadata * rs, const ExprList & attrs);
+  void emitTemplateSection(ReflectionMetadata * rmd, const Defn * def);
 
   /** Emitters for various definition types. */
   void emitNamespaceDefn(ReflectionMetadata * rs, const NamespaceDefn * def,
@@ -266,6 +268,8 @@ private:
 
   Module * module();
 
+  bool isExport(const Defn * de);
+
   CodeGenerator & cg_;
   bool enabled_;
   llvm::LLVMContext & context_;
@@ -274,10 +278,10 @@ private:
   llvm::GlobalVariable * nameTableVar_;
   llvm::Constant * invokeFnTableVar_;
 
-  ReflectedSymbolMap rsymMap_;
+  ReflectedSymbolMap rmdMap_;
   GlobalVarMap globals_;
 
-  TypeMap invokeMap_;
+  ModuleMetadata mmd_;
   TypeArray invokeRefs_;
 };
 

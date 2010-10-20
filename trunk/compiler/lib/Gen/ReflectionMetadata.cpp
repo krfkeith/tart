@@ -63,7 +63,7 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
       const CompositeType * ctype = static_cast<const CompositeType *>(type);
       TypeDefn * classDefn = ctype->typeDefn();
       types_[ctype] = TagInfo(1);
-      //names_.addQualifiedName(classDefn->qualifiedName())->use();
+      mmd_.defnsToExport().append(classDefn);
       break;
     }
 
@@ -71,7 +71,6 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
       const EnumType * etype = static_cast<const EnumType *>(type);
       TypeDefn * enumDefn = etype->typeDefn();
       types_[etype] = TagInfo(1);
-      //names_.addQualifiedName(enumDefn->qualifiedName())->use();
       break;
     }
 
@@ -83,10 +82,6 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
         addTypeRef(ftype->selfParam()->type());
       }
       addTypeRef(ftype->paramTypes());
-//      for (ParameterList::const_iterator it = ftype->params().begin();
-//          it != ftype->params().end(); ++it) {
-//        addTypeRef((*it)->type());
-//      }
       break;
     }
 
@@ -151,7 +146,7 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
     case Type::TypeVar: {
       const TypeVariable * typeVar = static_cast<const TypeVariable *>(type);
       types_[typeVar] = TagInfo(1);
-      names_.addName(typeVar->name())->use();
+      mmd_.names().addName(typeVar->name())->use();
       break;
     }
 
@@ -201,8 +196,8 @@ void ReflectionMetadata::assignIndices() {
     diag.debug() << derivedTypeRefs_.size() << " unique derived types added";
     diag.indent();
     for (TypeArray::iterator it = derivedTypeRefs_.begin(); it != derivedTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
-          " (" << it->second.index << ")";
+      diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
+          " (" << it->second.useCount << ")";
     }
     diag.unindent();
   }
@@ -210,9 +205,10 @@ void ReflectionMetadata::assignIndices() {
   if (!compositeTypeRefs_.empty()) {
     diag.debug() << compositeTypeRefs_.size() << " unique compound types added";
     diag.indent();
-    for (TypeArray::iterator it = compositeTypeRefs_.begin(); it != compositeTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
-          " (" << it->second.index << ")";
+    for (TypeArray::iterator it = compositeTypeRefs_.begin(); it != compositeTypeRefs_.end();
+        ++it) {
+      diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
+          " (" << it->second.useCount << ")";
     }
     diag.unindent();
   }
@@ -221,8 +217,8 @@ void ReflectionMetadata::assignIndices() {
     diag.debug() << enumTypeRefs_.size() << " unique enum types added";
     diag.indent();
     for (TypeArray::iterator it = enumTypeRefs_.begin(); it != enumTypeRefs_.end(); ++it) {
-      diag.debug() << Format_Verbose << it->second.useCount << " " << it->first <<
-          " (" << it->second.index << ")";
+      diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
+          " (" << it->second.useCount << ")";
     }
     diag.unindent();
   }
@@ -230,9 +226,12 @@ void ReflectionMetadata::assignIndices() {
 }
 
 void ReflectionMetadata::encodeTypesTable(llvm::raw_ostream & out) {
-  for (TypeArray::const_iterator it = derivedTypeRefs_.begin();
-      it != derivedTypeRefs_.end(); ++it) {
-    encodeType(it->first, out);
+  if (!derivedTypeRefs_.empty()) {
+    out << VarInt(derivedTypeRefs_.size());
+    for (TypeArray::const_iterator it = derivedTypeRefs_.begin();
+        it != derivedTypeRefs_.end(); ++it) {
+      encodeType(it->first, out);
+    }
   }
   out.flush();
 }
@@ -292,8 +291,8 @@ void ReflectionMetadata::encodeType(const Type * type, llvm::raw_ostream & out) 
       if (selfType == NULL ||
               selfType->typeClass() == Type::Class ||
               selfType->typeClass() == Type::Interface) {
-        TypeMap::iterator it = invokeMap_.find(ftype);
-        if (it != invokeMap_.end()) {
+        TypeMap::iterator it = mmd_.invokeMap().find(ftype);
+        if (it != mmd_.invokeMap().end()) {
           invokeIndex = it->second.index;
         }
       }

@@ -260,8 +260,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
         if (value == NULL) {
           return NULL;
         }
-        value = llvm::ConstantExpr::getPointerCast(
-            cast<Constant>(value), irType->getPointerTo());
+        value = llvm::ConstantExpr::getPointerCast(cast<Constant>(value), irType->getPointerTo());
         //DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
       } else {
         value = new GlobalVariable(

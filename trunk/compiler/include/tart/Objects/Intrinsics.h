@@ -41,6 +41,14 @@ class CompositeTypeOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// CompositeType.of2 intrinsic
+class CompositeTypeOf2Intrinsic : public Intrinsic {
+  static CompositeTypeOf2Intrinsic instance;
+  CompositeTypeOf2Intrinsic() : Intrinsic("tart.reflect.CompositeType.of2") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
 // TraceTable.of intrinsic
 class TraceTableOfIntrinsic : public Intrinsic {
   static TraceTableOfIntrinsic instance;

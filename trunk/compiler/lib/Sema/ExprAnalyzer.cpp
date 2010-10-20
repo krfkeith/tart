@@ -1265,18 +1265,30 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 }
 
 Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
-  DASSERT(lvalue->value() != NULL);
-  analyzeDefn(lvalue->value(), Task_PrepTypeComparison);
-  DASSERT(lvalue->value()->type() != NULL);
-  lvalue->setType(lvalue->value()->type());
-  if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
+  ValueDefn * valueDefn = lvalue->value();
+  DASSERT(valueDefn != NULL);
+  analyzeDefn(valueDefn, Task_PrepTypeComparison);
+  DASSERT(valueDefn->type() != NULL);
+  lvalue->setType(valueDefn->type());
+  if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDefn)) {
     lvalue->setType(param->internalType());
   }
 
-  checkAccess(lvalue->location(), lvalue->value());
-  switch (lvalue->value()->storageClass()) {
+  checkAccess(lvalue->location(), valueDefn);
+  switch (valueDefn->storageClass()) {
     case Storage_Global:
     case Storage_Static:
+      lvalue->setBase(NULL);
+
+      // If it's a let-variable, then make sure that the initialization value
+      // gets evaluated.
+      if (valueDefn->defnType() == Defn::Let &&
+          valueDefn->module() != module &&
+          valueDefn->module() != NULL) {
+        analyzeDefn(valueDefn, Task_PrepConstruction);
+      }
+      break;
+
     case Storage_Local:
       lvalue->setBase(NULL);
       break;
@@ -1285,7 +1297,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       Expr * base = lvalueBase(lvalue);
       if (base == NULL || base->exprType() == Expr::ScopeName) {
         diag.error(lvalue) << "Attempt to reference non-static member " <<
-        lvalue->value()->name() << " with no object";
+        valueDefn->name() << " with no object";
         return &Expr::ErrorVal;
       }
 

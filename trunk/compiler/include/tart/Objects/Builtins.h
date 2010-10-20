@@ -86,6 +86,7 @@ public:
   // System functions
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
+  static FunctionDefn * funcGetType;
 
   /** Initialization function for builtins. */
   static void init();
