@@ -143,20 +143,6 @@ void CodeGenerator::genBlocks(BlockList & blocks) {
   unwindTarget_ = NULL;
 }
 
-void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
-  if (debug_ && loc != dbgLocation_) {
-    dbgLocation_ = loc;
-    if (loc.region == NULL) {
-      builder_.SetCurrentDebugLocation(llvm::DebugLoc());
-    } else {
-      TokenPosition pos = tokenPosition(loc);
-      DASSERT(pos.beginLine);
-      builder_.SetCurrentDebugLocation(
-          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.region)));
-    }
-  }
-}
-
 void CodeGenerator::genStmt(Expr * in) {
   setDebugLocation(in->location());
   genExpr(in);

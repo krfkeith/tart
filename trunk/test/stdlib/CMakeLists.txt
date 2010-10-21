@@ -87,13 +87,10 @@ foreach(SRC_FILE ${TART_SRC})
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
-    # Assemble and run
+    # Link executable
     string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
-    add_custom_command(OUTPUT ${EXE_FILE}
-        COMMAND gcc -g -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${OBJ_FILE} -lruntime -ldl
-        MAIN_DEPENDENCY "${OBJ_FILE}"
-        DEPENDS runtime
-        COMMENT "Linking ${OBJ_FILE}")
+    add_executable(${EXE_FILE} ${OBJ_FILE})
+    target_link_libraries(${EXE_FILE} runtime dl)
   endif (GENERATE_ASM)
 
   # Generate debugging symbols

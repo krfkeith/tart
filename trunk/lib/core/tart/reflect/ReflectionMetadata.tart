@@ -253,7 +253,7 @@ import tart.collections.ImmutableList;
     let tag = DefnTag(decoder.readByte());
     let flags = DefnFlags(decoder.readByte());
     let name = decodeFieldName(decoder);
-    Debug.writeLnFmt("Decoding type for method '{0}', method index {1}", name, methodIndex);
+    //Debug.writeLnFmt("Decoding type for method '{0}', method index {1}", name, methodIndex);
     let methodType = typecast[FunctionType](decodeType(decoder, selfType));
     let methodPtr = _methods[methodIndex];
     
