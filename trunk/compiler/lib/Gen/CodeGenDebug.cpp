@@ -49,6 +49,20 @@ static unsigned typeEncoding(TypeId id) {
   return 0;
 }
 
+void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
+  if (debug_ && loc != dbgLocation_) {
+    dbgLocation_ = loc;
+    if (loc.region == NULL) {
+      builder_.SetCurrentDebugLocation(llvm::DebugLoc());
+    } else {
+      TokenPosition pos = tokenPosition(loc);
+      DASSERT(pos.beginLine);
+      builder_.SetCurrentDebugLocation(
+          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.region)));
+    }
+  }
+}
+
 DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
   using namespace llvm;
   DICompileUnit compileUnit;
