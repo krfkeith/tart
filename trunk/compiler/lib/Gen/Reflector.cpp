@@ -695,7 +695,7 @@ ReflectionMetadata * Reflector::getReflectionMetadata(const Defn * def) {
     mmd_.defnsToExport().append(def);
   }
 
-  ReflectionMetadata * rsym = new ReflectionMetadata(mmd_);
+  ReflectionMetadata * rsym = new ReflectionMetadata(def, mmd_);
   std::string metaVarName(".meta." + def->linkageName());
   if (def->defnType() == Defn::Mod) {
     metaVarName = ".meta.module." + def->linkageName();
@@ -784,9 +784,10 @@ void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
     strm << char(0);
   }
 
-#if 0
+#if DEBUG_VERBOSE
+  rmd->dump();
   if (!derivedTypesData.empty()) {
-    diag.debug() << derivedTypesData.size() << " bytes of derived type information added.";
+    diag.debug() << "  " << derivedTypesData.size() << " bytes of derived type information added.";
   }
 #endif
 

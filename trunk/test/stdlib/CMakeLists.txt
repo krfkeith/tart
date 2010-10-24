@@ -16,6 +16,7 @@ set(TART_OPTIONS
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 set(TARTLN_OPTIONS -internalize -O2)
 #set(TARTLN_OPTIONS -O2)
+#set(TARTLN_OPTIONS -internalize -O0)
 
 set(TEST_BC_FILES)
 
@@ -30,12 +31,13 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" ".out.bc" OUT_BC_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" "${CMAKE_CXX_OUTPUT_EXTENSION}" OBJ_FILE "${SRC_FILE}")  
+  string(REGEX REPLACE ".tart\$" "${CMAKE_EXECUTABLE_SUFFIX}" EXE_FILE "${SRC_FILE}")
 
   # Generate the deps variable name
   string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
   string(TOUPPER "${DEPS_NAME}" DEPS_NAME)
   string(REGEX REPLACE "[^a-zA-Z0-9]" "_" DEPS_NAME "${DEPS_NAME}")
-
+  
   # Compile tart source
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
@@ -69,7 +71,6 @@ foreach(SRC_FILE ${TART_SRC})
     #    COMMENT "Generating assembly for file ${BC_FILE}")
 
     # Assemble and run
-    string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
     add_custom_command(OUTPUT ${EXE_FILE}
         COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
         COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
@@ -88,7 +89,6 @@ foreach(SRC_FILE ${TART_SRC})
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Link executable
-    string(REGEX REPLACE ".tart\$" "" EXE_FILE "${SRC_FILE}")
     add_executable(${EXE_FILE} ${OBJ_FILE})
     target_link_libraries(${EXE_FILE} runtime dl)
   endif (GENERATE_ASM)
@@ -96,10 +96,10 @@ foreach(SRC_FILE ${TART_SRC})
   # Generate debugging symbols
   # TODO(talin): This doesn't work and I have no idea why
   #if ($DSYMUTIL)
-    add_custom_command(OUTPUT "${EXE_FILE}.dSYM/Contents/Resources/DWARF/${EXE_FILE}"
-        COMMAND ${DSYMUTIL} ${EXE_FILE}
-        MAIN_DEPENDENCY "${EXE_FILE}"
-        COMMENT "Generating debug symbols for ${EXE_FILE}")
+#    add_custom_command(OUTPUT "${EXE_FILE}.dSYM/Contents/Resources/DWARF/${EXE_FILE}"
+#        COMMAND ${DSYMUTIL} ${EXE_FILE}
+#        MAIN_DEPENDENCY "${EXE_FILE}"
+#        COMMENT "Generating debug symbols for ${EXE_FILE}")
   #endif ($DSYMUTIL)
 
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})

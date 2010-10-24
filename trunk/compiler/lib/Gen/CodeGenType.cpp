@@ -823,6 +823,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
         Builtins::typeString->irEmbeddedType());
 
     // TODO: What if the spread is greater than 2^63?
+#if 1
     int64_t spread = baseType->isUnsignedType() ?
         (maxValInt - minValInt).getZExtValue() :
         (maxValInt - minValInt).getSExtValue();
@@ -898,6 +899,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
         exit(-1);
       }*/
     } else {
+#endif
       // Create the toString function using a switch statement.
       Function * toStringFn = cast<Function>(irModule_->getOrInsertFunction(
           toString->linkageName(),
@@ -931,8 +933,18 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
         }
       }
 
+      // If there's no enum constant matching the value, then treat it as integer.
       builder_.SetInsertPoint(defaultBlk);
-      builder_.CreateRet(nullStrPtr);
+      const PrimitiveType * ptype = cast<PrimitiveType>(baseType);
+      const FunctionDefn * pToString = cast<FunctionDefn>(ptype->findSymbol("toString")->front());
+      char funcName[32];
+      DASSERT(ptype != &UnsizedIntType::instance);
+      snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
+      const llvm::FunctionType * funcType = cast<llvm::FunctionType>(pToString->type()->irType());
+      llvm::Function * pToStringFn = cast<llvm::Function>(
+          irModule_->getOrInsertFunction(funcName, funcType));
+      llvm::Value * strVal = builder_.CreateCall(pToStringFn, selfArg);
+      builder_.CreateRet(strVal);
 
       currentFn_ = NULL;
 
@@ -941,7 +953,9 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
         toStringFn->dump();
         exit(-1);
       }
+#if 1
     }
+#endif
   }
 
   return type->irType();

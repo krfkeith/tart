@@ -52,7 +52,11 @@ class StringFormatter {
         } else if ch == '}' {
           if state is State.FIELD_INDEX or state is State.FIELD_CONVERSION {
             let arg = args[fieldIndex];
-            builder.append(arg.toString());
+            if arg is not null {
+	            builder.append(arg.toString());
+            } else {
+	            builder.append("<null>");
+            }
             state = State.TEXT;
           } else if prevCh == '}' {
 		        builder.append('}');
