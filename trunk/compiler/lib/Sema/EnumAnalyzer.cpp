@@ -295,7 +295,7 @@ bool EnumAnalyzer::analyzeBase() {
     TypeAnalyzer ta(module, activeScope);
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
-      intValueType = cast<PrimitiveType>(baseType);
+      intValueType = dyn_cast<PrimitiveType>(baseType);
       if (intValueType == NULL || !isIntegerTypeId(intValueType->typeId())) {
         diag.fatal(ast) << "Enumerations can only derive from integer types.";
         return false;

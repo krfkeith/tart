@@ -53,8 +53,9 @@ public:
   typedef std::vector<TypeArrayElement> TypeArray;
   typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
 
-  ReflectionMetadata(ModuleMetadata & mmd)
-    : mmd_(mmd)
+  ReflectionMetadata(const Defn * reflectedDefn, ModuleMetadata & mmd)
+    : reflectedDefn_(reflectedDefn)
+    , mmd_(mmd)
     , var_(NULL)
     , methodTable_(NULL)
     , strm_(strmData_)
@@ -87,7 +88,10 @@ public:
 
   ModuleMetadata & mmd() { return mmd_; }
 
+  void dump() const;
+
 private:
+  const Defn * reflectedDefn_;
   ModuleMetadata & mmd_;
   TypeMap types_;
 

@@ -123,7 +123,7 @@ import tart.collections.ImmutableList;
     var _nameIndex:int16;
     var _defnType:DefnTag;
     var _traits:Member.Traits;
-  	var _derivedTypes:optional Type[];
+  	var _derivedTypes:Type[];
   	var _compositeTypes:Address[Address[TypeInfoBlock]];
   	var _enumTypes:Address[Address[EnumInfoBlock]];
   	var _invokeFns:Address[CallAdapterFn];
@@ -140,7 +140,7 @@ import tart.collections.ImmutableList;
   def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
   def localName:String { get { return _names.getLocalName(_nameIndex); } }
   
-  def derivedTypes:Type[] { get { return getDerivedTypes(); } }
+//  def derivedTypes:Type[] { get { return getDerivedTypes(); } }
 
   static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
     Preconditions.checkArgument(tib is not null);
@@ -154,7 +154,7 @@ import tart.collections.ImmutableList;
     }
 
     var type:CompositeType;
-    Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
+    //Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
 		switch (meta._defnType) {
 		  case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
 		  case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
@@ -181,7 +181,7 @@ import tart.collections.ImmutableList;
     let length = decoder.seekToSection(SectionTag.BASE_CLASS);
     if length != 0 {
 	  	var base = typecast[CompositeType](decodeType(decoder, selfType));
-	  	Debug.writeLn("Base = ", base.name);
+	  	//Debug.writeLn("Base = ", base.name);
 	  	return base;
     }
     
@@ -336,44 +336,87 @@ import tart.collections.ImmutableList;
     let typeParams = Type[](0);
     let params = Parameter[](0);
 
-    Debug.writeLnFmt("Decoding method named '{0}', type {1}", name, methodType);
+    //Debug.writeLnFmt("Decoding method named '{0}', type {1}", name, methodType);
 
     return Method(name, "", kind, visibility, traits, attributes, typeParams, methodType,
       params, methodPtr);
   }
 
-  private def getDerivedTypes() -> Type[] {
+  private def decodeType(decoder:StreamDecoder, selfType:optional Type) -> Type {
+    let typeId = TypeTag(decoder.readByte());
+    return decodeTypeExpr(decoder, typeId, selfType);
+  }
+  
+  private def decodeDerivedTypeRef(typeIndex:int, selfType:optional Type) -> Type {
     if _derivedTypes is not null {
-      return typecast[Type[]](_derivedTypes);
+      if _derivedTypes[typeIndex] is not null {
+        return _derivedTypes[typeIndex];
+      }
     }
 
     let decoder = StreamDecoder(_strmTypeRefs);
     let count = decoder.readVarInt();
-    var types = Type[](count);
-    _derivedTypes = types;
-    Debug.writeLn("Number of derived types: ", String(count));
-    for i in range(count) {
-      let ty = decodeType(decoder, null);
-      Debug.writeLnFmt("{0}. Decoded: {1}", i, ty.toString());
-      types[i] = ty;
+    if _derivedTypes is null {
+	   	_derivedTypes = Type[](count);
     }
-    return types;
-  }
 
-  private def decodeTypeList(decoder:StreamDecoder, selfType:optional Type) -> Type[] {
-    let count = decoder.readVarInt();
-    let result = Type[](count);
-    for i in range(count) {
-      let memberType = decodeType(decoder, selfType);
-      Debug.writeLnFmt("{0}. Decoded member type: {1}", i, memberType.toString());
-      result[i] = memberType;
+    //Debug.writeLnFmt("Retrieving derived type {0} of {1} in {2}: ", typeIndex, count, qualifiedName);
+    Preconditions.checkArgument(typeIndex < count);
+    
+    for i = 0; i < typeIndex; ++i {
+		  skipType(decoder);
+    }
+
+    let typeId = TypeTag(decoder.readByte());
+    var type:Type;
+    switch typeId {
+      else {
+			  _derivedTypes[typeIndex] = decodeTypeExpr(decoder, typeId, selfType);
+      }
+
+      case TUPLE
+      case UNION {
+		    let count = decoder.readVarInt();
+    		let typeParams = Type[](count);
+ 				let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
+        //Debug.writeLnFmt("Decoding a referenced {0} with {1} members", typeKind.toString(), count);
+
+		    // Assign a value to the derived types array *before* we start decoding types,
+		    // in case the definition is recursive.
+        _derivedTypes[typeIndex] = DerivedType(typeKind, typeParams);
+        for i in range(count) {
+          let memberType = decodeType(decoder, selfType);
+          //Debug.writeLnFmt("{0}. Decoded member type: {1}", i, memberType.toString());
+          typeParams[i] = memberType;
+        }
+      }
+
+      case ADDRESS {
+        Debug.fail("Implement ADDRESS");
+      }
+
+      case NARRAY {
+        Debug.fail("Implement NARRAY");
+      }
+
+      case TYPEVAR {
+        Debug.fail("Implement TYPEVAR");
+      }
+
+      case VARIADIC {
+        Debug.fail("Implement VARIADIC");
+      }
+      
+		  case DERIVED {
+        Debug.fail("Implement DERIVED");
+		  }
     }
     
-    return result;
+    return _derivedTypes[typeIndex];
   }
   
-  private def decodeType(decoder:StreamDecoder, selfType:optional Type) -> Type {
-    let typeId = TypeTag(decoder.readByte());
+  /** Decode an inline type expression. */
+  private def decodeTypeExpr(decoder:StreamDecoder, typeId:TypeTag, selfType:optional Type) -> Type {
     switch typeId {
       case VOID 	{ return PrimitiveType.VOID; }
       case BOOL 	{ return PrimitiveType.BOOL; }
@@ -407,12 +450,18 @@ import tart.collections.ImmutableList;
         Debug.fail("Implement BOUND_METHOD");
       }
 
-      case TUPLE {
-        return DerivedType(Type.TypeKind.TUPLE, decodeTypeList(decoder, selfType));
-      }
-
+      case TUPLE
       case UNION {
-        return DerivedType(Type.TypeKind.UNION, decodeTypeList(decoder, selfType));
+		    let count = decoder.readVarInt();
+    		let typeParams = Type[](count);
+ 				let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
+        //Debug.writeLnFmt("Decoding an inline {0} with {1} members", typeKind.toString(), count);
+        for i in range(count) {
+          let memberType = decodeType(decoder, selfType);
+          //Debug.writeLnFmt("{0}. Decoded member type: {1}", i, memberType.toString());
+          typeParams[i] = memberType;
+        }
+        return DerivedType(typeKind, typeParams);
       }
 
       case UNIT {
@@ -454,14 +503,10 @@ import tart.collections.ImmutableList;
 			else {
 			  if typeId >= TypeTag.DERIVED_IMM {
 			    let index = int(typeId) & 0x7f;
-			    Debug.writeLnFmt("Derived type index: {0} out of {1}", index, derivedTypes.size);
-			    if derivedTypes[index] is null {
-			      Debug.writeLn("Null derived type!");
-			    }
-			    return derivedTypes[index];
+			    return decodeDerivedTypeRef(index, selfType);
 			  } else if typeId >= TypeTag.COMPOSITE_IMM {
 			    let index = int(typeId) & 0x3f;
-			    Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
+			    //Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
 			  	let tib = _compositeTypes[index];
 			    return getCompositeType(tib);
 			  } else if typeId >= TypeTag.ENUM_IMM {
@@ -475,15 +520,9 @@ import tart.collections.ImmutableList;
     return PrimitiveType.VOID;
   }
 
-  private def skipTypeList(decoder:StreamDecoder) {
-    let count = decoder.readVarInt();
-    for i in range(count) {
-      skipType(decoder);
-    }
-  }
-  
   private def skipType(decoder:StreamDecoder) {
     let typeId = TypeTag(decoder.readByte());
+		//Debug.writeLnFmt("  Skipping type {0}", typeId.toString());
     switch typeId {
       case VOID
       case BOOL
@@ -497,7 +536,8 @@ import tart.collections.ImmutableList;
       case UINT32
       case UINT64
       case FLOAT
-      case DOUBLE
+      case DOUBLE {
+      }
       //case NULL
       //case UNSIZED_INT
 
@@ -513,7 +553,10 @@ import tart.collections.ImmutableList;
 
       case TUPLE
       case UNION {
-        skipTypeList(decoder);
+		    let count = decoder.readVarInt();
+   			for i in range(count) {
+          skipType(decoder);
+        }
       }
 
       case UNIT {

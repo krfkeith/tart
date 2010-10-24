@@ -48,9 +48,7 @@ public class CompositeType : Type {
   final def supertype:optional CompositeType {
     get {
       if _supertype is null {
-        Debug.writeLn("getting _super");
         self._supertype = _meta.readBaseClass(self);
-        Debug.writeLn("_super defined");
       }
   
       return _supertype;

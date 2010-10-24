@@ -137,7 +137,6 @@ class ReflectionTest : Test {
 	  assertEq("tart.core", ty.scopeName);
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  var st = ty.supertype;
-	  Debug.writeLn("Got super");
 	  assertEq("Object", ty.supertype.name);
 	  Debug.writeLn("Calling findMethod");
 	  let method = ty.findMethod("toString");

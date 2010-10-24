@@ -190,12 +190,17 @@ void ReflectionMetadata::assignIndices() {
     enumTypeRefs_[i].second.index = i;
     types_[enumTypeRefs_[i].first].index = i;
   }
+}
 
-#if 0
+
+void ReflectionMetadata::dump() const {
+  diag.debug() << "Reflection metadata for " << reflectedDefn_->linkageName();
+  diag.indent();
   if (!derivedTypeRefs_.empty()) {
     diag.debug() << derivedTypeRefs_.size() << " unique derived types added";
     diag.indent();
-    for (TypeArray::iterator it = derivedTypeRefs_.begin(); it != derivedTypeRefs_.end(); ++it) {
+    for (TypeArray::const_iterator it = derivedTypeRefs_.begin(); it != derivedTypeRefs_.end();
+        ++it) {
       diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
           " (" << it->second.useCount << ")";
     }
@@ -205,7 +210,7 @@ void ReflectionMetadata::assignIndices() {
   if (!compositeTypeRefs_.empty()) {
     diag.debug() << compositeTypeRefs_.size() << " unique compound types added";
     diag.indent();
-    for (TypeArray::iterator it = compositeTypeRefs_.begin(); it != compositeTypeRefs_.end();
+    for (TypeArray::const_iterator it = compositeTypeRefs_.begin(); it != compositeTypeRefs_.end();
         ++it) {
       diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
           " (" << it->second.useCount << ")";
@@ -216,13 +221,13 @@ void ReflectionMetadata::assignIndices() {
   if (!enumTypeRefs_.empty()) {
     diag.debug() << enumTypeRefs_.size() << " unique enum types added";
     diag.indent();
-    for (TypeArray::iterator it = enumTypeRefs_.begin(); it != enumTypeRefs_.end(); ++it) {
+    for (TypeArray::const_iterator it = enumTypeRefs_.begin(); it != enumTypeRefs_.end(); ++it) {
       diag.debug() << Format_Verbose << it->second.index << " " << it->first <<
           " (" << it->second.useCount << ")";
     }
     diag.unindent();
   }
-#endif
+  diag.unindent();
 }
 
 void ReflectionMetadata::encodeTypesTable(llvm::raw_ostream & out) {
