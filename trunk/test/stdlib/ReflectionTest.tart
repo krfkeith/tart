@@ -2,6 +2,7 @@ import tart.reflect.Module;
 import tart.reflect.Method;
 import tart.reflect.Type;
 import tart.reflect.CompositeType;
+import tart.reflect.PrimitiveType;
 import tart.testing.Test;
 
 @EntryPoint
@@ -169,7 +170,11 @@ class ReflectionTest : Test {
 	  
 	  // Param types
 	  assertEq(2, method.type.paramTypes.size);
+	  assertTrue(method.type.paramTypes[0] isa PrimitiveType);
 	  assertTrue(method.type.paramTypes[0].toString().startsWith("int"));
+	  assertTrue(method.type.paramTypes[0].isIntegerType);
+	  assertTrue(method.type.paramTypes[1] isa PrimitiveType);
 	  assertTrue(method.type.paramTypes[1].toString().startsWith("int"));
+	  assertTrue(method.type.paramTypes[1].isIntegerType);
   }
 }

@@ -119,7 +119,7 @@ public:
     Abstract = (1<<0),          // Function is explicitly abstract.
     InterfaceMethod = (1<<1),   // Function is defined in an interface.
     Undefined = (1<<2),         // Used to undefine a method in a base class.
-    Override = (1<<3),          // Function is externally defined
+    Override = (1<<3),          // Function overrides definition in base class.
     Extern = (1<<4),            // Function overrides one in a base class.
     Ctor = (1<<5),              // Function is a constructor
     Final = (1<<6),             // Function cannot be overridden

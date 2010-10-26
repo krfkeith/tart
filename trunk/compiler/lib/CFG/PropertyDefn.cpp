@@ -11,6 +11,16 @@ namespace tart {
 
 // -------------------------------------------------------------------
 // PropertyDefn
+
+PropertyDefn::PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
+  : ValueDefn(dtype, m, ast)
+  , type_(NULL)
+  , getter_(NULL)
+  , setter_(NULL)
+{
+  accessorScope_.setScopeName(ast_->name());
+}
+
 void PropertyDefn::trace() const {
   ValueDefn::trace();
   safeMark(type_);

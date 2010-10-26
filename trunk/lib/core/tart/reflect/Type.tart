@@ -37,9 +37,33 @@ import tart.core.Memory.Address;
     throw TypecastError(obj, self);
   }
   
+  /** True if this is the void type. */
+  def isVoidType:bool { get { return false; } }
+
+  /** True if this is the null type. */
+  def isNullType:bool { get { return false; } }
+
+  /** True if this is a boolean type. */
+  def isBooleanType:bool { get { return false; } }
+
+  /** True if this is a boolean type. */
+  def isCharType:bool { get { return false; } }
+
+  /** True if this is an integer type. */
+  def isIntegerType:bool { get { return false; } }
+
+  /** True if this is a signed integer type. */
+  def isSignedIntegerType:bool { get { return false; } }
+
+  /** True if this is an unsigned integer type. */
+  def isUnsignedIntegerType:bool { get { return false; } }
+
+  /** True if this is a floating-point type. */
+  def isFloatType:bool { get { return false; } }
+
   /** Return a string representation of this type. */
   abstract override toString() -> String;
-
+  
   /** Given a type literal, return the reflected type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> Type;
 }
