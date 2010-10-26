@@ -28,14 +28,7 @@ public:
   typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes an AST */
-  PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast)
-    : ValueDefn(dtype, m, ast)
-    , type_(NULL)
-    , getter_(NULL)
-    , setter_(NULL)
-  {
-    accessorScope_.setScopeName(ast_->name());
-  }
+  PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast);
 
   FunctionDefn * getter() const { return getter_; }
   void setGetter(FunctionDefn * f) { getter_ = f; }

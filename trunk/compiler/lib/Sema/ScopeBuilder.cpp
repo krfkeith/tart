@@ -92,6 +92,12 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
     if (ast->modifiers().flags & tart::Final) {
       getter->setFlag(FunctionDefn::Final);
     }
+    if (ast->modifiers().flags & tart::Undef) {
+      getter->setFlag(FunctionDefn::Undefined);
+    }
+    if (ast->modifiers().flags & tart::Override) {
+      getter->setFlag(FunctionDefn::Override);
+    }
     getter->setParentDefn(prop);
     if (getter->templateSignature() == NULL) {
       getter->copyTrait(prop, Defn::Singular);
@@ -106,6 +112,12 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
     setter->copyTrait(prop, Defn::Synthetic);
     if (ast->modifiers().flags & tart::Final) {
       setter->setFlag(FunctionDefn::Final);
+    }
+    if (ast->modifiers().flags & tart::Undef) {
+      setter->setFlag(FunctionDefn::Undefined);
+    }
+    if (ast->modifiers().flags & tart::Override) {
+      setter->setFlag(FunctionDefn::Override);
     }
     setter->setParentDefn(prop);
     if (setter->templateSignature() == NULL) {
