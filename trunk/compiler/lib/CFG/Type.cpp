@@ -181,7 +181,7 @@ void typeLinkageName(std::string & out, const Type * ty) {
   } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
     out.append("tart.reflect.Type");
   } else if (const TypeVariable * tvar = dyn_cast<TypeVariable>(ty)) {
-    out.append("%");
+    //out.append("%");
     out.append(tvar->name());
   } else {
     diag.error() << "Type: " << ty;

@@ -534,6 +534,10 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
     }
 
     Value * argVal = genExpr(in);
+    if (currentFn_ == NULL) {
+      return argVal;
+    }
+
     if (isa<llvm::Constant>(argVal)) {
       return argVal;
     }

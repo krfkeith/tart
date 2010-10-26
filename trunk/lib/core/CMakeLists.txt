@@ -63,4 +63,4 @@ add_custom_command(
     DEPENDS ${STDLIB_BC_FILES} gendeps
     COMMENT "Generating dependencies for libcore.bc")
 
-add_custom_target(libcore ALL DEPENDS libcore.bc libcore.deps)
+add_custom_target(libcore DEPENDS libcore.bc libcore.deps)

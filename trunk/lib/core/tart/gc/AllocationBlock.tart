@@ -1,8 +1,9 @@
 import tart.core.Memory.Address;
+import tart.reflect.Reflection;
 
 /** Class which represents a contiguous region of memory which is allocated via
 		a simple "bump pointer" strategy. */
-class AllocationBlock {
+@Reflection(Reflection.Detail.NONE) class AllocationBlock {
   private var _next:AllocationBlock;
   private var _addrs:AddressRange;
   private var _ptr:Address[ubyte];

@@ -954,7 +954,7 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
   }
 
   if (!innerTypes.empty()) {
-    //std::sort(innerTypes.begin(), innerTypes.end(), TypeOrder());
+    std::sort(innerTypes.begin(), innerTypes.end(), LexicalTypeOrdering());
     std::string typeData;
     raw_string_ostream typeStrm(typeData);
 
@@ -1002,6 +1002,10 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
     std::sort(methods.begin(), methods.end(), DefnOrder());
     std::string methodData;
     raw_string_ostream methodStrm(methodData);
+
+#if DEBUG_VERBOSE
+    diag.debug() << methods.size() << " reflected methods";
+#endif
 
     for (MethodList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
       const FunctionDefn * fn = *it;

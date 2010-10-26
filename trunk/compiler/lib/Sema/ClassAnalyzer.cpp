@@ -434,6 +434,8 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     CompositeType * baseClass = cast<CompositeType>(baseType);
     if (baseClass->isSingular()) {
       baseClass->addBaseXRefs(module);
+    } else if (isFromTemplate) {
+      module->addSymbol(baseDefn);
     }
 
     if (baseClass->isSubclassOf(type)) {
@@ -872,6 +874,12 @@ bool ClassAnalyzer::analyzeOverloading() {
     if (trace_) {
       diag.debug() << "Overloading";
     }
+
+    if (!target->isSingular()) {
+      type->passes().finish(CompositeType::OverloadingPass);
+      return true;
+    }
+
     // Do overload analysis on all bases
     ClassList & bases = type->bases();
     for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
@@ -1507,6 +1515,11 @@ bool ClassAnalyzer::analyzeCompletely() {
   // completes, not that it completes right now.
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::CompletionPass, true)) {
+    if (!type->isSingular()) {
+      type->passes().finish(CompositeType::CompletionPass);
+      return true;
+    }
+
     if (trace_) {
       diag.debug() << "Analyze completely";
     }

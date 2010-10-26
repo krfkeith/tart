@@ -90,6 +90,8 @@ foreach(SRC_FILE ${TART_SRC})
 
     # Link executable
     add_executable(${EXE_FILE} ${OBJ_FILE})
+    # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
+    add_dependencies(${EXE_FILE} libcore libtesting)
     target_link_libraries(${EXE_FILE} runtime dl)
   endif (GENERATE_ASM)
 

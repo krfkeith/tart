@@ -178,7 +178,7 @@ bool Module::addSymbol(Defn * de) {
     return false;
   }
 
-  DASSERT_OBJ(de->isSingular(), de);
+//  DASSERT_OBJ(de->isSingular(), de);
   if (de->module() == this || de->isSynthetic()) {
     if (exportDefs_.insert(de)) {
       DASSERT_OBJ(!importDefs_.count(de), de);
@@ -194,31 +194,6 @@ bool Module::addSymbol(Defn * de) {
       defsToAnalyze_.append(de);
       if (isDebug()) {
         diag.info() << Format_Type << Format_QualifiedName << "Import: " << de;
-      }
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool Module::addTemplateSymbol(Defn * de) {
-  if (isPassFinished(Pass_ResolveModuleMembers)) {
-    diag.fatal(de) << Format_Verbose << "Too late to add symbol '" << de <<
-        "', analysis for module '" << this << "' has already finished.";
-  }
-
-  if (de->defnType() == Defn::ExplicitImport) {
-    return false;
-  }
-
-  DASSERT_OBJ(de->isTemplate(), de);
-  if (de->module() == this) {
-    if (exportDefs_.insert(de)) {
-      DASSERT_OBJ(!importDefs_.count(de), de);
-      //defsToAnalyze_.append(de);
-      if (isDebug()) {
-        diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
       }
       return true;
     }

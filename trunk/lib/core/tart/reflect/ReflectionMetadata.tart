@@ -145,6 +145,7 @@ import tart.collections.ImmutableList;
   static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
     Preconditions.checkArgument(tib is not null);
     var meta = tib.meta;
+    Preconditions.checkState(meta is not null);
     if meta is null {
       // TODO - throw an exception?
     }
@@ -154,15 +155,18 @@ import tart.collections.ImmutableList;
     }
 
     var type:CompositeType;
-    //Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
+    Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
 		switch (meta._defnType) {
 		  case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
 		  case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
 		  case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
 		  case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
 		  case TEMPLATE_INST {
+		    Debug.writeLn("Reading base template");
+		    var baseTemplate = meta.readBaseTemplate();
+		    Debug.writeLnFmt("Base template kind is {0}", baseTemplate.typeKind.toString());
 		    // TODO: Implement template instantiations.
-		    type = CompositeType(Type.TypeKind.PROTOCOL, tib);
+		    type = CompositeType(baseTemplate.typeKind, tib, baseTemplate);
 		  }
 		  else { throw ArgumentError(
 		    String.concat("Invalid reflection metadata for type ", meta._defnType.toString())); }
@@ -194,6 +198,17 @@ import tart.collections.ImmutableList;
     if length != 0 {
     	Debug.writeLn("Length of interfaces section = ", length.toString());
     }
+  }
+
+  def readBaseTemplate() -> CompositeType {
+    let decoder = StreamDecoder(_strmDefns);
+    let length = decoder.seekToSection(SectionTag.BASE_TEMPLATE);
+    if length != 0 {
+    	Debug.writeLn("Length of base template section = ", length.toString());
+    	return typecast[CompositeType](decodeType(decoder, null));
+    }
+    
+    return Memory.zeroPtr();
   }
 
   def readTypeParams() -> Type[] {
@@ -232,7 +247,7 @@ import tart.collections.ImmutableList;
     let methods = ArrayList[Method]();
     let constructors = ArrayList[Method]();
     if length != 0 {
-    	Debug.writeLn("Length of method section = ", length.toString());
+    	//Debug.writeLn("Length of method section = ", length.toString());
     	let endPos = decoder.position + length;
     	var methodIndex = 0;
     	while decoder.position < endPos {
@@ -245,7 +260,7 @@ import tart.collections.ImmutableList;
     	}
     }
 
-   	Debug.writeLnFmt("Returing {0} constructors {1} methods", constructors.size, methods.size);
+   	//Debug.writeLnFmt("Returing {0} constructors {1} methods", constructors.size, methods.size);
    	return Array.copyOf(constructors), Array.copyOf(methods);
   }
 
