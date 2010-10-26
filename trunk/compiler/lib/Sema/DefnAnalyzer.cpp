@@ -108,12 +108,10 @@ bool DefnAnalyzer::analyzeModule() {
 
   // Analyze all exported definitions.
   for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
-    if (de->isTemplate()) {
+    if (de->isTemplate() || de->isPartialInstantiation()) {
       analyzeTemplateSignature(de);
-      module->addTemplateSymbol(de);
-    }
-
-    if (!de->hasUnboundTypeParams()) {
+      module->addSymbol(de);
+    } else if (!de->hasUnboundTypeParams()) {
       if (analyzeCompletely(de)) {
         module->addSymbol(de);
       } else {

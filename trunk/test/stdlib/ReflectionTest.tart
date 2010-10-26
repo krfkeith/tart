@@ -138,9 +138,11 @@ class ReflectionTest : Test {
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  var st = ty.supertype;
 	  assertEq("Object", ty.supertype.name);
-	  Debug.writeLn("Calling findMethod");
+
 	  let method = ty.findMethod("toString");
-//	  assertNotNull(method);
+	  assertNotNull(method);
+	  assertEq("tart.core.String", method.type.returnType.toString());
+	  assertEq(0, method.type.paramTypes.size);
   }
 
   def testTypeOfStringInstance {
@@ -149,15 +151,25 @@ class ReflectionTest : Test {
 	  assertEq("tart.core", ty.scopeName);
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  assertEq("Object", ty.supertype.name);
-	  Debug.writeLn("Calling findMethod");
+
 	  let method = ty.findMethod("toString");
-//	  assertNotNull(method);
+	  assertNotNull(method);
+	  assertEq("tart.core.String", method.type.returnType.toString());
+	  assertEq(0, method.type.paramTypes.size);
   }
 
-  def testGetStrings {
-    let m = Module.thisModule();
-    let ty:CompositeType = CompositeType.of(TestClass);
-    ty.test();
-    //let s = m.strings;
+  def testTypeOfStringToCharArray {
+    let ty = "".type;
+	  let method = ty.findMethod("toCharArray");
+	  assertNotNull(method);
+	  
+	  // Return type
+	  assertEq("tart.core.Array[char]", method.type.returnType.toString());
+	  assertEq(Type.TypeKind.CLASS, method.type.returnType.typeKind);
+	  
+	  // Param types
+	  assertEq(2, method.type.paramTypes.size);
+	  assertTrue(method.type.paramTypes[0].toString().startsWith("int"));
+	  assertTrue(method.type.paramTypes[1].toString().startsWith("int"));
   }
 }

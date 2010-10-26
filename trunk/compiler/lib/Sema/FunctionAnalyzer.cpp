@@ -395,7 +395,7 @@ bool FunctionAnalyzer::resolveModifiers() {
 bool FunctionAnalyzer::createCFG() {
   bool success = true;
 
-  if (target->hasUnboundTypeParams() || target->isTemplateMember()) {
+  if (target->hasUnboundTypeParams() || target->isTemplateMember() || !target->isSingular()) {
     // Don't build CFG for templates
     return true;
   }

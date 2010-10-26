@@ -87,14 +87,16 @@ const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
 }
 
 const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
-  if (type->isAttribute() && !type->attributeInfo().isRetained()) {
+  if (type->isAttribute() && !type->attributeInfo().isRetained() &&
+      type != Builtins::typeAttribute.get()) {
     return NULL;
   }
 
   TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
 
-  if (irModule_->getTypeName(type->irType()).empty() && type->typeClass() != Type::Interface) {
+  if (irModule_->getTypeName(type->irType()).empty() &&
+      (type->typeClass() == Type::Class || type->typeClass() == Type::Struct)) {
     irModule_->addTypeName(tdef->linkageName(), type->irType());
   }
 
@@ -163,18 +165,13 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
 
-//  if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
-//    return true;
-//  }
-
   if (rtype->getTypeInfoPtr() == NULL) {
     createTypeInfoBlockPtr(rtype);
   } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
     return true;
   }
 
-  const llvm::PointerType * typePointerType =
-      Builtins::typeTypeInfoBlock.irType()->getPointerTo();
+  const llvm::PointerType * typePointerType = Builtins::typeTypeInfoBlock.irType()->getPointerTo();
 
   // Generate the base class list.
   ConstantList baseClassList;
@@ -254,12 +251,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 }
 
 bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
-//  if (type->typeClass() == Type::Struct) {
-//    return true;
-//  }
-
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-
   if (rtype->getTypeInfoPtr() == NULL) {
     createTypeInfoBlockPtr(rtype);
   } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
@@ -268,7 +260,11 @@ bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
 
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
-  builder.addNullField(tib_meta.type());
+  if (!type->typeDefn()->isNonreflective()) {
+    builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
+  } else {
+    builder.addNullField(tib_meta.type());
+  }
   builder.addNullField(tib_traceTable.type());
   builder.addNullField(tib_bases.type());
   builder.addNullField(tib_idispatch.type());

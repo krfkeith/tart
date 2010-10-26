@@ -26,6 +26,13 @@ public class CompositeType : Type {
     self._meta = typeInfo.meta;
   }
 
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], baseTemplate:CompositeType) {
+    super(typeKind);
+    self._typeInfo = typeInfo;
+    self._meta = typeInfo.meta;
+    // TODO: Assign base template
+  }
+
   /** Given a type literal, return the reflected complex type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
 
@@ -212,9 +219,9 @@ public class CompositeType : Type {
   }
 
   def test() {
-    _meta.readInterfaces();
- 	  _meta.readTypeParams();
- 	  _meta.readFields();
+//    _meta.readInterfaces();
+// 	  _meta.readTypeParams();
+// 	  _meta.readFields();
  	  _meta.readMethods(self);
   }
 }

@@ -10,6 +10,13 @@ namespace Preconditions {
     }
   }
 
+  /** Ensure that the given expression is true, otherwise throw an IllegalArgumentException. */
+  macro checkState(expr:bool) {
+    if not expr {
+      throw ArgumentError(Debug.stringify(expr));
+    }
+  }
+
   /** Ensure that the given expression is true, otherwise throw an IndexOutOfRangeException. */
   macro checkIndex(expr:bool) {
     if not expr {

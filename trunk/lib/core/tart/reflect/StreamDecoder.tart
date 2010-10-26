@@ -3,7 +3,7 @@ import tart.core.Memory.addressOf;
 import tart.reflect.ReflectionMetadata.SectionTag;
 
 /** Used to decode a compressed stream of reflection data. */
-final class StreamDecoder {
+@Reflection(Reflection.Detail.NONE) final class StreamDecoder {
   private static let VARINT_2BYTE_PREFIX = 0xC0;
   private static let VARINT_3BYTE_PREFIX = 0xE0;
   private static let VARINT_2BYTE_MASK = ~VARINT_2BYTE_PREFIX;

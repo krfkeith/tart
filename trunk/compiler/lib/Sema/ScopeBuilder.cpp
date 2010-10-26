@@ -148,6 +148,9 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   if (parentDefn->hasUnboundTypeParams() || parentDefn->isTemplateMember()) {
     member->addTrait(Defn::TemplateMember);
   }
+  if (parentDefn->isPartialInstantiation()) {
+    member->addTrait(Defn::PartialInstantiation);
+  }
 
   //if (isa<ValueDefn>(member)) {
   //  member->copyTrait(parentDefn, Defn::Final);

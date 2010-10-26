@@ -117,10 +117,12 @@ void CodeGenerator::generate() {
 
     if (de->isSingular()) {
       genXDef(de);
-    } else if (de->isTemplate()) {
+    } else if (de->isTemplate() || de->isPartialInstantiation()) {
       if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
         createTemplateTypeInfoBlock(cast<CompositeType>(td->typeValue()));
       }
+    } else {
+      diag.debug() << "Not generated: " << de;
     }
   }
 
