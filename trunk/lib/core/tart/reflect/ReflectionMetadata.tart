@@ -241,7 +241,26 @@ import tart.collections.ImmutableList;
     }
   }
 
-  def readMethods(selfType:Type) -> (Method[], Method[]) {
+  def readModuleMethods() -> Method[] {
+    let decoder = StreamDecoder(_strmDefns);
+    let length = decoder.seekToSection(SectionTag.METHODS);
+    let methods = ArrayList[Method]();
+    if length != 0 {
+    	Debug.writeLn("Length of method section = ", length.toString());
+    	let endPos = decoder.position + length;
+    	var methodIndex = 0;
+    	while decoder.position < endPos {
+		  	let m = decodeMethod(decoder, null, methodIndex++);
+		  	Preconditions.checkState(m.kind == Member.MemberKind.METHOD);
+		  	methods.add(m);
+    	}
+    }
+
+   	Debug.writeLnFmt("Returing {0} methods", methods.size);
+   	return Array.copyOf(methods);
+  }
+
+  def readClassMethods(selfType:Type) -> (Method[], Method[]) {
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.METHODS);
     let methods = ArrayList[Method]();
@@ -264,7 +283,7 @@ import tart.collections.ImmutableList;
    	return Array.copyOf(constructors), Array.copyOf(methods);
   }
 
-  private def decodeMethod(decoder:StreamDecoder, selfType:Type, methodIndex:int) -> Method {
+  private def decodeMethod(decoder:StreamDecoder, selfType:optional Type, methodIndex:int) -> Method {
     let tag = DefnTag(decoder.readByte());
     let flags = DefnFlags(decoder.readByte());
     let name = decodeFieldName(decoder);

@@ -337,8 +337,9 @@ void Reflector::emitModule(Module * module) {
       sb.createObjectHeader(Builtins::typeModule);
       sb.addField(rmdForModule->var());
       sb.addIntegerField(module_nameIndex, qualifiedName->encodedIndex());
-      sb.addField(emitArray("tart.reflect.Module.", module_types.get(), rfMembers.types));
+      //sb.addField(emitArray("tart.reflect.Module.", module_types.get(), rfMembers.types));
       sb.addField(emitArray("tart.reflect.Module.", module_methods.get(), rfMembers.methods));
+      sb.addNullField(module_methods.type());
       modulePtr->setInitializer(sb.build());
     }
 
