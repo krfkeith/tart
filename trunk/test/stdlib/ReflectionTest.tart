@@ -163,7 +163,7 @@ class ReflectionTest : Test {
     let ty = "".type;
 	  let method = ty.findMethod("toCharArray");
 	  assertNotNull(method);
-	  
+
 	  // Return type
 	  assertEq("tart.core.Array[char]", method.type.returnType.toString());
 	  assertEq(Type.TypeKind.CLASS, method.type.returnType.typeKind);

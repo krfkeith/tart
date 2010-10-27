@@ -13,7 +13,6 @@ import tart.core.Memory.Address;
     var _types:Type[];
     var _methods:Method[];
     //var _typesNew: optional Type[];
-    //var _methodsNew: optional Method[];
     //var _globalsNew: optional Field[];
 
     undef construct();
@@ -46,7 +45,7 @@ import tart.core.Memory.Address;
   //final def typesNew:ImmutableList[Type] { get { return self._types; } }
 
   /** Array of types defined in this module. */
-  final def methods:Method[] { get { return self._methods; } }
+  final def methods:Method[] { get { decodeMethods(); return self._methods; } }
 
 	/** The strings table for this module. */ 
   //final def strings:ImmutableList[String] { get { return self._constants.strings; } }
@@ -56,6 +55,12 @@ import tart.core.Memory.Address;
 
   /** Returns a reference to module that contains the specified type. */
   @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
+
+  private final def decodeMethods {
+    if self._methods is null {
+	    self._methods = _meta.readModuleMethods();
+    }
+  }
 
   def findMethod(name:String) -> Method or void {
     for m in _methods {

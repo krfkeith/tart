@@ -208,7 +208,7 @@ public class CompositeType : Type {
   
   private final def decodeMethods {
     if self._methods is null {
-	    self._constructors, self._methods = _meta.readMethods(self);
+	    self._constructors, self._methods = _meta.readClassMethods(self);
     }
   }
 
@@ -219,9 +219,7 @@ public class CompositeType : Type {
   }
 
   def test() {
-//    _meta.readInterfaces();
-// 	  _meta.readTypeParams();
-// 	  _meta.readFields();
- 	  _meta.readMethods(self);
+    // TODO: For some reason deleting this line makes things break, even though it's never called.
+ 	  _meta.readClassMethods(self);
   }
 }
