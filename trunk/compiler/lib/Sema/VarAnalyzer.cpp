@@ -133,7 +133,7 @@ bool VarAnalyzer::resolveVarType() {
     if (target->type() == NULL) {
       DASSERT(ast != NULL);
       if (ast->type() != NULL) {
-        TypeAnalyzer ta(module, activeScope);
+        TypeAnalyzer ta(module_, activeScope_);
         Type * varType = ta.typeFromAST(ast->type());
         if (varType == NULL) {
           target->passes().finish(VariableDefn::VariableTypePass);
@@ -157,7 +157,7 @@ bool VarAnalyzer::resolveVarType() {
 
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
-      Scope * savedScope = activeScope;
+      Scope * savedScope = activeScope_;
       if (target->type() != NULL) {
         if (target->type()->typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
@@ -165,12 +165,12 @@ bool VarAnalyzer::resolveVarType() {
           // TODO: Eliminate the notion of delegating scopes, and instead use a scope stack.
           DelegatingScope * enumScope =
               new DelegatingScope(const_cast<IterableScope *>(
-                  target->type()->memberScope()), activeScope);
+                  target->type()->memberScope()), activeScope_);
           savedScope = setActiveScope(enumScope);
         }
       }
 
-      ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
+      ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
       Expr * initExpr = ea.analyze(ast->value(), target->type());
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
@@ -259,7 +259,7 @@ bool VarAnalyzer::resolveInitializers() {
         case Storage_Local: {
           // Make sure that the type gets analyzed.
           if (var->type()->typeDefn() != NULL) {
-            module->addSymbol(var->type()->typeDefn());
+            module_->addSymbol(var->type()->typeDefn());
           }
           break;
         }

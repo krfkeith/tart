@@ -20,8 +20,10 @@ class SpecializeExpr;
 class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  //ExprAnalyzer(Module * mod, Scope * parent, FunctionDefn * currentFunction = NULL);
-  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction);
+  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction)
+    : AnalyzerBase(mod, parent, subject, currentFunction) {}
+
+  ExprAnalyzer(const AnalyzerBase * parent) : AnalyzerBase(parent) {}
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {

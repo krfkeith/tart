@@ -62,10 +62,17 @@ public:
   AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL,
       FunctionDefn * currentFunction = NULL);
 
+  /** Constructor. */
+  AnalyzerBase(const AnalyzerBase * parent);
+
+  Module * module() const { return module_; }
+
+  Scope * activeScope() const { return activeScope_; }
+
   /** Replace the current active scope with a new scope. Returns the old scope. */
   Scope * setActiveScope(Scope * newScope) {
-    Scope * prevScope = activeScope;
-    activeScope = newScope;
+    Scope * prevScope = activeScope_;
+    activeScope_ = newScope;
     return prevScope;
   }
 
@@ -163,8 +170,8 @@ public:
   static bool isTraceEnabled(Defn * de);
 
 protected:
-  Module * module;
-  Scope * activeScope;
+  Module * module_;
+  Scope * activeScope_;
   Defn * subject_;
   FunctionDefn * currentFunction_;
 

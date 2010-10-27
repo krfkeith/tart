@@ -178,13 +178,13 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       // Get the template scope and set it as the active scope.
       analyzeTemplateSignature(target);
       TemplateSignature * tsig = target->templateSignature();
-      activeScope = &tsig->paramScope();
+      setActiveScope(&tsig->paramScope());
     } else if (target->isTemplateMember()) {
       for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
         if (parent->isTemplate()) {
           analyzeTemplateSignature(parent);
           TemplateSignature * tsig = parent->templateSignature();
-          activeScope = &tsig->paramScope();
+          setActiveScope(&tsig->paramScope());
           break;
         }
       }
@@ -192,7 +192,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
     if (ftype == NULL) {
       DASSERT(target->ast() != NULL);
-      TypeAnalyzer ta(target->sourceModule(), activeScope);
+      TypeAnalyzer ta(target->sourceModule(), activeScope());
       ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
       ftype = ta.typeFromFunctionAST(target->functionDecl());
       if (ftype == NULL) {
@@ -206,7 +206,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param, target->definingScope(), module, target, target)
+        VarAnalyzer(param, target->definingScope(), module_, target, target)
             .analyze(Task_PrepTypeComparison);
 
         if (param->type() == NULL) {
@@ -220,7 +220,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
             param->setInternalType(getArrayTypeForElement(param->type()));
             DASSERT_OBJ(param->internalType()->isSingular(), param);
             analyzeType(param->internalType(), Task_PrepConstruction);
-            module->addSymbol(param->internalType()->typeDefn());
+            module()->addSymbol(param->internalType()->typeDefn());
           }
 
           // TODO: Check for other unsafe types.
@@ -246,7 +246,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     }
 
     if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
-      ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
+      ParameterDefn * selfParam = new ParameterDefn(module(), istrings.idSelf);
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
       analyzeType(selfType->typeValue(), Task_PrepMemberLookup);
@@ -427,7 +427,7 @@ bool FunctionAnalyzer::createCFG() {
       // Push a dummy block for undefined method.
       Block * block = new Block("undef_entry");
       target->blocks().push_back(block);
-      module->addSymbol(Builtins::typeUnsupportedOperationError->typeDefn());
+      module()->addSymbol(Builtins::typeUnsupportedOperationError->typeDefn());
     }
 
     target->passes().finish(FunctionDefn::ControlFlowPass);
@@ -555,7 +555,7 @@ bool FunctionAnalyzer::resolveReturnType() {
 
           const Type * type = returnExpr->type();
           if (!returnType->isEqual(type)) {
-            AnalyzerBase(module, activeScope, subject())
+            AnalyzerBase(module(), activeScope(), subject())
                 .analyzeType(returnType, Task_PrepTypeComparison);
             returnExpr = returnType->implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
@@ -636,7 +636,7 @@ bool FunctionAnalyzer::createReflectionData() {
         const Type * paramType = dealias((*it)->type());
         if (paramType->isBoxableType()) {
           // Cache the unbox function for this type.
-          ExprAnalyzer(module, activeScope, subject_, target)
+          ExprAnalyzer(module(), activeScope(), subject_, target)
               .getUnboxFn(SourceLocation(), paramType);
         } else if (!paramType->isReferenceType()) {
           // For the moment we can't handle non-reference types in reflection.
@@ -648,7 +648,7 @@ bool FunctionAnalyzer::createReflectionData() {
         const Type * returnType = dealias(ftype->returnType());
         if (returnType->isBoxableType()) {
           // Cache the boxing function for this type.
-          ExprAnalyzer(module, activeScope, subject_, target).coerceToObjectFn(returnType);
+          ExprAnalyzer(module(), activeScope(), subject_, target).coerceToObjectFn(returnType);
         } else if (!returnType->isReferenceType()) {
           // For the moment we can't handle non-reference types in reflection.
           doReflect = false;

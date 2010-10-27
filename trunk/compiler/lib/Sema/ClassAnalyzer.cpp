@@ -433,9 +433,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     // by this module.)
     CompositeType * baseClass = cast<CompositeType>(baseType);
     if (baseClass->isSingular()) {
-      baseClass->addBaseXRefs(module);
+      baseClass->addBaseXRefs(module_);
     } else if (isFromTemplate) {
-      module->addSymbol(baseDefn);
+      module_->addSymbol(baseDefn);
     }
 
     if (baseClass->isSubclassOf(type)) {
@@ -453,7 +453,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   // If no base was specified, use Object.
   if (dtype == Type::Class && primaryBase == NULL && type != Builtins::typeObject) {
     primaryBase = static_cast<CompositeType *>(Builtins::typeObject);
-    module->addSymbol(primaryBase->typeDefn());
+    module_->addSymbol(primaryBase->typeDefn());
   }
 
   type->setSuper(primaryBase);
@@ -466,7 +466,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   }
 
   if (dtype == Type::Interface && Builtins::funcTypecastError != NULL) {
-    module->addSymbol(Builtins::funcTypecastError);
+    module_->addSymbol(Builtins::funcTypecastError);
   }
 
   return true;
@@ -546,7 +546,7 @@ bool ClassAnalyzer::analyzeMemberTypes() {
           case Type::Struct:
           case Type::Interface:
           case Type::Enum:
-            module->addSymbol(memberType);
+            module_->addSymbol(memberType);
             break;
 
           default:
@@ -629,7 +629,7 @@ bool ClassAnalyzer::analyzeFields() {
 
               //analyzeType(field->type(), Task_PrepTypeGeneration);
             } else if (field->storageClass() == Storage_Static) {
-              module->addSymbol(field);
+              module_->addSymbol(field);
               type->staticFields_.push_back(field);
             }
           }
@@ -1008,7 +1008,7 @@ void ClassAnalyzer::overrideMembers() {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {
         if (func->isSingular()) {
           if (!func->isInterfaceMethod()) {
-            module->addSymbol(func);
+            module_->addSymbol(func);
           }
           if (func->storageClass() == Storage_Instance && !func->isCtor()) {
             methods.push_back(func);
@@ -1280,7 +1280,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   // List of parameters to the default constructor
   ParameterList requiredParams;
   ParameterList optionalParams;
-  ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
+  ParameterDefn * selfParam = new ParameterDefn(module_, istrings.idSelf);
   selfParam->setType(type);
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
@@ -1301,7 +1301,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         Expr * initValue = getFieldInitVal(field);
 
         if (field->visibility() == Public) {
-          ParameterDefn * param = new ParameterDefn(module, field->name());
+          ParameterDefn * param = new ParameterDefn(module_, field->name());
           param->setLocation(target->location());
           param->setType(field->type());
           param->setInternalType(field->type());
@@ -1359,7 +1359,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
   }
 
   // List of parameters to the no-arg constructor
-  ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
+  ParameterDefn * selfParam = new ParameterDefn(module_, istrings.idSelf);
   selfParam->setType(type);
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
@@ -1419,7 +1419,7 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
 
   if (fieldType->typeClass() == Type::Struct) {
     // See if the struct has a no-arg constructor.
-    ExprAnalyzer ea(module, activeScope, var, NULL);
+    ExprAnalyzer ea(module_, activeScope_, var, NULL);
     Expr * fieldCtorCall = ea.callConstructor(
         var->location(), fieldType->typeDefn(), ASTNodeList());
     if (fieldCtorCall != NULL) {
@@ -1448,7 +1448,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
 
   FunctionType * funcType = new FunctionType(&VoidType::instance, params);
   funcType->setSelfParam(selfParam);
-  FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module, istrings.idConstruct);
+  FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module_, istrings.idConstruct);
   constructorDef->setFunctionType(funcType);
   constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
@@ -1470,7 +1470,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
     // If it's synthetic, then don't add the constructor unless someone
     // actually calls it.
     if (!target->isSynthetic()) {
-      module->addSymbol(constructorDef);
+      module_->addSymbol(constructorDef);
     }
   }
 

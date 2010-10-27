@@ -31,11 +31,6 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * parent, Defn * subject,
-    FunctionDefn * currentFunction)
-  : AnalyzerBase(mod, parent, subject, currentFunction) {
-}
-
 Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected,
     bool tryCoerciveCasts) {
   if (isErrorResult(expr)) {
@@ -287,24 +282,24 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
 }
 
 Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
-  TypeAnalyzer ta(module, activeScope);
+  TypeAnalyzer ta(module(), activeScope());
   FunctionType * ftype = ta.typeFromFunctionAST(ast);
 
   if (ftype != NULL) {
     if (ast->body() != NULL) {
-      ClosureEnvExpr * env = new ClosureEnvExpr(ast->location(), activeScope);
-      TypeDefn * envTypeDef = new TypeDefn(module, ".env", NULL);
+      ClosureEnvExpr * env = new ClosureEnvExpr(ast->location(), activeScope());
+      TypeDefn * envTypeDef = new TypeDefn(module(), ".env", NULL);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Nonreflective);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
-      envTypeDef->setDefiningScope(activeScope);
+      envTypeDef->setDefiningScope(activeScope());
       envTypeDef->createQualifiedName(currentFunction_);
-      CompositeType * envType = new CompositeType(Type::Struct, envTypeDef, activeScope);
+      CompositeType * envType = new CompositeType(Type::Struct, envTypeDef, activeScope());
       envTypeDef->setTypeValue(envType);
       env->setType(envType);
 
-      ParameterDefn * selfParam = new ParameterDefn(module, "self");
+      ParameterDefn * selfParam = new ParameterDefn(module(), "self");
       selfParam->setFlag(ParameterDefn::ClosureEnv, true);
       selfParam->setFlag(ParameterDefn::Reference, true);
       selfParam->setInitValue(env);
@@ -318,7 +313,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 
       // TODO: It's possible to have an anon fn outside of a function. Deal with that later.
       DASSERT(currentFunction_ != NULL);
-      FunctionDefn * fn =  new FunctionDefn(Defn::Function, module, ast);
+      FunctionDefn * fn =  new FunctionDefn(Defn::Function, module(), ast);
       fn->createQualifiedName(currentFunction_);
       fn->setFunctionType(ftype);
       fn->setStorageClass(Storage_Local);
@@ -327,7 +322,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
       fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(selfParam);
-      fn->setDefiningScope(activeScope);
+      fn->setDefiningScope(activeScope());
 
       if (!analyzeFunction(fn, Task_PrepEvaluation)) {
         return &Expr::ErrorVal;
@@ -664,7 +659,7 @@ Expr * ExprAnalyzer::reduceContainsTest(const ASTOper * ast) {
 
 Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   Expr * value = reduceExpr(ast->arg(0), NULL);
-  TypeAnalyzer ta(module, activeScope);
+  TypeAnalyzer ta(module(), activeScope());
   Type * type = ta.typeFromAST(ast->arg(1));
   if (type == NULL) {
     return &Expr::ErrorVal;
@@ -858,7 +853,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   // TODO: We might want to support more than 1 array index.
   DASSERT_OBJ(ast->count() >= 1, ast);
   if (ast->count() == 1) {
-    TypeAnalyzer ta(module, activeScope);
+    TypeAnalyzer ta(module(), activeScope());
     Type * elemType = ta.typeFromAST(ast->arg(0));
     if (elemType == NULL) {
       return &Expr::ErrorVal;
@@ -1193,7 +1188,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   FnCallExpr * getterCall = new FnCallExpr(callType, loc, getter, basePtr);
   getterCall->setType(prop->type());
   getterCall->args().append(castArgs.begin(), castArgs.end());
-  module->addSymbol(getter);
+  module()->addSymbol(getter);
   return getterCall;
 #endif
 }
@@ -1260,7 +1255,7 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
     setterCall->appendArg(value);
   }
 
-  module->addSymbol(setter);
+  module()->addSymbol(setter);
   return setterCall;
 }
 
@@ -1283,7 +1278,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       // If it's a let-variable, then make sure that the initialization value
       // gets evaluated.
       if (valueDefn->defnType() == Defn::Let &&
-          valueDefn->module() != module &&
+          valueDefn->module() != module() &&
           valueDefn->module() != NULL) {
         analyzeDefn(valueDefn, Task_PrepConstruction);
       }
@@ -1463,8 +1458,8 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(type->isSingular());
 
   TypePair conversionKey(type, Builtins::typeObject.get());
-  ConverterMap::iterator it = module->converters().find(conversionKey);
-  if (it != module->converters().end()) {
+  ConverterMap::iterator it = module()->converters().find(conversionKey);
+  if (it != module()->converters().end()) {
     return it->second;
   }
 
@@ -1483,8 +1478,8 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
   analyzeFunction(coercer, Task_PrepTypeComparison);
   DASSERT(coercer->isSingular());
-  module->converters()[conversionKey] = coercer;
-  module->addSymbol(coercer);
+  module()->converters()[conversionKey] = coercer;
+  module()->addSymbol(coercer);
   //diag.info() << Format_Verbose << "Generated coercer " << coercer;
   return coercer;
 }
@@ -1505,8 +1500,8 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
 FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   ExprList methods;
   TypePair conversionKey(Builtins::typeObject.get(), toType);
-  ConverterMap::iterator it = module->converters().find(conversionKey);
-  if (it != module->converters().end()) {
+  ConverterMap::iterator it = module()->converters().find(conversionKey);
+  if (it != module()->converters().end()) {
     return it->second;
   }
 
@@ -1529,8 +1524,8 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   }
 
   analyzeFunction(valueOfMethod, Task_PrepTypeComparison);
-  module->converters()[conversionKey] = valueOfMethod;
-  module->addSymbol(valueOfMethod);
+  module()->converters()[conversionKey] = valueOfMethod;
+  module()->addSymbol(valueOfMethod);
   //diag.info() << Format_Verbose << "Generated boxer " << valueOfMethod;
   return valueOfMethod;
 }

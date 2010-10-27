@@ -264,7 +264,7 @@ bool StmtAnalyzer::buildExprStmtCFG(const ExprStmt * st) {
 }
 
 bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
   Expr * testExpr = astToTestExpr(st->testExpr());
   if (isErrorResult(testExpr)) {
     return false;
@@ -313,15 +313,15 @@ bool StmtAnalyzer::buildIfStmtCFG(const IfStmt * st) {
 
   // Continue at the 'done' block if there was one.
   setInsertPos(blkDone);
-  if (savedScope != activeScope) {
-    exitLocalScope(activeScope->asLocalScope());
+  if (savedScope != activeScope()) {
+    exitLocalScope(activeScope()->asLocalScope());
     setActiveScope(savedScope);
   }
   return true;
 }
 
 bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
 
   // Create the set of basic blocks. We don't know yet
   // if we need an else block or endif block.
@@ -364,15 +364,15 @@ bool StmtAnalyzer::buildWhileStmtCFG(const WhileStmt * st) {
   }
 
   setInsertPos(blkDone);
-  if (savedScope != activeScope) {
-    exitLocalScope(activeScope->asLocalScope());
+  if (savedScope != activeScope()) {
+    exitLocalScope(activeScope()->asLocalScope());
     setActiveScope(savedScope);
   }
   return true;
 }
 
 bool StmtAnalyzer::buildDoWhileStmtCFG(const DoWhileStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
 
   // Create the set of basic blocks. We don't know yet
   // if we need an else block or endif block.
@@ -412,15 +412,15 @@ bool StmtAnalyzer::buildDoWhileStmtCFG(const DoWhileStmt * st) {
   }
 
   setInsertPos(blkDone);
-  if (savedScope != activeScope) {
-    exitLocalScope(activeScope->asLocalScope());
+  if (savedScope != activeScope()) {
+    exitLocalScope(activeScope()->asLocalScope());
     setActiveScope(savedScope);
   }
   return true;
 }
 
 bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
   LocalScope * forScope = createLocalScope("for-scope");
   setActiveScope(forScope);
 
@@ -533,7 +533,7 @@ bool StmtAnalyzer::buildForStmtCFG(const ForStmt * st) {
 }
 
 bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
   LocalScope * forScope = createLocalScope("for-scope");
   setActiveScope(forScope);
 
@@ -695,8 +695,8 @@ bool StmtAnalyzer::buildForEachStmtCFG(const ForEachStmt * st) {
 }
 
 bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
-  Scope * savedScope = activeScope;
-  Scope * caseValScope = activeScope;
+  Scope * savedScope = activeScope();
+  Scope * caseValScope = activeScope();
   Expr * testExpr = astToTestExpr(st->testExpr(), false);
   if (isErrorResult(testExpr)) {
     return false;
@@ -719,7 +719,7 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
   } else if (const EnumType * etype = dyn_cast<EnumType>(testType)) {
     // If it's an enum, allow unqualified enum constants to be used.
     caseValScope = new DelegatingScope(
-        const_cast<IterableScope *>(etype->memberScope()), activeScope);
+        const_cast<IterableScope *>(etype->memberScope()), activeScope());
   } else if (testType == Builtins::typeString.get()) {
     DefnList defns;
     if (TypeDefn * tdef = testType->typeDefn()) {
@@ -870,8 +870,8 @@ bool StmtAnalyzer::buildSwitchStmtCFG(const SwitchStmt * st) {
     setInsertPos(NULL);
   }
 
-  if (savedScope != activeScope) {
-    exitLocalScope(activeScope->asLocalScope());
+  if (savedScope != activeScope()) {
+    exitLocalScope(activeScope()->asLocalScope());
     setActiveScope(savedScope);
   }
   return true;
@@ -900,7 +900,7 @@ ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type 
 }
 
 bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
-  Scope * savedScope = activeScope;
+  Scope * savedScope = activeScope();
   Expr * testExpr = astToTestExpr(st->testExpr(), false);
   if (isErrorResult(testExpr)) {
     return false;
@@ -1044,8 +1044,8 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
     setInsertPos(NULL);
   }
 
-  if (savedScope != activeScope) {
-    exitLocalScope(activeScope->asLocalScope());
+  if (savedScope != activeScope()) {
+    exitLocalScope(activeScope()->asLocalScope());
     setActiveScope(savedScope);
   }
   return true;
@@ -1168,7 +1168,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       }
 
       exceptDefn->setType(exceptType);
-      module->addSymbol(exceptDefn);
+      module()->addSymbol(exceptDefn);
 
       catchTypes.push_back(const_cast<CompositeType *>(exceptType));
 
@@ -1412,7 +1412,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
       const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
       DASSERT(varDecl->value() == NULL);
       if (varDecl->type() != NULL) {
-        VarAnalyzer va(var, activeScope, module, function, function);
+        VarAnalyzer va(var, activeScope(), module(), function, function);
         if (!va.analyze(Task_PrepTypeComparison)) {
           return false;
         }
@@ -1425,7 +1425,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
     if (varList->value() != NULL) {
       const TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
-      ExprAnalyzer ea(module, activeScope, function, function);
+      ExprAnalyzer ea(module(), activeScope(), function, function);
       Expr * initExpr = inferTypes(ea.analyze(varList->value(), tt), tt);
       if (initExpr == NULL) {
         return false;
@@ -1458,7 +1458,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    VarAnalyzer va(var, activeScope, module, function, function);
+    VarAnalyzer va(var, activeScope(), module(), function, function);
     if (!va.analyze(Task_PrepConstruction)) {
       return false;
     }
@@ -1573,12 +1573,12 @@ Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {
     diag.error(ast) << "Multiple variable declarations not allowed here";
   }
 
-  return ScopeBuilder::createLocalDefn(activeScope, function, ast);
+  return ScopeBuilder::createLocalDefn(activeScope(), function, ast);
 }
 
 bool StmtAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
   for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
-    Defn * var = ScopeBuilder::createLocalDefn(activeScope, function, *it);
+    Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function, *it);
     vars.push_back(var);
   }
 
@@ -1605,8 +1605,8 @@ const Type * StmtAnalyzer::setReturnType(const Type * returnType) {
 }
 
 LocalScope * StmtAnalyzer::createLocalScope(const char * scopeName) {
-  DASSERT(activeScope != NULL);
-  LocalScope * newScope = new LocalScope(activeScope);
+  DASSERT(activeScope() != NULL);
+  LocalScope * newScope = new LocalScope(activeScope());
   newScope->setScopeName(scopeName);
   DASSERT(newScope->parentScope() != NULL);
 
@@ -1672,12 +1672,12 @@ Block * StmtAnalyzer::createBlock(const char * prefix, const std::string & suffi
 }
 
 LValueExpr * StmtAnalyzer::createTempVar(const char * name, Expr * value, bool isMutable) {
-  VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module, name);
+  VariableDefn * var = new VariableDefn(isMutable ? Defn::Var : Defn::Let, module(), name);
   var->addTrait(Defn::Singular);
   var->setLocation(value->location());
   var->setType(value->type());
   var->setStorageClass(Storage_Local);
-  activeScope->addMember(var);
+  activeScope()->addMember(var);
   currentBlock_->append(new InitVarExpr(value->location(), var, value));
   return LValueExpr::get(value->location(), NULL, var);
 }
@@ -1761,12 +1761,12 @@ void StmtAnalyzer::expandPropertyAccessors() {
   for (BlockList::iterator bi = blocks.begin(); bi != blocks.end(); ++bi) {
     Block * blk = *bi;
     for (ExprList::iterator ei = blk->exprs().begin(); ei != blk->exprs().end(); ++ei) {
-      *ei = PropertyAccessorPass::run(module, subject(), *ei);
+      *ei = PropertyAccessorPass::run(module(), subject(), *ei);
     }
 
     for (ExprList::iterator ei = blk->termExprs().begin(); ei != blk->termExprs().end(); ++ei) {
       if (*ei != NULL) {
-        *ei = PropertyAccessorPass::run(module, subject(), *ei);
+        *ei = PropertyAccessorPass::run(module(), subject(), *ei);
       }
     }
   }
@@ -1834,7 +1834,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
 
       // Add it to the local scope
       if (stateVarScope == NULL) {
-        stateVarScope = new LocalScope(activeScope);
+        stateVarScope = new LocalScope(activeScope());
         stateVarScope->setScopeName("proc-state");
         function->localScopes().push_back(stateVarScope);
       }
