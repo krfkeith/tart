@@ -9,8 +9,8 @@ namespace tart {
 
 // -------------------------------------------------------------------
 // TypeDefn
+
 Expr * TypeDefn::asExpr() {
-  //DASSERT(Builtins::typeType != NULL);
   if (expr_ == NULL) {
     expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), value);
   }

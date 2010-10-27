@@ -292,7 +292,7 @@ bool EnumAnalyzer::analyzeBase() {
   if (!ast->bases().empty()) {
     // For the moment, we require enums to be derived from integer types only.
     DASSERT(ast->bases().size() == 1);
-    TypeAnalyzer ta(module, activeScope);
+    TypeAnalyzer ta(module(), activeScope());
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
       intValueType = dyn_cast<PrimitiveType>(baseType);
@@ -324,7 +324,7 @@ bool EnumAnalyzer::createMembers() {
   }
 
   if (!isFlags && minValue_ != NULL) {
-    VariableDefn * minDef = new VariableDefn(Defn::Let, module, "minVal", minValue_);
+    VariableDefn * minDef = new VariableDefn(Defn::Let, module(), "minVal", minValue_);
     minDef->setType(enumType);
     minDef->setLocation(target_->location());
     minDef->passes().finish(VariableDefn::AttributePass);
@@ -333,7 +333,7 @@ bool EnumAnalyzer::createMembers() {
     minDef->passes().finish(VariableDefn::CompletionPass);
     enumType->memberScope()->addMember(minDef);
 
-    VariableDefn * maxDef = new VariableDefn(Defn::Let, module, "maxVal", maxValue_);
+    VariableDefn * maxDef = new VariableDefn(Defn::Let, module(), "maxVal", maxValue_);
     maxDef->setType(enumType);
     maxDef->setLocation(target_->location());
     maxDef->passes().finish(VariableDefn::AttributePass);
@@ -349,7 +349,7 @@ bool EnumAnalyzer::createMembers() {
 
 bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   DefnList dlist;
-  if (activeScope->lookupMember(ast->name(), dlist, false)) {
+  if (activeScope()->lookupMember(ast->name(), dlist, false)) {
     diag.error(ast) << "Definition of '" << ast << "' conflicts with earlier definition";
     diag.info(dlist.front()) << "defined here.";
     return false;
@@ -359,11 +359,11 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   const llvm::Type * irType = enumType->irType();
   bool isFlags = enumType->isFlags();
   bool isSigned = !enumType->baseType()->isUnsignedType();
-  VariableDefn * ec = new VariableDefn(Defn::Let, module, ast);
+  VariableDefn * ec = new VariableDefn(Defn::Let, module(), ast);
   ConstantInteger * value = NULL;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
-    ExprAnalyzer ea(module, activeScope, subject(), NULL);
+    ExprAnalyzer ea(module(), activeScope(), subject(), NULL);
     Expr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
     if (isErrorResult(enumValue)) {
       return false;

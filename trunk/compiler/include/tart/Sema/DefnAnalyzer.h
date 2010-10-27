@@ -31,6 +31,10 @@ public:
     : AnalyzerBase(mod, parent, subject, currentFunction)
   {}
 
+//  DefnAnalyzer(Defn * target)
+//    : AnalyzerBase(target->module(), target->definingScope(), target, currentFunction)
+//  {}
+
   /** Do a full analysis of the target module. */
   bool analyzeModule();
 

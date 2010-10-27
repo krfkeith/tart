@@ -45,12 +45,21 @@ llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
 
 AnalyzerBase::AnalyzerBase(Module * mod, Scope * parent, Defn * subject,
     FunctionDefn * currentFunction)
-  : module(mod)
-  , activeScope(parent)
+  : module_(mod)
+  , activeScope_(parent)
   , subject_(subject)
   , currentFunction_(currentFunction)
 {
-  DASSERT(activeScope != NULL);
+  DASSERT(activeScope_ != NULL);
+}
+
+AnalyzerBase::AnalyzerBase(const AnalyzerBase * parent)
+  : module_(parent->module())
+  , activeScope_(parent->activeScope())
+  , subject_(parent->subject())
+  , currentFunction_(parent->currentFunction())
+{
+  DASSERT(activeScope_ != NULL);
 }
 
 bool AnalyzerBase::isTraceEnabled(Defn * de) {
@@ -79,7 +88,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
     const char * name = ident->value();
-    if (!isAbsPath && activeScope != NULL && lookupIdent(out, name, loc)) {
+    if (!isAbsPath && activeScope_ != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
 
@@ -162,7 +171,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     path.clear();
 
     // See if it's an expression.
-    ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
+    ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
       out.push_back(result);
@@ -176,7 +185,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
 bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, SLC & loc) {
   // Search the current active scopes.
-  for (Scope * sc = activeScope; sc != NULL; sc = sc->parentScope()) {
+  for (Scope * sc = activeScope_; sc != NULL; sc = sc->parentScope()) {
     if (findInScope(out, name, sc, sc->baseExpr(), loc, NO_PREFERENCE)) {
       return true;
     }
@@ -359,7 +368,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
-  ExprAnalyzer ea(module, activeScope, subject(), currentFunction_);
+  ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     Expr * cb = ea.reduceTemplateArgExpr(*it, inferArgTypes);
     if (isErrorResult(cb)) {
@@ -491,9 +500,9 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
 }
 
 bool AnalyzerBase::importName(ExprList & out, const std::string & path, bool absPath, SLC & loc) {
-  if (module != NULL) {
+  if (module_ != NULL) {
     DefnList defns;
-    if (module->import(path.c_str(), defns, absPath)) {
+    if (module_->import(path.c_str(), defns, absPath)) {
       return getDefnListAsExprList(loc, defns, NULL, out);
     }
   }
@@ -884,7 +893,7 @@ bool AnalyzerBase::canAccess(Defn * source, Defn * target) {
 
 void AnalyzerBase::dumpScopeHierarchy() {
   int level = diag.getIndentLevel();
-  for (Scope * s = activeScope; s != NULL; s = s->parentScope()) {
+  for (Scope * s = activeScope_; s != NULL; s = s->parentScope()) {
     s->dumpHierarchy(true);
     diag.indent();
   }

@@ -352,7 +352,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
   //TypeDefn * tdef = type->typeDefn();
   checkAccess(loc, tdef);
   if (!tdef->isTemplate() && !tdef->isTemplateMember()) {
-    module->addSymbol(tdef);
+    module_->addSymbol(tdef);
   }
 
   // First thing we need to know is how much tdef has been analyzed.

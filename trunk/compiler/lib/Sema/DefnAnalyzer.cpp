@@ -63,7 +63,7 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
 
   if (tvar == NULL) {
     tvar = new TypeVariable(ast->location(), ast->name(), NULL);
-    TypeDefn * tdef = new TypeDefn(module, ast->name(), tvar);
+    TypeDefn * tdef = new TypeDefn(module_, ast->name(), tvar);
     tsig_->paramScope().addMember(tdef);
   }
 
@@ -97,23 +97,23 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
 
-  if (!createMembersFromAST(module)) {
+  if (!createMembersFromAST(module_)) {
     return false;
   }
 
-  if (module->firstMember() == NULL) {
+  if (module_->firstMember() == NULL) {
     diag.fatal() << "Module should have at least one definition";
     return false;
   }
 
   // Analyze all exported definitions.
-  for (Defn * de = module->firstMember(); de != NULL; de = de->nextInScope()) {
+  for (Defn * de = module_->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isTemplate() || de->isPartialInstantiation()) {
       analyzeTemplateSignature(de);
-      module->addSymbol(de);
+      module_->addSymbol(de);
     } else if (!de->hasUnboundTypeParams()) {
       if (analyzeCompletely(de)) {
-        module->addSymbol(de);
+        module_->addSymbol(de);
       } else {
         success = false;
         diag.recovered();
@@ -138,8 +138,8 @@ bool DefnAnalyzer::analyzeModule() {
   // be externally referenced.
 
   // Analyze all external references.
-  while (Defn * de = module->nextDefToAnalyze()) {
-    bool isExport = module->exportDefs().count(de) > 0;
+  while (Defn * de = module_->nextDefToAnalyze()) {
+    bool isExport = module_->exportDefs().count(de) > 0;
     AnalysisTask task = Task_PrepTypeGeneration;
     if (isExport) {
       task = Task_PrepCodeGeneration;
@@ -150,12 +150,12 @@ bool DefnAnalyzer::analyzeModule() {
     }
 
     if (analyzeDefn(de, task)) {
-      if (module->isReflectionEnabled() && isExport) {
+      if (module_->isReflectionEnabled() && isExport) {
         analyzeDefn(de, Task_PrepReflection);
       }
 
       if (isExport) {
-        FindExternalRefsPass::run(module, de);
+        FindExternalRefsPass::run(module_, de);
       }
     } else {
       success = false;
@@ -163,12 +163,12 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
-  /*for (DefnSet::iterator it = module->exportDefs().begin(); it != module->exportDefs().end(); ++it) {
+  /*for (DefnSet::iterator it = module_->exportDefs().begin(); it != module_->exportDefs().end(); ++it) {
     diag.debug() << "Export " << Format_Verbose << *it;
   }*/
 
   // Prevent further symbols from being added.
-  module->finishPass(Pass_ResolveModuleMembers);
+  module_->finishPass(Pass_ResolveModuleMembers);
   return success;
 }
 
@@ -193,7 +193,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
   }
 
   if (in->ast() != NULL) {
-    ExprAnalyzer ea(module, activeScope, subject(), NULL);
+    ExprAnalyzer ea(module_, activeScope_, subject(), NULL);
     const ASTNodeList & attrs = in->ast()->attributes();
     for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
       Expr * attrExpr = ea.reduceAttribute(*it);
@@ -418,7 +418,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * tar
         diag.error(import) << "Invalid type for import: " << impExpr;
       }
     } else {
-      targetScope->addMember(new ExplicitImportDefn(module, import->asName(), importDefs));
+      targetScope->addMember(new ExplicitImportDefn(module_, import->asName(), importDefs));
     }
   } else {
     diag.error(import) << "Not found '" << import << "'";
@@ -485,8 +485,8 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
 void DefnAnalyzer::addReflectionInfo(Defn * in) {
   analyzeDefn(in, Task_PrepTypeComparison);
-  bool enableReflection = module->isReflectionEnabled() &&
-        (in->isSynthetic() || in->module() == module);
+  bool enableReflection = module_->isReflectionEnabled() &&
+        (in->isSynthetic() || in->module() == module_);
   bool enableReflectionDetail = enableReflection && !in->isNonreflective();
   bool trace = isTraceEnabled(in);
 
@@ -497,7 +497,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     switch (tdef->typeValue()->typeClass()) {
       case Type::Primitive:
-        if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
+        if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
           importSystemType(Builtins::typeType);
         }
         break;
@@ -508,16 +508,16 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
         // If reflection enabled for this type then load the reflection classes.
         if (enableReflectionDetail) {
-          if (module->reflectedDefs().insert(tdef)) {
-            module->addSymbol(tdef);
+          if (module_->reflectedDefs().insert(tdef)) {
+            module_->addSymbol(tdef);
             reflectTypeMembers(ctype);
           }
 
           importSystemType(Builtins::typeType);
           importSystemType(Builtins::typeCompositeType);
         } else if (enableReflection) {
-          module->addSymbol(tdef);
-          module->reflectedDefs().insert(tdef);
+          module_->addSymbol(tdef);
+          module_->reflectedDefs().insert(tdef);
           importSystemType(Builtins::typeType);
           importSystemType(Builtins::typePrimitiveType);
         }
@@ -527,15 +527,15 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
       case Type::Struct:
       case Type::Protocol:
-        if (enableReflectionDetail && module->reflectedDefs().insert(tdef)) {
-          module->addSymbol(tdef);
+        if (enableReflectionDetail && module_->reflectedDefs().insert(tdef)) {
+          module_->addSymbol(tdef);
           importSystemType(Builtins::typeCompositeType);
         }
 
         break;
 
       case Type::Enum:
-        if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
+        if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
           importSystemType(Builtins::typeEnumType);
           importSystemType(Builtins::typeEnumInfoBlock);
         }
@@ -547,8 +547,8 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
       if (enableReflectionDetail) {
-        if (module->reflectedDefs().insert(fn)) {
-          module->addSymbol(fn);
+        if (module_->reflectedDefs().insert(fn)) {
+          module_->addSymbol(fn);
           importSystemType(Builtins::typeMethod);
           importSystemType(Builtins::typeDerivedType);
         }
@@ -559,18 +559,18 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           const Type * paramType = (*it)->internalType();
           // Cache the unbox function for this type.
           if (paramType->isBoxableType()) {
-            ExprAnalyzer(module, activeScope, fn, fn).getUnboxFn(SourceLocation(), paramType);
+            ExprAnalyzer(module_, activeScope_, fn, fn).getUnboxFn(SourceLocation(), paramType);
           }
         }
 
         // Cache the boxing function for this type.
        if (fn->returnType()->isBoxableType()) {
-          ExprAnalyzer(module, activeScope, subject_, fn).coerceToObjectFn(fn->returnType());
+          ExprAnalyzer(module_, activeScope_, subject_, fn).coerceToObjectFn(fn->returnType());
         }
       }
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
-    if (enableReflectionDetail && module->reflectedDefs().insert(in)) {
+    if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
       reflectType(prop->type());
       importSystemType(Builtins::typeProperty);
     }
@@ -590,7 +590,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
       return true;
     }
 
-    module->addSymbol(tdef);
+    module_->addSymbol(tdef);
   }
 
   switch (type->typeClass()) {
@@ -668,11 +668,11 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
 }
 
 bool DefnAnalyzer::importSystemType(const SystemClass & sclass) {
-  if (!module->systemDefs().count(sclass.typeDefn())) {
-    module->systemDefs().insert(sclass.typeDefn());
-    module->addSymbol(sclass.typeDefn());
+  if (!module_->systemDefs().count(sclass.typeDefn())) {
+    module_->systemDefs().insert(sclass.typeDefn());
+    module_->addSymbol(sclass.typeDefn());
     AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
-    sclass->addFieldTypesToModule(module);
+    sclass->addFieldTypesToModule(module_);
     return true;
   }
 

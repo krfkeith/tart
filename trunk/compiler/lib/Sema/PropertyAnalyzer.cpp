@@ -121,7 +121,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
     if (type == NULL) {
       DASSERT_OBJ(ast != NULL, target);
       DASSERT_OBJ(ast->type() != NULL, target);
-      TypeAnalyzer ta(module, target->definingScope());
+      TypeAnalyzer ta(module(), target->definingScope());
       type = ta.typeFromAST(ast->type());
       if (type == NULL) {
         return false;
@@ -134,7 +134,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       target->addTrait(Defn::Singular);
     }
 
-    TypeAnalyzer ta(module, activeScope);
+    TypeAnalyzer ta(module(), activeScope());
     const ASTParamList & astParams = ast->params();
 
     if (target->getter() != NULL) {
@@ -147,20 +147,20 @@ bool PropertyAnalyzer::resolvePropertyType() {
       // Add the property parameters
       for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
         ASTParameter * aparam = *it;
-        ParameterDefn * param = new ParameterDefn(module, aparam);
-        getterType->addParam(new ParameterDefn(module, aparam));
+        ParameterDefn * param = new ParameterDefn(module(), aparam);
+        getterType->addParam(new ParameterDefn(module(), aparam));
       }
 
       getter->setFunctionType(getterType);
       if (!getter->isAbstract()) {
-        module->addSymbol(getter);
+        module()->addSymbol(getter);
       }
     }
 
     if (target->setter() != NULL) {
       FunctionDefn * setter = target->setter();
       DASSERT_OBJ(setter->functionType() == NULL, setter);
-      TypeAnalyzer ta(module, activeScope);
+      TypeAnalyzer ta(module(), activeScope());
       FunctionType * setterType = ta.typeFromFunctionAST(setter->functionDecl());
 
       // See if the setter already has a 'value' parameter defined. If it does, we need
@@ -178,8 +178,8 @@ bool PropertyAnalyzer::resolvePropertyType() {
       // Add the property parameters
       for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
         ASTParameter * aparam = *it;
-        ParameterDefn * param = new ParameterDefn(module, aparam);
-        setterType->addParam(new ParameterDefn(module, aparam));
+        ParameterDefn * param = new ParameterDefn(module(), aparam);
+        setterType->addParam(new ParameterDefn(module(), aparam));
       }
 
       if (valueParam != NULL) {
@@ -207,7 +207,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
 
       setter->setFunctionType(setterType);
       if (!setter->isAbstract()) {
-        module->addSymbol(setter);
+        module()->addSymbol(setter);
       }
     }
 
