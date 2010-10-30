@@ -356,6 +356,7 @@ public:
   void genDIGlobalVariable(const VariableDefn * var, llvm::GlobalVariable * gv);
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void setDebugLocation(const SourceLocation & loc);
+  llvm::DIScope genRegionScope(const SourceRegion * region);
 
   /** Generate debugging information for types. */
   llvm::DIType genDIType(const Type * type);

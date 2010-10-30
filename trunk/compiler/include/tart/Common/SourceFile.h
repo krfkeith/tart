@@ -98,6 +98,7 @@ public:
   void close();
   bool readLineAt(uint32_t start, std::string & result);
   bool isValid() { return stream.good(); }
+  void dump() const;
 };
 
 /// -------------------------------------------------------------------
@@ -117,6 +118,7 @@ public:
   void close() {};
   bool readLineAt(uint32_t lineIndex, std::string & result);
   bool isValid() { return true; }
+  void dump() const {}
 };
 
 // -------------------------------------------------------------------

@@ -21,14 +21,19 @@ set(TARTLN_OPTIONS -internalize -O2)
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
+set(USE_LLVM_BINARIES 1)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
+
+set(GC_PLUGIN "${PROJECT_BINARY_DIR}/linker/libgc${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(REFLECTOR_PLUGIN "${PROJECT_BINARY_DIR}/linker/libreflector${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
   # Source file name
   string(REGEX REPLACE ".tart\$" ".bc" BC_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" ".out.bc" OUT_BC_FILE "${SRC_FILE}")
+  string(REGEX REPLACE ".tart\$" ".opt.bc" OPT_BC_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" ".s" ASM_FILE "${SRC_FILE}")
   string(REGEX REPLACE ".tart\$" "${CMAKE_CXX_OUTPUT_EXTENSION}" OBJ_FILE "${SRC_FILE}")  
   string(REGEX REPLACE ".tart\$" "${CMAKE_EXECUTABLE_SUFFIX}" EXE_FILE "${SRC_FILE}")
@@ -47,7 +52,7 @@ foreach(SRC_FILE ${TART_SRC})
 
   # Remember the list of output files.
   set(TEST_BC_FILES ${TEST_BC_FILES} "${BC_FILE}")
-
+  
   # Link with libcore
   if (GENERATE_ASM)
     add_custom_command(OUTPUT ${ASM_FILE}
@@ -77,6 +82,56 @@ foreach(SRC_FILE ${TART_SRC})
         MAIN_DEPENDENCY "${ASM_FILE}"
         DEPENDS runtime
         COMMENT "Assembling ${ASM_FILE}")
+  elseif (USE_LLVM_BINARIES)
+    # Link bitcode files
+    add_custom_command(OUTPUT ${OUT_BC_FILE}
+        COMMAND ${LLVM_BIN_DIR}/llvm-ld
+            -disable-opt
+            -link-as-library
+#            -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+            -o ${OUT_BC_FILE} ${BC_FILE}
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        MAIN_DEPENDENCY "${BC_FILE}" 
+        DEPENDS
+            "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+        COMMENT "Linking Tart bitcode file ${BC_FILE}")
+
+    # Link object files
+    add_custom_command(OUTPUT ${OPT_BC_FILE}
+        COMMAND ${LLVM_BIN_DIR}/opt
+            -O2
+            -load="${REFLECTOR_PLUGIN}"
+            -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+            -std-compile-opts
+            -std-link-opts
+            -reflector
+            -globaldce
+            -globalopt
+            -o ${OPT_BC_FILE}
+            ${OUT_BC_FILE}
+        MAIN_DEPENDENCY "${OUT_BC_FILE}" 
+        DEPENDS reflector
+        COMMENT "Generating optimized bitcode file ${OPT_BC_FILE}")
+
+    # Link object files
+    add_custom_command(OUTPUT ${OBJ_FILE}
+        COMMAND ${LLVM_BIN_DIR}/llc
+            -load="${GC_PLUGIN}"
+            -disable-fp-elim
+            -filetype=obj
+            -o ${OBJ_FILE}
+            ${OPT_BC_FILE}
+        MAIN_DEPENDENCY "${OPT_BC_FILE}" 
+        DEPENDS gc
+        COMMENT "Generating object file ${OBJ_FILE}")
+
+    # Link executable
+    add_executable(${EXE_FILE} ${OBJ_FILE})
+    # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
+    add_dependencies(${EXE_FILE} libcore libtesting)
+    target_link_libraries(${EXE_FILE} runtime dl)
   else (GENERATE_ASM)
     add_custom_command(OUTPUT ${OBJ_FILE}
         COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
@@ -84,6 +139,7 @@ foreach(SRC_FILE ${TART_SRC})
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
+            libcore libtesting
             "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")

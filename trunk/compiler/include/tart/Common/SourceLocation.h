@@ -78,6 +78,11 @@ struct SourceLocation {
 
   void trace() const;
 
+  /** With the current location, and a region which is a subset of the current location's
+      region, return a new location containing the new region and the file and line number of
+      the current location. */
+  SourceLocation forRegion(SourceRegion * region) const;
+
 #if __GNUG__
   void dump() const __attribute__ ((noinline));
 #else

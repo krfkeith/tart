@@ -27,13 +27,9 @@ class SystemClass;
 class DefnAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  DefnAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction)
-    : AnalyzerBase(mod, parent, subject, currentFunction)
+  DefnAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
+    : AnalyzerBase(mod, activeScope, subject, currentFunction)
   {}
-
-//  DefnAnalyzer(Defn * target)
-//    : AnalyzerBase(target->module(), target->definingScope(), target, currentFunction)
-//  {}
 
   /** Do a full analysis of the target module. */
   bool analyzeModule();

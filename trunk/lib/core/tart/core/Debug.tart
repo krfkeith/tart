@@ -33,6 +33,10 @@ namespace Debug {
     fail(String.concat(msgs));
   }
   
+  def failFmt(fmt:String, args:Object...) {
+    fail(String.format(fmt, args));
+  }
+  
   def assertTrueFailed(loc:String, cond:String) {
     fail(loc, " Assertion failed: ", cond);
   }

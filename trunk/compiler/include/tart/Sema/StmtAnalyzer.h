@@ -43,6 +43,7 @@ class YieldStmt;
 class DeclStmt;
 class Type;
 class FunctionDefn;
+class FunctionRegion;
 
 /// -------------------------------------------------------------------
 /// Declaration analyzer
@@ -130,7 +131,7 @@ public:
 
   /** Create a new local scope and make it's parent the current scope.
       Do not yet set it as the current active scope. */
-  LocalScope * createLocalScope(const char * scopeName);
+  LocalScope * createLocalScope(const char * scopeName, SourceRegion * region = NULL);
 
   /** We're exiting a local scope, so zero out any stack roots which are going out
       of scope. */
@@ -220,6 +221,7 @@ private:
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
   FunctionDefn * function;
+  FunctionRegion * functionRegion_;
   const Type * returnType_;
   Type * yieldType_;
   BlockList & blocks;

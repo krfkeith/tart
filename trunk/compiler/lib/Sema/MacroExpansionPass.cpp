@@ -5,6 +5,7 @@
 #include "tart/CFG/Exprs.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/FunctionRegion.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/AST/Stmt.h"
@@ -32,7 +33,8 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
     if (!returnType->isVoidType()) {
-      LocalScope * retValScope = new LocalScope(macro->definingScope());
+      LocalScope * retValScope =
+          new LocalScope(macro->definingScope(), stAn.activeScope()->region());
       retValScope->setScopeName("macro-return");
       stAn.getTarget()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");
@@ -42,7 +44,8 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       retValScope->addMember(retVal);
     }
 
-    LocalScope paramScope(macro->definingScope());
+    FunctionRegion * macroRegion = new FunctionRegion(macro, macro->location().region);
+    LocalScope paramScope(macro->definingScope(), macroRegion);
     paramScope.setScopeName("macro-params");
 
     if (in->selfArg() != NULL) {
@@ -89,7 +92,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // If control fell off the end of the macro, then branch to return block.
     Block * finalBlock = stAn.insertionBlock();
     if (finalBlock != NULL && !finalBlock->hasTerminator()) {
-      finalBlock->branchTo(macroBody->finalLocation(), returnBlock);
+      finalBlock->branchTo(macroBody->finalLocation().forRegion(macroRegion), returnBlock);
     }
 
     stAn.setReturnType(savedReturnType);

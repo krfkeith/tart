@@ -168,14 +168,14 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   switch (ast->nodeType()) {
     case ASTNode::Id:
     case ASTNode::Member:
-    return callName(ast->location(), ast, ASTNodeList(), NULL);
+    return callName(astLoc(ast), ast, ASTNodeList(), NULL);
 
     case ASTNode::Call: {
       const ASTCall * call = static_cast<const ASTCall *> (ast);
       const ASTNode * callable = call->func();
       const ASTNodeList & args = call->args();
       if (callable->nodeType() == ASTNode::Id || callable->nodeType() == ASTNode::Member) {
-        return callName(call->location(), callable, args, NULL);
+        return callName(astLoc(call), callable, args, NULL);
       }
 
       diag.fatal(call) << "Invalid attribute expression " << call;
@@ -232,43 +232,43 @@ Expr * ExprAnalyzer::reduceTemplateArgExpr(const ASTNode * ast, bool doInference
 }
 
 Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
-  return new ConstantNull(ast->location());
+  return new ConstantNull(astLoc(ast));
 }
 
 Expr * ExprAnalyzer::reduceIntegerLiteral(const ASTIntegerLiteral * ast) {
   return new ConstantInteger(
-      ast->location(),
+      astLoc(ast),
       &UnsizedIntType::instance,
       llvm::ConstantInt::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceFloatLiteral(const ASTFloatLiteral * ast) {
   return new ConstantFloat(
-      ast->location(),
+      astLoc(ast),
       &FloatType::instance,
       llvm::ConstantFP::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceDoubleLiteral(const ASTDoubleLiteral * ast) {
   return new ConstantFloat(
-      ast->location(),
+      astLoc(ast),
       &DoubleType::instance,
       llvm::ConstantFP::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceCharLiteral(const ASTCharLiteral * ast) {
   return new ConstantInteger(
-      ast->location(),
+      astLoc(ast),
       &CharType::instance,
       llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), ast->value(), false));
 }
 
 Expr * ExprAnalyzer::reduceStringLiteral(const ASTStringLiteral * ast) {
-  return new ConstantString(ast->location(), ast->value());
+  return new ConstantString(astLoc(ast), ast->value());
 }
 
 Expr * ExprAnalyzer::reduceBoolLiteral(const ASTBoolLiteral * ast) {
-  return ConstantInteger::getConstantBool(ast->location(), ast->value());
+  return ConstantInteger::getConstantBool(astLoc(ast), ast->value());
 }
 
 Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
@@ -287,7 +287,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 
   if (ftype != NULL) {
     if (ast->body() != NULL) {
-      ClosureEnvExpr * env = new ClosureEnvExpr(ast->location(), activeScope());
+      ClosureEnvExpr * env = new ClosureEnvExpr(astLoc(ast), activeScope());
       TypeDefn * envTypeDef = new TypeDefn(module(), ".env", NULL);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Nonreflective);
@@ -328,7 +328,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
         return &Expr::ErrorVal;
       }
 
-      return new BoundMethodExpr(ast->location(), env, fn,
+      return new BoundMethodExpr(astLoc(ast), env, fn,
           new BoundMethodType(fn->functionType()));
     } else {
       // It's merely a function type declaration
@@ -336,7 +336,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
         ftype->setReturnType(&VoidType::instance);
       }
 
-      return new TypeLiteralExpr(ast->location(), ftype);
+      return new TypeLiteralExpr(astLoc(ast), ftype);
     }
   }
 
@@ -359,7 +359,7 @@ Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  return reduceStoreValue(ast->location(), lhs, rhs);
+  return reduceStoreValue(astLoc(ast), lhs, rhs);
 }
 
 Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
@@ -374,7 +374,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        Expr * setProp = reduceSetParamPropertyValue(ast->location(), call, newValue);
+        Expr * setProp = reduceSetParamPropertyValue(astLoc(ast), call, newValue);
         if (isErrorResult(setProp)) {
           return &Expr::ErrorVal;
         }
@@ -384,7 +384,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
     }
   }
 
-  return new AssignmentExpr(Expr::PostAssign, ast->location(), lvalue, newValue);
+  return new AssignmentExpr(Expr::PostAssign, astLoc(ast), lvalue, newValue);
 }
 
 Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
@@ -409,10 +409,10 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
   }
 
   // Create a multi-assign node.
-  MultiAssignExpr * ma = new MultiAssignExpr(ast->location(), rhs->type());
+  MultiAssignExpr * ma = new MultiAssignExpr(astLoc(ast), rhs->type());
   if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
     for (size_t i = 0; i < dstVars.size(); ++i) {
-      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], tce->arg(i)));
+      ma->appendArg(reduceStoreValue(astLoc(ast), dstVars[i], tce->arg(i)));
     }
   } else {
     rhs = SharedValueExpr::get(rhs);
@@ -421,7 +421,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
           Expr::ElementRef, rhs->location(), tt->member(i),
           rhs, ConstantInteger::getUInt32(i));
 
-      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
+      ma->appendArg(reduceStoreValue(astLoc(ast), dstVars[i], srcVal));
     }
   }
 
@@ -484,16 +484,16 @@ Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
   }
 
   // Attempt to call augmented assignment operator as member function
-  ASTMemberRef augMethodRef(ast->location(), const_cast<ASTNode *>(ast->arg(0)), assignOperName);
+  ASTMemberRef augMethodRef(astLoc(ast), const_cast<ASTNode *>(ast->arg(0)), assignOperName);
   ASTNodeList args;
   args.push_back(const_cast<ASTNode *>(ast->arg(1)));
-  Expr * callExpr = callName(ast->location(), &augMethodRef, args, NULL, true);
+  Expr * callExpr = callName(astLoc(ast), &augMethodRef, args, NULL, true);
   if (callExpr != NULL) {
     return callExpr;
   }
 
   // Otherwise call the regular infix operator and assign to the same location.
-  Expr * callResult = callName(ast->location(), infixOperIdent, ast->args(), NULL, false);
+  Expr * callResult = callName(astLoc(ast), infixOperIdent, ast->args(), NULL, false);
   if (isErrorResult(callResult)) {
     return callResult;
   }
@@ -503,7 +503,7 @@ Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  return reduceStoreValue(ast->location(), lhs, callResult);
+  return reduceStoreValue(astLoc(ast), lhs, callResult);
 }
 
 Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
@@ -517,8 +517,8 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        checkAccess(ast->location(), prop);
-        return reduceGetParamPropertyValue(ast->location(), call);
+        checkAccess(astLoc(ast), prop);
+        return reduceGetParamPropertyValue(astLoc(ast), call);
       }
     }
   }
@@ -617,10 +617,10 @@ Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {
     DASSERT_OBJ(first->type() != NULL, first);
     DASSERT_OBJ(second->type() != NULL, second);
 
-    Expr * result = new BinaryExpr(Expr::RefEq, ast->location(),
+    Expr * result = new BinaryExpr(Expr::RefEq, astLoc(ast),
         &BoolType::instance, first, second);
     if (invert) {
-      result = new UnaryExpr(Expr::Not, ast->location(), &BoolType::instance, result);
+      result = new UnaryExpr(Expr::Not, astLoc(ast), &BoolType::instance, result);
     }
 
     return result;
@@ -643,15 +643,15 @@ Expr * ExprAnalyzer::reduceContainsTest(const ASTOper * ast) {
   ASTNodeList args;
   args.push_back(const_cast<ASTNode *>(ast->arg(0)));
   ASTNode * methodAst = new ASTMemberRef(
-      ast->location(), const_cast<ASTNode *>(ast->arg(1)), "contains");
-  Expr * callResult = callName(ast->location(), methodAst, args, &BoolType::instance, false);
+      astLoc(ast), const_cast<ASTNode *>(ast->arg(1)), "contains");
+  Expr * callResult = callName(astLoc(ast), methodAst, args, &BoolType::instance, false);
 
   if (isErrorResult(callResult)) {
     return callResult;
   }
 
   if (invert) {
-    callResult = new UnaryExpr(Expr::Not, ast->location(), &BoolType::instance, callResult);
+    callResult = new UnaryExpr(Expr::Not, astLoc(ast), &BoolType::instance, callResult);
   }
 
   return callResult;
@@ -669,23 +669,23 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   DASSERT_OBJ(value->isSingular(), value);
 
   if (value->type()->isEqual(type)) {
-    return ConstantInteger::getConstantBool(ast->location(), true);
+    return ConstantInteger::getConstantBool(astLoc(ast), true);
   }
 
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
     DASSERT_OBJ(value->type() != NULL, value);
     if (const CompositeType * valueClass = static_cast<const CompositeType *>(value->type())) {
       if (valueClass->isSubtype(ctd)) {
-        return ConstantInteger::getConstantBool(ast->location(), true);
+        return ConstantInteger::getConstantBool(astLoc(ast), true);
       }
     }
 
-    return new InstanceOfExpr(ast->location(), value, ctd);
+    return new InstanceOfExpr(astLoc(ast), value, ctd);
   }
 
   // See if the value is a union.
   if (const UnionType * ut = dyn_cast<UnionType>(value->type())) {
-    return new InstanceOfExpr(ast->location(), value, type);
+    return new InstanceOfExpr(astLoc(ast), value, type);
   }
 
   diag.debug(ast) << "Unsupported isa test to type " << type;
@@ -700,7 +700,7 @@ Expr * ExprAnalyzer::reduceLogicalOper(const ASTOper * ast) {
   ASTNodeList args;
   args.push_back(const_cast<ASTNode *>(ast->arg(0)));
   args.push_back(const_cast<ASTNode *>(ast->arg(1)));
-  return callName(ast->location(), opIdent, args, NULL, true);
+  return callName(astLoc(ast), opIdent, args, NULL, true);
 }
 
 Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
@@ -712,22 +712,22 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
 
   if (ConstantExpr * cval = dyn_cast<ConstantExpr>(value)) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cval)) {
-      return ConstantInteger::getConstantBool(ast->location(), cint->value() == 0);
+      return ConstantInteger::getConstantBool(astLoc(ast), cint->value() == 0);
     } else if (ConstantNull * cnull = dyn_cast<ConstantNull>(cval)) {
-      return ConstantInteger::getConstantBool(ast->location(), true);
+      return ConstantInteger::getConstantBool(astLoc(ast), true);
     }
 
     diag.error(ast) << "Invalid argument for logical 'not' expression";
     return &Expr::ErrorVal;
   }
 
-  value = BoolType::instance.implicitCast(ast->location(), value);
+  value = BoolType::instance.implicitCast(astLoc(ast), value);
   if (isErrorResult(value)) {
     return value;
   }
 
   return new UnaryExpr(
-      Expr::Not, ast->location(), &BoolType::instance, value);
+      Expr::Not, astLoc(ast), &BoolType::instance, value);
 }
 
 Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
@@ -739,7 +739,7 @@ Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
 
   if (ConstantExpr * cval = dyn_cast<ConstantExpr>(value)) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cval)) {
-      return ConstantInteger::get(ast->location(), cint->type(),
+      return ConstantInteger::get(astLoc(ast), cint->type(),
           cast<llvm::ConstantInt>(llvm::ConstantInt::get(
               cint->value()->getType(),
               ~cint->value()->getValue())));
@@ -755,14 +755,14 @@ Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
   }
 
   return new UnaryExpr(
-      Expr::Complement, ast->location(), value->type(), value);
+      Expr::Complement, astLoc(ast), value->type(), value);
 }
 
 Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
   DefnList fnlist;
-  if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", ast->location())) {
+  if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", astLoc(ast))) {
     DASSERT(fnlist.size() == 1);
-    CallExpr * call = new CallExpr(Expr::Call, ast->location(), NULL);
+    CallExpr * call = new CallExpr(Expr::Call, astLoc(ast), NULL);
     call->setExpectedReturnType(expected);
     addOverload(call, Builtins::typeArray->typeDefn()->asExpr(),
         cast<FunctionDefn>(fnlist.front()), ast->args());
@@ -787,7 +787,7 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
     }
   }
 
-  TupleCtorExpr * tuple = new TupleCtorExpr(ast->location(), NULL);
+  TupleCtorExpr * tuple = new TupleCtorExpr(astLoc(ast), NULL);
   ConstTypeList types;
   size_t numParams = ast->count();
   bool isSingular = true;
@@ -858,10 +858,10 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     if (elemType == NULL) {
       return &Expr::ErrorVal;
     }
-    return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elemType));
+    return new TypeLiteralExpr(astLoc(ast), getArrayTypeForElement(elemType));
 //    Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
 //    if (TypeLiteralExpr * elementType = dyn_cast_or_null<TypeLiteralExpr>(elementExpr)) {
-//      return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elementType->value()));
+//      return new TypeLiteralExpr(astLoc(ast), getArrayTypeForElement(elementType->value()));
 //    }
 //
 //    diag.debug(ast) << "Preceding expression was " << elementExpr;
@@ -899,7 +899,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       if (isTypeOrFunc) {
         ASTNodeList args;
         args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-        Expr * specResult = specialize(ast->location(), values, args, true);
+        Expr * specResult = specialize(astLoc(ast), values, args, true);
         if (specResult != NULL) {
           return specResult;
         } else {
@@ -967,7 +967,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     // TODO: Attempt to cast arg to an integer type of known size.
 
     // First dereference the pointer and then get the element.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, args[0]);
   }
 
   // Do automatic pointer dereferencing
@@ -1001,7 +1001,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
+    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, indexExpr);
   }
 
   // Handle flexible arrays.
@@ -1026,7 +1026,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
+    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, indexExpr);
   }
 
   // Handle tuples
@@ -1054,7 +1054,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       }
 
       uint32_t index = uint32_t(indexVal.getZExtValue());
-      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
+      return new BinaryExpr(Expr::ElementRef, astLoc(ast), tt->member(index), arrayExpr, cint);
     } else {
       diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
       return &Expr::ErrorVal;
@@ -1090,8 +1090,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // CallExpr type used to hold the array reference and parameters.
-  LValueExpr * callable = LValueExpr::get(ast->location(), arrayExpr, indexer);
-  CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
+  LValueExpr * callable = LValueExpr::get(astLoc(ast), arrayExpr, indexer);
+  CallExpr * call = new CallExpr(Expr::Call, astLoc(ast), callable);
   call->args().append(args.begin(), args.end());
   call->setType(indexer->type());
   return call;
@@ -1498,7 +1498,6 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
 }
 
 FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
-  ExprList methods;
   TypePair conversionKey(Builtins::typeObject.get(), toType);
   ConverterMap::iterator it = module()->converters().find(conversionKey);
   if (it != module()->converters().end()) {
@@ -1506,6 +1505,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   }
 
   //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
+  ExprList methods;
   analyzeTypeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());

@@ -24,6 +24,16 @@ void SourceLocation::dump() const {
   }
 }
 
+SourceLocation SourceLocation::forRegion(SourceRegion * newRegion) const {
+  if (newRegion == NULL || region == NULL || region == newRegion) {
+    return *this;
+  } else {
+    // Make sure that the active region is a child of loc.region.
+    DASSERT(newRegion->hasParent(region));
+    return SourceLocation(newRegion, begin, end);
+  }
+}
+
 TokenPosition ProgramSource::tokenPosition(const SourceLocation & loc) {
   DASSERT(loc.end >= loc.begin);
   std::vector<uint32_t>::const_iterator itBegin =
@@ -49,6 +59,10 @@ std::istream & SourceFile::open() {
 
 void SourceFile::close() {
   stream.close();
+}
+
+void SourceFile::dump() const {
+  fprintf(stderr, "Source File: %s\n", filePath.c_str());
 }
 
 bool SourceFile::readLineAt(uint32_t lineIndex, std::string & result) {

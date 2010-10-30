@@ -38,7 +38,7 @@ namespace {
 // Often intrinsics need to dereference input params
 const Expr * derefMacroParam(const Expr * in) {
   if (const LValueExpr * lval = dyn_cast<LValueExpr>(in)) {
-    if (lval->value()->defnType() == Defn::Let) {
+    if (lval->value()->defnType() == Defn::Let || lval->value()->defnType() == Defn::MacroArg) {
       const VariableDefn * defn = static_cast<const VariableDefn *> (lval->value());
       if (defn->initValue() != NULL) {
         return defn->initValue();

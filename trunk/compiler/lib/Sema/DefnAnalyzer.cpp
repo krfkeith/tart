@@ -193,7 +193,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
   }
 
   if (in->ast() != NULL) {
-    ExprAnalyzer ea(module_, activeScope_, subject(), NULL);
+    ExprAnalyzer ea(this, NULL);
     const ASTNodeList & attrs = in->ast()->attributes();
     for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
       Expr * attrExpr = ea.reduceAttribute(*it);
@@ -559,13 +559,13 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
           const Type * paramType = (*it)->internalType();
           // Cache the unbox function for this type.
           if (paramType->isBoxableType()) {
-            ExprAnalyzer(module_, activeScope_, fn, fn).getUnboxFn(SourceLocation(), paramType);
+            ExprAnalyzer(this, fn).getUnboxFn(SourceLocation(), paramType);
           }
         }
 
         // Cache the boxing function for this type.
        if (fn->returnType()->isBoxableType()) {
-          ExprAnalyzer(module_, activeScope_, subject_, fn).coerceToObjectFn(fn->returnType());
+          ExprAnalyzer(this, fn).coerceToObjectFn(fn->returnType());
         }
       }
     }

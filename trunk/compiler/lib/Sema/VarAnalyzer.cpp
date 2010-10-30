@@ -170,7 +170,7 @@ bool VarAnalyzer::resolveVarType() {
         }
       }
 
-      ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
+      ExprAnalyzer ea(this, currentFunction_);
       Expr * initExpr = ea.analyze(ast->value(), target->type());
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {

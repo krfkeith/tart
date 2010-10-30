@@ -20,10 +20,11 @@ class SpecializeExpr;
 class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  ExprAnalyzer(Module * mod, Scope * parent, Defn * subject, FunctionDefn * currentFunction)
-    : AnalyzerBase(mod, parent, subject, currentFunction) {}
+  ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
+    : AnalyzerBase(mod, activeScope, subject, currentFunction) {}
 
-  ExprAnalyzer(const AnalyzerBase * parent) : AnalyzerBase(parent) {}
+  ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
+    : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction) {}
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {
@@ -175,7 +176,7 @@ public:
   Expr * reduceSpecialize(const ASTSpecialize * call, const Type * expected);
 
   /** Return either the single best specialization candidate, or NULL. */
-  Defn * findBestSpecialization(SpecializeExpr * spe);
+  static Defn * findBestSpecialization(SpecializeExpr * spe);
 
   /** Given an LValue, return the base expression. */
   Expr * lvalueBase(LValueExpr * lval);

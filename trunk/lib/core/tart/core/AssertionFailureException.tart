@@ -1,5 +1,7 @@
 /** Exception thrown when an assertion fails. */
 public class AssertionFailureException : Exception {
+  private var location:String;
+  
   def construct() {
     super();
   }

@@ -10,18 +10,14 @@ namespace tart {
 // -------------------------------------------------------------------
 // FunctionRegion
 
-SLC FunctionRegion::create(FunctionDefn * fn, SLC & parentLoc) {
-  if (parentLoc.region != NULL) {
-    FunctionRegion * region = new FunctionRegion(fn, parentLoc.region);
-    return SourceLocation(region, parentLoc.begin, parentLoc.end);
-  } else {
-    return parentLoc;
-  }
-}
-
 void FunctionRegion::trace() const {
   safeMark(function_);
   safeMark(parentRegion_);
+}
+
+void FunctionRegion::dump() const {
+  diag.debug() << function_->linkageName() << " in:";
+  parentRegion_->dump();
 }
 
 } // namespace tart

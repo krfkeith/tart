@@ -106,7 +106,7 @@ protected:
   UnionType(TupleType * members);
 
   // Given an IR type, return an estimate of the size of this type.
-  static size_t estimateTypeSize(const llvm::Type * type, size_t ptrSize);
+  static size_t estimateTypeSize(const llvm::Type * type);
 
   TupleType * members_;
   size_t numValueTypes_;
