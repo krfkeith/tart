@@ -59,11 +59,8 @@ enum LookupOptions {
 class AnalyzerBase {
 public:
   /** Constructor. */
-  AnalyzerBase(Module * mod, Scope * parent, Defn * subject = NULL,
+  AnalyzerBase(Module * mod, Scope * activeScope, Defn * subject = NULL,
       FunctionDefn * currentFunction = NULL);
-
-  /** Constructor. */
-  AnalyzerBase(const AnalyzerBase * parent);
 
   Module * module() const { return module_; }
 
@@ -168,6 +165,10 @@ public:
 
   /** True if tracing is enabled for this def. */
   static bool isTraceEnabled(Defn * de);
+
+  /** Given an absolute file location, return the location within the active region. */
+//  SLC scopedRegion(SLC & loc, SourceRegion * region);
+  SLC astLoc(const ASTNode * ast);
 
 protected:
   Module * module_;

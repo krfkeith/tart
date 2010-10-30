@@ -11,6 +11,7 @@
 #include "tart/CFG/TypeOrdering.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/TargetSelection.h"
 
 namespace tart {
 
@@ -175,11 +176,10 @@ const llvm::Type * UnionType::createIRType() const {
   // largest type is different on 32 bit vs. 64 bits, in which case we'll just report failure
   // for now.
 
-  size_t largestSize32 = 0;
-  size_t largestSize64 = 0;
-  const Type * largestType32 = 0;   // Largest type on 32-bit platforms
-  const Type * largestType64 = 0;   // Largest type on 64-bit platforms.
-  shape_ = Shape_Small_RValue;
+  size_t largestSize = 0;
+  const Type * largestType = 0;   // Largest type on.
+
+  //shape_ = Shape_Small_RValue;
   shape_ = Shape_Large_Value;
 
   // Create an array representing all of the IR types that correspond to the Tart types.
@@ -193,35 +193,21 @@ const llvm::Type * UnionType::createIRType() const {
       shape_ = Shape_Large_Value;
     }
 
-    size_t size32 = estimateTypeSize(irType, 32);
-    size_t size64 = estimateTypeSize(irType, 64);
-
-    if (size32 > largestSize32 || (size32 == largestSize32 && size64 > largestSize64)) {
-      largestSize32 = size32;
-      largestType32 = type;
-    }
-
-    if (size64 > largestSize64 || (size64 == largestSize64 && size32 > largestSize32)) {
-      largestSize64 = size64;
-      largestType64 = type;
+    size_t size = estimateTypeSize(irType);
+    if (size > largestSize) {
+      largestSize = size;
+      largestType = type;
     }
   }
 
-  if (largestType32 != largestType64) {
-    diag.error() << "Internal error: conflict generating union type:";
-    diag.info() << "  Largest type on 32-bit system is " << largestType32;
-    diag.info() << "  Largest type on 64-bit system is " << largestType64;
-  }
+  DASSERT_OBJ(largestType != NULL, this);
 
   if (numValueTypes_ > 0 || hasVoidType_) {
     const llvm::Type * discriminatorType = getDiscriminatorType();
-    const llvm::Type * largestType = largestType32->irType();
-    if (largestType32->isReferenceType()) {
-      largestType = largestType->getPointerTo();
-    }
+    const llvm::Type * largestIRType = largestType->irEmbeddedType();
     std::vector<const llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
-    unionMembers.push_back(largestType);
+    unionMembers.push_back(largestIRType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else if (hasNullType_ && numReferenceTypes_ == 1) {
     // If it's Null or some reference type, then use the reference type.
@@ -260,7 +246,7 @@ const llvm::Type * UnionType::getDiscriminatorType() const {
   }
 }
 
-size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
+size_t UnionType::estimateTypeSize(const llvm::Type * type) {
   switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
     case llvm::Type::FloatTyID:
@@ -273,14 +259,16 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type, size_t ptrSize) {
     case llvm::Type::FunctionTyID:
       return type->getPrimitiveSizeInBits();
 
-    case llvm::Type::PointerTyID:
-      return ptrSize;
+    case llvm::Type::PointerTyID: {
+      const llvm::TargetData * td = TargetSelection::instance.targetData();
+      return td->getPointerSizeInBits();
+    }
 
     case llvm::Type::StructTyID: {
       size_t total = 0;
       unsigned numFields = type->getNumContainedTypes();
       for (unsigned i = 0; i < numFields; ++i) {
-        total += estimateTypeSize(type->getContainedType(i), ptrSize);
+        total += estimateTypeSize(type->getContainedType(i));
         // TODO: Add padding?
       }
 

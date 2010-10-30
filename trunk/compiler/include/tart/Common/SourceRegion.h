@@ -55,6 +55,9 @@ public:
   /** Calculate the token position for the given source location. */
   virtual TokenPosition tokenPosition(const SourceLocation & loc) = 0;
 
+  /** Dump a description of this region. */
+  virtual void dump() const = 0;
+
   /** LLVM dynamic casting primitive. */
   static inline bool classof(const SourceRegion *) { return true; }
 };

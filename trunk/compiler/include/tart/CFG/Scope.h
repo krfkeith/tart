@@ -24,6 +24,7 @@ class ProgramSource;
 class Defn;
 class Expr;
 class LocalScope;
+class SourceRegion;
 
 /// -------------------------------------------------------------------
 /// Scope interface
@@ -55,6 +56,9 @@ public:
 
   /** Ugly hack - for now */
   virtual LocalScope * asLocalScope() { return NULL; }
+
+  /** Return the source region associated with this scope. */
+  virtual SourceRegion * region() { return NULL; }
 };
 
 typedef llvm::SetVector<Scope *> ScopeSet;
@@ -129,37 +133,43 @@ private:
 /// A block scope
 class LocalScope : public GC, public IterableScope {
 public:
-  LocalScope(Scope * parent) : IterableScope(parent) {
+  LocalScope(Scope * parent, SourceRegion * region) : IterableScope(parent), region_(region) {
     assert(parent != NULL);
   }
 
   void addMember(Defn * d);
   void trace() const;
   LocalScope * asLocalScope() { return this; }
+  SourceRegion * region() { return region_; }
+
+private:
+  SourceRegion * region_;
 };
 
 /// -------------------------------------------------------------------
 /// A scope which delegates all methods to another scope. Allows us to
 /// non-destructively modify the current scope.
 class DelegatingScope : public Scope {
-  Scope * delegate;
-  Scope * parent;
-
 public:
-  DelegatingScope(Scope * s, Scope * p) : delegate(s), parent(p) {}
+  DelegatingScope(Scope * s, Scope * p) : delegate_(s), parent_(p) {}
 
-  void setDelegate(Scope * scope) { delegate = scope; }
-  void setParentScope(Scope * scope) { parent = scope; }
+  void setDelegate(Scope * scope) { delegate_ = scope; }
+  void setParentScope(Scope * scope) { parent_ = scope; }
 
-  Scope * parentScope() const { return parent; }
-  void addMember(Defn * d) { delegate->addMember(d); }
+  Scope * parentScope() const { return parent_; }
+  void addMember(Defn * d) { delegate_->addMember(d); }
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const {
-    return delegate->lookupMember(ident, defs, inherit);
+    return delegate_->lookupMember(ident, defs, inherit);
   }
 
-  bool allowOverloads() { return delegate->allowOverloads(); }
-  Expr * baseExpr() { return delegate->baseExpr(); }
-  void dumpHierarchy(bool full = true) const { delegate->dumpHierarchy(); }
+  bool allowOverloads() { return delegate_->allowOverloads(); }
+  Expr * baseExpr() { return delegate_->baseExpr(); }
+  void dumpHierarchy(bool full = true) const { delegate_->dumpHierarchy(); }
+  SourceRegion * region() { return delegate_->region(); }
+
+private:
+  Scope * delegate_;
+  Scope * parent_;
 };
 
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;

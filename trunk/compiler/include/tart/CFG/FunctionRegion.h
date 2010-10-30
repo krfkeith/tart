@@ -24,7 +24,7 @@ public:
 
   FunctionDefn * function() const { return function_; }
 
-  static SLC create(FunctionDefn * function, SLC & parentLoc);
+//  static SLC create(FunctionDefn * function, SLC & parentLoc);
 
   // Overrides
 
@@ -33,6 +33,7 @@ public:
   const std::string & getFilePath() const { return parentRegion_->getFilePath(); }
   TokenPosition tokenPosition(SLC & loc) { return parentRegion_->tokenPosition(loc); }
   void trace() const;
+  void dump() const;
 
   // Casting
 

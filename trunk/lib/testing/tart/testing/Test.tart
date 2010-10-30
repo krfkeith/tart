@@ -75,7 +75,7 @@ class Test {
       return true;
       // TODO: Save test results
     } catch (t:Throwable) {
-      Debug.fail(self.__typeName, ".", test.name, " failed: ", t.toString());
+      Debug.failFmt("{0}.{1} failed: {2} ", self.__typeName, test.name, t);
       return false;
     }
   }

@@ -4,6 +4,7 @@
 
 #include "tart/CFG/Scope.h"
 #include "tart/CFG/Defn.h"
+#include "tart/Common/SourceRegion.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -88,6 +89,7 @@ void LocalScope::addMember(Defn * d) {
 
 void LocalScope::trace() const {
   IterableScope::trace();
+  safeMark(region_);
 }
 
 }

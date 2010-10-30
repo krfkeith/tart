@@ -43,21 +43,12 @@ llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
     llvm::cl::value_desc("defn-name"),
     llvm::cl::init("-"));
 
-AnalyzerBase::AnalyzerBase(Module * mod, Scope * parent, Defn * subject,
+AnalyzerBase::AnalyzerBase(Module * mod, Scope * activeScope, Defn * subject,
     FunctionDefn * currentFunction)
   : module_(mod)
-  , activeScope_(parent)
+  , activeScope_(activeScope)
   , subject_(subject)
   , currentFunction_(currentFunction)
-{
-  DASSERT(activeScope_ != NULL);
-}
-
-AnalyzerBase::AnalyzerBase(const AnalyzerBase * parent)
-  : module_(parent->module())
-  , activeScope_(parent->activeScope())
-  , subject_(parent->subject())
-  , currentFunction_(parent->currentFunction())
 {
   DASSERT(activeScope_ != NULL);
 }
@@ -171,7 +162,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     path.clear();
 
     // See if it's an expression.
-    ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
+    ExprAnalyzer ea(this, currentFunction_);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
       out.push_back(result);
@@ -368,7 +359,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
-  ExprAnalyzer ea(module_, activeScope_, subject(), currentFunction_);
+  ExprAnalyzer ea(this, currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     Expr * cb = ea.reduceTemplateArgExpr(*it, inferArgTypes);
     if (isErrorResult(cb)) {
@@ -919,6 +910,14 @@ void AnalyzerBase::dumpScopeList(const ExprList & lvals) {
 
   diag.unindent();
   diag.recovered();
+}
+
+SLC AnalyzerBase::astLoc(const ASTNode * ast) {
+  if (activeScope_ == NULL) {
+    return ast->location();
+  } else {
+    return ast->location().forRegion(activeScope_->region());
+  }
 }
 
 TaskInProgress * TaskInProgress::tasks_ = NULL;

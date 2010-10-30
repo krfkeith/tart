@@ -24,8 +24,8 @@ class FunctionType;
 class TypeAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  TypeAnalyzer(Module * mod, Scope * parent)
-    : AnalyzerBase(mod, parent)
+  TypeAnalyzer(Module * mod, Scope * activeScope)
+    : AnalyzerBase(mod, activeScope)
     , lookupOptions_(LOOKUP_DEFAULT)
   {}
 

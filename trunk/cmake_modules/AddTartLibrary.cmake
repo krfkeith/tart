@@ -26,7 +26,8 @@ function(add_tart_library LibName SourceRoot SourceFiles)
   # Link phase
   add_custom_command(
       OUTPUT lib${LibName}.bc
-      COMMAND tartln -filetype=bc -link-as-library -o lib${LibName}.bc ${BC_FILES}
+      COMMAND ${LLVM_BIN_DIR}/llvm-ld -link-as-library -o lib${LibName}.bc ${BC_FILES}
+      #COMMAND tartln -filetype=bc -link-as-library -o lib${LibName}.bc ${BC_FILES}
       DEPENDS ${BC_FILES} tartln
       COMMENT "Linking lib${LibName}.bc")
   

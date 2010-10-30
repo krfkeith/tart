@@ -555,8 +555,7 @@ bool FunctionAnalyzer::resolveReturnType() {
 
           const Type * type = returnExpr->type();
           if (!returnType->isEqual(type)) {
-            AnalyzerBase(module(), activeScope(), subject())
-                .analyzeType(returnType, Task_PrepTypeComparison);
+            analyzeType(returnType, Task_PrepTypeComparison);
             returnExpr = returnType->implicitCast(loc, returnExpr);
             if (returnExpr != NULL) {
               bk->exitReturn(loc, returnExpr);
@@ -636,8 +635,7 @@ bool FunctionAnalyzer::createReflectionData() {
         const Type * paramType = dealias((*it)->type());
         if (paramType->isBoxableType()) {
           // Cache the unbox function for this type.
-          ExprAnalyzer(module(), activeScope(), subject_, target)
-              .getUnboxFn(SourceLocation(), paramType);
+          ExprAnalyzer(this, target).getUnboxFn(SourceLocation(), paramType);
         } else if (!paramType->isReferenceType()) {
           // For the moment we can't handle non-reference types in reflection.
           doReflect = false;
@@ -648,7 +646,7 @@ bool FunctionAnalyzer::createReflectionData() {
         const Type * returnType = dealias(ftype->returnType());
         if (returnType->isBoxableType()) {
           // Cache the boxing function for this type.
-          ExprAnalyzer(module(), activeScope(), subject_, target).coerceToObjectFn(returnType);
+          ExprAnalyzer(this, target).coerceToObjectFn(returnType);
         } else if (!returnType->isReferenceType()) {
           // For the moment we can't handle non-reference types in reflection.
           doReflect = false;

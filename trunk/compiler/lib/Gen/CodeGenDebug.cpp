@@ -6,6 +6,7 @@
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
+#include "tart/CFG/FunctionRegion.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -52,14 +53,34 @@ static unsigned typeEncoding(TypeId id) {
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
-    if (loc.region == NULL) {
+    if (true || loc.region == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else {
       TokenPosition pos = tokenPosition(loc);
-      DASSERT(pos.beginLine);
-      builder_.SetCurrentDebugLocation(
-          DebugLoc::get(pos.beginLine, pos.beginCol, genDIFile(loc.region)));
+      if (loc.region->regionType() == SourceRegion::FUNCTION) {
+        DASSERT(pos.beginLine);
+        builder_.SetCurrentDebugLocation(
+            DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region)));
+      } else {
+        builder_.SetCurrentDebugLocation(llvm::DebugLoc());
+      }
     }
+  }
+}
+
+DIScope CodeGenerator::genRegionScope(const SourceRegion * region) {
+  if (const FunctionRegion * fregion = dyn_cast<FunctionRegion>(region)) {
+    if (fregion->function()->defnType() != Defn::Macro) {
+      return genDISubprogram(fregion->function());
+    } else {
+      return genRegionScope(region->parentRegion());
+    }
+  } else if (const ProgramSource * source = dyn_cast<ProgramSource>(region)) {
+    return dbgCompileUnit_;
+    //return genDIFile(region);
+  } else {
+    diag.fatal() << "Unsupported region type";
+    return DIScope();
   }
 }
 
@@ -117,7 +138,6 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   DASSERT(fn != NULL);
   DISubprogram & sp = dbgSubprograms_[fn];
   if ((MDNode *)sp == NULL) {
-    DIFile file = genDIFile(fn);
     DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
     DASSERT(dbgCompileUnit_.Verify());
     sp = dbgFactory_.CreateSubprogram(

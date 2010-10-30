@@ -1288,7 +1288,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
 
   Block * constructorBody = new Block("ctor_entry");
-  constructorBody->exitReturn(target->location(), NULL);
+  constructorBody->exitReturn(SourceLocation(), NULL);
 
   // TODO: Call the super ctor;
   DASSERT_OBJ(superCtor == NULL, target);
