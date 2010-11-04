@@ -185,42 +185,28 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
     if (ftype->selfParam() != NULL) {
       /// CreateVariable - Create a new descriptor for the specified variable.
       const ParameterDefn * p = ftype->selfParam();
-#if 0
-      if (p->type()->typeClass() == Type::Class) {
-        DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_arg_variable, dbgContext_,
-            p->name(), dbgCompileUnit_, getSourceLineNumber(p->location()),
-            genDIParameterType(p->type()));
-        setDebugLocation(p->location());
-        dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
-      }
-#endif
+      /// InsertDbgValueIntrinsic - Insert a new llvm.dbg.value intrinsic call.
+      DIVariable dbgVar = dbgFactory_.CreateVariable(
+          dwarf::DW_TAG_arg_variable, dbgContext_,
+          p->name(), dbgFile_, getSourceLineNumber(p->location()),
+          genDIParameterType(p->type()));
+      dbgFactory_.InsertDbgValueIntrinsic(p->irValue(), 0,
+          dbgVar, builder_.GetInsertBlock());
     }
 
     const ParameterList & params = ftype->params();
     for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
       const ParameterDefn * p = *it;
+      DIVariable dbgVar = dbgFactory_.CreateVariable(
+          dwarf::DW_TAG_arg_variable, dbgContext_,
+          p->name(), dbgFile_, getSourceLineNumber(p->location()),
+          genDIParameterType(p->type()));
       if (p->isLValue()) {
-        DIVariable dbgVar = dbgFactory_.CreateVariable(
-            dwarf::DW_TAG_arg_variable, dbgContext_,
-            p->name(), dbgFile_, getSourceLineNumber(p->location()),
-            genDIParameterType(p->type()));
-        setDebugLocation(p->location());
+        //setDebugLocation(p->location());
         dbgFactory_.InsertDeclare(p->irValue(), dbgVar, builder_.GetInsertBlock());
       } else {
-#if 1
-        /// CreateVariable - Create a new descriptor for the specified variable.
-        DIVariable argVar = dbgFactory_.CreateVariable(
-            dwarf::DW_TAG_arg_variable, dbgContext_,
-            p->name(), dbgFile_, getSourceLineNumber(p->location()),
-            genDIParameterType(p->type()));
-        dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
-#if 0
-        dbgFactory_.InsertDbgValueIntrinsic(
-            p->irValue(), llvm::Value *Offset,
-            argVar, builder_.GetInsertBlock());
-        //dbgFactory_.InsertDeclare(p->irValue(), argVar, builder_.GetInsertBlock());
-#endif
-#endif
+        dbgFactory_.InsertDbgValueIntrinsic(p->irValue(), 0,
+            dbgVar, builder_.GetInsertBlock());
       }
     }
 
@@ -229,22 +215,17 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
       LocalScope * lscope = *it;
       for (const Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
         if (const VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+          /// CreateVariable - Create a new descriptor for the specified variable.
+          DIVariable dbgVar = dbgFactory_.CreateVariable(
+              dwarf::DW_TAG_auto_variable, dbgContext_,
+              var->name(), dbgFile_, getSourceLineNumber(var->location()),
+              genDIEmbeddedType(var->type()));
+          setDebugLocation(var->location());
           if (var->hasStorage()) {
-            /// CreateVariable - Create a new descriptor for the specified variable.
-            DIVariable dbgVar = dbgFactory_.CreateVariable(
-                dwarf::DW_TAG_auto_variable, dbgContext_,
-                var->name(), dbgFile_, getSourceLineNumber(var->location()),
-                genDIEmbeddedType(var->type()));
-            setDebugLocation(var->location());
             dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
-//          } else {
-//            // Currently we can only handle vars that point to an alloca.
-//            if (isa<CompositeType>(var->type())) {
-//              DIVariable dbgVar = dbgFactory_.CreateVariable(dwarf::DW_TAG_auto_variable, dbgContext_,
-//                  var->name(), dbgCompileUnit_, getSourceLineNumber(var->location()),
-//                  genDIType(var->type()));
-//              setDebugLocation(var->location());
-//            }
+          } else {
+//            dbgFactory_.InsertDbgValueIntrinsic(var->irValue(), 0,
+//                dbgVar, builder_.GetInsertBlock());
           }
         }
       }

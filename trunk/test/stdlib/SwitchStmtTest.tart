@@ -42,8 +42,8 @@ class SwitchStmtTest : Test {
 	def testSimpleNonConstSwitch {
 		var s = switchTest(1);
 	  assertEq("One", s);
-//	  assertEq("Two", switchTest(2));
-//	  assertEq("Three", switchTest(3));
+	  assertEq("Two", switchTest(2));
+	  assertEq("Three", switchTest(3));
 	}
 
   def testNonConstFallThroughSwitch {
