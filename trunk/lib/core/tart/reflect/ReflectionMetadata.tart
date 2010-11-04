@@ -505,7 +505,7 @@ import tart.collections.ImmutableList;
         let paramTypes = typecast[DerivedType](decodeType(decoder, selfType)).typeParams;
         let fnType = FunctionType(
             returnType,
-            cond(isStatic, selfType, null),
+            cond(isStatic, null, selfType),
             paramTypes,
             _invokeFns[invokeIndex]);
         //Debug.writeLnFmt("Function type {0} : invoke {1}", fnType, invokeIndex);
