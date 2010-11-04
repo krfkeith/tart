@@ -37,7 +37,7 @@ class Test {
 
 	/** Run all tests in this class. */  
   static def run[%T](testType:TypeLiteral[T]) -> int32 {
-    var testClass:CompositeType = CompositeType.of(T);
+    var testClass:CompositeType = CompositeType.of2(T);
     var testInstance = typecast[Test](testClass.create());
     return testInstance.runTests(testClass);
   }
@@ -49,7 +49,7 @@ class Test {
   def tearDown() {}
   
   final def runTests[%T](testType:TypeLiteral[T]) -> int32 {
-    return runTests(CompositeType.of(T));
+    return runTests(CompositeType.of2(T));
   }
 
   final def runTests(testClass:CompositeType) -> int32 {

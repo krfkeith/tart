@@ -5,7 +5,7 @@ import tart.collections.ImmutableList;
 /** The compressed and encoded reflection data for a type, namespace or module. */
 @Reflection(Reflection.Detail.NONE) final class ReflectionMetadata {
   /** Tags used to represent the start of a definition. */
-	enum DefnTag : uint8 {
+  enum DefnTag : uint8 {
     SCOPE_END = 0,    // End of scope
     MODULE,           // A module definition
     NAMESPACE,        // A namespace definition
@@ -27,8 +27,8 @@ import tart.collections.ImmutableList;
     TYPEALIAS,        // A type alias
     PARAM,            // A parameter definition within a method
     TYPE_PARAM,       // A template parameter definition
-    ATTRIBUTE,				// An attribute (applies to current scope).
-    TEMPLATE_INST,		// A template instantiation
+    ATTRIBUTE,        // An attribute (applies to current scope).
+    TEMPLATE_INST,    // A template instantiation
   
     // Modifier tags which affect the containing scope.
   
@@ -38,20 +38,20 @@ import tart.collections.ImmutableList;
     //MOD_ABSTRACT,      // Modifies a class or method to be abstract
     MOD_VARIADIC,      // Modifies a parameter to be variadic
     MOD_KEYWORD_ONLY,  // Modifies a parameter to be keyword-only
-	}
-	
-	@Flags enum DefnFlags : uint8 {
-	  STATIC,
-	  ABSTRACT,
-	  FINAL,
-	  UNSAFE,
-	  PROTECTED,
-	  PRIVATE,
-	}
-	
-	/** Tags used to define types. */
+  }
+  
+  @Flags enum DefnFlags : uint8 {
+    STATIC,
+    ABSTRACT,
+    FINAL,
+    UNSAFE,
+    PROTECTED,
+    PRIVATE,
+  }
+  
+  /** Tags used to define types. */
   enum TypeTag : uint8 {
-  	VOID = 0,
+    VOID = 0,
     BOOL,
     CHAR,
     INT8,
@@ -96,17 +96,17 @@ import tart.collections.ImmutableList;
 
   enum SectionTag : uint8 {
     END = 0,
-	  TYPE_PARAMS = 1,
-  	BASE_CLASS = 2,
-  	INTERFACES = 3,
-  	ATTRIBUTES = 4,
-  	INNER_TYPES = 5,
-  	NAMESPACES = 6,
-  	FIELDS = 7,
-  	METHODS = 8,
-  	PROPERTIES = 9,
-  	BASE_TEMPLATE = 10,
-	  TEMPLATE_PARAMS = 11,
+    TYPE_PARAMS = 1,
+    BASE_CLASS = 2,
+    INTERFACES = 3,
+    ATTRIBUTES = 4,
+    INNER_TYPES = 5,
+    NAMESPACES = 6,
+    FIELDS = 7,
+    METHODS = 8,
+    PROPERTIES = 9,
+    BASE_TEMPLATE = 10,
+    TEMPLATE_PARAMS = 11,
   }
 
   typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
@@ -117,19 +117,21 @@ import tart.collections.ImmutableList;
 
   private {
     var _value:optional Object;
-  	let _names:NameTable;
-  	var _strmTypeRefs:Address[ubyte];
-  	var _strmDefns:Address[ubyte];
+    let _names:NameTable;
+    var _strmTypeRefs:Address[ubyte];
+    var _strmDefns:Address[ubyte];
     var _nameIndex:int16;
+    var _methodBaseIndex:int16;
     var _defnType:DefnTag;
     var _traits:Member.Traits;
-  	var _derivedTypes:Type[];
-  	var _compositeTypes:Address[Address[TypeInfoBlock]];
-  	var _enumTypes:Address[Address[EnumInfoBlock]];
-  	var _invokeFns:Address[CallAdapterFn];
-  	var _methods:Address[MethodPtr];
-  	// field offsets
-  	// globals
+    var _derivedTypes:Type[];
+    var _compositeTypes:Address[Address[TypeInfoBlock]];
+    var _enumTypes:Address[Address[EnumInfoBlock]];
+    var _invokeFns:Address[CallAdapterFn];
+    var _methods:Address[MethodPtr];
+    var _alloc:static fn -> Object;
+    // field offsets
+    // globals
   }
   
   undef construct;
@@ -146,9 +148,6 @@ import tart.collections.ImmutableList;
     Preconditions.checkArgument(tib is not null);
     var meta = tib.meta;
     Preconditions.checkState(meta is not null);
-    if meta is null {
-      // TODO - throw an exception?
-    }
 
     if meta._value is not null {
       return typecast[CompositeType](meta._value);
@@ -156,24 +155,37 @@ import tart.collections.ImmutableList;
 
     var type:CompositeType;
     Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
-		switch (meta._defnType) {
-		  case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
-		  case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
-		  case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
-		  case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
-		  case TEMPLATE_INST {
-		    Debug.writeLn("Reading base template");
-		    var baseTemplate = meta.readBaseTemplate();
-		    Debug.writeLnFmt("Base template kind is {0}", baseTemplate.typeKind.toString());
-		    // TODO: Implement template instantiations.
-		    type = CompositeType(baseTemplate.typeKind, tib, baseTemplate);
-		  }
-		  else { throw ArgumentError(
-		    String.concat("Invalid reflection metadata for type ", meta._defnType.toString())); }
-		}
+    switch (meta._defnType) {
+      case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
+      case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
+      case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
+      case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
+      case TEMPLATE_INST {
+        Debug.writeLn("Reading base template");
+        var baseTemplate = meta.readBaseTemplate();
+        //Debug.writeLnFmt("Base template kind is {0}", baseTemplate.typeKind.toString());
+        // TODO: Implement template instantiations.
+        type = CompositeType(baseTemplate.typeKind, tib, baseTemplate);
+      }
+      else { throw ArgumentError(
+        String.concat("Invalid reflection metadata for type ", meta._defnType.toString())); }
+    }
 
-		meta._value = type;
-		return type;
+    meta._value = type;
+    return type;
+  }
+
+  static def getEnumType(eib:Address[EnumInfoBlock]) -> EnumType {
+    Preconditions.checkArgument(eib is not null);
+    var meta = eib.meta;
+    Preconditions.checkState(meta is not null);
+
+    if meta._value is not null {
+      return typecast[EnumType](meta._value);
+    }
+    
+    // TODO: Replace with real base type.
+    return EnumType(meta, PrimitiveType.INT32);
   }
 
   // readModule
@@ -184,9 +196,19 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.BASE_CLASS);
     if length != 0 {
-	  	var base = typecast[CompositeType](decodeType(decoder, selfType));
-	  	//Debug.writeLn("Base = ", base.name);
-	  	return base;
+      var base = typecast[CompositeType](decodeType(decoder, selfType));
+      //Debug.writeLn("Base = ", base.name);
+      return base;
+    }
+    
+    return null;
+  }
+
+  def readBaseType -> optional Type {
+    let decoder = StreamDecoder(_strmDefns);
+    let length = decoder.seekToSection(SectionTag.BASE_CLASS);
+    if length != 0 {
+      return decodeType(decoder, null);
     }
     
     return null;
@@ -196,7 +218,7 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.INTERFACES);
     if length != 0 {
-    	Debug.writeLn("Length of interfaces section = ", length.toString());
+      Debug.writeLn("Length of interfaces section = ", length.toString());
     }
   }
 
@@ -204,8 +226,8 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.BASE_TEMPLATE);
     if length != 0 {
-    	Debug.writeLn("Length of base template section = ", length.toString());
-    	return typecast[CompositeType](decodeType(decoder, null));
+      //Debug.writeLn("Length of base template section = ", length.toString());
+      return typecast[CompositeType](decodeType(decoder, null));
     }
     
     return Memory.zeroPtr();
@@ -216,20 +238,20 @@ import tart.collections.ImmutableList;
     let length = decoder.seekToSection(SectionTag.TYPE_PARAMS);
     let params = ArrayList[Type]();
     if length != 0 {
-    	let endPos = decoder.position + length;
-    	while decoder.position < endPos {
-		  	params.add(decodeType(decoder, null));
-    	}
+      let endPos = decoder.position + length;
+      while decoder.position < endPos {
+        params.add(decodeType(decoder, null));
+      }
     }
     
-   	return Array.copyOf(params);
+    return Array.copyOf(params);
   }
 
   def readTemplateParams() {
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.TEMPLATE_PARAMS);
     if length != 0 {
-    	Debug.writeLn("Length of type params section = ", length.toString());
+      Debug.writeLn("Length of type params section = ", length.toString());
     }
   }
 
@@ -237,7 +259,7 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmDefns);
     let length = decoder.seekToSection(SectionTag.FIELDS);
     if length != 0 {
-    	Debug.writeLn("Length of field section = ", length.toString());
+      Debug.writeLn("Length of field section = ", length.toString());
     }
   }
 
@@ -246,18 +268,17 @@ import tart.collections.ImmutableList;
     let length = decoder.seekToSection(SectionTag.METHODS);
     let methods = ArrayList[Method]();
     if length != 0 {
-    	Debug.writeLn("Length of method section = ", length.toString());
-    	let endPos = decoder.position + length;
-    	var methodIndex = 0;
-    	while decoder.position < endPos {
-		  	let m = decodeMethod(decoder, null, methodIndex++);
-		  	Preconditions.checkState(m.kind == Member.MemberKind.METHOD);
-		  	methods.add(m);
-    	}
+      Debug.writeLn("Length of method section = ", length.toString());
+      let endPos = decoder.position + length;
+      while decoder.position < endPos {
+        let m = decodeMethod(decoder, null);
+        Preconditions.checkState(m.kind == Member.MemberKind.METHOD);
+        methods.add(m);
+      }
     }
 
-   	Debug.writeLnFmt("Returing {0} methods", methods.size);
-   	return Array.copyOf(methods);
+    Debug.writeLnFmt("Returing {0} methods", methods.size);
+    return Array.copyOf(methods);
   }
 
   def readClassMethods(selfType:Type) -> (Method[], Method[]) {
@@ -266,35 +287,34 @@ import tart.collections.ImmutableList;
     let methods = ArrayList[Method]();
     let constructors = ArrayList[Method]();
     if length != 0 {
-    	//Debug.writeLn("Length of method section = ", length.toString());
-    	let endPos = decoder.position + length;
-    	var methodIndex = 0;
-    	while decoder.position < endPos {
-		  	let m = decodeMethod(decoder, selfType, methodIndex++);
-		  	if m.kind == Member.MemberKind.CONSTRUCTOR {
-		  	  constructors.add(m);
-		  	} else {
-		  	  methods.add(m);
-		  	}
-    	}
+      //Debug.writeLn("Length of method section = ", length.toString());
+      let endPos = decoder.position + length;
+      while decoder.position < endPos {
+        let m = decodeMethod(decoder, selfType);
+        if m.kind == Member.MemberKind.CONSTRUCTOR {
+          constructors.add(m);
+        } else {
+          methods.add(m);
+        }
+      }
     }
 
-   	//Debug.writeLnFmt("Returing {0} constructors {1} methods", constructors.size, methods.size);
-   	return Array.copyOf(constructors), Array.copyOf(methods);
+    Debug.writeLnFmt("Returing {0} constructors {1} methods for {2}", constructors.size, methods.size, qualifiedName);
+    return Array.copyOf(constructors), Array.copyOf(methods);
   }
 
-  private def decodeMethod(decoder:StreamDecoder, selfType:optional Type, methodIndex:int) -> Method {
+  private def decodeMethod(decoder:StreamDecoder, selfType:optional Type) -> Method {
     let tag = DefnTag(decoder.readByte());
     let flags = DefnFlags(decoder.readByte());
     let name = decodeFieldName(decoder);
+    let methodIndex = decoder.readVarInt();
     //Debug.writeLnFmt("Decoding type for method '{0}', method index {1}", name, methodIndex);
     let methodType = typecast[FunctionType](decodeType(decoder, selfType));
-    let methodPtr = _methods[methodIndex];
-    
+
     var visibility = Member.Visibility.PUBLIC;
     var traits:Method.Traits = 0;
-		var kind:Member.MemberKind = Member.MemberKind.METHOD;
-    
+    var kind:Member.MemberKind = Member.MemberKind.METHOD;
+
     if DefnFlags.FINAL in flags {
       traits |= Method.Traits.FINAL;
     }
@@ -322,55 +342,65 @@ import tart.collections.ImmutableList;
         // Nothing to do here.
       }
 
-  	  case UNDEF {
-  	  }
+      case UNDEF {
+      }
 
-    	case OVERRIDE {
-    	}
+      case OVERRIDE {
+        traits |= Method.Traits.OVERRIDE;
+      }
 
-    	case CONSTRUCTOR {
-    	  kind = Member.MemberKind.CONSTRUCTOR;
-    	}
+      case CONSTRUCTOR {
+        kind = Member.MemberKind.CONSTRUCTOR;
+      }
 
-    	case MACRO {
-    	}
-    	
-    	else {
-    	  throw DecodingError("Invalid method tag: ", tag.toString());
-    	}
+      case MACRO {
+      }
+      
+      else {
+        throw DecodingError("Invalid method tag: ", tag.toString());
+      }
     }
 
-		var isVariadic = false;
+    var isVariadic = false;
     repeat {
       let tag = DefnTag(decoder.readByte());
       switch tag {
         case SCOPE_END {
           break;
         }
-        
+
         case ATTRIBUTE {
         }
-        
+
         case PARAM {
-			    let paramName = decodeFieldName(decoder);
-					isVariadic = false;
+          let paramName = decodeFieldName(decoder);
+          isVariadic = false;
         }
-        
+
         case MOD_VARIADIC {
-					isVariadic = true;
+          isVariadic = true;
         }
 
         else {
-    	  	throw DecodingError("Invalid parameter tag: ", tag.toString());
+          throw DecodingError("Invalid parameter tag: ", tag.toString());
         }
       }
     }
-    
+
     let attributes = Object[](0);
     let typeParams = Type[](0);
     let params = Parameter[](0);
 
+    var methodPtr:MethodPtr;
+    if methodIndex < _methodBaseIndex {
+      let tib = typecast[CompositeType](selfType).typeInfo;
+      methodPtr = tib.methodTable[methodIndex];
+    } else {
+       methodPtr = _methods[methodIndex - _methodBaseIndex];
+    }
+    
     //Debug.writeLnFmt("Decoding method named '{0}', type {1}", name, methodType);
+    //Debug.writeLnFmt("For method {0} type {1}, method index is {2} of {3}", name, methodType, methodIndex, _methodBaseIndex.toString());
 
     return Method(name, "", kind, visibility, traits, attributes, typeParams, methodType,
       params, methodPtr);
@@ -391,32 +421,32 @@ import tart.collections.ImmutableList;
     let decoder = StreamDecoder(_strmTypeRefs);
     let count = decoder.readVarInt();
     if _derivedTypes is null {
-	   	_derivedTypes = Type[](count);
+      _derivedTypes = Type[](count);
     }
 
     //Debug.writeLnFmt("Retrieving derived type {0} of {1} in {2}: ", typeIndex, count, qualifiedName);
     Preconditions.checkArgument(typeIndex < count);
     
     for i = 0; i < typeIndex; ++i {
-		  skipType(decoder);
+      skipType(decoder);
     }
 
     let typeId = TypeTag(decoder.readByte());
     var type:Type;
     switch typeId {
       else {
-			  _derivedTypes[typeIndex] = decodeTypeExpr(decoder, typeId, selfType);
+        _derivedTypes[typeIndex] = decodeTypeExpr(decoder, typeId, selfType);
       }
 
       case TUPLE
       case UNION {
-		    let count = decoder.readVarInt();
-    		let typeParams = Type[](count);
- 				let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
+        let count = decoder.readVarInt();
+        let typeParams = Type[](count);
+        let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
         //Debug.writeLnFmt("Decoding a referenced {0} with {1} members", typeKind.toString(), count);
 
-		    // Assign a value to the derived types array *before* we start decoding types,
-		    // in case the definition is recursive.
+        // Assign a value to the derived types array *before* we start decoding types,
+        // in case the definition is recursive.
         _derivedTypes[typeIndex] = DerivedType(typeKind, typeParams);
         for i in range(count) {
           let memberType = decodeType(decoder, selfType);
@@ -441,9 +471,9 @@ import tart.collections.ImmutableList;
         Debug.fail("Implement VARIADIC");
       }
       
-		  case DERIVED {
+      case DERIVED {
         Debug.fail("Implement DERIVED");
-		  }
+      }
     }
     
     return _derivedTypes[typeIndex];
@@ -452,32 +482,34 @@ import tart.collections.ImmutableList;
   /** Decode an inline type expression. */
   private def decodeTypeExpr(decoder:StreamDecoder, typeId:TypeTag, selfType:optional Type) -> Type {
     switch typeId {
-      case VOID 	{ return PrimitiveType.VOID; }
-      case BOOL 	{ return PrimitiveType.BOOL; }
-      case CHAR 	{ return PrimitiveType.CHAR; }
-      case INT8 	{ return PrimitiveType.INT8; }
-      case INT16 	{ return PrimitiveType.INT16; }
-      case INT32 	{ return PrimitiveType.INT32; }
-      case INT64 	{ return PrimitiveType.INT64; }
-      case UINT8 	{ return PrimitiveType.UINT8; }
+      case VOID   { return PrimitiveType.VOID; }
+      case BOOL   { return PrimitiveType.BOOL; }
+      case CHAR   { return PrimitiveType.CHAR; }
+      case INT8   { return PrimitiveType.INT8; }
+      case INT16  { return PrimitiveType.INT16; }
+      case INT32  { return PrimitiveType.INT32; }
+      case INT64  { return PrimitiveType.INT64; }
+      case UINT8  { return PrimitiveType.UINT8; }
       case UINT16 { return PrimitiveType.UINT16; }
       case UINT32 { return PrimitiveType.UINT32; }
       case UINT64 { return PrimitiveType.UINT64; }
-      case FLOAT 	{ return PrimitiveType.FLOAT; }
+      case FLOAT  { return PrimitiveType.FLOAT; }
       case DOUBLE { return PrimitiveType.DOUBLE; }
-      //case NULL 	{ return PrimitiveType.VOID; }
+      //case NULL   { return PrimitiveType.VOID; }
       //case UNSIZED_INT { return PrimitiveType.VOID; }
 
       case FUNCTION case FUNCTION_STATIC {
-				let isStatic = (typeId == TypeTag.FUNCTION_STATIC);
+        let isStatic = (typeId == TypeTag.FUNCTION_STATIC);
         let invokeIndex = decoder.readVarInt();
         let returnType = decodeType(decoder, selfType);
         let paramTypes = typecast[DerivedType](decodeType(decoder, selfType)).typeParams;
-				return FunctionType(
-						returnType,
-						cond(isStatic, selfType, null),
-						paramTypes,
-						_invokeFns[invokeIndex]);
+        let fnType = FunctionType(
+            returnType,
+            cond(isStatic, selfType, null),
+            paramTypes,
+            _invokeFns[invokeIndex]);
+        //Debug.writeLnFmt("Function type {0} : invoke {1}", fnType, invokeIndex);
+        return fnType;
       }
 
       case BOUND_METHOD {
@@ -486,9 +518,9 @@ import tart.collections.ImmutableList;
 
       case TUPLE
       case UNION {
-		    let count = decoder.readVarInt();
-    		let typeParams = Type[](count);
- 				let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
+        let count = decoder.readVarInt();
+        let typeParams = Type[](count);
+         let typeKind = cond(typeId == TypeTag.TUPLE, Type.TypeKind.TUPLE, Type.TypeKind.UNION);
         //Debug.writeLnFmt("Decoding an inline {0} with {1} members", typeKind.toString(), count);
         for i in range(count) {
           let memberType = decodeType(decoder, selfType);
@@ -522,33 +554,39 @@ import tart.collections.ImmutableList;
         Debug.fail("Implement VARIADIC");
       }
       
-		  case COMPOSITE {
-        Debug.fail("Implement COMPOSITE");
-		  }
-		  
-		  case DERIVED {
-        Debug.fail("Implement DERIVED");
-		  }
+      case COMPOSITE {
+        let index = decoder.readVarInt();
+        let tib = _compositeTypes[index];
+        return getCompositeType(tib);
+      }
+      
+      case DERIVED {
+        let index = decoder.readVarInt();
+        return decodeDerivedTypeRef(index, selfType);
+      }
 
-			case ENUM {
-        Debug.fail("Implement ENUM");
-			}
-			
-			else {
-			  if typeId >= TypeTag.DERIVED_IMM {
-			    let index = int(typeId) & 0x7f;
-			    return decodeDerivedTypeRef(index, selfType);
-			  } else if typeId >= TypeTag.COMPOSITE_IMM {
-			    let index = int(typeId) & 0x3f;
-			    //Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
-			  	let tib = _compositeTypes[index];
-			    return getCompositeType(tib);
-			  } else if typeId >= TypeTag.ENUM_IMM {
-	        Debug.fail("Implement ENUM_IMM");
-			  } else {
-	        Debug.fail("Invalid type id: ", typeId.toString());
-			  }
-			}
+      case ENUM {
+        let index = decoder.readVarInt();
+        return getEnumType(_enumTypes[index]);
+      }
+      
+      else {
+        if typeId >= TypeTag.DERIVED_IMM {
+          let index = int(typeId) & 0x7f;
+          return decodeDerivedTypeRef(index, selfType);
+        } else if typeId >= TypeTag.COMPOSITE_IMM {
+          let index = int(typeId) & 0x3f;
+          //Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
+          let tib = _compositeTypes[index];
+          return getCompositeType(tib);
+        } else if typeId >= TypeTag.ENUM_IMM {
+          let index = int(typeId) & 0x0f;
+          let eib = _enumTypes[index];
+          return getEnumType(eib);
+        } else {
+          Debug.fail("Invalid type id: ", typeId.toString());
+        }
+      }
     }
 
     return PrimitiveType.VOID;
@@ -556,7 +594,7 @@ import tart.collections.ImmutableList;
 
   private def skipType(decoder:StreamDecoder) {
     let typeId = TypeTag(decoder.readByte());
-		//Debug.writeLnFmt("  Skipping type {0}", typeId.toString());
+    //Debug.writeLnFmt("  Skipping type {0}", typeId.toString());
     switch typeId {
       case VOID
       case BOOL
@@ -587,8 +625,8 @@ import tart.collections.ImmutableList;
 
       case TUPLE
       case UNION {
-		    let count = decoder.readVarInt();
-   			for i in range(count) {
+        let count = decoder.readVarInt();
+        for i in range(count) {
           skipType(decoder);
         }
       }
@@ -617,27 +655,26 @@ import tart.collections.ImmutableList;
         Debug.fail("Implement VARIADIC");
       }
       
-		  case COMPOSITE {
+      case COMPOSITE {
         Debug.fail("Implement COMPOSITE");
-		  }
-		  
-		  case DERIVED {
+      }
+      
+      case DERIVED {
         Debug.fail("Implement DERIVED");
-		  }
+      }
 
-			case ENUM {
+      case ENUM {
         Debug.fail("Implement ENUM");
-			}
-			
-			else {
-			  if typeId >= TypeTag.DERIVED_IMM {
-			  } else if typeId >= TypeTag.COMPOSITE_IMM {
-			  } else if typeId >= TypeTag.ENUM_IMM {
-	        Debug.fail("Implement ENUM_IMM");
-			  } else {
-	        Debug.fail("Invalid type id: ", typeId.toString());
-			  }
-			}
+      }
+      
+      else {
+        if typeId >= TypeTag.DERIVED_IMM {
+        } else if typeId >= TypeTag.COMPOSITE_IMM {
+        } else if typeId >= TypeTag.ENUM_IMM {
+        } else {
+          Debug.fail("Invalid type id: ", typeId.toString());
+        }
+      }
     }
   }
 

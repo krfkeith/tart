@@ -587,7 +587,7 @@ bool FunctionAnalyzer::resolveReturnType() {
 
 bool FunctionAnalyzer::createReflectionData() {
   if (target->passes().begin(FunctionDefn::ReflectionPass)) {
-    bool doReflect = true;
+    bool doReflect = module_->isReflectionEnabled();
     if (!target->isSingular() || target->defnType() == Defn::Macro) {
       // Don't reflect uninstantiated templates
       doReflect = false;

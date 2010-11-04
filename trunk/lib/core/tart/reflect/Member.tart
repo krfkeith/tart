@@ -18,6 +18,7 @@
     ABSTRACT,
     STATIC,
     UNSAFE,
+    OVERRIDE,
   }
 
   private {

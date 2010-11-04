@@ -50,33 +50,36 @@ public class CompositeType : Type {
 
   /** Size of this type in bytes. */
   final def size:uint32 { get { return _size; } }
-  
+
+	/** TypeInfoBlock for this type. */
+  final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } } 
+
   /** Pointer to this type's supertype, or null. */
   final def supertype:optional CompositeType {
     get {
       if _supertype is null {
         self._supertype = _meta.readBaseClass(self);
       }
-  
+
       return _supertype;
   	}
   }
 
   /** Array of inherited interfaces. */
   final def interfaces:CompositeType[] { get { return self._interfaces; } }
-  
+
   /** Array of type parameters. */
   final def typeParams:Type[] { get { decodeTypeParams(); return self._typeParams; } }
-  
+
   /** Array of associated attributes */
   final def attributes:Object[] { get { return self._attributes; } }
-  
+
   /** Array of field members. */
   final def fields:Field[] { get { return self._fields; } }
 
   /** Array of property members. */
   final def properties:Property[] { get { return self._properties; } }
-  
+
   /** Array of constructor members. */
   final def constructors:Method[] { get { decodeMethods(); return _constructors; } }
 
@@ -102,7 +105,7 @@ public class CompositeType : Type {
     }
    	throw TypecastError(obj, self);
   }
-  
+
   /** Return the first method whose name is 'name'. */
   def findMethod(name:String) -> optional Method {
     for m in methods {
@@ -114,47 +117,57 @@ public class CompositeType : Type {
     return null;
   }
 
-  /** Allocate and initialize a new object of this type, using the specified constructor. */  
+  /** Allocate and initialize a new object of this type, using the specified constructor. */
   final def create(ctor:Method, args:Object[]) -> Object {
     switch (typeKind) {
       case CLASS {
-        let instance = self._alloc();
+        let instance = _meta._alloc();
         ctor.call(instance, args);
         return instance;
       }
-        
+
       case STRUCT {
         throw InvocationError("Unimplemented struct construction");
       }
-      
+
       else {
         throw InstantiationError(self);
       }
     }
   }
 
-  /** Allocate and initialize a new object of this type, using the specified constructor. */  
+  /** Allocate and initialize a new object of this type, using the specified constructor. */
   final def create(ctor:Method, args:Object...) -> Object {
     return create(ctor, args);
   }
-  
-  /** Allocate and initialize a new object of this type, using a default constructor. */  
+
+  /** Allocate and initialize a new object of this type, using a default constructor. */
   final def create() -> Object {
     switch (typeKind) {
       case CLASS {
+	      if _noArgCtor is null {
+  	      for ctor in constructors {
+  	        if ctor.numParams == 0 {
+			        let instance = _meta._alloc();
+              ctor.call(instance);
+              return instance;
+  	        }
+  	      }
+	      }
+        
 	      if _noArgCtor is not null {
 	        let instance = self._alloc();
 	        _noArgCtor(instance);
 	        return instance;
 	      }
-    
+
         throw InvocationError("Class '{0}' does not have a no-arg constructor".format(qualifiedName));
       }
-        
+
       case STRUCT {
         throw InvocationError("Unimplemented struct construction");
       }
-      
+
       else {
         throw InstantiationError(self);
       }
@@ -205,7 +218,7 @@ public class CompositeType : Type {
 	    return qualifiedName;
     }
   }
-  
+
   private final def decodeMethods {
     if self._methods is null {
 	    self._constructors, self._methods = _meta.readClassMethods(self);

@@ -117,7 +117,9 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       f->setLinkage(GlobalValue::LinkOnceODRLinkage);
     }
 
-    f->setGC("tart-gc");
+    if (gcEnabled_) {
+      f->setGC("tart-gc");
+    }
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);

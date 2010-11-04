@@ -32,7 +32,6 @@ class TypeOfIntrinsic : public Intrinsic {
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
-// -------------------------------------------------------------------
 // CompositeType.of intrinsic
 class CompositeTypeOfIntrinsic : public Intrinsic {
   static CompositeTypeOfIntrinsic instance;

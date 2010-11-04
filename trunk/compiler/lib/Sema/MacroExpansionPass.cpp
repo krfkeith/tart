@@ -6,6 +6,7 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionRegion.h"
+#include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/AST/Stmt.h"
@@ -45,7 +46,9 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     }
 
     FunctionRegion * macroRegion = new FunctionRegion(macro, macro->location().region);
-    LocalScope paramScope(macro->definingScope(), macroRegion);
+    LexicalBlockRegion * blockRegion = new LexicalBlockRegion(SourceLocation(macroRegion,
+        macro->location().begin, macro->location().end));
+    LocalScope paramScope(macro->definingScope(), blockRegion);
     paramScope.setScopeName("macro-params");
 
     if (in->selfArg() != NULL) {

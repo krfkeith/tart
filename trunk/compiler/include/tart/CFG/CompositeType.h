@@ -113,6 +113,9 @@ public:
   /** List of data members which have storage type Storage_Static. */
   const DefnList & staticFields() const { return staticFields_; }
 
+  /** Return the number of instance methods. */
+  size_t instanceMethodCount() const { return instanceMethods_.size(); }
+
   /** Return the number of instance fields, not including the instance slot for
       the superclass. */
   int instanceFieldCount() const;

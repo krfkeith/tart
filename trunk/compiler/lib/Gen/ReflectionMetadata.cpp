@@ -70,6 +70,7 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
     case Type::Enum: {
       const EnumType * etype = static_cast<const EnumType *>(type);
       TypeDefn * enumDefn = etype->typeDefn();
+      mmd_.defnsToExport().append(enumDefn);
       types_[etype] = TagInfo(1);
       break;
     }

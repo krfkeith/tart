@@ -50,6 +50,9 @@ ShowGen("show-generated", llvm::cl::desc("Display generated symbols"));
 static llvm::cl::opt<bool>
 Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 
+llvm::cl::opt<bool>
+NoGC("nogc", llvm::cl::desc("Don't generate garbage-collection intrinsics"));
+
 CodeGenerator::CodeGenerator(Module * mod)
     : context_(llvm::getGlobalContext())
     , builder_(llvm::getGlobalContext())
@@ -61,6 +64,7 @@ CodeGenerator::CodeGenerator(Module * mod)
     , moduleInitFunc_(NULL)
     , moduleInitBlock_(NULL)
     , reflector_(*this)
+    , gcEnabled_(!NoGC)
     , dbgFactory_(*mod->irModule())
     , unwindTarget_(NULL)
     , unwindRaiseException_(NULL)
@@ -532,18 +536,19 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
 }
 
 void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata) {
-  using namespace llvm;
-  Function * gcroot = llvm::Intrinsic::getDeclaration(
-      irModule_, llvm::Intrinsic::gcroot, NULL, 0);
+  if (gcEnabled_) {
+    Function * gcroot = llvm::Intrinsic::getDeclaration(
+        irModule_, llvm::Intrinsic::gcroot, NULL, 0);
 
-  value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
-  if (metadata == NULL) {
-    DASSERT(isa<PointerType>(value->getType()->getContainedType(0)));
-    metadata = ConstantPointerNull::get(builder_.getInt8PtrTy());
-  } else {
-    metadata = llvm::ConstantExpr::getPointerCast(metadata, builder_.getInt8PtrTy());
+    value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
+    if (metadata == NULL) {
+      DASSERT(isa<llvm::PointerType>(value->getType()->getContainedType(0)));
+      metadata = llvm::ConstantPointerNull::get(builder_.getInt8PtrTy());
+    } else {
+      metadata = llvm::ConstantExpr::getPointerCast(metadata, builder_.getInt8PtrTy());
+    }
+    builder_.CreateCall2(gcroot, value, metadata);
   }
-  builder_.CreateCall2(gcroot, value, metadata);
 }
 
 }
