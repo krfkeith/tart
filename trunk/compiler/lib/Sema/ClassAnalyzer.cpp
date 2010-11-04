@@ -1342,6 +1342,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
   // Determine if the superclass has a default constructor. If it doesn't,
   // then we cannot make a no-arg constructor.
   CompositeType * type = targetType();
+  SourceLocation loc(NULL, 0, 0);
 
   // If the default constructor took no args, then we don't need a separate no-arg
   // constructor.
@@ -1364,10 +1365,10 @@ bool ClassAnalyzer::createNoArgConstructor() {
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
-  LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
+  LValueExpr * selfExpr = LValueExpr::get(loc, NULL, selfParam);
 
   Block * constructorBody = new Block("ctor_entry");
-  constructorBody->exitReturn(target->location(), NULL);
+  constructorBody->exitReturn(loc, NULL);
 
   // TODO: Call the super ctor;
   DASSERT_OBJ(superCtor == NULL, target);
@@ -1379,8 +1380,8 @@ bool ClassAnalyzer::createNoArgConstructor() {
         analyzeVariable(field, Task_PrepConstruction);
         Expr * initValue = getFieldInitVal(field);
         if (initValue != NULL) {
-          LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, field);
-          Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initValue);
+          LValueExpr * memberExpr = LValueExpr::get(loc, selfExpr, field);
+          Expr * initExpr = new AssignmentExpr(loc, memberExpr, initValue);
           constructorBody->append(initExpr);
         }
       }

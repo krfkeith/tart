@@ -125,9 +125,9 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
-  importSystemType(Builtins::typeModule);
-  //importSystemType(Builtins::typeModuleConstants);
-  //importSystemType(Builtins::typePackage);
+  if (module_->isReflectionEnabled()) {
+    importSystemType(Builtins::typeModule);
+  }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
@@ -572,7 +572,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
     if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
       reflectType(prop->type());
-      importSystemType(Builtins::typeProperty);
+      //importSystemType(Builtins::typeProperty);
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (enableReflectionDetail) {

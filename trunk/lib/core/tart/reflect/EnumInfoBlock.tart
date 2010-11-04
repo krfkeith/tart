@@ -4,7 +4,7 @@ import tart.core.Memory.Address;
     for an enum type. */
 @Reflection(Reflection.Detail.NONE) struct EnumInfoBlock {
   /** Constants pool for this enum. */
-  private var _meta:ReflectionMetadata;
+  readonly var meta:ReflectionMetadata;
   
   /** Encoded definition of this enum type. */
 	private var _encodedDefn:Address[ubyte];

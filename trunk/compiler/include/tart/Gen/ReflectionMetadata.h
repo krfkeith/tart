@@ -57,6 +57,7 @@ public:
     : reflectedDefn_(reflectedDefn)
     , mmd_(mmd)
     , var_(NULL)
+    , methodBaseIndex_(0)
     , methodTable_(NULL)
     , strm_(strmData_)
   {}
@@ -69,8 +70,16 @@ public:
   llvm::GlobalVariable * var() const { return var_; }
   void setVar(llvm::GlobalVariable * var) { var_ = var; }
 
+  /** The method table contains only method pointers that are not already pointed to by
+      the TypeInfoBlock for the class being reflected. */
   std::vector<llvm::Constant *> & methodTable() { return methodTable_; }
   const std::vector<llvm::Constant *> & methodTable() const { return methodTable_; }
+
+  /** The base offset for indices into the method table. Method indices lower than this
+      will use the dispatch table in the TypeInfoBlock; Method indices greater than or equal to
+      this will use the method table. */
+  size_t methodBaseIndex() const { return methodBaseIndex_; }
+  void setMethodBaseIndex(size_t index) { methodBaseIndex_ = index; }
 
   // Sort all of the types by popularity and assign IDs.
   void assignIndices();
@@ -96,6 +105,7 @@ private:
   TypeMap types_;
 
   llvm::GlobalVariable * var_;
+  size_t methodBaseIndex_;
   std::vector<llvm::Constant *> methodTable_;
   std::string strmData_;
   llvm::raw_string_ostream strm_;

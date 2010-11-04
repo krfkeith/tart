@@ -124,7 +124,7 @@ Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
 }
 
 // -------------------------------------------------------------------
-// CompositeTypeOfIntrinsic
+// CompositeTypeOf2Intrinsic
 CompositeTypeOf2Intrinsic CompositeTypeOf2Intrinsic::instance;
 
 Value * CompositeTypeOf2Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {

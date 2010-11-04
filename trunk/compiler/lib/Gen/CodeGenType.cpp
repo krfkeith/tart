@@ -45,7 +45,7 @@ SystemClassMember<VariableDefn> tib_traceTable(Builtins::typeTypeInfoBlock, "tra
 SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
 
 // Members of tart.reflect.EnumInfoBlock.
-SystemClassMember<VariableDefn> eib_meta(Builtins::typeEnumInfoBlock, "_meta");
+SystemClassMember<VariableDefn> eib_meta(Builtins::typeEnumInfoBlock, "meta");
 SystemClassMember<VariableDefn> eib_encodedDefn(Builtins::typeEnumInfoBlock, "_encodedDefn");
 SystemClassMember<VariableDefn> eib_type(Builtins::typeEnumInfoBlock, "_type");
 
@@ -213,7 +213,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
-  if (!type->typeDefn()->isNonreflective()) {
+  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
     builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
   } else {
     builder.addNullField(tib_meta.type());
@@ -260,7 +260,7 @@ bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
 
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
-  if (!type->typeDefn()->isNonreflective()) {
+  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
     builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
   } else {
     builder.addNullField(tib_meta.type());
@@ -775,9 +775,10 @@ GlobalVariable * CodeGenerator::getEnumInfoBlock(const EnumType * etype) {
   }
 
   const llvm::Type * enumInfoBlockType = Builtins::typeEnumInfoBlock.irType();
+  ReflectionMetadata * rmd = reflector_.getReflectionMetadata(etype->typeDefn());
+
   StructBuilder sb(*this);
-  //sb.addField(reflector_.getReflectedScope(etype->typeDefn())->var());
-  sb.addNullField(eib_meta.type());
+  sb.addField(rmd->var());
   sb.addNullField(eib_encodedDefn.type());
   sb.addNullField(eib_type.type());
   llvm::Constant * eib = sb.build(enumInfoBlockType);

@@ -7,6 +7,7 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
 #include "tart/CFG/FunctionRegion.h"
+#include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -53,46 +54,55 @@ static unsigned typeEncoding(TypeId id) {
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
-    if (true || loc.region == NULL) {
+    if (loc.region == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else {
       TokenPosition pos = tokenPosition(loc);
-      if (loc.region->regionType() == SourceRegion::FUNCTION) {
-        DASSERT(pos.beginLine);
-        builder_.SetCurrentDebugLocation(
-            DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region)));
-      } else {
-        builder_.SetCurrentDebugLocation(llvm::DebugLoc());
-      }
+      DASSERT(pos.beginLine);
+      builder_.SetCurrentDebugLocation(
+          DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region)));
     }
   }
 }
 
-DIScope CodeGenerator::genRegionScope(const SourceRegion * region) {
-  if (const FunctionRegion * fregion = dyn_cast<FunctionRegion>(region)) {
+DIScope CodeGenerator::genRegionScope(SourceRegion * region) {
+  if (region->dbgScope().isScope()) {
+    return region->dbgScope();
+  }
+
+  if (const LexicalBlockRegion * bregion = dyn_cast<LexicalBlockRegion>(region)) {
+    TokenPosition pos = tokenPosition(bregion->location());
+    DASSERT(pos.beginLine);
+    region->dbgScope() = dbgFactory_.CreateLexicalBlock(
+        genRegionScope(region->parentRegion()),
+        genDIFile(region),
+        pos.beginLine,
+        pos.beginCol);
+  } else if (const FunctionRegion * fregion = dyn_cast<FunctionRegion>(region)) {
     if (fregion->function()->defnType() != Defn::Macro) {
-      return genDISubprogram(fregion->function());
+      region->dbgScope() = genDISubprogram(fregion->function());
     } else {
-      return genRegionScope(region->parentRegion());
+      region->dbgScope() = genRegionScope(region->parentRegion());
     }
   } else if (const ProgramSource * source = dyn_cast<ProgramSource>(region)) {
     return dbgCompileUnit_;
-    //return genDIFile(region);
   } else {
     diag.fatal() << "Unsupported region type";
     return DIScope();
   }
+
+  return region->dbgScope();
 }
 
 DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
-  using namespace llvm;
   DICompileUnit compileUnit;
   if (source != NULL) {
     sys::Path srcPath(source->getFilePath());
     if (!srcPath.empty()) {
       DASSERT(srcPath.isAbsolute());
       compileUnit = dbgFactory_.CreateCompileUnit(
-        0xABBA, // Take a chance on me...
+        llvm::dwarf::DW_LANG_lo_user,
+        //0xABBA, // Take a chance on me...
         srcPath.getLast(),
         srcPath.getDirname(),
         "0.1 tartc",
@@ -104,7 +114,6 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
 }
 
 DIFile CodeGenerator::genDIFile(const SourceRegion * source) {
-  using namespace llvm;
   DIFile & file = dbgFiles_[source->getFilePath()];
   if ((MDNode *)file == NULL) {
     if (source != NULL) {
@@ -140,12 +149,13 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   if ((MDNode *)sp == NULL) {
     DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
     DASSERT(dbgCompileUnit_.Verify());
+    DASSERT_OBJ(fn->hasBody(), fn);
     sp = dbgFactory_.CreateSubprogram(
         dbgCompileUnit_,
         fn->name(),
-        fn->qualifiedName(),
+        fn->name(), // fn->qualifiedName(),
         fn->linkageName(),
-        genDIFile(fn), // TODO: Replace for functions within a scope.
+        genDIFile(fn),
         getSourceLineNumber(fn->location()),
         dbgFuncType,
         fn->isSynthetic() /* isLocalToUnit */,

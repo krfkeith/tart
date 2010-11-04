@@ -13,6 +13,8 @@
 #include "tart/Common/SourceLocation.h"
 #endif
 
+#include "llvm/Analysis/DebugInfo.h"
+
 #include <string>
 
 namespace tart {
@@ -25,8 +27,12 @@ public:
   enum RegionType {
     FILE,
     FUNCTION,
-    LOCAL
+    LEXICAL_BLOCK,
+    MACRO_EXPANSION,
   };
+
+  const llvm::DIScope & dbgScope() const { return dbgScope_; }
+  llvm::DIScope & dbgScope() { return dbgScope_; }
 
   /** Type of this region. */
   virtual RegionType regionType() const = 0;
@@ -60,6 +66,9 @@ public:
 
   /** LLVM dynamic casting primitive. */
   static inline bool classof(const SourceRegion *) { return true; }
+
+private:
+  llvm::DIScope dbgScope_;
 };
 
 } // namespace tart

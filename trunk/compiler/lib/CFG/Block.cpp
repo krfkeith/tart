@@ -21,7 +21,7 @@ void Block::branchTo(const SourceLocation & loc, Block * target) {
 void Block::condBranchTo(const SourceLocation & loc, Expr * test, Block * trueTarget,
     Block * falseTarget) {
   DASSERT(terminator_ == BlockTerm_None);
-  DASSERT(loc.region == NULL || loc.region->regionType() != SourceRegion::FILE);
+  DASSERT(loc.region == NULL || loc.region->regionType() == SourceRegion::LEXICAL_BLOCK);
   terminator_ = BlockTerm_Conditional;
   termLoc_ = loc;
   termExprs_.push_back(test);
@@ -35,7 +35,7 @@ void Block::addCase(Expr * caseVal, Block * target) {
 }
 
 void Block::exitReturn(const SourceLocation & loc, Expr * returnVal) {
-//  DASSERT(loc.region == NULL || loc.region->regionType() != SourceRegion::FILE);
+  DASSERT(loc.region == NULL || loc.region->regionType() == SourceRegion::LEXICAL_BLOCK);
   termExprs_.clear();
   termExprs_.push_back(returnVal);
   terminator_ = BlockTerm_Return;
@@ -43,7 +43,7 @@ void Block::exitReturn(const SourceLocation & loc, Expr * returnVal) {
 }
 
 void Block::exitThrow(const SourceLocation & loc, Expr * exceptVal) {
-  DASSERT(loc.region == NULL || loc.region->regionType() != SourceRegion::FILE);
+  DASSERT(loc.region == NULL || loc.region->regionType() == SourceRegion::LEXICAL_BLOCK);
   termExprs_.clear();
   termExprs_.push_back(exceptVal);
   terminator_ = BlockTerm_Throw;
@@ -51,7 +51,7 @@ void Block::exitThrow(const SourceLocation & loc, Expr * exceptVal) {
 }
 
 void Block::exitResumeUnwind(const SourceLocation & loc, Expr * exceptVal) {
-  DASSERT(loc.region == NULL || loc.region->regionType() != SourceRegion::FILE);
+  DASSERT(loc.region == NULL || loc.region->regionType() == SourceRegion::LEXICAL_BLOCK);
   termExprs_.clear();
   termExprs_.push_back(exceptVal);
   terminator_ = BlockTerm_ResumeUnwind;

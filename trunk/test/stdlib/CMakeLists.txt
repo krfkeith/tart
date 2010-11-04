@@ -101,7 +101,7 @@ foreach(SRC_FILE ${TART_SRC})
     # Link object files
     add_custom_command(OUTPUT ${OPT_BC_FILE}
         COMMAND ${LLVM_BIN_DIR}/opt
-            -O2
+#            -O2
             -load="${REFLECTOR_PLUGIN}"
             -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
             -std-compile-opts
@@ -109,6 +109,7 @@ foreach(SRC_FILE ${TART_SRC})
             -reflector
             -globaldce
             -globalopt
+            -disable-inlining
             -o ${OPT_BC_FILE}
             ${OUT_BC_FILE}
         MAIN_DEPENDENCY "${OUT_BC_FILE}" 
