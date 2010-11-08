@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/FunctionType.h"
+#include "tart/CFG/FunctionRegion.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
@@ -159,6 +160,10 @@ bool FunctionAnalyzer::resolveParameterTypes() {
   if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
     FunctionType * ftype = target->functionType();
 
+    if (target->region() == NULL) {
+      target->setRegion(new FunctionRegion(target, target->location().region));
+    }
+
     bool trace = isTraceEnabled(target);
     if (trace) {
       diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
@@ -208,6 +213,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         ParameterDefn * param = *it;
         VarAnalyzer(param, target->definingScope(), module_, target, target)
             .analyze(Task_PrepTypeComparison);
+        param->setLocation(param->location().forRegion(target->region()));
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
@@ -250,6 +256,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
       analyzeType(selfType->typeValue(), Task_PrepMemberLookup);
+      selfParam->setLocation(target->location().forRegion(target->region()));
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
@@ -402,6 +409,8 @@ bool FunctionAnalyzer::createCFG() {
 
   if (target->passes().begin(FunctionDefn::ControlFlowPass)) {
     if (target->hasBody() && target->blocks().empty()) {
+      target->setRegion(new FunctionRegion(target, target->location().region));
+
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
 

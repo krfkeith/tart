@@ -53,6 +53,8 @@ public:
   typedef std::vector<TypeArrayElement> TypeArray;
   typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
 
+  typedef std::vector<llvm::Constant *> ConstantArray;
+
   ReflectionMetadata(const Defn * reflectedDefn, ModuleMetadata & mmd)
     : reflectedDefn_(reflectedDefn)
     , mmd_(mmd)
@@ -66,14 +68,20 @@ public:
 
   void addTypeRef(const Type * type);
   void addASTDecl(const ASTDecl * ast);
+  size_t addRetainedAttribute(llvm::Constant * attribute);
 
   llvm::GlobalVariable * var() const { return var_; }
   void setVar(llvm::GlobalVariable * var) { var_ = var; }
 
   /** The method table contains only method pointers that are not already pointed to by
       the TypeInfoBlock for the class being reflected. */
-  std::vector<llvm::Constant *> & methodTable() { return methodTable_; }
-  const std::vector<llvm::Constant *> & methodTable() const { return methodTable_; }
+  ConstantArray & methodTable() { return methodTable_; }
+  const ConstantArray & methodTable() const { return methodTable_; }
+
+  /** The retained attribute table contains attribute instances that are needed by
+      the class or members of the class. */
+  ConstantArray & retainedAttrTable() { return retainedAttrs_; }
+  const ConstantArray & retainedAttrTable() const { return retainedAttrs_; }
 
   /** The base offset for indices into the method table. Method indices lower than this
       will use the dispatch table in the TypeInfoBlock; Method indices greater than or equal to
@@ -106,13 +114,15 @@ private:
 
   llvm::GlobalVariable * var_;
   size_t methodBaseIndex_;
-  std::vector<llvm::Constant *> methodTable_;
+  ConstantArray methodTable_;
   std::string strmData_;
   llvm::raw_string_ostream strm_;
 
   TypeArray derivedTypeRefs_;
   TypeArray compositeTypeRefs_;
   TypeArray enumTypeRefs_;
+
+  ConstantArray retainedAttrs_;
 };
 
 }

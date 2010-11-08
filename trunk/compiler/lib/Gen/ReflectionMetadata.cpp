@@ -159,6 +159,12 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
   }
 }
 
+size_t ReflectionMetadata::addRetainedAttribute(llvm::Constant * attribute) {
+  size_t index = retainedAttrs_.size();
+  retainedAttrs_.push_back(attribute);
+  return index;
+}
+
 void ReflectionMetadata::assignIndices() {
   for (TypeMap::iterator it = types_.begin(); it != types_.end(); ++it) {
     // Only insert types into the table if there's more than one; Otherwise

@@ -1285,7 +1285,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
   selfParam->setFlag(ParameterDefn::Reference, true);
-  LValueExpr * selfExpr = LValueExpr::get(target->location(), NULL, selfParam);
+  LValueExpr * selfExpr = LValueExpr::get(SourceLocation(), NULL, selfParam);
 
   Block * constructorBody = new Block("ctor_entry");
   constructorBody->exitReturn(SourceLocation(), NULL);
@@ -1302,7 +1302,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
 
         if (field->visibility() == Public) {
           ParameterDefn * param = new ParameterDefn(module_, field->name());
-          param->setLocation(target->location());
+          param->setLocation(SourceLocation());
           param->setType(field->type());
           param->setInternalType(field->type());
           param->addTrait(Defn::Singular);
@@ -1315,12 +1315,12 @@ bool ClassAnalyzer::createDefaultConstructor() {
             requiredParams.push_back(param);
           }
 
-          initValue = LValueExpr::get(target->location(), NULL, param);
+          initValue = LValueExpr::get(SourceLocation(), NULL, param);
         }
 
         if (initValue != NULL) {
-          LValueExpr * memberExpr = LValueExpr::get(target->location(), selfExpr, field);
-          Expr * initExpr = new AssignmentExpr(target->location(), memberExpr, initValue);
+          LValueExpr * memberExpr = LValueExpr::get(SourceLocation(), selfExpr, field);
+          Expr * initExpr = new AssignmentExpr(SourceLocation(), memberExpr, initValue);
           constructorBody->append(initExpr);
         }
       }
@@ -1449,6 +1449,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
 
   FunctionType * funcType = new FunctionType(&VoidType::instance, params);
   funcType->setSelfParam(selfParam);
+
   FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module_, istrings.idConstruct);
   constructorDef->setFunctionType(funcType);
   constructorDef->setLocation(target->location());

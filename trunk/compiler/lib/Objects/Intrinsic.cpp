@@ -104,7 +104,22 @@ TypeOfIntrinsic TypeOfIntrinsic::instance;
 Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
-  return cg.createTypeObjectPtr(type->value());
+  if (isa<CompositeType>(type->value())) {
+    Value * result = CompositeTypeOfIntrinsic::instance.generate(cg, call);
+    return cg.builder().CreateStructGEP(result, 0);
+  } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(type->value())) {
+    return cg.getPrimitiveTypeObjectPtr(ptype);
+  }
+
+  // We need a module pointer
+  DASSERT_OBJ(cg.module()->reflectedTypes().count(type->value()), type->value());
+  llvm::Constant * module = cg.createModuleObjectPtr();
+
+  // Need a function call...
+
+  //return cg.genTypeReference(type->value());
+  //return cg.createModuleObjectPtr();
+  DFAIL("Implement");
 }
 
 // -------------------------------------------------------------------
@@ -112,6 +127,7 @@ Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
 CompositeTypeOfIntrinsic CompositeTypeOfIntrinsic::instance;
 
 Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+#if 0
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
   const Type * type = typeLiteral->value();
@@ -121,6 +137,18 @@ Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
 
   return cg.builder().CreateBitCast(
       cg.createTypeObjectPtr(type), Builtins::typeCompositeType->irEmbeddedType(), "bitcast");
+#else
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
+  const CompositeType * type = cast<CompositeType>(typeLiteral->value());
+  Constant * tib = cg.getTypeInfoBlockPtr(type);
+
+  ValueList args;
+  args.push_back(tib);
+  Function * getType = cg.genFunctionValue(Builtins::funcGetType);
+  Value * result = cg.builder().CreateCall(getType, args.begin(), args.end());
+  return result;
+#endif
 }
 
 // -------------------------------------------------------------------

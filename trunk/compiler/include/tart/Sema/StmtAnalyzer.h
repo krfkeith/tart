@@ -221,7 +221,6 @@ private:
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
   FunctionDefn * function;
-  SourceRegion * functionRegion_;
   SourceRegion * rootBlockRegion_;
   const Type * returnType_;
   Type * yieldType_;

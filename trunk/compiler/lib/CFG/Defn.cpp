@@ -127,8 +127,9 @@ const std::string & Defn::linkageName() const {
 }
 
 const SourceLocation & Defn::location() const {
-  static const SourceLocation defaultLocation;
-  return ast_ ? ast_->location() : defaultLocation;
+  //static const SourceLocation defaultLocation;
+  return loc;
+  //return ast_ ? ast_->location() : defaultLocation;
 }
 
 Module * Defn::sourceModule() const {

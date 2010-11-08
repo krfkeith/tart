@@ -166,6 +166,14 @@ Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
   if (in->value()->typeDefn() != NULL) {
     module->addSymbol(in->value()->typeDefn());
   }
+
+  if (!isa<CompositeType>(in->value())) {
+    module->reflectedTypes().insert(in->value());
+    if (isa<PrimitiveType>(in->value())) {
+      module->addSymbol(Builtins::typePrimitiveType.typeDefn());
+    }
+  }
+
   return in;
 }
 

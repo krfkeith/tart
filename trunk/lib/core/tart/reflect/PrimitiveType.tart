@@ -82,13 +82,13 @@ class PrimitiveType : Type {
 
   final override isUnsignedIntegerType:bool {
     get {
-      return self._subtype >= SubtypeId.CHAR or
+      return self._subtype == SubtypeId.CHAR or
       		(self._subtype >= SubtypeId.UINT8 and self._subtype <= SubtypeId.UINT64);
     }
   }
 
   final override isFloatType:bool {
-    get { return self._subtype >= SubtypeId.FLOAT and self._subtype >= SubtypeId.DOUBLE; }
+    get { return self._subtype >= SubtypeId.FLOAT and self._subtype <= SubtypeId.DOUBLE; }
   }
 
   final override toString() -> String {

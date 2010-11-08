@@ -97,9 +97,6 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
 {
   insertPos_ = blocks.end();
   returnType_ = function->returnType();
-  functionRegion_ = new FunctionRegion(function, function->location().region);
-  rootBlockRegion_ = new LexicalBlockRegion(
-      SourceLocation(functionRegion_, function->location().begin, function->location().end));
 }
 
 bool StmtAnalyzer::buildCFG() {
@@ -159,7 +156,7 @@ bool StmtAnalyzer::buildCFG() {
         diag.error(body->finalLocation()) <<
             "Missing return statement at end of non-void function.";
       }
-      currentBlock_->exitReturn(body->finalLocation().forRegion(rootBlockRegion_), NULL);
+      currentBlock_->exitReturn(body->finalLocation().forRegion(function->region()), NULL);
     }
 
     return true;
@@ -232,7 +229,7 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
 
   SourceRegion * region = activeScope()->region();
   if (isRootBlock) {
-    region = rootBlockRegion_;
+    region = function->region();
   } else {
     // TODO: Create a local scope region.
     DASSERT(region != NULL);
@@ -1591,12 +1588,15 @@ Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {
     diag.error(ast) << "Multiple variable declarations not allowed here";
   }
 
-  return ScopeBuilder::createLocalDefn(activeScope(), function, ast);
+  Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function, ast);
+  var->setLocation(astLoc(ast));
+  return var;
 }
 
 bool StmtAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
   for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
     Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function, *it);
+    var->setLocation(astLoc(*it));
     vars.push_back(var);
   }
 
@@ -1848,7 +1848,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
       proc.stateVar->setType(&Int32Type::instance);
       proc.stateVar->setStorageClass(Storage_Local);
       proc.stateVar->addTrait(Defn::Singular);
-      proc.stateExpr = LValueExpr::get(proc.stateVar);
+      proc.stateExpr = LValueExpr::get(SourceLocation(), NULL, proc.stateVar);
 
       // Add it to the local scope
       if (stateVarScope == NULL) {

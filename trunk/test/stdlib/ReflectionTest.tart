@@ -178,10 +178,181 @@ class ReflectionTest : Test {
 	  assertTrue(method.type.paramTypes[1].isIntegerType);
   }
 
-  def testNonClassTypes {
-    assertTrue(Type.of(int).isIntegerType);
-    assertTrue(Type.of(float).isFloatType);
+  def testVoidType {
+    // void
     assertTrue(Type.of(void).isVoidType);
+    assertFalse(Type.of(void).isNullType);
+    assertFalse(Type.of(void).isBooleanType);
+    assertFalse(Type.of(void).isCharType);
+    assertFalse(Type.of(void).isIntegerType);
+    assertFalse(Type.of(void).isSignedIntegerType);
+    assertFalse(Type.of(void).isUnsignedIntegerType);
+    assertFalse(Type.of(void).isFloatType);
+  }
+
+  def testNullType {
+    // Null
+    assertFalse(Type.of(Null).isVoidType);
+    assertTrue(Type.of(Null).isNullType);
+    assertFalse(Type.of(Null).isBooleanType);
+    assertFalse(Type.of(Null).isCharType);
+    assertFalse(Type.of(Null).isIntegerType);
+    assertFalse(Type.of(Null).isSignedIntegerType);
+    assertFalse(Type.of(Null).isUnsignedIntegerType);
+    assertFalse(Type.of(Null).isFloatType);
+  }
+
+  def testBoolType {
+    // bool
+    assertFalse(Type.of(bool).isVoidType);
+    assertFalse(Type.of(bool).isNullType);
+    assertTrue(Type.of(bool).isBooleanType);
+    assertFalse(Type.of(bool).isCharType);
+    assertFalse(Type.of(bool).isIntegerType);
+    assertFalse(Type.of(bool).isSignedIntegerType);
+    assertFalse(Type.of(bool).isUnsignedIntegerType);
+    assertFalse(Type.of(bool).isFloatType);
+  }
+
+  def testCharType {
+    // char
+    assertFalse(Type.of(char).isVoidType);
+    assertFalse(Type.of(char).isNullType);
+    assertFalse(Type.of(char).isBooleanType);
+    assertTrue(Type.of(char).isCharType);
+    assertTrue(Type.of(char).isIntegerType);
+    assertFalse(Type.of(char).isSignedIntegerType);
+    assertTrue(Type.of(char).isUnsignedIntegerType);
+    assertFalse(Type.of(char).isFloatType);
+  }
+
+  def testSignedIntegerTypes {
+    // int8
+    assertFalse(Type.of(int8).isVoidType);
+    assertFalse(Type.of(int8).isNullType);
+    assertFalse(Type.of(int8).isBooleanType);
+    assertFalse(Type.of(int8).isCharType);
+    assertTrue(Type.of(int8).isIntegerType);
+    assertTrue(Type.of(int8).isSignedIntegerType);
+    assertFalse(Type.of(int8).isUnsignedIntegerType);
+    assertFalse(Type.of(int8).isFloatType);
+
+    // int16
+    assertFalse(Type.of(int16).isVoidType);
+    assertFalse(Type.of(int16).isNullType);
+    assertFalse(Type.of(int16).isBooleanType);
+    assertFalse(Type.of(int16).isCharType);
+    assertTrue(Type.of(int16).isIntegerType);
+    assertTrue(Type.of(int16).isSignedIntegerType);
+    assertFalse(Type.of(int16).isUnsignedIntegerType);
+    assertFalse(Type.of(int16).isFloatType);
+
+    // int32
+    assertFalse(Type.of(int32).isVoidType);
+    assertFalse(Type.of(int32).isNullType);
+    assertFalse(Type.of(int32).isBooleanType);
+    assertFalse(Type.of(int32).isCharType);
+    assertTrue(Type.of(int32).isIntegerType);
+    assertTrue(Type.of(int32).isSignedIntegerType);
+    assertFalse(Type.of(int32).isUnsignedIntegerType);
+    assertFalse(Type.of(int32).isFloatType);
+
+    // int64
+    assertFalse(Type.of(int64).isVoidType);
+    assertFalse(Type.of(int64).isNullType);
+    assertFalse(Type.of(int64).isBooleanType);
+    assertFalse(Type.of(int64).isCharType);
+    assertTrue(Type.of(int64).isIntegerType);
+    assertTrue(Type.of(int64).isSignedIntegerType);
+    assertFalse(Type.of(int64).isUnsignedIntegerType);
+    assertFalse(Type.of(int64).isFloatType);
+
+    // int
+    assertFalse(Type.of(int).isVoidType);
+    assertFalse(Type.of(int).isNullType);
+    assertFalse(Type.of(int).isBooleanType);
+    assertFalse(Type.of(int).isCharType);
+    assertTrue(Type.of(int).isIntegerType);
+    assertTrue(Type.of(int).isSignedIntegerType);
+    assertFalse(Type.of(int).isUnsignedIntegerType);
+    assertFalse(Type.of(int).isFloatType);
+  }
+
+  def testUnsignedIntegerTypes {
+    // uint8
+    assertFalse(Type.of(uint8).isVoidType);
+    assertFalse(Type.of(uint8).isNullType);
+    assertFalse(Type.of(uint8).isBooleanType);
+    assertFalse(Type.of(uint8).isCharType);
+    assertTrue(Type.of(uint8).isIntegerType);
+    assertFalse(Type.of(uint8).isSignedIntegerType);
+    assertTrue(Type.of(uint8).isUnsignedIntegerType);
+    assertFalse(Type.of(uint8).isFloatType);
+
+    // uint16
+    assertFalse(Type.of(uint16).isVoidType);
+    assertFalse(Type.of(uint16).isNullType);
+    assertFalse(Type.of(uint16).isBooleanType);
+    assertFalse(Type.of(uint16).isCharType);
+    assertTrue(Type.of(uint16).isIntegerType);
+    assertFalse(Type.of(uint16).isSignedIntegerType);
+    assertTrue(Type.of(uint16).isUnsignedIntegerType);
+    assertFalse(Type.of(uint16).isFloatType);
+
+    // uint32
+    assertFalse(Type.of(uint32).isVoidType);
+    assertFalse(Type.of(uint32).isNullType);
+    assertFalse(Type.of(uint32).isBooleanType);
+    assertFalse(Type.of(uint32).isCharType);
+    assertTrue(Type.of(uint32).isIntegerType);
+    assertFalse(Type.of(uint32).isSignedIntegerType);
+    assertTrue(Type.of(uint32).isUnsignedIntegerType);
+    assertFalse(Type.of(uint32).isFloatType);
+
+    // uint64
+    assertFalse(Type.of(uint64).isVoidType);
+    assertFalse(Type.of(uint64).isNullType);
+    assertFalse(Type.of(uint64).isBooleanType);
+    assertFalse(Type.of(uint64).isCharType);
+    assertTrue(Type.of(uint64).isIntegerType);
+    assertFalse(Type.of(uint64).isSignedIntegerType);
+    assertTrue(Type.of(uint64).isUnsignedIntegerType);
+    assertFalse(Type.of(uint64).isFloatType);
+
+    // uint
+    assertFalse(Type.of(uint).isVoidType);
+    assertFalse(Type.of(uint).isNullType);
+    assertFalse(Type.of(uint).isBooleanType);
+    assertFalse(Type.of(uint).isCharType);
+    assertTrue(Type.of(uint).isIntegerType);
+    assertFalse(Type.of(uint).isSignedIntegerType);
+    assertTrue(Type.of(uint).isUnsignedIntegerType);
+    assertFalse(Type.of(uint).isFloatType);
+  }
+
+  def testFloatTypes {
+    // float
+    assertFalse(Type.of(float).isVoidType);
+    assertFalse(Type.of(float).isNullType);
+    assertFalse(Type.of(float).isBooleanType);
+    assertFalse(Type.of(float).isCharType);
+    assertFalse(Type.of(float).isIntegerType);
+    assertFalse(Type.of(float).isSignedIntegerType);
+    assertFalse(Type.of(float).isUnsignedIntegerType);
+    assertTrue(Type.of(float).isFloatType);
+
+    // double
+    assertFalse(Type.of(double).isVoidType);
+    assertFalse(Type.of(double).isNullType);
+    assertFalse(Type.of(double).isBooleanType);
+    assertFalse(Type.of(double).isCharType);
+    assertFalse(Type.of(double).isIntegerType);
+    assertFalse(Type.of(double).isSignedIntegerType);
+    assertFalse(Type.of(double).isUnsignedIntegerType);
+    assertTrue(Type.of(double).isFloatType);
+  }
+
+  def testNonClassTypes {
 //    assertTrue(Type.of(TypeLiteral[int[]]()) isa CompositeType);
   }
 }

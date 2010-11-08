@@ -8,9 +8,8 @@ import tart.core.Memory.Address;
   private {
     let _meta:ReflectionMetadata;
     //var _encodedTypeExports:Address[ubyte];
-    //var _encodedMethodExports:Address[ubyte];
     var _nameIndex:int16;
-    var _types:Type[];
+    var _memberTypes:Type[];
     var _methods:Method[];
     //var _typesNew: optional Type[];
     //var _globalsNew: optional Field[];
@@ -39,16 +38,10 @@ import tart.core.Memory.Address;
   } }
 
   /** Array of types defined in this module. */
-  final def types:Type[] { get { return self._types; } }
-
-  /** Array of types defined in this module. */
-  //final def typesNew:ImmutableList[Type] { get { return self._types; } }
+  final def types:Type[] { get { decodeTypes(); return self._memberTypes; } }
 
   /** Array of types defined in this module. */
   final def methods:Method[] { get { decodeMethods(); return self._methods; } }
-
-	/** The strings table for this module. */ 
-  //final def strings:ImmutableList[String] { get { return self._constants.strings; } }
 
   /** Returns a reference to the caller's module. */  
   @Intrinsic static def thisModule() -> Module;
@@ -59,6 +52,15 @@ import tart.core.Memory.Address;
   private final def decodeMethods {
     if self._methods is null {
 	    self._methods = _meta.readModuleMethods();
+    }
+  }
+
+  private final def decodeTypes {
+    if self._memberTypes is null {
+      let memberTypes = _meta.readMemberTypes();
+	    //Debug.writeLnFmt("Assigning member types for {0}", self.name);
+	    self._memberTypes = memberTypes;
+	    //Debug.writeLn("Assigned member types");
     }
   }
 

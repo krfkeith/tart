@@ -353,9 +353,12 @@ public:
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   void genDISubprogramStart(const FunctionDefn * fn);
+  void genDIParameter(const ParameterDefn * param);
   void genDIGlobalVariable(const VariableDefn * var, llvm::GlobalVariable * gv);
+  void genDILocalVariable(const VariableDefn * var, llvm::Value * value);
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void setDebugLocation(const SourceLocation & loc);
+  void clearDebugLocation();
   llvm::DIScope genRegionScope(SourceRegion * region);
 
   /** Generate debugging information for types. */
@@ -370,7 +373,6 @@ public:
   llvm::DICompositeType genDITupleType(const TupleType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);
   llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
-  llvm::DIDerivedType genDITypeBase(const CompositeType * type);
   llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
   llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * irtype,
       llvm::StringRef name, int index);
@@ -383,6 +385,7 @@ public:
   llvm::GlobalVariable * createPackageObjectPtr();
   llvm::GlobalVariable * createPackageObjectPtr(Module * module);
   llvm::Constant * createTypeObjectPtr(const Type * type);
+  llvm::Constant * getPrimitiveTypeObjectPtr(const PrimitiveType * type);
 
   // Generate the function that unboxes arguments from reflection interfaces.
   llvm::Function * genCallAdapterFn(const FunctionType * fnType);
@@ -464,6 +467,7 @@ private:
   llvm::DIScope dbgContext_;
   DITypeMap dbgTypeMap_;
   SourceLocation dbgLocation_;
+  SourceRegion * functionRegion_;
 
   llvm::BasicBlock * unwindTarget_;
   llvm::Function * unwindRaiseException_;

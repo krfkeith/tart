@@ -357,7 +357,7 @@ bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args
       if (param->isVariadic()) {
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-            param->location(), param->type());
+            cd->callExpr()->location(), param->type());
         //diag.debug() << "Creating default array literal of type " << param->type() << " calling method " << cd->method();
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;

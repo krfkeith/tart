@@ -28,13 +28,16 @@ enum SectionTag {
   TAG_SECTION_BASE_CLASS = 2,
   TAG_SECTION_INTERFACES = 3,
   TAG_SECTION_ATTRIBUTES = 4,
-  TAG_SECTION_INNER_TYPES = 5,
+  TAG_SECTION_MEMBER_TYPES = 5,
   TAG_SECTION_NAMESPACES = 6,
   TAG_SECTION_FIELDS = 7,
   TAG_SECTION_METHODS = 8,
   TAG_SECTION_PROPERTIES = 9,
   TAG_SECTION_BASE_TEMPLATE = 10,
   TAG_SECTION_TEMPLATE_PARAMS = 11,
+
+  // Array of literal types imported into a module
+//  TAG_SECTION_LITERAL_TYPES = 12,
 };
 
 /// -------------------------------------------------------------------
