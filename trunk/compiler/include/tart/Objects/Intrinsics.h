@@ -34,6 +34,7 @@ class TypeOfIntrinsic : public Intrinsic {
 
 // CompositeType.of intrinsic
 class CompositeTypeOfIntrinsic : public Intrinsic {
+public:
   static CompositeTypeOfIntrinsic instance;
   CompositeTypeOfIntrinsic() : Intrinsic("tart.reflect.CompositeType.of") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;

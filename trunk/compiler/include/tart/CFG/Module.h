@@ -23,6 +23,7 @@
 
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/DenseSet.h"
 
 namespace llvm {
 class Module;
@@ -41,6 +42,8 @@ typedef llvm::DenseMap<TypePair, FunctionDefn *, TypePair::KeyInfo> ConverterMap
 /// A translation unit.
 class Module : public Defn, public IterableScope {
 public:
+  typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
+
   enum ModuleFlags {
     Module_Debug = (1<<0),      // Print debug options
     Module_Reflect = (1<<1),    // Generate reflection metadata
@@ -86,6 +89,9 @@ public:
 
   /** Get the set of defns for which reflection data is generated. */
   DefnSet & reflectedDefs() { return reflectedDefs_; }
+
+  /** Get the set of defns for which reflection data is generated. */
+  TypeSet & reflectedTypes() { return reflectedTypes_; }
 
   /** Keep track of which system defs have been imported into this module. */
   DefnSet & systemDefs() { return systemDefs_; }
@@ -152,6 +158,7 @@ private:
   DefnSet exportDefs_;
   DefnSet importDefs_;
   DefnSet reflectedDefs_;
+  TypeSet reflectedTypes_;
   DefnSet systemDefs_;
   DefnList initDefs_;
   Agenda<Defn> defsToAnalyze_;

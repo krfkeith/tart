@@ -268,6 +268,7 @@ private:
 
   Module * module();
 
+  llvm::Constant * getRetainedAttr(const Expr * attrExpr);
   bool isExport(const Defn * de);
 
   CodeGenerator & cg_;

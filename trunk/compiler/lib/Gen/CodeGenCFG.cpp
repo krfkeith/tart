@@ -71,13 +71,9 @@ void CodeGenerator::initGCRoot(Value * rootValue) {
   AllocaInst * alloca = cast<AllocaInst>(rootValue);
   const llvm::Type * rootType = alloca->getAllocatedType();
   if (const PointerType * ptype = dyn_cast<PointerType>(rootType)) {
-    builder_.CreateStore(
-        ConstantPointerNull::get(ptype),
-        alloca);
+    builder_.CreateStore(ConstantPointerNull::get(ptype), alloca);
   } else {
-    builder_.CreateStore(
-        ConstantAggregateZero::get(rootType),
-        alloca);
+    builder_.CreateStore(ConstantAggregateZero::get(rootType), alloca);
   }
 }
 

@@ -32,8 +32,6 @@ public:
     return new LValueExpr(loc, baseVal, val);
   }
 
-  static LValueExpr * get(ValueDefn * val);
-
   /** Constructor. */
   LValueExpr(const SourceLocation & loc, Expr * baseVal, ValueDefn * val);
 

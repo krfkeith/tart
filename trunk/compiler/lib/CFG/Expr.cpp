@@ -234,10 +234,6 @@ void ArglistExpr::trace() const {
 // -------------------------------------------------------------------
 // LValueExpr
 
-LValueExpr * LValueExpr::get(ValueDefn * val) {
-  return new LValueExpr(val->location(), NULL, val);
-}
-
 LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * value)
   : Expr(LValue, loc, value->type())
   , base_(base)

@@ -12,6 +12,7 @@
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/FunctionRegion.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
 
@@ -123,7 +124,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
-      setDebugLocation(fdef->location());
+      clearDebugLocation();
+      functionRegion_ = fdef->region();
     }
 
     BasicBlock * prologue = BasicBlock::Create(context_, "prologue", f);
@@ -220,6 +222,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     //}
 
     dbgContext_ = DISubprogram();
+    functionRegion_ = NULL;
     builder_.ClearInsertionPoint();
     builder_.SetCurrentDebugLocation(llvm::DebugLoc());
   }

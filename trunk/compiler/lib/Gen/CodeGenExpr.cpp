@@ -285,6 +285,7 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
     DASSERT_OBJ(initValue != NULL, var);
     DASSERT_TYPE_EQ(in->initExpr(), var->type()->irParameterType(), initValue->getType());
     var->setIRValue(initValue);
+    genDILocalVariable(var, initValue);
   } else {
     // Store the initValue to the variable.
     DASSERT_TYPE_EQ(in->initExpr(), var->type()->irParameterType(), initValue->getType());
@@ -296,7 +297,7 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
     DASSERT_TYPE_EQ_MSG(in->initExpr(),
         var->irValue()->getType()->getContainedType(0),
         initValue->getType(), "genInitVar:Var");
-    setDebugLocation(var->location());
+    //setDebugLocation(var->location());
     builder_.CreateStore(initValue, var->irValue());
   }
 
@@ -332,7 +333,7 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
         lvalue->getType()->getContainedType(0),
         rvalue->getType(), "doAssignment");
 
-    setDebugLocation(in->location());
+    //setDebugLocation(in->location());
     if (in->exprType() == Expr::PostAssign) {
       Value * result = builder_.CreateLoad(lvalue);
       builder_.CreateStore(rvalue, lvalue);
@@ -382,14 +383,14 @@ Value * CodeGenerator::genMultiAssign(const MultiAssignExpr * in) {
 Value * CodeGenerator::genBinaryOpcode(const BinaryOpcodeExpr * in) {
   Value * lOperand = genExpr(in->first());
   Value * rOperand = genExpr(in->second());
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   return builder_.CreateBinOp(in->opCode(), lOperand, rOperand);
 }
 
 llvm::Value * CodeGenerator::genCompare(const tart::CompareExpr* in) {
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   CmpInst::Predicate pred = in->predicate();
   if (pred >= CmpInst::FIRST_ICMP_PREDICATE &&
       pred <= CmpInst::LAST_ICMP_PREDICATE) {
@@ -408,7 +409,7 @@ Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
     return NULL;
   }
 
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   if (const UnionType * utype = dyn_cast<UnionType>(in->value()->type())) {
     return genUnionTypeTest(val, utype, in->toType(), false);
   }
@@ -422,7 +423,7 @@ Value * CodeGenerator::genRefEq(const BinaryExpr * in, bool invert) {
   DASSERT_OBJ(in->first()->type()->isEqual(in->second()->type()), in);
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   if (first != NULL && second != NULL) {
     if (invert) {
       return builder_.CreateICmpNE(first, second);
@@ -441,7 +442,7 @@ Value * CodeGenerator::genPtrDeref(const UnaryExpr * in) {
     DASSERT_TYPE_EQ_MSG(in,
         in->type()->irType(),
         ptrVal->getType()->getContainedType(0), "for expression " << in);
-    setDebugLocation(in->location());
+    //setDebugLocation(in->location());
     return builder_.CreateLoad(ptrVal);
   }
 
@@ -454,7 +455,7 @@ Value * CodeGenerator::genNot(const UnaryExpr * in) {
       return genRefEq(static_cast<const BinaryExpr *>(in->arg()), true);
 
     default: {
-      setDebugLocation(in->location());
+      //setDebugLocation(in->location());
       Value * result = genExpr(in->arg());
       return result ? builder_.CreateNot(result) : NULL;
     }
@@ -464,7 +465,7 @@ Value * CodeGenerator::genNot(const UnaryExpr * in) {
 Value * CodeGenerator::genComplement(const UnaryExpr * in) {
   Value * result = genExpr(in->arg());
   Value * allOnes = llvm::ConstantInt::getAllOnesValue(result->getType());
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   return result ? builder_.CreateXor(result, allOnes) : NULL;
 }
 
@@ -481,7 +482,7 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
     return NULL;
   }
 
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
 
   builder_.SetInsertPoint(blkTrue);
   builder_.CreateBr(blkNext);
@@ -671,7 +672,7 @@ Value * CodeGenerator::genElementAddr(const BinaryExpr * in) {
     return NULL;
   }
 
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(),
       labelStream.str().c_str());
 }
@@ -872,20 +873,20 @@ Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
     size_t index = 0;
     for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it, ++index) {
       Value * fieldValue = genExpr(*it);
-      setDebugLocation((*it)->location());
+      //setDebugLocation((*it)->location());
       tupleValue = builder_.CreateInsertValue(tupleValue, fieldValue, index);
     }
 
     return tupleValue;
   } else {
     // Large tuple values stored in local allocas.
-    setDebugLocation(in->location());
+    //setDebugLocation(in->location());
     Value * tupleValue = builder_.CreateAlloca(tt->irType(), 0, "tuple");
     size_t index = 0;
     for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it, ++index) {
       Value * fieldPtr = builder_.CreateConstInBoundsGEP2_32(tupleValue, 0, index);
       Value * fieldValue = genExpr(*it);
-      setDebugLocation((*it)->location());
+      //setDebugLocation((*it)->location());
       builder_.CreateStore(fieldValue, fieldPtr, false);
     }
 
@@ -966,7 +967,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   ValueList args;
   args.push_back(getIntVal(arrayLength));
   Function * allocFunc = findMethod(arrayType, "alloc");
-  setDebugLocation(in->location());
+  //setDebugLocation(in->location());
   Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
 
   // Evaluate the array elements.

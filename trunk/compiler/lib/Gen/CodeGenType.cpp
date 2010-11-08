@@ -958,6 +958,36 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
 }
 
+llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * type) {
+  std::string typeVarName("tart.reflect.PrimitiveType.");
+
+  switch (type->typeId()) {
+    case TypeId_Void: typeVarName += "VOID"; break;
+    case TypeId_Null: typeVarName += "NULL"; break;
+    case TypeId_Bool: typeVarName += "BOOL"; break;
+    case TypeId_Char: typeVarName += "CHAR"; break;
+    case TypeId_SInt8: typeVarName += "INT8"; break;
+    case TypeId_SInt16: typeVarName += "INT16"; break;
+    case TypeId_SInt32: typeVarName += "INT32"; break;
+    case TypeId_SInt64: typeVarName += "INT64"; break;
+    case TypeId_UInt8: typeVarName += "UINT8"; break;
+    case TypeId_UInt16: typeVarName += "UINT16"; break;
+    case TypeId_UInt32: typeVarName += "UINT32"; break;
+    case TypeId_UInt64: typeVarName += "UINT64"; break;
+    case TypeId_Float: typeVarName += "FLOAT"; break;
+    case TypeId_Double: typeVarName += "DOUBLE"; break;
+    default:
+      DFAIL("Illegal state");
+      break;
+  }
+
+  Constant * indices[2];
+  indices[0] = indices[1] = getInt32Val(0);
+  return llvm::ConstantExpr::getInBoundsGetElementPtr(
+      irModule_->getOrInsertGlobal(typeVarName, Builtins::typePrimitiveType.get()->irType()),
+      indices, 2);
+}
+
 const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
     const Type * invokeTypeDefn = rmd_CallAdapterFnType.get()->typeValue();
