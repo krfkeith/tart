@@ -101,12 +101,7 @@ void CodeGenerator::generate() {
     addTypeName(Builtins::typeModule);
     addTypeName(Builtins::typeNameTable);
     addTypeName(Builtins::typeReflectionMetadata);
-    addTypeName(Builtins::typeType);
-    addTypeName(Builtins::typeDerivedType);
-    addTypeName(Builtins::typeCompositeType);
-    addTypeName(Builtins::typeEnumType);
     addTypeName(Builtins::typeEnumInfoBlock);
-    addTypeName(Builtins::typeFunctionType);
   }
 
   // Write out a list of all modules this one depends on.

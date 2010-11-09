@@ -31,9 +31,7 @@ namespace tart {
 
 using namespace llvm;
 
-extern SystemClassMember<VariableDefn> functionType_invoke;
-extern SystemClassMember<FunctionDefn> functionType_invokeFn;
-extern SystemClassMember<FunctionDefn> functionType_checkArgs;
+SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
 
 extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
 

@@ -43,9 +43,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
   // Don't do classes whose instance vars are filled in by the compiler.
   if (cls_ == Builtins::typeObject ||
       cls_ == Builtins::typeTypeInfoBlock ||
-      cls_ == Builtins::typeThrowable ||
-      cls_ == Builtins::typeMember ||
-      cls_ == Builtins::typeParameter) {
+      cls_ == Builtins::typeThrowable) {
     return;
   }
 
