@@ -384,7 +384,8 @@ public:
   llvm::GlobalVariable * createModuleObjectPtr(Module * module);
   llvm::GlobalVariable * createPackageObjectPtr();
   llvm::GlobalVariable * createPackageObjectPtr(Module * module);
-  llvm::Constant * createTypeObjectPtr(const Type * type);
+  llvm::Value * getTypeObjectPtr(const Type * type);
+  llvm::Value * getCompositeTypeObjectPtr(const CompositeType * type);
   llvm::Constant * getPrimitiveTypeObjectPtr(const PrimitiveType * type);
 
   // Generate the function that unboxes arguments from reflection interfaces.

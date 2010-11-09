@@ -274,9 +274,10 @@ void Reflector::emitModule(Module * module) {
 
       // First visit members which are explicitly declared in this module.
       ReflectionMetadata * rmdForModule = getReflectionMetadata(module);
-      //addMembers(module, rmdForModule);
 
+#if 0
       visitMembers(rfMembers, module);
+#endif
 
       // Add references for all exported definitions
       while (!mmd_.defnsToExport().empty()) {
@@ -298,13 +299,12 @@ void Reflector::emitModule(Module * module) {
       sb.createObjectHeader(Builtins::typeModule);
       sb.addField(rmdForModule->var());
       sb.addIntegerField(module_nameIndex, qualifiedName->encodedIndex());
-      //sb.addField(emitArray("tart.reflect.Module.", module_memberTypes.get(), rfMembers.types));
       sb.addNullField(module_memberTypes.type());
-      //sb.addField(emitArray("tart.reflect.Module.", module_methods.get(), rfMembers.methods));
       sb.addNullField(module_methods.type());
       modulePtr->setInitializer(sb.build());
     }
 
+#if 0
     // If this module is the "Type" module, then also do the built-in types.
     if (module == Builtins::typeObject->typeDefn()->module()) {
       ReflectedMembers rfBuiltins;
@@ -323,6 +323,7 @@ void Reflector::emitModule(Module * module) {
       visitMember(rfBuiltins, &DoubleType::typedefn);
       visitMember(rfBuiltins, &NullType::typedefn);
     }
+#endif
   } else {
     nameTable.assignIndices();
   }
@@ -349,13 +350,6 @@ void Reflector::emitModule(Module * module) {
           (cast<FunctionType>(it->first)->isStatic() ? " [static]" : "");
     }
 #endif
-  }
-
-  for (DefnSet::iterator it = module->reflectedDefs().begin();
-      it != module->reflectedDefs().end(); ++it) {
-    if (const TypeDefn * td = dyn_cast<TypeDefn>(*it)) {
-      emitTypeDefn(td);
-    }
   }
 
   emitNameTable(module);
@@ -1245,14 +1239,9 @@ void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn
   out << char(TAG_DEF_SCOPE_END);
 }
 
-void Reflector::emitPropertyDefn(ReflectionMetadata * rmd, const PropertyDefn * def, raw_ostream & out) {
+void Reflector::emitPropertyDefn(ReflectionMetadata * rmd, const PropertyDefn * def,
+    raw_ostream & out) {
 }
-
-//llvm::Constant * Reflector::getTypeReference(const Type * type) {
-//  DASSERT(enabled_);
-//  return llvm::ConstantExpr::getPointerCast(
-//      getTypePtr(type), Builtins::typeType->irEmbeddedType());
-//}
 
 GlobalVariable * Reflector::getTypePtr(const Type * type) {
 //  if (type->typeDefn() != NULL && type->typeClass() != Type::Primitive &&
@@ -1316,14 +1305,6 @@ bool Reflector::visitMembers(ReflectedMembers & rm, const IterableScope * scope)
 bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
   switch (member->defnType()) {
     case Defn::Typedef: {
-#if 0
-      const TypeDefn * td = static_cast<const TypeDefn *>(member);
-      GlobalVariable * rfType = emitTypeDefn(td);
-      if (rfType != NULL) {
-        rm.types.push_back(
-            llvm::ConstantExpr::getPointerCast(rfType, Builtins::typeType->irEmbeddedType()));
-      }
-#endif
       break;
     }
 
@@ -1374,20 +1355,6 @@ bool Reflector::visitMember(ReflectedMembers & rm, const Defn * member) {
   return true;
 }
 
-llvm::GlobalVariable * Reflector::emitTypeDefn(const TypeDefn * td) {
-  if (td->typeValue() != NULL && td->isSingular()) {
-    const Type * type = td->typeValue();
-    GlobalVariable * rfType = getTypePtr(type);
-    if (rfType != NULL && !rfType->hasInitializer()) {
-      rfType->setInitializer(emitType(type));
-    }
-
-    return rfType;
-  }
-
-  return NULL;
-}
-
 llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
@@ -1421,37 +1388,6 @@ llvm::Constant * Reflector::emitArray(
       arrayStruct->getType(), true, GlobalValue::InternalLinkage, arrayStruct,
       ".data." + baseName + var->name());
   return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
-}
-
-llvm::Constant * Reflector::emitMethod(const FunctionDefn * func) {
-  StructBuilder sb(cg_);
-  sb.addField(emitMember(Builtins::typeMethod.get(), func));
-  sb.addNullField(method_typeParams.type());
-  sb.addField(getTypePtr(func->functionType()));
-  sb.addNullField(method_params.type());
-
-  if (func->isAbstract() || func->isUndefined() || func->isIntrinsic() ||
-      func->isInterfaceMethod()) {
-    sb.addNullField(method_methodPointer.type());
-  } else  {
-    llvm::Constant * fnVal = cg_.genFunctionValue(func);
-    sb.addField(llvm::ConstantExpr::getBitCast(fnVal, method_methodPointer.type()->irType()));
-  }
-  return sb.build(Builtins::typeMethod->irType());
-}
-
-llvm::Constant * Reflector::emitMember(const CompositeType * structType, const ValueDefn * def) {
-  TypeDefn * parent = def->enclosingClassDefn();
-  Module * module = def->module();
-  StructBuilder sb(cg_);
-  sb.createObjectHeader(structType);
-  sb.addField(internSymbol(def->name()));
-  sb.addField(internSymbol(def->linkageName()));
-  sb.addIntegerField(member_kind, memberKind(def));
-  sb.addIntegerField(member_visibility, memberVisibility(def));
-  sb.addIntegerField(member_traits, memberTraits(def));
-  sb.addField(emitAttributeArray(def->linkageName(), def->attrs()));
-  return sb.build(Builtins::typeMember->irType());
 }
 
 llvm::Constant * Reflector::emitTypeReference(const Type * type) {
@@ -1501,6 +1437,7 @@ const llvm::Type * Reflector::reflectedTypeOf(const Type * type) {
 }
 
 llvm::Constant * Reflector::emitType(const Type * type) {
+  DFAIL("Remove");
   switch (type->typeClass()) {
     case Type::Primitive:
       return emitSimpleType(Builtins::typePrimitiveType, static_cast<const PrimitiveType *>(type));
@@ -1574,11 +1511,6 @@ llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
 
   // Superclass
   sb.addNullField(complexType_superType.type());
-//  if (type->super() != NULL) {
-//    sb.addField(getTypePtr(type->super()));
-//  } else {
-//    sb.addNullField(complexType_superType.type());
-//  }
 
   // Interface list
   ConstantList interfaces;
@@ -1591,8 +1523,8 @@ llvm::Constant * Reflector::emitCompositeType(const CompositeType * type) {
 
   sb.addField(emitArray(qname, complexType_interfaces.get(), interfaces));
   sb.addNullField(complexType_typeParams.type());
-  //sb.addNullField(complexType_attributes.type());
-  sb.addField(emitAttributeArray(qname, type->typeDefn()->attrs()));
+  sb.addNullField(complexType_attributes.type());
+  //sb.addField(emitAttributeArray(qname, type->typeDefn()->attrs()));
   sb.addField(emitArray(qname, complexType_fields.get(), rfMembers.fields));
   sb.addField(emitArray(qname, complexType_properties.get(), rfMembers.properties));
   sb.addField(emitArray(qname, complexType_ctors.get(), rfMembers.constructors));
@@ -1785,60 +1717,6 @@ llvm::Constant * Reflector::emitTupleType(const TupleType * types) {
   GlobalVariable * array = new GlobalVariable(*irModule_, arrayStruct->getType(),
       true, GlobalValue::LinkOnceODRLinkage, arrayStruct, typeTupleName);
   return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
-}
-
-llvm::Constant * Reflector::emitAttributeArray(
-    const std::string & baseName, const ExprList & attrs) {
-  ConstantList attrInstances;
-  std::string attrArrayName(".attrs.");
-  attrArrayName.append(baseName);
-
-  for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    const Expr * e = *it;
-    const CompositeType * ctype = cast<CompositeType>(e->type());
-    DASSERT(ctype->isAttribute());
-    if (ctype->attributeInfo().isRetained()) {
-      if (const ConstantObjectRef * cobj = dyn_cast<ConstantObjectRef>(e)) {
-        llvm::Constant * attr = cg_.genConstRef(e, "", false);
-        attr = llvm::ConstantExpr::getPointerCast(attr, Builtins::typeObject->irEmbeddedType());
-        attrInstances.push_back(attr);
-      } else {
-        diag.error(e) << "Non-constant attribute (not implemented).";
-      }
-    }
-  }
-
-  return emitArray(attrArrayName, member_attributes.get(), attrInstances);
-}
-
-Reflector::Visibility Reflector::memberVisibility(const Defn * member) {
-  switch (member->visibility()) {
-    case Public: return PUBLIC;
-    case Protected: return PROTECTED;
-    case Private: return PRIVATE;
-    default:
-      DFAIL("Illegal state");
-  }
-}
-
-Reflector::MemberKind Reflector::memberKind(const Defn * member) {
-  switch (member->defnType()) {
-    case Defn::Let:
-    case Defn::Var:
-      return FIELD;
-      break;
-
-    case Defn::Property:
-      return PROPERTY;
-      break;
-
-    case Defn::Function:
-      return static_cast<const FunctionDefn *>(member)->isCtor() ? CONSTRUCTOR : METHOD;
-      break;
-
-    default:
-      DFAIL("Invalid member defn");
-  }
 }
 
 Reflector::Traits Reflector::memberTraits(const Defn * member) {

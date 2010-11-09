@@ -36,9 +36,6 @@ public class CompositeType : Type {
   /** Given a type literal, return the reflected complex type object. */
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
 
-  /** Given a type literal, return the reflected complex type object. */
-  @Intrinsic static def of2[%T](typeName:TypeLiteral[T]) -> CompositeType;
-
   /** Fully-qualified name of this type. */
   final def name:String { get { return _meta.localName; } }
 

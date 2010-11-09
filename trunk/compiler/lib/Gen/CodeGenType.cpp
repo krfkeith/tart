@@ -958,6 +958,36 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   return type->irType();
 }
 
+llvm::Value * CodeGenerator::getTypeObjectPtr(const Type * type) {
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
+    llvm::Value * typeObj = getCompositeTypeObjectPtr(ctype);
+    return builder_.CreateStructGEP(typeObj, 0);
+  } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(type)) {
+    llvm::Constant * typeObj = getPrimitiveTypeObjectPtr(ptype);
+    return builder_.CreateStructGEP(typeObj, 0);
+  }
+
+  // We need a module pointer
+  DASSERT_OBJ(module_->reflectedTypes().count(type), type);
+  llvm::Constant * moduleObject = createModuleObjectPtr();
+
+  // Need a function call...
+
+  //return cg.genTypeReference(type->value());
+  //return cg.createModuleObjectPtr();
+  DFAIL("Implement");
+}
+
+llvm::Value * CodeGenerator::getCompositeTypeObjectPtr(const CompositeType * type) {
+  Constant * tib = getTypeInfoBlockPtr(type);
+
+  ValueList args;
+  args.push_back(tib);
+  Function * getType = genFunctionValue(Builtins::funcGetType);
+  Value * result = builder_.CreateCall(getType, args.begin(), args.end());
+  return result;
+}
+
 llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * type) {
   std::string typeVarName("tart.reflect.PrimitiveType.");
 
@@ -983,9 +1013,7 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
 
   Constant * indices[2];
   indices[0] = indices[1] = getInt32Val(0);
-  return llvm::ConstantExpr::getInBoundsGetElementPtr(
-      irModule_->getOrInsertGlobal(typeVarName, Builtins::typePrimitiveType.get()->irType()),
-      indices, 2);
+  return irModule_->getOrInsertGlobal(typeVarName, Builtins::typePrimitiveType.get()->irType());
 }
 
 const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
@@ -1137,8 +1165,6 @@ llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
 
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
-  //tibMembers.push_back(llvm::ConstantExpr::getPointerCast(
-  //    reflector_.getTypePtr(type), Builtins::typeType->irEmbeddedType()));
   builder.addField(reflector_.internSymbol(proxyTypeName));
   builder.addField(baseClassArrayPtr);
   builder.addField(idispatch);
