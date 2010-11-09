@@ -169,9 +169,6 @@ public:
   /** Generate a pointer to the package reflection info. */
   llvm::GlobalVariable * getPackagePtr(Module * module);
 
-  /** Generate a pointer to a type's reflection info. */
-  llvm::GlobalVariable * getTypePtr(const Type * type);
-
   /** Return the reflected symbol data for a given definition. */
   ReflectionMetadata * getReflectionMetadata(const Defn * def);
 
@@ -224,31 +221,8 @@ public:
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  /** Get the type pointer for the reflected type, and cast it to a Type. */
-  llvm::Constant * emitTypeReference(const Type * type);
-
-  /** Return the LLVM type of the reflection infor for this type. */
-  const llvm::Type * reflectedTypeOf(const Type * type);
-
-  /** Generate a Type object and return a pointer to it. */
-  llvm::Constant * emitType(const Type * type);
-  llvm::Constant * emitCompositeType(const CompositeType * type);
-  llvm::Constant * emitEnumType(const EnumType * type);
-  llvm::Constant * emitFunctionType(const FunctionType * type);
-  llvm::Constant * emitDerivedType(const Type * type);
-  llvm::Constant * emitOpaqueType(const Type * type);
-  llvm::Constant * emitSimpleType(const Type * reflectType, const Type * type);
-  llvm::Constant * emitTypeBase(const Type * reflectType, TypeKind kind);
-  llvm::Constant * emitTupleType(const TupleType * types);
-
-  /** Return the type of the 'invoke' function for a function type. */
-  llvm::FunctionType * getCallAdapterFnType();
-
 private:
   typedef llvm::DenseMap<const Defn *, ReflectionMetadata *> ReflectedSymbolMap;
-
-  bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);
-  bool visitMember(ReflectedMembers & rm, const Defn * member);
 
   Traits memberTraits(const Defn * member);
 

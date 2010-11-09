@@ -496,12 +496,6 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     switch (tdef->typeValue()->typeClass()) {
-      case Type::Primitive:
-        if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
-          importSystemType(Builtins::typeType);
-        }
-        break;
-
       case Type::Class:
       case Type::Interface: {
         CompositeType * ctype = static_cast<CompositeType *>(tdef->typeValue());
@@ -513,13 +507,9 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
             reflectTypeMembers(ctype);
           }
 
-          importSystemType(Builtins::typeType);
-          importSystemType(Builtins::typeCompositeType);
         } else if (enableReflection) {
           module_->addSymbol(tdef);
           module_->reflectedDefs().insert(tdef);
-          importSystemType(Builtins::typeType);
-          importSystemType(Builtins::typePrimitiveType);
         }
 
         break;
@@ -529,14 +519,12 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Protocol:
         if (enableReflectionDetail && module_->reflectedDefs().insert(tdef)) {
           module_->addSymbol(tdef);
-          importSystemType(Builtins::typeCompositeType);
         }
 
         break;
 
       case Type::Enum:
         if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
-          importSystemType(Builtins::typeEnumType);
           importSystemType(Builtins::typeEnumInfoBlock);
         }
         break;
@@ -547,32 +535,27 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
       if (enableReflectionDetail) {
+        module_->addSymbol(fn);
         if (module_->reflectedDefs().insert(fn)) {
-          module_->addSymbol(fn);
-          importSystemType(Builtins::typeMethod);
-          importSystemType(Builtins::typeDerivedType);
-        }
-
-        reflectType(fn->type());
-
-        for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
-          const Type * paramType = (*it)->internalType();
-          // Cache the unbox function for this type.
-          if (paramType->isBoxableType()) {
-            ExprAnalyzer(this, fn).getUnboxFn(SourceLocation(), paramType);
+          reflectType(fn->type());
+          for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
+            const Type * paramType = (*it)->internalType();
+            // Cache the unbox function for this type.
+            if (paramType->isBoxableType()) {
+              ExprAnalyzer(this, fn).getUnboxFn(SourceLocation(), paramType);
+            }
           }
-        }
 
-        // Cache the boxing function for this type.
-       if (fn->returnType()->isBoxableType()) {
-          ExprAnalyzer(this, fn).coerceToObjectFn(fn->returnType());
+          // Cache the boxing function for this type.
+          if (fn->returnType()->isBoxableType()) {
+            ExprAnalyzer(this, fn).coerceToObjectFn(fn->returnType());
+          }
         }
       }
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
     if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
       reflectType(prop->type());
-      //importSystemType(Builtins::typeProperty);
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (enableReflectionDetail) {
@@ -595,21 +578,16 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
   switch (type->typeClass()) {
     case Type::Primitive:
-      importSystemType(Builtins::typePrimitiveType);
       break;
 
     case Type::Enum:
-      importSystemType(Builtins::typeEnumType);
       break;
 
     case Type::Class:
     case Type::Interface:
-      importSystemType(Builtins::typeCompositeType);
-      importSystemType(Builtins::typePrimitiveType);
       break;
 
     case Type::Function: {
-      importSystemType(Builtins::typeFunctionType);
       const FunctionType * ft = static_cast<const FunctionType *>(type);
       for (ParameterList::const_iterator it = ft->params().begin();
           it != ft->params().end(); ++it) {
@@ -626,7 +604,6 @@ bool DefnAnalyzer::reflectType(const Type * type) {
       for (TupleType::const_iterator it = tt->begin(); it != tt->end(); ++it) {
         reflectType(*it);
       }
-      importSystemType(Builtins::typeDerivedType);
       break;
     }
 

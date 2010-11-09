@@ -47,17 +47,9 @@ Type * Builtins::typeIterator;
 SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperationError");
 
 SystemClass Builtins::typeType("tart.reflect.Type");
-SystemClass Builtins::typeCompositeType("tart.reflect.CompositeType");
 SystemClass Builtins::typeEnumInfoBlock("tart.reflect.EnumInfoBlock");
-SystemClass Builtins::typeEnumType("tart.reflect.EnumType");
-SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
-SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
 SystemClass Builtins::typePrimitiveType("tart.reflect.PrimitiveType");
-SystemClass Builtins::typeMember("tart.reflect.Member");
-SystemClass Builtins::typeField("tart.reflect.Field");
-SystemClass Builtins::typeParameter("tart.reflect.Parameter");
-SystemClass Builtins::typeProperty("tart.reflect.Property");
-SystemClass Builtins::typeMethod("tart.reflect.Method");
+SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
 SystemClass Builtins::typeModule("tart.reflect.Module");
 SystemClass Builtins::typeNameTable("tart.reflect.NameTable");
 SystemClass Builtins::typePackage("tart.reflect.Package");
