@@ -373,9 +373,9 @@ public:
   llvm::DICompositeType genDITupleType(const TupleType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);
   llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
-  llvm::DIDerivedType genDITypeMember(const VariableDefn * var, llvm::Constant * offset);
-  llvm::DIDerivedType genDITypeMember(const Type * type,  const llvm::StructType * irtype,
-      llvm::StringRef name, int index);
+  llvm::DIDerivedType genDITypeMember(const Type * type, llvm::StringRef name, uint64_t & offset);
+  llvm::DIDerivedType genDITypeMember(const llvm::Type * type, llvm::DIType derivedFrom,
+      llvm::StringRef name, uint64_t & offset);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIParameterType(const Type * type);
 
@@ -424,9 +424,9 @@ private:
   void throwCondTypecastError(llvm::Value * typeTestResult);
   void throwTypecastError();
 
-  llvm::Constant * getSizeOfInBits(const llvm::Type * ty);
-  llvm::Constant * getAlignOfInBits(const llvm::Type * ty);
-  llvm::Constant * getOffsetOfInBits(const llvm::StructType * st, unsigned fieldIndex);
+  uint64_t getSizeOfInBits(const llvm::Type * ty);
+  uint64_t getAlignOfInBits(const llvm::Type * ty);
+  uint64_t align(uint64_t offset, uint64_t align);
 
   bool hasAddress(const Expr * expr);
   void ensureLValue(const Expr * expr, const llvm::Type * irType);
