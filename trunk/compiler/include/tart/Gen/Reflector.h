@@ -220,18 +220,6 @@ public:
   void emitMethodDefn(ReflectionMetadata * rs, const FunctionDefn * def, llvm::raw_ostream & out);
   void emitPropertyDefn(ReflectionMetadata * rs, const PropertyDefn * def, llvm::raw_ostream & out);
 
-  /** Generate reflection information for a type definition in this module. */
-  llvm::GlobalVariable * emitTypeDefn(const TypeDefn * td);
-
-  /** Generate reflection information for a method. */
-  llvm::Constant * emitMethod(const FunctionDefn * func);
-
-  /** Generate reflection information for a Member struct. */
-  llvm::Constant * emitMember(const CompositeType * structType, const ValueDefn * def);
-
-  /** Emit the array of attributes for the given defn. */
-  llvm::Constant * emitAttributeArray(const std::string & baseName, const ExprList & attrs);
-
   /** Generate an array containing reflection data supplied by the specified array. */
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
@@ -262,8 +250,6 @@ private:
   bool visitMembers(ReflectedMembers & rs, const IterableScope * scope);
   bool visitMember(ReflectedMembers & rm, const Defn * member);
 
-  Visibility memberVisibility(const Defn * member);
-  MemberKind memberKind(const Defn * member);
   Traits memberTraits(const Defn * member);
 
   Module * module();

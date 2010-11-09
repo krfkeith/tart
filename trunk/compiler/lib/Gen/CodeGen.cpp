@@ -442,10 +442,6 @@ llvm::GlobalVariable * CodeGenerator::createPackageObjectPtr(Module * module) {
   return reflector_.getPackagePtr(module);
 }
 
-llvm::Constant * CodeGenerator::createTypeObjectPtr(const Type * type) {
-  return reflector_.emitTypeReference(type);
-}
-
 void CodeGenerator::addModuleDependencies() {
   using namespace llvm;
   const ModuleSet & modules = module_->importModules();
