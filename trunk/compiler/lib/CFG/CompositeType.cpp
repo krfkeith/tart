@@ -567,23 +567,6 @@ void CompositeType::addStaticDefsToModule(Module * module) {
   }
 }
 
-void CompositeType::addFieldTypesToModule(Module * module) const {
-  for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
-    if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
-      if (var->type() != NULL) {
-        TypeDefn * tdef = var->type()->typeDefn();
-        if (tdef != NULL && tdef->isSynthetic()) {
-          module->addSymbol(tdef);
-        }
-      }
-    }
-  }
-
-  if (super() != NULL) {
-    super()->addFieldTypesToModule(module);
-  }
-}
-
 void CompositeType::addBaseXRefs(Module * module) {
   if (module->addSymbol(typeDefn())) {
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {

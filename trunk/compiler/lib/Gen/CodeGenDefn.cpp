@@ -124,7 +124,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
-      clearDebugLocation();
+      setDebugLocation(fdef->location().forRegion(fdef->region()));
       functionRegion_ = fdef->region();
     }
 

@@ -70,9 +70,6 @@ public:
   bool reflectType(const Type * type);
   void reflectTypeMembers(CompositeType * type);
 
-  /** Import a system class into the module. */
-  bool importSystemType(const SystemClass & sclass);
-
   /** Get the module in which a definition was defined - includes code to handle
       template instances which are defined in no module, but whose template definition
       is in a module. */

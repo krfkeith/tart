@@ -41,6 +41,8 @@ Implementation TODOS:
 * Add a unit test for converting invalid enum values to strings.
 * Fix coercion of enum values to objects.
 
+* Case *
+* Open/closed intervals
 * Call gc_alloc instead of malloc.
 * Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
@@ -376,3 +378,5 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
 
 -rwxr-xr-x 1 talin talin 1386054 2010-11-07 19:56 test/stdlib/SwitchStmtTest
 -rwxr-xr-x 1 talin talin 1374444 2010-11-07 21:28 test/stdlib/SwitchStmtTest
+-rwxr-xr-x 1 talin talin  772508 2010-11-09 17:01 test/stdlib/SwitchStmtTest
+-rwxr-xr-x 1 talin talin  363892 2010-11-09 17:03 test/stdlib/SwitchStmtTest (strip debug)

@@ -102,6 +102,7 @@ foreach(SRC_FILE ${TART_SRC})
     add_custom_command(OUTPUT ${OPT_BC_FILE}
         COMMAND ${LLVM_BIN_DIR}/opt
 #            -O2
+#            -strip-debug
             -load="${REFLECTOR_PLUGIN}"
             -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
             -std-compile-opts

@@ -126,7 +126,7 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   if (module_->isReflectionEnabled()) {
-    importSystemType(Builtins::typeModule);
+    module_->addSymbol(Builtins::typeModule.typeDefn());
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
@@ -525,7 +525,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
       case Type::Enum:
         if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
-          importSystemType(Builtins::typeEnumInfoBlock);
+          module_->addSymbol(Builtins::typeEnumInfoBlock.typeDefn());
         }
         break;
 
@@ -578,11 +578,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
   switch (type->typeClass()) {
     case Type::Primitive:
-      break;
-
     case Type::Enum:
-      break;
-
     case Type::Class:
     case Type::Interface:
       break;
@@ -642,18 +638,6 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
   for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
     reflectType(*it);
   }
-}
-
-bool DefnAnalyzer::importSystemType(const SystemClass & sclass) {
-  if (!module_->systemDefs().count(sclass.typeDefn())) {
-    module_->systemDefs().insert(sclass.typeDefn());
-    module_->addSymbol(sclass.typeDefn());
-    AnalyzerBase::analyzeType(sclass, Task_PrepCodeGeneration);
-    sclass->addFieldTypesToModule(module_);
-    return true;
-  }
-
-  return false;
 }
 
 Module * DefnAnalyzer::moduleForDefn(const Defn * def) {

@@ -169,9 +169,6 @@ public:
   /** Add all of the static member variables of this class as definitions to this module. */
   void addStaticDefsToModule(Module * module);
 
-  /** Add all of the symbols needed to construct a static instance of this type. */
-  void addFieldTypesToModule(Module * module) const;
-
   /** Add all of the ancestor classes as references to this module. */
   void addBaseXRefs(Module * module);
 
