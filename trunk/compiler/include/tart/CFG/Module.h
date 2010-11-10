@@ -93,9 +93,6 @@ public:
   /** Get the set of defns for which reflection data is generated. */
   TypeSet & reflectedTypes() { return reflectedTypes_; }
 
-  /** Keep track of which system defs have been imported into this module. */
-  DefnSet & systemDefs() { return systemDefs_; }
-
   /** Import this symbol into this module. If the symbol is from another module, add it
       to the list of imported symbols. If it is from this module, or if it is synthetic, then
       add it to the list of exported symbols. Also, add the symbol to the queue of symbols to
@@ -159,7 +156,6 @@ private:
   DefnSet importDefs_;
   DefnSet reflectedDefs_;
   TypeSet reflectedTypes_;
-  DefnSet systemDefs_;
   DefnList initDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;
