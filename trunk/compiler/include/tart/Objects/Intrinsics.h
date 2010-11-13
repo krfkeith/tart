@@ -160,7 +160,7 @@ class ReinterpretPtrIntrinsic : public Intrinsic {
 // Memory.addressOf intrinsic
 class AddressOfIntrinsic : public Intrinsic {
   static AddressOfIntrinsic instance;
-  AddressOfIntrinsic() : Intrinsic("tart.core.Memory.addressOf") {}
+  AddressOfIntrinsic() : Intrinsic("tart.core.Memory.addressOf", true) {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
@@ -238,7 +238,7 @@ class LogicalOrIntrinsic : public Intrinsic {
 class ArrayCopyIntrinsic : public Intrinsic {
   static ArrayCopyIntrinsic copyInstance;
   static ArrayCopyIntrinsic moveInstance;
-  ArrayCopyIntrinsic(const char * name, llvm::Intrinsic::ID id) : Intrinsic(name), _id(id) {}
+  ArrayCopyIntrinsic(const char * name, llvm::Intrinsic::ID id) : Intrinsic(name, true), _id(id) {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
   llvm::Intrinsic::ID _id;
 };
@@ -363,6 +363,15 @@ class GenerateStackTraceApplyIntrinsic : public Intrinsic {
 class UnsafeApplyIntrinsic : public Intrinsic {
   static UnsafeApplyIntrinsic instance;
   UnsafeApplyIntrinsic() : Intrinsic("tart.core.Unsafe.apply") {}
+  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
+      const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// Coalesce.apply intrinsic
+class CoalesceApplyIntrinsic : public Intrinsic {
+  static CoalesceApplyIntrinsic instance;
+  CoalesceApplyIntrinsic() : Intrinsic("tart.annex.Coalesce.apply") {}
   Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
       const ExprList & args, Type * expectedReturn) const;
 };

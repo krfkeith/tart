@@ -9,7 +9,7 @@ set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/lib/testing)
 
 set(TART_OPTIONS
-  -g
+#  -g
   -debug-errors
 #  -trace-def=InterfaceTest
 )
@@ -101,16 +101,20 @@ foreach(SRC_FILE ${TART_SRC})
     # Link object files
     add_custom_command(OUTPUT ${OPT_BC_FILE}
         COMMAND ${LLVM_BIN_DIR}/opt
-#            -O2
-#            -strip-debug
+            -O2
+            -strip-debug
+#            -disable-inlining
             -load="${REFLECTOR_PLUGIN}"
             -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+#            -mergefunc
             -std-compile-opts
             -std-link-opts
-            -reflector
+            -instcombine
+            -simplifycfg
+            -adce
             -globaldce
             -globalopt
-            -disable-inlining
+            -reflector
             -o ${OPT_BC_FILE}
             ${OUT_BC_FILE}
         MAIN_DEPENDENCY "${OUT_BC_FILE}" 

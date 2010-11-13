@@ -170,6 +170,15 @@ public:
 //  SLC scopedRegion(SLC & loc, SourceRegion * region);
   SLC astLoc(const ASTNode * ast);
 
+  /** Given a defn, make sure it's a template instance, and determine if there's another
+      instance of the same template with more generic type parameters. */
+  Defn * findLessSpecializedInstance(Defn * de);
+
+  /** Given a parent definition, and a definition to locate, find the child of that
+      parent which has the same AST, meaning that is is an instance of the same
+      template. */
+  Defn * findDefnByAst(Defn * parent, Defn * toFind);
+
 protected:
   Module * module_;
   Scope * activeScope_;

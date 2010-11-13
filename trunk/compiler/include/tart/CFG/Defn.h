@@ -92,6 +92,7 @@ public:
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
     RequestStackTrace,      // Set on catch variables that want stack tracing.
+    Mergeable,              // Request type weakening (coalesce with more general version.)
 
     TraitCount,
   };

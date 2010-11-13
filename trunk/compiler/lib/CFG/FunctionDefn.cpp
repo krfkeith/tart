@@ -57,6 +57,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * a
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
+  , mergeTo_(NULL)
 {
   if (modifiers_.flags & tart::Undef) {
     flags_ |= Undefined;
@@ -83,6 +84,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
+  , mergeTo_(NULL)
 {}
 
 /** Constructor used for static type construction */
@@ -93,6 +95,7 @@ FunctionDefn::FunctionDefn(Module * m, const char * name, FunctionType * ty)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
+  , mergeTo_(NULL)
 {}
 
 const Type * FunctionDefn::type() const {

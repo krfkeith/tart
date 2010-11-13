@@ -1101,9 +1101,10 @@ void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn
   } else if (fn->dispatchIndex() != -1) {
     methodIndex = fn->dispatchIndex();
   } else {
+    const FunctionDefn * coalescedFn = fn->mergeTo() != NULL ? fn->mergeTo() : fn;
     const llvm::Type * methodType = rmd_MethodPtrType.get()->typeValue()->irType();
     llvm::Constant * methodVal = llvm::ConstantExpr::getBitCast(
-        cg_.genFunctionValue(fn), methodType);
+        cg_.genFunctionValue(coalescedFn), methodType);
     methodIndex = rmd->methodBaseIndex() + rmd->methodTable().size();
     rmd->methodTable().push_back(methodVal);
   }

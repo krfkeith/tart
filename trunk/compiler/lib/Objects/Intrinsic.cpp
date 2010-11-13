@@ -797,6 +797,27 @@ Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
 }
 
 // -------------------------------------------------------------------
+// CoalesceApplyIntrinsic
+CoalesceApplyIntrinsic CoalesceApplyIntrinsic::instance;
+
+Expr * CoalesceApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+    Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
+    if (TypeDefn * tdef = ctype->value()->typeDefn()) {
+      tdef->addTrait(Defn::Mergeable);
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    lval->value()->addTrait(Defn::Mergeable);
+  } else {
+    diag.fatal(loc) << "Invalid target for @Coalesce.";
+    return args[0];
+  }
+
+  return args[0];
+}
+
+// -------------------------------------------------------------------
 // ReflectionApplyIntrinsic
 ReflectionApplyIntrinsic ReflectionApplyIntrinsic::instance;
 
@@ -810,7 +831,7 @@ Expr * ReflectionApplyIntrinsic::eval(const SourceLocation & loc, const Function
   } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     lval->value()->addTrait(Defn::Nonreflective);
   } else {
-    diag.fatal(loc) << "Invalid target for @Nonreflective.";
+    diag.fatal(loc) << "Invalid target for @Reflection.";
   }
 
   return args[0];

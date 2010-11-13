@@ -264,6 +264,7 @@ bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
     in->attrs().push_back(attr);
     if (attr->exprType() == Expr::ConstObjRef) {
       ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attr);
+      // TODO - actually look up multiple members and find the correct one.
       FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
           attrType->lookupSingleMember("apply", true));
       if (applyMethod != NULL) {
