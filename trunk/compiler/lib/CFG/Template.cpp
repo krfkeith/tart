@@ -239,7 +239,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the template instance
   DASSERT(value_->definingScope() != NULL);
-  TemplateInstance * tinst = new TemplateInstance(value_, typeArgs);
+  TemplateInstance * tinst = new TemplateInstance(value_, typeArgs, TupleType::get(paramValues));
   tinst->instantiatedFrom() = loc;
 
   // Create the definition
@@ -378,11 +378,14 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
 /// -------------------------------------------------------------------
 /// TemplateInstance
 
-TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templateArgs)
+TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templateArgs,
+    const TupleType * patternVarValues)
   : value_(NULL)
   , templateDefn_(templateDefn)
   , typeArgs_(templateArgs)
+  , patternVarValues_(patternVarValues)
   , parentScope_(templateDefn->definingScope())
+  , lessSpecialized_(NULL)
 {
 //  for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it) {
 //    if (const TypeBinding * tb = dyn_cast<TypeBinding>(*it)) {
@@ -415,6 +418,39 @@ bool TemplateInstance::lookupMember(const char * ident, DefnList & defs, bool in
   return false;
 }
 
+Defn * TemplateInstance::findLessSpecializedInstance() {
+  if (lessSpecialized_ != NULL) {
+    return lessSpecialized_ != value_ ? lessSpecialized_ : NULL;
+  }
+
+  TemplateSignature * tsig = templateDefn_->templateSignature();
+  BindingEnv env;
+  DASSERT(patternVarValues_->size() == tsig->patternVarCount());
+  bool canMerge = false;
+  for (size_t i = 0; i < patternVarValues_->size(); ++i) {
+    const Type * type = patternVarValues_->member(i);
+    if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
+      type = Builtins::typeObject.get();
+    }
+
+    // TODO: Merge primitive types, addresses, etc.
+
+    if (type != patternVarValues_->member(i)) {
+      canMerge = true;
+    }
+
+    env.addSubstitution(tsig->typeParam(i), type);
+  }
+
+  if (canMerge) {
+    lessSpecialized_ = tsig->instantiate(value_->location(), env, true);
+    return lessSpecialized_;
+  } else {
+    lessSpecialized_ = value_;
+    return NULL;
+  }
+}
+
 void TemplateInstance::dumpHierarchy(bool full) const {
   std::string out;
   out.append("[template-instance] ");
@@ -432,6 +468,7 @@ void TemplateInstance::trace() const {
   paramDefns_.trace();
   safeMark(value_);
   safeMark(typeArgs_);
+  safeMark(patternVarValues_);
 }
 
 } // namespace Tart

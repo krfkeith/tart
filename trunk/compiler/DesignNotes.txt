@@ -41,8 +41,12 @@ Implementation TODOS:
 * Add a unit test for converting invalid enum values to strings.
 * Fix coercion of enum values to objects.
 
-* Case *
+* Coalesced templates
+* Case * (what about classify?)
 * Open/closed intervals
+* Implicit downcast in if-block. (Includes unions as well.)
+* Implicit anonymous class for closure.
+
 * Call gc_alloc instead of malloc.
 * Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
@@ -97,7 +101,7 @@ Implementation TODOS:
   * State machine.
 * Strings
   * Conversion specs.
-  * Define toStringFmt - custom string formatting
+  * Define toStringFmt() - custom string formatting
   * Other string-related functions
   * Characters.tart
   * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
@@ -120,6 +124,7 @@ Implementation TODOS:
 * Tartdoc
   * Requires command-line parsing lib.
 * Ranges
+  * Syntax for open, closed, and half-open intervals.
   * Literals
   * As array slice indices
   * As tuple slice indices
@@ -380,3 +385,10 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
 -rwxr-xr-x 1 talin talin 1374444 2010-11-07 21:28 test/stdlib/SwitchStmtTest
 -rwxr-xr-x 1 talin talin  772508 2010-11-09 17:01 test/stdlib/SwitchStmtTest
 -rwxr-xr-x 1 talin talin  363892 2010-11-09 17:03 test/stdlib/SwitchStmtTest (strip debug)
+-rwxr-xr-x 1 talin talin  363943 2010-11-11 18:01 test/stdlib/SwitchStmtTest (w/downcast)
+-rwxr-xr-x 1 talin talin  756752 2010-11-09 22:12 test/stdlib/SwitchStmtTest (coalesce)
+-rwxr-xr-x 1 talin talin  362409 2010-11-09 22:13 test/stdlib/SwitchStmtTest (strip debug + coalesce)
+-rwxr-xr-x 1 talin talin  358492 2010-11-12 19:27 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  357291 2010-11-13 10:49 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  356590 2010-11-13 11:28 test/stdlib/SwitchStmtTest (smarter coalesce)
+

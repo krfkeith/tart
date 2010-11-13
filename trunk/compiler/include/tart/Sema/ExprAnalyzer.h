@@ -187,6 +187,9 @@ public:
   /** Return the function to unbox the specified type. */
   FunctionDefn * getUnboxFn(const SourceLocation & loc, const Type * toType);
 
+  /** Return the function to downcast to the specified type. */
+  FunctionDefn * getDowncastFn(const SourceLocation & loc, const Type * toType);
+
   /** Report that there were no matching candidates. */
   void noCandidatesError(CallExpr * call, const ExprList & methods);
 };

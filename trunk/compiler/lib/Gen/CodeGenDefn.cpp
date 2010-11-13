@@ -108,6 +108,11 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     return true;
   }
 
+  // Don't generate a function if it has been merged to another function
+  if (fdef->mergeTo() != NULL) {
+    return true;
+  }
+
   // Create the function
   Function * f = genFunctionValue(fdef);
 

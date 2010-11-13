@@ -59,6 +59,14 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
       if (!fn->isNonreflective()) {
         addTypeRef(fn->type());
       }
+
+      fn = fn->mergeTo();
+      if (fn != NULL) {
+        visit(fn);
+        if (!fn->isNonreflective()) {
+          addTypeRef(fn->type());
+        }
+      }
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (var->initValue()) {

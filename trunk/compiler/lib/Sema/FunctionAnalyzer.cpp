@@ -15,6 +15,7 @@
 #include "tart/Common/InternedString.h"
 
 #include "tart/Sema/FunctionAnalyzer.h"
+#include "tart/Sema/FunctionMergePass.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/VarAnalyzer.h"
@@ -55,6 +56,7 @@ static const FunctionDefn::PassSet PASS_SET_CODEGEN = FunctionDefn::PassSet::of(
   FunctionDefn::ModifierPass,
   FunctionDefn::ControlFlowPass,
   FunctionDefn::ReturnTypePass,
+  FunctionDefn::MergePass,
   FunctionDefn::ReflectionPass,
   FunctionDefn::CompletionPass
 );
@@ -132,6 +134,10 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
   }
 
   if (passesToRun.contains(FunctionDefn::ControlFlowPass) && !createCFG()) {
+    return false;
+  }
+
+  if (passesToRun.contains(FunctionDefn::MergePass) && !merge()) {
     return false;
   }
 
@@ -430,7 +436,6 @@ bool FunctionAnalyzer::createCFG() {
         if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
           ConstructorAnalyzer(cls).run(target);
         }
-
       }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.
@@ -594,6 +599,37 @@ bool FunctionAnalyzer::resolveReturnType() {
   return success;
 }
 
+bool FunctionAnalyzer::merge() {
+  bool success = true;
+
+  if (target->hasUnboundTypeParams() || target->isTemplateMember() || !target->isSingular()) {
+    target->passes().finish(FunctionDefn::MergePass);
+    return true;
+  }
+
+  if (target->passes().begin(FunctionDefn::MergePass)) {
+    // If we try to analyze re-entrantly, then just don't coalesce.
+    target->passes().finish(FunctionDefn::MergePass);
+
+    if (target->hasBody() && target->isSynthetic() && target->hasTrait(Defn::Mergeable)) {
+      Defn * de = findLessSpecializedInstance(target);
+      if (de != NULL) {
+        FunctionDefn * mergeTo = cast<FunctionDefn>(de);
+        if (mergeTo != NULL) {
+          AnalyzerBase::analyzeFunction(mergeTo, Task_PrepCodeGeneration);
+          bool canMerge = FunctionMergePass().visit(target, mergeTo);
+          if (canMerge) {
+            target->setMergeTo(mergeTo);
+            module_->addSymbol(mergeTo);
+          }
+        }
+      }
+    }
+  }
+
+  return success;
+}
+
 bool FunctionAnalyzer::createReflectionData() {
   if (target->passes().begin(FunctionDefn::ReflectionPass)) {
     bool doReflect = module_->isReflectionEnabled();
@@ -645,7 +681,9 @@ bool FunctionAnalyzer::createReflectionData() {
         if (paramType->isBoxableType()) {
           // Cache the unbox function for this type.
           ExprAnalyzer(this, target).getUnboxFn(SourceLocation(), paramType);
-        } else if (!paramType->isReferenceType()) {
+        } else if (paramType->isReferenceType()) {
+          ExprAnalyzer(this, target).getDowncastFn(SourceLocation(), paramType);
+        } else {
           // For the moment we can't handle non-reference types in reflection.
           doReflect = false;
         }

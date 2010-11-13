@@ -281,6 +281,9 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
   ConstantList methodValues;
   for (MethodList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
     FunctionDefn * method = static_cast<FunctionDefn *>(*it);
+    if (method->mergeTo() != NULL) {
+      method = method->mergeTo();
+    }
     if (!method->isSingular()) {
       diag.fatal(method) << "Non-singular method '" << method->name() << "' in closed type";
     }

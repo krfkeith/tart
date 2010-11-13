@@ -920,6 +920,49 @@ SLC AnalyzerBase::astLoc(const ASTNode * ast) {
   }
 }
 
+Defn * AnalyzerBase::findLessSpecializedInstance(Defn * de) {
+  if (de->isTemplateInstance()) {
+    return de->templateInstance()->findLessSpecializedInstance();
+  } else if (de->isSynthetic()) {
+    Defn * parent = findLessSpecializedInstance(de->parentDefn());
+    if (parent == NULL) {
+      return NULL;
+    }
+
+    return findDefnByAst(parent, de);
+  }
+
+  return NULL;
+}
+
+Defn * AnalyzerBase::findDefnByAst(Defn * parent, Defn * toFind) {
+  if (TypeDefn * tdef = dyn_cast<TypeDefn>(parent)) {
+    DefnList cdefs;
+    AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup);
+    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+      if (!ctype->memberScope()->lookupMember(toFind->name(), cdefs, false)) {
+        return false;
+      }
+    }
+
+    for (DefnList::const_iterator it = cdefs.begin(); it != cdefs.end(); ++it) {
+      if ((*it)->ast() == toFind->ast()) {
+        return *it;
+      }
+    }
+  } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(parent)) {
+    if (prop->getter() != NULL &&  prop->getter()->ast() == toFind->ast()) {
+      return prop->getter();
+    }
+
+    if (prop->setter() != NULL &&  prop->setter()->ast() == toFind->ast()) {
+      return prop->setter();
+    }
+  }
+
+  return NULL;
+}
+
 TaskInProgress * TaskInProgress::tasks_ = NULL;
 
 void TaskInProgress::report() {

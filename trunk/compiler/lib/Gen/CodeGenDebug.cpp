@@ -176,7 +176,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
         DIType() /* DIType */,
         0 /* Flags */,
         false /* isOptimized */,
-        genFunctionValue(fn));
+        genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn));
     if (!sp.Verify()) {
       sp.Verify();
       DFAIL("Bad DBG");

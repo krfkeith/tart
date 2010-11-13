@@ -52,7 +52,7 @@ public:
 
   /** How this attribute is propagated. */
   short propagation() const { return propagation_; }
-  void setPropagation(bool value) { propagation_ = value; }
+  void setPropagation(short value) { propagation_ = value; }
 
   /** Returns true if this attribute is allowed to attach to this defn. */
   bool canAttachTo(const Defn * de) const;

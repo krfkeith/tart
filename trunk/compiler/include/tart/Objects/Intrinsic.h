@@ -33,19 +33,22 @@ class FnCallExpr;
 /// is done via a custom code generator function.
 class Intrinsic {
 private:
-  const char * name;
+  const char * name_;
+  bool canCoalesce_;
 
   static llvm::StringMap<Intrinsic *> intrinsicMap;
 
 public:
-  Intrinsic(const char * n) : name(n) {
-    intrinsicMap[name] = this;
+  Intrinsic(const char * n, bool canCoalesce = false) : name_(n), canCoalesce_(canCoalesce) {
+    intrinsicMap[name_] = this;
   }
 
   virtual ~Intrinsic() {}
 
   /** The fully qualified name of this intrinsic. */
-  const char * getName() { return name; }
+  const char * name() const { return name_; }
+
+  bool canCoalesce() const { return canCoalesce_; }
 
   /** Analysis-time implementation of the intrinsic. This returns an
       expression node which replaces the function call. Returning NULL

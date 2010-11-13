@@ -1,7 +1,8 @@
+import tart.annex.Coalesce;
 import tart.core.Math.max;
 
 /** Array-backed list type. */
-final class ArrayList[%ElementType] : List[ElementType] {
+@Coalesce final class ArrayList[%ElementType] : List[ElementType] {
   private {
     var _data:ElementType[];
     var _size:int;
@@ -108,7 +109,7 @@ final class ArrayList[%ElementType] : List[ElementType] {
   }
 
   /** Iterator class for ArrayList. */
-  private final class ArrayListIterator : Iterator[ElementType], HasLength {
+  @Coalesce private final class ArrayListIterator : Iterator[ElementType], HasLength {
     private let list:ArrayList;
     private var index:int;
     

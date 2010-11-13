@@ -1530,4 +1530,37 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   return valueOfMethod;
 }
 
+FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
+  TypePair conversionKey(Builtins::typeObject.get(), toType);
+  ConverterMap::iterator it = module()->converters().find(conversionKey);
+  if (it != module()->converters().end()) {
+    return it->second;
+  }
+
+  //diag.debug(loc) << Format_Type << "Defining downcast function for " << toType;
+  ExprList methods;
+  analyzeTypeDefn(Builtins::typeObject->typeDefn(), Task_PrepMemberLookup);
+  findInScope(methods, "__downcast", Builtins::typeObject->memberScope(), NULL, loc, NO_PREFERENCE);
+  DASSERT(!methods.empty());
+  Expr * downCast = specialize(loc, methods, TupleType::get(toType));
+  FunctionDefn * downCastMethod;
+  if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(downCast)) {
+    downCastMethod = cast_or_null<FunctionDefn>(findBestSpecialization(spe));
+    if (downCastMethod == NULL) {
+      return NULL;
+    }
+  } else if (LValueExpr * lval = dyn_cast<LValueExpr>(downCast)) {
+    downCastMethod = cast<FunctionDefn>(lval->value());
+  } else {
+    diag.error(loc) << "Unknown expression " << downCast;
+    DFAIL("IllegalState");
+  }
+
+  analyzeFunction(downCastMethod, Task_PrepTypeComparison);
+  module()->converters()[conversionKey] = downCastMethod;
+  module()->addSymbol(downCastMethod);
+  //diag.info() << Format_Verbose << "Generated boxer " << downCastMethod;
+  return downCastMethod;
+}
+
 }

@@ -145,7 +145,8 @@ private:
 class TemplateInstance : public GC, public Scope {
 public:
   /** Construct a TemplateInstance. */
-  TemplateInstance(Defn * templateDefn, const TupleType * templateArgs);
+  TemplateInstance(Defn * templateDefn, const TupleType * templateArgs,
+      const TupleType * typeVarValues);
 
   /** The generated defn for this instance. */
   Defn * value() const { return value_; }
@@ -158,9 +159,15 @@ public:
   const TupleType * typeArgs() const { return typeArgs_; }
   const Type * typeArg(int index) const;
 
+  /** The template variable values for this template instance. */
+  const TupleType * patternVarValues() const { return patternVarValues_; }
+
   /** The location from which this template was instantiated. */
   const SourceLocation & instantiatedFrom() const { return instantiatedFrom_; }
   SourceLocation & instantiatedFrom() { return instantiatedFrom_; }
+
+  /** Find a more general instantiation of this template. */
+  Defn * findLessSpecializedInstance();
 
   // Overrides
 
@@ -176,9 +183,11 @@ private:
   Defn * value_;                    // The instantiated definition
   Defn * templateDefn_;             // The template definition from whence this came.
   OrderedSymbolTable paramDefns_;   // Symbol definitions for parameter values.
-  const TupleType * typeArgs_;  // Template arguments with substitutions
+  const TupleType * typeArgs_;      // Template arguments with substitutions
+  const TupleType * patternVarValues_;// Values of the type variables.
   Scope * parentScope_;             // Parent scope of this definition.
   SourceLocation instantiatedFrom_; // Location which produced this instance.
+  Defn * lessSpecialized_;          // A more general version of this template, or this one if none.
 };
 
 } // namespace tart

@@ -136,6 +136,7 @@ public:
     ControlFlowPass,
     ReturnTypePass,
     PrepConversionPass,
+    MergePass,
     CompletionPass,
     ReflectionPass,
     PassCount,
@@ -203,6 +204,9 @@ public:
   void setIntrinsic(Intrinsic * in) { intrinsic_ = in; }
   bool isIntrinsic() const { return intrinsic_ != NULL; }
 
+  FunctionDefn * mergeTo() const { return mergeTo_; }
+  void setMergeTo(FunctionDefn * f) { mergeTo_ = f; }
+
   /** Various function aspects. */
   bool isAbstract() const { return (flags_ & Abstract) != 0; }
   bool isInterfaceMethod() const { return (flags_ & InterfaceMethod) != 0; }
@@ -261,6 +265,7 @@ private:
   FunctionSet overriddenMethods_;
   FunctionRegion * region_;
   PassMgr passes_;
+  FunctionDefn * mergeTo_;
 };
 
 } // namespace tart
