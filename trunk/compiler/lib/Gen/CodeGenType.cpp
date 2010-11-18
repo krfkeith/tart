@@ -139,22 +139,17 @@ Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
   if (rtype->getTypeInfoPtr() == NULL) {
     // Create the global variable for the type info block.
     const CompositeType * type = rtype->getType();
-//    if (type->typeClass() != Type::Class && type->typeClass() != Type::Interface) {
-//      rtype->setTypeInfoPtr(ConstantPointerNull::get(
-//          Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
-//    } else {
-      DASSERT(rtype->getTypeInfoBlock() == NULL);
-      rtype->setTypeInfoBlock(
-          new GlobalVariable(*irModule_,
-              rtype->getTypeInfoBlockType().get(),
-              true, GlobalValue::ExternalLinkage, NULL,
-              type->typeDefn()->linkageName() + ".type.tib"));
-      DASSERT(rtype->getTypeInfoPtr() == NULL);
-      rtype->setTypeInfoPtr(
-          llvm::ConstantExpr::getBitCast(
-              rtype->getTypeInfoBlock(),
-              Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
-//    }
+    DASSERT(rtype->getTypeInfoBlock() == NULL);
+    rtype->setTypeInfoBlock(
+        new GlobalVariable(*irModule_,
+            rtype->getTypeInfoBlockType().get(),
+            true, GlobalValue::ExternalLinkage, NULL,
+            type->typeDefn()->linkageName() + ".type.tib"));
+    DASSERT(rtype->getTypeInfoPtr() == NULL);
+    rtype->setTypeInfoPtr(
+        llvm::ConstantExpr::getBitCast(
+            rtype->getTypeInfoBlock(),
+            Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
   }
 
   return rtype->getTypeInfoPtr();

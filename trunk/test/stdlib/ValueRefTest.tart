@@ -14,12 +14,12 @@ class ValueRefTest : Test {
 	
 	def testManualUnboxing() {
 	  let b = ValueRef(true);
-	  let c = Ref.valueOf[bool](b);
+	  let c = Refs.valueOf[bool](b);
 	  assertTrue(c);
 	
 	  // Boolean tests
-	  assertTrue(Ref.valueOf[bool](true));
-	  assertFalse(Ref.valueOf[bool](false));
+	  assertTrue(Refs.valueOf[bool](true));
+	  assertFalse(Refs.valueOf[bool](false));
 	
 	  // char
 	  tryUnbox[char]('a', 'a');
@@ -121,28 +121,28 @@ class ValueRefTest : Test {
 	  tryUnbox[uint64](97, 'a');
 	
 	  // float
-	  assertEq(1.0f, Ref.valueOf[float](int8(1)));
-	  assertEq(1.0f, Ref.valueOf[float](int16(1)));
-	  assertEq(1.0f, Ref.valueOf[float](int32(1)));
-	  assertEq(1.0f, Ref.valueOf[float](int64(1)));
-	  assertEq(1.0f, Ref.valueOf[float](uint8(1)));
-	  assertEq(1.0f, Ref.valueOf[float](uint16(1)));
-	  assertEq(1.0f, Ref.valueOf[float](uint32(1)));
-	  assertEq(1.0f, Ref.valueOf[float](uint64(1)));
-	  assertEq(1.0f, Ref.valueOf[float](float(1.0)));
-	  assertEq(1.0f, Ref.valueOf[float](double(1.0)));
+	  assertEq(1.0f, Refs.valueOf[float](int8(1)));
+	  assertEq(1.0f, Refs.valueOf[float](int16(1)));
+	  assertEq(1.0f, Refs.valueOf[float](int32(1)));
+	  assertEq(1.0f, Refs.valueOf[float](int64(1)));
+	  assertEq(1.0f, Refs.valueOf[float](uint8(1)));
+	  assertEq(1.0f, Refs.valueOf[float](uint16(1)));
+	  assertEq(1.0f, Refs.valueOf[float](uint32(1)));
+	  assertEq(1.0f, Refs.valueOf[float](uint64(1)));
+	  assertEq(1.0f, Refs.valueOf[float](float(1.0)));
+	  assertEq(1.0f, Refs.valueOf[float](double(1.0)));
 	
 	  // double
-	  assertEq(1.0, Ref.valueOf[double](int8(1)));
-	  assertEq(1.0, Ref.valueOf[double](int16(1)));
-	  assertEq(1.0, Ref.valueOf[double](int32(1)));
-	  assertEq(1.0, Ref.valueOf[double](int64(1)));
-	  assertEq(1.0, Ref.valueOf[double](uint8(1)));
-	  assertEq(1.0, Ref.valueOf[double](uint16(1)));
-	  assertEq(1.0, Ref.valueOf[double](uint32(1)));
-	  assertEq(1.0, Ref.valueOf[double](uint64(1)));
-	  assertEq(1.0, Ref.valueOf[double](float(1.0)));
-	  assertEq(1.0, Ref.valueOf[double](double(1.0)));
+	  assertEq(1.0, Refs.valueOf[double](int8(1)));
+	  assertEq(1.0, Refs.valueOf[double](int16(1)));
+	  assertEq(1.0, Refs.valueOf[double](int32(1)));
+	  assertEq(1.0, Refs.valueOf[double](int64(1)));
+	  assertEq(1.0, Refs.valueOf[double](uint8(1)));
+	  assertEq(1.0, Refs.valueOf[double](uint16(1)));
+	  assertEq(1.0, Refs.valueOf[double](uint32(1)));
+	  assertEq(1.0, Refs.valueOf[double](uint64(1)));
+	  assertEq(1.0, Refs.valueOf[double](float(1.0)));
+	  assertEq(1.0, Refs.valueOf[double](double(1.0)));
 	}
 	
 	def testUnboxingFailure() {
@@ -222,7 +222,7 @@ class ValueRefTest : Test {
 	
 	final def tryUnbox[%T](expected:T, actual:Object) {
 	  try {
-	    let n = Ref.valueOf[T](actual);
+	    let n = Refs.valueOf[T](actual);
 	    assertEq(expected, n);
 	  } catch e:TypecastError {
 	    failFmt("Typecast exception unboxing {0} [{1} .. {2}]", actual, T.minVal, T.maxVal);
@@ -231,7 +231,7 @@ class ValueRefTest : Test {
 	
 	final def expectFailure[%T](o:Object) {
 	  try {
-	    let n = Ref.valueOf[T](o);
+	    let n = Refs.valueOf[T](o);
 	    failFmt("Typecast exception expected unboxing {0} [{1} .. {2}]", o, T.minVal, T.maxVal);
 	  } catch e:TypecastError {
 	    return;

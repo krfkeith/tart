@@ -10,6 +10,7 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
+#include "tart/CFG/Closure.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -437,6 +438,10 @@ bool FunctionAnalyzer::createCFG() {
           ConstructorAnalyzer(cls).run(target);
         }
       }
+
+      if (!target->isNested() && !target->closureEnvs().empty()) {
+        visitClosureEnvs(target->closureEnvs());
+      }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.
       Block * block = new Block("undef_entry");
@@ -448,6 +453,49 @@ bool FunctionAnalyzer::createCFG() {
   }
 
   return success;
+}
+
+void FunctionAnalyzer::visitClosureEnvs(const ExprList & closureEnvs) {
+  for (ExprList::const_iterator it = closureEnvs.begin(); it != closureEnvs.end(); ++it) {
+    ClosureEnvExpr * closure = static_cast<ClosureEnvExpr *>(*it);
+    CompositeType * envType = closure->envType();
+
+    // First, propagate 'assignedTo' flags downward.
+    // Also, compute the type name of the closure type.
+    std::string closureName(".closure[");
+    Defn * first = envType->firstMember();
+    for (Defn * de = first; de != NULL; de = de->nextInScope()) {
+      VariableDefn * var = cast<VariableDefn>(de);
+      if (de != first) {
+        closureName.append(",");
+      }
+
+      // See if this variable was assigned to at any point.
+      bool isAssignedTo = false;
+      for (VariableDefn * v = var; v != NULL; v = v->closureBinding()) {
+        if (v->isAssignedTo()) {
+          isAssignedTo = true;
+          break;
+        }
+      }
+
+      const Type * varType = var->type();
+      if (isAssignedTo) {
+        var->setIsAssignedTo();
+        varType = getMutableRefType(varType);
+        analyzeType(varType, Task_PrepCodeGeneration);
+        module_->addSymbol(varType->typeDefn());
+        module_->addSymbol(cast<CompositeType>(varType)->super()->typeDefn());
+        var->setSharedRefType(varType);
+        var->closureBinding()->setSharedRefType(varType);
+      }
+
+      typeLinkageName(closureName, varType);
+    }
+
+    closureName.append("]");
+    envType->typeDefn()->setQualifiedName(closureName);
+  }
 }
 
 bool FunctionAnalyzer::resolveReturnType() {
@@ -636,8 +684,7 @@ bool FunctionAnalyzer::createReflectionData() {
     if (!target->isSingular() || target->defnType() == Defn::Macro) {
       // Don't reflect uninstantiated templates
       doReflect = false;
-    } else if (target->storageClass() == Storage_Local
-        || target->storageClass() == Storage_Closure) {
+    } else if (target->storageClass() == Storage_Local) {
       // Don't reflect local methods
       doReflect = false;
       target->addTrait(Defn::Nonreflective);

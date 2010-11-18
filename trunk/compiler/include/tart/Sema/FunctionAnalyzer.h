@@ -36,6 +36,7 @@ public:
   bool merge();
   bool createReflectionData();
   bool analyzeRecursive(AnalysisTask task, FunctionDefn::AnalysisPass pass);
+  void visitClosureEnvs(const ExprList & closureEnvs);
   void warnConflict(
       const SourceLocation & prevLoc, const Type * prevType,
       const SourceLocation & nextLoc, const Type * nextType) const;

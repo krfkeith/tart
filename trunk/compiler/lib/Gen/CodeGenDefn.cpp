@@ -170,13 +170,16 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
-      const Type * paramType = param->internalType();
       DASSERT_OBJ(param != NULL, fdef);
+      DASSERT_OBJ(param->storageClass() == Storage_Local, param);
+      const Type * paramType = param->internalType();
       it->setName(param->name());
       Value * paramValue = it;
 
       // See if we need to make a local copy of the param.
-      if (param->isLValue()) {
+      if (param->isSharedRef()) {
+        genLocalVar(param, paramValue);
+      } else if (param->isLValue()) {
         Value * localValue = builder_.CreateAlloca(paramType->irEmbeddedType(), 0, param->name());
         param->setIRValue(localValue);
 

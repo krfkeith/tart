@@ -31,11 +31,12 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     FunctionType * mtype = macro->functionType();
     const Type * returnType = dealias(mtype->returnType());
 
+    FunctionDefn * scopeFn = stAn.getTarget();
+
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
     if (!returnType->isVoidType()) {
-      LocalScope * retValScope =
-          new LocalScope(macro->definingScope(), stAn.activeScope()->region());
+      LocalScope * retValScope = new LocalScope(macro->definingScope(), stAn.activeScope()->region());
       retValScope->setScopeName("macro-return");
       stAn.getTarget()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");

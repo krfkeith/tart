@@ -1440,8 +1440,8 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
     if (varList->value() != NULL) {
       const TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
-      ExprAnalyzer ea(module(), activeScope(), function, function);
-      Expr * initExpr = inferTypes(ea.analyze(varList->value(), tt), tt);
+      //ExprAnalyzer ea(module(), activeScope(), function, function);
+      Expr * initExpr = inferTypes(/*ea.*/analyze(varList->value(), tt), tt);
       if (initExpr == NULL) {
         return false;
       }
@@ -1642,7 +1642,7 @@ void StmtAnalyzer::exitLocalScope(LocalScope * scope) {
 
   for (Defn * local = scope->firstMember(); local != NULL; local = local->nextInScope()) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
-      if (var->type()->containsReferenceType()) {
+      if (var->type()->containsReferenceType() && var->isSharedRef()) {
         // Zero out any garbage-collectible locals.
         rootsToClear.push_back(new ClearVarExpr(var));
       }

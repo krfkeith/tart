@@ -31,4 +31,156 @@ class FunctionTest : Test {
 	  Debug.assertEq(2, f(1));
 	  Debug.assertEq(4, f(2));
 	}
+
+	def testClosureWithLet {
+	  let a = "A";
+	  let f = fn (b:String) -> String {
+	    return String.concat(a, b);
+	  };
+	  
+	  Debug.assertEq("AB", f("B"));
+	  Debug.assertEq("AC", f("C"));
+	}
+
+	def testClosureWithVar {
+	  var a = "A";
+	  let f = fn (b:String) -> String {
+	    return String.concat(a, b);
+	  };
+	  
+	  Debug.assertEq("AB", f("B"));
+	  a = "AA";
+	  Debug.assertEq("AAB", f("B"));
+	}
+	
+	def testClosureCounter {
+	  var a = 0;
+	  let f = fn -> int {
+	    return a++;
+	  };
+
+	  Debug.assertEq(0, f());
+	  Debug.assertEq(1, f());
+	  Debug.assertEq(2, f());
+	  Debug.assertEq(3, a);
+	}
+
+	def returnClosure(a:String) -> fn :String -> String {
+	  var s = a;
+	  return fn (b:String) -> String {
+	    return String.concat(s, b);
+	  };
+	}
+
+	def testClosureReturnVal {
+	  let f = returnClosure("A");
+	  Debug.assertEq("AB", f("B"));
+	  Debug.assertEq("AC", f("C"));
+	}
+	
+	def makeCounter(n:int) -> fn -> int {
+	  return fn -> int {
+	    return n++;
+	  };
+	}
+
+	def testClosureWithParamVar {
+	  let f = makeCounter(10);
+	  Debug.assertEq(10, f());
+	  Debug.assertEq(11, f());
+	  Debug.assertEq(12, f());
+	}
+	
+	def testMultipleClosuresInOneScope {
+	  var a = 0;
+	  let f1 = fn -> int {
+	    a += 1;
+	    return a;
+	  };
+
+	  let f2 = fn -> int {
+	    a += 10;
+	    return a;
+	  };
+
+	  Debug.assertEq(1, f1());
+	  Debug.assertEq(11, f2());
+	  Debug.assertEq(12, f1());
+	  Debug.assertEq(22, f2());
+	}
+	
+	def callTenTimes(f:fn) {
+	  for i = 0; i < 10; ++i {
+	    f();
+	  }
+	}
+	
+	def testClosureAsParam {
+	  var i = 0;
+	  callTenTimes(fn { i += 2; });
+	  Debug.assertEq(20, i);
+
+	  var s = StringBuilder();
+	  callTenTimes(fn { s.append("A"); });
+	  Debug.assertEq("AAAAAAAAAA", s.toString());
+	}
+
+	def testNestedClosures {
+	  let makeCounter = fn n:int -> fn -> int {
+	    return fn -> int {
+	      return n++;
+	    };
+	  };
+	  
+	  let c = makeCounter(2);
+	  Debug.assertEq(2, c());
+	  Debug.assertEq(3, c());
+	}
+	
+	def testNestedClosures2 {
+	  var i = 0;
+	  let makeCounter = fn -> fn -> int {
+	    return fn -> int {
+	      return i++;
+	    };
+	  };
+
+	  let c = makeCounter();
+	  let d = makeCounter();
+
+	  Debug.assertEq(0, c());
+	  Debug.assertEq(1, c());
+	  Debug.assertEq(2, d());
+	  Debug.assertEq(3, d());
+	}
+	
+  struct LargeStruct {
+    var a:int;
+    var b:int;
+    var c:int;
+    var d:int;
+
+    def construct() {
+      a = 0;
+      b = 1;
+      c = 2;
+      d = 3;
+    }
+  }
+
+/*	def testClosuresWithLargerTypes {
+	  var ls = LargeStruct();
+	  let f = fn -> int {
+	    return ls.c++;
+	  };
+
+	  Debug.assertEq(2, f());
+	  Debug.assertEq(3, ls.c);
+	  Debug.assertEq(3, f());
+	  Debug.assertEq(4, ls.c);
+	  Debug.assertEq(4, f());
+	} */
+
+	// Test closures with tuples, structs
+	// Test closures interoperable as bound methods
 }

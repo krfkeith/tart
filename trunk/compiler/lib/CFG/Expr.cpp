@@ -239,6 +239,9 @@ LValueExpr::LValueExpr(const SourceLocation & loc, Expr * base, ValueDefn * valu
   , base_(base)
   , value_(value)
 {
+  if (value->storageClass() == Storage_Instance && base == NULL) {
+    diag.fatal(loc) << "Instance member with no base: " << value;
+  }
 }
 
 bool LValueExpr::isSingular() const {
@@ -664,19 +667,86 @@ void CastExpr::format(FormatStream & out) const {
 
 void ClosureEnvExpr::addMember(Defn * d) {
   DASSERT_OBJ(d->definingScope() == NULL, d);
-  SymbolTable::Entry * entry = members_.add(d);
+  SymbolTable::Entry * entry = envType_->members().add(d);
   d->setDefiningScope(this);
 }
 
 bool ClosureEnvExpr::lookupMember(const char * name, DefnList & defs, bool inherit) const {
-  const SymbolTable::Entry * entry = members_.findSymbol(name);
+  // If the closure variable has already been seen once, return the previous definition.
+  const SymbolTable::Entry * entry = envType_->members().findSymbol(name);
   if (entry != NULL) {
     defs.append(entry->begin(), entry->end());
     return true;
   }
 
   if (parentScope_ != NULL) {
-    return parentScope_->lookupMember(name, defs, inherit);
+    DefnList parentDefs;
+
+    // Search all of the scopes that extend from the scope that the closure is defined
+    // in to the parameter scope of the enclosing function.
+    Scope * foundScope = NULL;
+    for (Scope * s = parentScope_; s != NULL; s = s->parentScope()) {
+      if (s->lookupMember(name, parentDefs, inherit)) {
+        foundScope = s;
+        break;
+      }
+
+      if (s == finalScope_) {
+        break;
+      }
+    }
+
+    // If the closure variable is accessible from a parent definition, then
+    // create a copy of the variable in the current closure environment.
+    if (foundScope != NULL) {
+      DASSERT(parentDefs.size() > 0);
+      Defn * de = parentDefs.front();
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        if (var->storageClass() == Storage_Local || var->isClosureVar()) {
+          DASSERT(parentDefs.size() == 1);
+          VariableDefn * closureVar = NULL;
+          DASSERT(var->module() != NULL);
+          switch (var->defnType()) {
+            case Defn::Let:
+              closureVar = new VariableDefn(Defn::Let,
+                  var->module(), var->name(),
+                  LValueExpr::get(var->location(), foundScope->baseExpr(), var));
+              break;
+            case Defn::Var:
+            case Defn::Parameter:
+              closureVar = new VariableDefn(Defn::Var,
+                  var->module(), var->name(),
+                  LValueExpr::get(var->location(), foundScope->baseExpr(), var));
+              break;
+
+            case Defn::MacroArg:
+              // Don't do anything with macro args.
+              defs.append(parentDefs.begin(), parentDefs.end());
+              return true;
+
+            default:
+              DFAIL("Invalid variable type");
+          }
+
+          if (closureVar != NULL) {
+            closureVar->setType(var->type());
+            closureVar->addTrait(Defn::Singular);
+            closureVar->setFlag(VariableDefn::ClosureVar, true);
+            closureVar->setStorageClass(Storage_Instance);
+            closureVar->setQualifiedName(closureVar->name());
+            closureVar->setParentDefn(envType_->typeDefn());
+            envType_->addMember(closureVar);
+            defs.push_back(closureVar);
+            return true;
+          }
+        } else {
+          DFAIL("Closure access to non-variables not yet supported.");
+        }
+      }
+
+      defs.append(parentDefs.begin(), parentDefs.end());
+      return true;
+    }
   }
 
   return false;
@@ -693,7 +763,7 @@ void ClosureEnvExpr::trace() const {
 void ClosureEnvExpr::dumpHierarchy(bool full) const {
   std::string out;
   out.append("[closure]");
-  members_.getDebugSummary(out);
+  envType_->members().getDebugSummary(out);
   diag.writeLnIndent(out);
 }
 

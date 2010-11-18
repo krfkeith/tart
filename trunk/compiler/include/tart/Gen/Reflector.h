@@ -76,11 +76,11 @@ public:
   };
 
   const char * name() const { return name_; }
-  const FunctionType * type() const { return type_; }
+  const FunctionType * type() const { return ns_; }
 
 private:
   const char * name_;
-  const FunctionType * type_;
+  const FunctionType * ns_;
 };
 #endif
 

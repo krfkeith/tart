@@ -32,7 +32,6 @@ enum StorageClass {
   Storage_Class,      // Class variable - one copy per class
   Storage_Static,     // Static variable - one copy only
   Storage_Local,      // A local variable
-  Storage_Closure,    // A closure variable
 };
 
 /// -------------------------------------------------------------------

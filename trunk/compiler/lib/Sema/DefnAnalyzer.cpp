@@ -346,7 +346,7 @@ void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
       args.push_back(tdef->asExpr());
     } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
-      args.push_back(LValueExpr::get(attrObj->location(), NULL, vdef));
+      args.push_back(LValueExpr::get(attrObj->location(), attrObj, vdef));
     } else {
       DFAIL("Implement");
     }

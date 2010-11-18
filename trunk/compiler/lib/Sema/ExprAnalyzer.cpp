@@ -14,6 +14,7 @@
 #include "tart/CFG/TupleType.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Closure.h"
+#include "tart/CFG/NamespaceDefn.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -25,6 +26,7 @@
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 #include <llvm/DerivedTypes.h>
+#include <llvm/ADT/StringExtras.h>
 
 namespace tart {
 
@@ -287,49 +289,77 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 
   if (ftype != NULL) {
     if (ast->body() != NULL) {
-      ClosureEnvExpr * env = new ClosureEnvExpr(astLoc(ast), activeScope());
-      TypeDefn * envTypeDef = new TypeDefn(module(), ".env", NULL);
+      // The hidden parameter that points to the closure environment
+      ParameterDefn * envParam = new ParameterDefn(module(), "#env");
+
+      TypeDefn * envTypeDef = new TypeDefn(module(), ".closure", NULL);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Nonreflective);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
       envTypeDef->setDefiningScope(activeScope());
-      envTypeDef->createQualifiedName(currentFunction_);
-      CompositeType * envType = new CompositeType(Type::Struct, envTypeDef, activeScope());
+
+      // Use a composite type to represent the closure environment.
+      CompositeType * envType = new CompositeType(Type::Class, envTypeDef, activeScope());
       envTypeDef->setTypeValue(envType);
+      envType->setClassFlag(CompositeType::Closure, true);
+      envType->setSuper(static_cast<CompositeType *>(Builtins::typeObject));
+      module_->addSymbol(Builtins::typeObject->typeDefn());
+      module_->addSymbol(envTypeDef);
+
+      LValueExpr * envBaseExpr = LValueExpr::get(ast->location(), NULL, envParam);
+      envBaseExpr->setType(envType);
+
+      ClosureEnvExpr * env = new ClosureEnvExpr(
+          astLoc(ast), activeScope(), &currentFunction_->parameterScope(), envType, envBaseExpr);
       env->setType(envType);
+      currentFunction_->closureEnvs().push_back(env);
 
-      ParameterDefn * selfParam = new ParameterDefn(module(), "self");
-      selfParam->setFlag(ParameterDefn::ClosureEnv, true);
-      selfParam->setFlag(ParameterDefn::Reference, true);
-      selfParam->setInitValue(env);
-      selfParam->setType(env->type());
-      selfParam->setInternalType(env->type());
-      selfParam->addTrait(Defn::Singular);
-      //selfParam->addTrait(Defn::Final);
-      selfParam->setStorageClass(Storage_Instance);
+      envParam->setFlag(ParameterDefn::Reference, true);
+      envParam->setInitValue(env);
+      envParam->setType(env->type());
+      envParam->setInternalType(env->type());
+      envParam->addTrait(Defn::Singular);
+      envParam->setStorageClass(Storage_Local);
 
-      ftype->setSelfParam(selfParam);
+      ftype->setSelfParam(envParam);
 
       // TODO: It's possible to have an anon fn outside of a function. Deal with that later.
       DASSERT(currentFunction_ != NULL);
       FunctionDefn * fn =  new FunctionDefn(Defn::Function, module(), ast);
-      fn->createQualifiedName(currentFunction_);
       fn->setFunctionType(ftype);
+      fn->createQualifiedName(currentFunction_);
       fn->setStorageClass(Storage_Local);
       fn->setParentDefn(currentFunction_);
       fn->copyTrait(currentFunction_, Defn::Synthetic);
+      fn->setFlag(FunctionDefn::Nested);
       fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
-      fn->parameterScope().addMember(selfParam);
+      fn->parameterScope().addMember(envParam);
       fn->setDefiningScope(activeScope());
 
+      // Generate a unique name for this closure.
+      std::string linkageName(currentFunction_->linkageName());
+      linkageName += '.';
+      linkageName += llvm::itostr(currentFunction_->closureEnvs().size());
+      fn->setLinkageName(linkageName);
+
+      // Analyze the function body. Doing this will also cause additional fields
+      // to be added to the environment type.
       if (!analyzeFunction(fn, Task_PrepEvaluation)) {
         return &Expr::ErrorVal;
       }
 
-      return new BoundMethodExpr(astLoc(ast), env, fn,
-          new BoundMethodType(fn->functionType()));
+      // Append any closures nested within 'fn' to the next level up.
+      currentFunction_->closureEnvs().append(fn->closureEnvs().begin(), fn->closureEnvs().end());
+
+      // Finish analysis of the environment type.
+      if (!analyzeType(envType, Task_PrepCodeGeneration)) {
+        return &Expr::ErrorVal;
+      }
+      DASSERT(envType->super() != NULL);
+
+      return new BoundMethodExpr(astLoc(ast), env, fn, new BoundMethodType(fn->functionType()));
     } else {
       // It's merely a function type declaration
       if (ftype->returnType() != NULL) {
@@ -1284,9 +1314,10 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       }
       break;
 
-    case Storage_Local:
+    case Storage_Local: {
       lvalue->setBase(NULL);
       break;
+    }
 
     case Storage_Instance: {
       Expr * base = lvalueBase(lvalue);
@@ -1304,7 +1335,6 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
     }
 
     case Storage_Class:
-    case Storage_Closure:
     default:
       DFAIL("Invalid storage class");
   }
@@ -1506,8 +1536,8 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
   //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
   ExprList methods;
-  analyzeTypeDefn(Builtins::typeRef->typeDefn(), Task_PrepMemberLookup);
-  findInScope(methods, "valueOf", Builtins::typeRef->memberScope(), NULL, loc, NO_PREFERENCE);
+  analyzeDefn(Builtins::nsRefs, Task_PrepMemberLookup);
+  findInScope(methods, "valueOf", &Builtins::nsRefs->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());
   Expr * valueOf = specialize(loc, methods, TupleType::get(toType));
   FunctionDefn * valueOfMethod;

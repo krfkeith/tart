@@ -367,6 +367,56 @@ Field:
 
 // ------------------------------------------------------------------------
 
+Closures:
+  In parent function:
+  -- convert local vars to refs.
+  -- transparently box / unbox as accessed.
+  
+What if bound methods were a single pointer?
+
+-- It means that a closure would need to have a vtable containing the function pointer.
+   So, it would look like this:
+   
+      closure = { { tib, gcstate }, members... }
+      tib = { .., [toString, ..., method] }
+      
+   Invoking a closure would always be the Nth method of the tib. (In essence closures
+   would be subtypes of a 'callable' abstract class - not an interface though.)
+   
+So how would the 'Callable' class look?
+
+      closure = { { tib, gcstate }, members }
+      tib = { ..., [toString, ..., ..., call() }
+      
+   In other words, the function body would always be in the slot for the 'call' method
+   of the interface. Oh, it's an interface, so it's actually:
+
+      tib = { ..., idispatch, [toString] }
+      itable = { call() }
+      
+   However, this only works if we know in advance the type of the interface at the
+   point where the closure was defined. We can't arbitrarily convert a closure
+   to a single-function interface.
+   
+So how would bound methods look?
+
+  A bound method is a combination of an object pointer and a method pointer.
+
+      bm = { instance, method }
+      instance = { { tib, gcstate }, object members... }
+      tib = 
+      
+  ...and I don't know how to do this without forwarding.
+
+And if bound methods are two pointers, then what? How can a closure substitute for
+a single-interface function?
+
+  Again, I only see how to do this if the closure is defined at a point where the
+  interface type is known - i.e. the closure has to know what interface it's being
+  compiled to.
+
+// ------------------------------------------------------------------------
+
 // Redo Type::getHashCode();
 // Make function types canonical without paramters. (Can that be done?)
 
@@ -392,3 +442,50 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
 -rwxr-xr-x 1 talin talin  357291 2010-11-13 10:49 test/stdlib/SwitchStmtTest (smarter coalesce)
 -rwxr-xr-x 1 talin talin  356590 2010-11-13 11:28 test/stdlib/SwitchStmtTest (smarter coalesce)
 
+(Need new baseline)
+
+
+def callTenTimes(f:fn) {
+  for i = 0; i < 10; ++i {
+    f();
+  }
+}
+
+def testClosureAsParam {
+  var i = 0;
+  callTenTimes(fn { i += 2; });
+  Debug.assertEq(20, i);
+
+  var s = StringBuilder();
+  callTenTimes(fn { s.append("A"); });
+  Debug.assertEq("AAAAAAAAAA", s.toString());
+}
+
+def testNestedClosures {
+  let makeCounter = fn n:int -> fn -> int {
+    return fn -> int {
+      return n++;
+    };
+  };
+  
+  let c = makeCounter(2);
+  Debug.assertEq(2, c());
+  Debug.assertEq(3, c());
+}
+
+def testNestedClosures2 {
+  var i = 0;
+  let makeCounter = fn -> fn -> int {
+    return fn -> int {
+      return i++;
+    };
+  };
+
+  let c = makeCounter();
+  let d = makeCounter();
+
+  Debug.assertEq(0, c());
+  Debug.assertEq(1, c());
+  Debug.assertEq(2, d());
+  Debug.assertEq(3, d());
+}

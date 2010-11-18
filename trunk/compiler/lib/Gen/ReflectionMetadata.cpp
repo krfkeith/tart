@@ -86,6 +86,12 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
       break;
     }
 
+    case Type::BoundMethod: {
+      const BoundMethodType * bmtype = static_cast<const BoundMethodType *>(type);
+      addTypeRef(bmtype->fnType());
+      break;
+    }
+
     case Type::Union: {
       const UnionType * utype = static_cast<const UnionType *>(type);
       types_[utype] = TagInfo(1);
@@ -312,6 +318,12 @@ void ReflectionMetadata::encodeType(const Type * type, llvm::raw_ostream & out) 
       out << VarInt(invokeIndex);
       encodeTypeRef(ftype->returnType(), out);
       encodeTypeRef(ftype->paramTypes(), out);
+      break;
+    }
+
+    case Type::BoundMethod: {
+      const BoundMethodType * bmtype = static_cast<const BoundMethodType *>(type);
+      encodeTypeRef(bmtype->fnType(), out);
       break;
     }
 

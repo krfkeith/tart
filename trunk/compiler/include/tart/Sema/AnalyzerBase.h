@@ -152,6 +152,9 @@ public:
       construction of the array. */
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const Type * elementType);
 
+  /** Given a value type, return the MutableRef[value] type. */
+  CompositeType * getMutableRefType(const Type * valueType);
+
   /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);
   static void checkAccess(const SourceLocation & loc, Defn * source, Defn * target);
