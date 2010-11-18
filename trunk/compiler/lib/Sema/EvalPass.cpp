@@ -360,10 +360,6 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
         }
 
         return callFrame_->getLocal(var);
-
-      case Storage_Closure:
-        DFAIL("IMPLEMENT Storage_Closure");
-        break;
     }
   }
 
@@ -435,10 +431,6 @@ void EvalPass::store(Expr * value, Expr * dest) {
 
         case Storage_Local:
           callFrame_->setLocal(var, value);
-          break;
-
-        case Storage_Closure:
-          DFAIL("IMPLEMENT Storage_Closure");
           break;
       }
     } else if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {

@@ -690,6 +690,13 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
 
 ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
 {
+  if (mods.flags & Abstract) {
+    diag.error(tokenLoc) << "Namespaces cannot be declared abstract";
+  }
+  if (mods.flags & Final) {
+    diag.error(tokenLoc) << "Namespaces cannot be declared final";
+  }
+
   const char * declName = matchIdent();
   if (declName == NULL) {
     expectedIdentifier();

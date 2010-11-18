@@ -206,20 +206,6 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
       return false;
     }
 
-    // Special case for non-reflective types: Any type that takes a non-reflective type
-    // as a type argument is also non-reflective.
-//    if (target->isTemplateInstance()) {
-//      const TupleType * typeParams = target->templateInstance()->typeArgs();
-//      for (TupleType::const_iterator it = typeParams->begin(); it != typeParams->end(); ++it) {
-//        const Type * typeParam = *it;
-//        analyzeType(typeParam, Task_PrepMemberLookup);
-//        if (typeParam->typeDefn() != NULL && typeParam->typeDefn()->isNonreflective()) {
-//          target->addTrait(Defn::Nonreflective);
-//          break;
-//        }
-//      }
-//    }
-
     type->passes().finish(CompositeType::AttributePass);
   }
 
@@ -672,6 +658,12 @@ bool ClassAnalyzer::analyzeConstructors() {
   if (type->passes().begin(CompositeType::ConstructorPass)) {
     if (trace_) {
       diag.debug() << "Constructors";
+    }
+
+    // Closures don't have constructors
+    if (type->getClassFlag(CompositeType::Closure)) {
+      type->passes().finish(CompositeType::ConstructorPass);
+      return true;
     }
 
     Type::TypeClass tcls = type->typeClass();
@@ -1474,12 +1466,12 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
     if (!target->isSynthetic()) {
       module_->addSymbol(constructorDef);
     }
-  }
 
-  DASSERT_OBJ(constructorDef->isSingular(), constructorDef);
-  if (!funcType->isSingular()) {
-    diag.fatal(target) << "Default constructor type " << funcType << " is not singular";
-    funcType->whyNotSingular();
+    DASSERT_OBJ(constructorDef->isSingular(), constructorDef);
+    if (!funcType->isSingular()) {
+      diag.fatal(target) << "Default constructor type " << funcType << " is not singular";
+      funcType->whyNotSingular();
+    }
   }
 
   targetType()->addMember(constructorDef);

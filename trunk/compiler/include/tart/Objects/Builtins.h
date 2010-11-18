@@ -18,15 +18,16 @@ namespace tart {
 class Module;
 class Defn;
 class TypeDefn;
+class NamespaceDefn;
 class ValueDefn;
 class SystemClass;
+class SystemNamespace;
 
 /// -------------------------------------------------------------------
 /// Class to hold references to all builtin types and methods.
 class Builtins {
 private:
   static Module * loadSystemModule(const char * name);
-  static Defn * loadSystemDef(const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
 
   static bool compileBuiltins(ProgramSource & source);
@@ -71,6 +72,8 @@ public:
   // System types - lazily loaded
   static SystemClass typeRef;
   static SystemClass typeValueRef;
+  static SystemClass typeMutableRef;
+  static SystemNamespace nsRefs;
 
   // Global aliases - used to create static references to types that are dynamically loaded.
   static TypeAlias typeAliasString;
@@ -85,6 +88,9 @@ public:
 
   /** Load a system type. */
   static Type * loadSystemType(const char * name);
+
+  /** Load a system definition. */
+  static Defn * loadSystemDef(const char * name);
 
   /** Load classes known to the compiler. */
   static void loadSystemClasses();
@@ -170,6 +176,30 @@ private:
   SystemClass & definingClass_;
   const char * fieldName_;
   mutable T * member_;
+};
+
+/// -------------------------------------------------------------------
+/// Contains a lazy reference to a system namespace
+class SystemNamespace {
+public:
+  SystemNamespace(const char * typeName)
+    : nsName_(typeName)
+    , ns_(NULL)
+    {}
+
+  NamespaceDefn * get() const;
+  NamespaceDefn * peek() const { return ns_; }
+  NamespaceDefn * operator->() const {
+    return get();
+  }
+
+  operator NamespaceDefn *() const {
+    return get();
+  }
+
+private:
+  const char * nsName_;
+  mutable NamespaceDefn * ns_;
 };
 
 }

@@ -88,7 +88,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "", false);
 
     case Expr::LValue:
-      return genLoadLValue(static_cast<const LValueExpr *>(in));
+      return genLoadLValue(static_cast<const LValueExpr *>(in), true);
 
     case Expr::BoundMethod:
       return genBoundMethod(static_cast<const BoundMethodExpr *>(in));
@@ -279,7 +279,10 @@ Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
     return NULL;
   }
 
-  if (!var->hasStorage()) {
+  if (var->isSharedRef()) {
+    Value * refAddr = builder_.CreateStructGEP(builder_.CreateLoad(var->irValue()), 1);
+    builder_.CreateStore(initValue, refAddr);
+  } else if (!var->hasStorage()) {
     // Bind the initValue to the variable. Large value types will be allocas.
     DASSERT_OBJ(var->initValue() == NULL, var);
     DASSERT_OBJ(initValue != NULL, var);
@@ -323,11 +326,10 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
       // If it's a zero-size struct then don't do the assignment at all.
       return rvalue;
     }
-#if FC_STRUCTS_INTERNAL
+
     if (typeShape == Shape_Large_Value) {
       rvalue = loadValue(rvalue, in->fromExpr(), "deref");
     }
-#endif
 
     DASSERT_TYPE_EQ_MSG(in,
         lvalue->getType()->getContainedType(0),
@@ -497,18 +499,19 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
   return phi;
 }
 
-Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
+Value * CodeGenerator::genLoadLValue(const LValueExpr * lval, bool derefShared) {
   const ValueDefn * var = lval->value();
   TypeShape typeShape = var->canonicalType()->typeShape();
 
   // It's a member or element expression
   if (lval->base() != NULL) {
-    return genLoadMemberField(lval);
+    return genLoadMemberField(lval, derefShared);
   }
 
   // It's a global, static, or parameter
   if (var->defnType() == Defn::Let) {
     const VariableDefn * let = static_cast<const VariableDefn *>(var);
+    DASSERT(!let->isSharedRef());
     Value * letValue = genLetValue(let);
 
     // If this is a let-value that has actual storage
@@ -520,7 +523,17 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     DASSERT_TYPE_EQ(lval, let->type()->irParameterType(), letValue->getType());
     return letValue;
   } else if (var->defnType() == Defn::Var) {
-    Value * varValue = genVarValue(static_cast<const VariableDefn *>(var));
+    const VariableDefn * v = static_cast<const VariableDefn *>(var);
+    Value * varValue = genVarValue(static_cast<const VariableDefn *>(v));
+
+    if (v->isSharedRef()) {
+      if (!derefShared) {
+        return varValue;
+      }
+
+      varValue = builder_.CreateStructGEP(builder_.CreateLoad(varValue), 1, var->name());
+    }
+
     if (typeShape == Shape_Large_Value) {
       return varValue;
     }
@@ -532,6 +545,14 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval) {
     const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
     if (param->irValue() == NULL) {
       diag.fatal(param) << "Invalid parameter IR value for parameter '" << param << "'";
+    }
+
+    if (param->isSharedRef()) {
+      if (!derefShared) {
+        return param->irValue();
+      }
+
+      DFAIL("Implement shared param");
     }
 
     DASSERT_OBJ(param->irValue() != NULL, param);
@@ -564,20 +585,36 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
 
       // It's a reference to a class member.
       if (lval->base() != NULL) {
-        return genMemberFieldAddr(lval);
+        Value * result = genMemberFieldAddr(lval);
+        if (const VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+          if (var->isSharedRef()) {
+            result = builder_.CreateStructGEP(builder_.CreateLoad(result), 1);
+          }
+        }
+        return result;
       }
 
       // It's a global, static, or parameter
       const ValueDefn * var = lval->value();
       if (var->defnType() == Defn::Var) {
-        return genVarValue(static_cast<const VariableDefn *>(var));
+        const VariableDefn * v = static_cast<const VariableDefn *>(var);
+        Value * varValue = genVarValue(v);
+        if (v->isSharedRef()) {
+          varValue = builder_.CreateStructGEP(builder_.CreateLoad(varValue), 1);
+        }
+
+        return varValue;
       } else if (var->defnType() == Defn::Parameter) {
         const ParameterDefn * param = static_cast<const ParameterDefn *>(var);
+        if (param->isSharedRef()) {
+          DFAIL("Implement");
+        }
         return param->irValue();
       } else if (var->defnType() == Defn::MacroArg) {
         return genLValueAddress(static_cast<const VariableDefn *>(var)->initValue());
       } else {
         const VariableDefn * v = static_cast<const VariableDefn *>(var);
+        DASSERT(!v->isSharedRef());
         if (v->hasStorage()) {
           return genVarValue(v);
         }
@@ -601,7 +638,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
   }
 }
 
-Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
+Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval, bool derefShared) {
   TypeShape baseShape = lval->base()->type()->typeShape();
 
   if (baseShape == Shape_Small_RValue || baseShape == Shape_Small_LValue) {
@@ -617,6 +654,15 @@ Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval) {
   Value * addr = genMemberFieldAddr(lval);
   if (addr == NULL) {
     return NULL;
+  }
+
+  bool isShared = cast<VariableDefn>(lval->value())->isSharedRef();
+  if (isShared) {
+    if (derefShared) {
+      addr = builder_.CreateStructGEP(builder_.CreateLoad(addr), 1);
+    } else {
+      return addr;
+    }
   }
 
   if (lval->value()->type()->typeShape() == Shape_Large_Value) {
@@ -706,9 +752,13 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       label << "." << field->name();
 
       // Assert that the type is what we expected: A pointer to the field type.
-      DASSERT_TYPE_EQ(expr,
-          expr->type()->irEmbeddedType(),
-          getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      if (field->isSharedRef()) {
+        // TODO: Check type of shared ref.
+      } else {
+        DASSERT_TYPE_EQ(expr,
+            expr->type()->irEmbeddedType(),
+            getGEPType(baseAddr->getType(), indices.begin(), indices.end()));
+      }
 
       return baseAddr;
     }
@@ -782,6 +832,10 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
       if (param->getFlag(ParameterDefn::Reference)) {
         needsDeref = true;
       }
+    }
+
+    if (const VariableDefn * var = dyn_cast<VariableDefn>(field)) {
+      DASSERT(!var->isSharedRef());
     }
 
     TypeShape typeShape = fieldType->typeShape();
@@ -1001,7 +1055,47 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
 }
 
 Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
-  return llvm::ConstantPointerNull::get(in->type()->irType()->getPointerTo());
+  if (in->members().count() == 0) {
+    return llvm::ConstantPointerNull::get(in->type()->irType()->getPointerTo());
+  } else {
+    const CompositeType * envType = in->envType();
+    DASSERT(envType->super() != NULL);
+
+    // Allocate the environment.
+    Value * env = builder_.CreateCall(
+        getGlobalAlloc(),
+        llvm::ConstantExpr::getSizeOf(envType->irType()),
+        "closure.env.new");
+    env = builder_.CreatePointerCast(env, envType->irType()->getPointerTo(), "closure.env");
+    genInitObjVTable(envType, env);
+    // TODO: Init the GC slot as well.
+
+    // Set all the variables in the environment.
+    for (Defn * de = in->firstMember(); de != NULL; de = de->nextInScope()) {
+      VariableDefn * var = cast<VariableDefn>(de);
+      Value * value;
+      if (var->isSharedRef()) {
+        const LValueExpr * initValue = cast<LValueExpr>(var->initValue());
+        value = builder_.CreateLoad(genLoadLValue(initValue, false));
+      } else {
+        value = genExpr(var->initValue());
+
+//        if (var->typeShape() == Shape_Large_Value) {
+//          value =
+//        }
+      }
+
+      if (value == NULL) {
+        return NULL;
+      }
+
+      Value * memberAddr = builder_.CreateStructGEP(env, var->memberIndex(), var->name());
+      builder_.CreateStore(value, memberAddr, false);
+    }
+
+    // Return the closure environment
+    return env;
+  }
 }
 
 llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {

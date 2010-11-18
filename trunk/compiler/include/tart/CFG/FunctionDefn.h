@@ -26,7 +26,6 @@ public:
     Reference = (1<<1),     // Value passed by reference, even if value type
     LValueParam = (1<<2),   // Allow taking address or mutating param
     KeywordOnly = (1<<3),   // A "keyword only" argument.
-    ClosureEnv = (1<<4),    // A reference to a closure environment.
   };
 
   /** Constructor that takes a name */
@@ -35,29 +34,18 @@ public:
     , internalType_(NULL)
     , variance_(Contravariant)
     , flags_(0)
-  {}
-
-  /** Constructor that takes a name and a defn type */
-  ParameterDefn(DefnType dt, Module * m, const char * name)
-    : VariableDefn(dt, m, name)
-    , internalType_(NULL)
-    , variance_(Contravariant)
-    , flags_(0)
-  {}
+  {
+    setStorageClass(Storage_Local);
+  }
 
   /** Constructor that takes an AST declaration. */
   ParameterDefn(Module * m, ASTDecl * de)
     : VariableDefn(Parameter, m, de)
     , variance_(Contravariant)
     , flags_(0)
-  {}
-
-  /** Constructor that takes an AST declaration and a defn type. */
-  ParameterDefn(DefnType dt, Module * m, ASTDecl * de)
-    : VariableDefn(dt, m, de)
-    , variance_(Contravariant)
-    , flags_(0)
-  {}
+  {
+    setStorageClass(Storage_Local);
+  }
 
   /** Constructor that takes a name and a type (for static decls.) */
   ParameterDefn(Module * m, const char * name, const Type * ty, int paramFlags,
@@ -69,6 +57,7 @@ public:
   {
     setType(ty);
     assert(ty != NULL);
+    setStorageClass(Storage_Local);
   }
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
@@ -125,6 +114,7 @@ public:
     Extern = (1<<4),            // Function overrides one in a base class.
     Ctor = (1<<5),              // Function is a constructor
     Final = (1<<6),             // Function cannot be overridden
+    Nested = (1<<7),            // This function is nested within another function
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };
@@ -207,6 +197,10 @@ public:
   FunctionDefn * mergeTo() const { return mergeTo_; }
   void setMergeTo(FunctionDefn * f) { mergeTo_ = f; }
 
+  /** List of all closureEnvs in this function. */
+  const ExprList & closureEnvs() const { return closureEnvs_; }
+  ExprList & closureEnvs() { return closureEnvs_; }
+
   /** Various function aspects. */
   bool isAbstract() const { return (flags_ & Abstract) != 0; }
   bool isInterfaceMethod() const { return (flags_ & InterfaceMethod) != 0; }
@@ -215,6 +209,7 @@ public:
   bool isExtern() const { return (flags_ & Extern) != 0; }
   bool isCtor() const { return (flags_ & Ctor) != 0; }
   bool isFinal() const { return (flags_ & Final) != 0; }
+  bool isNested() const { return (flags_ & Nested) != 0; }
 
   /** True if this function has a body. */
   bool hasBody() const;
@@ -266,6 +261,7 @@ private:
   FunctionRegion * region_;
   PassMgr passes_;
   FunctionDefn * mergeTo_;
+  ExprList closureEnvs_;
 };
 
 } // namespace tart

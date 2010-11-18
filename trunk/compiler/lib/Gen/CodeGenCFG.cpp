@@ -30,8 +30,8 @@ void CodeGenerator::genLocalStorage(LocalScopeList & lsl) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-        if (var->hasStorage()) {
-          genLocalVar(var);
+        if (var->isSharedRef() || var->hasStorage()) {
+          genLocalVar(var, NULL);
         }
       }
     }
@@ -43,7 +43,9 @@ void CodeGenerator::genLocalRoots(LocalScopeList & lsl) {
     LocalScope * lscope = *it;
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-        if (var->hasStorage() && var->type()->containsReferenceType()) {
+        if (var->isSharedRef()) {
+          genGCRoot(var->irValue(), var->sharedRefType());
+        } else if (var->hasStorage() && var->type()->containsReferenceType()) {
           genGCRoot(var->irValue(), var->type());
         }
       }
@@ -51,20 +53,43 @@ void CodeGenerator::genLocalRoots(LocalScopeList & lsl) {
   }
 }
 
-void CodeGenerator::genLocalVar(VariableDefn * var) {
+void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
   // Don't generate the IR if we've already done so
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
   DASSERT_OBJ(var->irValue() == NULL, var);
-  DASSERT_OBJ(var->type() != NULL, var);
+
+  const Type * varType = var->type();
+  DASSERT_OBJ(varType != NULL, var);
 
   // Generate the variable type
-  const Type * varType = var->type();
-  DASSERT(varType != NULL);
-  const llvm::Type * irType = varType->irEmbeddedType();
+  if (var->isSharedRef()) {
+    // For a shared variable, create a shared reference on the heap.
+    const Type * cellType = var->sharedRefType();
+    DASSERT_OBJ(cellType != NULL, var);
+    const llvm::Type * irType = cellType->irEmbeddedType();
 
-  // Allocate space for the variable on the stack
-  Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
-  var->setIRValue(lValue);
+    Value * cellValue = builder_.CreateCall(
+            getGlobalAlloc(),
+            llvm::ConstantExpr::getSizeOf(varType->irType()),
+            var->name() + StringRef(".shared.alloc"));
+    cellValue = builder_.CreatePointerCast(
+        cellValue, irType, var->name() + StringRef(".shared"));
+
+    genInitObjVTable(cast<CompositeType>(cellType), cellValue);
+
+    if (initialVal != NULL) {
+      builder_.CreateStore(initialVal, builder_.CreateStructGEP(cellValue, 1));
+    }
+
+    Value * cellAlloca = builder_.CreateAlloca(irType, NULL, var->name());
+    builder_.CreateStore(cellValue, cellAlloca);
+    var->setIRValue(cellAlloca);
+  } else {
+    // Allocate space for the variable on the stack
+    const llvm::Type * irType = varType->irEmbeddedType();
+    Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
+    var->setIRValue(lValue);
+  }
 }
 
 void CodeGenerator::initGCRoot(Value * rootValue) {

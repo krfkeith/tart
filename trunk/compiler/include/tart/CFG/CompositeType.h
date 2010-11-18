@@ -45,6 +45,7 @@ public:
     Attribute = (1<<0),         // This class is an attribute.
     Abstract = (1<<1),          // This class cannot be instantiated
     Final = (1<<2),             // This class cannot be subclassed
+    Closure = (1<<3),           // This class is a closure environment
   };
 
   /** A table of methods that together implement a given interface. */

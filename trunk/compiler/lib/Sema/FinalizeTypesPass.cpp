@@ -121,6 +121,9 @@ Expr * FinalizeTypesPassImpl::visitAssignImpl(AssignmentExpr * in) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(to)) {
       if (ParameterDefn * param = dyn_cast<ParameterDefn>(lval->value())) {
         param->setFlag(ParameterDefn::LValueParam, true);
+        param->setIsAssignedTo();
+      } else if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+        var->setIsAssignedTo();
       }
     }
 

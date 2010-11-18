@@ -27,6 +27,8 @@ public:
     Constant = (1<<0),          // Variable is immutable
     ThreadLocal = (1<<1),       // Variable is thread local
     Extern = (1<<2),            // Variable is external to this module
+    AssignedTo = (1<<3),        // Variable is assigned to (local vars only)
+    ClosureVar = (1<<4),        // Variable is a member of a closure environment
   };
 
   typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
@@ -79,6 +81,25 @@ public:
   bool isThreadLocal() const { return getFlag(ThreadLocal); }
   void setThreadLocal(bool threadLocal) { setFlag(ThreadLocal, threadLocal); }
 
+  /** True if this variable is assigned to after initialization. */
+  bool isAssignedTo() const { return getFlag(AssignedTo); }
+  void setIsAssignedTo();
+
+  /** True if this variable is shared between multiple scopes (for example closures). */
+  bool isClosureVar() const { return getFlag(ClosureVar); }
+  void setClosureVar(bool value) { setFlag(ClosureVar, value); }
+
+  /** If this variable is a closure variable, then return the outer variable that it
+      is bound to. */
+  VariableDefn * closureBinding() const;
+
+  /** If this variable is a closure variable (meaning that it is shared between
+      multiple environments) then this is the type of the shared reference cell
+      containing the variable. */
+  const Type * sharedRefType() const { return sharedRefType_; }
+  void setSharedRefType(const Type * type) { sharedRefType_ = type; }
+  bool isSharedRef() const { return sharedRefType_ != NULL; }
+
   /** True if this variable is external to this module. */
   bool isExtern() const { return getFlag(Extern); }
 
@@ -97,11 +118,13 @@ public:
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
   static inline bool classof(const Defn * de) {
-    return de->defnType() == Let || de->defnType() == Var || de->defnType() == MacroArg;
+    return de->defnType() == Let || de->defnType() == Var || de->defnType() == Parameter ||
+        de->defnType() == MacroArg;
   }
 
 private:
   const Type * type_;
+  const Type * sharedRefType_;
   uint32_t flags_;
   Expr * initValue_;
   mutable llvm::Value * irValue_;

@@ -4,6 +4,8 @@
 
 #include "tart/CFG/VariableDefn.h"
 #include "tart/CFG/TypeDefn.h"
+#include "tart/CFG/Exprs.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -14,6 +16,7 @@ namespace tart {
 VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value)
   : ValueDefn(dtype, m, name)
   , type_(value ? value->type() : NULL)
+  , sharedRefType_(NULL)
   , flags_(dtype == Defn::Let ? Constant : 0)
   , initValue_(value)
   , irValue_(NULL)
@@ -24,6 +27,7 @@ VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr *
 VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
   : ValueDefn(dtype, m, de)
   , type_(NULL)
+  , sharedRefType_(NULL)
   , flags_(dtype == Defn::Let ? Constant : 0)
   , initValue_(NULL)
   , irValue_(NULL)
@@ -63,6 +67,23 @@ bool VariableDefn::hasStorage() const {
 
   return true;
 }
+
+void VariableDefn::setIsAssignedTo() {
+  if (!isAssignedTo()) {
+    setFlag(AssignedTo, true);
+    VariableDefn * outer = closureBinding();
+    if (outer != NULL) {
+      outer->setIsAssignedTo();
+    }
+  }
+}
+
+VariableDefn * VariableDefn::closureBinding() const {
+  return isClosureVar() ?
+    cast<VariableDefn>(cast<LValueExpr>(initValue_)->value()) :
+    NULL;
+}
+
 
 void VariableDefn::format(FormatStream & out) const {
   /*if (out.isVerbose()) {

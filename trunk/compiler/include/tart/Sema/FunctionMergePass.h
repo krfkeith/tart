@@ -38,7 +38,7 @@ class FunctionMergePass {
 public:
   bool visit(FunctionDefn * from, FunctionDefn * to);
 
-  FunctionMergePass() : showMessages_(true) {}
+  FunctionMergePass() : showMessages_(false) {}
 
 private:
   bool visitBlock(Block * from, Block * to);

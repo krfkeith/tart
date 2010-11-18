@@ -817,6 +817,24 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elem
   return array;
 }
 
+CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
+  // Look up the MutableRef class
+  TemplateSignature * refTemplate = Builtins::typeMutableRef->typeDefn()->templateSignature();
+
+  // Do analysis on template if needed.
+  if (refTemplate->ast() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
+    da.analyzeTemplateSignature(Builtins::typeMutableRef->typeDefn());
+  }
+
+  DASSERT_OBJ(refTemplate->paramScope().count() == 1, valueType);
+
+  BindingEnv refEnv;
+  refEnv.addSubstitution(refTemplate->patternVar(0), valueType);
+  return cast<CompositeType>(cast<TypeDefn>(
+      refTemplate->instantiate(SourceLocation(), refEnv))->typeValue());
+}
+
 // Determine if the target is able to be accessed from the current source defn.
 void AnalyzerBase::checkAccess(const SourceLocation & loc, Defn * target) {
   if (!canAccess(subject_, target)) {

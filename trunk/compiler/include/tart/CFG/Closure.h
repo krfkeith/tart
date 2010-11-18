@@ -13,6 +13,10 @@
 #include "tart/CFG/Scope.h"
 #endif
 
+#ifndef TART_CFG_COMPOSITETYPE_H
+#include "tart/CFG/CompositeType.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -20,9 +24,13 @@ namespace tart {
 class ClosureEnvExpr : public Expr, public Scope {
 public:
   /** Constructor. */
-  ClosureEnvExpr(const SourceLocation & loc, Scope * parentScope)
+  ClosureEnvExpr(const SourceLocation & loc, Scope * parentScope, Scope * finalScope,
+      CompositeType * envType, Expr * baseExpr)
     : Expr(ClosureEnv, loc, NULL)
     , parentScope_(parentScope)
+    , finalScope_(finalScope)
+    , envType_(envType)
+    , baseExpr_(baseExpr)
   {
   }
 
@@ -33,22 +41,25 @@ public:
   bool isSingular() const { return true; }
   void trace() const;
 
+  CompositeType * envType() const { return envType_; }
+
   // Scope Overrides
 
   Scope * parentScope() const { return parentScope_; }
   void setParentScope(Scope * parent) { parentScope_ = parent; }
-  const SymbolTable & members() const { return members_; }
-  SymbolTable & members() { return members_; }
+  const SymbolTable & members() const { return envType_->members(); }
+  SymbolTable & members() { return envType_->members(); }
   void addMember(Defn * d);
   bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
-  Defn * firstMember() const { return members_.first(); }
+  Defn * firstMember() const { return envType_->firstMember(); }
   const SymbolTable::Entry * findSymbol(const char * key) const {
-    return members_.findSymbol(key);
+    return envType_->findSymbol(key);
   }
+  virtual Expr * baseExpr() { return baseExpr_; }
 
   bool allowOverloads() { return true; }
-  size_t count() { return members_.count(); }
-  void clear() { members_.clear(); }
+  size_t count() { return envType_->members().count(); }
+  void clear() { envType_->members().clear(); }
   void dumpHierarchy(bool full) const;
 
   static inline bool classof(const ClosureEnvExpr *) { return true; }
@@ -57,8 +68,10 @@ public:
   }
 
 private:
-  OrderedSymbolTable members_;
   Scope * parentScope_;
+  Scope * finalScope_;
+  CompositeType * envType_;
+  Expr * baseExpr_;
 };
 
 } // namespace tart

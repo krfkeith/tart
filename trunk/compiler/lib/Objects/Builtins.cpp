@@ -9,12 +9,16 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/NamespaceDefn.h"
+
 #include "tart/Objects/TargetSelection.h"
 #include "tart/Objects/Builtins.h"
+
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/ScopeBuilder.h"
+
 #include "tart/Parse/Parser.h"
 
 namespace tart {
@@ -62,6 +66,8 @@ SystemClass Builtins::typeTraceAction("tart.gc.TraceAction");
 
 SystemClass Builtins::typeRef("tart.core.Ref");
 SystemClass Builtins::typeValueRef("tart.core.ValueRef");
+SystemClass Builtins::typeMutableRef("tart.core.MutableRef");
+SystemNamespace Builtins::nsRefs("tart.core.Refs");
 
 Type * Builtins::typeUnwindException;
 
@@ -215,5 +221,14 @@ const llvm::Type * SystemClass::irReturnType() const {
 TypeDefn * SystemClass::typeDefn() const {
   return get()->typeDefn();
 }
+
+NamespaceDefn * SystemNamespace::get() const {
+  if (ns_ == NULL) {
+    ns_ = cast<NamespaceDefn>(Builtins::loadSystemDef(nsName_));
+  }
+
+  return ns_;
+}
+
 
 }

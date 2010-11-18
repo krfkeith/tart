@@ -50,6 +50,9 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::Function:
       return visitFunctionType(static_cast<const FunctionType *>(in));
 
+    case Type::BoundMethod:
+      return visitBoundMethodType(static_cast<const BoundMethodType *>(in));
+
     case Type::Union:
       return visitUnionType(static_cast<const UnionType *>(in));
 
@@ -104,6 +107,10 @@ const Type * TypeTransform::visitEnumType(const EnumType * in) {
 }
 
 const Type * TypeTransform::visitFunctionType(const FunctionType * in) {
+  return in;
+}
+
+const Type * TypeTransform::visitBoundMethodType(const BoundMethodType * in) {
   return in;
 }
 

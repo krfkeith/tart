@@ -135,7 +135,7 @@ public:
     /** Generate the code that allocates storage for locals on the stack. */
   void genLocalStorage(LocalScopeList & lsl);
   void genLocalRoots(LocalScopeList & lsl);
-  void genLocalVar(VariableDefn * var);
+  void genLocalVar(VariableDefn * var, llvm::Value * initialVal);
   void genGCRoot(llvm::Value * lValue, const Type * varType);
   void initGCRoot(llvm::Value * allocaValue);
 
@@ -182,13 +182,13 @@ public:
       const CompositeType * toCls, bool throwOnFailure);
 
   /** Load an expression */
-  llvm::Value * genLoadLValue(const LValueExpr * lval);
+  llvm::Value * genLoadLValue(const LValueExpr * lval, bool derefShared);
 
   /** Get the address of a value. */
   llvm::Value * genLValueAddress(const Expr * in);
 
   /** Load the value of a member field. */
-  llvm::Value * genLoadMemberField(const LValueExpr * lval);
+  llvm::Value * genLoadMemberField(const LValueExpr * lval, bool derefShared);
 
   /** Generate the address of a member field. */
   llvm::Value * genMemberFieldAddr(const LValueExpr * lval);
