@@ -39,8 +39,10 @@ target_link_libraries(unittest
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
-    dl
     )
+if (LIB_DL)
+target_link_libraries(unittest dl)
+endif (LIB_DL)
 set_target_properties(unittest PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
 add_custom_target(unittest.run DEPENDS unittest COMMAND unittest)

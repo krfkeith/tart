@@ -38,8 +38,14 @@
 /** Whether GCC thread local support is available. */
 #cmakedefine HAVE_GCC_THREAD_LOCAL 1
 
+/** Whether MSVC thread local support is available. */
+#cmakedefine HAVE_MSVC_THREAD_LOCAL 1
+
 /** Whether the posix_memalign() function is available. */
 #cmakedefine HAVE_POSIX_MEMALIGN 1
+
+/** Whether the _aligned_malloc function is available. */
+#cmakedefine HAVE_ALIGNED_MALLOC 1
 
 /** Whether the valloc() function is available. */
 #cmakedefine HAVE_VALLOC 1

@@ -314,11 +314,12 @@ public:
   static void writeIndent(FormatStream & out, int level);
 
   /** Assertion failure. */
-  void NORETURN(assertionFailed(const char * expr, const char * fname, unsigned lineno));
+  void LLVM_ATTRIBUTE_NORETURN(
+      assertionFailed(const char * expr, const char * fname, unsigned lineno));
 
   /** Assertion failure. */
   template<class T>
-  void NORETURN(assertionFailed(
+  void LLVM_ATTRIBUTE_NORETURN(assertionFailed(
       const char * expr, const char * fname, unsigned lineno, const T & obj)) {
     StrFormatStream stream;
     stream.setFormatOptions(Format_Verbose);
@@ -330,7 +331,8 @@ public:
   }
 
   /** Fatal compiler error. */
-  void NORETURN(__fail(const char * msg, const char * fname, unsigned lineno));
+  void LLVM_ATTRIBUTE_NORETURN(
+      __fail(const char * msg, const char * fname, unsigned lineno));
 
   /** Break execution. */
   static void debugBreak();
