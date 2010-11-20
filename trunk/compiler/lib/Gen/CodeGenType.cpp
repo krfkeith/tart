@@ -26,6 +26,7 @@
 #include "llvm/Module.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Analysis/Verifier.h"
+#include "llvm/Support/Format.h"
 
 namespace tart {
 

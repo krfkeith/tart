@@ -183,7 +183,7 @@ cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llvm-inst/inc
 
 cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=$HOME/Projects/llvm-inst/lib ../trunk/
 
-cmake -G "Visual Studio 9 2008" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
+cmake -G "Visual Studio 10 2010" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
 
 cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
 

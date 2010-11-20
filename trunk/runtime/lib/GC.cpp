@@ -8,7 +8,7 @@
 #include "tart_object.h"
 
 #if HAVE_UNISTD_H
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 
 #define USE_PTHREAD_THREAD_LOCAL 0
@@ -16,6 +16,10 @@
   #include <pthread.h>
   #undef USE_PTHREAD_THREAD_LOCAL
   #define USE_PTHREAD_THREAD_LOCAL 1
+#endif
+
+#if HAVE_ALIGNED_MALLOC
+  #include <malloc.h>
 #endif
 
 extern "C" {
@@ -50,6 +54,10 @@ static SafePointEntry * safePointTable;
   pthread_key_t lasKey;
 #endif
 
+#if HAVE_MSVC_THREAD_LOCAL
+  __declspec(thread) LocalAllocState * tldLas;
+#endif
+
 inline size_t GC_align(size_t size) {
   return (size + (MEM_ALIGN_SIZE - 1)) & ~(MEM_ALIGN_SIZE - 1);
 }
@@ -66,6 +74,8 @@ void * GC_getPages(size_t size) {
     return NULL;
   #elif HAVE_VALLOC
     return valloc(size);
+  #elif HAVE_ALIGNED_MALLOC
+    return _aligned_malloc(size, pageSize);
   #else
     #error("Missing aligned memory allocator for platform.")
     (void)pageSize;
@@ -119,7 +129,13 @@ void GC_addSegments(size_t size, Segment ** seglist) {
 }
 
 void GC_init(size_t * safepointMap) {
-  pageSize = sysconf(_SC_PAGESIZE);
+  #ifdef HAVE_POSIX_MEMALIGN
+    pageSize = sysconf(_SC_PAGESIZE);
+  #elif HAVE_VALLOC
+    pageSize = sysconf(_SC_PAGESIZE);
+  #elif HAVE_ALIGNED_MALLOC
+    pageSize = 4096;
+  #endif
 
   #if USE_PTHREAD_THREAD_LOCAL
     pthread_key_create(&lasKey, NULL);
@@ -148,7 +164,7 @@ void GC_init(size_t * safepointMap) {
 }
 
 LocalAllocState * GC_getLocalAllocState() {
-  #if HAVE_GCC_THREAD_LOCAL
+  #if HAVE_GCC_THREAD_LOCAL || HAVE_MSVC_THREAD_LOCAL
     // TODO: Get rid of this check, instead create LocalAllocState on thread startup.
     if (tldLas == NULL) {
       tldLas = (LocalAllocState *)malloc(sizeof(LocalAllocState));
@@ -172,10 +188,22 @@ LocalAllocState * GC_getLocalAllocState() {
 
 void GC_syncImpl(LocalAllocState * las) {
   CallFrame * framePtr;
-  #if SIZEOF_VOID_PTR == 4
-    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #if _MSC_VER
+    #if SIZEOF_VOID_PTR == 4
+      __asm {
+        mov framePtr, ebp
+      }
+    #else
+      __asm {
+        mov framePtr, rbp
+      }
+    #endif
   #else
-    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #if SIZEOF_VOID_PTR == 4
+      __asm__("movl %%ebp, %0" :"=r"(framePtr));
+    #else
+      __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #endif
   #endif
 
   while (framePtr != NULL) {
@@ -274,12 +302,23 @@ void GC_collect() {
   //tart::Tracer<ObjectPrinter> tracer;
 
   CallFrame * framePtr;
-  #if SIZEOF_VOID_PTR == 4
-    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #if _MSC_VER
+    #if SIZEOF_VOID_PTR == 4
+      __asm {
+        mov framePtr, ebp
+      }
+    #else
+      __asm {
+        mov framePtr, rbp
+      }
+    #endif
   #else
-    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #if SIZEOF_VOID_PTR == 4
+      __asm__("movl %%ebp, %0" :"=r"(framePtr));
+    #else
+      __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #endif
   #endif
-
 
   SafePointEntry * spEnd = &safePointTable[numSafePoints];
   while (framePtr != NULL) {
@@ -329,10 +368,22 @@ void GC_collect() {
 
 void GC_traceStack(tart_object * traceAction) {
   CallFrame * framePtr;
-  #if SIZEOF_VOID_PTR == 4
-    __asm__("movl %%ebp, %0" :"=r"(framePtr));
+  #if _MSC_VER
+    #if SIZEOF_VOID_PTR == 4
+      __asm {
+        mov framePtr, ebp
+      }
+    #else
+      __asm {
+        mov framePtr, rbp
+      }
+    #endif
   #else
-    __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #if SIZEOF_VOID_PTR == 4
+      __asm__("movl %%ebp, %0" :"=r"(framePtr));
+    #else
+      __asm__("movq %%rbp, %0" :"=r"(framePtr));
+    #endif
   #endif
 
   SafePointEntry * spEnd = &safePointTable[numSafePoints];

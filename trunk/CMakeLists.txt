@@ -13,7 +13,6 @@ include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
 include(CheckTypeSize)
-include(CMakeDetermineASMCompiler)
 include(FindThreads)
 
 # Check for the existence of include files.
@@ -50,9 +49,13 @@ check_function_exists(backtrace HAVE_BACKTRACE)
 check_function_exists(dladdr HAVE_DLADDR)
 check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
 check_function_exists(valloc HAVE_VALLOC)
+check_function_exists(_aligned_malloc HAVE_ALIGNED_MALLOC)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
+
+# Find libraries
+find_library(LIB_DL dl)
 
 # Check for GCC atomics
 check_cxx_source_compiles(
@@ -70,6 +73,12 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
     "__thread int i; int main() { return 0; }"
     HAVE_GCC_THREAD_LOCAL)
+
+if (MSVC)
+  check_cxx_source_compiles(
+      "__declspec(thread) int i; int main() { return 0; }"
+      HAVE_MSVC_THREAD_LOCAL)
+endif (MSVC)
 
 # Check for type sizes
 check_type_size(int SIZEOF_INT)
@@ -121,6 +130,11 @@ if (MSVC)
       -wd4355 -wd4715 -wd4180 -wd4345 -wd4224
   )
 endif (MSVC)
+
+# Enable use of assembly language sources
+if (NOT MSVC)
+  enable_language(ASM-ATT OPTIONAL)
+endif (NOT MSVC)
 
 # Add the check-build target
 add_custom_target(check)

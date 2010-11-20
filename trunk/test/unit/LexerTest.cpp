@@ -211,6 +211,7 @@ TEST_F(LexerTest, StringLiterals) {
     EXPECT_EQ(expected, lex.tokenValue());
   }
 
+#if !_MSC_VER
   {
     std::string     expected("\x01\u00AA\u00BB");
     FakeSourceFile  src("\"\\x01\\uAA\\uBB\"");
@@ -237,6 +238,7 @@ TEST_F(LexerTest, StringLiterals) {
     EXPECT_EQ(Token_String, lex.next());
     EXPECT_EQ(expected, lex.tokenValue());
   }
+#endif
 }
 
 TEST_F(LexerTest, CharLiterals) {

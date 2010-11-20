@@ -18,6 +18,14 @@ set(TARTLN_OPTIONS -internalize -O2)
 #set(TARTLN_OPTIONS -O2)
 #set(TARTLN_OPTIONS -internalize -O0)
 
+set(GCC_OPTIONS -lruntime)
+set(TEST_LIBS runtime)
+
+if (LIB_DL)
+  set(GCC_OPTIONS ${GCC_OPTIONS} -ldl)
+  set(TEST_LIBS ${TEST_LIBS} runtime dl)
+endif (LIB_DL)
+
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
@@ -78,7 +86,7 @@ foreach(SRC_FILE ${TART_SRC})
     # Assemble and run
     add_custom_command(OUTPUT ${EXE_FILE}
         COMMAND gcc -g -fno-omit-framepointer -c -O0 -x assembler ${ASM_FILE} -o ${EXE_FILE}.o
-        COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o -lruntime -ldl
+        COMMAND gcc -o ${EXE_FILE} -L${TART_BINARY_DIR}/runtime ${EXE_FILE}.o ${GCC_OPTIONS}
         MAIN_DEPENDENCY "${ASM_FILE}"
         DEPENDS runtime
         COMMENT "Assembling ${ASM_FILE}")
@@ -137,7 +145,7 @@ foreach(SRC_FILE ${TART_SRC})
     add_executable(${EXE_FILE} ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
     add_dependencies(${EXE_FILE} libcore libtesting)
-    target_link_libraries(${EXE_FILE} runtime dl)
+    target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   else (GENERATE_ASM)
     add_custom_command(OUTPUT ${OBJ_FILE}
         COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
@@ -154,7 +162,7 @@ foreach(SRC_FILE ${TART_SRC})
     add_executable(${EXE_FILE} ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
     add_dependencies(${EXE_FILE} libcore libtesting)
-    target_link_libraries(${EXE_FILE} runtime dl)
+    target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   endif (GENERATE_ASM)
 
   # Generate debugging symbols
