@@ -1,4 +1,4 @@
-# CMake build file for Tart/test-unit
+# CMake build file for tart/unittest
 
 # Extra flags for GCC (C++ only)
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -41,7 +41,7 @@ target_link_libraries(unittest
     ${LLVM_SYSTEM}
     )
 if (LIB_DL)
-target_link_libraries(unittest dl)
+  target_link_libraries(unittest dl)
 endif (LIB_DL)
 set_target_properties(unittest PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
