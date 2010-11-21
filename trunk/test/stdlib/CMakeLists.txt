@@ -3,6 +3,7 @@
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
+source_group(StdLibTests FILES ${TART_SRC})
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/lib/core
@@ -79,7 +80,7 @@ foreach(SRC_FILE ${TART_SRC})
       
     # Convert to assembly
     #add_custom_command(OUTPUT ${ASM_FILE}
-    #    COMMAND ${LLVM_BIN_DIR}/opt ${OUT_BC_FILE} | ${LLVM_BIN_DIR}/llc -disable-fp-elim -o ${ASM_FILE}
+    #    COMMAND ${LLVM_OPT} ${OUT_BC_FILE} | ${LLVM_LLC} -disable-fp-elim -o ${ASM_FILE}
     #    DEPENDS "${OUT_BC_FILE}"
     #    COMMENT "Generating assembly for file ${BC_FILE}")
 
@@ -93,7 +94,7 @@ foreach(SRC_FILE ${TART_SRC})
   elseif (USE_LLVM_BINARIES)
     # Link bitcode files
     add_custom_command(OUTPUT ${OUT_BC_FILE}
-        COMMAND ${LLVM_BIN_DIR}/llvm-ld
+        COMMAND ${LLVM_LD}
             -disable-opt
             -link-as-library
 #            -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
@@ -108,7 +109,7 @@ foreach(SRC_FILE ${TART_SRC})
 
     # Link object files
     add_custom_command(OUTPUT ${OPT_BC_FILE}
-        COMMAND ${LLVM_BIN_DIR}/opt
+        COMMAND ${LLVM_OPT}
             -O2
             -strip-debug
 #            -disable-inlining
@@ -131,7 +132,7 @@ foreach(SRC_FILE ${TART_SRC})
 
     # Link object files
     add_custom_command(OUTPUT ${OBJ_FILE}
-        COMMAND ${LLVM_BIN_DIR}/llc
+        COMMAND ${LLVM_LLC}
             -load="${GC_PLUGIN}"
             -disable-fp-elim
             -filetype=obj

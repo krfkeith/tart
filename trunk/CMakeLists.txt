@@ -53,6 +53,9 @@ check_function_exists(_aligned_malloc HAVE_ALIGNED_MALLOC)
 
 # Check for LLVM
 find_package(LLVM REQUIRED)
+find_program(LLVM_LLC llc PATHS ${LLVM_BIN_DIR})
+find_program(LLVM_LD llvm-ld PATHS ${LLVM_BIN_DIR})
+find_program(LLVM_OPT opt PATHS ${LLVM_BIN_DIR})
 
 # Find libraries
 find_library(LIB_DL dl)

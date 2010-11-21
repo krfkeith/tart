@@ -230,12 +230,13 @@ void CodeGenerator::outputModule() {
   binPath.appendSuffix("bc");
 
   llvm::sys::Path binDir(binPath);
-  binDir.eraseComponent();
-  if (!binDir.isEmpty()) {
-    std::string err;
-    if (binDir.createDirectoryOnDisk(true, &err)) {
-      diag.fatal() << "Cannot create output directory '" << binDir.c_str() << "': " << err;
-      return;
+  if (binDir.eraseComponent()) {
+    if (!binDir.isEmpty()) {
+      std::string err;
+      if (binDir.createDirectoryOnDisk(true, &err)) {
+        diag.fatal() << "Cannot create output directory '" << binDir.c_str() << "': " << err;
+        return;
+      }
     }
   }
 

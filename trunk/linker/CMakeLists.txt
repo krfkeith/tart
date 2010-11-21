@@ -32,4 +32,22 @@ add_library(linker_reflect STATIC
   ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
 
 add_library(gc SHARED ${GC_SOURCES} ${GC_HEADERS})
+target_link_libraries(gc
+    ${LLVM_ANALYSIS}
+    ${LLVM_TARGET}
+    ${LLVM_CODE_GEN}
+    ${LLVM_ASM_PRINTER}
+    ${LLVM_MC}
+    ${LLVM_MC_PARSER}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
 add_library(reflector SHARED ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
+target_link_libraries(reflector
+    linker_common
+    ${LLVM_TARGET}
+    ${LLVM_CORE}
+    ${LLVM_SUPPORT}
+    ${LLVM_SYSTEM}
+    )
