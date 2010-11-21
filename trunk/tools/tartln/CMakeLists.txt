@@ -1,4 +1,4 @@
-# CMake build file for Tart/tools
+# CMake build file for tools/tartln
 
 # Create a command for each source file
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
@@ -18,12 +18,12 @@ target_link_libraries(tartln
     linker_reflect
     linker_common
     gcstrategy
-    ${LLVM_ALL_BACKENDS}
     ${LLVM_IPO}
     ${LLVM_LINKER}
-    ${LLVM_SELECTION_DAG}
     ${LLVM_ARCHIVE}
     ${LLVM_BIT_READER}
+    ${LLVM_ALL_BACKENDS}
+    ${LLVM_SELECTION_DAG}
     ${LLVM_BIT_WRITER}
     ${LLVM_ASM_PRINTER}
     ${LLVM_MC_PARSER}
@@ -35,8 +35,8 @@ target_link_libraries(tartln
     ${LLVM_TRANSFORM_UTILS}
     ${LLVM_ANALYSIS}
     ${LLVM_TARGET}
-    ${LLVM_MC}
     ${LLVM_CORE}
+    ${LLVM_MC}
     ${LLVM_SUPPORT}
     ${LLVM_SYSTEM}
     )

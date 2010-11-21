@@ -24,15 +24,14 @@ Hard problems:
   -- GC
   -- Exception backtrace
   -- Reflection size
+  -- Dynamic reification of types.
 
 Working on currently:
   -- Get static ctors working.
   -- BitTricks tests.
-  -- New @Reflection annotation
   -- GC
   -- Static If
   -- Compile-time configuration options. @TargetProperty.
-  -- Reduce number of generated strings, or eliminate dead reflection globals. (working on it)
   -- Exception backtrace.
   -- Hashing of integers
 
@@ -61,7 +60,6 @@ Implementation TODOS:
 * Link-time coalescing (use LLVM plugin)
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
-* Closures - Closure cells.
 * Garbage collector
 * Reflection
   * Struct Constructors
@@ -134,7 +132,6 @@ Implementation TODOS:
   instead of being inline.
 * Map literals
 * Matrix literals + Matrix class.
-* Comprehensions
 * Anonymous inner classes.
 * Insure typealiases aren't circular.
 
@@ -293,8 +290,6 @@ namespace Numbers {
 
 // ------------------------------------------------------------------------
 
-// ------------------------------------------------------------------------
-
 Weak references implemented in terms of finalization:
 
 class WeakReference[%T:Object] {
@@ -330,15 +325,6 @@ class WeakReference[%T:Object] {
 
 // ------------------------------------------------------------------------
 
-// Some way to store it as Object, but retrieve it as the original type.
-// Like saying: I want you to store all occurances of T as type Object.
-// Mainly this affects naming conventions for methods.
-
-Something like [@Strict %T <: Object]
-
-@Unsafe @Intrinsic def reinterpretCast[%T <: Object](obj:Object);
-
-// ------------------------------------------------------------------------
 flags:
 
   static var OutputFile = StringOption("o",
@@ -360,63 +346,6 @@ object
 
 // ------------------------------------------------------------------------
 
-Field:
-  StaticVar
-  InstanceVar
-  Constant
-
-// ------------------------------------------------------------------------
-
-Closures:
-  In parent function:
-  -- convert local vars to refs.
-  -- transparently box / unbox as accessed.
-  
-What if bound methods were a single pointer?
-
--- It means that a closure would need to have a vtable containing the function pointer.
-   So, it would look like this:
-   
-      closure = { { tib, gcstate }, members... }
-      tib = { .., [toString, ..., method] }
-      
-   Invoking a closure would always be the Nth method of the tib. (In essence closures
-   would be subtypes of a 'callable' abstract class - not an interface though.)
-   
-So how would the 'Callable' class look?
-
-      closure = { { tib, gcstate }, members }
-      tib = { ..., [toString, ..., ..., call() }
-      
-   In other words, the function body would always be in the slot for the 'call' method
-   of the interface. Oh, it's an interface, so it's actually:
-
-      tib = { ..., idispatch, [toString] }
-      itable = { call() }
-      
-   However, this only works if we know in advance the type of the interface at the
-   point where the closure was defined. We can't arbitrarily convert a closure
-   to a single-function interface.
-   
-So how would bound methods look?
-
-  A bound method is a combination of an object pointer and a method pointer.
-
-      bm = { instance, method }
-      instance = { { tib, gcstate }, object members... }
-      tib = 
-      
-  ...and I don't know how to do this without forwarding.
-
-And if bound methods are two pointers, then what? How can a closure substitute for
-a single-interface function?
-
-  Again, I only see how to do this if the closure is defined at a point where the
-  interface type is known - i.e. the closure has to know what interface it's being
-  compiled to.
-
-// ------------------------------------------------------------------------
-
 // Redo Type::getHashCode();
 // Make function types canonical without paramters. (Can that be done?)
 
@@ -426,10 +355,12 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
   
   The type of 'closures' is: fn (arg:int)[]
 
-// Redo pvalloc as flexAlloc. And also tie into tracer somehow (need to know length).
-
 // CountingIterator is really inefficient. Why?
 // Derived types for reflection can be deserialized in random order.
+
+// ------------------------------------------------------------------------
+
+Executable sizes:
 
 -rwxr-xr-x 1 talin talin 1386054 2010-11-07 19:56 test/stdlib/SwitchStmtTest
 -rwxr-xr-x 1 talin talin 1374444 2010-11-07 21:28 test/stdlib/SwitchStmtTest
@@ -444,48 +375,15 @@ Why can't we remove the names of the parameters from FunctionType? Here's an exa
 
 (Need new baseline)
 
+// ------------------------------------------------------------------------
 
-def callTenTimes(f:fn) {
-  for i = 0; i < 10; ++i {
-    f();
-  }
-}
+Type reification:
 
-def testClosureAsParam {
-  var i = 0;
-  callTenTimes(fn { i += 2; });
-  Debug.assertEq(20, i);
+Idea #0: We need to find every example of where we actually need to have
+ad-hoc polymorphism. (Protocols?)
 
-  var s = StringBuilder();
-  callTenTimes(fn { s.append("A"); });
-  Debug.assertEq("AAAAAAAAAA", s.toString());
-}
+  * Hashing of primitive types.
 
-def testNestedClosures {
-  let makeCounter = fn n:int -> fn -> int {
-    return fn -> int {
-      return n++;
-    };
-  };
-  
-  let c = makeCounter(2);
-  Debug.assertEq(2, c());
-  Debug.assertEq(3, c());
-}
+Idea #1: Make a bare template parameter really mean [T <: __Any].
 
-def testNestedClosures2 {
-  var i = 0;
-  let makeCounter = fn -> fn -> int {
-    return fn -> int {
-      return i++;
-    };
-  };
-
-  let c = makeCounter();
-  let d = makeCounter();
-
-  Debug.assertEq(0, c());
-  Debug.assertEq(1, c());
-  Debug.assertEq(2, d());
-  Debug.assertEq(3, d());
-}
+  -- Redo templates so that template parameters really are opaque.

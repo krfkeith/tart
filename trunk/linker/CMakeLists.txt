@@ -6,6 +6,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Woverloaded-virtual
       -fno-operator-names -ffor-scope
       -fPIC
+      -fno-rtti
       )
    if ($PROFILE_TARTLN)
      add_definitions(-pg)

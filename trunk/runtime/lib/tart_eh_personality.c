@@ -12,9 +12,9 @@
 #include "stdbool.h"
 #include "string.h"
 
-//#if HAVE_DLFCN_H
-//#include <dlfcn.h>
-//#endif
+#if HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
 
 #if HAVE_EXECINFO_H
 #include <execinfo.h>         // For backtrace().
