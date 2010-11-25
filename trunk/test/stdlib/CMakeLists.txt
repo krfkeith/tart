@@ -24,13 +24,13 @@ set(TEST_LIBS runtime)
 
 if (LIB_DL)
   set(GCC_OPTIONS ${GCC_OPTIONS} -ldl)
-  set(TEST_LIBS ${TEST_LIBS} runtime dl)
+  set(TEST_LIBS ${TEST_LIBS} dl)
 endif (LIB_DL)
 
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
-set(USE_LLVM_BINARIES 1)
+set(USE_LLVM_BINARIES 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
@@ -148,13 +148,14 @@ foreach(SRC_FILE ${TART_SRC})
     add_dependencies(${EXE_FILE} libcore libtesting)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   else (GENERATE_ASM)
+    # Use tartln and don't generate assembly.
     add_custom_command(OUTPUT ${OBJ_FILE}
         COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
             "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
-            libcore libtesting
+#            libcore libtesting
             "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")

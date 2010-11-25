@@ -13,6 +13,8 @@
 #include "tart/CFG/Exprs.h"
 #endif
 
+#include "llvm/Intrinsics.h"
+
 namespace tart {
 
 // -------------------------------------------------------------------
@@ -20,8 +22,8 @@ namespace tart {
 class TypecastIntrinsic : public Intrinsic {
   static TypecastIntrinsic instance;
   TypecastIntrinsic() : Intrinsic("tart.core.typecast") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -97,6 +99,8 @@ class ModuleOfIntrinsic : public Intrinsic {
 class ThisPackageIntrinsic : public Intrinsic {
   static ThisPackageIntrinsic instance;
   ThisPackageIntrinsic() : Intrinsic("tart.reflect.Package.thisPackage") {}
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
@@ -105,6 +109,8 @@ class ThisPackageIntrinsic : public Intrinsic {
 class PackageOfIntrinsic : public Intrinsic {
   static PackageOfIntrinsic instance;
   PackageOfIntrinsic() : Intrinsic("tart.reflect.Package.of") {}
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
@@ -193,8 +199,8 @@ class PointerDiffIntrinsic : public Intrinsic {
 class DerefIntrinsic : public Intrinsic {
   static DerefIntrinsic instance;
   DerefIntrinsic() : Intrinsic("tart.core.Memory.deref") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -203,8 +209,8 @@ template<llvm::CmpInst::Predicate pred>
 class PointerComparisonIntrinsic : public Intrinsic {
   static PointerComparisonIntrinsic instance;
   PointerComparisonIntrinsic(const char * name) : Intrinsic(name) {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -220,8 +226,8 @@ class AddressAddIntrinsic : public Intrinsic {
 class LogicalAndIntrinsic : public Intrinsic {
   static LogicalAndIntrinsic instance;
   LogicalAndIntrinsic() : Intrinsic("infixLogicalAnd") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -229,8 +235,8 @@ class LogicalAndIntrinsic : public Intrinsic {
 class LogicalOrIntrinsic : public Intrinsic {
   static LogicalOrIntrinsic instance;
   LogicalOrIntrinsic() : Intrinsic("infixLogicalOr") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -269,8 +275,8 @@ class MathIntrinsic1i : public Intrinsic {
   static MathIntrinsic1i instance;
   MathIntrinsic1i(const char * name) : Intrinsic(name) {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -309,8 +315,8 @@ class AtomicCasIntrinsic : public Intrinsic {
 class FlagsApplyIntrinsic : public Intrinsic {
   static FlagsApplyIntrinsic instance;
   FlagsApplyIntrinsic() : Intrinsic("tart.core.Flags.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -318,8 +324,8 @@ class FlagsApplyIntrinsic : public Intrinsic {
 class ExternApplyIntrinsic : public Intrinsic {
   static ExternApplyIntrinsic instance;
   ExternApplyIntrinsic() : Intrinsic("tart.core.Extern.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -327,8 +333,8 @@ class ExternApplyIntrinsic : public Intrinsic {
 class LinkageNameApplyIntrinsic : public Intrinsic {
   static LinkageNameApplyIntrinsic instance;
   LinkageNameApplyIntrinsic() : Intrinsic("tart.core.LinkageName.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -336,8 +342,8 @@ class LinkageNameApplyIntrinsic : public Intrinsic {
 class EntryPointApplyIntrinsic : public Intrinsic {
   static EntryPointApplyIntrinsic instance;
   EntryPointApplyIntrinsic() : Intrinsic("tart.core.EntryPoint.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -345,8 +351,8 @@ class EntryPointApplyIntrinsic : public Intrinsic {
 class EssentialApplyIntrinsic : public Intrinsic {
   static EssentialApplyIntrinsic instance;
   EssentialApplyIntrinsic() : Intrinsic("tart.annex.Essential.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -354,8 +360,8 @@ class EssentialApplyIntrinsic : public Intrinsic {
 class GenerateStackTraceApplyIntrinsic : public Intrinsic {
   static GenerateStackTraceApplyIntrinsic instance;
   GenerateStackTraceApplyIntrinsic() : Intrinsic("tart.annex.GenerateStackTrace.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self, const ExprList & args,
-      Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -363,8 +369,8 @@ class GenerateStackTraceApplyIntrinsic : public Intrinsic {
 class UnsafeApplyIntrinsic : public Intrinsic {
   static UnsafeApplyIntrinsic instance;
   UnsafeApplyIntrinsic() : Intrinsic("tart.core.Unsafe.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -372,8 +378,8 @@ class UnsafeApplyIntrinsic : public Intrinsic {
 class CoalesceApplyIntrinsic : public Intrinsic {
   static CoalesceApplyIntrinsic instance;
   CoalesceApplyIntrinsic() : Intrinsic("tart.annex.Coalesce.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -381,8 +387,8 @@ class CoalesceApplyIntrinsic : public Intrinsic {
 class ReflectionApplyIntrinsic : public Intrinsic {
   static ReflectionApplyIntrinsic instance;
   ReflectionApplyIntrinsic() : Intrinsic("tart.reflect.Reflection.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -390,8 +396,8 @@ class ReflectionApplyIntrinsic : public Intrinsic {
 class TargetPropertyApplyIntrinsic : public Intrinsic {
   static TargetPropertyApplyIntrinsic instance;
   TargetPropertyApplyIntrinsic() : Intrinsic("tart.annex.TargetProperty.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------
@@ -399,8 +405,8 @@ class TargetPropertyApplyIntrinsic : public Intrinsic {
 class ThreadLocalApplyIntrinsic : public Intrinsic {
   static ThreadLocalApplyIntrinsic instance;
   ThreadLocalApplyIntrinsic() : Intrinsic("tart.concurrent.ThreadLocal.apply") {}
-  Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const;
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
 };
 
 // -------------------------------------------------------------------

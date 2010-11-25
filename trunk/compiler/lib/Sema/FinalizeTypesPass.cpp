@@ -195,7 +195,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
 
     // See if we can evaluate the call at compile-time.
     // TODO: Dereference any 'let' statements to constants if possible.
-    Expr * expr = method->eval(in->location(), selfArg, callingArgs);
+    Expr * expr = method->eval(in->location(), subject_->module(), selfArg, callingArgs);
     if (expr != NULL) {
       // Special case for dynamic cast, which is returned by typecast[T] intrinsic.
       if (expr->exprType() == Expr::UnboxCast) {

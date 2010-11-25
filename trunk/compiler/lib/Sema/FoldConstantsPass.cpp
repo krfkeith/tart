@@ -87,7 +87,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
           }
         }
 
-        Expr * result = cc->method()->eval(in->location(), cc->base(), callingArgs);
+        Expr * result = cc->method()->eval(in->location(), module_, cc->base(), callingArgs);
         if (result != NULL) {
           return result;
         }

@@ -244,7 +244,7 @@ bool VarAnalyzer::resolveInitializers() {
           Expr * initVal = var->initValue();
           if (initVal) {
             if (var->defnType() == Defn::Let) {
-              Expr * constInitVal = EvalPass::eval(initVal, true);
+              Expr * constInitVal = EvalPass::eval(module_, initVal, true);
               if (constInitVal != NULL) {
                 var->setInitValue(constInitVal);
               } else {

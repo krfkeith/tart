@@ -400,13 +400,13 @@ Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
 /// -------------------------------------------------------------------
 /// TypeInference
 
-Expr * TypeInferencePass::run(Expr * in, const Type * expected, bool strict) {
-  TypeInferencePass instance(in, expected, strict);
+Expr * TypeInferencePass::run(Module * module, Expr * in, const Type * expected, bool strict) {
+  TypeInferencePass instance(module, in, expected, strict);
   return instance.runImpl();
 }
 
 Expr * TypeInferencePass::runImpl() {
-  rootExpr_ = FoldConstantsPass().visitExpr(rootExpr_);
+  rootExpr_ = FoldConstantsPass(module_).visitExpr(rootExpr_);
   if (isErrorResult(rootExpr_) || rootExpr_->isSingular()) {
     return rootExpr_;
   }

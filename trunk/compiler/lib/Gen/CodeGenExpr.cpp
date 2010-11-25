@@ -976,7 +976,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
   members.push_back(getIntVal(strval.size()));
   members.push_back(strSource);
   members.push_back(strDataStart);
-  members.push_back(ConstantArray::get(context_, strval, false));
+  members.push_back(strVal);
 
   // If the name is blank, then the string is internal only.
   // If the name is non-blank, then it's assumed that this name is a globally unique

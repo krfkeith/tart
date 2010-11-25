@@ -77,7 +77,7 @@ class ScannerBase {
 
 	/** Replace the last 'n' token characters with the string 's'. */  
   def replace(n:int32, s:String) {
-    _tokenText.size -= n;
+    erase(n);
     append(s);
   }
   

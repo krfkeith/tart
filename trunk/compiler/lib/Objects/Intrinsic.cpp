@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "config.h"
+
 #include "tart/CFG/Expr.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
@@ -17,11 +18,15 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/TupleType.h"
+
 #include "tart/Gen/CodeGenerator.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
+
 #include "tart/Objects/Intrinsics.h"
 #include "tart/Objects/Builtins.h"
+
 #include "tart/Sema/AnalyzerBase.h"
 
 #include "llvm/Function.h"
@@ -79,7 +84,7 @@ Intrinsic * Intrinsic::get(const SourceLocation & loc, const char * name) {
 // TypecastIntrinsic
 TypecastIntrinsic TypecastIntrinsic::instance;
 
-Expr * TypecastIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
+Expr * TypecastIntrinsic::eval(const SourceLocation & loc, Module * m, const FunctionDefn * method,
     Expr * self, const ExprList & args, Type * expectedReturn) const {
   DASSERT(args.size() == 1);
   DASSERT(method->isTemplateInstance());
@@ -212,6 +217,26 @@ Value * ModuleOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call)
 // ThisPackageIntrinsic
 ThisPackageIntrinsic ThisPackageIntrinsic::instance;
 
+Expr * ThisPackageIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  callingModule->addSymbol(
+      AnalyzerBase::getArrayTypeForElement(Builtins::typeModule.get())->typeDefn());
+  callingModule->addSymbol(
+      AnalyzerBase::getArrayTypeForElement(Builtins::typePackage.get())->typeDefn());
+  VariableDefn * emptyModuleArray =
+      AnalyzerBase::getEmptyArrayOfElementType(Builtins::typeModule.get());
+  VariableDefn * emptyPackageArray =
+      AnalyzerBase::getEmptyArrayOfElementType(Builtins::typePackage.get());
+
+  DASSERT(emptyModuleArray != NULL);
+  DASSERT(emptyPackageArray != NULL);
+
+  AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
+
+  return NULL;
+}
+
 Value * ThisPackageIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   return cg.createPackageObjectPtr();
 }
@@ -220,9 +245,32 @@ Value * ThisPackageIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 // PackageOfIntrinsic
 PackageOfIntrinsic PackageOfIntrinsic::instance;
 
+Expr * PackageOfIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  // TODO: Refactor, combine with above.
+  callingModule->addSymbol(
+      AnalyzerBase::getArrayTypeForElement(Builtins::typeModule.get())->typeDefn());
+  callingModule->addSymbol(
+      AnalyzerBase::getArrayTypeForElement(Builtins::typePackage.get())->typeDefn());
+  VariableDefn * emptyModuleArray =
+      AnalyzerBase::getEmptyArrayOfElementType(Builtins::typeModule.get());
+  VariableDefn * emptyPackageArray =
+      AnalyzerBase::getEmptyArrayOfElementType(Builtins::typePackage.get());
+
+  DASSERT(emptyModuleArray != NULL);
+  DASSERT(emptyPackageArray != NULL);
+
+  AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
+  AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
+
+  return NULL;
+}
+
 Value * PackageOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  DFAIL("Implement");
-  return cg.createPackageObjectPtr();
+  const Expr * arg = call->arg(0);
+  const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
+  return cg.createModuleObjectPtr();
+  return cg.createPackageObjectPtr(type->value()->typeDefn()->module());
 }
 
 // -------------------------------------------------------------------
@@ -372,8 +420,8 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 // DerefIntrinsic
 DerefIntrinsic DerefIntrinsic::instance;
 
-Expr * DerefIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-    const ExprList & args, Type * expectedReturn) const {
+Expr * DerefIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   DASSERT(args.size() == 1);
   Expr * arg = args[0];
   return new UnaryExpr(Expr::PtrDeref, loc, arg->type()->typeParam(0), arg);
@@ -382,7 +430,7 @@ Expr * DerefIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * met
 // -------------------------------------------------------------------
 // PointerComparisonIntrinsic
 template<llvm::CmpInst::Predicate pred>
-Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc,
+Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   return new CompareExpr(loc, pred, args[0], args[1]);
@@ -411,8 +459,8 @@ Value * AddressAddIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
 // LogicalAndIntrinsic
 LogicalAndIntrinsic LogicalAndIntrinsic::instance;
 
-Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   Expr * first = args[0];
   Expr * second = args[1];
@@ -445,8 +493,8 @@ Expr * LogicalAndIntrinsic::eval(const SourceLocation & loc, const FunctionDefn 
 // LogicalOrIntrinsic
 LogicalOrIntrinsic LogicalOrIntrinsic::instance;
 
-Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * LogicalOrIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 2);
   Expr * first = args[0];
   Expr * second = args[1];
@@ -519,8 +567,8 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 // -------------------------------------------------------------------
 // MathIntrinsic1i
 template<llvm::Intrinsic::ID id>
-Expr * MathIntrinsic1i<id>::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * MathIntrinsic1i<id>::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   if (const ConstantInteger * arg = dyn_cast<ConstantInteger>(args[0])) {
     const PrimitiveType * type = arg->primitiveType();
     llvm::APInt value = arg->value()->getValue();
@@ -668,8 +716,8 @@ llvm::Value * AtomicCasIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
 // FlagsApplyIntrinsic
 FlagsApplyIntrinsic FlagsApplyIntrinsic::instance;
 
-Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   EnumType * enumType = cast<EnumType>(const_cast<Type *>(ctype->value()));
@@ -681,8 +729,8 @@ Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn 
 // ExternApplyIntrinsic
 ExternApplyIntrinsic ExternApplyIntrinsic::instance;
 
-Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   const ConstantString * extName = dyn_cast<ConstantString>(selfObj->members()[2]);
@@ -705,8 +753,8 @@ Expr * ExternApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
 // LinkageNameApplyIntrinsic
 LinkageNameApplyIntrinsic LinkageNameApplyIntrinsic::instance;
 
-Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   const ConstantString * linkName = cast<ConstantString>(selfObj->members()[2]);
@@ -719,8 +767,8 @@ Expr * LinkageNameApplyIntrinsic::eval(const SourceLocation & loc, const Functio
 // EntryPointApplyIntrinsic
 EntryPointApplyIntrinsic EntryPointApplyIntrinsic::instance;
 
-Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
@@ -747,8 +795,8 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, const Function
 // EssentialApplyIntrinsic
 EssentialApplyIntrinsic EssentialApplyIntrinsic::instance;
 
-Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
   Builtins::registerEssentialType(ctype->value());
@@ -759,7 +807,7 @@ Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, const FunctionD
 // GenerateStackTraceApplyIntrinsic
 GenerateStackTraceApplyIntrinsic GenerateStackTraceApplyIntrinsic::instance;
 
-Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc,
+Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
@@ -780,8 +828,8 @@ Expr * GenerateStackTraceApplyIntrinsic::eval(const SourceLocation & loc,
 // UnsafeApplyIntrinsic
 UnsafeApplyIntrinsic UnsafeApplyIntrinsic::instance;
 
-Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
     if (TypeDefn * tdef = ctype->value()->typeDefn()) {
@@ -800,8 +848,8 @@ Expr * UnsafeApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn
 // CoalesceApplyIntrinsic
 CoalesceApplyIntrinsic CoalesceApplyIntrinsic::instance;
 
-Expr * CoalesceApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * CoalesceApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
     if (TypeDefn * tdef = ctype->value()->typeDefn()) {
@@ -821,8 +869,8 @@ Expr * CoalesceApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDe
 // ReflectionApplyIntrinsic
 ReflectionApplyIntrinsic ReflectionApplyIntrinsic::instance;
 
-Expr * ReflectionApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * ReflectionApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
     if (TypeDefn * tdef = ctype->value()->typeDefn()) {
@@ -841,8 +889,8 @@ Expr * ReflectionApplyIntrinsic::eval(const SourceLocation & loc, const Function
 // TargetPropertyApplyIntrinsic
 TargetPropertyApplyIntrinsic TargetPropertyApplyIntrinsic::instance;
 
-Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
@@ -862,8 +910,8 @@ Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, const Func
 // ThreadLocalIntrinsic
 ThreadLocalApplyIntrinsic ThreadLocalApplyIntrinsic::instance;
 
-Expr * ThreadLocalApplyIntrinsic::eval(const SourceLocation & loc, const FunctionDefn * method,
-    Expr * self, const ExprList & args, Type * expectedReturn) const {
+Expr * ThreadLocalApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {

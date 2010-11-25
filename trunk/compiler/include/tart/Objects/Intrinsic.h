@@ -9,8 +9,6 @@
 #include "tart/CFG/Defn.h"
 #endif
 
-#include "llvm/Intrinsics.h"
-
 namespace llvm {
   class Value;
 }
@@ -53,8 +51,9 @@ public:
   /** Analysis-time implementation of the intrinsic. This returns an
       expression node which replaces the function call. Returning NULL
       indicates that no replacement should be done. */
-  virtual Expr * eval(const SourceLocation & loc, const FunctionDefn * method, Expr * self,
-      const ExprList & args, Type * expectedReturn) const {
+  virtual Expr * eval(const SourceLocation & loc, Module * callingModule,
+      const FunctionDefn * method, Expr * self, const ExprList & args,
+      Type * expectedReturn) const {
     return NULL;
   }
 

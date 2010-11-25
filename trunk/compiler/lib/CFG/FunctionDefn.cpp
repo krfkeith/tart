@@ -110,9 +110,10 @@ bool FunctionDefn::hasBody() const {
   return (ast_ != NULL && functionDecl()->body() != NULL) || !blocks_.empty();
 }
 
-Expr * FunctionDefn::eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+Expr * FunctionDefn::eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+    const ExprList & args) const {
   if (intrinsic_ != NULL) {
-    return intrinsic_->eval(loc, this, self, args, NULL);
+    return intrinsic_->eval(loc, callingModule, this, self, args, NULL);
   }
 
   return NULL;

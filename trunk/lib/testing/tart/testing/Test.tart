@@ -16,6 +16,13 @@ class Test {
         overallStatus = testStatus;
       }
     }
+    
+    for sub in package.subpackages {
+      let testStatus = runAllTests(sub);
+      if testStatus != 0 {
+        overallStatus = testStatus;
+      }
+    }
 
     return overallStatus;
   }

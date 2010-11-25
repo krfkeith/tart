@@ -56,3 +56,8 @@ struct CharacterRange {
     }
   }
 }
+
+// TODO: Delete this and insted create a built-in comparator
+public def infixEQ(cr1:CharacterRange, cr2:CharacterRange) -> bool {
+  return cr1.begin == cr2.begin and cr1.end == cr2.end;
+}

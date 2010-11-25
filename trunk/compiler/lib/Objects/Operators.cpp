@@ -44,7 +44,8 @@ public:
   BinaryOpFunction(const char * name)
       : FunctionDefn(NULL, name, &StaticFnType2<typ, typ, typ>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 2);
     //const Expr * arg0 = derefDeclaredConstant(args[0]);
     //const Expr * arg1 = derefDeclaredConstant(args[1]);
@@ -232,7 +233,8 @@ public:
   ComparisonOp(const char * name)
       : FunctionDefn(NULL, name, &StaticFnType2<TypeId_Bool, typ, typ>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 2);
     //const Expr * arg0 = derefDeclaredConstant(args[0]);
     //const Expr * arg1 = derefDeclaredConstant(args[1]);
@@ -304,7 +306,8 @@ public:
   NegateOp()
       : FunctionDefn(NULL, "unaryNegate", &StaticFnType1<typ, typ>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 1);
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
@@ -347,7 +350,8 @@ public:
       : FunctionDefn(NULL, "unaryNegate",
             &StaticFnType1<TypeId_UnsizedInt, TypeId_UnsizedInt>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 1);
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
@@ -389,7 +393,8 @@ class SuccessorOp : public FunctionDefn {
 public:
   SuccessorOp() : FunctionDefn(NULL, "successorOf", &StaticFnType1<typ, typ>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 1);
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
@@ -425,7 +430,8 @@ class PredeccessorOp : public FunctionDefn {
 public:
   PredeccessorOp() : FunctionDefn(NULL, "predeccessorOf", &StaticFnType1<typ, typ>::value) {}
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 1);
     //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
@@ -459,7 +465,11 @@ static SourceString infixEqSrc(
     " @tart.annex.Intrinsic"
     " def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic"
-    " def infixNE[%T](:__Address[T], :__Address[T]) -> bool;");
+    " def infixNE[%T](:__Address[T], :__Address[T]) -> bool;"
+// TODO: Implement this
+//    " @tart.annex.Intrinsic"
+//    " def infixEQ[%T](:T, :T) -> bool;"
+    );
 
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");

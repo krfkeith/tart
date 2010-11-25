@@ -25,9 +25,9 @@ static ConstantNull nullValue = ConstantNull(SourceLocation());
 /// -------------------------------------------------------------------
 /// EvalPass
 
-Expr * EvalPass::eval(Expr * in, bool allowPartial) {
+Expr * EvalPass::eval(Module * module, Expr * in, bool allowPartial) {
   allowPartial = false;
-  return EvalPass(allowPartial).evalExpr(in);
+  return EvalPass(module, allowPartial).evalExpr(in);
 }
 
 Expr * EvalPass::evalExpr(Expr * in) {
@@ -268,7 +268,7 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
     frame.args().push_back(arg);
   }
 
-  Expr * evalResult = func->eval(in->location(), frame.selfArg(), frame.args());
+  Expr * evalResult = func->eval(in->location(), module_, frame.selfArg(), frame.args());
   if (evalResult != NULL) {
     return evalResult;
   }
