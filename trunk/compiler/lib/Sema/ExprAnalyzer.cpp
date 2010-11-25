@@ -46,7 +46,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
   }
 
   if (expr && !expr->isSingular()) {
-    expr = TypeInferencePass::run(expr, expected);
+    expr = TypeInferencePass::run(subject->module(), expr, expected);
   }
 
   expr = FinalizeTypesPass::run(subject, expr, tryCoerciveCasts);
@@ -889,14 +889,6 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       return &Expr::ErrorVal;
     }
     return new TypeLiteralExpr(astLoc(ast), getArrayTypeForElement(elemType));
-//    Expr * elementExpr = reduceExpr(ast->arg(0), NULL);
-//    if (TypeLiteralExpr * elementType = dyn_cast_or_null<TypeLiteralExpr>(elementExpr)) {
-//      return new TypeLiteralExpr(astLoc(ast), getArrayTypeForElement(elementType->value()));
-//    }
-//
-//    diag.debug(ast) << "Preceding expression was " << elementExpr;
-//    diag.error(ast) << "Type expression expected before []";
-//    return &Expr::ErrorVal;
   }
 
   // If it's a name, see if it's a specializable name.
@@ -907,9 +899,6 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     lookupName(values, base, LOOKUP_REQUIRED);
 
     if (values.size() == 0) {
-      //diag.error(base) << "Undefined symbol " << base;
-      //diag.writeLnIndent("Scopes searched:");
-      //dumpScopeHierarchy();
       return &Expr::ErrorVal;
     } else {
       // For type names and function names, brackets always mean specialize, not index.

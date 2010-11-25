@@ -905,7 +905,7 @@ ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type 
         " can never equal switch expression of type '" << testType << "'";
   }
 
-  result = EvalPass::eval(result, false);
+  result = EvalPass::eval(module_, result, false);
   if (result == NULL) {
     return NULL;
   }
@@ -1543,7 +1543,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
     }
 
     if (!testExpr->isSingular()) {
-      testExpr = TypeInferencePass::run(testExpr, &BoolType::instance, false);
+      testExpr = TypeInferencePass::run(module_, testExpr, &BoolType::instance, false);
     }
 
     testExpr = FinalizeTypesPass::run(function, testExpr);

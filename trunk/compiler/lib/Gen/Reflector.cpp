@@ -172,6 +172,8 @@ GlobalVariable * Reflector::getNameTablePtr(Module * module) {
 }
 
 llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
+//  diag.info() << "Module qualified name: " << module->qualifiedName();
+//  diag.info() << "Module package name: " << module->packageName();
   std::string packageSymbol(".package." + module->packageName());
   GlobalVarMap::iterator it = globals_.find(packageSymbol);
   if (it != globals_.end()) {
@@ -1173,6 +1175,7 @@ llvm::Constant * Reflector::emitArray(
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), var);
 
   if (values.empty()) {
+    //DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::CompletionPass), arrayType);
     VariableDefn * emptyArray = cast_or_null<VariableDefn>(
         arrayType->memberScope()->lookupSingleMember("emptyArray"));
     if (emptyArray != NULL) {

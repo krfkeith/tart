@@ -3,6 +3,7 @@ import tart.io.StringReader;
 import tartx.lexgen.gen.LexGenParser;
 import tartx.lexgen.gen.LexGenScanner.LToken;
 import tartx.lexgen.gen.LexGenScanner.LState;
+import tartx.lexgenTest.FakeLogWriter;
 
 class LexGenParserTest : Test {
   def createParser(s:String) -> LexGenParser {

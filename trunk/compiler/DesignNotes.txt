@@ -37,6 +37,7 @@ Working on currently:
 
 Implementation TODOS:
 
+* Add structure compares. (And tuple compares, and so on for all types.)
 * Add a unit test for converting invalid enum values to strings.
 * Fix coercion of enum values to objects.
 

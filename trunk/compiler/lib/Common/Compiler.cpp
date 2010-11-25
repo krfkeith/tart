@@ -32,7 +32,7 @@ Compiler::Compiler()
 void Compiler::processInputFile(const std::string & inFile) {
   llvm::sys::Path filePath(SourcePath);
   filePath.appendComponent(inFile);
-  std::string moduleName(inFile);
+  std::string moduleName;
 
   // Add extension if needed.
   if (filePath.getSuffix().empty()) {
@@ -40,14 +40,25 @@ void Compiler::processInputFile(const std::string & inFile) {
   }
 
   // And remove extension from module name.
-  if (moduleName.find(".tart") == moduleName.size() - 5) {
-    moduleName.erase(moduleName.size() - 5, 5);
+  moduleName.reserve(inFile.size());
+  std::string::const_iterator it = inFile.begin(), itEnd = inFile.end();
+  if (inFile.rfind(".tart") == inFile.size() - 5) {
+    itEnd -= 5;
   }
 
   // Convert module path to dotted form.
-  for (std::string::iterator it = moduleName.begin(); it != moduleName.end(); ++it) {
-    if (*it == '/' || *it == '\\') {
-      *it = '.';
+  char lastCh = 0;
+  while (it != itEnd) {
+    char ch = *it++;
+    if (ch == '/' || ch == '\\') {
+      if (lastCh == '.') {
+        continue;
+      }
+      moduleName.push_back('.');
+      lastCh = '.';
+    } else {
+      moduleName.push_back(ch);
+      lastCh = ch;
     }
   }
 

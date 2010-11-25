@@ -216,7 +216,8 @@ public:
 
   /** Evaluate this function at compile-time. Return
       NULL if the function is not compile-time evaluable. */
-  virtual Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const;
+  virtual Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const;
 
   /** The set of functions which have been overridden by this function. */
   FunctionSet & overriddenMethods() { return overriddenMethods_; }

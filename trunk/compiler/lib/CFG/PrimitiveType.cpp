@@ -630,7 +630,8 @@ public:
     setStorageClass(Storage_Static);
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     DASSERT(args.size() == 1);
     Expr * arg = args[0];
     return StaticType<to>::value.explicitCast(loc, arg);
@@ -700,7 +701,8 @@ public:
     setStorageClass(Storage_Static);
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     DASSERT(args.size() == 0);
     return ConstantNull::get(loc, &VoidType::instance);
   }

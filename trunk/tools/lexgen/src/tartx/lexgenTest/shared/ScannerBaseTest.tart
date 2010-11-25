@@ -2,6 +2,7 @@ import tart.testing.Test;
 import tartx.lexgen.shared.ScannerBase;
 import tartx.lexgen.shared.Location;
 import tartx.lexgen.shared.LogWriter;
+import tartx.lexgenTest.FakeLogWriter;
 import tart.io.TextReader;
 import tart.io.StringReader;
 

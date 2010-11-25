@@ -16,9 +16,11 @@ namespace tart {
 /// This helps the type inference pass run better.
 class FoldConstantsPass : public CFGPass {
 public:
-  FoldConstantsPass() {}
+  FoldConstantsPass(Module * module) : module_(module) {}
 
 private:
+  Module * module_;
+
   Expr * visitCall(CallExpr * in);
   Expr * visitInitVar(InitVarExpr * in);
 };

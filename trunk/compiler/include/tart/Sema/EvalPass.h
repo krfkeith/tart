@@ -30,7 +30,7 @@ public:
   /** Evaluate the given expression.
       'allowPartial' - means its ok if the evaluation cannot be done at compile-time.
     */
-  static Expr * eval(Expr * in, bool allowPartial = false);
+  static Expr * eval(Module * module, Expr * in, bool allowPartial = false);
 
 private:
 
@@ -81,11 +81,13 @@ private:
     BOOLEAN_ERROR = -1,
   };
 
+  Module * module_;
   bool allowPartial_;
   CallFrame * callFrame_;
 
-  EvalPass(bool allowPartial)
-    : allowPartial_(allowPartial)
+  EvalPass(Module * module, bool allowPartial)
+    : module_(module)
+    , allowPartial_(allowPartial)
     , callFrame_(NULL)
   {}
 

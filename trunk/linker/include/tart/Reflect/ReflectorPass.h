@@ -12,17 +12,20 @@
 namespace tart {
 using namespace llvm;
 
+class Package;
+
 //typedef SmallPtrSet<GlobalVariable *, 16> ModuleSet;
 typedef SmallVector<GlobalVariable *, 16> GlobalVarList;
 typedef StringMap<GlobalVariable *> GlobalVarMap;
+typedef SmallVector<Package *, 4> PackageList;
 
 /** Describes a package. */
 class Package {
 public:
 
-  Package(const StringRef & name)
+  Package(const StringRef & name, GlobalVariable * global)
     : name_(name)
-    , global_(NULL)
+    , global_(global)
   {}
 
   /** Package name. */
@@ -30,7 +33,6 @@ public:
 
   /** Global variable for the package reflection object. */
   GlobalVariable * global() const { return global_; }
-  void setGlobal(GlobalVariable * value) { global_ = value; }
 
   /** Add a module to this package. */
   void addModule(GlobalVariable * module) {
@@ -38,13 +40,13 @@ public:
   }
 
   GlobalVarList & modules() { return modules_; }
-  GlobalVarList & subpackages() { return subpackages_; }
+  PackageList & subpackages() { return subpackages_; }
 
 private:
   std::string name_;
   GlobalVariable * global_;
   GlobalVarList modules_;
-  GlobalVarList subpackages_;
+  PackageList subpackages_;
 };
 
 /** Map of package names to packages. */
@@ -62,22 +64,35 @@ public:
   ~ReflectorPass();
 
   bool runOnModule(Module & module);
-  Package * getOrCreatePackage(const StringRef & pkgName);
-  Package * getPackage(const StringRef & pkgName);
 
+  /** Return the package if it already exists, otherwise create it. */
+  Package * getOrCreatePackage(const StringRef & pkgName, GlobalVariable * global);
+
+  /** Return the package if it already exists, otherwise create it iff it's a descendant
+      of an existing package. */
+  Package * getOrCreateSubPackage(const StringRef & pkgName, Module * module);
+
+  Package * createPackage(const StringRef & pkgName, GlobalVariable * global);
   Constant * createArray(
       Module & module,
       const ConstantList & elements,
-      Constant * arrayTypeInfo);
+      Constant * arrayTypeInfo,
+      const Type * arrayType,
+      const StringRef & name);
+
+  Constant * createString(
+      Module & module,
+      Constant * stringTypeInfo,
+      const Type * stringType,
+      const StringRef & stringVal);
+
+  GlobalVariable * requireGlobal(const StringRef & name, Module & module);
+
+  const Type * requireType(const StringRef & name, Module & module);
 
 private:
   GlobalVarMap modules_;
   PackageMap packages_;
-  ConstantRef packageHeader_;
-  ConstantRef moduleArrayPtr_;
-  ConstantRef packageArrayPtr_;
-  ConstantRef moduleArrayHeader_;
-  ConstantRef packageArrayHeader_;
 };
 
 }

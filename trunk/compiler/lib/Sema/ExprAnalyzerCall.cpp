@@ -122,9 +122,17 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   }
 
   // If it's unqualified, then do ADL.
+  size_t candidateCount = call->candidates().size();
   if (isUnqualified && !args.empty()) {
     const char * name = static_cast<const ASTIdent *>(callable)->value();
     lookupByArgType(call, name, args);
+    if (call->candidates().size() != candidateCount) {
+      // Re-evaluate args in light of new argument types.
+      call->args().clear();
+      if (!reduceArgList(args, call)) {
+        return &Expr::ErrorVal;
+      }
+    }
   }
 
   if (!success) {

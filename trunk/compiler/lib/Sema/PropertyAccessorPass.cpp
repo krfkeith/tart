@@ -29,7 +29,8 @@ Expr * PropertyAccessorPass::visitLValue(LValueExpr * in) {
   }
 
   if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in->value())) {
-    return getPropertyValue(in->location(), in->base(), prop);
+    Expr * base = in->base() != NULL ? visitExpr(in->base()) : NULL;
+    return getPropertyValue(in->location(), base, prop);
   }
 
   return in;
@@ -50,10 +51,11 @@ Expr * PropertyAccessorPass::visitCall(CallExpr * in) {
 #endif
 
 Expr * PropertyAccessorPass::visitAssign(AssignmentExpr * in) {
-  in = cast<AssignmentExpr>(CFGPass::visitAssign(in));
+  Expr * fromExpr = visitExpr(in->fromExpr());
   if (LValueExpr * lval = dyn_cast<LValueExpr>(in->toExpr())) {
     if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-      return setPropertyValue(in->location(), lval->base(), prop, in->fromExpr());
+      Expr * base = lval->base() != NULL ? visitExpr(lval->base()) : NULL;
+      return setPropertyValue(in->location(), base, prop, fromExpr);
     }
 #if 0
   } else if (CallExpr * call = dyn_cast<CallExpr>(in->toExpr())) {
@@ -70,9 +72,13 @@ Expr * PropertyAccessorPass::visitAssign(AssignmentExpr * in) {
       diag.error(in) << "Cannot assign to a method call";
     }
 #endif
+  } else if (isa<FnCallExpr>(in->toExpr())) {
+    diag.error(in) << "Not an l-value: " << in->toExpr();
   }
 
-
+  Expr * toExpr = visitExpr(in->toExpr());
+  in->setFromExpr(fromExpr);
+  in->setToExpr(toExpr);
   return in;
 }
 

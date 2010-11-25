@@ -43,6 +43,7 @@ public:
   ConstantBuilder(Module & module)
     : module_(module)
     , context_(module.getContext())
+    , tibType_(NULL)
   {
   }
 
@@ -52,6 +53,10 @@ public:
   }
 
   ConstantBuilder & addField(llvm::Constant * value);
+
+  ConstantBuilder & addInt(int i);
+
+  ConstantBuilder & addObjectHeader(llvm::Constant * typeInfo);
 
   /** Build a constant whose type is the same as 'type' */
   Constant * buildStruct(const llvm::Type * type);
@@ -63,6 +68,9 @@ private:
   ConstantList members_;
   Module & module_;
   LLVMContext & context_;
+  const Type * tibType_;
+
+  const Type * tibType();
 };
 
 }

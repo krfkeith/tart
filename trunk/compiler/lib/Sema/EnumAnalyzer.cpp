@@ -45,7 +45,8 @@ public:
     return ft;
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModules, Expr * self,
+      const ExprList & args) const {
     DASSERT(args.size() == 1);
     return type_->explicitCast(loc, args[0], Conversion::Coerce);
   }
@@ -77,7 +78,8 @@ public:
     return ft;
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 1);
     Expr * arg0 = args[0];
     Expr * result;
@@ -126,7 +128,8 @@ public:
     return new FunctionType(type, params);
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 2);
     Expr * arg0 = args[0];
     Expr * arg1 = args[1];
@@ -169,7 +172,8 @@ public:
     return ft;
   }
 
-  Expr * eval(const SourceLocation & loc, Expr * self, const ExprList & args) const {
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
     assert(args.size() == 0);
     if (self->exprType() == Expr::ConstInt) {
       ConstantInteger * ci = static_cast<ConstantInteger *>(self);

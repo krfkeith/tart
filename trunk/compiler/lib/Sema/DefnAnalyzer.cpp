@@ -309,7 +309,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
 
       // Evaluate the attribute. If it returns NULL, it simply means that it could not
       // be evaluated at compile-time.
-      Expr * attrVal = EvalPass::eval(attrExpr, true);
+      Expr * attrVal = EvalPass::eval(module_, attrExpr, true);
       if (isErrorResult(attrVal)) {
         continue;
       }
@@ -351,7 +351,7 @@ void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
       DFAIL("Implement");
     }
 
-    applyMethod->eval(de->location(), attrObj, args);
+    applyMethod->eval(de->location(), module_, attrObj, args);
   }
 }
 
