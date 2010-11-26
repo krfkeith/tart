@@ -64,8 +64,18 @@ void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
     } else {
       TokenPosition pos = tokenPosition(loc);
       DASSERT(pos.beginLine);
+
+      // TODO: Avoid creating the debug loc each time.
+//      MDNode * inlinedAt = NULL;
+//      SourceLocation inLoc = loc.region->inlinedAt();
+//      if (inLoc.region != NULL) {
+//        TokenPosition inPos = tokenPosition(inLoc);
+//        inlinedAt = DebugLoc::get(
+//            inPos.beginLine, inPos.endLine, genRegionScope(inLoc.region)).getAsMDNode(context_);
+//      }
+
       builder_.SetCurrentDebugLocation(
-          DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region)));
+          DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region) /*, inlinedAt */));
     }
   }
 }
@@ -164,7 +174,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     sp = dbgFactory_.CreateSubprogram(
         dbgCompileUnit_,
         fn->name(),
-        fn->name(), // fn->qualifiedName(),
+        fn->qualifiedName(), // fn->qualifiedName(),
         fn->linkageName(),
         genDIFile(fn),
         getSourceLineNumber(fn->location()),

@@ -563,7 +563,11 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval, bool derefShared) 
     return param->irValue();
   } else if (var->defnType() == Defn::MacroArg) {
     const VariableDefn * arg = static_cast<const VariableDefn *>(var);
-    return genExpr(arg->initValue());
+    SourceLocation saveLocation = dbgLocation_;
+    setDebugLocation(arg->initValue()->location());
+    Value * result = genExpr(arg->initValue());
+    setDebugLocation(saveLocation);
+    return result;
   } else {
     DFAIL("IllegalState");
   }
