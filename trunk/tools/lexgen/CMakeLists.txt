@@ -3,9 +3,9 @@
 include(AddTartLibrary)
 
 set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src) # Source file root
-#set(TARTC_OPTIONS -g -debug-errors)
-set(TARTC_OPTIONS -debug-errors)
-set(TARTLN_OPTIONS -disable-fp-elim -internalize -O2)
+set(TARTC_OPTIONS -g -debug-errors)
+#set(TARTC_OPTIONS -debug-errors)
+set(TARTLN_OPTIONS -disable-fp-elim -disable-inlining -internalize -O2)
 
 set(RUNTIME_LIBS runtime)
 if (LIB_DL)

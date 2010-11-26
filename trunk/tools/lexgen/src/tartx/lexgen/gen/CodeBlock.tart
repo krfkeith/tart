@@ -7,7 +7,7 @@ class CodeBlock {
     self.code = code;
   }
   
-  override toString() -> String {
+  override toString -> String {
     return code;
   }
 }
