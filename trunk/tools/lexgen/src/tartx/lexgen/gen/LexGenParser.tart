@@ -11,18 +11,18 @@ class LexGenParser {
     var scanner:LexGenScanner;
     var log:LogWriter;
   }
-  
+
   def construct(sourceFile:String, reader:TextReader, log:LogWriter) {
     self.sourceFile = sourceFile;
     self.log = log;
     self.scanner = LexGenScanner(sourceFile, reader, log);
     self.scanner.next();
   }
-  
+
   def fail(msg:String) {
     log.fatal(scanner.tokenLoc, msg);
   }
-  
+
   def matchIdent -> optional String {
     if scanner.token == LToken.ID {
       let result = scanner.tokenText;
@@ -31,7 +31,7 @@ class LexGenParser {
     }
     return null;
   }
-  
+
   def matchToken(token:LToken) -> bool {
     if scanner.token == token {
       scanner.next();
@@ -39,7 +39,7 @@ class LexGenParser {
     }
     return false;
   }
-  
+
   def matchAndSetState(token:LToken, state:LState) -> bool {
     if scanner.token == token {
       scanner.state = state;
@@ -59,7 +59,7 @@ class LexGenParser {
     }    
     return char(-1);
   }
-  
+
   def parseCodeBlock -> optional CodeBlock {
     if matchAndSetState(LToken.OPEN_BRACE, LState.ACTION) {
       let codeText = StringBuilder();
@@ -84,7 +84,7 @@ class LexGenParser {
     }
     return null;
   }
-  
+
   //def parseArgumentList(g:Grammar) -> List[String] {
   //  
   //}

@@ -3,12 +3,12 @@ import tartx.lexgen.shared.ScannerBase;
 import tartx.lexgen.shared.LogWriter;
 
 class LexGenScanner : ScannerBase {
-   public enum LState {
-     START,
-     STRING,
-     ACTION,
-     PARAMETER,
-   }
+  public enum LState {
+    START,
+    STRING,
+    ACTION,
+    PARAMETER,
+  }
 
   public enum LToken {
     EOF,
@@ -487,41 +487,73 @@ class LexGenScanner : ScannerBase {
   }
 
   def actionState -> LToken {
-        return LToken.ERROR;
+    switch _ch {
+      case '\n' {
+        take();
+        nl();
+      }
+
+      case '\r' {
+        read();
+        if not matchChar('\n') {
+          append('\n');
+        }
+      }
+
+      case '\\' {
+        take();
+      }
+
+      case '{' {
+        take();
+        return LToken.START_BLOCK;
+      }
+
+      case '}' {
+        take();
+        return LToken.END_BLOCK;
+      }
+
+      else {
+        take();
+      }
+    }
+
+    repeat {
+      switch _ch {
+        case '\n' {
+          take();
+          nl();
+        }
+  
+        case '\r' {
+          read();
+          if not matchChar('\n') {
+	          append('\n');
+          }
+        }
+  
+        case '\\' {
+          take();
+        }
+
+        case '{'
+        case '}'
+				case TextReader.EOF {
+	        return LToken.ACTION_TEXT;
+        }
+  
+        else {
+          take();
+        }
+      }
+    }
   }
 
   def parameterState -> LToken {
-        return LToken.ERROR;
+    return LToken.ERROR;
   }
 /*
-       case LState.Action:
-          switch (_ch) {
-          case '\n':
-             take();
-             nl();
-             goto L9;
-  
-          case '\r':
-             take();
-             goto L10;
-  
-          case '\\':
-             take();
-             goto L11;
-  
-          case '{':
-             take();
-             return LToken.StartBlock;
-  
-          case '}':
-             take();
-             return LToken.EndBlock;
-  
-          default:
-             take();
-             goto L9;
-          }
-  
        case LState.Parameter:
           switch (_ch) {
           case '\n':
@@ -660,7 +692,7 @@ class LexGenScanner : ScannerBase {
         return LToken.ActionText;
      }
      PrematureEof("?");
-     return LToken.Error;
+     return LToken.ERROR;
 
   L10:
      if (matchChar('\n')) {

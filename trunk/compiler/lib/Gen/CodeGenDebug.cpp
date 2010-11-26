@@ -358,7 +358,7 @@ DIBasicType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
 DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
   //DASSERT(di.Verify());
-  if (type->typeClass() == Type::Class) {
+  if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
     di = dbgFactory_.CreateDerivedType(
         dwarf::DW_TAG_pointer_type,
         dbgCompileUnit_,
@@ -471,6 +471,15 @@ DICompositeType CodeGenerator::genDICompositeType(const CompositeType * type) {
 
 DIType CodeGenerator::genDIEnumType(const EnumType * type) {
   DIDescriptorArray members;
+  for (const Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
+    if (const VariableDefn * enumConstant = dyn_cast<VariableDefn>(member)) {
+      if (const ConstantInteger * enumVal = dyn_cast<ConstantInteger>(enumConstant->initValue())) {
+        members.push_back(dbgFactory_.CreateEnumerator(
+            enumConstant->name(), enumVal->intValue().getSExtValue()));
+      }
+    }
+  }
+
   return dbgFactory_.CreateCompositeType(
       dwarf::DW_TAG_enumeration_type,
       dbgCompileUnit_,
@@ -715,23 +724,6 @@ unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
   return pos.beginLine;
 }
 
-#if 0
-Constant * CodeGenerator::getSizeOfInBits(const llvm::Type * ty) {
-  Constant * c = llvm::ConstantExpr::getSizeOf(ty);
-  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
-}
-
-Constant * CodeGenerator::getAlignOfInBits(const llvm::Type * ty) {
-  Constant * c = llvm::ConstantExpr::getAlignOf(ty);
-  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
-}
-
-Constant * CodeGenerator::getOffsetOfInBits(const StructType * st, unsigned fieldIndex) {
-  Constant * c = llvm::ConstantExpr::getOffsetOf(st, fieldIndex);
-  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
-}
-
-#else
 uint64_t CodeGenerator::getSizeOfInBits(const llvm::Type * ty) {
   return TargetSelection::instance.targetData()->getTypeSizeInBits(ty);
 }
@@ -743,11 +735,5 @@ uint64_t CodeGenerator::getAlignOfInBits(const llvm::Type * ty) {
 uint64_t CodeGenerator::align(uint64_t offset, uint64_t align) {
   return TargetData::RoundUpAlignment(offset, align);
 }
-
-//uint64_t CodeGenerator::getOffsetOfInBits(const StructType * st, unsigned fieldIndex) {
-//  Constant * c = llvm::ConstantExpr::getOffsetOf(st, fieldIndex);
-//  return llvm::ConstantExpr::getMul(c, llvm::ConstantInt::get(c->getType(), 8));
-//}
-#endif
 
 } // namespace tart

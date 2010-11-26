@@ -158,10 +158,6 @@ static cl::list<std::string> optMAttrs("mattr",
   cl::desc("Target specific attributes (-mattr=help for details)"),
   cl::value_desc("a1,+a2,-a3,..."));
 
-static cl::opt<bool> optDisableRedZone("disable-red-zone",
-  cl::desc("Do not emit code that uses the red zone."),
-  cl::init(false));
-
 static cl::opt<bool> optNoImplicitFloats("no-implicit-float",
   cl::desc("Don't generate implicit floating point instructions (x86-only)"),
   cl::init(false));
@@ -290,88 +286,6 @@ void optimize(Module * module, const TargetData * targetData) {
   }
 }
 
-#if 0
-/// copyEnv - This function takes an array of environment variables and makes a
-/// copy of it.  This copy can then be manipulated any way the caller likes
-/// without affecting the process's real environment.
-///
-/// Inputs:
-///  envp - An array of C strings containing an environment.
-///
-/// Return value:
-///  NULL - An error occurred.
-///
-///  Otherwise, a pointer to a new array of C strings is returned.  Every string
-///  in the array is a duplicate of the one in the original array (i.e. we do
-///  not copy the char *'s from one array to another).
-///
-static char ** copyEnv(char ** const envp) {
-  // Count the number of entries in the old list;
-  unsigned entries; // The number of entries in the old environment list
-  for (entries = 0; envp[entries] != NULL; entries++) {}
-
-  // Add one more entry for the NULL pointer that ends the list.
-  ++entries;
-
-  // If there are no entries at all, just return NULL.
-  if (entries == 0) {
-    return NULL;
-  }
-
-  // Allocate a new environment list.
-  char **newenv = new char*[entries];
-  if ((newenv = new char*[entries]) == NULL) {
-    return NULL;
-  }
-
-  // Make a copy of the list.  Don't forget the NULL that ends the list.
-  entries = 0;
-  while (envp[entries] != NULL) {
-    newenv[entries] = new char[strlen(envp[entries]) + 1];
-    strcpy(newenv[entries], envp[entries]);
-    ++entries;
-  }
-
-  newenv[entries] = NULL;
-  return newenv;
-}
-
-/// removeEnv - Remove the specified environment variable from the environment
-/// array.
-///
-/// Inputs:
-///  name - The name of the variable to remove.  It cannot be NULL.
-///  envp - The array of environment variables.  It cannot be NULL.
-///
-/// Notes:
-///  This is mainly done because functions to remove items from the environment
-///  are not available across all platforms.  In particular, Solaris does not
-///  seem to have an unsetenv() function or a setenv() function (or they are
-///  undocumented if they do exist).
-///
-static void removeEnv(const char * name, char ** const envp) {
-  for (unsigned index = 0; envp[index] != NULL; index++) {
-    // Find the first equals sign in the array and make it an EOS character.
-    char *p = strchr(envp[index], '=');
-    if (p == NULL) {
-      continue;
-    } else {
-      *p = '\0';
-    }
-
-    // Compare the two strings.  If they are equal, zap this string.
-    // Otherwise, restore it.
-    if (!strcmp(name, envp[index])) {
-      *envp[index] = '\0';
-    } else {
-      *p = '=';
-    }
-  }
-
-  return;
-}
-#endif
-
 std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
   // If we are supposed to override the target triple, do so now.
   //if (!optTargetTriple.empty()) {
@@ -460,7 +374,7 @@ void generateBitcode(Module * module, const sys::Path & outputFilePath) {
   bcOut.close();
 }
 
-static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & assemblyFile,
+static void generateMachineCode(std::auto_ptr<Module> & mod, const sys::Path & assemblyFile,
     TargetMachine & target, TargetMachine::CodeGenFileType codeGenType) {
   std::string errMsg;
 
@@ -500,85 +414,31 @@ static void generateAssembly(std::auto_ptr<Module> & mod, const sys::Path & asse
 
   CodeGenOpt::Level optLevel = CodeGenOpt::Default;
   switch (optOptimizationLevel) {
-    case O0:
-      optLevel = CodeGenOpt::None;
-      break;
-
-    case O1:
-      optLevel = CodeGenOpt::Less;
-      break;
-
-    case O2:
-      optLevel = CodeGenOpt::Default;
-      break;
-
-    case O3:
-      optLevel = CodeGenOpt::Aggressive;
-      break;
+    case O0: optLevel = CodeGenOpt::None; break;
+    case O1: optLevel = CodeGenOpt::Less; break;
+    case O2: optLevel = CodeGenOpt::Default; break;
+    case O3: optLevel = CodeGenOpt::Aggressive; break;
   }
 
   // Build up all of the passes that we want to do to the module.
-  FunctionPassManager passes(mod.get());
+  PassManager pm;
 
   // Add the target data from the target machine, if it exists, or the module.
   if (const TargetData * targetData = target.getTargetData()) {
-    passes.add(new TargetData(*targetData));
+    pm.add(new TargetData(*targetData));
   } else {
-    passes.add(new TargetData(mod.get()));
+    pm.add(new TargetData(mod.get()));
   }
-
-  if (!optDontVerify) {
-    passes.add(createVerifierPass());
-  }
-
-  // Ask the target to add backend passes as necessary.
-  //ObjectCodeEmitter * emitter = 0;
 
   // Override default to generate verbose assembly.
   target.setAsmVerbosityDefault(true);
 
-  switch (target.addPassesToEmitFile(passes, *asOut.get(), codeGenType, optLevel)) {
-    default:
-      assert(0 && "Invalid file model!");
-      goto fail;
-
-    case TargetMachine::CGFT_AssemblyFile:
-    case TargetMachine::CGFT_ObjectFile:
-      break;
-
-    //case FileModel::MachOFile:
-    //  emitter = AddMachOWriter(passes, *asOut.get(), target);
-    //  break;
-
-    //case TargetMachine::ElfFile:
-    //  emitter = AddELFWriter(passes, *asOut.get(), target);
-    //  break;
+  if (target.addPassesToEmitFile(pm, *asOut, codeGenType, optLevel)) {
+    errs() << "tartln: target does not support generation of this file type!\n";
+    goto fail;
   }
 
-//  if (target.addPassesToEmitFileFinish(passes, emitter, optLevel)) {
-//    errs() << "tartln: target does not support generation of this file type!\n";
-//    goto fail;
-//  }
-
-  passes.doInitialization();
-
-  // Run our queue of passes all at once now, efficiently.
-  // TODO: this could lazily stream functions out of the module.
-  for (Module::iterator it = mod.get()->begin(); it != mod.get()->end(); ++it) {
-    if (!it->isDeclaration()) {
-      if (optDisableRedZone) {
-        it->addFnAttr(Attribute::NoRedZone);
-      }
-
-      if (optNoImplicitFloats) {
-        it->addFnAttr(Attribute::NoImplicitFloat);
-      }
-
-      passes.run(*it);
-    }
-  }
-
-  passes.doFinalization();
+  pm.run(*mod);
   return;
 
 fail:
@@ -739,7 +599,7 @@ int main(int argc, char **argv, char **envp) {
         case BitcodeFile:
           outputFilename.appendSuffix("bc");
           break;
-        
+
         case ObjectFile:
           #if defined(_WIN32) || defined(__CYGWIN__)
             outputFilename.appendSuffix("obj");
@@ -766,101 +626,15 @@ int main(int argc, char **argv, char **envp) {
     if (optOutputType == BitcodeFile) {
       generateBitcode(composite.get(), outputFilename);
     } else if (optOutputType == AssemblyFile) {
-      generateAssembly(composite, outputFilename, *targetMachine.get(),
+      generateMachineCode(composite, outputFilename, *targetMachine.get(),
           TargetMachine::CGFT_AssemblyFile);
     } else if (optOutputType == ObjectFile) {
-      generateAssembly(composite, outputFilename, *targetMachine.get(),
+      generateMachineCode(composite, outputFilename, *targetMachine.get(),
           TargetMachine::CGFT_ObjectFile);
     } else {
       printAndExit("Unsupported output type");
     }
-
-    // If we are not linking a library, generate either a native executable
-    // or a JIT shell script, depending upon what the user wants.
-    if (!optLinkAsLibrary) {
-#if 0
-      // If the user wants to run a post-link optimization, run it now.
-      if (!optPostLinkOpts.empty()) {
-        std::vector<std::string> opts = optPostLinkOpts;
-        for (std::vector<std::string>::iterator it = opts.begin(), E = opts.end(); it != E; ++it) {
-          sys::Path prog(*it);
-          if (!prog.canExecute()) {
-            prog = sys::Program::FindProgramByName(*it);
-            if (prog.isEmpty()) {
-              printAndExit(std::string("Optimization program '") + *it
-                  + "' is not found or not executable.");
-            }
-          }
-          // Get the program arguments
-          sys::Path tmpOutput("opt_result");
-          std::string errMsg;
-          if (tmpOutput.createTemporaryFileOnDisk(true, &errMsg)) printAndExit(errMsg);
-
-          const char* args[4];
-          args[0] = it->c_str();
-          args[1] = optBitcodeOutputFilename.c_str();
-          args[2] = tmpOutput.c_str();
-          args[3] = 0;
-          if (0 == sys::Program::ExecuteAndWait(prog, args, 0, 0, 0, 0, &errMsg)) {
-            if (tmpOutput.isBitcodeFile() || tmpOutput.isBitcodeFile()) {
-              sys::Path target(optBitcodeOutputFilename);
-              target.eraseFromDisk();
-              if (tmpOutput.renamePathOnDisk(target, &errMsg)) printAndExit(errMsg, 2);
-            } else
-              printAndExit("Post-link optimization output is not bitcode");
-          } else {
-            printAndExit(errMsg);
-          }
-        }
-      }
-#endif
-#if 0
-
-      // If the user wants to generate a native executable, compile it from the
-      // bitcode file.
-      //
-      // Otherwise, create a script that will run the bitcode through the JIT.
-      // Name of the Assembly Language output file
-      sys::Path assemblyFile(optOutputFilename);
-      assemblyFile.appendSuffix("s");
-
-      // Mark the output files for removal if we get an interrupt.
-      sys::RemoveFileOnSignal(assemblyFile);
-      sys::RemoveFileOnSignal(sys::Path(optOutputFilename));
-
-      // Determine the locations of the llc and gcc programs.
-      sys::Path llc = FindExecutable("llc", argv[0], (void *) (intptr_t) &optimize);
-      if (llc.isEmpty()) printAndExit("Failed to find llc");
-
-      sys::Path gcc = sys::Program::FindProgramByName("gcc");
-      if (gcc.isEmpty()) printAndExit("Failed to find gcc");
-
-      // Generate an assembly language file for the bitcode.
-      std::string errMsg;
-      if (0 != generateAssembly(assemblyFile.str(), optBitcodeOutputFilename, llc, errMsg)) {
-        printAndExit(errMsg);
-      }
-
-      if (0 != generateNative(optOutputFilename, assemblyFile.str(), nativeLinkItems, gcc, envp,
-          errMsg)) {
-        printAndExit(errMsg);
-      }
-
-      // Remove the assembly language file.
-      assemblyFile.eraseFromDisk();
-
-
-
-      // Make the script executable...
-      if (sys::Path(optOutputFilename).makeExecutableOnDisk(&errMsg)) printAndExit(errMsg);
-
-      // Make the bitcode file readable and directly executable in LLEE as well
-      if (sys::Path(optBitcodeOutputFilename).makeExecutableOnDisk(&errMsg)) printAndExit(errMsg);
-
-      if (sys::Path(optBitcodeOutputFilename).makeReadableOnDisk(&errMsg)) printAndExit(errMsg);
-#endif
-    }
-  } catch (const std::string& msg) {
+  } catch (const std::string & msg) {
     printAndExit(msg, 2);
   } catch (...) {
     printAndExit("Unexpected unknown exception occurred.", 2);

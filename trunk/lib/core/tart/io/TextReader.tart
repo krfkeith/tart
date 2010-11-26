@@ -2,7 +2,7 @@
 interface TextReader : IOStream {
 
   /** Character constant that signals no more characters can be read. */
-  let EOF = char(-1);
+  static let EOF = char(-1);
 
   /** Close the reader and release any resources held by the reader instance. */
   def close;
