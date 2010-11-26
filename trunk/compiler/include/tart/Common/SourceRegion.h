@@ -52,8 +52,9 @@ public:
     return false;
   }
 
-  /** The region from which this one was generated (template or macro). */
-  //virtual SourceRegion * generatingRegion() const = 0;
+  /** If this region was inlined into some other function body, here's the location
+      of that point in the function body where it was inlined. */
+  virtual SourceLocation inlinedAt() const { return SourceLocation(); }
 
   /** Return the path of the file containing this region. */
   virtual const std::string & getFilePath() const = 0;

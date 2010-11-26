@@ -17,8 +17,9 @@ class FunctionDefn;
 /// A region of code which comprises a function definition.
 class LexicalBlockRegion : public SourceRegion {
 public:
-  LexicalBlockRegion(SLC location)
+  LexicalBlockRegion(SLC location, SLC inlinedAt = SourceLocation())
     : location_(location)
+    , inlinedAt_(inlinedAt)
   {}
 
   const SourceLocation & location() const { return location_; }
@@ -29,6 +30,7 @@ public:
   SourceRegion * parentRegion() const { return location_.region; }
   const std::string & getFilePath() const { return location_.region->getFilePath(); }
   TokenPosition tokenPosition(SLC & loc) { return location_.region->tokenPosition(loc); }
+  SourceLocation inlinedAt() const { return inlinedAt_; }
   void trace() const;
   void dump() const;
 
@@ -41,6 +43,7 @@ public:
 
 private:
   SourceLocation location_;
+  SourceLocation inlinedAt_;
 };
 
 } // namespace tart
