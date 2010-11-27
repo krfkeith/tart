@@ -4,10 +4,14 @@
 
 #include "tart/CFG/Module.h"
 #include "tart/CFG/FunctionDefn.h"
+#include "tart/CFG/Template.h"
+
 #include "tart/Sema/DefnAnalyzer.h"
+
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
+
 #include <llvm/Module.h>
 #include <llvm/Support/CommandLine.h>
 
@@ -70,6 +74,20 @@ const std::string Module::packageName() const {
   return result;
 }
 
+void Module::addModuleDependency(Defn * de) {
+  if (de != NULL) {
+    Module * m = de->module();
+    if (de->isSynthetic()) {
+      if (de->isTemplateInstance()) {
+        m = de->templateInstance()->templateDefn()->module();
+      }
+    }
+
+    if (m != NULL && m != this) {
+      importModules_.insert(m);
+    }
+  }
+}
 
 bool Module::import(const char * name, DefnList & defs, bool absPath) {
   Module * mod = PackageMgr::get().getModuleForImportPath(name);

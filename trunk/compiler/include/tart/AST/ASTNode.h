@@ -438,6 +438,8 @@ public:
 
   const ASTNode * path() const { return path_; }
   const char * asName() const { return asName_; }
+
+  /** Whether to import the contents of the namespace instead of the namespace as a symbol. */
   bool unpack() const { return unpack_; }
 
   // Overrides

@@ -62,6 +62,9 @@ public:
   /** Return the set of modules that were imported into this module. Includes implicit imports. */
   const ModuleSet & importModules() const { return importModules_; }
 
+  /** Add a dependency from this module to the module in which the given definition was defined. */
+  void addModuleDependency(Defn * de);
+
   /** List of AST declarations defined in this module. */
   const ASTDeclList & astMembers() const { return decls_; }
   ASTDeclList & astMembers() { return decls_; }

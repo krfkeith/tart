@@ -171,10 +171,17 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     DICompositeType dbgFuncType = genDIFunctionType(fn->functionType());
     DASSERT(dbgCompileUnit_.Verify());
     DASSERT_OBJ(fn->hasBody(), fn);
+    TypeDefn * definingClass = fn->enclosingClassDefn();
+    DIType dbgDefiningClass;
+    DIDescriptor dbgContext(dbgCompileUnit_);
+    if (definingClass != NULL) {
+      dbgContext = dbgDefiningClass =
+          genDICompositeType(cast<CompositeType>(definingClass->typeValue()));
+    }
     sp = dbgFactory_.CreateSubprogram(
-        dbgCompileUnit_,
+        dbgContext,
         fn->name(),
-        fn->qualifiedName(), // fn->qualifiedName(),
+        fn->name(), // fn->qualifiedName(),
         fn->linkageName(),
         genDIFile(fn),
         getSourceLineNumber(fn->location()),
@@ -183,7 +190,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
         fn->hasBody() /* isDefinition */,
         0 /* VK */,
         0 /* VIndex */,
-        DIType() /* DIType */,
+        dbgDefiningClass,
         0 /* Flags */,
         false /* isOptimized */,
         genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn));

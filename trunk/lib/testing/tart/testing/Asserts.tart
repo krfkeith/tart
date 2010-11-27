@@ -3,23 +3,15 @@ import tart.core.Debug.locationOf;
 
 namespace Asserts {
   def assertionFailed(loc:String, msg:String) {
-    throw AssertionFailureException(String.concat(loc, " ", msg));
+    throw AssertionFailureError(loc, msg);
   }
 
-  def assertionFailed(loc:String, a0:String, a1:String) {
-    throw AssertionFailureException(String.concat(loc, " ", a0, a1));
+  def assertionFailed(loc:String, msgs:String...) {
+    throw AssertionFailureError(loc, String.concat(msgs));
   }
 
-  def assertionFailed(loc:String, a0:String, a1:String, a2:String) {
-    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2));
-  }
-
-  def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String) {
-    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3));
-  }
-
-  def assertionFailed(loc:String, a0:String, a1:String, a2:String, a3:String, a4:String) {
-    throw AssertionFailureException(String.concat(loc, " ", a0, a1, a2, a3, a4));
+  def assertionFailedFmt(loc:String, format:String, args:Object...) {
+    throw AssertionFailureError(loc, format.format(args));
   }
 
   macro fail(msg:String) {
@@ -134,8 +126,7 @@ namespace Asserts {
 
   macro assertNotNull[%T <: Object](actual:T) {
     if actual is null {
-		  assertionFailed(locationOf(actual),
-		  	"expected {0} is not null".format(stringify(actual)));
+		  assertionFailedFmt(locationOf(actual), "expected {0} is not null", stringify(actual));
     }
   }
   
@@ -147,8 +138,7 @@ namespace Asserts {
 
   macro assertNotNull[%T <: Object](actual:optional T) {
     if actual is null {
-		  assertionFailed(locationOf(actual),
-		  	"expected {0} is not null".format(stringify(actual)));
+		  assertionFailedFmt(locationOf(actual), "expected {0} is not null", stringify(actual));
     }
   }
   
@@ -160,8 +150,7 @@ namespace Asserts {
 
   macro assertNull[%T <: Object](actual:optional T) {
     if actual is not null {
-		  assertionFailed(locationOf(actual),
-		  	"expected {0} is null".format(stringify(actual)));
+		  assertionFailed(locationOf(actual), "expected {0} is null", stringify(actual));
     }
   }
   
@@ -173,8 +162,7 @@ namespace Asserts {
 
   macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
     if not Iterators.equal(expected, actual) {
-      throw AssertionFailureException(
-        // TODO: Replace with String.format.
+      throw assertionFailed(locationOf(actual),
         String.concat("expected: ", expected.toString(), ", actual: ", actual.toString()));
     }
   }

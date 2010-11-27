@@ -382,3 +382,117 @@ class Option[%T] {
 
   def isPresent { get { return present; } }
 }
+
+
+// ------------------------------------------------------------------------------
+// Option parsing.
+
+Decoder
+Encoding
+Filter
+Parser
+Deserializer
+Reader
+
+var useSource = Option(bool);
+var logLevel = Option(int);
+
+// 
+
+interface OptionParser[T] {
+  def parser(s:String) -> T;
+}
+
+class StringOptionParser : OptionParser[String] {
+  def parser(s:String) -> String {
+    return s;
+  }
+}
+
+class IntOptionParser : OptionParser[int] {
+  def parser(s:String) -> int {
+    // ??
+  }
+}
+
+class Int32OptionParser : OptionParser[int32] {
+  def parser(s:String) -> int32 {
+    // ??
+  }
+}
+
+class BoolOptionParser : OptionParser[bool] {
+  def parser(s:String) -> bool {
+    switch s {
+      case "true"
+      case "True"
+      case "TRUE"
+      case "Y"
+      case "y"
+      case "1" {
+        return true;
+      }
+      
+      case "false"
+      case "False"
+      case "FALSE"
+      case "N"
+      case "n"
+      case "0" {
+        return false;
+      }
+      
+      else {
+        throw something_option_error;
+      }
+    }
+  }
+}
+
+interface OptionBase {
+  def isPresent:bool;
+  def parse(s:String);
+}
+
+class Option[%T] : OptionBase {
+  private {
+    var _present = false;
+    var _value:T;
+  }
+
+  def construct(type:TypeLiteral[T]) {
+    _reader = optionReader[T]();
+  }
+
+  def construct(type:TypeLiteral[T], default:T) {
+    _value = default;
+    _reader = optionReader[T]();
+  }
+
+  def construct(type:TypeLiteral[T], reader:OptionReader[T]) {
+    _value = default;
+    _reader = reader;
+  }
+
+  def construct(type:TypeLiteral[T], default:T, reader:OptionReader[T]) {
+    _value = default;
+    _reader = reader;
+  }
+
+  final def isPresent:bool { get { return _present; } }
+
+  final def value -> T {
+    Preconditions.checkState(_present);
+    return _value;
+  }
+
+  final def setValue(value:T) {
+    _value = value;
+    _present = true;
+  }
+  
+  final def parse(s:String) {
+    _value = _reader.parse(s);
+    _present = true;
+  }
+}
