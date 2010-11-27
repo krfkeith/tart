@@ -33,4 +33,9 @@ class LexGenParserTest : Test {
     let cn = lg.parseClassName();
     assertEq("a.b.c", cn.toString());
   }
+
+  def testParseClassNameError {
+    let lg = createParser("a.b.1 xxx");
+    assertNull(lg.parseClassName());
+  }
 }

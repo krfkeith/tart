@@ -78,6 +78,8 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
 }
 
 void FindExternalRefsPass::addSymbol(Defn * de) {
+  module->addModuleDependency(de);
+
   if (FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
     addFunction(fn);
   } else if (de->storageClass() == Storage_Static || de->storageClass() == Storage_Global) {
@@ -109,6 +111,10 @@ bool FindExternalRefsPass::addTypeRef(const Type * type) {
 bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
   if (!fn->isIntrinsic() && !fn->isExtern()) {
     AnalyzerBase::analyzeType(fn->type(), Task_PrepTypeGeneration);
+    if (fn->module() != module && fn->module() != NULL) {
+      module->addModuleDependency(fn->module());
+    }
+
     return module->addSymbol(fn);
   }
 

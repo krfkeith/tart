@@ -1526,6 +1526,14 @@ bool ClassAnalyzer::analyzeCompletely() {
       AnalyzerBase::analyzeCompletely(member);
     }
 
+    // Make sure to add all ancestor types as a dependency, even if not explicitly referenced.
+    ClassSet ancestors;
+    type->ancestorClasses(ancestors);
+    for (ClassSet::const_iterator it = ancestors.begin(); it != ancestors.end(); ++it) {
+      const CompositeType * base = *it;
+      module_->addModuleDependency(base->typeDefn());
+    }
+
     type->passes().finish(CompositeType::CompletionPass);
   }
 

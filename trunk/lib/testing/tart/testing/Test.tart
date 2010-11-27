@@ -82,7 +82,8 @@ class Test {
       return true;
       // TODO: Save test results
     } catch (t:Throwable) {
-      Debug.failFmt("{0}.{1} failed: {2} ", self.__typeName, test.name, t);
+      Debug.writeLnFmt("{0}.{1} failed:", self.__typeName, test.name, t);
+      Debug.fail(t.toString());
       return false;
     }
   }

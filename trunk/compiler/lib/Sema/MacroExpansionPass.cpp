@@ -9,7 +9,10 @@
 #include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/Module.h"
+
 #include "tart/AST/Stmt.h"
+
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -30,6 +33,10 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     FunctionDefn * macro = in->function();
     FunctionType * mtype = macro->functionType();
     const Type * returnType = dealias(mtype->returnType());
+
+    // Add a dependency on the macro's module. Do this here because
+    // the module reference will be removed during the expansion.
+    stAn.module()->addModuleDependency(macro);
 
     FunctionDefn * scopeFn = stAn.getTarget();
 

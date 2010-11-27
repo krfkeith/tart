@@ -445,7 +445,9 @@ void CodeGenerator::addModuleDependencies() {
     ValueList deps;
     for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
       Module * m = *it;
-      deps.push_back(MDString::get(context_, m->moduleSource()->getFilePath()));
+      if (!m->moduleSource()->getFilePath().empty()) {
+        deps.push_back(MDString::get(context_, m->moduleSource()->getFilePath()));
+      }
     }
 
     irModule_->getOrInsertNamedMetadata("tart.module_deps")->addOperand(
