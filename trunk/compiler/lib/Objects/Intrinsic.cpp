@@ -179,6 +179,40 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
 }
 
 // -------------------------------------------------------------------
+// PrimitiveParseIntrinsic
+PrimitiveParseIntrinsic PrimitiveParseIntrinsic::instance;
+
+Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  const FunctionDefn * fn = call->function();
+  const Expr * self = call->selfArg();
+
+  //Value * selfArg = cg.genExpr(self);
+  Value * strArg = cg.genExpr(call->arg(0));
+
+  if (strArg == NULL) {
+    return NULL;
+  }
+
+  const PrimitiveType * ptype = cast<PrimitiveType>(fn->returnType());
+  TypeId id = ptype->typeId();
+
+  if (functions_[id] == NULL) {
+    DASSERT(ptype != &UnsizedIntType::instance);
+    char funcName[48];
+    snprintf(funcName, sizeof funcName, "tart.core.Strings.parse_%s", ptype->typeDefn()->name());
+    const llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
+    functions_[id] = cast<llvm::Function>(cg.irModule()->getOrInsertFunction(funcName, funcType));
+  }
+
+  if (call->argCount() == 2) {
+    Value * radixArg = cg.genExpr(call->arg(1));
+    return cg.builder().CreateCall2(functions_[id], strArg, radixArg, "parse");
+  } else {
+    return cg.builder().CreateCall(functions_[id], strArg, "parse");
+  }
+}
+
+// -------------------------------------------------------------------
 // LocationOfIntrinsic
 LocationOfIntrinsic LocationOfIntrinsic::instance;
 

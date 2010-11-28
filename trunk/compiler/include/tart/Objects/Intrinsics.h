@@ -71,6 +71,16 @@ class PrimitiveToStringIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// PrimitiveType.parse() intrinsic
+class PrimitiveParseIntrinsic : public Intrinsic {
+  static PrimitiveParseIntrinsic instance;
+  PrimitiveParseIntrinsic() : Intrinsic("PrimitiveType.parse") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+
+  mutable llvm::Function * functions_[TypeId_Count];
+};
+
+// -------------------------------------------------------------------
 // Debug.locationOf intrinsic
 class LocationOfIntrinsic : public Intrinsic {
   static LocationOfIntrinsic instance;

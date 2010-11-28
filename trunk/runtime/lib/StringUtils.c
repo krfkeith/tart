@@ -119,3 +119,7 @@ const String * double_toString(double value) {
   int length = snprintf(data, sizeof(data), "%lf", value);
   return String_create(data, length);
 }
+
+//int32 String_toDouble(const TartString * s, double * result) {
+//  double d = strtod(s, ??, ??);
+//}

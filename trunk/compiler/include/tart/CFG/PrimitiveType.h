@@ -45,7 +45,10 @@ public:
   PrimitiveType(TypeDefn * de);
 
   /** Deferred initialization function, unique to each type. */
-  virtual void init() = 0;
+  virtual void initType() = 0;
+
+  /** Deferred initialization function, unique to each type. */
+  virtual void initMembers() = 0;
 
   /** Return the type id. */
   virtual TypeId typeId() const = 0;
@@ -114,9 +117,8 @@ public:
   /** Construct a primitive type */
   PrimitiveTypeImpl() : PrimitiveType(&typedefn) {}
 
-  /** Deferred initialization function, unique to each type. */
-  void init();
-
+  void initType();
+  void initMembers();
   Expr * nullInitValue() const;
   bool isReferenceType() const { return kTypeId == TypeId_Null; }
 

@@ -40,6 +40,10 @@ class StringsTest : Test {
     assertEq(127, Strings.parse[int8]("127"));
     assertEq(127, Strings.parse[int8]("+127"));
     assertEq(-128, Strings.parse[int8]("-128"));
+    
+    assertEq(0, int8.parse("0"));
+    assertEq(1, int8.parse("1"));
+    assertEq(15, int8.parse("f", 16));
 
     try {
       var n = Strings.parse[int8]("black");
@@ -72,6 +76,10 @@ class StringsTest : Test {
     assertEq(0, Strings.parse[int16]("0"));
     assertEq(-1, Strings.parse[int16]("-1"));
 
+    assertEq(0, int16.parse("0"));
+    assertEq(1, int16.parse("1"));
+    assertEq(15, int16.parse("f", 16));
+
     try {
       var n = Strings.parse[int16]("black");
       Debug.fail("Input format error expected");
@@ -92,9 +100,44 @@ class StringsTest : Test {
     assertUInt8Eq(1, Strings.tryParse[uint8]("1"));
     assertUInt8Eq(255, Strings.tryParse[uint8]("255"));
 
+    assertEq(0, uint8.parse("0"));
+    assertEq(1, uint8.parse("1"));
+    assertEq(15, uint8.parse("f", 16));
+
     expectError(Strings.ConversionError.INPUT_FORMAT, Strings.tryParse[uint8]("black"));
     expectError(Strings.ConversionError.OVERFLOW, Strings.tryParse[uint8]("-1"));
     expectError(Strings.ConversionError.OVERFLOW, Strings.tryParse[uint8]("256"));
+  }
+
+  def testParseInt32() {
+    assertEq(0, Strings.parse[int32]("0"));
+    assertEq(-1, Strings.parse[int32]("-1"));
+
+    assertEq(0, int32.parse("0"));
+    assertEq(1, int32.parse("1"));
+    assertEq(15, int32.parse("f", 16));
+  }
+  
+  def testTryParseInt64() {
+    assertInt64Eq(0, Strings.tryParse[int64]("0"));
+    assertInt64Eq(1, Strings.tryParse[int64]("1"));
+    assertInt64Eq(-1, Strings.tryParse[int64]("-1"));
+    assertInt64Eq(127, Strings.tryParse[int64]("127"));
+    assertInt64Eq(int64.maxVal, Strings.tryParse[int64]("+9223372036854775807"));
+    assertInt64Eq(int64.minVal, Strings.tryParse[int64]("-9223372036854775808"));
+
+    expectError(Strings.ConversionError.INPUT_FORMAT, Strings.tryParse[int64]("black"));
+    expectError(Strings.ConversionError.OVERFLOW, Strings.tryParse[int64]("9223372036854775808"));
+    expectError(Strings.ConversionError.OVERFLOW, Strings.tryParse[int64]("-9223372036854775809"));
+  }
+
+  def testParseInt64() {
+    assertEq(0, Strings.parse[int64]("0"));
+    assertEq(-1, Strings.parse[int64]("-1"));
+
+    assertEq(0, int64.parse("0"));
+    assertEq(1, int64.parse("1"));
+    assertEq(15, int64.parse("f", 16));
   }
 
   def testRadix() {
@@ -132,6 +175,16 @@ class StringsTest : Test {
     assertEq(expected, typecast[uint8](actual));
   }
 
+  def assertInt32Eq(expected:int32, actual:Strings.ConversionError or int32) {
+    assertTrue(actual isa int32);
+    assertEq(expected, typecast[int32](actual));
+  }
+
+  def assertInt64Eq(expected:int64, actual:Strings.ConversionError or int64) {
+    assertTrue(actual isa int64);
+    assertEq(expected, typecast[int64](actual));
+  }
+
   def expectError(expected:Strings.ConversionError, actual:Strings.ConversionError or bool) {
     assertTrue(actual isa Strings.ConversionError);
     assertEq(expected, typecast[Strings.ConversionError](actual));
@@ -143,6 +196,16 @@ class StringsTest : Test {
   }
 
   def expectError(expected:Strings.ConversionError, actual:Strings.ConversionError or int16) {
+    assertTrue(actual isa Strings.ConversionError);
+    assertEq(expected, typecast[Strings.ConversionError](actual));
+  }
+
+  def expectError(expected:Strings.ConversionError, actual:Strings.ConversionError or int32) {
+    assertTrue(actual isa Strings.ConversionError);
+    assertEq(expected, typecast[Strings.ConversionError](actual));
+  }
+
+  def expectError(expected:Strings.ConversionError, actual:Strings.ConversionError or int64) {
     assertTrue(actual isa Strings.ConversionError);
     assertEq(expected, typecast[Strings.ConversionError](actual));
   }
