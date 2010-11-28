@@ -1,0 +1,262 @@
+import Debug.stringify;
+
+/** Collection of utility functions for converting and manipulating strings. */
+namespace Strings {
+  enum ConversionError {
+    INPUT_FORMAT,
+    OVERFLOW,
+  }
+
+  def parse[bool](s:String) -> bool {
+    let result = tryParse[bool](s);
+    return errCheck(s, result);
+  }
+
+  def tryParse[bool](s:String) -> bool or ConversionError {
+    return false if s is null;
+    switch s {
+      case "true"
+      case "True"
+      case "Y"
+      case "y" {
+        return true;
+      }
+
+      case "false"
+      case "False"
+      case "N"
+      case "n" {
+        return false;
+      }
+
+      else { return ConversionError.INPUT_FORMAT; }
+    }
+  }
+
+  def tryParse[char](s:String) -> char or ConversionError {
+    // TODO - implement
+    return char(0);
+  }
+
+  def parse[char](s:String) -> char {
+    let result = tryParse[char](s);
+    return errCheck(s, result);
+  }
+
+  def parse[int8](s:String, radix:int = 10) -> int8 {
+    return parseSInt[int8](s, radix);
+  }
+
+  def tryParse[int8](s:String, radix:int = 10) -> int8 or ConversionError {
+    return tryParseSInt[int8](s, radix);
+  }
+
+  def parse[int16](s:String, radix:int = 10) -> int16 {
+    return parseSInt[int16](s, radix);
+  }
+
+  def tryParse[int16](s:String, radix:int = 10) -> int16 or ConversionError {
+    return tryParseSInt[int16](s, radix);
+  }
+
+  def parse[int32](s:String, radix:int = 10) -> int32 {
+    return parseSInt[int32](s, radix);
+  }
+
+  def tryParse[int32](s:String, radix:int = 10) -> int32 or ConversionError {
+    return tryParseSInt[int32](s, radix);
+  }
+
+  def parse[int64](s:String, radix:int = 10) -> int64 {
+    return parseSInt[int64](s, radix);
+  }
+
+  def tryParse[int64](s:String, radix:int = 10) -> int64 or ConversionError {
+    return tryParseSInt[int64](s, radix);
+  }
+
+  def parse[uint8](s:String, radix:int = 10) -> uint8 {
+    return parseUInt[uint8](s, radix);
+  }
+
+  def tryParse[uint8](s:String, radix:int = 10) -> uint8 or ConversionError {
+    return tryParseUInt[uint8](s, radix);
+  }
+
+  def parse[uint16](s:String, radix:int = 10) -> uint16 {
+    return parseUInt[uint16](s, radix);
+  }
+
+  def tryParse[uint16](s:String, radix:int = 10) -> uint16 or ConversionError {
+    return tryParseUInt[uint16](s, radix);
+  }
+
+  def parse[uint32](s:String, radix:int = 10) -> uint32 {
+    return parseUInt[uint32](s, radix);
+  }
+
+  def tryParse[uint32](s:String, radix:int = 10) -> uint32 or ConversionError {
+    return tryParseUInt[uint32](s, radix);
+  }
+
+  def parse[uint64](s:String, radix:int = 10) -> uint64 {
+    return parseUInt[uint64](s, radix);
+  }
+
+  def tryParse[uint64](s:String, radix:int = 10) -> uint64 or ConversionError {
+    return tryParseUInt[uint64](s, radix);
+  }
+
+  private def errCheck[%T](s:String, value:T or ConversionError) -> T {
+    classify value as err:ConversionError {
+      fail(s, stringify(T), err);
+    }
+
+    return typecast[T](value);
+  }
+
+  private def parseSInt[%T](s:String, radix:int) -> T {
+    classify tryParseSInt(s, radix, T.minVal, T.maxVal) {
+      as n:int64 { return T(n); }
+      as err:ConversionError { fail(s, stringify(T), err); }
+    }
+
+		// Can't ever get here, but compiler is too stupid to know that.
+    return 0;
+  }
+
+  private def parseUInt[%T](s:String, radix:int) -> T {
+    classify tryParseUInt(s, radix, T.maxVal) {
+      as n:uint64 { return T(n); }
+      as err:ConversionError { fail(s, stringify(T), err); }
+    }
+
+		// Can't ever get here, but compiler is too stupid to know that.
+    return 0;
+  }
+
+  private def tryParseSInt[%T](s:String, radix:int) -> T or ConversionError {
+    classify tryParseSInt(s, radix, T.minVal, T.maxVal) {
+      as n:int64 { return T(n); }
+      as err:ConversionError { return err; }
+    }
+
+		// Can't ever get here, but compiler is too stupid to know that.
+    return ConversionError.OVERFLOW;
+  }
+
+  private def tryParseUInt[%T](s:String, radix:int) -> T or ConversionError {
+    classify tryParseUInt(s, radix, T.maxVal) {
+      as n:uint64 { return T(n); }
+      as err:ConversionError { return err; }
+    }
+
+		// Can't ever get here, but compiler is too stupid to know that.
+    return ConversionError.OVERFLOW;
+  }
+
+  private def fail(s:String, typeName:String, err:ConversionError) {
+    switch err {
+      case INPUT_FORMAT {
+        throw InputFormatError("'{0}' has invalid format for type '{1}'".format(s, typeName));
+      }
+      case OVERFLOW {
+        throw OverflowError("'{0}' is outside the range of values for type '{1}'".format(s, typeName));
+      }
+    }
+  }
+
+  private def tryParseSInt(s:String, radix:int, minVal:int64, maxVal:int64) ->
+  		int64 or ConversionError {
+    // Radix of 2 to 35 is supported.
+    Preconditions.checkArgument(radix > 1 and radix < 36);
+
+    var neg = false;
+    var first = true;
+    var n:int64 = 0;
+
+    // Compute the cutoff value used to determine if the value is out of range.
+    // If the value is greater than this number and followed by a digit, then the value
+    // is too big. A value equal to this number may or may not be too large, depending
+    // on the subsequent digit. For example, if maxVal is 127 and base is 10, then
+    // cutoff will be 12 and cutlim will be 7. Thus if value > 12, or value == 12 and the
+    // next digit is > 7, then the value is too big and we return an overflow error.
+    var cutoff = maxVal / radix;
+    var cutlim = maxVal % radix;
+    for ch in s {
+      var digit:int64;
+      if ch >= '0' and ch <= '9' {
+        digit = int64(ch) - int64('0');
+      } else if ch >= 'a' and ch <= 'z' {
+        digit = int64(ch) - int64('a') + 10;
+      } else if ch >= 'A' and ch <= 'Z' {
+        digit = int64(ch) - int64('A') + 10;
+    	} else if ch == '+' {
+        return ConversionError.INPUT_FORMAT if not first;
+        continue;
+      } else if ch == '-' {
+        return ConversionError.INPUT_FORMAT if not first;
+        neg = true;
+    		cutoff = -(minVal / radix);
+    		cutlim = -(minVal % radix);
+        continue;
+      } else {
+        return ConversionError.INPUT_FORMAT;
+      }
+
+      return ConversionError.INPUT_FORMAT if digit >= radix;
+      return ConversionError.OVERFLOW if n > cutoff or (n == cutoff and digit > cutlim);
+
+      n *= radix;
+      n += digit;
+      first = false;
+    }
+
+    if neg {
+      n = -n;
+    }
+
+    return n;
+  }
+
+  private def tryParseUInt(s:String, radix:int, maxVal:uint64) -> uint64 or ConversionError {
+    // Radix of 2 to 35 is supported.
+    Preconditions.checkArgument(radix > 1 and radix < 36);
+
+    var neg = false;
+    var first = true;
+    var n:uint64 = 0;
+    var cutoff = maxVal / uint64(radix);
+    var cutlim = maxVal % uint64(radix);
+    for ch in s {
+      var digit:uint64;
+      if ch >= '0' and ch <= '9' {
+        digit = uint64(ch) - uint64('0');
+      } else if ch >= 'a' and ch <= 'z' {
+        digit = uint64(ch) - uint64('a') + 10;
+      } else if ch >= 'A' and ch <= 'Z' {
+        digit = uint64(ch) - uint64('A') + 10;
+    	} else if ch == '+' {
+        return ConversionError.INPUT_FORMAT if not first;
+        continue;
+      } else if ch == '-' {
+        return ConversionError.INPUT_FORMAT if not first;
+        neg = true;
+        continue;
+      } else {
+        return ConversionError.INPUT_FORMAT;
+      }
+
+      return ConversionError.INPUT_FORMAT if digit >= radix;
+      return ConversionError.OVERFLOW if n > cutoff or (n == cutoff and digit > cutlim);
+
+      n *= uint64(radix);
+      n += digit;
+      first = false;
+    }
+
+    // The only negative number allowed is negative zero.
+    return ConversionError.OVERFLOW if neg and n > 0;
+    return n;
+  }
+}

@@ -144,6 +144,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
       } else if (isFloatingTypeId(srcId)) {
         if (cn.fromValue && cn.resultValue) {
           // Convert from float
+          diag.debug() << cn.fromValue;
           DFAIL("Implement");
         }
 
@@ -580,6 +581,10 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
   DASSERT(cn.fromValue != NULL);
   DASSERT(cn.fromValue->type()->isEqual(fromType));
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
+    if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
+      fromType = etype->baseType();
+    }
+
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
     DASSERT(isIntegerTypeId(srcId) || srcId == TypeId_UnsizedInt);

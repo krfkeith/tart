@@ -400,29 +400,29 @@ var logLevel = Option(int);
 // 
 
 interface OptionParser[T] {
-  def parser(s:String) -> T;
+  def parse(s:String) -> T;
 }
 
 class StringOptionParser : OptionParser[String] {
-  def parser(s:String) -> String {
+  def parse(s:String) -> String {
     return s;
   }
 }
 
 class IntOptionParser : OptionParser[int] {
-  def parser(s:String) -> int {
+  def parse(s:String) -> int {
     // ??
   }
 }
 
 class Int32OptionParser : OptionParser[int32] {
-  def parser(s:String) -> int32 {
+  def parse(s:String) -> int32 {
     // ??
   }
 }
 
 class BoolOptionParser : OptionParser[bool] {
-  def parser(s:String) -> bool {
+  def parse(s:String) -> bool {
     switch s {
       case "true"
       case "True"
@@ -494,5 +494,84 @@ class Option[%T] : OptionBase {
   final def parse(s:String) {
     _value = _reader.parse(s);
     _present = true;
+  }
+}
+
+
+
+
+namespace StringUtils {
+  enum ConversionError {
+    FormatError,
+    Overflow,
+  }
+  
+  //@Extern("strtok") static def strlen(str:Address[ubyte]) -> int32;
+    @Extern("strtol") static def strtol(
+    	nptr:Address[ubyte],
+    	endptr:Address[Address[ubyte]],
+    	base:int) -> int32;
+    @Extern("strtoll") static def strtoll(
+    	nptr:Address[ubyte],
+    	endptr:Address[Address[ubyte]],
+    	base:int) -> int64;
+  
+  def parseBool(s:String) {
+  }
+
+  def parseChar(s:String) {
+  }
+
+  def parseInt8(s:String, radix:int) -> int8 {
+    var n:int32;
+    if not parseInt(s, addressOf(n), radix) {
+      throw NumberFormatException();
+    }
+    
+    if n < int8.minVal or n > int8.maxVal {
+      throw OverflowError();
+    }
+    
+    return n;
+  }
+
+  def tryParseInt8(s:String, radix:int) -> int8 or void {
+    var n:int32;
+    if not parseInt(s, addressOf(n), radix) {
+      return;
+    }
+    
+    if n < int8.minVal or n > int8.maxVal {
+      return;
+    }
+    
+    return n;
+  }
+
+  def parseInt16(s:String, radix:int) {
+  }
+
+  def parseInt32(s:String, radix:int) {
+  }
+
+  def parseInt64(s:String, radix:int) {
+  }
+
+  def parseUInt8(s:String, radix:int) {
+  }
+
+  def parseUInt16(s:String, radix:int) {
+  }
+
+  def parseUInt32(s:String, radix:int) {
+  }
+
+  def parseUInt64(s:String, radix:int) {
+  }
+
+  def parseFloat(s:String) {
+  }
+
+  def parseDouble(s:String) {
   }
 }
