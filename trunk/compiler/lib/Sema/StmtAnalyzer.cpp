@@ -973,6 +973,9 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
 
         typesSeen.insert(toType);
 
+        // For union types, the type test might not be needed if we have
+        // already tested all other types.
+
         // Create the block containing the type test
         Block * testBlock = NULL;
         if (prevTestBlock != NULL) {

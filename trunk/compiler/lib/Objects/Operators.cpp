@@ -34,23 +34,24 @@ inline bool areBothConstFloats(const Expr * a0, const Expr * a1) {
       a1->exprType() == Expr::ConstFloat;
 }
 
-/** A class representing a binary operator on primitive types.
+/** A class representing a binary operator on integer types.
     The operator takes two arguments and returns a single value,
     all of which are the same type.
 */
 template<int typ, Instruction::BinaryOps opCode>
-class BinaryOpFunction : public FunctionDefn {
+class IntegerBinOpFunction : public FunctionDefn {
 public:
-  BinaryOpFunction(const char * name)
+  IntegerBinOpFunction(const char * name)
       : FunctionDefn(NULL, name, &StaticFnType2<typ, typ, typ>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 2);
-    //const Expr * arg0 = derefDeclaredConstant(args[0]);
-    //const Expr * arg1 = derefDeclaredConstant(args[1]);
     Expr * arg0 = args[0];
     Expr * arg1 = args[1];
+
+    DASSERT_OBJ(arg0->type()->isIntType(), arg0);
+    DASSERT_OBJ(arg1->type()->isIntType(), arg1);
 
     if (areBothConstInts(arg0, arg1)) {
       ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
@@ -61,7 +62,162 @@ public:
             c0->type(),
             cast<ConstantInt>(
                 llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
-    } else if (areBothConstFloats(arg0, arg1)) {
+    } else {
+      return new BinaryOpcodeExpr(opCode, loc, &StaticType<typ>::value, arg0, arg1);
+    }
+  }
+};
+
+/** The builtin add operator. */
+template<int type>
+class OperatorAddDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Add> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Add> OperatorAddDecl<type>::value("infixAdd");
+
+/** The builtin subtract operator. */
+template<int type>
+class OperatorSubDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Sub> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Sub> OperatorSubDecl<type>::value("infixSubtract");
+
+/** The builtin multiply operator. */
+template<int type>
+class OperatorMulDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Mul> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Mul> OperatorMulDecl<type>::value("infixMultiply");
+
+/** The builtin divide operator (signed). */
+template<int type>
+class OperatorSDivDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::SDiv> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::SDiv> OperatorSDivDecl<type>::value("infixDivide");
+
+/** The builtin divide operator (unsigned). */
+template<int type>
+class OperatorUDivDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::UDiv> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::UDiv> OperatorUDivDecl<type>::value("infixDivide");
+
+/** The builtin modulus operator (signed). */
+template<int type>
+class OperatorSModDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::SRem> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::SRem> OperatorSModDecl<type>::value("infixModulus");
+
+/** The builtin modulus operator (unsigned). */
+template<int type>
+class OperatorUModDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::URem> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::URem> OperatorUModDecl<type>::value("infixModulus");
+
+/** The builtin bitwise 'or' operator. */
+template<int type>
+class BitwiseOrDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Or> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Or> BitwiseOrDecl<type>::value("infixBitOr");
+
+/** The builtin bitwise 'and' operator. */
+template<int type>
+class BitwiseAndDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::And> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::And> BitwiseAndDecl<type>::value("infixBitAnd");
+
+/** The builtin bitwise 'xor' operator. */
+template<int type>
+class BitwiseXorDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Xor> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Xor> BitwiseXorDecl<type>::value("infixBitXor");
+
+/** The builtin shift left operator. */
+template<int type>
+class OperatorLShiftDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::Shl> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::Shl> OperatorLShiftDecl<type>::value("infixLShift");
+
+/** The builtin arithmetic shift right operator. */
+template<int type>
+class OperatorARShiftDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::AShr> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::AShr> OperatorARShiftDecl<type>::value("infixRShift");
+
+/** The builtin logical shift right operator. */
+template<int type>
+class OperatorRShiftDecl {
+public:
+  static IntegerBinOpFunction<type, Instruction::LShr> value;
+};
+
+template<int type>
+IntegerBinOpFunction<type, Instruction::LShr> OperatorRShiftDecl<type>::value("infixRShift");
+
+/** A class representing a binary operator on floating point types.
+    The operator takes two arguments and returns a single value,
+    all of which are the same type.
+*/
+template<int typ, Instruction::BinaryOps opCode>
+class FloatBinOpFunction : public FunctionDefn {
+public:
+  FloatBinOpFunction(const char * name)
+      : FunctionDefn(NULL, name, &StaticFnType2<typ, typ, typ>::value) {}
+
+  Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
+      const ExprList & args) const {
+    assert(args.size() == 2);
+    Expr * arg0 = args[0];
+    Expr * arg1 = args[1];
+
+    DASSERT_OBJ(arg0->type()->isFPType(), arg0);
+    DASSERT_OBJ(arg1->type()->isFPType(), arg1);
+
+    if (areBothConstFloats(arg0, arg1)) {
       ConstantFloat * c0 = static_cast<ConstantFloat *>(arg0);
       ConstantFloat * c1 = static_cast<ConstantFloat *>(arg1);
       DASSERT(c0->type() == c1->type());
@@ -76,155 +232,55 @@ public:
   }
 };
 
-/** The builtin add operator. */
+/** The builtin add operator (float). */
 template<int type>
-class OperatorAddDecl {
+class OperatorFAddDecl {
 public:
-  static BinaryOpFunction<type, Instruction::Add> value;
+  static FloatBinOpFunction<type, Instruction::FAdd> value;
 };
 
 template<int type>
-BinaryOpFunction<type, Instruction::Add> OperatorAddDecl<type>::value("infixAdd");
+FloatBinOpFunction<type, Instruction::FAdd> OperatorFAddDecl<type>::value("infixAdd");
 
-/** The builtin subtract operator. */
+/** The builtin subtract operator (float). */
 template<int type>
-class OperatorSubDecl {
+class OperatorFSubDecl {
 public:
-  static BinaryOpFunction<type, Instruction::Sub> value;
+  static FloatBinOpFunction<type, Instruction::FSub> value;
 };
 
 template<int type>
-BinaryOpFunction<type, Instruction::Sub> OperatorSubDecl<type>::value("infixSubtract");
+FloatBinOpFunction<type, Instruction::FSub> OperatorFSubDecl<type>::value("infixSubtract");
 
-/** The builtin multiply operator. */
+/** The builtin multiply operator (float). */
 template<int type>
-class OperatorMulDecl {
+class OperatorFMulDecl {
 public:
-  static BinaryOpFunction<type, Instruction::Mul> value;
+  static FloatBinOpFunction<type, Instruction::FMul> value;
 };
 
 template<int type>
-BinaryOpFunction<type, Instruction::Mul> OperatorMulDecl<type>::value("infixMultiply");
-
-/** The builtin divide operator (signed). */
-template<int type>
-class OperatorSDivDecl {
-public:
-  static BinaryOpFunction<type, Instruction::SDiv> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::SDiv> OperatorSDivDecl<type>::value("infixDivide");
-
-/** The builtin divide operator (unsigned). */
-template<int type>
-class OperatorUDivDecl {
-public:
-  static BinaryOpFunction<type, Instruction::UDiv> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::UDiv> OperatorUDivDecl<type>::value("infixDivide");
+FloatBinOpFunction<type, Instruction::FMul> OperatorFMulDecl<type>::value("infixMultiply");
 
 /** The builtin divide operator (float). */
 template<int type>
 class OperatorFDivDecl {
 public:
-  static BinaryOpFunction<type, Instruction::FDiv> value;
+  static FloatBinOpFunction<type, Instruction::FDiv> value;
 };
 
 template<int type>
-BinaryOpFunction<type, Instruction::FDiv> OperatorFDivDecl<type>::value("infixDivide");
-
-/** The builtin modulus operator (signed). */
-template<int type>
-class OperatorSModDecl {
-public:
-  static BinaryOpFunction<type, Instruction::SRem> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::SRem> OperatorSModDecl<type>::value("infixModulus");
-
-/** The builtin modulus operator (unsigned). */
-template<int type>
-class OperatorUModDecl {
-public:
-  static BinaryOpFunction<type, Instruction::URem> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::URem> OperatorUModDecl<type>::value("infixModulus");
+FloatBinOpFunction<type, Instruction::FDiv> OperatorFDivDecl<type>::value("infixDivide");
 
 /** The builtin modulus operator (float). */
 template<int type>
 class OperatorFModDecl {
 public:
-  static BinaryOpFunction<type, Instruction::FRem> value;
+  static FloatBinOpFunction<type, Instruction::FRem> value;
 };
 
 template<int type>
-BinaryOpFunction<type, Instruction::FRem> OperatorFModDecl<type>::value("infixModulus");
-
-/** The builtin bitwise 'or' operator. */
-template<int type>
-class BitwiseOrDecl {
-public:
-  static BinaryOpFunction<type, Instruction::Or> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::Or> BitwiseOrDecl<type>::value("infixBitOr");
-
-/** The builtin bitwise 'and' operator. */
-template<int type>
-class BitwiseAndDecl {
-public:
-  static BinaryOpFunction<type, Instruction::And> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::And> BitwiseAndDecl<type>::value("infixBitAnd");
-
-/** The builtin bitwise 'xor' operator. */
-template<int type>
-class BitwiseXorDecl {
-public:
-  static BinaryOpFunction<type, Instruction::Xor> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::Xor> BitwiseXorDecl<type>::value("infixBitXor");
-
-/** The builtin shift left operator. */
-template<int type>
-class OperatorLShiftDecl {
-public:
-  static BinaryOpFunction<type, Instruction::Shl> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::Shl> OperatorLShiftDecl<type>::value("infixLShift");
-
-/** The builtin arithmetic shift right operator. */
-template<int type>
-class OperatorARShiftDecl {
-public:
-  static BinaryOpFunction<type, Instruction::AShr> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::AShr> OperatorARShiftDecl<type>::value("infixRShift");
-
-/** The builtin logical shift right operator. */
-template<int type>
-class OperatorRShiftDecl {
-public:
-  static BinaryOpFunction<type, Instruction::LShr> value;
-};
-
-template<int type>
-BinaryOpFunction<type, Instruction::LShr> OperatorRShiftDecl<type>::value("infixRShift");
+FloatBinOpFunction<type, Instruction::FRem> OperatorFModDecl<type>::value("infixModulus");
 
 /** Comparison op */
 template<int typ, CmpInst::Predicate pred>
@@ -309,7 +365,6 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
-    //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
     if (arg->exprType() == Expr::ConstInt) {
@@ -323,16 +378,30 @@ public:
       return new ConstantFloat(
             cn->location(),
             cn->type(),
-            cast<ConstantFP>(llvm::ConstantExpr::getNeg(cn->value())));
+            cast<ConstantFP>(llvm::ConstantExpr::getFNeg(cn->value())));
     } else {
-      DFAIL("Implement");
-      /*Expr * constantZero = ConstNumber::get(
+      const llvm::Type * argType = arg->type()->irType();
+      if (arg->type()->isIntType()) {
+        const llvm::IntegerType * intType = cast<llvm::IntegerType>(argType);
+        ConstantInt * zero = ConstantInt::get(intType, 0, true);
+        Expr * constantZero = new ConstantInteger(
             arg->location(),
-            cast<const PrimitiveType>(arg->type()),
-            Constant::getNullValue(arg->type()->irType()));
-      Expr * result = new BinaryExpr(Instruction::Sub, constantZero, arg);
-      result->setType(arg->type());
-      return result;*/
+            arg->type(),
+            zero);
+        return new BinaryOpcodeExpr(
+            Instruction::Sub, loc, arg->type(),
+            constantZero, arg);
+      } else if (arg->type()->isFPType()) {
+        Expr * constantZero = new ConstantFloat(
+            arg->location(),
+            arg->type(),
+            cast<ConstantFP>(ConstantFP::getZeroValueForNegation(argType)));
+        return new BinaryOpcodeExpr(
+            Instruction::FSub, loc, arg->type(),
+            constantZero, arg);
+      } else {
+        DFAIL("Invalid type");
+      }
     }
   }
 
@@ -499,8 +568,8 @@ void Builtins::initOperators() {
   module.addMember(&OperatorAddDecl<TypeId_UInt16>::value);
   module.addMember(&OperatorAddDecl<TypeId_UInt32>::value);
   module.addMember(&OperatorAddDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorAddDecl<TypeId_Float>::value);
-  module.addMember(&OperatorAddDecl<TypeId_Double>::value);
+  module.addMember(&OperatorFAddDecl<TypeId_Float>::value);
+  module.addMember(&OperatorFAddDecl<TypeId_Double>::value);
   module.addMember(&OperatorAddDecl<TypeId_UnsizedInt>::value);
 
   module.addMember(&OperatorSubDecl<TypeId_SInt8>::value);
@@ -511,8 +580,8 @@ void Builtins::initOperators() {
   module.addMember(&OperatorSubDecl<TypeId_UInt16>::value);
   module.addMember(&OperatorSubDecl<TypeId_UInt32>::value);
   module.addMember(&OperatorSubDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorSubDecl<TypeId_Float>::value);
-  module.addMember(&OperatorSubDecl<TypeId_Double>::value);
+  module.addMember(&OperatorFSubDecl<TypeId_Float>::value);
+  module.addMember(&OperatorFSubDecl<TypeId_Double>::value);
   module.addMember(&OperatorSubDecl<TypeId_UnsizedInt>::value);
 
   module.addMember(&OperatorMulDecl<TypeId_SInt8>::value);
@@ -523,8 +592,8 @@ void Builtins::initOperators() {
   module.addMember(&OperatorMulDecl<TypeId_UInt16>::value);
   module.addMember(&OperatorMulDecl<TypeId_UInt32>::value);
   module.addMember(&OperatorMulDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorMulDecl<TypeId_Float>::value);
-  module.addMember(&OperatorMulDecl<TypeId_Double>::value);
+  module.addMember(&OperatorFMulDecl<TypeId_Float>::value);
+  module.addMember(&OperatorFMulDecl<TypeId_Double>::value);
   module.addMember(&OperatorMulDecl<TypeId_UnsizedInt>::value);
 
   module.addMember(&OperatorSDivDecl<TypeId_SInt8>::value);
