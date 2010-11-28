@@ -46,7 +46,7 @@ Implementation TODOS:
 * Open/closed intervals
 * Implicit downcast in if-block. (Includes unions as well.)
 * Implicit anonymous class for closure.
-
+* Bug: uint64 + int64 != float (error in infix add overload selection).
 * Call gc_alloc instead of malloc.
 * Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
 * Refactoring
