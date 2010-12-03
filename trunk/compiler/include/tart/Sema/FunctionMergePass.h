@@ -60,7 +60,7 @@ private:
 //  bool visitMultiAssign(MultiAssignExpr * from, MultiAssignExpr * to);
 //  bool visitCall(CallExpr * from, CallExpr * to);
   bool visitFnCall(FnCallExpr * from, FnCallExpr * to);
-//  bool visitIndirectCall(CallExpr * from, CallExpr * to);
+//  bool visitIndirectCall(IndirectCallExpr * from, IndirectCallExpr * to);
   bool visitNew(NewExpr * from, NewExpr * to);
   bool visitCast(CastExpr * from, CastExpr * to);
   bool visitUnionCtorCast(CastExpr * from, CastExpr * to);

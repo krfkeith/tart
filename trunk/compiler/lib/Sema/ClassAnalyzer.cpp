@@ -341,9 +341,11 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   CompositeType * primaryBase = NULL;
   TypeAnalyzer ta(moduleForDefn(target), target->definingScope());
   ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
-  if (target->isTemplate()) {
-    ta.setActiveScope(&target->templateSignature()->paramScope());
-  }
+
+  // Mark the base type pass as finished early, allowing inherited symbols from one
+  // base to be used as template parameters for the next base.
+  type->passes().finish(CompositeType::BaseTypesPass);
+  ta.setActiveScope(type->memberScope());
 
   for (ASTNodeList::const_iterator it = astBases.begin(); it != astBases.end(); ++it) {
     Type * baseType = ta.typeFromAST(*it);

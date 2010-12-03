@@ -1,5 +1,13 @@
+import tart.core.Memory.Address;
+
 /** Reflection type class for pointers, unions, tuples, and so on. */
 class DerivedType : Type {
+  struct Data {
+    let streamData:Address[ubyte];
+    let typeRefs:Address[Type];
+    let size:uint;
+  }
+
   private {
     var _typeParams:Type[];
   }

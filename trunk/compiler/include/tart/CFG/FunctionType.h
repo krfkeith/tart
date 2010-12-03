@@ -70,6 +70,9 @@ public:
       This is used when calling methods via reflection. */
   const std::string & invokeName() const;
 
+  /** Return true if any of the parameter types in this function are of type BadType. */
+  bool hasErrors() const;
+
   // Overrides
 
   const llvm::Type * createIRType() const;

@@ -192,8 +192,17 @@ Defn * ScopeBuilder::createLocalDefn(Scope * scope, Defn * parent, const ASTDecl
 Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemplate * tp) {
   DASSERT(scope != NULL);
   Defn * body = createDefn(scope, m, tp->body());
-  TemplateSignature * tsig = TemplateSignature::get(body, scope);
-  tsig->setAST(tp);
+  Scope * parentScope = scope;
+  if (TypeDefn * tdef = dyn_cast<TypeDefn>(body)) {
+    TemplateSignature * tsig = TemplateSignature::get(body, NULL /*parentScope*/);
+    tsig->setAST(tp);
+    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+      ctype->auxScopes().insert(&tsig->paramScope());
+    }
+  } else {
+    TemplateSignature * tsig = TemplateSignature::get(body, parentScope);
+    tsig->setAST(tp);
+  }
   return body;
 }
 

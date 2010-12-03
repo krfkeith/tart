@@ -50,8 +50,6 @@ class FunctionType : Type {
 
   /** Trampoline function to invoke a method of this type. */
   final def invoke(func:Address[void], obj:optional Object, args:Object[]) -> Object {
-	  //return self._invoke(
-	  //		func, cond(_selfType is not null, _selfType.downCast(obj), null), args);
 		if _selfType is null {
 	    return self._invoke(func, null, args);
 		} else {

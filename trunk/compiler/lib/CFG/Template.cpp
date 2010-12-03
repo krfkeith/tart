@@ -201,6 +201,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     TypeVariable * var = *it;
     const Type * value = env.subst(var);
     DASSERT_OBJ(value != NULL, var);
+    //DASSERT_OBJ(!value->isNullType(), var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
           " incompatible with template parameter " << var << ":" << var->valueType();

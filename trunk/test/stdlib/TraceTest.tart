@@ -123,7 +123,7 @@ class TraceTest : Test {
 
   def testTraceStackNullPtr {
     var counter = TraceCounter();
-    var s:String = Memory.zeroPtr();
+    var s:String = Memory.nullObject();
     GC.traceStack(counter);
     var baseCount = counter.count;
     s = "Hello";

@@ -22,6 +22,12 @@ Defn * Scope::lookupSingleMember(const char * ident, bool inherit) const {
   return NULL;
 }
 
+/** Debugging function to dump the scope hierarchy. */
+void Scope::dump() const {
+  for (const Scope * s = this; s != NULL; s = s->parentScope()) {
+    s->dumpHierarchy(true);
+  }
+}
 
 /// -------------------------------------------------------------------
 /// IterableScope
@@ -76,6 +82,13 @@ void IterableScope::dumpHierarchy(bool full) const {
   }
 
   members_.getDebugSummary(out);
+
+  diag.indent();
+  for (ScopeSet::const_iterator it = auxScopes_.begin(); it != auxScopes_.end(); ++it) {
+    (*it)->dumpHierarchy(full);
+  }
+  diag.unindent();
+
   diag.writeLnIndent(out);
 }
 

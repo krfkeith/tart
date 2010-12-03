@@ -139,7 +139,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     FunctionDefn * method = cd->method();
 
     if (method == NULL) {
-      return visitIndirectCall(in);
+      return visitCallExpr(in);
     }
 
     // Handle the case where the method is a template, or is contained within a template.
@@ -260,7 +260,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
   return &Expr::ErrorVal;
 }
 
-Expr * FinalizeTypesPassImpl::visitIndirectCall(CallExpr * in) {
+Expr * FinalizeTypesPassImpl::visitCallExpr(CallExpr * in) {
   CallCandidate * cd = in->candidates().front();
   DASSERT(cd->base() != NULL);
   DASSERT(in->exprType() != Expr::Construct);

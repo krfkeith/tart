@@ -154,6 +154,10 @@ void BindingEnv::reset() {
 
 bool BindingEnv::unify(SourceContext * source, const Type * pattern, const Type * value,
     Variance variance) {
+  if (pattern == &BadType::instance) {
+    return false;
+  }
+
   // Dealias but don't depattern pattern
   while (pattern->typeClass() == Type::Alias) {
     if (const TypeAlias * alias = dyn_cast<TypeAlias>(pattern)) {

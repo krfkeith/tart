@@ -1474,6 +1474,8 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(type->typeClass() != Type::NAddress);
   DASSERT(type->typeClass() != Type::NArray);
   DASSERT(type->typeClass() != Type::FlexibleArray);
+  DASSERT(!type->isVoidType());
+  DASSERT(!type->isNullType());
   DASSERT(type->isSingular());
 
   TypePair conversionKey(type, Builtins::typeObject.get());
@@ -1517,6 +1519,9 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
 }
 
 FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
+  DASSERT(!toType->isNullType());
+  DASSERT(!toType->isVoidType());
+
   TypePair conversionKey(Builtins::typeObject.get(), toType);
   ConverterMap::iterator it = module()->converters().find(conversionKey);
   if (it != module()->converters().end()) {

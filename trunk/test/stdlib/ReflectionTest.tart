@@ -24,12 +24,16 @@ class RetainedAttr {
 }
 
 class TestClass {
+  var dataField:int;
+  
   // No-arg constructor
   def construct {
+    dataField = 3;
   }
   
   // Single-arg constructor
   def construct(s:String) {
+    dataField = 4;
   }
   
   @RetainedAttr def square(arg:int32) -> int32 {
@@ -354,5 +358,10 @@ class ReflectionTest : Test {
 
   def testNonClassTypes {
 //    assertTrue(Type.of(TypeLiteral[int[]]()) isa CompositeType);
+  }
+
+  def testFieldReflection {
+    let test = TestClass();
+    let testType = test.type;
   }
 }

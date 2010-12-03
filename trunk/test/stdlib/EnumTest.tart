@@ -8,20 +8,20 @@ def main(args:String[]) -> int32 {
 }
 
 class EnumTest : Test {
-  enum Test {
+  enum TestEnum {
     Rock = 1,
     Paper,
     Scissors = Rock + 1
   }
 
   def testEnumConstants {
-    assertTrue(Test.Rock == 1);
-    assertEq(Test.Paper, 2);
-    assertEq(Test.Scissors, 2);
-    assertEq(Test.minVal, 1);
-    assertEq(Test.maxVal, 2);
+    assertTrue(TestEnum.Rock == 1);
+    assertEq(TestEnum.Paper, 2);
+    assertEq(TestEnum.Scissors, 2);
+    assertEq(TestEnum.minVal, 1);
+    assertEq(TestEnum.maxVal, 2);
     
-    let a = Test.Rock;
+    let a = TestEnum.Rock;
     assertEq(a, 1);
     
     assertEq(FlagTest.Waving, 1);
@@ -31,7 +31,7 @@ class EnumTest : Test {
   }
   
   def testImplicitScoping {
-    let b:Test = Rock;
+    let b:TestEnum = Rock;
     assertEq(b, 1);
   }
   
@@ -42,8 +42,8 @@ class EnumTest : Test {
   }
   
   def testToString {
-    let b:Test = Rock;
-    assertEq("Paper", Test.Paper.toString());
+    let b:TestEnum = Rock;
+    assertEq("Paper", TestEnum.Paper.toString());
     assertEq("Rock", b.toString());
   }
 }

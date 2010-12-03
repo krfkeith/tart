@@ -1,3 +1,7 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.reinterpretPtr;
+import tart.core.Memory.bitCast;
+
 /** Reflection type class for primitive and enum types. */
 class PrimitiveType : Type {
   enum SubtypeId : ubyte {
@@ -21,31 +25,30 @@ class PrimitiveType : Type {
   private {
     var _subtype:SubtypeId;
     var _name:String;
-    //var _scopeName:String;
     var _size:uint32;
   }
 
-  def construct(kind:TypeKind, subtype:SubtypeId, name:String, size:uint32) {
-    super(kind);
+  def construct(subtype:SubtypeId, name:String, size:uint32) {
+    super(TypeKind.PRIMITIVE);
     self._subtype = subtype;
     self._name = name;
     self._size = size;
   }
 
-  static let VOID = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.VOID, "void", 0);
-  static let NULL = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.NULL, "Null", 0);
-  static let BOOL = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.BOOL, "bool", 1);
-  static let CHAR = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.CHAR, "char", 4);
-  static let INT8 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT8, "int8", 1);
-  static let INT16 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT16, "int16", 2);
-  static let INT32 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT32, "int32", 4);
-  static let INT64 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.INT64, "int64", 8);
-  static let UINT8 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT8, "uint8", 1);
-  static let UINT16 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT16, "uint16", 2);
-  static let UINT32 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT32, "uint32", 4);
-  static let UINT64 = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.UINT64, "uint64", 8);
-  static let FLOAT = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.FLOAT, "float", 4);
-  static let DOUBLE = PrimitiveType(TypeKind.PRIMITIVE, SubtypeId.DOUBLE, "double", 8);
+  static let VOID:PrimitiveType   = PrimitiveNullType(SubtypeId.VOID, "void", 0);
+  static let NULL:PrimitiveType   = PrimitiveNullType(SubtypeId.NULL, "Null", 0);
+  static let BOOL:PrimitiveType   = PrimitiveTypeImpl[bool](SubtypeId.BOOL, "bool", 1);
+  static let CHAR:PrimitiveType   = PrimitiveTypeImpl[char](SubtypeId.CHAR, "char", 4);
+  static let INT8:PrimitiveType   = PrimitiveTypeImpl[int8](SubtypeId.INT8, "int8", 1);
+  static let INT16:PrimitiveType  = PrimitiveTypeImpl[int16](SubtypeId.INT16, "int16", 2);
+  static let INT32:PrimitiveType  = PrimitiveTypeImpl[int32](SubtypeId.INT32, "int32", 4);
+  static let INT64:PrimitiveType  = PrimitiveTypeImpl[int64](SubtypeId.INT64, "int64", 8);
+  static let UINT8:PrimitiveType  = PrimitiveTypeImpl[uint8](SubtypeId.UINT8, "uint8", 1);
+  static let UINT16:PrimitiveType = PrimitiveTypeImpl[uint16](SubtypeId.UINT16, "uint16", 2);
+  static let UINT32:PrimitiveType = PrimitiveTypeImpl[uint32](SubtypeId.UINT32, "uint32", 4);
+  static let UINT64:PrimitiveType = PrimitiveTypeImpl[uint64](SubtypeId.UINT64, "uint64", 8);
+  static let FLOAT:PrimitiveType  = PrimitiveTypeImpl[float](SubtypeId.FLOAT, "float", 4);
+  static let DOUBLE:PrimitiveType = PrimitiveTypeImpl[double](SubtypeId.DOUBLE, "double", 8);
 
   /** Size of this type in bits. */
   final def subtype:SubtypeId { get { return self._subtype; } }
@@ -93,5 +96,53 @@ class PrimitiveType : Type {
 
   final override toString() -> String {
     return _name;
+  }
+}
+
+private final class PrimitiveTypeImpl[%T] : PrimitiveType {
+  def construct(subtype:SubtypeId, name:String, size:uint32) {
+    super(subtype, name, size);
+  }
+
+  final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    return addr[0];
+  }
+
+  final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    addr[0] = Refs.valueOf(value);
+  }
+
+  final override getPropertyValue(obj:Object, getter:Address[void]) -> Object {
+    let getterFn:static fn (obj:Object) -> T = bitCast(getter);
+    return getterFn(obj);
+  }
+
+  final override setPropertyValue(obj:Object, setter:Address[void], value:Object) {
+    let setterFn:static fn (obj:Object, value:T) = bitCast(setter);
+    setterFn(obj, Refs.valueOf(value));
+  }
+}
+
+private final class PrimitiveNullType : PrimitiveType {
+  def construct(subtype:SubtypeId, name:String, size:uint32) {
+    super(subtype, name, size);
+  }
+
+  final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    throw UnsupportedOperationError();
+  }
+
+  final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    throw UnsupportedOperationError();
+  }
+
+  final override getPropertyValue(obj:Object, getter:Address[void]) -> Object {
+    throw UnsupportedOperationError();
+  }
+
+  final override setPropertyValue(obj:Object, setter:Address[void], value:Object) {
+    throw UnsupportedOperationError();
   }
 }

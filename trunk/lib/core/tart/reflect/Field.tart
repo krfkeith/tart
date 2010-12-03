@@ -1,30 +1,63 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.core.Memory.objectAddress;
+import tart.core.Memory.reinterpretPtr;
+
 /** Description of a class field. */
-class Field : Member {
+class Field : DataMember {
   private {
-    var _type:Type;
-    //var _offset:int; // For instance vars.
-    //var _value:Address[void]; // for global vars.
-    //var _value:Object // for constants.
+    var _offset:int; // For instance vars.
+    var _addr:Address[void]; // For global vars
   }
 
   def construct(
       name:String,
-      scopeName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
       attributes:Object[],
-      type:Type) {
-    super(name, scopeName, kind, visibility, traits, attributes);
-    self._type = type;
+      type:Type,
+      selfType:optional Type,
+      offset:int) {
+    super(name, kind, visibility, traits, attributes, type, selfType);
+    _offset = offset;
   }
 
-  /** The type of the method. */
-  final def type:Type { get { return _type; } }
+  def construct(
+      name:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:Object[],
+      type:Type,
+      selfType:optional Type,
+      addr:Address[void]) {
+    super(name, kind, visibility, traits, attributes, type, selfType);
+    _addr = addr;
+  }
 
-  //@Extern
-  //final def getValue(self:Object) -> Object;
-  //final def setValue(self:Object, value:Object);
+  final def isReadable:bool { get { return true; } }
+  final def isWriteable:bool { get { return true; } }
+
+	// Implement
+  final def getValue(obj:Object) -> Object {
+    if selfType is not null {
+	    return type.getFieldValue(fieldAddress(selfType.checkCast(obj)));
+    } else {
+	    return type.getFieldValue(_addr);
+    }
+  }
+
+  final def setValue(obj:Object, value:Object) {
+    if selfType is not null {
+      type.setFieldValue(fieldAddress(selfType.checkCast(obj)), value);
+    } else {
+      type.setFieldValue(_addr, value);
+    }
+  }
   
-  // flags
+  private def fieldAddress(obj:Object) -> Address[void] {
+    let addr:Address[ubyte] = reinterpretPtr(objectAddress(obj));
+    return reinterpretPtr(addressOf(addr[_offset]));
+  }
 }

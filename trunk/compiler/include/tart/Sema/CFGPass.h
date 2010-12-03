@@ -19,6 +19,7 @@ class AssignmentExpr;
 class MultiAssignExpr;
 class CallExpr;
 class FnCallExpr;
+class IndirectCallExpr;
 class NewExpr;
 class CastExpr;
 class BinaryOpcodeExpr;
@@ -62,7 +63,7 @@ public:
   virtual Expr * visitMultiAssign(MultiAssignExpr * in);
   virtual Expr * visitCall(CallExpr * in);
   virtual Expr * visitFnCall(FnCallExpr * in);
-  virtual Expr * visitIndirectCall(CallExpr * in);
+  virtual Expr * visitIndirectCall(IndirectCallExpr * in);
   virtual Expr * visitNew(NewExpr * in);
   virtual Expr * visitCast(CastExpr * in);
   virtual Expr * visitBinaryOpcode(BinaryOpcodeExpr * in);

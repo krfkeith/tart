@@ -320,7 +320,8 @@ void FunctionType::whyNotSingular() const {
 }
 
 ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
-  if (isEqual(cn.fromType)) {
+  const Type * fromType = dealias(cn.fromType);
+  if (isEqual(fromType)) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
     }
@@ -344,6 +345,17 @@ const std::string & FunctionType::invokeName() const {
   }
 
   return invokeName_;
+}
+
+bool FunctionType::hasErrors() const {
+  for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
+    const ParameterDefn * param = *it;
+    if (param->type() == &BadType::instance) {
+      return true;
+    }
+  }
+
+  return returnType_ == &BadType::instance;
 }
 
 // -------------------------------------------------------------------

@@ -195,8 +195,6 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
         if (parent->isTemplate()) {
           analyzeTemplateSignature(parent);
-          TemplateSignature * tsig = parent->templateSignature();
-          setActiveScope(&tsig->paramScope());
           break;
         }
       }

@@ -92,7 +92,7 @@ public:
   bool isSingular() const;
 
   /** Perform unification on the candidate and its arguments. */
-  bool unify(CallExpr * callExpr);
+  bool unify(CallExpr * callExpr, FormatStream * errStrm = NULL);
 
   /** Return the environment containing type bindings created during
       unification between the template function and the actual params. */

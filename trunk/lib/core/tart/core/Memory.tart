@@ -41,11 +41,9 @@ namespace Memory {
     def mutableEnd:Address[T] { get { return _end; } }
   }
 
-  /** The integer 0, converted to a pointer of a given type. Intended to be
-      used for offset calculations.
-   */
+  /** The null pointer, converted to an object reference. */
   @Intrinsic
-  def zeroPtr[%ElemTy]() -> ElemTy;
+  def nullObject[%ElemTy]() -> ElemTy;
 
   /** Take the address of a variable and return the result as a native
       pointer. 'Value' can be a complex expression that resolves to an l-value.
@@ -76,6 +74,10 @@ namespace Memory {
   /** An unchecked cast of one pointer type to another. */
   @Unsafe @Intrinsic
   def reinterpretPtr[%S, %T](from:Address[S]) -> Address[T];
+
+  /** An unchecked cast of one type to another. Types must be the same size. */
+  @Unsafe @Intrinsic
+  def bitCast[%S, %T](from:S) -> T;
 
   /** Dereference a pointer value. */
   @Unsafe @Intrinsic

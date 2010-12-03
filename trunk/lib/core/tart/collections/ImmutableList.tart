@@ -1,5 +1,4 @@
 import tart.core.Math.max;
-import tart.core.Memory.zeroPtr;
 import tart.core.Memory.arrayCopy;
 
 /** A list type with a fixed set of elements. */

@@ -22,9 +22,7 @@
   }
 
   private {
-    //var _meta:ReflectionMetadata;
     var _name:String;
-    var _scopeName:String;
     var _kind:MemberKind;
     var _visibility:Visibility;
     var _traits:Traits;
@@ -33,14 +31,11 @@
 
   protected def construct(
       name:String,
-      scopeName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
       attributes:Object[]) {
     self._name = name;
-    self._scopeName = scopeName;
-    //self.qualifiedName_ = qualifiedName;
     self._kind = kind;
     self._visibility = visibility;
     self._traits = traits;
@@ -49,12 +44,6 @@
 
   /** The unqualified member name. */
   final def name:String { get { return _name; } }
-  
-  /** The name of the scope in which this is defined. */
-  final def scopeName:String { get { return _scopeName; } }
-  
-  /** The qualified member name. */
-  //final def qualifiedName:String { get { return _fullName; } }
   
   /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
   final def kind:MemberKind { get { return _kind; } }

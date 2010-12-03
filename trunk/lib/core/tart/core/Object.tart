@@ -35,10 +35,10 @@ public class Object : Hashable {
 
       This version is similar to '__valloc', except that 'size' is a pointer
       which will be bitcast to int. This is used in conjunction with
-      'zeroPtr' to calculate the offset of a field within a data structure.
+      'nullObject' to calculate the offset of a field within a data structure.
   */
-  @Intrinsic @Unsafe
-  protected static def __pvalloc[%T, %S](size:T) -> S;
+  //@Intrinsic @Unsafe
+  //protected static def __pvalloc[%T, %S](size:T) -> S;
 
 	/** Compiler intrinsic used to create and initialize instances of
 	    variable-length object types.

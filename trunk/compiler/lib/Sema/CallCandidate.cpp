@@ -308,7 +308,7 @@ void CallCandidate::combineConversionRanks(ConversionRank newRank) {
   }
 }
 
-bool CallCandidate::unify(CallExpr * callExpr) {
+bool CallCandidate::unify(CallExpr * callExpr, FormatStream * errStrm) {
   if (!isTemplate_) {
     return true;
   }
@@ -345,6 +345,10 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     if (argType->isUnsizedIntType()) {
       hasUnsizedArgs = true;
     } else if (!bindingEnv_.unify(&candidateSite, paramType, argType, Contravariant)) {
+      if (errStrm) {
+        *errStrm << "Argument #" << argIndex + 1 << " type " << paramType <<
+            " failed to unify with " << argType;
+      }
       return false;
     }
   }
@@ -355,6 +359,9 @@ bool CallCandidate::unify(CallExpr * callExpr) {
     if (resultType_->isUnsizedIntType()) {
       hasUnsizedArgs = true;
     } else if (!bindingEnv_.unify(&candidateSite, resultType_, expectedReturnType, Covariant)) {
+      if (errStrm) {
+        *errStrm << "Return type " << expectedReturnType << " failed to unify with " << resultType_;
+      }
       return false;
     }
   }
@@ -397,6 +404,10 @@ bool CallCandidate::unify(CallExpr * callExpr) {
 
         // Try to bind the integer type.
         if (!bindingEnv_.unify(&candidateSite, paramType, argType, Contravariant)) {
+          if (errStrm) {
+            *errStrm << "Argument #" << argIndex + 1 << " type " << paramType <<
+                " failed to unify with " << argType;
+          }
           return false;
         }
       }
@@ -407,6 +418,10 @@ bool CallCandidate::unify(CallExpr * callExpr) {
       // TODO: Determine the size of the constant integer here.
       if (!bindingEnv_.unify(
           &candidateSite, resultType_, expectedReturnType, Covariant)) {
+        if (errStrm) {
+          *errStrm << "Return type " << expectedReturnType << " failed to unify with " <<
+              resultType_;
+        }
         return false;
       }
     }
@@ -422,6 +437,9 @@ bool CallCandidate::unify(CallExpr * callExpr) {
         TypeVariable * var = ts->patternVar(i);
         Type * value = bindingEnv_.get(var);
         if (value == NULL) {
+          if (errStrm) {
+            *errStrm << "No binding for template parameter " << var;
+          }
           return false;
         }
       }
