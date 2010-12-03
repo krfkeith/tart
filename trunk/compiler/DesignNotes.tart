@@ -393,9 +393,13 @@ Filter
 Parser
 Deserializer
 Reader
+Validator
 
 var useSource = Option(bool);
 var logLevel = Option(int);
+var detail = Option(DetailLevel, DetailLevel.LOW);
+
+// Enum parsing would be a good thing to do.
 
 // 
 
@@ -411,47 +415,25 @@ class StringOptionParser : OptionParser[String] {
 
 class IntOptionParser : OptionParser[int] {
   def parse(s:String) -> int {
-    // ??
+    return int.parse(s);
   }
 }
 
 class Int32OptionParser : OptionParser[int32] {
   def parse(s:String) -> int32 {
-    // ??
+    return int32.parse(s);
   }
 }
 
 class BoolOptionParser : OptionParser[bool] {
   def parse(s:String) -> bool {
-    switch s {
-      case "true"
-      case "True"
-      case "TRUE"
-      case "Y"
-      case "y"
-      case "1" {
-        return true;
-      }
-      
-      case "false"
-      case "False"
-      case "FALSE"
-      case "N"
-      case "n"
-      case "0" {
-        return false;
-      }
-      
-      else {
-        throw something_option_error;
-      }
-    }
+    return bool.parse(s);
   }
 }
 
 interface OptionBase {
   def isPresent:bool;
-  def parse(s:String);
+  def parse(s:optionName, s:String);
 }
 
 class Option[%T] : OptionBase {
@@ -491,14 +473,267 @@ class Option[%T] : OptionBase {
     _present = true;
   }
   
-  final def parse(s:String) {
-    _value = _reader.parse(s);
+  final def parse(s:optionName, s:String) {
+    if _present {
+      throw OptionParseException("Error parsing option '{0}': value is already set".format(optionName);
+    }
+
+    try {
+	    _value = _reader.parse(s);
+    } catch e:InputFormatError {
+      throw OptionParseException("Error parsing option '{0}' value '{1}': Invalid input format".format(
+      		optionName, s);
+    } catch e:Exception {
+      throw OptionParseException("Error parsing option '{0}' value '{1}': {2}".format(
+      		optionName, s, e.toString());
+    }
+
     _present = true;
   }
 }
 
+class OptionMap {
+  def construct(type:TypeLiteral[T]) {
+    collectOptions(CompositeType.of(type));
+  }
+
+  def collectOptions(type:CompositeType) {
+    Debug.writeLn("Collecting options for type: ", type.toString());
+    for field in type.fields {
+      if field.type isa CompositeType {
+        var ctype = typecast[CompositeType](field.type);
+        if ctype.isSubclass(OptionBase) {
+          readable = 
+        }
+      }
+    }
+    
+    for prop in type.properties {
+    }
+  }
+  
+  def parseOption(obj:Object, name:String, value:String) {
+  }
+}
 
 @Flags enum ParseOptions {
   ALLOW_WS,				// Allow leading whitespace.
   ALLOW_PARTIAL,	// Allow trailing junk - parse until first invalid char.
+}
+
+// ------------------------------------------------------------------------------------------------
+
+final class PrimitiveTypeImpl[%T] : PrimitiveType {
+  final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    return addr[0];
+  }
+
+  final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    addr[0] = Refs.valueOf(value);
+  }
+
+  final override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    let getterFn:static fn (obj:Object) -> T = reinterpretPtr(getter);
+    return getterFn(obj);
+  }
+
+  final override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+    let setterFn:static fn (obj:Object, value:T) = reinterpretPtr(setter);
+    setterFn(obj, Refs.valueOf(value));
+  }
+}
+
+
+
+
+class TypeAdapterImpl[%T] : TypeAdapter {
+  def getFieldValue(obj:Address[void], offset:int) -> Object {
+    let baseAddr:Address[ubyte] = reinterpretPtr(obj);
+    var fieldAddr:Address[T] = reinterpretPtr(addressOf(baseAddr[offset]));
+    return deref(fieldAddr);
+  }
+
+  def setFieldValue(obj:Address[void], offset:int, value:Object) {
+    let baseAddr:Address[ubyte] = reinterpretPtr(obj);
+    var fieldAddr:Address[T] = reinterpretPtr(addressOf(baseAddr[offset]));
+    fieldAddr[0] = Refs.valueOf(value);
+  }
+
+  def getPropValue(obj:Address[void], getter:Address[void]) -> Object {
+    let getterFn:static fn (obj:Address[void]) -> T = reinterpretPtr(getter);
+    return getterFn(obj);
+  }
+  
+  def setPropValue(obj:Address[void], setter:Address[void], value:Object) {
+    let setterFn:static fn (obj:Address[void], value:T) = reinterpretPtr(setter);
+    setterFn(obj, Refs.valueOf(value));
+  }
+}
+
+struct TypeAdapter {
+  // The get adapter reads the field data and the boxes the return type.
+  readonly var getFieldAdapter:static fn(fieldAddr:Address[void], offset:int) -> Object;
+  
+  // The set adapter unboxes the value, and then writes the field data.
+  readonly var setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object);
+
+  // The getter adapter calls the getter function and the boxes the return type.
+  readonly var getPropAdapter:static fn(obj:Address[void], getter:Address[void]) -> Object;
+  
+  // The setter adapter unboxes the value, and then calls the setter.
+  readonly var setPropAdapter:static fn(obj:Address[void], setter:Address[void], value:Object);
+  
+  def construct(
+  	getFieldAdapter:static fn(obj:Address[void], offset:int) -> Object,
+  	setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object),
+  	getPropAdapter:static fn(obj:Address[void], getter:Address[void]) -> Object,
+  	setPropAdapter:static fn(obj:Address[void], setter:Address[void], value:Object)) {
+  	self.getFieldAdapter = getFieldAdapter;
+  	self.setFieldAdapter = setFieldAdapter;
+  	self.getPropAdapter = getPropAdapter;
+  	self.setPropAdapter = setPropAdapter;
+  }
+}
+
+
+import tart.core.Memory.Address;
+import tart.collections.ArrayList;
+import tart.collections.ImmutableList;
+
+/** The compressed and encoded reflection data for a type, namespace or module. */
+@Reflection(Reflection.Detail.NONE) final class DerivedTypeDescriptor {
+  private {
+    var _value:optional DerivedType; // Has to be mutable!
+    var _typeKind:Type.TypeKind;
+    var _descriptorData:Address[ubyte];
+    var _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
+    var _compositeTypeRefs:Address[Address[TypeInfoBlock]];
+	  var _fieldGetValueAdapter:static fn (fieldAddr:Address[void]) -> Object {
+	  var _fieldSetValueAdapter:static fn (fieldAddr:Address[void], value:Object) {}
+  	var _propGetValueAdapter:static fn(obj:Object, getterFn:Address[void]) -> Object {
+  	var _propSetValueAdapter:static fn(obj:Object, setterFn:Address[void], value:Object) {
+  }
+}
+
+@Reflection(Reflection.Detail.NONE) final class TypeDecoder : StreamDecoder {
+  private {
+    let _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
+    let _compositeTypeRefs:Address[Address[TypeInfoBlock]];
+  }
+  
+  def construct(
+    	derivedTypeRefs:Address[Address[DerivedTypeDescriptor]],
+    	compositeTypeRefs:Address[Address[TypeInfoBlock]],
+  		data:Address[ubyte]) {
+    Preconditions.checkArgument(data is not null);
+    self._derivedTypeRefs = derivedTypeRefs;
+    self._compositeTypeRefs = compositeTypeRefs;
+    self._data = data;
+    self._pos = 0;
+  }
+
+  def decodeType(decoder:StreamDecoder, selfType:optional Type) -> Type {
+  }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+class DerivedType : Type {
+  struct MutableState {
+    let _typeParams:Type[]?;
+  }
+
+  private {
+    let _state:Address[MutableState];
+    let _streamData:Address[ubyte];
+    let _typeRefs:Address[Type];
+    let _size:uint;
+  }
+}
+
+class AddressType : DerivedType {
+}
+
+class TupleType : DerivedType {
+}
+
+class UnionType : DerivedType {
+}
+
+// 160
+
+class CompositeType : Type {
+  struct MutableState {
+    var _superType:CompositeType?
+    var _interfaces:CompositeType[]?;
+    var _typeParams:Type[]?;
+    var _attributes:Object[]?
+    var _fields:Field[]?
+    var _properties:Property[]?
+    var _constructors:Method[]?
+    var _methods:Method[]?
+    var _innerTypes:Type[]?
+  }
+
+  private {
+    let _state:Address[MutableState];
+    let _streamData:Address[ubyte];
+    let _typeRefs:Address[Type];
+    let _globalRefs:Address[Address[void]];
+    let _names:NameTable;
+    let _nameIndex:int16;
+    let _methodBaseIndex:int16;
+    let _size:uint32;
+    let _typeInfo:Address[TypeInfoBlock];
+//    var _attributes:Object[]?
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
+  }
+  
+  /* private {
+    let _descriptor:CompositeTypeDecriptor;
+    var _superType:CompositeType?
+    var _interfaces:CompositeType[]?;
+    var _typeParams:Type[]?;
+    var _attributes:Object[]?
+    var _fields:Field[]?
+    var _properties:Property[]?
+    var _constructors:Method[]?
+    var _methods:Method[]?
+    var _innerTypes:Type[]?
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
+  } */
+}
+
+class ClassType : CompositeType {
+}
+
+class InterfaceType : CompositeType {
+}
+
+class StructType : CompositeType {
+}
+
+class ProtocolType : CompositeType {
+}
+
+class Module {
+  struct MutableState {
+    var _memberTypes:Type[]?
+    var _methods:Method[]?
+  }
+
+  private {
+    let _state:Address[MutableState];
+  	let _streamData:Address[ubyte];
+	  let _typeRefs:Address[Type];
+  	let _globalRefs:Address[Address[void]]
+  	let _names:NameTable;
+  	let _nameIndex:int16;
+  }
+  
+  _state[0]._memberTypes;
 }

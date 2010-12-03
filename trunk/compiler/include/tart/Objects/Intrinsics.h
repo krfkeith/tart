@@ -149,10 +149,10 @@ class FlexAllocIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Memory.zeroPtr intrinsic
-class ZeroPtrIntrinsic : public Intrinsic {
-  static ZeroPtrIntrinsic instance;
-  ZeroPtrIntrinsic() : Intrinsic("tart.core.Memory.zeroPtr") {}
+// Memory.nullObject intrinsic
+class NullObjectIntrinsic : public Intrinsic {
+  static NullObjectIntrinsic instance;
+  NullObjectIntrinsic() : Intrinsic("tart.core.Memory.nullObject") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
@@ -169,6 +169,14 @@ class PtrToIntIntrinsic : public Intrinsic {
 class ReinterpretPtrIntrinsic : public Intrinsic {
   static ReinterpretPtrIntrinsic instance;
   ReinterpretPtrIntrinsic() : Intrinsic("tart.core.Memory.reinterpretPtr") {}
+  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
+};
+
+// -------------------------------------------------------------------
+// Memory.bitCast intrinsic
+class BitCastIntrinsic : public Intrinsic {
+  static BitCastIntrinsic instance;
+  BitCastIntrinsic() : Intrinsic("tart.core.Memory.bitCast") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 

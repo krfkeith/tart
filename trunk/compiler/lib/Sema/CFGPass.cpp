@@ -103,7 +103,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitFnCall(static_cast<FnCallExpr *>(in));
 
     case Expr::IndirectCall:
-      return visitIndirectCall(static_cast<CallExpr *>(in));
+      return visitIndirectCall(static_cast<IndirectCallExpr *>(in));
 
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(in));
@@ -252,7 +252,7 @@ Expr * CFGPass::visitFnCall(FnCallExpr * in) {
   return in;
 }
 
-Expr * CFGPass::visitIndirectCall(CallExpr * in) {
+Expr * CFGPass::visitIndirectCall(IndirectCallExpr * in) {
   visitExpr(in->function());
   //in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);

@@ -177,7 +177,7 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
       return visitFnCall(static_cast<FnCallExpr *>(from), static_cast<FnCallExpr *>(to));
 
 //    case Expr::IndirectCall:
-//      return visitIndirectCall(static_cast<CallExpr *>(from), static_cast<CallExpr *>(to));
+//      return visitIndirectCall(static_cast<IndirectCallExpr *>(from), static_cast<IndirectCallExpr *>(to));
 //
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(from), static_cast<NewExpr *>(to));

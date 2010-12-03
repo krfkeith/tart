@@ -1,25 +1,46 @@
-class Property : Member {
-  var getter:int32;
-  
+import tart.core.Memory.Address;
+import tart.core.Memory.nullObject;
+
+/** Description of a property. */
+class Property : DataMember {
+  private {
+    let _getterFn:Address[void];
+    let _setterFn:Address[void];
+  }
+
   def construct(
       name:String,
-      scopeName:String,
-      //qualifiedName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
-      attributes:Object[]) {
-    super(name, scopeName, kind, visibility, traits, attributes);
+      attributes:Object[],
+      type:Type,
+      selfType:optional Type,
+	    getterFn:Address[void],
+    	setterFn:Address[void]) {
+    super(name, kind, visibility, traits, attributes, type, selfType);
+    _getterFn = getterFn;
+    _setterFn = setterFn;
   }
 
-  /*
-  private var getter = static fn (obj:Object) -> Object;
-  private var setter = static fn (obj:Object, value:Object);
-  
-  def isReadable:bool;
-  def isWriteable:bool;
-  
-  def getValue(obj:Object) -> Object;
-  def setValue(obj:Object, value:Object);
-  */
+  final def isReadable:bool { get { return _getterFn is not null; } }
+  final def isWriteable:bool { get { return _setterFn is not null; } }
+
+  final def getValue(obj:Object) -> Object {
+    // TODO: Throw if not gettable
+    if selfType is not null {
+	    return type.getPropertyValue(selfType.downCast(obj), _getterFn);
+    } else {
+	    return type.getPropertyValue(nullObject(), _getterFn);
+    }
+  }
+
+  final def setValue(obj:Object, value:Object) {
+    // TODO: Throw if not settable
+    if selfType is not null {
+	    type.setPropertyValue(selfType.downCast(obj), _setterFn, value);
+    } else {
+	    type.setPropertyValue(nullObject(), _setterFn, value);
+    }
+  }
 }

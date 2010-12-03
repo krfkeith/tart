@@ -1,8 +1,25 @@
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
+import tart.core.Memory.reinterpretPtr;
+//import tart.reflect.info.CompositeTypeDesc;
 
 /** Reflection type for classes, structs, and interfaces. */
 public class CompositeType : Type {
+  struct Data {
+    let streamData:Address[ubyte];
+    let typeRefs:Address[Type];
+    let globalRefs:Address[Address[void]];
+    let names:NameTable;
+    let nameIndex:int16;
+    let size:uint;
+    let typeInfo:Address[TypeInfoBlock];
+    let methodBaseIndex:int16;
+
+    //def qualifiedName:String { get { return names.getQualifiedName(nameIndex); } }
+    //def scopeName:String { get { return names.getScopeName(nameIndex); } }
+    //def localName:String { get { return names.getLocalName(nameIndex); } }
+  }
+  
   private {
     let _meta:ReflectionMetadata;
     var _size:uint32;
@@ -18,6 +35,7 @@ public class CompositeType : Type {
     var _innerTypes:Type[];
     var _alloc:static fn -> Object;
     var _noArgCtor:static fn :Object -> Object;
+    // Need type adapter functions for structs.
   }
 
   def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
@@ -49,7 +67,7 @@ public class CompositeType : Type {
   final def size:uint32 { get { return _size; } }
 
 	/** TypeInfoBlock for this type. */
-  final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } } 
+  final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } }
 
   /** Pointer to this type's supertype, or null. */
   final def supertype:optional CompositeType {
@@ -103,6 +121,15 @@ public class CompositeType : Type {
    	throw TypecastError(obj, self);
   }
 
+  @Unsafe final override checkCast(obj:Object) -> Object {
+    if obj is not null {
+    	if obj.__typeHasBase(_typeInfo) {
+    	  return obj;
+    	}
+    }
+   	throw TypecastError(obj, self);
+  }
+
   /** Return the first method whose name is 'name'. */
   def findMethod(name:String) -> optional Method {
     for m in methods {
@@ -151,7 +178,7 @@ public class CompositeType : Type {
   	        }
   	      }
 	      }
-        
+
 	      if _noArgCtor is not null {
 	        let instance = self._alloc();
 	        _noArgCtor(instance);
@@ -171,6 +198,14 @@ public class CompositeType : Type {
     }
   }
 
+  final def isSubclass(cls:Type) -> bool {
+    return isSubclassImpl(cls);
+  }
+
+  final def isSubclass[%T](cls:TypeLiteral[T]) -> bool {
+    return isSubclassImpl(Type.of(T));
+  }
+
   private final def isSubclassImpl(cls:Type) -> bool {
     return true if self is cls;
     classify cls as complex:CompositeType {
@@ -178,14 +213,6 @@ public class CompositeType : Type {
     } else {
       return false;
     }
-  }
-
-  final def isSubclass(cls:Type) -> bool {
-    return isSubclassImpl(cls);
-  }
-
-  final def isSubclass[%T](cls:TypeLiteral[T]) -> bool {
-    return isSubclassImpl(Type.of(T));
   }
 
   /** Return the first attribute of type 'attrType'. */
@@ -226,6 +253,76 @@ public class CompositeType : Type {
     if self._typeParams is null {
 	    self._typeParams = _meta.readTypeParams();
     }
+  }
+
+  @Unsafe final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let addr:Address[Object] = Memory.reinterpretPtr(fieldAddr);
+  		  return addr[0];
+    	}
+
+    	case TypeKind.STRUCT {
+	      // TODO: Implement
+  	    return self;
+    	}
+    	
+    	else {
+	      // TODO: throw something
+  	    return self;
+    	}
+    }
+  }
+
+  @Unsafe final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let addr:Address[Object] = Memory.reinterpretPtr(fieldAddr);
+  		  addr[0] = self.checkCast(value);
+    	}
+
+    	case TypeKind.STRUCT {
+	      // TODO: Implement
+    	}
+    	
+    	else {
+	      // TODO: throw something
+    	}
+	  }
+  }
+
+  @Unsafe final override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    return self;
+    // TODO: Need a reinterpret-cast for function types.
+    /*switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+    		let getterFn:static fn (obj:Object) -> Object = reinterpretPtr(getterFn);
+		    return getterFn(obj);
+    	}
+
+    	else {
+	      // TODO: Implement
+		    return self;
+    	}
+	  }*/
+  }
+
+  @Unsafe final override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+    // TODO: Need a reinterpret-cast for function types.
+    /*switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let setterFn:static fn (obj:Object, value:Object) = reinterpretPtr(setterFn);
+    		setterFn(obj, self.checkCast(value));
+    	}
+
+    	else {
+	      // TODO: Implement
+    	}
+	  }*/
   }
 
   def test() {

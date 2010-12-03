@@ -5,6 +5,18 @@ import tart.core.Memory.Address;
 
 /** Description of a compiled module. */
 @Reflection(Reflection.Detail.NONE) final class Module {
+  struct Data {
+    let streamData:Address[ubyte];
+    let typeRefs:Address[Type];
+    let globalRefs:Address[Address[void]];
+    let names:NameTable;
+    let nameIndex:int16;
+  
+    //def qualifiedName:String { get { return names.getQualifiedName(nameIndex); } }
+    //def scopeName:String { get { return names.getScopeName(nameIndex); } }
+    //def localName:String { get { return names.getLocalName(nameIndex); } }
+  }
+
   private {
     let _meta:ReflectionMetadata;
     //var _encodedTypeExports:Address[ubyte];

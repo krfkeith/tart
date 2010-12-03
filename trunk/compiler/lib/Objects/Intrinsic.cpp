@@ -368,10 +368,10 @@ Value * FlexAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 }
 
 // -------------------------------------------------------------------
-// ZeroPtrIntrinsic
-ZeroPtrIntrinsic ZeroPtrIntrinsic::instance;
+// NullObjectIntrinsic
+NullObjectIntrinsic NullObjectIntrinsic::instance;
 
-Value * ZeroPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+Value * NullObjectIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Type * retType = dealias(call->type());
   const llvm::Type * type = retType->irType();
   return ConstantPointerNull::get(type->getPointerTo());
@@ -395,6 +395,16 @@ Value * ReinterpretPtrIntrinsic::generate(CodeGenerator & cg, const FnCallExpr *
   DASSERT(call->argCount() == 1);
   Value * val = cg.genExpr(call->arg(0));
   return cg.builder().CreatePointerCast(val, call->type()->irType(), "ptrToPtr");
+}
+
+// -------------------------------------------------------------------
+// BitCastIntrinsic
+BitCastIntrinsic BitCastIntrinsic::instance;
+
+Value * BitCastIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  DASSERT(call->argCount() == 1);
+  Value * val = cg.genExpr(call->arg(0));
+  return cg.builder().CreateBitCast(val, call->type()->irEmbeddedType(), "bitCast");
 }
 
 // -------------------------------------------------------------------

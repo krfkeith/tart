@@ -162,7 +162,7 @@ import tart.collections.ImmutableList;
       case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
       case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
       case TEMPLATE_INST {
-        Debug.writeLn("Reading base template");
+        //Debug.writeLn("Reading base template");
         var baseTemplate = meta.readBaseTemplate();
         //Debug.writeLnFmt("Base template kind is {0}", baseTemplate.typeKind.toString());
         // TODO: Implement template instantiations.
@@ -236,7 +236,7 @@ import tart.collections.ImmutableList;
       return typecast[CompositeType](decodeType(decoder, null));
     }
 
-    return Memory.zeroPtr();
+    return Memory.nullObject();
   }
 
   def readTypeParams() -> Type[] {
@@ -424,7 +424,7 @@ import tart.collections.ImmutableList;
     //Debug.writeLnFmt("Decoding method named '{0}', type {1}", name, methodType);
     //Debug.writeLnFmt("For method {0} type {1}, method index is {2} of {3}", name, methodType, methodIndex, _methodBaseIndex.toString());
 
-    return Method(name, "", kind, visibility, traits,
+    return Method(name, kind, visibility, traits,
     	Array.copyOf(attributes), Array.copyOf(typeParams), methodType, Array.copyOf(params), methodPtr);
   }
 

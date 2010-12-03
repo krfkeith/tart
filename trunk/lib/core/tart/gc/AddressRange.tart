@@ -1,6 +1,5 @@
 import tart.core.Memory.Address;
 import tart.core.Memory.ptrDiff;
-import tart.core.Memory.zeroPtr;
 import tart.reflect.Reflection;
 
 /** A value type representing a range of addresses. */

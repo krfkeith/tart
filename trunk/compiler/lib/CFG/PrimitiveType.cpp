@@ -44,10 +44,6 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
     module->addMember(de);
   }
 
-  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
-    ptype->initMembers();
-  }
-
   unsigned pointerSize = 32;
   const llvm::TargetData * td = TargetSelection::instance.targetData();
   if (td != NULL) {
@@ -56,6 +52,10 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
 
   intDef.setValue(pointerSize == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
   uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
+
+  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
+    ptype->initMembers();
+  }
 }
 
 const Type * PrimitiveType::intType() {
@@ -225,7 +225,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
       return NonPreferred;
     }
 
-    if (srcId == TypeId_Bad || srcId == TypeId_Void) {
+    if (srcId == TypeId_Bad || srcId == TypeId_Void || srcId == TypeId_Null) {
       return Incompatible;
     }
 
@@ -712,7 +712,7 @@ public:
 
   void init() {
     // Can't do this in constructor because it happens too early.
-    type.addParam(new ParameterDefn(NULL, "s", Builtins::typeString.get(), 0));
+    type.addParam(new ParameterDefn(NULL, "s", &Builtins::typeAliasString, 0));
     if (kTypeId >= TypeId_SInt8 && kTypeId <= TypeId_UInt64) {
       ConstantInteger * defaultRadix = ConstantInteger::getSInt(10);
       type.addParam(new ParameterDefn(NULL, "radix", defaultRadix->type(), 0, defaultRadix));

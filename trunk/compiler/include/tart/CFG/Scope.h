@@ -54,6 +54,9 @@ public:
   /** Debugging function to dump the current hierarchy. */
   virtual void dumpHierarchy(bool full = true) const = 0;
 
+  /** Debugging function to dump the scope hierarchy. */
+  virtual void dump() const;
+
   /** Ugly hack - for now */
   virtual LocalScope * asLocalScope() { return NULL; }
 

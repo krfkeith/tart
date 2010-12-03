@@ -185,11 +185,11 @@ bool CallSite::unify(int searchDepth) {
     // unify after a unification failure.
     for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
       CallCandidate * c = *cc;
-      unifyVerbose = true;
+      //unifyVerbose = true;
       if (c->unify(callExpr_)) {
         canUnify = true;
       }
-      unifyVerbose = false;
+      //unifyVerbose = false;
     }
 
     reportErrors("No methods match calling signature: ");
@@ -253,6 +253,15 @@ void CallSite::formatCallSignature(FormatStream & out) {
 }
 
 void CallSite::reportErrors(const char * msg) {
+  Candidates & cd = callExpr_->candidates();
+
+  // If any of the candidates contains a parameter of type badType, then forego the report.
+  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->method()->functionType()->hasErrors()) {
+      return;
+    }
+  }
+
   // Create a representation of the calling signature
   std::stringstream callsig;
   FormatStream fs(callsig);
@@ -261,14 +270,18 @@ void CallSite::reportErrors(const char * msg) {
   fs.flush();
   diag.error(callExpr_->location()) << msg << callsig.str() << ".";
   diag.info(callExpr_->location()) << "Candidates are:";
-  Candidates & cd = callExpr_->candidates();
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
+    std::stringstream errMsg;
+    FormatStream errStrm(errMsg);
     CallCandidate * cc = *it;
-    unifyVerbose = true;
-    cc->unify(callExpr_);
+    //unifyVerbose = true;
+    cc->unify(callExpr_, &errStrm);
     cc->updateConversionRank();
-    unifyVerbose = false;
-    if (cc->env().empty()) {
+    //unifyVerbose = false;
+    errStrm.flush();
+    if (!errMsg.str().empty()) {
+      diag.info(cc->method()) << Format_Type << cc->method() << " : " << errMsg.str();
+    } else if (cc->env().empty()) {
       diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "*"
           << cc->conversionCount() << "]";
     } else {

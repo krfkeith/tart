@@ -30,7 +30,7 @@ private:
 
   Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from, const Type * to);
   Expr * visitAssignImpl(AssignmentExpr * in);
-  Expr * visitIndirectCall(CallExpr * in);
+  Expr * visitCallExpr(CallExpr * in);
   Expr * visitLValue(LValueExpr * in);
   Expr * visitBoundMethod(BoundMethodExpr * in);
   Expr * visitScopeName(ScopeNameExpr * in);

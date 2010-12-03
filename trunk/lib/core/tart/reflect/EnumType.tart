@@ -29,7 +29,23 @@ public final class EnumType : Type {
   /** Array of enumeration constants. */
   //final def values:Field[] { get { return self._values; } }
   
-  def toString -> String {
+  override toString -> String {
     return qualifiedName;
+  }
+
+  override getFieldValue(fieldAddr:Address[void]) -> Object {
+    return _supertype.getFieldValue(fieldAddr);
+  }
+  
+  override setFieldValue(fieldAddr:Address[void], value:Object) {
+    _supertype.setFieldValue(fieldAddr, value);
+  }
+
+  override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    return _supertype.getPropertyValue(obj, getterFn);
+  }
+
+  override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+    _supertype.setPropertyValue(obj, setterFn, value);
   }
 }

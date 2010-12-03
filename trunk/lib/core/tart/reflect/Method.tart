@@ -11,7 +11,6 @@ final class Method : Member {
 
   public def construct(
       name:String,
-      scopeName:String,
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
@@ -20,7 +19,7 @@ final class Method : Member {
       type:FunctionType,
       params:Parameter[],
       methodPointer:Address[void]) {
-    super(name, scopeName, kind, visibility, traits, attributes);
+    super(name, kind, visibility, traits, attributes);
     self._typeParams = typeParams;
     self._type = type;
     self._params = params;
