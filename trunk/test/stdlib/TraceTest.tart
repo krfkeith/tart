@@ -19,8 +19,10 @@ class TraceCounter : TraceAction {
     var obj:Object = objectReference(ptr);
     if obj is not null {
       ++_count;
-      var s = obj.__typeName;
-      Debug.assertTrue(s.size > 0);
+	    if obj.type is not null {
+	      var s = obj.__typeName;
+  	    Debug.assertTrue(s.size > 0);
+	    }
       //Debug.writeLn(obj.__typeName);
     } else {
       //Debug.writeLn("<null>");

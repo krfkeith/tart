@@ -38,7 +38,7 @@ extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
 
 // Members of tart.core.TypeInfoBlock.
 
-SystemClassMember<VariableDefn> tib_meta(Builtins::typeTypeInfoBlock, "meta");
+SystemClassMember<VariableDefn> tib_type(Builtins::typeTypeInfoBlock, "type");
 SystemClassMember<VariableDefn> tib_bases(Builtins::typeTypeInfoBlock, "bases");
 SystemClassMember<VariableDefn> tib_traceTable(Builtins::typeTypeInfoBlock, "traceTable");
 SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
@@ -208,9 +208,9 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
   if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
-    builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
+    builder.addField(getCompositeTypeObjectPtr(type));
   } else {
-    builder.addNullField(tib_meta.type());
+    builder.addNullField(tib_type.type());
   }
 
   if (type->typeClass() == Type::Class) {
@@ -255,9 +255,9 @@ bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
   if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
-    builder.addField(reflector_.getReflectionMetadata(type->typeDefn())->var());
+    builder.addField(getCompositeTypeObjectPtr(type));
   } else {
-    builder.addNullField(tib_meta.type());
+    builder.addNullField(tib_type.type());
   }
   builder.addNullField(tib_traceTable.type());
   builder.addNullField(tib_bases.type());
@@ -975,14 +975,8 @@ llvm::Value * CodeGenerator::getTypeObjectPtr(const Type * type) {
   DFAIL("Implement");
 }
 
-llvm::Value * CodeGenerator::getCompositeTypeObjectPtr(const CompositeType * type) {
-  Constant * tib = getTypeInfoBlockPtr(type);
-
-  ValueList args;
-  args.push_back(tib);
-  Function * getType = genFunctionValue(Builtins::funcGetType);
-  Value * result = builder_.CreateCall(getType, args.begin(), args.end());
-  return result;
+llvm::Constant * CodeGenerator::getCompositeTypeObjectPtr(const CompositeType * type) {
+  return reflector_.getCompositeTypePtr(type);
 }
 
 llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * type) {

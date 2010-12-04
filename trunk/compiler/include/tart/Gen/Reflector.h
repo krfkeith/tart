@@ -14,6 +14,7 @@
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/DenseSet.h"
 #include "iostream"
 
 namespace tart {
@@ -60,37 +61,13 @@ struct ReflectedMembers {
 };
 
 /// -------------------------------------------------------------------
-/// Represents a unique method signature.
-
-#if 0
-class UniqueMethodKey {
-public:
-  UniqueMethodKey(const char * name, const FunctionType * fnType);
-
-  struct KeyInfo {
-    static const UniqueMethodKey getEmptyKey();
-    static const UniqueMethodKey getTombstoneKey();
-    static unsigned getHashValue(const UniqueMethodKey & key);
-    static bool isEqual(const UniqueMethodKey & lhs, const UniqueMethodKey & rhs);
-    static bool isPod() { return true; }
-  };
-
-  const char * name() const { return name_; }
-  const FunctionType * type() const { return ns_; }
-
-private:
-  const char * name_;
-  const FunctionType * ns_;
-};
-#endif
-
-/// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
 class Reflector {
 public:
   typedef std::pair<const Type *, TagInfo> TypeArrayElement;
   typedef std::vector<TypeArrayElement> TypeArray;
   typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
+  typedef llvm::SetVector<const Type *> TypeSet;
 
   // Keep these enums in sync with Member.tart
   enum Visibility {
@@ -194,6 +171,12 @@ public:
   /** Generate reflection information for a definition in this module. */
   void buildRMD(const Defn * def);
 
+  /** Return a reference to the reflected type object for the specified composite type. */
+  llvm::GlobalVariable * getCompositeTypePtr(const CompositeType * type);
+
+  /** Write out reflection information for a composite type. */
+  llvm::GlobalVariable * emitCompositeType(ReflectionMetadata * rmd, const CompositeType * type);
+
   /** Write out reflection information for a definition in this module. */
   void emitReflectedDefn(ReflectionMetadata * rs, const Defn * def);
 
@@ -230,6 +213,7 @@ private:
 
   llvm::Constant * getRetainedAttr(const Expr * attrExpr);
   bool isExport(const Defn * de);
+  int typeKind(Type::TypeClass cls);
 
   CodeGenerator & cg_;
   bool enabled_;
@@ -244,6 +228,9 @@ private:
 
   ModuleMetadata mmd_;
   TypeArray invokeRefs_;
+
+  // Set of types exported by this module.
+  TypeSet typeExports_;
 };
 
 }

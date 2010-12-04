@@ -72,14 +72,14 @@ public class Object : Hashable {
   //final def removeFinalizer(finalizer:fn) {}
 
   /** Return the fully-qualified name of this object's class. */
-  final def __typeName:String { get { return __tib.qualifiedName; } }
+  final def __typeName:String { get { return __tib.type.qualifiedName; } }
 
   /** Return trace descriptors for this object. */
   final def __traceTable:Address[TraceDescriptor] { get { return __tib.traceTable; } }
 
 	/** Return the reflected type of this object. */
   final def type:CompositeType { get {
-    return ReflectionMetadata.getCompositeType(__tib);
+    return __tib.type;
   } }
 
 	/** Return true if the type of this object is (or is a subtype of) 'baseType'. */
@@ -89,7 +89,7 @@ public class Object : Hashable {
 
   /** Return a string representation of this object. */
   def toString() -> String {
-    return String.concat("<", __tib.qualifiedName, ">");
+    return String.concat("<", __tib.type.qualifiedName, ">");
   }
 
   /** Return a hash value for this object. The base version hashes the object address. */

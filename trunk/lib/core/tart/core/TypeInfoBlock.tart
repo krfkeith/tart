@@ -1,5 +1,4 @@
 import tart.reflect.CompositeType;
-import tart.reflect.ReflectionMetadata;
 import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.reflect.Type;
@@ -10,7 +9,7 @@ import tart.gc.TraceDescriptor;
  */
 @Reflection(Reflection.Detail.NONE) struct TypeInfoBlock {
   /** Pointer to the compressed reflection data for this type. */
-  readonly var meta:ReflectionMetadata;
+  readonly var type:CompositeType;
 
 	/** The table of offsets that specify where in the type are embedded object references. NULL
 			if this type has no embedded object references. */
@@ -39,20 +38,8 @@ import tart.gc.TraceDescriptor;
     return false;
   }
   
-  final def getType() -> CompositeType {
-    return ReflectionMetadata.getCompositeType(Memory.addressOf(self));
-  }
-  
   /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
   static def typecastError() {
     throw TypecastError();
   }
-  
-  def qualifiedName:String { get {
-    if meta is not null {
-      return meta.qualifiedName;
-    }
-    
-    return "<unnamed>";
-  } }
 }
