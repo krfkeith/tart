@@ -30,18 +30,26 @@ public:
 
   ModuleMetadata(NameTable & names)
     : names_(names)
+    , outputPhase_(false)
   {}
 
   NameTable & names() const { return names_; }
+
   const Agenda<const Defn> & defnsToExport() const { return defnsToExport_; }
   Agenda<const Defn> & defnsToExport() { return defnsToExport_; }
+  void addExport(const Defn * de);
+
   const TypeMap & invokeMap() const { return invokeMap_; }
   TypeMap & invokeMap() { return invokeMap_; }
+
+  bool outputPhase() const { return outputPhase_; }
+  void setOutputPhase() { outputPhase_ = true; }
 
 private:
   NameTable & names_;
   Agenda<const Defn> defnsToExport_;
   TypeMap invokeMap_;
+  bool outputPhase_;
 };
 
 /// -------------------------------------------------------------------

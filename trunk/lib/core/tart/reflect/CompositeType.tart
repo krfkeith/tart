@@ -1,7 +1,7 @@
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 import tart.core.Memory.reinterpretPtr;
-//import tart.reflect.info.CompositeTypeDesc;
+import tart.core.Memory.bitCast;
 
 /** Reflection type for classes, structs, and interfaces. */
 public class CompositeType : Type {
@@ -9,27 +9,21 @@ public class CompositeType : Type {
     let streamData:Address[ubyte];
     let typeRefs:Address[Type];
     let globalRefs:Address[Address[void]];
-    let names:NameTable;
-    let nameIndex:int16;
-    let size:uint;
-    let typeInfo:Address[TypeInfoBlock];
     let methodBaseIndex:int16;
-
-    //def qualifiedName:String { get { return names.getQualifiedName(nameIndex); } }
-    //def scopeName:String { get { return names.getScopeName(nameIndex); } }
-    //def localName:String { get { return names.getLocalName(nameIndex); } }
   }
-  
+
   private {
     let _meta:ReflectionMetadata;
-    var _size:uint32;
+    var _names:NameTable;
+    var _nameIndex:int16;
+    var _size:uint;
     let _typeInfo:Address[TypeInfoBlock];
     var _supertype:optional CompositeType;
     var _interfaces:CompositeType[];
     var _typeParams:Type[];
     var _attributes:Object[];
-    var _fields:Field[];
-    var _properties:Property[];
+    var _fields:optional Field[];
+    var _properties:optional Property[];
     var _constructors:optional Method[];
     var _methods:optional Method[];
     var _innerTypes:Type[];
@@ -38,16 +32,16 @@ public class CompositeType : Type {
     // Need type adapter functions for structs.
   }
 
-  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], meta:ReflectionMetadata) {
     super(typeKind);
     self._typeInfo = typeInfo;
-    self._meta = typeInfo.meta;
+    self._meta = meta;
   }
 
-  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], baseTemplate:CompositeType) {
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], baseTemplate:CompositeType, meta:ReflectionMetadata) {
     super(typeKind);
     self._typeInfo = typeInfo;
-    self._meta = typeInfo.meta;
+    self._meta = meta;
     // TODO: Assign base template
   }
 
@@ -55,16 +49,16 @@ public class CompositeType : Type {
   @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
 
   /** Fully-qualified name of this type. */
-  final def name:String { get { return _meta.localName; } }
+  final def name:String { get { return _names.getLocalName(_nameIndex); } }
 
   /** Fully-qualified name of this type. */
-  final def qualifiedName:String { get { return _meta.qualifiedName; } }
+  final def qualifiedName:String { get { return _names.getQualifiedName(_nameIndex); } }
 
   /** Fully-qualified name of the scope in which this type is defined. */
-  final def scopeName:String { get { return _meta.scopeName; } }
+  final def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
 
   /** Size of this type in bytes. */
-  final def size:uint32 { get { return _size; } }
+  final def size:uint { get { return _size; } }
 
 	/** TypeInfoBlock for this type. */
   final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } }
@@ -293,13 +287,11 @@ public class CompositeType : Type {
 	  }
   }
 
-  @Unsafe final override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
-    return self;
-    // TODO: Need a reinterpret-cast for function types.
-    /*switch typeKind {
+  @Unsafe final override getPropertyValue(obj:Object, getter:Address[void]) -> Object {
+    switch typeKind {
     	case TypeKind.CLASS
     	case TypeKind.INTERFACE {
-    		let getterFn:static fn (obj:Object) -> Object = reinterpretPtr(getterFn);
+    		let getterFn:static fn (obj:Object) -> Object = bitCast(getter);
 		    return getterFn(obj);
     	}
 
@@ -307,22 +299,21 @@ public class CompositeType : Type {
 	      // TODO: Implement
 		    return self;
     	}
-	  }*/
+	  }
   }
 
-  @Unsafe final override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
-    // TODO: Need a reinterpret-cast for function types.
-    /*switch typeKind {
+  @Unsafe final override setPropertyValue(obj:Object, setter:Address[void], value:Object) {
+    switch typeKind {
     	case TypeKind.CLASS
     	case TypeKind.INTERFACE {
-		    let setterFn:static fn (obj:Object, value:Object) = reinterpretPtr(setterFn);
+		    let setterFn:static fn (obj:Object, value:Object) = bitCast(setter);
     		setterFn(obj, self.checkCast(value));
     	}
 
     	else {
 	      // TODO: Implement
     	}
-	  }*/
+	  }
   }
 
   def test() {

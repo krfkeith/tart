@@ -54,6 +54,8 @@ SystemClass Builtins::typeType("tart.reflect.Type");
 SystemClass Builtins::typeEnumInfoBlock("tart.reflect.EnumInfoBlock");
 SystemClass Builtins::typePrimitiveType("tart.reflect.PrimitiveType");
 SystemClass Builtins::typeFunctionType("tart.reflect.FunctionType");
+SystemClass Builtins::typeCompositeType("tart.reflect.CompositeType");
+SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
 SystemClass Builtins::typeModule("tart.reflect.Module");
 SystemClass Builtins::typeNameTable("tart.reflect.NameTable");
 SystemClass Builtins::typePackage("tart.reflect.Package");
@@ -75,7 +77,6 @@ TypeAlias Builtins::typeAliasString = NULL;
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
-FunctionDefn * Builtins::funcGetType;
 
 void Builtins::init() {
   // Initialize primitive types
@@ -150,7 +151,6 @@ void Builtins::loadSystemClasses() {
   // Get the function that tests for a type
   funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "hasBase");
   funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastError");
-  funcGetType = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "getType");
 
   // Get the low-level exception structure
   typeUnwindException = getMember<TypeDefn>(typeThrowable.get(), "UnwindException")->typeValue();

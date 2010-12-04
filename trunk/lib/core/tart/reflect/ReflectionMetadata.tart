@@ -145,37 +145,6 @@ import tart.collections.ImmutableList;
 
 //  def derivedTypes:Type[] { get { return getDerivedTypes(); } }
 
-  static def getCompositeType(tib:Address[TypeInfoBlock]) -> CompositeType {
-    Preconditions.checkArgument(tib is not null);
-    var meta = tib.meta;
-    Preconditions.checkState(meta is not null);
-
-    if meta._value is not null {
-      return typecast[CompositeType](meta._value);
-    }
-
-    var type:CompositeType;
-    //Debug.writeLnFmt("type: {0} {1} {2}", meta._defnType.toString(), meta._nameIndex.toString(), meta.qualifiedName);
-    switch (meta._defnType) {
-      case CLASS { type = CompositeType(Type.TypeKind.CLASS, tib); }
-      case STRUCT { type = CompositeType(Type.TypeKind.STRUCT, tib); }
-      case INTERFACE { type = CompositeType(Type.TypeKind.INTERFACE, tib); }
-      case PROTOCOL { type = CompositeType(Type.TypeKind.PROTOCOL, tib); }
-      case TEMPLATE_INST {
-        //Debug.writeLn("Reading base template");
-        var baseTemplate = meta.readBaseTemplate();
-        //Debug.writeLnFmt("Base template kind is {0}", baseTemplate.typeKind.toString());
-        // TODO: Implement template instantiations.
-        type = CompositeType(baseTemplate.typeKind, tib, baseTemplate);
-      }
-      else { throw ArgumentError(
-        String.concat("Invalid reflection metadata for type ", meta._defnType.toString())); }
-    }
-
-    meta._value = type;
-    return type;
-  }
-
   static def getEnumType(eib:Address[EnumInfoBlock]) -> EnumType {
     Preconditions.checkArgument(eib is not null);
     var meta = eib.meta;
@@ -579,7 +548,7 @@ import tart.collections.ImmutableList;
       case COMPOSITE {
         let index = decoder.readVarInt();
         let tib = _compositeTypes[index];
-        return getCompositeType(tib);
+        return tib.type;
       }
 
       case DERIVED {
@@ -600,7 +569,7 @@ import tart.collections.ImmutableList;
           let index = int(typeId) & 0x3f;
           //Debug.writeLnFmt("Composite type index: {0} of RMD for {1}", index, qualifiedName);
           let tib = _compositeTypes[index];
-          return getCompositeType(tib);
+          return tib.type;
         } else if typeId >= TypeTag.ENUM_IMM {
           let index = int(typeId) & 0x0f;
           let eib = _enumTypes[index];

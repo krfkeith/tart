@@ -50,6 +50,43 @@ SystemClassMember<VariableDefn> module_nameIndex(Builtins::typeModule, "_nameInd
 SystemClassMember<VariableDefn> module_memberTypes(Builtins::typeModule, "_memberTypes");
 SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods");
 
+// Members of tart.reflect.CompositeType
+SystemClassMember<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
+
+// Members of tart.reflect.CompositeType
+SystemClassMember<VariableDefn> compositeType_meta(
+    Builtins::typeCompositeType, "_meta");
+SystemClassMember<VariableDefn> compositeType_names(
+    Builtins::typeCompositeType, "_names");
+SystemClassMember<VariableDefn> compositeType_nameIndex(
+    Builtins::typeCompositeType, "_nameIndex");
+SystemClassMember<VariableDefn> compositeType_size(
+    Builtins::typeCompositeType, "_size");
+SystemClassMember<VariableDefn> compositeType_typeInfo(
+    Builtins::typeCompositeType, "_typeInfo");
+SystemClassMember<VariableDefn> compositeType_superType(
+    Builtins::typeCompositeType, "_supertype");
+SystemClassMember<VariableDefn> compositeType_interfaces(
+    Builtins::typeCompositeType, "_interfaces");
+SystemClassMember<VariableDefn> compositeType_typeParams(
+    Builtins::typeCompositeType, "_typeParams");
+SystemClassMember<VariableDefn> compositeType_attributes(
+    Builtins::typeCompositeType, "_attributes");
+SystemClassMember<VariableDefn> compositeType_fields(
+    Builtins::typeCompositeType, "_fields");
+SystemClassMember<VariableDefn> compositeType_properties(
+    Builtins::typeCompositeType, "_properties");
+SystemClassMember<VariableDefn> compositeType_constructors(
+    Builtins::typeCompositeType, "_constructors");
+SystemClassMember<VariableDefn> compositeType_methods(
+    Builtins::typeCompositeType, "_methods");
+SystemClassMember<VariableDefn> compositeType_innerTypes(
+    Builtins::typeCompositeType, "_innerTypes");
+SystemClassMember<VariableDefn> compositeType_alloc(
+    Builtins::typeCompositeType, "_alloc");
+SystemClassMember<VariableDefn> compositeType_noArgCtor(
+    Builtins::typeCompositeType, "_noArgCtor");
+
 // Members of tart.reflect.NameTable.
 SystemClassMember<VariableDefn> nameTable_nameStrmSimple(
     Builtins::typeNameTable, "_nameStrmSimple");
@@ -204,7 +241,7 @@ void Reflector::emitModule(Module * module) {
 
   // See if there are any reflected defns.
   bool hasReflectedDefns = false;
-  if (!rmdMap_.empty() || !module->reflectedTypes().empty()) {
+  if (!rmdMap_.empty() || !module->reflectedTypes().empty() || !mmd_.defnsToExport().empty()) {
     hasReflectedDefns = true;
   }
 
@@ -245,6 +282,8 @@ void Reflector::emitModule(Module * module) {
     nameTable.assignIndices();
   }
 
+  mmd_.setOutputPhase();
+
   if (!mmd_.invokeMap().empty()) {
     for (TypeMap::iterator it = mmd_.invokeMap().begin(); it != mmd_.invokeMap().end(); ++it) {
       const FunctionType * ft = cast<FunctionType>(it->first);
@@ -275,6 +314,12 @@ void Reflector::emitModule(Module * module) {
   for (ReflectedSymbolMap::const_iterator it = rmdMap_.begin(); it != rmdMap_.end(); ++it) {
     DASSERT(it->second != NULL);
     emitReflectedDefn(it->second, it->first);
+  }
+
+  for (TypeSet::iterator it = typeExports_.begin(); it != typeExports_.end(); ++it) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(*it)) {
+      emitCompositeType(getReflectionMetadata(ctype->typeDefn()), ctype);
+    }
   }
 }
 
@@ -382,6 +427,7 @@ void Reflector::addDefn(const Defn * def) {
           diag.indent();
           cg_.nameTable().addQualifiedName(def->qualifiedName())->use();
           if (def->isTemplateInstance()) {
+            getReflectionMetadata(def->templateInstance()->templateDefn());
             rmd->addTypeRef(cast<TypeDefn>(def->templateInstance()->templateDefn())->typeValue());
             rmd->addTypeRef(def->templateInstance()->typeArgs());
           } else {
@@ -494,7 +540,7 @@ void Reflector::addMember(const Defn * def, ReflectionMetadata * rmd) {
     }
 
     case Defn::Namespace: {
-      mmd_.defnsToExport().append(def);
+      mmd_.addExport(def);
       break;
     }
 
@@ -572,13 +618,13 @@ ReflectionMetadata * Reflector::getReflectionMetadata(const Defn * def) {
   }
 
   if (isExport(def)) {
-    mmd_.defnsToExport().append(def);
+    mmd_.addExport(def);
   }
 
   ReflectionMetadata * rsym = new ReflectionMetadata(def, mmd_);
   std::string metaVarName(".meta." + def->linkageName());
   if (def->defnType() == Defn::Mod) {
-    metaVarName = ".meta.module." + def->linkageName();
+    metaVarName = ".moduleMeta." + def->linkageName();
   }
   rsym->setVar(new GlobalVariable(*irModule_, Builtins::typeReflectionMetadata->irType(),
       false,
@@ -588,13 +634,93 @@ ReflectionMetadata * Reflector::getReflectionMetadata(const Defn * def) {
   return rsym;
 }
 
-void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
+llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type) {
+  std::string typeSymbol(".compositeType." + type->typeDefn()->linkageName());
+  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  if (!isExport(type->typeDefn())) {
+    //diag.debug() << "Importing type : " << type;
+    return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), true,
+        GlobalValue::ExternalLinkage, NULL, typeSymbol);
+  }
+
+  typeExports_.insert(type);
+  mmd_.addExport(type->typeDefn());
+  return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), false,
+      type->typeDefn()->isSynthetic()
+          ? GlobalValue::LinkOnceAnyLinkage
+          : GlobalValue::ExternalLinkage,
+      NULL, typeSymbol);
+}
+
+llvm::GlobalVariable * Reflector::emitCompositeType(
+    ReflectionMetadata * rmd, const CompositeType * type) {
+  GlobalVariable * var = getCompositeTypePtr(type);
+  if (var->hasInitializer()) {
+    return var;
+  }
+
+  //diag.debug() << "Emitting composite type: " << Format_Verbose << type;
+
+  TypeDefn * td = type->typeDefn();
   GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
+  bool isNonReflective = td->isNonreflective();
+
+  // Generate the CompositeType instance
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(Builtins::typeCompositeType);
+  sb.addIntegerField(type_typeKind.type(), typeKind(type->typeClass()));
+  sb.combine();
+
+  // CompositeType._meta
+  sb.addField(rmd->var());
+
+  // CompositeType._names
+  sb.addField(nameTableVar);
+  NameTable::Name * qname = cg_.nameTable().getQualifiedName(td->qualifiedName());
+  sb.addIntegerField(compositeType_nameIndex, qname ? qname->encodedIndex() : 0);
+
+  if (type->isSingular()) {
+    sb.addField(llvm::ConstantExpr::getSizeOf(type->irType()));
+  } else {
+    sb.addIntegerField(compositeType_size.type(), 0);
+  }
+
+  sb.addField(cg_.getTypeInfoBlockPtr(type));
+
+  if (type->super() != NULL && !td->isTemplateInstance()) {
+    sb.addField(getCompositeTypePtr(type->super()));
+  } else {
+    sb.addNullField(compositeType_superType.type());
+  }
+
+  sb.addNullField(compositeType_interfaces.type());
+  sb.addNullField(compositeType_typeParams.type());
+  sb.addNullField(compositeType_attributes.type());
+  sb.addNullField(compositeType_fields.type());
+  sb.addNullField(compositeType_properties.type());
+  sb.addNullField(compositeType_constructors.type());
+  sb.addNullField(compositeType_methods.type());
+  sb.addNullField(compositeType_innerTypes.type());
+  sb.addNullField(compositeType_alloc.type());
+  sb.addNullField(compositeType_noArgCtor.type());
+
+  var->setInitializer(sb.build(Builtins::typeCompositeType->irType()));
+
+  return var;
+}
+
+void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
   if (!isExport(def)) {
     return;
   }
 
   rmd->assignIndices();
+
+  GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
 
   // Generate the module constants structure
   StructBuilder sb(cg_);
@@ -660,6 +786,8 @@ void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
         }
         emitBaseClassSection(rmd, ctype);
         emitReflectedMembers(rmd, ctype->memberScope());
+
+        emitCompositeType(rmd, ctype);
       } else if (const EnumType * etype = dyn_cast<EnumType>(type)) {
         defnTypeId = TAG_DEF_ENUM;
         strm << char(TAG_DEF_ENUM) << VarInt(qname->encodedIndex());
@@ -1233,6 +1361,24 @@ llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr) {
 
 bool Reflector::isExport(const Defn * de) {
   return de->module() == module() || de->isSynthetic();
+}
+
+int Reflector::typeKind(Type::TypeClass cls) {
+  switch (cls) {
+    case Type::Primitive: return PRIMITIVE;
+    case Type::Class: return CLASS;
+    case Type::Struct: return STRUCT;
+    case Type::Interface: return INTERFACE;
+    case Type::Protocol: return PROTOCOL;
+    case Type::Enum: return ENUM;
+    case Type::Function: return FUNCTION;
+    case Type::Tuple: return TUPLE;
+    case Type::Union: return UNION;
+    case Type::NAddress: return ADDRESS;
+    case Type::NArray: return NATIVE_ARRAY;
+    default:
+      return OPAQUE;
+  }
 }
 
 } // namespace tart

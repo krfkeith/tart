@@ -57,6 +57,8 @@ public:
   static SystemClass typeEnumInfoBlock;
   static SystemClass typeFunctionType;
   static SystemClass typePrimitiveType;
+  static SystemClass typeCompositeType;
+  static SystemClass typeDerivedType;
   static SystemClass typeModule;
   static SystemClass typeNameTable;
   static SystemClass typePackage;
@@ -81,7 +83,6 @@ public:
   // System functions
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
-  static FunctionDefn * funcGetType;
 
   /** Initialization function for builtins. */
   static void init();

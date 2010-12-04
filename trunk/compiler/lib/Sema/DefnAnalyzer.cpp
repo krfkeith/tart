@@ -127,6 +127,8 @@ bool DefnAnalyzer::analyzeModule() {
 
   if (module_->isReflectionEnabled()) {
     module_->addSymbol(Builtins::typeModule.typeDefn());
+    analyzeType(Builtins::typeCompositeType.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeDerivedType.get(), Task_PrepCodeGeneration);
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
@@ -486,8 +488,8 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
 void DefnAnalyzer::addReflectionInfo(Defn * in) {
   analyzeDefn(in, Task_PrepTypeComparison);
-  bool enableReflection = module_->isReflectionEnabled() &&
-        (in->isSynthetic() || in->module() == module_);
+  bool isExport = in->isSynthetic() || in->module() == module_;
+  bool enableReflection = module_->isReflectionEnabled() && isExport;
   bool enableReflectionDetail = enableReflection && !in->isNonreflective();
   bool trace = isTraceEnabled(in);
 
@@ -504,12 +506,11 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
         // If reflection enabled for this type then load the reflection classes.
         if (enableReflectionDetail) {
           if (module_->reflectedDefs().insert(tdef)) {
-            module_->addSymbol(tdef);
-            reflectTypeMembers(ctype);
+            if (isExport) {
+              reflectTypeMembers(ctype);
+            }
           }
-
         } else if (enableReflection) {
-          module_->addSymbol(tdef);
           module_->reflectedDefs().insert(tdef);
         }
 
@@ -536,7 +537,6 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
       if (enableReflectionDetail) {
-        module_->addSymbol(fn);
         if (module_->reflectedDefs().insert(fn)) {
           reflectType(fn->type());
           for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
@@ -573,8 +573,6 @@ bool DefnAnalyzer::reflectType(const Type * type) {
       addReflectionInfo(tdef);
       return true;
     }
-
-    module_->addSymbol(tdef);
   }
 
   switch (type->typeClass()) {

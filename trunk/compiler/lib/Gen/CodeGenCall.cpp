@@ -107,23 +107,15 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());
   if (in->exprType() == Expr::CtorCall) {
     // Constructor call returns the 'self' argument.
-#if FC_STRUCTS_INTERNAL
     TypeShape selfTypeShape = in->selfArg()->type()->typeShape();
     // A large value type will, at this point, be a pointer.
     if (selfTypeShape == Shape_Small_LValue) {
       selfArg = builder_.CreateLoad(selfArg, "self");
     }
-#endif
 
     result = selfArg;
   } else if (fnType->isStructReturn()) {
     result = retVal;
-#if !FC_STRUCTS_INTERNAL
-  } else if (fn->returnType()->typeShape() == Shape_Small_LValue) {
-    retVal = builder_.CreateAlloca(fnType->returnType()->irType(), NULL, "retval");
-    builder_.CreateStore(result, retVal);
-    result = retVal;
-#endif
   }
 
   // Clear out all the temporary roots
@@ -147,6 +139,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
 
   if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
     fnValue = genArgExpr(fn, saveIntermediateStackRoots);
+
     if (fnValue != NULL) {
       if (ft->isStatic()) {
         //fnValue = builder_.CreateLoad(fnValue);

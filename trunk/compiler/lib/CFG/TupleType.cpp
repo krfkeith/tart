@@ -135,8 +135,8 @@ const llvm::Type * TupleType::createIRType() const {
     shape_ = Shape_Large_Value;
   } else if (containsReferenceType_) {
     // TODO: Should be small l-value but that's not working for some reason.
-    //shape_ = Shape_Small_LValue;
-    shape_ = Shape_Large_Value;
+    shape_ = Shape_Small_LValue;
+    //shape_ = Shape_Large_Value;
   } else {
     shape_ = Shape_Small_RValue;
   }
@@ -271,11 +271,7 @@ Expr * TupleType::nullInitValue() const {
 
 TypeShape TupleType::typeShape() const {
   if (shape_ == Shape_Unset) {
-    if (isLargeIRType(irType())) {
-      shape_ = Shape_Large_Value;
-    } else {
-      shape_ = Shape_Small_RValue;
-    }
+    irType();
   }
 
   return shape_;

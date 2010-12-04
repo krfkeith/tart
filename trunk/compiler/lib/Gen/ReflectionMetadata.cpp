@@ -42,6 +42,16 @@ struct TypeOrder {
 }
 
 /// -------------------------------------------------------------------
+/// ModuleMetadata
+
+void ModuleMetadata::addExport(const Defn * de) {
+  if (outputPhase_) {
+    diag.fatal() << "Attempting to add an export during output phase: " << de;
+  }
+  defnsToExport_.append(de);
+}
+
+/// -------------------------------------------------------------------
 /// ReflectionMetadata
 
 void ReflectionMetadata::addTypeRef(const Type * type) {
@@ -63,14 +73,14 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
       const CompositeType * ctype = static_cast<const CompositeType *>(type);
       TypeDefn * classDefn = ctype->typeDefn();
       types_[ctype] = TagInfo(1);
-      mmd_.defnsToExport().append(classDefn);
+      mmd_.addExport(classDefn);
       break;
     }
 
     case Type::Enum: {
       const EnumType * etype = static_cast<const EnumType *>(type);
       TypeDefn * enumDefn = etype->typeDefn();
-      mmd_.defnsToExport().append(enumDefn);
+      mmd_.addExport(enumDefn);
       types_[etype] = TagInfo(1);
       break;
     }

@@ -388,3 +388,26 @@ ad-hoc polymorphism. (Protocols?)
 Idea #1: Make a bare template parameter really mean [T <: __Any].
 
   -- Redo templates so that template parameters really are opaque.
+
+  
+  
+define void @"tart.reflect.ReflectionMetadata.readClassMethods(tart.reflect.Type)->(tart.reflect.Method[],tart.reflect.Method[])"(
+    %189* sret,
+    %tart.reflect.ReflectionMetadata* %self,
+    %tart.reflect.Type* %selfType) gc "tart-gc"
+
+%readClassMethods = call %189
+  bitcast (
+    void (
+      %189*,
+      %tart.reflect.ReflectionMetadata*,
+      %tart.reflect.Type*
+    )* @"tart.reflect.ReflectionMetadata.readClassMethods(tart.reflect.Type)->(tart.reflect.Method[],tart.reflect.Method[])"
+  to
+    %189 (
+      %tart.reflect.ReflectionMetadata*,
+      %tart.reflect.Type*)*)(
+        %tart.reflect.ReflectionMetadata* %_meta, %tart.reflect.Type* %upcast), !dbg !34937
+
+  %3 = extractvalue %189 %readClassMethods, 0, !dbg !34937
+  %4 = extractvalue %189 %readClassMethods, 1, !dbg !34937

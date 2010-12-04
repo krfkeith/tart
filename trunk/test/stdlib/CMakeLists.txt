@@ -10,7 +10,6 @@ set(MODPATH  # Module search path
   -i ${TART_SOURCE_DIR}/lib/testing)
 
 set(TART_OPTIONS
-#  -g
   -debug-errors
 #  -trace-def=InterfaceTest
 )
@@ -31,11 +30,45 @@ set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
 set(USE_LLVM_BINARIES 0)
+set(GENERATE_DEBUG_INFO 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
 set(GC_PLUGIN "${PROJECT_BINARY_DIR}/linker/libgc${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(REFLECTOR_PLUGIN "${PROJECT_BINARY_DIR}/linker/libreflector${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
+if (GENERATE_DEBUG_INFO)
+  set(TART_OPTIONS ${TART_OPTIONS} -g)
+  set(OPT_FLAGS
+      -disable-inlining
+      -load="${REFLECTOR_PLUGIN}"
+      -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+#      -std-compile-opts
+#      -std-link-opts
+#      -instcombine
+#      -simplifycfg
+#      -adce
+#      -globaldce
+#      -globalopt
+      -reflector
+  )
+else (GENERATE_DEBUG_INFO)
+  set(OPT_FLAGS
+      -O2
+      -strip-debug
+      -load="${REFLECTOR_PLUGIN}"
+      -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+#     -mergefunc
+      -std-compile-opts
+      -std-link-opts
+      -instcombine
+      -simplifycfg
+      -adce
+      -globaldce
+      -globalopt
+      -reflector)
+endif (GENERATE_DEBUG_INFO)
+
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
@@ -109,21 +142,7 @@ foreach(SRC_FILE ${TART_SRC})
 
     # Link object files
     add_custom_command(OUTPUT ${OPT_BC_FILE}
-        COMMAND ${LLVM_OPT}
-            -O2
-            -strip-debug
-#            -disable-inlining
-            -load="${REFLECTOR_PLUGIN}"
-            -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
-#            -mergefunc
-            -std-compile-opts
-            -std-link-opts
-            -instcombine
-            -simplifycfg
-            -adce
-            -globaldce
-            -globalopt
-            -reflector
+        COMMAND ${LLVM_OPT} ${OPT_FLAGS}
             -o ${OPT_BC_FILE}
             ${OUT_BC_FILE}
         MAIN_DEPENDENCY "${OUT_BC_FILE}" 
