@@ -42,25 +42,6 @@ typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
 typedef llvm::SetVector<Defn *> DefnSet;
 
 /// -------------------------------------------------------------------
-/// Represents all of the reflected symbols within a single scope.
-
-struct ReflectedMembers {
-  ConstantList fields;
-  ConstantList properties;
-  ConstantList constructors;
-  ConstantList methods;
-  ConstantList types;
-
-  bool isEmpty() const {
-    return fields.empty() &&
-        properties.empty() &&
-        constructors.empty() &&
-        methods.empty() &&
-        types.empty();
-  }
-};
-
-/// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
 class Reflector {
 public:
@@ -156,9 +137,6 @@ public:
       and the definitions within it. */
   void emitNameTable(Module * module);
 
-  /** Generate the table of invocation functions. */
-  void emitCallAdapterFnTable(Module * module);
-
   /** Add a definition to the list of reflected members. */
   void addDefn(const Defn * def);
 
@@ -171,23 +149,31 @@ public:
   /** Generate reflection information for a definition in this module. */
   void buildRMD(const Defn * def);
 
-  /** Return a reference to the reflected type object for the specified composite type. */
+  /** Return a reference to the reflected type object for the specified type. */
+  llvm::Constant * getTypePtr(const Type * type);
   llvm::GlobalVariable * getCompositeTypePtr(const CompositeType * type);
+  llvm::GlobalVariable * getEnumTypePtr(const EnumType * type);
+  llvm::GlobalVariable * getDerivedTypePtr(const Type * type);
+  llvm::GlobalVariable * getFunctionTypePtr(const FunctionType * type);
 
-  /** Write out reflection information for a composite type. */
-  llvm::GlobalVariable * emitCompositeType(ReflectionMetadata * rmd, const CompositeType * type);
+  /** Write out reflection information for a type. */
+  void emitType(const Type * type);
+  void emitCompositeType(const CompositeType * type);
+  void emitEnumType(const EnumType * type);
+  void emitDerivedType(const Type * type);
+  void emitFunctionType(const FunctionType * type);
 
   /** Write out reflection information for a definition in this module. */
   void emitReflectedDefn(ReflectionMetadata * rs, const Defn * def);
+
+  /** Write out the array of member types defined within the given scope. */
+  llvm::Constant * emitMemberTypes(const IterableScope * scope);
 
   /** Write out the reflection data for the contents of a definition. */
   void emitReflectedMembers(ReflectionMetadata * rs, const IterableScope * scope);
 
   /** Emitters for various sections. */
-  void emitTypeParamsSection(ReflectionMetadata * rs, const Defn * def);
   void emitTemplateParamsSection(ReflectionMetadata * rs, const Defn * def);
-  void emitBaseClassSection(ReflectionMetadata * rs, const CompositeType * type);
-  void emitInterfacesSection(ReflectionMetadata * rs, const CompositeType * type);
   void emitAttributeSection(ReflectionMetadata * rs, const ExprList & attrs);
   void emitTemplateSection(ReflectionMetadata * rmd, const Defn * def);
 
@@ -195,10 +181,20 @@ public:
   void emitNamespaceDefn(ReflectionMetadata * rs, const NamespaceDefn * def,
       llvm::raw_ostream & out);
   void emitFieldDefn(ReflectionMetadata * rs, const VariableDefn * def, llvm::raw_ostream & out);
-  void emitConstructorDefn(ReflectionMetadata * rs, const FunctionDefn * def,
-      llvm::raw_ostream & out);
   void emitMethodDefn(ReflectionMetadata * rs, const FunctionDefn * def, llvm::raw_ostream & out);
   void emitPropertyDefn(ReflectionMetadata * rs, const PropertyDefn * def, llvm::raw_ostream & out);
+
+  /** Write out a POD array of type references. */
+  llvm::Constant * emitTypeRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
+
+  /** Write out a POD array of global references. */
+  llvm::Constant * emitGlobalRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
+
+  /** Write out a POD array of method pointers. */
+  llvm::Constant * emitMethodRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
+
+  /** Generate a StaticTypeList from the given tuple type. */
+  llvm::Constant * emitStaticTypeList(const ConstTypeList & types);
 
   /** Generate an array containing reflection data supplied by the specified array. */
   llvm::Constant * emitArray(
@@ -221,13 +217,11 @@ private:
   llvm::IRBuilder<true> builder_;    // LLVM builder
   llvm::Module * irModule_;
   llvm::GlobalVariable * nameTableVar_;
-  llvm::Constant * invokeFnTableVar_;
 
   ReflectedSymbolMap rmdMap_;
   GlobalVarMap globals_;
 
   ModuleMetadata mmd_;
-  TypeArray invokeRefs_;
 
   // Set of types exported by this module.
   TypeSet typeExports_;

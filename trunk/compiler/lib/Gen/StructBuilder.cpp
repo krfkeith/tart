@@ -51,6 +51,10 @@ StructBuilder & StructBuilder::addStringField(const std::string & strval) {
   return addField(gen_.genStringLiteral(strval));
 }
 
+StructBuilder & StructBuilder::addPointerField(VariableDefn * var, llvm::Constant * value) {
+  return addField(llvm::ConstantExpr::getPointerCast(value, var->type()->irEmbeddedType()));
+}
+
 StructBuilder & StructBuilder::addArrayField(
     const Type * elementType, const ConstantList & values) {
   const ArrayType * arrayType = ArrayType::get(elementType->irEmbeddedType(), values.size());
@@ -81,10 +85,23 @@ llvm::Constant * StructBuilder::build() const {
 
 llvm::Constant * StructBuilder::build(const llvm::Type * expectedType) const {
   llvm::Constant * result = ConstantStruct::get(gen_.context(), members_, false);
-  if (result->getType() != expectedType) {
+  const llvm::Type * actualType = result->getType();
+  if (actualType != expectedType) {
     diag.error() << "Expected type does not match actual type:";
     expectedType->dump(gen_.irModule());
-    result->getType()->dump(gen_.irModule());
+    actualType->dump(gen_.irModule());
+    if (expectedType->getNumContainedTypes() != actualType->getNumContainedTypes()) {
+      diag.info() << "Expected has " << expectedType->getNumContainedTypes() <<
+          " fields, but actual has " << actualType->getNumContainedTypes() << " fields.";
+    } else {
+      for (size_t i = 0; i < expectedType->getNumContainedTypes(); ++i) {
+        if (expectedType->getContainedType(i) != actualType->getContainedType(i)) {
+          diag.info() << "Mismatch in struct field " << i;
+          expectedType->getContainedType(i)->dump(gen_.irModule());
+          actualType->getContainedType(i)->dump(gen_.irModule());
+        }
+      }
+    }
     DFAIL("abort");
   }
   return result;

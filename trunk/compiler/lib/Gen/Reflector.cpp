@@ -45,8 +45,12 @@ using namespace llvm;
 /// -------------------------------------------------------------------
 
 // Members of tart.reflect.Module.
-SystemClassMember<VariableDefn> module_constants(Builtins::typeModule, "_constants");
+SystemClassMember<VariableDefn> module_names(Builtins::typeModule, "_names");
 SystemClassMember<VariableDefn> module_nameIndex(Builtins::typeModule, "_nameIndex");
+SystemClassMember<VariableDefn> module_strmData(Builtins::typeModule, "_strmData");
+SystemClassMember<VariableDefn> module_typeRefs(Builtins::typeModule, "_typeRefs");
+SystemClassMember<VariableDefn> module_globalRefs(Builtins::typeModule, "_globalRefs");
+SystemClassMember<VariableDefn> module_methodRefs(Builtins::typeModule, "_methodRefs");
 SystemClassMember<VariableDefn> module_memberTypes(Builtins::typeModule, "_memberTypes");
 SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods");
 
@@ -54,8 +58,6 @@ SystemClassMember<VariableDefn> module_methods(Builtins::typeModule, "_methods")
 SystemClassMember<VariableDefn> type_typeKind(Builtins::typeType, "_typeKind");
 
 // Members of tart.reflect.CompositeType
-SystemClassMember<VariableDefn> compositeType_meta(
-    Builtins::typeCompositeType, "_meta");
 SystemClassMember<VariableDefn> compositeType_names(
     Builtins::typeCompositeType, "_names");
 SystemClassMember<VariableDefn> compositeType_nameIndex(
@@ -64,7 +66,15 @@ SystemClassMember<VariableDefn> compositeType_size(
     Builtins::typeCompositeType, "_size");
 SystemClassMember<VariableDefn> compositeType_typeInfo(
     Builtins::typeCompositeType, "_typeInfo");
-SystemClassMember<VariableDefn> compositeType_superType(
+SystemClassMember<VariableDefn> compositeType_strmData(
+    Builtins::typeCompositeType, "_strmData");
+SystemClassMember<VariableDefn> compositeType_typeRefs(
+    Builtins::typeCompositeType, "_typeRefs");
+SystemClassMember<VariableDefn> compositeType_globalRefs(
+    Builtins::typeCompositeType, "_globalRefs");
+SystemClassMember<VariableDefn> compositeType_methodRefs(
+    Builtins::typeCompositeType, "_methodRefs");
+SystemClassMember<VariableDefn> compositeType_supertype(
     Builtins::typeCompositeType, "_supertype");
 SystemClassMember<VariableDefn> compositeType_interfaces(
     Builtins::typeCompositeType, "_interfaces");
@@ -80,58 +90,42 @@ SystemClassMember<VariableDefn> compositeType_constructors(
     Builtins::typeCompositeType, "_constructors");
 SystemClassMember<VariableDefn> compositeType_methods(
     Builtins::typeCompositeType, "_methods");
-SystemClassMember<VariableDefn> compositeType_innerTypes(
-    Builtins::typeCompositeType, "_innerTypes");
+SystemClassMember<VariableDefn> compositeType_memberTypes(
+    Builtins::typeCompositeType, "_memberTypes");
 SystemClassMember<VariableDefn> compositeType_alloc(
     Builtins::typeCompositeType, "_alloc");
 SystemClassMember<VariableDefn> compositeType_noArgCtor(
     Builtins::typeCompositeType, "_noArgCtor");
+SystemClassMember<VariableDefn> compositeType_methodBaseIndex(
+    Builtins::typeCompositeType, "_methodBaseIndex");
+
+// Members of tart.reflect.EnumType
+SystemClassMember<VariableDefn> enumType_names(Builtins::typeEnumType, "_names");
+SystemClassMember<VariableDefn> enumType_nameIndex(Builtins::typeEnumType, "_nameIndex");
+SystemClassMember<VariableDefn> enumType_supertype(Builtins::typeEnumType, "_supertype");
+SystemClassMember<VariableDefn> enumType_values(Builtins::typeEnumType, "_values");
+
+// Members of tart.reflect.DerivedType
+SystemClassMember<VariableDefn> derivedType_typeParams(Builtins::typeDerivedType, "_typeParams");
 
 // Members of tart.reflect.NameTable.
 SystemClassMember<VariableDefn> nameTable_nameStrmSimple(
     Builtins::typeNameTable, "_nameStrmSimple");
-SystemClassMember<VariableDefn> nameTable_simpleNames(
-    Builtins::typeNameTable, "_simpleNames");
-SystemClassMember<VariableDefn> nameTable_compoundNames(
-    Builtins::typeNameTable, "_compoundNames");
+SystemClassMember<VariableDefn> nameTable_simpleNames(Builtins::typeNameTable, "_simpleNames");
+SystemClassMember<VariableDefn> nameTable_compoundNames(Builtins::typeNameTable, "_compoundNames");
 SystemClassMember<VariableDefn> nameTable_compoundNameStrings(
     Builtins::typeNameTable, "_compoundNameStrings");
 
-SystemClassMember<VariableDefn> rmd_value(
-    Builtins::typeReflectionMetadata, "_value");
-SystemClassMember<VariableDefn> rmd_names(
-    Builtins::typeReflectionMetadata, "_names");
-SystemClassMember<VariableDefn> rmd_strmTypeRefs(
-    Builtins::typeReflectionMetadata, "_strmTypeRefs");
-SystemClassMember<VariableDefn> rmd_strmDefns(
-    Builtins::typeReflectionMetadata, "_strmDefns");
-SystemClassMember<VariableDefn> rmd_nameIndex(
-    Builtins::typeReflectionMetadata, "_nameIndex");
-SystemClassMember<VariableDefn> rmd_methodBaseIndex(
-    Builtins::typeReflectionMetadata, "_methodBaseIndex");
-SystemClassMember<VariableDefn> rmd_defnType(
-    Builtins::typeReflectionMetadata, "_defnType");
-SystemClassMember<VariableDefn> rmd_traits(
-    Builtins::typeReflectionMetadata, "_traits");
-SystemClassMember<VariableDefn> rmd_derivedTypes(
-    Builtins::typeReflectionMetadata, "_derivedTypes");
-SystemClassMember<VariableDefn> rmd_compositeTypes(
-    Builtins::typeReflectionMetadata, "_compositeTypes");
-SystemClassMember<VariableDefn> rmd_enumTypes(
-    Builtins::typeReflectionMetadata, "_enumTypes");
-SystemClassMember<VariableDefn> rmd_invokeFns(
-    Builtins::typeReflectionMetadata, "_invokeFns");
-SystemClassMember<VariableDefn> rmd_methods(
-    Builtins::typeReflectionMetadata, "_methods");
-SystemClassMember<VariableDefn> rmd_retainedAttrs(
-    Builtins::typeReflectionMetadata, "_retainedAttrs");
-SystemClassMember<VariableDefn> rmd_alloc(
-    Builtins::typeReflectionMetadata, "_alloc");
+// Members of tart.reflect.FunctionType
+SystemClassMember<TypeDefn> functionType_CallAdapterFnType(
+    Builtins::typeFunctionType, "CallAdapterFn");
+SystemClassMember<VariableDefn> functionType_returnType(Builtins::typeFunctionType, "_returnType");
+SystemClassMember<VariableDefn> functionType_selfType(Builtins::typeFunctionType, "_selfType");
+SystemClassMember<VariableDefn> functionType_paramTypes(Builtins::typeFunctionType, "_paramTypes");
+SystemClassMember<VariableDefn> functionType_invoke(Builtins::typeFunctionType, "_invoke");
 
-SystemClassMember<TypeDefn> rmd_CallAdapterFnType(
-    Builtins::typeReflectionMetadata, "CallAdapterFn");
-SystemClassMember<TypeDefn> rmd_MethodPtrType(
-    Builtins::typeReflectionMetadata, "MethodPtr");
+// Members of tart.reflect.StaticTypeList
+SystemClassMember<VariableDefn> staticTypeList_size(Builtins::typeStaticTypeList, "_size");
 
 // Members of tart.reflect.Package.
 SystemClassMember<VariableDefn> package_name(Builtins::typePackage, "_name");
@@ -170,13 +164,16 @@ Reflector::Reflector(CodeGenerator & cg)
   , builder_(cg.builder())
   , irModule_(cg.irModule())
   , nameTableVar_(NULL)
-  , invokeFnTableVar_(NULL)
   , mmd_(cg_.nameTable())
 {
 }
 
 Reflector::~Reflector() {
   // TODO: Delete reflection metadata pointers.
+}
+
+llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
+  return cg_.genStringLiteral(Key, Key);
 }
 
 GlobalVariable * Reflector::getModulePtr(Module * module) {
@@ -230,8 +227,134 @@ llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
   return rfPackage;
 }
 
-llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
-  return cg_.genStringLiteral(Key, Key);
+llvm::Constant * Reflector::getTypePtr(const Type * type) {
+  switch (type->typeClass()) {
+    case Type::Primitive:
+      return cg_.getPrimitiveTypeObjectPtr(static_cast<const PrimitiveType *>(type));
+
+    case Type::Class:
+    case Type::Struct:
+    case Type::Interface:
+    case Type::Protocol:
+      return getCompositeTypePtr(static_cast<const CompositeType *>(type));
+
+    case Type::Enum:
+      return getEnumTypePtr(static_cast<const EnumType *>(type));
+
+    case Type::Tuple:
+    case Type::Union:
+    case Type::NAddress:
+      return getDerivedTypePtr(type);
+
+    case Type::Function:
+      return getFunctionTypePtr(static_cast<const FunctionType *>(type));
+
+    case Type::BoundMethod:
+      return getFunctionTypePtr(static_cast<const BoundMethodType *>(type)->fnType());
+
+    case Type::NArray:
+      diag.fatal() << "Attempt to get type pointer for unimplemented type: " << type;
+      DFAIL("Implement");
+
+    default:
+      diag.fatal() << "Attempt to get type pointer for non-supported type: " << type;
+  }
+
+  return NULL;
+}
+
+llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type) {
+  std::string typeSymbol(".compositeType." + type->typeDefn()->linkageName());
+  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  if (!isExport(type->typeDefn())) {
+    return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), true,
+        GlobalValue::ExternalLinkage, NULL, typeSymbol);
+  }
+
+  if (mmd_.outputPhase()) {
+    diag.fatal() << "Attempting to add a type export during output phase: " << type;
+  }
+  typeExports_.insert(type);
+  mmd_.addExport(type->typeDefn());
+  return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), false,
+      type->typeDefn()->isSynthetic()
+          ? GlobalValue::LinkOnceAnyLinkage
+          : GlobalValue::ExternalLinkage,
+      NULL, typeSymbol);
+}
+
+llvm::GlobalVariable * Reflector::getEnumTypePtr(const EnumType * type) {
+  std::string typeSymbol(".enumType." + type->typeDefn()->linkageName());
+  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  if (!isExport(type->typeDefn())) {
+    return new GlobalVariable(*irModule_, Builtins::typeEnumType->irType(), true,
+        GlobalValue::ExternalLinkage, NULL, typeSymbol);
+  }
+
+  if (mmd_.outputPhase()) {
+    diag.fatal() << "Attempting to add a type export during output phase: " << type;
+  }
+  typeExports_.insert(type);
+  mmd_.addExport(type->typeDefn());
+  return new GlobalVariable(*irModule_, Builtins::typeEnumType->irType(), false,
+      type->typeDefn()->isSynthetic()
+          ? GlobalValue::LinkOnceAnyLinkage
+          : GlobalValue::ExternalLinkage,
+      NULL, typeSymbol);
+}
+
+llvm::GlobalVariable * Reflector::getDerivedTypePtr(const Type * type) {
+  std::string typeSymbol(".type.");
+  typeLinkageName(typeSymbol, type);
+  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  if (mmd_.outputPhase()) {
+    diag.fatal() << "Attempting to add a type export during output phase: " << type;
+  }
+  typeExports_.insert(type);
+
+  for (size_t i = 0; i < type->numTypeParams(); ++i) {
+    getTypePtr(type->typeParam(i));
+  }
+
+  return new GlobalVariable(*irModule_, Builtins::typeDerivedType->irType(), false,
+      GlobalValue::LinkOnceODRLinkage,
+      NULL, typeSymbol);
+}
+
+llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) {
+  std::string typeSymbol(".type.");
+  typeLinkageName(typeSymbol, type);
+  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  if (mmd_.outputPhase()) {
+    diag.fatal() << "Attempting to add a type export during output phase: " << type;
+  }
+
+  getTypePtr(type->returnType());
+  for (ParameterList::const_iterator it = type->params().begin();
+      it != type->params().end(); ++it) {
+    getTypePtr((*it)->type());
+  }
+
+  typeExports_.insert(type);
+  return new GlobalVariable(*irModule_, Builtins::typeFunctionType->irType(), false,
+      GlobalValue::LinkOnceODRLinkage,
+      NULL, typeSymbol);
 }
 
 void Reflector::emitModule(Module * module) {
@@ -241,17 +364,17 @@ void Reflector::emitModule(Module * module) {
 
   // See if there are any reflected defns.
   bool hasReflectedDefns = false;
-  if (!rmdMap_.empty() || !module->reflectedTypes().empty() || !mmd_.defnsToExport().empty()) {
+  if (!module->reflectedTypes().empty() || !mmd_.defnsToExport().empty()) {
     hasReflectedDefns = true;
   }
 
   if (hasReflectedDefns) {
     GlobalVariable * modulePtr = getModulePtr(module);
     if (!modulePtr->hasInitializer()) {
-      ReflectedMembers rfMembers;
 
       // First visit members which are explicitly declared in this module.
-      ReflectionMetadata * rmdForModule = getReflectionMetadata(module);
+      ReflectionMetadata * rmd = getReflectionMetadata(module);
+      addMembers(module, rmd);
 
       // Add references for all exported definitions
       while (!mmd_.defnsToExport().empty()) {
@@ -261,65 +384,69 @@ void Reflector::emitModule(Module * module) {
       // Add references for any type literals
       for (Module::TypeSet::iterator it = module->reflectedTypes().begin(); it
           != module->reflectedTypes().end(); ++it) {
-        rmdForModule->addTypeRef(*it);
+        rmd->addTypeRef(*it);
       }
 
+      GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
       NameTable::Name * qualifiedName = nameTable.addQualifiedName(module->qualifiedName());
       DASSERT(qualifiedName != NULL);
 
       nameTable.assignIndices();
+      rmd->assignIndices();
 
+      // Encode any methods in the module.
+      raw_ostream & strm = rmd->strm();
+      rmd->setMethodBaseIndex(0);
+      emitReflectedMembers(rmd, module);
+      strm << char(0);
+      strm.flush();
+
+      // Generate the Module struct
       StructBuilder sb(cg_);
       sb.createObjectHeader(Builtins::typeModule);
-      sb.addField(rmdForModule->var());
+      sb.addField(nameTableVar);
       sb.addIntegerField(module_nameIndex, qualifiedName->encodedIndex());
-      sb.addNullField(module_memberTypes.type());
+
+      // Module._strmData
+      Constant * defnStrm = ConstantArray::get(context_, rmd->strmData(), false);
+      GlobalVariable * defnStrmVar = new GlobalVariable(*irModule_, defnStrm->getType(),
+          true, GlobalValue::InternalLinkage, defnStrm, ".module_members");
+      sb.addField(llvm::ConstantExpr::getPointerCast(defnStrmVar, builder_.getInt8PtrTy()));
+
+      // Module._typeRefs
+      if (!rmd->typeRefs().empty()) {
+        sb.addPointerField(module_typeRefs, emitTypeRefArray(rmd, "module"));
+      } else {
+        sb.addNullField(module_typeRefs.type());
+      }
+
+      // Module._globalRefs
+      if (!rmd->globalRefs().empty()) {
+        sb.addPointerField(module_globalRefs, emitGlobalRefArray(rmd, "module"));
+      } else {
+        sb.addNullField(module_globalRefs.type());
+      }
+
+      // Module._methodRefs
+      if (!rmd->methodRefs().empty()) {
+        sb.addPointerField(module_methodRefs, emitMethodRefArray(rmd, "module"));
+      } else {
+        sb.addNullField(module_methodRefs.type());
+      }
+
+      sb.addPointerField(module_memberTypes, emitMemberTypes(module));
       sb.addNullField(module_methods.type());
       modulePtr->setInitializer(sb.build());
     }
-
   } else {
     nameTable.assignIndices();
   }
 
   mmd_.setOutputPhase();
 
-  if (!mmd_.invokeMap().empty()) {
-    for (TypeMap::iterator it = mmd_.invokeMap().begin(); it != mmd_.invokeMap().end(); ++it) {
-      const FunctionType * ft = cast<FunctionType>(it->first);
-      // TODO: Temporarily disable union types
-      if (ft->returnType()->typeClass() != Type::Union) {
-        invokeRefs_.push_back(*it);
-      }
-    }
-
-    std::sort(invokeRefs_.begin(), invokeRefs_.end(), TypeOrder());
-    for (unsigned i = 0; i < invokeRefs_.size(); ++i) {
-      invokeRefs_[i].second.index = i + 1;
-      mmd_.invokeMap()[invokeRefs_[i].first].index = i + 1;
-    }
-
-#if 0
-    diag.debug() << invokeRefs_.size() << " unique invoke map entries added";
-    for (TypeArray::iterator it = invokeRefs_.begin(); it != invokeRefs_.end(); ++it) {
-      diag.debug() << Format_Type << "   " << it->second.index << " " << it->first <<
-          (cast<FunctionType>(it->first)->isStatic() ? " [static]" : "");
-    }
-#endif
-  }
-
   emitNameTable(module);
-  emitCallAdapterFnTable(module);
-
-  for (ReflectedSymbolMap::const_iterator it = rmdMap_.begin(); it != rmdMap_.end(); ++it) {
-    DASSERT(it->second != NULL);
-    emitReflectedDefn(it->second, it->first);
-  }
-
   for (TypeSet::iterator it = typeExports_.begin(); it != typeExports_.end(); ++it) {
-    if (const CompositeType * ctype = dyn_cast<CompositeType>(*it)) {
-      emitCompositeType(getReflectionMetadata(ctype->typeDefn()), ctype);
-    }
+    emitType(*it);
   }
 }
 
@@ -373,37 +500,6 @@ void Reflector::emitNameTable(Module * module) {
   }
 }
 
-void Reflector::emitCallAdapterFnTable(Module * module) {
-  std::string invokeTableSymbol;
-  if (invokeRefs_.empty()) {
-    invokeTableSymbol = ".invoke_fns.empty";
-  } else {
-    invokeTableSymbol = ".invoke_fns." + module->linkageName();
-  }
-
-  const llvm::Type * invokeFnType = cg_.getCallAdapterFnType();
-  const llvm::PointerType * invokeFnPtrType =
-      cg_.getCallAdapterFnType()->getPointerTo();
-
-  ConstantList invokeFnList;
-  invokeFnList.push_back(llvm::ConstantPointerNull::get(invokeFnPtrType));
-  for (TypeArray::const_iterator it = invokeRefs_.begin(); it != invokeRefs_.end(); ++it) {
-    const FunctionType * ft = cast<FunctionType>(it->first);
-    invokeFnList.push_back(cg_.genCallAdapterFn(ft));
-  }
-
-  Constant * invokeFnArray = ConstantArray::get(
-      ArrayType::get(invokeFnPtrType, invokeFnList.size()),
-      invokeFnList);
-  GlobalVariable * invokeFnListPtr = new GlobalVariable(*irModule_,
-      invokeFnArray->getType(), true, GlobalValue::LinkOnceODRLinkage,
-      invokeFnArray, invokeTableSymbol);
-  llvm::Constant * gepIndices[2];
-  gepIndices[0] = gepIndices[1] = cg_.getInt32Val(0);
-  invokeFnTableVar_ = llvm::ConstantExpr::getInBoundsGetElementPtr(
-      invokeFnListPtr, &gepIndices[0], 2);
-}
-
 void Reflector::addDefn(const Defn * def) {
   if (def->isNonreflective() || !isExport(def)) {
     return;
@@ -423,36 +519,20 @@ void Reflector::addDefn(const Defn * def) {
         case Type::Struct:
         case Type::Interface:
         case Type::Protocol: {
+          const CompositeType * ctype = static_cast<const CompositeType *>(type);
           ReflectionMetadata * rmd = getReflectionMetadata(def);
           diag.indent();
           cg_.nameTable().addQualifiedName(def->qualifiedName())->use();
-          if (def->isTemplateInstance()) {
-            getReflectionMetadata(def->templateInstance()->templateDefn());
-            rmd->addTypeRef(cast<TypeDefn>(def->templateInstance()->templateDefn())->typeValue());
-            rmd->addTypeRef(def->templateInstance()->typeArgs());
-          } else {
-            const CompositeType * ctype = static_cast<const CompositeType *>(type);
-            if (def->isTemplate()) {
-              const TemplateSignature * tsig = def->templateSignature();
-              for (const Defn * param = tsig->paramScope().firstMember(); param != NULL;
-                  param = param->nextInScope()) {
-                cg_.nameTable().addName(param->name())->use();
-              }
-
-              for (ClassList::const_iterator it = ctype->bases().begin();
-                  it != ctype->bases().end(); ++it) {
-                rmd->addTypeRef(*it);
-              }
-              //addASTDecl(def->ast());
-            } else {
-              for (ClassList::const_iterator it = ctype->bases().begin();
-                  it != ctype->bases().end(); ++it) {
-                rmd->addTypeRef(*it);
-              }
-
-              addMembers(ctype->memberScope(), rmd);
-            }
+          for (ClassList::const_iterator it = ctype->bases().begin();
+              it != ctype->bases().end(); ++it) {
+            getTypePtr(*it);
           }
+
+          for (size_t i = 0; i < ctype->numTypeParams(); ++i) {
+            getTypePtr(ctype->typeParam(i));
+          }
+
+          addMembers(ctype->memberScope(), rmd);
           diag.unindent();
           break;
         }
@@ -465,6 +545,7 @@ void Reflector::addDefn(const Defn * def) {
           diag.debug() << "Emitting metadata for enum " << etype;
           diag.indent();
 #endif
+          getEnumTypePtr(etype);
           //addMembers(etype->memberScope(), rmd);
 #if DEBUG_VERBOSE
           diag.unindent();
@@ -535,7 +616,10 @@ void Reflector::addMember(const Defn * def, ReflectionMetadata * rmd) {
     case Defn::Typedef: {
       const TypeDefn * td = static_cast<const TypeDefn *>(def);
       const Type * type = td->typeValue();
-      rmd->addTypeRef(type);
+      if (td->isSingular()) {
+        getTypePtr(type);
+        //mmd_.addExport(td);
+      }
       break;
     }
 
@@ -547,8 +631,14 @@ void Reflector::addMember(const Defn * def, ReflectionMetadata * rmd) {
     case Defn::Var:
     case Defn::Let: {
       const VariableDefn * v = static_cast<const VariableDefn *>(def);
+      if (v->type()->typeClass() == Type::NArray ||
+          v->type()->typeClass() == Type::FlexibleArray ||
+          v->type()->typeClass() == Type::Function) {
+        break;
+      }
       cg_.nameTable().addName(v->name())->use();
       rmd->addTypeRef(v->type());
+      getTypePtr(v->type());
 #if DEBUG_VERBOSE
       diag.debug() << "Emitting metadata for var " << def;
 #endif
@@ -560,6 +650,7 @@ void Reflector::addMember(const Defn * def, ReflectionMetadata * rmd) {
       const PropertyDefn * prop = static_cast<const PropertyDefn *>(def);
       cg_.nameTable().addName(prop->name())->use();
       rmd->addTypeRef(prop->type());
+      getTypePtr(prop->type());
 #if DEBUG_VERBOSE
       diag.debug() << "Emitting metadata for property " << def;
 #endif
@@ -570,24 +661,14 @@ void Reflector::addMember(const Defn * def, ReflectionMetadata * rmd) {
     /*case Defn::Macro:*/ {
       const FunctionDefn * fn = static_cast<const FunctionDefn *>(def);
       const FunctionType * fnType = fn->functionType();
-      if (!fn->isIntrinsic() && !fn->isNonreflective() && fn->isSingular()) {
+      if (!fn->isIntrinsic() && !fn->isNonreflective() && fn->isSingular()
+          && fn->functionType() != NULL) {
         cg_.nameTable().addName(fn->name())->use();
-        DASSERT(fn->functionType());
-        rmd->addTypeRef(fnType);
-        for (ParameterList::const_iterator it = fn->functionType()->params().begin();
-            it != fn->functionType()->params().end(); ++it) {
-          const ParameterDefn * p = *it;
-          cg_.nameTable().addName(p->name())->use();
-        }
-
-        const Type * selfType = fnType->selfParam() != NULL ? fnType->selfParam()->type() : NULL;
-        // For now, we only support reflected invocation of global, class, or interface methods.
-        if (/*fn->isSingular() &&*/ !fn->isUnsafe() &&
-            (selfType == NULL ||
-                selfType->typeClass() == Type::Class ||
-                selfType->typeClass() == Type::Interface)) {
-          TagInfo & info = mmd_.invokeMap()[fnType];
-          info.useCount++;
+        getTypePtr(fn->functionType());
+        rmd->addTypeRef(fn->functionType());
+        for (ParameterList::const_iterator it = fnType->params().begin();
+            it != fnType->params().end(); ++it) {
+          cg_.nameTable().addName((*it)->name())->use();
         }
 
 #if DEBUG_VERBOSE
@@ -622,50 +703,54 @@ ReflectionMetadata * Reflector::getReflectionMetadata(const Defn * def) {
   }
 
   ReflectionMetadata * rsym = new ReflectionMetadata(def, mmd_);
-  std::string metaVarName(".meta." + def->linkageName());
-  if (def->defnType() == Defn::Mod) {
-    metaVarName = ".moduleMeta." + def->linkageName();
-  }
-  rsym->setVar(new GlobalVariable(*irModule_, Builtins::typeReflectionMetadata->irType(),
-      false,
-      def->isSynthetic() ? GlobalValue::LinkOnceAnyLinkage : GlobalValue::ExternalLinkage,
-      NULL, metaVarName));
   rmdMap_[def] = rsym;
   return rsym;
 }
 
-llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type) {
-  std::string typeSymbol(".compositeType." + type->typeDefn()->linkageName());
-  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
-  if (var != NULL) {
-    return var;
-  }
+void Reflector::emitType(const Type * type) {
+  switch (type->typeClass()) {
+    case Type::Primitive:
+      diag.fatal() << "Attempt to emit type pointer for primtitive type: " << type;
+      break;
 
-  if (!isExport(type->typeDefn())) {
-    //diag.debug() << "Importing type : " << type;
-    return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), true,
-        GlobalValue::ExternalLinkage, NULL, typeSymbol);
-  }
+    case Type::Class:
+    case Type::Struct:
+    case Type::Interface:
+    case Type::Protocol:
+      emitCompositeType(static_cast<const CompositeType *>(type));
+      break;
 
-  typeExports_.insert(type);
-  mmd_.addExport(type->typeDefn());
-  return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), false,
-      type->typeDefn()->isSynthetic()
-          ? GlobalValue::LinkOnceAnyLinkage
-          : GlobalValue::ExternalLinkage,
-      NULL, typeSymbol);
+    case Type::Enum:
+      emitEnumType(static_cast<const EnumType *>(type));
+      break;
+
+    case Type::Tuple:
+    case Type::Union:
+    case Type::NAddress:
+      emitDerivedType(type);
+      break;
+
+    case Type::Function:
+      emitFunctionType(static_cast<const FunctionType *>(type));
+      break;
+
+    case Type::NArray:
+      DFAIL("Implement");
+
+    default:
+      diag.fatal() << "Attempt to emit type pointer for unsupported type: " << type;
+      break;
+  }
 }
 
-llvm::GlobalVariable * Reflector::emitCompositeType(
-    ReflectionMetadata * rmd, const CompositeType * type) {
+void Reflector::emitCompositeType(const CompositeType * type) {
   GlobalVariable * var = getCompositeTypePtr(type);
   if (var->hasInitializer()) {
-    return var;
+    return;
   }
 
-  //diag.debug() << "Emitting composite type: " << Format_Verbose << type;
-
   TypeDefn * td = type->typeDefn();
+  ReflectionMetadata * rmd = td->isNonreflective() ? NULL : getReflectionMetadata(td);
   GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
   bool isNonReflective = td->isNonreflective();
 
@@ -675,265 +760,232 @@ llvm::GlobalVariable * Reflector::emitCompositeType(
   sb.addIntegerField(type_typeKind.type(), typeKind(type->typeClass()));
   sb.combine();
 
-  // CompositeType._meta
-  sb.addField(rmd->var());
-
   // CompositeType._names
   sb.addField(nameTableVar);
   NameTable::Name * qname = cg_.nameTable().getQualifiedName(td->qualifiedName());
   sb.addIntegerField(compositeType_nameIndex, qname ? qname->encodedIndex() : 0);
 
+  // CompositeType._size
   if (type->isSingular()) {
     sb.addField(llvm::ConstantExpr::getSizeOf(type->irType()));
   } else {
     sb.addIntegerField(compositeType_size.type(), 0);
   }
 
+  // CompositeType._typeInfo
   sb.addField(cg_.getTypeInfoBlockPtr(type));
 
-  if (type->super() != NULL && !td->isTemplateInstance()) {
-    sb.addField(getCompositeTypePtr(type->super()));
-  } else {
-    sb.addNullField(compositeType_superType.type());
+  // Generate the stream of definition data.
+  if (rmd != NULL) {
+    rmd->assignIndices();
+    raw_ostream & strm = rmd->strm();
+    rmd->setMethodBaseIndex(type->instanceMethodCount());
+    emitAttributeSection(rmd, td->attrs());
+    emitReflectedMembers(rmd, type->memberScope());
+    strm << char(0);
+    strm.flush();
   }
 
-  sb.addNullField(compositeType_interfaces.type());
-  sb.addNullField(compositeType_typeParams.type());
+  // Definition stream
+  if (rmd != NULL && !rmd->strmData().empty()) {
+    std::string defnStrmSymbol(".members." + td->linkageName());
+    Constant * defnStrm = ConstantArray::get(context_, rmd->strmData(), false);
+    GlobalVariable * defnStrmVar = new GlobalVariable(*irModule_, defnStrm->getType(),
+        true, GlobalValue::InternalLinkage, defnStrm, defnStrmSymbol);
+    sb.addField(llvm::ConstantExpr::getPointerCast(defnStrmVar, builder_.getInt8PtrTy()));
+  } else {
+    sb.addNullField(compositeType_strmData.type());
+  }
+
+  // CompositeType._typeRefs
+  if (rmd != NULL && !rmd->typeRefs().empty()) {
+    sb.addPointerField(compositeType_typeRefs, emitTypeRefArray(rmd, td->linkageName()));
+  } else {
+    sb.addNullField(compositeType_typeRefs.type());
+  }
+
+  // CompositeType._globalRefs
+  if (rmd != NULL && !rmd->globalRefs().empty()) {
+    sb.addPointerField(compositeType_globalRefs, emitGlobalRefArray(rmd, td->linkageName()));
+  } else {
+    sb.addNullField(compositeType_globalRefs.type());
+  }
+
+  // CompositeType._methodRefs
+  if (rmd != NULL && !rmd->methodRefs().empty()) {
+    sb.addPointerField(compositeType_methodRefs, emitMethodRefArray(rmd, td->linkageName()));
+  } else {
+    sb.addNullField(compositeType_methodRefs.type());
+  }
+
+  // CompositeType._supertype
+  if (type->super() != NULL) {
+    sb.addField(getCompositeTypePtr(type->super()));
+  } else {
+    sb.addNullField(compositeType_supertype.type());
+  }
+
+  // CompositeType._interfaces
+  ConstTypeList interfaceList;
+  for (ClassList::const_iterator it = type->bases().begin(); it != type->bases().end(); ++it) {
+    if ((*it)->typeClass() == Type::Interface) {
+      interfaceList.push_back(*it);
+    }
+  }
+  sb.addPointerField(compositeType_interfaces, emitStaticTypeList(interfaceList));
+
+  // CompositeType._typeParams
+  ConstTypeList typeParamList;
+  if (!td->isNonreflective()) {
+    type->getTypeParams(typeParamList);
+  }
+  sb.addPointerField(compositeType_typeParams, emitStaticTypeList(typeParamList));
+
+  // Lazily-initialized fields.
   sb.addNullField(compositeType_attributes.type());
   sb.addNullField(compositeType_fields.type());
   sb.addNullField(compositeType_properties.type());
   sb.addNullField(compositeType_constructors.type());
   sb.addNullField(compositeType_methods.type());
-  sb.addNullField(compositeType_innerTypes.type());
-  sb.addNullField(compositeType_alloc.type());
+
+  if (!td->isNonreflective()) {
+    sb.addPointerField(compositeType_memberTypes, emitMemberTypes(type->memberScope()));
+  } else {
+    sb.addNullField(compositeType_memberTypes.type());
+  }
+
+  if (type->isSingular()) {
+    Function * alloc = cg_.getTypeAllocator(type);
+    if (alloc != NULL) {
+      sb.addPointerField(compositeType_alloc, alloc);
+    } else {
+      sb.addNullField(compositeType_alloc.type());
+    }
+  } else {
+    sb.addNullField(compositeType_alloc.type());
+  }
+
   sb.addNullField(compositeType_noArgCtor.type());
+  sb.addIntegerField(compositeType_methodBaseIndex, type->instanceMethodCount());
 
   var->setInitializer(sb.build(Builtins::typeCompositeType->irType()));
-
-  return var;
 }
 
-void Reflector::emitReflectedDefn(ReflectionMetadata * rmd, const Defn * def) {
-  if (!isExport(def)) {
+void Reflector::emitEnumType(const EnumType * type) {
+  GlobalVariable * var = getEnumTypePtr(type);
+  if (var->hasInitializer()) {
     return;
   }
 
-  rmd->assignIndices();
+  //diag.debug() << "Emitting composite type: " << Format_Verbose << type;
 
+  TypeDefn * td = type->typeDefn();
+  ReflectionMetadata * rmd = getReflectionMetadata(td);
   GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
+  bool isNonReflective = td->isNonreflective();
 
-  // Generate the module constants structure
+  // Generate the EnumType instance
   StructBuilder sb(cg_);
-  sb.createObjectHeader(Builtins::typeReflectionMetadata);
-  sb.addNullField(rmd_value.type());
+  sb.createObjectHeader(Builtins::typeEnumType);
+  sb.addIntegerField(type_typeKind.type(), ENUM);
+  sb.combine();
+
+  // EnumType._names
   sb.addField(nameTableVar);
+  NameTable::Name * qname = cg_.nameTable().getQualifiedName(td->qualifiedName());
+  sb.addIntegerField(enumType_nameIndex, qname ? qname->encodedIndex() : 0);
 
-  // Generate the stream of encoded derived types.
-  std::string derivedTypesData;
-  raw_string_ostream derivedTypesStream(derivedTypesData);
-  rmd->encodeTypesTable(derivedTypesStream);
+  // EnumType._supertype
+  sb.addNullField(enumType_supertype.type());
+  sb.addNullField(enumType_values.type());
 
-  // Generate the stream of definition data.
-  raw_ostream & strm = rmd->strm();
-  char defnTypeId = 0;
-  NameTable::Name * qname = NULL;
-  llvm::Function * alloc = NULL;
-  if (def->isTemplateInstance()) {
-    defnTypeId = TAG_DEF_TEMPLATE_INST;
-    emitTemplateSection(rmd, def);
-    emitTypeParamsSection(rmd, def);
-    qname = cg_.nameTable().getQualifiedName(def->qualifiedName());
-    DASSERT_OBJ(qname != NULL, def);
-    //qname = NULL;
-    strm << char(0);
-    // TODO: Encode type args.
-  } else if (def->isSynthetic()) {
-    qname = cg_.nameTable().getQualifiedName(def->qualifiedName());
-    strm << char(0);
-    // It's a subtype of a template - how to deal?
+  var->setInitializer(sb.build(Builtins::typeEnumType->irType()));
+}
+
+void Reflector::emitDerivedType(const Type * type) {
+  GlobalVariable * var = getDerivedTypePtr(type);
+  if (var->hasInitializer()) {
+    return;
+  }
+
+  // Generate the DerivedType instance
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(Builtins::typeDerivedType);
+  sb.addIntegerField(type_typeKind.type(), typeKind(type->typeClass()));
+  sb.combine();
+
+  ConstTypeList typeParamList;
+  type->getTypeParams(typeParamList);
+  sb.addPointerField(derivedType_typeParams, emitStaticTypeList(typeParamList));
+
+  var->setInitializer(sb.build(Builtins::typeDerivedType->irType()));
+}
+
+void Reflector::emitFunctionType(const FunctionType * type) {
+  GlobalVariable * var = getFunctionTypePtr(type);
+  if (var->hasInitializer()) {
+    return;
+  }
+
+  // Union return values temporarily disabled for the moment.
+  bool canInvoke = false;
+  const Type * selfType = type->selfParam() != NULL ? type->selfParam()->type() : NULL;
+  const Type * returnType = type->returnType();
+  if (type->isInvocable() &&
+      returnType->typeClass() != Type::Union &&
+      (selfType == NULL ||
+          selfType->typeClass() == Type::Class ||
+          selfType->typeClass() == Type::Interface)) {
+    canInvoke = true;
+  }
+
+  // Generate the FunctionType instance
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(Builtins::typeFunctionType);
+  sb.addIntegerField(type_typeKind.type(), typeKind(type->typeClass()));
+  sb.combine();
+
+  // FunctionType._returnType
+  sb.addPointerField(functionType_returnType, getTypePtr(type->returnType()));
+
+  // FunctionType._selfType
+  if (type->selfParam() != NULL) {
+    sb.addPointerField(functionType_selfType, getTypePtr(type->selfParam()->type()));
   } else {
-    qname = cg_.nameTable().getQualifiedName(def->qualifiedName());
-    DASSERT_OBJ(qname != NULL, def);
-    if (const Module * mod = dyn_cast<Module>(def)) {
-      defnTypeId = TAG_DEF_MODULE;
-      emitAttributeSection(rmd, mod->attrs());
-      emitReflectedMembers(rmd, mod);
-    } else if (const NamespaceDefn * ns = dyn_cast<NamespaceDefn>(def)) {
-      defnTypeId = TAG_DEF_NAMESPACE;
-      emitAttributeSection(rmd, ns->attrs());
-      emitReflectedMembers(rmd, &ns->memberScope());
-    } else if (const TypeDefn * td = dyn_cast<TypeDefn>(def)) {
-      const Type * type = td->typeValue();
-      if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-        switch (ctype->typeClass()) {
-          case Type::Class:
-            defnTypeId = TAG_DEF_CLASS;
-            if (ctype->isSingular()) {
-              alloc = cg_.getTypeAllocator(ctype);
-            }
-            break;
-          case Type::Struct: defnTypeId = TAG_DEF_STRUCT; break;
-          case Type::Interface: defnTypeId = TAG_DEF_INTERFACE; break;
-          case Type::Protocol: defnTypeId = TAG_DEF_PROTOCOL; break;
-          default:
-            DFAIL("Illegal state");
-            break;
-        }
-        rmd->setMethodBaseIndex(ctype->instanceMethodCount());
-        emitAttributeSection(rmd, td->attrs());
-        if (td->isTemplate()) {
-          emitTemplateParamsSection(rmd, def);
-        }
-        emitBaseClassSection(rmd, ctype);
-        emitReflectedMembers(rmd, ctype->memberScope());
+    sb.addNullField(functionType_selfType.type());
+  }
 
-        emitCompositeType(rmd, ctype);
-      } else if (const EnumType * etype = dyn_cast<EnumType>(type)) {
-        defnTypeId = TAG_DEF_ENUM;
-        strm << char(TAG_DEF_ENUM) << VarInt(qname->encodedIndex());
-        emitAttributeSection(rmd, td->attrs());
-      }
+  // FunctionType._paramTypes
+  sb.addPointerField(functionType_paramTypes, emitStaticTypeList(type->paramTypes()->members()));
+
+  // FunctionType._invoke
+  if (canInvoke) {
+    sb.addField(cg_.genCallAdapterFn(type));
+  } else {
+    sb.addNullField(functionType_invoke.type());
+  }
+
+  var->setInitializer(sb.build(Builtins::typeFunctionType->irType()));
+}
+
+llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
+  ConstTypeList memberTypes;
+
+  for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
+    if (de->isNonreflective() || !isExport(de)) {
+      continue;
     }
 
-    strm << char(0);
+    if (de->isSingular() && de->defnType() == Defn::Typedef) {
+      memberTypes.push_back(static_cast<const TypeDefn *>(de)->typeValue());
+    }
   }
 
-#if DEBUG_VERBOSE
-  rmd->dump();
-  if (!derivedTypesData.empty()) {
-    diag.debug() << "  " << derivedTypesData.size() << " bytes of derived type information added.";
-  }
-#endif
-
-  // Generate the table of TypeInfoBlocks referred to by this module.
-  ConstantList classRefList;
-  const ReflectionMetadata::TypeArray & compositeTypes = rmd->compositeTypeRefs();
-  for (ReflectionMetadata::TypeArray::const_iterator it = compositeTypes.begin();
-      it != compositeTypes.end(); ++it) {
-    classRefList.push_back(cg_.getTypeInfoBlockPtr(cast<CompositeType>(it->first)));
-  }
-
-  // Generate the table of TypeInfoBlocks referred to by this module.
-  ConstantList enumRefList;
-  const ReflectionMetadata::TypeArray & enumTypes = rmd->enumTypeRefs();
-  for (ReflectionMetadata::TypeArray::const_iterator it = enumTypes.begin();
-      it != enumTypes.end(); ++it) {
-    enumRefList.push_back(cg_.getEnumInfoBlock(cast<EnumType>(it->first)));
-  }
-
-  // Write out encoded derived type stream
-  if (!derivedTypesData.empty()) {
-    std::string derivedTypesSymbol(".derived_typerefs." + def->linkageName());
-    Constant * derivedTypes = ConstantArray::get(context_, derivedTypesData, false);
-    GlobalVariable * derivedTypesVar = new GlobalVariable(*irModule_, derivedTypes->getType(),
-        true, GlobalValue::InternalLinkage, derivedTypes, derivedTypesSymbol);
-
-    sb.addField(llvm::ConstantExpr::getPointerCast(derivedTypesVar, builder_.getInt8PtrTy()));
-  } else {
-    sb.addNullField(rmd_strmTypeRefs.type());
-  }
-
-  // Definition stream
-  strm.flush();
-  if (rmd->strmData().empty()) {
-    sb.addNullField(rmd_strmDefns.type());
-  } else {
-    std::string defnStrmSymbol(".meta_defn." + def->linkageName());
-    Constant * defnStrm = ConstantArray::get(context_, rmd->strmData(), false);
-    GlobalVariable * defnStrmVar = new GlobalVariable(*irModule_, defnStrm->getType(),
-        true, GlobalValue::InternalLinkage, defnStrm, defnStrmSymbol);
-    sb.addField(llvm::ConstantExpr::getPointerCast(defnStrmVar, builder_.getInt8PtrTy()));
-  }
-
-  // Definition info
-  sb.addIntegerField(rmd_nameIndex, qname ? qname->encodedIndex() : 0);
-  sb.addIntegerField(rmd_methodBaseIndex, rmd->methodBaseIndex());
-  sb.addIntegerField(rmd_defnType, defnTypeId);
-  sb.addIntegerField(rmd_traits, memberTraits(def));
-
-  // Derived type array is initially null.
-  sb.addNullField(rmd_derivedTypes.type());
-
-  // Write out the list of TIB references
-  if (!classRefList.empty()) {
-    const llvm::PointerType * tibPointerType =
-        Builtins::typeTypeInfoBlock.irType()->getPointerTo();
-    Constant * compositeTypeArray = ConstantArray::get(
-        ArrayType::get(tibPointerType, classRefList.size()),
-        classRefList);
-    std::string encodedCompositesSymbol(".composite_typerefs." + def->linkageName());
-    GlobalVariable * classRefListPtr = new GlobalVariable(*irModule_,
-        compositeTypeArray->getType(), true, GlobalValue::InternalLinkage,
-        compositeTypeArray, encodedCompositesSymbol);
-
-    sb.addField(llvm::ConstantExpr::getPointerCast(
-        classRefListPtr, tibPointerType->getPointerTo()));
-  } else {
-    sb.addNullField(rmd_compositeTypes.type());
-  }
-
-  // Write out the list of EIB references
-  if (!enumRefList.empty()) {
-    const llvm::PointerType * eibPointerType =
-        Builtins::typeEnumInfoBlock.irType()->getPointerTo();
-    Constant * enumTypeArray = ConstantArray::get(
-        ArrayType::get(eibPointerType, enumRefList.size()),
-        enumRefList);
-    std::string encodedEnumSymbol(".enum_typerefs." + def->linkageName());
-    GlobalVariable * enumRefListPtr = new GlobalVariable(*irModule_,
-        enumTypeArray->getType(), true, GlobalValue::InternalLinkage,
-        enumTypeArray, encodedEnumSymbol);
-
-    sb.addField(llvm::ConstantExpr::getPointerCast(
-        enumRefListPtr, eibPointerType->getPointerTo()));
-  } else {
-    sb.addNullField(rmd_enumTypes.type());
-  }
-
-  sb.addField(invokeFnTableVar_);
-
-  if (!rmd->methodTable().empty()) {
-    Constant * methodTable = ConstantArray::get(
-        ArrayType::get(rmd_MethodPtrType.get()->typeValue()->irType(), rmd->methodTable().size()),
-        rmd->methodTable());
-    std::string methodTableSymbol(".methods." + def->linkageName());
-    GlobalVariable * methodTableVar = new GlobalVariable(*irModule_, methodTable->getType(), true,
-        GlobalValue::InternalLinkage, methodTable, methodTableSymbol);
-    sb.addField(llvm::ConstantExpr::getPointerCast(
-        methodTableVar, cast<llvm::PointerType>(rmd_methods.type()->irType())));
-  } else {
-    sb.addNullField(rmd_methods.type());
-  }
-
-  /** The list of retained attributes for the reflected definition. */
-  if (!rmd->retainedAttrTable().empty()) {
-    const llvm::Type * attrPointerType = Builtins::typeObject.irEmbeddedType();
-    Constant * retainedAttrTable = ConstantArray::get(
-        ArrayType::get(attrPointerType, rmd->retainedAttrTable().size()),
-        rmd->retainedAttrTable());
-    std::string retainedAttrTableSymbol(".rattrs." + def->linkageName());
-    GlobalVariable * retainedAttrTableVar = new GlobalVariable(
-        *irModule_, retainedAttrTable->getType(), true,
-        GlobalValue::InternalLinkage, retainedAttrTable, retainedAttrTableSymbol);
-    sb.addField(llvm::ConstantExpr::getPointerCast(
-        retainedAttrTableVar, cast<llvm::PointerType>(rmd_retainedAttrs.type()->irType())));
-  } else {
-    sb.addNullField(rmd_retainedAttrs.type());
-  }
-
-  /** The allocator function for this type. */
-  if (alloc != NULL) {
-    sb.addField(llvm::ConstantExpr::getPointerCast(alloc, rmd_alloc.type()->irEmbeddedType()));
-  } else {
-    sb.addNullField(rmd_alloc.type());
-  }
-
-  rmd->var()->setInitializer(sb.build(Builtins::typeReflectionMetadata->irType()));
+  return emitStaticTypeList(memberTypes);
 }
 
 void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableScope * scope) {
   DefnList namespaces;
-  TypeList memberTypes;
   DefnList fields;
   DefnList properties;
   MethodList methods;
@@ -963,13 +1015,6 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
       case Defn::Namespace:
         break;
 
-      case Defn::Typedef:
-        // TODO: Handle non-singular types...
-        if (de->isSingular()) {
-          memberTypes.push_back(static_cast< TypeDefn * const>(de)->typeValue());
-        }
-        break;
-
       case Defn::Property:
       case Defn::Indexer:
         break;
@@ -991,21 +1036,6 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
     nsStrm.flush();
     if (!nsData.empty()) {
       rmd->strm() << char(TAG_SECTION_NAMESPACES) << VarInt(nsData.size()) << nsData;
-    }
-  }
-
-  if (!memberTypes.empty()) {
-    std::sort(memberTypes.begin(), memberTypes.end(), LexicalTypeOrdering());
-    std::string typeData;
-    raw_string_ostream typeStrm(typeData);
-
-    for (TypeList::const_iterator it = memberTypes.begin(); it != memberTypes.end(); ++it) {
-      rmd->encodeTypeRef(*it, typeStrm);
-    }
-
-    typeStrm.flush();
-    if (!typeData.empty()) {
-      rmd->strm() << char(TAG_SECTION_MEMBER_TYPES) << VarInt(typeData.size()) << typeData;
     }
   }
 
@@ -1040,7 +1070,6 @@ void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableSco
   }
 
   if (!methods.empty()) {
-    //std::sort(methods.begin(), methods.end(), DefnOrder());
     std::string methodData;
     raw_string_ostream methodStrm(methodData);
 
@@ -1070,7 +1099,7 @@ void Reflector::emitAttributeSection(ReflectionMetadata * rmd, const ExprList & 
     for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
       llvm::Constant * retainedAttr = getRetainedAttr(*it);
       if (retainedAttr != NULL) {
-        size_t attrIndex = rmd->addRetainedAttribute(retainedAttr);
+        size_t attrIndex = rmd->addGlobalRef(retainedAttr);
         attrStrm << VarInt(attrIndex);
       }
     }
@@ -1078,24 +1107,6 @@ void Reflector::emitAttributeSection(ReflectionMetadata * rmd, const ExprList & 
     attrStrm.flush();
     if (!attrData.empty()) {
       rmd->strm() << char(TAG_SECTION_ATTRIBUTES) << VarInt(attrData.size()) << attrData;
-    }
-  }
-}
-
-void Reflector::emitTypeParamsSection(ReflectionMetadata * rmd, const Defn * def) {
-  const TemplateInstance * ts = def->templateInstance();
-  if (ts != NULL) {
-    std::string paramData;
-    raw_string_ostream paramStrm(paramData);
-
-    for (TupleType::const_iterator it = ts->typeArgs()->begin(); it != ts->typeArgs()->end();
-        ++it) {
-      rmd->encodeTypeRef(*it, paramStrm);
-    }
-
-    paramStrm.flush();
-    if (!paramData.empty()) {
-      rmd->strm() << char(TAG_SECTION_TYPE_PARAMS) << VarInt(paramData.size()) << paramData;
     }
   }
 }
@@ -1109,32 +1120,6 @@ void Reflector::emitTemplateParamsSection(ReflectionMetadata * rmd, const Defn *
     paramStrm.flush();
     if (!paramData.empty()) {
       rmd->strm() << char(TAG_SECTION_TEMPLATE_PARAMS) << VarInt(paramData.size()) << paramData;
-    }
-  }
-}
-
-void Reflector::emitBaseClassSection(ReflectionMetadata * rmd, const CompositeType * type) {
-  if (type->super() != NULL) {
-    std::string baseClassData;
-    raw_string_ostream baseClassStrm(baseClassData);
-    rmd->encodeTypeRef(type->super(), baseClassStrm);
-    baseClassStrm.flush();
-    rmd->strm() << char(TAG_SECTION_BASE_CLASS) << VarInt(baseClassData.size()) << baseClassData;
-  }
-}
-
-void Reflector::emitInterfacesSection(ReflectionMetadata * rmd, const CompositeType * type) {
-  if (!type->bases().empty()) {
-    std::string ifaceData;
-    raw_string_ostream ifaceStrm(ifaceData);
-    for (ClassList::const_iterator it = type->bases().begin(); it != type->bases().end(); ++it) {
-      if (*it != type->super()) {
-        rmd->encodeTypeRef(*it, ifaceStrm);
-      }
-    }
-    ifaceStrm.flush();
-    if (!ifaceData.empty()) {
-      rmd->strm() << char(TAG_SECTION_INTERFACES) << VarInt(ifaceData.size()) << ifaceData;
     }
   }
 }
@@ -1153,20 +1138,11 @@ void Reflector::emitTemplateSection(ReflectionMetadata * rmd, const Defn * def) 
   }
 }
 
-//void Reflector::emitInnerTypeDefn(ReflectionMetadata * rmd, const Defn * def) {
-//}
-
 void Reflector::emitNamespaceDefn(ReflectionMetadata * rmd, const NamespaceDefn * def,
     raw_ostream & out) {
 }
 
 void Reflector::emitFieldDefn(ReflectionMetadata * rmd, const VariableDefn * def, raw_ostream & out) {
-
-}
-
-void Reflector::emitConstructorDefn(ReflectionMetadata * rmd, const FunctionDefn * def,
-    raw_ostream & out) {
-
 }
 
 void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn, raw_ostream & out) {
@@ -1174,18 +1150,6 @@ void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn
     // TODO: Implement.
     return;
   }
-
-  // Add the method to the method table.
-//  if (fn->isAbstract() || fn->isUndefined() || fn->isIntrinsic() ||
-//      fn->isInterfaceMethod() || !fn->isSingular()) {
-//    rmd->methodTable().push_back(
-//        ConstantPointerNull::get(
-//            cast<llvm::PointerType>(rmd_MethodPtrType.get()->typeValue()->irType())));
-//  } else  {
-//    llvm::Constant * fnVal = cg_.genFunctionValue(fn);
-//    rmd->methodTable().push_back(
-//        llvm::ConstantExpr::getBitCast(fnVal, rmd_MethodPtrType.get()->typeValue()->irType()));
-//  }
 
   char tag = TAG_DEF_METHOD;
   if (fn->defnType() == Defn::Macro) {
@@ -1232,18 +1196,17 @@ void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn
     methodIndex = fn->dispatchIndex();
   } else {
     const FunctionDefn * coalescedFn = fn->mergeTo() != NULL ? fn->mergeTo() : fn;
-    const llvm::Type * methodType = rmd_MethodPtrType.get()->typeValue()->irType();
+    const llvm::Type * methodType = cg_.getMethodPointerType();
     llvm::Constant * methodVal = llvm::ConstantExpr::getBitCast(
         cg_.genFunctionValue(coalescedFn), methodType);
-    methodIndex = rmd->methodBaseIndex() + rmd->methodTable().size();
-    rmd->methodTable().push_back(methodVal);
+    methodIndex = rmd->methodBaseIndex() + rmd->methodRefs().size();
+    rmd->methodRefs().push_back(methodVal);
   }
 
   // Definition tag and name
-  out << tag << flags << VarInt(name->encodedIndex()) << VarInt(uint32_t(methodIndex));
-
-  // Return type and parameter types.
+  out << tag << flags << VarInt(name->encodedIndex());
   rmd->encodeTypeRef(fn->functionType(), out);
+  out << VarInt(uint32_t(methodIndex));
 
   // Declare parameters
   const ParameterList & params = fn->functionType()->params();
@@ -1265,22 +1228,17 @@ void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn
     NameTable::Name * paramName = cg_.nameTable().getName(p->name());
     DASSERT_OBJ(paramName != NULL, fn);
     out << char(TAG_DEF_PARAM) << VarInt(paramName->encodedIndex());
+    //rmd->encodeTypeRef(p->type(), out);
   }
 
   // Method attributes
   for (ExprList::const_iterator it = fn->attrs().begin(); it != fn->attrs().end(); ++it) {
     llvm::Constant * retainedAttr = getRetainedAttr(*it);
     if (retainedAttr != NULL) {
-      size_t attrIndex = rmd->addRetainedAttribute(retainedAttr);
+      size_t attrIndex = rmd->addGlobalRef(retainedAttr);
       out << char(TAG_DEF_ATTRIBUTE) << VarInt(attrIndex);
     }
   }
-
-  // method tag
-  // Name index
-  // Function type tuple index
-  // method code index (NO)
-  // invoke function index.
 
   out << char(TAG_DEF_SCOPE_END);
 }
@@ -1289,6 +1247,109 @@ void Reflector::emitPropertyDefn(ReflectionMetadata * rmd, const PropertyDefn * 
     raw_ostream & out) {
 }
 
+llvm::Constant * Reflector::emitStaticTypeList(const ConstTypeList & types) {
+  // Generate the symbolic name of the type list.
+  std::string sym = ".typelist.(";
+  for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
+    if (it != types.begin()) {
+      sym.append(",");
+    }
+    typeLinkageName(sym, *it);
+  }
+  sym.append(")");
+
+  GlobalVariable * var = irModule_->getGlobalVariable(sym, true);
+  if (var != NULL) {
+    return var;
+  }
+
+  const llvm::Type * typePtrType = Builtins::typeType->irEmbeddedType();
+  ConstantList typePtrList;
+  for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
+    llvm::Constant * ptr = getTypePtr(*it);
+    typePtrList.push_back(llvm::ConstantExpr::getPointerCast(ptr, typePtrType));
+  }
+
+  Constant * typePtrArray = ConstantArray::get(
+      ArrayType::get(typePtrType, typePtrList.size()),
+      typePtrList);
+
+  StructBuilder sb(cg_);
+  sb.createObjectHeader(Builtins::typeStaticTypeList);
+  sb.addIntegerField(staticTypeList_size, typePtrList.size());
+  sb.addField(typePtrArray);
+  Constant * typeListStruct = sb.build();
+
+  var = new GlobalVariable(*irModule_, typeListStruct->getType(), true,
+      GlobalValue::LinkOnceAnyLinkage, typeListStruct, sym);
+  return var;
+}
+
+llvm::Constant * Reflector::emitTypeRefArray(const ReflectionMetadata * rmd,
+    llvm::StringRef baseName) {
+  ConstantList typeRefList;
+  const llvm::Type * typePointerType = Builtins::typeType.irEmbeddedType();
+  const ReflectionMetadata::TypeArray & typeRefs = rmd->typeRefs();
+  for (ReflectionMetadata::TypeArray::const_iterator it = typeRefs.begin();
+      it != typeRefs.end(); ++it) {
+    typeRefList.push_back(
+        llvm::ConstantExpr::getPointerCast(getTypePtr(it->first), typePointerType));
+  }
+
+  // Create constant array
+  Constant * typeArray = ConstantArray::get(
+      ArrayType::get(typePointerType, typeRefList.size()),
+      typeRefList);
+
+  // Declare global
+  return new GlobalVariable(*irModule_,
+      typeArray->getType(), true, GlobalValue::InternalLinkage,
+      typeArray, ".typeRefs." + baseName);
+}
+
+llvm::Constant * Reflector::emitGlobalRefArray(const ReflectionMetadata * rmd,
+    llvm::StringRef baseName) {
+  ConstantList globalRefList;
+  const llvm::Type * globalPointerType = Builtins::typeObject.irEmbeddedType();
+  const ReflectionMetadata::ConstantArray & globalRefs = rmd->globalRefs();
+  for (ReflectionMetadata::ConstantArray::const_iterator it = globalRefs.begin();
+      it != globalRefs.end(); ++it) {
+    globalRefList.push_back(llvm::ConstantExpr::getPointerCast(*it, globalPointerType));
+  }
+
+  // Create constant array
+  Constant * globalArray = ConstantArray::get(
+      ArrayType::get(globalPointerType, globalRefList.size()),
+      globalRefList);
+
+  // Declare global
+  return new GlobalVariable(*irModule_,
+      globalArray->getType(), true, GlobalValue::InternalLinkage,
+      globalArray, ".globalRefs." + baseName);
+}
+
+llvm::Constant * Reflector::emitMethodRefArray(const ReflectionMetadata * rmd,
+    llvm::StringRef baseName) {
+  ConstantList methodRefList;
+  const llvm::Type * methodPointerType = cg_.getMethodPointerType();
+  const ReflectionMetadata::ConstantArray & methodRefs = rmd->methodRefs();
+  for (ReflectionMetadata::ConstantArray::const_iterator it = methodRefs.begin();
+      it != methodRefs.end(); ++it) {
+    methodRefList.push_back(llvm::ConstantExpr::getPointerCast(*it, methodPointerType));
+  }
+
+  // Create constant array
+  Constant * methodArray = ConstantArray::get(
+      ArrayType::get(methodPointerType, methodRefList.size()),
+      methodRefList);
+
+  // Declare global var
+  return new GlobalVariable(*irModule_,
+      methodArray->getType(), true, GlobalValue::InternalLinkage,
+      methodArray, ".methodRefs." + baseName);
+}
+
+// TODO - remove this and replace all arrays with immutable lists.
 llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
@@ -1308,8 +1369,6 @@ llvm::Constant * Reflector::emitArray(
         arrayType->memberScope()->lookupSingleMember("emptyArray"));
     if (emptyArray != NULL) {
       return cast<llvm::Constant>(cg_.genLetValue(emptyArray));
-      //GlobalVariable * eaVar = cast<GlobalVariable>(cg_.genVarValue(emptyArray));
-      //return eaVar->getInitializer();
     }
   }
 

@@ -194,9 +194,6 @@ public:
 
   // Member/Container methods.
 
-  /** Add a null-terminated list of members to this defn. */
-  void addMembers(Defn ** member);
-
   /** Get the scope in which this is defined. */
   virtual Scope * definingScope() const = 0;
   virtual void setDefiningScope(Scope * scope) = 0;

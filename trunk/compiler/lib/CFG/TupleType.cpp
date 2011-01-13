@@ -188,7 +188,8 @@ ConversionRank TupleType::convertImpl(const Conversion & cn) const {
       if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(cn.fromValue)) {
         fieldConversion.fromValue = tce->arg(i);
       } else {
-        DFAIL("Implement tuple GetElement");
+        return Incompatible;
+        //DFAIL("Implement tuple memberwise conversion");
       }
 
       fieldConversion.resultValue = &fieldResult;

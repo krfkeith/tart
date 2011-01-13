@@ -163,12 +163,10 @@ public:
       or is a subclass of 'type. */
   const InterfaceTable * findBaseImplementationOf(CompositeType * type) const;
 
-  /** Add all of the methods that are referred to by this class's TypeInfoBlock as
-      definitions to this module. This is used for template instances. */
-  void addMethodDefsToModule(Module * module) const;
-
-  /** Add all of the static member variables of this class as definitions to this module. */
-  void addStaticDefsToModule(Module * module);
+  /** Add all of the definitions that are referred to by this class's TypeInfoBlock or
+      this class's CompositeType definitions to this module. This is used for template
+      instances. */
+  void addClassExportsToModule(Module * module) const;
 
   /** Add all of the ancestor classes as references to this module. */
   void addBaseXRefs(Module * module);

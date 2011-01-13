@@ -678,6 +678,7 @@ bool FunctionAnalyzer::merge() {
 
 bool FunctionAnalyzer::createReflectionData() {
   if (target->passes().begin(FunctionDefn::ReflectionPass)) {
+    FunctionType * ftype = target->functionType();
     bool doReflect = module_->isReflectionEnabled();
     if (!target->isSingular() || target->defnType() == Defn::Macro) {
       // Don't reflect uninstantiated templates
@@ -697,7 +698,6 @@ bool FunctionAnalyzer::createReflectionData() {
       }
 
       if (doReflect) {
-        FunctionType * ftype = target->functionType();
         if (ftype->selfParam() != NULL) {
           const Type * selfType = ftype->selfParam()->type();
           if (const CompositeType * cself = dyn_cast<CompositeType>(selfType)) {
@@ -717,8 +717,6 @@ bool FunctionAnalyzer::createReflectionData() {
 
     // Generate the invoke function.
     if (doReflect) {
-      FunctionType * ftype = target->functionType();
-
       // Add the other arguments
       for (ParameterList::const_iterator it = target->params().begin();
           it != target->params().end(); ++it) {
@@ -745,7 +743,9 @@ bool FunctionAnalyzer::createReflectionData() {
         }
       }
 
-      if (!doReflect) {
+      if (doReflect) {
+        ftype->setIsInvocable(true);
+      } else {
         target->addTrait(Defn::Nonreflective);
       }
     }

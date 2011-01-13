@@ -257,9 +257,13 @@ bool VarAnalyzer::resolveInitializers() {
 
         case Storage_Instance:
         case Storage_Local: {
-          // Make sure that the type gets analyzed.
+          // Make sure that the type gets analyzed. We don't need to actually import it
+          // however, since declaring a variable to be a type does not imply that we're
+          // actually calling any of that type's methods.
           if (var->type()->typeDefn() != NULL) {
-            module_->addSymbol(var->type()->typeDefn());
+            module_->queueSymbol(var->type()->typeDefn());
+//            if (var->type()->typeDefn()->isSynthetic()) {
+//            }
           }
           break;
         }

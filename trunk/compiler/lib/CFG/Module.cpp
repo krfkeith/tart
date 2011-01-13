@@ -196,11 +196,11 @@ bool Module::addSymbol(Defn * de) {
     return false;
   }
 
-//  DASSERT_OBJ(de->isSingular(), de);
+  DASSERT_OBJ(de->isSingular(), de);
   if (de->module() == this || de->isSynthetic()) {
     if (exportDefs_.insert(de)) {
       DASSERT_OBJ(!importDefs_.count(de), de);
-      defsToAnalyze_.append(de);
+      queueSymbol(de);
       if (isDebug()) {
         diag.info() << Format_Type << Format_QualifiedName << "Export: " << de;
       }
@@ -209,7 +209,7 @@ bool Module::addSymbol(Defn * de) {
   } else {
     if (importDefs_.insert(de)) {
       DASSERT_OBJ(!exportDefs_.count(de), de);
-      defsToAnalyze_.append(de);
+      queueSymbol(de);
       if (isDebug()) {
         diag.info() << Format_Type << Format_QualifiedName << "Import: " << de;
       }
@@ -218,6 +218,10 @@ bool Module::addSymbol(Defn * de) {
   }
 
   return false;
+}
+
+void Module::queueSymbol(Defn * de) {
+  defsToAnalyze_.append(de);
 }
 
 Defn * Module::nextDefToAnalyze() {

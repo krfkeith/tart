@@ -422,8 +422,6 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     CompositeType * baseClass = cast<CompositeType>(baseType);
     if (baseClass->isSingular()) {
       baseClass->addBaseXRefs(module_);
-    } else if (isFromTemplate) {
-      module_->addSymbol(baseDefn);
     }
 
     if (baseClass->isSubclassOf(type)) {
@@ -779,12 +777,11 @@ bool ClassAnalyzer::analyzeMethods() {
     // Analyze all methods
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (METHOD_DEFS.contains(member->defnType()) || member->defnType() == Defn::Property) {
-        //FunctionDefn * method = cast<FunctionDefn>(member);
         if (member->isTemplate()) {
-         analyzeTemplateSignature(member);
-         if (member->hasUnboundTypeParams()) {
-           continue;
-         }
+          analyzeTemplateSignature(member);
+          if (member->hasUnboundTypeParams()) {
+            continue;
+          }
         }
 
         if (member->visibility() != Public) {

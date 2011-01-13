@@ -1,11 +1,12 @@
+import tart.collections.List;
 import tart.core.Memory.Address;
 
 /** Description of a callable method. */
 final class Method : Member {
   private {
-	  let _typeParams:Type[];
+	  let _typeParams:List[Type];
     let _type:FunctionType;
-	  let _params:Parameter[];
+	  let _params:List[Parameter];
     let _methodPointer:Address[void];
   }
 
@@ -14,10 +15,10 @@ final class Method : Member {
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
-      attributes:Object[],
-      typeParams:Type[],
+      attributes:List[Object],
+      typeParams:List[Type],
       type:FunctionType,
-      params:Parameter[],
+      params:List[Parameter],
       methodPointer:Address[void]) {
     super(name, kind, visibility, traits, attributes);
     self._typeParams = typeParams;
@@ -27,7 +28,7 @@ final class Method : Member {
   }
 
   /** Array of type parameters. */
-  def typeParams:Type[] { get { return _typeParams; } }
+  def typeParams:List[Type] { get { return _typeParams; } }
 
   /** The type of the method. */
   def type:FunctionType { get { return _type; } }
@@ -39,10 +40,10 @@ final class Method : Member {
   def numParams:int { get { return _type.numParams; } }
   
   /** The array of function parameter types. */
-  def paramTypes:Type[] { get { return _type.paramTypes; } }
+  def paramTypes:List[Type] { get { return _type.paramTypes; } }
 
   /** The parameters of this method. */
-  def params:Parameter[] { get { return _params; } }
+  def params:List[Parameter] { get { return _params; } }
   
   /** Call this method with the given arguments.
       Parameters:

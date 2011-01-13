@@ -32,6 +32,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
   , isStructReturn_(false)
+  , isInvocable_(false)
 {
   for (ParameterList::iterator it = plist.begin(); it != plist.end(); ++it) {
     addParam(*it);
@@ -47,6 +48,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
   , isStructReturn_(false)
+  , isInvocable_(false)
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);
@@ -63,6 +65,7 @@ FunctionType::FunctionType(
   , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , isCreatingType(false)
   , isStructReturn_(false)
+  , isInvocable_(false)
 {
   for (size_t i = 0; i < pcount; ++i) {
     addParam(plist[i]);

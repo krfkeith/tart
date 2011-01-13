@@ -34,7 +34,7 @@ using namespace llvm;
 
 SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
 
-extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
+extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
 
 // Members of tart.core.TypeInfoBlock.
 
@@ -42,11 +42,6 @@ SystemClassMember<VariableDefn> tib_type(Builtins::typeTypeInfoBlock, "type");
 SystemClassMember<VariableDefn> tib_bases(Builtins::typeTypeInfoBlock, "bases");
 SystemClassMember<VariableDefn> tib_traceTable(Builtins::typeTypeInfoBlock, "traceTable");
 SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
-
-// Members of tart.reflect.EnumInfoBlock.
-SystemClassMember<VariableDefn> eib_meta(Builtins::typeEnumInfoBlock, "meta");
-SystemClassMember<VariableDefn> eib_encodedDefn(Builtins::typeEnumInfoBlock, "_encodedDefn");
-SystemClassMember<VariableDefn> eib_type(Builtins::typeEnumInfoBlock, "_type");
 
 // Members of tart.gc.TraceAction.
 SystemClassMember<FunctionDefn> traceAction_tracePointer(Builtins::typeTraceAction, "tracePointer");
@@ -207,11 +202,11 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
-  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
-    builder.addField(getCompositeTypeObjectPtr(type));
-  } else {
-    builder.addNullField(tib_type.type());
-  }
+  builder.addField(getCompositeTypeObjectPtr(type));
+//  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
+//  } else {
+//    builder.addNullField(tib_type.type());
+//  }
 
   if (type->typeClass() == Type::Class) {
     llvm::GlobalVariable * traceTable = getTraceTable(type);
@@ -244,34 +239,34 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   return true;
 }
 
-bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
-  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-  if (rtype->getTypeInfoPtr() == NULL) {
-    createTypeInfoBlockPtr(rtype);
-  } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
-    return true;
-  }
-
-  // Create the TypeInfoBlock struct
-  StructBuilder builder(*this);
-  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
-    builder.addField(getCompositeTypeObjectPtr(type));
-  } else {
-    builder.addNullField(tib_type.type());
-  }
-  builder.addNullField(tib_traceTable.type());
-  builder.addNullField(tib_bases.type());
-  builder.addNullField(tib_idispatch.type());
-  builder.addField(genMethodArray(MethodList()));
-  Constant * tibStruct = builder.build();
-
-  // Assign the TIB value to the tib global variable.
-  GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
-  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(tibStruct->getType());
-  tibPtr->setInitializer(tibStruct);
-  tibPtr->setLinkage(rtype->getLinkageType());
-  return true;
-}
+//bool CodeGenerator::createTemplateTypeInfoBlock(const CompositeType * type) {
+//  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
+//  if (rtype->getTypeInfoPtr() == NULL) {
+//    createTypeInfoBlockPtr(rtype);
+//  } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
+//    return true;
+//  }
+//
+//  // Create the TypeInfoBlock struct
+//  StructBuilder builder(*this);
+//  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
+//    builder.addField(getCompositeTypeObjectPtr(type));
+//  } else {
+//    builder.addNullField(tib_type.type());
+//  }
+//  builder.addNullField(tib_traceTable.type());
+//  builder.addNullField(tib_bases.type());
+//  builder.addNullField(tib_idispatch.type());
+//  builder.addField(genMethodArray(MethodList()));
+//  Constant * tibStruct = builder.build();
+//
+//  // Assign the TIB value to the tib global variable.
+//  GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
+//  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(tibStruct->getType());
+//  tibPtr->setInitializer(tibStruct);
+//  tibPtr->setLinkage(rtype->getLinkageType());
+//  return true;
+//}
 
 Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
   ConstantList methodValues;
@@ -764,26 +759,6 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
   return fn;
 }
 
-GlobalVariable * CodeGenerator::getEnumInfoBlock(const EnumType * etype) {
-  std::string eibName(etype->typeDefn()->linkageName() + ".type.eib");
-  llvm::GlobalVariable * eibVar = irModule_->getGlobalVariable(eibName, false);
-  if (eibVar != NULL) {
-    return eibVar;
-  }
-
-  const llvm::Type * enumInfoBlockType = Builtins::typeEnumInfoBlock.irType();
-  ReflectionMetadata * rmd = reflector_.getReflectionMetadata(etype->typeDefn());
-
-  StructBuilder sb(*this);
-  sb.addField(rmd->var());
-  sb.addNullField(eib_encodedDefn.type());
-  sb.addNullField(eib_type.type());
-  llvm::Constant * eib = sb.build(enumInfoBlockType);
-
-  return new GlobalVariable(*irModule_, eib->getType(), true, GlobalValue::LinkOnceODRLinkage,
-      eib, eibName);
-}
-
 const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   TypeDefn * enumDef = type->typeDefn();
   GlobalValue::LinkageTypes linkage = GlobalValue::ExternalLinkage;
@@ -1002,14 +977,12 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
       break;
   }
 
-  Constant * indices[2];
-  indices[0] = indices[1] = getInt32Val(0);
   return irModule_->getOrInsertGlobal(typeVarName, Builtins::typePrimitiveType.get()->irType());
 }
 
 const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
-    const Type * invokeTypeDefn = rmd_CallAdapterFnType.get()->typeValue();
+    const Type * invokeTypeDefn = functionType_CallAdapterFnType.get()->typeValue();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
   }
 

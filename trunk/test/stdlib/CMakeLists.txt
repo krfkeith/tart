@@ -29,8 +29,8 @@ endif (LIB_DL)
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
-set(USE_LLVM_BINARIES 0)
-set(GENERATE_DEBUG_INFO 0)
+set(USE_LLVM_BINARIES 1)
+set(GENERATE_DEBUG_INFO 1)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
@@ -68,7 +68,6 @@ else (GENERATE_DEBUG_INFO)
       -globalopt
       -reflector)
 endif (GENERATE_DEBUG_INFO)
-
 
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})

@@ -1,14 +1,16 @@
+import tart.collections.List;
 import tart.core.Memory.Address;
 
 /** Reflection type class for functions. This object is shared by all functions that
     have the same type signature.
   */
 class FunctionType : Type {
+  typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
   private {
     var _returnType:Type;
     var _selfType:optional Type;
-    var _paramTypes:Type[];
-    var _invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+    var _paramTypes:List[Type];
+    var _invoke:CallAdapterFn;
 
 	  /** Helper function to check the number of arguments. */
 	  static def checkArgCount(args:Object[], count:int32) {
@@ -16,17 +18,12 @@ class FunctionType : Type {
 	      throw InvocationError("Incorrect number of arguments");
 	    }
 	  }
-
-	  /** Helper function to ensure that the object pointer is null. */
-	  static def ignoreObjectPtr(obj:Object) -> Address[void] {
-	    return null;
-	  }
   }
 
   def construct(
   		returnType:Type,
   		selfType:optional Type,
-  		paramTypes:Type[],
+  		paramTypes:List[Type],
     	invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
     super(TypeKind.FUNCTION);
     self._returnType = returnType;
@@ -43,7 +40,7 @@ class FunctionType : Type {
   final def selfType:Type { get { return _selfType; } }
 
   /** The array of parameter types. */
-  final def paramTypes:Type[] { get { return _paramTypes; } }
+  final def paramTypes:List[Type] { get { return _paramTypes; } }
 
 	/** The number of parameters for this function type. */
   final def numParams:int { get { return _paramTypes.size; } }

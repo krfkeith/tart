@@ -25,37 +25,26 @@ enum NameTag {
 enum SectionTag {
   TAG_SECTION_END = 0,
   TAG_SECTION_TYPE_PARAMS = 1,
-  TAG_SECTION_BASE_CLASS = 2,
-  TAG_SECTION_INTERFACES = 3,
-  TAG_SECTION_ATTRIBUTES = 4,
-  TAG_SECTION_MEMBER_TYPES = 5,
-  TAG_SECTION_NAMESPACES = 6,
-  TAG_SECTION_FIELDS = 7,
-  TAG_SECTION_METHODS = 8,
-  TAG_SECTION_PROPERTIES = 9,
-  TAG_SECTION_BASE_TEMPLATE = 10,
-  TAG_SECTION_TEMPLATE_PARAMS = 11,
-
-  // Array of literal types imported into a module
-//  TAG_SECTION_LITERAL_TYPES = 12,
+  TAG_SECTION_ATTRIBUTES = 2,
+  TAG_SECTION_NAMESPACES = 3,
+  TAG_SECTION_FIELDS = 4,
+  TAG_SECTION_METHODS = 5,
+  TAG_SECTION_PROPERTIES = 6,
+  TAG_SECTION_BASE_TEMPLATE = 7,
+  TAG_SECTION_TEMPLATE_PARAMS = 8,
 };
 
 /// -------------------------------------------------------------------
 /// Tag definitions for reflected definitions.
 
-enum DefnTag {
+enum MemberTag {
 
-  // Tags representing declarations. Declarations are always followed
+  // Tags representing member declarations. Declarations are always followed
   // by the index of their name (variable-length encoded), any members
   // or modifiers, and ending with the end-of-scope tag.
 
   TAG_DEF_SCOPE_END = 0,    // End of scope
-  TAG_DEF_MODULE,           // A module definition
   TAG_DEF_NAMESPACE,        // A namespace definition
-  TAG_DEF_CLASS,            // A class definition
-  TAG_DEF_STRUCT,           // A struct definition
-  TAG_DEF_INTERFACE,        // An interface definitions
-  TAG_DEF_PROTOCOL,         // A protocol definition
   TAG_DEF_METHOD,           // A method definition
   TAG_DEF_UNDEF,            // A method un-definition
   TAG_DEF_OVERRIDE,         // A method override
@@ -65,9 +54,7 @@ enum DefnTag {
   TAG_DEF_PROPERTY,         // A property definition
   TAG_DEF_VARIABLE,         // A variable definition
   TAG_DEF_LET,              // An immutable constant
-  TAG_DEF_ENUM,             // An enumeration type
   TAG_DEF_IMPORT,           // An import definition
-  TAG_DEF_TYPEALIAS,        // A type alias
   TAG_DEF_PARAM,            // A parameter definition within a method
   TAG_DEF_TYPE_PARAM,       // A template parameter definition
   TAG_DEF_ATTRIBUTE,        // An attribute (applies to current scope).

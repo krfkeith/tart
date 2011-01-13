@@ -1,3 +1,5 @@
+import tart.collections.List;
+
 /** A member of a type */
 @Reflection(Reflection.Detail.NONE) class Member {
   enum Visibility : ubyte {
@@ -26,7 +28,7 @@
     var _kind:MemberKind;
     var _visibility:Visibility;
     var _traits:Traits;
-    var _attributes:Object[];
+    var _attributes:List[Object];
   }
 
   protected def construct(
@@ -34,7 +36,7 @@
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
-      attributes:Object[]) {
+      attributes:List[Object]) {
     self._name = name;
     self._kind = kind;
     self._visibility = visibility;
@@ -55,7 +57,7 @@
   final def traits:Traits { get { return _traits; } }
 
   /** Array of attributes for this member. */
-  final def attributes:Object[] { get { return _attributes; } }
+  final def attributes:List[Object] { get { return _attributes; } }
 
   /** Return the first attribute of type 'attrType'. */
   final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {

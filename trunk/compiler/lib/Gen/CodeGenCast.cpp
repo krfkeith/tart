@@ -33,8 +33,8 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
 
   const FunctionDefn * converter = NULL;
   TypePair conversionKey(fromType, toType);
-  ConverterMap::iterator it = module_->converters().find(conversionKey);
-  if (it != module_->converters().end()) {
+  ConverterMap::iterator it = Builtins::module.converters().find(conversionKey);
+  if (it != Builtins::module.converters().end()) {
     converter = it->second;
   }
 

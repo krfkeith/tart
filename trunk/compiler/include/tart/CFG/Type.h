@@ -128,6 +128,9 @@ public:
   /** Return the Nth type parameter. */
   virtual const Type * typeParam(int index) const;
 
+  /** Return the list of all type parameters for this type. */
+  void getTypeParams(ConstTypeList & out) const;
+
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
 
@@ -165,6 +168,9 @@ public:
 
   /** True if this type is a floating point type. */
   bool isFPType() const;
+
+  /** True if this type is the 'Error' type. */
+  bool isErrorType() const;
 
   /** True if this type is the 'unsized int' type. */
   bool isUnsizedIntType() const;

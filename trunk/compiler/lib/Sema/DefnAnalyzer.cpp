@@ -31,7 +31,10 @@
 
 namespace tart {
 
-extern SystemClassMember<TypeDefn> rmd_CallAdapterFnType;
+extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
+
+// -------------------------------------------------------------------
+// TemplateParamAnalyzer
 
 class TemplateParamAnalyzer : public TypeAnalyzer {
 public:
@@ -94,6 +97,9 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   return tvar;
 }
 
+// -------------------------------------------------------------------
+// DefnAnalyzer
+
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
 
@@ -110,7 +116,7 @@ bool DefnAnalyzer::analyzeModule() {
   for (Defn * de = module_->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isTemplate() || de->isPartialInstantiation()) {
       analyzeTemplateSignature(de);
-      module_->addSymbol(de);
+      //module_->addSymbol(de);
     } else if (!de->hasUnboundTypeParams()) {
       if (analyzeCompletely(de)) {
         module_->addSymbol(de);
@@ -127,13 +133,18 @@ bool DefnAnalyzer::analyzeModule() {
 
   if (module_->isReflectionEnabled()) {
     module_->addSymbol(Builtins::typeModule.typeDefn());
+    module_->addSymbol(Builtins::typeStaticTypeList.typeDefn());
     analyzeType(Builtins::typeCompositeType.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeEnumType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typeDerivedType.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typePrimitiveType.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeStaticTypeList.get(), Task_PrepCodeGeneration);
+    //Builtins::typeStaticTypeList.get()->addBaseXRefs(module_);
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
-  analyzeDefn(rmd_CallAdapterFnType.get(), Task_PrepCodeGeneration);
+  analyzeDefn(functionType_CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
@@ -158,6 +169,7 @@ bool DefnAnalyzer::analyzeModule() {
 
       if (isExport) {
         FindExternalRefsPass::run(module_, de);
+        addReflectionInfo(de);
       }
     } else {
       success = false;
@@ -505,12 +517,14 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
         // If reflection enabled for this type then load the reflection classes.
         if (enableReflectionDetail) {
+          module_->addSymbol(tdef);
           if (module_->reflectedDefs().insert(tdef)) {
             if (isExport) {
               reflectTypeMembers(ctype);
             }
           }
         } else if (enableReflection) {
+          module_->addSymbol(tdef);
           module_->reflectedDefs().insert(tdef);
         }
 
@@ -527,7 +541,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 
       case Type::Enum:
         if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
-          module_->addSymbol(Builtins::typeEnumInfoBlock.typeDefn());
+          module_->addSymbol(Builtins::typeEnumType.typeDefn());
         }
         break;
 
@@ -539,11 +553,14 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       if (enableReflectionDetail) {
         if (module_->reflectedDefs().insert(fn)) {
           reflectType(fn->type());
+          module_->addSymbol(fn);
           for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
             const Type * paramType = (*it)->internalType();
             // Cache the unbox function for this type.
             if (paramType->isBoxableType()) {
               ExprAnalyzer(this, fn).getUnboxFn(SourceLocation(), paramType);
+            } else if (paramType->isReferenceType()) {
+              ExprAnalyzer(this, fn).getDowncastFn(SourceLocation(), paramType);
             }
           }
 
@@ -556,6 +573,12 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
     if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
+      if (prop->getter() != NULL) {
+        module_->addSymbol(prop->getter());
+      }
+      if (prop->setter() != NULL) {
+        module_->addSymbol(prop->setter());
+      }
       reflectType(prop->type());
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {

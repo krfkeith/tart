@@ -100,8 +100,9 @@ void CodeGenerator::generate() {
   if (reflector_.enabled() && Builtins::typeModule.peek() != NULL) {
     addTypeName(Builtins::typeModule);
     addTypeName(Builtins::typeNameTable);
-    addTypeName(Builtins::typeReflectionMetadata);
-    addTypeName(Builtins::typeEnumInfoBlock);
+    addTypeName(Builtins::typeCompositeType);
+    addTypeName(Builtins::typeDerivedType);
+    addTypeName(Builtins::typeEnumType);
   }
 
   // Write out a list of all modules this one depends on.
@@ -118,9 +119,9 @@ void CodeGenerator::generate() {
     if (de->isSingular()) {
       genXDef(de);
     } else if (de->isTemplate() || de->isPartialInstantiation()) {
-      if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
-        createTemplateTypeInfoBlock(cast<CompositeType>(td->typeValue()));
-      }
+//      if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
+//        createTemplateTypeInfoBlock(cast<CompositeType>(td->typeValue()));
+//      }
     } else {
       diag.debug() << "Not generated: " << de;
     }
@@ -130,9 +131,6 @@ void CodeGenerator::generate() {
       Builtins::typeModule->passes().isFinished(CompositeType::FieldPass)) {
     reflector_.emitModule(module_);
   }
-
-  addTypeName(Builtins::typeObject);
-  addTypeName(Builtins::typeTypeInfoBlock);
 
   // Finish up static constructors.
   if (moduleInitFunc_) {

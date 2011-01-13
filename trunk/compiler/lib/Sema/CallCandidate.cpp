@@ -267,6 +267,7 @@ ConversionRank CallCandidate::updateConversionRank() {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     const Type * paramType = this->paramType(argIndex);
+    AnalyzerBase::analyzeType(paramType, Task_PrepConversion);
     combineConversionRanks(paramType->canConvert(argExpr, Conversion::Coerce));
 //    conversionRank_ = std::min(conversionRank_, paramType->canConvert(argExpr, Conversion::Coerce));
   }

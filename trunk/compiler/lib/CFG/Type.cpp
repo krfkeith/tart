@@ -229,6 +229,12 @@ const char * Type::typeClassName(TypeClass tc) {
   return "<Invalid Type>";
 }
 
+void Type::getTypeParams(ConstTypeList & out) const {
+  for (int i = 0, end = numTypeParams(); i < end; ++i) {
+    out.push_back(typeParam(i));
+  }
+}
+
 bool Type::isEqual(const Type * other) const {
   return this == dealias(other);
 }
@@ -265,6 +271,11 @@ bool Type::isFPType() const {
 bool Type::isUnsizedIntType() const {
   return cls == Primitive &&
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_UnsizedInt;
+}
+
+bool Type::isErrorType() const {
+  return cls == Primitive &&
+      static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Bad;
 }
 
 bool Type::isBoxableType() const {
@@ -311,7 +322,7 @@ ConversionRank Type::convert(const Conversion & cn) const {
   if (rank == Incompatible && (cn.options & Conversion::Coerce) && !cn.resultValue) {
     if (const CompositeType * ctype = dyn_cast<CompositeType>(this)) {
       if (!ctype->passes().isFinished(CompositeType::CoercerPass)) {
-        diag.warn() << "Converter pass for " << ctype << " not done.";
+        diag.warn() << "Converter pass for " << ctype << " was not done.";
       }
 
       if (!ctype->coercers().empty()) {

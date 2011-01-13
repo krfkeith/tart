@@ -35,11 +35,15 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
       }
 
       if (tdef->isSynthetic()) {
-        ctype->addMethodDefsToModule(module);
+        ctype->addClassExportsToModule(module);
       }
 
       for (Defn * de = ctype->firstMember(); de != NULL; de = de->nextInScope()) {
         if (de->isSingular() && de->storageClass() == Storage_Static) {
+          // Add static members
+          module->addSymbol(de);
+        } else if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
+          // Add inner types
           module->addSymbol(de);
         }
       }
