@@ -20,6 +20,7 @@ namespace tart {
 class Defn;
 class Module;
 class ASTDecl;
+class Reflector;
 
 /// -------------------------------------------------------------------
 /// List of reflected defns exported by a module.
@@ -39,16 +40,12 @@ public:
   Agenda<const Defn> & defnsToExport() { return defnsToExport_; }
   void addExport(const Defn * de);
 
-  const TypeMap & invokeMap() const { return invokeMap_; }
-  TypeMap & invokeMap() { return invokeMap_; }
-
   bool outputPhase() const { return outputPhase_; }
   void setOutputPhase() { outputPhase_ = true; }
 
 private:
   NameTable & names_;
   Agenda<const Defn> defnsToExport_;
-  TypeMap invokeMap_;
   bool outputPhase_;
 };
 
@@ -66,30 +63,24 @@ public:
   ReflectionMetadata(const Defn * reflectedDefn, ModuleMetadata & mmd)
     : reflectedDefn_(reflectedDefn)
     , mmd_(mmd)
-    , var_(NULL)
     , methodBaseIndex_(0)
-    , methodTable_(NULL)
     , strm_(strmData_)
   {}
 
-  ~ReflectionMetadata();
+  ~ReflectionMetadata() {}
 
   void addTypeRef(const Type * type);
   void addASTDecl(const ASTDecl * ast);
-  size_t addRetainedAttribute(llvm::Constant * attribute);
-
-  llvm::GlobalVariable * var() const { return var_; }
-  void setVar(llvm::GlobalVariable * var) { var_ = var; }
+  size_t addGlobalRef(llvm::Constant * attribute);
 
   /** The method table contains only method pointers that are not already pointed to by
       the TypeInfoBlock for the class being reflected. */
-  ConstantArray & methodTable() { return methodTable_; }
-  const ConstantArray & methodTable() const { return methodTable_; }
+  ConstantArray & methodRefs() { return methodRefs_; }
+  const ConstantArray & methodRefs() const { return methodRefs_; }
 
-  /** The retained attribute table contains attribute instances that are needed by
-      the class or members of the class. */
-  ConstantArray & retainedAttrTable() { return retainedAttrs_; }
-  const ConstantArray & retainedAttrTable() const { return retainedAttrs_; }
+  /** The table of pointers to global objects referred to by the type. */
+  ConstantArray & globalRefs() { return globalRefs_; }
+  const ConstantArray & globalRefs() const { return globalRefs_; }
 
   /** The base offset for indices into the method table. Method indices lower than this
       will use the dispatch table in the TypeInfoBlock; Method indices greater than or equal to
@@ -100,16 +91,12 @@ public:
   // Sort all of the types by popularity and assign IDs.
   void assignIndices();
 
-  void encodeTypesTable(llvm::raw_ostream & out);
   void encodeTypeRef(const Type * type, llvm::raw_ostream & out);
-  void encodeType(const Type * type, llvm::raw_ostream & out);
 
   llvm::raw_string_ostream & strm() { return strm_; }
   std::string & strmData() { return strmData_; }
 
-  const TypeArray & derivedTypeRefs() const { return compositeTypeRefs_; }
-  const TypeArray & compositeTypeRefs() const { return compositeTypeRefs_; }
-  const TypeArray & enumTypeRefs() const { return enumTypeRefs_; }
+  const TypeArray & typeRefs() const { return typeRefs_; }
 
   ModuleMetadata & mmd() { return mmd_; }
 
@@ -120,17 +107,14 @@ private:
   ModuleMetadata & mmd_;
   TypeMap types_;
 
-  llvm::GlobalVariable * var_;
   size_t methodBaseIndex_;
-  ConstantArray methodTable_;
+  ConstantArray methodRefs_;
   std::string strmData_;
   llvm::raw_string_ostream strm_;
 
-  TypeArray derivedTypeRefs_;
-  TypeArray compositeTypeRefs_;
-  TypeArray enumTypeRefs_;
+  TypeArray typeRefs_;
 
-  ConstantArray retainedAttrs_;
+  ConstantArray globalRefs_;
 };
 
 }

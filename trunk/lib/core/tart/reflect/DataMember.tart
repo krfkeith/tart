@@ -1,0 +1,40 @@
+import tart.collections.List;
+
+/** Common base class for fields and properties - any member that can be read (and possibly written). */
+abstract class DataMember : Member {
+  private {
+    var _type:Type;
+    var _selfType:optional Type;
+  }
+
+  def construct(
+      name:String,
+      kind:MemberKind,
+      visibility:Visibility,
+      traits:Traits,
+      attributes:List[Object],
+      type:Type,
+      selfType:optional Type) {
+    super(name, kind, visibility, traits, attributes);
+    self._type = type;
+    self._selfType = selfType;
+  }
+
+  /** The type of the member. */
+  final def type:Type { get { return _type; } }
+
+  /** The type that contains this member, or null if this is static or global. */
+  final def selfType:optional Type { get { return _selfType; } }
+
+	/** True if this data member is readable. */
+  abstract def isReadable:bool { get; }
+
+	/* True if this data member is writeable. */
+  abstract def isWriteable:bool { get; }
+  
+	/** Get the value of this member field, for the given object. */
+  abstract def getValue(obj:Object) -> Object;
+
+	/** Set the value of this member field, for the given object. */
+  abstract def setValue(obj:Object, value:Object);
+}

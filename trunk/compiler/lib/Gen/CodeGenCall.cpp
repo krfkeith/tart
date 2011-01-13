@@ -129,7 +129,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
 Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
   const Expr * fn = in->function();
-  const Type * fnType = fn->type();
+  const Type * fnType = dealias(fn->type());
   bool saveIntermediateStackRoots = true;
 
   Value * fnValue;

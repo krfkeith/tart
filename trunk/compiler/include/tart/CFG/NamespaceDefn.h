@@ -18,6 +18,7 @@ public:
   enum AnalysisPass {
     ImportPass,
     ScopeCreationPass,
+    MethodPass,
     StaticInitializerPass,
     PassCount
   };

@@ -266,9 +266,6 @@ public:
       ConstantList & traceTable, ConstantList & fieldOffsets, ConstantList & indices);
   llvm::Function * getUnionTraceMethod(const UnionType * utype);
 
-  /** Generate a descriptor block for an enumerated type. */
-  llvm::GlobalVariable * getEnumInfoBlock(const EnumType * etype);
-
   /** Given a type, generate a constant representing the size of that type.
       'memberSize' - return how much space the type would consume as a member of another
       type (which will be equal to the size of a reference for reference types.)
@@ -399,6 +396,9 @@ public:
 
   // Generate the function that boxes arguments when a call is intercepted.
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
+
+  /** Return the void * type for method pointers in a method table. */
+  const llvm::Type * getMethodPointerType() { return methodPtrType_; }
 private:
   typedef llvm::StringMap<llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;

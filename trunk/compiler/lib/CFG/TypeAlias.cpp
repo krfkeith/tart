@@ -44,7 +44,7 @@ void TypeAlias::format(FormatStream & out) const {
 }
 
 void TypeAlias::trace() const {
-  value_->mark();
+  safeMark(value_);
 }
 
 } // namespace tart

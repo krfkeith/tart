@@ -54,15 +54,15 @@ public:
 
   // System types - reflection
   static SystemClass typeType;
-  static SystemClass typeEnumInfoBlock;
   static SystemClass typeFunctionType;
   static SystemClass typePrimitiveType;
   static SystemClass typeCompositeType;
+  static SystemClass typeEnumType;
   static SystemClass typeDerivedType;
   static SystemClass typeModule;
   static SystemClass typeNameTable;
   static SystemClass typePackage;
-  static SystemClass typeReflectionMetadata;
+  static SystemClass typeStaticTypeList;
 
   // System types - attributes
   static SystemClass typeAttribute;

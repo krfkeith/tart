@@ -31,6 +31,10 @@ public:
   bool isStatic() const { return isStatic_; }
   void setIsStatic(bool value) { isStatic_ = value; }
 
+  // isInvocable
+  bool isInvocable() const { return isInvocable_; }
+  void setIsInvocable(bool value) { isInvocable_ = value; }
+
   // Return type
   const Type * returnType() const { return returnType_; }
   void setReturnType(const Type * type) { returnType_ = type; }
@@ -105,6 +109,7 @@ private:
   mutable llvm::PATypeHolder irType_;
   mutable bool isCreatingType;
   mutable bool isStructReturn_;
+  mutable bool isInvocable_;
   mutable std::string invokeName_;
 };
 

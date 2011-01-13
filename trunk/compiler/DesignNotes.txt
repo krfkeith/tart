@@ -389,25 +389,70 @@ Idea #1: Make a bare template parameter really mean [T <: __Any].
 
   -- Redo templates so that template parameters really are opaque.
 
-  
-  
-define void @"tart.reflect.ReflectionMetadata.readClassMethods(tart.reflect.Type)->(tart.reflect.Method[],tart.reflect.Method[])"(
-    %189* sret,
-    %tart.reflect.ReflectionMetadata* %self,
-    %tart.reflect.Type* %selfType) gc "tart-gc"
+class TypeList {
+}
 
-%readClassMethods = call %189
-  bitcast (
-    void (
-      %189*,
-      %tart.reflect.ReflectionMetadata*,
-      %tart.reflect.Type*
-    )* @"tart.reflect.ReflectionMetadata.readClassMethods(tart.reflect.Type)->(tart.reflect.Method[],tart.reflect.Method[])"
-  to
-    %189 (
-      %tart.reflect.ReflectionMetadata*,
-      %tart.reflect.Type*)*)(
-        %tart.reflect.ReflectionMetadata* %_meta, %tart.reflect.Type* %upcast), !dbg !34937
+class AttributeList {
+}
 
-  %3 = extractvalue %189 %readClassMethods, 0, !dbg !34937
-  %4 = extractvalue %189 %readClassMethods, 1, !dbg !34937
+// ------------------------------------------------------------------------
+
+// Closures should really correspond to this interface.
+// and fn (params:ParamTypes) -> ReturnType should as well.
+// and bound methods shouldn't be a distinct type class.
+
+// TODO: We need variadic template params.
+
+interface Function[%ReturnType, %ParamTypes...] {
+  def (params:ParamTypes) -> ReturnType;
+}
+
+class Closure[%ReturnType, %ParamTypes...] : Function[ReturnType, ParamTypes] {
+  private var func:static fn(obj:Object, :ParamTypes) -> ReturnType;
+  private var _env1:??;
+  private var _env2:??;
+
+  def (params:ParamTypes) -> ReturnType {
+    return func(self, params);
+  }
+}
+
+class BoundMethod[%ReturnType, %ParamTypes...] : Function[ReturnType, ParamTypes] {
+  private var obj:Object;
+  private var method:static fn(obj:Object, :ParamTypes) -> ReturnType;
+
+  def (params:ParamTypes) -> ReturnType {
+    return func(obj, params);
+  }
+}
+
+Closure TypeInfoBlock:
+
+   TIB {
+     ...
+     itables [
+       Function [ closure.call ]
+       SomeOtherInterface [ closure.call ]
+     ]
+     methods [
+       toString
+     ]
+   }
+   
+   // Direct reference to the compiled closure code.
+   closure.call(self, params) -> ReturnType
+
+BoundMethod TypeInfoBlock:
+
+   TIB {
+     ...
+     itables [
+       Function [ bm.call ]
+     ]
+     methods [
+       toString
+     ]
+   }
+
+   // Adapter function that calls the method.   
+   bm.call(self, params) -> ReturnType

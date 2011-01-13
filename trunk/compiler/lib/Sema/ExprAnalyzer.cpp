@@ -1090,7 +1090,9 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
   if (arrayType->memberScope() == NULL ||
       !arrayType->memberScope()->lookupMember(istrings.idIndex, indexers, true)) {
-    diag.fatal(ast) << "Type " << arrayType << " does not support element reference operator";
+    if (!arrayType->isErrorType()) {
+      diag.error(ast) << "Type " << arrayType << " does not support element reference operator";
+    }
     return &Expr::ErrorVal;
   }
 
@@ -1479,8 +1481,9 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(type->isSingular());
 
   TypePair conversionKey(type, Builtins::typeObject.get());
-  ConverterMap::iterator it = module()->converters().find(conversionKey);
-  if (it != module()->converters().end()) {
+  ConverterMap::iterator it = Builtins::module.converters().find(conversionKey);
+  if (it != Builtins::module.converters().end()) {
+    module()->addSymbol(it->second);
     return it->second;
   }
 
@@ -1499,7 +1502,7 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
   analyzeFunction(coercer, Task_PrepTypeComparison);
   DASSERT(coercer->isSingular());
-  module()->converters()[conversionKey] = coercer;
+  Builtins::module.converters()[conversionKey] = coercer;
   module()->addSymbol(coercer);
   //diag.info() << Format_Verbose << "Generated coercer " << coercer;
   return coercer;
@@ -1522,9 +1525,11 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   DASSERT(!toType->isNullType());
   DASSERT(!toType->isVoidType());
 
+  //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType << " in module " << module()->linkageName();
   TypePair conversionKey(Builtins::typeObject.get(), toType);
-  ConverterMap::iterator it = module()->converters().find(conversionKey);
-  if (it != module()->converters().end()) {
+  ConverterMap::iterator it = Builtins::module.converters().find(conversionKey);
+  if (it != Builtins::module.converters().end()) {
+    module()->addSymbol(it->second);
     return it->second;
   }
 
@@ -1548,7 +1553,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   }
 
   analyzeFunction(valueOfMethod, Task_PrepTypeComparison);
-  module()->converters()[conversionKey] = valueOfMethod;
+  Builtins::module.converters()[conversionKey] = valueOfMethod;
   module()->addSymbol(valueOfMethod);
   //diag.info() << Format_Verbose << "Generated boxer " << valueOfMethod;
   return valueOfMethod;
@@ -1556,12 +1561,13 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
 
 FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
   TypePair conversionKey(Builtins::typeObject.get(), toType);
-  ConverterMap::iterator it = module()->converters().find(conversionKey);
-  if (it != module()->converters().end()) {
+  ConverterMap::iterator it = Builtins::module.converters().find(conversionKey);
+  if (it != Builtins::module.converters().end()) {
+    module()->addSymbol(it->second);
     return it->second;
   }
 
-  //diag.debug(loc) << Format_Type << "Defining downcast function for " << toType;
+  //diag.debug(loc) << Format_Type << "Defining downcast function for " << toType << " in module " << module()->linkageName();
   ExprList methods;
   analyzeTypeDefn(Builtins::typeObject->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "__downcast", Builtins::typeObject->memberScope(), NULL, loc, NO_PREFERENCE);
@@ -1581,7 +1587,7 @@ FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
   }
 
   analyzeFunction(downCastMethod, Task_PrepTypeComparison);
-  module()->converters()[conversionKey] = downCastMethod;
+  Builtins::module.converters()[conversionKey] = downCastMethod;
   module()->addSymbol(downCastMethod);
   //diag.info() << Format_Verbose << "Generated boxer " << downCastMethod;
   return downCastMethod;

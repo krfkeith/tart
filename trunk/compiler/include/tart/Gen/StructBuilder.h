@@ -40,6 +40,9 @@ public:
   /** Add a String field. */
   StructBuilder & addStringField(const std::string & strval);
 
+  /** Add an pointer field with the same type as the variable 'var'. */
+  StructBuilder & addPointerField(VariableDefn * var, llvm::Constant * value);
+
   /** Add a native array field consisting of elements of type 'elementType'. */
   StructBuilder & addArrayField(const Type * elementType, const ConstantList & values);
 

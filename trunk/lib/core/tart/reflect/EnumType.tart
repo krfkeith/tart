@@ -3,25 +3,22 @@ import tart.core.Memory.Address;
 /** Interface type for enums. */
 public final class EnumType : Type {
   private {
-    let _meta:ReflectionMetadata;
+    var _names:NameTable;
+    var _nameIndex:int16;
     let _supertype:Type;
     var _values:optional Field[];
-  }
-
-  def construct(meta:ReflectionMetadata, supertype:Type) {
-    super(TypeKind.ENUM);
-    self._meta = meta;
-    self._supertype = supertype;
+    
+    undef construct();
   }
 
   /** Fully-qualified name of this type. */
-  def name:String { get { return _meta.localName; } }
+  def name:String { get { return _names.getLocalName(_nameIndex); } }
 
   /** Fully-qualified name of this type. */
-  def qualifiedName:String { get { return _meta.qualifiedName; } }
+  def qualifiedName:String { get { return _names.getQualifiedName(_nameIndex); } }
 
   /** Fully-qualified name of the scope in which this type is defined. */
-  def scopeName:String { get { return _meta.scopeName; } }
+  def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
 
   /** Pointer to this type's supertype. */
   def supertype:Type { get { return self._supertype; } }

@@ -285,13 +285,14 @@ Expr * FinalizeTypesPassImpl::visitCallExpr(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  if (const FunctionType * fnType = dyn_cast<FunctionType>(fnValue->type())) {
+  const Type * type = dealias(fnValue->type());
+  if (const FunctionType * fnType = dyn_cast<FunctionType>(type)) {
     if (!fnType->isStatic()) {
       diag.error(in) << "Attempt to call function expression '" << fnValue << "'" <<
           " with no object";
       return &Expr::ErrorVal;
     }
-  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnValue->type())) {
+  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(type)) {
     // TODO: Extra checks needed?
   } else {
     diag.error(in) << "Non-callable type '" << fnValue->type() << "'";

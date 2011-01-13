@@ -1,3 +1,4 @@
+import tart.collections.List;
 import tart.core.Memory.Address;
 import tart.core.Memory.nullObject;
 
@@ -13,7 +14,7 @@ class Property : DataMember {
       kind:MemberKind,
       visibility:Visibility,
       traits:Traits,
-      attributes:Object[],
+      attributes:List[Object],
       type:Type,
       selfType:optional Type,
 	    getterFn:Address[void],

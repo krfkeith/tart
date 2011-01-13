@@ -226,6 +226,8 @@ private:
       const CompositeType * value, Variance variance);
   bool unifyUnionType(SourceContext * source, const UnionType * pattern,
       const UnionType * value, Variance variance);
+  bool unifyToUnionType(SourceContext * source, const Type * pattern, const UnionType * value,
+      Variance variance);
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
 

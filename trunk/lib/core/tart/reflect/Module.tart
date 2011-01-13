@@ -1,59 +1,45 @@
 import tart.annex.Intrinsic;
 import tart.annex.Essential;
+import tart.collections.ArrayList;
+import tart.collections.List;
 import tart.collections.ImmutableList;
 import tart.core.Memory.Address;
 
 /** Description of a compiled module. */
 @Reflection(Reflection.Detail.NONE) final class Module {
-  struct Data {
-    let streamData:Address[ubyte];
-    let typeRefs:Address[Type];
-    let globalRefs:Address[Address[void]];
-    let names:NameTable;
-    let nameIndex:int16;
-  
-    //def qualifiedName:String { get { return names.getQualifiedName(nameIndex); } }
-    //def scopeName:String { get { return names.getScopeName(nameIndex); } }
-    //def localName:String { get { return names.getLocalName(nameIndex); } }
-  }
-
   private {
-    let _meta:ReflectionMetadata;
-    //var _encodedTypeExports:Address[ubyte];
+    var _names:NameTable;
     var _nameIndex:int16;
-    var _memberTypes:Type[];
-    var _methods:Method[];
-    //var _typesNew: optional Type[];
-    //var _globalsNew: optional Field[];
+    var _strmData:Address[ubyte];
+    var _typeRefs:Address[Type];
+    var _globalRefs:Address[Object];
+    var _methodRefs:Address[Address[void]];
+    var _memberTypes:List[Type];
+    var _methods:List[Method];
 
     undef construct();
-    
-//    def decodeTypeExports {
-	    //let stream = ReflectionDataStream(_encodedTypeExports);
-//	    let count = stream.
-//    }
   }
 
   /** Short name of the module. */
   final def name:String { get {
-    return _meta.names.getLocalName(_nameIndex);
+    return _names.getLocalName(_nameIndex);
   } }
 
   /** Fully-qualified name of the module. */
   final def qualifiedName:String { get {
-    return _meta.names.getQualifiedName(_nameIndex);
+    return _names.getQualifiedName(_nameIndex);
   } }
 
   /** Name of the package containing the module. */
   final def packageName:String { get {
-    return _meta.names.getScopeName(_nameIndex);
+    return _names.getScopeName(_nameIndex);
   } }
 
   /** Array of types defined in this module. */
-  final def types:Type[] { get { decodeTypes(); return self._memberTypes; } }
+  final def types:List[Type] { get { return self._memberTypes; } }
 
   /** Array of types defined in this module. */
-  final def methods:Method[] { get { decodeMethods(); return self._methods; } }
+  final def methods:List[Method] { get { decodeMethods(); return self._methods; } }
 
   /** Returns a reference to the caller's module. */  
   @Intrinsic static def thisModule() -> Module;
@@ -63,16 +49,19 @@ import tart.core.Memory.Address;
 
   private final def decodeMethods {
     if self._methods is null {
-	    self._methods = _meta.readModuleMethods();
-    }
-  }
-
-  private final def decodeTypes {
-    if self._memberTypes is null {
-      let memberTypes = _meta.readMemberTypes();
-	    //Debug.writeLnFmt("Assigning member types for {0}", self.name);
-	    self._memberTypes = memberTypes;
-	    //Debug.writeLn("Assigned member types");
+      let decoder = MemberDecoder(_strmData, _names, _typeRefs, _globalRefs, _methodRefs, null, 0);
+	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
+  	  let methods = ArrayList[Method]();
+	    if length != 0 {
+      	//Debug.writeLn("Length of method section = ", length.toString());
+	      let endPos = decoder.position + length;
+  	    while decoder.position < endPos {
+    	    let m = decoder.decodeMethod();
+         	methods.add(m);
+      	}
+	    }
+	    
+	    self._methods = ImmutableList.copyOf(methods);
     }
   }
 

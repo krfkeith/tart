@@ -1,25 +1,19 @@
-import tart.core.Memory.Address;
+import tart.collections.List;
 
 /** Reflection type class for pointers, unions, tuples, and so on. */
 class DerivedType : Type {
-  struct Data {
-    let streamData:Address[ubyte];
-    let typeRefs:Address[Type];
-    let size:uint;
-  }
-
   private {
-    var _typeParams:Type[];
+    var _typeParams:List[Type];
   }
 
-  def construct(typeKind:TypeKind, typeParams:Type[]) {
+  def construct(typeKind:TypeKind, typeParams:List[Type]) {
     super(typeKind);
     self._typeParams = typeParams;
   }
 
   /** The list of type parameters for this type. */
-  final def typeParams:Type[] { get { return _typeParams; } }
-  
+  final def typeParams:List[Type] { get { return _typeParams; } }
+
   final override toString -> String {
     let typeStrings = tart.collections.ArrayList[String]();
     for type in typeParams {

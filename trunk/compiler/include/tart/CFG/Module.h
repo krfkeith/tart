@@ -105,6 +105,9 @@ public:
   */
   bool addSymbol(Defn * de);
 
+  /** Add this symbol to the queue of symbols to be analyzed, but don't import it. */
+  void queueSymbol(Defn * de);
+
   /** Return the next xref that has not been analyzed. */
   Defn * nextDefToAnalyze();
 

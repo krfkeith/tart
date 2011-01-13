@@ -539,7 +539,7 @@ const CompositeType::InterfaceTable * CompositeType::findBaseImplementationOf(Co
   return NULL;
 }
 
-void CompositeType::addMethodDefsToModule(Module * module) const {
+void CompositeType::addClassExportsToModule(Module * module) const {
   DASSERT_OBJ(defn_->isSynthetic(), defn_);
 
   // Make certain that every method that is referred to from the TIB is XRef'd.
@@ -550,6 +550,7 @@ void CompositeType::addMethodDefsToModule(Module * module) const {
     }
   }
 
+  // Add references to all interfaces and interface methods.
   for (InterfaceList::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
     if (it->interfaceType->typeDefn()->isSynthetic()) {
       module->addSymbol(it->interfaceType->typeDefn());
@@ -562,16 +563,15 @@ void CompositeType::addMethodDefsToModule(Module * module) const {
       }
     }
   }
-}
 
-void CompositeType::addStaticDefsToModule(Module * module) {
-  for (DefnList::iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
+  for (DefnList::const_iterator it = staticFields_.begin(); it != staticFields_.end(); ++it) {
     module->addSymbol(*it);
   }
 }
 
 void CompositeType::addBaseXRefs(Module * module) {
-  if (module->addSymbol(typeDefn())) {
+  module->addSymbol(typeDefn());
+  if (typeDefn()->isSynthetic()) {
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       (*it)->addBaseXRefs(module);
     }

@@ -102,9 +102,10 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
           return false;
         }
 
-        if (const FunctionType * ft = dyn_cast<FunctionType>(var->type())) {
+        const Type * varType = dealias(var->type());
+        if (const FunctionType * ft = dyn_cast<FunctionType>(varType)) {
           success &= addOverload(call, lv, ft, args);
-        } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(var->type())) {
+        } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(varType)) {
           success &= addOverload(call, lv, bmt->fnType(), args);
         } else {
           diag.fatal(loc) << *it << " is not callable.";

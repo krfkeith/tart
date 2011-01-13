@@ -241,6 +241,10 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
   } else if (const CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
     if (const CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
       return unifyCompositeType(source, ctPattern, ctValue, variance);
+    } else if (variance == Covariant) {
+      if (const UnionType * utValue = dyn_cast<UnionType>(value)) {
+        return unifyToUnionType(source, ctPattern, utValue, variance);
+      }
     }
 
     return false;
@@ -474,6 +478,23 @@ bool BindingEnv::unifyUnionType(
   return unify(source, *patternTypes.begin(), *valueTypes.begin(), Invariant);
 }
 
+bool BindingEnv::unifyToUnionType(
+    SourceContext * source, const Type * pattern, const UnionType * value,
+    Variance variance) {
+  // If we're assigning to a union type, try each of the union members.
+  Substitution * savedState = substitutions();
+  for (TupleType::const_iterator it = value->members().begin(); it != value->members().end();
+      ++it) {
+    if (unify(source, pattern, *it, variance)) {
+      return true;
+    }
+
+    setSubstitutions(savedState);
+  }
+
+  return false;
+}
+
 bool BindingEnv::unifyPattern(
     SourceContext * source, const TypeVariable * pattern, const Type * value, Variance variance) {
 
@@ -581,14 +602,20 @@ bool BindingEnv::unifyPattern(
 
       if (commonType != s->right() && commonType->isSingular()) {
         if (unifyVerbose) {
-          diag.debug() << "Adding substitution of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+          diag.debug() << "Adding substitution of " << pattern << " <- " << commonType <<
+              " because the new value is " << value <<
+              " and the old value is " << s->right() <<
+              " with variance " << variance;
         }
 
         addSubstitution(pattern, commonType);
       } else {
         // No need to rebind if same as before.
         if (unifyVerbose) {
-          diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType << " because the new value is " << value << " and the old value is " << s->right() << " with variance " << variance;
+          diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType <<
+              " because the new value is " << value <<
+              " and the old value is " << s->right() <<
+              " with variance " << variance;
         }
       }
 
