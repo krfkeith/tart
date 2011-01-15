@@ -2,7 +2,7 @@ import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 
 /** Used to decode a compressed stream of reflection data. */
-@Reflection(Reflection.Detail.NONE) class StreamDecoder {
+class StreamDecoder {
   private static let VARINT_2BYTE_PREFIX = 0xC0;
   private static let VARINT_3BYTE_PREFIX = 0xE0;
   private static let VARINT_2BYTE_MASK = ~VARINT_2BYTE_PREFIX;

@@ -1,10 +1,9 @@
-import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.core.Memory.addressOf;
 import tart.gc.AddressRange;
 
 /** Manages the global list of memory regions. */
-@Reflection(Reflection.Detail.NONE) namespace SpaceMgr {
+namespace SpaceMgr {
   // The global table of spaces.
   private var _spaces:Address[Space]; // = addressOf(_initialSpaceTable[0]);
   

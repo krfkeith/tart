@@ -113,6 +113,10 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
       return false;
     }
 
+    if (hasAnyRetainedAttrs(target)) {
+      target->addTrait(Defn::Reflect);
+    }
+
     target->passes().finish(FunctionDefn::AttributePass);
   }
 
@@ -679,36 +683,26 @@ bool FunctionAnalyzer::merge() {
 bool FunctionAnalyzer::createReflectionData() {
   if (target->passes().begin(FunctionDefn::ReflectionPass)) {
     FunctionType * ftype = target->functionType();
-    bool doReflect = module_->isReflectionEnabled();
+    bool doReflect = module_->isReflectionEnabled() && target->isReflected();
     if (!target->isSingular() || target->defnType() == Defn::Macro) {
       // Don't reflect uninstantiated templates
       doReflect = false;
     } else if (target->storageClass() == Storage_Local) {
       // Don't reflect local methods
       doReflect = false;
-      target->addTrait(Defn::Nonreflective);
     } else {
-      // Don't reflect if any parent is non-reflective.
-      for (Defn * de = target; de != NULL; de = de->parentDefn()) {
-        if (de->isNonreflective()) {
-          target->addTrait(Defn::Nonreflective);
-          doReflect = false;
-          break;
-        }
-      }
-
       if (doReflect) {
         if (ftype->selfParam() != NULL) {
           const Type * selfType = ftype->selfParam()->type();
           if (const CompositeType * cself = dyn_cast<CompositeType>(selfType)) {
             // Don't reflect structs (for now) or protocols.
             if (cself->typeClass() == Type::Struct || cself->typeClass() == Type::Protocol) {
-              target->addTrait(Defn::Nonreflective);
+              target->removeTrait(Defn::Reflect);
               doReflect = false;
             }
           } else {
             // Don't reflect functions of non-composite types.
-            target->addTrait(Defn::Nonreflective);
+            target->removeTrait(Defn::Reflect);
             doReflect = false;
           }
         }
@@ -746,7 +740,7 @@ bool FunctionAnalyzer::createReflectionData() {
       if (doReflect) {
         ftype->setIsInvocable(true);
       } else {
-        target->addTrait(Defn::Nonreflective);
+        target->removeTrait(Defn::Reflect);
       }
     }
 

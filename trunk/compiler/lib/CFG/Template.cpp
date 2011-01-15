@@ -235,7 +235,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   }
 
   if (trace) {
-    diag.debug() << "Instantiating " << value_ << " with params " << typeParams_;
+    diag.debug() << "Instantiating " << value_ << " with params " << typeArgs;
   }
 
   // Create the template instance

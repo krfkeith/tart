@@ -220,6 +220,23 @@ bool Module::addSymbol(Defn * de) {
   return false;
 }
 
+/** Add a symbol to the set of definitions to be reflected from this module. */
+bool Module::reflect(Defn * de) {
+  DASSERT(de != NULL);
+
+  if (isPassFinished(Pass_ResolveModuleMembers)) {
+    diag.fatal(de) << Format_Verbose << "Too late to reflect symbol '" << de <<
+        "', analysis for module '" << this << "' has already finished.";
+  }
+
+  if (de->module() == this || de->isSynthetic()) {
+    addSymbol(de);
+    return reflectedDefs_.insert(de);
+  } else {
+    return false;
+  }
+}
+
 void Module::queueSymbol(Defn * de) {
   defsToAnalyze_.append(de);
 }

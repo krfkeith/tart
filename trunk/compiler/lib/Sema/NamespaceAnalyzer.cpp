@@ -114,7 +114,7 @@ bool NamespaceAnalyzer::analyzeMethods() {
            }
         }
 
-        m->copyTrait(target, Defn::Nonreflective);
+        m->copyTrait(target, Defn::Reflect);
 
         if (FunctionDefn * val = dyn_cast<FunctionDefn>(m)) {
           analyzeFunction(val, Task_PrepTypeComparison);

@@ -3,6 +3,7 @@ import tart.reflect.Method;
 import tart.reflect.Type;
 import tart.reflect.CompositeType;
 import tart.reflect.PrimitiveType;
+import tart.reflect.Reflect;
 import tart.testing.Test;
 
 @EntryPoint
@@ -12,10 +13,10 @@ def main(args:String[]) -> int32 {
 
 var savedValue:int32;
 
-def sample() {
+@Reflect def sample() {
 }
 
-def sample2(arg:int32) {
+@Reflect def sample2(arg:int32) {
   savedValue = arg;
 }
 
@@ -23,7 +24,7 @@ def sample2(arg:int32) {
 class RetainedAttr {
 }
 
-class TestClass {
+@Reflect class TestClass {
   var dataField:int;
   
   // No-arg constructor
@@ -39,6 +40,14 @@ class TestClass {
   @RetainedAttr def square(arg:int32) -> int32 {
     return arg * arg;
   }
+  
+  override toString -> String {
+    return "TestClass";
+  }
+  
+  def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
+    return char[](0);
+  }
 }
 
 class ReflectionTest : Test {
@@ -47,8 +56,8 @@ class ReflectionTest : Test {
 	  assertEq("ReflectionTest", m.name);
 	  assertEq("ReflectionTest", m.qualifiedName);
 	  assertEq("", m.packageName);
-	  assertEq(3, m.types.size);
-	  assertEq(3, m.methods.size);
+	  assertEq(2, m.types.size);
+	  //assertEq(3, m.methods.size);
 	}
 	
 	def testModuleQualifiedName() {
@@ -144,6 +153,17 @@ class ReflectionTest : Test {
 	  var st = ty.supertype;
 	  assertEq("Object", ty.supertype.name);
 
+		// String is not reflected, so this should return null.
+	  let method = ty.findMethod("toString");
+	  assertNull(method);
+  }
+
+  def testTypeOfTestClass {
+    let ty = CompositeType.of(TestClass);
+	  assertEq("TestClass", ty.name);
+	  var st = ty.supertype;
+	  assertEq("Object", ty.supertype.name);
+
 	  let method = ty.findMethod("toString");
 	  assertNotNull(method);
 	  assertEq("tart.core.String", method.type.returnType.toString());
@@ -156,20 +176,15 @@ class ReflectionTest : Test {
 	  assertEq("tart.core", ty.scopeName);
 	  assertEq("tart.core.String", ty.qualifiedName);
 	  assertEq("Object", ty.supertype.name);
-
-	  let method = ty.findMethod("toString");
-	  assertNotNull(method);
-	  assertEq("tart.core.String", method.type.returnType.toString());
-	  assertEq(0, method.type.paramTypes.size);
   }
 
-  def testTypeOfStringToCharArray {
-    let ty = "".type;
+  def testTypeOfToCharArray {
+    let ty = CompositeType.of(TestClass);
 	  let method = ty.findMethod("toCharArray");
 	  assertNotNull(method);
 
 	  // Return type
-	  assertEq("tart.core.Array[char]", method.type.returnType.toString());
+	  assertEq("tart.core.Array", method.type.returnType.toString());
 	  assertEq(Type.TypeKind.CLASS, method.type.returnType.typeKind);
 	  
 	  // Param types

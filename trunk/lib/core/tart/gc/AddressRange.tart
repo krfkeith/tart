@@ -1,9 +1,8 @@
 import tart.core.Memory.Address;
 import tart.core.Memory.ptrDiff;
-import tart.reflect.Reflection;
 
 /** A value type representing a range of addresses. */
-@Reflection(Reflection.Detail.NONE) struct AddressRange {
+struct AddressRange {
   private {
     var _first:Address[ubyte];
     var _last:Address[ubyte];
@@ -46,6 +45,6 @@ import tart.reflect.Reflection;
   }
 }
 
-@Reflection(Reflection.Detail.NONE) def infixEQ(a0:AddressRange, a1:AddressRange) -> bool {
+def infixEQ(a0:AddressRange, a1:AddressRange) -> bool {
   return a0.first is a1.first and a0.last is a1.last;
 }

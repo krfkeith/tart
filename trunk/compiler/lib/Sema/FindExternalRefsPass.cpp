@@ -60,14 +60,14 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern()) {
       visit(fn);
-      if (!fn->isNonreflective()) {
+      if (fn->isReflected()) {
         addTypeRef(fn->type());
       }
 
       fn = fn->mergeTo();
       if (fn != NULL) {
         visit(fn);
-        if (!fn->isNonreflective()) {
+        if (fn->isReflected()) {
           addTypeRef(fn->type());
         }
       }
@@ -186,7 +186,7 @@ Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
   }
 
   if (!isa<CompositeType>(in->value())) {
-    module->reflectedTypes().insert(in->value());
+    module->reflect(in->value()->typeDefn());
     if (isa<PrimitiveType>(in->value())) {
       module->addSymbol(Builtins::typePrimitiveType.typeDefn());
     }

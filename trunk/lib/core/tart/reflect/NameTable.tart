@@ -3,7 +3,7 @@ import tart.collections.ArrayList;
 import tart.collections.ImmutableList;
 
 /** Contains the encoded table of strings for a module. */
-@Reflection(Reflection.Detail.NONE) final class NameTable {
+final class NameTable {
   static let COMPOUND_NAME_FLAG:int = 1;
 
 	// Represents a dotted name X.Y

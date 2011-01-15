@@ -116,7 +116,6 @@ bool DefnAnalyzer::analyzeModule() {
   for (Defn * de = module_->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isTemplate() || de->isPartialInstantiation()) {
       analyzeTemplateSignature(de);
-      //module_->addSymbol(de);
     } else if (!de->hasUnboundTypeParams()) {
       if (analyzeCompletely(de)) {
         module_->addSymbol(de);
@@ -139,7 +138,6 @@ bool DefnAnalyzer::analyzeModule() {
     analyzeType(Builtins::typeDerivedType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typePrimitiveType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typeStaticTypeList.get(), Task_PrepCodeGeneration);
-    //Builtins::typeStaticTypeList.get()->addBaseXRefs(module_);
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
@@ -177,10 +175,6 @@ bool DefnAnalyzer::analyzeModule() {
     }
   }
 
-  /*for (DefnSet::iterator it = module_->exportDefs().begin(); it != module_->exportDefs().end(); ++it) {
-    diag.debug() << "Export " << Format_Verbose << *it;
-  }*/
-
   // Prevent further symbols from being added.
   module_->finishPass(Pass_ResolveModuleMembers);
   return success;
@@ -202,7 +196,6 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     attrType->setClassFlag(CompositeType::Attribute, true);
     attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
     attrType->attributeInfo().setRetained(false);
-    attrType->typeDefn()->addTrait(Defn::Nonreflective);
     return true;
   }
 
@@ -212,7 +205,6 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
       Expr * attrExpr = ea.reduceAttribute(*it);
       if (attrExpr != NULL) {
-        //diag.info(in) << attrExpr;
         in->attrs().push_back(attrExpr);
       }
     }
@@ -278,7 +270,7 @@ bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
     in->attrs().push_back(attr);
     if (attr->exprType() == Expr::ConstObjRef) {
       ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attr);
-      // TODO - actually look up multiple members and find the correct one.
+      // TODO - actually look up multiple 'apply' members and find the correct one.
       FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
           attrType->lookupSingleMember("apply", true));
       if (applyMethod != NULL) {
@@ -388,10 +380,19 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   targetType->attributeInfo().setTarget(target);
   targetType->attributeInfo().setRetained(retention);
   targetType->attributeInfo().setPropagation(propagation);
-  if (!retention) {
-    // If a type is not retained, then don't generate reflection information for it.
-    targetTypeDefn->addTrait(Defn::Nonreflective);
+}
+
+bool DefnAnalyzer::hasAnyRetainedAttrs(Defn * in) {
+  const ExprList & attrs = in->attrs();
+  for (ExprList::const_iterator it = attrs.begin(), itEnd = attrs.end(); it != itEnd; ++it) {
+    if (const CompositeType * attrClass = dyn_cast<CompositeType>((*it)->type())) {
+      if (attrClass->attributeInfo().isRetained()) {
+        return true;
+      }
+    }
   }
+
+  return false;
 }
 
 void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
@@ -499,10 +500,8 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 }
 
 void DefnAnalyzer::addReflectionInfo(Defn * in) {
-  analyzeDefn(in, Task_PrepTypeComparison);
   bool isExport = in->isSynthetic() || in->module() == module_;
-  bool enableReflection = module_->isReflectionEnabled() && isExport;
-  bool enableReflectionDetail = enableReflection && !in->isNonreflective();
+  bool isReflected = isExport && in->isReflected();
   bool trace = isTraceEnabled(in);
 
   if (trace) {
@@ -514,33 +513,22 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Class:
       case Type::Interface: {
         CompositeType * ctype = static_cast<CompositeType *>(tdef->typeValue());
-
-        // If reflection enabled for this type then load the reflection classes.
-        if (enableReflectionDetail) {
-          module_->addSymbol(tdef);
-          if (module_->reflectedDefs().insert(tdef)) {
-            if (isExport) {
-              reflectTypeMembers(ctype);
-            }
-          }
-        } else if (enableReflection) {
-          module_->addSymbol(tdef);
-          module_->reflectedDefs().insert(tdef);
+        if (isExport && module_->reflect(tdef)) {
+          reflectTypeMembers(ctype);
         }
-
         break;
       }
 
       case Type::Struct:
       case Type::Protocol:
-        if (enableReflectionDetail && module_->reflectedDefs().insert(tdef)) {
-          module_->addSymbol(tdef);
+        if (isExport) {
+          module_->reflect(tdef);
         }
 
         break;
 
       case Type::Enum:
-        if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
+        if (isExport && module_->reflect(tdef)) {
           module_->addSymbol(Builtins::typeEnumType.typeDefn());
         }
         break;
@@ -550,29 +538,13 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
     }
   } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(in)) {
     if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
-      if (enableReflectionDetail) {
-        if (module_->reflectedDefs().insert(fn)) {
-          reflectType(fn->type());
-          module_->addSymbol(fn);
-          for (ParameterList::iterator it = fn->params().begin(); it != fn->params().end(); ++it) {
-            const Type * paramType = (*it)->internalType();
-            // Cache the unbox function for this type.
-            if (paramType->isBoxableType()) {
-              ExprAnalyzer(this, fn).getUnboxFn(SourceLocation(), paramType);
-            } else if (paramType->isReferenceType()) {
-              ExprAnalyzer(this, fn).getDowncastFn(SourceLocation(), paramType);
-            }
-          }
-
-          // Cache the boxing function for this type.
-          if (fn->returnType()->isBoxableType()) {
-            ExprAnalyzer(this, fn).coerceToObjectFn(fn->returnType());
-          }
-        }
+      if (isReflected) {
+        reflectType(fn->type());
+        module_->addSymbol(fn->mergeTo() ? fn->mergeTo() : fn);
       }
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
-    if (enableReflectionDetail && module_->reflectedDefs().insert(in)) {
+    if (isReflected) {
       if (prop->getter() != NULL) {
         module_->addSymbol(prop->getter());
       }
@@ -582,8 +554,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       reflectType(prop->type());
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
-    if (enableReflectionDetail) {
-      //diag.info() << Format_Verbose << "Member " << in;
+    if (isReflected) {
       reflectType(var->type());
     }
   }
@@ -592,10 +563,8 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
 bool DefnAnalyzer::reflectType(const Type * type) {
   TypeDefn * tdef = type->typeDefn();
   if (tdef != NULL) {
-    if (tdef->isNonreflective() || tdef->isSynthetic()) {
-      addReflectionInfo(tdef);
-      return true;
-    }
+    addReflectionInfo(tdef);
+    return true;
   }
 
   switch (type->typeClass()) {
@@ -607,20 +576,33 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
     case Type::Function: {
       const FunctionType * ft = static_cast<const FunctionType *>(type);
+      ExprAnalyzer ea(module_, activeScope_, subject_, currentFunction_);
       for (ParameterList::const_iterator it = ft->params().begin();
           it != ft->params().end(); ++it) {
         const Type * paramType = (*it)->internalType();
         reflectType(paramType);
+        // Cache the unbox function for this type.
+        if (paramType->isBoxableType()) {
+          ea.getUnboxFn(SourceLocation(), paramType);
+        } else if (paramType->isReferenceType()) {
+          ea.getDowncastFn(SourceLocation(), paramType);
+        }
       }
 
       reflectType(ft->returnType());
+      if (ft->returnType()->isBoxableType()) {
+        // Cache the boxing function for this type.
+        ea.coerceToObjectFn(ft->returnType());
+      }
       break;
     }
 
-    case Type::Tuple: {
-      const TupleType * tt = static_cast<const TupleType *>(type);
-      for (TupleType::const_iterator it = tt->begin(); it != tt->end(); ++it) {
-        reflectType(*it);
+    case Type::Tuple:
+    case Type::Union:
+    case Type::NAddress:
+    case Type::NArray: {
+      for (size_t i = 0; i < type->numTypeParams(); ++i) {
+        reflectType(type->typeParam(i));
       }
       break;
     }
@@ -634,24 +616,25 @@ bool DefnAnalyzer::reflectType(const Type * type) {
 
 void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
   analyzeTypeDefn(type->typeDefn(), Task_PrepCodeGeneration);
-  //diag.info() << Format_Verbose << "Adding reflect info for " << type;
 
-  // If we're doing detailed reflection, then reflect the members of this type.
-  for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
-    if (de->isSingular()) {
-      switch (de->defnType()) {
-        case Defn::Typedef:
-        case Defn::Namespace:
-        case Defn::Var:
-        case Defn::Let:
-        case Defn::Property:
-        case Defn::Indexer:
-        case Defn::Function:
-          addReflectionInfo(de);
-          break;
+  if (type->typeDefn()->isReflected()) {
+    // If we're doing detailed reflection, then reflect the members of this type.
+    for (Defn * de = type->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (de->isSingular()) {
+        switch (de->defnType()) {
+          case Defn::Typedef:
+          case Defn::Namespace:
+          case Defn::Var:
+          case Defn::Let:
+          case Defn::Property:
+          case Defn::Indexer:
+          case Defn::Function:
+            addReflectionInfo(de);
+            break;
 
-        default:
-          break;
+          default:
+            break;
+        }
       }
     }
   }
@@ -659,6 +642,14 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
   ClassList & bases = type->bases();
   for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
     reflectType(*it);
+  }
+
+  for (size_t i = 0; i < type->numTypeParams(); ++i) {
+    reflectType(type->typeParam(i));
+  }
+
+  if (type->noArgConstructor()) {
+    module_->addSymbol(type->noArgConstructor());
   }
 }
 

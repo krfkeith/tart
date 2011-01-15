@@ -87,10 +87,9 @@ public:
     Unsafe,                 // Requires unsafe language extensions
     Singular,               // Has no unbound template params
     Synthetic,              // Generated via template
-    Nonreflective,          // Don't generate reflection data for this class.
+    Reflect,                // Generate reflection data for this definition.
     TemplateMember,         // Is a member of a template
     PartialInstantiation,   // A template instance whose variables are unbound template params.
-    CompileTimeEvaluable,   // If set, it means that this def can be evaluated in the compiler.
     RequestStackTrace,      // Set on catch variables that want stack tracing.
     Mergeable,              // Request type weakening (coalesce with more general version.)
 
@@ -181,7 +180,7 @@ public:
 
   virtual bool isSingular() const { return traits_.contains(Singular); }
   bool isSynthetic() const { return traits_.contains(Synthetic); }
-  bool isNonreflective() const { return traits_.contains(Nonreflective); }
+  bool isReflected() const { return traits_.contains(Reflect); }
   bool isUnsafe() const { return traits_.contains(Unsafe); }
 
   void setSingular(bool t) {

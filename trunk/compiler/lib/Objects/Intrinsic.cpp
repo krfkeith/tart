@@ -910,20 +910,20 @@ Expr * CoalesceApplyIntrinsic::eval(const SourceLocation & loc, Module * calling
 }
 
 // -------------------------------------------------------------------
-// ReflectionApplyIntrinsic
-ReflectionApplyIntrinsic ReflectionApplyIntrinsic::instance;
+// ReflectApplyIntrinsic
+ReflectApplyIntrinsic ReflectApplyIntrinsic::instance;
 
-Expr * ReflectionApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+Expr * ReflectApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(args[0])) {
     if (TypeDefn * tdef = ctype->value()->typeDefn()) {
-      tdef->addTrait(Defn::Nonreflective);
+      tdef->addTrait(Defn::Reflect);
     }
   } else if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
-    lval->value()->addTrait(Defn::Nonreflective);
+    lval->value()->addTrait(Defn::Reflect);
   } else {
-    diag.fatal(loc) << "Invalid target for @Reflection.";
+    diag.fatal(loc) << "Invalid target for @Reflect.";
   }
 
   return args[0];

@@ -43,16 +43,6 @@ struct TypeOrder {
 }
 
 /// -------------------------------------------------------------------
-/// ModuleMetadata
-
-void ModuleMetadata::addExport(const Defn * de) {
-  if (outputPhase_) {
-    diag.fatal() << "Attempting to add an export during output phase: " << de;
-  }
-  defnsToExport_.append(de);
-}
-
-/// -------------------------------------------------------------------
 /// ReflectionMetadata
 
 void ReflectionMetadata::addTypeRef(const Type * type) {
@@ -99,12 +89,9 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
     case Type::TypeVar: {
       const TypeVariable * typeVar = static_cast<const TypeVariable *>(type);
       //types_[typeVar] = TagInfo(1);
-      mmd_.names().addName(typeVar->name())->use();
+      //mmd_.names().addName(typeVar->name())->use();
       break;
     }
-
-//    case Type::Binding:
-//      return visitTypeBinding(static_cast<const TypeBinding *>(in));
 
     default:
       diag.fatal() << "Type class not handled: " << type->typeClass();

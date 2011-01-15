@@ -91,10 +91,7 @@ public:
   DefnSet & importDefs() { return importDefs_; }
 
   /** Get the set of defns for which reflection data is generated. */
-  DefnSet & reflectedDefs() { return reflectedDefs_; }
-
-  /** Get the set of defns for which reflection data is generated. */
-  TypeSet & reflectedTypes() { return reflectedTypes_; }
+  const DefnSet & reflectedDefs() { return reflectedDefs_; }
 
   /** Import this symbol into this module. If the symbol is from another module, add it
       to the list of imported symbols. If it is from this module, or if it is synthetic, then
@@ -110,6 +107,10 @@ public:
 
   /** Return the next xref that has not been analyzed. */
   Defn * nextDefToAnalyze();
+
+  /** Add a symbol to the set of definitions to be reflected from this module.
+      Returns true if the symbol is not already reflected. */
+  bool reflect(Defn * de);
 
   /** Return the map of functions that perform type conversions. */
   const ConverterMap & converters() const { return converters_; }
@@ -161,7 +162,6 @@ private:
   DefnSet exportDefs_;
   DefnSet importDefs_;
   DefnSet reflectedDefs_;
-  TypeSet reflectedTypes_;
   DefnList initDefs_;
   Agenda<Defn> defsToAnalyze_;
   FunctionDefn * entryPoint_;

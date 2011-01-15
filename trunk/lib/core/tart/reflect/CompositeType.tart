@@ -41,7 +41,6 @@ public class CompositeType : Type {
   def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], baseTemplate:CompositeType) {
     super(typeKind);
     self._typeInfo = typeInfo;
-    // TODO: Assign base template
   }
 
   /** Given a type literal, return the reflected complex type object. */
@@ -154,16 +153,6 @@ public class CompositeType : Type {
   final def create() -> Object {
     switch (typeKind) {
       case CLASS {
-	      if _noArgCtor is null {
-  	      for ctor in constructors {
-  	        if ctor.numParams == 0 {
-			        let instance = _alloc();
-              ctor.call(instance);
-              return instance;
-  	        }
-  	      }
-	      }
-
 	      if _noArgCtor is not null {
 	        let instance = self._alloc();
 	        _noArgCtor(instance);
@@ -227,34 +216,33 @@ public class CompositeType : Type {
     }
   }
 
+	/** Decode the compressed method descriptors. */
   private final def decodeMethods {
     if self._methods is null {
-      let decoder = MemberDecoder(
-      		_strmData,
-      		_names,
-      		_typeRefs,
-      		_globalRefs,
-      		_methodRefs,
-      		addressOf(_typeInfo.methodTable[0]),
-      		_methodBaseIndex);
-	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
-  	  let methods = ArrayList[Method]();
-    	let constructors = ArrayList[Method]();
-	    if length != 0 {
-      	//Debug.writeLn("Length of method section = ", length.toString());
-	      let endPos = decoder.position + length;
-  	    while decoder.position < endPos {
-    	    let m = decoder.decodeMethod();
-      	  if m.kind == Member.MemberKind.CONSTRUCTOR {
-        	  constructors.add(m);
-        	} else {
-          	methods.add(m);
+      if _strmData is null {
+		    self._methods = ImmutableList.of();
+		    self._constructors = ImmutableList.of();
+      } else {
+        let decoder = MemberDecoder(
+        		_strmData, _names, _typeRefs, _globalRefs, _methodRefs,
+        		addressOf(_typeInfo.methodTable[0]), _methodBaseIndex);
+  	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
+    	  let methods = ArrayList[Method]();
+      	let constructors = ArrayList[Method]();
+  	    if length != 0 {
+  	      let endPos = decoder.position + length;
+    	    while decoder.position < endPos {
+      	    let m = decoder.decodeMethod();
+        	  if m.kind == Member.MemberKind.CONSTRUCTOR {
+          	  constructors.add(m);
+          	} else {
+            	methods.add(m);
+          	}
         	}
-      	}
-	    }
-	    
-	    self._methods = ImmutableList.copyOf(methods);
-	    self._constructors = ImmutableList.copyOf(constructors);
+  	    }
+  	    self._methods = ImmutableList.copyOf(methods);
+  	    self._constructors = ImmutableList.copyOf(constructors);
+      }
     }
   }
 

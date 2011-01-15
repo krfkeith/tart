@@ -4,7 +4,6 @@ import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 import tart.core.Memory.Address;
 import tart.core.Math.min;
-import tart.reflect.Reflection;
 
 /** Built-in array class */
 @Coalesce public final class Array[%ElementType] : Collection[ElementType] {

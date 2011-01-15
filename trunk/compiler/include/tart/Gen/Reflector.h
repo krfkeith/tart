@@ -130,6 +130,9 @@ public:
   /** Return the reflected symbol data for a given definition. */
   ReflectionMetadata * getReflectionMetadata(const Defn * def);
 
+  /** Return the reflected symbol data for a given definition, creating it if necessary. */
+  ReflectionMetadata * getOrCreateReflectionMetadata(const Defn * def);
+
   /** Generate reflection information for a module. */
   void emitModule(Module * module);
 
@@ -138,13 +141,13 @@ public:
   void emitNameTable(Module * module);
 
   /** Add a definition to the list of reflected members. */
-  void addDefn(const Defn * def);
+  void createMetadata(const Defn * def);
 
   /** Add all of the members of the given scope to the reflected scope. */
-  void addMembers(const IterableScope * scope, ReflectionMetadata * rs);
+  void createMetadataForMembers(const IterableScope * scope, ReflectionMetadata * rs);
 
   /** Add the member to the reflected scope. */
-  void addMember(const Defn * def, ReflectionMetadata * rs);
+  void createMetadataForMember(const Defn * def, ReflectionMetadata * rs);
 
   /** Generate reflection information for a definition in this module. */
   void buildRMD(const Defn * def);
@@ -162,9 +165,6 @@ public:
   void emitEnumType(const EnumType * type);
   void emitDerivedType(const Type * type);
   void emitFunctionType(const FunctionType * type);
-
-  /** Write out reflection information for a definition in this module. */
-  void emitReflectedDefn(ReflectionMetadata * rs, const Defn * def);
 
   /** Write out the array of member types defined within the given scope. */
   llvm::Constant * emitMemberTypes(const IterableScope * scope);
@@ -203,8 +203,6 @@ public:
 private:
   typedef llvm::DenseMap<const Defn *, ReflectionMetadata *> ReflectedSymbolMap;
 
-  Traits memberTraits(const Defn * member);
-
   Module * module();
 
   llvm::Constant * getRetainedAttr(const Expr * attrExpr);
@@ -221,10 +219,9 @@ private:
   ReflectedSymbolMap rmdMap_;
   GlobalVarMap globals_;
 
-  ModuleMetadata mmd_;
-
   // Set of types exported by this module.
   TypeSet typeExports_;
+  bool outputPhase_;
 };
 
 }

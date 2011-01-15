@@ -603,7 +603,7 @@ import tart.collections.ArrayList;
 import tart.collections.ImmutableList;
 
 /** The compressed and encoded reflection data for a type, namespace or module. */
-@Reflection(Reflection.Detail.NONE) final class DerivedTypeDescriptor {
+final class DerivedTypeDescriptor {
   private {
     var _value:optional DerivedType; // Has to be mutable!
     var _typeKind:Type.TypeKind;
@@ -617,7 +617,7 @@ import tart.collections.ImmutableList;
   }
 }
 
-@Reflection(Reflection.Detail.NONE) final class TypeDecoder : StreamDecoder {
+final class TypeDecoder : StreamDecoder {
   private {
     let _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
     let _compositeTypeRefs:Address[Address[TypeInfoBlock]];

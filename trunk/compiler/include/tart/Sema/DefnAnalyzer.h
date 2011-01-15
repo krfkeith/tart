@@ -54,6 +54,7 @@ public:
   void applyAttribute(Defn * de, ConstantObjectRef * attrObj, FunctionDefn * applyMethod);
   void handleIntrinsicAttribute(Defn * de, Expr * attrCtor);
   void handleAttributeAttribute(Defn * de, ConstantObjectRef * attrObj);
+  static bool hasAnyRetainedAttrs(Defn * in);
 
   /** Resolve the target of an import statement, and add a definition
       to the target scope. */

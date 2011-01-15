@@ -401,10 +401,10 @@ class CoalesceApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Reflection.apply intrinsic
-class ReflectionApplyIntrinsic : public Intrinsic {
-  static ReflectionApplyIntrinsic instance;
-  ReflectionApplyIntrinsic() : Intrinsic("tart.reflect.Reflection.apply") {}
+// Reflect.apply intrinsic
+class ReflectApplyIntrinsic : public Intrinsic {
+  static ReflectApplyIntrinsic instance;
+  ReflectApplyIntrinsic() : Intrinsic("tart.reflect.Reflect.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
 };

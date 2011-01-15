@@ -1,5 +1,18 @@
 // ------------------------------------------------------------------------
 
+Next up:
+* classify -> match
+* optional semicolon at end of block
+* statements returning values - if, switch, match.
+* type inference for blocks returning expressions.
+* make varargs into a type modifier - if that can be done.
+* varargs templates
+* interface Function[%ReturnType, %ParamTypes...] {}
+* Closures to implement Function.
+* Remove BoundMethod as a type, reimplement as an implementation of Function.
+* Measure symbol sizes again.
+* See if we need to make a global attribute index.
+
 Design TODOS:
 
 * Const-ness "const" and "const? / constable"
@@ -26,7 +39,7 @@ Hard problems:
   -- Reflection size
   -- Dynamic reification of types.
 
-Working on currently:
+More things to do:
   -- Get static ctors working.
   -- BitTricks tests.
   -- GC
