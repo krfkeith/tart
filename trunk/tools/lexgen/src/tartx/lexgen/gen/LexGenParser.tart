@@ -135,10 +135,10 @@ class LexGenParser {
         }
 */
   def parseClassName -> optional String {
-    classify matchIdent() as id:String {
+    match matchIdent() as id:String {
 	    let className = StringBuilder(id);
 	    while matchToken(LToken.DOT) {
-	      classify matchIdent() as id:String {
+	      match matchIdent() as id:String {
           className.append('.');
           className.append(id);
         } else {

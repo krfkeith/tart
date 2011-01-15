@@ -167,7 +167,7 @@ DEFINE_TOKEN(Continue)
 DEFINE_TOKEN(Where)
 DEFINE_TOKEN(Switch)
 DEFINE_TOKEN(Case)
-DEFINE_TOKEN(Classify)
+DEFINE_TOKEN(Match)
 DEFINE_TOKEN(As)
 
 // Exception handling

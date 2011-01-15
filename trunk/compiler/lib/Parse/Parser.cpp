@@ -1445,9 +1445,9 @@ Stmt * Parser::statement() {
       next();
       return switchStmt();
 
-    case Token_Classify:
+    case Token_Match:
       next();
-      return classifyStmt();
+      return matchStmt();
 
     case Token_Return:
       next();
@@ -1835,7 +1835,7 @@ Stmt * Parser::caseStmt() {
   return NULL;
 }
 
-Stmt * Parser::classifyStmt() {
+Stmt * Parser::matchStmt() {
   SourceLocation loc = tokenLoc;
   bool parens = match(Token_LParen);
 
@@ -1850,7 +1850,7 @@ Stmt * Parser::classifyStmt() {
     return NULL;
   }
 
-  ClassifyStmt * st = new ClassifyStmt(loc, test);
+  MatchStmt * st = new MatchStmt(loc, test);
 
   if (match(Token_As)) {
     Stmt * asSt = asStmt();
@@ -1919,7 +1919,7 @@ Stmt * Parser::asStmt() {
     return NULL;
   }
 
-  return new ClassifyAsStmt(loc, var, body);
+  return new MatchAsStmt(loc, var, body);
 }
 
 Stmt * Parser::bodyStmt() {

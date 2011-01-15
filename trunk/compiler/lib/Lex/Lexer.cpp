@@ -52,7 +52,6 @@ namespace {
 
         case 'c':
           if (strcmp(kw, "class") == 0) return Token_Class;
-          if (strcmp(kw, "classify") == 0) return Token_Classify;
           if (strcmp(kw, "catch") == 0) return Token_Catch;
           if (strcmp(kw, "char") == 0) return Token_CharType;
           if (strcmp(kw, "continue") == 0) return Token_Continue;
@@ -105,6 +104,7 @@ namespace {
         case 'm':
           if (strcmp(kw, "module") == 0) return Token_Module;
           if (strcmp(kw, "macro") == 0) return Token_Macro;
+          if (strcmp(kw, "match") == 0) return Token_Match;
           break;
 
         case 'n':

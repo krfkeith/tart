@@ -46,7 +46,7 @@ struct ConversionSpec {
 
 class StringConverter {
   def convert(value:Object) -> String {
-    classify value {
+    match value {
     }
   }
 }

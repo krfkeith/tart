@@ -173,7 +173,7 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_Catch, LexToken("catch"));
   EXPECT_EQ(Token_Finally, LexToken("finally"));
   EXPECT_EQ(Token_Switch, LexToken("switch"));
-  EXPECT_EQ(Token_Classify, LexToken("classify"));
+  EXPECT_EQ(Token_Match, LexToken("match"));
 
   // String literals
   EXPECT_EQ(Token_String, LexToken("\"\""));

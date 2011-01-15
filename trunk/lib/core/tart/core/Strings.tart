@@ -136,7 +136,7 @@ namespace Strings {
   }
 
   private def errCheck[%T](s:String, value:T or ConversionError) -> T {
-    classify value as err:ConversionError {
+    match value as err:ConversionError {
       fail(s, stringify(T), err);
     }
 
@@ -144,7 +144,7 @@ namespace Strings {
   }
 
   private def parseSInt[%T](s:String, radix:int) -> T {
-    classify tryParseSInt(s, radix, T.minVal, T.maxVal) {
+    match tryParseSInt(s, radix, T.minVal, T.maxVal) {
       as n:int64 { return T(n); }
       as err:ConversionError { fail(s, stringify(T), err); }
     }
@@ -154,7 +154,7 @@ namespace Strings {
   }
 
   private def parseUInt[%T](s:String, radix:int) -> T {
-    classify tryParseUInt(s, radix, T.maxVal) {
+    match tryParseUInt(s, radix, T.maxVal) {
       as n:uint64 { return T(n); }
       as err:ConversionError { fail(s, stringify(T), err); }
     }
@@ -164,7 +164,7 @@ namespace Strings {
   }
 
   private def tryParseSInt[%T](s:String, radix:int) -> T or ConversionError {
-    classify tryParseSInt(s, radix, T.minVal, T.maxVal) {
+    match tryParseSInt(s, radix, T.minVal, T.maxVal) {
       as n:int64 { return T(n); }
       as err:ConversionError { return err; }
     }
@@ -174,7 +174,7 @@ namespace Strings {
   }
 
   private def tryParseUInt[%T](s:String, radix:int) -> T or ConversionError {
-    classify tryParseUInt(s, radix, T.maxVal) {
+    match tryParseUInt(s, radix, T.maxVal) {
       as n:uint64 { return T(n); }
       as err:ConversionError { return err; }
     }

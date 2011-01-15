@@ -136,7 +136,7 @@ class TupleTypeTest : Test {
 	
 	def testTupleUnion() {
 	  var s:(ubyte, ubyte) or void = (2, 3);
-	  classify s as n:(ubyte, ubyte) {
+	  match s as n:(ubyte, ubyte) {
 	    assertEq(2, n[0]);
 	    assertEq(3, n[1]);
 	  }
@@ -144,7 +144,7 @@ class TupleTypeTest : Test {
 	
 	def testTupleLargeUnion() {
 	  var s:(int, int, int, int) or void = (2, 3, 4, 5);
-	  classify s as n:(int, int, int, int) {
+	  match s as n:(int, int, int, int) {
 	    assertEq(2, n[0]);
 	    assertEq(3, n[1]);
 	    assertEq(4, n[2]);
@@ -179,7 +179,7 @@ class TupleTypeTest : Test {
 	  var n = i.next();
 	  assertFalse(n isa void);
 	  assertTrue(n isa (int32, int32));
-	  classify n as t:(int32, int32) {
+	  match n as t:(int32, int32) {
 		  assertEq(1, t[0]);
 		  assertEq(2, t[1]);
 	  }
