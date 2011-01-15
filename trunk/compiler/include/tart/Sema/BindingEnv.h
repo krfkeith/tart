@@ -87,8 +87,8 @@ private:
 };
 
 /// -------------------------------------------------------------------
-/// A TypeBinding represents the value of a TypeVariable within a
-/// specific environment.
+/// A TypeBinding represents a (environment, typevar) pair, which when
+/// dereferenced causes a lookup of that typevar within that environment.
 class TypeBinding : public Type {
 public:
   TypeBinding(BindingEnv * env, const TypeVariable * var)

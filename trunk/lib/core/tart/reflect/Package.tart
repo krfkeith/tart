@@ -3,7 +3,7 @@ import tart.annex.Essential;
 import tart.core.Memory.Address;
 
 /** Description of a package. */
-@Reflection(Reflection.Detail.NONE) final class Package {
+final class Package {
   private {
     var _name:String;
     var _modules:Module[];

@@ -102,6 +102,10 @@ bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
       return false;
     }
 
+    if (hasAnyRetainedAttrs(target)) {
+      target->addTrait(Defn::Reflect);
+    }
+
     target->passes().finish(VariableDefn::AttributePass);
   }
 
@@ -260,10 +264,12 @@ bool VarAnalyzer::resolveInitializers() {
           // Make sure that the type gets analyzed. We don't need to actually import it
           // however, since declaring a variable to be a type does not imply that we're
           // actually calling any of that type's methods.
-          if (var->type()->typeDefn() != NULL) {
-            module_->queueSymbol(var->type()->typeDefn());
-//            if (var->type()->typeDefn()->isSynthetic()) {
-//            }
+          // (NOTE: changed it to add symbol, because queueSymbol has problems - what
+          // if you queue it, analyze it, and then later addSymbol it again - doesn't get
+          // fully analyzed.)
+          TypeDefn * typeDef = var->type()->typeDefn();
+          if (typeDef != NULL) {
+            module_->addSymbol(typeDef);
           }
           break;
         }

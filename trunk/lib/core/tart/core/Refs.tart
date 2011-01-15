@@ -1,7 +1,5 @@
-import tart.reflect.Reflection;
-
 /** Abstract class used to represent a reference to some value. */
-@Reflection(Reflection.Detail.NONE) namespace Refs {
+namespace Refs {
   private {
     /// Convert signed integers to their unsigned equivalents. Supresses conversion warnings.
 

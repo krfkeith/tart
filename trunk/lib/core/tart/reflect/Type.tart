@@ -1,9 +1,8 @@
-import tart.reflect.Reflection;
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 
 /** The metatype object - the class that describes a type. */
-@Reflection(Reflection.Detail.NONE) abstract class Type {
+abstract class Type {
   enum TypeKind : ubyte {
     OPAQUE,
     PRIMITIVE,

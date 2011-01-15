@@ -6,7 +6,7 @@ import tart.collections.ImmutableList;
 import tart.core.Memory.Address;
 
 /** Description of a compiled module. */
-@Reflection(Reflection.Detail.NONE) final class Module {
+final class Module {
   private {
     var _names:NameTable;
     var _nameIndex:int16;
@@ -47,21 +47,25 @@ import tart.core.Memory.Address;
   /** Returns a reference to module that contains the specified type. */
   @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
 
+	/** Decode the compressed method descriptors. */
   private final def decodeMethods {
     if self._methods is null {
-      let decoder = MemberDecoder(_strmData, _names, _typeRefs, _globalRefs, _methodRefs, null, 0);
-	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
-  	  let methods = ArrayList[Method]();
-	    if length != 0 {
-      	//Debug.writeLn("Length of method section = ", length.toString());
-	      let endPos = decoder.position + length;
-  	    while decoder.position < endPos {
-    	    let m = decoder.decodeMethod();
-         	methods.add(m);
-      	}
-	    }
-	    
-	    self._methods = ImmutableList.copyOf(methods);
+      if _strmData is null {
+  	    self._methods = ImmutableList.of();
+      } else {
+        let decoder = MemberDecoder(_strmData, _names, _typeRefs, _globalRefs, _methodRefs, null, 0);
+  	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
+    	  let methods = ArrayList[Method]();
+  	    if length != 0 {
+        	//Debug.writeLn("Length of method section = ", length.toString());
+  	      let endPos = decoder.position + length;
+    	    while decoder.position < endPos {
+      	    let m = decoder.decodeMethod();
+           	methods.add(m);
+        	}
+  	    }
+  	    self._methods = ImmutableList.copyOf(methods);
+      }
     }
   }
 

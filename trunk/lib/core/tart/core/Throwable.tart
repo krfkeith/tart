@@ -1,8 +1,6 @@
-import tart.reflect.Reflection;
-
 /** The base class for all throwable objects. */
 class Throwable {
-  @Reflection(Reflection.Detail.NONE) class StackFrame {
+  class StackFrame {
     var caller:optional StackFrame;
     var function:String;
     var sourceFile:String;
@@ -13,7 +11,7 @@ class Throwable {
   
   private {
     // Exception structure needed by libunwind.
-    @Reflection(Reflection.Detail.NONE) final struct UnwindException {
+    final struct UnwindException {
       var exceptionClass:uint64;
       var exceptionCleanup:static fn(:int32, :int32);
       var private1:uint64;

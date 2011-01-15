@@ -1,5 +1,4 @@
 import tart.reflect.CompositeType;
-import tart.reflect.Reflection;
 import tart.core.Memory.Address;
 import tart.reflect.Type;
 import tart.gc.TraceDescriptor;
@@ -7,7 +6,7 @@ import tart.gc.TraceDescriptor;
 /** All objects contain a pointer to a TypeInfoBlock, which contains the
     pointer to the type object and the method table.
  */
-@Reflection(Reflection.Detail.NONE) struct TypeInfoBlock {
+struct TypeInfoBlock {
   /** Pointer to the compressed reflection data for this type. */
   readonly var type:CompositeType;
 

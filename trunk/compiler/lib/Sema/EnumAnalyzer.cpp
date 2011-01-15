@@ -31,7 +31,6 @@ public:
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
-    addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Static);
     setParentDefn(type->typeDefn());
@@ -63,7 +62,6 @@ public:
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
-    addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Instance);
     setParentDefn(type->typeDefn());
@@ -114,7 +112,6 @@ public:
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
-    addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Global);
     setParentDefn(type->typeDefn());
@@ -159,7 +156,6 @@ public:
   {
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
-    addTrait(Defn::Nonreflective);
     setFlag(Final);
     setStorageClass(Storage_Instance);
     setParentDefn(type->typeDefn());

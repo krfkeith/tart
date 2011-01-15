@@ -294,7 +294,6 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 
       TypeDefn * envTypeDef = new TypeDefn(module(), ".closure", NULL);
       envTypeDef->addTrait(Defn::Singular);
-      envTypeDef->addTrait(Defn::Nonreflective);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
       envTypeDef->setDefiningScope(activeScope());

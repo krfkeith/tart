@@ -3,8 +3,9 @@ import tart.reflect.Module;
 import tart.reflect.Package;
 import tart.reflect.CompositeType;
 import tart.reflect.Type;
+import tart.reflect.Reflect;
 
-class Test {
+@Reflect class Test {
   import namespace Asserts;
   
   /** Run all of the test cases in the specified package. */

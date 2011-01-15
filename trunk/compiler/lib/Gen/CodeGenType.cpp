@@ -203,10 +203,6 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   // Create the TypeInfoBlock struct
   StructBuilder builder(*this);
   builder.addField(getCompositeTypeObjectPtr(type));
-//  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
-//  } else {
-//    builder.addNullField(tib_type.type());
-//  }
 
   if (type->typeClass() == Type::Class) {
     llvm::GlobalVariable * traceTable = getTraceTable(type);
@@ -940,7 +936,7 @@ llvm::Value * CodeGenerator::getTypeObjectPtr(const Type * type) {
   }
 
   // We need a module pointer
-  DASSERT_OBJ(module_->reflectedTypes().count(type), type);
+  //DASSERT_OBJ(module_->reflectedTypes().count(type), type);
   llvm::Constant * moduleObject = createModuleObjectPtr();
 
   // Need a function call...

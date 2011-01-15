@@ -526,7 +526,7 @@ bool ClassAnalyzer::analyzeMemberTypes() {
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
         // TODO: Copy attributes that are inherited.
-        memberType->copyTrait(target, Defn::Nonreflective);
+        memberType->copyTrait(target, Defn::Reflect);
         switch (memberType->typeValue()->typeClass()) {
           case Type::Class:
           case Type::Struct:
@@ -581,6 +581,7 @@ bool ClassAnalyzer::analyzeFields() {
         case Defn::Let: {
           VariableDefn * field = static_cast<VariableDefn *>(member);
           //field->copyTrait(target, Defn::Final);
+          field->copyTrait(target, Defn::Reflect);
 
           if (field->passes().isRunning(VariableDefn::VariableTypePass)) {
             continue;
@@ -711,7 +712,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               ctor->addTrait(Defn::Singular);
             }
 
-            ctor->copyTrait(target, Defn::Nonreflective);
+            ctor->copyTrait(target, Defn::Reflect);
             analyzeConstructBase(ctor);
           } else {
             diag.fatal(*it) << "Member named 'construct' must be a method.";
@@ -734,7 +735,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
-            ctor->copyTrait(target, Defn::Nonreflective);
+            ctor->copyTrait(target, Defn::Reflect);
             // TODO: check return type.
           }
         }
@@ -800,7 +801,7 @@ bool ClassAnalyzer::analyzeMethods() {
            }
         }
 
-        member->copyTrait(target, Defn::Nonreflective);
+        member->copyTrait(target, Defn::Reflect);
 
         if (FunctionDefn * val = dyn_cast<FunctionDefn>(member)) {
           analyzeFunction(val, Task_PrepTypeComparison);

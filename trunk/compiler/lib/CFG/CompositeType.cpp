@@ -545,7 +545,7 @@ void CompositeType::addClassExportsToModule(Module * module) const {
   // Make certain that every method that is referred to from the TIB is XRef'd.
   for (MethodList::const_iterator m = instanceMethods_.begin(); m != instanceMethods_.end(); ++m) {
     FunctionDefn * method = *m;
-    if (method->hasBody() && module->addSymbol(method)) {
+    if (method->hasBody() && module->addSymbol(method->mergeTo() ? method->mergeTo() : method)) {
       //diag.info() << Format_Verbose << "Added method " << method;
     }
   }
@@ -559,7 +559,7 @@ void CompositeType::addClassExportsToModule(Module * module) const {
     for (MethodList::const_iterator m = it->methods.begin(); m != it->methods.end(); ++m) {
       FunctionDefn * method = *m;
       if (method->hasBody()) {
-        module->addSymbol(method);
+        module->addSymbol(method->mergeTo() ? method->mergeTo() : method);
       }
     }
   }

@@ -29,7 +29,6 @@ void TypeLiteralType::initBuiltin() {
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
   typedefn.setTypeValue(&prototype);
-  typedefn.addTrait(Defn::Nonreflective);
 
   prototype.literalType_ = tsig->typeParam(0);
 }

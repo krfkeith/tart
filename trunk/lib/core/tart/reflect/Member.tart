@@ -1,7 +1,7 @@
 import tart.collections.List;
 
 /** A member of a type */
-@Reflection(Reflection.Detail.NONE) class Member {
+class Member {
   enum Visibility : ubyte {
     PUBLIC,
     PROTECTED,

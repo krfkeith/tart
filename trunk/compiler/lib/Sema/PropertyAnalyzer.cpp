@@ -68,6 +68,10 @@ bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
       return false;
     }
 
+    if (hasAnyRetainedAttrs(target)) {
+      target->addTrait(Defn::Reflect);
+    }
+
     target->passes().finish(PropertyDefn::AttributePass);
   }
 
