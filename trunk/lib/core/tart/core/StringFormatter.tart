@@ -31,7 +31,7 @@ class StringFormatter {
     var state = State.TEXT;
     var fieldIndex = 0;
     repeat {
-      classify it.next() as ch:char {
+      match it.next() as ch:char {
         if prevCh == '{' {
           if ch == '{' {
 		        builder.append('{');

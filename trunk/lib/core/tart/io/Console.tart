@@ -19,7 +19,7 @@ public namespace Console {
   /** Return the input stream for stdin. */
   def cin:TextReader {
     get {
-      classify _cin {
+      match _cin {
         as r:TextReader { return r; }
         else {
           let r:TextReader = StdFileStream(getStdStream(StreamID.STDIN), true, false, false);

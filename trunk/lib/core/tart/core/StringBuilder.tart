@@ -141,7 +141,7 @@ public final class StringBuilder {
   }
 
   def insert(insertPos:int, s:Iterator[char]) {
-    classify s {
+    match s {
       as sequence:HasLength {
         grow(sequence.length, insertPos);
         for c in s {

@@ -300,16 +300,16 @@ void CaseStmt::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
-// Classify
+// Match
 
-void ClassifyStmt::trace() const {
+void MatchStmt::trace() const {
   Stmt::trace();
   safeMark(testExpr_);
   markList(caseList_.begin(), caseList_.end());
 }
 
-void ClassifyStmt::format(FormatStream & out) const {
-  out << "Classify (" << testExpr_ << ", ";
+void MatchStmt::format(FormatStream & out) const {
+  out << "Match (" << testExpr_ << ", ";
   for (StmtList::const_iterator it = caseList_.begin(); it != caseList_.end(); ++it) {
     out << " " << *it << ";";
   }
@@ -320,13 +320,13 @@ void ClassifyStmt::format(FormatStream & out) const {
 // -------------------------------------------------------------------
 // Case
 
-void ClassifyAsStmt::trace() const {
+void MatchAsStmt::trace() const {
   Stmt::trace();
   safeMark(asDecl_);
   safeMark(body_);
 }
 
-void ClassifyAsStmt::format(FormatStream & out) const {
+void MatchAsStmt::format(FormatStream & out) const {
   out << "as (" << asDecl_ << ", " << body_ << ")";
 }
 

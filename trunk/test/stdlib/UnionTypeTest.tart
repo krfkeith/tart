@@ -25,8 +25,8 @@ class UnionTypeTest : Test {
 	    fail("union member test failed");
 	  } catch t:TypecastError {}
 	
-	  // classify  
-	  classify x as xi:int32 {
+	  // match  
+	  match x as xi:int32 {
 	    assertTrue(xi == 1);
 	  } else {
 	    fail("union member test failed");
@@ -48,8 +48,8 @@ class UnionTypeTest : Test {
 	    fail("union member test failed");
 	  } catch t:TypecastError {}
 	  
-	  // classify
-	  classify x as xf:float {
+	  // match
+	  match x as xf:float {
 	    assertTrue(xf == 1.0);
 	  } else {
 	    fail("union member test failed");
@@ -75,8 +75,8 @@ class UnionTypeTest : Test {
 	    //assertEq(1.0, typecast[Throwable](x));
 	  } catch t:TypecastError {}
 	
-	  // classify  
-	  classify x as xs:String {
+	  // match  
+	  match x as xs:String {
 	    assertTrue(xs == "Hello");
 	  } else {
 	    fail("union member test failed");
@@ -109,8 +109,8 @@ class UnionTypeTest : Test {
 	    fail("union member test failed");
 	  } catch t:TypecastError {}
 	
-	  // classify  
-	  classify x as xi:int32 {
+	  // match  
+	  match x as xi:int32 {
 	    // For some reason this fails with -O1
 	    assertEq(1, xi);
 	  } else {
@@ -132,8 +132,8 @@ class UnionTypeTest : Test {
 	    fail("union member test failed");
 	  } catch t:TypecastError {}
 	  
-	  // classify
-	  classify x as xs:String {
+	  // match
+	  match x as xs:String {
 	    assertTrue(xs == "Hello");
 	  } else {
 	    fail("union member test failed");
@@ -159,8 +159,8 @@ class UnionTypeTest : Test {
 	    fail("union member test failed");
 	  } catch t:TypecastError {}
 	  
-	  // classify
-	  classify x as xs:String {
+	  // match
+	  match x as xs:String {
 	    assertTrue(xs == "Hello");
 	  } else {
 	    fail("union member test failed");

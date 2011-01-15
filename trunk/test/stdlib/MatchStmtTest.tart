@@ -2,29 +2,29 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
-  return Test.run(ClassifyStmtTest);
+  return Test.run(MatchStmtTest);
 }
 
-class ClassifyStmtTest : Test {
-	def testClassifySucceed {
+class MatchStmtTest : Test {
+	def testMatchSucceed {
 	  let e:Object = "H";
-	  classify e as s:String {
+	  match e as s:String {
 	    return;
 	  }
 	  
 	  fail("Invalid classification");
 	}
 	
-	def testClassifyFallThrough {
+	def testMatchFallThrough {
 	  let e:Object = "H";
-	  classify e as s:Exception {
+	  match e as s:Exception {
 	    fail("Invalid classification");
 	  }
 	}
 	
-	def testClassifyElse {
+	def testMatchElse {
 	  let e:Object = "H";
-	  classify e as s:Exception {
+	  match e as s:Exception {
 	    fail("Invalid classification");
 	  } else {
 	    return;
@@ -33,9 +33,9 @@ class ClassifyStmtTest : Test {
 	  fail("Invalid control flow");
 	}
 	
-	def testClassifyComplex {
+	def testMatchComplex {
 	  let e:Object = "H";
-	  classify e {
+	  match e {
 	    as s:Exception {
 	      fail("Invalid classification");
 	    }
@@ -53,9 +53,9 @@ class ClassifyStmtTest : Test {
 	}
 	
 	// These test requires union support in LLVM.
-	def testClassifyUnion {
+	def testMatchUnion {
 	  var n:int32 or float = 1;
-	  classify n {
+	  match n {
 	    as i:int32 {
 	      return;
 	    }
@@ -68,9 +68,9 @@ class ClassifyStmtTest : Test {
 	  fail("Invalid control flow");
 	}
 	
-	def testClassifyMulti {
+	def testMatchMulti {
 	  let n:int32 or float = 1.0;
-	  classify n {
+	  match n {
 	    as i:int32 {
 	      fail("Invalid classification");
 	    }

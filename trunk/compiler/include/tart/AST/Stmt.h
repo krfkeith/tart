@@ -440,11 +440,11 @@ private:
 };
 
 // -------------------------------------------------------------------
-// Classify statement
-class ClassifyStmt: public Stmt {
+// Match statement
+class MatchStmt: public Stmt {
 public:
-  ClassifyStmt(SourceLocation loc, ASTNode * testExpr)
-    : Stmt(Classify, loc), testExpr_(testExpr) {
+  MatchStmt(SourceLocation loc, ASTNode * testExpr)
+    : Stmt(Match, loc), testExpr_(testExpr) {
   }
 
   ASTNode * testExpr() const { return testExpr_; }
@@ -461,10 +461,10 @@ private:
 };
 
 // -------------------------------------------------------------------
-// Classify/As statement
-class ClassifyAsStmt: public Stmt {
+// Match/As statement
+class MatchAsStmt: public Stmt {
 public:
-  ClassifyAsStmt(SourceLocation loc, ASTDecl * asDecl, Stmt * body)
+  MatchAsStmt(SourceLocation loc, ASTDecl * asDecl, Stmt * body)
     : Stmt(Case, loc), asDecl_(asDecl), body_(body) {
   }
 

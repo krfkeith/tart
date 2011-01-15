@@ -31,7 +31,7 @@ import tart.reflect.Reflect;
   /** Run all of the test cases in the specified module. */
   static def runAllTests(mod:Module) -> int32 {
     for type in mod.types {
-      classify type as cls:CompositeType {
+      match type as cls:CompositeType {
 	      if cls.isSubclass(Test) {
 	        Debug.writeLn("Test Class: ", cls.qualifiedName);
 			    var testInstance = typecast[Test](cls.create());

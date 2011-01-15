@@ -65,7 +65,7 @@ namespace Refs {
   /// Convert an object containing a number to the requested number type.
   
   def valueOf[bool](ref:Object) -> bool {
-    classify ref {
+    match ref {
       as v:Ref[bool]   { return v.value; }
       else {
         throw TypecastError();
@@ -74,7 +74,7 @@ namespace Refs {
   }
 
   def valueOf[char](ref:Object) -> char {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { signCheck(v.value); return char(v.value); }
       as v:Ref[int16]  { signCheck(v.value); return char(v.value); }
       as v:Ref[int32]  { 
@@ -97,7 +97,7 @@ namespace Refs {
   }
 
   def valueOf[int8](ref:Object) -> int8 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return v.value; }
       as v:Ref[int16]  { rangeCheck[int8](v.value); return int8(v.value); }
       as v:Ref[int32]  { rangeCheck[int8](v.value); return int8(v.value); }
@@ -114,7 +114,7 @@ namespace Refs {
   }
 
   def valueOf[int16](ref:Object) -> int16 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return int16(v.value); }
       as v:Ref[int16]  { return v.value; }
       as v:Ref[int32]  { rangeCheck[int16](v.value); return int16(v.value); }
@@ -131,7 +131,7 @@ namespace Refs {
   }
 
   def valueOf[int32](ref:Object) -> int32 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return v.value; }
       as v:Ref[int16]  { return int32(v.value); }
       as v:Ref[int32]  { return v.value; }
@@ -148,7 +148,7 @@ namespace Refs {
   }
 
   def valueOf[int64](ref:Object) -> int64 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return int64(v.value); }
       as v:Ref[int16]  { return int64(v.value); }
       as v:Ref[int32]  { return int64(v.value); }
@@ -165,7 +165,7 @@ namespace Refs {
   }
 
   def valueOf[uint8](ref:Object) -> uint8 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { signCheck(v.value); return uint8(v.value); }
       as v:Ref[int16]  {
         check(v.value >= 0 and v.value <= int16(uint8.maxVal));
@@ -191,7 +191,7 @@ namespace Refs {
   }
 
   def valueOf[uint16](ref:Object) -> uint16 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { signCheck(v.value); return uint16(v.value); }
       as v:Ref[int16]  { signCheck(v.value); return uint16(v.value); }
       as v:Ref[int32]  {
@@ -214,7 +214,7 @@ namespace Refs {
   }
 
   def valueOf[uint32](ref:Object) -> uint32 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { signCheck(v.value); return uint32(v.value); }
       as v:Ref[int16]  { signCheck(v.value); return uint32(v.value); }
       as v:Ref[int32]  { signCheck(v.value); return uint32(v.value); }
@@ -234,7 +234,7 @@ namespace Refs {
   }
 
   def valueOf[uint64](ref:Object) -> uint64 {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { signCheck(v.value); return uint64(v.value); }
       as v:Ref[int16]  { signCheck(v.value); return uint64(v.value); }
       as v:Ref[int32]  { signCheck(v.value); return uint64(v.value); }
@@ -251,7 +251,7 @@ namespace Refs {
   }
 
   def valueOf[float](ref:Object) -> float {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return float(v.value); }
       as v:Ref[int16]  { return float(v.value); }
       as v:Ref[int32]  { return float(v.value); }
@@ -269,7 +269,7 @@ namespace Refs {
   }
 
   def valueOf[double](ref:Object) -> double {
-    classify ref {
+    match ref {
       as v:Ref[int8]   { return double(v.value); }
       as v:Ref[int16]  { return double(v.value); }
       as v:Ref[int32]  { return double(v.value); }
@@ -287,7 +287,7 @@ namespace Refs {
   }
 
   def valueOf[%T](ref:Object) -> T {
-    classify ref {
+    match ref {
       as v:Ref[T]   { return v.value; }
       else {
         throw TypecastError();

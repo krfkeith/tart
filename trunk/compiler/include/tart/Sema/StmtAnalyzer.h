@@ -34,7 +34,7 @@ class DoWhileStmt;
 class ForStmt;
 class ForEachStmt;
 class SwitchStmt;
-class ClassifyStmt;
+class MatchStmt;
 class ThrowStmt;
 class TryStmt;
 class CatchStmt;
@@ -66,7 +66,7 @@ public:
   bool buildForStmtCFG(const ForStmt * st);
   bool buildForEachStmtCFG(const ForEachStmt * st);
   bool buildSwitchStmtCFG(const SwitchStmt * st);
-  bool buildClassifyStmtCFG(const ClassifyStmt * st);
+  bool buildMatchStmtCFG(const MatchStmt * st);
   bool buildThrowStmtCFG(const ThrowStmt * st);
   bool buildTryStmtCFG(const TryStmt * st);
   bool buildReturnStmtCFG(const ReturnStmt * st);

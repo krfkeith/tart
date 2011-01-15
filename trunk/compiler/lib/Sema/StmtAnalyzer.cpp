@@ -192,8 +192,8 @@ bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
     case ASTNode::Switch:
       return buildSwitchStmtCFG(static_cast<const SwitchStmt *>(st));
 
-    case ASTNode::Classify:
-      return buildClassifyStmtCFG(static_cast<const ClassifyStmt *>(st));
+    case ASTNode::Match:
+      return buildMatchStmtCFG(static_cast<const MatchStmt *>(st));
 
     case ASTNode::Throw:
       return buildThrowStmtCFG(static_cast<const ThrowStmt *>(st));
@@ -913,7 +913,7 @@ ConstantExpr * StmtAnalyzer::astToCaseValueExpr(const ASTNode * ast, const Type 
   return cast<ConstantExpr>(result);
 }
 
-bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
+bool StmtAnalyzer::buildMatchStmtCFG(const MatchStmt * st) {
   Scope * savedScope = activeScope();
   Expr * testExpr = astToTestExpr(st->testExpr(), false);
   if (isErrorResult(testExpr)) {
@@ -934,11 +934,11 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   } else if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
     castType = Expr::UnionMemberCast;
   } else {
-    diag.warn(testExpr) << "Classify expression's type is already known: " << fromType;
+    diag.warn(testExpr) << "Match expression's type is already known: " << fromType;
   }
 
   // Create the temporary variable which is going to hold the test expression.
-  LValueExpr * testLVal = createTempVar("classify-expr", testExpr, testIsLValue);
+  LValueExpr * testLVal = createTempVar("match-expr", testExpr, testIsLValue);
 
   Block * endBlock = NULL;
   Block * prevTestBlock = NULL;
@@ -948,7 +948,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
     if (s->nodeType() == ASTNode::Case) {
-      const ClassifyAsStmt * asSt = static_cast<const ClassifyAsStmt *>(s);
+      const MatchAsStmt * asSt = static_cast<const MatchAsStmt *>(s);
       if (const ASTDecl * asDecl = asSt->asDecl()) {
         SourceLocation stLoc = astLoc(asDecl);
         LocalScope * caseScope = createLocalScope("as-scope");
@@ -1009,7 +1009,7 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
         // Only generate a branch if we haven't returned or thrown.
         if (currentBlock_ && !currentBlock_->hasTerminator()) {
           if (endBlock == NULL) {
-            endBlock = new Block("endclassify");
+            endBlock = new Block("endmatch");
           }
 
           currentBlock_->branchTo(astLoc(st), endBlock);
@@ -1040,14 +1040,14 @@ bool StmtAnalyzer::buildClassifyStmtCFG(const ClassifyStmt * st) {
     // Only generate a branch if we haven't returned or thrown.
     if (currentBlock_ && !currentBlock_->hasTerminator()) {
       if (endBlock == NULL) {
-        endBlock = new Block("endclassify");
+        endBlock = new Block("endmatch");
       }
 
       currentBlock_->branchTo(astLoc(st), endBlock);
     }
   } else {
     if (endBlock == NULL) {
-      endBlock = new Block("endclassify");
+      endBlock = new Block("endmatch");
     }
 
     prevTestBlock->succs().push_back(endBlock);

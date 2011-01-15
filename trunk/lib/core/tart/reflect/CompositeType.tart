@@ -182,7 +182,7 @@ public class CompositeType : Type {
 
   private final def isSubclassImpl(cls:Type) -> bool {
     return true if self is cls;
-    classify cls as complex:CompositeType {
+    match cls as complex:CompositeType {
       return Memory.deref(_typeInfo).hasBase(complex._typeInfo);
     } else {
       return false;
@@ -192,7 +192,7 @@ public class CompositeType : Type {
   /** Return the first attribute of type 'attrType'. */
   final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
     for attr in _attributes {
-      classify attr as result:T {
+      match attr as result:T {
         return result;
       }
     }

@@ -222,16 +222,16 @@ public:
   /** Parse a repeat Stmt */
   Stmt * repeatStmt();
 
-  /** Parse a classify Stmt */
+  /** Parse a switch Stmt */
   Stmt * switchStmt();
 
   /** The 'case' clause of a switch statement. */
   Stmt * caseStmt();
 
-  /** Parse a classify Stmt */
-  Stmt * classifyStmt();
+  /** Parse a match Stmt */
+  Stmt * matchStmt();
 
-  /** The 'as' clause of a classify statement. */
+  /** The 'as' clause of a match statement. */
   Stmt * asStmt();
 
   /** Parse the body of a compound statement such as 'if' or 'while'. */
