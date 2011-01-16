@@ -1,0 +1,42 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(FunctionInterfaceTest);
+}
+
+class NoArgsCallable : Function[String] {
+  def () -> String {
+    return "NoArgs";
+  }
+}
+
+class SingleArgCallable : Function[String, int] {
+  def (arg:int) -> String {
+    return arg.toString();
+  }
+}
+
+class TwoArgCallable : Function[String, String, int] {
+  def (s:String, i:int) -> String {
+    return "{0} {1}".format(s, i);
+  }
+}
+
+class FunctionInterfaceTest : Test {
+	def testNoArgsCallable() {
+	  var callable = NoArgsCallable();
+	  assertEq("NoArgs", callable());
+	}
+
+	def testOneArgCallable() {
+	  var callable = SingleArgCallable();
+	  assertEq("6", callable(6));
+	}
+
+	def testTwoArgCallable() {
+	  var callable = TwoArgCallable();
+	  assertEq("six 6", callable("six", 6));
+	}
+}

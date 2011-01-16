@@ -468,7 +468,21 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
     const TemplateSignature * tsig = defn->templateSignature();
-    if (args->size() >= tsig->numRequiredArgs() && args->size() <= tsig->typeParams()->size()) {
+    if (tsig->isVariadic()) {
+      // Attempt to match the type args against the variadic type params.
+      size_t variadicIndex = tsig->typeParams()->size() - 1;
+      if (args->size() >= variadicIndex) {
+        ConstTypeList typeArgs(args->begin(), args->begin() + variadicIndex);
+        typeArgs.push_back(TupleType::get(args->begin() + variadicIndex, args->end()));
+        args = TupleType::get(typeArgs);
+        SpCandidate * spc = new SpCandidate(base, defn, args);
+        SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
+        if (spc->unify(&candidateSite)) {
+          spcs.insert(spc);
+        }
+      }
+    } else if (args->size() >= tsig->numRequiredArgs() &&
+        args->size() <= tsig->typeParams()->size()) {
       // Attempt unification of type variables with template args.
       SpCandidate * spc = new SpCandidate(base, defn, args);
       SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);

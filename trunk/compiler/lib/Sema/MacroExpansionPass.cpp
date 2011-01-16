@@ -38,7 +38,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // the module reference will be removed during the expansion.
     stAn.module()->addModuleDependency(macro);
 
-    FunctionDefn * scopeFn = stAn.getTarget();
+    FunctionDefn * scopeFn = stAn.function();
 
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
@@ -46,7 +46,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       LocalScope * retValScope = new LocalScope(
           macro->definingScope(), stAn.activeScope()->region());
       retValScope->setScopeName("macro-return");
-      stAn.getTarget()->localScopes().push_back(retValScope);
+      stAn.function()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");
       retVal->setType(returnType);
       retVal->setStorageClass(Storage_Local);

@@ -36,6 +36,10 @@ public:
   /** Set the type of values which can be bound to this variable. */
   void setValueType(Type * type) { valueType_ = type; }
 
+  /** Whether this is a variadic template parameter. */
+  bool isVariadic() const { return isVariadic_; }
+  void setIsVariadic(bool isVariadic) { isVariadic_ = isVariadic; }
+
   /** Return true if the specified type value can be bound to this type. */
   bool canBindTo(const Type * value) const;
 
@@ -59,6 +63,7 @@ private:
   const SourceLocation location_;
   const Type * valueType_;
   const char * name_;
+  bool isVariadic_;
 };
 
 typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
@@ -118,6 +123,9 @@ public:
   /** Special version of instantiate for types. */
   Type * instantiateType(const SourceLocation & loc, const BindingEnv & env);
 
+  /** Returns true if this template has a variadic argument. */
+  bool isVariadic() const { return isVariadic_; }
+
   /** Print the template param list */
   void format(FormatStream & out) const;
 
@@ -128,7 +136,6 @@ public:
 private:
   Defn * value_;
   const ASTTemplate * ast_;
-
   const TupleType * typeParams_;
   TypeList typeParamDefaults_;
   TemplateConditionList conditions_;
@@ -138,6 +145,7 @@ private:
   SpecializationMap specializations_;
   IterableScope paramScope_;
   size_t numRequiredArgs_;
+  bool isVariadic_;
 };
 
 /// -------------------------------------------------------------------

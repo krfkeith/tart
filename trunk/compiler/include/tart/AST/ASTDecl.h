@@ -58,6 +58,7 @@ enum ParameterFlags {
   Param_Variadic    = (1<<0),   // Multiple args
   Param_KeywordOnly = (1<<1),   // Only settable via keyword
   Param_Explicit    = (1<<2),   // No type conversion - type must be exact
+  Param_Star        = (1<<3),   // Parameter type is expanded tuple
 };
 
 /// -------------------------------------------------------------------
@@ -362,12 +363,16 @@ public:
     IS_SUPERTYPE,
   };
 
-  ASTTypeVariable(const SourceLocation & loc, const char * name, ASTNode * typ, int constraint)
+  ASTTypeVariable(const SourceLocation & loc, const char * name, ASTNode * typ,
+      ConstraintType constraint, bool isVariadic)
     : ASTVarDecl(TypeVar, loc, name, typ, NULL, DeclModifiers())
     , constraint_(constraint)
+    , isVariadic_(isVariadic)
   {}
 
-  int constraint() const { return constraint_; }
+  ConstraintType constraint() const { return constraint_; }
+
+  bool isVariadic() const { return isVariadic_; }
 
   // Overrides
 
@@ -379,7 +384,8 @@ public:
   }
 
 private:
-  int constraint_;
+  ConstraintType constraint_;
+  bool isVariadic_;
 };
 
 /// ---------------------------------------------------------------

@@ -21,6 +21,7 @@
 #include "tart/Common/PackageMgr.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/ParameterAssignments.h"
+#include "tart/Sema/TemplateParamAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
@@ -32,70 +33,6 @@
 namespace tart {
 
 extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
-
-// -------------------------------------------------------------------
-// TemplateParamAnalyzer
-
-class TemplateParamAnalyzer : public TypeAnalyzer {
-public:
-  TemplateParamAnalyzer(Defn * de)
-    : TypeAnalyzer(de->module(), de->definingScope())
-    , tsig_(de->templateSignature())
-  {}
-
-  Type * reduceTypeVariable(const ASTTypeVariable * ast);
-
-private:
-  TemplateSignature * tsig_;
-};
-
-Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
-  DefnList defs;
-  TypeVariable * tvar = NULL;
-  Defn * def = tsig_->paramScope().lookupSingleMember(ast->name());
-  if (def != NULL) {
-    if (TypeDefn * tdef = dyn_cast<TypeDefn>(defs.front())) {
-      tvar = dyn_cast<TypeVariable>(tdef->typeValue());
-    }
-
-    if (tvar == NULL) {
-      diag.error(ast) << "Conflicting type declaration for type variable '" << ast->name() << "'";
-      return NULL;
-    }
-  }
-
-  if (tvar == NULL) {
-    tvar = new TypeVariable(ast->location(), ast->name(), NULL);
-    TypeDefn * tdef = new TypeDefn(module_, ast->name(), tvar);
-    tsig_->paramScope().addMember(tdef);
-  }
-
-  // See if the type variable has constraints
-  Type * type = NULL;
-  if (ast->type() != NULL) {
-    Type * type = typeFromAST(ast->type());
-    if (type != NULL) {
-      if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
-        // Add a subclass test
-        TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
-        tsig_->conditions().push_back(condition);
-      } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {
-        // Add a subclass test - reversed.
-        TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
-        tsig_->conditions().push_back(condition);
-      } else {
-        if (tvar->valueType() == NULL) {
-          tvar->setValueType(type);
-        } else if (!tvar->valueType()->isEqual(type)) {
-          diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
-              ast->name() << "'";
-        }
-      }
-    }
-  }
-
-  return tvar;
-}
 
 // -------------------------------------------------------------------
 // DefnAnalyzer
@@ -478,6 +415,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       const ASTNode * node = *it;
       Type * paramDefault = NULL;
       if (node != NULL) {
+        if (tsig->isVariadic()) {
+          diag.error(node) << "default parameter values not allowed on variadic templates";
+        }
         paramDefault = TypeAnalyzer(de->module(), &tsig->paramScope()).typeFromAST(node);
       }
 
