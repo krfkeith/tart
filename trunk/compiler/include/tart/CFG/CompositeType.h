@@ -163,6 +163,9 @@ public:
       or is a subclass of 'type. */
   const InterfaceTable * findBaseImplementationOf(CompositeType * type) const;
 
+  /** Search all base classes for one that is a specialization of the type 'templateType'. */
+  const CompositeType * findBaseSpecializing(const CompositeType * templateType) const;
+
   /** Add all of the definitions that are referred to by this class's TypeInfoBlock or
       this class's CompositeType definitions to this module. This is used for template
       instances. */

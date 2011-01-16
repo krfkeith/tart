@@ -5,6 +5,7 @@
 #include "tart/CFG/Exprs.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/PrimitiveType.h"
+#include "tart/CFG/TupleType.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -438,7 +439,6 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       return ExactConversion;
     }*/
 
-
     // Check dynamic casts.
     if ((cn.options & Conversion::Checked)
         && isReferenceType() && fromClass->isReferenceType()) {
@@ -448,6 +448,48 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
 
       return NonPreferred;
     }
+  } else if (const FunctionType * ftype = dyn_cast<FunctionType>(fromType)) {
+    // See if this class implements the Function interface.
+    const CompositeType * functionInterface = findBaseSpecializing(Builtins::typeFunction);
+    if (functionInterface != NULL) {
+      if (!ftype->returnType()->isEqual(functionInterface->typeParam(0))) {
+        return Incompatible;
+      }
+
+      if (!ftype->paramTypes()->isEqual(functionInterface->typeParam(1))) {
+        return Incompatible;
+      }
+
+      if (ftype->isStatic()) {
+        // We currently only support bound methods.
+        DFAIL("Implement conversion of non-method functions");
+      }
+
+      if (cn.fromValue && cn.resultValue) {
+        if (LValueExpr * lval = dyn_cast<LValueExpr>(cn.fromValue)) {
+          if (FunctionDefn * method = dyn_cast<FunctionDefn>(lval->value())) {
+            if (method->isIntrinsic()) {
+              diag.error(lval) << "Intrinsic methods cannot be called indirectly.";
+              return Incompatible;
+            } else if (method->isCtor()) {
+              diag.error(lval) << "Constructors cannot be called indirectly.";
+              return Incompatible;
+            }
+
+            DASSERT(lval->base() != NULL);
+            *cn.resultValue = new BoundMethodExpr(
+                lval->location(), lval->base(), method, functionInterface);
+            return NonPreferred;
+          }
+        }
+
+        DFAIL("Implement conversion of non-lvalue functions");
+      }
+
+      return NonPreferred;
+    }
+
+    return Incompatible;
   }
 
   return Incompatible;
@@ -533,6 +575,23 @@ const CompositeType::InterfaceTable * CompositeType::findBaseImplementationOf(Co
   for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
     if (const InterfaceTable * itable = (*it)->findBaseImplementationOf(type)) {
       return itable;
+    }
+  }
+
+  return NULL;
+}
+
+const CompositeType * CompositeType::findBaseSpecializing(const CompositeType * templateType)
+    const {
+  TemplateInstance * ti = typeDefn()->templateInstance();
+  if (ti != NULL && ti->templateDefn() == templateType->typeDefn()) {
+    return this;
+  }
+
+  for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
+    const CompositeType * result = (*it)->findBaseSpecializing(templateType);
+    if (result != NULL) {
+      return result;
     }
   }
 

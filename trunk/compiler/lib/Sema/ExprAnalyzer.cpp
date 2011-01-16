@@ -315,6 +315,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       envTypeDef->setTypeValue(envType);
       envType->setClassFlag(CompositeType::Closure, true);
       envType->setSuper(static_cast<CompositeType *>(Builtins::typeObject));
+      envType->bases().push_back(Builtins::typeObject);
       envType->bases().push_back(interfaceType);
       module_->addSymbol(Builtins::typeObject->typeDefn());
       module_->addSymbol(envTypeDef);

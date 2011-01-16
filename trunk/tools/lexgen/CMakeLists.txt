@@ -14,7 +14,7 @@ endif (LIB_DL)
 
 # Module search path
 set(TART_MODULE_PATH
-    -i ${TART_SOURCE_DIR}/lib/core
+    -i ${TART_SOURCE_DIR}/lib/std
     -i ${TART_SOURCE_DIR}/lib/testing
     -i ${TART_SOURCE_DIR}/lib/opts
     -i ${SRC_ROOT})
@@ -51,26 +51,26 @@ function(add_tart_executable Name)
       COMMENT "Linking Tart bitcode file ${OBJ_FILE}")
 
   add_executable(${EXE_FILE} ${OBJ_FILE})
-  add_dependencies(${EXE_FILE} libcore libtesting)
+  add_dependencies(${EXE_FILE} libstd libtesting)
   target_link_libraries(${EXE_FILE} ${RUNTIME_LIBS})
 endfunction(add_tart_executable)
 
 add_tart_executable(lexgenTest${CMAKE_EXECUTABLE_SUFFIX}
-  "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+  "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
   libLexGenShared.bc
   libLexGenGen.bc
   libLexGenTest.bc
 )
-add_dependencies(lexgenTest libcore libtesting libLexGenShared libLexGenGen libLexGenTest)
+add_dependencies(lexgenTest libstd libtesting libLexGenShared libLexGenGen libLexGenTest)
 add_custom_target(lexgenTest.run COMMAND ./lexgenTest)
 add_dependencies(lexgenTest.run lexgenTest)
 
 add_tart_executable(lexgen${CMAKE_EXECUTABLE_SUFFIX}
-  "${PROJECT_BINARY_DIR}/lib/core/libcore.bc"
+  "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/opts/libopts.bc"
   libLexGenApp.bc
   libLexGenShared.bc
   libLexGenGen.bc
 )
-add_dependencies(lexgen libcore libopts libLexGenShared libLexGenGen libLexGenApp)
+add_dependencies(lexgen libstd libopts libLexGenShared libLexGenGen libLexGenApp)
