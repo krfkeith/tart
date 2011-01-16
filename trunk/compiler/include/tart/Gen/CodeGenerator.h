@@ -60,7 +60,6 @@ class NativeArrayType;
 class FlexibleArrayType;
 class UnionType;
 class TupleType;
-class BoundMethodType;
 class Block;
 class LocalScope;
 class FormatStream;
@@ -369,7 +368,6 @@ public:
   llvm::DICompositeType genDIUnionType(const UnionType * type);
   llvm::DICompositeType genDITupleType(const TupleType * type);
   llvm::DICompositeType genDIFunctionType(const FunctionType * type);
-  llvm::DICompositeType genDIBoundMethodType(const BoundMethodType * type);
   llvm::DIDerivedType genDITypeMember(const Type * type, llvm::StringRef name, uint64_t & offset);
   llvm::DIDerivedType genDITypeMember(const llvm::Type * type, llvm::DIType derivedFrom,
       llvm::StringRef name, uint64_t & offset);

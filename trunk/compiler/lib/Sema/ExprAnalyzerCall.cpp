@@ -110,8 +110,6 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         const Type * varType = dealias(var->type());
         if (const FunctionType * ft = dyn_cast<FunctionType>(varType)) {
           success &= addOverload(call, lv, ft, args);
-        } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(varType)) {
-          success &= addOverload(call, lv, bmt->fnType(), args);
         } else {
           diag.fatal(loc) << callableExpr << " is not callable.";
         }
@@ -554,10 +552,6 @@ const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
 }
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * callable, const ASTNodeList & args) {
-  if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(callable->type())) {
-    return addOverload(call, callable, bmt->fnType(), args);
-  }
-
   if (LValueExpr * lv = dyn_cast<LValueExpr>(callable)) {
     if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
       return addOverload(call, lvalueBase(lv), func, args);

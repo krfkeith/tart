@@ -606,18 +606,6 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
       break;
     }
 
-    case Type::BoundMethod: {
-      // Trace the context pointer, but not the function pointer
-      size_t indicesSize = indices.size();
-      indices.push_back(getInt32Val(1));
-      llvm::Constant * fieldOffset =
-          llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
-      fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
-      fieldOffsets.push_back(fieldOffset);
-      indices.resize(indicesSize);
-      break;
-    }
-
     case Type::Interface:
     case Type::Protocol:
     default:
@@ -657,7 +645,6 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
       case Type::Struct:
       case Type::Tuple:
       case Type::Union:
-      case Type::BoundMethod:
         indices.push_back(getInt32Val(var->memberIndex()));
         createTraceTableEntries(var->type(), basePtr, traceTable, fieldOffsets, indices);
         indices.resize(indicesSize);

@@ -7,7 +7,6 @@ TYPE_CLASS(Interface)     // An interface type
 TYPE_CLASS(Protocol)      // A protocol
 TYPE_CLASS(Enum)          // An enumeration type
 TYPE_CLASS(Function)      // A function type
-TYPE_CLASS(BoundMethod)   // A reference to a bound method
 TYPE_CLASS(Tuple)         // A tuple type
 TYPE_CLASS(Union)         // A disjoint type
 TYPE_CLASS(NAddress)      // A machine address

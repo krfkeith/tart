@@ -16,7 +16,6 @@ class PrimitiveType;
 class CompositeType;
 class EnumType;
 class FunctionType;
-class BoundMethodType;
 class UnionType;
 class TupleType;
 class AddressType;
@@ -51,7 +50,6 @@ class TypeOrdering {
   virtual ComparisonResult compare(const CompositeType * t1, const CompositeType * t2);
   virtual ComparisonResult compare(const EnumType * t1, const EnumType * t2);
   virtual ComparisonResult compare(const FunctionType * t1, const FunctionType * t2);
-  virtual ComparisonResult compare(const BoundMethodType * t1, const BoundMethodType * t2);
   virtual ComparisonResult compare(const UnionType * t1, const UnionType * t2);
   virtual ComparisonResult compare(const TupleType * t1, const TupleType * t2);
   virtual ComparisonResult compare(const AddressType * t1, const AddressType * t2);

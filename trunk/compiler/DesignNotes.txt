@@ -4,7 +4,6 @@ Next up:
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* Closures to implement Function.
 * Remove BoundMethod as a type, reimplement as an implementation of Function.
 * Measure symbol sizes again.
 * See if we need to make a global attribute index.
@@ -459,3 +458,4 @@ BoundMethod TypeInfoBlock:
 
    // Adapter function that calls the method.   
    bm.call(self, params) -> ReturnType
+

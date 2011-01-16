@@ -223,8 +223,7 @@ bool FunctionType::isEqual(const Type * other) const {
     }
 
     // Note that selfParam types are not compared. I *think* that's right, but
-    // I'm not sure - if not, we'll need to revise BoundMethodType to tell it
-    // not to take selfParam into account.
+    // I'm not sure.
 
     if (ft->isStatic() != isStatic()) {
       return false;
@@ -359,88 +358,6 @@ bool FunctionType::hasErrors() const {
   }
 
   return returnType_ == &BadType::instance;
-}
-
-// -------------------------------------------------------------------
-// Type that represents a reference to a 'bound' method.
-
-const llvm::Type * BoundMethodType::irType() const {
-  if (llvm::OpaqueType * ty = dyn_cast<llvm::OpaqueType>(irType_.get())) {
-    ty->refineAbstractTypeTo(createIRType());
-  }
-
-  return irType_.get();
-}
-
-const llvm::Type * BoundMethodType::createIRType() const {
-  const llvm::FunctionType * irFnType = fnType_->createIRFunctionType(
-      Builtins::typeObject, fnType_->params(), fnType_->returnType());
-
-  std::vector<const llvm::Type *> fieldTypes;
-  fieldTypes.push_back(irFnType->getPointerTo());
-  fieldTypes.push_back(Builtins::typeObject->irEmbeddedType());
-  return llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
-}
-
-ConversionRank BoundMethodType::convertImpl(const Conversion & cn) const {
-  if (const BoundMethodType * btFrom = dyn_cast<BoundMethodType>(cn.fromType)) {
-    if (fnType_->isEqual(btFrom->fnType())) {
-      if (cn.resultValue != NULL) {
-        *cn.resultValue = cn.fromValue;
-      }
-
-      return IdenticalTypes;
-    }
-
-    return Incompatible;
-  } else if (const FunctionType * fnFrom = dyn_cast<FunctionType>(cn.fromType)) {
-    if (fnType_->isEqual(fnFrom)) {
-      if (cn.resultValue != NULL) {
-        if (LValueExpr * lval = dyn_cast<LValueExpr>(cn.fromValue)) {
-          Expr * base = lval->base();
-          if (FunctionDefn * fnVal = dyn_cast<FunctionDefn>(lval->value())) {
-            DASSERT(fnFrom->selfParam() != NULL);
-            BoundMethodType * bmType = new BoundMethodType(fnFrom);
-            BoundMethodExpr * boundMethod = new BoundMethodExpr(lval->location(),
-                base, fnVal, bmType);
-            *cn.resultValue = boundMethod;
-            return ExactConversion;
-          } else {
-            return Incompatible;
-          }
-        } else {
-          return Incompatible;
-        }
-      }
-    }
-
-    return Incompatible;
-  }
-
-  return Incompatible;
-}
-
-bool BoundMethodType::isEqual(const Type * other) const {
-  if (const BoundMethodType * bmOther = dyn_cast<BoundMethodType>(other)) {
-    return fnType_->isEqual(bmOther->fnType());
-  }
-
-  return false;
-}
-
-bool BoundMethodType::isSubtype(const Type * other) const {
-  return isEqual(other);
-}
-
-bool BoundMethodType::isReferenceType() const { return false; }
-bool BoundMethodType::isSingular() const { return fnType_->isSingular(); }
-
-void BoundMethodType::trace() const {
-  fnType_->mark();
-}
-
-void BoundMethodType::format(FormatStream & out) const {
-  out << fnType_;
 }
 
 }

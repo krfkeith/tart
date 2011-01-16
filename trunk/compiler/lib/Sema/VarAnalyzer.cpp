@@ -148,7 +148,7 @@ bool VarAnalyzer::resolveVarType() {
           diag.error(target) << "Variable type cannot be void";
         } else if (FunctionType * fnType = dyn_cast<FunctionType>(varType)) {
           if (!fnType->isStatic()) {
-            varType = new BoundMethodType(fnType);
+            DFAIL("Shoulda been converted to a Function object");
           }
         }
 

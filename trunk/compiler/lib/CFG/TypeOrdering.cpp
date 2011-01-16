@@ -121,11 +121,6 @@ ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
           static_cast<const FunctionType *>(t1),
           static_cast<const FunctionType *>(t2));
 
-    case Type::BoundMethod:
-      return compare(
-          static_cast<const BoundMethodType *>(t1),
-          static_cast<const BoundMethodType *>(t2));
-
     case Type::Tuple:
       return compare(
           static_cast<const TupleType *>(t1),
@@ -174,10 +169,6 @@ ComparisonResult TypeOrdering::compare(const EnumType * t1, const EnumType * t2)
 }
 
 ComparisonResult TypeOrdering::compare(const FunctionType * t1, const FunctionType * t2) {
-  return t1 == t2 ? EQUAL : UNORDERED;
-}
-
-ComparisonResult TypeOrdering::compare(const BoundMethodType * t1, const BoundMethodType * t2) {
   return t1 == t2 ? EQUAL : UNORDERED;
 }
 
@@ -309,17 +300,6 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
         return result;
       }
       return int(ft0->isStatic()) - int(ft1->isStatic());
-    }
-
-    case Type::BoundMethod: {
-      const FunctionType * ft0 = static_cast<const BoundMethodType *>(t0)->fnType();
-      const FunctionType * ft1 = static_cast<const BoundMethodType *>(t1)->fnType();
-      int result = compare(ft0->paramTypes(), ft1->paramTypes());
-      if (result != 0) {
-        return result;
-      }
-
-      DFAIL("Implement");
     }
 
     case Type::Tuple: {

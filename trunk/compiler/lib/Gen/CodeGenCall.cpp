@@ -147,19 +147,6 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
         //DFAIL("Implement");
       }
     }
-  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(fnType)) {
-    Value * fnref = genArgExpr(fn, saveIntermediateStackRoots);
-    if (fnref == NULL) {
-      return NULL;
-    }
-
-    fnValue = builder_.CreateExtractValue(fnref, 0, "method");
-    Value * selfArg = builder_.CreateExtractValue(fnref, 1, "self");
-    if (selfArg == NULL) {
-      return NULL;
-    }
-
-    args.push_back(selfArg);
   } else {
     diag.info(in) << in->function() << " - " << in->function()->exprType();
     TFAIL << "Invalid function type: " << in->function() << " - " << in->function()->exprType();
@@ -261,6 +248,8 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
 }
 
 Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
+  DFAIL("Implement");
+#if 0
   const BoundMethodType * type = cast<BoundMethodType>(in->type());
   const FunctionDefn * fn = in->method();
   if (fn->isIntrinsic()) {
@@ -308,6 +297,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
   result = builder_.CreateLoad(
       builder_.CreateBitCast(result, type->irType()->getPointerTo()));
   return result;
+#endif
 }
 
 Value * CodeGenerator::genNew(const tart::NewExpr* in) {

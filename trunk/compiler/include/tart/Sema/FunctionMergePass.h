@@ -13,7 +13,6 @@ namespace tart {
 
 //class ClosureEnvExpr;
 class LValueExpr;
-//class BoundMethodExpr;
 //class ScopeNameExpr;
 class AssignmentExpr;
 //class MultiAssignExpr;
