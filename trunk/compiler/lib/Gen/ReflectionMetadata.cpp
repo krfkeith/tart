@@ -70,12 +70,6 @@ void ReflectionMetadata::addTypeRef(const Type * type) {
       types_[type] = TagInfo(1);
       break;
 
-    case Type::BoundMethod: {
-      const BoundMethodType * bmtype = static_cast<const BoundMethodType *>(type);
-      addTypeRef(bmtype->fnType());
-      break;
-    }
-
     case Type::TypeLiteral: {
       const TypeLiteralType * ttype = static_cast<const TypeLiteralType *>(type);
 //      return visitTypeLiteralType(static_cast<const TypeLiteralType *>(in));

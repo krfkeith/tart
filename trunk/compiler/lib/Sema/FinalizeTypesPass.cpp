@@ -292,8 +292,6 @@ Expr * FinalizeTypesPassImpl::visitCallExpr(CallExpr * in) {
           " with no object";
       return &Expr::ErrorVal;
     }
-  } else if (const BoundMethodType * bmType = dyn_cast<BoundMethodType>(type)) {
-    // TODO: Extra checks needed?
   } else {
     diag.error(in) << "Non-callable type '" << fnValue->type() << "'";
     return &Expr::ErrorVal;

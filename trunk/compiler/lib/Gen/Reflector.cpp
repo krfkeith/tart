@@ -247,9 +247,6 @@ llvm::Constant * Reflector::getTypePtr(const Type * type) {
     case Type::Function:
       return getFunctionTypePtr(static_cast<const FunctionType *>(type));
 
-    case Type::BoundMethod:
-      return getFunctionTypePtr(static_cast<const BoundMethodType *>(type)->fnType());
-
     case Type::NArray:
       diag.fatal() << "Attempt to get type pointer for unimplemented type: " << type;
       DFAIL("Implement");

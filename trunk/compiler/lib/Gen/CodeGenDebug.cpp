@@ -330,10 +330,6 @@ DIType CodeGenerator::genDIType(const Type * type) {
       result = genDIFunctionType(static_cast<const FunctionType *>(type));
       break;
 
-    case Type::BoundMethod:
-      result = genDIBoundMethodType(static_cast<const BoundMethodType *>(type));
-      break;
-
     case Type::Alias: {
       const TypeAlias * alias = static_cast<const TypeAlias *>(type);
       result = genDIType(alias->value());
@@ -701,39 +697,6 @@ DICompositeType CodeGenerator::genDIFunctionType(const FunctionType * type) {
 
   DASSERT(fnType.Verify());
   return fnType;
-}
-
-DICompositeType CodeGenerator::genDIBoundMethodType(const BoundMethodType * type) {
-  const StructType * stype = cast<StructType>(type->irType());
-  const FunctionType * fnType = type->fnType();
-  std::string typeName(".fnref.");
-  typeLinkageName(typeName, fnType);
-
-  DIType placeHolder = dbgFactory_.CreateTemporaryType();
-  dbgTypeMap_[type] = placeHolder;
-
-  //const DefnList & fields = type->instanceFields();
-  DIDescriptorArray members;
-  uint64_t offset = 0;
-  members.push_back(genDITypeMember(fnType, "method", offset));
-  members.push_back(genDITypeMember(Builtins::typeObject, "self", offset));
-
-  DICompositeType di = dbgFactory_.CreateCompositeType(
-      dwarf::DW_TAG_structure_type,
-      dbgCompileUnit_,
-      typeName.c_str(),
-      dbgFile_,
-      0,
-      getSizeOfInBits(type->irType()),
-      getAlignOfInBits(type->irType()),
-      0, 0,
-      DIType(),
-      dbgFactory_.GetOrCreateArray(members.data(), members.size()));
-
-  dbgTypeMap_[type] = di;
-  placeHolder.replaceAllUsesWith(di);
-  DASSERT(di.Verify());
-  return di;
 }
 
 unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {

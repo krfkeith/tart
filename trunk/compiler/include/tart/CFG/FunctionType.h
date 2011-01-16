@@ -113,44 +113,6 @@ private:
   mutable std::string invokeName_;
 };
 
-// -------------------------------------------------------------------
-// Type that represents a reference to a 'bound' method.
-
-class BoundMethodType : public Type {
-public:
-  BoundMethodType(const FunctionType * fnType)
-    : Type(BoundMethod)
-      , fnType_(fnType)
-      , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
-    {}
-
-  const llvm::Type * irType() const;
-
-  /** The type of the function being pointed to. */
-  const FunctionType * fnType() const { return fnType_; }
-
-  // Overrides
-
-  const llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
-  bool isReferenceType() const;
-  bool isSingular() const;
-  bool containsReferenceType() const { return true; }
-  void trace() const;
-  void format(FormatStream & out) const;
-  TypeShape typeShape() const { return Shape_Small_RValue; }
-  static inline bool classof(const BoundMethodType *) { return true; }
-  static inline bool classof(const Type * type) {
-    return type->typeClass() == BoundMethod;
-  }
-
-private:
-  const FunctionType * fnType_;
-  mutable llvm::PATypeHolder irType_;
-};
-
 }
 
 #endif

@@ -23,7 +23,6 @@ class TypeBinding;
 class TypeConstraint;
 class TypeAlias;
 class TypeLiteralType;
-class BoundMethodType;
 
 /// -------------------------------------------------------------------
 /// A framework for general transformations on type expressions.
@@ -38,7 +37,6 @@ public:
   virtual const Type * visitCompositeType(const CompositeType * in);
   virtual const Type * visitEnumType(const EnumType * in);
   virtual const Type * visitFunctionType(const FunctionType * in);
-  virtual const Type * visitBoundMethodType(const BoundMethodType * in);
   virtual const Type * visitUnionType(const UnionType * in);
   virtual const Type * visitTupleType(const TupleType * in);
   virtual const Type * visitAddressType(const AddressType * in);

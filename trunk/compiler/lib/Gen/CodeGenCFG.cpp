@@ -135,10 +135,6 @@ void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
       }
       break;
 
-    case Type::BoundMethod:
-      markGCRoot(allocaValue, getTraceTable(varType));
-      break;
-
     default:
       break;
   }
