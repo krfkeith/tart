@@ -20,7 +20,7 @@ file(GLOB TART_STDLIB_SRC
     tart/text/encodings/*.tart)
 
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(MODPATH ${TART_SOURCE_DIR}/lib/core)  # Module search path
+set(MODPATH ${TART_SOURCE_DIR}/lib/std)  # Module search path
 set(TART_OPTIONS
     -g
     -debug-errors
@@ -29,7 +29,7 @@ set(TART_OPTIONS
 # Empty list of output files
 set(STDLIB_BC_FILES)
 
-include(${CMAKE_CURRENT_BINARY_DIR}/libcore.deps OPTIONAL)
+include(${CMAKE_CURRENT_BINARY_DIR}/libstd.deps OPTIONAL)
 
 # Create a command for each source file
 foreach(SRC_FILE ${TART_STDLIB_SRC})
@@ -51,16 +51,16 @@ endforeach(SRC_FILE)
 
 # Target to drive the conversion
 add_custom_command(
-    OUTPUT libcore.bc
-    COMMAND tartln -filetype=bc -link-as-library -o libcore.bc ${STDLIB_BC_FILES}
+    OUTPUT libstd.bc
+    COMMAND tartln -filetype=bc -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} tartln
-    COMMENT "Linking libcore.bc")
+    COMMENT "Linking libstd.bc")
     
 # Generate dependency info
 add_custom_command(
-    OUTPUT libcore.deps
-    COMMAND gendeps -o libcore.deps ${STDLIB_BC_FILES}
+    OUTPUT libstd.deps
+    COMMAND gendeps -o libstd.deps ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} gendeps
-    COMMENT "Generating dependencies for libcore.bc")
+    COMMENT "Generating dependencies for libstd.bc")
 
-add_custom_target(libcore DEPENDS libcore.bc libcore.deps)
+add_custom_target(libstd DEPENDS libstd.bc libstd.deps)
