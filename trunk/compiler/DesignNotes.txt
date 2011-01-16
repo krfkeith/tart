@@ -4,7 +4,7 @@ Next up:
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* Remove BoundMethod as a type, reimplement as an implementation of Function.
+* Implement BoundMethodExpr as an implementation of Function.
 * Measure symbol sizes again.
 * See if we need to make a global attribute index.
 
@@ -404,20 +404,6 @@ class AttributeList {
 }
 
 // ------------------------------------------------------------------------
-
-// Closures should really correspond to this interface.
-// and fn (params:ParamTypes) -> ReturnType should as well.
-// and bound methods shouldn't be a distinct type class.
-
-class Closure[%ReturnType, %ParamTypes...] : Function[ReturnType, *ParamTypes] {
-  private var func:static fn(obj:Object, :ParamTypes) -> ReturnType;
-  private var _env1:??;
-  private var _env2:??;
-
-  def (params:ParamTypes) -> ReturnType {
-    return func(self, params);
-  }
-}
 
 class BoundMethod[%ReturnType, %ParamTypes...] : Function[ReturnType, *ParamTypes] {
   private var obj:Object;
