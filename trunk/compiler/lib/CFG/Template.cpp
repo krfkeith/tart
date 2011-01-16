@@ -46,11 +46,13 @@ private:
 // -------------------------------------------------------------------
 // TypeVariable
 
-TypeVariable::TypeVariable(const SourceLocation & location, const char * name, const Type * valueType)
+TypeVariable::TypeVariable(const SourceLocation & location, const char * name,
+    const Type * valueType)
   : TypeImpl(TypeVar, Shape_Unset)
   , location_(location)
   , valueType_(valueType)
   , name_(name)
+  , isVariadic_(false)
 {}
 
 const llvm::Type * TypeVariable::createIRType() const {
@@ -101,6 +103,9 @@ void TypeVariable::trace() const {
 
 void TypeVariable::format(FormatStream & out) const {
   out << "%" << name_;
+  if (isVariadic_) {
+    out << "...";
+  }
 }
 
 /// -------------------------------------------------------------------
@@ -120,17 +125,39 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
   , typeParams_(NULL)
   , paramScope_(parentScope)
   , numRequiredArgs_(0)
+  , isVariadic_(false)
 {
   paramScope_.setScopeName("template-params");
 }
+
+// TODO: Insure that variadic argument is the last one? Do we care?
 
 void TemplateSignature::setTypeParams(const TupleType * typeParams) {
   DASSERT(typeParams_ == NULL);
   typeParams_ = typeParams;
   numRequiredArgs_ = typeParams->size();
   FindTypeVariables(vars_).transform(typeParams_);
+
+  // Check for variadic type parameters
+  const TypeVariable * variadicParam = NULL;
+  for (size_t i = 0; i < typeParams_->size(); ++i) {
+    if (const TypeVariable * tv = dyn_cast<TypeVariable>((*typeParams)[i])) {
+      if (tv->isVariadic()) {
+        if (i != typeParams_->size() - 1) {
+          diag.error(tv) << "template variadic parameter must be last";
+        }
+        isVariadic_ = true;
+        variadicParam = tv;
+        --numRequiredArgs_;
+      }
+    }
+  }
+
   for (TypeVariableList::const_iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
+    if (var->isVariadic() && var != variadicParam) {
+      diag.error(var) << "Variadic argument not allowed here";
+    }
     if (paramScope_.lookupSingleMember(var->name()) == NULL) {
       TypeDefn * tdef = new TypeDefn(value_->module(), var->name(), var);
       paramScope_.addMember(tdef);
@@ -388,14 +415,6 @@ TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templa
   , parentScope_(templateDefn->definingScope())
   , lessSpecialized_(NULL)
 {
-//  for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it) {
-//    if (const TypeBinding * tb = dyn_cast<TypeBinding>(*it)) {
-//      Type * s = tb->env()->get(tb->var());
-//      if (s != NULL) {
-//        DASSERT_OBJ(s != tb, tb);
-//      }
-//    }
-//  }
 }
 
 const Type * TemplateInstance::typeArg(int index) const {

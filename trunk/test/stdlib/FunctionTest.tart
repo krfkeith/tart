@@ -12,15 +12,15 @@ def func(a:int32, b="Hello") -> int32 {
 
 class FunctionTest : Test {
 	def testDefaultArgs() {
-	  Debug.assertEq(1, func(1, "Hello"));
-	  Debug.assertEq(1, func(1));
+	  assertEq(1, func(1, "Hello"));
+	  assertEq(1, func(1));
 	}
 	
 	def testFunctionVar {
 	  var streq:fn s:String -> bool;
 	  streq = "Hello".equals;
-	  Debug.assertTrue(streq("Hello"));
-	  Debug.assertFalse(streq("Yello"));
+	  assertTrue(streq("Hello"));
+	  assertFalse(streq("Yello"));
 	}
 	
 	def testAnonFn {
@@ -28,8 +28,8 @@ class FunctionTest : Test {
 	    return i + i;
 	  };
 	  
-	  Debug.assertEq(2, f(1));
-	  Debug.assertEq(4, f(2));
+	  assertEq(2, f(1));
+	  assertEq(4, f(2));
 	}
 
 	def testClosureWithLet {
@@ -38,8 +38,8 @@ class FunctionTest : Test {
 	    return String.concat(a, b);
 	  };
 	  
-	  Debug.assertEq("AB", f("B"));
-	  Debug.assertEq("AC", f("C"));
+	  assertEq("AB", f("B"));
+	  assertEq("AC", f("C"));
 	}
 
 	def testClosureWithVar {
@@ -48,9 +48,9 @@ class FunctionTest : Test {
 	    return String.concat(a, b);
 	  };
 	  
-	  Debug.assertEq("AB", f("B"));
+	  assertEq("AB", f("B"));
 	  a = "AA";
-	  Debug.assertEq("AAB", f("B"));
+	  assertEq("AAB", f("B"));
 	}
 	
 	def testClosureCounter {
@@ -59,10 +59,10 @@ class FunctionTest : Test {
 	    return a++;
 	  };
 
-	  Debug.assertEq(0, f());
-	  Debug.assertEq(1, f());
-	  Debug.assertEq(2, f());
-	  Debug.assertEq(3, a);
+	  assertEq(0, f());
+	  assertEq(1, f());
+	  assertEq(2, f());
+	  assertEq(3, a);
 	}
 
 	def returnClosure(a:String) -> fn :String -> String {
@@ -74,8 +74,8 @@ class FunctionTest : Test {
 
 	def testClosureReturnVal {
 	  let f = returnClosure("A");
-	  Debug.assertEq("AB", f("B"));
-	  Debug.assertEq("AC", f("C"));
+	  assertEq("AB", f("B"));
+	  assertEq("AC", f("C"));
 	}
 	
 	def makeCounter(n:int) -> fn -> int {
@@ -86,9 +86,9 @@ class FunctionTest : Test {
 
 	def testClosureWithParamVar {
 	  let f = makeCounter(10);
-	  Debug.assertEq(10, f());
-	  Debug.assertEq(11, f());
-	  Debug.assertEq(12, f());
+	  assertEq(10, f());
+	  assertEq(11, f());
+	  assertEq(12, f());
 	}
 	
 	def testMultipleClosuresInOneScope {
@@ -103,10 +103,10 @@ class FunctionTest : Test {
 	    return a;
 	  };
 
-	  Debug.assertEq(1, f1());
-	  Debug.assertEq(11, f2());
-	  Debug.assertEq(12, f1());
-	  Debug.assertEq(22, f2());
+	  assertEq(1, f1());
+	  assertEq(11, f2());
+	  assertEq(12, f1());
+	  assertEq(22, f2());
 	}
 	
 	def callTenTimes(f:fn) {
@@ -118,11 +118,11 @@ class FunctionTest : Test {
 	def testClosureAsParam {
 	  var i = 0;
 	  callTenTimes(fn { i += 2; });
-	  Debug.assertEq(20, i);
+	  assertEq(20, i);
 
 	  var s = StringBuilder();
 	  callTenTimes(fn { s.append("A"); });
-	  Debug.assertEq("AAAAAAAAAA", s.toString());
+	  assertEq("AAAAAAAAAA", s.toString());
 	}
 
 	def testNestedClosures {
@@ -133,8 +133,8 @@ class FunctionTest : Test {
 	  };
 	  
 	  let c = makeCounter(2);
-	  Debug.assertEq(2, c());
-	  Debug.assertEq(3, c());
+	  assertEq(2, c());
+	  assertEq(3, c());
 	}
 	
 	def testNestedClosures2 {
@@ -148,10 +148,10 @@ class FunctionTest : Test {
 	  let c = makeCounter();
 	  let d = makeCounter();
 
-	  Debug.assertEq(0, c());
-	  Debug.assertEq(1, c());
-	  Debug.assertEq(2, d());
-	  Debug.assertEq(3, d());
+	  assertEq(0, c());
+	  assertEq(1, c());
+	  assertEq(2, d());
+	  assertEq(3, d());
 	}
 	
   struct LargeStruct {
@@ -174,11 +174,11 @@ class FunctionTest : Test {
 	    return ls.c++;
 	  };
 
-	  Debug.assertEq(2, f());
-	  Debug.assertEq(3, ls.c);
-	  Debug.assertEq(3, f());
-	  Debug.assertEq(4, ls.c);
-	  Debug.assertEq(4, f());
+	  assertEq(2, f());
+	  assertEq(3, ls.c);
+	  assertEq(3, f());
+	  assertEq(4, ls.c);
+	  assertEq(4, f());
 	} */
 
 	// Test closures with tuples, structs

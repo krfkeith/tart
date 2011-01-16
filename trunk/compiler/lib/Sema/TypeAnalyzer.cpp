@@ -192,19 +192,46 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
   for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
     ASTParameter * aparam = *it;
 
-    // Note that type might be NULL if not specified. We'll pick it up
-    // later from the default value.
-    Type * paramType = typeFromAST(aparam->type());
-    ParameterDefn * param = new ParameterDefn(module_, aparam);
-    param->setType(paramType);
-    param->setInternalType(paramType);
-    params.push_back(param);
-    if (aparam->flags() & Param_Variadic) {
-      param->setFlag(ParameterDefn::Variadic, true);
-    }
+    if (aparam->flags() & Param_Star) {
+      Type * paramType = typeFromAST(aparam->type());
+      if (const TupleType * paramTypes = dyn_cast<TupleType>(paramType)) {
+        if (aparam->flags() & Param_Variadic) {
+          diag.error(aparam) << "*Type params cannot be variadic";
+        } else if (aparam->value() != NULL) {
+          diag.error(aparam) << "*Type params cannot have default values";
+        }
 
-    if (aparam->flags() & Param_KeywordOnly) {
-      param->setFlag(ParameterDefn::KeywordOnly, true);
+        for (TupleType::const_iterator it = paramTypes->begin(); it != paramTypes->end(); ++it) {
+          // TODO - give each param a name.
+          // TODO - make an alias for the params that can be used within the function body
+          // accessible as an array.
+          const Type * ptype = *it;
+          ParameterDefn * param = new ParameterDefn(module_, "");
+          param->setType(ptype);
+          param->setInternalType(ptype);
+          params.push_back(param);
+          if (aparam->flags() & Param_KeywordOnly) {
+            param->setFlag(ParameterDefn::KeywordOnly, true);
+          }
+        }
+      } else {
+        diag.error(aparam) << "Type " << paramType << " cannot be expanded with '*'";
+      }
+    } else {
+      // Note that type might be NULL if not specified. We'll pick it up
+      // later from the default value.
+      Type * paramType = typeFromAST(aparam->type());
+      ParameterDefn * param = new ParameterDefn(module_, aparam);
+      param->setType(paramType);
+      param->setInternalType(paramType);
+      params.push_back(param);
+      if (aparam->flags() & Param_Variadic) {
+        param->setFlag(ParameterDefn::Variadic, true);
+      }
+
+      if (aparam->flags() & Param_KeywordOnly) {
+        param->setFlag(ParameterDefn::KeywordOnly, true);
+      }
     }
   }
 

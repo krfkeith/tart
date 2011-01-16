@@ -303,8 +303,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   docComment.swap(decl->docComment());
   decl->attributes().append(attributes.begin(), attributes.end());
   if (ASTTemplate * templ = dyn_cast<ASTTemplate>(decl)) {
-    templ->body()->attributes().append(attributes.begin(),
-        attributes.end());
+    templ->body()->attributes().append(attributes.begin(), attributes.end());
   }
 
   dlist.push_back(decl);
@@ -486,7 +485,12 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
   const char * declName = matchIdent();
   if (declName == NULL) {
-    declName = istrings.idCall;
+    if (token == Token_LParen) {
+      declName = istrings.idCall;
+    } else {
+      diag.error(lexer.tokenLocation()) << "Expected method or property name";
+      declName = "";
+    }
   }
 
   SourceLocation loc = tokenLoc;
@@ -1058,7 +1062,7 @@ ASTNode * Parser::typeExprPrimary() {
       return NULL;
     }
 
-    int constraint = ASTTypeVariable::IS_INSTANCE;
+    ASTTypeVariable::ConstraintType constraint = ASTTypeVariable::IS_INSTANCE;
     if (match(Token_Colon)) {
       declType = typeExpression();
       if (declType == NULL) {
@@ -1078,7 +1082,9 @@ ASTNode * Parser::typeExprPrimary() {
       }
     }
 
-    result = new ASTTypeVariable(tokenLoc, pvarName, declType, constraint);
+    bool isVariadic = match(Token_Ellipsis);
+
+    result = new ASTTypeVariable(tokenLoc, pvarName, declType, constraint, isVariadic);
   } else if (match(Token_Optional)) {
     result = typeExprPrimary();
     if (result != NULL) {
@@ -1389,6 +1395,9 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   const char * argName = matchIdent();
   ASTNode * argType = NULL;
   if (match(Token_Colon)) {
+    if (match(Token_Star)) {
+      paramFlags |= Param_Star;
+    }
     argType = typeExpression();
   }
 
@@ -1398,7 +1407,7 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   }
 
   if (match(Token_Ellipsis)) {
-    paramFlags = Param_Variadic;
+    paramFlags |= Param_Variadic;
   }
 
   ASTNode * defaultValue = NULL;

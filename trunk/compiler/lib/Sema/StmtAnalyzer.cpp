@@ -82,9 +82,6 @@ public:
 
 StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   : ExprAnalyzer(func->module(), &func->parameterScope(), func, func)
-  , function(func)
-  //, returnType_(NULL)
-  //, yieldType_(NULL)
   , blocks(func->blocks())
   , currentBlock_(NULL)
   , continueTarget_(NULL)
@@ -94,40 +91,41 @@ StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   , loopCleanups_(NULL)
   , macroReturnVal_(NULL)
   , macroReturnTarget_(NULL)
+//, yieldType_(NULL)
 {
   insertPos_ = blocks.end();
-  returnType_ = function->returnType();
+  returnType_ = function()->returnType();
 }
 
 bool StmtAnalyzer::buildCFG() {
-  if (function->functionDecl() && function->functionDecl()->body() != NULL) {
+  if (function()->functionDecl() && function()->functionDecl()->body() != NULL) {
 
     // Create a temporary scope to allow lookup of the function parameters.
-    DelegatingScope parameterScope(&function->parameterScope(), function->definingScope());
+    DelegatingScope parameterScope(&function()->parameterScope(), function()->definingScope());
     setActiveScope(&parameterScope);
 
     // If this is an instance method, then set up the implicit 'self'
     // scope as well. This scope searches the type of the self parameter,
     // and is always searched immediately after the parameter scope.
-    if (function->storageClass() == Storage_Instance) {
-      ParameterDefn * selfParam = function->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->type() != NULL, function);
+    if (function()->storageClass() == Storage_Instance) {
+      ParameterDefn * selfParam = function()->functionType()->selfParam();
+      DASSERT_OBJ(selfParam != NULL, function());
+      DASSERT_OBJ(selfParam->type() != NULL, function());
       TypeDefn * selfType = selfParam->type()->typeDefn();
-      DASSERT_OBJ(selfType != NULL, function);
+      DASSERT_OBJ(selfType != NULL, function());
 
 #if IMPLICIT_SELF
       // Uncomment to allow 'self' to be searched implicitly.
       SelfScope * selfScope =
-          new SelfScope(selfType->typeValue()->memberScope(), function->definingScope());
+          new SelfScope(selfType->typeValue()->memberScope(), function()->definingScope());
       selfScope->setSelfParam(selfParam);
       parameterScope.setParentScope(selfScope);
 #endif
-    } else if (function->storageClass() == Storage_Local) {
-      ParameterDefn * selfParam = function->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function);
-      DASSERT_OBJ(selfParam->type() != NULL, function);
-      DASSERT_OBJ(selfParam->initValue() != NULL, function);
+    } else if (function()->storageClass() == Storage_Local) {
+      ParameterDefn * selfParam = function()->functionType()->selfParam();
+      DASSERT_OBJ(selfParam != NULL, function());
+      DASSERT_OBJ(selfParam->type() != NULL, function());
+      DASSERT_OBJ(selfParam->initValue() != NULL, function());
       if (ClosureEnvExpr * env = dyn_cast<ClosureEnvExpr>(selfParam->initValue())) {
         parameterScope.setParentScope(env);
       }
@@ -135,7 +133,7 @@ bool StmtAnalyzer::buildCFG() {
 
     // Create the initial block.
     setInsertPos(createBlock("entry"));
-    const Stmt * body = function->functionDecl()->body();
+    const Stmt * body = function()->functionDecl()->body();
     if (!buildStmtCFG(body)) {
       return false;
     }
@@ -156,7 +154,7 @@ bool StmtAnalyzer::buildCFG() {
         diag.error(body->finalLocation()) <<
             "Missing return statement at end of non-void function.";
       }
-      currentBlock_->exitReturn(body->finalLocation().forRegion(function->region()), NULL);
+      currentBlock_->exitReturn(body->finalLocation().forRegion(function()->region()), NULL);
     }
 
     return true;
@@ -224,12 +222,12 @@ bool StmtAnalyzer::buildStmtCFG(const Stmt * st) {
 }
 
 bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
-  bool isRootBlock = st == function->functionDecl()->body();
+  bool isRootBlock = st == function()->functionDecl()->body();
   bool success = true;
 
   SourceRegion * region = activeScope()->region();
   if (isRootBlock) {
-    region = function->region();
+    region = function()->region();
   } else {
     // TODO: Create a local scope region.
     DASSERT(region != NULL);
@@ -1151,7 +1149,7 @@ bool StmtAnalyzer::buildTryStmtCFG(const TryStmt * st) {
       // Define the exception variable in the catch scope.
       ASTDecl * exceptDecl = cst->exceptDecl();
       VariableDefn * exceptDefn = cast<VariableDefn>(
-          ScopeBuilder::createLocalDefn(catchScope, function, exceptDecl));
+          ScopeBuilder::createLocalDefn(catchScope, function(), exceptDecl));
       if (!analyzeVariable(exceptDefn, Task_PrepCodeGeneration)) {
         return false;
       }
@@ -1430,7 +1428,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
       const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
       DASSERT(varDecl->value() == NULL);
       if (varDecl->type() != NULL) {
-        VarAnalyzer va(var, activeScope(), module(), function, function);
+        VarAnalyzer va(var, activeScope(), module(), function(), function());
         if (!va.analyze(Task_PrepTypeComparison)) {
           return false;
         }
@@ -1443,7 +1441,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
     if (varList->value() != NULL) {
       const TupleType * tt = TupleType::get(varTypes.begin(), varTypes.end());
-      //ExprAnalyzer ea(module(), activeScope(), function, function);
+      //ExprAnalyzer ea(module(), activeScope(), function(), function());
       Expr * initExpr = inferTypes(/*ea.*/analyze(varList->value(), tt), tt);
       if (initExpr == NULL) {
         return false;
@@ -1476,7 +1474,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 
   Defn * de = astToDefn(st->decl());
   if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-    VarAnalyzer va(var, activeScope(), module(), function, function);
+    VarAnalyzer va(var, activeScope(), module(), function(), function());
     if (!va.analyze(Task_PrepConstruction)) {
       return false;
     }
@@ -1497,7 +1495,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 }
 
 Expr * StmtAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
-  expr = ExprAnalyzer::inferTypes(function, expr, expectedType);
+  expr = ExprAnalyzer::inferTypes(function(), expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
   }
@@ -1549,7 +1547,7 @@ Expr * StmtAnalyzer::astToTestExpr(const ASTNode * test, bool castToBool) {
       testExpr = TypeInferencePass::run(module_, testExpr, &BoolType::instance, false);
     }
 
-    testExpr = FinalizeTypesPass::run(function, testExpr);
+    testExpr = FinalizeTypesPass::run(function(), testExpr);
     testExpr = MacroExpansionPass::run(*this, testExpr);
     DASSERT_OBJ(testExpr->isSingular(), testExpr);
   }
@@ -1591,14 +1589,14 @@ Defn * StmtAnalyzer::astToDefn(const ASTDecl * ast) {
     diag.error(ast) << "Multiple variable declarations not allowed here";
   }
 
-  Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function, ast);
+  Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function(), ast);
   var->setLocation(astLoc(ast));
   return var;
 }
 
 bool StmtAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
   for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
-    Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function, *it);
+    Defn * var = ScopeBuilder::createLocalDefn(activeScope(), function(), *it);
     var->setLocation(astLoc(*it));
     vars.push_back(var);
   }
@@ -1631,7 +1629,7 @@ LocalScope * StmtAnalyzer::createLocalScope(const char * scopeName, SourceRegion
   newScope->setScopeName(scopeName);
   DASSERT(newScope->parentScope() != NULL);
 
-  function->localScopes().push_back(newScope);
+  function()->localScopes().push_back(newScope);
   return newScope;
 }
 
@@ -1857,7 +1855,7 @@ void StmtAnalyzer::flattenLocalProcedureCalls() {
       if (stateVarScope == NULL) {
         stateVarScope = new LocalScope(activeScope(), activeScope()->region());
         stateVarScope->setScopeName("proc-state");
-        function->localScopes().push_back(stateVarScope);
+        function()->localScopes().push_back(stateVarScope);
       }
       stateVarScope->addMember(proc.stateVar);
 

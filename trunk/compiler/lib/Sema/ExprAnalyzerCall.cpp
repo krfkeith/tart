@@ -88,8 +88,13 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
   call->setExpectedReturnType(expected);
   for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
-    //success &= addOverload(call, *it, args);
-    if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
+    Expr * callableExpr = *it;
+    const Type * callableType = callableExpr->type();
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(callableType)) {
+      if (!addOverloads(call, callableExpr, ctype, args)) {
+        diag.error(loc) << callableExpr << " is not callable.";
+      }
+    } else if (LValueExpr * lv = dyn_cast<LValueExpr>(callableExpr)) {
       if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
         success &= addOverload(call, lvalueBase(lv), func, args);
 
@@ -108,13 +113,13 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         } else if (const BoundMethodType * bmt = dyn_cast<BoundMethodType>(varType)) {
           success &= addOverload(call, lv, bmt->fnType(), args);
         } else {
-          diag.fatal(loc) << *it << " is not callable.";
+          diag.fatal(loc) << callableExpr << " is not callable.";
         }
-      } else if (const FunctionType * ftype = dyn_cast<FunctionType>((*it)->type())) {
-        success &= addOverload(call, *it, ftype, args);
+      } else if (const FunctionType * ftype = dyn_cast<FunctionType>((callableExpr)->type())) {
+        success &= addOverload(call, callableExpr, ftype, args);
       }
     } else {
-      diag.fatal(loc) << *it << " is not callable.";
+      diag.fatal(loc) << callableExpr << " is not callable.";
     }
   }
 
@@ -597,10 +602,6 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * fn, const FunctionType * ftype,
     const ASTNodeList & args) {
-  //if (!analyzeType(ftype, Task_PrepOverloadSelection)) {
-  //  return false;
-  //}
-
   DASSERT_OBJ(ftype != NULL, fn);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, ftype);
@@ -609,6 +610,19 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * fn, const FunctionType * 
   }
 
   return true;
+}
+
+bool ExprAnalyzer::addOverloads(CallExpr * call, Expr * callable, const CompositeType * ctype,
+    const ASTNodeList & args) {
+  DefnList callMethods;
+  ctype->lookupMember(istrings.idCall, callMethods, true);
+  bool success = false;
+  for (DefnList::const_iterator it = callMethods.begin(); it != callMethods.end(); ++it) {
+    FunctionDefn * method = cast<FunctionDefn>(*it);
+    success |= addOverload(call, callable, method, args);
+  }
+
+  return success;
 }
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,

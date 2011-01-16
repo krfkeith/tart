@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------
 
 Next up:
-* classify -> match
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.

@@ -143,13 +143,11 @@ public:
       Parameters:
         'call' - The call expression.
         'callable' - The callable expression (function or function-typed variable.)
-        'args' - the list of argument AST nodes (for computing keyword
-                 assignment.)
+        'args' - the list of argument AST nodes (for computing keyword assignment.)
    */
   bool addOverload(CallExpr * call, Expr * callable, const ASTNodeList & args);
 
   /** Add an overload to a call expression.
-
       Parameters:
         'base' - the base expression (i.e. the 'self' argument) for each method.
         'methods' - the list of methods.
@@ -165,7 +163,12 @@ public:
       const ASTNodeList & args, SpCandidate * sp);
 
   /** Version of addOverload which works with expressions of function type. */
-  bool addOverload(CallExpr * call, Expr * fn, const FunctionType * ftype,
+  bool addOverload(CallExpr * call, Expr * callable, const FunctionType * ftype,
+      const ASTNodeList & args);
+
+  /** Version of addOverload which works with expressions of composite type that have
+      a call method. */
+  bool addOverloads(CallExpr * call, Expr * callable, const CompositeType * ftype,
       const ASTNodeList & args);
 
   /** Version of overload which works with pre-analyzed arguments. No keyword mapping

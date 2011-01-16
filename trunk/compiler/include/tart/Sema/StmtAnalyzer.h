@@ -53,7 +53,7 @@ public:
   StmtAnalyzer(FunctionDefn * func);
 
   /** The target function being analyzed. */
-  FunctionDefn * getTarget() { return function; }
+  FunctionDefn * function() { return currentFunction_; }
 
   /** Build the control flow graph for this function. */
   bool buildCFG();
@@ -220,7 +220,6 @@ private:
   /** Create a temporary variable. */
   LValueExpr * createTempVar(const char * name, Expr * value, bool isMutable = false);
 
-  FunctionDefn * function;
   SourceRegion * rootBlockRegion_;
   const Type * returnType_;
   Type * yieldType_;
