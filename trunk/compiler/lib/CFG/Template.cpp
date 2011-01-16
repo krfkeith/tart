@@ -479,8 +479,35 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 }
 
 void TemplateInstance::format(FormatStream & out) const {
+  TemplateSignature * tsig = templateDefn_->templateSignature();
   out << "[";
-  typeArgs_->formatMembers(out);
+  if (tsig && tsig->isVariadic()) {
+    int index = 0;
+    for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it, ++index) {
+      const TupleType * vargs = NULL;
+      if (const TypeVariable * tv = dyn_cast<TypeVariable>(tsig->typeParam(index))) {
+        if (tv->isVariadic()) {
+          vargs = cast<TupleType>(*it);
+          if (vargs->size() == 0) {
+            break;
+          }
+        }
+      }
+
+      if (it != typeArgs_->begin()) {
+        out << ",";
+      }
+
+      // Special formatting for variadic template params
+      if (vargs != NULL) {
+        vargs->formatMembers(out);
+      } else {
+        (*it)->format(out);
+      }
+    }
+  } else {
+    typeArgs_->formatMembers(out);
+  }
   out << "]";
 }
 

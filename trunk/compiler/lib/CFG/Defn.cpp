@@ -107,12 +107,34 @@ const std::string & Defn::linkageName() const {
     if (tinst_ != NULL) {
       lnkName.append("[");
       const TupleType * typeArgs = tinst_->typeArgs();
-      for (TupleType::const_iterator it = typeArgs->begin(); it != typeArgs->end(); ++it) {
+      int index = 0;
+      TemplateSignature * tsig = tinst_->templateDefn()->templateSignature();
+      for (TupleType::const_iterator it = typeArgs->begin(); it != typeArgs->end(); ++it, ++index) {
+        const TupleType * variadicArgs = NULL;
+        if (const TypeVariable * tv = dyn_cast<TypeVariable>(tsig->typeParam(index))) {
+          if (tv->isVariadic()) {
+            variadicArgs = cast<TupleType>(*it);
+            if (variadicArgs->size() == 0) {
+              break;
+            }
+          }
+        }
+
         if (it != typeArgs->begin()) {
           lnkName.append(",");
         }
 
-        typeLinkageName(lnkName, *it);
+        // Special formatting for variadic template params
+        if (variadicArgs != NULL) {
+          for (TupleType::const_iterator t = variadicArgs->begin(); t != variadicArgs->end(); ++t) {
+            if (t != variadicArgs->begin()) {
+              lnkName.append(",");
+            }
+            typeLinkageName(lnkName, *t);
+          }
+        } else {
+          typeLinkageName(lnkName, *it);
+        }
       }
 
       lnkName.append("]");

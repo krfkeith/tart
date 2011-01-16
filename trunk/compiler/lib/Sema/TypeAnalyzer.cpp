@@ -118,16 +118,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       if (fnDecl->storageClass() == Storage_Static) {
         ftype->setIsStatic(true);
       } else {
-        return new BoundMethodType(ftype);
-
-        // Non-static functions must have a self param, even though we don't know what type
-        // it is.
-        /*ParameterDefn * selfParam = new ParameterDefn(module, istrings.idSelf);
-        selfParam->setType(Builtins::typeObject);
-        selfParam->setInternalType(Builtins::typeObject);
-        selfParam->addTrait(Defn::Singular);
-        selfParam->setFlag(ParameterDefn::Reference, true);
-        ftype->setSelfParam(selfParam);*/
+        return getFunctionInterfaceType(ftype);
       }
 
       return ftype;

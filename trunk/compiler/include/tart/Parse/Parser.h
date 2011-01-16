@@ -265,6 +265,9 @@ public:
   /** Parse a list of arguments. */
   bool parseArgumentList(ASTNodeList & args);
 
+  /** Parse an anonymous inner class. */
+  ASTNode * anonClass(ASTNode * result);
+
   /** Parse a list of arguments. */
   ASTNode * arrayLiteral();
 

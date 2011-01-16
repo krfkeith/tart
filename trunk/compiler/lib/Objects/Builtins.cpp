@@ -46,6 +46,7 @@ SystemClass Builtins::typeString("tart.core.String");
 SystemClass Builtins::typeArray("tart.core.Array");
 SystemClass Builtins::typeRange("tart.core.Range");
 SystemClass Builtins::typeThrowable("tart.core.Throwable");
+SystemClass Builtins::typeFunction("tart.core.Function");
 Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
 SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperationError");

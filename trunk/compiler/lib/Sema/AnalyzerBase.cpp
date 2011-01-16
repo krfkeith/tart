@@ -855,6 +855,25 @@ CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
       refTemplate->instantiate(SourceLocation(), refEnv))->typeValue());
 }
 
+CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftype) {
+  // Look up the Function interface
+  TemplateSignature * fnTemplate = Builtins::typeFunction->typeDefn()->templateSignature();
+
+  // Do analysis on template if needed.
+  if (fnTemplate->ast() != NULL) {
+    DefnAnalyzer da(&Builtins::module, &Builtins::module, &Builtins::module, NULL);
+    da.analyzeTemplateSignature(Builtins::typeFunction->typeDefn());
+  }
+
+  DASSERT_OBJ(fnTemplate->paramScope().count() == 2, ftype);
+
+  BindingEnv env;
+  env.addSubstitution(fnTemplate->patternVar(0), ftype->returnType());
+  env.addSubstitution(fnTemplate->patternVar(1), ftype->paramTypes());
+  return cast<CompositeType>(cast<TypeDefn>(
+      fnTemplate->instantiate(SourceLocation(), env))->typeValue());
+}
+
 // Determine if the target is able to be accessed from the current source defn.
 void AnalyzerBase::checkAccess(const SourceLocation & loc, Defn * target) {
   if (!canAccess(subject_, target)) {

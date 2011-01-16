@@ -1061,25 +1061,26 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
 
     // Set all the variables in the environment.
     for (Defn * de = in->firstMember(); de != NULL; de = de->nextInScope()) {
-      VariableDefn * var = cast<VariableDefn>(de);
-      Value * value;
-      if (var->isSharedRef()) {
-        const LValueExpr * initValue = cast<LValueExpr>(var->initValue());
-        value = builder_.CreateLoad(genLoadLValue(initValue, false));
-      } else {
-        value = genExpr(var->initValue());
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        Value * value;
+        if (var->isSharedRef()) {
+          const LValueExpr * initValue = cast<LValueExpr>(var->initValue());
+          value = builder_.CreateLoad(genLoadLValue(initValue, false));
+        } else {
+          value = genExpr(var->initValue());
 
-//        if (var->typeShape() == Shape_Large_Value) {
-//          value =
-//        }
+  //        if (var->typeShape() == Shape_Large_Value) {
+  //          value =
+  //        }
+        }
+
+        if (value == NULL) {
+          return NULL;
+        }
+
+        Value * memberAddr = builder_.CreateStructGEP(env, var->memberIndex(), var->name());
+        builder_.CreateStore(value, memberAddr, false);
       }
-
-      if (value == NULL) {
-        return NULL;
-      }
-
-      Value * memberAddr = builder_.CreateStructGEP(env, var->memberIndex(), var->name());
-      builder_.CreateStore(value, memberAddr, false);
     }
 
     // Return the closure environment

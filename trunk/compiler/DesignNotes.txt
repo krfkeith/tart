@@ -4,9 +4,6 @@ Next up:
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* make varargs into a type modifier - if that can be done.
-* varargs templates
-* interface Function[%ReturnType, %ParamTypes...] {}
 * Closures to implement Function.
 * Remove BoundMethod as a type, reimplement as an implementation of Function.
 * Measure symbol sizes again.
@@ -413,13 +410,7 @@ class AttributeList {
 // and fn (params:ParamTypes) -> ReturnType should as well.
 // and bound methods shouldn't be a distinct type class.
 
-// TODO: We need variadic template params.
-
-interface Function[%ReturnType, %ParamTypes...] {
-  def (params:ParamTypes) -> ReturnType;
-}
-
-class Closure[%ReturnType, %ParamTypes...] : Function[ReturnType, ParamTypes] {
+class Closure[%ReturnType, %ParamTypes...] : Function[ReturnType, *ParamTypes] {
   private var func:static fn(obj:Object, :ParamTypes) -> ReturnType;
   private var _env1:??;
   private var _env2:??;
@@ -429,7 +420,7 @@ class Closure[%ReturnType, %ParamTypes...] : Function[ReturnType, ParamTypes] {
   }
 }
 
-class BoundMethod[%ReturnType, %ParamTypes...] : Function[ReturnType, ParamTypes] {
+class BoundMethod[%ReturnType, %ParamTypes...] : Function[ReturnType, *ParamTypes] {
   private var obj:Object;
   private var method:static fn(obj:Object, :ParamTypes) -> ReturnType;
 

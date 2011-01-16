@@ -463,40 +463,29 @@ void FunctionAnalyzer::visitClosureEnvs(const ExprList & closureEnvs) {
     CompositeType * envType = closure->envType();
 
     // First, propagate 'assignedTo' flags downward.
-    // Also, compute the type name of the closure type.
-    std::string closureName(".closure[");
-    Defn * first = envType->firstMember();
-    for (Defn * de = first; de != NULL; de = de->nextInScope()) {
-      VariableDefn * var = cast<VariableDefn>(de);
-      if (de != first) {
-        closureName.append(",");
-      }
+    for (Defn * de = envType->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        // See if this variable was assigned to at any point.
+        bool isAssignedTo = false;
+        for (VariableDefn * v = var; v != NULL; v = v->closureBinding()) {
+          if (v->isAssignedTo()) {
+            isAssignedTo = true;
+            break;
+          }
+        }
 
-      // See if this variable was assigned to at any point.
-      bool isAssignedTo = false;
-      for (VariableDefn * v = var; v != NULL; v = v->closureBinding()) {
-        if (v->isAssignedTo()) {
-          isAssignedTo = true;
-          break;
+        const Type * varType = var->type();
+        if (isAssignedTo) {
+          var->setIsAssignedTo();
+          varType = getMutableRefType(varType);
+          analyzeType(varType, Task_PrepCodeGeneration);
+          module_->addSymbol(varType->typeDefn());
+          module_->addSymbol(cast<CompositeType>(varType)->super()->typeDefn());
+          var->setSharedRefType(varType);
+          var->closureBinding()->setSharedRefType(varType);
         }
       }
-
-      const Type * varType = var->type();
-      if (isAssignedTo) {
-        var->setIsAssignedTo();
-        varType = getMutableRefType(varType);
-        analyzeType(varType, Task_PrepCodeGeneration);
-        module_->addSymbol(varType->typeDefn());
-        module_->addSymbol(cast<CompositeType>(varType)->super()->typeDefn());
-        var->setSharedRefType(varType);
-        var->closureBinding()->setSharedRefType(varType);
-      }
-
-      typeLinkageName(closureName, varType);
     }
-
-    closureName.append("]");
-    envType->typeDefn()->setQualifiedName(closureName);
   }
 }
 

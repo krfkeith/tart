@@ -154,7 +154,7 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
       return reduceTuple(static_cast<const ASTOper *> (ast), expected);
 
     case ASTNode::AnonFn:
-      return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast));
+      return reduceAnonFn(static_cast<const ASTFunctionDecl *> (ast), expected);
 
     case ASTNode::TypeVar:
       diag.error(ast) << "Pattern variable used outside of pattern.";
@@ -283,28 +283,46 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
   }
 }
 
-Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
+Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expected) {
   TypeAnalyzer ta(module(), activeScope());
   FunctionType * ftype = ta.typeFromFunctionAST(ast);
 
   if (ftype != NULL) {
+    if (ftype->returnType() == NULL) {
+      // TODO - deduce the return type from the expected type.
+      ftype->setReturnType(&VoidType::instance);
+    }
+
     if (ast->body() != NULL) {
+      // Generate a unique name for this closure.
+      std::string closureName(llvm::itostr(currentFunction_->closureEnvs().size() + 1));
+
       // The hidden parameter that points to the closure environment
       ParameterDefn * envParam = new ParameterDefn(module(), "#env");
 
-      TypeDefn * envTypeDef = new TypeDefn(module(), ".closure", NULL);
+      TypeDefn * envTypeDef = new TypeDefn(module(), istrings.intern(closureName), NULL);
+      envTypeDef->createQualifiedName(currentFunction_);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
       envTypeDef->setDefiningScope(activeScope());
 
       // Use a composite type to represent the closure environment.
+      CompositeType * interfaceType = getFunctionInterfaceType(ftype);
+      DASSERT(interfaceType->isSingular());
+
       CompositeType * envType = new CompositeType(Type::Class, envTypeDef, activeScope());
       envTypeDef->setTypeValue(envType);
       envType->setClassFlag(CompositeType::Closure, true);
       envType->setSuper(static_cast<CompositeType *>(Builtins::typeObject));
+      envType->bases().push_back(interfaceType);
       module_->addSymbol(Builtins::typeObject->typeDefn());
       module_->addSymbol(envTypeDef);
+
+      // Prepare the Function interface
+      if (!analyzeType(interfaceType, Task_PrepMemberLookup)) {
+        return &Expr::ErrorVal;
+      }
 
       LValueExpr * envBaseExpr = LValueExpr::get(ast->location(), NULL, envParam);
       envBaseExpr->setType(envType);
@@ -325,23 +343,24 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
 
       // TODO: It's possible to have an anon fn outside of a function. Deal with that later.
       DASSERT(currentFunction_ != NULL);
-      FunctionDefn * fn =  new FunctionDefn(Defn::Function, module(), ast);
+      FunctionDefn * fn = new FunctionDefn(Defn::Function, module(), ast);
       fn->setFunctionType(ftype);
-      fn->createQualifiedName(currentFunction_);
-      fn->setStorageClass(Storage_Local);
-      fn->setParentDefn(currentFunction_);
+      fn->createQualifiedName(envTypeDef);
+      fn->setStorageClass(Storage_Instance);
+      fn->setParentDefn(envTypeDef);
       fn->copyTrait(currentFunction_, Defn::Synthetic);
       fn->setFlag(FunctionDefn::Nested);
       fn->setFlag(FunctionDefn::Final);
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(envParam);
-      fn->setDefiningScope(activeScope());
 
-      // Generate a unique name for this closure.
-      std::string linkageName(currentFunction_->linkageName());
-      linkageName += '.';
-      linkageName += llvm::itostr(currentFunction_->closureEnvs().size());
-      fn->setLinkageName(linkageName);
+      envType->memberScope()->addMember(fn);
+      fn->setDefiningScope(env);
+
+      // Prepare the environment for lookups
+      if (!analyzeType(envType, Task_PrepMemberLookup)) {
+        return &Expr::ErrorVal;
+      }
 
       // Analyze the function body. Doing this will also cause additional fields
       // to be added to the environment type.
@@ -357,14 +376,9 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast) {
         return &Expr::ErrorVal;
       }
       DASSERT(envType->super() != NULL);
-
-      return new BoundMethodExpr(astLoc(ast), env, fn, new BoundMethodType(fn->functionType()));
+      return env;
     } else {
       // It's merely a function type declaration
-      if (ftype->returnType() != NULL) {
-        ftype->setReturnType(&VoidType::instance);
-      }
-
       return new TypeLiteralExpr(astLoc(ast), ftype);
     }
   }

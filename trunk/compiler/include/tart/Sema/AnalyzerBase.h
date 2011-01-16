@@ -158,6 +158,9 @@ public:
   /** Given a value type, return the MutableRef[value] type. */
   CompositeType * getMutableRefType(const Type * valueType);
 
+  /** Given a function type, return the 'Function' interface that corresponds to that type. */
+  static CompositeType * getFunctionInterfaceType(const FunctionType * ftype);
+
   /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);
   static void checkAccess(const SourceLocation & loc, Defn * source, Defn * target);
