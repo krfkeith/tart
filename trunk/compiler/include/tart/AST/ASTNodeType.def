@@ -37,6 +37,7 @@ NODE_TYPE(Template)
 NODE_TYPE(TParam)
 NODE_TYPE(TypeVar)
 NODE_TYPE(Namespace)
+NODE_TYPE(AnonClass)
 
 // Type modifiers
 NODE_TYPE(AnonFn)

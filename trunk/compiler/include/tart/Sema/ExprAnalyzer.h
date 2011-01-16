@@ -65,7 +65,7 @@ public:
   Expr * reduceStringLiteral(const ASTStringLiteral * ast);
   Expr * reduceBoolLiteral(const ASTBoolLiteral * ast);
   Expr * reduceBuiltInDefn(const ASTBuiltIn * ast);
-  Expr * reduceAnonFn(const ASTFunctionDecl * ast);
+  Expr * reduceAnonFn(const ASTFunctionDecl * ast, const Type * expected);
 
   // Identifiers
 

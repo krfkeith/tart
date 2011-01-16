@@ -55,7 +55,7 @@ public:
 
     // First and last declaration node types
     DefFirst = Class,
-    DefLast = Namespace,
+    DefLast = AnonClass,
 
     StmtFirst = Block,
     StmtLast = Intrinsic
@@ -336,19 +336,18 @@ public:
 /// A call expression
 class ASTCall : public ASTOper {
 private:
-  const ASTNode * func_;
+  ASTNode * func_;
 
 public:
-  ASTCall(const SourceLocation & loc, const ASTNode * f, const ASTNodeList & argList)
+  ASTCall(const SourceLocation & loc, ASTNode * f, const ASTNodeList & argList)
     : ASTOper(Call, loc, argList)
     , func_(f)
   {
   }
 
   /** Function to be called. */
-  const ASTNode * func() const {
-    return func_;
-  }
+  const ASTNode * func() const { return func_; }
+  ASTNode * func() { return func_; }
 
   // Overrides
 

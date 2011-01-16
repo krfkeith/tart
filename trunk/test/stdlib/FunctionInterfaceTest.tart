@@ -25,18 +25,28 @@ class TwoArgCallable : Function[String, String, int] {
 }
 
 class FunctionInterfaceTest : Test {
-	def testNoArgsCallable() {
+	def testNoArgsCallable {
 	  var callable = NoArgsCallable();
 	  assertEq("NoArgs", callable());
 	}
 
-	def testOneArgCallable() {
+	def testOneArgCallable {
 	  var callable = SingleArgCallable();
 	  assertEq("6", callable(6));
 	}
 
-	def testTwoArgCallable() {
+	def testTwoArgCallable {
 	  var callable = TwoArgCallable();
 	  assertEq("six 6", callable("six", 6));
 	}
+
+	/*def anonymousCallable {
+	  var closureVar = "Hello";
+	  var callable = class : Function[String] {
+	    def -> String {
+	      return closureVar;
+	    }
+	  }
+	  assertEq("Hello", callable());
+	}*/
 }

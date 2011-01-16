@@ -2500,7 +2500,7 @@ ASTNode * Parser::primaryExpression() {
 
     case Token_Function: {
       next();
-      ASTFunctionDecl * fn = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
+      ASTFunctionDecl * fn = functionDeclaration(ASTNode::AnonFn, istrings.idCall, DeclModifiers());
       if (token == Token_LBrace) {
         ASTFunctionDecl * saveFunction = function;
         function = fn;
@@ -2634,6 +2634,27 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
 
   return false;
 }
+
+#if 0
+// TODO - implement
+ASTNode * Parser::anonClass(ASTNode * expr) {
+  ASTCall * call = dyn_cast<ASTCall>(expr);
+  ASTNodeList bases;
+  bases.push_back(call->func());
+  ASTTypeDecl * typeDecl = new ASTTypeDecl(ASTNode::AnonClass, expr->location(), NULL,
+      bases, DeclModifiers());
+  parseImports(typeDecl->imports());
+  declarationList(typeDecl->members(), DeclModifiers(Storage_Instance));
+
+  if (!match(Token_RBrace)) {
+    expected("declaration or '}'");
+    // Recovery: Look for a '}'
+    // Recovery: Look for a '{'
+  }
+
+  return typeDecl;
+}
+#endif
 
 ASTNode * Parser::arrayLiteral() {
   ASTOper * arglist = new ASTOper(ASTNode::ArrayLiteral, lexer.tokenLocation());

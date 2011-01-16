@@ -258,7 +258,7 @@ public class CompositeType : Type {
 	      // TODO: Implement
   	    return self;
     	}
-    	
+
     	else {
 	      // TODO: throw something
   	    return self;
@@ -277,7 +277,7 @@ public class CompositeType : Type {
     	case TypeKind.STRUCT {
 	      // TODO: Implement
     	}
-    	
+
     	else {
 	      // TODO: throw something
     	}
