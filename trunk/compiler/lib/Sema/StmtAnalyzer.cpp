@@ -1495,7 +1495,7 @@ bool StmtAnalyzer::buildLocalDeclStmtCFG(const DeclStmt * st) {
 }
 
 Expr * StmtAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
-  expr = ExprAnalyzer::inferTypes(function(), expr, expectedType);
+  expr = ExprAnalyzer::inferTypes(subject_, expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
   }
