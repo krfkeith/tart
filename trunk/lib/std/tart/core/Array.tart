@@ -4,6 +4,8 @@ import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 import tart.core.Memory.Address;
 import tart.core.Math.min;
+import tart.gc.TraceMethod;
+import tart.gc.TraceAction;
 
 /** Built-in array class */
 @Coalesce public final class Array[%ElementType] : Collection[ElementType] {
@@ -17,10 +19,11 @@ import tart.core.Math.min;
       self._size = size;
       return self;
     }
-    
-    def __trace(op:Address[void]) {
+
+		/** Custom trace method for garbage collection to handle variable-length object. */
+    @TraceMethod def __trace(action:TraceAction) {
       for i = 0; i < _size; ++i {
-        //GC.trace(op, addressOf[_data[i]]);
+        action.trace(_data[i]);
       }
     }
 
@@ -50,20 +53,20 @@ import tart.core.Math.min;
   static def of(elements:ElementType...) -> Array {
     return elements;
   }
-  
+
   static def copyOf(collection:Collection[ElementType]) -> Array {
     let size = collection.size;
     if size == 0 {
       return emptyArray;
     }
-    
+
     let result:Array = alloc(size);
     var index = 0;
     for el in collection {
       result._data[index++] = el;
     }
 
-		return result;    
+		return result;
   }
 
   /** True if the array is zero size. */
@@ -96,7 +99,7 @@ import tart.core.Math.min;
     }
   }
 
-  /** Make a copy of this array. */  
+  /** Make a copy of this array. */
   def copy() -> Array {
     let result = Array(self._size);
     Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._size);
@@ -110,7 +113,7 @@ import tart.core.Math.min;
 
   /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
       'dstOffset' in array 'dst'.
-   */  
+   */
   static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._size);
@@ -124,12 +127,12 @@ import tart.core.Math.min;
   @Coalesce private final class ArrayIterator : Iterator[ElementType], HasLength {
     private var array:Array;
     private var index:int;
-    
+
     def construct(array:Array) {
       self.array = array;
       self.index = 0;
     }
-    
+
     def next() -> ElementType or void {
       if (self.index < self.array._size) {
         return self.array._data[self.index++];

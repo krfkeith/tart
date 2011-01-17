@@ -6,7 +6,7 @@ import GC;
 
 /** Handles the logic of a tracing pass. */
 abstract class TraceAction {
-  /** Trace a single pointer. */
+  /** Trace a single pointer. Override this in the subclass to implement the trace algorithm. */
   protected abstract def tracePointer(ptrAddr:Address[Address[Object]]);
 
   /** Trace a list of pointers as specified by offsets from a base address. TraceAction subclasses
@@ -43,7 +43,7 @@ abstract class TraceAction {
     }
   	//Debug.writeLn("**endTraceDescriptors");
   }
-  
+
   final def traceObject(v:Object) {
     traceDescriptors(reinterpretPtr(objectAddress(v)), v.__traceTable);
   }
@@ -62,7 +62,7 @@ abstract class TraceAction {
   macro trace(v:float) {}
   macro trace(v:double) {}
 
-	/** Object pointer tracer. */
+	/** Tracer for object fields - updates the object reference. */
   macro trace(v:Object) {
 	  self.tracePointer(reinterpretPtr(addressOf(v)));
   }

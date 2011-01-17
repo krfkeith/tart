@@ -971,6 +971,26 @@ Expr * ThreadLocalApplyIntrinsic::eval(const SourceLocation & loc, Module * call
 }
 
 // -------------------------------------------------------------------
+// TraceMethodApplyIntrinsic
+TraceMethodApplyIntrinsic TraceMethodApplyIntrinsic::instance;
+
+Expr * TraceMethodApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+      if (fn->storageClass() == Storage_Instance) {
+        // TODO: implement.
+        return args[0];
+      }
+    }
+  }
+
+  diag.error(loc) << "Invalid target for 'TraceMethod'";
+  return args[0];
+}
+
+// -------------------------------------------------------------------
 // ProxyCreateIntrinsic
 ProxyCreateIntrinsic ProxyCreateIntrinsic::instance;
 

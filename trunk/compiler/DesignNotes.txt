@@ -4,9 +4,9 @@ Next up:
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* Implement BoundMethodExpr as an implementation of Function.
-* Measure symbol sizes again.
+* Measure symbol sizes again (get the size measurer thingy from work)
 * See if we need to make a global attribute index.
+* @ReflectOnly (non-propagating reflection.)
 
 Design TODOS:
 
@@ -51,22 +51,18 @@ Implementation TODOS:
 
 * Coalesced templates
 * Case * (what about classify?)
-* Open/closed intervals
 * Implicit downcast in if-block. (Includes unions as well.)
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
 * Call gc_alloc instead of malloc.
-* Add 'typealias' to eclipse plugin. (Also trim whitespace at ends of lines).
+* Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
-  * Fill out TypeOrderings.h / TypeComparator.h
+  * Fill out TypeOrderings.h / TypeComparator.h - or delete.
   * Unit tests for lexical type ordering.
 * I/O library.
-* Win32
-  * Find an assembler.
-* Link-time coalescing (use LLVM plugin)
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
 * Garbage collector
@@ -79,8 +75,7 @@ Implementation TODOS:
 * Test overloading of augmented assignment operators.
 * Override for property getters and setters. (I think that's done.)
 * Finish array unit tests. (One test remaining)
-* Proxy types
-* Integer parsing
+* Proxy types. I think we'll want to use method names instead of Method pointers...?
 * Exceptions:
   * Finally
     * Return
@@ -108,7 +103,7 @@ Implementation TODOS:
   * State machine.
 * Strings
   * Conversion specs.
-  * Define toStringFmt() - custom string formatting
+  * Define toStringFmt() - custom string formatting.
   * Other string-related functions
   * Characters.tart
   * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
@@ -142,6 +137,7 @@ Implementation TODOS:
 * Map literals
 * Matrix literals + Matrix class.
 * Anonymous inner classes.
+* Implement BoundMethodExpr as an implementation of Function.
 * Insure typealiases aren't circular.
 
 Doc errors:
@@ -169,7 +165,7 @@ o  Our never-ending quest to get 'hello world' working!
   o Do we want to use stdio open() or fopen()? (Do we want to do our own buffering?)
   o Need stdin/stdout/stderr pointers.
 o  Namespace merging.
-o  'virtual' arguments. (Or 'dispatched')
+o  'virtual' arguments for multi-methods. (Or 'dispatched')
   o  implicit convert (silent)
   o  explicit convert
   o  dynamic convert
@@ -192,28 +188,6 @@ cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llv
 cmake -G "Visual Studio 10 2010" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
 
 cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
-
-// ------------------------------------------------------------------------
-Templates:
-
-Variadic templates:
-
-  class Foo:[%T, %Args...]
-
-  def func:[%T, %Args...](t:T, args:Args...) {
-    out << t;
-    func(args);
-  }
-
-  def func[%T, %Args...](t:T, args:Args...) {
-    out << t;
-    func(args...);
-  }
-
-  def func[%T, %Args...](t:T, args:Args...) {
-    out << t;
-    func(args...);
-  }
 
 // ------------------------------------------------------------------------
 
@@ -396,52 +370,3 @@ ad-hoc polymorphism. (Protocols?)
 Idea #1: Make a bare template parameter really mean [T <: __Any].
 
   -- Redo templates so that template parameters really are opaque.
-
-class TypeList {
-}
-
-class AttributeList {
-}
-
-// ------------------------------------------------------------------------
-
-class BoundMethod[%ReturnType, %ParamTypes...] : Function[ReturnType, *ParamTypes] {
-  private var obj:Object;
-  private var method:static fn(obj:Object, :ParamTypes) -> ReturnType;
-
-  def (params:ParamTypes) -> ReturnType {
-    return func(obj, params);
-  }
-}
-
-Closure TypeInfoBlock:
-
-   TIB {
-     ...
-     itables [
-       Function [ closure.call ]
-       SomeOtherInterface [ closure.call ]
-     ]
-     methods [
-       toString
-     ]
-   }
-   
-   // Direct reference to the compiled closure code.
-   closure.call(self, params) -> ReturnType
-
-BoundMethod TypeInfoBlock:
-
-   TIB {
-     ...
-     itables [
-       Function [ bm.call ]
-     ]
-     methods [
-       toString
-     ]
-   }
-
-   // Adapter function that calls the method.   
-   bm.call(self, params) -> ReturnType
-  

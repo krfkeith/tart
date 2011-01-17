@@ -428,6 +428,15 @@ class ThreadLocalApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// TraceMethod.apply intrinsic
+class TraceMethodApplyIntrinsic : public Intrinsic {
+  static TraceMethodApplyIntrinsic instance;
+  TraceMethodApplyIntrinsic() : Intrinsic("tart.gc.TraceMethod.apply") {}
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
 // Proxy.create intrinsic
 class ProxyCreateIntrinsic : public Intrinsic {
   static ProxyCreateIntrinsic instance;
