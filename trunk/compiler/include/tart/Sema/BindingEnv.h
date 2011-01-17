@@ -231,6 +231,11 @@ private:
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
 
+  /** Given two types, return the one that is more general, the higher of the two. Returns NULL
+      if neither type is a specialization of the other. */
+  const Type * selectLessSpecificType(SourceContext * source, const Type * type1,
+      const Type * type2);
+
   bool hasVar(const TypeVariable * var) const;
 };
 

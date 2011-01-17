@@ -65,6 +65,9 @@ bool TypeBinding::isSingular() const {
 }
 
 bool TypeBinding::isEqual(const Type * other) const {
+  if (this == other) {
+    return true;
+  }
   if (Type * val = value()) {
     return val->isEqual(other);
   }
@@ -569,9 +572,16 @@ bool BindingEnv::unifyPattern(
       if (unify(source, s->right(), value, Invariant)) {
         return true;
       }
+
+      // Hack: For now, don't even try to unify a constraint with another constraint.
+      // TODO: Figure out how this really ought to work, but in the mean time
+      // this makes the unit tests compile and run.
+      if (isa<TypeConstraint>(s->right()) && isa<TypeConstraint>(value)) {
+        return true;
+      }
     }
 
-    const Type * commonType = Type::selectLessSpecificType(source, s->right(), value);
+    const Type * commonType = selectLessSpecificType(source, s->right(), value);
     /*if (variance == Invariant) {
       diag.info() << "Invariant " << pattern;
       diag.info() << "Pattern = " << pattern;
@@ -587,7 +597,7 @@ bool BindingEnv::unifyPattern(
         return unify(source, s->right(), value, variance);
 
       case Covariant:
-        //newValue = Type::selectLessSpecificType(s->right(), value);
+        //newValue = Type::selectLesSpecificType(s->right(), value);
         break;
 
       case Contravariant:
@@ -710,6 +720,66 @@ const Type * BindingEnv::subst(const Type * in) const {
   }
 
   return SubstitutionTransform(*this).transform(in);
+}
+
+
+const Type * BindingEnv::selectLessSpecificType(SourceContext * source, const Type * type1,
+    const Type * type2) {
+  if (type2->includes(type1)) {
+    return type2;
+  } else if (type1->includes(type2)) {
+    return type1;
+  } else {
+    const Type * t1 = PrimitiveType::derefEnumType(type1);
+    const Type * t2 = PrimitiveType::derefEnumType(type2);
+    if (t1->typeClass() == Type::Primitive && t2->typeClass() == Type::Primitive) {
+      const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
+      const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
+
+      if (isIntegerTypeId(p1->typeId()) && isIntegerTypeId(p2->typeId())) {
+        bool isSignedResult = isSignedIntegerTypeId(p1->typeId())
+            || isSignedIntegerTypeId(p2->typeId());
+        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p1->typeId()) ? 1 : 0);
+        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p2->typeId()) ? 1 : 0);
+        int resultBits = std::max(type1Bits, type2Bits);
+
+        if (isSignedResult) {
+          if (resultBits <= 8) {
+            return &Int8Type::instance;
+          } else if (resultBits <= 16) {
+            return &Int16Type::instance;
+          } else if (resultBits <= 32) {
+            return &Int32Type::instance;
+          } else if (resultBits <= 64) {
+            return &Int64Type::instance;
+          }
+
+          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
+          diag.info() << "p1 = " << p1;
+          diag.info() << "p2 = " << p2;
+          //DFAIL("Integer value too large to be represented as native type.");
+        } else {
+          if (resultBits <= 8) {
+            return &UInt8Type::instance;
+          } else if (resultBits <= 16) {
+            return &UInt16Type::instance;
+          } else if (resultBits <= 32) {
+            return &UInt32Type::instance;
+          } else if (resultBits <= 64) {
+            return &UInt64Type::instance;
+          }
+
+          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
+          diag.info() << "p1 = " << p1;
+          diag.info() << "p2 = " << p2;
+          //DFAIL("Integer value too large to be represented as native type.");
+        }
+      }
+    }
+
+    diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
+    return NULL;
+  }
 }
 
 void BindingEnv::trace() const {
