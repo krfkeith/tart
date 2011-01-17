@@ -195,10 +195,6 @@ public:
 
   // Static utility functions
 
-  /** Given two types, return the one that is more general, the higher of the two. Returns NULL
-      if neither type is a specialization of the other. */
-  static Type * selectLessSpecificType(Type * type1, Type * type2);
-
   /** Return true if type1 and type2 are type expressions that, when finalized, will
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */

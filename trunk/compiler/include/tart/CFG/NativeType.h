@@ -42,6 +42,7 @@ public:
   bool isEqual(const Type * other) const;
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
+  bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   Expr * nullInitValue() const;
   unsigned getHashValue() const;
