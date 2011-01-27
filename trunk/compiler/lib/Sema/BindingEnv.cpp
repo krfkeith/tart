@@ -118,9 +118,8 @@ void TypeBinding::trace() const {
 }
 
 void TypeBinding::format(FormatStream & out) const {
-  out << "%";
   var_->format(out);
-  out << "-" << env_->index_;
+  out << "." << env_->index_;
   if (Type * val = value()) {
     out << "=" << val;
   }
@@ -280,6 +279,10 @@ bool BindingEnv::unifyAddressType(
 
     return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
   } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
+    if (const TypeBinding * elemVar = dyn_cast<TypeBinding>(pat->typeParam(0))) {
+      return unify(source, elemVar, new SingleTypeParamOfConstraint(tc, Type::NAddress), Invariant);
+    }
+
     return tc->unifyWithPattern(*this, pat);
   } else {
     return false;
@@ -569,7 +572,7 @@ bool BindingEnv::unifyPattern(
     }
 
     if (!s->right()->includes(value) && !value->includes(s->right())) {
-      if (unify(source, s->right(), value, Invariant)) {
+      if (unifyWithBoundValue(source, s->right(), value, Invariant)) {
         return true;
       }
 
@@ -650,6 +653,24 @@ bool BindingEnv::unifyPattern(
     return true;
   } else {
     return false;
+  }
+}
+
+bool BindingEnv::unifyWithBoundValue(
+    SourceContext * source, const Type * prevValue, const Type * newValue, Variance variance) {
+  if (unifyVerbose) {
+    diag.debug() << "Attempting to reconcile existing substitution: ";
+    diag.debug() << "   " << prevValue;
+    diag.debug() << "with new value: ";
+    diag.debug() << "   " << newValue;
+  }
+
+  if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(prevValue)) {
+    // For now, unification of a previous constraint with a new value always succeeds.
+    // This will get further constrained later when we rank conversions.
+    return true;
+  } else {
+    return unify(source, prevValue, newValue, variance);
   }
 }
 

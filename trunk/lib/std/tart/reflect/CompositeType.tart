@@ -2,7 +2,9 @@ import tart.annex.Intrinsic;
 import tart.collections.List;
 import tart.collections.ArrayList;
 import tart.collections.ImmutableList;
+import tart.core.Memory.Allocator;
 import tart.core.Memory.Address;
+import tart.core.Memory.DefaultAllocator;
 import tart.core.Memory.reinterpretPtr;
 import tart.core.Memory.bitCast;
 import tart.core.Memory.addressOf;
@@ -27,10 +29,17 @@ public class CompositeType : Type {
     var _constructors:optional List[Method];
     var _methods:optional List[Method];
     var _memberTypes:List[Type];
-    var _alloc:static fn -> Object;
     var _noArgCtor:static fn :Object -> Object;
     var _methodBaseIndex:int;
     // Need type adapter functions for structs.
+
+		/** Object header structure - used to fill in the TIB field when creating a new
+		    object instance. */
+    struct ObjectHeader {
+		  var tib:Address[TypeInfoBlock];
+    }
+
+    typealias ObjectHeaderPtr:Address[ObjectHeader];
   }
 
   def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
@@ -88,8 +97,8 @@ public class CompositeType : Type {
   /** Array of types defined within this type. */
   final def memberTypes:List[Type] { get { return self._memberTypes; } }
 
-  /** Return true if this type has a custom allocator. */
-  final def hasCustomAlloc:bool { get { return self._alloc is null; } }
+  // /** Return true if this type has a custom allocator. */
+  //final def hasCustomAlloc:bool { get { return self._alloc is null; } }
 
   /** Return true if this type has a no-arg constructor. */
   final def hasNoArgConstructor:bool { get { return self._noArgCtor is not null; } }
@@ -121,15 +130,48 @@ public class CompositeType : Type {
         return m;
       }
     }
-
     return null;
   }
 
-  /** Allocate and initialize a new object of this type, using the specified constructor. */
+  /** Allocate and initialize a new object of this type, using the specified constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
   final def create(ctor:Method, args:Object[]) -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE, ctor, args);
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create(ctor:Method, args:Object...) -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE, ctor, args);
+  }
+
+  /** Allocate and initialize a new object of this type, using a default constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create() -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE);
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor and
+  	  memory allocator.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+   */
+  final def create(allocator:Allocator, ctor:Method, args:Object[]) -> Object {
     switch (typeKind) {
       case CLASS {
-        let instance = _alloc();
+        let instance:Object = Memory.bitCast(allocator.alloc(_size));
+        let header:ObjectHeaderPtr = Memory.bitCast(instance);
+        Memory.deref(header).tib = _typeInfo;
         ctor.call(instance, args);
         return instance;
       }
@@ -144,22 +186,24 @@ public class CompositeType : Type {
     }
   }
 
-  /** Allocate and initialize a new object of this type, using the specified constructor. */
-  final def create(ctor:Method, args:Object...) -> Object {
-    return create(ctor, args);
-  }
-
-  /** Allocate and initialize a new object of this type, using a default constructor. */
-  final def create() -> Object {
+  /** Allocate and initialize a new object of this type, using the default constructor and
+      the specified memory allocator.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create(allocator:Allocator) -> Object {
     switch (typeKind) {
       case CLASS {
-	      if _noArgCtor is not null {
-	        let instance = self._alloc();
-	        _noArgCtor(instance);
-	        return instance;
+	      if _noArgCtor is null {
+	        throw InvocationError(
+	        		"Class '{0}' does not have a no-arg constructor".format(qualifiedName));
 	      }
-
-        throw InvocationError("Class '{0}' does not have a no-arg constructor".format(qualifiedName));
+        let instance:Object = Memory.bitCast(allocator.alloc(_size));
+        let header:ObjectHeaderPtr = Memory.bitCast(instance);
+        Memory.deref(header).tib = _typeInfo;
+        _noArgCtor(instance);
+        return instance;
       }
 
       case STRUCT {

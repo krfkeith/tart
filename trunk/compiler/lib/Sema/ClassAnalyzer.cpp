@@ -1196,6 +1196,10 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
           }
         }
 
+        if (newMethod->isIntrinsic()) {
+          diag.error(newMethod) << "Intrinsic methods cannot override base class methods.";
+        }
+
         newMethod->overriddenMethods().insert(m);
       } else if (isClassTable) {
         diag.recovered();

@@ -12,43 +12,43 @@ namespace Hashing {
       return value.computeHash();
     }
   }
-  
+
   /*struct HashFn[int32] {
     def hash(value:int32) {
       return Hashing.hash(value);
     }
   }*/
-  
+
   /** Hash a single 32-bit integer. */
   def hash(value:uint32) -> uint32 {
     return murmurHash(value);
   }
-  
+
   /** Hash a single 64-bit integer. */
   def hash(value:uint64) -> uint64 {
     return murmurHash(value);
   }
-  
+
   /** Hash a pointer. */
   def hash[%T](value:Address[T]) -> uint64 {
     return murmurHash(reinterpretPtr[T, void](value));
   }
-  
+
   /** Hash a buffer of bytes. */
   def hash(buffer:Memory.Buffer[ubyte]) -> uint64 {
     return murmurHash(buffer);
   }
-  
+
   let M32:uint32 = 0x5bd1e995;
   let M64:uint64 = 0xc6a4a7935bd1e995;
-  
+
   /** Hash a single 32-bit integer. */
   def murmurHash(key:uint32, seed:uint32 = 0) -> uint32 {
     var h:uint32 = seed ^ 1;
-    key *= M32; 
-    key ^= key >> 24; 
-    key *= M32; 
-    
+    key *= M32;
+    key ^= key >> 24;
+    key *= M32;
+
     h *= M32;
     h ^= key;
 
@@ -64,12 +64,12 @@ namespace Hashing {
     let R:uint64 = 47;
 
     var h:uint64 = seed ^ M64;
-    key *= M64; 
-    key ^= key >> R; 
-    key *= M64; 
-    
+    key *= M64;
+    key ^= key >> R;
+    key *= M64;
+
     h ^= key;
-    h *= M64; 
+    h *= M64;
 
     h ^= h >> R;
     h *= M64;
@@ -96,7 +96,7 @@ namespace Hashing {
       var h:uint64 = seed ^ (uint64(len) * M64);
       var data:Address[uint64] = reinterpretPtr(first);
       var end:Address[uint64] = addressOf(data[len / 8]);
-      
+
       while data is not end {
         var k:uint64 = Memory.deref(data);
         data += 1;
@@ -104,7 +104,7 @@ namespace Hashing {
 		    k *= M64;
 		    k ^= k >> R;
 		    k *= M64;
-		
+
 		    h ^= k;
 		    h *= M64;
       }
@@ -116,13 +116,13 @@ namespace Hashing {
 	        data2 += 4;
 	        h ^= uint64(Memory.deref(d)) << 32;
 	      }
-	      
+
 	      if (len & 2) != 0 {
 	        let d:Address[uint16] = reinterpretPtr(data2);
 	        data2 += 2;
 	        h ^= uint64(Memory.deref(d)) << 16;
 	      }
-	      
+
 	      if (len & 1) != 0 {
 	        let d:Address[uint8] = reinterpretPtr(data2);
 	        data2 += 1;
@@ -135,10 +135,10 @@ namespace Hashing {
 		  h ^= h >> R;
 		  h *= M64;
 		  h ^= h >> R;
-		
+
 		  return h;
     }
-    
+
     return 0;
   }
 

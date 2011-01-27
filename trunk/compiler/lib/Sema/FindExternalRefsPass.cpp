@@ -16,6 +16,7 @@
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/Intrinsics.h"
 
 namespace tart {
 
@@ -27,6 +28,12 @@ Defn * FindExternalRefsPass::run(Module * m, Defn * in) {
   return instance.runImpl(in);
 }
 
+void FindExternalRefsPass::visit(FunctionDefn * in) {
+  function_ = in;
+  CFGPass::visit(in);
+  function_ = NULL;
+}
+
 Defn * FindExternalRefsPass::runImpl(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
@@ -35,16 +42,16 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
       }
 
       if (tdef->isSynthetic()) {
-        ctype->addClassExportsToModule(module);
+        ctype->addClassExportsToModule(module_);
       }
 
       for (Defn * de = ctype->firstMember(); de != NULL; de = de->nextInScope()) {
         if (de->isSingular() && de->storageClass() == Storage_Static) {
           // Add static members
-          module->addSymbol(de);
+          module_->addSymbol(de);
         } else if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
           // Add inner types
-          module->addSymbol(de);
+          module_->addSymbol(de);
         }
       }
 
@@ -82,13 +89,13 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
 }
 
 void FindExternalRefsPass::addSymbol(Defn * de) {
-  module->addModuleDependency(de);
+  module_->addModuleDependency(de);
 
   if (FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
     addFunction(fn);
   } else if (de->storageClass() == Storage_Static || de->storageClass() == Storage_Global) {
     if (de->isSynthetic()) {
-      module->addSymbol(de);
+      module_->addSymbol(de);
     }
   } else if (de->storageClass() == Storage_Local) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
@@ -101,7 +108,7 @@ void FindExternalRefsPass::addSymbol(Defn * de) {
 
 bool FindExternalRefsPass::addTypeRef(const Type * type) {
   if (type->typeDefn() != NULL) {
-    return module->addSymbol(type->typeDefn());
+    return module_->addSymbol(type->typeDefn());
   } else if (const FunctionType * fnType = dyn_cast<FunctionType>(type)) {
     for (ParameterList::const_iterator it = fnType->params().begin(); it != fnType->params().end();
         ++it) {
@@ -115,11 +122,11 @@ bool FindExternalRefsPass::addTypeRef(const Type * type) {
 bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
   if (!fn->isIntrinsic() && !fn->isExtern()) {
     AnalyzerBase::analyzeType(fn->type(), Task_PrepTypeGeneration);
-    if (fn->module() != module && fn->module() != NULL) {
-      module->addModuleDependency(fn->module());
+    if (fn->module() != module_ && fn->module() != NULL) {
+      module_->addModuleDependency(fn->module());
     }
 
-    return module->addSymbol(fn);
+    return module_->addSymbol(fn);
   }
 
   return false;
@@ -138,6 +145,15 @@ Expr * FindExternalRefsPass::visitBoundMethod(BoundMethodExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
+  // If this is a memory allocation intrinsic, make sure alloc state is available.
+  Intrinsic * intrinsic = in->function()->intrinsic();
+  if (intrinsic != NULL) {
+    if (intrinsic == &DefaultAllocIntrinsic::instance ||
+        intrinsic == &FlexAllocIntrinsic::instance) {
+      function_->setFlag(FunctionDefn::MakesAllocs, true);
+    }
+  }
+
   if (addFunction(in->function())) {
     CFGPass::visitFnCall(in);
   } else {
@@ -152,19 +168,22 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
+  if (function_ != NULL) {
+    function_->setFlag(FunctionDefn::MakesAllocs, true);
+  }
   addTypeRef(in->type());
   return in;
 }
 
 Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
   const CompositeType * ctype = cast<CompositeType>(in->type());
-  module->addSymbol(ctype->typeDefn());
+  module_->addSymbol(ctype->typeDefn());
   return CFGPass::visitConstantObjectRef(in);
 }
 
 Expr * FindExternalRefsPass::visitCast(CastExpr * in) {
   if (in->type()->typeDefn() != NULL) {
-    module->addSymbol(in->type()->typeDefn());
+    module_->addSymbol(in->type()->typeDefn());
   }
 
   return CFGPass::visitCast(in);
@@ -182,13 +201,13 @@ Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
 
 Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
   if (in->value()->typeDefn() != NULL) {
-    module->addSymbol(in->value()->typeDefn());
+    module_->addSymbol(in->value()->typeDefn());
   }
 
   if (!isa<CompositeType>(in->value())) {
-    module->reflect(in->value()->typeDefn());
+    module_->reflect(in->value()->typeDefn());
     if (isa<PrimitiveType>(in->value())) {
-      module->addSymbol(Builtins::typePrimitiveType.typeDefn());
+      module_->addSymbol(Builtins::typePrimitiveType.typeDefn());
     }
   }
 
@@ -201,6 +220,13 @@ Expr * FindExternalRefsPass::visitInstanceOf(InstanceOfExpr * in) {
   }
 
   return CFGPass::visitInstanceOf(in);
+}
+
+Expr * FindExternalRefsPass::visitClosureScope(ClosureEnvExpr * in) {
+  if (function_ != NULL) {
+    function_->setFlag(FunctionDefn::MakesAllocs, true);
+  }
+  return CFGPass::visitClosureScope(in);
 }
 
 } // namespace tart

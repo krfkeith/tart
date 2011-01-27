@@ -33,6 +33,8 @@
 namespace tart {
 
 extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
+extern SystemNamespaceMember<FunctionDefn> gc_allocContext;
+extern SystemNamespaceMember<FunctionDefn> gc_alloc;
 
 // -------------------------------------------------------------------
 // DefnAnalyzer
@@ -79,6 +81,8 @@ bool DefnAnalyzer::analyzeModule() {
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+  analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
+  analyzeFunction(gc_alloc, Task_PrepCodeGeneration);
   analyzeDefn(functionType_CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
@@ -453,6 +457,11 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       case Type::Class:
       case Type::Interface: {
         CompositeType * ctype = static_cast<CompositeType *>(tdef->typeValue());
+        if (ctype->isAttribute() && !ctype->attributeInfo().isRetained() &&
+            ctype != Builtins::typeAttribute) {
+          isExport = false;
+        }
+
         if (isExport && module_->reflect(tdef)) {
           reflectTypeMembers(ctype);
         }

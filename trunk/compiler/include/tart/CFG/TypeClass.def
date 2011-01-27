@@ -25,3 +25,4 @@ TYPE_CLASS(Binding)       // The value of a type variable within an environment.
 TYPE_CLASS(ResultOf)      // Type constraint - result of function
 TYPE_CLASS(ParameterOf)   // Type constraint - param of function
 TYPE_CLASS(TupleOf)       // Type constraint - tuple of constraints
+TYPE_CLASS(SingleTypeParamOf) // Type constraint - type parameter of another constraint

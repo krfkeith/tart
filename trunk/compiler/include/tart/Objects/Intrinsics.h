@@ -125,25 +125,23 @@ class PackageOfIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
-// Object.__valloc intrinsic
-class VAllocIntrinsic : public Intrinsic {
-  static VAllocIntrinsic instance;
-  VAllocIntrinsic() : Intrinsic("tart.core.Object.__valloc") {}
-  llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
-};
+// Object.__alloc intrinsic
+class DefaultAllocIntrinsic : public Intrinsic {
+public:
+  static DefaultAllocIntrinsic instance;
 
-// -------------------------------------------------------------------
-// Object.__pvalloc intrinsic
-class PVAllocIntrinsic : public Intrinsic {
-  static PVAllocIntrinsic instance;
-  PVAllocIntrinsic() : Intrinsic("tart.core.Object.__pvalloc") {}
+private:
+  DefaultAllocIntrinsic() : Intrinsic("tart.core.Memory.DefaultAllocator.__alloc") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
 
 // -------------------------------------------------------------------
 // Object.__flexAlloc intrinsic
 class FlexAllocIntrinsic : public Intrinsic {
+public:
   static FlexAllocIntrinsic instance;
+
+private:
   FlexAllocIntrinsic() : Intrinsic("tart.core.Object.__flexAlloc") {}
   llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 };
@@ -432,6 +430,15 @@ class ThreadLocalApplyIntrinsic : public Intrinsic {
 class TraceMethodApplyIntrinsic : public Intrinsic {
   static TraceMethodApplyIntrinsic instance;
   TraceMethodApplyIntrinsic() : Intrinsic("tart.gc.TraceMethod.apply") {}
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
+// NoInline.apply intrinsic
+class NoInlineApplyIntrinsic : public Intrinsic {
+  static NoInlineApplyIntrinsic instance;
+  NoInlineApplyIntrinsic() : Intrinsic("tart.core.NoInline.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
 };

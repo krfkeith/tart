@@ -37,6 +37,6 @@ class GCTraceTest : Test {
     var a = RefContainer();
     var b = "S3b";
     var c = b;
-    GC.collect();
+    //GC.collect();
   }
 }

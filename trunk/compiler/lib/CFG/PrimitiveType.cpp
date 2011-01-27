@@ -360,7 +360,7 @@ ConversionRank PrimitiveType::fromUnsizedIntToInt(const ConstantInteger * cint, 
         //rank = ConstSignChange;
       }
     } else {
-      rank = ExactConversion;
+      rank = IdenticalTypes;
     }
   }
 

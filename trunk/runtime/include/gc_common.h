@@ -10,16 +10,13 @@
 #include <stdlib.h>
 #endif
 
-#if HAVE_STDIO_H
-#include <stdio.h>
-#endif
-
 #if HAVE_STDINT_H
 #include <stdint.h>
 #endif
 
 struct tart_object;
 
+#if 0
 enum GCInfoBits {
   GCInfo_Relocated = (1<<0),     // Object has moved to a new location
   GCInfo_Marked = (1<<1),        // Object is live
@@ -38,6 +35,7 @@ struct AddressRange {
 
   size_t size() const { return last - first; }
 };
+#endif
 
 struct TraceDescriptor {
   uint16_t last;
@@ -49,11 +47,20 @@ struct TraceDescriptor {
   };
 };
 
-struct SafePointEntry {
-  void * safePoint;
+struct StackFrameDescMapEntry {
+  // The address of the instruction
+  void * instructionAddr;
+
+  // The trace table corresponding to the instruction address.
   TraceDescriptor * traceTable;
 };
 
+struct CallFrame {
+  CallFrame * prevFrame;
+  void * returnAddr;
+};
+
+#if 0
 struct Segment {
   Segment * next;
   AddressRange range;
@@ -70,11 +77,7 @@ struct SurvivorSpace {
   char * pos;
 };
 
-struct CallFrame {
-  CallFrame * prevFrame;
-  void * returnAddr;
-};
-
 static const size_t MEM_ALIGN_SIZE = (16 * sizeof(void *));
 static const size_t MAX_EDEN_SIZE = 4096;
 static const size_t MAX_LAS_SIZE = 0x8000;
+#endif

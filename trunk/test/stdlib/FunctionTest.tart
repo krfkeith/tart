@@ -59,6 +59,7 @@ class FunctionTest : Test {
 	    return a++;
 	  };
 
+	  assertEq(0, a);
 	  assertEq(0, f());
 	  assertEq(1, f());
 	  assertEq(2, f());

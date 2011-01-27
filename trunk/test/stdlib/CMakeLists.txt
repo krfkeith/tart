@@ -29,7 +29,7 @@ endif (LIB_DL)
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
-set(USE_LLVM_BINARIES 0)
+set(USE_LLVM_BINARIES 1)
 set(GENERATE_DEBUG_INFO 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
@@ -97,17 +97,15 @@ foreach(SRC_FILE ${TART_SRC})
   # Link with libstd
   if (GENERATE_ASM)
     add_custom_command(OUTPUT ${ASM_FILE}
-#    add_custom_command(OUTPUT ${OUT_BC_FILE}
-#        COMMAND tartln -disable-fp-elim -filetype=bc -o ${OUT_BC_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
-#            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-#            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
         COMMAND tartln -disable-fp-elim -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
       
     # Convert to assembly
@@ -133,10 +131,12 @@ foreach(SRC_FILE ${TART_SRC})
             -o ${OUT_BC_FILE} ${BC_FILE}
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Link object files
@@ -163,7 +163,7 @@ foreach(SRC_FILE ${TART_SRC})
     # Link executable
     add_executable(${EXE_FILE} ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
-    add_dependencies(${EXE_FILE} libstd libtesting)
+    add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   else (GENERATE_ASM)
     # Use tartln and don't generate assembly.
@@ -171,17 +171,19 @@ foreach(SRC_FILE ${TART_SRC})
         COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
-#            libstd libtesting
+#            libstd libtesting libgc1
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Link executable
     add_executable(${EXE_FILE} ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
-    add_dependencies(${EXE_FILE} libstd libtesting)
+    add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   endif (GENERATE_ASM)
 
@@ -195,7 +197,7 @@ foreach(SRC_FILE ${TART_SRC})
   #endif ($DSYMUTIL)
 
   add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
-  add_dependencies("${EXE_FILE}.run" libstd libtesting)
+  add_dependencies("${EXE_FILE}.run" libstd libtesting libgc1)
   add_dependencies(check "${EXE_FILE}.run")
 endforeach(SRC_FILE)
 

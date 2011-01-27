@@ -78,9 +78,9 @@ const llvm::Type * AddressType::createIRType() const {
 }
 
 ConversionRank AddressType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = dealias(cn.getFromType());
+  const Type * fromType = cn.getFromType();
   if (isa<AddressType>(fromType)) {
-    const Type * fromElementType = fromType->typeParam(0);
+    const Type * fromElementType = dealias(fromType->typeParam(0));
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -224,9 +224,8 @@ const llvm::Type * NativeArrayType::createIRType() const {
 
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
-  if (const NativeArrayType * naFrom =
-      dyn_cast<NativeArrayType>(fromType)) {
-    const Type * fromElementType = naFrom->elementType();
+  if (const NativeArrayType * naFrom = dyn_cast<NativeArrayType>(fromType)) {
+    const Type * fromElementType = dealias(naFrom->elementType());
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
@@ -236,7 +235,7 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
     }
 
     // Check conversion on element types
-    Conversion elementConversion(dealias(fromElementType));
+    Conversion elementConversion(fromElementType);
     if (elementType()->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;
@@ -340,13 +339,13 @@ ConversionRank FlexibleArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const FlexibleArrayType * naFrom =
       dyn_cast<FlexibleArrayType>(fromType)) {
-    const Type * fromElementType = naFrom->elementType();
+    const Type * fromElementType = dealias(naFrom->elementType());
     if (fromElementType == NULL) {
       DFAIL("No element type");
     }
 
     // Check conversion on element types
-    Conversion elementConversion(dealias(fromElementType));
+    Conversion elementConversion(fromElementType);
     if (elementType()->convert(elementConversion) == IdenticalTypes) {
       if (cn.resultValue) {
         *cn.resultValue = cn.fromValue;

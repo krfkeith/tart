@@ -4,7 +4,7 @@ import Memory.reinterpretPtr;
 import Memory.objectReference;
 import tart.testing.Test;
 import tart.gc.TraceAction;
-import tart.gc.GC;
+import tart.gc.GCRuntimeSupport;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
@@ -14,9 +14,8 @@ def main(args:String[]) -> int32 {
 /** TraceAction that counts the number of non-null pointers. */
 class TraceCounter : TraceAction {
   private var _count:int = 0;
-  def tracePointer(ptrAddr:Address[Address[Object]]) {
-    var ptr:Address[Object] = deref(ptrAddr);
-    var obj:Object = objectReference(ptr);
+  def tracePointer(ptrAddr:Address[Object]) {
+    var obj:Object = ptrAddr[0];
     if obj is not null {
       ++_count;
 	    if obj.type is not null {
@@ -41,7 +40,7 @@ class ClassWithPointers {
 
 class ClassWithUnion {
   var u:String or int8;
-  
+
   def construct {
     u = 0;
   }
@@ -53,7 +52,7 @@ class ClassWithTuple {
 
 class StructWithPointer {
   var a:String;
-  
+
   def construct(a:String) {
     self.a = a;
   }
@@ -71,7 +70,7 @@ class TraceTest : Test {
     var obj = ClassWithPointers();
     counter.traceObject(obj);
     assertEq(0, counter.count);
-    
+
     obj.a = "Hello";
     counter.reset();
     counter.traceObject(obj);
@@ -119,32 +118,32 @@ class TraceTest : Test {
 
   def testTraceStack {
     var counter = TraceCounter();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     assertTrue(counter.count > 0);
   }
 
   def testTraceStackNullPtr {
     var counter = TraceCounter();
     var s:String = Memory.nullObject();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     var baseCount = counter.count;
     s = "Hello";
     counter.reset();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     assertEq(baseCount + 1, counter.count);
   }
 
   def testTraceStackUnion {
     var counter = TraceCounter();
     var value:String or void;
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     var baseCount = counter.count;
     value = "Hello";
     counter.reset();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     assertEq(baseCount + 1, counter.count);
   }
-  
+
   def testTraceIntermediateValue {
     // Insure that intermediate values to a function are marked as roots.
     var c1 = getCountForNoValues();
@@ -156,33 +155,33 @@ class TraceTest : Test {
 
   def getCountForNoValues() -> int {
     var counter = TraceCounter();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     return counter.count;
   }
-  
+
   def getCountForIntermediateValues(s0:String, s1:String) -> int {
     var counter = TraceCounter();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     return counter.count;
   }
-  
+
   def testTraceLocalScopeVar {
     // Make sure that a variable is not a root when out of scope.
     var counter = TraceCounter();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     var c1 = counter.count;
     var c2:int;
     var c3:int;
-    
+
     if true {
       var s1 = String("Hello");
       counter.reset();
-	    GC.traceStack(counter);
+	    GCRuntimeSupport.traceStack(counter);
     	c2 = counter.count;
     }
-    
+
     counter.reset();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
   	c3 = counter.count;
 
     assertEq(c1 + 1, c2);
@@ -192,20 +191,20 @@ class TraceTest : Test {
   def testTraceLocalScopeStructVar {
     // Make sure that a variable is not a root when out of scope.
     var counter = TraceCounter();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
     var c1 = counter.count;
     var c2:int;
     var c3:int;
-    
+
     if true {
       var s1 = StructWithPointer("Hello");
       counter.reset();
-	    GC.traceStack(counter);
+	    GCRuntimeSupport.traceStack(counter);
     	c2 = counter.count;
     }
-    
+
     counter.reset();
-    GC.traceStack(counter);
+    GCRuntimeSupport.traceStack(counter);
   	c3 = counter.count;
 
     assertEq(c1 + 1, c2);

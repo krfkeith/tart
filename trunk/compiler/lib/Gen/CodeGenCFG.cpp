@@ -68,9 +68,9 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
     DASSERT_OBJ(cellType != NULL, var);
     const llvm::Type * irType = cellType->irEmbeddedType();
 
-    Value * cellValue = builder_.CreateCall(
-            getGlobalAlloc(),
-            llvm::ConstantExpr::getSizeOf(varType->irType()),
+    Value * cellValue = builder_.CreateCall2(
+            getGcAlloc(), gcAllocContext_,
+            llvm::ConstantExpr::getSizeOf(cellType->irType()),
             var->name() + StringRef(".shared.alloc"));
     cellValue = builder_.CreatePointerCast(
         cellValue, irType, var->name() + StringRef(".shared"));

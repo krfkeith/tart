@@ -4,9 +4,10 @@
 
 /* Tart Garbage collection functions. */
 
-#include "gc.h"
+#include "gc_common.h"
 #include "tart_object.h"
 
+#if 0
 #if HAVE_UNISTD_H
   #include <unistd.h>
 #endif
@@ -411,3 +412,4 @@ void GC_trace(uint8_t * basePtr, TraceDescriptor * traceTable, tart_object * tra
 //  tart::TracerBase * tpBase = static_cast<tart::TracerBase *>(ctx);
 //  tpBase->execute(basePtr, traceTable);
 }
+#endif

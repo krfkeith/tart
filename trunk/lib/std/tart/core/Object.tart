@@ -8,51 +8,19 @@ public class Object : Hashable {
   private var __tib:Address[TypeInfoBlock];
   private var __gcstate:int;
 
-  /** Compiler intrinsic used to create and initialize instances of
-      variable-length types.
-    
-      '__valloc' allocates a block of memory given by 'size', then
-      initializes its vtable pointer to the pointer for 'T'. It returns the
-      memory block, bitcast to type T.
-    
-      The caller is responsible for insuring that 'size' is large enough
-      to hold the resulting type.
-  */
-  @Intrinsic @Unsafe
-  protected static def __valloc[%T](size:int) -> T;
-
-  /** Compiler intrinsic used to create and initialize instances of
-      variable-length object types.
-    
-      '__pvalloc' allocates a block of memory given by 'size', then
-      initializes its vtable pointer to the pointer for 'T'. It then
-      returns the memory block, bitcast to type T.
-    
-      The caller is responsible for insuring that 'size' is large enough
-      to hold the resulting type.
-
-      This version is similar to '__valloc', except that 'size' is a pointer
-      which will be bitcast to int. This is used in conjunction with
-      'nullObject' to calculate the offset of a field within a data structure.
-  */
-  //@Intrinsic @Unsafe
-  //protected static def __pvalloc[%T, %S](size:T) -> S;
-
 	/** Compiler intrinsic used to create and initialize instances of
 	    variable-length object types.
-	    
+
 	    Type 'T' represents a user-defined type whose last data member
 	    is a FlexibleArray. 'count' represents the number of elements
 	    in the FlexibleArray.
 
 	    '__flexAlloc' allocates a block of memory large enough to hold
-	    the object, then initializes its TIB pointer to the TIB for 'T'.
+	    the object, using the default allocator, then initializes its
+	    TIB pointer to the TIB for 'T'.
 	 */
   @Intrinsic @Unsafe
   protected static def __flexAlloc[%T](count:int) -> T;
-
-  /** Return the reflected type of this object. */
-  //def type:tart.reflect.Type { get { return self.__tib.type; } }
 
   /** Default constructor. */
   def construct() {}

@@ -1,0 +1,44 @@
+import Memory.Address;
+import Memory.Allocator;
+import tart.annex.Intrinsic;
+
+/** This namespace defines a collection of functions that are intended to be used
+    by a garbage collector implementation. The services provided are:
+      * reading and writing thread-local data.
+      * tracing the call stack.
+      * low-level aligned memory allocation functions.
+*/
+namespace GCRuntimeSupport {
+
+	/** An allocator which calls 'malloc'. */
+  class MallocAllocator : Allocator {
+    static let INSTANCE = MallocAllocator();
+    @Extern("malloc") def alloc(size:uint) -> Address[ubyte];
+    @Extern("free") def free(ptr:Address[ubyte]);
+  }
+
+	/** Construct a map that associates instruction addresses with stack frame descriptors.
+	    This map is used by traceStack(). */
+  @Extern("GC_initStackFrameDescMap") def initStackFrameDescMap(stackTraceDescMap:Address[uint]);
+
+	/** Trace all of the pointers in the calling stack for this thread, using the specified trace
+	    action. */
+  @Extern("GC_traceStack") def traceStack(action:TraceAction);
+
+	/** Initialize the thread-local data variable. This should be called before accessing
+	    the thread-local data. */
+  @Extern("GC_initThreadLocalData") def initThreadLocalData;
+
+	/** Return a reference to the thread-local data for the current thread. */
+  @Extern("GC_getThreadLocalData") def getThreadLocalData -> Object;
+
+	/** Return a reference to the thread-local data for the current thread. */
+  @Extern("GC_setThreadLocalData") def setThreadLocalData(state:Object);
+
+	/** Return the size of a memory page, for page-aligned memory allocations. */
+  @Extern("GC_getPageSize") def pageSize -> uint;
+
+	/** Allocate memory that is aligned on a page boundary, where the page size is the value
+			returned by 'pageSize'. */
+	@Extern("GC_allocAligned") def allocAligned(size:uint) -> Address[ubyte];
+}

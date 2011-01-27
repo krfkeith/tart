@@ -83,6 +83,7 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::ResultOf:
     case Type::ParameterOf:
     case Type::TupleOf:
+    case Type::SingleTypeParamOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
     default:
@@ -279,6 +280,7 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
     return constraint->singularValue();
   }
 
+  diag.debug() << "Type constraint: " << in;
   DFAIL("Type constraint not handled");
   return in;
 }

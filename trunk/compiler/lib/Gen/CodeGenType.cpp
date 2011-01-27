@@ -107,7 +107,6 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   DASSERT_OBJ(type->irType() != NULL, type);
 
   createTypeInfoBlock(rtype);
-  createTypeAllocator(rtype);
   return type->irType();
 }
 
@@ -125,10 +124,6 @@ Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
   }
 
   return createTypeInfoBlockPtr(getRTTypeInfo(type));
-}
-
-Function * CodeGenerator::getTypeAllocator(const CompositeType * type) {
-  return createTypeAllocator(getRTTypeInfo(type));
 }
 
 Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
@@ -376,49 +371,6 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   }
 
   return idispatch;
-}
-
-Function * CodeGenerator::createTypeAllocator(RuntimeTypeInfo * rtype) {
-  const CompositeType * type = rtype->getType();
-  if (rtype->getTypeAllocator() == NULL && type->typeClass() == Type::Class) {
-
-    // Declare the allocator function
-    llvm::FunctionType * alloctype = llvm::FunctionType::get(
-        type->irType()->getPointerTo(), false);
-    Function * allocFunc = Function::Create(
-        alloctype, rtype->getLinkageType(),
-        type->typeDefn()->linkageName() + ".type.alloc", irModule_);
-
-    if (!rtype->isExternal()) {
-      // Save the builder_ state and set to the new allocator function.
-      DIScope saveContext = dbgContext_;
-      dbgContext_ = DIScope();
-      BasicBlock * savePoint = builder_.GetInsertBlock();
-      builder_.SetInsertPoint(BasicBlock::Create(context_, "alloc_entry", allocFunc));
-
-      // Allocate an instance of the object
-      Value * instance = builder_.CreatePointerCast(
-          builder_.CreateCall(
-              getGlobalAlloc(),
-              llvm::ConstantExpr::getSizeOf(type->irType()),
-              "new"),
-          type->irType()->getPointerTo());
-
-      // Generate code to fill in vtable pointer of new object.
-      genInitObjVTable(type, instance);
-      builder_.CreateRet(instance);
-
-      // Restore the builder_ state.
-      dbgContext_ = saveContext;
-      if (savePoint != NULL) {
-        builder_.SetInsertPoint(savePoint);
-      }
-    }
-
-    rtype->setTypeAllocator(allocFunc);
-  }
-
-  return rtype->getTypeAllocator();
 }
 
 void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instance) {
@@ -710,7 +662,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
         ValueList args;
         args.push_back(actionPtr);
         args.push_back(builder_.CreatePointerCast(unionValuePtr,
-            Builtins::typeObject->irEmbeddedType()->getPointerTo()->getPointerTo()));
+            Builtins::typeObject->irEmbeddedType()->getPointerTo()));
         genCallInstr(fnValue, args.begin(), args.end(), "trace");
         builder_.CreateBr(blkExit);
       } else {

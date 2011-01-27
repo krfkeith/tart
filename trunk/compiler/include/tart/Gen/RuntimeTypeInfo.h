@@ -69,11 +69,6 @@ public:
     typeInfoPtr = value;
   }
 
-  /** The allocator function for this type. */
-  llvm::Function * getTypeAllocator() const {
-    return typeAllocator;
-  }
-
   void setTypeAllocator(llvm::Function * value) {
     typeAllocator = value;
   }

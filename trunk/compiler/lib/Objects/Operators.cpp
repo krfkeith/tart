@@ -530,30 +530,33 @@ public:
 template<int typ>
 PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
-static SourceString infixEqSrc(
-    " @tart.annex.Intrinsic"
-    " def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
-    " @tart.annex.Intrinsic"
-    " def infixNE[%T](:__Address[T], :__Address[T]) -> bool;"
+static SourceString infixAddrCmpSrc(
+    " @tart.annex.Intrinsic def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixNE[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixLT[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixLE[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixGT[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixGE[%T](:__Address[T], :__Address[T]) -> bool;"
+    );
+
 // TODO: Implement this
 //    " @tart.annex.Intrinsic"
 //    " def infixEQ[%T](:T, :T) -> bool;"
-    );
 
 static SourceString infixNeSrc(
     " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");
 
 static SourceString infixLogicalSrc(
-    " @tart.annex.Intrinsic"
-    " def infixLogicalAnd(:bool, :bool) -> bool;"
-    " @tart.annex.Intrinsic"
-    " def infixLogicalOr(:bool, :bool) -> bool;");
+    " @tart.annex.Intrinsic def infixLogicalAnd(:bool, :bool) -> bool;"
+    " @tart.annex.Intrinsic def infixLogicalOr(:bool, :bool) -> bool;"
+    );
 
 static SourceString infixAddSrc(
-    " @tart.annex.Intrinsic"
-    " def infixAdd[%T](:__Address[T], :int32) -> __Address[T];"
-    " @tart.annex.Intrinsic"
-    " def infixAdd[%T](:__Address[T], :int64) -> __Address[T];");
+    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T],  :int32) -> __Address[T];"
+    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T],  :int64) -> __Address[T];"
+    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T], :uint32) -> __Address[T];"
+    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T], :uint64) -> __Address[T];"
+    );
 
 } // namespace
 
@@ -790,7 +793,7 @@ void Builtins::initOperators() {
   module.addMember(&OperatorRShiftDecl<TypeId_UInt64>::value);
   module.addMember(&OperatorARShiftDecl<TypeId_UnsizedInt>::value);
 
-  compileBuiltins(infixEqSrc);
+  compileBuiltins(infixAddrCmpSrc);
   compileBuiltins(infixNeSrc);
   compileBuiltins(infixLogicalSrc);
   compileBuiltins(infixAddSrc);

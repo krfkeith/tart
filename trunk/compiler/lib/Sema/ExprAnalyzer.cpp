@@ -888,6 +888,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
     } else if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(value)) {
       return scopeName;
     } else {
+      diag.error(ast) << "Not an l-value " << ast;
       DFAIL("Not an LValue");
     }
   }

@@ -25,6 +25,8 @@
 
 namespace tart {
 
+extern SystemNamespaceMember<FunctionDefn> gc_allocContext;
+
 using namespace llvm;
 
 bool CodeGenerator::genXDef(Defn * de) {
@@ -89,6 +91,10 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   fn = Function::Create(
       cast<llvm::FunctionType>(funcType->irType()),
       Function::ExternalLinkage, fdef->linkageName(), fdef->module()->irModule());
+
+  if (fdef->flags() & FunctionDefn::NoInline) {
+    fn->addFnAttr(llvm::Attribute::NoInline);
+  }
 
   return fn;
 }
@@ -165,6 +171,14 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       ++it;
     }
 
+    // If this function needs to make allocations, cache a copy of the
+    // allocation context pointer for this thread, since it can on some
+    // platforms be expensive to look up.
+    if (fdef->flags() & FunctionDefn::MakesAllocs) {
+      Function * gcGetAllocContext = genFunctionValue(gc_allocContext);
+      gcAllocContext_ = builder_.CreateCall(gcGetAllocContext, "allocCtx");
+    }
+
     for (; it != f->arg_end(); ++it, ++param_index) {
       Value * argVal = it;
 
@@ -207,6 +221,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
       builder_.SetInsertPoint(blocks.front()->irBlock());
       genBlocks(fdef->blocks());
+
+      gcAllocContext_ = NULL;
 #if 0
     }
 #endif
