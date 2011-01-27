@@ -16,6 +16,7 @@ include(CheckTypeSize)
 include(FindThreads)
 
 # Check for the existence of include files.
+check_include_file(assert.h HAVE_ASSERT_H)
 check_include_file(stdio.h HAVE_STDIO_H)
 check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(stddef.h HAVE_STDDEF_H)

@@ -6,6 +6,34 @@ namespace Memory {
   // Import built-in type definition.
   import __Address as Address;
 
+	/** A general interface for allocators. */
+  interface Allocator {
+    /** Allocate 'size' bytes of memory and return it. The memory will not be initialized, and
+        may contain random data. If the allocator is one that supports garbage collection,
+        it must fill in any fields that it needs, such as the __gcstate field of class Object. */
+    def alloc(size:uint) -> Address[ubyte];
+
+		/** Explicitly free a region of memory previously allocated by 'alloc'. Not supported by
+		    all allocator types. */
+    def free(ptr:Address[ubyte]);
+  }
+
+	/** The default allocator instance for all objects. This calls the garbage collector's
+	    GC.alloc() function. */
+  class DefaultAllocator : Allocator {
+    static let INSTANCE = DefaultAllocator();
+
+    @Intrinsic private def __alloc(size:uint) -> Address[ubyte];
+
+    def alloc(size:uint) -> Address[ubyte] {
+      return __alloc(size);
+    }
+
+    def free(ptr:Address[ubyte]) {
+      throw UnsupportedOperationError();
+    }
+  }
+
   /** Represents a sub-range of an array or list or other container that uses
       contiguous storage of elements. */
   struct Buffer[%T] {
@@ -23,13 +51,13 @@ namespace Memory {
     }
 
     // TODO: Mark T as const.
-    
+
     /** Read-only access to the beginning of the buffer. */
     def begin:Address[T] { get { return _begin; } }
 
     /** Read-only access to the end of the buffer. */
     def end:Address[T] { get { return _end; } }
-    
+
     def length:int {
       get { return ptrDiff(_begin, _end); }
     }
@@ -85,18 +113,19 @@ namespace Memory {
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.
-      
+
       The behavior is equivalent to the CLib function memcpy().
       Parameters:
         dst: The array containing the destination range.
         src: The array containing the source range.
-        length: The number of elements to copy. 
+        length: The number of elements to copy.
    */
   @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:uint);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.
-      
+
       The behavior is equivalent to the CLib function memcpy().
       Parameters:
         dstBegin: The start of the destination range.
@@ -107,20 +136,21 @@ namespace Memory {
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
-      
+
       The behavior is equivalent to the CLib function memmove().
       Parameters:
         dst: The array containing the destination range.
         dstOffset: The starting index of the destination range.
         src: The array containing the source range.
         srcOffset: The starting index of the source ranbge.
-        length: The number of elements to copy. 
+        length: The number of elements to copy.
    */
   @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:uint);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.
-      
+
       The behavior is equivalent to the CLib function memcpy().
       Parameters:
         dstBegin: The start of the destination range.

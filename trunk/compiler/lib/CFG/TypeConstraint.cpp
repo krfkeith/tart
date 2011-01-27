@@ -19,24 +19,31 @@ const llvm::Type * TypeConstraint::irType() const {
   DFAIL("TypeConstraint does not have an IRType");
 }
 
-// -------------------------------------------------------------------
-// ResultOfConstraint
+/// -------------------------------------------------------------------
+/// TypeSetConstraint
 
-ConversionRank ResultOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
+const Type * TypeSetConstraint::singularValue() const {
+  TypeExpansion expansion;
+  expand(expansion);
+  if (expansion.size() == 1) {
+    return *expansion.begin();
+  }
+
+  return NULL;
+}
+
+ConversionRank TypeSetConstraint::convertTo(const Type * toType, const Conversion & cn) const {
   // Makes no sense to return a value when converting to a constraint.
   if (cn.resultValue != NULL) {
     return Incompatible;
   }
 
+  TypeExpansion expansion;
+  expand(expansion);
   ConversionRank best = Incompatible;
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * resultType = candidateResultType(*it);
-    ConversionRank rank = toType->canConvert(resultType);
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    ConversionRank rank = toType->canConvert(ty);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -48,16 +55,13 @@ ConversionRank ResultOfConstraint::convertTo(const Type * toType, const Conversi
   return best;
 }
 
-ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) const {
+ConversionRank TypeSetConstraint::convertImpl(const Conversion & conversion) const {
+  TypeExpansion expansion;
+  expand(expansion);
   ConversionRank best = Incompatible;
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * resultType = candidateResultType(*it);
-    ConversionRank rank = resultType->convert(conversion);
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    ConversionRank rank = ty->convert(conversion);
     if (rank > best) {
       best = rank;
       if (rank == IdenticalTypes) {
@@ -67,6 +71,73 @@ ConversionRank ResultOfConstraint::convertImpl(const Conversion & conversion) co
   }
 
   return best;
+}
+
+bool TypeSetConstraint::isSubtype(const Type * other) const {
+  // It's a subtype only if it's a subtype of every member
+  TypeExpansion expansion;
+  expand(expansion);
+  if (expansion.empty()) {
+    return false;
+  }
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    if (!ty->isSubtype(other)) {
+      diag.debug() << this << " is not a subtype of " << other;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool TypeSetConstraint::includes(const Type * other) const {
+  // Includes is true if any member of the set includes 'other'.
+  TypeExpansion expansion;
+  expand(expansion);
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    if (ty->includes(other)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool TypeSetConstraint::isSingular() const {
+  const Type * ty = singularValue();
+  return ty != NULL; // && ty->isSingular();
+}
+
+bool TypeSetConstraint::isReferenceType() const {
+  DFAIL("Illegal State");
+}
+
+void TypeSetConstraint::format(FormatStream & out) const {
+  TypeExpansion expansion;
+  expand(expansion);
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    if (it != expansion.begin()) {
+      out << "|";
+    }
+
+    out << *it;
+  }
+}
+
+// -------------------------------------------------------------------
+// ResultOfConstraint
+
+void ResultOfConstraint::expand(TypeExpansion & out) const {
+  const Candidates & cd = callExpr->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    if ((*it)->isCulled()) {
+      continue;
+    }
+
+    out.insert(candidateResultType(*it));
+  }
 }
 
 bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
@@ -75,9 +146,9 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
   SourceContext callSite(callExpr, NULL, callExpr);
   bool match = false;
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
+//    if ((*it)->isCulled()) {
+//      continue;
+//    }
 
     const Type * resultType = candidateResultType(*it);
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
@@ -96,71 +167,12 @@ bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern)
   return match;
 }
 
-const Type * ResultOfConstraint::singularValue() const {
-  const Type * result = NULL;
-  Candidates & cd = callExpr->candidates();
-  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    if (result != NULL) {
-      return NULL;
-    }
-
-    result = candidateResultType(*it);
-  }
-
-  return result;
-}
-
-bool ResultOfConstraint::isSubtype(const Type * other) const {
-  // It's a subtype only if it's a subtype of every member
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * resultType = candidateResultType(*it);
-    if (!resultType->isSubtype(other)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool ResultOfConstraint::includes(const Type * other) const {
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * resultType = candidateResultType(*it);
-    if (resultType->includes(other)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 const Type * ResultOfConstraint::candidateResultType(const CallCandidate * cc) const {
   if (callExpr->exprType() == Expr::Construct && cc->method()->isCtor()) {
     return cc->method()->functionType()->selfParam()->type();
   }
 
   return cc->resultType();
-}
-
-bool ResultOfConstraint::isSingular() const {
-  return callExpr->singularResultType() != NULL;
-}
-
-bool ResultOfConstraint::isReferenceType() const {
-  DFAIL("Illegal State");
 }
 
 void ResultOfConstraint::trace() const {
@@ -176,91 +188,22 @@ void ResultOfConstraint::format(FormatStream & out) const {
   }
 
   out << "{Result: ";
-  const Candidates & cd = callExpr->candidates();
-  bool first = true;
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * resultType = candidateResultType(*it);
-    if (!first) {
-      out << "|";
-    }
-
-    out << resultType;
-    first = false;
-  }
-
+  TypeSetConstraint::format(out);
   out << "}";
 }
 
 // -------------------------------------------------------------------
 // ParameterOfConstraint
 
-ConversionRank ParameterOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
-  // Makes no sense to return a value when converting to a constraint.
-  if (cn.resultValue != NULL) {
-    return Incompatible;
-  }
-
-  ConversionRank best = Incompatible;
+void ParameterOfConstraint::expand(TypeExpansion & out) const {
   const Candidates & cd = callExpr->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    const Type * paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = toType->canConvert(paramType);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
+    out.insert((*it)->paramType(argIndex));
   }
-
-  return best;
-}
-
-ConversionRank ParameterOfConstraint::convertImpl(const Conversion & conversion) const {
-  ConversionRank best = Incompatible;
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = paramType->convert(conversion);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
-  }
-
-  return best;
-}
-
-const Type * ParameterOfConstraint::singularValue() const {
-  const Type * result = NULL;
-  Candidates & cd = callExpr->candidates();
-  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    if (result != NULL) {
-      return NULL;
-    }
-
-    result = (*it)->paramType(argIndex);
-  }
-
-  return result;
 }
 
 bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
@@ -269,9 +212,9 @@ bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * patte
   SourceContext callSite(callExpr, NULL, callExpr);
   bool match = false;
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
+//    if ((*it)->isCulled()) {
+//      continue;
+//    }
 
     const Type * paramType = (*it)->paramType(argIndex);
     SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
@@ -291,34 +234,6 @@ bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * patte
   return match;
 }
 
-bool ParameterOfConstraint::isSingular() const {
-  return callExpr->singularParamType(argIndex) != NULL;
-}
-
-bool ParameterOfConstraint::isSubtype(const Type * other) const {
-  DFAIL("Implement");
-}
-
-bool ParameterOfConstraint::includes(const Type * other) const {
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * paramType = (*it)->paramType(argIndex);
-    if (paramType->includes(other)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool ParameterOfConstraint::isReferenceType() const {
-  DFAIL("Illegal State");
-}
-
 void ParameterOfConstraint::trace() const {
   Type::trace();
   callExpr->mark();
@@ -326,26 +241,47 @@ void ParameterOfConstraint::trace() const {
 
 void ParameterOfConstraint::format(FormatStream & out) const {
   out << "{Param(" << argIndex << "): ";
-  const Candidates & cd = callExpr->candidates();
-  bool first = true;
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
+  TypeSetConstraint::format(out);
+  out << "}";
+}
 
-    const Type * paramType = (*it)->paramType(argIndex);
-    if (!first) {
-      out << "|";
-    }
+// -------------------------------------------------------------------
+// SingleTypeParamOfConstraint
 
-    out << paramType;
-    first = false;
+void SingleTypeParamOfConstraint::expand(TypeExpansion & out) const {
+  TypeExpansion baseExpansion;
+  base_->expand(baseExpansion);
+  for (TypeExpansion::const_iterator it = baseExpansion.begin(); it != baseExpansion.end(); ++it) {
+    const Type * ty = dealias(*it);
+    if (ty->typeClass() == cls_) {
+      out.insert(ty->typeParam(0));
+    }
   }
+}
+
+bool SingleTypeParamOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
+  diag.debug() << "Can't unify " << pattern << " with " << this;
+  return false;
+}
+
+void SingleTypeParamOfConstraint::trace() const {
+  Type::trace();
+  base_->mark();
+}
+
+void SingleTypeParamOfConstraint::format(FormatStream & out) const {
+  out << "{TypeParam(0): ";
+  base_->format(out);
+  //TypeSetConstraint::format(out);
   out << "}";
 }
 
 // -------------------------------------------------------------------
 // TupleOfConstraint
+
+void TupleOfConstraint::expand(TypeExpansion & out) const {
+  out.insert(this);
+}
 
 ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
   // Makes no sense to return a value when converting to a constraint.

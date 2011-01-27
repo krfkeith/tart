@@ -310,17 +310,40 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
       }
       return builder_.CreateAlloca(type, 0, ctdef->typeDefn()->name());
     } else if (ctdef->typeClass() == Type::Class) {
-      Function * allocator = getTypeAllocator(ctdef);
-      if (allocator != NULL) {
-        return builder_.CreateCall(allocator, Twine(ctdef->typeDefn()->name(), StringRef("_new")));
-      } else {
-        diag.fatal(in) << "Cannot create an instance of type '" <<
-        ctdef->typeDefn()->name() << "'";
-      }
+      DASSERT(gcAllocContext_ != NULL);
+      Function * alloc = getGcAlloc();
+      Value * newObj = builder_.CreateCall2(
+          alloc, gcAllocContext_,
+          llvm::ConstantExpr::getSizeOf(ctdef->irType()),
+          Twine(ctdef->typeDefn()->name(), StringRef("_new")));
+      newObj = builder_.CreatePointerCast(newObj, ctdef->irType()->getPointerTo());
+      genInitObjVTable(ctdef, newObj);
+      return newObj;
     }
   }
 
   DFAIL("IllegalState");
+}
+
+Value * CodeGenerator::allocInstance(const tart::Expr * size, const tart::Expr * typeInfoPtr) {
+  DASSERT(gcAllocContext_ != NULL);
+  Value * sizeVal = genExpr(size);
+  Value * tibVal = genExpr(typeInfoPtr);
+  Function * alloc = getGcAlloc();
+  Value * newObj = builder_.CreateCall2(alloc, gcAllocContext_, sizeVal, "newInstance");
+  newObj = builder_.CreatePointerCast(newObj, Builtins::typeObject->irType()->getPointerTo());
+  Value * vtablePtrPtr = builder_.CreateStructGEP(newObj, 0);
+  builder_.CreateStore(tibVal, vtablePtrPtr);
+  return newObj;
+}
+
+Value * CodeGenerator::defaultAlloc(const tart::Expr * size) {
+  DASSERT(gcAllocContext_ != NULL);
+  Value * sizeVal = genExpr(size);
+  Function * alloc = getGcAlloc();
+  return builder_.CreatePointerCast(
+      builder_.CreateCall2(alloc, gcAllocContext_, sizeVal, "newInstance"),
+      builder_.getInt8PtrTy());
 }
 
 Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,

@@ -483,6 +483,7 @@ void FunctionAnalyzer::visitClosureEnvs(const ExprList & closureEnvs) {
           module_->addSymbol(cast<CompositeType>(varType)->super()->typeDefn());
           var->setSharedRefType(varType);
           var->closureBinding()->setSharedRefType(varType);
+          target->setFlag(FunctionDefn::MakesAllocs);
         }
       }
     }

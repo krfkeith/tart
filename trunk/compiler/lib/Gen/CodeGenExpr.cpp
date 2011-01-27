@@ -1051,8 +1051,8 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
     DASSERT(envType->super() != NULL);
 
     // Allocate the environment.
-    Value * env = builder_.CreateCall(
-        getGlobalAlloc(),
+    Value * env = builder_.CreateCall2(
+        getGcAlloc(), gcAllocContext_,
         llvm::ConstantExpr::getSizeOf(envType->irType()),
         "closure.env.new");
     env = builder_.CreatePointerCast(env, envType->irType()->getPointerTo(), "closure.env");
@@ -1104,32 +1104,6 @@ llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
       builder_.getInt32Ty());
 }
 
-Value * CodeGenerator::genVarSizeAlloc(const SourceLocation & loc,
-    const Type * objType, const Expr * sizeExpr) {
-
-  if (!objType->isReferenceType()) {
-    diag.fatal(loc) << "__valloc can only be used with reference types.";
-    return NULL;
-  }
-
-  const llvm::Type * resultType = objType->irType();
-  resultType = resultType->getPointerTo();
-
-  Value * sizeValue;
-  switch (sizeExpr->exprType()) {
-    case Expr::LValue:
-    case Expr::ElementRef:
-      sizeValue = genLValueAddress(sizeExpr);
-      break;
-
-    default:
-      sizeValue = genExpr(sizeExpr);
-      break;
-  }
-
-  return genVarSizeAlloc(objType, sizeValue);
-}
-
 Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) {
 
   const llvm::Type * resultType = objType->irType();
@@ -1146,7 +1120,8 @@ Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) 
   std::stringstream labelStream;
   FormatStream fs(labelStream);
   fs << objType;
-  Value * alloc = builder_.CreateCall(getGlobalAlloc(), sizeValue, labelStream.str().c_str());
+  Value * alloc = builder_.CreateCall2(getGcAlloc(), gcAllocContext_, sizeValue,
+      labelStream.str().c_str());
   Value * instance = builder_.CreateBitCast(alloc, resultType);
 
   if (const CompositeType * classType = dyn_cast<CompositeType>(objType)) {

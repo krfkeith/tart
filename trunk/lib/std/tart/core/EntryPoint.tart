@@ -8,7 +8,7 @@ import tart.gc.GC;
 class EntryPoint {
   public def construct() {}
   @Intrinsic def apply(t:tart.reflect.Type);
-  
+
   /** Program start function which initializes runtime system and then calls entry point. */
   private static def programStart(
       argc:int32,
@@ -17,16 +17,16 @@ class EntryPoint {
     try {
       // Start the GC.
       GC.init(Memory.addressOf(gcSafepointMap[0]));
-      
+
       // Run static constructors.
       runStaticCtors();
-      
+
       // Convert command-line arguments.
       let args = String[](argc);
       for i:int32 = 0; i < argc; ++i {
         args[i] = String(argv[i], strlen(argv[i]));
       }
-      
+
       // Call entry point function.
       return func(args);
     } catch t:Throwable {
@@ -35,7 +35,7 @@ class EntryPoint {
     }
   }
 
-  @Extern("gc_safepoint_map") static var gcSafepointMap:FlexibleArray[int];
+  @Extern("gc_safepoint_map") static var gcSafepointMap:FlexibleArray[uint];
 	@Extern("run_static_ctors") static def runStaticCtors();
   @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
 }

@@ -566,17 +566,17 @@ int main(int argc, char **argv, char **envp) {
     bool outputToStdout = (optOutputFilename == "-");
     if (!outputToStdout) {
       outputFilename = optOutputFilename;
-      std::string suffix = outputFilename.getSuffix(); // Note: empty if no name set
+      std::string suffix = llvm::sys::path::extension(outputFilename.str());
 
       if (optOutputType == Unset) {
         if (suffix.empty()) {
           errs() << "tartln: output type not specified.\n";
           return 1;
-        } else if (suffix == "bc") {
+        } else if (suffix == ".bc") {
           optOutputType = BitcodeFile;
-        } else if (suffix == "s") {
+        } else if (suffix == ".s") {
           optOutputType = AssemblyFile;
-        } else if (suffix == "o" || suffix == "obj") {
+        } else if (suffix == ".o" || suffix == ".obj") {
         	optOutputType = ObjectFile;
         } else {
           errs() << "tartln: unknown output file type suffix '" <<

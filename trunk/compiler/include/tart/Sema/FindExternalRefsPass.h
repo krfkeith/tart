@@ -23,6 +23,7 @@ public:
   /** Run this pass on the specified expression. */
   static Defn * run(Module * m, Defn * in);
 
+  void visit(FunctionDefn * in);
   Expr * visitLValue(LValueExpr * in);
   Expr * visitBoundMethod(BoundMethodExpr * in);
   Expr * visitFnCall(FnCallExpr * in);
@@ -32,12 +33,15 @@ public:
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitConstantObjectRef(ConstantObjectRef * in);
   Expr * visitCast(CastExpr * in);
+  Expr * visitClosureScope(ClosureEnvExpr * in);
 
 private:
-  Module * module;
+  Module * module_;
+  FunctionDefn * function_;
 
   FindExternalRefsPass(Module * m)
-    : module(m)
+    : module_(m)
+    , function_(NULL)
   {}
 
   Defn * runImpl(Defn * in);

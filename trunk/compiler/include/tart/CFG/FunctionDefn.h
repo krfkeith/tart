@@ -115,6 +115,8 @@ public:
     Ctor = (1<<5),              // Function is a constructor
     Final = (1<<6),             // Function cannot be overridden
     Nested = (1<<7),            // This function is nested within another function
+    MakesAllocs = (1<<8),       // This function allocates memory.
+    NoInline = (1<<9),          // Don't inline this function
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };

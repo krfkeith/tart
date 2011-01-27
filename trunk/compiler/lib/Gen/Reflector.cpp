@@ -818,18 +818,11 @@ void Reflector::emitCompositeType(const CompositeType * type) {
     sb.addNullField(compositeType_memberTypes.type());
   }
 
-  if (type->isSingular()) {
-    Function * alloc = cg_.getTypeAllocator(type);
-    if (alloc != NULL) {
-      sb.addPointerField(compositeType_alloc, alloc);
-    } else {
-      sb.addNullField(compositeType_alloc.type());
-    }
-  } else {
-    sb.addNullField(compositeType_alloc.type());
+  FunctionDefn * noArgCtor = NULL;
+  if (type->typeClass() == Type::Class ||
+      (type->typeClass() == Type::Struct && td->isReflected())) {
+    noArgCtor = type->noArgConstructor();
   }
-
-  FunctionDefn * noArgCtor = type->noArgConstructor();
   if (noArgCtor != NULL && noArgCtor->hasBody() && !noArgCtor->isUndefined()) {
     sb.addPointerField(compositeType_noArgCtor, cg_.genFunctionValue(noArgCtor));
   } else {

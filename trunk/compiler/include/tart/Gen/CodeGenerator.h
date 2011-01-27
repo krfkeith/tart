@@ -177,6 +177,8 @@ public:
   llvm::Value * genCall(const FnCallExpr * in);
   llvm::Value * genIndirectCall(const IndirectCallExpr * in);
   llvm::Value * genNew(const NewExpr * in);
+  llvm::Value * allocInstance(const tart::Expr * size, const tart::Expr * typeInfoPtr);
+  llvm::Value * defaultAlloc(const tart::Expr * size);
   llvm::Value * genCompositeCast(llvm::Value * in, const CompositeType * fromCls,
       const CompositeType * toCls, bool throwOnFailure);
 
@@ -243,10 +245,6 @@ public:
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
   bool createTemplateTypeInfoBlock(const CompositeType * type);
 
-  /** Generate a reference to the allocator function for this type. */
-  llvm::Function * getTypeAllocator(const CompositeType * tdef);
-  llvm::Function * createTypeAllocator(RuntimeTypeInfo * tdef);
-
   /** Generate the method dispatch table for a type. */
   llvm::Constant * genMethodArray(const MethodList & methods);
 
@@ -296,6 +294,9 @@ public:
   /** return a reference to the global allocator function. */
   llvm::Function * getGlobalAlloc();
 
+  /** return a reference to the global gc_alloc function (allocates memory in the nursery space). */
+  llvm::Function * getGcAlloc();
+
   /** Generate data structures for a string literal. */
   llvm::Constant * genStringLiteral(const llvm::StringRef & strval,
       const llvm::StringRef & symName = "");
@@ -305,10 +306,6 @@ public:
 
   /** Generate a closure environment. */
   llvm::Value * genClosureEnv(const ClosureEnvExpr * in);
-
-  /** Generate code to allocate an object, where the object size is not a compile-time constant. */
-  llvm::Value * genVarSizeAlloc(const SourceLocation & loc, const Type * objType,
-      const Expr * sizeExpr);
 
   /** Generate code to allocate an object, where the object size is not a compile-time constant. */
   llvm::Value * genVarSizeAlloc(const Type * objType, llvm::Value * sizeValue);
@@ -474,6 +471,8 @@ private:
   llvm::Function * exceptionPersonality_;
   llvm::Function * exceptionTracePersonality_;
   llvm::Function * globalAlloc_;
+  llvm::Function * gcAlloc_;
+  llvm::Value * gcAllocContext_;
 
   RTTypeMap compositeTypeMap_;
   StringLiteralMap stringLiteralMap_;

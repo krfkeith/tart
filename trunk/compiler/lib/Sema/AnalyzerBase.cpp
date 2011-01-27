@@ -234,7 +234,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
         return false;
       }
 
-      contextType = type;
+      contextType = dealias(type);
     }
 
     // If it's a native pointer, then do an implicit dereference.

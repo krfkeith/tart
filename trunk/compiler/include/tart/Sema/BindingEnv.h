@@ -145,11 +145,6 @@ public:
   /** Reset all bindings. */
   void reset();
 
-  /** If the given variable does not already have a definition in this environment,
-      then bind it to a TypeBinding instance
-   */
-  //void defineVar(TypeVariable * var);
-
   /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const Type * pattern, const Type * value, Variance variance);
 
@@ -230,6 +225,8 @@ private:
       Variance variance);
   bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
       Variance variance);
+  bool unifyWithBoundValue(
+      SourceContext * source, const Type * prevValue, const Type * newValue, Variance variance);
 
   /** Given two types, return the one that is more general, the higher of the two. Returns NULL
       if neither type is a specialization of the other. */

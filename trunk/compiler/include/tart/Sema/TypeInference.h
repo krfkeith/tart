@@ -257,6 +257,12 @@ public:
   static Expr * run(Module * module, Expr * in, const Type * expected, bool strict = true);
 
 private:
+  enum ReportLabel {
+    INITIAL,
+    INTERMEDIATE,
+    FINAL,
+  };
+
   Module * module_;
   Expr * rootExpr_;
   const Type * expectedType_;
@@ -271,9 +277,6 @@ private:
   bool overconstrained_;
   bool strict_;
 
-  // Map of template parameter substitutions
-  //BindingMap substitutions_;
-
   TypeInferencePass(Module * module, Expr * root, const Type * expected, bool strict = true)
     : module_(module)
     , rootExpr_(root)
@@ -284,7 +287,7 @@ private:
 
   Expr * runImpl();
 
-  void reportRanks(bool final);
+  void reportRanks(ReportLabel label);
   void update();
   void checkSolution();
 

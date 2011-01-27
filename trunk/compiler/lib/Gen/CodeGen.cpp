@@ -53,27 +53,31 @@ Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 llvm::cl::opt<bool>
 NoGC("nogc", llvm::cl::desc("Don't generate garbage-collection intrinsics"));
 
+extern SystemNamespaceMember<FunctionDefn> gc_alloc;
+
 CodeGenerator::CodeGenerator(Module * mod)
-    : context_(llvm::getGlobalContext())
-    , builder_(llvm::getGlobalContext())
-    , module_(mod)
-    , irModule_(mod->irModule())
-    , currentFn_(NULL)
-    , invokeFnType_(NULL)
-    , structRet_(NULL)
-    , moduleInitFunc_(NULL)
-    , moduleInitBlock_(NULL)
-    , reflector_(*this)
-    , gcEnabled_(!NoGC)
-    , dbgFactory_(*mod->irModule())
-    , functionRegion_(NULL)
-    , unwindTarget_(NULL)
-    , unwindRaiseException_(NULL)
-    , unwindResume_(NULL)
-    , exceptionPersonality_(NULL)
-    , exceptionTracePersonality_(NULL)
-    , globalAlloc_(NULL)
-    , debug_(Debug)
+  : context_(llvm::getGlobalContext())
+  , builder_(llvm::getGlobalContext())
+  , module_(mod)
+  , irModule_(mod->irModule())
+  , currentFn_(NULL)
+  , invokeFnType_(NULL)
+  , structRet_(NULL)
+  , moduleInitFunc_(NULL)
+  , moduleInitBlock_(NULL)
+  , reflector_(*this)
+  , gcEnabled_(!NoGC)
+  , dbgFactory_(*mod->irModule())
+  , functionRegion_(NULL)
+  , unwindTarget_(NULL)
+  , unwindRaiseException_(NULL)
+  , unwindResume_(NULL)
+  , exceptionPersonality_(NULL)
+  , exceptionTracePersonality_(NULL)
+  , globalAlloc_(NULL)
+  , gcAlloc_(NULL)
+  , gcAllocContext_(NULL)
+  , debug_(Debug)
 {
   // Turn on reflection if (a) it's enabled on the command-line, and (b) there were
   // any reflectable definitions within the module.
@@ -401,6 +405,17 @@ llvm::Function * CodeGenerator::getGlobalAlloc() {
   }
 
   return globalAlloc_;
+}
+
+llvm::Function * CodeGenerator::getGcAlloc() {
+  using namespace llvm;
+
+  DASSERT(gcAllocContext_ != NULL);
+  if (gcAlloc_ == NULL) {
+    gcAlloc_ = genFunctionValue(gc_alloc);
+  }
+
+  return gcAlloc_;
 }
 
 Function * CodeGenerator::findMethod(const CompositeType * type, const char * methodName) {

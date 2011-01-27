@@ -176,6 +176,12 @@ bool CallSite::unify(int searchDepth) {
     if (c->unify(callExpr_)) {
       canUnify = true;
     } else {
+      if (ShowInference) {
+        diag.debug() << Format_Type << "Unification failed for " << c->method() << ":";
+        unifyVerbose = true;
+        c->unify(callExpr_);
+        unifyVerbose = false;
+      }
       c->cull(searchDepth);
     }
   }
@@ -437,13 +443,13 @@ Expr * TypeInferencePass::runImpl() {
   }
 
   update();
-  reportRanks(false);
+  reportRanks(INITIAL);
 
   cullByConversionRank();
   cullBySpecificity();
   cullByElimination();
 
-  reportRanks(true);
+  reportRanks(FINAL);
 
   // Remove all culled candidates
   for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
@@ -515,16 +521,24 @@ void TypeInferencePass::checkSolution() {
   }
 }
 
-void TypeInferencePass::reportRanks(bool final) {
+void TypeInferencePass::reportRanks(ReportLabel label) {
   if (!ShowInference) {
     return;
   }
 
   size_t numSites = callSites_.size();
-  if (final) {
-    diag.debug() << "=== Final conversion rankings for " << numSites << " call sites: ===";
-  } else {
-    diag.debug() << "=== Initial conversion rankings for " << numSites << " call sites: ===";
+  switch (label) {
+    case INITIAL:
+      diag.debug() << "=== Initial conversion rankings for " << numSites << " call sites: ===";
+      break;
+
+    case INTERMEDIATE:
+      diag.debug() << "Intermediate conversion rankings for " << numSites << " call sites:";
+      break;
+
+    case FINAL:
+      diag.debug() << "=== Final conversion rankings for " << numSites << " call sites: ===";
+      break;
   }
 
   diag.indent();
@@ -574,7 +588,9 @@ void TypeInferencePass::cullByConversionRank() {
 
   if (overconstrained_) {
     if (ShowInference) {
-      diag.debug() << "  Backtracking";
+      diag.indent();
+      diag.debug() << "Backtracking";
+      diag.unindent();
     }
     backtrack();
   }
@@ -604,7 +620,9 @@ void TypeInferencePass::cullByConversionRank() {
 
         if (overconstrained_) {
           if (ShowInference) {
-            diag.debug() << "  Backtracking";
+            diag.indent();
+            diag.debug() << "Backtracking";
+            diag.unindent();
           }
           backtrack();
           break;
@@ -630,7 +648,9 @@ void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit) {
   }
 
   if (ShowInference) {
-    diag.debug() << "  " << cullCount_ << " methods culled.";
+    diag.indent();
+    diag.debug() << cullCount_ << " methods culled.";
+    diag.unindent();
   }
 
   update();
@@ -660,6 +680,11 @@ void TypeInferencePass::cullBySpecificity() {
 
 void TypeInferencePass::cullByElimination() {
   if (underconstrained_) {
+    if (ShowInference) {
+      diag.debug() << "Culling by elimination";
+      reportRanks(INTERMEDIATE);
+      diag.indent();
+    }
     cullByElimination(callSites_.begin(), callSites_.end());
     if (bestSolutionCount_ == 1) {
       for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
@@ -670,6 +695,10 @@ void TypeInferencePass::cullByElimination() {
     }
 
     update();
+
+    if (ShowInference) {
+      diag.unindent();
+    }
   }
 }
 
@@ -687,17 +716,19 @@ void TypeInferencePass::cullByElimination(
           continue;
         }
 
-        //if (ShowInference) {
-        //  diag.debug() << Format_Type << "Trying " << (*ci)->method();
-        //}
-        diag.indent();
+        if (ShowInference) {
+          diag.debug() << Format_Type << "Trying " << ccp->expr();
+          diag.indent();
+        }
 
         ++searchDepth_;
         ccp->cullAllExcept(ch, searchDepth_);
         cullByElimination(first + 1, last);
         backtrack();
 
-        diag.unindent();
+        if (ShowInference) {
+          diag.unindent();
+        }
       }
 
       return;

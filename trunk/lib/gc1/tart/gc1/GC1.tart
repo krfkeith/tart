@@ -1,0 +1,143 @@
+import Memory.Address;
+import Memory.ptrDiff;
+import tart.annex.Intrinsic;
+import tart.gc.AddressRange;
+import tart.gc.GCRuntimeSupport;
+import tart.gc.TraceAction;
+import tart.reflect.CompositeType;
+
+/** GarbageCollector1 is a simple semi-space, single-generation, copying collector. */
+namespace GC1 {
+  /** Flag bits that are stored in the __gcstate field of an object. */
+  @Flags enum GCFlags {
+    /** Indicates that the object has moved, use the new address. */
+    RELOCATED,
+
+    /** True if this object has had a finalizer function registered with it. */
+    HAS_FINALIZER,
+  }
+
+	/** The header structure of an object - redeclared here with public fields so that the
+			collector can access the gcstate flags and the relocation pointer. */
+  struct ObjectHeader {
+    var newLocation:Object;
+    var gcstate:uint;
+  }
+
+  /** A pool of memory allocated by a simple pointer increment. */
+  final class SemiSpace {
+    var begin:Address[ubyte];
+    var pos:Address[ubyte];
+    var end:Address[ubyte];
+
+		/** Return true if an object is located within this space. */
+    def contains(a:Address[ubyte]) -> bool {
+      return a >= begin and a < end;
+    }
+
+		/** Return true if there is enough space available to allocate 'size' bytes. */
+		def canAlloc(size:uint) -> bool {
+		  return (pos + size) <= end;
+		}
+
+		/** Allocate an object of 'size' bytes. */
+    def alloc(size:uint) -> Address[ubyte] {
+      let result = pos;
+      pos += size;
+      return result;
+    }
+  }
+
+	// The two semispaces of the collector.
+  private var fromSpace:SemiSpace;
+  private var toSpace:SemiSpace;
+
+	/** Allocate an object in permanent memory, outside of the scope of the collector. Such
+		  objects will never be moved or reclaimed. */
+  private def permAlloc[%T](type:TypeLiteral[T]) -> T {
+    return Memory.bitCast(CompositeType.of(T).create(GCRuntimeSupport.MallocAllocator.INSTANCE));
+  }
+
+	/** Initialize the garbage collector.
+	    Parameters: stackFrameDescEntries - contains the static table of entries which associate
+	        an instruction address with a stack frame descriptor.
+	*/
+  @LinkageName("GC_init") def init(stackFrameDescEntries:Address[uint]) {
+    GCRuntimeSupport.initStackFrameDescMap(stackFrameDescEntries);
+    GCRuntimeSupport.initThreadLocalData();
+
+		// Set up the initial 'to-space'.
+		toSpace = permAlloc(SemiSpace);
+    toSpace.begin = toSpace.pos = GCRuntimeSupport.allocAligned(0x10000);
+    toSpace.end = Memory.addressOf(toSpace.pos[0x10000]);
+
+		// Set up the initial 'from-space'.
+		fromSpace = permAlloc(SemiSpace);
+    fromSpace.begin = toSpace.pos = GCRuntimeSupport.allocAligned(0x10000);
+    fromSpace.end = Memory.addressOf(toSpace.pos[0x10000]);
+  }
+
+  @LinkageName("GC_enterThread") def enterThread() {}
+  @LinkageName("GC_exitThread") def exitThread() {}
+  @LinkageName("GC_sync") def sync() {}
+  @LinkageName("GC_suspend") def suspend() {}
+  @LinkageName("GC_resume") def resume() {}
+
+	/** For this collector, the allocation context is always toSpace. */
+  @LinkageName("GC_allocContext") @NoInline def allocContext -> Object {
+    return toSpace;
+  }
+
+	/** Allocate an object from toSpace. */
+  @LinkageName("GC_alloc") @NoInline def alloc(context:Object, size:uint) -> Object {
+    size = (size + 7) & uint(~7);
+    if not toSpace.canAlloc(size) {
+      collect();
+    }
+
+    let result:Address[ObjectHeader] = Memory.bitCast(toSpace.alloc(size));
+    result[0].gcstate = size;
+    return Memory.bitCast(result);
+  }
+
+  @LinkageName("GC_collect") def collect() {
+    // swap space.
+    toSpace, fromSpace = fromSpace, toSpace;
+    toSpace.pos = toSpace.begin;
+
+    // trace stack
+    GCRuntimeSupport.traceStack(TRACE_ACTION);
+
+    // trace static roots
+    // trace dynamic roots
+  }
+
+	/** The trace action for this collector. This relocates objects to the current to-space
+			and leaves a fowarding pointer at the old location. */
+  private class TraceActionImpl : TraceAction {
+	  protected def tracePointer(ptrAddr:Address[Object]) {
+	    let addr:Address[ubyte] = Memory.bitCast(ptrAddr[0]);
+	    if fromSpace.contains(addr) {
+		    let header:Address[ObjectHeader] = Memory.bitCast(addr);
+		    if (header.gcstate & uint(GCFlags.RELOCATED)) != 0 {
+		      ptrAddr[0] = header.newLocation;
+		    } else {
+					let size = header.gcstate & uint(~3);
+					let newAddr:Address[ubyte] = toSpace.alloc(size);
+			    Memory.arrayCopy(newAddr, addr, size);
+		      header.newLocation = ptrAddr[0] = Memory.bitCast(newAddr);
+		      header.gcstate = uint(GCFlags.RELOCATED);
+		    }
+	    }
+	  }
+
+/*    protected def tracePointers(baseAddr:Address[ubyte], fieldOffsets:Address[uint], fieldCount:uint32) {
+      for i:uint32 = 0; i < fieldCount; ++i {
+        tracePointer(reinterpretPtr(addressOf(baseAddr[fieldOffsets[i]])));
+      }
+    }*/
+  }
+
+	/** Static instance of the trace action. */
+  let TRACE_ACTION = TraceActionImpl();
+}

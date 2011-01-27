@@ -71,6 +71,10 @@ SystemClass Builtins::typeRef("tart.core.Ref");
 SystemClass Builtins::typeValueRef("tart.core.ValueRef");
 SystemClass Builtins::typeMutableRef("tart.core.MutableRef");
 SystemNamespace Builtins::nsRefs("tart.core.Refs");
+SystemNamespace Builtins::nsGC("tart.gc.GC");
+
+SystemNamespaceMember<FunctionDefn> gc_allocContext(Builtins::nsGC, "allocContext");
+SystemNamespaceMember<FunctionDefn> gc_alloc(Builtins::nsGC, "alloc");
 
 Type * Builtins::typeUnwindException;
 
@@ -117,21 +121,29 @@ Type * Builtins::loadSystemType(const char * name) {
   return result;
 }
 
-Defn * Builtins::getSingleDefn(Type * type, const char * name) {
+Defn * Builtins::getSingleMember(Scope * scope, const char * name) {
   DefnList defs;
-  if (CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    AnalyzerBase::analyzeType(ctype, Task_PrepMemberLookup);
-    if (!ctype->lookupMember(name, defs, false)) {
-      diag.info() << "Couldn't find system definition for " << name;
-      DFAIL("Couldn't find system definition");
-    }
+  if (!scope->lookupMember(name, defs, false)) {
+    diag.info() << "Couldn't find system definition for " << name;
+    DFAIL("Couldn't find system definition");
+  }
 
-    if (defs.size() > 1) {
-      DFAIL("Couldn't find system definition");
-    }
+  if (defs.size() > 1) {
+    DFAIL("Couldn't find system definition");
   }
 
   return defs.front();
+}
+
+Defn * Builtins::getSingleDefn(Type * type, const char * name) {
+  CompositeType * ctype = cast<CompositeType>(type);
+  AnalyzerBase::analyzeType(ctype, Task_PrepMemberLookup);
+  return getSingleMember(ctype, name);
+}
+
+Defn * Builtins::getSingleDefn(NamespaceDefn * ns, const char * name) {
+  AnalyzerBase::analyzeNamespace(ns, Task_PrepMemberLookup);
+  return getSingleMember(&ns->memberScope(), name);
 }
 
 void Builtins::loadSystemClasses() {

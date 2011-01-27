@@ -308,21 +308,11 @@ Value * PackageOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 }
 
 // -------------------------------------------------------------------
-// VAllocIntrinsic
-VAllocIntrinsic VAllocIntrinsic::instance;
+// AllocIntrinsic
+DefaultAllocIntrinsic DefaultAllocIntrinsic::instance;
 
-Value * VAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->type());
-  return cg.genVarSizeAlloc(call->location(), retType, call->arg(0));
-}
-
-// -------------------------------------------------------------------
-// PVAllocIntrinsic
-PVAllocIntrinsic PVAllocIntrinsic::instance;
-
-Value * PVAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->type());
-  return cg.genVarSizeAlloc(call->location(), retType, call->arg(0));
+Value * DefaultAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
+  return cg.defaultAlloc(call->arg(0));
 }
 
 // -------------------------------------------------------------------
@@ -468,7 +458,7 @@ Expr * DerefIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   DASSERT(args.size() == 1);
   Expr * arg = args[0];
-  return new UnaryExpr(Expr::PtrDeref, loc, arg->type()->typeParam(0), arg);
+  return new UnaryExpr(Expr::PtrDeref, loc, dealias(arg->type())->typeParam(0), arg);
 }
 
 // -------------------------------------------------------------------
@@ -487,6 +477,22 @@ PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEQ");
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
+
+template<>
+PointerComparisonIntrinsic<CmpInst::ICMP_ULE>
+PointerComparisonIntrinsic<CmpInst::ICMP_ULE>::instance("infixLE");
+
+template<>
+PointerComparisonIntrinsic<CmpInst::ICMP_ULT>
+PointerComparisonIntrinsic<CmpInst::ICMP_ULT>::instance("infixLT");
+
+template<>
+PointerComparisonIntrinsic<CmpInst::ICMP_UGT>
+PointerComparisonIntrinsic<CmpInst::ICMP_UGT>::instance("infixGT");
+
+template<>
+PointerComparisonIntrinsic<CmpInst::ICMP_UGE>
+PointerComparisonIntrinsic<CmpInst::ICMP_UGE>::instance("infixGE");
 
 // -------------------------------------------------------------------
 // AddressAddIntrinsic
@@ -991,6 +997,24 @@ Expr * TraceMethodApplyIntrinsic::eval(const SourceLocation & loc, Module * call
 }
 
 // -------------------------------------------------------------------
+// NoInlineApplyIntrinsic
+NoInlineApplyIntrinsic NoInlineApplyIntrinsic::instance;
+
+Expr * NoInlineApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+      fn->setFlag(FunctionDefn::NoInline, true);
+      return args[0];
+    }
+  }
+
+  diag.error(loc) << "Invalid target for 'NoInline'";
+  return args[0];
+}
+
+// -------------------------------------------------------------------
 // ProxyCreateIntrinsic
 ProxyCreateIntrinsic ProxyCreateIntrinsic::instance;
 
@@ -999,12 +1023,12 @@ Value * ProxyCreateIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   const Expr * typeArg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(typeArg);
   const Type * type = typeLiteral->value();
-  if (type->typeClass() != Type::Interface) {
-    diag.error(call) << "Only interface types can be proxied.";
+  if (!type->isReferenceType()) {
+    diag.error(call) << "Only reference types can be proxied.";
     return NULL;
   }
 
-  // Could be a bound or unbound method.
+  // Handler arg will be an InvocationHandler[T].
   const Expr * handlerArg = call->arg(1);
 
   llvm::Constant * proxyTib = cg.genProxyType(static_cast<const CompositeType *>(type));

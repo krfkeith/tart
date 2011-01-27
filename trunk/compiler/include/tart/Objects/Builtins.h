@@ -28,13 +28,16 @@ class SystemNamespace;
 class Builtins {
 private:
   static Module * loadSystemModule(const char * name);
+  static Defn * getSingleMember(Scope * scope, const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
+  static Defn * getSingleDefn(NamespaceDefn * ns, const char * name);
 
   static bool compileBuiltins(ProgramSource & source);
 
 public:
 
   template<class T> static T * getMember(Type * tdef, const char * name);
+  template<class T> static T * getMember(NamespaceDefn * ns, const char * name);
 
   // The module for builtins
   static Module module;
@@ -77,6 +80,7 @@ public:
   static SystemClass typeValueRef;
   static SystemClass typeMutableRef;
   static SystemNamespace nsRefs;
+  static SystemNamespace nsGC;
 
   // Global aliases - used to create static references to types that are dynamically loaded.
   static TypeAlias typeAliasString;
@@ -110,6 +114,10 @@ public:
 
 template<class T> T * Builtins::getMember(Type * tdef, const char * name) {
   return cast_or_null<T>(getSingleDefn(tdef, name));
+}
+
+template<class T> T * Builtins::getMember(NamespaceDefn * ns, const char * name) {
+  return cast_or_null<T>(getSingleDefn(ns, name));
 }
 
 /// -------------------------------------------------------------------
@@ -202,6 +210,43 @@ public:
 private:
   const char * nsName_;
   mutable NamespaceDefn * ns_;
+};
+
+/// -------------------------------------------------------------------
+/// Contains a lazy reference to a member of a system namespace
+template <class T>
+class SystemNamespaceMember {
+public:
+  SystemNamespaceMember(SystemNamespace & ns, const char * fieldName)
+    : ns_(ns)
+    , fieldName_(fieldName)
+    , member_(NULL)
+  {}
+
+  T * get() const {
+    if (member_ == NULL) {
+      member_ = Builtins::getMember<T>(ns_.get(), fieldName_);
+    }
+
+    return member_;
+  }
+
+  T * operator->() const {
+    return get();
+  }
+
+  operator T *() const {
+    return get();
+  }
+
+  const Type * type() const {
+    return get()->type();
+  }
+
+private:
+  SystemNamespace & ns_;
+  const char * fieldName_;
+  mutable T * member_;
 };
 
 }
