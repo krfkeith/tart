@@ -17,6 +17,7 @@
 #include "tart/CFG/PrimitiveType.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/Attributes.h"
 #include "llvm/Module.h"

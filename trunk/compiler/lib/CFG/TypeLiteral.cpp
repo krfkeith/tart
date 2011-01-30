@@ -8,6 +8,7 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 namespace tart {
 

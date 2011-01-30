@@ -7,21 +7,8 @@ class Property : DataMember {
   private {
     let _getterFn:Address[void];
     let _setterFn:Address[void];
-  }
 
-  def construct(
-      name:String,
-      kind:MemberKind,
-      visibility:Visibility,
-      traits:Traits,
-      attributes:List[Object],
-      type:Type,
-      selfType:optional Type,
-	    getterFn:Address[void],
-    	setterFn:Address[void]) {
-    super(name, kind, visibility, traits, attributes, type, selfType);
-    _getterFn = getterFn;
-    _setterFn = setterFn;
+    undef construct;
   }
 
   final def isReadable:bool { get { return _getterFn is not null; } }

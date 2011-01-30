@@ -5,8 +5,6 @@
 #ifndef TART_COMMON_HASHING_H
 #define TART_COMMON_HASHING_H
 
-//#include <llvm/ADT/SetVector.h>
-
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -92,4 +90,4 @@ private:
 
 } // tart
 
-#endif // TART_COMMON_AGENDA
+#endif // TART_COMMON_HASHING_H

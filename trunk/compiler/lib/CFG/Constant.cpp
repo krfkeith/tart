@@ -11,6 +11,7 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/TypeLiteral.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 #include "tart/Objects/TargetSelection.h"
 #include "tart/Common/Diagnostics.h"
 #include <llvm/ADT/StringExtras.h>

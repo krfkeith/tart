@@ -17,6 +17,7 @@
 #include "tart/CFG/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/Objects/TargetSelection.h"
 

@@ -23,6 +23,7 @@
 #include "tart/Sema/ConstructorAnalyzer.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #define INFER_RETURN_TYPE 0
 

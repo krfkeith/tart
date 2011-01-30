@@ -26,25 +26,25 @@ class RetainedAttr {
 
 @Reflect class TestClass {
   var dataField:int;
-  
+
   // No-arg constructor
   def construct {
     dataField = 3;
   }
-  
+
   // Single-arg constructor
   def construct(s:String) {
     dataField = 4;
   }
-  
+
   @RetainedAttr def square(arg:int32) -> int32 {
     return arg * arg;
   }
-  
+
   override toString -> String {
     return "TestClass";
   }
-  
+
   def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
     return char[](0);
   }
@@ -59,14 +59,14 @@ class ReflectionTest : Test {
 	  assertEq(2, m.types.size);
 	  //assertEq(3, m.methods.size);
 	}
-	
+
 	def testModuleQualifiedName() {
 	  let m = Module.of(String);
 	  assertEq("String", m.name);
 	  assertEq("tart.core.String", m.qualifiedName);
 	  assertEq("tart.core", m.packageName);
 	}
-	
+
 	def testModuleMethods() {
 	  let m = Module.thisModule();
 	  var foundSample = false;
@@ -74,11 +74,11 @@ class ReflectionTest : Test {
 	    if method.name == "sample" {
 	      foundSample = true;
 	    }
-	  } 
-	
+	  }
+
 	  assertTrue(foundSample);
 	}
-	
+
 	def testFindMethod() {
 	  let m = Module.thisModule();
 	  let f1 = m.findMethod("sample");
@@ -86,7 +86,7 @@ class ReflectionTest : Test {
 	  let f2 = m.findMethod("ample");
 	  assertFalse(f2 isa Method);
 	}
-	
+
 	def testCallMethod() {
 	  let m = Module.thisModule();
 	  let method = typecast[Method](m.findMethod("sample2"));
@@ -94,7 +94,7 @@ class ReflectionTest : Test {
 		method.call(m, 77);
 		assertEq(77, savedValue);
 	}
-	
+
 	def testFindClass() {
 	  let ty:Type = Type.of(TestClass);
 	  //assertEq("tart.reflect.CompositeType", ty.__typeName);
@@ -123,7 +123,7 @@ class ReflectionTest : Test {
     let ctor = ty.constructors[1];
 
     let tclass = typecast[TestClass](ty.create(ctor, "Hello"));
-    
+
     //let method = typecast[Method](ty.findMethod("square"));
     //assertEq(484, typecast[int32](method.call(tclass, 22)));
   }
@@ -144,7 +144,7 @@ class ReflectionTest : Test {
     assertFalse(attr isa String);
     //assertEq(null, attr);
   }
-  
+
   def testTypeOfStringClass {
     let ty = CompositeType.of(String);
 	  assertEq("String", ty.name);
@@ -166,8 +166,8 @@ class ReflectionTest : Test {
 
 	  let method = ty.findMethod("toString");
 	  assertNotNull(method);
-	  assertEq("tart.core.String", method.type.returnType.toString());
-	  assertEq(0, method.type.paramTypes.size);
+	  assertEq("tart.core.String", method.functionType.returnType.toString());
+	  assertEq(0, method.functionType.paramTypes.size);
   }
 
   def testTypeOfStringInstance {
@@ -184,17 +184,17 @@ class ReflectionTest : Test {
 	  assertNotNull(method);
 
 	  // Return type
-	  assertEq("tart.core.Array", method.type.returnType.toString());
-	  assertEq(Type.TypeKind.CLASS, method.type.returnType.typeKind);
-	  
+	  assertEq("tart.core.Array", method.functionType.returnType.toString());
+	  assertEq(Type.TypeKind.CLASS, method.functionType.returnType.typeKind);
+
 	  // Param types
-	  assertEq(2, method.type.paramTypes.size);
-	  assertTrue(method.type.paramTypes[0] isa PrimitiveType);
-	  assertTrue(method.type.paramTypes[0].toString().startsWith("int"));
-	  assertTrue(method.type.paramTypes[0].isIntegerType);
-	  assertTrue(method.type.paramTypes[1] isa PrimitiveType);
-	  assertTrue(method.type.paramTypes[1].toString().startsWith("int"));
-	  assertTrue(method.type.paramTypes[1].isIntegerType);
+	  assertEq(2, method.functionType.paramTypes.size);
+	  assertTrue(method.functionType.paramTypes[0] isa PrimitiveType);
+	  assertTrue(method.functionType.paramTypes[0].toString().startsWith("int"));
+	  assertTrue(method.functionType.paramTypes[0].isIntegerType);
+	  assertTrue(method.functionType.paramTypes[1] isa PrimitiveType);
+	  assertTrue(method.functionType.paramTypes[1].toString().startsWith("int"));
+	  assertTrue(method.functionType.paramTypes[1].isIntegerType);
   }
 
   def testVoidType {

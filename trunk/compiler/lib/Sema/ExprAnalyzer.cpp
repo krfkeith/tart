@@ -15,9 +15,13 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Closure.h"
 #include "tart/CFG/NamespaceDefn.h"
+
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
@@ -25,6 +29,7 @@
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/FinalizeTypesPass.h"
+
 #include <llvm/DerivedTypes.h>
 #include <llvm/ADT/StringExtras.h>
 

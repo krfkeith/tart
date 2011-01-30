@@ -1,7 +1,7 @@
 import tart.annex.Intrinsic;
 
 /** Attribute that specifies that this method or variable is an externally-defined symbol. */
-@Attribute
+@Attribute(Attribute.Target.ANY, Attribute.Retention.NONE)
 public class Extern {
   readonly var name:String;
 

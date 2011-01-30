@@ -10,6 +10,7 @@
 #include "tart/CFG/CompositeType.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/Common/Diagnostics.h"
 

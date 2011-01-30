@@ -25,6 +25,7 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/TargetSelection.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
@@ -91,7 +92,7 @@ DICompileUnit CodeGenerator::genDICompileUnit(const ProgramSource * source) {
     if (!srcPath.empty()) {
       DASSERT(srcPath.isAbsolute());
       compileUnit = dbgFactory_.CreateCompileUnit(
-        llvm::dwarf::DW_LANG_lo_user,
+        llvm::dwarf::DW_LANG_C, //  llvm::dwarf::DW_LANG_lo_user,
         //0xABBA, // Take a chance on me...
         srcPath.getLast(),
         srcPath.getDirname(),

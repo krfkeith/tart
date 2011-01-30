@@ -41,7 +41,7 @@ class Attribute {
 
   def construct() {
     self.target = Target.ANY;
-    self.retention = Retention.RUNTIME;
+    self.retention = Retention.NONE;
     self.propagation = Propagation.NONE;
   }
 

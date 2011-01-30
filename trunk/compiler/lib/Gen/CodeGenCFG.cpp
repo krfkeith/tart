@@ -16,6 +16,7 @@
 #include "tart/Common/SourceFile.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/CFG/Block.h"
 

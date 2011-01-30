@@ -8,6 +8,7 @@
 #include "tart/CFG/FunctionDefn.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/Sema/ConstructorAnalyzer.h"
 #include "tart/Sema/AnalyzerBase.h"

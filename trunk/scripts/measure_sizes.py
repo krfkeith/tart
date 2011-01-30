@@ -197,7 +197,9 @@ st = Stats([
     Stat("Composite types", PrefixMatcher(".compositeType")),
     Stat("Enum types", PrefixMatcher(".enumType")),
     Stat("Other types", PrefixMatcher(".type.")),
-    Stat("Type references", PrefixMatcher(".typeRefs")),
+    Stat("Methods", PrefixMatcher(".method")),
+    Stat("Properties", PrefixMatcher(".propert")),
+    Stat("Fields", PrefixMatcher(".field")),
     Stat("Type lists", PrefixMatcher(".typelist")),
     Stat("Invokers", PrefixMatcher(".invoke")),
     Stat("Name tables (head)", PrefixMatcher(".names.")),
@@ -229,9 +231,6 @@ st = Stats([
   Stat("Static strings", PrefixMatcher(".string")),
   Stat("Trace tables", PrefixMatcher(".tracetable")),
 ])
-
-#.methodRefs 2
-#.members 3
 
 prev_sym = None
 prev_addr = 0

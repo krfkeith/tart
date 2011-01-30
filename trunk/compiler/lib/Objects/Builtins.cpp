@@ -13,6 +13,7 @@
 
 #include "tart/Objects/TargetSelection.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
@@ -60,7 +61,16 @@ SystemClass Builtins::typeDerivedType("tart.reflect.DerivedType");
 SystemClass Builtins::typeModule("tart.reflect.Module");
 SystemClass Builtins::typeNameTable("tart.reflect.NameTable");
 SystemClass Builtins::typePackage("tart.reflect.Package");
-SystemClass Builtins::typeStaticTypeList("tart.reflect.StaticTypeList");
+SystemClass Builtins::typeMethod("tart.reflect.Method");
+SystemClass Builtins::typeProperty("tart.reflect.Property");
+SystemClass Builtins::typeField("tart.reflect.Field");
+SystemClass Builtins::typeDataMember("tart.reflect.DataMember");
+SystemClass Builtins::typeMember("tart.reflect.Member");
+SystemClass Builtins::typeTypeList("tart.reflect.TypeList");
+SystemClass Builtins::typeAttributeList("tart.reflect.AttributeList");
+SystemClass Builtins::typeMethodList("tart.reflect.MethodList");
+SystemClass Builtins::typePropertyList("tart.reflect.PropertyList");
+SystemClass Builtins::typeFieldList("tart.reflect.FieldList");
 
 SystemClass Builtins::typeAttribute("tart.core.Attribute");
 SystemClass Builtins::typeIntrinsicAttribute("tart.annex.Intrinsic");
@@ -136,9 +146,8 @@ Defn * Builtins::getSingleMember(Scope * scope, const char * name) {
 }
 
 Defn * Builtins::getSingleDefn(Type * type, const char * name) {
-  CompositeType * ctype = cast<CompositeType>(type);
-  AnalyzerBase::analyzeType(ctype, Task_PrepMemberLookup);
-  return getSingleMember(ctype, name);
+  AnalyzerBase::analyzeType(type, Task_PrepMemberLookup);
+  return getSingleMember(type->memberScope(), name);
 }
 
 Defn * Builtins::getSingleDefn(NamespaceDefn * ns, const char * name) {
@@ -206,42 +215,5 @@ FunctionDefn * Builtins::objectCoerceFn() {
 
   return coerceFn;
 }
-
-CompositeType * SystemClass::get() const {
-  if (type_ == NULL) {
-    type_ = cast<CompositeType>(Builtins::loadSystemType(typeName_));
-  }
-
-  return type_;
-}
-
-const llvm::Type * SystemClass::irType() const {
-  return get()->irType();
-}
-
-const llvm::Type * SystemClass::irEmbeddedType() const {
-  return get()->irEmbeddedType();
-}
-
-const llvm::Type * SystemClass::irParameterType() const {
-  return get()->irParameterType();
-}
-
-const llvm::Type * SystemClass::irReturnType() const {
-  return get()->irReturnType();
-}
-
-TypeDefn * SystemClass::typeDefn() const {
-  return get()->typeDefn();
-}
-
-NamespaceDefn * SystemNamespace::get() const {
-  if (ns_ == NULL) {
-    ns_ = cast<NamespaceDefn>(Builtins::loadSystemDef(nsName_));
-  }
-
-  return ns_;
-}
-
 
 }
