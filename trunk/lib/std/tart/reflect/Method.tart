@@ -5,46 +5,34 @@ import tart.core.Memory.Address;
 final class Method : Member {
   private {
 	  let _typeParams:List[Type];
-    let _type:FunctionType;
 	  let _params:List[Parameter];
     let _methodPointer:Address[void];
-  }
+    let _isConstructor:bool;
 
-  public def construct(
-      name:String,
-      kind:MemberKind,
-      visibility:Visibility,
-      traits:Traits,
-      attributes:List[Object],
-      typeParams:List[Type],
-      type:FunctionType,
-      params:List[Parameter],
-      methodPointer:Address[void]) {
-    super(name, kind, visibility, traits, attributes);
-    self._typeParams = typeParams;
-    self._type = type;
-    self._params = params;
-    self._methodPointer = methodPointer;
+    undef construct();
   }
 
   /** Array of type parameters. */
   def typeParams:List[Type] { get { return _typeParams; } }
 
   /** The type of the method. */
-  def type:FunctionType { get { return _type; } }
+  def functionType:FunctionType { get { return Memory.bitCast(memberType); } }
 
   /** The return type of the method. */
-  def returnType:Type { get { return _type.returnType; } }
+  def returnType:Type { get { return functionType.returnType; } }
 
 	/** Number of parameters for this method. */
-  def numParams:int { get { return _type.numParams; } }
-  
+  def numParams:int { get { return functionType.numParams; } }
+
   /** The array of function parameter types. */
-  def paramTypes:List[Type] { get { return _type.paramTypes; } }
+  def paramTypes:List[Type] { get { return functionType.paramTypes; } }
 
   /** The parameters of this method. */
   def params:List[Parameter] { get { return _params; } }
-  
+
+	/** True if this method is a constructor. */
+  def isConstructor:bool { get { return _isConstructor; } }
+
   /** Call this method with the given arguments.
       Parameters:
         obj - The 'self' argument, or null if this is a static method.
@@ -52,7 +40,7 @@ final class Method : Member {
    */
   def call(obj:optional Object, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
-    return _type.invoke(_methodPointer, obj, args);
+    return functionType.invoke(_methodPointer, obj, args);
   }
 
   /** Call this method with the given arguments.
@@ -61,25 +49,25 @@ final class Method : Member {
         args - The list of arguments to the method.
    */
   def call(obj:optional Object, args:Object...) -> Object {
-    return _type.invoke(_methodPointer, obj, args);
+    return functionType.invoke(_methodPointer, obj, args);
   }
 
   override toString -> String {
     let sb = StringBuilder(name);
-    if not _type.paramTypes.isEmpty or _type.returnType is PrimitiveType.VOID {
+    if not functionType.paramTypes.isEmpty or functionType.returnType is PrimitiveType.VOID {
       let typeStrings = tart.collections.ArrayList[String]();
-      for type in _type.paramTypes {
+      for type in functionType.paramTypes {
         typeStrings.add(type.toString());
       }
 
       sb.append(String.format("({0})", ",".join(typeStrings)));
     }
-    
-    if _type.returnType is not PrimitiveType.VOID {
+
+    if functionType.returnType is not PrimitiveType.VOID {
       sb.append(" -> ");
-	    sb.append(_type.returnType.toString());
+	    sb.append(functionType.returnType.toString());
     }
-    
+
     return sb.toString();
   }
 }

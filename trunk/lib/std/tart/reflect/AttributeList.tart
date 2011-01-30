@@ -3,13 +3,13 @@ import tart.core.Memory.Address;
 import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
-/** An immutable list of types that points to a statically-initialized array. */
-final class StaticTypeList : List[Type] {
+/** An immutable list of attributes that points to a statically-initialized array. */
+final class AttributeList : List[Attribute] {
   private {
     var _size:int;
-    var _data:FlexibleArray[Type];
+    var _data:FlexibleArray[Attribute];
 
-		/** Custom trace method for garbage collection to handle variable-length object. */
+    /** Custom trace method for garbage collection to handle variable-length object. */
     @TraceMethod def __trace(action:TraceAction) {
       for i = 0; i < _size; ++i {
         action.trace(_data[i]);
@@ -17,14 +17,12 @@ final class StaticTypeList : List[Type] {
     }
   }
 
-  undef construct;
-
-	// TODO: Make this undef. (Undefs should automatically throw UnsupportedOperationError().) */
-  def add(e:Type) {
+  // TODO: Make this undef. (Undefs should automatically throw UnsupportedOperationError().) */
+  def add(e:Attribute) {
     throw UnsupportedOperationError();
   }
 
-  def insert(position:int, e:Type) {
+  def insert(position:int, e:Attribute) {
     throw UnsupportedOperationError();
   }
 
@@ -32,7 +30,7 @@ final class StaticTypeList : List[Type] {
     throw UnsupportedOperationError();
   }
 
-  def [index:int]:Type {
+  def [index:int]:Attribute {
     get {
       return _data[index];
     }
@@ -54,27 +52,27 @@ final class StaticTypeList : List[Type] {
     get { return self._size == 0; }
   }
 
-  def contains(type:Type) -> bool {
+  def contains(type:Attribute) -> bool {
     for i = 0; i < _size; ++i {
-			return true if self._data[i] == type;
+      return true if self._data[i] == type;
     }
     return false;
   }
 
-  def iterate -> Iterator[Type] {
-    return StaticTypeListIterator(self);
+  def iterate -> Iterator[Attribute] {
+    return IteratorImpl(self);
   }
 
-  private final class StaticTypeListIterator : Iterator[Type], HasLength {
-    private var _typeList:StaticTypeList;
+  private final class IteratorImpl : Iterator[Attribute], HasLength {
+    private var _typeList:AttributeList;
     private var _index:int;
 
-    def construct(typeList:StaticTypeList) {
+    def construct(typeList:AttributeList) {
       self._typeList = typeList;
       self._index = 0;
     }
 
-    def next() -> Type or void {
+    def next() -> Attribute or void {
       if (self._index < self._typeList._size) {
         return self._typeList._data[self._index++];
       } else {

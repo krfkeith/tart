@@ -16,9 +16,11 @@
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/TemplateConditions.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/Common/PackageMgr.h"
+
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Sema/TemplateParamAnalyzer.h"
@@ -27,12 +29,19 @@
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/FindExternalRefsPass.h"
 #include "tart/Sema/EvalPass.h"
+
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
+#include "tart/Objects/SystemDefs.h"
 
 namespace tart {
 
-extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
+namespace reflect {
+  namespace FunctionType {
+    extern SystemClassMember<TypeDefn> CallAdapterFnType;
+  }
+}
+
 extern SystemNamespaceMember<FunctionDefn> gc_allocContext;
 extern SystemNamespaceMember<FunctionDefn> gc_alloc;
 
@@ -71,19 +80,27 @@ bool DefnAnalyzer::analyzeModule() {
 
   if (module_->isReflectionEnabled()) {
     module_->addSymbol(Builtins::typeModule.typeDefn());
-    module_->addSymbol(Builtins::typeStaticTypeList.typeDefn());
+    module_->addSymbol(Builtins::typeTypeList.typeDefn());
     analyzeType(Builtins::typeCompositeType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typeEnumType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typeDerivedType.get(), Task_PrepCodeGeneration);
     analyzeType(Builtins::typePrimitiveType.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeStaticTypeList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeTypeList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeAttributeList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeMethod.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeMethodList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeProperty.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typePropertyList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeField.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeFieldList.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeDataMember.get(), Task_PrepCodeGeneration);
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
   analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
   analyzeFunction(gc_alloc, Task_PrepCodeGeneration);
-  analyzeDefn(functionType_CallAdapterFnType.get(), Task_PrepCodeGeneration);
+  analyzeDefn(reflect::FunctionType::CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
   // way down; Non-synthetic xrefs only need to be analyzed deep enough to
@@ -489,7 +506,7 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
     if (!fn->isIntrinsic() && !fn->isExtern() && fn->isSingular()) {
       if (isReflected) {
         reflectType(fn->type());
-        module_->addSymbol(fn->mergeTo() ? fn->mergeTo() : fn);
+        module_->reflect(fn->mergeTo() ? fn->mergeTo() : fn);
       }
     }
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(in)) {
@@ -500,11 +517,15 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
       if (prop->setter() != NULL) {
         module_->addSymbol(prop->setter());
       }
+      module_->reflect(prop);
       reflectType(prop->type());
     }
   } else if (VariableDefn * var = dyn_cast<VariableDefn>(in)) {
     if (isReflected) {
-      reflectType(var->type());
+      if (var->storageClass() == Storage_Global || var->storageClass() == Storage_Static) {
+        module_->reflect(var);
+        reflectType(var->type());
+      }
     }
   }
 }

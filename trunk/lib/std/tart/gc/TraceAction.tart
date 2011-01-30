@@ -67,6 +67,11 @@ abstract class TraceAction {
 	  self.tracePointer(addressOf(v));
   }
 
+	/** Tracer for object fields - updates the object reference. */
+  macro trace[%T <: Object](v:T) {
+	  self.tracePointer(reinterpretPtr[T, Object](addressOf(v)));
+  }
+
   /** Trace an arbitrary value type. */
   macro trace[%T](v:T) {
     self.traceDescriptors(reinterpretPtr(addressOf(v)), GC.traceTableOf(T));

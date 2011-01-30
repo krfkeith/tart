@@ -9,10 +9,6 @@
 #include "tart/CFG/Defn.h"
 #endif
 
-#ifndef TART_COMMON_AGENDA_H
-#include "tart/Common/Agenda.h"
-#endif
-
 #include "llvm/ADT/SetVector.h"
 #include "llvm/Support/CommandLine.h"
 

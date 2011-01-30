@@ -11,6 +11,7 @@
 #include "tart/CFG/TypeOrdering.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 #include "tart/Objects/TargetSelection.h"
 
 namespace tart {

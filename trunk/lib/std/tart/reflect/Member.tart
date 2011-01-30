@@ -7,14 +7,7 @@ class Member {
     PROTECTED,
     PRIVATE,
   }
-  
-  enum MemberKind : ubyte {
-    FIELD,
-    PROPERTY,
-    METHOD,
-    CONSTRUCTOR,
-  }
-  
+
   @Flags enum Traits : ubyte {
     FINAL,
     ABSTRACT,
@@ -24,40 +17,30 @@ class Member {
   }
 
   private {
-    var _name:String;
-    var _kind:MemberKind;
+    var _names:NameTable;
+    var _nameIndex:int16;
     var _visibility:Visibility;
     var _traits:Traits;
-    var _attributes:List[Object];
-  }
+    var _type:Type;
+    var _attributes:List[Attribute];
 
-  protected def construct(
-      name:String,
-      kind:MemberKind,
-      visibility:Visibility,
-      traits:Traits,
-      attributes:List[Object]) {
-    self._name = name;
-    self._kind = kind;
-    self._visibility = visibility;
-    self._traits = traits;
-    self._attributes = attributes;
+    undef construct;
   }
 
   /** The unqualified member name. */
-  final def name:String { get { return _name; } }
-  
-  /** What kind of member this is (FIELD, PROPERTY, METHOD, CONSTRUCTOR) */
-  final def kind:MemberKind { get { return _kind; } }
-  
+  final def name:String { get { return _names.getName(_nameIndex); } }
+
   /** Accessibility of this member. */
   final def visibility:Visibility { get { return _visibility; } }
-  
+
   /** Various member flags. */
   final def traits:Traits { get { return _traits; } }
 
+  /** The type of this member. */
+  final def memberType:Type { get { return _type; } }
+
   /** Array of attributes for this member. */
-  final def attributes:List[Object] { get { return _attributes; } }
+  final def attributes:List[Attribute] { get { return _attributes; } }
 
   /** Return the first attribute of type 'attrType'. */
   final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
@@ -69,7 +52,7 @@ class Member {
     return null;
   }
 
-	/** Return true if this member has an attribute of type 'attrType'. */ 
+	/** Return true if this member has an attribute of type 'attrType'. */
   final def hasAttribute[%T](attrType:TypeLiteral[T]) -> bool {
 	  //return any(_attributes, fn attr { attr isa T; });
     for attr in _attributes {
@@ -81,12 +64,12 @@ class Member {
   /** The class that declared this member, or null if it's a global function. */
   //let definingScope:Type;
 
-  /** True if this member has static or global storage class. */  
+  /** True if this member has static or global storage class. */
   //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }
 
-  /** True if this member was declared 'final'. */  
+  /** True if this member was declared 'final'. */
   //def isFinal:bool { get { return (Traits.FINAL in _traits) != 0; } }
 
-  /** True if this member is abstract. */  
+  /** True if this member is abstract. */
   //def isAbstract:bool { get { return (Traits.ABSTRACT in _traits) != 0; } }
 }

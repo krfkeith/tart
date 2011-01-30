@@ -29,7 +29,7 @@ endif (LIB_DL)
 set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
-set(USE_LLVM_BINARIES 1)
+set(USE_LLVM_BINARIES 0)
 set(GENERATE_DEBUG_INFO 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
@@ -139,7 +139,7 @@ foreach(SRC_FILE ${TART_SRC})
             "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
-    # Link object files
+    # Optimize object files
     add_custom_command(OUTPUT ${OPT_BC_FILE}
         COMMAND ${LLVM_OPT} ${OPT_FLAGS}
             -o ${OPT_BC_FILE}

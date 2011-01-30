@@ -11,12 +11,16 @@
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/EnumType.h"
+
 #include "tart/Sema/FindExternalRefsPass.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/AnalyzerBase.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsics.h"
+#include "tart/Objects/SystemDefs.h"
 
 namespace tart {
 
@@ -121,6 +125,9 @@ bool FindExternalRefsPass::addTypeRef(const Type * type) {
 
 bool FindExternalRefsPass::addFunction(FunctionDefn * fn) {
   if (!fn->isIntrinsic() && !fn->isExtern()) {
+    if (fn->mergeTo()) {
+      fn = fn->mergeTo();
+    }
     AnalyzerBase::analyzeType(fn->type(), Task_PrepTypeGeneration);
     if (fn->module() != module_ && fn->module() != NULL) {
       module_->addModuleDependency(fn->module());

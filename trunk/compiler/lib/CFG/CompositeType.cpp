@@ -11,10 +11,14 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
+
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Sema/AnalyzerBase.h"
+
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/DerivedTypes.h"
 

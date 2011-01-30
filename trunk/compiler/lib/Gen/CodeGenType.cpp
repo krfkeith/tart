@@ -4,7 +4,6 @@
 
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/StructBuilder.h"
-#include "tart/Gen/ReflectionMetadata.h"
 #include "tart/Gen/RuntimeTypeInfo.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -20,7 +19,9 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
+
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
@@ -34,7 +35,11 @@ using namespace llvm;
 
 SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
 
-extern SystemClassMember<TypeDefn> functionType_CallAdapterFnType;
+namespace reflect {
+  namespace FunctionType {
+    extern SystemClassMember<TypeDefn> CallAdapterFnType;
+  }
+}
 
 // Members of tart.core.TypeInfoBlock.
 
@@ -185,7 +190,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
       ArrayType::get(typePointerType, baseClassList.size()),
       baseClassList);
   GlobalVariable * baseClassArrayPtr = new GlobalVariable(*irModule_,
-    baseClassArray->getType(), true, GlobalValue::InternalLinkage,
+    baseClassArray->getType(), true, GlobalValue::LinkOnceAnyLinkage,
     baseClassArray, type->typeDefn()->linkageName() + ".type.tib.bases");
 
   // Generate the interface dispatch function
@@ -917,7 +922,7 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
 
 const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
-    const Type * invokeTypeDefn = functionType_CallAdapterFnType.get()->typeValue();
+    const Type * invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->typeValue();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
   }
 

@@ -25,6 +25,7 @@
 #include "tart/Sema/ExprAnalyzer.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 namespace tart {
 

@@ -13,6 +13,7 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsic.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/Function.h"
 

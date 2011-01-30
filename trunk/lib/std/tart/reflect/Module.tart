@@ -10,12 +10,9 @@ final class Module {
   private {
     var _names:NameTable;
     var _nameIndex:int16;
-    var _strmData:Address[ubyte];
-    var _typeRefs:Address[Type];
-    var _globalRefs:Address[Object];
-    var _methodRefs:Address[Address[void]];
     var _memberTypes:List[Type];
     var _methods:List[Method];
+    // TODO: Add fields, properties.
 
     undef construct();
   }
@@ -39,35 +36,13 @@ final class Module {
   final def types:List[Type] { get { return self._memberTypes; } }
 
   /** Array of types defined in this module. */
-  final def methods:List[Method] { get { decodeMethods(); return self._methods; } }
+  final def methods:List[Method] { get { return self._methods; } }
 
-  /** Returns a reference to the caller's module. */  
+  /** Returns a reference to the caller's module. */
   @Intrinsic static def thisModule() -> Module;
 
   /** Returns a reference to module that contains the specified type. */
   @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
-
-	/** Decode the compressed method descriptors. */
-  private final def decodeMethods {
-    if self._methods is null {
-      if _strmData is null {
-  	    self._methods = ImmutableList.of();
-      } else {
-        let decoder = MemberDecoder(_strmData, _names, _typeRefs, _globalRefs, _methodRefs, null, 0);
-  	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
-    	  let methods = ArrayList[Method]();
-  	    if length != 0 {
-        	//Debug.writeLn("Length of method section = ", length.toString());
-  	      let endPos = decoder.position + length;
-    	    while decoder.position < endPos {
-      	    let m = decoder.decodeMethod();
-           	methods.add(m);
-        	}
-  	    }
-  	    self._methods = ImmutableList.copyOf(methods);
-      }
-    }
-  }
 
   def findMethod(name:String) -> Method or void {
     for m in _methods {

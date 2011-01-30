@@ -16,21 +16,16 @@ public class CompositeType : Type {
     var _nameIndex:int16;
     var _size:uint;
     let _typeInfo:Address[TypeInfoBlock];
-    var _strmData:Address[ubyte];
-    var _typeRefs:Address[Type];
-    var _globalRefs:Address[Object];
-    var _methodRefs:Address[Address[void]];
     var _supertype:optional CompositeType;
     var _interfaces:List[Type];
     var _typeParams:List[Type];
-    var _attributes:List[Object];
+    var _attributes:List[Attribute];
     var _fields:List[Field];
     var _properties:List[Property];
     var _constructors:optional List[Method];
     var _methods:optional List[Method];
     var _memberTypes:List[Type];
     var _noArgCtor:static fn :Object -> Object;
-    var _methodBaseIndex:int;
     // Need type adapter functions for structs.
 
 		/** Object header structure - used to fill in the TIB field when creating a new
@@ -80,7 +75,7 @@ public class CompositeType : Type {
   final def typeParams:List[Type] { get { return self._typeParams; } }
 
   /** Array of associated attributes */
-  final def attributes:List[Object] { get { return self._attributes; } }
+  final def attributes:List[Attribute] { get { return self._attributes; } }
 
   /** Array of field members. */
   final def fields:List[Field] { get { return self._fields; } }
@@ -89,10 +84,10 @@ public class CompositeType : Type {
   final def properties:List[Property] { get { return self._properties; } }
 
   /** Array of constructor members. */
-  final def constructors:List[Method] { get { decodeMethods(); return _constructors; } }
+  final def constructors:List[Method] { get { return _constructors; } }
 
   /** Array of methods. */
-  final def methods:List[Method] { get { decodeMethods(); return _methods; } }
+  final def methods:List[Method] { get { return _methods; } }
 
   /** Array of types defined within this type. */
   final def memberTypes:List[Type] { get { return self._memberTypes; } }
@@ -257,36 +252,6 @@ public class CompositeType : Type {
 	    return sb.toString();
     } else {
 	    return qualifiedName;
-    }
-  }
-
-	/** Decode the compressed method descriptors. */
-  private final def decodeMethods {
-    if self._methods is null {
-      if _strmData is null {
-		    self._methods = ImmutableList.of();
-		    self._constructors = ImmutableList.of();
-      } else {
-        let decoder = MemberDecoder(
-        		_strmData, _names, _typeRefs, _globalRefs, _methodRefs,
-        		addressOf(_typeInfo.methodTable[0]), _methodBaseIndex);
-  	    let length = decoder.seekToSection(MemberDecoder.SectionTag.METHODS);
-    	  let methods = ArrayList[Method]();
-      	let constructors = ArrayList[Method]();
-  	    if length != 0 {
-  	      let endPos = decoder.position + length;
-    	    while decoder.position < endPos {
-      	    let m = decoder.decodeMethod();
-        	  if m.kind == Member.MemberKind.CONSTRUCTOR {
-          	  constructors.add(m);
-          	} else {
-            	methods.add(m);
-          	}
-        	}
-  	    }
-  	    self._methods = ImmutableList.copyOf(methods);
-  	    self._constructors = ImmutableList.copyOf(constructors);
-      }
     }
   }
 

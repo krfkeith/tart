@@ -1,10 +1,11 @@
 // ------------------------------------------------------------------------
 
 Next up:
+* Type constraints - eliminated un-needed methods.
+* Reflection - try making methods pre-generated, eliminate compressed rep.
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* Measure symbol sizes again (get the size measurer thingy from work)
 * See if we need to make a global attribute index.
 * @ReflectOnly (non-propagating reflection.)
 
@@ -355,6 +356,7 @@ Executable sizes:
 -rwxr-xr-x 1 talin talin  358492 2010-11-12 19:27 test/stdlib/SwitchStmtTest (smarter coalesce)
 -rwxr-xr-x 1 talin talin  357291 2010-11-13 10:49 test/stdlib/SwitchStmtTest (smarter coalesce)
 -rwxr-xr-x 1 talin talin  356590 2010-11-13 11:28 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  256897 2011-01-29 18:09 test/stdlib/SwitchStmtTest (new reflector)
 
 (Need new baseline)
 

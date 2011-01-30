@@ -5,11 +5,14 @@
 #ifndef TART_GEN_REFLECTOR_H
 #define TART_GEN_REFLECTOR_H
 
+#include "tart/Common/Agenda.h"
 #include "tart/Common/SourceLocation.h"
 
-#include "tart/CFG/CFG.h"
+#ifndef TART_META_NAMETABLE_H
+  #include "tart/Meta/NameTable.h"
+#endif
 
-#include "tart/Gen/ReflectionMetadata.h"
+#include "tart/CFG/CFG.h"
 
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/ADT/StringMap.h"
@@ -35,39 +38,19 @@ class FunctionType;
 class IterableScope;
 class TypeDefn;
 class TupleType;
-class ReflectionMetadata;
 
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
-typedef llvm::SetVector<Defn *> DefnSet;
 
 /// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
 class Reflector {
 public:
-  typedef std::pair<const Type *, TagInfo> TypeArrayElement;
-  typedef std::vector<TypeArrayElement> TypeArray;
-  typedef llvm::DenseMap<const Type *, TagInfo, Type::CanonicalKeyInfo> TypeMap;
-  typedef llvm::SetVector<const Type *> TypeSet;
-
   // Keep these enums in sync with Member.tart
   enum Visibility {
     PUBLIC,
     PROTECTED,
     PRIVATE,
-  };
-
-  enum MemberKind {
-    FIELD,
-    PROPERTY,
-    METHOD,
-    CONSTRUCTOR,
-  };
-
-  enum Traits {
-    FINAL     = (1 << 0),
-    ABSTRACT  = (1 << 1),
-    STATIC    = (1 << 2),
   };
 
   // Keep this enum in sync with Type.tart
@@ -85,27 +68,6 @@ public:
     ADDRESS,
     NATIVE_ARRAY,
     //SingleValue
-  };
-
-  // Keep this enum in sync with PrimitiveType.tart
-  enum SubtypeId {
-    NONE = 0,
-    VOID,
-    NULLTYPE,
-    BOOL,
-    CHAR,
-    BYTE,
-    SHORT,
-    INT,
-    LONG,
-    INTPTR,
-    UBYTE,
-    USHORT,
-    UINT,
-    ULONG,
-    UINTPTR,
-    FLOAT,
-    DOUBLE,
   };
 
   Reflector(CodeGenerator & cg);
@@ -127,11 +89,14 @@ public:
   /** Generate a pointer to the package reflection info. */
   llvm::GlobalVariable * getPackagePtr(Module * module);
 
-  /** Return the reflected symbol data for a given definition. */
-  ReflectionMetadata * getReflectionMetadata(const Defn * def);
+  /** Generate a pointer to a reflected method. */
+  llvm::GlobalVariable * getMethodPtr(const FunctionDefn * fn);
 
-  /** Return the reflected symbol data for a given definition, creating it if necessary. */
-  ReflectionMetadata * getOrCreateReflectionMetadata(const Defn * def);
+  /** Generate a pointer to a reflected property. */
+  llvm::GlobalVariable * getPropertyPtr(const PropertyDefn * prop);
+
+  /** Generate a pointer to a reflected field. */
+  llvm::GlobalVariable * getFieldPtr(const VariableDefn * field);
 
   /** Generate reflection information for a module. */
   void emitModule(Module * module);
@@ -141,16 +106,7 @@ public:
   void emitNameTable(Module * module);
 
   /** Add a definition to the list of reflected members. */
-  void createMetadata(const Defn * def);
-
-  /** Add all of the members of the given scope to the reflected scope. */
-  void createMetadataForMembers(const IterableScope * scope, ReflectionMetadata * rs);
-
-  /** Add the member to the reflected scope. */
-  void createMetadataForMember(const Defn * def, ReflectionMetadata * rs);
-
-  /** Generate reflection information for a definition in this module. */
-  void buildRMD(const Defn * def);
+  void getRefs(const Defn * def);
 
   /** Return a reference to the reflected type object for the specified type. */
   llvm::Constant * getTypePtr(const Type * type);
@@ -158,6 +114,14 @@ public:
   llvm::GlobalVariable * getEnumTypePtr(const EnumType * type);
   llvm::GlobalVariable * getDerivedTypePtr(const Type * type);
   llvm::GlobalVariable * getFunctionTypePtr(const FunctionType * type);
+
+  /** Write out reflection information for a member. */
+  void emitDefn(const Defn * def);
+  void emitMethod(const FunctionDefn * fn);
+  void emitProperty(const PropertyDefn * prop);
+  void emitField(const VariableDefn * field);
+  llvm::Constant * emitMember(const ValueDefn * member, const CompositeType * memberType,
+      llvm::StringRef name);
 
   /** Write out reflection information for a type. */
   void emitType(const Type * type);
@@ -169,39 +133,35 @@ public:
   /** Write out the array of member types defined within the given scope. */
   llvm::Constant * emitMemberTypes(const IterableScope * scope);
 
-  /** Write out the reflection data for the contents of a definition. */
-  void emitReflectedMembers(ReflectionMetadata * rs, const IterableScope * scope);
+  /** Write out the array of reflected Attribute objects defined within the given scope. */
+  llvm::Constant * emitAttributeList(const ExprList & attrs, llvm::StringRef name);
 
-  /** Emitters for various sections. */
-  void emitTemplateParamsSection(ReflectionMetadata * rs, const Defn * def);
-  void emitAttributeSection(ReflectionMetadata * rs, const ExprList & attrs);
-  void emitTemplateSection(ReflectionMetadata * rmd, const Defn * def);
+  /** Write out the array of reflected Method objects defined within the given scope.
+      If 'ctors' is true, include only constructors, otherwise only include non-constructors. */
+  llvm::Constant * emitMethodList(const IterableScope * scope, bool ctors, llvm::StringRef name);
 
-  /** Emitters for various definition types. */
-  void emitNamespaceDefn(ReflectionMetadata * rs, const NamespaceDefn * def,
-      llvm::raw_ostream & out);
-  void emitFieldDefn(ReflectionMetadata * rs, const VariableDefn * def, llvm::raw_ostream & out);
-  void emitMethodDefn(ReflectionMetadata * rs, const FunctionDefn * def, llvm::raw_ostream & out);
-  void emitPropertyDefn(ReflectionMetadata * rs, const PropertyDefn * def, llvm::raw_ostream & out);
+  /** Write out the array of reflected Property objects within the given scope. */
+  llvm::Constant * emitPropertList(const IterableScope * scope, llvm::StringRef name);
 
-  /** Write out a POD array of type references. */
-  llvm::Constant * emitTypeRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
+  /** Write out the array of reflected Field objects within the given scope. */
+  llvm::Constant * emitFieldList(const IterableScope * scope, llvm::StringRef name);
 
-  /** Write out a POD array of global references. */
-  llvm::Constant * emitGlobalRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
+  /** Generate a TypeList from the given list of types. */
+  llvm::Constant * emitTypeList(const ConstTypeList & types);
 
-  /** Write out a POD array of method pointers. */
-  llvm::Constant * emitMethodRefArray(const ReflectionMetadata * rmd, llvm::StringRef baseName);
-
-  /** Generate a StaticTypeList from the given tuple type. */
-  llvm::Constant * emitStaticTypeList(const ConstTypeList & types);
+  /** Generate a StaticList from the given list of constant elements. */
+  llvm::Constant * emitStaticList(const ConstantList & elements,
+      llvm::StringRef namePrefix, llvm::StringRef name,
+      const CompositeType * listType, const CompositeType * elementType);
 
   /** Generate an array containing reflection data supplied by the specified array. */
   llvm::Constant * emitArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
 private:
-  typedef llvm::DenseMap<const Defn *, ReflectionMetadata *> ReflectedSymbolMap;
+
+  NameTable::Name * addQualifiedName(llvm::StringRef name);
+  NameTable::Name * addName(const llvm::StringRef name);
 
   Module * module();
 
@@ -216,11 +176,11 @@ private:
   llvm::Module * irModule_;
   llvm::GlobalVariable * nameTableVar_;
 
-  ReflectedSymbolMap rmdMap_;
   GlobalVarMap globals_;
 
   // Set of types exported by this module.
-  TypeSet typeExports_;
+  Agenda<const Defn> defnExports_;
+  Agenda<const Type> typeExports_;
   bool outputPhase_;
 };
 
