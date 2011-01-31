@@ -4,11 +4,10 @@
 
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/StructBuilder.h"
-//#include "tart/Gen/RuntimeTypeInfo.h"
-//
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
-//
+
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
@@ -19,15 +18,11 @@
 #include "tart/CFG/EnumType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/TupleType.h"
-//
-//#include "tart/Objects/Builtins.h"
+
 #include "tart/Objects/SystemDefs.h"
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
-//#include "llvm/DerivedTypes.h"
-//#include "llvm/Analysis/Verifier.h"
-//#include "llvm/Support/Format.h"
 
 #define DEBUG_STATIC_ROOTS 0
 
@@ -35,16 +30,8 @@ namespace tart {
 
 using namespace llvm;
 
-//SystemClassMember<FunctionDefn> functionType_checkArgs(Builtins::typeFunctionType, "checkArgCount");
-//
-//namespace reflect {
-//  namespace FunctionType {
-//    extern SystemClassMember<TypeDefn> CallAdapterFnType;
-//  }
-//}
-//
-//// Members of tart.core.TypeInfoBlock.
-//
+// Members of tart.core.TypeInfoBlock.
+
 extern SystemClassMember<VariableDefn> tib_traceTable;
 
 // Members of tart.gc.TraceAction.
@@ -426,18 +413,19 @@ void CodeGenerator::addStaticRoot(const llvm::GlobalVariable * gv, const Type * 
 
 void CodeGenerator::emitStaticRoots() {
   if (!staticRoots_.empty()) {
-    ConstantList entries;
+    // GEP indices
+    Constant * indices[2];
+    indices[0] = indices[1] = getInt32Val(0);
 
+    ConstantList entries;
     for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
       Constant * fieldName = ConstantArray::get(context_, it->first->getName());
-      GlobalVariable * fieldNameVar = new GlobalVariable(
-new GlobalVariable(*irModule_, stackRootArray->getType(), true, GlobalValue::AppendingLinkage,
-          stackRootArray, ".static_roots");
+      GlobalVariable * fieldNameVar = new GlobalVariable(*irModule_,
+          fieldName->getType(), true, GlobalValue::InternalLinkage, fieldName, "root_name");
 
       Constant * fields[2];
-      fields[0] = ConstantArray::get(context_, it->first->getName());
-      fields[1] = it->second;
-
+      fields[0] = llvm::ConstantExpr::getInBoundsGetElementPtr(fieldNameVar, indices, 2);
+      fields[1] = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
       llvm::Constant * entry = llvm::ConstantStruct::get(context_, fields, 2, false);
       entries.push_back(entry);
     }
