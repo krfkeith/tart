@@ -30,16 +30,13 @@ import tart.gc.TraceAction;
     //def asBuffer() {
     //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
     //}
-
-    // Static empty array singleton.
-    static let emptyArray:Array = [];
   }
 
   /** Construct an array of a given length */
   static def create(size:int) -> Array {
     Preconditions.checkArgument(size >= 0);
     if (size == 0) {
-      return emptyArray;
+      return []; // Compiler optimizes empty arrays as static singletons
     }
 
     let self:Array = alloc(size);
@@ -57,7 +54,7 @@ import tart.gc.TraceAction;
   static def copyOf(collection:Collection[ElementType]) -> Array {
     let size = collection.size;
     if size == 0 {
-      return emptyArray;
+      return []; // Compiler optimizes empty arrays as static singletons
     }
 
     let result:Array = alloc(size);

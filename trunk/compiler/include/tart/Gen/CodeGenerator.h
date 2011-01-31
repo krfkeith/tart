@@ -76,6 +76,7 @@ typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
 typedef llvm::DenseMap<const Type *, llvm::DIType> DITypeMap;
+typedef llvm::DenseMap<const llvm::GlobalVariable *, llvm::Constant *> StaticRootMap;
 typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
@@ -153,7 +154,7 @@ public:
   /** Generate an expression (an RValue). */
   llvm::Value * genExpr(const Expr * expr);
   llvm::Constant * genConstExpr(const Expr * expr);
-  llvm::GlobalVariable * genConstRef(const Expr * in, llvm::StringRef name, bool synthetic);
+  llvm::Constant * genConstRef(const Expr * in, llvm::StringRef name, bool synthetic);
   llvm::Value * genInitVar(const InitVarExpr * in);
   llvm::Value * genClearVar(const ClearVarExpr * in);
   llvm::Value * genBinaryOpcode(const BinaryOpcodeExpr * expr);
@@ -313,6 +314,8 @@ public:
   /** Generate a constant object. */
   llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name,
       bool synthetic);
+
+  /** Generate the contents of a constant object. */
   llvm::Constant * genConstantObject(const ConstantObjectRef * obj);
 
   /** Generate a structure from the fields of a constant object. */
@@ -320,10 +323,19 @@ public:
       const ConstantObjectRef * obj, const CompositeType * type);
 
   /** Generate a constant array. */
-  llvm::Constant * genConstantArray(const ConstantNativeArray * array);
+  llvm::Constant * genConstantNativeArray(const ConstantNativeArray * array);
 
   /** Generate a constant union. */
   llvm::Constant * genConstantUnion(const CastExpr * array);
+
+  /** Generate a constant object. */
+  llvm::Constant * genConstantEmptyArray(const CompositeType * arrayType);
+
+  /** Mark this variable as being a static root for garbage collection. */
+  void addStaticRoot(const llvm::GlobalVariable * var, const Type * type);
+
+  /** Emit the table of static roots. */
+  void emitStaticRoots();
 
   /** Return the IR module being compiled. */
   llvm::Module * irModule() const { return irModule_; }
@@ -479,6 +491,7 @@ private:
   ConstantObjectMap constantObjectMap_;
   TraceTableMap traceTableMap_;
   TraceMethodMap traceMethodMap_;
+  StaticRootMap staticRoots_;
 
   // Temporary roots generated for GC
   ValueList tempRoots_;

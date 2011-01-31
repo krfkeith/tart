@@ -137,6 +137,9 @@ void CodeGenerator::generate() {
     reflector_.emitModule(module_);
   }
 
+  // Emit tables for static GC roots.
+  emitStaticRoots();
+
   // Finish up static constructors.
   if (moduleInitFunc_) {
     // See if any actual code was added to the init block.

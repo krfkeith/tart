@@ -143,6 +143,9 @@ public:
       requirements of this protocol. */
   bool isSupportedBy(const Type * type) const;
 
+  /** True if this object has any mutable fields. (Not counting garbage collector state) */
+  bool isMutable() const;
+
   /** Return the default constructor for this type. */
   FunctionDefn * defaultConstructor() const;
 

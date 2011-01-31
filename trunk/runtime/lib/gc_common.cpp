@@ -49,6 +49,7 @@ namespace {
   size_t stackFrameDescMapSize;
   size_t stackFrameDescMapMask;
   StackFrameDescMapEntry * stackFrameDescMap;
+  StaticRootsTableEntry * staticRootsTable;
 
   #if HAVE_GCC_THREAD_LOCAL
     __thread tart_object * tld;
@@ -178,6 +179,13 @@ void GC_traceStack(tart_object * traceAction) {
     if (tdesc != NULL) {
       TraceAction_traceDescriptors(traceAction, (void *)framePtr, tdesc);
     }
+  }
+}
+
+void GC_traceStaticRoots(tart_object * traceAction) {
+  for (StaticRootsTableEntry * root = staticRootsTable; root->rootAddr != NULL; ++root) {
+    TraceDescriptor * tdesc = root->traceTable;
+    TraceAction_traceDescriptors(traceAction, root->rootAddr, tdesc);
   }
 }
 

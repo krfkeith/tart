@@ -60,8 +60,14 @@ bool VariableDefn::hasStorage() const {
   // or if it's a object reference.
   DASSERT_OBJ(passes().isFinished(VariableDefn::VariableTypePass), this);
   if (ConstantExpr * ce = dyn_cast_or_null<ConstantExpr>(initValue_)) {
-    if (ce->exprType() != Expr::ConstObjRef && ce->exprType() != Expr::ConstNArray) {
-      return false;
+    switch (ce->exprType()) {
+      case Expr::ConstObjRef:
+      case Expr::ConstNArray:
+      case Expr::ConstEmptyArray:
+        return true;
+
+      default:
+        return false;
     }
   }
 

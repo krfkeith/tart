@@ -410,6 +410,27 @@ bool CompositeType::isSupportedBy(const Type * type) const {
   return true;
 }
 
+bool CompositeType::isMutable() const {
+  if (this == Builtins::typeObject.get()) {
+    return false;
+  }
+
+  for (DefnList::const_iterator it = instanceFields().begin(); it != instanceFields().end(); ++it) {
+    if (*it != NULL) {
+      VariableDefn * var = cast<VariableDefn>(*it);
+      if (var->defnType() == Defn::Var) {
+        return true;
+      }
+    }
+  }
+
+  if (super_) {
+    return super_->isMutable();
+  }
+
+  return false;
+}
+
 ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const CompositeType * fromClass = dyn_cast_or_null<CompositeType>(fromType)) {

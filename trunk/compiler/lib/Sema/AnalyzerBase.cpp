@@ -824,10 +824,9 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
       arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
 }
 
-VariableDefn * AnalyzerBase::getEmptyArrayOfElementType(const Type * elementType) {
+Expr * AnalyzerBase::getEmptyArrayOfElementType(const Type * elementType) {
   CompositeType * arrayType = getArrayTypeForElement(elementType);
-  AnalyzerBase::analyzeDefn(arrayType->typeDefn(), Task_PrepMemberLookup);
-  return cast_or_null<VariableDefn>(arrayType->memberScope()->lookupSingleMember("emptyArray"));
+  return new ConstantEmptyArray(SourceLocation(), arrayType);
 }
 
 ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elementType) {

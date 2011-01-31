@@ -23,9 +23,9 @@ class PrimitiveType : Type {
   }
 
   private {
-    var _subtype:SubtypeId;
-    var _name:String;
-    var _size:uint32;
+    let _subtype:SubtypeId;
+    let _name:String;
+    let _size:uint32;
   }
 
   def construct(subtype:SubtypeId, name:String, size:uint32) {

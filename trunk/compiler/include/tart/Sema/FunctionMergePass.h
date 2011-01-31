@@ -25,7 +25,7 @@ class CompareExpr;
 //class InstanceOfExpr;
 class InitVarExpr;
 //class ClearVarExpr;
-//class ArrayLiteralExpr;
+class ArrayLiteralExpr;
 //class TupleCtorExpr;
 //class ClosureEnvExpr;
 //class SharedValueExpr;
@@ -74,7 +74,7 @@ private:
   bool visitInitVar(InitVarExpr * from, InitVarExpr * to);
 //  bool visitClearVar(ClearVarExpr * from, ClearVarExpr * to);
 //  bool visitProg2(BinaryExpr * from, BinaryExpr * to);
-//  bool visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to);
+  bool visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to);
 //  bool visitTupleCtor(TupleCtorExpr * from, TupleCtorExpr * to);
 //  bool visitClosureScope(ClosureEnvExpr * from, ClosureEnvExpr * to);
 //  bool visitSharedValue(SharedValueExpr * from, SharedValueExpr * to);

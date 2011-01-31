@@ -70,6 +70,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::ConstNArray:
       return visitConstantNativeArray(static_cast<ConstantNativeArray *>(in));
 
+    case Expr::ConstEmptyArray:
+      return visitConstantEmptyArray(static_cast<ConstantEmptyArray *>(in));
+
     case Expr::LValue:
       return visitLValue(static_cast<LValueExpr *>(in));
 
@@ -199,6 +202,10 @@ Expr * CFGPass::visitConstantNativeArray(ConstantNativeArray * in) {
     *it = visitExpr(*it);
   }
 
+  return in;
+}
+
+Expr * CFGPass::visitConstantEmptyArray(ConstantEmptyArray * in) {
   return in;
 }
 

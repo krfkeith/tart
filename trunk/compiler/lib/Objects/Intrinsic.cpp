@@ -258,16 +258,16 @@ Expr * ThisPackageIntrinsic::eval(const SourceLocation & loc, Module * callingMo
       AnalyzerBase::getArrayTypeForElement(Builtins::typeModule.get())->typeDefn());
   callingModule->addSymbol(
       AnalyzerBase::getArrayTypeForElement(Builtins::typePackage.get())->typeDefn());
-  VariableDefn * emptyModuleArray =
+  Expr * emptyModuleArray =
       AnalyzerBase::getEmptyArrayOfElementType(Builtins::typeModule.get());
-  VariableDefn * emptyPackageArray =
+  Expr * emptyPackageArray =
       AnalyzerBase::getEmptyArrayOfElementType(Builtins::typePackage.get());
 
   DASSERT(emptyModuleArray != NULL);
   DASSERT(emptyPackageArray != NULL);
 
-  AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
+  //AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
+  //AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
 
   return NULL;
 }
@@ -287,16 +287,16 @@ Expr * PackageOfIntrinsic::eval(const SourceLocation & loc, Module * callingModu
       AnalyzerBase::getArrayTypeForElement(Builtins::typeModule.get())->typeDefn());
   callingModule->addSymbol(
       AnalyzerBase::getArrayTypeForElement(Builtins::typePackage.get())->typeDefn());
-  VariableDefn * emptyModuleArray =
+  Expr * emptyModuleArray =
       AnalyzerBase::getEmptyArrayOfElementType(Builtins::typeModule.get());
-  VariableDefn * emptyPackageArray =
+  Expr * emptyPackageArray =
       AnalyzerBase::getEmptyArrayOfElementType(Builtins::typePackage.get());
 
   DASSERT(emptyModuleArray != NULL);
   DASSERT(emptyPackageArray != NULL);
 
-  AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
-  AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
+  //AnalyzerBase::analyzeDefn(emptyModuleArray, Task_PrepCodeGeneration);
+  //AnalyzerBase::analyzeDefn(emptyPackageArray, Task_PrepCodeGeneration);
 
   return NULL;
 }

@@ -14,6 +14,7 @@
 #include "tart/CFG/Closure.h"
 
 #include "tart/Gen/CodeGenerator.h"
+#include "tart/Gen/StructBuilder.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -90,6 +91,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     case Expr::ConstObjRef:
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "", false);
+
+    case Expr::ConstEmptyArray:
+      return genConstantEmptyArray(cast<CompositeType>(in->type()));
 
     case Expr::LValue:
       return genLoadLValue(static_cast<const LValueExpr *>(in), true);
@@ -229,7 +233,10 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
       return genConstantObject(static_cast<const ConstantObjectRef *>(in));
 
     case Expr::ConstNArray:
-      return genConstantArray(static_cast<const ConstantNativeArray *>(in));
+      return genConstantNativeArray(static_cast<const ConstantNativeArray *>(in));
+
+    case Expr::ConstEmptyArray:
+      return genConstantEmptyArray(cast<CompositeType>(in->type()));
 
     case Expr::ConstString:
       return genStringLiteral(static_cast<const ConstantString *> (in)->value());
@@ -259,10 +266,28 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
   }
 }
 
-llvm::GlobalVariable * CodeGenerator::genConstRef(const Expr * in, StringRef name, bool synthetic) {
+llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, bool synthetic) {
   switch (in->exprType()) {
     case Expr::ConstObjRef:
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), name, synthetic);
+
+    case Expr::ConstEmptyArray:
+      return genConstantEmptyArray(cast<CompositeType>(in->type()));
+
+      // Don't know if this is needed....
+#if 0
+    case Expr::LValue: {
+      const LValueExpr * lval = static_cast<const LValueExpr *>(in);
+      const ValueDefn * value = lval->value();
+      if (value->defnType() == Defn::Let &&
+          (value->storageClass() == Storage_Global || value->storageClass() == Storage_Static)) {
+        return cast<GlobalVariable>(genLetValue(static_cast<const VariableDefn *>(value)));
+      }
+      diag.fatal(in) << "Not a constant reference: " <<
+      exprTypeName(in->exprType()) << " [" << in << "]";
+      return NULL;
+    }
+#endif
 
     //case Expr::ConstNArray:
       //return genConstantArrayPtr(static_cast<const ConstantNativeArray *>(in));
@@ -1007,6 +1032,10 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const Type * elementType = arrayType->typeDefn()->templateInstance()->typeArg(0);
   size_t arrayLength = in->args().size();
 
+  if (arrayLength == 0) {
+    return genConstantEmptyArray(arrayType);
+  }
+
   //diag.debug() << "Generating array literal of type " << elementType << ", length " << arrayLength;
 
   const llvm::Type * etype = elementType->irEmbeddedType();
@@ -1034,12 +1063,10 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   }
 
   // Store the array elements into their slots.
-  if (arrayLength > 0) {
-    Value * arrayData = builder_.CreateStructGEP(result, 2, "data");
-    for (size_t i = 0; i < arrayLength; ++i) {
-      Value * arraySlot = builder_.CreateStructGEP(arrayData, i);
-      builder_.CreateStore(arrayVals[i], arraySlot);
-    }
+  Value * arrayData = builder_.CreateStructGEP(result, 2, "data");
+  for (size_t i = 0; i < arrayLength; ++i) {
+    Value * arraySlot = builder_.CreateStructGEP(arrayData, i);
+    builder_.CreateStore(arrayVals[i], arraySlot);
   }
 
   // TODO: Optimize array creation when most of the elements are constants.
@@ -1149,10 +1176,16 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
     return NULL;
   }
 
-  return new GlobalVariable(
-      *irModule_, constObject->getType(), true,
+  bool isMutable = false;
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(obj->type())) {
+    isMutable = ctype->isMutable();
+  }
+  GlobalVariable * var = new GlobalVariable(
+      *irModule_, constObject->getType(), !isMutable,
       synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       constObject, name);
+  addStaticRoot(var, obj->type());
+  return var;
 }
 
 Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
@@ -1214,7 +1247,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
   return ConstantStruct::get(context_, fieldValues, false);
 }
 
-llvm::Constant * CodeGenerator::genConstantArray(const ConstantNativeArray * array) {
+llvm::Constant * CodeGenerator::genConstantNativeArray(const ConstantNativeArray * array) {
   ConstantList elementValues;
   for (ExprList::const_iterator it = array->elements().begin(); it != array->elements().end(); ++it) {
     Constant * value = genConstExpr(*it);
@@ -1280,6 +1313,28 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
   }
 
   return NULL;
+}
+
+llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arrayType) {
+  std::string arrayName = arrayType->typeDefn()->linkageName() + ".emptyArray";
+  if (GlobalVariable * gv = irModule_->getGlobalVariable(arrayName, true)) {
+    return gv;
+  }
+  const Type * elementType = arrayType->typeParam(0);
+
+  irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
+  DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), arrayType);
+
+  StructBuilder sb(*this);
+  sb.createObjectHeader(arrayType);
+  sb.addField(getIntVal(0));
+  sb.addArrayField(elementType, ConstantList());
+
+  llvm::Constant * arrayStruct = sb.build();
+  GlobalVariable * array = new GlobalVariable(*irModule_,
+      arrayStruct->getType(), true, GlobalValue::LinkOnceODRLinkage, arrayStruct,
+      arrayName);
+  return llvm::ConstantExpr::getPointerCast(array, arrayType->irEmbeddedType());
 }
 
 } // namespace tart
