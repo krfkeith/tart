@@ -165,7 +165,7 @@ private:
 
   Module * module();
 
-  llvm::Constant * getRetainedAttr(const Expr * attrExpr);
+  llvm::Constant * getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName);
   bool isExport(const Defn * de);
   int typeKind(Type::TypeClass cls);
 

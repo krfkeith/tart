@@ -261,6 +261,28 @@ void ConstantObjectRef::format(FormatStream & out) const {
   out << "<" << type()->typeDefn()->qualifiedName() << ">";
 }
 
+// -------------------------------------------------------------------
+// ConstantEmptyArray
+
+ConstantEmptyArray::ConstantEmptyArray(SourceLocation l, const CompositeType * type)
+  : Expr(ConstEmptyArray, l, type)
+{
+  const CompositeType * ctype = cast<CompositeType>(type);
+  DASSERT_OBJ(ctype->passes().isFinished(CompositeType::FieldPass), ctype);
+}
+
+bool ConstantEmptyArray::isSingular() const {
+  return type()->isSingular();
+}
+
+void ConstantEmptyArray::trace() const {
+  Expr::trace();
+}
+
+void ConstantEmptyArray::format(FormatStream & out) const {
+  out << "<" << type()->typeDefn()->qualifiedName() << ">";
+}
+
 /// -------------------------------------------------------------------
 /// ConstantNativeArray
 ConstantNativeArray::ConstantNativeArray(SourceLocation l, NativeArrayType * type)

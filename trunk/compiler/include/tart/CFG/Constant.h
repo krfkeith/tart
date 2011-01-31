@@ -214,6 +214,28 @@ public:
 };
 
 /// -------------------------------------------------------------------
+/// A reference to a constant empty array.
+class ConstantEmptyArray : public Expr {
+private:
+
+public:
+  ConstantEmptyArray(SourceLocation l, const CompositeType * val);
+
+  // Overrides
+
+  bool isConstant() const { return true; }
+  bool isSideEffectFree() const { return true; }
+  bool isSingular() const;
+
+  void format(FormatStream & out) const;
+  void trace() const;
+  static inline bool classof(const ConstantEmptyArray *) { return true; }
+  static inline bool classof(const Expr * ex) {
+    return ex->exprType() == ConstEmptyArray;
+  }
+};
+
+/// -------------------------------------------------------------------
 /// A constant native array.
 class ConstantNativeArray : public Expr {
 private:

@@ -51,6 +51,7 @@ public:
   virtual Expr * visitConstantNull(ConstantNull * in) { return in; }
   virtual Expr * visitConstantObjectRef(ConstantObjectRef * in);
   virtual Expr * visitConstantNativeArray(ConstantNativeArray * in);
+  virtual Expr * visitConstantEmptyArray(ConstantEmptyArray * in);
   virtual Expr * visitTypeLiteral(TypeLiteralExpr * in) { return in; }
 
   virtual Expr * visitLValue(LValueExpr * in);

@@ -568,6 +568,7 @@ void Reflector::emitNameTable(Module * module) {
     sb.addNullField(reflect::NameTable::compoundNameStrings.type());
 
     nameTablePtr->setInitializer(sb.build(Builtins::typeNameTable->irType()));
+    cg_.addStaticRoot(nameTablePtr, Builtins::typeNameTable);
   }
 }
 
@@ -1054,7 +1055,7 @@ llvm::Constant * Reflector::emitAttributeList(const ExprList & attrs, llvm::Stri
   const llvm::Type * attrType = Builtins::typeAttribute->irEmbeddedType();
   ConstantList retainedAttrs;
   for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    llvm::Constant * retainedAttr = getRetainedAttr(*it);
+    llvm::Constant * retainedAttr = getRetainedAttr(*it, name);
     if (retainedAttr != NULL) {
       retainedAttrs.push_back(
           llvm::ConstantExpr::getPointerCast(retainedAttr, attrType));
@@ -1332,12 +1333,7 @@ llvm::Constant * Reflector::emitArray(
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), var);
 
   if (values.empty()) {
-    //DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::CompletionPass), arrayType);
-    VariableDefn * emptyArray = cast_or_null<VariableDefn>(
-        arrayType->memberScope()->lookupSingleMember("emptyArray"));
-    if (emptyArray != NULL) {
-      return cast<llvm::Constant>(cg_.genLetValue(emptyArray));
-    }
+    return cg_.genConstantEmptyArray(arrayType);
   }
 
   StructBuilder sb(cg_);
@@ -1354,11 +1350,26 @@ llvm::Constant * Reflector::emitArray(
 
 Module * Reflector::module() { return cg_.module(); }
 
-llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr) {
+llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName) {
   const CompositeType * ctype = cast<CompositeType>(attrExpr->type());
   if (ctype->attributeInfo().isRetained()) {
     if (const ConstantObjectRef * cobj = dyn_cast<ConstantObjectRef>(attrExpr)) {
-      llvm::Constant * attr = cg_.genConstRef(attrExpr, "", false);
+      // Construct a unique name for this attribute instance.
+      int index = 0;
+      llvm::StringRef attrInstanceName;
+      llvm::SmallVector<char, 64> attrInstanceNameBuffer;
+      for (;; ++index) {
+        llvm::Twine attrInstanceNameBuilder(".attr.");
+        attrInstanceNameBuilder.concat(llvm::Twine::utohexstr(index));
+        attrInstanceNameBuilder.concat(".");
+        attrInstanceNameBuilder.concat(baseName);
+        attrInstanceName = attrInstanceNameBuilder.toStringRef(attrInstanceNameBuffer);
+        if (cg_.irModule()->getGlobalVariable(attrInstanceName) == NULL) {
+          break;
+        }
+      }
+
+      llvm::Constant * attr = cg_.genConstRef(attrExpr, attrInstanceName, false);
       return llvm::ConstantExpr::getPointerCast(attr, Builtins::typeObject->irEmbeddedType());
     } else {
       diag.error(attrExpr) << "Non-constant attribute (not implemented).";

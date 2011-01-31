@@ -1,12 +1,12 @@
 // ------------------------------------------------------------------------
 
 Next up:
+* Mark static GC roots.
 * Type constraints - eliminated un-needed methods.
-* Reflection - try making methods pre-generated, eliminate compressed rep.
 * optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
-* See if we need to make a global attribute index.
+* Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
 
 Design TODOS:
@@ -32,7 +32,6 @@ Design TODOS:
 Hard problems:
   -- GC
   -- Exception backtrace
-  -- Reflection size
   -- Dynamic reification of types.
 
 More things to do:

@@ -149,7 +149,7 @@ public:
   static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const Type * elementType);
 
   /** Given an element type, return an empty array of that element type. */
-  static VariableDefn * getEmptyArrayOfElementType(const Type * elementType);
+  static Expr * getEmptyArrayOfElementType(const Type * elementType);
 
   /** Given a value type, return the MutableRef[value] type. */
   CompositeType * getMutableRefType(const Type * valueType);

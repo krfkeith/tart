@@ -188,6 +188,12 @@ Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
   return CFGPass::visitConstantObjectRef(in);
 }
 
+Expr * FindExternalRefsPass::visitConstantEmptyArray(ConstantEmptyArray * in) {
+  const CompositeType * ctype = cast<CompositeType>(in->type());
+  module_->addSymbol(ctype->typeDefn());
+  return CFGPass::visitConstantEmptyArray(in);
+}
+
 Expr * FindExternalRefsPass::visitCast(CastExpr * in) {
   if (in->type()->typeDefn() != NULL) {
     module_->addSymbol(in->type()->typeDefn());

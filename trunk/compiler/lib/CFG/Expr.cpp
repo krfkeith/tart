@@ -274,7 +274,9 @@ Expr * LValueExpr::constValue(Expr * in) {
     if (lv->value()->defnType() == Defn::Let) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
         if (ConstantExpr * cexp = dyn_cast_or_null<ConstantExpr>(var->initValue())) {
-          return cexp;
+          if (cexp->exprType() != Expr::ConstObjRef) {
+            return cexp;
+          }
         }
       }
     }

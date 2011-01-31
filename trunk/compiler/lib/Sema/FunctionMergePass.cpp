@@ -140,8 +140,11 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
       return true;
 
     case Expr::ConstObjRef:
+      //      return visitConstantObjectRef(static_cast<ConstantObjectRef *>(from), static_cast<ConstantObjectRef *>(to));
       return false;
-//      return visitConstantObjectRef(static_cast<ConstantObjectRef *>(from), static_cast<ConstantObjectRef *>(to));
+
+    case Expr::ConstEmptyArray:
+      return from->type()->isEqual(to->type());
 
 //    case Expr::ConstNArray:
 //      return visitConstantNativeArray(static_cast<ConstantNativeArray *>(from), static_cast<ConstantNativeArray *>(to));
@@ -234,9 +237,11 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //    case Expr::Prog2:
 //      return visitProg2(static_cast<BinaryExpr *>(from), static_cast<BinaryExpr *>(to));
 //
-//    case Expr::ArrayLiteral:
-//      return visitArrayLiteral(static_cast<ArrayLiteralExpr *>(from), static_cast<ArrayLiteralExpr *>(to));
-//
+    case Expr::ArrayLiteral:
+      return visitArrayLiteral(
+          static_cast<ArrayLiteralExpr *>(from),
+          static_cast<ArrayLiteralExpr *>(to));
+
 //    case Expr::TupleCtor:
 //      return visitTupleCtor(static_cast<TupleCtorExpr *>(from), static_cast<TupleCtorExpr *>(to));
 //
@@ -458,6 +463,24 @@ bool FunctionMergePass::visitInitVar(InitVarExpr * from, InitVarExpr * to) {
   }
 
   return visitExpr(from->initExpr(), to->initExpr());
+}
+
+bool FunctionMergePass::visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to) {
+  if (!from->type()->isEqual(to->type())) {
+    return false;
+  }
+
+  if (from->argCount() != to->argCount()) {
+    return false;
+  }
+
+  for (size_t i = 0, end = from->argCount(); i < end; ++i) {
+    if (!visitExpr(from->arg(i), to->arg(i))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 #if 0

@@ -50,6 +50,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ConstString:
     case Expr::ConstNull:
     case Expr::ConstObjRef:
+    case Expr::ConstEmptyArray:
     case Expr::TypeLiteral:
       return in;
 
@@ -485,23 +486,16 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   for (ExprList::iterator it = in->args().begin(); it != in->args().end(); ++it) {
     Expr * element = elementType->implicitCast((*it)->location(), evalExpr(*it));
     if (element == NULL) {
+      // Return NULL if any of the elements in the array are not constants.
       return NULL;
     }
 
     arrayData->elements().push_back(element);
-
-    //*it = element;
   }
 
   // If it's empty, then prepare the empty list singleton.
   if (arrayData->elements().empty()) {
-    VariableDefn * emptyArray = cast_or_null<VariableDefn>(
-        arrayType->memberScope()->lookupSingleMember("emptyArray"));
-    if (emptyArray != NULL) {
-      AnalyzerBase::analyzeVariable(emptyArray, Task_PrepCodeGeneration);
-      // TODO: Replace with empty list in code gen phase.
-      //return new LValueExpr(in->location(), NULL, emptyArray);
-    }
+    return new ConstantEmptyArray(in->location(), arrayType);
   }
 
   // Constant array objects are special because of their variable size.

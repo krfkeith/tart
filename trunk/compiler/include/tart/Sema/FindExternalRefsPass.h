@@ -32,6 +32,7 @@ public:
   Expr * visitTypeLiteral(TypeLiteralExpr * in);
   Expr * visitInstanceOf(InstanceOfExpr * in);
   Expr * visitConstantObjectRef(ConstantObjectRef * in);
+  Expr * visitConstantEmptyArray(ConstantEmptyArray * in);
   Expr * visitCast(CastExpr * in);
   Expr * visitClosureScope(ClosureEnvExpr * in);
 

@@ -206,6 +206,7 @@ st = Stats([
     Stat("Name tables (simple)", PrefixMatcher(".names_simple")),
     Stat("Name tables (compound)", PrefixMatcher(".names_compound")),
     Stat("Field offsets", PrefixMatcher(".fieldoffsets")),
+    Stat("Retained attributes", PrefixMatcher(".attr.")),
   ]),
   Group("TIB", [
     Stat("TypeInfoBlocks", SuffixMatcher(".type.tib")),

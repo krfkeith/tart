@@ -261,14 +261,6 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
     return let->irValue();
   }
 
-#if 0
-  // Generate the attributes
-  Attributes letAttrs;
-  if (!genAttrs(letDef, letAttrs)) {
-    return NULL;
-  }
-#endif
-
   // Calculate the type.
   DASSERT(let->type() != NULL);
   const llvm::Type * irType = let->type()->irEmbeddedType();
@@ -389,6 +381,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
   if (var->module() == module_ || var->isSynthetic()) {
+    addStaticRoot(gv, var->type());
     if (debug_) {
       genDIGlobalVariable(var, gv);
     }

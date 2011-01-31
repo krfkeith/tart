@@ -1350,6 +1350,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
       DFAIL("Invalid storage class");
   }
 
+  // Addresses are implicitly dereferenced.
   if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
     lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
         lvalue->base()->type()->typeParam(0), lvalue->base()));

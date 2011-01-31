@@ -55,6 +55,14 @@ struct StackFrameDescMapEntry {
   TraceDescriptor * traceTable;
 };
 
+struct StaticRootsTableEntry {
+  // The address of the static root
+  void * rootAddr;
+
+  // The trace table for that root.
+  TraceDescriptor * traceTable;
+};
+
 struct CallFrame {
   CallFrame * prevFrame;
   void * returnAddr;

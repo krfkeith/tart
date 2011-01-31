@@ -398,6 +398,7 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
       case Expr::ConstString:
       case Expr::ConstNull:
       case Expr::ConstObjRef:
+      case Expr::ConstEmptyArray:
       case Expr::Truncate:
       case Expr::SignExtend:
       case Expr::ZeroExtend:
