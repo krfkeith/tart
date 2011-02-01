@@ -52,16 +52,19 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   // See if any of the instance members contain reference types. This does
   // not include the superclass.
   if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    bool hasReferenceMembers = false;
-    for (DefnList::const_iterator it = ctype->instanceFields().begin();
-        it != ctype->instanceFields().end(); ++it) {
-      if (*it == NULL) {
-        continue;
-      }
-      VariableDefn * var = cast<VariableDefn>(*it);
-      if (var->type()->containsReferenceType()) {
-        hasReferenceMembers = true;
-        break;
+    bool hasReferenceMembers = !ctype->traceMethods().empty();
+    if (!hasReferenceMembers) {
+      // Search for any reference members.
+      for (DefnList::const_iterator it = ctype->instanceFields().begin();
+          it != ctype->instanceFields().end(); ++it) {
+        if (*it == NULL) {
+          continue;
+        }
+        VariableDefn * var = cast<VariableDefn>(*it);
+        if (var->type()->containsReferenceType()) {
+          hasReferenceMembers = true;
+          break;
+        }
       }
     }
 
@@ -248,6 +251,22 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
       default:
         break;
     }
+  }
+
+  const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
+  for (MethodList::const_iterator it = type->traceMethods().begin();
+      it != type->traceMethods().end(); ++it) {
+    Function * traceMethod = genFunctionValue(*it);
+    DASSERT(traceMethod != NULL);
+
+    llvm::Constant * descriptorFields[4];
+    descriptorFields[0] = getInt16Val(0);
+    descriptorFields[1] = getInt16Val(0);
+    descriptorFields[2] = getInt32Val(0);
+    descriptorFields[3] = llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType);
+
+    llvm::Constant * desc = ConstantStruct::get(context_, descriptorFields, 4, false);
+    traceTable.push_back(desc);
   }
 }
 

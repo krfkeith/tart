@@ -330,6 +330,7 @@ public:
 
   /** Class in which this is defined, or NULL if defining scope is not a class. */
   const CompositeType * definingClass() const;
+  CompositeType * definingClass();
 
   // Overrides
 

@@ -131,7 +131,14 @@ Value * TraceTableOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * c
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
   const Type * type = typeLiteral->value();
-  return cg.getTraceTable(type);
+  Value * indices[2];
+  indices[0] = indices[1] = cg.getInt32Val(0);
+  llvm::Constant * traceTable = cg.getTraceTable(type);
+  if (traceTable != NULL) {
+    return llvm::ConstantExpr::getInBoundsGetElementPtr(traceTable, indices, 2);
+  } else {
+    return NULL;
+  }
 }
 
 // -------------------------------------------------------------------
@@ -987,7 +994,10 @@ Expr * TraceMethodApplyIntrinsic::eval(const SourceLocation & loc, Module * call
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
       if (fn->storageClass() == Storage_Instance) {
-        // TODO: implement.
+        CompositeType * ctype = fn->definingClass();
+        DASSERT_OBJ(ctype != NULL, fn);
+        ctype->traceMethods().push_back(fn);
+        //callingModule->addSymbol(fn);
         return args[0];
       }
     }

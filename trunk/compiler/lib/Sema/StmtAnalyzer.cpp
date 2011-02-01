@@ -251,7 +251,7 @@ bool StmtAnalyzer::buildBlockStmtCFG(const BlockStmt * st) {
     }
   }
 
-  if (success && currentBlock_ != NULL && isRootBlock) {
+  if (success && currentBlock_ != NULL && !isRootBlock) {
     exitLocalScope(blockScope);
   }
 
@@ -1644,7 +1644,7 @@ void StmtAnalyzer::exitLocalScope(LocalScope * scope) {
 
   for (Defn * local = scope->firstMember(); local != NULL; local = local->nextInScope()) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(local)) {
-      if (var->type()->containsReferenceType() && var->isSharedRef()) {
+      if (var->type()->containsReferenceType() || var->isSharedRef()) {
         // Zero out any garbage-collectible locals.
         rootsToClear.push_back(new ClearVarExpr(var));
       }

@@ -634,6 +634,14 @@ void CompositeType::addClassExportsToModule(Module * module) const {
     }
   }
 
+  // Do the same for the trace table.
+  for (MethodList::const_iterator m = traceMethods_.begin(); m != traceMethods_.end(); ++m) {
+    FunctionDefn * method = *m;
+    if (method->hasBody() && module->addSymbol(method->mergeTo() ? method->mergeTo() : method)) {
+      //diag.info() << Format_Verbose << "Added method " << method;
+    }
+  }
+
   // Add references to all interfaces and interface methods.
   for (InterfaceList::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it) {
     if (it->interfaceType->typeDefn()->isSynthetic()) {

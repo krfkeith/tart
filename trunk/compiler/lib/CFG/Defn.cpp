@@ -261,6 +261,15 @@ void Defn::trace() const {
 // -------------------------------------------------------------------
 // ValueDefn
 
+CompositeType * ValueDefn::definingClass() {
+  TypeDefn * enclosingType = enclosingClassDefn();
+  if (enclosingType != NULL) {
+    return dyn_cast<CompositeType>(enclosingType->typeValue());
+  }
+
+  return NULL;
+}
+
 const CompositeType * ValueDefn::definingClass() const {
   TypeDefn * enclosingType = enclosingClassDefn();
   if (enclosingType != NULL) {

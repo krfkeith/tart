@@ -185,7 +185,7 @@ class TraceTest : Test {
   	c3 = counter.count;
 
     assertEq(c1 + 1, c2);
-    //assertEq(c1, c3);
+    assertEq(c1, c3);
   }
 
   def testTraceLocalScopeStructVar {
@@ -208,6 +208,17 @@ class TraceTest : Test {
   	c3 = counter.count;
 
     assertEq(c1 + 1, c2);
-    //assertEq(c1, c3);
+    assertEq(c1, c3);
+  }
+
+  def testTraceArray {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    var array1 = [1, 2, 3, 4];
+    var array2 = ["hello", "world"];
+    counter.traceObject(array1);
+    assertEq(0, counter.count);
+    counter.traceObject(array2);
+    assertEq(2, counter.count);
   }
 }

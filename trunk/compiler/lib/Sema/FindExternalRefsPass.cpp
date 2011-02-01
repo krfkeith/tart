@@ -213,12 +213,15 @@ Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
-  if (in->value()->typeDefn() != NULL) {
-    module_->addSymbol(in->value()->typeDefn());
+  TypeDefn * td = in->value()->typeDefn();
+  if (td != NULL) {
+    module_->addSymbol(td);
   }
 
   if (!isa<CompositeType>(in->value())) {
-    module_->reflect(in->value()->typeDefn());
+    if (td != NULL) {
+      module_->reflect(td);
+    }
     if (isa<PrimitiveType>(in->value())) {
       module_->addSymbol(Builtins::typePrimitiveType.typeDefn());
     }
