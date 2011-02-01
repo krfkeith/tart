@@ -124,6 +124,10 @@ public:
   /** Return the number of instance fields in this class and all superclasses. */
   int instanceFieldCountRecursive() const;
 
+  /** Return the list of custom trace methods for this class. */
+  const MethodList & traceMethods() const { return traceMethods_; }
+  MethodList & traceMethods() { return traceMethods_; }
+
   /** True if this class is an attribute. */
   bool isAttribute() const { return (classFlags_ & Attribute) != 0; }
   bool isFinal() const { return (classFlags_ & Final) != 0; }
@@ -212,6 +216,7 @@ private:
 
   // The list of instance methods for this type
   MethodList instanceMethods_;
+  MethodList traceMethods_;
 
   // The interface override list
   InterfaceList interfaces_;
