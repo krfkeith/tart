@@ -11,9 +11,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
    endif ($PROFILE_TARTLN)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
-add_executable(tartln
-    tartln.cpp
-    ReflectionSizePass.cpp)
+add_executable(tartln tartln.cpp)
 target_link_libraries(tartln
     linker_reflect
     linker_common
@@ -38,6 +36,5 @@ target_link_libraries(tartln
     ${LLVM_CORE}
     ${LLVM_MC}
     ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
     )
 set_target_properties(tartln PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

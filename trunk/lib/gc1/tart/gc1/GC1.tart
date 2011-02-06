@@ -4,6 +4,7 @@ import tart.annex.Intrinsic;
 import tart.gc.AddressRange;
 import tart.gc.GCRuntimeSupport;
 import tart.gc.TraceAction;
+import tart.gc.StaticRoot;
 import tart.reflect.CompositeType;
 
 /** GarbageCollector1 is a simple semi-space, single-generation, copying collector. */
@@ -46,11 +47,18 @@ namespace GC1 {
       pos += size;
       return result;
     }
+
+		/** The amount of memory used in this space. */
+    def used:int { get { return Memory.ptrDiff(begin, pos); } }
+
+		/** The amount of available memory in this space. */
+    def avail:int { get { return Memory.ptrDiff(pos, end); } }
   }
 
 	// The two semispaces of the collector.
   private var fromSpace:SemiSpace;
   private var toSpace:SemiSpace;
+  private var spaceSize:uint = 0x10000;
 
 	/** Allocate an object in permanent memory, outside of the scope of the collector. Such
 		  objects will never be moved or reclaimed. */
@@ -62,19 +70,19 @@ namespace GC1 {
 	    Parameters: stackFrameDescEntries - contains the static table of entries which associate
 	        an instruction address with a stack frame descriptor.
 	*/
-  @LinkageName("GC_init") def init(stackFrameDescEntries:Address[uint]) {
-    GCRuntimeSupport.initStackFrameDescMap(stackFrameDescEntries);
+  @LinkageName("GC_init") def init {
+    GCRuntimeSupport.initStackFrameDescMap(GCRuntimeSupport.safepoints);
     GCRuntimeSupport.initThreadLocalData();
 
 		// Set up the initial 'to-space'.
 		toSpace = permAlloc(SemiSpace);
-    toSpace.begin = toSpace.pos = GCRuntimeSupport.allocAligned(0x10000);
-    toSpace.end = Memory.addressOf(toSpace.pos[0x10000]);
+    toSpace.begin = toSpace.pos = GCRuntimeSupport.allocAligned(spaceSize);
+    toSpace.end = Memory.addressOf(toSpace.pos[spaceSize]);
 
 		// Set up the initial 'from-space'.
 		fromSpace = permAlloc(SemiSpace);
-    fromSpace.begin = toSpace.pos = GCRuntimeSupport.allocAligned(0x10000);
-    fromSpace.end = Memory.addressOf(toSpace.pos[0x10000]);
+    fromSpace.begin = fromSpace.pos = GCRuntimeSupport.allocAligned(spaceSize);
+    fromSpace.end = Memory.addressOf(fromSpace.pos[spaceSize]);
   }
 
   @LinkageName("GC_enterThread") def enterThread() {}
@@ -92,6 +100,9 @@ namespace GC1 {
   @LinkageName("GC_alloc") @NoInline def alloc(context:Object, size:uint) -> Object {
     size = (size + 7) & uint(~7);
     if not toSpace.canAlloc(size) {
+      if size > spaceSize / 2 {
+      	Debug.fail("Allocation is too large!");
+      }
       collect();
     }
 
@@ -105,28 +116,34 @@ namespace GC1 {
     toSpace, fromSpace = fromSpace, toSpace;
     toSpace.pos = toSpace.begin;
 
-    // trace stack
+    // trace static roots and runtime stack
+    GCRuntimeSupport.traceStaticRoots(TRACE_ACTION);
     GCRuntimeSupport.traceStack(TRACE_ACTION);
 
-    // trace static roots
-    // trace dynamic roots
+    // Collect stats...
+    Debug.writeLn("Collection complete");
   }
 
 	/** The trace action for this collector. This relocates objects to the current to-space
 			and leaves a fowarding pointer at the old location. */
-  private class TraceActionImpl : TraceAction {
+  private final class TraceActionImpl : TraceAction {
 	  protected def tracePointer(ptrAddr:Address[Object]) {
 	    let addr:Address[ubyte] = Memory.bitCast(ptrAddr[0]);
 	    if fromSpace.contains(addr) {
 		    let header:Address[ObjectHeader] = Memory.bitCast(addr);
-		    if (header.gcstate & uint(GCFlags.RELOCATED)) != 0 {
-		      ptrAddr[0] = header.newLocation;
-		    } else {
-					let size = header.gcstate & uint(~3);
-					let newAddr:Address[ubyte] = toSpace.alloc(size);
-			    Memory.arrayCopy(newAddr, addr, size);
-		      header.newLocation = ptrAddr[0] = Memory.bitCast(newAddr);
-		      header.gcstate = uint(GCFlags.RELOCATED);
+	      // A gcstate of 0 means that 'header' is the head of a statically allocated object
+	      // instance, in which case we need not do anything since it will be traced as
+	      // a static root.
+		    if (header.gcstate != 0) {
+		      if (header.gcstate & uint(GCFlags.RELOCATED)) != 0 {
+  		      ptrAddr[0] = header.newLocation;
+  		    } else {
+  					let size = header.gcstate & uint(~3);
+  					let newAddr:Address[ubyte] = toSpace.alloc(size);
+  			    Memory.arrayCopy(newAddr, addr, size);
+  		      header.newLocation = ptrAddr[0] = Memory.bitCast(newAddr);
+  		      header.gcstate = uint(GCFlags.RELOCATED);
+  		    }
 		    }
 	    }
 	  }

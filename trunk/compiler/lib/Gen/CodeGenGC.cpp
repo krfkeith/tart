@@ -352,7 +352,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
   return fn;
 }
 
-void CodeGenerator::addStaticRoot(const llvm::GlobalVariable * gv, const Type * type) {
+void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) {
   // Don't add the root if it's already been added.
   if (staticRoots_.count(gv) > 0) {
     return;
@@ -436,24 +436,36 @@ void CodeGenerator::emitStaticRoots() {
     Constant * indices[2];
     indices[0] = indices[1] = getInt32Val(0);
 
-    ConstantList entries;
-    for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
-      Constant * fieldName = ConstantArray::get(context_, it->first->getName());
-      GlobalVariable * fieldNameVar = new GlobalVariable(*irModule_,
-          fieldName->getType(), true, GlobalValue::InternalLinkage, fieldName, "root_name");
+    const PointerType * bytePtrType = builder_.getInt8PtrTy();
 
+    ConstantList rootList;
+    NamedMDNode * node = irModule_->getOrInsertNamedMetadata("roots." + module()->linkageName());
+    for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
+      Constant * traceTable = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
       Constant * fields[2];
-      fields[0] = llvm::ConstantExpr::getInBoundsGetElementPtr(fieldNameVar, indices, 2);
-      fields[1] = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
+      fields[0] = llvm::ConstantExpr::getPointerCast(traceTable, bytePtrType);
+      fields[1] = traceTable;
       llvm::Constant * entry = llvm::ConstantStruct::get(context_, fields, 2, false);
-      entries.push_back(entry);
+      rootList.push_back(entry);
+
+      Value * mdOperands[2];
+      mdOperands[0] = it->first;
+      mdOperands[1] = fields[1];
+      node->addOperand(MDNode::get(context_, mdOperands, 2));
     }
 
-    ArrayType * arrayType = ArrayType::get(entries[0]->getType(), entries.size());
-    Constant * stackRootArray = ConstantArray::get(arrayType, entries);
+    ArrayType * arrayType = ArrayType::get(rootList.front()->getType(), rootList.size());
+    Constant * stackRootArray = ConstantArray::get(arrayType, rootList);
 
-    new GlobalVariable(*irModule_, stackRootArray->getType(), true, GlobalValue::AppendingLinkage,
-        stackRootArray, ".static_roots");
+    GlobalVariable * rootsArray = new GlobalVariable(*irModule_, stackRootArray->getType(), true,
+        GlobalValue::AppendingLinkage, stackRootArray, "GC_static_roots_array");
+    GlobalVariable * rootsVar = irModule_->getGlobalVariable("GC_static_roots");
+    if (rootsVar != NULL) {
+      Constant * firstRootPtr = llvm::ConstantExpr::getInBoundsGetElementPtr(
+          rootsArray, indices, 2);
+      rootsVar->setConstant(false);
+      rootsVar->setInitializer(firstRootPtr);
+    }
   }
 }
 

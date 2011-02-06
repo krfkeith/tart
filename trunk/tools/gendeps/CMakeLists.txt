@@ -10,6 +10,5 @@ target_link_libraries(gendeps
     ${LLVM_TARGET}
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
     )
 set_target_properties(gendeps PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

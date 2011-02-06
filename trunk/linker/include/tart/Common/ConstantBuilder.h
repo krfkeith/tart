@@ -1,5 +1,8 @@
 /** Similar to StructBuilder, but works purely with LLVM types. */
 
+#ifndef TART_LINKER_CONSTANTBUILDER_H
+#define TART_LINKER_CONSTANTBUILDER_H 1
+
 #include <llvm/DerivedTypes.h>
 #include <llvm/Constants.h>
 #include <llvm/Module.h>
@@ -73,4 +76,6 @@ private:
   const Type * tibType();
 };
 
-}
+} // namespace tart
+
+#endif

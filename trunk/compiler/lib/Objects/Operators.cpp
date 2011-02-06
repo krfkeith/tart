@@ -532,7 +532,6 @@ PredeccessorOp<typ> PredeccessorOp<typ>::value;
 
 static SourceString infixAddrCmpSrc(
     " @tart.annex.Intrinsic def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
-    " @tart.annex.Intrinsic def infixNE[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixLT[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixLE[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixGT[%T](:__Address[T], :__Address[T]) -> bool;"

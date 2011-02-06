@@ -38,7 +38,6 @@ target_link_libraries(unittest
     ${LLVM_MMC}
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
     )
 if (LIB_DL)
   target_link_libraries(unittest dl)

@@ -188,6 +188,40 @@ class ArithmeticOperatorTest : Test {
     assertFalse(zero >= one);
   }
 
+  def testRelationalPointerOperators() {
+    var n:NativeArray[int, 1];
+    var zero = Memory.addressOf(n[0]);
+    var one = Memory.addressOf(n[1]);
+
+    // Equal
+    assertTrue(one == one);
+    assertFalse(one == zero);
+
+    // Not equal
+    assertTrue(one != zero);
+    assertFalse(one != one);
+
+    // Less
+    assertTrue(zero < one);
+    assertFalse(one < zero);
+    assertFalse(zero < zero);
+
+    // Less or equal
+    assertTrue(zero <= one);
+    assertTrue(one <= one);
+    assertFalse(one <= zero);
+
+    // Greater
+    assertTrue(one > zero);
+    assertFalse(zero > one);
+    assertFalse(zero > zero);
+
+    // Greater or equal
+    assertTrue(one >= zero);
+    assertTrue(one >= one);
+    assertFalse(zero >= one);
+  }
+
   def testRelationalAndLogicalOperators() {
     var zero = 0;
     var one = 1;

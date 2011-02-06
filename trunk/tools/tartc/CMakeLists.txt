@@ -32,6 +32,5 @@ target_link_libraries(tartc
     ${LLVM_MC}
     ${LLVM_CORE}
     ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
     )
 set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

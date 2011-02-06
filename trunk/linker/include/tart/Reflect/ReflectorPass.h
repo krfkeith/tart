@@ -63,6 +63,8 @@ public:
 
   ~ReflectorPass();
 
+  void getAnalysisUsage(AnalysisUsage & AU) const;
+
   bool runOnModule(Module & module);
 
   /** Return the package if it already exists, otherwise create it. */

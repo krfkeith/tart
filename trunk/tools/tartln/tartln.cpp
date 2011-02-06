@@ -33,8 +33,8 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Scalar.h"
 
-#include "ReflectionSizePass.h"
 #include "tart/Reflect/ReflectorPass.h"
+#include "tart/Reflect/StaticRoots.h"
 
 #include <memory>
 #include <cstring>
@@ -212,15 +212,13 @@ void optimize(Module * module, const TargetData * targetData) {
 
   // Add an appropriate TargetData instance for this module...
   addPass(passes, new TargetData(*targetData));
-  if (!optLinkAsLibrary) {
-    addPass(passes, new tart::ReflectorPass());
-    if (optInternalize) {
-      std::vector<const char *> externs;
-      externs.push_back("main");
-      externs.push_back("String_create");
-      externs.push_back("TraceAction_traceDescriptors");
-      passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
-    }
+  if (!optLinkAsLibrary && optInternalize) {
+    std::vector<const char *> externs;
+    externs.push_back("main");
+    externs.push_back("String_create");
+    externs.push_back("TraceAction_traceDescriptors");
+    externs.push_back("GC_static_roots");
+    passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
   }
 
   if (optOptimizationLevel > O0) {
@@ -249,7 +247,7 @@ void optimize(Module * module, const TargetData * targetData) {
   if (optStrip || optStripDebug) {
     addPass(passes, createStripSymbolsPass(optStripDebug && !optStrip));
   } else {
-    //passes.add(createStripDeadDebugInfoPass());
+    passes.add(createStripDeadDebugInfoPass());
   }
 
   // The user's passes may leave cruft around. Clean up after them them but
@@ -259,19 +257,18 @@ void optimize(Module * module, const TargetData * targetData) {
     addPass(passes, createCFGSimplificationPass());
     addPass(passes, createAggressiveDCEPass());
     addPass(passes, createGlobalDCEPass());
-  } else if (optInternalize) {
+  } else { //if (optInternalize) {
     addPass(passes, createGlobalDCEPass());
+  }
+
+  if (!optLinkAsLibrary) {
+    addPass(passes, new tart::StaticRoots());
+    addPass(passes, new tart::ReflectorPass());
   }
 
   // Make sure everything is still good.
   if (!optDontVerify) {
     passes.add(createVerifierPass());
-  }
-
-  tart::ReflectionSizePass * rsPass = NULL;
-  if (optShowSizes) {
-    rsPass = new tart::ReflectionSizePass();
-    passes.add(rsPass);
   }
 
   if (optDumpDebug) {
@@ -280,10 +277,6 @@ void optimize(Module * module, const TargetData * targetData) {
 
   // Run our queue of passes all at once now, efficiently.
   passes.run(*module);
-
-  if (rsPass != NULL) {
-    rsPass->report();
-  }
 }
 
 std::auto_ptr<TargetMachine> selectTarget(Module & mod) {

@@ -1,6 +1,7 @@
 import tart.annex.Intrinsic;
 import tart.core.Memory.Address;
 import tart.gc.GC;
+import tart.gc.StaticRoot;
 
 /** Attribute that indicates that the associated function is where
     execution of the application should start. */
@@ -16,7 +17,7 @@ class EntryPoint {
       func:static fn (:String[]) -> int32) -> int32 {
     try {
       // Start the GC.
-      GC.init(Memory.addressOf(gcSafepointMap[0]));
+      GC.init();
 
       // Run static constructors.
       runStaticCtors();
@@ -35,7 +36,6 @@ class EntryPoint {
     }
   }
 
-  @Extern("gc_safepoint_map") static var gcSafepointMap:FlexibleArray[uint];
 	@Extern("run_static_ctors") static def runStaticCtors();
   @Extern("strlen") static def strlen(str:Address[ubyte]) -> int32;
 }
