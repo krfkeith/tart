@@ -97,7 +97,6 @@ find_llvm_library(MC_PARSER LLVMMCParser)
 find_llvm_library(SCALAR_OPTS LLVMScalarOpts)
 find_llvm_library(SELECTION_DAG LLVMSelectionDAG)
 find_llvm_library(SUPPORT LLVMSupport)
-find_llvm_library(SYSTEM LLVMSystem)
 find_llvm_library(TARGET LLVMTarget)
 find_llvm_library(TRANSFORM_UTILS LLVMTransformUtils)
 

@@ -7,7 +7,7 @@ import tart.annex.Intrinsic;
 namespace GC {
 
 	/** Initialize the garbage collector. This also does an implicit enterThread() call. */
-  @Extern("GC_init") def init(stackFrameDescEntries:Address[uint]);
+  @Extern("GC_init") def init();
 
   /** Set up the thread-local state for the current thread. Called when creating a new thread. */
   @Extern("GC_enterThread") def enterThread();

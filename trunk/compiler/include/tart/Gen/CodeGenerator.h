@@ -76,7 +76,7 @@ typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
 typedef llvm::DenseMap<const Type *, llvm::DIType> DITypeMap;
-typedef llvm::DenseMap<const llvm::GlobalVariable *, llvm::Constant *> StaticRootMap;
+typedef llvm::DenseMap<llvm::GlobalVariable *, llvm::Constant *> StaticRootMap;
 typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
 typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
@@ -332,7 +332,7 @@ public:
   llvm::Constant * genConstantEmptyArray(const CompositeType * arrayType);
 
   /** Mark this variable as being a static root for garbage collection. */
-  void addStaticRoot(const llvm::GlobalVariable * var, const Type * type);
+  void addStaticRoot(llvm::GlobalVariable * var, const Type * type);
 
   /** Emit the table of static roots. */
   void emitStaticRoots();

@@ -1,4 +1,4 @@
-/** LLVM pass to measure the size of reflection data. */
+/** LLVM pass to generate reflection data for modules and packages. */
 
 #include "llvm/Module.h"
 #include "llvm/Constants.h"
@@ -37,6 +37,10 @@ struct PackageNameComparator {
 
 ReflectorPass::~ReflectorPass() {
   // TODO: Delete what we created.
+}
+
+void ReflectorPass::getAnalysisUsage(AnalysisUsage & AU) const {
+  AU.setPreservesCFG();
 }
 
 bool ReflectorPass::runOnModule(Module & module) {

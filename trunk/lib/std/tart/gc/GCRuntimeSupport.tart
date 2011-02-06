@@ -41,4 +41,19 @@ namespace GCRuntimeSupport {
 	/** Allocate memory that is aligned on a page boundary, where the page size is the value
 			returned by 'pageSize'. */
 	@Extern("GC_allocAligned") def allocAligned(size:uint) -> Address[ubyte];
+
+	/** Return the array of safe points. */
+	def safepoints:Address[uint] { get { return Memory.addressOf(_safepoints[0]); } }
+
+	/** Apply the specified trace action to all static roots. */
+	@NoInline def traceStaticRoots(action:TraceAction) {
+	  var i = 0;
+	  while staticRoots[i].addr is not null {
+	    action.traceDescriptors(staticRoots[i].addr, staticRoots[i].trace);
+	    ++i;
+	  }
+	}
+
+  @Extern("GC_safepoint_map") private var _safepoints:FlexibleArray[uint];
+  @Extern("GC_static_roots") private var staticRoots:Address[StaticRoot];
 }

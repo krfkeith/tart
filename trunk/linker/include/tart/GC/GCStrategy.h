@@ -119,7 +119,6 @@ private:
       the initializer of that variable. */
   llvm::Constant * getGlobalValue(const llvm::Constant * c);
 
-
   llvm::FoldingSet<StackTraceTable> traceTables;
 };
 

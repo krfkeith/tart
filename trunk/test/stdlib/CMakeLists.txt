@@ -14,7 +14,6 @@ set(TART_OPTIONS
 #  -trace-def=InterfaceTest
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
-set(TARTLN_OPTIONS -internalize -O2)
 #set(TARTLN_OPTIONS -O2)
 #set(TARTLN_OPTIONS -internalize -O0)
 
@@ -30,19 +29,21 @@ set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
 set(USE_LLVM_BINARIES 0)
-set(GENERATE_DEBUG_INFO 0)
+set(GENERATE_DEBUG_INFO 1)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
 set(GC_PLUGIN "${PROJECT_BINARY_DIR}/linker/libgc${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(REFLECTOR_PLUGIN "${PROJECT_BINARY_DIR}/linker/libreflector${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(PUBLIC_SYMBOLS "main,String_create,TraceAction_traceDescriptors,GC_static_roots")
 
 if (GENERATE_DEBUG_INFO)
   set(TART_OPTIONS ${TART_OPTIONS} -g)
+  set(TARTLN_OPTIONS -O2 -disable-inlining)
   set(OPT_FLAGS
       -disable-inlining
       -load="${REFLECTOR_PLUGIN}"
-      -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+      -internalize-public-api-list=${PUBLIC_SYMBOLS}
 #      -std-compile-opts
 #      -std-link-opts
 #      -instcombine
@@ -50,14 +51,17 @@ if (GENERATE_DEBUG_INFO)
 #      -adce
 #      -globaldce
 #      -globalopt
+      -globaldce
+      -staticroots
       -reflector
   )
 else (GENERATE_DEBUG_INFO)
+  set(TARTLN_OPTIONS -internalize -O2)
   set(OPT_FLAGS
       -O2
       -strip-debug
       -load="${REFLECTOR_PLUGIN}"
-      -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
+      -internalize-public-api-list=${PUBLIC_SYMBOLS}
 #     -mergefunc
       -std-compile-opts
       -std-link-opts
@@ -66,7 +70,10 @@ else (GENERATE_DEBUG_INFO)
       -adce
       -globaldce
       -globalopt
-      -reflector)
+      -staticroots
+      -reflector
+      -globaldce
+  )
 endif (GENERATE_DEBUG_INFO)
 
 # Create and run a test executable for each source file
@@ -127,7 +134,6 @@ foreach(SRC_FILE ${TART_SRC})
         COMMAND ${LLVM_LD}
             -disable-opt
             -link-as-library
-#            -internalize-public-api-list=main,String_create,TraceAction_traceDescriptors
             -o ${OUT_BC_FILE} ${BC_FILE}
             "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
             "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"

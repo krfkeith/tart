@@ -221,4 +221,27 @@ class TraceTest : Test {
     counter.traceObject(array2);
     assertEq(2, counter.count);
   }
+
+  static var aGlobal:String;
+
+  def testTraceGlobalVar {
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c1 = counter.count;
+
+    // Add a global, should have one more static root.
+    aGlobal = "Hello";
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c2 = counter.count;
+
+    // Add a global, should have one more static root.
+    aGlobal = Memory.nullObject();
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c3 = counter.count;
+    //Debug.writeLnFmt("Trace counts: {0} {1} {2}", c1, c2, c3);
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
+  }
 }

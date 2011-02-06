@@ -222,17 +222,18 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
       LocalScope * lscope = *it;
       for (const Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
         if (const VariableDefn * var = dyn_cast<VariableDefn>(de)) {
-          /// CreateVariable - Create a new descriptor for the specified variable.
-          DIVariable dbgVar = dbgFactory_.CreateVariable(
-              dwarf::DW_TAG_auto_variable, dbgContext_,
-              var->name(), dbgFile_, getSourceLineNumber(var->location()),
-              genDIEmbeddedType(var->type()));
+          // If variable does not have storage, then we generate debug info on first assignment
+          // rather than on alloca.
           if (var->hasStorage()) {
+            /// CreateVariable - Create a new descriptor for the specified variable.
+            DIVariable dbgVar = dbgFactory_.CreateVariable(
+                dwarf::DW_TAG_auto_variable, dbgContext_,
+                var->name(), dbgFile_, getSourceLineNumber(var->location()),
+                genDIEmbeddedType(var->type()));
             setDebugLocation(var->location());
-            dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
-          } else {
-//            dbgFactory_.InsertDbgValueIntrinsic(var->irValue(), 0,
-//                dbgVar, builder_.GetInsertBlock());
+            Instruction * declareInst = dbgFactory_.InsertDeclare(
+                var->irValue(), dbgVar, builder_.GetInsertBlock());
+            declareInst->setDebugLoc(builder_.getCurrentDebugLocation());
           }
         }
       }
@@ -271,16 +272,18 @@ void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable
 
 void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) {
   if (debug_ && var->location().region != NULL) {
-    /// CreateVariable - Create a new descriptor for the specified variable.
-    DIVariable dbgVar = dbgFactory_.CreateVariable(
-        dwarf::DW_TAG_auto_variable, genRegionScope(var->location().region),
-        var->name(), dbgFile_, getSourceLineNumber(var->location()),
-        genDIEmbeddedType(var->type()));
-    if (var->hasStorage()) {
-      //dbgFactory_.InsertDeclare(var->irValue(), dbgVar, builder_.GetInsertBlock());
-    } else {
+    // If var does have storage, we generate the debug info on the alloca rather than on
+    // first assignment.
+    if (!var->hasStorage()) {
+      /// CreateVariable - Create a new descriptor for the specified variable.
+      DIVariable dbgVar = dbgFactory_.CreateVariable(
+          dwarf::DW_TAG_auto_variable, genRegionScope(var->location().region),
+          var->name(), dbgFile_, getSourceLineNumber(var->location()),
+          genDIEmbeddedType(var->type()));
       setDebugLocation(var->location());
-      dbgFactory_.InsertDbgValueIntrinsic(value, 0, dbgVar, builder_.GetInsertBlock());
+      Instruction * valueInst = dbgFactory_.InsertDbgValueIntrinsic(
+          value, 0, dbgVar, builder_.GetInsertBlock());
+      valueInst->setDebugLoc(builder_.getCurrentDebugLocation());
     }
   }
 }

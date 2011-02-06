@@ -10,7 +10,7 @@ abstract class TraceAction {
   protected abstract def tracePointer(ptrAddr:Address[Object]);
 
   /** Trace a list of pointers as specified by offsets from a base address. TraceAction subclasses
-  		should probably re-implement this for effiency and inline the call to 'tracePointer()'.
+      should probably re-implement this for effiency and inline the call to 'tracePointer()'.
    */
   protected def tracePointers(baseAddr:Address[ubyte], fieldOffsets:Address[uint], fieldCount:uint32) {
     for i:uint32 = 0; i < fieldCount; ++i {
@@ -18,11 +18,11 @@ abstract class TraceAction {
     }
   }
 
-	/** Trace an object given a list of trace descriptor structures. */
+  /** Trace an object given a list of trace descriptor structures. */
   @LinkageName("TraceAction_traceDescriptors")
   final def traceDescriptors(
-  		baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
-  	//Debug.writeLn("**traceDescriptors");
+      baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
+    //Debug.writeLn("**traceDescriptors");
     if descriptorList is not null {
       var methodDescriptorList:Address[TraceMethodDescriptor] =
           reinterpretPtr(addressOf(descriptorList));
@@ -31,24 +31,26 @@ abstract class TraceAction {
         var fieldAddr = addressOf(baseAddr[descriptorList[i].offset]);
         var fieldCount = descriptorList[i].fieldCount;
         if fieldCount != 0 {
-			  	//Debug.writeLn("  tracePointers ", String(fieldCount));
+          //Debug.writeLn("  tracePointers ", String(fieldCount));
           tracePointers(fieldAddr, descriptorList[i].fieldOffsets, fieldCount);
         } else {
-			  	//Debug.writeLn("  methodDesc");
+          //Debug.writeLn("  methodDesc");
           methodDescriptorList[i].method(fieldAddr, self);
         }
         break if descriptorList[i].endList != 0;
         ++i;
       }
     }
-  	//Debug.writeLn("**endTraceDescriptors");
+    //Debug.writeLn("**endTraceDescriptors");
   }
 
+  /** Trace the object 'v', which must not be null. This method is primarily used for
+      testing TraceAction subclasses - it is not called by the collector. */
   final def traceObject(v:Object) {
     traceDescriptors(reinterpretPtr(objectAddress(v)), v.__traceTable);
   }
 
-	/** Tracer functions for primitive types, which do nothing. */
+  /** Tracer functions for primitive types, which do nothing. */
   macro trace(v:bool) {}
   macro trace(v:char) {}
   macro trace(v:int8) {}
@@ -62,14 +64,14 @@ abstract class TraceAction {
   macro trace(v:float) {}
   macro trace(v:double) {}
 
-	/** Tracer for object fields - updates the object reference. */
+  /** Tracer for object fields - updates the object reference. */
   macro trace(v:Object) {
-	  self.tracePointer(addressOf(v));
+    self.tracePointer(addressOf(v));
   }
 
-	/** Tracer for object fields - updates the object reference. */
+  /** Tracer for object fields - updates the object reference. */
   macro trace[%T <: Object](v:T) {
-	  self.tracePointer(reinterpretPtr[T, Object](addressOf(v)));
+    self.tracePointer(reinterpretPtr[T, Object](addressOf(v)));
   }
 
   /** Trace an arbitrary value type. */

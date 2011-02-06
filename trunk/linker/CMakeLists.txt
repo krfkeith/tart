@@ -7,6 +7,8 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -fno-operator-names -ffor-scope
       -fPIC
       -fno-rtti
+#      -fvisibility=hidden
+      -shared
       )
    if ($PROFILE_TARTLN)
      add_definitions(-pg)
@@ -34,21 +36,20 @@ add_library(linker_reflect STATIC
 
 add_library(gc SHARED ${GC_SOURCES} ${GC_HEADERS})
 target_link_libraries(gc
-    ${LLVM_ANALYSIS}
-    ${LLVM_TARGET}
-    ${LLVM_CODE_GEN}
-    ${LLVM_ASM_PRINTER}
-    ${LLVM_MC}
-    ${LLVM_MC_PARSER}
-    ${LLVM_CORE}
-    ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
+#    ${LLVM_CODE_GEN}
+#    ${LLVM_ASM_PRINTER}
+#    ${LLVM_MC_PARSER}
+#    ${LLVM_ANALYSIS}
+#    ${LLVM_TARGET}
+#    ${LLVM_MC}
+#    ${LLVM_CORE}
+#    ${LLVM_SUPPORT}
     )
-add_library(reflector SHARED ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
+
+add_library(reflector SHARED ${COMMON_SOURCES} ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
 target_link_libraries(reflector
-    linker_common
-    ${LLVM_TARGET}
-    ${LLVM_CORE}
-    ${LLVM_SUPPORT}
-    ${LLVM_SYSTEM}
+#    ${LLVM_ANALYSIS}
+#    ${LLVM_TARGET}
+#    ${LLVM_CORE}
+#    ${LLVM_SUPPORT}
     )
