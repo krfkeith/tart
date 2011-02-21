@@ -117,6 +117,7 @@ public:
     Nested = (1<<7),            // This function is nested within another function
     MakesAllocs = (1<<8),       // This function allocates memory.
     NoInline = (1<<9),          // Don't inline this function
+    HasSafePoints = (1<<10),    // This function has safe points, requires GC.
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };
@@ -212,6 +213,7 @@ public:
   bool isCtor() const { return (flags_ & Ctor) != 0; }
   bool isFinal() const { return (flags_ & Final) != 0; }
   bool isNested() const { return (flags_ & Nested) != 0; }
+  bool hasSafePoints() const { return (flags_ & HasSafePoints) != 0; }
 
   /** True if this function has a body. */
   bool hasBody() const;

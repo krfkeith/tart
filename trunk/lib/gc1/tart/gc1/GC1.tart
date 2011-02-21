@@ -66,10 +66,7 @@ namespace GC1 {
     return Memory.bitCast(CompositeType.of(T).create(GCRuntimeSupport.MallocAllocator.INSTANCE));
   }
 
-	/** Initialize the garbage collector.
-	    Parameters: stackFrameDescEntries - contains the static table of entries which associate
-	        an instruction address with a stack frame descriptor.
-	*/
+	/** Initialize the garbage collector. */
   @LinkageName("GC_init") def init {
     GCRuntimeSupport.initStackFrameDescMap(GCRuntimeSupport.safepoints);
     GCRuntimeSupport.initThreadLocalData();
@@ -112,21 +109,54 @@ namespace GC1 {
   }
 
   @LinkageName("GC_collect") def collect() {
-    // swap space.
+    // Swap the spaces.
+	  //Debug.writeLn("== Begin collection ==");
+    //Debug.writeIntLn("  Heap size: ", toSpace.used);
     toSpace, fromSpace = fromSpace, toSpace;
     toSpace.pos = toSpace.begin;
 
     // trace static roots and runtime stack
-    GCRuntimeSupport.traceStaticRoots(TRACE_ACTION);
+	  //Debug.writeLn("== Trace stack ==");
+	  //TRACE_ACTION.count = 0;
     GCRuntimeSupport.traceStack(TRACE_ACTION);
+    //Debug.writeIntLn("  Alloc count: ", TRACE_ACTION.count);
+	  //Debug.writeLn("== Trace static roots ==");
+	  //TRACE_ACTION.count = 0;
+    GCRuntimeSupport.traceStaticRoots(TRACE_ACTION);
+    //Debug.writeIntLn("  Alloc count: ", TRACE_ACTION.count);
+
+		// trace all remaining live objects.
+	  //Debug.writeLn("== Trace to-space ==");
+	  //TRACE_ACTION.count = 0;
+    var tracePos = toSpace.begin;
+    while (tracePos < toSpace.pos) {
+		  let header:Address[ObjectHeader] = Memory.bitCast(tracePos);
+		  let obj:Object = Memory.bitCast[Address[ubyte], Object](tracePos);
+		  let length = header.gcstate;
+  		TRACE_ACTION.traceObject(obj);
+  		//match obj as s:String {
+	    //  Debug.write("\"");
+	    //  Debug.write(s);
+	    //  Debug.writeLn("\"");
+  		//} else {
+	    //  Debug.write("<");
+	    //  Debug.write(obj.type.qualifiedName);
+	    //  Debug.writeLn(">");
+  		//}
+		  tracePos += length;
+    }
 
     // Collect stats...
-    Debug.writeLn("Collection complete");
+	  //Debug.writeLn("== Tracing complete ==");
+    //Debug.writeIntLn("  Alloc count: ", TRACE_ACTION.count);
+    //Debug.writeIntLn("  Heap size: ", toSpace.used);
+	  //Debug.writeLn("== Collection complete ==");
   }
 
 	/** The trace action for this collector. This relocates objects to the current to-space
 			and leaves a fowarding pointer at the old location. */
   private final class TraceActionImpl : TraceAction {
+    //var count:int;
 	  protected def tracePointer(ptrAddr:Address[Object]) {
 	    let addr:Address[ubyte] = Memory.bitCast(ptrAddr[0]);
 	    if fromSpace.contains(addr) {
@@ -143,6 +173,7 @@ namespace GC1 {
   			    Memory.arrayCopy(newAddr, addr, size);
   		      header.newLocation = ptrAddr[0] = Memory.bitCast(newAddr);
   		      header.gcstate = uint(GCFlags.RELOCATED);
+  		      //++count;
   		    }
 		    }
 	    }

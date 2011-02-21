@@ -44,8 +44,7 @@ abstract class TraceAction {
     //Debug.writeLn("**endTraceDescriptors");
   }
 
-  /** Trace the object 'v', which must not be null. This method is primarily used for
-      testing TraceAction subclasses - it is not called by the collector. */
+  /** Trace the object 'v', which must not be null. */
   final def traceObject(v:Object) {
     traceDescriptors(reinterpretPtr(objectAddress(v)), v.__traceTable);
   }

@@ -485,6 +485,7 @@ void FunctionAnalyzer::visitClosureEnvs(const ExprList & closureEnvs) {
           var->setSharedRefType(varType);
           var->closureBinding()->setSharedRefType(varType);
           target->setFlag(FunctionDefn::MakesAllocs);
+          target->setFlag(FunctionDefn::HasSafePoints);
         }
       }
     }

@@ -45,9 +45,9 @@ void CodeGenerator::genLocalRoots(LocalScopeList & lsl) {
     for (Defn * de = lscope->firstMember(); de != NULL; de = de->nextInScope()) {
       if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
         if (var->isSharedRef()) {
-          genGCRoot(var->irValue(), var->sharedRefType());
+          genGCRoot(var->irValue(), var->sharedRefType(), var->name());
         } else if (var->hasStorage() && var->type()->containsReferenceType()) {
-          genGCRoot(var->irValue(), var->type());
+          genGCRoot(var->irValue(), var->type(), var->name());
         }
       }
     }
@@ -85,6 +85,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
     Value * cellAlloca = builder_.CreateAlloca(irType, NULL, var->name());
     builder_.CreateStore(cellValue, cellAlloca);
     var->setIRValue(cellAlloca);
+//    markGCRoot(cellAlloca, NULL, var->name());
   } else {
     // Allocate space for the variable on the stack
     const llvm::Type * irType = varType->irEmbeddedType();
@@ -103,10 +104,11 @@ void CodeGenerator::initGCRoot(Value * rootValue) {
   }
 }
 
-void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
+void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType, StringRef rootName) {
   switch (varType->typeClass()) {
     case Type::Class:
-      markGCRoot(allocaValue, NULL);
+    case Type::Interface:
+      markGCRoot(allocaValue, NULL, rootName);
       break;
 
     case Type::Struct:
@@ -116,7 +118,7 @@ void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
             varType->typeShape() != Shape_Large_Value) {
           diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
         }
-        markGCRoot(allocaValue, getTraceTable(varType));
+        markGCRoot(allocaValue, getTraceTable(varType), rootName);
       }
       break;
 
@@ -124,7 +126,7 @@ void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
       if (varType->containsReferenceType()) {
         const UnionType * utype = static_cast<const UnionType *>(varType);
         if (utype->hasRefTypesOnly()) {
-          markGCRoot(allocaValue, NULL);
+          markGCRoot(allocaValue, NULL, rootName);
           break;
         }
 
@@ -132,7 +134,7 @@ void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType) {
             varType->typeShape() != Shape_Large_Value) {
           diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
         }
-        markGCRoot(allocaValue, getTraceTable(varType));
+        markGCRoot(allocaValue, getTraceTable(varType), rootName);
       }
       break;
 

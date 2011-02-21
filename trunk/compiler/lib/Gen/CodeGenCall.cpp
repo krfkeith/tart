@@ -418,12 +418,9 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
       case Expr::LValue: {
         const LValueExpr * lval = static_cast<const LValueExpr *>(in);
         const ValueDefn * value = lval->value();
+        // Params are roots, so don't need this.
         if (const ParameterDefn * param = dyn_cast<ParameterDefn>(value)) {
-          if (!param->isLValue()) {
-            return genExpr(in);
-          } else {
-            break;
-          }
+          return genExpr(in);
         }
 
         switch (value->storageClass()) {
@@ -440,12 +437,9 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
           case Storage_Instance:
             if (value->defnType() == Defn::Let && lval->base() != NULL) {
               if (const LValueExpr * baseLVal = dyn_cast<LValueExpr>(lval->base())) {
+                // Fields of params are taken care of as well.
                 if (const ParameterDefn * param = dyn_cast<ParameterDefn>(baseLVal->value())) {
-                  if (!param->isLValue()) {
-                    return genExpr(in);
-                  } else {
-                    break;
-                  }
+                  return genExpr(in);
                 }
               }
             }
@@ -560,9 +554,8 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
 
     // Try set the insertion point at the first block.
     builder_.SetInsertPoint(&currentFn_->getBasicBlockList().front());
-    llvm::Value * tempRoot = builder_.CreateAlloca(argVal->getType(), NULL, "gc_root");
-    genGCRoot(tempRoot, in->type());
-    //initGCRoot(tempRoot);
+    llvm::Value * tempRoot = builder_.CreateAlloca(argVal->getType(), NULL, "im_root");
+    genGCRoot(tempRoot, in->type(), tempRoot->getName());
 
     builder_.restoreIP(savePt);
     builder_.CreateStore(argVal, tempRoot, false);

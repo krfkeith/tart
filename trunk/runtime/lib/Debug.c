@@ -14,6 +14,10 @@ void Debug_writeLn(const String * msg) {
   fprintf(stderr, "%.*s\n", (int32_t) msg->length, msg->start);
 }
 
+void Debug_writeIntLn(const String * msg, intptr_t val) {
+  fprintf(stderr, "%.*s%zd\n", (int32_t) msg->length, msg->start, val);
+}
+
 void Debug_fail(const String * msg) {
   fprintf(stderr, "%.*s\n", (int32_t) msg->length, msg->start);
   exit(1);
