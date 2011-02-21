@@ -161,6 +161,7 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
     }
   }
 
+  function_->setFlag(FunctionDefn::HasSafePoints, true);
   if (addFunction(in->function())) {
     CFGPass::visitFnCall(in);
   } else {
@@ -177,6 +178,7 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
 Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
   if (function_ != NULL) {
     function_->setFlag(FunctionDefn::MakesAllocs, true);
+    function_->setFlag(FunctionDefn::HasSafePoints, true);
   }
   addTypeRef(in->type());
   return in;
@@ -241,6 +243,7 @@ Expr * FindExternalRefsPass::visitInstanceOf(InstanceOfExpr * in) {
 Expr * FindExternalRefsPass::visitClosureScope(ClosureEnvExpr * in) {
   if (function_ != NULL) {
     function_->setFlag(FunctionDefn::MakesAllocs, true);
+    function_->setFlag(FunctionDefn::HasSafePoints, true);
   }
   return CFGPass::visitClosureScope(in);
 }

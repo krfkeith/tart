@@ -574,6 +574,8 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval, bool derefShared) 
     }
 
     DASSERT_OBJ(param->irValue() != NULL, param);
+    typeShape = param->internalType()->typeShape();
+
     if (param->isLValue() && typeShape != Shape_Large_Value) {
       return loadValue(param->irValue(), lval, param->name());
     }

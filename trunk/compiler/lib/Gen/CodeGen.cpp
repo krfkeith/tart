@@ -68,7 +68,7 @@ CodeGenerator::CodeGenerator(Module * mod)
   , moduleInitBlock_(NULL)
   , reflector_(*this)
   , gcEnabled_(!NoGC)
-  , dbgFactory_(*mod->irModule())
+  , diBuilder_(*mod->irModule())
   , functionRegion_(NULL)
   , unwindTarget_(NULL)
   , unwindRaiseException_(NULL)
@@ -96,7 +96,7 @@ void CodeGenerator::generate() {
 
   // Generate debugging information
   if (debug_) {
-    dbgCompileUnit_ = genDICompileUnit(module_->moduleSource());
+    genDICompileUnit();
     dbgFile_ = genDIFile(module_->moduleSource());
   }
 
@@ -547,12 +547,17 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   return builder_.CreateLoad(value, name);
 }
 
-void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata) {
+void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, llvm::StringRef rootName) {
   if (gcEnabled_) {
     Function * gcroot = llvm::Intrinsic::getDeclaration(
         irModule_, llvm::Intrinsic::gcroot, NULL, 0);
 
-    value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
+    if (rootName.empty()) {
+      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
+    } else {
+      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo(),
+          rootName + ".rptr");
+    }
     if (metadata == NULL) {
       DASSERT(isa<llvm::PointerType>(value->getType()->getContainedType(0)));
       metadata = llvm::ConstantPointerNull::get(builder_.getInt8PtrTy());

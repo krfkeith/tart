@@ -164,10 +164,26 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
+      ParameterDefn * selfParam = ftype->selfParam();
+      const Type * selfParamType = selfParam->type();
       DASSERT_OBJ(fdef->storageClass() == Storage_Instance ||
           fdef->storageClass() == Storage_Local, fdef);
       DASSERT_OBJ(it != f->arg_end(), ftype);
-      ftype->selfParam()->setIRValue(it);
+
+      // Check if the self param is a root.
+      if (selfParamType->isReferenceType()) {
+        selfParam->setFlag(ParameterDefn::LValueParam, true);
+        Value * selfAlloca = builder_.CreateAlloca(
+            selfParam->type()->irEmbeddedType(), 0, "self.alloca");
+        builder_.CreateStore(it, selfAlloca);
+        selfParam->setIRValue(selfAlloca);
+        markGCRoot(selfAlloca, NULL, "self.alloca");
+      } else {
+        // Since selfParam is always a pointer, we don't need to mark the object pointed
+        // to as a root, since the next call frame up is responsible for tracing it.
+        ftype->selfParam()->setIRValue(it);
+      }
+
       it->setName("self");
       ++it;
     }
@@ -191,18 +207,37 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       it->setName(param->name());
       Value * paramValue = it;
 
-      // See if we need to make a local copy of the param.
+      // If the parameter is a shared reference, then create the shared ref.
       if (param->isSharedRef()) {
         genLocalVar(param, paramValue);
-      } else if (param->isLValue()) {
-        Value * localValue = builder_.CreateAlloca(paramType->irEmbeddedType(), 0, param->name());
-        param->setIRValue(localValue);
+        genGCRoot(param->irValue(), param->sharedRefType(), param->name());
+        continue;
+      }
+
+      // If the parameter type contains any reference types, then the parameter needs
+      // to be a root.
+      bool paramIsRoot = false;
+      if (paramType->isReferenceType()) {
+        param->setFlag(ParameterDefn::LValueParam, true);
+        paramIsRoot = true;
+      } else if (paramType->containsReferenceType()) {
+        // TODO: Handle roots of various shapes
+        //param->setFlag(ParameterDefn::LValueParam, true);
+      }
+
+      // See if we need to make a local copy of the param.
+      if (param->isLValue()) {
+        Value * paramAlloca = builder_.CreateAlloca(paramType->irEmbeddedType(), 0, param->name());
+        param->setIRValue(paramAlloca);
 
         if (paramType->typeShape() == Shape_Large_Value) {
           paramValue = builder_.CreateLoad(paramValue);
         }
 
-        builder_.CreateStore(paramValue, localValue);
+        builder_.CreateStore(paramValue, paramAlloca);
+        if (paramIsRoot) {
+          genGCRoot(paramAlloca, paramType, param->name());
+        }
       } else {
         param->setIRValue(paramValue);
       }

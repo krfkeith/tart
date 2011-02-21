@@ -14,45 +14,50 @@ namespace Debug {
   def write(msgs:String...) {
     write(String.concat(msgs));
   }
-  
+
   @Extern("Debug_writeLn")
   def writeLn(msg:String);
-  
+
   def writeLn(msgs:String...) {
     writeLn(String.concat(msgs));
   }
-  
+
   def writeLnFmt(fmt:String, args:Object...) {
     writeLn(String.format(fmt, args));
   }
-  
+
   @Extern("Debug_fail")
   def fail(msg:String);
 
   def fail(msgs:String...) {
     fail(String.concat(msgs));
   }
-  
+
   def failFmt(fmt:String, args:Object...) {
     fail(String.format(fmt, args));
   }
-  
+
+	// Special writeLn method that prints a string and an int, but allocates no
+	// memory to do so - used for debugging garbage collectors.
+  @Extern("Debug_writeIntLn")
+  def writeIntLn(msg:String, val:int);
+
   def assertTrueFailed(loc:String, cond:String) {
     fail(loc, " Assertion failed: ", cond);
   }
-  
+
   def assertFalseFailed(loc:String, cond:String) {
     fail(loc, " Assertion failed, expected false: ", cond);
   }
-  
+
   def assertEqFailed(loc:String, expected:String, actual:String) {
     fail(loc, " Assertion failure, expected: ", expected, ", actual value: ", actual);
   }
-  
+
   def assertNeFailed(loc:String, expected:String, actual:String) {
     fail(loc, " Assertion failure: ", expected, " not expected to equal ", actual);
   }
-  
+
   macro assertTrue(cond:bool) {
     if not cond {
   		assertTrueFailed(locationOf(cond), stringify(cond));

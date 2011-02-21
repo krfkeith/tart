@@ -371,3 +371,5 @@ ad-hoc polymorphism. (Protocols?)
 Idea #1: Make a bare template parameter really mean [T <: __Any].
 
   -- Redo templates so that template parameters really are opaque.
+
+// ------------------------------------------------------------------------

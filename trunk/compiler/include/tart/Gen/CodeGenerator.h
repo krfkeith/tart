@@ -15,6 +15,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Analysis/DebugInfo.h"
+#include "llvm/Analysis/DIBuilder.h"
 #include "llvm/Target/TargetData.h"
 #include <iostream>
 
@@ -136,7 +137,8 @@ public:
   void genLocalStorage(LocalScopeList & lsl);
   void genLocalRoots(LocalScopeList & lsl);
   void genLocalVar(VariableDefn * var, llvm::Value * initialVal);
-  void genGCRoot(llvm::Value * lValue, const Type * varType);
+  void genGCRoot(llvm::Value * lValue, const Type * varType,
+      llvm::StringRef rootName = llvm::StringRef());
   void initGCRoot(llvm::Value * allocaValue);
 
   /** Generate the function body from the basic block list. */
@@ -353,7 +355,8 @@ public:
   llvm::ConstantInt * getInt64Val(int64_t value);
 
   /** Return the debug compile unit for the specified source file. */
-  llvm::DICompileUnit genDICompileUnit(const ProgramSource * source);
+  void genDICompileUnit();
+  llvm::DIScope compileUnit();
   llvm::DIFile genDIFile(const SourceRegion * source);
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
@@ -365,21 +368,22 @@ public:
   void setDebugLocation(const SourceLocation & loc);
   void clearDebugLocation();
   llvm::DIScope genRegionScope(SourceRegion * region);
+  llvm::DIDescriptor genDefnScope(const Defn * de);
 
   /** Generate debugging information for types. */
   llvm::DIType genDIType(const Type * type);
-  llvm::DIBasicType genDIPrimitiveType(const PrimitiveType * type);
-  llvm::DICompositeType genDICompositeType(const CompositeType * type);
+  llvm::DIType genDIPrimitiveType(const PrimitiveType * type);
+  llvm::DIType genDICompositeType(const CompositeType * type);
   llvm::DIType genDIEnumType(const EnumType * type);
-  llvm::DICompositeType genDINativeArrayType(const NativeArrayType * type);
-  llvm::DICompositeType genDIFlexibleArrayType(const FlexibleArrayType * type);
-  llvm::DIDerivedType genDIAddressType(const AddressType * type);
-  llvm::DICompositeType genDIUnionType(const UnionType * type);
-  llvm::DICompositeType genDITupleType(const TupleType * type);
-  llvm::DICompositeType genDIFunctionType(const FunctionType * type);
-  llvm::DIDerivedType genDITypeMember(const Type * type, llvm::StringRef name, uint64_t & offset);
-  llvm::DIDerivedType genDITypeMember(const llvm::Type * type, llvm::DIType derivedFrom,
-      llvm::StringRef name, uint64_t & offset);
+  llvm::DIType genDINativeArrayType(const NativeArrayType * type);
+  llvm::DIType genDIFlexibleArrayType(const FlexibleArrayType * type);
+  llvm::DIType genDIAddressType(const AddressType * type);
+  llvm::DIType genDIUnionType(const UnionType * type);
+  llvm::DIType genDITupleType(const TupleType * type);
+  llvm::DIType genDIFunctionType(const FunctionType * type);
+  llvm::DIType genDITypeMember(const VariableDefn * var, uint64_t & offset);
+  llvm::DIType genDITypeMember(const llvm::Type * type, llvm::DIType memberType,
+      llvm::StringRef name, unsigned sourceLine, uint64_t & offset);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIParameterType(const Type * type);
 
@@ -434,6 +438,7 @@ private:
   uint64_t getSizeOfInBits(const llvm::Type * ty);
   uint64_t getAlignOfInBits(const llvm::Type * ty);
   uint64_t align(uint64_t offset, uint64_t align);
+  unsigned getDefnFlags(const Defn * de);
 
   bool hasAddress(const Expr * expr);
   void ensureLValue(const Expr * expr, const llvm::Type * irType);
@@ -442,7 +447,8 @@ private:
   llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
   llvm::Value * genArgExpr(const Expr * arg, bool saveIntermediateStackRoots);
 
-  void markGCRoot(llvm::Value * value, llvm::Constant * metadata);
+  void markGCRoot(llvm::Value * value, llvm::Constant * metadata,
+      llvm::StringRef rootName = llvm::StringRef());
 
   llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
 
@@ -469,8 +475,7 @@ private:
   // Debug information
   DIFileMap dbgFiles_;
   SubprogramMap dbgSubprograms_;
-  llvm::DIFactory dbgFactory_;
-  llvm::DICompileUnit dbgCompileUnit_;
+  llvm::DIBuilder diBuilder_;
   llvm::DIFile dbgFile_;
   llvm::DIScope dbgContext_;
   DITypeMap dbgTypeMap_;
