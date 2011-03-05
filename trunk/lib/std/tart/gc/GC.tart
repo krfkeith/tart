@@ -1,0 +1,52 @@
+import Memory.Address;
+import tart.annex.Intrinsic;
+
+/** The GC namespace defines the interface to the garbage collector. For performance
+    reasons, the interface is defined in terms of statically-linkable functions rather
+    than as an object with members. */
+namespace GC {
+
+	/** Initialize the garbage collector. This also does an implicit enterThread() call. */
+  @Extern("GC_init") def init();
+
+  /** Set up the thread-local state for the current thread. Called when creating a new thread. */
+  @Extern("GC_enterThread") def enterThread();
+
+  /** Clean up the thread-local state for the current thread. */
+  @Extern("GC_exitThread") def exitThread();
+
+  /** A sync point. Called to let the garbage collector know it's OK to do a collection at the
+  		point where this function is called. Objects may move during this call. */
+  @Extern("GC_sync") def sync();
+
+  /** Start of an extended sync point. Called before any blocking operation to let the collector
+  		know it's OK to do a collection while the operation is in progress. Objects may move
+  		at any time until the next call to resume(). */
+  @Extern("GC_suspend") def suspend();
+
+  /** Called after a blocking operation to finish a 'suspend' call. The collector will no longer
+      do collections until this thread reaches the next sync point. */
+  @Extern("GC_resume") def resume();
+
+	/** Return a reference to the thread-local context pointer for the current thread. This
+			should only need to be done once per function that allocates memory. The compiler will
+			generate a call to this as needed, and pass the result to 'alloc'. */
+  @Extern("GC_allocContext") def allocContext -> Object;
+
+  /** Obtain a block of memory from the alloc pool associated with the given thread local state.
+      This is implicitly a sync point. This should be passed the context object returned by
+      'allocContext'. */
+  @Extern("GC_alloc") def alloc(context:Object, size:uint) -> Object;
+
+  /** Force an immediate garbage collection. */
+  @Extern("GC_collect") def collect();
+
+  /** Register a finalizer function for an object. */
+  @Extern("GC_addFinalizer") def addFinalizer(obj:Object, finalizer:Function[void]);
+
+  /** Unregister a finalizer function for an object. */
+  @Extern("GC_removeFinalizer") def removeFinalizer(obj:Object, finalizer:Function[void]);
+
+	/** Return the list of trace descriptors for the given type. */
+  @Intrinsic static def traceTableOf[%T](typeName:TypeLiteral[T]) -> Address[TraceDescriptor];
+}

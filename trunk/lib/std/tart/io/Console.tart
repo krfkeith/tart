@@ -1,0 +1,46 @@
+import tart.core.Memory.Address;
+
+/** Contains the standard input & output streams. */
+public namespace Console {
+  private {
+    enum StreamID {
+      STDIN,
+      STDOUT,
+      STDERR,
+    }
+    
+    @Extern("get_std_stream") def getStdStream(id:StreamID) -> Address[StdFileStream.FILE];
+
+    var _cin:optional TextReader;
+    var _cout:optional TextWriter;
+    var _cerr:optional TextWriter;
+  }
+
+  /** Return the input stream for stdin. */
+  def cin:TextReader {
+    get {
+      match _cin {
+        as r:TextReader { return r; }
+        else {
+          let r:TextReader = StdFileStream(getStdStream(StreamID.STDIN), true, false, false);
+          _cin = r;
+          return r;
+        }
+      }
+    }
+  }
+
+  /** Standard output stream. */
+  def cout:TextWriter {
+    get {
+      return lazyEval(_cout, StdFileStream(getStdStream(StreamID.STDOUT), false, true, false));
+    }
+  }
+
+  /** Standard error output stream. */
+  def cerr:TextWriter {
+    get {
+      return lazyEval(_cerr, StdFileStream(getStdStream(StreamID.STDERR), false, true, false));
+    }
+  }
+}

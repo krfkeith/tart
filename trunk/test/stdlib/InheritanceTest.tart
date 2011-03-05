@@ -1,0 +1,34 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(InheritanceTest);
+}
+
+class Parent {}
+class Child : Parent {}
+
+class InheritanceTest : Test {
+  def testInheritance1() {
+    let p:Parent = Child();
+    Debug.assertTrue(p isa Child);
+    Debug.assertTrue(p isa Parent);
+    //let c = p as Child;
+    //Debug.assertTrue(c is p);
+  }
+  
+  def testInheritance2() {
+    let p:Parent = Parent();
+    Debug.assertFalse(p isa Child);
+    Debug.assertTrue(p isa Parent);
+    Debug.writeLn("TODO: fix this test - need dynamic cast");
+    //let c = p as Child; // c should be null
+    //assert(c === null);
+  }
+  
+  def testInheritance3() {
+    //let tp:Type = Parent;
+    //let tc:Type = Child;
+    //Debug.assertTrue(tc.superType is tp);
+  }
+}

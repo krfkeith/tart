@@ -1,0 +1,158 @@
+/* ================================================================ *
+    TART - A Sweet Programming Language.
+ * ================================================================ */
+
+#ifndef TART_SEMA_CALLCANDIDATE_H
+#define TART_SEMA_CALLCANDIDATE_H
+
+#ifndef TART_CFG_CFG_H
+#include "tart/CFG/CFG.h"
+#endif
+
+#ifndef TART_CFG_TYPE_H
+#include "tart/CFG/Type.h"
+#endif
+
+#ifndef TART_SEMA_PARAMETERASSIGNMENTS_H
+#include "tart/Sema/ParameterAssignments.h"
+#endif
+
+#ifndef TART_SEMA_BINDINGENV_H
+#include "tart/Sema/BindingEnv.h"
+#endif
+
+#ifndef TART_AST_ASTNODE_H
+#include "tart/AST/ASTNode.h"
+#endif
+
+namespace tart {
+
+class SpCandidate;
+
+/// -------------------------------------------------------------------
+/// A call candidate
+class CallCandidate : public GC {
+public:
+  CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
+      const ParameterAssignments & param, SpCandidate * spCandidate = NULL);
+
+  CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType * ftype,
+      const ParameterAssignments & params);
+
+  /** The call expression that this is a candidate for. */
+  CallExpr * callExpr() const { return callExpr_; }
+
+  /** The base ('self') expression for the method. */
+  Expr * base() const { return base_; }
+
+  /** The callable method. May be null if the call is via a pointer. */
+  FunctionDefn * method() const { return method_; }
+  void setMethod(FunctionDefn * m) { method_ = m; }
+
+  /** The method type. */
+  const FunctionType * functionType() const { return fnType_; }
+  void setFunctionType(FunctionType * fnType) { fnType_ = fnType; }
+
+  /** The mapping of input args to formal parameters. */
+  const ParameterAssignments & paramAssignments() const {
+    return paramAssignments_;
+  }
+
+  /** For the argument at position 'argIndex', return which parameter it was mapped to. */
+  int parameterIndex(int argIndex) const {
+    return paramAssignments_[argIndex];
+  }
+
+  /** Get the number of non-default arguments in this call. */
+  size_t argCount() const { return paramAssignments_.size(); }
+
+  /** For a given input argument index, return the type of the parameter
+      that this argument will be assigned to. This may not be the same
+      as the formally declared parameter type, as pattern variable
+      substitutions may have occurred. */
+  const Type * paramType(int argIndex) const;
+
+  /** Get the return type of this candidate. */
+  const Type * resultType() const { return resultType_; }
+  void setResultType(Type * type) { resultType_ = type; }
+
+  /** The compatibility rank for the least compatible argument. */
+  ConversionRank conversionRank() const { return conversionRank_; }
+
+  /** The number of conversions that occurred at the least compatible rank. */
+  int conversionCount() const { return conversionCount_; }
+
+  /** Update the compatibility score for this candidate. */
+  ConversionRank updateConversionRank();
+
+  /** Return true if *this* candidate is more specific than the one given. */
+  bool isMoreSpecific(const CallCandidate * other) const;
+
+  /** Return true if the method and base pointer are singular. */
+  bool isSingular() const;
+
+  /** Perform unification on the candidate and its arguments. */
+  bool unify(CallExpr * callExpr, FormatStream * errStrm = NULL);
+
+  /** Return the environment containing type bindings created during
+      unification between the template function and the actual params. */
+  const BindingEnv & env() const { return bindingEnv_; }
+  BindingEnv & env() { return bindingEnv_; }
+
+  /** If this candidate has not already been culld, then set it's pruning
+      depth to the current depth, otherwise leave it as-is. Returns true
+      if the pruningDepth changed state. */
+  bool cull(int depth) {
+    if (pruningDepth_ == 0) {
+      pruningDepth_ = depth;
+      return true;
+    }
+
+    return false;
+  }
+
+  /** If this candidate was culld at a level equal or higher than the
+      specified depth, then un-cull it, otherwise leave it culld. */
+  bool decull(int depth) {
+    if (pruningDepth_ >= depth) {
+      pruningDepth_ = 0;
+      return true;
+    }
+
+    return false;
+  }
+
+  /** Return true if the candidate has been culld. */
+  bool isCulled() const { return pruningDepth_ != 0; }
+
+  // Overrides
+
+  void trace() const;
+
+private:
+  void combineConversionRanks(ConversionRank newRank);
+
+  CallExpr * callExpr_;
+  Expr * base_;
+  FunctionDefn * method_;
+  ConversionRank conversionRank_;
+  int conversionCount_;
+  int pruningDepth_;
+  ParameterAssignments paramAssignments_;
+  BindingEnv bindingEnv_;
+  const FunctionType * fnType_;
+  const Type * resultType_;
+  ConstTypeList paramTypes_;
+  const TupleType * typeParams_;
+  const TupleType * typeArgs_;
+  TemplateConditionList conditions_;
+  SpCandidate * spCandidate_;
+  bool isTemplate_;
+  bool trace_;
+};
+
+FormatStream & operator<<(FormatStream & out, const CallCandidate & cc);
+
+} // namespace tart
+
+#endif

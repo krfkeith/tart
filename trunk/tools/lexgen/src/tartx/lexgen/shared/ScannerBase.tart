@@ -1,0 +1,140 @@
+import tart.io.TextReader;
+
+/** Base class for scanners. */
+class ScannerBase {
+  protected {
+    var _reader:TextReader; // Input stream
+
+    var _tokenText = StringBuilder();
+    var _tokenLoc:Location; // Current token location in file
+
+    var _scanPos:int;     	// Current scan position
+    var _scanLine:int32;    // Current scan line number
+    var _scanCol:int32;     // Current scan column
+    var _ch:char = 0;       // Current scan character
+    var _skipToken:bool;		// Whether to discard the current token.
+    var _saveTokenLength:int32 = 0;
+
+    var _log:LogWriter;     // Output logging stream
+
+    def construct(file:String, reader:TextReader, log:LogWriter) {
+      _reader = reader;
+      _log = log;
+      _tokenLoc.file = file;
+      _scanPos = 0;
+      _scanCol = 0;
+      _scanLine = 1;
+	    _skipToken = false;
+      read();
+	    saveTokenLocation();
+    }
+
+    /** Read the next character in the stream.
+        Returns: True if a character could be read.*/
+    def read -> bool {
+      _ch = _reader.readCh();
+      return false if _ch == TextReader.EOF;
+      _scanCol += 1;
+      return true;
+    }
+
+  	/** Copy the current scan location to the token location. */
+    def saveTokenLocation {
+      _tokenLoc.line = _scanLine;
+      _tokenLoc.col = _scanCol;
+    }
+
+    /** Call in subclass when an end of line token is encountered. */
+    def nl {
+      _scanLine++;
+      _scanCol = 0;
+    }
+  }
+
+  /** The text of the current token. */
+  def tokenText:String { get { return _tokenText.toString(); } }
+
+  /** The length of the current token. */
+  def tokenLength:int { get { return _tokenText.size; } }
+
+  /** The location of the current token. */
+  def tokenLoc:Location { get { return _tokenLoc; } }
+
+  /** The location of the current scan position. */
+  def scanLoc:Location { get { return Location(_tokenLoc.file, _scanLine, _scanCol); } }
+
+  /** Append the character 'c' to the current output token text. */
+  def append(c:char) {
+    _tokenText.append(c);
+  }
+
+  /** Append the string 's' to the current output token text. */
+  def append(s:String) {
+    _tokenText.append(s);
+  }
+
+  /** Consume the current character and read another. */
+  def take {
+    append(_ch);
+    read();
+  }
+
+	/** Replace the last 'n' token characters with the string 's'. */
+  def replace(n:int32, s:String) {
+    erase(n);
+    append(s);
+  }
+
+  /** Discard the current token. */
+  def skip {
+    _tokenText.size = _saveTokenLength;
+    _skipToken = true;
+  }
+
+	/** Drop the last 'n' characters of the current token text. */
+  def erase(n:int32) {
+    _tokenText.size -= n;
+  }
+
+	/** Drop all of the characters accumulated since the end of the previous token. */
+  def erase() {
+    _tokenText.size = _saveTokenLength;
+  }
+
+  /** If the current character matches the specified character,
+      advance the read pointer and return true; otherwise return
+      false. */
+  def matchChar(c:char) -> bool {
+    if (c == _ch) {
+      take();
+      return true;
+    }
+
+    return false;
+  }
+
+  /** Match any character within the range minVal..maxVal, inclusive.
+      Consume the character and return true if matched, otherwise return
+      false. */
+  def matchRange(minVal:char, maxVal:char) -> bool {
+    if (_ch >= minVal and _ch <= maxVal) {
+      take();
+      return true;
+    }
+
+    return false;
+  }
+
+  /** The logging output stream. */
+  def log:LogWriter { get { return _log; } }
+
+	/** Reports a match failure error. */
+  def matchFail(tokenName:String) {
+    log.error(_tokenLoc, "Expecting ", tokenName, " after ", _tokenText.toString());
+  }
+
+	/** Report an unrecognized character. */
+  def illegalChar() {
+    log.error(_tokenLoc, "Illegal character: ", _ch.toString());
+  }
+}

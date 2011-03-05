@@ -1,0 +1,140 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(StringTest);
+}
+
+class StringTest : Test {
+	def testStringLiteral() {
+	  let s = "Hello";
+	  assertTrue(5 == s.size);
+	  assertFalse(s.isEmpty);
+	  assertTrue("".isEmpty);
+	  assertFalse("a".isEmpty);
+	}
+	
+	def testStringComparison() {
+	  let s = "Hello";
+	  let t = "Goodbye";
+	  assertTrue(s == s);
+	  assertFalse(s == t);
+	  assertTrue(s == "Hello");
+	  assertFalse(s == "Goodbye");
+	//  assertTrue(s != "Yello");
+	  
+	  // TODO: Test !=
+	  
+	  assertTrue("Hello, World".startsWith("Hello"));
+	  assertFalse("Hello, World".startsWith("Jello"));
+	  assertFalse("Hello".startsWith("Hello, World"));
+	  assertTrue("Hello, World".startsWith("Hello, World"));
+	
+	  assertTrue("Hello, World".endsWith("World"));
+	  assertFalse("Hello, World".endsWith("Wirld"));
+	  assertFalse("Hello".endsWith("Hello, World"));
+	  assertTrue("Hello, World".endsWith("Hello, World"));
+	}
+	
+	def testStringGetChar() {
+	  let s = "Hello";
+	  assertTrue(s[0] == 'H');
+	  assertTrue(s[1] == 'e');
+	}
+	
+	def testStringFromArray() {
+	  let a = ubyte[](0); // Zero-length array
+	  let s = String(a);
+	  assertTrue(s == "");
+	}
+	
+	def testStringToString() {
+	  // TODO: Type inference problem.
+	  assertEq("Hello", "Hello".toString());
+	}
+	
+	def testStringConcatenation() {
+	  let s = String.concat("This", "Is", "A", "Test");
+	  assertEq(11, s.size);
+	  assertEq("ThisIsATest", s);
+	}
+	
+	def testStringJoin() {
+	  let s = ", ".join("This", "Is", "A", "Test");
+	  assertEq("This, Is, A, Test", s);
+	  let s2 = ", ".join();
+	  assertEq("", s2);
+	  let s3 = ", ".join("This");
+	  assertEq("This", s3);
+	}
+	
+	def testIterableStringJoin() {
+	  let a = tart.collections.ArrayList[String]();
+	  a.add("One");
+	  a.add("Two");
+	  a.add("Three");
+	  let s = ", ".join(a);
+	  assertEq("One, Two, Three", s);
+	}
+	
+	def testUnicode() {
+	  assertEq(2, "\u0200".size);
+	  assertEq(1, "\u0200".charLength());
+	  assertEq(6, "Test\u0200".size);
+	  assertEq(5, "Test\u0200".charLength());
+	  assertEq(3, "\u2100".size);
+	  assertEq(1, "\u2100".charLength());
+	  assertEq(6, "\u2100\u2100".size);
+	  assertEq(2, "\u2100\u2100".charLength());
+	  assertEq(4, "\U20000".size);
+	  assertEq(1, "\U20000".charLength());
+	}
+	
+	def testToCharArray() {
+	  let s = "Hello";
+	  let a = s.toCharArray();
+	  assertEq(5, a.size);
+	  assertEq('H', a[0]);
+	  assertEq('e', a[1]);
+	  assertEq('l', a[2]);
+	  assertEq('l', a[3]);
+	  assertEq('o', a[4]);
+	
+	  let s2 = "\u2100";
+	  let a2 = s2.toCharArray();
+	  assertEq(1, a2.size);
+	  assertEq('\u2100', a2[0]);
+	}
+	
+	def testStringConversion() {
+	  assertEq("1", String(1));
+	}
+
+	def testStringIteration() {
+	  let i = "Test".iterate();
+	  assertEq('T', typecast[char](i.next()));
+	  assertEq('e', typecast[char](i.next()));
+	  assertEq('s', typecast[char](i.next()));
+	  assertEq('t', typecast[char](i.next()));
+	  assertTrue(i.next() isa void);
+	  
+	  let i2 = "\u2100".iterate();
+	  assertEq(0x2100, typecast[char](i2.next()));
+	  assertTrue(i2.next() isa void);
+	}
+
+	def testStringFormatEscapeBraces() {
+	  assertEq("Test {}", String.format("Test {{}}"));
+	}
+
+	def testStringFormatField() {
+	  assertEq("Test Hello", String.format("Test {0}", "Hello"));
+	  assertEq("Test Hello", "Test {0}".format("Hello"));
+	}
+
+	def testStringSubstring() {
+	  assertEq("Hello", "Test Hello".substr(5));
+	  assertEq("Hello", "Test Hello".substr(5, 20));
+	  assertEq("He", "Test Hello".substr(5, 7));
+	}
+}

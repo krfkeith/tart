@@ -1,0 +1,10 @@
+/** Exception thrown when an array index is outside of the valid range of array indices. */
+public class IndexError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

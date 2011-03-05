@@ -1,0 +1,42 @@
+/// TEST SwitchDuplicateCase: Duplicate case
+def func() {
+  var a:int32 = 1;
+  switch a {
+    case 1 {}
+    case 1 {}
+  }
+}
+
+/// TEST SwitchInvalidCaseType: incompatible
+def func() {
+  var a:int32 = 1;
+  switch a {
+    case "Hey" {}
+  }
+}
+
+/// TEST SwitchTruncatedCaseValue: can never equal
+def func() {
+  var a:int8 = 1;
+  switch a {
+    case 1000 {}
+  }
+}
+
+/// TEST SwitchInvalidExpressionType: Invalid expression type
+def func() {
+  var a:float = 1.0;
+  switch a {
+    case 1.0 {}
+  }
+}
+
+/// TEST SwitchOnlyOneElse: Only one
+def func() {
+  var a:int8 = 1;
+  switch a {
+    case 1 {}
+    else {}
+    else {}
+  }
+}

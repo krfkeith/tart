@@ -1,0 +1,192 @@
+import tart.core.Memory.Address;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** A stream which can read / write to a C stdio FILE handle. */
+final class StdFileStream : TextReader, TextWriter {
+  struct FILE {}
+  
+  private {
+    var _file:Address[FILE];
+    let _canRead:bool;
+    let _canWrite:bool;
+    let _canSeek:bool;
+    let _encoding:Codec;
+    //let _isIdentityCoding:bool = true;
+    //var _buffer:ubyte[];
+
+    @Extern("StdFileStream_read_byte") static def _readByte(file:Address[FILE]) -> int32;
+    @Extern("StdFileStream_read_bytes") static def _readBytes(
+        file:Address[FILE], buffer:ubyte[], count:int64) -> int64;
+    //@Extern("StdFileStream_read_chars") static def _readChars(
+    //    file:Address[FILE], buffer:char[], length:int64) -> int64;
+    @Extern("StdFileStream_write_byte") static def _writeByte(
+        file:Address[FILE], value:ubyte) -> IOError.IOResult;
+    @Extern("StdFileStream_write_bytes") static def _writeBytes(
+        file:Address[FILE], buffer:Address[ubyte], count:int64) -> IOError.IOResult;
+    @Extern("StdFileStream_atEnd") static def _atEnd(file:Address[FILE]) -> bool;
+    @Extern("StdFileStream_position") static def _position(file:Address[FILE]) -> int64;
+    @Extern("StdFileStream_length") static def _length(file:Address[FILE]) -> int64;
+    @Extern("StdFileStream_flush") static def _flush(file:Address[FILE]) -> IOError.IOResult;
+    @Extern("StdFileStream_close") static def _close(file:Address[FILE]) -> IOError.IOResult;
+  }
+
+  def construct(file:Address[FILE], canRead:bool, canWrite:bool, canSeek:bool) {
+    self._file = file;
+    self._canRead = canRead;
+    self._canWrite = canWrite;
+    self._canSeek = canSeek;
+    self._encoding = Codecs.UTF_8;
+  }
+
+  /** Read a single byte from the stream. */
+  //@Throws(IOError)
+  def read -> int32 {
+    return _readByte(_file);
+  }
+  
+  def readCh -> char {
+    return EOF;
+  }
+
+  /** Read a buffer of bytes from the stream. */
+  //@Throws(IOError)
+  def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
+    return 0;
+  }
+  
+  def read(buffer:char[], start:int = 0, length:int = int.maxVal) -> int {
+    return 0;
+  }
+  
+  def readLn -> String {
+    return "";
+  }
+
+  def readAll -> String {
+    return "";
+  }
+
+  /** Write a single byte to the stream. */
+  //@Throws(IOError)
+  def write(value:ubyte) {
+    IOError.checkResult(_writeByte(_file, value));
+  }
+
+  /** Write a buffer of bytes to the stream. */
+  //@Throws(IOError)
+  def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> void {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start);
+    if count > 0 {
+      IOError.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
+    }
+  }
+
+  //def write(text:String, start:int32 = 0, count:int32 = int32.maxVal) -> int32;
+
+  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int {
+    //Preconditions.checkArgument(count >= 0);
+    //start = Math.min(start, chars.size);
+    //count = Math.min(count, chars.size - start);
+    //if count > 0 {
+      // TODO: Shortcut for identity encoding.
+      let encodedLength = _encoding.encodedLength(chars, int32(start), int32(count));
+      //let encodedLength = tart.text.encodings.Codecs.UTF_8.encodedLength(chars, int32(start), int32(count));
+      let buffer:ubyte[] = ubyte[](encodedLength);
+      _encoding.encode(buffer, 0, chars, int32(start), int32(count));
+      //tart.text.encodings.Codecs.UTF_8.encode(buffer, 0, chars, int32(start), int32(count));
+      IOError.checkResult(_writeBytes(_file, buffer.data, encodedLength));
+    //}
+
+    return 0;
+  }
+
+  def writeChars(text:String, start:int = 0, count:int = int.maxVal) -> int {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, text.size);
+    count = Math.min(count, text.size - start);
+    if count > 0 {
+      writeChars(text.toCharArray(int32(start), int32(count)), 0, count);
+    }
+    
+    return 0;
+  }
+
+  /** Write a string of text to the output stream. */
+  def write(text:String) -> TextWriter {
+    writeChars(text);
+    return self;
+  }
+
+  /** Concatenate strings and write them to the output stream. */
+  def write(text:String...) -> TextWriter {
+    writeChars(String.concat(text));
+    return self;
+  }
+
+  /** Write a string of text to the output stream followed by a line break. */
+  def writeLn(text:String) -> TextWriter {
+    writeChars(text);
+    writeChars("\n");
+    return self;
+  }
+
+  /** Concatenate strings and write them to the output stream, followed by a line break. */
+  def writeLn(text:String...) -> TextWriter {
+    writeChars(String.concat(text));
+    writeChars("\n");
+    return self;
+  }
+
+  /** Write values to the output stream using a format string. */
+  def writeFmt(format:String, values:Object...) -> TextWriter {
+    return self;
+  }
+
+  /** Write values to the output stream using a format string, followed by a line break. */
+  def writeLnFmt(format:String, values:Object...) -> TextWriter {
+    writeChars("\n");
+    return self;
+  }
+
+  /** Change the current read/write position of the stream. */
+  //@Throws(IOError)
+  @Extern("StdFileStream_seek") 
+  def seek(from:SeekFrom, offset:int64) -> int64;
+  
+  /** True if we've reached the end of available input. */
+  //@Throws(IOError)
+  def atEnd: bool { get { return _atEnd(_file); } }
+  
+  /** True if the stream supports reading. */
+  def canRead:bool { get { return _canRead; } }
+  
+  /** True if the stream supports writing. */
+  def canWrite:bool { get { return _canWrite; } }
+  
+  /** True if this stream supports seek operations. */
+  def canSeek:bool { get { return _canSeek; } }
+  
+  /** Returns the current position in the stream. */
+  def position:int64 { get { return _position(_file); } }
+  
+  /** Return the length of the stream, or -1 if indeterminate. */
+  def size:int64 { get { return _length(_file); } }
+  
+  /** Flush any pending writes. */
+  //@Throws(IOError)
+  def flush {
+    IOError.checkResult(_flush(_file));
+  }
+  
+  /** Close the stream. */
+  //@Throws(IOError)
+  def close {
+    IOError.checkResult(_close(_file));
+  }
+  
+  def acquire() {}
+  def release() { close(); }
+}

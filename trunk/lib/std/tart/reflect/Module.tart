@@ -1,0 +1,56 @@
+import tart.annex.Intrinsic;
+import tart.annex.Essential;
+import tart.collections.ArrayList;
+import tart.collections.List;
+import tart.collections.ImmutableList;
+import tart.core.Memory.Address;
+
+/** Description of a compiled module. */
+final class Module {
+  private {
+    var _names:NameTable;
+    var _nameIndex:int16;
+    var _memberTypes:List[Type];
+    var _methods:List[Method];
+    // TODO: Add fields, properties.
+
+    undef construct();
+  }
+
+  /** Short name of the module. */
+  final def name:String { get {
+    return _names.getLocalName(_nameIndex);
+  } }
+
+  /** Fully-qualified name of the module. */
+  final def qualifiedName:String { get {
+    return _names.getQualifiedName(_nameIndex);
+  } }
+
+  /** Name of the package containing the module. */
+  final def packageName:String { get {
+    return _names.getScopeName(_nameIndex);
+  } }
+
+  /** Array of types defined in this module. */
+  final def types:List[Type] { get { return self._memberTypes; } }
+
+  /** Array of types defined in this module. */
+  final def methods:List[Method] { get { return self._methods; } }
+
+  /** Returns a reference to the caller's module. */
+  @Intrinsic static def thisModule() -> Module;
+
+  /** Returns a reference to module that contains the specified type. */
+  @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Module;
+
+  def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }
+}

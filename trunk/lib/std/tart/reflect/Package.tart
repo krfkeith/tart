@@ -1,0 +1,39 @@
+import tart.annex.Intrinsic;
+import tart.annex.Essential;
+import tart.core.Memory.Address;
+
+/** Description of a package. */
+final class Package {
+  private {
+    var _name:String;
+    var _modules:Module[];
+    var _subpackages:Package[];
+    
+    undef construct();
+  }
+  
+  /** Fully-qualified name of the package. */
+  final def name:String { get { return self._name; } }
+
+  /** Array of all of the modules contained within this package. */
+  final def modules:Module[] { get { return self._modules; } }
+
+  /** Array of any subpackages contained in this package. */
+  final def subpackages:Package[] { get { return self._subpackages; } }
+  
+  /** Returns a reference to the caller's package. */  
+  @Intrinsic static def thisPackage() -> Package;
+
+  /** Returns a reference to package that contains a specific type. */
+  @Intrinsic static def of[%T](type:TypeLiteral[T]) -> Package;
+
+  /*def findMethod(name:String) -> Method or void {
+    for m in _methods {
+      if m.name == name {
+        return m;
+      }
+    }
+
+    return;
+  }*/
+}

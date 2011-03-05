@@ -1,0 +1,743 @@
+import tart.io.TextReader;
+import tartx.lexgen.shared.ScannerBase;
+import tartx.lexgen.shared.LogWriter;
+
+class LexGenScanner : ScannerBase {
+  public enum LState {
+    START,
+    STRING,
+    ACTION,
+    PARAMETER,
+  }
+
+  public enum LToken {
+    EOF,
+    ERROR,
+    ACTION_TEXT,
+    ALTERNATIVE,
+    CHAR_CONSTANT,
+    CLOSE_BRACE,
+    CLOSE_BRACKET,
+    CLOSE_PAREN,
+    COLON,
+    COMMA,
+    COMMENT,
+    COMPLEMENT,
+    DOT,
+    DOT_DOT,
+    END_BLOCK,
+    EOS_MARKER,
+    ID,
+    IMPORT,
+    INIT,
+    INTEGER,
+    LEXER,
+    ONE_OR_MORE,
+    OPEN_BRACE,
+    OPEN_BRACKET,
+    OPEN_PAREN,
+    OPTIONAL,
+    OPTIONS,
+    PARAM_TEXT,
+    PARSER,
+    PROLOGUE,
+    QUOTE,
+    RETURNS,
+    SEMI,
+    START_BLOCK,
+    STATE,
+    STRING,
+    WHITESPACE,
+    ZERO_OR_MORE,
+  }
+
+  private {
+    var _token:LToken = LToken.ERROR;
+    var _state:LState = LState.START;
+    var _tabSize:int32 = 4;
+
+    def matchAny -> bool {
+       return matchRange(char(1),char(65534));
+    }
+  
+    def matchIdentChar -> bool {
+       return matchRange('0','9') or matchRange('A','Z') or matchChar('_') or matchRange('a','z');
+    }
+  
+    def matchIdentStart -> bool {
+       return (matchRange('A','Z') or matchChar('_') or matchRange('a','z'));
+    }
+  
+    def matchHexDigit -> bool {
+       return (matchRange('0','9') or matchRange('A','F') or matchRange('a','f'));
+    }
+  
+    def matchDigit -> bool {
+       return (matchRange('0','9'));
+    }
+  }
+  
+  def construct(file:String, reader:TextReader, log:LogWriter) {
+    super(file, reader, log);
+    _tokenLoc.file = file;
+  }
+
+  def state:LState {
+     get { return _state; }
+     set { _state = value; }
+  }
+
+  def token:LToken  { get { return _token; } }
+
+  def next -> LToken {
+     _tokenText.clear();
+     _tokenLoc.line = _scanLine;
+     _tokenLoc.col = _scanCol;
+     do {
+        _skipToken = false;
+        //mScanStart = mTokenText.Length;
+        _token = scan();
+     } while _token != LToken.EOF and _token != LToken.ERROR and _skipToken;
+
+     //if (_token != LToken.ERROR) mNumConsecutiveErrors = 0;
+     return _token;
+  }
+
+  protected def scan -> LToken {
+    return LToken.EOF if _ch == TextReader.EOF; // WRONG -- ch is unsigned
+    switch _state {
+      case LState.START {
+        return startState();
+      }
+      
+      case LState.STRING {
+        return stringState();
+      }
+
+      case LState.ACTION {
+        return actionState();
+      }
+        
+       case LState.PARAMETER {
+        return parameterState();
+       }
+    }
+    
+    return LToken.ERROR;
+  }
+    
+  def startState -> LToken {
+    switch _ch {
+      case '\t' {
+         take();
+         _scanCol += _tabSize - _scanCol % _tabSize;
+         return L1();
+      }
+
+      case '\n' {
+         take();
+         nl();
+         return L1();
+      }
+
+      case '\r' {
+         take();
+         return L2();
+      }
+
+      case '\"' {
+         take();
+         _state = LState.STRING;
+         skip();
+         return LToken.QUOTE;
+      }
+
+      case '$' {
+         take();
+         return LToken.EOS_MARKER;
+      }
+
+      case '\'' {
+        take();
+        erase();
+        if (matchChar('\\')) {
+          switch (_ch) {
+            case '\"' {
+              take();
+              replace(2, "\"");
+              return L3();
+            }
+
+            case '\'' {
+              take();
+              replace(2, "\'");
+              return L3();
+            }
+
+            case '\\' {
+              take();
+              replace(2, "\\");
+              return L3();
+            }
+
+            case 'b' {
+              take();
+              replace(2, "\b");
+              return L3();
+            }
+
+            case 'f' {
+              take();
+              replace(2, "\f");
+              return L3();
+            }
+
+            case 'n' {
+              take();
+              replace(2, "\n");
+              return L3();
+            }
+
+            case 'r' {
+              take();
+              replace(2, "\r");
+              return L3();
+            }
+
+            case 't' {
+              take();
+              replace(2, "\t");
+              return L3();
+            }
+
+            else {
+              erase(1);
+              take();
+              return L3();
+            }
+          }
+        }
+        if ((_ch < '\t' or _ch > '\n') and (_ch < '\f' or _ch > '\r') and _ch != '\'')  {
+          take();
+          return L3();
+        }
+       
+        matchFail("Any except \\t-\\n, \\f-\\r or \\'");
+        return LToken.ERROR;
+      }
+
+      case '(' {
+        take();
+        return LToken.OPEN_PAREN;
+      }
+
+      case ')' {
+        take();
+        return LToken.CLOSE_PAREN;
+      }
+
+      case '*' {
+        take();
+        return LToken.ZERO_OR_MORE;
+      }
+
+      case '+' {
+        take();
+        return LToken.ONE_OR_MORE;
+      }
+
+      case '.' {
+        take();
+        if (matchChar('.')) {
+           return LToken.DOT_DOT;
+        }
+        return LToken.DOT;
+      }
+
+      case '/' {
+        take();
+        if (matchChar('*')) { return L4(); }
+        if (matchChar('/')) { return L5(); }
+        matchFail("* or /");
+        return LToken.ERROR;
+      }
+
+      case '0' {
+        take();
+        if (matchChar('X') or matchChar('x')) {
+          if (matchHexDigit()) {
+            while (matchHexDigit()) {} // loop
+             return LToken.INTEGER;
+          }
+          matchFail("HexDigit");
+          return LToken.ERROR;
+        }
+
+         while (matchDigit()) {} // loop
+         return LToken.INTEGER;
+      }
+
+      case ':' {
+        take();
+        return LToken.COLON;
+      }
+
+      case ';' {
+        take();
+        return LToken.SEMI;
+      }
+
+      case '?' {
+        take();
+        return LToken.OPTIONAL;
+      }
+
+      case '[' {
+        take();
+        return LToken.OPEN_BRACKET;
+      }
+
+      case ']' {
+        take();
+        return LToken.CLOSE_BRACKET;
+      }
+
+      case 'i' {
+        take();
+        if (matchChar('m') and matchChar('p') and matchChar('o') and matchChar('r') and matchChar('t')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.IMPORT;
+        }
+        if (matchChar('n') and matchChar('i') and matchChar('t')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.INIT;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case 'l' {
+        take();
+        if (matchChar('e') and matchChar('x') and matchChar('e') and matchChar('r')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.LEXER;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case 'o' {
+        take();
+        if (matchChar('p') and matchChar('t') and matchChar('i') and matchChar('o') and matchChar('n') and matchChar('s')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.OPTIONS;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case 'p' {
+        take();
+        if (matchChar('a') and matchChar('r') and matchChar('s') and matchChar('e') and matchChar('r')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.PARSER;
+        }
+        if (matchChar('r') and matchChar('o') and matchChar('l') and matchChar('o') and matchChar('g') and matchChar('u') and matchChar('e')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.PROLOGUE;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case 'r' {
+        take();
+        if (matchChar('e') and matchChar('t') and matchChar('u') and matchChar('r') and matchChar('n') and matchChar('s')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.RETURNS;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case 's' {
+        take();
+        if (matchChar('t') and matchChar('a') and matchChar('t') and matchChar('e')) {
+          if (matchIdentChar()) { return L8(); }
+          return LToken.STATE;
+        }
+        if (matchIdentChar()) { return L8(); }
+        return LToken.ID;
+      }
+
+      case '{' {
+        take();
+        return LToken.OPEN_BRACE;
+      }
+
+      case '|' {
+        take();
+        return LToken.ALTERNATIVE;
+      }
+
+      case '}' {
+        take();
+        return LToken.CLOSE_BRACE;
+      }
+
+      case '~' {
+        take();
+        return LToken.COMPLEMENT;
+      }
+
+      case '\f'
+      case ' ' {
+        take();
+        return L1();
+      }
+
+      else {
+        if (matchDigit()) {
+           while (matchDigit()) {}// loop
+          return LToken.INTEGER;
+        }
+
+        if (matchIdentChar()) { return L8(); }
+        illegalChar();
+        return LToken.ERROR;
+      }
+    }
+
+    return LToken.ERROR;
+  }
+  
+  def stringState -> LToken {
+    while (_ch >= 0) {
+      if (matchChar('\"')) {
+        erase(1);
+        state = LState.START;
+        return LToken.STRING;
+      }
+      if (matchChar('\\')) {
+        switch (_ch) {
+          case '\"' {
+            take();
+            replace(2, "\"");
+            continue;
+          }
+          
+          case '\'' {
+            take();
+            replace(2, "\'");
+            continue;
+          }
+
+          case '\\' {
+            take();
+            replace(2, "\\");
+            continue;
+          }
+
+          case 'b' {
+            take();
+            replace(2, "\b");
+            continue;
+          }
+
+          case 'f' {
+            take();
+            replace(2, "\f");
+            continue;
+          }
+
+          case 'n' {
+            take();
+            replace(2, "\n");
+            continue;
+          }
+
+          case 'r' {
+            take();
+            replace(2, "\r");
+            continue;
+          }
+
+          case 't' {
+            take();
+            replace(2, "\t");
+            continue;
+          }
+
+          else {
+            erase(1);
+            take();
+            continue;
+          }
+        }
+      }
+      if ((_ch < '\t' or _ch > '\n') and (_ch < '\f' or _ch > '\r'))  {
+        take();
+        continue;
+      }
+      illegalChar();
+      return LToken.ERROR;
+    }
+    //prematureEof("?");
+    return LToken.ERROR;
+  }
+
+  def actionState -> LToken {
+    switch _ch {
+      case '\n' {
+        take();
+        nl();
+      }
+
+      case '\r' {
+        read();
+        if not matchChar('\n') {
+          append('\n');
+        }
+      }
+
+      case '\\' {
+        take();
+      }
+
+      case '{' {
+        take();
+        return LToken.START_BLOCK;
+      }
+
+      case '}' {
+        take();
+        return LToken.END_BLOCK;
+      }
+
+      else {
+        take();
+      }
+    }
+
+    repeat {
+      switch _ch {
+        case '\n' {
+          take();
+          nl();
+        }
+  
+        case '\r' {
+          read();
+          if not matchChar('\n') {
+	          append('\n');
+          }
+        }
+  
+        case '\\' {
+          take();
+        }
+
+        case '{'
+        case '}'
+				case TextReader.EOF {
+	        return LToken.ACTION_TEXT;
+        }
+  
+        else {
+          take();
+        }
+      }
+    }
+  }
+
+  def parameterState -> LToken {
+    return LToken.ERROR;
+  }
+/*
+       case LState.Parameter:
+          switch (_ch) {
+          case '\n':
+             take();
+             nl();
+             goto L12;
+  
+          case '\r':
+             take();
+             goto L13;
+  
+          case ',':
+             take();
+             return LToken.Comma;
+  
+          case '[':
+             take();
+             return LToken.OpenBracket;
+  
+          case ']':
+             take();
+             return LToken.CloseBracket;
+  
+          default:
+             if (matchIdentChar() or matchChar('\t') or matchChar(' ') or matchRange('$','&') or matchRange('*','+') or matchChar('-') or matchChar(':') or matchChar('=') or matchChar('@')) goto L12;
+             IllegalChar();
+             return LToken.Error;
+          }
+  
+       default {
+          Fail("Invalid State Transition");
+          return LToken.Error;
+       }
+    }
+  }*/
+
+  def L1 -> LToken {
+     repeat {
+        if (matchChar('\t')) {
+           _scanCol += _tabSize - _scanCol % _tabSize;
+           continue;
+        }
+        if (matchChar('\n')) {
+           nl();
+           continue;
+        }
+        if (matchChar('\r')) {
+          matchChar('\n');
+          nl();
+        } else {
+          continue if (matchChar('\f') or matchChar(' '));
+          skip();
+          return LToken.WHITESPACE;
+        }
+     }
+  }
+
+  def L2 -> LToken {
+     matchChar('\n');
+     nl();
+     return L1();
+  }
+
+  def L3 -> LToken {
+    if (matchChar('\'')) {
+      erase(1);
+      return LToken.CHAR_CONSTANT;
+    }
+    matchFail("\\'");
+    return LToken.ERROR;
+  }
+
+  def L4 -> LToken {
+    repeat {
+      if (matchChar('*')) { return L14(); }
+      take();
+      continue;
+    }
+  }
+
+  def L14 -> LToken {
+     while (matchChar('*')) {} // loop
+     if (matchChar('/')) {
+        skip();
+        return LToken.COMMENT;
+     }
+     take();
+     return L4();
+  }
+
+  def L5 -> LToken {
+     repeat {
+        if (matchChar('\n')) {
+           nl();  skip();
+           return LToken.COMMENT;
+        }
+        if (matchChar('\r')) {
+           if (matchChar('\n')) {
+              nl();  skip();
+              return LToken.COMMENT;
+           }
+           nl();
+           skip();
+           return LToken.COMMENT;
+        }
+        take();
+        continue;
+     }
+  }
+
+/*  L6:
+     while (matchHexDigit()) ; // loop
+     return LToken.Integer;
+
+  L7:
+     while (matchDigit()) ; // loop
+     return LToken.Integer; */
+
+  def L8 -> LToken {
+     while (matchIdentChar()) {} // loop
+     return LToken.ID;
+  }
+
+/*  L9:
+     while (_ch >= 0) {
+        if (matchChar('\n')) {
+           nl();
+           continue;
+        }
+        if (matchChar('\r')) goto L10;
+        if (matchChar('\\')) goto L11;
+        if (_ch != '{' and _ch != '}')  {
+           take();
+           continue;
+        }
+        return LToken.ActionText;
+     }
+     PrematureEof("?");
+     return LToken.ERROR;
+
+  L10:
+     if (matchChar('\n')) {
+        nl();
+        goto L9;
+     }
+     nl();
+     goto L9;
+
+  L11:
+     while (_ch >= 0) {
+        if (matchChar('\n')) {
+           nl();
+           goto L9;
+        }
+        if (matchChar('\r')) goto L10;
+        if (matchChar('\\')) continue;
+        if (_ch != '{' and _ch != '}')  {
+           take();
+           goto L9;
+        }
+        return LToken.ACTION_TEXT;
+     }
+     PrematureEof("?");
+     return LToken.Error;
+
+  L12:
+     for (;;) {
+        if (matchChar('\n')) {
+           nl();
+           continue;
+        }
+        if (matchChar('\r')) goto L13;
+        if (matchIdentChar() or matchChar('\t') or matchChar(' ') or matchRange('$','&') or matchRange('*','+') or matchChar('-') or matchChar(':') or matchChar('=') or matchChar('@')) continue;
+        return LToken.ParamText;
+     }
+
+  L13:
+     if (matchChar('\n')) {
+        nl();
+        goto L12;
+     }
+     nl();
+     goto L12;
+
+  }*/
+}
+

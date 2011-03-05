@@ -1,0 +1,62 @@
+/** A conditional expression. If 'test' evaluates to true, then 'trueVal'
+    is evaluated and the result is returned, otherwise 'falseVal' is
+    evaluated and its result is returned.
+*/
+macro cond[%T](test:bool, trueVal:T, falseVal:T) -> T {
+  if (test) { return trueVal; }
+  return falseVal;
+}
+
+/** A conditional expression. The arguments are a sequence of test/value pairs
+    followed by a default value. Each test is evaluated in order; If any test
+    evaluates to 'true', then the corresponding value is evaluated and its
+    result is returned. If no test evaluates to 'true', then the default
+    value is returned.
+*/
+macro cond[%T](
+    test0:bool, val0:T,
+    test1:bool, val1:T,
+    defaultVal:T) -> T {
+  if (test0) { return val0; }
+  if (test1) { return val1; }
+  return defaultVal;
+}
+
+macro cond[%T](
+    test0:bool, val0:T,
+    test1:bool, val1:T,
+    test2:bool, val2:T,
+    defaultVal:T) -> T {
+  if (test0) { return val0; }
+  if (test1) { return val1; }
+  if (test2) { return val2; }
+  return defaultVal;
+}
+
+macro cond[%T](
+    test0:bool, val0:T,
+    test1:bool, val1:T,
+    test2:bool, val2:T,
+    test3:bool, val3:T,
+    defaultVal:T) -> T {
+  if (test0) { return val0; }
+  if (test1) { return val1; }
+  if (test2) { return val2; }
+  if (test3) { return val3; }
+  return defaultVal;
+}
+
+macro cond[%T](
+    test0:bool, val0:T,
+    test1:bool, val1:T,
+    test2:bool, val2:T,
+    test3:bool, val3:T,
+    test4:bool, val4:T,
+    defaultVal:T) -> T {
+  if (test0) { return val0; }
+  if (test1) { return val1; }
+  if (test2) { return val2; }
+  if (test3) { return val3; }
+  if (test4) { return val4; }
+  return defaultVal;
+}
