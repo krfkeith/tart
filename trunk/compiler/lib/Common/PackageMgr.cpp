@@ -10,8 +10,8 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/ScopeBuilder.h"
-#include <llvm/System/Path.h>
-#include <llvm/Support/CommandLine.h>
+#include "llvm/Support/Path.h"
+#include "llvm/Support/CommandLine.h"
 
 namespace tart {
 

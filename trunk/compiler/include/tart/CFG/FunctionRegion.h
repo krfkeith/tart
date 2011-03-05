@@ -30,7 +30,7 @@ public:
 
   RegionType regionType() const { return FUNCTION; }
   SourceRegion * parentRegion() const { return parentRegion_; }
-  const std::string & getFilePath() const { return parentRegion_->getFilePath(); }
+  llvm::StringRef getFilePath() const { return parentRegion_->getFilePath(); }
   TokenPosition tokenPosition(SLC & loc) { return parentRegion_->tokenPosition(loc); }
   void trace() const;
   void dump() const;

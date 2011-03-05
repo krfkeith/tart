@@ -13,8 +13,7 @@
 #include "tart/Common/SourceRegion.h"
 #endif
 
-//#include <llvm/Support/DataTypes.h>
-#include <llvm/System/Path.h>
+#include "llvm/Support/Path.h"
 #include <string>
 #include <fstream>
 #include <list>
@@ -37,7 +36,7 @@ public:
   virtual ~ProgramSource() {}
 
   /** Return the path of this file. */
-  const std::string & getFilePath() const { return filePath; }
+  llvm::StringRef getFilePath() const { return filePath; }
 
   /** Opens the file and returns an input stream. */
   virtual std::istream & open() = 0;
@@ -78,7 +77,7 @@ public:
   }
 
 protected:
-  std::string filePath;       // Path to the file
+  llvm::SmallString<128> filePath;       // Path to the file
   std::vector<uint32_t> lineOffsets;  // The start offset of each line
 };
 

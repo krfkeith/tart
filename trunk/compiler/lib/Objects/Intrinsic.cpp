@@ -33,6 +33,7 @@
 #include "llvm/Function.h"
 #include "llvm/Module.h"
 #include "llvm/GlobalVariable.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace tart {
 
@@ -225,16 +226,17 @@ Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr *
 LocationOfIntrinsic LocationOfIntrinsic::instance;
 
 Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  std::stringstream sstream;
+  llvm::SmallString<128> str;
+  llvm::raw_svector_ostream strm(str);
 
   const Expr * arg = derefMacroParam(call->arg(0));
   SourceLocation loc = arg->location();
   if (loc.region != NULL) {
     TokenPosition pos = loc.region->tokenPosition(loc);
-    sstream << loc.region->getFilePath() << ":" << pos.beginLine << ":";
+    strm << loc.region->getFilePath() << ":" << pos.beginLine << ":";
   }
 
-  return cg.genStringLiteral(sstream.str());
+  return cg.genStringLiteral(strm.str());
 }
 
 // -------------------------------------------------------------------

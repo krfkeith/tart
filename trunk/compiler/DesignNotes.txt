@@ -177,7 +177,7 @@ o  Type conversions of non-constants.
 
 Command to create Eclipse project:
 
-cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -D ECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE -D LLVM_INCLUDE_DIR=$HOME/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=$HOME/Projects/llvm-inst/lib ../trunk/
+cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -D ECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE -D LLVM_CONFIG=$HOME/Projects/llvm-inst/bin/llvm-config ../trunk/
 
 Command to create Makefile project:
 

@@ -11,7 +11,7 @@
 #include "tart/Objects/TargetSelection.h"
 
 #include "llvm/Support/CommandLine.h"
-#include "llvm/System/Signals.h"
+#include "llvm/Support/Signals.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Target/TargetSelect.h"

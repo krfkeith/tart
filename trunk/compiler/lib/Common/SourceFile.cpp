@@ -4,6 +4,9 @@
 
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/Diagnostics.h"
+
+#include "llvm/Support/raw_ostream.h"
+
 #include <ostream>
 #include <iostream>
 #include <fstream>
@@ -20,7 +23,7 @@ void SourceLocation::trace() const {
 void SourceLocation::dump() const {
   if (region != NULL && !region->getFilePath().empty()) {
     TokenPosition pos = region->tokenPosition(*this);
-    fprintf(stderr, "%s:%d\n", region->getFilePath().c_str(), pos.beginLine);
+    llvm::errs() << region->getFilePath() << ":" << pos.beginLine << "\n";
   }
 }
 
@@ -62,7 +65,7 @@ void SourceFile::close() {
 }
 
 void SourceFile::dump() const {
-  fprintf(stderr, "Source File: %s\n", filePath.c_str());
+  llvm::errs() << filePath << "\n";
 }
 
 bool SourceFile::readLineAt(uint32_t lineIndex, std::string & result) {

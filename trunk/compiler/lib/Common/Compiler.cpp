@@ -15,13 +15,19 @@
 
 #include "tart/Gen/CodeGenerator.h"
 
-#include <llvm/Support/CommandLine.h>
-#include <llvm/System/Path.h>
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Path.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/system_error.h"
 
 namespace tart {
 
+using namespace llvm::sys;
+using llvm::errs;
+
 static llvm::cl::opt<std::string>
-SourcePath("sourcepath", llvm::cl::desc("Where to find input files"));
+SourcePath("sourcepath", llvm::cl::desc("Root directory of source package"));
 
 Compiler::Compiler()
   : generateBitcode_(true)
@@ -29,19 +35,19 @@ Compiler::Compiler()
 {
 }
 
-void Compiler::processInputFile(const std::string & inFile) {
-  llvm::sys::Path filePath(SourcePath);
-  filePath.appendComponent(inFile);
-  std::string moduleName;
+void Compiler::processInputFile(llvm::StringRef inFile) {
+  llvm::SmallString<128> filePath(SourcePath);
+  path::append(filePath, inFile);
 
   // Add extension if needed.
-  if (filePath.getSuffix().empty()) {
-    filePath.appendSuffix("tart");
+  if (!path::has_extension(filePath.str())) {
+    path::replace_extension(filePath, "tart");
   }
 
   // And remove extension from module name.
+  std::string moduleName;
   moduleName.reserve(inFile.size());
-  std::string::const_iterator it = inFile.begin(), itEnd = inFile.end();
+  llvm::StringRef::const_iterator it = inFile.begin(), itEnd = inFile.end();
   if (inFile.rfind(".tart") == inFile.size() - 5) {
     itEnd -= 5;
   }
@@ -63,17 +69,18 @@ void Compiler::processInputFile(const std::string & inFile) {
   }
 
   // Check if the file is good.
-  if (!filePath.exists()) {
+  bool exists;
+  if (llvm::errc::success != fs::exists(filePath.str(), exists) || exists == false) {
     // Try just the raw input file.
-    filePath.set(inFile);
+    filePath = inFile;
 
     // Add extension if needed.
-    if (filePath.getSuffix().empty()) {
-      filePath.appendSuffix("tart");
+    if (!path::has_extension(filePath.str())) {
+      path::replace_extension(filePath, "tart");
     }
 
-    if (!filePath.exists()) {
-      fprintf(stderr, "Input file '%s' not found\n", inFile.c_str());
+    if (llvm::errc::success != fs::exists(filePath.str(), exists) || exists == false) {
+      errs() << "Input file '" << inFile << "' not found\n";
       exit(-1);
     }
 
@@ -90,15 +97,16 @@ void Compiler::processInputFile(const std::string & inFile) {
       modulePrefix.push_back('.');
 
     if (moduleName.size() <= modulePrefix.size() || moduleName.find(modulePrefix) != 0) {
-      fprintf(stderr, "Input file '%s' not found on source path\n", inFile.c_str());
+      errs() << "Input file '" << inFile  << "' not found on source path\n";
       exit(-1);
     }
 
     moduleName.erase(0, modulePrefix.size());
   }
 
-  if (!filePath.canRead()) {
-    fprintf(stderr, "Error reading input file '%s'\n", filePath.c_str());
+  bool result;
+  if (llvm::errc::success != fs::exists(filePath.str(), result) || result == false) {
+    errs() << "Error reading input file '" << filePath << "'\n";
     exit(-1);
   }
 

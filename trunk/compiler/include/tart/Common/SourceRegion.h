@@ -57,7 +57,7 @@ public:
   virtual SourceLocation inlinedAt() const { return SourceLocation(); }
 
   /** Return the path of the file containing this region. */
-  virtual const std::string & getFilePath() const = 0;
+  virtual llvm::StringRef getFilePath() const = 0;
 
   /** Calculate the token position for the given source location. */
   virtual TokenPosition tokenPosition(const SourceLocation & loc) = 0;

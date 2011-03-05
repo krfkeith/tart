@@ -6,6 +6,7 @@
 
 #include "tart/Parse/Parser.h"
 #include "tart/Common/Diagnostics.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace tart {
 
@@ -14,7 +15,7 @@ class Compiler {
 public:
   Compiler();
 
-  void processInputFile(const std::string & infile);
+  void processInputFile(llvm::StringRef infile);
   void setGenerateBitcode(bool generate) {
     generateBitcode_ = generate;
   }

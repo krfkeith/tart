@@ -297,7 +297,7 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
     // The TextMate error parser is fairly strict
     TokenPosition tokLoc = loc.region->tokenPosition(loc);
     fprintf(stderr, "%s:%d: %s%.*s%s\n",
-        loc.region->getFilePath().c_str(),
+        loc.region->getFilePath().str().c_str(),
         tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,
@@ -320,7 +320,7 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
     // The TextMate error parser is fairly strict
     TokenPosition tokLoc = loc.region->tokenPosition(loc);
     len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
-        loc.region->getFilePath().c_str(),
+        loc.region->getFilePath().str().c_str(),
         tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,

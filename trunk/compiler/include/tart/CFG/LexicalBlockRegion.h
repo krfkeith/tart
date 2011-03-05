@@ -28,7 +28,7 @@ public:
 
   RegionType regionType() const { return LEXICAL_BLOCK; }
   SourceRegion * parentRegion() const { return location_.region; }
-  const std::string & getFilePath() const { return location_.region->getFilePath(); }
+  llvm::StringRef getFilePath() const { return location_.region->getFilePath(); }
   TokenPosition tokenPosition(SLC & loc) { return location_.region->tokenPosition(loc); }
   SourceLocation inlinedAt() const { return inlinedAt_; }
   void trace() const;

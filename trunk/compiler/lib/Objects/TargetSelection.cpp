@@ -11,7 +11,7 @@
 #include "llvm/Target/TargetRegistry.h"
 #include "llvm/Target/SubtargetFeature.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/System/Host.h"
+#include "llvm/Support/Host.h"
 
 static llvm::cl::opt<std::string>
 optTargetTriple("mtriple", llvm::cl::desc("Override target triple for module"));

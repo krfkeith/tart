@@ -34,6 +34,7 @@
 namespace tart {
 
 using namespace llvm;
+using namespace llvm::sys;
 
 typedef SmallVector<Value *, 16> ValueArray;
 
@@ -88,14 +89,14 @@ void CodeGenerator::clearDebugLocation() {
 void CodeGenerator::genDICompileUnit() {
   const ProgramSource * source = module_->moduleSource();
   if (source != NULL) {
-    sys::Path srcPath(source->getFilePath());
+    llvm::StringRef srcPath(source->getFilePath());
     if (!srcPath.empty()) {
-      DASSERT(srcPath.isAbsolute());
-      diBuilder_.CreateCompileUnit(
+      DASSERT(path::is_absolute(srcPath));
+      diBuilder_.createCompileUnit(
           llvm::dwarf::DW_LANG_C,
           //0xABBA, // Take a chance on me...
-          srcPath.getLast(),
-          srcPath.getDirname(),
+          path::filename(srcPath),
+          path::parent_path(srcPath),
           "0.1 tartc",
           false,
           "", // flags
@@ -112,12 +113,12 @@ DIFile CodeGenerator::genDIFile(const SourceRegion * source) {
   DIFile & file = dbgFiles_[source->getFilePath()];
   if ((MDNode *)file == NULL) {
     if (source != NULL) {
-      sys::Path srcPath(source->getFilePath());
+      llvm::StringRef srcPath(source->getFilePath());
       if (!srcPath.empty()) {
-        DASSERT(srcPath.isAbsolute());
-        file = diBuilder_.CreateFile(
-            srcPath.getLast(),
-            srcPath.getDirname());
+        DASSERT(path::is_absolute(srcPath));
+        file = diBuilder_.createFile(
+            path::filename(srcPath),
+            path::parent_path(srcPath));
       } else {
         file = dbgFile_;
       }
@@ -146,7 +147,7 @@ DIScope CodeGenerator::genRegionScope(SourceRegion * region) {
   if (const LexicalBlockRegion * bregion = dyn_cast<LexicalBlockRegion>(region)) {
     TokenPosition pos = tokenPosition(bregion->location());
     DASSERT(pos.beginLine);
-    region->dbgScope() = diBuilder_.CreateLexicalBlock(
+    region->dbgScope() = diBuilder_.createLexicalBlock(
         genRegionScope(region->parentRegion()),
         genDIFile(region),
         pos.beginLine,
@@ -186,7 +187,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     DASSERT_OBJ(fn->hasBody(), fn);
     Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
     if (fn->storageClass() == Storage_Instance) {
-      sp = diBuilder_.CreateMethod(
+      sp = diBuilder_.createMethod(
           genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
@@ -199,7 +200,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
           0 /* Flags */,
           fval);
     } else {
-      sp = diBuilder_.CreateFunction(
+      sp = diBuilder_.createFunction(
           genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
@@ -241,13 +242,13 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
           // If variable does not have storage, then we generate debug info on first assignment
           // rather than on alloca.
           if (var->hasStorage()) {
-            /// CreateVariable - Create a new descriptor for the specified variable.
-            DIVariable dbgVar = diBuilder_.CreateLocalVariable(
+            /// createVariable - create a new descriptor for the specified variable.
+            DIVariable dbgVar = diBuilder_.createLocalVariable(
                 dwarf::DW_TAG_auto_variable, dbgContext_,
                 var->name(), dbgFile_, getSourceLineNumber(var->location()),
                 genDIEmbeddedType(var->type()));
             setDebugLocation(var->location());
-            Instruction * declareInst = diBuilder_.InsertDeclare(
+            Instruction * declareInst = diBuilder_.insertDeclare(
                 var->irValue(), dbgVar, builder_.GetInsertBlock());
             declareInst->setDebugLoc(builder_.getCurrentDebugLocation());
           }
@@ -259,14 +260,14 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
 
 void CodeGenerator::genDIParameter(const ParameterDefn * param) {
   // TODO: Need to take 'shape' into account, esp for return type.
-  DIVariable dbgVar = diBuilder_.CreateLocalVariable(
+  DIVariable dbgVar = diBuilder_.createLocalVariable(
       dwarf::DW_TAG_arg_variable, dbgContext_,
       param->name(), dbgFile_, getSourceLineNumber(param->location()),
       genDIParameterType(param->type()));
   if (param->isLValue()) {
-    diBuilder_.InsertDeclare(param->irValue(), dbgVar, builder_.GetInsertBlock());
+    diBuilder_.insertDeclare(param->irValue(), dbgVar, builder_.GetInsertBlock());
   } else {
-    diBuilder_.InsertDbgValueIntrinsic(param->irValue(), 0, dbgVar, builder_.GetInsertBlock());
+    diBuilder_.insertDbgValueIntrinsic(param->irValue(), 0, dbgVar, builder_.GetInsertBlock());
   }
 }
 
@@ -277,7 +278,7 @@ void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable
     TypeDefn * definingClass = var->enclosingClassDefn();
     DASSERT(definingClass != NULL);
     DIScope dbgContext = genDIType(definingClass->typeValue());
-    diBuilder_.CreateStaticVariable(
+    diBuilder_.createStaticVariable(
         dbgContext,
         var->name(),
         var->linkageName(),
@@ -287,7 +288,7 @@ void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable
         var->visibility() != Public,
         gv);
   } else {
-    diBuilder_.CreateGlobalVariable(
+    diBuilder_.createGlobalVariable(
         var->name(),
         genDIFile(var),
         getSourceLineNumber(var->location()),
@@ -302,13 +303,13 @@ void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) 
     // If var does have storage, we generate the debug info on the alloca rather than on
     // first assignment.
     if (!var->hasStorage()) {
-      /// CreateVariable - Create a new descriptor for the specified variable.
-      DIVariable dbgVar = diBuilder_.CreateLocalVariable(
+      /// createVariable - create a new descriptor for the specified variable.
+      DIVariable dbgVar = diBuilder_.createLocalVariable(
           dwarf::DW_TAG_auto_variable, genRegionScope(var->location().region),
           var->name(), dbgFile_, getSourceLineNumber(var->location()),
           genDIEmbeddedType(var->type()));
       setDebugLocation(var->location());
-      Instruction * valueInst = diBuilder_.InsertDbgValueIntrinsic(
+      Instruction * valueInst = diBuilder_.insertDbgValueIntrinsic(
           value, 0, dbgVar, builder_.GetInsertBlock());
       valueInst->setDebugLoc(builder_.getCurrentDebugLocation());
     }
@@ -382,10 +383,10 @@ DIType CodeGenerator::genDIType(const Type * type) {
 }
 
 DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
-  /// CreateBasicType - Create a basic type like int, float, etc.
+  /// createBasicType - create a basic type like int, float, etc.
   const llvm::Type * irType = type->irType();
   DASSERT(dbgFile_.Verify());
-  DIType di = diBuilder_.CreateBasicType(
+  DIType di = diBuilder_.createBasicType(
       type->typeDefn()->qualifiedName().c_str(),
       getSizeOfInBits(irType),
       getAlignOfInBits(irType),
@@ -397,7 +398,7 @@ DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
 DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
-    di = diBuilder_.CreatePointerType(di,
+    di = diBuilder_.createPointerType(di,
         getSizeOfInBits(type->irEmbeddedType()),
         getAlignOfInBits(type->irEmbeddedType()));
   }
@@ -410,7 +411,7 @@ DIType CodeGenerator::genDIParameterType(const Type * type) {
   // TODO: Need to take 'shape' into account.
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class || type->typeClass() == Type::TypeLiteral) {
-    di = diBuilder_.CreatePointerType(di,
+    di = diBuilder_.createPointerType(di,
         getSizeOfInBits(type->irEmbeddedType()),
         getAlignOfInBits(type->irEmbeddedType()));
   }
@@ -434,7 +435,7 @@ DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memb
   uint64_t memberAlign = getAlignOfInBits(type);
 
   offset = align(offset, memberAlign);
-  DIType result = diBuilder_.CreateMemberType(
+  DIType result = diBuilder_.createMemberType(
       name.str().c_str(),
       dbgFile_,
       sourceLine,
@@ -446,7 +447,7 @@ DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memb
 }
 
 DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
-  DIType placeHolder = diBuilder_.CreateTemporaryType();
+  DIType placeHolder = diBuilder_.createTemporaryType();
   dbgTypeMap_[type] = placeHolder;
   TypeDefn * td = type->typeDefn();
 
@@ -456,7 +457,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
   uint64_t memberOffset = 0;
   if (type->typeClass() == Type::Class && type->super() != NULL) {
     const Type * super = type->super();
-    members.push_back(diBuilder_.CreateInheritance(
+    members.push_back(diBuilder_.createInheritance(
         placeHolder, genDIType(super), 0, 0));
     memberOffset += getSizeOfInBits(super->irType());
     DASSERT(memberOffset > 0);
@@ -471,7 +472,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
 
   DIType di;
   if (type->typeClass() == Type::Class) {
-    di = diBuilder_.CreateClassType(
+    di = diBuilder_.createClassType(
         genDefnScope(td),
         td->linkageName(),
         genDIFile(td),
@@ -481,9 +482,9 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
         0, // Offset
         getDefnFlags(td),
         DIType(),
-        diBuilder_.GetOrCreateArray(members.data(), members.size()));
+        diBuilder_.getOrCreateArray(members.data(), members.size()));
   } else {
-    di = diBuilder_.CreateStructType(
+    di = diBuilder_.createStructType(
         genDefnScope(td),
         td->linkageName(),
         genDIFile(td),
@@ -491,7 +492,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
         getSizeOfInBits(type->irType()),
         getAlignOfInBits(type->irType()),
         getDefnFlags(td),
-        diBuilder_.GetOrCreateArray(members.data(), members.size()));
+        diBuilder_.getOrCreateArray(members.data(), members.size()));
   }
 
   dbgTypeMap_[type] = di;
@@ -505,30 +506,30 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
   for (const Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
     if (const VariableDefn * enumConstant = dyn_cast<VariableDefn>(member)) {
       if (const ConstantInteger * enumVal = dyn_cast<ConstantInteger>(enumConstant->initValue())) {
-        members.push_back(diBuilder_.CreateEnumerator(
+        members.push_back(diBuilder_.createEnumerator(
             enumConstant->name(), enumVal->intValue().getSExtValue()));
       }
     }
   }
 
-  return diBuilder_.CreateEnumerationType(
+  return diBuilder_.createEnumerationType(
       genDefnScope(type->typeDefn()),
       type->typeDefn()->name(),
       genDIFile(type->typeDefn()),
       getSourceLineNumber(type->typeDefn()->location()),
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()),
-      diBuilder_.GetOrCreateArray(&members[0], members.size()));
+      diBuilder_.getOrCreateArray(&members[0], members.size()));
 }
 
 #if 0
 DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
-  Value * subrange = diBuilder_.GetOrCreateSubrange(0, type->size());
-  return diBuilder_.CreateArrayType(
+  Value * subrange = diBuilder_.getOrCreateSubrange(0, type->size());
+  return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
       genDIEmbeddedType(type->typeParam(0)),
-      diBuilder_.GetOrCreateArray(&subrange, 1));
+      diBuilder_.getOrCreateArray(&subrange, 1));
 }
 #else
 DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
@@ -551,12 +552,12 @@ DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
 
 #if 0
 DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
-  Value * subrange = diBuilder_.GetOrCreateSubrange(0, 0);
-  return diBuilder_.CreateArrayType(
+  Value * subrange = diBuilder_.getOrCreateSubrange(0, 0);
+  return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
       genDIEmbeddedType(type->typeParam(0)),
-      diBuilder_.GetOrCreateArray(&subrange, 1));
+      diBuilder_.getOrCreateArray(&subrange, 1));
 }
 #else
 DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
@@ -577,7 +578,7 @@ DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
 #endif
 
 DIType CodeGenerator::genDIAddressType(const AddressType * type) {
-  return diBuilder_.CreatePointerType(
+  return diBuilder_.createPointerType(
       genDIType(type->typeParam(0)),
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()));
@@ -595,7 +596,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
       DIType memberDbgType = genDIEmbeddedType(memberType);
-      unionMembers.push_back(diBuilder_.CreateMemberType(
+      unionMembers.push_back(diBuilder_.createMemberType(
           name,
           dbgFile_,
           0, // Source line
@@ -609,8 +610,8 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
     ++memberIndex;
   }
 
-  // Create the non-discriminated union.
-  DIType unionType = diBuilder_.CreateUnionType(
+  // create the non-discriminated union.
+  DIType unionType = diBuilder_.createUnionType(
       compileUnit(),
       "value",
       dbgFile_,
@@ -618,13 +619,13 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()),
       0, // Flags
-      diBuilder_.GetOrCreateArray(&unionMembers[0], unionMembers.size()));
+      diBuilder_.getOrCreateArray(&unionMembers[0], unionMembers.size()));
 
   // If there's a discriminator field
   if (irType->getNumContainedTypes() > 1) {
     const llvm::Type * discType = irType->getContainedType(0);
     ValueArray structMembers;
-    DIType discDbgType = diBuilder_.CreateBasicType(
+    DIType discDbgType = diBuilder_.createBasicType(
         "disc",
         getSizeOfInBits(discType),
         getAlignOfInBits(discType),
@@ -635,7 +636,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
     structMembers.push_back(genDITypeMember(
         irType->getContainedType(1), unionType, ".value", 0, offset));
 
-    unionType = diBuilder_.CreateStructType(
+    unionType = diBuilder_.createStructType(
         compileUnit(),
         "",
         dbgFile_,
@@ -643,7 +644,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
         getSizeOfInBits(type->irType()),
         getAlignOfInBits(type->irType()),
         0, // Flags
-        diBuilder_.GetOrCreateArray(&structMembers[0], structMembers.size()));
+        diBuilder_.getOrCreateArray(&structMembers[0], structMembers.size()));
   }
 
   DASSERT(unionType.Verify());
@@ -661,7 +662,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
     uint64_t memberAlign = getAlignOfInBits(memberType->irEmbeddedType());
     memberOffset = align(memberOffset, memberAlign);
     sprintf(memberName, "_%d", index);
-    members.push_back(diBuilder_.CreateMemberType(
+    members.push_back(diBuilder_.createMemberType(
         memberName,
         dbgFile_,
         0, // Source line
@@ -672,7 +673,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
 
   std::string tupleName;
   typeLinkageName(tupleName, type);
-  return diBuilder_.CreateStructType(
+  return diBuilder_.createStructType(
       compileUnit(),
       tupleName,
       dbgFile_,
@@ -680,7 +681,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()),
       0, // Flags
-      diBuilder_.GetOrCreateArray(members.data(), members.size()));
+      diBuilder_.getOrCreateArray(members.data(), members.size()));
 }
 
 DIType CodeGenerator::genDIFunctionType(const FunctionType * type) {
@@ -703,9 +704,9 @@ DIType CodeGenerator::genDIFunctionType(const FunctionType * type) {
     args.push_back(ptype);
   }
 
-  DIType fnType = diBuilder_.CreateSubroutineType(
+  DIType fnType = diBuilder_.createSubroutineType(
       dbgFile_,
-      diBuilder_.GetOrCreateArray(&args[0], args.size()));
+      diBuilder_.getOrCreateArray(&args[0], args.size()));
 
   DASSERT(fnType.Verify());
   return fnType;

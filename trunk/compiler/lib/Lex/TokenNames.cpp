@@ -4,7 +4,7 @@
 
 //#include <llvm/Support/DataTypes.h>
 #include "tart/Lex/Tokens.h"
-#include "llvm/System/DataTypes.h"
+#include "llvm/Support/DataTypes.h"
 #include <sys/types.h>
 
 #ifdef DEFINE_TOKEN
