@@ -54,7 +54,9 @@ final class FieldList : List[Field] {
 
   def contains(type:Field) -> bool {
     for i = 0; i < _size; ++i {
-      return true if self._data[i] == type;
+      if self._data[i] == type {
+        return true;
+      }
     }
     return false;
   }

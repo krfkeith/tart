@@ -65,7 +65,7 @@ import tart.core.Math.max;
     ElementType[].copyElements(_data, index, _data, index + 1, _size - index - 1);
     --_size;
   }
-  
+
   def clear() {
     _size = 0;
   }
@@ -83,7 +83,7 @@ import tart.core.Math.max;
       _data[index] = value;
     }
   }
-  
+
   def size:int {
     get { return _size; }
   }
@@ -91,10 +91,12 @@ import tart.core.Math.max;
   def isEmpty:bool {
     get { return _size == 0; }
   }
-  
+
   def contains(e:ElementType) -> bool {
     for i = 0; i < _size; ++i {
-			return true if _data[i] == e;
+			if _data[i] == e {
+			  return true;
+			}
     }
     return false;
   }
@@ -112,12 +114,12 @@ import tart.core.Math.max;
   @Coalesce private final class ArrayListIterator : Iterator[ElementType], HasLength {
     private let list:ArrayList;
     private var index:int;
-    
+
     def construct(list:ArrayList) {
       self.list = list;
       self.index = 0;
     }
-    
+
     def next -> ElementType or void {
       if (self.index < self.list.size) {
         return self.list._data[self.index++];

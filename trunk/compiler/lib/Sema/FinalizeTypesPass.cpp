@@ -461,9 +461,19 @@ Expr * FinalizeTypesPassImpl::visitCast(CastExpr * in) {
     return handleUnboxCast(in);
   }
 
-  // Attempt to cast
-  arg = in->type()->explicitCast(in->location(), arg);
-  return arg ? arg : &Expr::ErrorVal;
+  switch (in->exprType()) {
+    case Expr::UnionMemberCast:
+    case Expr::CheckedUnionMemberCast:
+    case Expr::TryCast:
+    case Expr::BitCast:
+      in->setArg(arg);
+      return in;
+
+    default:
+      // Attempt to cast
+      arg = in->type()->explicitCast(in->location(), arg);
+      return arg ? arg : &Expr::ErrorVal;
+  }
 }
 
 Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {

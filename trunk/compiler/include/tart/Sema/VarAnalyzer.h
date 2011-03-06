@@ -1,5 +1,5 @@
 /* ================================================================ *
-    TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #ifndef TART_SEMA_VARANALYZER_H
@@ -31,9 +31,8 @@ private:
   bool trace_;
 
   void setTargetType(const Type * type);
-
 };
 
-}
+} // namespace tart
 
 #endif

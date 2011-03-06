@@ -29,6 +29,12 @@ class ArrayLiteralExpr;
 //class TupleCtorExpr;
 //class ClosureEnvExpr;
 //class SharedValueExpr;
+class SeqExpr;
+class IfExpr;
+class ForExpr;
+class ReturnExpr;
+class ThrowExpr;
+class LocalProcedureExpr;
 
 /// -------------------------------------------------------------------
 /// Analysis pass that determines whether or not two functions can
@@ -40,7 +46,6 @@ public:
   FunctionMergePass() : showMessages_(false) {}
 
 private:
-  bool visitBlock(Block * from, Block * to);
 //  bool visitStmtExpr(Expr * from, Expr * to) { return visitExpr(in); }
 //  bool visitTermExpr(Expr * from, Expr * to) { return visitExpr(in); }
 
@@ -73,11 +78,19 @@ private:
   bool visitLogicalOper(BinaryExpr * from, BinaryExpr * to);
   bool visitInitVar(InitVarExpr * from, InitVarExpr * to);
 //  bool visitClearVar(ClearVarExpr * from, ClearVarExpr * to);
-//  bool visitProg2(BinaryExpr * from, BinaryExpr * to);
+  bool visitProg2(BinaryExpr * from, BinaryExpr * to);
   bool visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to);
 //  bool visitTupleCtor(TupleCtorExpr * from, TupleCtorExpr * to);
 //  bool visitClosureScope(ClosureEnvExpr * from, ClosureEnvExpr * to);
 //  bool visitSharedValue(SharedValueExpr * from, SharedValueExpr * to);
+
+  bool visitSeq(SeqExpr * from, SeqExpr * to);
+  bool visitIf(IfExpr * from, IfExpr * to);
+  bool visitFor(ForExpr * from, ForExpr * to);
+  bool visitReturn(ReturnExpr * from, ReturnExpr * to);
+  bool visitThrow(ThrowExpr * from, ThrowExpr * to);
+  bool visitLocalProcedure(LocalProcedureExpr * from, LocalProcedureExpr * to);
+  bool visitLocalReturn(ReturnExpr * from, ReturnExpr * to);
 
   bool visitExprArgs(ArglistExpr * from, ArglistExpr * to);
 
