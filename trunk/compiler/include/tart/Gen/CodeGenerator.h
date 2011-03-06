@@ -45,6 +45,18 @@ class NewExpr;
 class TupleCtorExpr;
 class LValueExpr;
 class BoundMethodExpr;
+class SeqExpr;
+class IfExpr;
+class WhileExpr;
+class ForExpr;
+class ForEachExpr;
+class SwitchExpr;
+class MatchExpr;
+class TryExpr;
+class ThrowExpr;
+class ReturnExpr;
+class BranchExpr;
+class LocalProcedureExpr;
 class Defn;
 class TypeDefn;
 class ValueDefn;
@@ -61,7 +73,6 @@ class NativeArrayType;
 class FlexibleArrayType;
 class UnionType;
 class TupleType;
-class Block;
 class LocalScope;
 class FormatStream;
 class RuntimeTypeInfo;
@@ -79,11 +90,76 @@ typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObje
 typedef llvm::DenseMap<const Type *, llvm::DIType> DITypeMap;
 typedef llvm::DenseMap<llvm::GlobalVariable *, llvm::Constant *> StaticRootMap;
 typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
-typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
 
 /// -------------------------------------------------------------------
-/// Reflected Member
+/// BlockExits - used to store information relating to an exit from a
+/// block, such as cleanup handlers (for finally or with statements)
+/// or break and continue jump targets.
+
+class BlockExits {
+public:
+  typedef llvm::SmallPtrSet<llvm::BasicBlock *, 8> BlockSet;
+
+  BlockExits(BlockExits * parent)
+    : parent_(parent)
+    , breakBlock_(NULL)
+    , continueBlock_(NULL)
+    , localReturnBlock_(NULL)
+    , unwindBlock_(NULL)
+    , cleanupBlock_(NULL)
+    , breakUsed_(false)
+    , returnVar_(NULL)
+  {}
+
+  /** Get the block exits surrounding this one. */
+  BlockExits * parent() const { return parent_; }
+
+  /** Get the block to which a break statement should transfer control. */
+  llvm::BasicBlock * breakBlock() const { return breakBlock_; }
+  BlockExits & setBreakBlock(llvm::BasicBlock * blk) { breakBlock_ = blk; return *this; }
+
+  /** Get the block to which a continue statement should transfer control. */
+  llvm::BasicBlock * continueBlock() const { return continueBlock_; }
+  BlockExits & setContinueBlock(llvm::BasicBlock * blk) { continueBlock_ = blk; return *this; }
+
+  /** Get the block to which a local (macro) return statement should transfer control. */
+  llvm::BasicBlock * localReturnBlock() const { return localReturnBlock_; }
+  BlockExits & setLocalReturnBlock(llvm::BasicBlock * blk) {
+    localReturnBlock_ = blk; return *this;
+  }
+
+  /** Get the block containing the exception catch dispatch logic. */
+  llvm::BasicBlock * unwindBlock() const { return unwindBlock_; }
+  BlockExits & setUnwindBlock(llvm::BasicBlock * blk) { unwindBlock_ = blk; return *this; }
+
+  /** Get the block containing cleanup code which should be run before exiting this scope. */
+  llvm::BasicBlock * cleanupBlock() const { return cleanupBlock_; }
+  BlockExits & setCleanupBlock(llvm::BasicBlock * blk) { cleanupBlock_ = blk; return *this; }
+
+  /** Return 'true' if the continue block was ever used. */
+  bool breakUsed() const { return breakUsed_; }
+  void setBreakUsed(bool used) { breakUsed_ = used; }
+
+  /** Get the variable that stores the address to return to after the cleanup has finished. */
+  llvm::Value * returnVar() const { return returnVar_; }
+  BlockExits & setReturnVar(llvm::Value * value) { returnVar_ = value; return *this; }
+
+  /** Get the list of blocks to which we return after executing the cleanup block. */
+  const BlockSet & returnBlocks() const { return returnBlocks_; }
+  BlockSet & returnBlocks() { return returnBlocks_; }
+
+private:
+  BlockExits * parent_;
+  llvm::BasicBlock * breakBlock_;
+  llvm::BasicBlock * continueBlock_;
+  llvm::BasicBlock * localReturnBlock_;
+  llvm::BasicBlock * unwindBlock_;
+  llvm::BasicBlock * cleanupBlock_;
+  bool breakUsed_;
+  llvm::Value * returnVar_;
+  BlockSet returnBlocks_;
+};
 
 /// -------------------------------------------------------------------
 /// Code generator class.
@@ -139,19 +215,35 @@ public:
   void genLocalVar(VariableDefn * var, llvm::Value * initialVal);
   void genGCRoot(llvm::Value * lValue, const Type * varType,
       llvm::StringRef rootName = llvm::StringRef());
+  llvm::Value * addTempRoot(const Type * type, llvm::Value * value, const llvm::Twine & name);
   void initGCRoot(llvm::Value * allocaValue);
+  size_t rootStackSize() const { return rootStack_.size(); }
+  void pushGCRoot(llvm::Value * allocaValue, const Type * varType);
+  void pushRoots(LocalScope * scope);
+  void popRootStack(size_t level = 0);
 
   /** Generate the function body from the basic block list. */
-  void genBlocks(BlockList & blocks);
-  void genStmt(Expr * in);
-  void genBlockTerminator(Block * blk);
-  void genReturn(Expr * returnVal);
-  void genLocalReturn(Block * blk);
   bool genTestExpr(const Expr * test, llvm::BasicBlock * trueBlk, llvm::BasicBlock * falseBlk);
-  void genThrow(Block * blk);
-  void genCatch(Block * blk);
-  void genSwitch(Block * blk);
-  void genDoFinally(Block * blk);
+
+  /** Statement expressions. */
+  llvm::Value * genSeq(const SeqExpr * in);
+  llvm::Value * genIf(const IfExpr * in);
+  llvm::Value * genWhile(const WhileExpr * in);
+  llvm::Value * genDoWhile(const WhileExpr * in);
+  llvm::Value * genFor(const ForExpr * in);
+  llvm::Value * genForEach(const ForEachExpr * in);
+  llvm::Value * genSwitch(const SwitchExpr * in);
+  llvm::Value * genIntegerSwitch(const SwitchExpr * in);
+  llvm::Value * genEqSwitch(const SwitchExpr * in);
+  llvm::Value * genMatch(const MatchExpr * in);
+  llvm::Value * genTry(const TryExpr * in);
+  llvm::Value * genThrow(const ThrowExpr * in);
+  llvm::Value * genReturn(const ReturnExpr * in);
+  llvm::Value * genYield(const ReturnExpr * in);
+  llvm::Value * genBreak(const BranchExpr * in);
+  llvm::Value * genContinue(const BranchExpr * in);
+  llvm::Value * genLocalProcedure(const LocalProcedureExpr * in);
+  llvm::Value * genLocalReturn(const BranchExpr * in);
 
   /** Generate an expression (an RValue). */
   llvm::Value * genExpr(const Expr * expr);
@@ -226,7 +318,7 @@ public:
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
   llvm::Value * genCallInstr(llvm::Value * fn,
-      ValueList::iterator firstArg, ValueList::iterator lastArg, const char * name);
+      ValueList::iterator firstArg, ValueList::iterator lastArg, const llvm::Twine & name);
 
   /** Get the address of a value. */
   llvm::Value * genBoundMethod(const BoundMethodExpr * in);
@@ -234,11 +326,15 @@ public:
   /** Generate an upcast instruction. */
   llvm::Value * genUpCastInstr(llvm::Value * val, const Type * fromType, const Type * toType);
 
-  /** Generate an 'isInstanceOf' test for composite types. */
+  /** Generate an 'isa' test for either composite or union types. */
+  llvm::Value * genTypeTest(llvm::Value * val, const Type * fromType, const Type * toType,
+      bool valIsLval);
+
+  /** Generate an 'isa' test for composite types. */
   llvm::Value * genCompositeTypeTest(llvm::Value * val, const CompositeType * fromType,
       const CompositeType * toType);
 
-  /** Generate an 'isInstance' test for union types. */
+  /** Generate an 'isa' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
       const Type * toType, bool isLValValue);
 
@@ -416,6 +512,38 @@ private:
   typedef llvm::DenseMap<const Type *, llvm::GlobalVariable *> TraceTableMap;
   typedef llvm::DenseMap<const Type *, llvm::Function *> TraceMethodMap;
 
+  /** Create a new basic block and append it to the current function. */
+  llvm::BasicBlock * createBlock(const llvm::Twine & blkName);
+
+  /** Create a new basic block and append it to the current function, but only if it doesn't
+      already exist, otherwise just return the existing block. */
+  llvm::BasicBlock * ensureBlock(const llvm::Twine & blkName, llvm::BasicBlock * blk) {
+    return blk ? blk : createBlock(blkName);
+  }
+
+  /** Return the current unwind block, if any. */
+  llvm::BasicBlock * getUnwindBlock() {
+    return getUnwindBlockImpl(blockExits_);
+  }
+
+  /** Return the unwind block for a given BlockExits. This will return a block which,
+      when branched to, will call any appropriate cleanup handlers before branching
+      to the catch dispatcher. */
+  llvm::BasicBlock * getUnwindBlockImpl(BlockExits * be);
+
+  /** Move the block 'blk' to the current insertion point, or to the end of the function
+      if the insertion point is clear. */
+  void moveToEnd(llvm::BasicBlock * blk);
+
+  /** Return true if the current instruction insertion point is at a terminator instruction. */
+  bool atTerminator() const;
+
+  /** Call a saved cleanup function. This terminates the current block.
+      After cleanup, control will resume at blkNext, if it is non-NULL. If
+      blkNext is NULL, then a new block will be created. The insertion point
+      will be set to the beginning of this block. */
+  void callCleanup(BlockExits * be, llvm::BasicBlock * blkNext = NULL);
+
   /** Find a static method of the given class, and also generate an external reference
       to it from this module. If it's a template, then also instantiate it. This is used
       to call various methods of core classes. */
@@ -462,6 +590,7 @@ private:
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
   const llvm::IntegerType * intPtrType_;
+  llvm::Value * voidValue_;
 
   llvm::Function * moduleInitFunc_;
   llvm::BasicBlock * moduleInitBlock_;
@@ -482,7 +611,8 @@ private:
   SourceLocation dbgLocation_;
   SourceRegion * functionRegion_;
 
-  llvm::BasicBlock * unwindTarget_;
+  BlockExits * blockExits_;
+  bool isUnwindBlock_;
   llvm::Function * unwindRaiseException_;
   llvm::Function * unwindResume_;
   llvm::Function * exceptionPersonality_;
@@ -499,7 +629,7 @@ private:
   StaticRootMap staticRoots_;
 
   // Temporary roots generated for GC
-  ValueList tempRoots_;
+  ValueList rootStack_;
 
   bool debug_;
 };

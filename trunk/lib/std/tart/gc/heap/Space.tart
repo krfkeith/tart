@@ -5,22 +5,26 @@ import tart.gc.AddressRange;
 abstract class Space {
   private var _extent:AddressRange;
   private var _contiguous:bool;
-  
+
   def construct(extent:AddressRange) {
     _extent = extent;
     _contiguous = true;
   }
-  
+
   /** True if the space contains the specified address. */
   final def contains(address:Address[ubyte]) -> bool {
-    return false if address not in _extent;
-    return true if _contiguous;
+    if address not in _extent {
+      return false;
+    }
+    if _contiguous {
+      return true;
+    }
     // TODO: Check for non-contiguous space.
     return false;
   }
-  
+
   /** The range of addresses that contain this space. */
   final def extent:AddressRange { get { return _extent; } }
-  
+
   // add page to space
 }

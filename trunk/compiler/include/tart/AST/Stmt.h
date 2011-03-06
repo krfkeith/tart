@@ -122,7 +122,7 @@ public:
 };
 
 // -------------------------------------------------------------------
-// Return statement
+// Yield statement
 class YieldStmt: public ExprStmt {
 public:
   YieldStmt(SourceLocation loc, ASTNode * ex, int index) :
@@ -218,7 +218,7 @@ public:
   }
 
   /** The test expression. This may be a simple expression, a let-declaration,
-   or a tuple of let-declarations. */
+      or a tuple of let-declarations. */
   const ASTNode * testExpr() const { return testExpr_; }
   ASTNode * testExpr() { return testExpr_; }
 

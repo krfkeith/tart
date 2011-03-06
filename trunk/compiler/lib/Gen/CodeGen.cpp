@@ -70,7 +70,8 @@ CodeGenerator::CodeGenerator(Module * mod)
   , gcEnabled_(!NoGC)
   , diBuilder_(*mod->irModule())
   , functionRegion_(NULL)
-  , unwindTarget_(NULL)
+  , blockExits_(NULL)
+  , isUnwindBlock_(false)
   , unwindRaiseException_(NULL)
   , unwindResume_(NULL)
   , exceptionPersonality_(NULL)
@@ -84,6 +85,8 @@ CodeGenerator::CodeGenerator(Module * mod)
   // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
   methodPtrType_ = llvm::OpaqueType::get(context_)->getPointerTo();
+
+  voidValue_ = llvm::UndefValue::get(builder_.getVoidTy());
 }
 
 void CodeGenerator::generate() {
@@ -545,27 +548,6 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   }
 #endif
   return builder_.CreateLoad(value, name);
-}
-
-void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, llvm::StringRef rootName) {
-  if (gcEnabled_) {
-    Function * gcroot = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::gcroot, NULL, 0);
-
-    if (rootName.empty()) {
-      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
-    } else {
-      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo(),
-          rootName + ".rptr");
-    }
-    if (metadata == NULL) {
-      DASSERT(isa<llvm::PointerType>(value->getType()->getContainedType(0)));
-      metadata = llvm::ConstantPointerNull::get(builder_.getInt8PtrTy());
-    } else {
-      metadata = llvm::ConstantExpr::getPointerCast(metadata, builder_.getInt8PtrTy());
-    }
-    builder_.CreateCall2(gcroot, value, metadata);
-  }
 }
 
 }

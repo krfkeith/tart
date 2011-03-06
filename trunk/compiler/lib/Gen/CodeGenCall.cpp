@@ -30,10 +30,9 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     return fn->intrinsic()->generate(*this, in);
   }
 
-  ValueList args;
-  ValueList savedTempRoots;
-  std::swap(tempRoots_, savedTempRoots);
+  size_t savedRootCount = rootStackSize();
 
+  ValueList args;
   fnType->irType(); // Need to know the irType for isStructReturn.
   Value * retVal = NULL;
   if (fnType->isStructReturn()) {
@@ -120,11 +119,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   }
 
   // Clear out all the temporary roots
-  std::swap(tempRoots_, savedTempRoots);
-  for (ValueList::iterator it = savedTempRoots.begin(); it != savedTempRoots.end(); ++it) {
-    initGCRoot(*it);
-  }
-
+  popRootStack(savedRootCount);
   return result;
 }
 
@@ -135,8 +130,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
 
   Value * fnValue;
   ValueList args;
-  ValueList savedTempRoots;
-  std::swap(tempRoots_, savedTempRoots);
+  size_t savedRootCount = rootStackSize();
 
   if (const FunctionType * ft = dyn_cast<FunctionType>(fnType)) {
     fnValue = genArgExpr(fn, saveIntermediateStackRoots);
@@ -167,11 +161,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
   llvm::Value * result = genCallInstr(fnValue, args.begin(), args.end(), "indirect");
 
   // Clear out all the temporary roots
-  std::swap(tempRoots_, savedTempRoots);
-  for (ValueList::iterator it = savedTempRoots.begin(); it != savedTempRoots.end(); ++it) {
-    initGCRoot(*it);
-  }
-
+  popRootStack(savedRootCount);
   return result;
 }
 
@@ -198,17 +188,20 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   indices.push_back(getInt32Val(0));
 
   // Get the TIB
+  Twine tibName = Twine("tib.") + classType->typeDefn()->name();
+  Twine tibAddrName = Twine("tibaddr.") + classType->typeDefn()->name();
   Value * tib = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end()), "tib");
-  //DASSERT_TYPE_EQ(Builtins::typeTypeInfoBlock.irType()->getPointerTo(), tib->getType());
+      builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end(), tibAddrName), tibName);
 
   indices.clear();
   indices.push_back(getInt32Val(0));
   indices.push_back(getInt32Val(TIB_METHOD_TABLE));
   indices.push_back(getInt32Val(methodIndex));
+  Twine methodName = Twine("method.") + method->name();
+  Twine methodPtrName = Twine("method.ptr.") + method->name();
   Value * fptr = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), method->name());
-  return builder_.CreateBitCast(fptr, method->type()->irType()->getPointerTo());
+      builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), methodPtrName);
+  return builder_.CreateBitCast(fptr, method->type()->irType()->getPointerTo(), methodName);
 }
 
 Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const CompositeType * classType,
@@ -232,20 +225,26 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
 
   // Load the pointer to the TIB.
   objectPtr = builder_.CreatePointerCast(objectPtr, Builtins::typeObject->irEmbeddedType());
+  Twine tibName = Twine("tib.") + classType->typeDefn()->name();
+  Twine tibAddrName = Twine("tibaddr.") + classType->typeDefn()->name();
   Value * tib = builder_.CreateLoad(
-      builder_.CreateConstInBoundsGEP2_32(objectPtr, 0, 0, "tib_ptr"), "tib");
+      builder_.CreateConstInBoundsGEP2_32(objectPtr, 0, 0, tibAddrName),
+      tibName);
 
   // Load the pointer to the dispatcher function.
+  Twine idispName = Twine("idispatch.") + classType->typeDefn()->name();
+  Twine idispAddrName = Twine("idispatchaddr.") + classType->typeDefn()->name();
   Value * dispatcher = builder_.CreateLoad(
-      builder_.CreateConstInBoundsGEP2_32(tib, 0, TIB_IDISPATCH, "idispatch_ptr"), "idispatch");
+      builder_.CreateConstInBoundsGEP2_32(tib, 0, TIB_IDISPATCH, idispAddrName), idispName);
 
   // Construct the call to the dispatcher
   ValueList args;
   args.push_back(iname);
   args.push_back(getInt32Val(methodIndex));
-  Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), "method_ptr");
-  return builder_.CreateBitCast(
-      methodPtr, method->type()->irType()->getPointerTo(), "method");
+  Twine methodName = Twine("method.") + method->name();
+  Twine methodPtrName = Twine("method.ptr.") + method->name();
+  Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), methodPtrName);
+  return builder_.CreateBitCast(methodPtr, method->type()->irType()->getPointerTo(), methodName);
 }
 
 Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
@@ -348,13 +347,13 @@ Value * CodeGenerator::defaultAlloc(const tart::Expr * size) {
 }
 
 Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
-    ValueList::iterator lastArg, const char * name) {
+    ValueList::iterator lastArg, const Twine & name) {
   checkCallingArgs(func, firstArg, lastArg);
-  if (unwindTarget_ != NULL) {
+  if (isUnwindBlock_) {
     Function * f = currentFn_;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
-    normalDest->moveAfter(builder_.GetInsertBlock());
-    Value * result = builder_.CreateInvoke(func, normalDest, unwindTarget_, firstArg, lastArg);
+    moveToEnd(normalDest);
+    Value * result = builder_.CreateInvoke(func, normalDest, getUnwindBlock(), firstArg, lastArg);
     builder_.SetInsertPoint(normalDest);
     if (!result->getType()->isVoidTy()) {
       result->setName(name);
@@ -549,19 +548,7 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
       return argVal;
     }
 
-    // Save the current insertion point
-    IRBuilderBase::InsertPoint savePt = builder_.saveIP();
-
-    // Try set the insertion point at the first block.
-    builder_.SetInsertPoint(&currentFn_->getBasicBlockList().front());
-    llvm::Value * tempRoot = builder_.CreateAlloca(argVal->getType(), NULL, "im_root");
-    genGCRoot(tempRoot, in->type(), tempRoot->getName());
-
-    builder_.restoreIP(savePt);
-    builder_.CreateStore(argVal, tempRoot, false);
-    tempRoots_.push_back(tempRoot);
-
-    //diag.debug(in) << "Temporary root: " << in;
+    addTempRoot(in->type(), argVal, "temp.root");
     return argVal;
   } else {
     return genExpr(in);

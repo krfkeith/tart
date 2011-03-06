@@ -21,6 +21,8 @@ class CastExpr;
 class ArrayLiteralExpr;
 class BinaryOpcodeExpr;
 class CompareExpr;
+class SeqExpr;
+class ReturnExpr;
 
 /// -------------------------------------------------------------------
 /// Pass which evalutes a compile-time expression.
@@ -33,13 +35,21 @@ public:
   static Expr * eval(Module * module, Expr * in, bool allowPartial = false);
 
 private:
+  enum RunState {
+    RUNNING,
+    BREAK,
+    CONTINUE,
+    RETURN,
+    THROW,
+  };
 
   typedef llvm::DenseMap<VariableDefn *, Expr *> VariableMap;
 
   // Contains the parameters and local variables of a call frame.
   class CallFrame {
   public:
-    CallFrame(CallFrame * prev) : prev_(prev), function_(NULL), selfArg_(NULL), returnVal_(NULL) {}
+    CallFrame(CallFrame * prev)
+      : prev_(prev), function_(NULL), selfArg_(NULL), returnVal_(NULL), runState_(RUNNING) {}
 
     // Return the caller's call frame.
     CallFrame * prev() const { return prev_; }
@@ -65,6 +75,9 @@ private:
     const SourceLocation & callLocation() const { return callLocation_; }
     void setCallLocation(const SourceLocation & loc) { callLocation_ = loc; }
 
+    RunState runState() const { return runState_; }
+    void setRunState(RunState rs) { runState_ = rs; }
+
   private:
     CallFrame * prev_;
     FunctionDefn * function_;
@@ -73,6 +86,7 @@ private:
     Expr * returnVal_;
     VariableMap locals_;
     SourceLocation callLocation_;
+    RunState runState_;
   };
 
   enum BooleanResult {
@@ -91,8 +105,6 @@ private:
     , callFrame_(NULL)
   {}
 
-  bool evalBlocks(BlockList & blocks);
-
   Expr * evalExpr(Expr * in);
   ConstantExpr * evalConstantExpr(Expr * in);
   Expr * evalLValue(LValueExpr * in);
@@ -105,6 +117,8 @@ private:
   Expr * evalUnionCtorCast(CastExpr *in);
   Expr * evalBinaryOpcode(BinaryOpcodeExpr *in);
   Expr * evalCompare(CompareExpr *in);
+  Expr * evalSeq(SeqExpr * in);
+  Expr * evalReturn(ReturnExpr * in);
 
   llvm::Constant * asConstNumber(ConstantExpr * e);
   BooleanResult asConstBoolean(Expr * in);

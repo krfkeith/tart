@@ -6,17 +6,17 @@ class StringFormatter {
       FIELD_INDEX,
       FIELD_CONVERSION,
     }
-    
+
     static let LBRACE = '{';
     static let RBRACE = '}';
-    
+
     var formatString:String;
     var formatIndex:int;
     var args:Object[];
     var argIndex:int;
     var builder:StringBuilder;
   }
-  
+
   def construct(formatString:String, args:Object[]) {
     self.formatString = formatString;
     self.args = args;
@@ -24,7 +24,7 @@ class StringFormatter {
     self.argIndex = 0;
     self.builder = StringBuilder();
   }
-  
+
   def build() -> String {
     let it = formatString.iterate();
     var prevCh:char = 0;
@@ -82,13 +82,13 @@ class StringFormatter {
         } else {
 	        builder.append(ch);
         }
-        
+
         prevCh = ch;
       } else {
         break;
       }
     }
-    
+
     return builder.toString();
   }
 }

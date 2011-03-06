@@ -30,7 +30,6 @@ class Expr;
 class ConstantExpr;
 class Module;
 class Type;
-class Block;
 class ParameterAssignments;
 class CallCandidate;
 class SpCandidate;
@@ -43,7 +42,6 @@ typedef llvm::SmallVector<Type *, 8> TypeList;
 typedef llvm::SmallVector<const Type *, 8> ConstTypeList;
 typedef llvm::SmallVector<ParameterDefn *, 8> ParameterList;
 typedef llvm::SmallVector<ConstantExpr *, 8> ConstantExprList;
-typedef llvm::SmallVector<Block *, 16> BlockList;
 typedef llvm::SmallVector<CallCandidate *, 8> Candidates;
 typedef llvm::SmallVector<FunctionDefn *, 32> MethodList;
 

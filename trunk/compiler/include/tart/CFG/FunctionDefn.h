@@ -173,9 +173,9 @@ public:
     }
   }
 
-  /** List of basic blocks. */
-  const BlockList & blocks() const { return blocks_; }
-  BlockList & blocks() { return blocks_; }
+  /** The function body, as an expression. */
+  Expr * body() const { return body_; }
+  void setBody(Expr * body) { body_ = body; }
 
   /** List of all local scopes. */
   const LocalScopeList & localScopes() const { return localScopes_; }
@@ -257,7 +257,7 @@ public:
 private:
   FunctionType * type_;
   uint32_t flags_;
-  BlockList blocks_;
+  Expr * body_;
   IterableScope parameterScope_;
   LocalScopeList localScopes_;
   int dispatchIndex_;

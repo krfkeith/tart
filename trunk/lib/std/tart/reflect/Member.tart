@@ -22,7 +22,7 @@ class Member {
     var _visibility:Visibility;
     var _traits:Traits;
     var _type:Type;
-    var _attributes:List[Attribute];
+    var _attributes:List[Object];
 
     undef construct;
   }
@@ -40,7 +40,7 @@ class Member {
   final def memberType:Type { get { return _type; } }
 
   /** Array of attributes for this member. */
-  final def attributes:List[Attribute] { get { return _attributes; } }
+  final def attributes:List[Object] { get { return _attributes; } }
 
   /** Return the first attribute of type 'attrType'. */
   final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
@@ -56,7 +56,9 @@ class Member {
   final def hasAttribute[%T](attrType:TypeLiteral[T]) -> bool {
 	  //return any(_attributes, fn attr { attr isa T; });
     for attr in _attributes {
-      return true if attr isa T;
+      if attr isa T {
+        return true;
+      }
     }
     return false;
   }

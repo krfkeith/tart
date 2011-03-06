@@ -9,14 +9,14 @@
 #include "tart/CFG/Expr.h"
 #endif
 
-#include <llvm/Instructions.h>
-#include <llvm/ADT/SetVector.h>
+#include "llvm/Instructions.h"
+#include "llvm/ADT/SetVector.h"
 
 namespace tart {
 
 class VariableDefn;
 class TupleType;
-//
+
 typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;
 typedef llvm::SmallVector<SpCandidate *, 8> SpCandidateList;
 
@@ -533,43 +533,6 @@ public:
 
 private:
   llvm::Value * value_;
-};
-
-/// -------------------------------------------------------------------
-/// A statement that executes a local jump and return within a function.
-/// This is used for cleanup handlers.
-class LocalCallExpr : public Expr {
-private:
-  Block * target_;
-  int returnState_;
-
-public:
-  /** Constructor. */
-  LocalCallExpr(Block * target)
-    : Expr(LocalCall, SourceLocation(), NULL)
-    , target_(target)
-    , returnState_(-1)
-  {}
-
-  /** The target of the call. */
-  Block * target() const { return target_; }
-  void setTarget(Block * target) { target_ = target; }
-
-  /** Used in generating the call - sets a state variable before the branch. */
-  int returnState() const { return returnState_; }
-  void setReturnState(int state) { returnState_ = state; }
-
-  // Overrides
-
-  bool isSideEffectFree() const { return true; }
-  bool isConstant() const { return false; }
-  bool isSingular() const { return true; }
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const LocalCallExpr *) { return true; }
-  static inline bool classof(const Expr * ex) {
-    return ex->exprType() == LocalCall;
-  }
 };
 
 /// -------------------------------------------------------------------

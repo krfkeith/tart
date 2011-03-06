@@ -1359,10 +1359,10 @@ llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, llvm::StringR
       llvm::StringRef attrInstanceName;
       llvm::SmallVector<char, 64> attrInstanceNameBuffer;
       for (;; ++index) {
-        llvm::Twine attrInstanceNameBuilder(".attr.");
-        attrInstanceNameBuilder.concat(llvm::Twine::utohexstr(index));
-        attrInstanceNameBuilder.concat(".");
-        attrInstanceNameBuilder.concat(baseName);
+        llvm::Twine attrInstanceNameBuilder =
+            llvm::Twine(".attr.") +
+            llvm::Twine::utohexstr(index) +
+            llvm::Twine(".") + baseName;
         attrInstanceName = attrInstanceNameBuilder.toStringRef(attrInstanceNameBuffer);
         if (cg_.irModule()->getGlobalVariable(attrInstanceName) == NULL) {
           break;

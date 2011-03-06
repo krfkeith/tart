@@ -275,6 +275,11 @@ bool Type::isErrorType() const {
       static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Bad;
 }
 
+bool Type::isBooleanType() const {
+  return cls == Primitive &&
+      static_cast<const PrimitiveType *>(this)->typeId() == TypeId_Bool;
+}
+
 bool Type::isBoxableType() const {
   switch (cls) {
     // Types that need to be boxed.

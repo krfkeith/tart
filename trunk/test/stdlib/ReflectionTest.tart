@@ -139,6 +139,7 @@ class ReflectionTest : Test {
     let method = typecast[Method](ct.findMethod("square"));
     assertEq(1, method.attributes.size);
     let attr = method.findAttribute(RetainedAttr);
+    assertTrue(attr is not null);
     assertTrue(attr isa RetainedAttr);
     let attr2 = method.findAttribute(String);
     assertFalse(attr isa String);

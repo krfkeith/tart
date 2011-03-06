@@ -31,6 +31,21 @@ class ArrayLiteralExpr;
 class TupleCtorExpr;
 class ClosureEnvExpr;
 class SharedValueExpr;
+class SeqExpr;
+class IfExpr;
+class WhileExpr;
+class ForExpr;
+class ForEachExpr;
+class SwitchExpr;
+class CaseExpr;
+class MatchExpr;
+class MatchAsExpr;
+class TryExpr;
+class CatchExpr;
+class ThrowExpr;
+class ReturnExpr;
+class BranchExpr;
+class LocalProcedureExpr;
 
 /// -------------------------------------------------------------------
 /// Mixin class that handles iteration over the CFG expression tree and
@@ -40,7 +55,6 @@ public:
   virtual ~CFGPass() {}
 
   virtual void visit(FunctionDefn * in);
-  virtual void visitBlock(Block * in);
   virtual Expr * visitStmtExpr(Expr * in) { return visitExpr(in); }
   virtual Expr * visitTermExpr(Expr * in) { return visitExpr(in); }
 
@@ -83,8 +97,29 @@ public:
   virtual Expr * visitClosureScope(ClosureEnvExpr * in);
   virtual Expr * visitSharedValue(SharedValueExpr * in);
 
+  virtual Expr * visitSeq(SeqExpr * in);
+  virtual Expr * visitIf(IfExpr * in);
+  virtual Expr * visitWhile(WhileExpr * in);
+  virtual Expr * visitDoWhile(WhileExpr * in);
+  virtual Expr * visitFor(ForExpr * in);
+  virtual Expr * visitForEach(ForEachExpr * in);
+  virtual Expr * visitSwitch(SwitchExpr * in);
+  virtual Expr * visitCase(CaseExpr * in);
+  virtual Expr * visitMatch(MatchExpr * in);
+  virtual Expr * visitMatchAs(MatchAsExpr * in);
+  virtual Expr * visitThrow(ThrowExpr * in);
+  virtual Expr * visitReturn(ReturnExpr * in);
+  virtual Expr * visitYield(ReturnExpr * in);
+  virtual Expr * visitTry(TryExpr * in);
+  virtual Expr * visitCatch(CatchExpr * in);
+  virtual Expr * visitBreak(BranchExpr * in);
+  virtual Expr * visitContinue(BranchExpr * in);
+  virtual Expr * visitLocalProcedure(LocalProcedureExpr * in);
+  virtual Expr * visitLocalReturn(BranchExpr * in);
+
 protected:
   void visitExprArgs(ArglistExpr * in);
+  void visitExprList(ExprList & args);
 };
 
 } // namespace tart
