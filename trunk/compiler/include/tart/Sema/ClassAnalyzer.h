@@ -55,7 +55,7 @@ public:
 private:
   Expr * getFieldInitVal(VariableDefn * var);
   FunctionDefn * createConstructorFunc(ParameterDefn * selfParam,
-      ParameterList & params, Block * constructorBody);
+      ParameterList & params, Expr * constructorBody);
 
   TypeDefn * target;
   bool trace_;

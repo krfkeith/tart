@@ -23,6 +23,7 @@
 
 #include "llvm/Function.h"
 #include "llvm/Module.h"
+#include "llvm/Intrinsics.h"
 
 #define DEBUG_STATIC_ROOTS 0
 
@@ -38,6 +39,138 @@ extern SystemClassMember<VariableDefn> tib_traceTable;
 SystemClassMember<FunctionDefn> traceAction_tracePointer(Builtins::typeTraceAction, "tracePointer");
 SystemClassMember<FunctionDefn> traceAction_traceDescriptors(
     Builtins::typeTraceAction, "traceDescriptors");
+
+void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType, StringRef rootName) {
+  switch (varType->typeClass()) {
+    case Type::Class:
+    case Type::Interface:
+      markGCRoot(allocaValue, NULL, rootName);
+      break;
+
+    case Type::Struct:
+    case Type::Tuple:
+      if (varType->containsReferenceType()) {
+        if (varType->typeShape() != Shape_Small_LValue &&
+            varType->typeShape() != Shape_Large_Value) {
+          diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
+        }
+        markGCRoot(allocaValue, getTraceTable(varType), rootName);
+      }
+      break;
+
+    case Type::Union:
+      if (varType->containsReferenceType()) {
+        const UnionType * utype = static_cast<const UnionType *>(varType);
+        if (utype->hasRefTypesOnly()) {
+          markGCRoot(allocaValue, NULL, rootName);
+          break;
+        }
+
+        if (varType->typeShape() != Shape_Small_LValue &&
+            varType->typeShape() != Shape_Large_Value) {
+          diag.fatal() << "Wrong shape for " << varType << " " << varType->typeShape();
+        }
+        markGCRoot(allocaValue, getTraceTable(varType), rootName);
+      }
+      break;
+
+    default:
+      break;
+  }
+}
+
+void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, llvm::StringRef rootName) {
+  if (gcEnabled_) {
+    Function * gcroot = llvm::Intrinsic::getDeclaration(
+        irModule_, llvm::Intrinsic::gcroot, NULL, 0);
+
+    if (rootName.empty()) {
+      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
+    } else {
+      value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo(),
+          rootName + ".rptr");
+    }
+    if (metadata == NULL) {
+      DASSERT(isa<llvm::PointerType>(value->getType()->getContainedType(0)));
+      metadata = llvm::ConstantPointerNull::get(builder_.getInt8PtrTy());
+    } else {
+      metadata = llvm::ConstantExpr::getPointerCast(metadata, builder_.getInt8PtrTy());
+    }
+    builder_.CreateCall2(gcroot, value, metadata);
+  }
+}
+
+void CodeGenerator::initGCRoot(Value * rootValue) {
+  AllocaInst * alloca = cast<AllocaInst>(rootValue);
+  const llvm::Type * rootType = alloca->getAllocatedType();
+  if (const PointerType * ptype = dyn_cast<PointerType>(rootType)) {
+    builder_.CreateStore(ConstantPointerNull::get(ptype), alloca);
+  } else {
+    builder_.CreateStore(ConstantAggregateZero::get(rootType), alloca);
+  }
+}
+
+void CodeGenerator::pushGCRoot(Value * allocaValue, const Type * varType) {
+  switch (varType->typeClass()) {
+    case Type::Class:
+    case Type::Interface:
+      rootStack_.push_back(allocaValue);
+      break;
+
+    case Type::Struct:
+    case Type::Tuple:
+    case Type::Union:
+      if (varType->containsReferenceType()) {
+        rootStack_.push_back(allocaValue);
+      }
+
+    default:
+      break;
+  }
+}
+
+void CodeGenerator::pushRoots(LocalScope * scope) {
+  if (gcEnabled_ && scope != NULL) {
+    for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        if (var->isSharedRef()) {
+          pushGCRoot(var->irValue(), var->sharedRefType());
+        } else if (var->hasStorage() && var->type()->containsReferenceType()) {
+          pushGCRoot(var->irValue(), var->type());
+        }
+      }
+    }
+  }
+}
+
+void CodeGenerator::popRootStack(size_t level) {
+  while (rootStack_.size() > level) {
+    initGCRoot(rootStack_.back());
+    rootStack_.pop_back();
+  }
+}
+
+Value * CodeGenerator::addTempRoot(const Type * type, Value * value, const Twine & name) {
+  // Save the current insertion point
+  IRBuilderBase::InsertPoint savePt = builder_.saveIP();
+
+  // Add an alloca to the prologue block.
+  builder_.SetInsertPoint(&currentFn_->getBasicBlockList().front());
+  llvm::Value * tempRoot = builder_.CreateAlloca(value->getType(), NULL, name);
+  if (gcEnabled_) {
+    genGCRoot(tempRoot, type, tempRoot->getName());
+  }
+
+  // Restore the IP
+  builder_.restoreIP(savePt);
+
+  // Store the root value in the alloca
+  builder_.CreateStore(value, tempRoot, false);
+  if (gcEnabled_) {
+    rootStack_.push_back(tempRoot);
+  }
+  return tempRoot;
+}
 
 llvm::GlobalVariable * CodeGenerator::getTraceTable(const Type * type) {
   TraceTableMap::const_iterator it = traceTableMap_.find(type);

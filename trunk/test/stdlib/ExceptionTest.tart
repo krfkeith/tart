@@ -3,7 +3,7 @@ import tart.testing.Test;
 
 @EntryPoint
 def main(args:String[]) -> int32 {
-  return ExceptionTest().runTests(ExceptionTest);
+  return Test.run(ExceptionTest);
 }
 
 def throwSomething() {
@@ -16,10 +16,10 @@ class ExceptionTest : Test {
 	  try {
 	    visitedTry = true;
 	  }
-	  
+
 	  assertTrue(visitedTry);
 	}
-	
+
 	def testTryCatchBlock() {
 	  var visitedTry = false;
 	  try {
@@ -27,31 +27,31 @@ class ExceptionTest : Test {
 	  } catch t:Throwable {
 	    fail("testTryCatchBlock: invalid catch");
 	  }
-	
+
 	  assertTrue(visitedTry);
 	}
-	
+
 	def testTryAndReturn() {
 	  try {
 	    return;
 	  } catch t:Throwable {
 	    fail("testTryAndReturn: invalid catch");
 	  }
-	  
+
 	  fail("return failed");
 	}
-	
+
 	def testThrowAndCatch() {
 	  try {
 	    throw Exception();
-	    fail("exception not thrown");
+	    //fail("exception not thrown");
 	  } catch t:Throwable {
 	    return;
 	  }
-	  
+
 	  fail("exception not caught");
 	}
-	
+
 	def testUnwindAndCatch() {
 	  var v = false;
 	  try {
@@ -62,10 +62,10 @@ class ExceptionTest : Test {
 	    assertTrue(t isa Exception);
 	    v = true;
 	  }
-	
+
 	  assertTrue(v);
 	}
-	
+
 	def testUnwindAndCatch2() {
 	  var v = false;
 	  try {
@@ -78,10 +78,10 @@ class ExceptionTest : Test {
 	    assertTrue(t isa Exception);
 	    v = true;
 	  }
-	
+
 	  assertTrue(v);
 	}
-	
+
 	def testExceptionMsg() {
 	  var v = false;
 	  try {
@@ -91,10 +91,10 @@ class ExceptionTest : Test {
 	    assertEq("Message", e.message);
 	    v = true;
 	  }
-	
+
 	  assertTrue(v);
 	}
-	
+
 	def testNestedTry() {
 	  var v = false;
 	  try {
@@ -108,10 +108,10 @@ class ExceptionTest : Test {
 	  } catch t:Throwable {
 	    fail("testNestedTry: invalid catch Throwable");
 	  }
-	
+
 	  assertTrue(v);
 	}
-	
+
 	def testNestedTry2() {
 	  var v = false;
 	  try {
@@ -125,10 +125,10 @@ class ExceptionTest : Test {
 	  } catch t:Throwable {
 	    fail("testNestedTry2: invalid catch 3");
 	  }
-	
+
 	  assertTrue(v);
 	}
-	
+
 	def testTryFinally() {
 	  var visitedTry = false;
 	  var visitedFinally = false;
@@ -137,11 +137,11 @@ class ExceptionTest : Test {
 	  } finally {
 	    visitedFinally = true;
 	  }
-	  
+
 	  assertTrue(visitedTry);
 	  assertTrue(visitedFinally);
 	}
-	
+
 	def testTryCatchFinally() {
 	  var visitedCatch = false;
 	  var visitedFinally = false;
@@ -152,11 +152,11 @@ class ExceptionTest : Test {
 	  } finally {
 	    visitedFinally = true;
 	  }
-	  
+
 	  assertTrue(visitedCatch);
 	  assertTrue(visitedFinally);
 	}
-	
+
 	/*def testTryReturnFinaFlly() {
 	  var visitedFinally = false;
 	  try {
@@ -165,11 +165,11 @@ class ExceptionTest : Test {
 	  } finally {
 	    visitedFinally = true;
 	  }
-	  
+
 	  fail("failed to return");
 	}
 	*/
-	
+
 	def testStackTrace() {
 	  try {
 	    throwSomething();

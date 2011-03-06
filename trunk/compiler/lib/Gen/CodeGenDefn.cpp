@@ -13,7 +13,6 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionRegion.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
 
 #include "tart/Objects/Builtins.h"
@@ -143,11 +142,11 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     BasicBlock * prologue = BasicBlock::Create(context_, "prologue", f);
 
     // Create the LLVM Basic Blocks corresponding to each high level BB.
-    BlockList & blocks = fdef->blocks();
-    for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
-      Block * blk = *b;
-      blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
-    }
+//    BlockList & blocks = fdef->blocks();
+//    for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
+//      Block * blk = *b;
+//      blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
+//    }
 
     builder_.SetInsertPoint(prologue);
 
@@ -255,8 +254,18 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       genDISubprogramStart(fdef);
       genLocalRoots(fdef->localScopes());
 
-      builder_.SetInsertPoint(blocks.front()->irBlock());
-      genBlocks(fdef->blocks());
+      BasicBlock * blkEntry = createBlock("entry");
+      builder_.SetInsertPoint(blkEntry);
+      genExpr(fdef->body());
+
+      if (!atTerminator()) {
+        if (fdef->returnType()->isVoidType()) {
+          builder_.CreateRetVoid();
+        } else {
+          // TODO: Use the location from the last statement of the function.
+          diag.error(fdef) << "Missing return statement at end of non-void function.";
+        }
+      }
 
       gcAllocContext_ = NULL;
 #if 0
@@ -264,7 +273,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 #endif
 
     builder_.SetInsertPoint(prologue);
-    builder_.CreateBr(blocks.front()->irBlock());
+    builder_.CreateBr(blkEntry);
 
     currentFn_ = saveFn;
     structRet_ = saveStructRet;

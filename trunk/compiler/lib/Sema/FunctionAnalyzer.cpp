@@ -8,7 +8,6 @@
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/Template.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/Module.h"
 #include "tart/CFG/Closure.h"
 
@@ -418,20 +417,20 @@ bool FunctionAnalyzer::createCFG() {
   }
 
   if (target->passes().begin(FunctionDefn::ControlFlowPass)) {
-    if (target->hasBody() && target->blocks().empty()) {
+    if (target->hasBody() && target->body() == NULL) {
       target->setRegion(new FunctionRegion(target, target->location().region));
 
       StmtAnalyzer sa(target);
       success = sa.buildCFG();
 
       // Generate the list of predecessor blocks for each block.
-      for (BlockList::iterator b = target->blocks().begin(); b != target->blocks().end(); ++b) {
-        Block * blk = *b;
-        BlockList & succs = blk->succs();
-        for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
-          (*s)->preds().push_back(blk);
-        }
-      }
+//      for (BlockList::iterator b = target->blocks().begin(); b != target->blocks().end(); ++b) {
+//        Block * blk = *b;
+//        BlockList & succs = blk->succs();
+//        for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
+//          (*s)->preds().push_back(blk);
+//        }
+//      }
 
       // Make sure that the constructor calls the superclass and initializes all fields.
       if (target->isCtor() && target->isSingular()) {
@@ -447,8 +446,9 @@ bool FunctionAnalyzer::createCFG() {
       }
     } else if (target->isUndefined()) {
       // Push a dummy block for undefined method.
-      Block * block = new Block("undef_entry");
-      target->blocks().push_back(block);
+//      Block * block = new Block("undef_entry");
+//      target->blocks().push_back(block);
+      //DFAIL("Implement");
       module()->addSymbol(Builtins::typeUnsupportedOperationError->typeDefn());
     }
 
@@ -594,6 +594,7 @@ bool FunctionAnalyzer::resolveReturnType() {
       target->addTrait(Defn::Unsafe);
     }
 
+#if 0
     // Add implicit casts to return statements if needed.
     BlockList & blocks = target->blocks();
     bool isVoidFunc = returnType->isVoidType();
@@ -634,6 +635,7 @@ bool FunctionAnalyzer::resolveReturnType() {
         }
       }
     }
+#endif
 
     target->passes().finish(FunctionDefn::ReturnTypePass);
   }

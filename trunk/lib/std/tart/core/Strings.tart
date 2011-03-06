@@ -14,7 +14,9 @@ namespace Strings {
   }
 
   def tryParse[bool](s:String) -> bool or ConversionError {
-    return false if s is null;
+    if s is null {
+      return false;
+    }
     switch s {
       case "true"
       case "True"
@@ -220,10 +222,14 @@ namespace Strings {
       } else if ch >= 'A' and ch <= 'Z' {
         digit = int64(ch) - int64('A') + 10;
     	} else if ch == '+' {
-        return ConversionError.INPUT_FORMAT if not first;
+    	  if not first {
+        	return ConversionError.INPUT_FORMAT;
+    	  }
         continue;
       } else if ch == '-' {
-        return ConversionError.INPUT_FORMAT if not first;
+        if not first {
+        	return ConversionError.INPUT_FORMAT;
+        }
         neg = true;
     		cutoff = -(minVal / radix);
     		cutlim = -(minVal % radix);
@@ -232,8 +238,12 @@ namespace Strings {
         return ConversionError.INPUT_FORMAT;
       }
 
-      return ConversionError.INPUT_FORMAT if digit >= radix;
-      return ConversionError.OVERFLOW if n > cutoff or (n == cutoff and digit > cutlim);
+			if digit >= radix {
+	      return ConversionError.INPUT_FORMAT;
+			}
+			if n > cutoff or (n == cutoff and digit > cutlim) {
+	      return ConversionError.OVERFLOW;
+			}
 
       n *= radix;
       n += digit;
@@ -265,18 +275,26 @@ namespace Strings {
       } else if ch >= 'A' and ch <= 'Z' {
         digit = uint64(ch) - uint64('A') + 10;
     	} else if ch == '+' {
-        return ConversionError.INPUT_FORMAT if not first;
+    	  if not first {
+	        return ConversionError.INPUT_FORMAT;
+    	  }
         continue;
       } else if ch == '-' {
-        return ConversionError.INPUT_FORMAT if not first;
+        if not first {
+	        return ConversionError.INPUT_FORMAT;
+        }
         neg = true;
         continue;
       } else {
         return ConversionError.INPUT_FORMAT;
       }
 
-      return ConversionError.INPUT_FORMAT if digit >= radix;
-      return ConversionError.OVERFLOW if n > cutoff or (n == cutoff and digit > cutlim);
+			if digit >= radix {
+	      return ConversionError.INPUT_FORMAT;
+			}
+			if n > cutoff or (n == cutoff and digit > cutlim) {
+	      return ConversionError.OVERFLOW;
+			}
 
       n *= uint64(radix);
       n += digit;
@@ -284,7 +302,9 @@ namespace Strings {
     }
 
     // The only negative number allowed is negative zero.
-    return ConversionError.OVERFLOW if neg and n > 0;
+    if neg and n > 0 {
+	    return ConversionError.OVERFLOW;
+    }
     return n;
   }
 }

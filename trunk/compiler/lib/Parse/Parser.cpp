@@ -1531,7 +1531,7 @@ Stmt * Parser::returnStmt() {
   SourceLocation loc = lexer.tokenLocation();
   ASTNode * expr = expressionList();
   Stmt * st = new ReturnStmt(loc, expr);
-  st = postCondition(st);
+  //st = postCondition(st);
   needSemi();
   return st;
 }
@@ -2522,6 +2522,18 @@ ASTNode * Parser::primaryExpression() {
     case Token_Static:
       return typeExprPrimary();
 
+    case Token_If:
+      next();
+      return ifStmt();
+
+    case Token_Switch:
+      next();
+      return switchStmt();
+
+    case Token_Match:
+      next();
+      return matchStmt();
+
     default:
       if (token >= Token_BoolType && token <= Token_UIntpType) {
         result = builtInTypeName(token);
@@ -2792,8 +2804,10 @@ void Parser::unexpectedToken() {
 
 bool Parser::needSemi() {
   if (!match(Token_Semi)) {
-    expectedSemicolon();
-    return false;
+    if (token != Token_RBrace) {
+      expectedSemicolon();
+      return false;
+    }
   }
   return true;
 }

@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/NativeType.h"
 #include "tart/CFG/FunctionType.h"
@@ -14,7 +15,6 @@
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Template.h"
 #include "tart/CFG/Module.h"
-#include "tart/CFG/Block.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -555,8 +555,6 @@ bool ClassAnalyzer::analyzeFields() {
       diag.debug() << "Fields";
     }
 
-    //diag.debug() << Format_Verbose << "Analyzing fields: " << target;
-
     CompositeType * super = type->super();
     // Also analyze base class fields.
     int instanceFieldCount = 0;
@@ -575,7 +573,6 @@ bool ClassAnalyzer::analyzeFields() {
       DASSERT(type->instanceFieldCountRecursive() == instanceFieldCountRecursive);
     }
 
-    Defn::DefnType dtype = target->defnType();
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
       switch (member->defnType()) {
         case Defn::Var:
@@ -614,6 +611,10 @@ bool ClassAnalyzer::analyzeFields() {
               //if (target->isNonreflective()) {
               //  module->addSymbol(field);
               //}
+
+              if (!type->isAttribute() && type != Builtins::typeObject) {
+                analyzeType(field->type(), Task_PrepConstruction);
+              }
 
               //analyzeType(field->type(), Task_PrepTypeGeneration);
             } else if (field->storageClass() == Storage_Static) {
@@ -757,7 +758,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
   CompositeType * type = targetType();
   CompositeType * superType = cast_or_null<CompositeType>(type->super());
-  if (superType != NULL) {
+/*  if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
     for (BlockList::iterator blk = blocks.begin(); blk != blocks.end(); ++blk) {
       ExprList & exprs = (*blk)->exprs();
@@ -765,7 +766,7 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
         //if (e->exprType() ==
       }
     }
-  }
+  }*/
 }
 
 bool ClassAnalyzer::analyzeMethods() {
@@ -1284,8 +1285,9 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setFlag(ParameterDefn::Reference, true);
   LValueExpr * selfExpr = LValueExpr::get(SourceLocation(), NULL, selfParam);
 
-  Block * constructorBody = new Block("ctor_entry");
-  constructorBody->exitReturn(SourceLocation(), NULL);
+  //Block * constructorBody = new Block("ctor_entry");
+  SeqExpr * constructorBody = new SeqExpr(SourceLocation(), &VoidType::instance);
+  //constructorBody->exitReturn(SourceLocation(), NULL);
 
   // TODO: Call the super ctor;
   DASSERT_OBJ(superCtor == NULL, target);
@@ -1318,7 +1320,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
         if (initValue != NULL) {
           LValueExpr * memberExpr = LValueExpr::get(SourceLocation(), selfExpr, field);
           Expr * initExpr = new AssignmentExpr(SourceLocation(), memberExpr, initValue);
-          constructorBody->append(initExpr);
+          constructorBody->appendArg(initExpr);
         }
       }
     }
@@ -1364,8 +1366,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
   selfParam->setFlag(ParameterDefn::Reference, true);
   LValueExpr * selfExpr = LValueExpr::get(loc, NULL, selfParam);
 
-  Block * constructorBody = new Block("ctor_entry");
-  constructorBody->exitReturn(loc, NULL);
+  SeqExpr * constructorBody = new SeqExpr(SourceLocation(), &VoidType::instance);
 
   // TODO: Call the super ctor;
   DASSERT_OBJ(superCtor == NULL, target);
@@ -1379,7 +1380,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
         if (initValue != NULL) {
           LValueExpr * memberExpr = LValueExpr::get(loc, selfExpr, field);
           Expr * initExpr = new AssignmentExpr(loc, memberExpr, initValue);
-          constructorBody->append(initExpr);
+          constructorBody->appendArg(initExpr);
         }
       }
     }
@@ -1442,7 +1443,7 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
 }
 
 FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
-    ParameterList & params, Block * constructorBody) {
+    ParameterList & params, Expr * constructorBody) {
 
   FunctionType * funcType = new FunctionType(&VoidType::instance, params);
   funcType->setSelfParam(selfParam);
@@ -1454,7 +1455,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
   constructorDef->setVisibility(Public);
   constructorDef->setFlag(FunctionDefn::Ctor);
   constructorDef->copyTrait(target, Defn::Synthetic);
-  constructorDef->blocks().push_back(constructorBody);
+  constructorDef->setBody(constructorBody);
   constructorDef->passes().finished().addAll(
       FunctionDefn::PassSet::of(
           FunctionDefn::AttributePass,

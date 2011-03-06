@@ -6,9 +6,9 @@
 #include "tart/Sema/AnalyzerBase.h"
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/Closure.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/TupleType.h"
@@ -31,75 +31,38 @@ bool FunctionMergePass::visit(FunctionDefn * from, FunctionDefn * to) {
     diag.indent();
   }
 
-  BlockList & fromBlocks = from->blocks();
-  BlockList & toBlocks = to->blocks();
+//  BlockList & fromBlocks = from->blocks();
+//  BlockList & toBlocks = to->blocks();
 
-  int index = 0;
-  for (BlockList::iterator bi = fromBlocks.begin(); bi != fromBlocks.end(); ++bi) {
-    (*bi)->setIndex(++index);
-  }
+//  int index = 0;
+//  for (BlockList::iterator bi = fromBlocks.begin(); bi != fromBlocks.end(); ++bi) {
+//    (*bi)->setIndex(++index);
+//  }
+//
+//  index = 0;
+//  for (BlockList::iterator bi = toBlocks.begin(); bi != toBlocks.end(); ++bi) {
+//    (*bi)->setIndex(++index);
+//  }
 
-  index = 0;
-  for (BlockList::iterator bi = toBlocks.begin(); bi != toBlocks.end(); ++bi) {
-    (*bi)->setIndex(++index);
-  }
+//  size_t blkCount = fromBlocks.size();
+//  if (toBlocks.size() != blkCount) {
+//    diag.debug() << "Merge failure: Difference in block count: " <<
+//        fromBlocks.size() << " vs " << toBlocks.size();
+//    diag.setIndentLevel(indentLevel);
+//    return false;
+//  }
 
-  size_t blkCount = fromBlocks.size();
-  if (toBlocks.size() != blkCount) {
-    diag.debug() << "Merge failure: Difference in block count: " <<
-        fromBlocks.size() << " vs " << toBlocks.size();
-    diag.setIndentLevel(indentLevel);
+//  for (size_t i = 0; i < blkCount; ++i) {
+//    if (!visitBlock(fromBlocks[i], toBlocks[i])) {
+//      diag.setIndentLevel(indentLevel);
+//      return false;
+//    }
+//  }
+  if (!visitExpr(from->body(), to->body())) {
     return false;
-  }
-
-  for (size_t i = 0; i < blkCount; ++i) {
-    if (!visitBlock(fromBlocks[i], toBlocks[i])) {
-      diag.setIndentLevel(indentLevel);
-      return false;
-    }
   }
 
   diag.setIndentLevel(indentLevel);
-  return true;
-}
-
-bool FunctionMergePass::visitBlock(Block * from, Block * to) {
-  if (from->index() != to->index()) {
-    diag.debug() << "Merge failure: Difference in block index";
-    return false;
-  }
-
-  if (from->terminator() != to->terminator()) {
-    diag.debug() << "Merge failure: Difference in block terminator";
-    return false;
-  }
-
-  ExprList & fromExprs = from->exprs();
-  ExprList & toExprs = to->exprs();
-  if (fromExprs.size() != toExprs.size()) {
-    diag.debug() << "Merge failure: Difference in block expr count";
-    return false;
-  }
-
-  for (size_t i = 0; i < fromExprs.size(); ++i) {
-    if (!visitExpr(fromExprs[i], toExprs[i])) {
-      return false;
-    }
-  }
-
-  ExprList & fromTermExprs = from->termExprs();
-  ExprList & toTermExprs = to->termExprs();
-  if (fromTermExprs.size() != toTermExprs.size()) {
-    diag.debug() << "Merge failure: Difference in block term expr count";
-    return false;
-  }
-
-  for (size_t i = 0; i < fromTermExprs.size(); ++i) {
-    if (!visitExpr(fromTermExprs[i], toTermExprs[i])) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -234,9 +197,9 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //    case Expr::ClearVar:
 //      return visitClearVar(static_cast<ClearVarExpr *>(from), static_cast<ClearVarExpr *>(to));
 //
-//    case Expr::Prog2:
-//      return visitProg2(static_cast<BinaryExpr *>(from), static_cast<BinaryExpr *>(to));
-//
+    case Expr::Prog2:
+      return visitProg2(static_cast<BinaryExpr *>(from), static_cast<BinaryExpr *>(to));
+
     case Expr::ArrayLiteral:
       return visitArrayLiteral(
           static_cast<ArrayLiteralExpr *>(from),
@@ -256,6 +219,32 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //
 //    case Expr::PatternVar:
 //      DFAIL("PatternVar");
+
+    case Expr::Seq:
+      return visitSeq(static_cast<SeqExpr *>(from), static_cast<SeqExpr *>(to));
+
+    case Expr::If:
+      return visitIf(static_cast<IfExpr *>(from), static_cast<IfExpr *>(to));
+
+    case Expr::For:
+      return visitFor(static_cast<ForExpr *>(from), static_cast<ForExpr *>(to));
+
+    case Expr::Throw:
+      return visitThrow(static_cast<ThrowExpr *>(from), static_cast<ThrowExpr *>(to));
+
+    case Expr::Return:
+      return visitReturn(static_cast<ReturnExpr *>(from), static_cast<ReturnExpr *>(to));
+
+    case Expr::LocalProcedure:
+      return visitLocalProcedure(
+          static_cast<LocalProcedureExpr *>(from), static_cast<LocalProcedureExpr *>(to));
+
+    case Expr::LocalReturn:
+      return visitLocalReturn(static_cast<ReturnExpr *>(from), static_cast<ReturnExpr *>(to));
+
+    case Expr::Break:
+    case Expr::Continue:
+      return true;
 
     default:
       break;
@@ -465,6 +454,11 @@ bool FunctionMergePass::visitInitVar(InitVarExpr * from, InitVarExpr * to) {
   return visitExpr(from->initExpr(), to->initExpr());
 }
 
+bool FunctionMergePass::visitProg2(BinaryExpr * from, BinaryExpr * to) {
+  return visitExpr(from->first(), to->first()) &&
+         visitExpr(from->second(), to->second());
+}
+
 bool FunctionMergePass::visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to) {
   if (!from->type()->isEqual(to->type())) {
     return false;
@@ -481,6 +475,49 @@ bool FunctionMergePass::visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralE
   }
 
   return true;
+}
+
+bool FunctionMergePass::visitSeq(SeqExpr * from, SeqExpr * to) {
+  if (from->argCount() != to->argCount()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < from->argCount(); ++i) {
+    if (!visitExpr(from->arg(i), to->arg(i))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool FunctionMergePass::visitIf(IfExpr * from, IfExpr * to) {
+  return visitExpr(from->test(), to->test()) &&
+      visitExpr(from->thenVal(), to->thenVal()) &&
+      visitExpr(from->elseVal(), to->elseVal());
+}
+
+bool FunctionMergePass::visitFor(ForExpr * from, ForExpr * to) {
+  return visitExpr(from->init(), to->init()) &&
+      visitExpr(from->test(), to->test()) &&
+      visitExpr(from->incr(), to->incr()) &&
+      visitExpr(from->body(), to->body());
+}
+
+bool FunctionMergePass::visitReturn(ReturnExpr * from, ReturnExpr * to) {
+  return visitExpr(from->arg(), to->arg());
+}
+
+bool FunctionMergePass::visitThrow(ThrowExpr * from, ThrowExpr * to) {
+  return visitExpr(from->arg(), to->arg());
+}
+
+bool FunctionMergePass::visitLocalProcedure(LocalProcedureExpr * from, LocalProcedureExpr * to) {
+  return visitExpr(from->arg(), to->arg());
+}
+
+bool FunctionMergePass::visitLocalReturn(ReturnExpr * from, ReturnExpr * to) {
+  return visitExpr(from->arg(), to->arg());
 }
 
 #if 0

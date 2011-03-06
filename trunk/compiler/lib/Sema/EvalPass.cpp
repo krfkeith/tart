@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/CompositeType.h"
@@ -13,7 +14,6 @@
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/UnitType.h"
 #include "tart/CFG/Constant.h"
-#include "tart/CFG/Block.h"
 #include "tart/Sema/EvalPass.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Common/Diagnostics.h"
@@ -167,11 +167,18 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::ClearVar:
       return in;
 
+    case Expr::Seq:
+      return evalSeq(static_cast<SeqExpr *>(in));
+
+    case Expr::Return:
+      return evalReturn(static_cast<ReturnExpr *>(in));
+
     default:
       break;
   }
 
-  diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType()) << " : " << in;
+  diag.error(in) << "Expr type not handled in eval: " <<
+      exprTypeName(in->exprType()) << " : " << in;
   showCallStack();
   DFAIL("Fall through");
 }
@@ -190,6 +197,7 @@ ConstantExpr * EvalPass::evalConstantExpr(Expr * in) {
   return NULL;
 }
 
+#if 0
 bool EvalPass::evalBlocks(BlockList & blocks) {
   Block * block = blocks.front();
 
@@ -245,12 +253,14 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
     }
   }
 }
+#endif
 
 Expr * EvalPass::evalFnCall(FnCallExpr * in) {
   FunctionDefn * func = in->function();
   CallFrame frame(callFrame_);
   frame.setFunction(func);
   frame.setCallLocation(in->location());
+  frame.setReturnVal(&Expr::VoidVal);
   if (in->selfArg() != NULL) {
     Expr * selfArg = evalExpr(in->selfArg());
     if (selfArg == NULL) {
@@ -286,10 +296,10 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
     return NULL;
   }
 
-  DASSERT_OBJ(!func->blocks().empty(), func);
+  DASSERT_OBJ(func->body() != NULL, func);
 
   CallFrame * prevFrame = setCallFrame(&frame);
-  evalBlocks(func->blocks());
+  evalExpr(func->body());
   setCallFrame(prevFrame);
 
   if (in->exprType() == Expr::CtorCall) {
@@ -440,6 +450,27 @@ void EvalPass::store(Expr * value, Expr * dest) {
   } else {
     DFAIL("Implement");
   }
+}
+
+Expr * EvalPass::evalSeq(SeqExpr * in) {
+  Expr * result = NULL;
+  for (SeqExpr::const_iterator it = in->begin(), itEnd = in->end(); it != itEnd; ++it) {
+    result = evalExpr(*it);
+    if (result == NULL || callFrame_->runState() != RUNNING) {
+      break;
+    }
+  }
+  return result;
+}
+
+Expr * EvalPass::evalReturn(ReturnExpr * in) {
+  if (in->arg() != NULL) {
+    callFrame_->setReturnVal(evalExpr(in->arg()));
+  } else {
+    callFrame_->setReturnVal(&nullValue);
+  }
+  callFrame_->setRunState(RETURN);
+  return in;
 }
 
 Expr * EvalPass::evalNot(UnaryExpr * in) {

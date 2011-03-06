@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/UnionType.h"
 #include "tart/CFG/FunctionDefn.h"
@@ -18,6 +19,7 @@ namespace tart {
 ConstructorAnalyzer::ConstructorAnalyzer(CompositeType * cls)
   : cls_(cls)
   , varCount_(1) // 0 is for super() call.
+  , isReturnVisited_(false)
 {
   // Collect a set of all initializable members and assign an index to each one.
   const DefnList & fields = cls->instanceFields();
@@ -53,102 +55,25 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
     diag.debug(ctor) << Format_Verbose << "Analyzing constructor " << ctor;
   }
 
-  // Check for blocks which end in return
-  BlockList returnBlocks;
-  Block * entry = ctor->blocks().front();
+  set_.resize(varCount_);
+  maybeSet_.resize(varCount_);
+  ctor_ = ctor;
+
+  DASSERT(ctor->body() != NULL);
+
+  CtorInitState initState(*this);
+  initState.visit(ctor);
+  initState.visitReturn(NULL);
+
   FunctionType * ctorType = ctor->functionType();
-
-  DASSERT(!ctor->blocks().empty());
-
-  // For every block, determine which instance vars are initialized in that block.
-  for (BlockList::const_iterator it = ctor->blocks().begin(); it != ctor->blocks().end(); ++it) {
-    // See which vars are initialized within this block
-    Block * blk = *it;
-    BlockState & bstate = blockStates_[blk];
-    bstate.visited_ = false;
-    bstate.initialized_.resize(varCount_, false);
-
-    for (ExprList::const_iterator it = blk->exprs().begin(); it != blk->exprs().end(); ++it) {
-      Expr * e = *it;
-      switch (e->exprType()) {
-        case Expr::Assign:
-        case Expr::PostAssign: {
-          do {
-            AssignmentExpr * assignExpr = static_cast<AssignmentExpr *>(e);
-            if (LValueExpr * lval = dyn_cast<LValueExpr>(assignExpr->toExpr())) {
-              if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
-                VarIndexMap::iterator entry = varIndices_.find(var);
-                if (entry != varIndices_.end()) {
-                  bstate.initialized_.set(entry->second);
-                }
-              }
-            }
-
-            e = assignExpr->fromExpr();
-          } while (e->exprType() == Expr::Assign);
-          break;
-        }
-
-        case Expr::FnCall: {
-          FnCallExpr * callExpr = static_cast<FnCallExpr *>(e);
-          FunctionDefn * fn = callExpr->function();
-          if (fn->isCtor()) {
-            // We need to know if we're calling ourselves, or if we're calling super().
-            // If it's ourselves, then we can assume that this ctor inits everything.
-            Expr * selfExpr = callExpr->selfArg();
-            bool isSuperCall = false;
-            if (selfExpr->exprType() == Expr::UpCast) {
-              CastExpr * castExpr = static_cast<CastExpr *>(selfExpr);
-              selfExpr = castExpr->arg();
-              isSuperCall = true;
-            }
-
-            if (LValueExpr * selfLVal = dyn_cast<LValueExpr>(selfExpr)) {
-              if (ParameterDefn * selfParam = dyn_cast<ParameterDefn>(selfLVal->value())) {
-                if (selfParam == ctorType->selfParam()) {
-                  if (isSuperCall) {
-                    bstate.initialized_.set(0);
-                  } else {
-                    // If it's a call to another constructor of this class, then
-                    // assume that everything was initialized by the other constructor.
-                    // Note that you can fool this code with cyclic constructor calls.
-                    // TODO: Check for cyclic constructor calls.
-                    return;
-                  }
-                }
-              }
-            }
-          }
-
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
-
-    if (blk->terminator() == BlockTerm_Return) {
-      returnBlocks.push_back(blk);
-    }
-  }
-
-  // A simple (yet incorrect) flow analysis...
-  // TODO: Do this with real dominance graph analysis.
-  for (BlockList::const_iterator it = returnBlocks.begin(); it != returnBlocks.end(); ++it) {
-    visitBlock(*it);
-  }
 
   // List of additional initializers to add.
   ExprList defaultInitializers;
 
   // Determine if the superclass constructor was called on all exit paths.
   bool needsSuperCall = false;
-  for (BlockList::const_iterator it = returnBlocks.begin(); it != returnBlocks.end(); ++it) {
-    Block * blk = *it;
-    BlockState & bstate = blockStates_[blk];
-
-    if (!bstate.initialized_[0] && cls_->super() != NULL && cls_->super() != Builtins::typeObject) {
+  if (cls_->super() != NULL && cls_->super() != Builtins::typeObject) {
+    if (!set_[0]) {
       needsSuperCall = true;
     }
   }
@@ -218,12 +143,8 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
 
     int index = varIndices_[field];
     bool needsInitialization = false;
-    for (BlockList::const_iterator it = returnBlocks.begin(); it != returnBlocks.end(); ++it) {
-      Block * blk = *it;
-      BlockState & bstate = blockStates_[blk];
-      if (!bstate.initialized_[index]) {
-        needsInitialization = true;
-      }
+    if (!set_[index]) {
+      needsInitialization = true;
     }
 
     if (needsInitialization) {
@@ -268,30 +189,184 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
   }
 
   // TODO: There's also an ordering issue, as some fields may depend on others.
-  entry->exprs().insert(entry->exprs().begin(),
+  SeqExpr * bodyExpr = cast<SeqExpr>(ctor->body());
+  bodyExpr->args().insert(bodyExpr->begin(),
       defaultInitializers.begin(), defaultInitializers.end());
 }
 
-void ConstructorAnalyzer::visitBlock(Block * b) {
-  BlockState & bstate = blockStates_[b];
-  if (bstate.visited_) {
-    return;
+void ConstructorAnalyzer::putReturnState(llvm::BitVector & set, llvm::BitVector & maybeSet) {
+  if (isReturnVisited_) {
+    set_ &= set;
+    maybeSet_ |= maybeSet;
+  } else {
+    set_ = set;
+    maybeSet_ = maybeSet;
+    isReturnVisited_ = true;
   }
+}
 
-  // Get the intersection of all predecessor blocks.
-  bstate.visited_ = true;
-  if (!b->preds().empty()) {
-    BlockState combinedStates;
-    combinedStates.initialized_.resize(varCount_, true);
-    for (BlockList::const_iterator it = b->preds().begin(); it != b->preds().end(); ++it) {
-      Block * pred = *it;
-      visitBlock(pred);
-      combinedStates.initialized_ &= blockStates_[pred].initialized_;
+// -------------------------------------------------------------------
+// CtorInitState
+
+CtorInitState::CtorInitState(ConstructorAnalyzer & analyzer)
+  : analyzer_(analyzer)
+{
+  set_.resize(analyzer_.set_.size());
+  maybeSet_.resize(analyzer_.maybeSet_.size());
+}
+
+void CtorInitState::checkAssign(AssignmentExpr * in) {
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(in->toExpr())) {
+    if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
+      VarIndexMap::iterator entry = analyzer_.varIndices_.find(var);
+      if (entry != analyzer_.varIndices_.end()) {
+        set_.set(entry->second);
+        maybeSet_.set(entry->second);
+      }
+    }
+  }
+}
+
+Expr * CtorInitState::visitAssign(AssignmentExpr * in) {
+  CFGPass::visitAssign(in);
+  checkAssign(in);
+  return in;
+}
+
+Expr * CtorInitState::visitPostAssign(AssignmentExpr * in) {
+  CFGPass::visitPostAssign(in);
+  checkAssign(in);
+  return in;
+}
+
+Expr * CtorInitState::visitFnCall(FnCallExpr * in) {
+  CFGPass::visitFnCall(in);
+  FunctionDefn * fn = in->function();
+  if (fn->isCtor()) {
+    // We need to know if we're calling ourselves, or if we're calling super().
+    // If it's ourselves, then we can assume that this ctor inits everything.
+    Expr * selfExpr = in->selfArg();
+    bool isSuperCall = false;
+    if (selfExpr->exprType() == Expr::UpCast) {
+      CastExpr * castExpr = static_cast<CastExpr *>(selfExpr);
+      selfExpr = castExpr->arg();
+      isSuperCall = true;
     }
 
-    // Now union it with the current block.
-    bstate.initialized_ |= combinedStates.initialized_;
+    if (LValueExpr * selfLVal = dyn_cast<LValueExpr>(selfExpr)) {
+      if (ParameterDefn * selfParam = dyn_cast<ParameterDefn>(selfLVal->value())) {
+        if (selfParam == analyzer_.ctor_->functionType()->selfParam()) {
+          if (isSuperCall) {
+            set_.set(0);
+          } else {
+            // If it's a call to another constructor of this class, then
+            // assume that everything was initialized by the other constructor.
+            // Note that you can fool this code with cyclic constructor calls.
+            // TODO: Check for cyclic constructor calls.
+            set_.reset();
+            set_.flip();
+            maybeSet_ = set_;
+          }
+        }
+      }
+    }
   }
+
+  return in;
+}
+
+Expr * CtorInitState::visitIf(IfExpr * in) {
+  visitExpr(in->test());
+  CtorInitState thenState(analyzer_);
+  thenState.visitExpr(in->thenVal());
+  maybeSet_ |= thenState.maybeSet_;
+  CtorInitState elseState(analyzer_);
+  elseState.visitExpr(in->elseVal());
+  set_ |= (thenState.set_ & elseState.set_);
+  maybeSet_ |= elseState.maybeSet_;
+  return in;
+}
+
+Expr * CtorInitState::visitWhile(WhileExpr * in) {
+  visitExpr(in->test());
+  CtorInitState loopState(analyzer_);
+  loopState.visitExpr(in->body());
+  maybeSet_ |= loopState.maybeSet_;
+  return in;
+}
+
+Expr * CtorInitState::visitDoWhile(WhileExpr * in) {
+  visitExpr(in->test());
+  CtorInitState loopState(analyzer_);
+  loopState.visitExpr(in->body());
+  maybeSet_ |= loopState.maybeSet_;
+  return in;
+}
+
+Expr * CtorInitState::visitFor(ForExpr * in) {
+  visitExpr(in->init());
+  visitExpr(in->test());
+  CtorInitState loopState(analyzer_);
+  loopState.visitExpr(in->incr());
+  loopState.visitExpr(in->body());
+  maybeSet_ |= loopState.maybeSet_;
+  return in;
+}
+
+Expr * CtorInitState::visitForEach(ForEachExpr * in) {
+  visitExpr(in->iterator());
+  visitExpr(in->test());
+  CtorInitState loopState(analyzer_);
+  loopState.visitExpr(in->body());
+  maybeSet_ |= loopState.maybeSet_;
+  return in;
+}
+
+Expr * CtorInitState::visitSwitch(SwitchExpr * in) {
+  // We only care about switch statements that have an 'else' case.
+  if (in->elseCase() != NULL) {
+    CtorInitState switchState(analyzer_);
+    switchState.visitExpr(in->elseCase());
+    for (SwitchExpr::const_iterator it = in->begin(); it != in->end(); ++it) {
+      CtorInitState caseState(analyzer_);
+      caseState.visitExpr(*it);
+      switchState.set_ &= caseState.set_;
+      switchState.maybeSet_ |= caseState.maybeSet_;
+    }
+
+    maybeSet_ |= switchState.maybeSet_;
+    set_ |= switchState.set_;
+  }
+  return in;
+}
+
+Expr * CtorInitState::visitMatch(MatchExpr * in) {
+  // We only care about match statements that have an 'else' case.
+  if (in->elseCase() != NULL) {
+    CtorInitState matchState(analyzer_);
+    matchState.visitExpr(in->elseCase());
+    for (SwitchExpr::const_iterator it = in->begin(); it != in->end(); ++it) {
+      CtorInitState caseState(analyzer_);
+      caseState.visitExpr(*it);
+      matchState.set_ &= caseState.set_;
+      matchState.maybeSet_ |= caseState.maybeSet_;
+    }
+
+    maybeSet_ |= matchState.maybeSet_;
+    set_ |= matchState.set_;
+  }
+  return in;
+}
+
+Expr * CtorInitState::visitTry(TryExpr * in) {
+  // TODO: Implement
+  DFAIL("Implement");
+  return in;
+}
+
+Expr * CtorInitState::visitReturn(ReturnExpr * in) {
+  analyzer_.putReturnState(set_, maybeSet_);
+  return in;
 }
 
 } // namespace tart

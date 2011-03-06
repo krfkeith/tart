@@ -20,6 +20,28 @@ EXPR_TYPE(ScopeName)      // A reference to a scope name
 EXPR_TYPE(ElementRef)     // A reference to an element in a native array
 EXPR_TYPE(PatternVar)     // A pattern variable
 
+// Statements
+EXPR_TYPE(Seq)            // A sequence of statements
+EXPR_TYPE(If)             // An if-statement
+EXPR_TYPE(While)          // A while statement
+EXPR_TYPE(DoWhile)        // A do/while statement
+EXPR_TYPE(For)            // A for statement
+EXPR_TYPE(ForEach)        // A foreach statement
+EXPR_TYPE(Switch)         // A switch statement
+EXPR_TYPE(Case)           // A case statement
+EXPR_TYPE(Match)          // A match statement
+EXPR_TYPE(MatchAs)        // An 'as' statement within a match
+EXPR_TYPE(Throw)          // A throw statement
+EXPR_TYPE(Return)         // A return statement
+EXPR_TYPE(Yield)          // A yield statement
+EXPR_TYPE(Try)            // A try statement
+EXPR_TYPE(Catch)          // A catch statement
+EXPR_TYPE(With)           // A with statement
+EXPR_TYPE(Break)          // A break statement
+EXPR_TYPE(Continue)       // A continue statement
+EXPR_TYPE(LocalProcedure) // Defines a local procedure (macro).
+EXPR_TYPE(LocalReturn)    // A return from a local procedure.
+
 // Operators
 EXPR_TYPE(Assign)         // Assignment
 EXPR_TYPE(PostAssign)     // Assign, return value before assignment
@@ -69,7 +91,6 @@ EXPR_TYPE(BitCast)        // Reinterpret cast
 
 // Special objects
 EXPR_TYPE(IRValue)        // An IR-level value.
-EXPR_TYPE(LocalCall)      // A jump to a local subroutine.
 EXPR_TYPE(ArrayLiteral)   // An array literal
 EXPR_TYPE(BoundMethod)    // A reference to a method and a base object
 EXPR_TYPE(ClosureEnv)     // A reference to a closure environment.

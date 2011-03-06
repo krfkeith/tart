@@ -181,6 +181,9 @@ public:
   /** True if this type is the 'unsized int' type. */
   bool isUnsizedIntType() const;
 
+  /** True if this type is a boolean type. */
+  bool isBooleanType() const;
+
   /** Return true if this type can be boxed. */
   bool isBoxableType() const;
 

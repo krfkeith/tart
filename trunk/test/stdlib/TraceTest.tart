@@ -333,4 +333,6 @@ class TraceTest : Test {
   // Relocation of statics.
   // Relocation of instance fields.
   // Relocation of stuff inside instance fields.
+
+  // Do a collection inside each statement type.
 }

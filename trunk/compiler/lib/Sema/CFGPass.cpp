@@ -5,9 +5,9 @@
 #include "tart/Sema/CFGPass.h"
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/Closure.h"
 #include "tart/Common/Diagnostics.h"
 
@@ -16,22 +16,7 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// CFGPass
 void CFGPass::visit(FunctionDefn * in) {
-  BlockList & blocks = in->blocks();
-  for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
-    visitBlock(*it);
-  }
-}
-
-void CFGPass::visitBlock(Block * in) {
-  ExprList & types = in->exprs();
-  for (ExprList::iterator it = types.begin(); it != types.end(); ++it) {
-    *it = visitStmtExpr(*it);
-  }
-
-  ExprList & ttypes = in->termExprs();
-  for (ExprList::iterator it = ttypes.begin(); it != ttypes.end(); ++it) {
-    *it = visitTermExpr(*it);
-  }
+  in->setBody(visitExpr(in->body()));
 }
 
 Expr * CFGPass::visitExpr(Expr * in) {
@@ -176,32 +161,83 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::SharedValue:
       return visitSharedValue(static_cast<SharedValueExpr *>(in));
 
-    case Expr::PatternVar:
-      DFAIL("PatternVar");
+    case Expr::Seq:
+      return visitSeq(static_cast<SeqExpr *>(in));
 
-    default:
+    case Expr::If:
+      return visitIf(static_cast<IfExpr *>(in));
+
+    case Expr::While:
+      return visitWhile(static_cast<WhileExpr *>(in));
+
+    case Expr::DoWhile:
+      return visitDoWhile(static_cast<WhileExpr *>(in));
+
+    case Expr::For:
+      return visitFor(static_cast<ForExpr *>(in));
+
+    case Expr::ForEach:
+      return visitForEach(static_cast<ForEachExpr *>(in));
+
+    case Expr::Switch:
+      return visitSwitch(static_cast<SwitchExpr *>(in));
+
+    case Expr::Match:
+      return visitMatch(static_cast<MatchExpr *>(in));
+
+    case Expr::MatchAs:
+      return visitMatchAs(static_cast<MatchAsExpr *>(in));
+
+    case Expr::Throw:
+      return visitThrow(static_cast<ThrowExpr *>(in));
+
+    case Expr::Return:
+      return visitReturn(static_cast<ReturnExpr *>(in));
+
+    case Expr::Yield:
+      return visitYield(static_cast<ReturnExpr *>(in));
+
+    case Expr::Try:
+      return visitTry(static_cast<TryExpr *>(in));
+
+    case Expr::Catch:
+      return visitCatch(static_cast<CatchExpr *>(in));
+
+    case Expr::Break:
+      return visitBreak(static_cast<BranchExpr *>(in));
+
+    case Expr::Continue:
+      return visitContinue(static_cast<BranchExpr *>(in));
+
+    case Expr::LocalReturn:
+      return visitLocalReturn(static_cast<BranchExpr *>(in));
+
+    case Expr::LocalProcedure:
+      return visitLocalProcedure(static_cast<LocalProcedureExpr *>(in));
+
+    case Expr::Case:
+      return visitCase(static_cast<CaseExpr *>(in));
+
+    case Expr::With:
+      DFAIL("Implement");
+
+    case Expr::PatternVar:
+    case Expr::TypeName:
+    case Expr::Specialize:
+      diag.error(in) << "Invalid expression type: " << exprTypeName(in->exprType());
       break;
   }
 
-  diag.error(in) << "Expr type not handled: " << exprTypeName(in->exprType());
   DFAIL("Fall through");
 }
 
 Expr * CFGPass::visitConstantObjectRef(ConstantObjectRef * in) {
-  ExprList & members = in->members();
-  for (ExprList::iterator it = members.begin(); it != members.end(); ++it) {
-    *it = visitExpr(*it);
-  }
-
+  visitExprList(in->members());
   return in;
 }
 
 Expr * CFGPass::visitConstantNativeArray(ConstantNativeArray * in) {
-  ExprList & elements = in->elements();
-  for (ExprList::iterator it = elements.begin(); it != elements.end(); ++it) {
-    *it = visitExpr(*it);
-  }
-
+  visitExprList(in->elements());
   return in;
 }
 
@@ -351,15 +387,130 @@ Expr * CFGPass::visitSharedValue(SharedValueExpr * in) {
   return in;
 }
 
+Expr * CFGPass::visitSeq(SeqExpr * in) {
+  visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitIf(IfExpr * in) {
+  in->setTest(visitExpr(in->test()));
+  in->setThenVal(visitExpr(in->thenVal()));
+  in->setElseVal(visitExpr(in->elseVal()));
+  return in;
+}
+
+Expr * CFGPass::visitWhile(WhileExpr * in) {
+  in->setTest(visitExpr(in->test()));
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitDoWhile(WhileExpr * in) {
+  in->setTest(visitExpr(in->test()));
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitFor(ForExpr * in) {
+  in->setInit(visitExpr(in->init()));
+  in->setTest(visitExpr(in->test()));
+  in->setIncr(visitExpr(in->incr()));
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitForEach(ForEachExpr * in) {
+  in->setIterator(visitExpr(in->iterator()));
+  in->setNext(visitExpr(in->next()));
+  in->setTest(visitExpr(in->test()));
+  visitExprList(in->assigns());
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitSwitch(SwitchExpr * in) {
+  in->setValue(visitExpr(in->value()));
+  visitExprArgs(in);
+  in->setElseCase(visitExpr(in->elseCase()));
+  return in;
+}
+
+Expr * CFGPass::visitCase(CaseExpr * in) {
+  visitExprArgs(in);
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitMatch(MatchExpr * in) {
+  visitExprArgs(in);
+  in->setValue(visitExpr(in->value()));
+  in->setElseCase(visitExpr(in->elseCase()));
+  return in;
+}
+
+Expr * CFGPass::visitMatchAs(MatchAsExpr * in) {
+  in->setTest(visitExpr(in->test()));
+  in->setInit(visitExpr(in->init()));
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitTry(TryExpr * in) {
+  visitExprArgs(in);
+  in->setBody(visitExpr(in->body()));
+  in->setFinallyBlock(visitExpr(in->finallyBlock()));
+  return in;
+}
+
+Expr * CFGPass::visitCatch(CatchExpr * in) {
+  in->setBody(visitExpr(in->body()));
+  return in;
+}
+
+Expr * CFGPass::visitThrow(ThrowExpr * in) {
+  in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitReturn(ReturnExpr * in) {
+  in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitYield(ReturnExpr * in) {
+  in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitBreak(BranchExpr * in) {
+  return in;
+}
+
+Expr * CFGPass::visitContinue(BranchExpr * in) {
+  return in;
+}
+
+Expr * CFGPass::visitLocalProcedure(LocalProcedureExpr * in) {
+  in->setArg(visitExpr(in->arg()));
+  return in;
+}
+
+Expr * CFGPass::visitLocalReturn(BranchExpr * in) {
+  return in;
+}
+
 void CFGPass::visitExprArgs(ArglistExpr * in) {
-  ExprList & args = in->args();
-  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
-    *it = visitExpr(*it);
-  }
+  visitExprList(in->args());
 }
 
 Expr * CFGPass::visitClosureScope(ClosureEnvExpr * in) {
   return in;
+}
+
+void CFGPass::visitExprList(ExprList & args) {
+  for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
+    *it = visitExpr(*it);
+  }
 }
 
 } // namespace tart

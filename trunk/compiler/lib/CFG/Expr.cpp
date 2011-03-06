@@ -6,7 +6,6 @@
 #include "tart/CFG/Type.h"
 #include "tart/CFG/Defn.h"
 #include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/CompositeType.h"
 #include "tart/CFG/FunctionType.h"
@@ -76,10 +75,33 @@ bool isErrorResult(const Type * ex) {
   return ex == NULL || BadType::instance.isEqual(ex);
 }
 
+bool any(ExprList::const_iterator first, ExprList::const_iterator last,
+    bool (Expr::*func)() const) {
+  while (first != last) {
+    const Expr * e = *first++;
+    if ((e->*func)()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool all(ExprList::const_iterator first, ExprList::const_iterator last,
+    bool (Expr::*func)() const) {
+  while (first != last) {
+    const Expr * e = *first++;
+    if (!(e->*func)()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // -------------------------------------------------------------------
 // Expr
 
 ErrorExpr Expr::ErrorVal;
+UnaryExpr Expr::VoidVal(Expr::NoOp, SourceLocation(), &VoidType::instance, NULL);
 
 const ExprList Expr::emptyList;
 
@@ -879,12 +901,6 @@ void CompareExpr::format(FormatStream & out) const {
 // IRValueExpr
 void IRValueExpr::format(FormatStream & out) const {
   out << "<IRValue>";
-}
-
-// -------------------------------------------------------------------
-// LocalCallExpr
-void LocalCallExpr::format(FormatStream & out) const {
-  out << "local call " << target_ << " return=" << returnState_;
 }
 
 // -------------------------------------------------------------------

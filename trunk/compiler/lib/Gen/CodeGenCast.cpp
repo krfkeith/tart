@@ -447,6 +447,18 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
   return builder_.CreateInBoundsGEP(val, indices.begin(), indices.end(), "upcast");
 }
 
+Value * CodeGenerator::genTypeTest(Value * val, const Type * fromType, const Type * toType,
+    bool valIsLval) {
+  if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
+    return genUnionTypeTest(val, utype, toType, false);
+  } else if (const CompositeType * cFrom = dyn_cast<CompositeType>(fromType)) {
+    const CompositeType * cTo = cast<CompositeType>(toType);
+    return genCompositeTypeTest(val, cFrom, cTo);
+  }
+
+  DFAIL("Unsupported type test");
+}
+
 Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * fromType,
     const CompositeType * toType) {
   DASSERT(fromType != NULL);
@@ -458,22 +470,18 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
 
   // Bitcast to object type
   Value * valueAsObjType = builder_.CreateBitCast(val,
-      Builtins::typeObject->irType()->getPointerTo());
+      Builtins::typeObject->irType()->getPointerTo(), "object");
 
   // Upcast to type 'object' and load the TIB pointer.
-  ValueList indices;
-  indices.push_back(getInt32Val(0));
-  indices.push_back(getInt32Val(0));
-  Value * tib = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(valueAsObjType, indices.begin(), indices.end()),
-      "tib");
+  Value * tib = builder_.CreateLoad(builder_.CreateStructGEP(valueAsObjType, 0, "tib.addr"), "tib");
 
   ValueList args;
   args.push_back(tib);
   args.push_back(toTypeObj);
   Function * upcastTest = genFunctionValue(Builtins::funcHasBase);
   checkCallingArgs(upcastTest, args.begin(), args.end());
-  Value * result = builder_.CreateCall(upcastTest, args.begin(), args.end());
+  Value * result = builder_.CreateCall(upcastTest, args.begin(), args.end(),
+      Twine("isa.") + toType->typeDefn()->name());
   return result;
 }
 
@@ -577,12 +585,12 @@ void CodeGenerator::throwCondTypecastError(Value * typeTestResult) {
 void CodeGenerator::throwTypecastError() {
   Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
   typecastFailure->setDoesNotReturn(true);
-  if (unwindTarget_ != NULL) {
+  if (isUnwindBlock_) {
     Function * f = currentFn_;
     ValueList emptyArgs;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
-    normalDest->moveAfter(builder_.GetInsertBlock());
-    builder_.CreateInvoke(typecastFailure, normalDest, unwindTarget_,
+    moveToEnd(normalDest);
+    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock(),
         emptyArgs.begin(), emptyArgs.end(), "");
     builder_.SetInsertPoint(normalDest);
     builder_.CreateUnreachable();

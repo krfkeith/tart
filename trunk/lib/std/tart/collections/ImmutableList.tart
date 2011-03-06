@@ -34,16 +34,16 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     get {
       return data[index];
     }
-    
+
     set {
       throw UnsupportedOperationError();
     }
   }
-  
+
   def clear {
     throw UnsupportedOperationError();
   }
-  
+
   def size:int {
     get { return self.data.size; }
   }
@@ -51,10 +51,12 @@ final class ImmutableList[%ElementType] : List[ElementType] {
   def isEmpty:bool {
     get { return self.data.size == 0; }
   }
-  
+
   def contains(el:ElementType) -> bool {
     for i = 0; i < self.data.size; ++i {
-			return true if self.data[i] == el;
+			if self.data[i] == el {
+			  return true;
+			}
     }
     return false;
   }
