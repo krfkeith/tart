@@ -767,10 +767,6 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
   blockExits_ = &exits;
 
   // Generate the try body.
-  BasicBlock * blkBody = createBlock("try.body");
-  builder_.CreateBr(blkBody);
-  moveToEnd(blkBody);
-  builder_.SetInsertPoint(blkBody);
   setDebugLocation(in->body()->location());
   Value * result = genExpr(in->body());
 
@@ -907,7 +903,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
             builder_.SetInsertPoint(blkCatchAll);
           }
 
-          // There was a catch-all block.
+          // Generate the catch body.
           result = genExpr(ce->body());
           if (!atTerminator()) {
             popRootStack(savedRootCount);

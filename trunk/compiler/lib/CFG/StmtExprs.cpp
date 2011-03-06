@@ -360,7 +360,11 @@ CatchExpr::CatchExpr(const SourceLocation & loc, LocalScope * scope,
 {}
 
 void CatchExpr::format(FormatStream & out) const {
-  out << "as " << var_ << " " << body_;
+  out << "catch ";
+  if (var_ != NULL) {
+    out << var_ << " ";
+  }
+  out << body_;
 }
 
 void CatchExpr::trace() const {
@@ -375,7 +379,7 @@ bool CatchExpr::isSideEffectFree() const {
 }
 
 bool CatchExpr::isSingular() const {
-  return var_->isSingular() && body_->isSingular();
+  return (var_ == NULL || var_->isSingular()) && body_->isSingular();
 }
 
 /// -------------------------------------------------------------------

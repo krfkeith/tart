@@ -658,7 +658,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         Value * result = genMemberFieldAddr(lval);
         if (const VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
           if (var->isSharedRef()) {
-            result = builder_.CreateStructGEP(builder_.CreateLoad(result), 1);
+            result = builder_.CreateStructGEP(builder_.CreateLoad(result), 1, var->name());
           }
         }
         return result;
@@ -670,7 +670,7 @@ Value * CodeGenerator::genLValueAddress(const Expr * in) {
         const VariableDefn * v = static_cast<const VariableDefn *>(var);
         Value * varValue = genVarValue(v);
         if (v->isSharedRef()) {
-          varValue = builder_.CreateStructGEP(builder_.CreateLoad(varValue), 1);
+          varValue = builder_.CreateStructGEP(builder_.CreateLoad(varValue), 1, var->name());
         }
 
         return varValue;
@@ -729,7 +729,7 @@ Value * CodeGenerator::genLoadMemberField(const LValueExpr * lval, bool derefSha
   bool isShared = cast<VariableDefn>(lval->value())->isSharedRef();
   if (isShared) {
     if (derefShared) {
-      addr = builder_.CreateStructGEP(builder_.CreateLoad(addr), 1);
+      addr = builder_.CreateStructGEP(builder_.CreateLoad(addr), 1, lval->value()->name());
     } else {
       return addr;
     }

@@ -1,9 +1,8 @@
 // ------------------------------------------------------------------------
 
 Next up:
-* Mark static GC roots.
+* Simplify source location / lexical block tracking.
 * Type constraints - eliminated un-needed methods.
-* optional semicolon at end of block
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
@@ -77,10 +76,6 @@ Implementation TODOS:
 * Finish array unit tests. (One test remaining)
 * Proxy types. I think we'll want to use method names instead of Method pointers...?
 * Exceptions:
-  * Finally
-    * Return
-    * Break / Continue
-  * Nested catch (try inside catch or finally block) - test
   * Stack trace
 * Enum types
    * Enum operators (relational).
@@ -154,7 +149,7 @@ Error TODOS: (things that should be an error)
 
 * Module with multiple public names at top level.
 * Assignment to a non-lvalue.
-* Multiple catch statements with the same exception.* Template functions cannot be extern.
+* Template functions cannot be extern.
 * Enforce 'readonly'
 * LValueExpr.isSideEffectFree may not be true for property
   // Check for hiding similarly-named variable.
