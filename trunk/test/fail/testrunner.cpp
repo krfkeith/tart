@@ -9,9 +9,9 @@
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/ScopeBuilder.h"
-#include <llvm/Support/CommandLine.h>
-#include <llvm/System/Signals.h>
-#include <llvm/System/Path.h>
+#include "llvm/Support/CommandLine.h"
+#include "llvm/System/Signals.h"
+#include "llvm/System/Path.h"
 
 using namespace tart;
 
@@ -82,17 +82,18 @@ int main(int argc, char **argv) {
   diag.setWriter(&errors);
   for (unsigned i = 0, e = InputFilenames.size(); i != e; ++i) {
     bool running = true;
-    llvm::sys::Path filePath(SourcePath);
-    filePath.appendComponent(InputFilenames[i]);
+    llvm::SmallString<128> filePath(SourcePath);
+    llvm::sys::path::append(filePath, InputFilenames[i]);
     SourceFile source(filePath.c_str());
-    Module module(&source, filePath.getBasename(), &Builtins::module);
+    llvm::sys::path::replace_extension(filePath, "");
+    Module module(&source, llvm::sys::path::filename(filePath), &Builtins::module);
     Parser parser(&source, &module);
     if (!parser.parseImports(module.imports())) {
       break;
     }
 
     while (!parser.finished() && running) {
-      std::string testName(filePath.getBasename());
+      std::string testName(llvm::sys::path::filename(filePath));
       std::string testMsg;
       if (!parser.docComment().empty()) {
         const std::string & doc = parser.docComment();

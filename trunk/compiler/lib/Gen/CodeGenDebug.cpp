@@ -522,7 +522,7 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
       diBuilder_.getOrCreateArray(&members[0], members.size()));
 }
 
-#if 0
+#if 1
 DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   Value * subrange = diBuilder_.getOrCreateSubrange(0, type->size());
   return diBuilder_.createArrayType(
@@ -550,7 +550,7 @@ DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
 
 #endif
 
-#if 0
+#if 1
 DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
   Value * subrange = diBuilder_.getOrCreateSubrange(0, 0);
   return diBuilder_.createArrayType(

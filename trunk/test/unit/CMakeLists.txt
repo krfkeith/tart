@@ -8,6 +8,12 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       )
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
+execute_process(
+  COMMAND ${LLVM_CONFIG} --libs bitwriter ${LLVM_TARGETS}
+  OUTPUT_VARIABLE LLVM_TESTRUNNER_LIBS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 include_directories(${TART_SOURCE_DIR}/third-party/gtest-1.3.0/include)
 include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.1.0/include)
 
@@ -32,12 +38,14 @@ add_executable(unittest
   NameTableTest.cpp)
 target_link_libraries(unittest
     gtest gmock compiler
-    ${LLVM_BIT_WRITER}
-    ${LLVM_ANALYSIS} 
-    ${LLVM_TARGET}
-    ${LLVM_MMC}
-    ${LLVM_CORE}
-    ${LLVM_SUPPORT}
+    ${LLVM_TESTRUNNER_LIBS}
+
+#    ${LLVM_BIT_WRITER}
+#    ${LLVM_ANALYSIS} 
+#    ${LLVM_TARGET}
+#    ${LLVM_MMC}
+#    ${LLVM_CORE}
+#    ${LLVM_SUPPORT}
     )
 if (LIB_DL)
   target_link_libraries(unittest dl)
