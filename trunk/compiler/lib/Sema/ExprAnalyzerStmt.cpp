@@ -614,6 +614,14 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, const Type * expected) {
       CatchStmt * cst = static_cast<CatchStmt*>(*it);
       const SourceLocation loc = astLoc(cst);
 
+      if (cst->exceptDecl() == NULL) {
+        // 'catch-all' block.
+        body = reduceExpr(cst->body(), expected);
+        CHECK_EXPR(body);
+        te->appendArg(new CatchExpr(cst->location(), NULL, NULL, body));
+        continue;
+      }
+
       // Create a local scope in which the exception expression will be defined.
       LocalScope * catchScope = createLocalScope("catch-scope");
 

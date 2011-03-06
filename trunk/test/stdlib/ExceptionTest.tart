@@ -11,17 +11,28 @@ def throwSomething() {
 }
 
 class ExceptionTest : Test {
+  var visitedTry = false;
+  var visitedCatch = false;
+	var visitedFinally = false;
+	var visitedFinally2 = false;
+
+	override setUp {
+		visitedCatch = false;
+  	visitedTry = false;
+		visitedFinally = false;
+		visitedFinally2 = false;
+	}
+
+	// Ensure that the try block gets executed.
 	def testTryBlock() {
-	  var visitedTry = false;
 	  try {
 	    visitedTry = true;
 	  }
-
 	  assertTrue(visitedTry);
 	}
 
+	// Ensure that the catch block does not get visited.
 	def testTryCatchBlock() {
-	  var visitedTry = false;
 	  try {
 	    visitedTry = true;
 	  } catch t:Throwable {
@@ -31,6 +42,7 @@ class ExceptionTest : Test {
 	  assertTrue(visitedTry);
 	}
 
+	// Ensure that return exits from the try block.
 	def testTryAndReturn() {
 	  try {
 	    return;
@@ -41,6 +53,7 @@ class ExceptionTest : Test {
 	  fail("return failed");
 	}
 
+	// Ensure that an exception is caught.
 	def testThrowAndCatch() {
 	  try {
 	    throw Exception();
@@ -52,22 +65,22 @@ class ExceptionTest : Test {
 	  fail("exception not caught");
 	}
 
+	// Ensure that an exception from a deeper call frame is caught.
 	def testUnwindAndCatch() {
-	  var v = false;
 	  try {
 	    throwSomething();
 	    fail("exception not thrown");
 	  } catch t:Throwable {
 	    assertTrue(t isa Throwable);
 	    assertTrue(t isa Exception);
-	    v = true;
+	    visitedCatch = true;
 	  }
 
-	  assertTrue(v);
+	  assertTrue(visitedCatch);
 	}
 
+	// Insure that the correct catch block is executed.
 	def testUnwindAndCatch2() {
-	  var v = false;
 	  try {
 	    throwSomething();
 	    fail("exception not thrown");
@@ -76,32 +89,42 @@ class ExceptionTest : Test {
 	  } catch t:Throwable {
 	    assertTrue(t isa Throwable);
 	    assertTrue(t isa Exception);
-	    v = true;
+	    visitedCatch = true;
 	  }
-
-	  assertTrue(v);
+	  assertTrue(visitedCatch);
 	}
 
+	// Insure that the catch-all block is executed.
+/*	def testCatchAll() {
+	  try {
+	    throwSomething();
+	    fail("exception not thrown");
+	  } catch t:ArgumentError{
+	    fail("testUnwindAndCatch2: invalid catch");
+	  } catch {
+	    visitedCatch = true;
+	  }
+	  assertTrue(visitedCatch);
+	} */
+
 	def testExceptionMsg() {
-	  var v = false;
 	  try {
 	    throwSomething();
 	    fail("exception not thrown");
 	  } catch e:Exception {
 	    assertEq("Message", e.message);
-	    v = true;
+	    visitedCatch = true;
 	  }
-
-	  assertTrue(v);
+	  assertTrue(visitedCatch);
 	}
 
+	// Ensure that the innermost nested try can catch an exception
 	def testNestedTry() {
-	  var v = false;
 	  try {
 	    try {
 	      throw Exception();
 	    } catch e:Exception {
-	      v = true;
+	      visitedCatch = true;
 	    }
 	  } catch t:ArgumentError {
 	    fail("testNestedTry: invalid catch InvalidArgumentException");
@@ -109,11 +132,11 @@ class ExceptionTest : Test {
 	    fail("testNestedTry: invalid catch Throwable");
 	  }
 
-	  assertTrue(v);
+	  assertTrue(visitedCatch);
 	}
 
+	// Ensure that the outermost nested try can catch an exception
 	def testNestedTry2() {
-	  var v = false;
 	  try {
 	    try {
 	      throw Exception();
@@ -121,30 +144,26 @@ class ExceptionTest : Test {
 	      fail("testNestedTry2: invalid catch 2");
 	    }
 	  } catch t:Exception {
-	    v = true;
+	    visitedCatch = true;
 	  } catch t:Throwable {
 	    fail("testNestedTry2: invalid catch 3");
 	  }
-
-	  assertTrue(v);
+	  assertTrue(visitedCatch);
 	}
 
+	// Ensure that the finally block is run when we fall off the end.
 	def testTryFinally() {
-	  var visitedTry = false;
-	  var visitedFinally = false;
 	  try {
 	    visitedTry = true;
 	  } finally {
 	    visitedFinally = true;
 	  }
-
 	  assertTrue(visitedTry);
 	  assertTrue(visitedFinally);
 	}
 
+	// Ensure that the finally block is run when we catch an exception.
 	def testTryCatchFinally() {
-	  var visitedCatch = false;
-	  var visitedFinally = false;
 	  try {
 	    throw Exception();
 	  } catch t:Exception {
@@ -152,23 +171,60 @@ class ExceptionTest : Test {
 	  } finally {
 	    visitedFinally = true;
 	  }
-
 	  assertTrue(visitedCatch);
 	  assertTrue(visitedFinally);
 	}
 
-	/*def testTryReturnFinaFlly() {
-	  var visitedFinally = false;
-	  try {
-	    return;
-	  } catch t:Exception {
-	  } finally {
-	    visitedFinally = true;
+	// Ensure that the finally block is run when we break out of a loop.
+	def testBreakFinally() {
+	  while true {
+  	  try {
+  	    break;
+  	  } finally {
+  	    visitedFinally = true;
+  	  }
 	  }
-
-	  fail("failed to return");
+	  assertTrue(visitedFinally);
 	}
-	*/
+
+	def doReturnFinally() {
+	  while true {
+  	  try {
+  	    return;
+  	  } finally {
+  	    visitedFinally = true;
+  	  }
+	  }
+	}
+
+	// Insure that the 'finally' block is visited before returning.
+	def testReturnFinally() {
+		doReturnFinally();
+	  assertTrue(visitedFinally);
+	}
+
+	def doReturnNestedFinally() {
+	  try {
+  	  try {
+			  visitedTry = true;
+  	    return;
+  	  } finally {
+		    Debug.writeLn("In first finally");
+  	    visitedFinally = true;
+  	  }
+	  } finally {
+	    Debug.writeLn("In second finally");
+	    visitedFinally2 = true;
+	  }
+	}
+
+	// Insure that both 'finally' block are called before returning.
+	def testNestedReturnFinally() {
+		doReturnNestedFinally();
+	  assertTrue(visitedTry);
+	  assertTrue(visitedFinally);
+	  assertTrue(visitedFinally2);
+	}
 
 	def testStackTrace() {
 	  try {

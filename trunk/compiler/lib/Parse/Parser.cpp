@@ -1581,49 +1581,60 @@ Stmt * Parser::tryStmt() {
   TryStmt * tst = new TryStmt(lexer.tokenLocation(), st);
   while (match(Token_Catch)) {
 
-    bool parens = match(Token_LParen); // Optional parens
+    // A 'catch-all' block.
     SourceLocation loc = lexer.tokenLocation();
+    if (token == Token_LBrace) {
+      st = bodyStmt();
+      if (st == NULL) {
+        expectedStatement();
+        return NULL;
+      }
 
-    // Parse attributes
-    ASTNodeList attributes;
-    if (!attributeList(attributes)) {
-      return false;
-    }
-
-    const char * exceptName = matchIdent();
-    if (exceptName == NULL) {
-      exceptName = "";
-    }
-
-    ASTNode * exceptType = NULL;
-    if (match(Token_Colon)) {
-      exceptType = typeExpression();
+      tst->catchList().push_back(new CatchStmt(loc | st->location(), NULL, st));
     } else {
-      expected("exception type");
-      return NULL;
-    }
+      bool parens = match(Token_LParen); // Optional parens
+      loc = lexer.tokenLocation();
 
-    if (parens && !match(Token_RParen)) {
-      expectedCloseParen();
-    }
+      // Parse attributes
+      ASTNodeList attributes;
+      if (!attributeList(attributes)) {
+        return false;
+      }
 
-    DeclModifiers mods;
-    mods.storageClass = Storage_Local;
-    mods.visibility = Public;
-    ASTDecl * exceptDecl = new ASTVarDecl(ASTNode::Let, loc, exceptName, exceptType,
-        NULL, mods);
-    if (!attributes.empty()) {
-      exceptDecl->attributes().swap(attributes);
-    }
+      const char * exceptName = matchIdent();
+      if (exceptName == NULL) {
+        exceptName = "";
+      }
 
-    st = bodyStmt();
-    if (st == NULL) {
-      expectedStatement();
-      return NULL;
-    }
+      ASTNode * exceptType = NULL;
+      if (match(Token_Colon)) {
+        exceptType = typeExpression();
+      } else {
+        expected("exception type");
+        return NULL;
+      }
 
-    tst->catchList().push_back(
-      new CatchStmt(loc | st->location(), exceptDecl, st));
+      if (parens && !match(Token_RParen)) {
+        expectedCloseParen();
+      }
+
+      DeclModifiers mods;
+      mods.storageClass = Storage_Local;
+      mods.visibility = Public;
+      ASTDecl * exceptDecl = new ASTVarDecl(ASTNode::Let, loc, exceptName, exceptType,
+          NULL, mods);
+      if (!attributes.empty()) {
+        exceptDecl->attributes().swap(attributes);
+      }
+
+      st = bodyStmt();
+      if (st == NULL) {
+        expectedStatement();
+        return NULL;
+      }
+
+      tst->catchList().push_back(new CatchStmt(loc | st->location(), exceptDecl, st));
+    }
   }
 
   if (match(Token_Else)) {
