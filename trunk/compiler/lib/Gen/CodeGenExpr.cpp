@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/TypeDefn.h"
 #include "tart/CFG/Constant.h"
 #include "tart/CFG/PrimitiveType.h"
@@ -212,7 +213,55 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return getTypeObjectPtr(static_cast<const TypeLiteralExpr *>(in)->value());
 
     case Expr::NoOp:
-      return NULL;
+      return voidValue_;
+
+    case Expr::Seq:
+      return genSeq(static_cast<const SeqExpr *>(in));
+
+    case Expr::If:
+      return genIf(static_cast<const IfExpr *>(in));
+
+    case Expr::While:
+      return genWhile(static_cast<const WhileExpr *>(in));
+
+    case Expr::DoWhile:
+      return genDoWhile(static_cast<const WhileExpr *>(in));
+
+    case Expr::For:
+      return genFor(static_cast<const ForExpr *>(in));
+
+    case Expr::ForEach:
+      return genForEach(static_cast<const ForEachExpr *>(in));
+
+    case Expr::Switch:
+      return genSwitch(static_cast<const SwitchExpr *>(in));
+
+    case Expr::Match:
+      return genMatch(static_cast<const MatchExpr *>(in));
+
+    case Expr::Try:
+      return genTry(static_cast<const TryExpr *>(in));
+
+    case Expr::Throw:
+      return genThrow(static_cast<const ThrowExpr *>(in));
+
+    case Expr::Return:
+      return genReturn(static_cast<const ReturnExpr *>(in));
+
+    case Expr::Yield:
+      return genYield(static_cast<const ReturnExpr *>(in));
+
+    case Expr::Break:
+      return genBreak(static_cast<const BranchExpr *>(in));
+
+    case Expr::Continue:
+      return genContinue(static_cast<const BranchExpr *>(in));
+
+    case Expr::LocalProcedure:
+      return genLocalProcedure(static_cast<const LocalProcedureExpr *>(in));
+
+    case Expr::LocalReturn:
+      return genLocalReturn(static_cast<const BranchExpr *>(in));
 
     default:
       diag.debug(in) << "No generator for " <<
@@ -406,7 +455,7 @@ Value * CodeGenerator::genMultiAssign(const MultiAssignExpr * in) {
     doAssignment(assign, toVal, fromVals[i]);
   }
 
-  return NULL;
+  return voidValue_;
 }
 
 Value * CodeGenerator::genBinaryOpcode(const BinaryOpcodeExpr * in) {
@@ -436,13 +485,9 @@ Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
     return NULL;
   }
 
-  if (const UnionType * utype = dyn_cast<UnionType>(in->value()->type())) {
-    return genUnionTypeTest(val, utype, in->toType(), false);
-  }
+  TypeShape shape = in->type()->typeShape();
 
-  const CompositeType * fromType = cast<CompositeType>(in->value()->type());
-  const CompositeType * toType = cast<CompositeType>(in->toType());
-  return genCompositeTypeTest(val, fromType, toType);
+  return genTypeTest(val, in->value()->type(), in->toType(), shape == Shape_Large_Value);
 }
 
 Value * CodeGenerator::genRefEq(const BinaryExpr * in, bool invert) {
@@ -589,6 +634,7 @@ Value * CodeGenerator::genLoadLValue(const LValueExpr * lval, bool derefShared) 
     setDebugLocation(saveLocation);
     return result;
   } else {
+    diag.debug(lval) << "Illegal l-value reference: " << var;
     DFAIL("IllegalState");
   }
 }

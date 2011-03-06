@@ -440,9 +440,9 @@ TEST_F(ParserTest, Statements) {
   ASSERT_EQ(ASTNode::Return, ast->nodeType());
   EXPECT_AST_EQ("return b;", ast);
 
-  ast = parseStatement("return b if c;");
-  ASSERT_EQ(ASTNode::If, ast->nodeType());
-  EXPECT_AST_EQ("If (c, return b;)", ast);
+//  ast = parseStatement("return b if c;");
+//  ASSERT_EQ(ASTNode::If, ast->nodeType());
+//  EXPECT_AST_EQ("If (c, return b;)", ast);
 
   ast = parseStatement("yield b;");
   ASSERT_EQ(ASTNode::Yield, ast->nodeType());

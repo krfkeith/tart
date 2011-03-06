@@ -8,7 +8,6 @@
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/PrimitiveType.h"
 #include "tart/CFG/NativeType.h"
-#include "tart/CFG/Block.h"
 #include "tart/CFG/Template.h"
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
@@ -54,6 +53,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * a
   : ValueDefn(dtype, m, ast)
   , type_(NULL)
   , flags_(0)
+  , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
@@ -81,6 +81,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
   : ValueDefn(dtype, m, name)
   , type_(NULL)
   , flags_(0)
+  , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
@@ -92,6 +93,7 @@ FunctionDefn::FunctionDefn(Module * m, const char * name, FunctionType * ty)
   : ValueDefn(Function, m, name)
   , type_(ty)
   , flags_(0)
+  , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
   , region_(NULL)
@@ -107,7 +109,7 @@ const Type * FunctionDefn::returnType() const {
 }
 
 bool FunctionDefn::hasBody() const {
-  return (ast_ != NULL && functionDecl()->body() != NULL) || !blocks_.empty();
+  return (ast_ != NULL && functionDecl()->body() != NULL) || body_ != NULL;
 }
 
 Expr * FunctionDefn::eval(const SourceLocation & loc, Module * callingModule, Expr * self,
@@ -123,7 +125,7 @@ void FunctionDefn::trace() const {
   ValueDefn::trace();
   parameterScope_.trace();
   safeMark(type_);
-  markList(blocks_.begin(), blocks_.end());
+  safeMark(body_);
   markList(localScopes_.begin(), localScopes_.end());
 }
 
@@ -306,7 +308,7 @@ void FunctionDefn::format(FormatStream & out) const {
 
 void FunctionDefn::dumpBlocks() {
   FormatStream stream(std::cout);
-
+#if 0
   // Number all blocks.
   int index = 0;
   for (BlockList::iterator bi = blocks_.begin(); bi != blocks_.end(); ++bi) {
@@ -385,6 +387,7 @@ void FunctionDefn::dumpBlocks() {
       }
     }
   }
+#endif
   stream << "\n";
 }
 

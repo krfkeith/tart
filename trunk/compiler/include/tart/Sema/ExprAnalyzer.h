@@ -14,6 +14,21 @@ namespace tart {
 class LValueExpr;
 class CallExpr;
 class SpecializeExpr;
+class Stmt;
+class BlockStmt;
+class IfStmt;
+class WhileStmt;
+class DoWhileStmt;
+class ForStmt;
+class ForEachStmt;
+class SwitchStmt;
+class MatchStmt;
+class MatchAsStmt;
+class TryStmt;
+class ThrowStmt;
+class ReturnStmt;
+class ReturnStmt;
+class DeclStmt;
 
 /// -------------------------------------------------------------------
 /// Expression analyzer
@@ -21,10 +36,18 @@ class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
   ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
-    : AnalyzerBase(mod, activeScope, subject, currentFunction) {}
+    : AnalyzerBase(mod, activeScope, subject, currentFunction)
+    , returnType_(NULL)
+    , macroReturnVal_(NULL)
+    , inMacroExpansion_(false)
+  {}
 
   ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
-    : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction) {}
+    : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
+    , returnType_(NULL)
+    , macroReturnVal_(NULL)
+    , inMacroExpansion_(false)
+  {}
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {
@@ -34,6 +57,7 @@ public:
   /** Take a reduced expression and do type inferencing. */
   static Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
       bool tryCoerciveCasts = true);
+  Expr * inferTypes(Expr * expr, const Type * expectedType);
 
   /** Build expression tree from AST. */
   Expr * reduceExpr(const ASTNode * ast, const Type * expected);
@@ -73,9 +97,6 @@ public:
   Expr * reduceSymbolRef(const ASTNode * ast, bool store);
   Expr * reduceElementRef(const ASTOper * ast, bool store);
   Expr * reduceLValueExpr(LValueExpr * lvalue, bool store);
-//  Expr * reduceGetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop);
-//  Expr * reduceSetPropertyValue(const SourceLocation & loc, Expr * basePtr, PropertyDefn * prop,
-//      Expr * value);
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
 
@@ -95,6 +116,26 @@ public:
   Expr * reduceComplement(const ASTOper * ast);
   Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
   Expr * reduceTuple(const ASTOper * ast, const Type * expected);
+
+  // Statements
+
+  Expr * reduceBlockStmt(const BlockStmt * st, const Type * expected);
+  Expr * reduceIfStmt(const IfStmt * st, const Type * expected);
+  Expr * reduceWhileStmt(const WhileStmt * st, const Type * expected);
+  Expr * reduceDoWhileStmt(const DoWhileStmt * st, const Type * expected);
+  Expr * reduceForStmt(const ForStmt * st, const Type * expected);
+  Expr * reduceForEachStmt(const ForEachStmt * st, const Type * expected);
+  Expr * reduceSwitchStmt(const SwitchStmt * st, const Type * expected);
+  Expr * reduceMatchStmt(const MatchStmt * st, const Type * expected);
+  Expr * reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr, Expr::ExprType castType,
+      const Type * expected);
+  Expr * reduceTryStmt(const TryStmt * st, const Type * expected);
+  Expr * reduceThrowStmt(const ThrowStmt * st, const Type * expected);
+  Expr * reduceReturnStmt(const ReturnStmt * st, const Type * expected);
+  Expr * reduceYieldStmt(const ReturnStmt * st, const Type * expected);
+  Expr * reduceBreakStmt(const Stmt * st, const Type * expected);
+  Expr * reduceContinueStmt(const Stmt * st, const Type * expected);
+  bool reduceDeclStmt(const DeclStmt * st, const Type * expected, ExprList & exprs);
 
   // Calls
 
@@ -176,13 +217,14 @@ public:
   bool addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * method,
       const ExprList & args);
 
+  // Specializations
+
   Expr * reduceSpecialize(const ASTSpecialize * call, const Type * expected);
 
   /** Return either the single best specialization candidate, or NULL. */
   static Defn * findBestSpecialization(SpecializeExpr * spe);
 
-  /** Given an LValue, return the base expression. */
-  Expr * lvalueBase(LValueExpr * lval);
+  // Type conversions
 
   /** Given a type, return the coercion function to convert it to a reference type. */
   FunctionDefn * coerceToObjectFn(const Type * type);
@@ -195,6 +237,44 @@ public:
 
   /** Report that there were no matching candidates. */
   void noCandidatesError(CallExpr * call, const ExprList & methods);
+
+  /** Given an LValue, return the base expression. */
+  Expr * lvalueBase(LValueExpr * lval);
+
+  /** Set the function return type. If in a macro expansion, this will be the
+      return type of the macro. */
+  const Type * setReturnType(const Type * returnType);
+
+  /** Cause a 'return' statement to instead assign to a local variable.
+      Used during macro expansion. Returns previous value. */
+  LValueExpr * setMacroReturnVal(LValueExpr * retVal);
+
+  /** Flag that indicates we're inside a macro expansion. */
+  bool setInMacroExpansion(bool value);
+
+protected:
+  const Type * returnType_;
+  LValueExpr * macroReturnVal_;
+  bool inMacroExpansion_;
+
+private:
+  ConstantExpr * reduceCaseValue(const ASTNode * ast, const Type * testType);
+  LocalScope * createLocalScope(const char * scopeName, SourceRegion * region = NULL);
+  Defn * createLocalDefn(const ASTDecl * ast);
+  Expr * createTempVar(Defn::DefnType kind, const char * name, Expr * value);
+  VariableDefn * createTempVar(
+      const SourceLocation & loc, Defn::DefnType kind, const Type * type, const char * name);
+  Expr * reduceTestExpr(const ASTNode * test, LocalScope *& implicitScope, bool castToBool = true);
+  Defn * astToDefn(const ASTDecl * ast);
+  bool astToDefnList(const ASTVarDecl * ast, DefnList & vars);
+
+  /** True if any catch target can catch the specified exception type */
+  bool canCatch(TypeList & catchTypes, const CompositeType * exceptionType);
+
+  /** Given an interface (which may be a template), and a concrete type, first locate the method
+      in the interface, and then find the overloaded version of that method in the concrete type. */
+  FunctionDefn * findInterfaceMethod(const CompositeType * type, const Type * interface,
+      const char * method);
 };
 
 } // namespace tart

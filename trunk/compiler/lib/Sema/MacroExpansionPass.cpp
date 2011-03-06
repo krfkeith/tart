@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/Exprs.h"
+#include "tart/CFG/StmtExprs.h"
 #include "tart/CFG/FunctionType.h"
 #include "tart/CFG/FunctionDefn.h"
 #include "tart/CFG/FunctionRegion.h"
@@ -83,47 +84,35 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     }
 
     LValueExpr * retLVal = NULL;
-    LValueExpr * savedRetVal = NULL;
     if (retVal != NULL) {
       retLVal = LValueExpr::get(in->location(), NULL, retVal);
-      savedRetVal = stAn.setMacroReturnVal(retLVal);
       DASSERT_OBJ(retLVal->isSingular(), retLVal);
     }
-
-    Block * returnBlock = stAn.createBlock("return");
+    LValueExpr * savedRetVal = stAn.setMacroReturnVal(retLVal);
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
-    Block * savedReturnBlock = stAn.setMacroReturnTarget(returnBlock);
+    bool saveInMacroExpansion = stAn.setInMacroExpansion(true);
     const Type * savedReturnType = stAn.setReturnType(returnType);
     const Stmt * macroBody = macro->functionDecl()->body();
 
     Defn * saveSubject = stAn.setSubject(macro);
-    stAn.buildStmtCFG(macroBody);
+    Expr * bodyExpr = stAn.reduceExpr(macroBody, NULL);
+    if (bodyExpr != NULL) {
+      bodyExpr = new LocalProcedureExpr(bodyExpr->location(), bodyExpr);
+    }
     stAn.setSubject(saveSubject);
 
-    // If control fell off the end of the macro, then branch to return block.
-    Block * finalBlock = stAn.insertionBlock();
-    if (finalBlock != NULL && !finalBlock->hasTerminator()) {
-      finalBlock->branchTo(macroBody->finalLocation().forRegion(macroRegion), returnBlock);
-    }
-
     stAn.setReturnType(savedReturnType);
-    stAn.setMacroReturnTarget(savedReturnBlock);
+    stAn.setInMacroExpansion(saveInMacroExpansion);
     stAn.setActiveScope(savedScope);
-    if (savedRetVal != NULL) {
-      stAn.setMacroReturnVal(savedRetVal);
-    }
-
-    // Move return block after macro blocks.
-    std::remove(macro->blocks().begin(), macro->blocks().end(), returnBlock);
-    macro->blocks().push_back(returnBlock);
-    stAn.setInsertPos(returnBlock);
+    stAn.setMacroReturnVal(savedRetVal);
 
     if (retLVal != NULL) {
-      return retLVal;
+      // Execute the macro body and return the result.
+      return new BinaryExpr(Expr::Prog2, in->location(), retLVal->type(), bodyExpr, retLVal);
     } else {
-      // Return a dummy expression, it won't be used.
-      return new UnaryExpr(Expr::NoOp, in->location(), &VoidType::instance, in);
+      // Just evaluate the macro body and ignore the result.
+      return bodyExpr;
     }
   }
 

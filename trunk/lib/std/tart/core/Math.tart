@@ -5,7 +5,9 @@ namespace Math {
   /** Return the smaller of the two input values, where "smaller" is defined by the less-than
       operator. */
   def min[%T](a0:T, a1:T) -> T {
-    return a0 if a0 < a1; 
+    if a0 < a1 {
+      return a0;
+    }
     return a1;
   }
 
@@ -24,7 +26,9 @@ namespace Math {
   /** Return the larger of the input values, where "larger" is defined in terms of the
       less-than operator. */
   def max[%T](a0:T, a1:T) -> T {
-    return a1 if a0 < a1;
+    if a0 < a1 {
+      return a1;
+    }
     return a0;
   }
 
@@ -39,14 +43,18 @@ namespace Math {
   def max[%T](a0:T, a1:T, a2:T, a3:T) -> T {
     return max(a0, max(a1, max(a2, a3)));
   }
-  
+
   /** Clamp the input value between the lower and upper bound. */
   def clamp[%T](value:T, minVal:T, maxVal:T) -> T {
-    return minVal if value < minVal; 
-    return maxVal if value > maxVal; 
+    if value < minVal {
+      return minVal;
+    }
+    if value > maxVal {
+      return maxVal;
+    }
     return value;
   }
-  
+
   /** Return the square root of the input operand. */
   @Intrinsic
   def sqrt(f:float) -> float;

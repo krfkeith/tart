@@ -24,6 +24,7 @@
 namespace tart {
 
 class ErrorExpr;
+class UnaryExpr;
 
 /// -------------------------------------------------------------------
 /// A Control Flow Graph value or expression
@@ -94,6 +95,7 @@ public:
 
   /** A placeholder node used to signal an error in the computation. */
   static ErrorExpr ErrorVal;
+  static UnaryExpr VoidVal;
 };
 
 /// -------------------------------------------------------------------
@@ -181,6 +183,9 @@ public:
 /// An operation with a variable number of arguments
 class ArglistExpr : public Expr {
 public:
+  typedef ExprList::iterator iterator;
+  typedef ExprList::const_iterator const_iterator;
+
   /** The argument list. */
   ExprList & args() { return args_; }
   const ExprList & args() const { return args_; }
@@ -188,6 +193,12 @@ public:
   Expr * arg(size_t index) { return args_[index]; }
   size_t argCount() const { return args_.size(); }
   void appendArg(Expr * arg);
+
+  iterator begin() { return args_.begin(); }
+  iterator end() { return args_.end(); }
+
+  const_iterator begin() const { return args_.begin(); }
+  const_iterator end() const { return args_.end(); }
 
   // Overrides
 
@@ -203,6 +214,12 @@ protected:
   ArglistExpr(ExprType k, const SourceLocation & loc, const Type * type)
     : Expr(k, loc, type)
   {}
+
+  ArglistExpr(ExprType k, const SourceLocation & loc, const ExprList & exprs, const Type * type)
+    : Expr(k, loc, type)
+  {
+    args_.append(exprs.begin(), exprs.end());
+  }
 };
 
 /// -------------------------------------------------------------------
@@ -226,6 +243,9 @@ inline bool isErrorResult(const Expr * ex) {
 }
 
 bool isErrorResult(const Type * ty);
+
+bool any(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);
+bool all(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);
 
 } // namespace tart
 

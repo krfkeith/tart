@@ -4,10 +4,10 @@ import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
 /** An immutable list of attributes that points to a statically-initialized array. */
-final class AttributeList : List[Attribute] {
+final class AttributeList : List[Object] {
   private {
     var _size:int;
-    var _data:FlexibleArray[Attribute];
+    var _data:FlexibleArray[Object];
 
     /** Custom trace method for garbage collection to handle variable-length object. */
     @TraceMethod def __trace(action:TraceAction) {
@@ -18,11 +18,11 @@ final class AttributeList : List[Attribute] {
   }
 
   // TODO: Make this undef. (Undefs should automatically throw UnsupportedOperationError().) */
-  def add(e:Attribute) {
+  def add(e:Object) {
     throw UnsupportedOperationError();
   }
 
-  def insert(position:int, e:Attribute) {
+  def insert(position:int, e:Object) {
     throw UnsupportedOperationError();
   }
 
@@ -30,7 +30,7 @@ final class AttributeList : List[Attribute] {
     throw UnsupportedOperationError();
   }
 
-  def [index:int]:Attribute {
+  def [index:int]:Object {
     get {
       return _data[index];
     }
@@ -52,18 +52,20 @@ final class AttributeList : List[Attribute] {
     get { return self._size == 0; }
   }
 
-  def contains(type:Attribute) -> bool {
+  def contains(type:Object) -> bool {
     for i = 0; i < _size; ++i {
-      return true if self._data[i] == type;
+      if self._data[i] == type {
+        return true;
+      }
     }
     return false;
   }
 
-  def iterate -> Iterator[Attribute] {
+  def iterate -> Iterator[Object] {
     return IteratorImpl(self);
   }
 
-  private final class IteratorImpl : Iterator[Attribute], HasLength {
+  private final class IteratorImpl : Iterator[Object], HasLength {
     private var _typeList:AttributeList;
     private var _index:int;
 
@@ -72,7 +74,7 @@ final class AttributeList : List[Attribute] {
       self._index = 0;
     }
 
-    def next() -> Attribute or void {
+    def next() -> Object or void {
       if (self._index < self._typeList._size) {
         return self._typeList._data[self._index++];
       } else {

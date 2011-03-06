@@ -120,7 +120,7 @@ class ConstantString : public ConstantExpr {
 public:
   ConstantString(SourceLocation l, const std::string & val);
 
-  const std::string & value() const { return value_; }
+  llvm::StringRef value() const { return value_; }
 
   // Overrides
 
