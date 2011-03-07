@@ -3,12 +3,12 @@
  * ================================================================ */
 
 #include <gtest/gtest.h>
-#include "tart/CFG/Type.h"
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/TupleType.h"
-#include "tart/CFG/CompositeType.h"
-#include "tart/CFG/Module.h"
+#include "tart/Type/Type.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Defn/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "FakeSourceFile.h"
 #include "TestHelpers.h"

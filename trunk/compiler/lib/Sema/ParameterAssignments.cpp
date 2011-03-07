@@ -3,8 +3,8 @@
  * ================================================================ */
 
 #include "tart/Sema/ParameterAssignments.h"
-#include "tart/CFG/FunctionType.h"
-#include "tart/CFG/FunctionDefn.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Defn/FunctionDefn.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {

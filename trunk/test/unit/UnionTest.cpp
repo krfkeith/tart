@@ -4,12 +4,12 @@
 
 #include <gtest/gtest.h>
 
-#include "tart/CFG/CompositeType.h"
-#include "tart/CFG/Module.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/TupleType.h"
-#include "tart/CFG/UnionType.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Defn/Module.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/UnionType.h"
 
 #include "FakeSourceFile.h"
 #include "TestHelpers.h"

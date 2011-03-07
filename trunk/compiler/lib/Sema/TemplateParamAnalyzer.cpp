@@ -2,8 +2,9 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Template.h"
-#include "tart/CFG/TemplateConditions.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/TemplateConditions.h"
+
 #include "tart/Sema/TemplateParamAnalyzer.h"
 
 namespace tart {

@@ -9,8 +9,8 @@
 #include "tart/Objects/Intrinsic.h"
 #endif
 
-#ifndef TART_CFG_EXPRS_H
-#include "tart/CFG/Exprs.h"
+#ifndef TART_EXPR_EXPRS_H
+#include "tart/Expr/Exprs.h"
 #endif
 
 #include "llvm/Intrinsics.h"

@@ -3,7 +3,7 @@
  * ================================================================ */
 
 #include "tart/CFG/FunctionRegion.h"
-#include "tart/CFG/FunctionDefn.h"
+#include "tart/Defn/FunctionDefn.h"
 
 namespace tart {
 

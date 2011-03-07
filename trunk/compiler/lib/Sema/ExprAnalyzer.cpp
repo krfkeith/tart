@@ -4,13 +4,13 @@
 
 #include "tart/AST/Stmt.h"
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/Module.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/CompositeType.h"
-#include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/PropertyDefn.h"
-#include "tart/CFG/UnionType.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Defn/Module.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/PropertyDefn.h"
+#include "tart/Type/UnionType.h"
 
 #include "tart/Common/Diagnostics.h"
 

@@ -2,7 +2,7 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Module.h"
+#include "tart/Defn/Module.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"

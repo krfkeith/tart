@@ -2,9 +2,9 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/PropertyDefn.h"
-#include "tart/CFG/TupleType.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Defn/PropertyDefn.h"
+#include "tart/Type/TupleType.h"
 
 #include "tart/Sema/ExprAnalyzer.h"
 

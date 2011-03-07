@@ -4,11 +4,11 @@
 
 #include "tart/Sema/CFGPass.h"
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/StmtExprs.h"
-#include "tart/CFG/Defn.h"
-#include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/Closure.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+#include "tart/Defn/Defn.h"
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Expr/Closure.h"
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {

@@ -5,12 +5,12 @@
 #ifndef TART_OBJECTS_BUILTINS_H
 #define TART_OBJECTS_BUILTINS_H
 
-#ifndef TART_CFG_SCOPE_H
-#include "tart/CFG/Scope.h"
+#ifndef TART_DEFN_SCOPE_H
+#include "tart/Defn/Scope.h"
 #endif
 
-#ifndef TART_CFG_TYPEALIAS_H
-#include "tart/CFG/TypeAlias.h"
+#ifndef TART_TYPE_TYPEALIAS_H
+#include "tart/Type/TypeAlias.h"
 #endif
 
 namespace tart {

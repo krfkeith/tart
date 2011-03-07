@@ -6,8 +6,8 @@
 #include "tart/AST/ASTNode.h"
 #endif
 
-#ifndef TART_CFG_TYPE_H
-#include "tart/CFG/Type.h"
+#ifndef TART_TYPE_TYPE_H
+#include "tart/Type/Type.h"
 #endif
 
 #include <ostream>

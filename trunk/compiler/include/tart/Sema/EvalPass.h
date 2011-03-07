@@ -5,8 +5,8 @@
 #ifndef TART_SEMA_EVALPASS_H
 #define TART_SEMA_EVALPASS_H
 
-#ifndef TART_CFG_CONSTANT_H
-#include "tart/CFG/Constant.h"
+#ifndef TART_EXPR_CONSTANT_H
+#include "tart/Expr/Constant.h"
 #endif
 
 #include "llvm/ADT/DenseMap.h"

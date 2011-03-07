@@ -5,8 +5,8 @@
 #ifndef TART_SEMA_SCOPEBUILDER_H
 #define TART_SEMA_SCOPEBUILDER_H
 
-#ifndef TART_CFG_DECL_H
-#include "tart/CFG/Defn.h"
+#ifndef TART_DEFN_DEFN_H
+#include "tart/Defn/Defn.h"
 #endif
 
 namespace tart {

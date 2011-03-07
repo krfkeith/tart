@@ -9,8 +9,8 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
-#ifndef TART_CFG_PROPERTYDEFN_H
-#include "tart/CFG/PropertyDefn.h"
+#ifndef TART_DEFN_PROPERTYDEFN_H
+#include "tart/Defn/PropertyDefn.h"
 #endif
 
 namespace tart {

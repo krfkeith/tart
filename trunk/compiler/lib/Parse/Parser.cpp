@@ -7,10 +7,10 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 #include "tart/AST/Stmt.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/NativeType.h"
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/Module.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/Module.h"
 #include <errno.h>
 
 namespace tart {

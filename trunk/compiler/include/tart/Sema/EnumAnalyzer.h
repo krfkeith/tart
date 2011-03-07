@@ -9,8 +9,8 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
-#ifndef TART_CFG_ENUMTYPE_H
-#include "tart/CFG/EnumType.h"
+#ifndef TART_TYPE_ENUMTYPE_H
+#include "tart/Type/EnumType.h"
 #endif
 
 namespace tart {

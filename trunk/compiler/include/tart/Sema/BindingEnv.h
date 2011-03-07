@@ -13,8 +13,8 @@
 #include "tart/CFG/CFG.h"
 #endif
 
-#ifndef TART_CFG_TYPECONSTRAINT_H
-#include "tart/CFG/TypeConstraint.h"
+#ifndef TART_TYPE_TYPECONSTRAINT_H
+#include "tart/Type/TypeConstraint.h"
 #endif
 
 namespace tart {

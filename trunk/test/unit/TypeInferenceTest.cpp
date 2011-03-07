@@ -7,8 +7,8 @@
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/CallCandidate.h"
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/StaticType.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Type/StaticType.h"
 
 #include "TestHelpers.h"
 

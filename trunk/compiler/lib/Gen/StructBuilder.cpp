@@ -5,9 +5,9 @@
 #include "tart/Gen/StructBuilder.h"
 #include "tart/Gen/CodeGenerator.h"
 
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/VariableDefn.h"
-#include "tart/CFG/CompositeType.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/VariableDefn.h"
+#include "tart/Type/CompositeType.h"
 
 #include "tart/Objects/Builtins.h"
 

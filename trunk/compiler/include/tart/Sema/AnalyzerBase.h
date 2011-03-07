@@ -5,8 +5,8 @@
 #ifndef TART_SEMA_ANALYZERBASE_H
 #define TART_SEMA_ANALYZERBASE_H
 
-#ifndef TART_CFG_DEFN_H
-#include "tart/CFG/Defn.h"
+#ifndef TART_DEFN_DEFN_H
+#include "tart/Defn/Defn.h"
 #endif
 
 #include "llvm/ADT/SetVector.h"
@@ -20,6 +20,7 @@ class Expr;
 class NamespaceDefn;
 class FunctionDefn;
 class ArrayLiteralExpr;
+class SpCandidate;
 struct SourceLocation;
 
 typedef llvm::SmallSetVector<SpCandidate *, 8> SpCandidateSet;

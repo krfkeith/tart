@@ -9,8 +9,8 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
-#ifndef TART_CFG_NAMESPACEDEFN_H
-#include "tart/CFG/NamespaceDefn.h"
+#ifndef TART_DEFN_NAMESPACEDEFN_H
+#include "tart/Defn/NamespaceDefn.h"
 #endif
 
 namespace tart {

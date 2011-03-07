@@ -5,8 +5,8 @@
 #ifndef TART_SEMA_TYPETRANSFORM_H
 #define TART_SEMA_TYPETRANSFORM_H
 
-#ifndef TART_CFG_TYPE_H
-#include "tart/CFG/Type.h"
+#ifndef TART_TYPE_TYPE_H
+#include "tart/Type/Type.h"
 #endif
 
 #ifndef TART_SEMA_BINDINGENV_H

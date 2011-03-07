@@ -9,8 +9,8 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #endif
 
-#ifndef TART_CFG_FUNCTIONDEFN_H
-#include "tart/CFG/FunctionDefn.h"
+#ifndef TART_DEFN_FUNCTIONDEFN_H
+#include "tart/Defn/FunctionDefn.h"
 #endif
 
 namespace tart {
