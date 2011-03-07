@@ -4,7 +4,7 @@
 
 #include "tart/Common/PackageMgr.h"
 
-#include "tart/CFG/Module.h"
+#include "tart/Defn/Module.h"
 #include "tart/Parse/Parser.h"
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/Diagnostics.h"

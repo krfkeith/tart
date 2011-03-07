@@ -3,9 +3,9 @@
  * ================================================================ */
 
 #include <gtest/gtest.h>
-#include "tart/CFG/Type.h"
-#include "tart/CFG/TypeDefn.h"
-#include "tart/CFG/PrimitiveType.h"
+#include "tart/Type/Type.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Type/PrimitiveType.h"
 #include "tart/Common/Diagnostics.h"
 #include "FakeSourceFile.h"
 #include "TestHelpers.h"

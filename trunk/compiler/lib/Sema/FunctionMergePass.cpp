@@ -5,14 +5,14 @@
 #include "tart/Sema/FunctionMergePass.h"
 #include "tart/Sema/AnalyzerBase.h"
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/StmtExprs.h"
-#include "tart/CFG/Defn.h"
-#include "tart/CFG/FunctionDefn.h"
-#include "tart/CFG/Closure.h"
-#include "tart/CFG/PrimitiveType.h"
-#include "tart/CFG/TupleType.h"
-#include "tart/CFG/UnionType.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+#include "tart/Defn/Defn.h"
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Expr/Closure.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/UnionType.h"
 
 #include "tart/Common/Diagnostics.h"
 

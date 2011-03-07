@@ -5,10 +5,29 @@
 #ifndef TART_CFG_CFG_H
 #define TART_CFG_CFG_H
 
-#include "llvm/ADT/SmallVector.h"
+#ifndef LLVM_ADT_FOLDINGSET_H
 #include "llvm/ADT/FoldingSet.h"
+#endif
+
+#ifndef LLVM_ADT_SMALLVECTOR_H
+#include "llvm/ADT/SmallVector.h"
+#endif
+
+#ifndef LLVM_ADT_SMALLSTRING_H
+#include "llvm/ADT/SmallString.h"
+#endif
+
+#ifndef LLVM_ADT_TWINE_H
+#include "llvm/ADT/Twine.h"
+#endif
+
+#ifndef LLVM_LLVMCONTEXT_H
 #include "llvm/LLVMContext.h"
+#endif
+
+#ifndef LLVM_SUPPORT_CASTING_H
 #include "llvm/Support/Casting.h"
+#endif
 
 namespace tart {
 
@@ -17,22 +36,18 @@ using llvm::dyn_cast_or_null;
 using llvm::cast;
 using llvm::cast_or_null;
 using llvm::isa;
+using llvm::SmallString;
+using llvm::Twine;
 
 // -------------------------------------------------------------------
 // Forward declarations
 class Defn;
-class TypeDefn;
-class ValueDefn;
 class FunctionDefn;
 class ParameterDefn;
-class TemplateParamDefn;
 class Expr;
 class ConstantExpr;
-class Module;
 class Type;
-class ParameterAssignments;
 class CallCandidate;
-class SpCandidate;
 
 // -------------------------------------------------------------------
 // Container types

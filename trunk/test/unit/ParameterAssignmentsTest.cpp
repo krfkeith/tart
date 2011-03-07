@@ -4,8 +4,8 @@
  
 #include <gtest/gtest.h>
 #include "tart/Sema/ParameterAssignments.h"
-#include "tart/CFG/StaticType.h"
-#include "tart/CFG/FunctionDefn.h"
+#include "tart/Type/StaticType.h"
+#include "tart/Defn/FunctionDefn.h"
 
 using namespace tart;
 

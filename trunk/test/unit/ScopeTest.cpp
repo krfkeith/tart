@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
-#include "tart/CFG/VariableDefn.h"
+#include "tart/Defn/VariableDefn.h"
 #include "llvm/Support/Format.h"
 
 using namespace tart;

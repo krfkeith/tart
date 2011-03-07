@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "tart/Sema/BindingEnv.h"
-#include "tart/CFG/StaticType.h"
+#include "tart/Type/StaticType.h"
 #include "TestHelpers.h"
 
 namespace {

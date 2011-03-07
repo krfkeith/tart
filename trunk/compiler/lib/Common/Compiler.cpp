@@ -6,7 +6,7 @@
 #include "tart/Common/SourceFile.h"
 #include "tart/Common/PackageMgr.h"
 
-#include "tart/CFG/Module.h"
+#include "tart/Defn/Module.h"
 
 #include "tart/Objects/Builtins.h"
 

@@ -5,7 +5,7 @@
 #ifndef TART_META_NAMETABLE_H
 #define TART_META_NAMETABLE_H
 
-#include "tart/CFG/Type.h"
+#include "tart/Type/Type.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Support/Casting.h"

@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
-#include "tart/CFG/NamespaceDefn.h"
-#include "tart/CFG/VariableDefn.h"
+#include "tart/Defn/NamespaceDefn.h"
+#include "tart/Defn/VariableDefn.h"
 
 using namespace tart;
 using llvm::isa;

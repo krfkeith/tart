@@ -5,8 +5,8 @@
 #ifndef TART_SEMA_CONSTRUCTORANALYZER_H
 #define TART_SEMA_CONSTRUCTORANALYZER_H
 
-#ifndef TART_CFG_VARIABLEDEFN_H
-#include "tart/CFG/VariableDefn.h"
+#ifndef TART_DEFN_VARIABLEDEFN_H
+#include "tart/Defn/VariableDefn.h"
 #endif
 
 #ifndef TART_SEMA_CFGPASS_H

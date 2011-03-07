@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "tart/AST/ASTDecl.h"
-#include "tart/CFG/Module.h"
+#include "tart/Defn/Module.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Common/Diagnostics.h"

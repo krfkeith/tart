@@ -2,16 +2,16 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Exprs.h"
-#include "tart/CFG/StaticType.h"
-#include "tart/CFG/Constant.h"
-#include "tart/CFG/Module.h"
-#include "tart/CFG/FunctionDefn.h"
+#include "tart/Expr/Exprs.h"
+#include "tart/Type/StaticType.h"
+#include "tart/Expr/Constant.h"
+#include "tart/Defn/Module.h"
+#include "tart/Defn/FunctionDefn.h"
 #include "tart/Objects/Builtins.h"
 #include "tart/Common/Diagnostics.h"
 
-#include "tart/CFG/Template.h"
-#include "tart/CFG/FunctionType.h"
+#include "tart/Defn/Template.h"
+#include "tart/Type/FunctionType.h"
 
 #include "llvm/Instructions.h"
 

@@ -9,12 +9,12 @@
 #include "tart/Sema/AnalyzerBase.h"
 #endif
 
-#ifndef TART_CFG_DECL_H
-#include "tart/CFG/Defn.h"
+#ifndef TART_DEFN_DEFN_H
+#include "tart/Defn/Defn.h"
 #endif
 
-#ifndef TART_CFG_COMPOSITETYPE_H
-#include "tart/CFG/CompositeType.h"
+#ifndef TART_TYPE_COMPOSITETYPE_H
+#include "tart/Type/CompositeType.h"
 #endif
 
 namespace tart {

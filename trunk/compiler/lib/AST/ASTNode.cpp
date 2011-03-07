@@ -3,7 +3,7 @@
  * ================================================================ */
 
 #include "tart/AST/ASTNode.h"
-#include "tart/CFG/Defn.h"
+#include "tart/Defn/Defn.h"
 #include "llvm/ADT/StringExtras.h"
 
 namespace tart {

@@ -5,8 +5,8 @@
 #ifndef TART_COMMON_PACKAGEMGR_H
 #define TART_COMMON_PACKAGEMGR_H
 
-#ifndef TART_CFG_MODULE_H
-#include "tart/CFG/Module.h"
+#ifndef TART_DEFN_MODULE_H
+#include "tart/Defn/Module.h"
 #endif
 
 #include <llvm/ADT/StringMap.h>

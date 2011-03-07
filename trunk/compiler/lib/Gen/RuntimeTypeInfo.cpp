@@ -3,9 +3,9 @@
  * ================================================================ */
 
 #include "tart/Gen/RuntimeTypeInfo.h"
-#include "tart/CFG/CompositeType.h"
-#include "tart/CFG/Defn.h"
-#include "tart/CFG/TypeDefn.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Defn/Defn.h"
+#include "tart/Defn/TypeDefn.h"
 
 namespace tart {
 

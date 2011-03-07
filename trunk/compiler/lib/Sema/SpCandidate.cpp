@@ -2,11 +2,11 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/CFG/Defn.h"
-#include "tart/CFG/FunctionType.h"
-#include "tart/CFG/TupleType.h"
-#include "tart/CFG/Template.h"
-#include "tart/CFG/TemplateConditions.h"
+#include "tart/Defn/Defn.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/TemplateConditions.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/TypeTransform.h"
 #include "tart/Common/Diagnostics.h"
