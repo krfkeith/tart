@@ -11,11 +11,11 @@ class CharacterClass : Iterable[CharacterRange] {
   /** No-arg constructor. */
   def construct() {}
 
-  /** Copy constructor. */    
+  /** Copy constructor. */
   def construct(toCopy:CharacterClass) {
     add(toCopy);
   }
-  
+
   /** Single character range constructor */
   def construct(a:char) {
     add(a);
@@ -25,47 +25,47 @@ class CharacterClass : Iterable[CharacterRange] {
   def construct(low:char, high:char) {
     add(low, high);
   }
-  
+
   /** Multiple character range constructor. */
   def construct(ranges:CharacterRange...) {
     for rg in ranges {
     	add(rg);
     }
   }
-  
+
   /** Return the number of ranges in this character class. */
   def count:int { get { return ranges.size; } }
 
   /** Return true if this character class contains no characters. */
   def empty:bool { get { return ranges.size == 0; } }
-  
+
   /** Iterate through the list of ranges. */
   def iterate -> Iterator[CharacterRange] {
     return ranges.iterate();
   }
 
-  /** Returns true if this appears to be an inverted (^) character range. */  
+  /** Returns true if this appears to be an inverted (^) character range. */
   def inverted(vocabulary:CharacterRange) -> bool {
     return ranges.size > 1
         and ranges[0].begin == vocabulary.begin
         and ranges[ranges.size - 1].end == vocabulary.end;
   }
-  
+
   /** Add a single character to this character class. */
   def add(c:char) {
     add(CharacterRange(c, c + 1));
   }
-  
+
   /** Add a range of characters to this class. */
   def add(low:char, high:char) {
     add(CharacterRange(low, high));
   }
-  
+
   /** Add a range of characters to this class, including the high character. */
   def addInclusive(low:char, high:char) {
     add(CharacterRange(low, high + 1));
   }
-  
+
   /** Add a range of characters to this class. */
   def add(toAdd:CharacterRange) {
     var index:int = 0;
@@ -86,13 +86,13 @@ class CharacterClass : Iterable[CharacterRange] {
             if rnext.end > end {
               end = rnext.end;
             }
-            
+
             ranges.remove(index + 1);
           } else {
             break;
           }
         }
-        
+
         ranges[index] = CharacterRange(rg.begin, end);
         return;
       }
@@ -100,7 +100,7 @@ class CharacterClass : Iterable[CharacterRange] {
 
     ranges.insert(index, toAdd);
   }
-  
+
   /** Add (i.e. union) all characters in the character class 'cl' to this class. */
   def add(cl:CharacterClass) {
     var index:int = 0;
@@ -142,7 +142,7 @@ class CharacterClass : Iterable[CharacterRange] {
     }
   }
 
-	/** Remove all characters in the character class 'cl' from this class. */ 
+	/** Remove all characters in the character class 'cl' from this class. */
   def remove(cl:CharacterClass) {
     var index:int = 0;
     for toRemove in cl.ranges {
@@ -157,7 +157,7 @@ class CharacterClass : Iterable[CharacterRange] {
           if rg.end > toRemove.end {
             ranges.insert(index + 1, CharacterRange(toRemove.end, rg.end));
           }
-                  
+
           ranges[index] = CharacterRange(rg.begin, toRemove.begin);
           index++;
         } else if rg.end > toRemove.end {
@@ -168,33 +168,33 @@ class CharacterClass : Iterable[CharacterRange] {
       }
     }
   }
-  
+
   def invert(vocab:CharacterRange) {
   }
-  
+
   def contains(ch:char) -> bool {
     return contains(CharacterRange(ch, ch + 1));
   }
-  
+
   def contains(low:char, high:char) -> bool {
     return contains(CharacterRange(low, high));
   }
-  
+
   def contains(range:CharacterRange) -> bool {
     for r in ranges {
       break if r.begin >= range.end;
-      return true if range in r;
+      if range in r { return true; }
     }
-    
+
     return false;
   }
-  
+
   override toString -> String {
     let sb = StringBuilder();
     for r in ranges {
       r.format(sb);
     }
-    
+
     return sb.toString();
   }
 }
