@@ -157,11 +157,15 @@ Expr * FindExternalRefsPass::visitFnCall(FnCallExpr * in) {
   if (intrinsic != NULL) {
     if (intrinsic == &DefaultAllocIntrinsic::instance ||
         intrinsic == &FlexAllocIntrinsic::instance) {
-      function_->setFlag(FunctionDefn::MakesAllocs, true);
+      if (function_ != NULL) {
+        function_->setFlag(FunctionDefn::MakesAllocs, true);
+      }
     }
   }
 
-  function_->setFlag(FunctionDefn::HasSafePoints, true);
+  if (function_ != NULL) {
+    function_->setFlag(FunctionDefn::HasSafePoints, true);
+  }
   if (addFunction(in->function())) {
     CFGPass::visitFnCall(in);
   } else {
