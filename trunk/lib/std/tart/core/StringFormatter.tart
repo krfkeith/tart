@@ -1,0 +1,94 @@
+/** Class to handle string formatting. */
+class StringFormatter {
+  private {
+    enum State {
+      TEXT,
+      FIELD_INDEX,
+      FIELD_CONVERSION,
+    }
+
+    static let LBRACE = '{';
+    static let RBRACE = '}';
+
+    var formatString:String;
+    var formatIndex:int;
+    var args:Object[];
+    var argIndex:int;
+    var builder:StringBuilder;
+  }
+
+  def construct(formatString:String, args:Object[]) {
+    self.formatString = formatString;
+    self.args = args;
+    self.formatIndex = 0;
+    self.argIndex = 0;
+    self.builder = StringBuilder();
+  }
+
+  def build() -> String {
+    let it = formatString.iterate();
+    var prevCh:char = 0;
+    var state = State.TEXT;
+    var fieldIndex = 0;
+    repeat {
+      match it.next() as ch:char {
+        if prevCh == '{' {
+          if ch == '{' {
+		        builder.append('{');
+		        prevCh = 0;
+		        continue;
+          } else {
+            if ch < '0' or ch > '9' {
+              throw ArgumentError();
+            }
+
+            state = State.FIELD_INDEX;
+            fieldIndex = int(ch) - int('0');
+          }
+        } else if ch == '{' {
+          if (state is State.FIELD_INDEX) {
+            // Nested.
+          }
+        } else if ch == '}' {
+          if state is State.FIELD_INDEX or state is State.FIELD_CONVERSION {
+            let arg = args[fieldIndex];
+            if arg is not null {
+	            builder.append(arg.toString());
+            } else {
+	            builder.append("<null>");
+            }
+            state = State.TEXT;
+          } else if prevCh == '}' {
+		        builder.append('}');
+		        prevCh = 0;
+		        continue;
+          } else {
+            // TODO: What?
+          }
+        } else if ch == ':' {
+          if state is State.FIELD_INDEX {
+            state = State.FIELD_CONVERSION;
+          } else if state is State.FIELD_INDEX {
+            throw ArgumentError();
+          } else {
+		        builder.append(ch);
+          }
+        } else if state is State.FIELD_INDEX {
+            if ch < '0' or ch > '9' {
+              throw ArgumentError();
+            }
+
+            fieldIndex = fieldIndex * 10 + int(ch) - int('0');
+        } else {
+	        builder.append(ch);
+        }
+
+        prevCh = ch;
+      } else {
+        break;
+      }
+    }
+
+    return builder.toString();
+  }
+}

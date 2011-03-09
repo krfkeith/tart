@@ -1,0 +1,78 @@
+import tart.testing.Test;
+import tartx.lexgen.shared.ScannerBase;
+import tartx.lexgen.shared.Location;
+import tartx.lexgen.shared.LogWriter;
+import tartx.lexgenTest.FakeLogWriter;
+import tart.io.TextReader;
+import tart.io.StringReader;
+
+class ScannerBaseTest : Test {
+  class TestScanner : ScannerBase {
+    def construct(reader:TextReader, log:LogWriter) {
+      super("TestSource", reader, log);
+    }
+
+    override read -> bool {
+      return super();
+    }
+    
+    override saveTokenLocation {
+      super();
+    }
+  
+    override nl {
+      super();
+    }
+  }
+  
+  var log:FakeLogWriter;
+  var reader:TextReader;
+  var scanner:TestScanner;
+  
+  override setUp {
+    log = FakeLogWriter();
+    reader = StringReader("abc\ndef");
+    scanner = TestScanner(reader, log);
+  }
+  
+  def testInitialState {
+    assertEq("", scanner.tokenText);
+    assertEq("TestSource", scanner.tokenLoc.file);
+    assertEq("TestSource", scanner.scanLoc.file);
+    assertEq(1, scanner.tokenLoc.col);
+    assertEq(1, scanner.tokenLoc.line);
+    assertEq(1, scanner.scanLoc.col);
+    assertEq(1, scanner.scanLoc.line);
+  }
+  
+  def testReadChar {
+    scanner.take();
+    assertEq("a", scanner.tokenText);
+
+    assertEq("TestSource", scanner.tokenLoc.file);
+    assertEq("TestSource", scanner.scanLoc.file);
+    assertEq(1, scanner.tokenLoc.col);
+    assertEq(1, scanner.tokenLoc.line);
+    assertEq(2, scanner.scanLoc.col);
+    assertEq(1, scanner.scanLoc.line);
+
+    scanner.take();
+    assertEq("ab", scanner.tokenText);
+    assertEq(3, scanner.scanLoc.col);
+    assertEq(1, scanner.scanLoc.line);
+
+    scanner.take();
+    assertEq("abc", scanner.tokenText);
+    assertEq(4, scanner.scanLoc.col);
+    assertEq(1, scanner.scanLoc.line);
+  }
+
+  def testnewline {
+    scanner.take();
+    scanner.nl();
+    scanner.read();
+    assertEq("a", scanner.tokenText);
+    assertEq(1, scanner.scanLoc.col);
+    assertEq(2, scanner.scanLoc.line);
+  }
+}

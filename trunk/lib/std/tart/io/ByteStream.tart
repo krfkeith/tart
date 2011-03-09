@@ -1,0 +1,18 @@
+/** Interface to a stream of bytes, which may be readable and/or writeable. */
+interface ByteStream : IOStream {
+  /** Read a single byte from the stream. */
+  //@Throws(IOException)
+  def read -> ubyte;
+  
+  /** Read a buffer of bytes from the stream. */
+  //@Throws(IOException)
+  def read(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> int;
+  
+  /** Write a single byte to the stream. */
+  //@Throws(IOException)
+  def write(value:ubyte) -> void;
+
+  /** Write a buffer of bytes to the stream. */
+  //@Throws(IOException)
+  def write(buffer:ubyte[], offset:int = 0, count:int = int.maxVal) -> void;
+}

@@ -1,0 +1,48 @@
+import tart.core.Memory.Address;
+
+/** Interface type for enums. */
+public final class EnumType : Type {
+  private {
+    var _names:NameTable;
+    var _nameIndex:int16;
+    let _supertype:Type;
+    var _values:optional Field[];
+    
+    undef construct();
+  }
+
+  /** Fully-qualified name of this type. */
+  def name:String { get { return _names.getLocalName(_nameIndex); } }
+
+  /** Fully-qualified name of this type. */
+  def qualifiedName:String { get { return _names.getQualifiedName(_nameIndex); } }
+
+  /** Fully-qualified name of the scope in which this type is defined. */
+  def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
+
+  /** Pointer to this type's supertype. */
+  def supertype:Type { get { return self._supertype; } }
+  
+  /** Array of enumeration constants. */
+  //final def values:Field[] { get { return self._values; } }
+  
+  override toString -> String {
+    return qualifiedName;
+  }
+
+  override getFieldValue(fieldAddr:Address[void]) -> Object {
+    return _supertype.getFieldValue(fieldAddr);
+  }
+  
+  override setFieldValue(fieldAddr:Address[void], value:Object) {
+    _supertype.setFieldValue(fieldAddr, value);
+  }
+
+  override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    return _supertype.getPropertyValue(obj, getterFn);
+  }
+
+  override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+    _supertype.setPropertyValue(obj, setterFn, value);
+  }
+}

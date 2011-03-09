@@ -1,0 +1,326 @@
+import tart.annex.Intrinsic;
+import tart.collections.List;
+import tart.collections.ArrayList;
+import tart.collections.ImmutableList;
+import tart.core.Memory.Allocator;
+import tart.core.Memory.Address;
+import tart.core.Memory.DefaultAllocator;
+import tart.core.Memory.reinterpretPtr;
+import tart.core.Memory.bitCast;
+import tart.core.Memory.addressOf;
+
+/** Reflection type for classes, structs, and interfaces. */
+public class CompositeType : Type {
+  private {
+    var _names:NameTable;
+    var _nameIndex:int16;
+    var _size:uint;
+    let _typeInfo:Address[TypeInfoBlock];
+    var _supertype:optional CompositeType;
+    var _interfaces:List[Type];
+    var _typeParams:List[Type];
+    var _attributes:List[Object];
+    var _fields:List[Field];
+    var _properties:List[Property];
+    var _constructors:optional List[Method];
+    var _methods:optional List[Method];
+    var _memberTypes:List[Type];
+    var _noArgCtor:static fn :Object -> Object;
+    // Need type adapter functions for structs.
+
+		/** Object header structure - used to fill in the TIB field when creating a new
+		    object instance. */
+    struct ObjectHeader {
+		  var tib:Address[TypeInfoBlock];
+    }
+
+    typealias ObjectHeaderPtr:Address[ObjectHeader];
+  }
+
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock]) {
+    super(typeKind);
+    self._typeInfo = typeInfo;
+  }
+
+  def construct(typeKind:TypeKind, typeInfo:Address[TypeInfoBlock], baseTemplate:CompositeType) {
+    super(typeKind);
+    self._typeInfo = typeInfo;
+  }
+
+  /** Given a type literal, return the reflected complex type object. */
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> CompositeType;
+
+  /** Fully-qualified name of this type. */
+  final def name:String { get { return _names.getLocalName(_nameIndex); } }
+
+  /** Fully-qualified name of this type. */
+  final def qualifiedName:String { get { return _names.getQualifiedName(_nameIndex); } }
+
+  /** Fully-qualified name of the scope in which this type is defined. */
+  final def scopeName:String { get { return _names.getScopeName(_nameIndex); } }
+
+  /** Size of this type in bytes. */
+  final def size:uint { get { return _size; } }
+
+	/** TypeInfoBlock for this type. */
+  final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } }
+
+  /** Pointer to this type's supertype, or null. */
+  final def supertype:optional CompositeType { get { return _supertype; } }
+
+  /** Array of inherited interfaces. */
+  final def interfaces:List[Type] { get { return self._interfaces; } }
+
+  /** Array of type parameters. */
+  final def typeParams:List[Type] { get { return self._typeParams; } }
+
+  /** Array of associated attributes */
+  final def attributes:List[Object] { get { return self._attributes; } }
+
+  /** Array of field members. */
+  final def fields:List[Field] { get { return self._fields; } }
+
+  /** Array of property members. */
+  final def properties:List[Property] { get { return self._properties; } }
+
+  /** Array of constructor members. */
+  final def constructors:List[Method] { get { return _constructors; } }
+
+  /** Array of methods. */
+  final def methods:List[Method] { get { return _methods; } }
+
+  /** Array of types defined within this type. */
+  final def memberTypes:List[Type] { get { return self._memberTypes; } }
+
+  // /** Return true if this type has a custom allocator. */
+  //final def hasCustomAlloc:bool { get { return self._alloc is null; } }
+
+  /** Return true if this type has a no-arg constructor. */
+  final def hasNoArgConstructor:bool { get { return self._noArgCtor is not null; } }
+
+	/** If 'obj' is castable to this type, do the cast and return the raw address,
+			otherwise throw a typecast exception. */
+  @Unsafe final override downCast(obj:Object) -> Address[void] {
+    if obj is not null {
+    	if obj.__typeHasBase(_typeInfo) {
+    	  return Memory.reinterpretPtr(Memory.objectAddress(obj));
+    	}
+    }
+   	throw TypecastError(obj, self);
+  }
+
+  @Unsafe final override checkCast(obj:Object) -> Object {
+    if obj is not null {
+    	if obj.__typeHasBase(_typeInfo) {
+    	  return obj;
+    	}
+    }
+   	throw TypecastError(obj, self);
+  }
+
+  /** Return the first method whose name is 'name'. */
+  def findMethod(name:String) -> optional Method {
+    for m in methods {
+      if m.name == name {
+        return m;
+      }
+    }
+    return null;
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create(ctor:Method, args:Object[]) -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE, ctor, args);
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create(ctor:Method, args:Object...) -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE, ctor, args);
+  }
+
+  /** Allocate and initialize a new object of this type, using a default constructor.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create() -> Object {
+    return create(Memory.DefaultAllocator.INSTANCE);
+  }
+
+  /** Allocate and initialize a new object of this type, using the specified constructor and
+  	  memory allocator.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+   */
+  final def create(allocator:Allocator, ctor:Method, args:Object[]) -> Object {
+    switch (typeKind) {
+      case CLASS {
+        let instance:Object = Memory.bitCast(allocator.alloc(_size));
+        let header:ObjectHeaderPtr = Memory.bitCast(instance);
+        Memory.deref(header).tib = _typeInfo;
+        ctor.call(instance, args);
+        return instance;
+      }
+
+      case STRUCT {
+        throw InvocationError("Unimplemented struct construction");
+      }
+
+      else {
+        throw InstantiationError(self);
+      }
+    }
+  }
+
+  /** Allocate and initialize a new object of this type, using the default constructor and
+      the specified memory allocator.
+  		Exceptions:
+  		  InvocationError - if the class does not have a default constructor, or this type is not
+  		                    a class.
+  */
+  final def create(allocator:Allocator) -> Object {
+    switch (typeKind) {
+      case CLASS {
+	      if _noArgCtor is null {
+	        throw InvocationError(
+	        		"Class '{0}' does not have a no-arg constructor".format(qualifiedName));
+	      }
+        let instance:Object = Memory.bitCast(allocator.alloc(_size));
+        let header:ObjectHeaderPtr = Memory.bitCast(instance);
+        Memory.deref(header).tib = _typeInfo;
+        _noArgCtor(instance);
+        return instance;
+      }
+
+      case STRUCT {
+        throw InvocationError("Unimplemented struct construction");
+      }
+
+      else {
+        throw InstantiationError(self);
+      }
+    }
+  }
+
+  final def isSubclass(cls:Type) -> bool {
+    return isSubclassImpl(cls);
+  }
+
+  final def isSubclass[%T](cls:TypeLiteral[T]) -> bool {
+    return isSubclassImpl(Type.of(T));
+  }
+
+  private final def isSubclassImpl(cls:Type) -> bool {
+    if self is cls {
+      return true;
+    }
+    match cls as complex:CompositeType {
+      return Memory.deref(_typeInfo).hasBase(complex._typeInfo);
+    } else {
+      return false;
+    }
+  }
+
+  /** Return the first attribute of type 'attrType'. */
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
+    for attr in _attributes {
+      match attr as result:T {
+        return result;
+      }
+    }
+
+    return null;
+  }
+
+  final override toString -> String {
+    // TODO: Should have a flag indicating whether this is a template instance, template, etc.
+    if not _typeParams.isEmpty {
+	    let sb = StringBuilder(qualifiedName);
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in _typeParams {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("[{0}]", ",".join(typeStrings)));
+	    return sb.toString();
+    } else {
+	    return qualifiedName;
+    }
+  }
+
+  @Unsafe final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let addr:Address[Object] = Memory.reinterpretPtr(fieldAddr);
+  		  return addr[0];
+    	}
+
+    	case TypeKind.STRUCT {
+	      // TODO: Implement
+  	    return self;
+    	}
+
+    	else {
+	      // TODO: throw something
+  	    return self;
+    	}
+    }
+  }
+
+  @Unsafe final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let addr:Address[Object] = Memory.reinterpretPtr(fieldAddr);
+  		  addr[0] = self.checkCast(value);
+    	}
+
+    	case TypeKind.STRUCT {
+	      // TODO: Implement
+    	}
+
+    	else {
+	      // TODO: throw something
+    	}
+	  }
+  }
+
+  @Unsafe final override getPropertyValue(obj:Object, getter:Address[void]) -> Object {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+    		let getterFn:static fn (obj:Object) -> Object = bitCast(getter);
+		    return getterFn(obj);
+    	}
+
+    	else {
+	      // TODO: Implement
+		    return self;
+    	}
+	  }
+  }
+
+  @Unsafe final override setPropertyValue(obj:Object, setter:Address[void], value:Object) {
+    switch typeKind {
+    	case TypeKind.CLASS
+    	case TypeKind.INTERFACE {
+		    let setterFn:static fn (obj:Object, value:Object) = bitCast(setter);
+    		setterFn(obj, self.checkCast(value));
+    	}
+
+    	else {
+	      // TODO: Implement
+    	}
+	  }
+  }
+}

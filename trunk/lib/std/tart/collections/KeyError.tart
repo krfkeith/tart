@@ -1,0 +1,10 @@
+/** Exception thrown when a map key lookup fails. */
+class KeyError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

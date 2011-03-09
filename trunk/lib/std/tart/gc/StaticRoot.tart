@@ -1,0 +1,10 @@
+import Memory.Address;
+
+/** Data structure that describes a static root. */
+struct StaticRoot {
+  // The address of the root
+  var addr:Address[ubyte];
+
+  // The trace table for the root.
+  var trace:Address[TraceDescriptor];
+}

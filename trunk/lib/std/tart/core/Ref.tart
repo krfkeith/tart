@@ -1,0 +1,6 @@
+import tart.reflect.Reflection;
+
+/** Abstract class used to represent a reference to some value. */
+abstract class Ref[%T] {
+  abstract def value:T { get; }
+}

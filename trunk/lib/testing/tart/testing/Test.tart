@@ -1,0 +1,91 @@
+import tart.reflect.Method;
+import tart.reflect.Module;
+import tart.reflect.Package;
+import tart.reflect.CompositeType;
+import tart.reflect.Type;
+import tart.reflect.Reflect;
+
+@Reflect class Test {
+  import namespace Asserts;
+  
+  /** Run all of the test cases in the specified package. */
+  static def runAllTests(package:Package) -> int32 {
+    var overallStatus:int32 = 0;
+    for mod in package.modules {
+      let testStatus = runAllTests(mod);
+      if testStatus != 0 {
+        overallStatus = testStatus;
+      }
+    }
+    
+    for sub in package.subpackages {
+      let testStatus = runAllTests(sub);
+      if testStatus != 0 {
+        overallStatus = testStatus;
+      }
+    }
+
+    return overallStatus;
+  }
+
+  /** Run all of the test cases in the specified module. */
+  static def runAllTests(mod:Module) -> int32 {
+    for type in mod.types {
+      match type as cls:CompositeType {
+	      if cls.isSubclass(Test) {
+	        Debug.writeLn("Test Class: ", cls.qualifiedName);
+			    var testInstance = typecast[Test](cls.create());
+    			return testInstance.runTests(cls);
+	      }
+      }
+    }
+    
+    return 0;
+  }
+
+	/** Run all tests in this class. */  
+  static def run[%T](testType:TypeLiteral[T]) -> int32 {
+    var testClass:CompositeType = CompositeType.of(T);
+    var testInstance = typecast[Test](testClass.create());
+    return testInstance.runTests(testClass);
+  }
+
+  /** Test fixture setup method. Will be called before every test. */
+  def setUp() {}
+
+  /** Test fixture teardown method. Will be called after every test. */
+  def tearDown() {}
+  
+  final def runTests[%T](testType:TypeLiteral[T]) -> int32 {
+    return runTests(CompositeType.of(T));
+  }
+
+  final def runTests(testClass:CompositeType) -> int32 {
+    for method in testClass.methods {
+      if method.name.startsWith("test") {
+        Debug.writeLn("[Running] ", self.__typeName, ".", method.name);
+	      if not runTestMethod(method) {
+	        Debug.writeLn("[FAIL   ]");
+	        return 1;
+	      }
+      }
+    }
+
+    Debug.writeLn("[OK     ]");
+    return 0;
+  }
+
+  def runTestMethod(test:Method) -> bool {
+    try {
+      setUp();
+      test.call(self);
+      tearDown();
+      return true;
+      // TODO: Save test results
+    } catch (t:Throwable) {
+      Debug.writeLnFmt("{0}.{1} failed:", self.__typeName, test.name, t);
+      Debug.fail(t.toString());
+      return false;
+    }
+  }
+}

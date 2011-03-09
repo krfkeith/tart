@@ -1,0 +1,40 @@
+import tart.collections.List;
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.core.Memory.objectAddress;
+import tart.core.Memory.reinterpretPtr;
+
+/** Description of a class field. */
+class Field : DataMember {
+  private {
+    var _offset:int; // For instance vars.
+    var _addr:Address[void]; // For global vars
+
+    undef construct;
+  }
+
+  final def isReadable:bool { get { return true; } }
+  final def isWriteable:bool { get { return true; } }
+
+	// Implement
+  final def getValue(obj:Object) -> Object {
+    if selfType is not null {
+	    return type.getFieldValue(fieldAddress(selfType.checkCast(obj)));
+    } else {
+	    return type.getFieldValue(_addr);
+    }
+  }
+
+  final def setValue(obj:Object, value:Object) {
+    if selfType is not null {
+      type.setFieldValue(fieldAddress(selfType.checkCast(obj)), value);
+    } else {
+      type.setFieldValue(_addr, value);
+    }
+  }
+
+  private def fieldAddress(obj:Object) -> Address[void] {
+    let addr:Address[ubyte] = reinterpretPtr(objectAddress(obj));
+    return reinterpretPtr(addressOf(addr[_offset]));
+  }
+}

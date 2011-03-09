@@ -1,0 +1,22 @@
+/** An atomic pointer type. */
+struct AtomicPtr[%T <: Object] {
+  def construct(n:T) {
+    _value = n;
+  }
+  
+  def value:T {
+    get { return _value; }
+    set { _value = value; }
+  }
+
+	/** Compare and swap the current value with the new value 'new'.
+			Return false if the current value was not equal to 'expected'.
+	 */
+  @Intrinsic def cas(expected:T, new:T) -> bool;
+
+	/** Do an atomic addition with 'n'. */
+  //@Extern("atomicint32_add") def add(n:int32);
+  //@Extern("atomicint32_subtract") def subtract(v:int32);
+
+  private var _value:T;
+}
