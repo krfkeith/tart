@@ -1167,22 +1167,6 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
   }
 }
 
-llvm::Constant * CodeGenerator::genSizeOf(Type * type, bool memberSize) {
-  ValueList indices;
-  indices.push_back(getInt32Val(1));
-
-  const llvm::Type * irType = type->irType();
-  if (memberSize && type->isReferenceType()) {
-    irType = irType->getPointerTo();
-  }
-
-  return llvm::ConstantExpr::getPtrToInt(
-      llvm::ConstantExpr::getGetElementPtr(
-          ConstantPointerNull::get(irType->getPointerTo()),
-          &indices[0], 1),
-      builder_.getInt32Ty());
-}
-
 Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) {
 
   const llvm::Type * resultType = objType->irType();
@@ -1190,12 +1174,17 @@ Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) 
 
   if (isa<llvm::PointerType>(sizeValue->getType())) {
     if (Constant * c = dyn_cast<Constant>(sizeValue)) {
-      sizeValue = llvm::ConstantExpr::getPtrToInt(c, builder_.getInt64Ty());
+      sizeValue = llvm::ConstantExpr::getPtrToInt(c, intPtrType_);
     } else {
-      sizeValue = builder_.CreatePtrToInt(sizeValue, builder_.getInt64Ty());
+      sizeValue = builder_.CreatePtrToInt(sizeValue, intPtrType_, "size");
+    }
+  } else if (isa<llvm::IntegerType>(sizeValue->getType())) {
+    if (sizeValue->getType() != intPtrType_) {
+      sizeValue = builder_.CreatePtrToInt(sizeValue, intPtrType_, "size");
     }
   }
 
+  DASSERT(sizeValue->getType() == intPtrType_);
   std::stringstream labelStream;
   FormatStream fs(labelStream);
   fs << objType;

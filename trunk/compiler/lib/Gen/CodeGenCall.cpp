@@ -314,7 +314,9 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
       Function * alloc = getGcAlloc();
       Value * newObj = builder_.CreateCall2(
           alloc, gcAllocContext_,
-          llvm::ConstantExpr::getSizeOf(ctdef->irType()),
+          llvm::ConstantExpr::getIntegerCast(
+              llvm::ConstantExpr::getSizeOf(ctdef->irType()),
+              intPtrType_, false),
           Twine(ctdef->typeDefn()->name(), StringRef("_new")));
       newObj = builder_.CreatePointerCast(newObj, ctdef->irType()->getPointerTo());
       genInitObjVTable(ctdef, newObj);
@@ -323,18 +325,6 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
   }
 
   DFAIL("IllegalState");
-}
-
-Value * CodeGenerator::allocInstance(const tart::Expr * size, const tart::Expr * typeInfoPtr) {
-  DASSERT(gcAllocContext_ != NULL);
-  Value * sizeVal = genExpr(size);
-  Value * tibVal = genExpr(typeInfoPtr);
-  Function * alloc = getGcAlloc();
-  Value * newObj = builder_.CreateCall2(alloc, gcAllocContext_, sizeVal, "newInstance");
-  newObj = builder_.CreatePointerCast(newObj, Builtins::typeObject->irType()->getPointerTo());
-  Value * vtablePtrPtr = builder_.CreateStructGEP(newObj, 0);
-  builder_.CreateStore(tibVal, vtablePtrPtr);
-  return newObj;
 }
 
 Value * CodeGenerator::defaultAlloc(const tart::Expr * size) {

@@ -876,7 +876,11 @@ void Reflector::emitCompositeType(const CompositeType * type) {
 
   // CompositeType._size
   if (type->isSingular()) {
-    sb.addField(llvm::ConstantExpr::getSizeOf(type->irType()));
+    sb.addField(
+        llvm::ConstantExpr::getIntegerCast(
+            llvm::ConstantExpr::getSizeOf(type->irType()),
+            reflect::CompositeType::size.type()->irType(),
+            false));
   } else {
     sb.addIntegerField(reflect::CompositeType::size.type(), 0);
   }

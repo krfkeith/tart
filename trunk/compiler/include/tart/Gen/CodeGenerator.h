@@ -272,7 +272,6 @@ public:
   llvm::Value * genCall(const FnCallExpr * in);
   llvm::Value * genIndirectCall(const IndirectCallExpr * in);
   llvm::Value * genNew(const NewExpr * in);
-  llvm::Value * allocInstance(const tart::Expr * size, const tart::Expr * typeInfoPtr);
   llvm::Value * defaultAlloc(const tart::Expr * size);
   llvm::Value * genCompositeCast(llvm::Value * in, const CompositeType * fromCls,
       const CompositeType * toCls, bool throwOnFailure);
@@ -361,12 +360,6 @@ public:
   void createCompositeTraceTableEntries(const CompositeType * type, llvm::Constant * basePtr,
       ConstantList & traceTable, ConstantList & fieldOffsets, ConstantList & indices);
   llvm::Function * getUnionTraceMethod(const UnionType * utype);
-
-  /** Given a type, generate a constant representing the size of that type.
-      'memberSize' - return how much space the type would consume as a member of another
-      type (which will be equal to the size of a reference for reference types.)
-   */
-  llvm::Constant * genSizeOf(Type * type, bool memberSize);
 
   /** Generate the program entry point. */
   void genEntryPoint();
