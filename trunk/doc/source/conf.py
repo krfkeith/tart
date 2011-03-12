@@ -35,7 +35,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'Tart'
-copyright = '2008, Talin'
+copyright = '2008-2011, Talin'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
@@ -66,7 +66,7 @@ add_function_parentheses = True
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'trac'
+pygments_style = 'tartstyle.TartStyle'
 
 
 # Options for HTML output

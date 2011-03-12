@@ -1,3 +1,6 @@
+.. highlight:: tart
+  :linenothreshold: 30
+
 .. index::
   keyword: let
   keyword: var
