@@ -31,6 +31,7 @@ private:
   bool trace_;
 
   void setTargetType(const Type * type);
+  Expr * initializeNativeArray(Expr * initValue);
 };
 
 } // namespace tart

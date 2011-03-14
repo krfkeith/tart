@@ -209,11 +209,9 @@ class ExceptionTest : Test {
 			  visitedTry = true;
   	    return;
   	  } finally {
-		    Debug.writeLn("In first finally");
   	    visitedFinally = true;
   	  }
 	  } finally {
-	    Debug.writeLn("In second finally");
 	    visitedFinally2 = true;
 	  }
 	}

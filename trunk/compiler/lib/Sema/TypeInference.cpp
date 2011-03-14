@@ -373,6 +373,8 @@ void ConstraintSite::update() {
 
 Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
   if (!in->candidates().empty() && visited_.insert(in)) {
+    // Note: pre-order traversal.
+    Expr * result = CFGPass::visitCall(in);
     callSites_.push_back(new CallSite(in));
 
     // If the function is NULL, it means that the function reference is
@@ -383,9 +385,10 @@ Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
         visitExpr((*it)->base());
       }
     }
+    return result;
+  } else {
+    return CFGPass::visitCall(in);
   }
-
-  return CFGPass::visitCall(in);
 }
 
 
@@ -446,6 +449,7 @@ Expr * TypeInferencePass::runImpl() {
   reportRanks(INITIAL);
 
   cullByConversionRank();
+  reportRanks(INTERMEDIATE);
   cullBySpecificity();
   cullByElimination();
 
@@ -533,7 +537,7 @@ void TypeInferencePass::reportRanks(ReportLabel label) {
       break;
 
     case INTERMEDIATE:
-      diag.debug() << "Intermediate conversion rankings for " << numSites << " call sites:";
+      diag.debug() << "=== Intermediate conversion rankings for " << numSites << " call sites: ===";
       break;
 
     case FINAL:
@@ -595,47 +599,53 @@ void TypeInferencePass::cullByConversionRank() {
     backtrack();
   }
 
-  if (underconstrained_) {
-    int siteIndex = 1;
-    for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
-      ChoicePoint * site = *it;
-      while (site->rank() < IdenticalTypes) {
-        ConversionRank limit = ConversionRank(site->rank() + 1);
+  while (underconstrained_ && cullEachSiteByConversionRank()) {}
+  checkSolution();
+}
+
+bool TypeInferencePass::cullEachSiteByConversionRank() {
+  int siteIndex = 1;
+  bool siteChanged = false;
+  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
+    ChoicePoint * site = *it;
+    while (site->rank() < IdenticalTypes) {
+      ConversionRank limit = ConversionRank(site->rank() + 1);
+      if (ShowInference) {
+        diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
+      }
+      ++searchDepth_;
+      if (CullableChoicePoint * ccp = site->asCullable()) {
+        cullCount_ = ccp->cullByConversionRank(limit, searchDepth_);
+        update();
+
         if (ShowInference) {
-          diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
-        }
-        ++searchDepth_;
-        if (CullableChoicePoint * ccp = site->asCullable()) {
-          cullCount_ = ccp->cullByConversionRank(limit, searchDepth_);
-          update();
-
-          if (ShowInference) {
-            diag.indent();
-            diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
-                " remaining:";
-            site->reportRanks();
-            diag.unindent();
-          }
-        }
-
-        if (overconstrained_) {
-          if (ShowInference) {
-            diag.indent();
-            diag.debug() << "Backtracking";
-            diag.unindent();
-          }
-          backtrack();
-          break;
+          diag.indent();
+          diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
+              " remaining:";
+          site->reportRanks();
+          diag.unindent();
         }
       }
 
-      if (!underconstrained_) {
+      if (overconstrained_) {
+        if (ShowInference) {
+          diag.indent();
+          diag.debug() << "Backtracking";
+          diag.unindent();
+        }
+        backtrack();
         break;
+      } else {
+        siteChanged = true;
       }
+    }
+
+    if (!underconstrained_) {
+      break;
     }
   }
 
-  checkSolution();
+  return siteChanged;
 }
 
 void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit) {

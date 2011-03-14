@@ -47,7 +47,7 @@ Here's a somewhat more interesting example::
     }
 
     // Constructor
-    def construct(var:minValue, var:maxValue) {
+    def construct(minValue:int, maxValue:int) {
       // Initialize member variables from constructor args.
       minVal = val = minValue;
       maxVal = maxValue;
