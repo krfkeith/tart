@@ -59,7 +59,6 @@ struct StackFrame {
 // The Throwable class
 struct TartThrowable {
   struct TartObject object;
-  //struct TypeInfoBlock * tib;
   struct StackFrame * stack;
 
   // _Unwind_Exception follows, but don't explicitly declare it because

@@ -135,6 +135,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
+      dbgInlineContext_ = DIScope();
       setDebugLocation(fdef->location().forRegion(fdef->region()));
       functionRegion_ = fdef->region();
     }
@@ -290,7 +291,8 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     //  DFAIL("BAD DBG");
     //}
 
-    dbgContext_ = DISubprogram();
+    dbgContext_ = DIScope();
+    dbgInlineContext_ = DIScope();
     functionRegion_ = NULL;
     builder_.ClearInsertionPoint();
     builder_.SetCurrentDebugLocation(llvm::DebugLoc());

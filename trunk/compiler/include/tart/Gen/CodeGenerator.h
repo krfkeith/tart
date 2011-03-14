@@ -459,6 +459,8 @@ public:
   llvm::DIFile genDIFile(const SourceRegion * source);
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
+  llvm::DIDescriptor genDefnScope(const Defn * de);
+  llvm::DILexicalBlock genLexicalBlock(const SourceLocation & loc);
   void genDISubprogramStart(const FunctionDefn * fn);
   void genDIParameter(const ParameterDefn * param);
   void genDIGlobalVariable(const VariableDefn * var, llvm::GlobalVariable * gv);
@@ -466,8 +468,6 @@ public:
   unsigned getSourceLineNumber(const SourceLocation & loc);
   void setDebugLocation(const SourceLocation & loc);
   void clearDebugLocation();
-  llvm::DIScope genRegionScope(SourceRegion * region);
-  llvm::DIDescriptor genDefnScope(const Defn * de);
 
   /** Generate debugging information for types. */
   llvm::DIType genDIType(const Type * type);
@@ -625,6 +625,7 @@ private:
   llvm::DIBuilder diBuilder_;
   llvm::DIFile dbgFile_;
   llvm::DIScope dbgContext_;
+  llvm::DIScope dbgInlineContext_;
   DITypeMap dbgTypeMap_;
   SourceLocation dbgLocation_;
   SourceRegion * functionRegion_;
