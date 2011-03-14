@@ -5,12 +5,18 @@
 #ifndef TART_COMMON_FORMATTABLE_H
 #define TART_COMMON_FORMATTABLE_H
 
+#ifndef LLVM_SUPPORT_RAW_OS_OSTREAM_H
 #include "llvm/Support/raw_os_ostream.h"
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
 #include <sstream>
-//#include <ostream>
+
+namespace llvm {
+class Twine;
+}
 
 namespace tart {
 
@@ -110,6 +116,8 @@ public:
 
   FormatStream & operator<<(const char * str);
   FormatStream & operator<<(const std::string & str);
+  FormatStream & operator<<(llvm::StringRef str);
+  FormatStream & operator<<(const llvm::Twine & str);
   FormatStream & operator<<(int value);
   FormatStream & operator<<(void (*func)(FormatStream &)) {
     (*func)(*this);

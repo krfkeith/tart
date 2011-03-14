@@ -3,9 +3,12 @@
  * ================================================================ */
 
 #include "tart/Common/Formattable.h"
-#include <ostream>
+
+#include "llvm/ADT/Twine.h"
+
+//#include <ostream>
 #include <iostream>
-#include <sstream>
+//#include <sstream>
 
 namespace tart {
 
@@ -43,6 +46,16 @@ FormatStream & FormatStream::operator<<(const std::string & str) {
 
 FormatStream & FormatStream::operator<<(int value) {
   llvm::raw_os_ostream::operator<<(value);
+  return *this;
+}
+
+FormatStream & FormatStream::operator<<(llvm::StringRef str) {
+  llvm::raw_os_ostream::operator<<(str);
+  return *this;
+}
+
+FormatStream & FormatStream::operator<<(const llvm::Twine & str) {
+  str.print(*this);
   return *this;
 }
 

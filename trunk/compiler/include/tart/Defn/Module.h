@@ -21,9 +21,21 @@
 #include "tart/Common/SourceFile.h"
 #endif
 
+#ifndef LLVM_ADT_SETVECTOR_H
 #include "llvm/ADT/SetVector.h"
+#endif
+
+#ifndef LLVM_ADT_DENSEMAP_H
 #include "llvm/ADT/DenseMap.h"
+#endif
+
+#ifndef LLVM_ADT_DENSESET_H
 #include "llvm/ADT/DenseSet.h"
+#endif
+
+#ifndef LLVM_SYSTEM_TIMEVALUE_H
+#include "llvm/Support/TimeValue.h"
+#endif
 
 namespace llvm {
 class Module;
@@ -50,10 +62,10 @@ public:
   };
 
   /** Construct a new module at the top level. */
-  Module(ProgramSource * src, const std::string & qual, Scope * builtinScope);
+  Module(llvm::StringRef qual, Scope * builtinScope);
 
   /** Construct a builtin module. */
-  Module(ProgramSource * src, const std::string & qual);
+  Module(ProgramSource * src, llvm::StringRef qual);
 
   /** List of import statements. */
   const ASTNodeList & imports() const { return imports_; }
@@ -125,6 +137,11 @@ public:
 
   /** The source file for this module. */
   ProgramSource * moduleSource() const { return moduleSource_; }
+  void setModuleSource(ProgramSource * src) { moduleSource_ = src; loc.region = src; }
+
+  /** The module time stamp. */
+  const llvm::sys::TimeValue & timestamp() const { return timestamp_; }
+  llvm::sys::TimeValue & timestamp() { return timestamp_; }
 
   /** Remove all definitions from the module. */
   void clearDefns() {
@@ -168,6 +185,7 @@ private:
   FunctionDefn * programStartup_;
   ConverterMap converters_;
   short flags_;
+  llvm::sys::TimeValue timestamp_;
 
   // The LLVM module
   llvm::Module * irModule_;

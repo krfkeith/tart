@@ -45,7 +45,11 @@ const String * char_toString(uint32_t value) {
     length = snprintf(data, sizeof(data), "%lc", value);
   }
 
-  return String_create(data, length);
+  if (length == (size_t) -1) {
+    return String_create("\xff\xfd", 2);
+  } else {
+    return String_create(data, length);
+  }
 }
 
 const String * int8_toString(int8_t value) {

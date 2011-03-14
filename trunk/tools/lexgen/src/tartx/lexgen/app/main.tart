@@ -2,14 +2,14 @@ import tart.testing.Test;
 import tart.opts.StringOption;
 import tart.io.Console;
 
-var generator = StringOption("gen", varName="generator name", help="Output generator language");
+//var generator = StringOption("gen", varName="generator name", help="Output generator language");
 
 @EntryPoint
 def main(args:String[]) -> int32 {
-  if generator.present {
+/*  if generator.present {
     Console.cout.writeLn("Generator type is present");
   } else {
     Console.cout.writeLn("Generator type is not present");
   }
-  return 0;
+*/  return 0;
 }

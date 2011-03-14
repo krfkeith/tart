@@ -28,6 +28,7 @@ namespace SpaceMgr {
 	// TODO: Need to specify defaultSpace as well...
   def init(pageAllocator:PageAllocator) {
     _pageAllocator = pageAllocator;
+    let m:Space = _initialSpaceTable[0];
     _spaces = addressOf(_initialSpaceTable[0]);
     _numSpaces = 64;
     _spacesExtent = AddressRange();

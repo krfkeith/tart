@@ -3,7 +3,7 @@ import tart.collections.HashMap;
 
 abstract class OptionBase {
   private {
-	  static var _argMap = HashMap[String, OptionBase]();
+//	  static var _argMap = HashMap[String, OptionBase]();
 		var _name:String;
 		var _altName:String;
 		var _varName:String;
@@ -18,22 +18,22 @@ abstract class OptionBase {
     self._help = help;
     self._present = false;
 
-    if name in _argMap {
-      throw NameConflictError("more than one program option named '{0}'".format(name));
-    } else {
-	    _argMap[name] = self;
-    }
+//    if name in _argMap {
+//      throw NameConflictError("more than one program option named '{0}'".format(name));
+//    } else {
+//	    _argMap[name] = self;
+//    }
   }
 
-	/** The argument name. */ 
+	/** The argument name. */
   def name:String { get { return _name; } }
-	  
-	/** The argument help string. */ 
+
+	/** The argument help string. */
   def help:String { get { return _help; } }
-  
+
   /** True if the argument was present in the command line. */
   def present:bool { get { return _present; } }
-	  
+
   /** List of all declared arguments. */
-  static def argMap:Map[String, OptionBase] { get { return _argMap; } }
+//  static def argMap:Map[String, OptionBase] { get { return _argMap; } }
 }

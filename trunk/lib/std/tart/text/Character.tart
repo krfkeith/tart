@@ -1,0 +1,88 @@
+namespace Character {
+  enum Category {
+  	Cn = 0, // Unassigned
+	  Lu, // Uppercase_Letter
+  	Ll, // Lowercase_Letter
+  	Lt, // Titlecase_Letter
+  	Lm, // Modifier_Letter
+  	Lo, // Other_Letter
+  	Mn, // Nonspacing_Mark
+  	Mc, // Spacing_Mark
+  	Me, // Enclosing_Mark
+  	Nd, // Decimal_Number
+  	Nl, // Letter_Number
+  	No, // Other_Number
+  	Pc, // Connector_Punctuation
+  	Pd, // Dash_Punctuation
+  	Ps, // Open_Punctuation
+  	Pe, // Close_Punctuation
+  	Pi, // Initial_Punctuation
+  	Pf, // Final_Punctuation
+  	Po, // Other_Punctuation
+  	Sm, // Math_Symbol
+  	Sc, // Currency_Symbol
+  	Sk, // Modifier_Symbol
+  	So, // Other_Symbol
+  	Zs, // Space_Separator
+  	Zl, // Line_Separator
+  	Zp, // Paragraph_Separator
+  	Cc, // Control
+  	Cf, // Format
+  	Cs, // Surrogate
+  	Co, // Private_Use
+  }
+
+  private def category(ch:char) -> Category {
+	  return Category(CharacterTables.category(ch));
+  }
+
+  /** True if the character 'ch' is a letter. */
+	def isLetter(ch:char) -> bool {
+	  let c = category(ch);
+	  switch c {
+	    case Lu
+	    case Ll
+	    case Lt
+	    case Lm
+	    case Lo
+	    case Nl {
+	      return true;
+	  	}
+
+	  	else {
+	  	  return false;
+	  	}
+	  }
+	}
+
+  /** True if the character 'ch' is an upper case character. */
+	def isUpperCase(ch:char) -> bool {
+	  return CharacterTables.category(ch) == Category.Lu;
+	}
+
+  /** True if the character 'ch' is a lower case character. */
+	def isLowerCase(ch:char) -> bool {
+	  return CharacterTables.category(ch) == Category.Ll;
+	}
+
+  /** True if the character 'ch' is cased. */
+	def isCased(ch:char) -> bool {
+	  let c = category(ch);
+	  return ch == Category.Lu or ch == Category.Ll or ch == Category.Lt;
+	}
+
+  /** Conver the character 'ch' to upper case. */
+	def toUpperCase(ch:char) -> char {
+	  return ch + char(CharacterTables.uppercaseMapping(ch));
+	}
+
+  /** Conver the character 'ch' to lower case. */
+	def toLowerCase(ch:char) -> char {
+	  return ch + char(CharacterTables.lowercaseMapping(ch));
+	}
+
+  /** Conver the character 'ch' to title case. */
+	def toTitleCase(ch:char) -> char {
+	  return ch + char(CharacterTables.titlecaseMapping(ch));
+	}
+}

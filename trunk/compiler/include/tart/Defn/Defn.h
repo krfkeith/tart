@@ -143,7 +143,7 @@ public:
   void setQualifiedName(const std::string & name) { qname_ = name; }
 
   /** Get the linkage name of this definition. */
-  virtual const std::string & linkageName() const;
+  virtual llvm::StringRef linkageName() const;
 
   /** Set the linkage name of this definition. */
   void setLinkageName(const std::string & name) { lnkName = name; }

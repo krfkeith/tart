@@ -86,7 +86,8 @@ int main(int argc, char **argv) {
     llvm::sys::path::append(filePath, InputFilenames[i]);
     SourceFile source(filePath.c_str());
     llvm::sys::path::replace_extension(filePath, "");
-    Module module(&source, llvm::sys::path::filename(filePath), &Builtins::module);
+    Module module(llvm::sys::path::filename(filePath), &Builtins::module);
+    module.setModuleSource(&source);
     Parser parser(&source, &module);
     if (!parser.parseImports(module.imports())) {
       break;

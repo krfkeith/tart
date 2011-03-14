@@ -9,11 +9,13 @@
 #include "tart/Common/InternedString.h"
 
 #include "tart/Defn/Module.h"
-#include "tart/Expr/Exprs.h"
 #include "tart/Defn/Defn.h"
-#include "tart/Type/CompositeType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/TypeDefn.h"
+
+#include "tart/Expr/Exprs.h"
+
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
@@ -126,10 +128,6 @@ void CodeGenerator::generate() {
 
     if (de->isSingular()) {
       genXDef(de);
-    } else if (de->isTemplate() || de->isPartialInstantiation()) {
-//      if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
-//        createTemplateTypeInfoBlock(cast<CompositeType>(td->typeValue()));
-//      }
     } else {
       diag.debug() << "Not generated: " << de;
     }
@@ -173,6 +171,8 @@ void CodeGenerator::generate() {
   if (diag.getErrorCount() == 0 && module_->entryPoint() != NULL) {
     genEntryPoint();
   }
+
+  genModuleMetadata();
 
   if (Dump) {
     if (diag.getErrorCount() == 0) {

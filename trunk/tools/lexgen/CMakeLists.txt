@@ -50,7 +50,7 @@ function(add_tart_executable Name)
       DEPENDS ${LIBS} ${DEPFILES}
       COMMENT "Linking Tart bitcode file ${OBJ_FILE}")
 
-  add_executable(${EXE_FILE} ${OBJ_FILE})
+  add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
   add_dependencies(${EXE_FILE} libstd libtesting)
   target_link_libraries(${EXE_FILE} ${RUNTIME_LIBS})
 endfunction(add_tart_executable)
@@ -58,6 +58,7 @@ endfunction(add_tart_executable)
 add_tart_executable(lexgenTest${CMAKE_EXECUTABLE_SUFFIX}
   "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+  "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
   libLexGenShared.bc
   libLexGenGen.bc
   libLexGenTest.bc
@@ -69,6 +70,7 @@ add_dependencies(lexgenTest.run lexgenTest)
 add_tart_executable(lexgen${CMAKE_EXECUTABLE_SUFFIX}
   "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/opts/libopts.bc"
+  "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
   libLexGenApp.bc
   libLexGenShared.bc
   libLexGenGen.bc
