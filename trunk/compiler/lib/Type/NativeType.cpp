@@ -2,16 +2,19 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/Defn/Module.h"
+#include "tart/Defn/Template.h"
+
 #include "tart/Type/NativeType.h"
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/StaticType.h"
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Defn/Module.h"
-#include "tart/Defn/Template.h"
 
 #include "tart/Common/Diagnostics.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/DerivedTypes.h"
 #include "llvm/Support/CommandLine.h"
@@ -222,6 +225,10 @@ const llvm::Type * NativeArrayType::createIRType() const {
   return llvm::ArrayType::get(elementType()->irEmbeddedType(), size());
 }
 
+const llvm::Type * NativeArrayType::irParameterType() const {
+  return irType()->getPointerTo();
+}
+
 ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (const NativeArrayType * naFrom = dyn_cast<NativeArrayType>(fromType)) {
@@ -246,6 +253,19 @@ ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
 
     diag.fatal() << Format_Verbose << "Wants to convert from " << fromType << " to " << this;
     //DFAIL("Implement");
+    return Incompatible;
+  } else if (const CompositeType * cfrom = dyn_cast<CompositeType>(fromType)) {
+    // Special case for initializing a native type from an array literal.
+    if (cfrom->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
+      Conversion elementConversion(cfrom->typeParam(0));
+      if (elementType()->convert(elementConversion) == IdenticalTypes) {
+        if (cn.resultValue) {
+          *cn.resultValue = cn.fromValue;
+        }
+
+        return IdenticalTypes;
+      }
+    }
     return Incompatible;
   } else {
     return Incompatible;

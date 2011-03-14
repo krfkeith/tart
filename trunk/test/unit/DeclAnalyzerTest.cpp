@@ -21,9 +21,11 @@ protected:
 public:
   DefnAnalyzerTest()
     : testSource("")
-    , testModule(&testSource, "test", &Builtins::module)
+    , testModule("test", &Builtins::module)
     , declAnalyzer(&testModule, &testModule, &testModule, NULL)
-  {}
+  {
+    testModule.setModuleSource(&testSource);
+  }
 
   virtual void SetUp() {}
   virtual void TearDown() {}

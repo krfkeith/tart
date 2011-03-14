@@ -10,6 +10,8 @@
 #endif
 
 #include <llvm/ADT/StringMap.h>
+#include <llvm/ADT/StringRef.h>
+
 #include <vector>
 #include <list>
 
@@ -19,29 +21,41 @@ class Module;
 class Package;
 
 /// -------------------------------------------------------------------
-/// Container types
-typedef llvm::StringMap<Module *> ModuleMap;
-typedef std::list<std::string> PathList;
+/// Represents a location where modules can be found.
+
+class Importer {
+public:
+  virtual bool load(llvm::StringRef qualifiedName, Module *& module) = 0;
+};
+
+/// -------------------------------------------------------------------
+/// An import path which points to a directory in the filesystem.
+
+class DirectoryImporter : public Importer {
+public:
+  DirectoryImporter(llvm::StringRef path) : path_(path) {}
+  bool load(llvm::StringRef qualifiedName, Module *& module);
+
+private:
+  llvm::SmallString<128> path_;
+};
+
+/// -------------------------------------------------------------------
+/// An import path which points to a library.
+
+class ArchiveImporter : public Importer {
+public:
+  bool load(llvm::StringRef qualifiedName, Module *& module);
+};
 
 /// -------------------------------------------------------------------
 /// Keeps track of which modules have been compiled and where they are
+
 class PackageMgr {
-private:
-  // Set of all modules, arranged by package
-  ModuleMap modules;
-
-  // Set of directories to search for modules.
-  PathList importPaths;
-
-  // The singleton instance.
-  static PackageMgr instance;
-
 public:
-
-  /** Add a path to the list of module search paths. */
-  void addImportPath(const std::string & path) {
-      importPaths.push_back(path);
-  }
+  /** Add a path to the list of module search paths. The path can either be
+      a directory, or a bitcode library file. */
+  void addImportPath(llvm::StringRef path);
 
   /** Add a built-in module. */
   void addModule(Module * mod);
@@ -50,21 +64,31 @@ public:
       that symbol and return it. Optionally returns the number of
       prefix characters that were actually used to locate the module.
   */
-  Module * getModuleForImportPath(const std::string & importPath);
+  Module * getModuleForImportPath(llvm::StringRef importPath);
 
   /** Get the module from the module cache using this exact name. */
-  Module * getCachedModule(const std::string & moduleName);
-
-  /** Get all modules in the specified package. */
-  //bool getModulesInPackage(const std::string & qname, ModuleList & out);
+  Module * getCachedModule(llvm::StringRef moduleName);
 
   /** Return the singleton instance. */
-  static PackageMgr & get() { return instance; }
+  static PackageMgr & get() { return instance_; }
 
   /** Garbage collection for modules. */
   void trace();
+
+private:
+  typedef llvm::StringMap<Module *> ModuleMap;
+  typedef llvm::SmallVector<Importer *, 8> PathList;
+
+  // Set of all modules, arranged by package
+  ModuleMap modules_;
+
+  // Set of directories to search for modules.
+  PathList importPaths_;
+
+  // The singleton instance.
+  static PackageMgr instance_;
 };
 
-}
+} // namespace tart
 
-#endif
+#endif // TART_COMMON_PACKAGEMGR_H

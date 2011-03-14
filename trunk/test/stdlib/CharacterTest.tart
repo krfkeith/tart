@@ -1,0 +1,78 @@
+import tart.testing.Test;
+import tart.text.Character;
+import tart.text.CharacterTables;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(CharacterTest);
+}
+
+class CharacterTest : Test {
+  def testIsLetter {
+    assertTrue(Character.isLetter('a'));
+    assertTrue(Character.isLetter('z'));
+    assertTrue(Character.isLetter('A'));
+    assertTrue(Character.isLetter('Z'));
+    assertFalse(Character.isLetter('9'));
+    assertFalse(Character.isLetter(' '));
+    assertFalse(Character.isLetter('\n'));
+    assertTrue(Character.isLetter('\u01DE')); // Latin capital letter A with diaresis and macron
+    assertTrue(Character.isLetter('\u01DF')); // Latin small letter A with diaresis and macron
+    assertTrue(Character.isLetter('\uA764')); // Latin capital letter thorn with stroke
+    assertTrue(Character.isLetter('\uA765')); // Latin small letter thorn with stroke
+  }
+
+  def testIsUpperCase {
+    assertTrue(Character.isUpperCase('A'));
+    assertFalse(Character.isUpperCase('a'));
+    assertTrue(Character.isUpperCase('Z'));
+    assertFalse(Character.isUpperCase('z'));
+    assertFalse(Character.isUpperCase('0'));
+    assertFalse(Character.isUpperCase(' '));
+    assertFalse(Character.isUpperCase('\n'));
+    assertTrue(Character.isUpperCase('\u01DE')); // Latin capital letter A with diaresis and macron
+    assertFalse(Character.isUpperCase('\u01DF')); // Latin small letter A with diaresis and macron
+    assertTrue(Character.isUpperCase('\uA764')); // Latin capital letter thorn with stroke
+    assertFalse(Character.isUpperCase('\uA765')); // Latin small letter thorn with stroke
+  }
+
+  def testIsLowerCase {
+    assertTrue(Character.isLowerCase('a'));
+    assertFalse(Character.isLowerCase('A'));
+    assertTrue(Character.isLowerCase('z'));
+    assertFalse(Character.isLowerCase('Z'));
+    assertFalse(Character.isLowerCase('0'));
+    assertFalse(Character.isLowerCase(' '));
+    assertFalse(Character.isLowerCase('\n'));
+    assertFalse(Character.isLowerCase('\u01DE')); // Latin capital letter A with diaresis and macron
+    assertTrue(Character.isLowerCase('\u01DF')); // Latin small letter A with diaresis and macron
+    assertFalse(Character.isLowerCase('\uA764')); // Latin capital letter thorn with stroke
+    assertTrue(Character.isLowerCase('\uA765')); // Latin small letter thorn with stroke
+  }
+
+  def testToUpperCase {
+    assertEq('A', Character.toUpperCase('a'));
+    assertEq('Z', Character.toUpperCase('z'));
+    assertEq('A', Character.toUpperCase('A'));
+    assertEq('Z', Character.toUpperCase('Z'));
+    assertEq('0', Character.toUpperCase('0'));
+    assertEq(' ', Character.toUpperCase(' '));
+    assertEq('\u01DE', Character.toUpperCase('\u01DE')); // Latin capital letter A with diaresis and macron
+    assertEq('\u01DE', Character.toUpperCase('\u01DF')); // Latin small letter A with diaresis and macron
+    assertEq('\uA764', Character.toUpperCase('\uA764')); // Latin capital letter thorn with stroke
+    assertEq('\uA764', Character.toUpperCase('\uA765')); // Latin small letter thorn with stroke
+  }
+
+  def testToLowerCase {
+    assertEq('a', Character.toLowerCase('a'));
+    assertEq('z', Character.toLowerCase('z'));
+    assertEq('a', Character.toLowerCase('A'));
+    assertEq('z', Character.toLowerCase('Z'));
+    assertEq('0', Character.toLowerCase('0'));
+    assertEq(' ', Character.toLowerCase(' '));
+    assertEq('\u01DF', Character.toLowerCase('\u01DE')); // Latin capital letter A with diaresis and macron
+    assertEq('\u01DF', Character.toLowerCase('\u01DF')); // Latin small letter A with diaresis and macron
+    assertEq('\uA765', Character.toLowerCase('\uA764')); // Latin capital letter thorn with stroke
+    assertEq('\uA765', Character.toLowerCase('\uA765')); // Latin small letter thorn with stroke
+  }
+}

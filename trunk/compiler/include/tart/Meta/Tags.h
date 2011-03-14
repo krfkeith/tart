@@ -20,21 +20,6 @@ enum NameTag {
 };
 
 /// -------------------------------------------------------------------
-/// Tag definitions for definition sections.
-
-enum SectionTag {
-  TAG_SECTION_END = 0,
-  TAG_SECTION_TYPE_PARAMS = 1,
-  TAG_SECTION_ATTRIBUTES = 2,
-  TAG_SECTION_NAMESPACES = 3,
-  TAG_SECTION_FIELDS = 4,
-  TAG_SECTION_METHODS = 5,
-  TAG_SECTION_PROPERTIES = 6,
-  TAG_SECTION_BASE_TEMPLATE = 7,
-  TAG_SECTION_TEMPLATE_PARAMS = 8,
-};
-
-/// -------------------------------------------------------------------
 /// Tag definitions for reflected definitions.
 
 enum MemberTag {
@@ -43,9 +28,15 @@ enum MemberTag {
   // by the index of their name (variable-length encoded), any members
   // or modifiers, and ending with the end-of-scope tag.
 
-  TAG_DEF_SCOPE_END = 0,    // End of scope
+  TAG_DEF_INVALID = 0,      // Invalid tag
+  TAG_DEF_CLASS,            // A class definition
+  TAG_DEF_STRUCT,           // A struct definition
+  TAG_DEF_INTERFACE,        // An interface definition
+  TAG_DEF_PROTOCOL,         // A protocol definition
+  TAG_DEF_ENUM,             // An enum definition
+  TAG_DEF_TYPEALIAS,        // A protocol definition
   TAG_DEF_NAMESPACE,        // A namespace definition
-  TAG_DEF_METHOD,           // A method definition
+  TAG_DEF_FUNCTION,         // A function definition
   TAG_DEF_UNDEF,            // A method un-definition
   TAG_DEF_OVERRIDE,         // A method override
   TAG_DEF_CONSTRUCTOR,      // A constructor definition
@@ -86,6 +77,12 @@ enum DefnFlag {
   DEFNFLAG_UNSAFE       = (1<<3),
   DEFNFLAG_PROTECTED    = (1<<4),
   DEFNFLAG_PRIVATE      = (1<<5),
+  DEFNFLAG_INTERNAL     = (1<<6),
+  DEFNFLAG_CONSTANT     = (1<<7),   // Unused
+  DEFNFLAG_EXTERN       = (1<<8),
+  DEFNFLAG_READONLY     = (1<<9),
+  DEFNFLAG_VARIADIC     = (1<<10),
+  DEFNFLAG_KEYWORDONLY  = (1<<11),
 };
 
 /// -------------------------------------------------------------------
