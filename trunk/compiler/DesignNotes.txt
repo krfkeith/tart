@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------
 
 Next up:
-* Simplify source location / lexical block tracking.
 * Type constraints - eliminated un-needed methods.
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
