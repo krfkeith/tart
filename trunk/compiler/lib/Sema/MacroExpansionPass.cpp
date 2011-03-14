@@ -6,8 +6,6 @@
 #include "tart/Expr/StmtExprs.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/CFG/FunctionRegion.h"
-#include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Defn/Module.h"
@@ -44,8 +42,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
     if (!returnType->isVoidType()) {
-      LocalScope * retValScope = new LocalScope(
-          macro->definingScope(), stAn.activeScope()->region());
+      LocalScope * retValScope = new LocalScope(macro->definingScope());
       retValScope->setScopeName("macro-return");
       stAn.function()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");
@@ -55,10 +52,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       retValScope->addMember(retVal);
     }
 
-    FunctionRegion * macroRegion = new FunctionRegion(macro, macro->location().region);
-    LexicalBlockRegion * blockRegion = new LexicalBlockRegion(SourceLocation(macroRegion,
-        macro->location().begin, macro->location().end), in->location());
-    LocalScope paramScope(macro->definingScope(), blockRegion);
+    LocalScope paramScope(macro->definingScope());
     paramScope.setScopeName("macro-params");
 
     if (in->selfArg() != NULL) {

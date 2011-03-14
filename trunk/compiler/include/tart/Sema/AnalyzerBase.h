@@ -172,10 +172,6 @@ public:
   /** True if tracing is enabled for this def. */
   static bool isTraceEnabled(Defn * de);
 
-  /** Given an absolute file location, return the location within the active region. */
-//  SLC scopedRegion(SLC & loc, SourceRegion * region);
-  SLC astLoc(const ASTNode * ast);
-
   /** Given a defn, make sure it's a template instance, and determine if there's another
       instance of the same template with more generic type parameters. */
   Defn * findLessSpecializedInstance(Defn * de);

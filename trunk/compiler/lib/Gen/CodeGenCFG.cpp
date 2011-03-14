@@ -107,8 +107,6 @@ Value * CodeGenerator::genSeq(const SeqExpr * in) {
     dbgContext_ = genLexicalBlock(in->location());
   }
 
-  // Begin region. Note that we don't do this for the topmost block of a function.
-  //DIDescriptor savedScope = beginLexicalBlock(in->location());
   for (SeqExpr::const_iterator it = in->begin(); it != in->end(); ++it) {
     if (atTerminator()) {
       diag.warn(*it) << "Unreachable statement";

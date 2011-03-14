@@ -9,8 +9,6 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
 
-#include "tart/CFG/FunctionRegion.h"
-#include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/Defn/Module.h"
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/TypeDefn.h"
@@ -61,7 +59,7 @@ static unsigned typeEncoding(TypeId id) {
 void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
   if (debug_ && loc != dbgLocation_) {
     dbgLocation_ = loc;
-    if (loc.region == NULL) {
+    if (loc.file == NULL) {
       builder_.SetCurrentDebugLocation(llvm::DebugLoc());
     } else {
       TokenPosition pos = tokenPosition(loc);
@@ -99,7 +97,7 @@ llvm::DIScope CodeGenerator::compileUnit() {
   return DIScope(diBuilder_.getCU());
 }
 
-DIFile CodeGenerator::genDIFile(const SourceRegion * source) {
+DIFile CodeGenerator::genDIFile(const ProgramSource * source) {
   DIFile & file = dbgFiles_[source->getFilePath()];
   if ((MDNode *)file == NULL) {
     if (source != NULL) {
@@ -122,11 +120,11 @@ DIFile CodeGenerator::genDIFile(const SourceRegion * source) {
 }
 
 DIFile CodeGenerator::genDIFile(const Defn * defn) {
-  if (defn == NULL || defn->location().region == NULL) {
+  if (defn == NULL || defn->location().file == NULL) {
     return dbgFile_;
   }
 
-  return genDIFile(defn->location().region);
+  return genDIFile(defn->location().file);
 }
 
 DILexicalBlock CodeGenerator::genLexicalBlock(const SourceLocation & loc) {
@@ -134,7 +132,7 @@ DILexicalBlock CodeGenerator::genLexicalBlock(const SourceLocation & loc) {
   DASSERT(pos.beginLine);
   return diBuilder_.createLexicalBlock(
       dbgContext_,
-      genDIFile(loc.region),
+      genDIFile(loc.file),
       pos.beginLine,
       pos.beginCol);
 }
@@ -195,6 +193,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
 void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   // Generate debugging information (this has to be done after local variable allocas.)
   if (debug_ && (MDNode *)dbgContext_ != NULL) {
+    DASSERT(dbgFile_.Verify());
     const FunctionType * ftype = fn->functionType();
     if (ftype->selfParam() != NULL) {
       genDIParameter(ftype->selfParam());
@@ -231,6 +230,7 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
 
 void CodeGenerator::genDIParameter(const ParameterDefn * param) {
   // TODO: Need to take 'shape' into account, esp for return type.
+  DASSERT(dbgFile_.Verify());
   DIVariable dbgVar = diBuilder_.createLocalVariable(
       dwarf::DW_TAG_arg_variable, dbgContext_,
       param->name(), dbgFile_, getSourceLineNumber(param->location()),
@@ -270,11 +270,12 @@ void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable
 }
 
 void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) {
-  if (debug_ && var->location().region != NULL) {
+  if (debug_ && var->location().file != NULL) {
     // If var does have storage, we generate the debug info on the alloca rather than on
     // first assignment.
     if (!var->hasStorage()) {
       /// createVariable - create a new descriptor for the specified variable.
+      DASSERT(dbgFile_.Verify());
       DIVariable dbgVar = diBuilder_.createLocalVariable(
           dwarf::DW_TAG_auto_variable, dbgContext_,
           var->name(), dbgFile_, getSourceLineNumber(var->location()),
@@ -406,6 +407,7 @@ DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memb
   uint64_t memberAlign = getAlignOfInBits(type);
 
   offset = align(offset, memberAlign);
+  DASSERT(dbgFile_.Verify());
   DIType result = diBuilder_.createMemberType(
       name.str().c_str(),
       dbgFile_,
@@ -521,6 +523,7 @@ DIType CodeGenerator::genDIAddressType(const AddressType * type) {
 DIType CodeGenerator::genDIUnionType(const UnionType * type) {
   const llvm::Type * irType = type->irType();
   ValueArray unionMembers;
+  DASSERT(dbgFile_.Verify());
 
   // Collect union members
   int memberIndex = 0;
@@ -590,6 +593,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
   int32_t index = 0;
   char memberName[16];
   uint64_t memberOffset = 0;
+  DASSERT(dbgFile_.Verify());
   for (TupleType::const_iterator it = type->begin(); it != type->end(); ++it) {
     const Type * memberType = *it;
     uint64_t memberSize = getSizeOfInBits(memberType->irEmbeddedType());
@@ -622,6 +626,7 @@ DIType CodeGenerator::genDIFunctionType(const FunctionType * type) {
   ValueArray args;
   // TODO: Need to take 'shape' into account.
   args.push_back(genDIType(type->returnType()));
+  DASSERT(dbgFile_.Verify());
 
   if (type->selfParam() != NULL) {
     const ParameterDefn * param = type->selfParam();

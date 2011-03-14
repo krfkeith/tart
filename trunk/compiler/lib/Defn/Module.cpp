@@ -34,7 +34,7 @@ Module::Module(llvm::StringRef qual, Scope * builtinScope)
   , timestamp_(0, 0)
   , irModule_(NULL)
 {
-  loc.region = NULL;
+  loc.file = NULL;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
@@ -58,7 +58,7 @@ Module::Module(ProgramSource * src, llvm::StringRef qual)
   , timestamp_(0, 0)
   , irModule_(NULL)
 {
-  loc.region = src;
+  loc.file = src;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));

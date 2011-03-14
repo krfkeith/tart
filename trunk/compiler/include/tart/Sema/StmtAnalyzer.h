@@ -38,7 +38,6 @@ public:
   bool buildCFG();
 
 private:
-  SourceRegion * rootBlockRegion_;
   Type * yieldType_;
 };
 

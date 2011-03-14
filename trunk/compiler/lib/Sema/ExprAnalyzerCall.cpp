@@ -29,15 +29,15 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
   if (callable->nodeType() == ASTNode::Id ||
       callable->nodeType() == ASTNode::Member ||
       callable->nodeType() == ASTNode::Specialize) {
-    return callName(astLoc(call), callable, args, expected);
+    return callName(call->location(), callable, args, expected);
   } else if (callable->nodeType() == ASTNode::Super) {
-    return callSuper(astLoc(call), args, expected);
+    return callSuper(call->location(), args, expected);
   } else if (callable->nodeType() == ASTNode::BuiltIn) {
     // Built-in type constructor
     Defn * tdef = static_cast<const ASTBuiltIn *>(callable)->value();
-    return callExpr(astLoc(call), cast<TypeDefn>(tdef)->asExpr(), args, expected);
+    return callExpr(call->location(), cast<TypeDefn>(tdef)->asExpr(), args, expected);
   } else if (callable->nodeType() == ASTNode::GetElement) {
-    return callExpr(astLoc(call), reduceElementRef(
+    return callExpr(call->location(), reduceElementRef(
         static_cast<const ASTOper *>(callable), false), args, expected);
   }
 

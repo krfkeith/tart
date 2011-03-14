@@ -11,30 +11,30 @@
 
 namespace tart {
 
-class SourceRegion;
+class ProgramSource;
 class Formattable;
 
 /// -------------------------------------------------------------------
 /// Location of a token within a source file, in terms of character
 /// offsets from the start of the file.
 struct SourceLocation {
-  SourceRegion  * region;         // Pointer to enclosing region
+  ProgramSource * file;           // Pointer to enclosing file
   uint32_t        begin;          // Start position in file
   uint32_t        end;            // End position in file
 
   SourceLocation() {
-    region = NULL;
+    file = NULL;
     begin = end = 0;
   }
 
-  SourceLocation(SourceRegion * region, uint32_t begin, uint32_t end) {
-    this->region = region;
+  SourceLocation(ProgramSource * file, uint32_t begin, uint32_t end) {
+    this->file = file;
     this->begin = begin;
     this->end = end;
   }
 
   SourceLocation & operator=(const SourceLocation & in) {
-    region = in.region;
+    file = in.file;
     begin = in.begin;
     end = in.end;
     return *this;
@@ -42,11 +42,11 @@ struct SourceLocation {
 
   friend SourceLocation operator|(const SourceLocation & a, const SourceLocation & b) {
     SourceLocation result;
-    if (a.region == b.region) {
-      result.region = a.region;
+    if (a.file == b.file) {
+      result.file = a.file;
       result.begin = a.begin < b.begin ? a.begin : b.begin;
       result.end = a.end > b.end ? a.end : b.end;
-    } else if (a.region == NULL) {
+    } else if (a.file == NULL) {
       result = b;
     } else {
       result = a;
@@ -56,11 +56,11 @@ struct SourceLocation {
   }
 
   SourceLocation operator|=(const SourceLocation & a) {
-    if (a.region == region) {
+    if (a.file == file) {
       if (a.begin < begin) begin = a.begin;
       if (a.end > end) end = a.end;
-    } else if (region == NULL) {
-      region = a.region;
+    } else if (file == NULL) {
+      file = a.file;
       begin = a.begin;
       end = a.end;
     }
@@ -69,19 +69,14 @@ struct SourceLocation {
   }
 
   bool operator==(const SourceLocation & in) const {
-    return (region == in.region && begin == in.begin && end == in.end);
+    return (file == in.file && begin == in.begin && end == in.end);
   }
 
   bool operator!=(const SourceLocation & in) const {
-    return (region != in.region || begin != in.begin || end != in.end);
+    return (file != in.file || begin != in.begin || end != in.end);
   }
 
   void trace() const;
-
-  /** With the current location, and a region which is a subset of the current location's
-      region, return a new location containing the new region and the file and line number of
-      the current location. */
-  SourceLocation forRegion(SourceRegion * region) const;
 
 #if __GNUG__
   void dump() const __attribute__ ((noinline));

@@ -15,25 +15,15 @@
 namespace tart {
 
 void SourceLocation::trace() const {
-  if (region != NULL) {
-    region->mark();
+  if (file != NULL) {
+    file->mark();
   }
 }
 
 void SourceLocation::dump() const {
-  if (region != NULL && !region->getFilePath().empty()) {
-    TokenPosition pos = region->tokenPosition(*this);
-    llvm::errs() << region->getFilePath() << ":" << pos.beginLine << "\n";
-  }
-}
-
-SourceLocation SourceLocation::forRegion(SourceRegion * newRegion) const {
-  if (newRegion == NULL || region == NULL || region == newRegion) {
-    return *this;
-  } else {
-    // Make sure that the active region is a child of loc.region.
-    DASSERT(newRegion->hasParent(region));
-    return SourceLocation(newRegion, begin, end);
+  if (file != NULL && !file->getFilePath().empty()) {
+    TokenPosition pos = file->tokenPosition(*this);
+    llvm::errs() << file->getFilePath() << ":" << pos.beginLine << "\n";
   }
 }
 

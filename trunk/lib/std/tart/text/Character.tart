@@ -55,6 +55,16 @@ namespace Character {
 	  }
 	}
 
+  /** True if the character 'ch' is a defined Unicode character. */
+	def isDefined(ch:char) -> bool {
+	  return CharacterTables.category(ch) != Category.Cn;
+	}
+
+  /** True if the character 'ch' is an ISO control character. */
+	def isControl(ch:char) -> bool {
+	  return CharacterTables.category(ch) == Category.Cc;
+	}
+
   /** True if the character 'ch' is an upper case character. */
 	def isUpperCase(ch:char) -> bool {
 	  return CharacterTables.category(ch) == Category.Lu;

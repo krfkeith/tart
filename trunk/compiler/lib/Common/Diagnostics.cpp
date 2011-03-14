@@ -293,11 +293,11 @@ void Diagnostics::AssertAction::write(const SourceLocation & loc, const std::str
 
 void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
     const std::string & msg) {
-  if (loc.region != NULL && !loc.region->getFilePath().empty()) {
+  if (loc.file != NULL && !loc.file->getFilePath().empty()) {
     // The TextMate error parser is fairly strict
-    TokenPosition tokLoc = loc.region->tokenPosition(loc);
+    TokenPosition tokLoc = loc.file->tokenPosition(loc);
     fprintf(stderr, "%s:%d: %s%.*s%s\n",
-        loc.region->getFilePath().str().c_str(),
+        loc.file->getFilePath().str().c_str(),
         tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,
@@ -316,11 +316,11 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
     const std::string & msg) {
   char buffer[256];
   size_t len;
-  if (loc.region != NULL && !loc.region->getFilePath().empty()) {
+  if (loc.file != NULL && !loc.file->getFilePath().empty()) {
     // The TextMate error parser is fairly strict
-    TokenPosition tokLoc = loc.region->tokenPosition(loc);
+    TokenPosition tokLoc = loc.file->tokenPosition(loc);
     len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
-        loc.region->getFilePath().str().c_str(),
+        loc.file->getFilePath().str().c_str(),
         tokLoc.beginLine,
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,

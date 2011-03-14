@@ -15,8 +15,6 @@
 
 namespace tart {
 
-class FunctionRegion;
-
 /// -------------------------------------------------------------------
 /// A definition of a function parameter
 class ParameterDefn : public VariableDefn {
@@ -186,9 +184,6 @@ public:
     return static_cast<const ASTFunctionDecl *>(ast_);
   }
 
-  FunctionRegion * region() const { return region_; }
-  void setRegion(FunctionRegion * region) { region_ = region; }
-
   /** The index into the dispatch table for the enclosing class. */
   int dispatchIndex() const { return dispatchIndex_; }
   void setDispatchIndex(int index) { dispatchIndex_ = index; }
@@ -263,7 +258,6 @@ private:
   int dispatchIndex_;
   Intrinsic * intrinsic_;
   FunctionSet overriddenMethods_;
-  FunctionRegion * region_;
   PassMgr passes_;
   FunctionDefn * mergeTo_;
   ExprList closureEnvs_;
