@@ -72,7 +72,9 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
 
     Value * cellValue = builder_.CreateCall2(
             getGcAlloc(), gcAllocContext_,
-            llvm::ConstantExpr::getSizeOf(cellType->irType()),
+            llvm::ConstantExpr::getIntegerCast(
+                llvm::ConstantExpr::getSizeOf(cellType->irType()),
+                intPtrType_, false),
             var->name() + StringRef(".shared.alloc"));
     cellValue = builder_.CreatePointerCast(
         cellValue, irType, var->name() + StringRef(".shared"));
@@ -100,6 +102,11 @@ Value * CodeGenerator::genSeq(const SeqExpr * in) {
   size_t savedRootCount = rootStackSize();
   pushRoots(in->scope());
 
+  DIScope saveContext = dbgContext_;
+  if (in->scope() != NULL) {
+    dbgContext_ = genLexicalBlock(in->location());
+  }
+
   // Begin region. Note that we don't do this for the topmost block of a function.
   //DIDescriptor savedScope = beginLexicalBlock(in->location());
   for (SeqExpr::const_iterator it = in->begin(); it != in->end(); ++it) {
@@ -117,6 +124,8 @@ Value * CodeGenerator::genSeq(const SeqExpr * in) {
   if (!atTerminator()) {
     popRootStack(savedRootCount);
   }
+
+  dbgContext_ = saveContext;
   return result;
 }
 

@@ -1132,7 +1132,9 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
     // Allocate the environment.
     Value * env = builder_.CreateCall2(
         getGcAlloc(), gcAllocContext_,
-        llvm::ConstantExpr::getSizeOf(envType->irType()),
+        llvm::ConstantExpr::getIntegerCast(
+            llvm::ConstantExpr::getSizeOf(envType->irType()),
+            intPtrType_, false),
         "closure.env.new");
     env = builder_.CreatePointerCast(env, envType->irType()->getPointerTo(), "closure.env");
     genInitObjVTable(envType, env);

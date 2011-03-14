@@ -66,18 +66,8 @@ void CodeGenerator::setDebugLocation(const SourceLocation & loc) {
     } else {
       TokenPosition pos = tokenPosition(loc);
       DASSERT(pos.beginLine);
-
-      // TODO: Avoid creating the debug loc each time.
-//      MDNode * inlinedAt = NULL;
-//      SourceLocation inLoc = loc.region->inlinedAt();
-//      if (inLoc.region != NULL) {
-//        TokenPosition inPos = tokenPosition(inLoc);
-//        inlinedAt = DebugLoc::get(
-//            inPos.beginLine, inPos.endLine, genRegionScope(inLoc.region)).getAsMDNode(context_);
-//      }
-
       builder_.SetCurrentDebugLocation(
-          DebugLoc::get(pos.beginLine, pos.beginCol, genRegionScope(loc.region) /*, inlinedAt */));
+          DebugLoc::get(pos.beginLine, pos.beginCol, dbgContext_, dbgInlineContext_));
     }
   }
 }
@@ -139,33 +129,14 @@ DIFile CodeGenerator::genDIFile(const Defn * defn) {
   return genDIFile(defn->location().region);
 }
 
-DIScope CodeGenerator::genRegionScope(SourceRegion * region) {
-  if (region->dbgScope().isScope()) {
-    return region->dbgScope();
-  }
-
-  if (const LexicalBlockRegion * bregion = dyn_cast<LexicalBlockRegion>(region)) {
-    TokenPosition pos = tokenPosition(bregion->location());
-    DASSERT(pos.beginLine);
-    region->dbgScope() = diBuilder_.createLexicalBlock(
-        genRegionScope(region->parentRegion()),
-        genDIFile(region),
-        pos.beginLine,
-        pos.beginCol);
-  } else if (const FunctionRegion * fregion = dyn_cast<FunctionRegion>(region)) {
-    if (fregion->function()->defnType() != Defn::Macro) {
-      region->dbgScope() = genDISubprogram(fregion->function());
-    } else {
-      region->dbgScope() = genRegionScope(region->parentRegion());
-    }
-  } else if (const ProgramSource * source = dyn_cast<ProgramSource>(region)) {
-    return compileUnit();
-  } else {
-    diag.fatal() << "Unsupported region type";
-    return DIScope();
-  }
-
-  return region->dbgScope();
+DILexicalBlock CodeGenerator::genLexicalBlock(const SourceLocation & loc) {
+  TokenPosition pos = tokenPosition(loc);
+  DASSERT(pos.beginLine);
+  return diBuilder_.createLexicalBlock(
+      dbgContext_,
+      genDIFile(loc.region),
+      pos.beginLine,
+      pos.beginCol);
 }
 
 DIDescriptor CodeGenerator::genDefnScope(const Defn * de) {
@@ -305,7 +276,7 @@ void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) 
     if (!var->hasStorage()) {
       /// createVariable - create a new descriptor for the specified variable.
       DIVariable dbgVar = diBuilder_.createLocalVariable(
-          dwarf::DW_TAG_auto_variable, genRegionScope(var->location().region),
+          dwarf::DW_TAG_auto_variable, dbgContext_,
           var->name(), dbgFile_, getSourceLineNumber(var->location()),
           genDIEmbeddedType(var->type()));
       setDebugLocation(var->location());
@@ -522,7 +493,6 @@ DIType CodeGenerator::genDIEnumType(const EnumType * type) {
       diBuilder_.getOrCreateArray(&members[0], members.size()));
 }
 
-#if 1
 DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   Value * subrange = diBuilder_.getOrCreateSubrange(0, type->size());
   return diBuilder_.createArrayType(
@@ -531,26 +501,7 @@ DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
       genDIEmbeddedType(type->typeParam(0)),
       diBuilder_.getOrCreateArray(&subrange, 1));
 }
-#else
-DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
-  DIFactory dbgFactory(*irModule_);
-  DIDescriptor subrange = dbgFactory.GetOrCreateSubrange(0, type->size());
-  return dbgFactory.CreateCompositeType(
-      dwarf::DW_TAG_array_type,
-      compileUnit(),
-      "",
-      dbgFile_,
-      0,
-      getSizeOfInBits(type->irEmbeddedType()),
-      getAlignOfInBits(type->irEmbeddedType()),
-      0, 0,
-      DIType(),
-      dbgFactory.GetOrCreateArray(&subrange, 1));
-}
 
-#endif
-
-#if 1
 DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
   Value * subrange = diBuilder_.getOrCreateSubrange(0, 0);
   return diBuilder_.createArrayType(
@@ -559,23 +510,6 @@ DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
       genDIEmbeddedType(type->typeParam(0)),
       diBuilder_.getOrCreateArray(&subrange, 1));
 }
-#else
-DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
-  DIFactory dbgFactory(*irModule_);
-  DIDescriptor subrange = dbgFactory.GetOrCreateSubrange(0, 0);
-  return dbgFactory.CreateCompositeType(
-      dwarf::DW_TAG_array_type,
-      compileUnit(),
-      "",
-      dbgFile_,
-      0,
-      getSizeOfInBits(type->irEmbeddedType()),
-      getAlignOfInBits(type->irEmbeddedType()),
-      0, 0,
-      DIType(),
-      dbgFactory.GetOrCreateArray(&subrange, 1));
-}
-#endif
 
 DIType CodeGenerator::genDIAddressType(const AddressType * type) {
   return diBuilder_.createPointerType(

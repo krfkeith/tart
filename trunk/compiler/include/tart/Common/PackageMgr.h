@@ -26,6 +26,7 @@ class Package;
 class Importer {
 public:
   virtual bool load(llvm::StringRef qualifiedName, Module *& module) = 0;
+  virtual ~Importer() {}
 };
 
 /// -------------------------------------------------------------------
