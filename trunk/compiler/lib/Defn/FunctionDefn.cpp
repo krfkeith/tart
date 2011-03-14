@@ -245,7 +245,7 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   return true;
 }
 
-const std::string & FunctionDefn::linkageName() const {
+llvm::StringRef FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
     Defn::linkageName();
 

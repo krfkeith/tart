@@ -29,14 +29,13 @@ Design TODOS:
   * Some way to import C++ data structures into Tart - for things like pthreads.
   
 Hard problems:
-  -- GC
+  -- Dynamic linking.
   -- Exception backtrace
   -- Dynamic reification of types.
 
 More things to do:
   -- Get static ctors working.
   -- BitTricks tests.
-  -- GC
   -- Static If
   -- Compile-time configuration options. @TargetProperty.
   -- Exception backtrace.
@@ -48,13 +47,15 @@ Implementation TODOS:
 * Add a unit test for converting invalid enum values to strings.
 * Fix coercion of enum values to objects.
 
+* Sphinx extension for Tart autoocs?
+* Sphinx domain for Tart?
 * Coalesced templates
-* Case * (what about classify?)
+* Case * (what about classify? - short form needs an 'else')
 * Implicit downcast in if-block. (Includes unions as well.)
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
-* Call gc_alloc instead of malloc.
 * Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
+* Undef'd methods should throw UnsupportedOperationException.
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
@@ -74,9 +75,7 @@ Implementation TODOS:
 * Test overloading of augmented assignment operators.
 * Override for property getters and setters. (I think that's done.)
 * Finish array unit tests. (One test remaining)
-* Proxy types. I think we'll want to use method names instead of Method pointers...?
-* Exceptions:
-  * Stack trace
+* Proxy types.
 * Enum types
    * Enum operators (relational).
   * .parse or valueOf.
@@ -325,14 +324,6 @@ object
 // ------------------------------------------------------------------------
 
 // Redo Type::getHashCode();
-// Make function types canonical without paramters. (Can that be done?)
-
-Why can't we remove the names of the parameters from FunctionType? Here's an example:
-
-  closures[index](arg=10);
-  
-  The type of 'closures' is: fn (arg:int)[]
-
 // CountingIterator is really inefficient. Why?
 // Derived types for reflection can be deserialized in random order.
 

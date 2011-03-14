@@ -221,25 +221,22 @@ llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
 GlobalVariable * Reflector::getModulePtr(Module * module) {
   DASSERT(enabled_);
 
-  std::string moduleSymbol(".module." + module->linkageName());
-  GlobalVarMap::iterator it = globals_.find(moduleSymbol);
-  if (it != globals_.end()) {
-    return it->second;
+  Twine moduleSymbol(".module.", module->linkageName());
+  if (GlobalVariable * var = findGlobal(moduleSymbol)) {
+    return var;
   }
 
   irModule_->addTypeName("tart.reflect.Module", Builtins::typeModule->irType());
   irModule_->addTypeName("tart.reflect.NameTable", Builtins::typeNameTable->irType());
-  GlobalVariable * rfModule = new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
       GlobalValue::ExternalLinkage, NULL, moduleSymbol);
-  globals_[moduleSymbol] = rfModule;
-  return rfModule;
 }
 
 GlobalVariable * Reflector::getNameTablePtr(Module * module) {
   DASSERT(enabled_);
 
   if (nameTableVar_ == NULL) {
-    std::string nameTableSymbol(".names." + module->linkageName());
+    Twine nameTableSymbol(".names.", module->linkageName());
     nameTableVar_ = new GlobalVariable(*irModule_, Builtins::typeNameTable->irType(),
         false, GlobalValue::ExternalLinkage, NULL, nameTableSymbol);
   }
@@ -248,10 +245,9 @@ GlobalVariable * Reflector::getNameTablePtr(Module * module) {
 }
 
 llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
-  std::string packageSymbol(".package." + module->packageName());
-  GlobalVarMap::iterator it = globals_.find(packageSymbol);
-  if (it != globals_.end()) {
-    return it->second;
+  Twine packageSymbol(".package.", module->packageName());
+  if (GlobalVariable * var = findGlobal(packageSymbol)) {
+    return var;
   }
 
   irModule_->addTypeName("tart.reflect.Package", Builtins::typePackage->irType());
@@ -262,16 +258,13 @@ llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
   sb.addField(emitArray("tart.reflect.Package.", reflect::Package::subpackages.get(),
       ConstantList()));
 
-  GlobalVariable * rfPackage = new GlobalVariable(*irModule_, Builtins::typePackage->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typePackage->irType(), true,
       GlobalValue::LinkOnceAnyLinkage, sb.build(), packageSymbol);
-  globals_[packageSymbol] = rfPackage;
-  return rfPackage;
 }
 
 llvm::GlobalVariable * Reflector::getMethodPtr(const FunctionDefn * fn) {
-  std::string symbol = ".method." + fn->linkageName();
-  GlobalVariable * var = irModule_->getGlobalVariable(symbol, true);
-  if (var != NULL) {
+  Twine symbol(".method.", fn->linkageName());
+  if (GlobalVariable * var = findGlobal(symbol)) {
     return var;
   }
 
@@ -290,9 +283,8 @@ llvm::GlobalVariable * Reflector::getMethodPtr(const FunctionDefn * fn) {
 }
 
 llvm::GlobalVariable * Reflector::getPropertyPtr(const PropertyDefn * prop) {
-  std::string symbol = ".property." + prop->linkageName();
-  GlobalVariable * var = irModule_->getGlobalVariable(symbol, true);
-  if (var != NULL) {
+  Twine symbol(".property.", prop->linkageName());
+  if (GlobalVariable * var = findGlobal(symbol)) {
     return var;
   }
 
@@ -309,9 +301,8 @@ llvm::GlobalVariable * Reflector::getPropertyPtr(const PropertyDefn * prop) {
 }
 
 llvm::GlobalVariable * Reflector::getFieldPtr(const VariableDefn * field) {
-  std::string symbol = ".field." + field->linkageName();
-  GlobalVariable * var = irModule_->getGlobalVariable(symbol, true);
-  if (var != NULL) {
+  Twine symbol(".field.", field->linkageName());
+  if (GlobalVariable * var = findGlobal(symbol)) {
     return var;
   }
 
@@ -361,9 +352,8 @@ llvm::Constant * Reflector::getTypePtr(const Type * type) {
 }
 
 llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type) {
-  std::string typeSymbol(".compositeType." + type->typeDefn()->linkageName());
-  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
-  if (var != NULL) {
+  Twine typeSymbol(".compositeType.", type->typeDefn()->linkageName());
+  if (GlobalVariable * var = findGlobal(typeSymbol)) {
     return var;
   }
 
@@ -384,9 +374,8 @@ llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type
 }
 
 llvm::GlobalVariable * Reflector::getEnumTypePtr(const EnumType * type) {
-  std::string typeSymbol(".enumType." + type->typeDefn()->linkageName());
-  GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
-  if (var != NULL) {
+  Twine typeSymbol(".enumType.", type->typeDefn()->linkageName());
+  if (GlobalVariable * var = findGlobal(typeSymbol)) {
     return var;
   }
 
@@ -534,7 +523,7 @@ void Reflector::emitNameTable(Module * module) {
 
     // Write out encoded string data stream
     if (!encodedStringData.empty()) {
-      std::string encodedStringsSymbol(".names_simple." + module->linkageName());
+      Twine encodedStringsSymbol(".names_simple.", module->linkageName());
       Constant * encodedStrings = ConstantArray::get(context_, encodedStringData, false);
       GlobalVariable * encodedStringsVar = new GlobalVariable(*irModule_, encodedStrings->getType(),
           true, GlobalValue::InternalLinkage, encodedStrings, encodedStringsSymbol);
@@ -546,13 +535,13 @@ void Reflector::emitNameTable(Module * module) {
     // Write out encoded compound name stream
     if (!encodedNamesData.empty()) {
       if (encodedNamesData.size() == 1 && encodedNamesData[0] == 0) {
-        std::string encodedNamesSymbol(".names_compound.$empty");
+        StringRef encodedNamesSymbol(".names_compound.$empty");
         Constant * encodedNames = ConstantArray::get(context_, encodedNamesData, false);
         GlobalVariable * encodedNamesVar = new GlobalVariable(*irModule_, encodedNames->getType(),
             true, GlobalValue::LinkOnceODRLinkage, encodedNames, encodedNamesSymbol);
         sb.addField(llvm::ConstantExpr::getPointerCast(encodedNamesVar, builder_.getInt8PtrTy()));
       } else {
-        std::string encodedNamesSymbol(".names_compound." + module->linkageName());
+        Twine encodedNamesSymbol(".names_compound.", module->linkageName());
         Constant * encodedNames = ConstantArray::get(context_, encodedNamesData, false);
         GlobalVariable * encodedNamesVar = new GlobalVariable(*irModule_, encodedNames->getType(),
             true, GlobalValue::InternalLinkage, encodedNames, encodedNamesSymbol);
@@ -1410,6 +1399,11 @@ NameTable::Name * Reflector::addQualifiedName(StringRef name) {
 NameTable::Name * Reflector::addName(const StringRef name) {
   DASSERT(nameTableVar_ == NULL);
   return cg_.nameTable().addName(name);
+}
+
+GlobalVariable * Reflector::findGlobal(const llvm::Twine & name) {
+  llvm::SmallString<128> str;
+  return irModule_->getGlobalVariable(name.toStringRef(str), true);
 }
 
 } // namespace tart

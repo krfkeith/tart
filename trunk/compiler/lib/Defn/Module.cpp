@@ -24,16 +24,17 @@ NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
 
 namespace tart {
 
-Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinScope)
+Module::Module(llvm::StringRef qual, Scope * builtinScope)
   : Defn(Mod, this, "<module>")
   , IterableScope(builtinScope)
-  , moduleSource_(src)
+  , moduleSource_(NULL)
   , entryPoint_(NULL)
   , programStartup_(NULL)
   , flags_(Module_Reflect)
+  , timestamp_(0, 0)
   , irModule_(NULL)
 {
-  loc.region = src;
+  loc.region = NULL;
   qname_.assign(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
@@ -47,13 +48,14 @@ Module::Module(ProgramSource * src, const std::string & qual, Scope * builtinSco
   }
 }
 
-Module::Module(ProgramSource * src, const std::string & qual)
+Module::Module(ProgramSource * src, llvm::StringRef qual)
   : Defn(Mod, this, "<module>")
   , IterableScope(NULL)
   , moduleSource_(src)
   , entryPoint_(NULL)
   , programStartup_(NULL)
   , flags_(Module_Reflect)
+  , timestamp_(0, 0)
   , irModule_(NULL)
 {
   loc.region = src;

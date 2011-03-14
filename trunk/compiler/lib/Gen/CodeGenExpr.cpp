@@ -323,6 +323,9 @@ llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, boo
     case Expr::ConstEmptyArray:
       return genConstantEmptyArray(cast<CompositeType>(in->type()));
 
+    case Expr::ConstNArray:
+      return genConstantNativeArrayPtr(static_cast<const ConstantNativeArray *>(in), name);
+
       // Don't know if this is needed....
 #if 0
     case Expr::LValue: {
@@ -337,9 +340,6 @@ llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, boo
       return NULL;
     }
 #endif
-
-    //case Expr::ConstNArray:
-      //return genConstantArrayPtr(static_cast<const ConstantNativeArray *>(in));
 
     default:
       diag.fatal(in) << "Not a constant reference: " <<
@@ -1295,6 +1295,17 @@ Constant * CodeGenerator::genConstantObjectStruct(
   return ConstantStruct::get(context_, fieldValues, false);
 }
 
+llvm::Constant * CodeGenerator::genConstantNativeArrayPtr(const ConstantNativeArray * array,
+    llvm::StringRef name) {
+  llvm::Constant * nativeArray = genConstantNativeArray(array);
+  GlobalVariable * var = new GlobalVariable(
+      *irModule_, nativeArray->getType(), false,
+      GlobalValue::InternalLinkage, nativeArray, name);
+  // TODO: Might need to make this a root.
+  addStaticRoot(var, array->type());
+  return var;
+}
+
 llvm::Constant * CodeGenerator::genConstantNativeArray(const ConstantNativeArray * array) {
   ConstantList elementValues;
   for (ExprList::const_iterator it = array->elements().begin(); it != array->elements().end(); ++it) {
@@ -1364,8 +1375,10 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
 }
 
 llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arrayType) {
-  std::string arrayName = arrayType->typeDefn()->linkageName() + ".emptyArray";
-  if (GlobalVariable * gv = irModule_->getGlobalVariable(arrayName, true)) {
+  Twine arrayName(arrayType->typeDefn()->linkageName(), ".emptyArray");
+  SmallString<128> arrayNameStr;
+  arrayName.toVector(arrayNameStr);
+  if (GlobalVariable * gv = irModule_->getGlobalVariable(arrayNameStr, true)) {
     return gv;
   }
   const Type * elementType = arrayType->typeParam(0);

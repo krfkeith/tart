@@ -87,7 +87,7 @@ void Defn::createQualifiedName(Defn * parent) {
   qname_ = name_;
 }
 
-const std::string & Defn::linkageName() const {
+llvm::StringRef Defn::linkageName() const {
   if (lnkName.empty()) {
     if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray.typeDefn()) {
       // Handle arrays specially.

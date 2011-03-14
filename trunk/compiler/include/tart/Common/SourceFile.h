@@ -14,6 +14,8 @@
 #endif
 
 #include "llvm/Support/Path.h"
+#include "llvm/ADT/SmallString.h"
+
 #include <string>
 #include <fstream>
 #include <list>
@@ -26,7 +28,7 @@ namespace tart {
 // Abstract interface representing the source of program text.
 class ProgramSource : public SourceRegion {
 public:
-  ProgramSource(const std::string & path)
+  ProgramSource(llvm::StringRef path)
     : filePath(path)
     , lineOffsets()
   {
@@ -88,7 +90,7 @@ private:
   std::ifstream stream;
 
 public:
-  SourceFile(const std::string & path)
+  SourceFile(llvm::StringRef path)
     : ProgramSource(path)
   {
   }

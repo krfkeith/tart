@@ -22,9 +22,11 @@ protected:
 public:
   ScopeBuilderTest()
     : testSource("")
-    , testModule(&testSource, "test.test", &Builtins::module)
+    , testModule("test.test", &Builtins::module)
     , builder()
-  {}
+  {
+    testModule.setModuleSource(&testSource);
+  }
 
   virtual void SetUp() {}
   virtual void TearDown() {}

@@ -172,10 +172,7 @@ void CodeGenerator::generate() {
     genEntryPoint();
   }
 
-  llvm::SmallString<128> mdName(".meta.");
-  mdName += module_->qualifiedName();
-  NamedMDNode * md = irModule_->getOrInsertNamedMetadata(mdName);
-  //emitModuleMetadata();
+  genModuleMetadata();
 
   if (Dump) {
     if (diag.getErrorCount() == 0) {
