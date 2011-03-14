@@ -1,0 +1,109 @@
+import tart.core.Memory.Address;
+import tart.collections.ArrayList;
+import tart.collections.ImmutableList;
+
+/** Contains the encoded table of strings for a module. */
+final class NameTable {
+  static let COMPOUND_NAME_FLAG:int = 1;
+
+	// Represents a dotted name X.Y
+  private struct CompoundName {
+    var first:int;
+    var second:int;
+
+    def construct(first:int, second:int) {
+      self.first = first;
+      self.second = second;
+    }
+  }
+
+  private var _nameStrmSimple:Address[ubyte];
+  private var _nameStrmCompound:Address[ubyte];
+  private var _simpleNames:optional ImmutableList[String];
+  private var _compoundNames:optional CompoundName[];
+  private var _compoundNameStrings:optional (optional String)[];
+
+  private def decodeStrings -> ImmutableList[String] {
+    let decoder = StreamDecoder(_nameStrmSimple);
+    var count = decoder.readVarInt();
+    // TODO: Do this as a comprehension.
+    var namesTable = String[](count);
+    for i = 0; i < count; ++i {
+      namesTable[i] = decoder.readString();
+    }
+    return ImmutableList.copyOf(namesTable);
+  }
+
+  private def decodeCompoundNames -> CompoundName[] {
+	  let decoder = StreamDecoder(_nameStrmCompound);
+	  var count = decoder.readVarInt();
+	  let table = CompoundName[](count);
+	  for i = 0; i < count; ++i {
+	    let first = decoder.readVarInt();
+	    let second = decoder.readVarInt();
+	    table[i] = CompoundName(first, second);
+	  }
+	  return table;
+  }
+
+  private def getCompoundNameTable() -> CompoundName[] {
+    // Lazily evaluate the table of compound names.
+    return lazyEval(_compoundNames, decodeCompoundNames());
+  }
+  
+  private def getCompoundName(index:int) -> String {
+    var names = getCompoundNameTable();
+
+    // Lazily construct the table of cached compound name strings.
+    var cnameStrings = lazyEval(_compoundNameStrings, (optional String)[](names.size));
+
+    // Lazily evaluate each element within the array.
+    return lazyEval(cnameStrings[index],
+      	String.concat(
+      			getQualifiedName(names[index].first), ".",
+      			getQualifiedName(names[index].second)));
+  }
+
+  def strings:ImmutableList[String] {
+    get {
+      return lazyEval(_simpleNames, decodeStrings());
+    }
+  }
+
+	/** Return the complete name for the given name id. */
+  def getName(i:int) -> String {
+    var index = i >> 1;
+    if (i & COMPOUND_NAME_FLAG) != 0 {
+      return getCompoundName(index);
+    } else {
+      return strings[index];
+    }
+  }
+  
+	/** Return the fully-qualified name for the given name id. */
+  def getQualifiedName(i:int) -> String {
+    return getName(i);
+  }
+  
+	/** Return the scope part of the name associated with a given name id. */
+  def getScopeName(i:int) -> String {
+    var index = i >> 1;
+    if (i & COMPOUND_NAME_FLAG) != 0 {
+	    var names = getCompoundNameTable();
+      return getQualifiedName(names[index].first);
+    } else {
+      return "";
+    }
+  }
+
+	/** Return the local part of the name associated with a given name id. */
+  def getLocalName(i:int) -> String {
+    var index = i >> 1;
+    if (i & COMPOUND_NAME_FLAG) != 0 {
+	    var names = getCompoundNameTable();
+      return getQualifiedName(names[index].second);
+    } else {
+      return strings[index];
+    }
+  }
+}

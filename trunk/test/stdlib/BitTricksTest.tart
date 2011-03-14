@@ -1,0 +1,18 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(BitTricksTest);
+}
+
+class BitTricksTest : Test {
+  def testLeadingZeroes {
+    assertEq(32, BitTricks.leadingZeroes(int32(0)));
+  }
+
+  def testTrailingZeroes {
+  }
+
+  def testLog2 {
+  }
+}

@@ -1,0 +1,144 @@
+import tart.annex.Coalesce;
+import tart.collections.Collection;
+import tart.core.Memory.addressOf;
+import tart.core.Memory.ptrDiff;
+import tart.core.Memory.Address;
+import tart.core.Math.min;
+import tart.gc.TraceMethod;
+import tart.gc.TraceAction;
+
+/** Built-in array class */
+@Coalesce public final class Array[%ElementType] : Collection[ElementType] {
+  private {
+    var _size:int;
+    var _data:FlexibleArray[ElementType];
+
+    /** Array allocator function */
+    static def alloc(size:int) -> Array {
+      let self:Array =  __flexAlloc(size);
+      self._size = size;
+      return self;
+    }
+
+		/** Custom trace method for garbage collection to handle variable-length object. */
+    @TraceMethod def __trace(action:TraceAction) {
+      for i = 0; i < _size; ++i {
+        action.trace(_data[i]);
+      }
+    }
+
+    //def asBuffer() {
+    //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
+    //}
+  }
+
+  /** Construct an array of a given length */
+  static def create(size:int) -> Array {
+    Preconditions.checkArgument(size >= 0);
+    if (size == 0) {
+      return []; // Compiler optimizes empty arrays as static singletons
+    }
+
+    let self:Array = alloc(size);
+    // TODO: Need to initialize the array elements to default values.
+    // Memory.initToDefaultValues(addressOf(data[0]), end);
+    return self;
+  }
+
+  /** Static factory function which takes advantage of the built-in behavior of
+      variadic parameters to build an Array. */
+  static def of(elements:ElementType...) -> Array {
+    return elements;
+  }
+
+  static def copyOf(collection:Collection[ElementType]) -> Array {
+    let size = collection.size;
+    if size == 0 {
+      return []; // Compiler optimizes empty arrays as static singletons
+    }
+
+    let result:Array = alloc(size);
+    var index = 0;
+    for el in collection {
+      result._data[index++] = el;
+    }
+
+		return result;
+  }
+
+  /** True if the array is zero size. */
+  def isEmpty:bool {
+    get { return self._size == 0; }
+  }
+
+  /** The length of the array. */
+  def size:int {
+    get { return _size; }
+  }
+
+  @Unsafe def data:Address[ElementType] { get { return addressOf(_data[0]); } }
+  @Unsafe def elementAddress(offset:int32) -> Address[ElementType] {
+    return addressOf(_data[offset]);
+  }
+  @Unsafe def elementAddress(offset:int64) -> Address[ElementType] {
+    return addressOf(_data[offset]);
+  }
+
+  /** Array element access. */
+  def [index:int]:ElementType {
+    get {
+      Preconditions.checkIndex(index >= 0 and index < _size);
+      return self._data[index];
+    }
+    set {
+      Preconditions.checkArgument(index >= 0 and index < _size);
+      self._data[index] = value;
+    }
+  }
+
+  /** Make a copy of this array. */
+  def copy() -> Array {
+    let result = Array(self._size);
+    Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._size);
+    return result;
+  }
+
+  /** Iterate over the elements of the array. */
+  def iterate -> Iterator[ElementType] {
+    return ArrayIterator(self);
+  }
+
+  /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
+      'dstOffset' in array 'dst'.
+   */
+  static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._size);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._size);
+    count = min(count, dst._size - dstOffset, src._size - srcOffset);
+    if count > 0 {
+      Memory.arrayMove(addressOf(dst._data[dstOffset]), addressOf(src._data[srcOffset]), count);
+    }
+  }
+
+  @Coalesce private final class ArrayIterator : Iterator[ElementType], HasLength {
+    private var array:Array;
+    private var index:int;
+
+    def construct(array:Array) {
+      self.array = array;
+      self.index = 0;
+    }
+
+    def next() -> ElementType or void {
+      if (self.index < self.array._size) {
+        return self.array._data[self.index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:int { get { return array._size; } }
+    def size:int { get { return array._size; } }
+  }
+}

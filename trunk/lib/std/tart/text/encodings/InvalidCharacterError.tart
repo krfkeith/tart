@@ -1,0 +1,11 @@
+/** Exception thrown when an attempt is made to encode a character that is not supported
+    by the encoding. */
+public class InvalidCharacterError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

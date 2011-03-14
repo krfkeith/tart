@@ -1,0 +1,375 @@
+import tart.core.Memory.addressOf;
+import tart.core.Memory.Address;
+import tart.text.encodings.Codecs;
+
+/** The built-in string class. Strings are immutable. */
+public final class String : Iterable[char] {
+  private {
+    /** The length of the string, in bytes. */
+    var _size:int;
+
+    /** For strings which are slices, this points to the original string.
+        For non-slice strings, or strings which refer to constant string
+        literals, this points to 'self'. */
+    var _source:String;
+
+    /** The pointer to the starting byte. */
+    var _start:Address[ubyte];
+
+    /** For non-slice strings, this is the array of bytes immediately
+        following the string instance in memory. */
+    var _data:FlexibleArray[ubyte];
+
+    /** Custom allocation function for strings. */
+    static def alloc(len:int) -> String {
+      // The 'offsetof' trick for calculating the size.
+      let s:String = __flexAlloc(len);
+      s._size = len;
+      s._source = s;
+      s._start = addressOf(s._data[0]);
+      return s;
+    }
+  }
+
+  /** Construct a string from a byte array.
+      Parameters:
+        bytes: The byte array.
+   */
+  static def create(bytes:ubyte[]) -> String {
+    let self = alloc(bytes.size);
+    Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes.data[0]), bytes.size);
+    return self;
+  }
+
+  /** Construct a string from a subrange of a byte array.
+      Parameters:
+        bytes: The byte array.
+        start: The starting index within the byte array.
+        count: The number of bytes to use in constructing the string. Will be clamped
+            to the end of the string if there are fewer than 'count' bytes following 'start'.
+   */
+  static def create(bytes:ubyte[], start:int, count:int) -> String {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, bytes.size);
+    count = Math.min(count, bytes.size - start);
+    let self = alloc(count);
+    Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes.data[start]), count);
+    return self;
+  }
+
+  /** Construct a string from a subrange of another string. Note that the bytes that make
+  		up the string are shared between the two instances rather than copied.
+      Parameters:
+        bytes: The source string.
+        start: The starting index within the byte array.
+        count: The number of bytes to use in constructing the string. Will be clamped
+            to the end of the string if there are fewer than 'count' bytes following 'start'.
+   */
+  static def create(str:String, start:int, count:int) -> String {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, str.size);
+    count = Math.min(count, str.size - start);
+    let self:String = __flexAlloc(0);
+    self._size = count;
+    self._start = addressOf(str._data[start]);
+    self._source = str._source;
+    return self;
+  }
+
+  /** Construct a string from a char array.
+      Parameters:
+        chars: The character array.
+        start: The starting index within the character array.
+        count: The number of characters to use in constructing the string. Will be clamped
+            to the end of the string if there are fewer than 'count' characters following 'start'.
+   */
+  static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
+    let length = Codecs.UTF_8.encodedLength(chars, start, count);
+    let self = alloc(length);
+    Codecs.UTF_8.encodeRaw(addressOf(self._data[0]), length, addressOf(chars.data[0]), count);
+    return self;
+  }
+
+  /** Construct a string from a native byte array. */
+  @LinkageName("String_create")
+  static def create(bytes:Address[ubyte], length:int) -> String {
+    let self = alloc(length);
+    Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes[0]), length);
+    return self;
+  }
+
+  /** Explicitly convert values to String types. */
+  static def create[%T] (value:T) -> String { return "<??>"; }
+  static def create[%T <: HasToString] (value:T) -> String { return value.toString(); }
+  static def create(value:Object) -> String { return value.toString(); }
+
+  /** 'true' if this is an empty string. */
+  def isEmpty:bool {
+    get { return self._size == 0; }
+  }
+
+  /** The length of the string in bytes. */
+  def size:int { get { return self._size; } }
+
+  /** Return true if this string starts with the substring 's'. */
+  def startsWith(s:String) -> bool {
+    if s.size > self._size {
+      return false;
+    }
+    for i:int = 0; i < s.size; ++i {
+      if s[i] != self._data[i] {
+				return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** Return true if this string ends with the substring 's'. */
+  def endsWith(s:String) -> bool {
+    if s.size > self._size {
+			return false;
+    }
+    let offset = self.size - s.size;
+    for i:int = 0; i < s.size; ++i {
+      if s[i] != self._data[i + offset] {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** The length of the string in characters.
+      Parameters:
+        start: The starting byte index of the substring to measure.
+        count: The length, in bytes, of the substring to measure.
+   */
+  def charLength(start:int = 0, count:int = int.maxVal) -> int {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, self._size);
+    count = Math.min(count, self._size - start);
+    return Codecs.UTF_8.decodedLengthRaw(addressOf(self._data[start]), count);
+  }
+
+  /** Convert this string to a character array.
+      Parameters:
+        start: The starting byte index of the substring to convert.
+        count: The length, in bytes, of the substring to convert.
+   */
+  def toCharArray(start:int = 0, count:int = int.maxVal) -> char[] {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, self._size);
+    count = Math.min(count, self._size - start);
+    let charCount = self.charLength(start, count);
+    let result = char[](charCount);
+    Codecs.UTF_8.decodeRaw(
+        addressOf(result.data[0]), charCount, addressOf(self._data[start]), count);
+    return result;
+  }
+
+  /** 'true' if 's' is equal to to this string. */
+  def equals(s:String) -> bool {
+    if self._size != s._size {
+      return false;
+    }
+    for i = 0; i < self._size; i++ {
+      if self._start[i] != s._start[i] {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** The index operator. */
+  def [index:int]:ubyte {
+    get {
+      //Preconditions.verify[IndexOutOfRangeError](index < 0 or index >= len);
+      return self._data[index];
+    }
+  }
+
+  /** Return this string as a memory buffer. */
+  //def asBuffer -> Memory.Buffer[ubyte] {
+  //  return Memory.Buffer(self, addressOf(start[0]), addressOf(start[len]));
+  //}
+
+  /** Coerce a String to a String simply returns 'self'. */
+  override toString -> String {
+    return self;
+  }
+
+  static def format(formatString:String, args:Object...) -> String {
+    return formatString.format(args);
+  }
+
+  static def format(formatString:String, args:Object[]) -> String {
+    return formatString.format(args);
+  }
+
+  def format(args:Object...) -> String {
+    return format(args);
+  }
+
+  def format(args:Object[]) -> String {
+    return StringFormatter(self, args).build();
+  }
+
+  static def concat(s:String...) -> String {
+    return concat(s);
+  }
+
+  static def concat(strings:Iterable[String]) -> String {
+    var length:int = 0;
+    for s in strings {
+      length += s._size;
+    }
+
+    let result = alloc(length);
+    var index = 0;
+    for s in strings {
+      Memory.arrayCopy(addressOf(result._data[index]), addressOf(s._data[0]), s._size);
+      index += s._size;
+    }
+
+    return result;
+  }
+
+  def join(s:String...) -> String {
+    return String.join(self, s);
+  }
+
+  def join(strings:Iterable[String]) -> String {
+    return String.join(self, strings);
+  }
+
+  static def join(sep:String, s:String...) -> String {
+    return String.join(sep, s);
+  }
+
+  static def join(sep:String, strings:Iterable[String]) -> String {
+    let sepSize = sep.size;
+    var length:int = 0;
+    for s in strings {
+      if length != 0 {
+        length += sepSize;
+      }
+      length += s._size;
+    }
+
+    let result = alloc(length);
+    var index = 0;
+    for s in strings {
+      if index != 0 {
+	      Memory.arrayCopy(addressOf(result._data[index]), addressOf(sep._data[0]), sepSize);
+  	    index += sepSize;
+      }
+      Memory.arrayCopy(addressOf(result._data[index]), addressOf(s._data[0]), s._size);
+      index += s._size;
+    }
+
+    return result;
+  }
+
+  def substr(beginIndex:int, endIndex:int) -> String {
+    return String(self, beginIndex, endIndex - beginIndex);
+  }
+
+  def substr(beginIndex:int) -> String {
+    return String(self, beginIndex, self._size);
+  }
+
+	/** Given a byte index into the string, return the character at the given index,
+			as well as the byte index of the next character. */
+  def nextCh(index:int) -> (char, int) {
+	  return Codecs.UTF_8.decodeOne(_start, index, _size);
+  }
+
+	/** Given a byte index into the string, return the character at the given index. */
+  def charAt(index:int) -> char {
+	  return Codecs.UTF_8.decodeOne(_start, index, _size)[0];
+  }
+
+	/** Copy characters from this string into a character array.
+			Parameters:
+				index - the byte index into this string.
+				dst - the destination character buffer.
+				start - the starting index in the character buffer.
+				count - the maximum number of characters to copy.
+			Returns: A tuple containing the number of characters actually copied,
+				and the byte index of the last character copied plus one.
+			Throws:
+				IndexError - if 'start' or 'index' are out of range.
+				InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
+		*/
+  def copyChars(index:int, dst:char[], start:int, count:int) -> (int, int) {
+    var copied:int = 0;
+    Preconditions.checkIndex(index >= 0 and start >= 0 and count >= 0);
+    start = Math.min(start, dst.size);
+    count = Math.min(count, dst.size - start);
+    while index < _size and copied < count {
+      var charVal, nextIndex = Codecs.UTF_8.decodeOne(_start, index, _size);
+      index = nextIndex;
+      dst[start++] = charVal;
+      copied++;
+    }
+
+    return copied, index;
+  }
+
+  /** A protocol for types that have a 'toString' method. */
+  protocol HasToString {
+    def toString() -> String;
+  }
+
+  /** Implicitly convert values to String types. */
+//  static def coerce[%T] (value:T) -> String { return "<??>"; }
+//  static def coerce[%T <: HasToString] (value:T) -> String { return value.toString(); }
+//  static def coerce(value:Object) -> String { return value.toString(); }
+
+  /** Return an immutable buffer representation of this string's data. */
+  def asBuffer() -> Memory.Buffer[ubyte] {
+    return Memory.Buffer[ubyte](self, _start, addressOf(_start[self._size]));
+  }
+
+  /** Compute a hash value for this string. */
+  override computeHash -> uint64 {
+    return Hashing.hash(asBuffer());
+  }
+
+	/** Iterate over the characters in this string. */
+  def iterate -> Iterator[char] {
+    return StringIterator(self);
+  }
+
+  /** String iterator class. */
+  private final class StringIterator : Iterator[char] {
+    private {
+      let str:String;
+      var index:int;
+    }
+
+    def construct(str:String) {
+      self.str = str;
+      self.index = 0;
+    }
+
+    def next -> char or void {
+      var charVal:char;
+      if index < str._size {
+	      charVal, index = str.nextCh(index);
+  	    return charVal;
+      } else {
+        return;
+      }
+    }
+  }
+}
+
+/** Equality comparison operator for strings. */
+public def infixEQ(s1:String, s2:String) -> bool {
+  return s1.equals(s2);
+}

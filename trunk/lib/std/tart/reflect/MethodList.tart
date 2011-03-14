@@ -1,0 +1,95 @@
+import tart.collections.List;
+import tart.core.Memory.Address;
+import tart.gc.TraceMethod;
+import tart.gc.TraceAction;
+
+/** An immutable list of methods that points to a statically-initialized array. */
+final class MethodList : List[Method] {
+  /** Static singleton empty list. */
+  //static let EMPTY_LIST = MethodList();
+
+  private {
+    var _size:int;
+    var _data:FlexibleArray[Method];
+
+    /** Custom trace method for garbage collection to handle variable-length object. */
+    @TraceMethod def __trace(action:TraceAction) {
+      for i = 0; i < _size; ++i {
+        action.trace(_data[i]);
+      }
+    }
+
+		/** Default constructor constructs an empty list. */
+		//def construct() {
+		//  _size = 0;
+		//}
+  }
+
+  // TODO: Make this undef. (Undefs should automatically throw UnsupportedOperationError().) */
+  def add(e:Method) {
+    throw UnsupportedOperationError();
+  }
+
+  def insert(position:int, e:Method) {
+    throw UnsupportedOperationError();
+  }
+
+  def remove(index:int) {
+    throw UnsupportedOperationError();
+  }
+
+  def [index:int]:Method {
+    get {
+      return _data[index];
+    }
+
+    set {
+      throw UnsupportedOperationError();
+    }
+  }
+
+  def clear {
+    throw UnsupportedOperationError();
+  }
+
+  def size:int {
+    get { return self._size; }
+  }
+
+  def isEmpty:bool {
+    get { return self._size == 0; }
+  }
+
+  def contains(type:Method) -> bool {
+    for i = 0; i < _size; ++i {
+      if self._data[i] == type {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  def iterate -> Iterator[Method] {
+    return IteratorImpl(self);
+  }
+
+  private final class IteratorImpl : Iterator[Method], HasLength {
+    private var _typeList:MethodList;
+    private var _index:int;
+
+    def construct(typeList:MethodList) {
+      self._typeList = typeList;
+      self._index = 0;
+    }
+
+    def next() -> Method or void {
+      if (self._index < self._typeList._size) {
+        return self._typeList._data[self._index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:int { get { return _typeList._size; } }
+  }
+}

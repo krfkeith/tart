@@ -1,0 +1,16 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that specifies that this method or variable is an externally-defined symbol. */
+@Attribute(Attribute.Target.ANY, Attribute.Retention.NONE)
+public class Extern {
+  readonly var name:String;
+
+  /** Construct an ExternAttribute.
+      'name' - The linkage name of the attributed method or variable.
+   */
+  def construct(name:String) {
+    self.name = name;
+  }
+
+  @Intrinsic def apply(t:tart.reflect.Type);
+}

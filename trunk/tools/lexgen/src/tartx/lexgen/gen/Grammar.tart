@@ -1,0 +1,14 @@
+abstract class Grammar {
+  var className:String;
+  var targetLanguage:String;
+  var initCode:CodeBlock;
+  var tokenTypeName:String;
+  var tokenNamePrefix:String = "";
+  var tokenNames:String[];
+  
+  def construct(className:String) {
+    self.className = className;
+  }
+  
+  abstract def setOption(key:String, value:String);
+}

@@ -1,0 +1,30 @@
+import tart.reflect.Type;
+
+/** Exception thrown when an attempt to cast an object reference to a type that is not
+    a subclass of the instance. */
+public final class TypecastError : Exception {
+  private var from:Object;
+  private var to:Object;
+  
+  def construct() {
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+
+  def construct[%T](expr:Object, to:TypeLiteral[T]) {
+    self.from = expr;
+    self.to = to;
+  }
+
+  def construct(expr:Object, to:Type) {
+    self.from = expr;
+    self.to = to;
+  }
+
+  def construct[%S, %T](from:TypeLiteral[T], to:TypeLiteral[T]) {
+    self.from = from;
+    self.to = to;
+  }
+}
