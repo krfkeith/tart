@@ -113,7 +113,8 @@ void Compiler::processInputFile(llvm::StringRef inFile) {
   SourceFile  src(filePath.c_str());
   Module * mod = PackageMgr::get().getCachedModule(moduleName);
   if (mod == NULL) {
-    mod = new Module(&src, moduleName, &Builtins::module);
+    mod = new Module(moduleName, &Builtins::module);
+    mod->setModuleSource(&src);
     Parser parser(&src, mod);
     if (parser.parse()) {
       ScopeBuilder::createScopeMembers(mod);

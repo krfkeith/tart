@@ -269,15 +269,11 @@ ConversionRank CallCandidate::updateConversionRank() {
     const Type * paramType = this->paramType(argIndex);
     AnalyzerBase::analyzeType(paramType, Task_PrepConversion);
     combineConversionRanks(paramType->canConvert(argExpr, Conversion::Coerce));
-//    conversionRank_ = std::min(conversionRank_, paramType->canConvert(argExpr, Conversion::Coerce));
   }
 
   const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
     combineConversionRanks(expectedReturnType->canConvert(resultType_, Conversion::Coerce));
-//    conversionRank_ = std::min(
-//        conversionRank_,
-//        expectedReturnType->canConvert(resultType_, Conversion::Coerce));
   }
 
   // If there are explicit specializations, then check those too.
@@ -385,7 +381,7 @@ bool CallCandidate::unify(CallExpr * callExpr, FormatStream * errStrm) {
 
         // See if the parameter type is a pattern variable.
         if (const TypeBinding * pvar = dyn_cast<TypeBinding>(dealias(paramType))) {
-          if (pvar->value() == NULL) {
+          if (pvar->value() == NULL && pvar->env() == &bindingEnv_) {
             // There are no constraints, so bind it to an int.
             bindingEnv_.addSubstitution(pvar->var(), &Int32Type::instance);
             continue;

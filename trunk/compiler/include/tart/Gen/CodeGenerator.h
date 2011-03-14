@@ -23,6 +23,10 @@
 // a function; If false, it means they are passed as pointers.
 #define FC_STRUCTS_INTERNAL 1
 
+namespace llvm {
+class MDString;
+}
+
 namespace tart {
 
 class Module;
@@ -64,6 +68,8 @@ class VariableDefn;
 class Type;
 class FunctionDefn;
 class TypeDefn;
+class PropertyDefn;
+class IndexerDefn;
 class CompositeType;
 class EnumType;
 class FunctionType;
@@ -416,6 +422,10 @@ public:
   /** Generate a constant array. */
   llvm::Constant * genConstantNativeArray(const ConstantNativeArray * array);
 
+  /** Generate a pointer to a constant array. */
+  llvm::Constant * genConstantNativeArrayPtr(const ConstantNativeArray * array,
+      llvm::StringRef name);
+
   /** Generate a constant union. */
   llvm::Constant * genConstantUnion(const CastExpr * array);
 
@@ -499,6 +509,21 @@ public:
 
   /** Return the void * type for method pointers in a method table. */
   const llvm::Type * getMethodPointerType() { return methodPtrType_; }
+
+  // Module metadata methods
+  void genModuleMetadata();
+  llvm::MDNode * getModuleDeps();
+  llvm::MDNode * getModuleTimestamp();
+  llvm::MDNode * getMemberExports(const IterableScope * scope);
+  llvm::MDNode * exportType(const TypeDefn * td);
+  llvm::MDNode * exportNamespace(const NamespaceDefn * td);
+  llvm::MDNode * exportVar(const VariableDefn * td);
+  llvm::MDNode * exportProperty(const PropertyDefn * td);
+  llvm::MDNode * exportIndexer(const IndexerDefn * idx);
+  llvm::MDNode * exportFunction(const FunctionDefn * td);
+  llvm::Value * exportModifiers(const Defn * de);
+  llvm::MDString * exportTypeRef(const Type * type);
+
 private:
   typedef llvm::StringMap<llvm::DIFile> DIFileMap;
   typedef llvm::DenseMap<const FunctionDefn *, llvm::DISubprogram> SubprogramMap;

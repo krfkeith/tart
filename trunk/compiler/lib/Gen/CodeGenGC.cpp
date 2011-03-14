@@ -572,7 +572,9 @@ void CodeGenerator::emitStaticRoots() {
     const PointerType * bytePtrType = builder_.getInt8PtrTy();
 
     ConstantList rootList;
-    NamedMDNode * node = irModule_->getOrInsertNamedMetadata("roots." + module()->linkageName());
+    Twine rootSym("roots.", module()->linkageName());
+    SmallString<128> rootSymStr;
+    NamedMDNode * node = irModule_->getOrInsertNamedMetadata(rootSym.toStringRef(rootSymStr));
     for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
       Constant * traceTable = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
       Constant * fields[2];

@@ -18,6 +18,7 @@
 #include "tart/Common/Diagnostics.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/Support/CommandLine.h"
@@ -236,14 +237,22 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
       return unify(source, pattern, boundValue, variance);
     }
 
-    diag.debug(source) << "Unbound pattern value found in value " << value <<
-        " for pattern " << pattern;
-    addSubstitution(pval, value);
     return true;
+//    diag.error(source) << "Unbound pattern value found in value " << value <<
+//        " for pattern " << pattern;
+//    //addSubstitution(pval, value);
+//    return true;
   } else if (const CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
     if (const CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
       return unifyCompositeType(source, ctPattern, ctValue, variance);
-    } else if (variance == Covariant) {
+    } else if (const NativeArrayType * natValue = dyn_cast<NativeArrayType>(value)) {
+      // Special case for assigning Array to NativeArray in initializers
+      if (ctPattern->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
+        return unify(source, ctPattern->typeParam(0), natValue->typeParam(0), Invariant);
+      }
+    }
+
+    if (variance == Covariant) {
       if (const UnionType * utValue = dyn_cast<UnionType>(value)) {
         return unifyToUnionType(source, ctPattern, utValue, variance);
       }

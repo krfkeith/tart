@@ -20,3 +20,5 @@ add_executable(tartc tartc.cpp)
 add_dependencies(tartc compiler)
 target_link_libraries(tartc compiler ${LLVM_TARTC_LIBS})
 set_target_properties(tartc PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+install(TARGETS tartc RUNTIME DESTINATION bin)

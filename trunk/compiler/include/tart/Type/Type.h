@@ -450,6 +450,9 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(std::string & out, const Type * ty);
 
+// Given a type, append the linkage name of that type to the output buffer.
+void typeLinkageName(llvm::raw_ostream & out, const Type * ty);
+
 /** Given two types, try and find the narrowest type that both
     can be converted to.
   */

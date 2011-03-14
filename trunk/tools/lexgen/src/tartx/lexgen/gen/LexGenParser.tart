@@ -56,7 +56,7 @@ class LexGenParser {
       let result = scanner.tokenText.charAt(0);
       scanner.next();
       return result;
-    }    
+    }
     return char(-1);
   }
 
@@ -72,12 +72,12 @@ class LexGenParser {
           fail("Unexpected token: {0}".format(scanner.tokenText));
           break;
         }
-        
+
         break if depth == 0;
         codeText.append(scanner.tokenText);
         scanner.next();
       }
-      
+
       scanner.state = LState.START;
       scanner.next();
       return CodeBlock(codeText.toString());
@@ -86,11 +86,11 @@ class LexGenParser {
   }
 
   //def parseArgumentList(g:Grammar) -> List[String] {
-  //  
+  //
   //}
-  
+
   /*
-  
+
         public IList ParseArgumentList(Recognizer reco) {
             // Parse the argument list of the production
             ArrayList paramList = new ArrayList();
@@ -157,12 +157,12 @@ class LexGenParser {
         if (s = MatchIdent()) == null {
           fail("Identifier expected after '.'");
         }
-        
+
         className.append('.');
         className.append(s);
       }
     }
-    
+
     return className.toString();*/
   }
 /*
@@ -290,7 +290,7 @@ class LexGenParser {
 
                 if (result.NodeType == NodeType.Alternative)
                     result.Append(next);
-                else 
+                else
                     result = reco.CreateNode(NodeType.Alternative, Location, result, next);
             }
 
@@ -380,7 +380,9 @@ class LexGenParser {
         */
 
   def parseOptions(/*IOptionListener target*/) -> bool {
-    return false if not matchToken(LToken.OPTIONS);
+    if not matchToken(LToken.OPTIONS) {
+      return false;
+    }
     if not matchToken(LToken.OPEN_BRACE) {
       fail("'{' expected");
     }
@@ -426,7 +428,7 @@ class LexGenParser {
       if lexerName is null {
         fail("Lexer class name expected");
       }
-      
+
       if not matchToken(LToken.OPEN_BRACE) {
         fail("Open brace expected after lexer name");
       }
@@ -435,7 +437,7 @@ class LexGenParser {
     }
 
     return false;
-    
+
     /*
         public bool ParseLexerDef() {
             if (Match(LToken.Lexer)) {
@@ -471,11 +473,11 @@ class LexGenParser {
         }
     */
   }
-  
+
   def parse -> bool {
     repeat {
-      return false if scanner.token == LToken.ERROR;
-      return true if scanner.token == LToken.EOF;
+      if scanner.token == LToken.ERROR { return false; }
+      if scanner.token == LToken.EOF { return true; }
       continue if parseLexerDef();
       fail("Unexpected token: {0}".format(scanner.tokenText));
     }

@@ -33,7 +33,9 @@ class ScannerBase {
         Returns: True if a character could be read.*/
     def read -> bool {
       _ch = _reader.readCh();
-      return false if _ch == TextReader.EOF;
+      if _ch == TextReader.EOF {
+        return false;
+      }
       _scanCol += 1;
       return true;
     }

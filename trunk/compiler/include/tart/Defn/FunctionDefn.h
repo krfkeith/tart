@@ -245,7 +245,7 @@ public:
 
   // Overrides
 
-  const std::string & linkageName() const;
+  llvm::StringRef linkageName() const;
   const Type * type() const;
   void trace() const;
   void format(FormatStream & out) const;

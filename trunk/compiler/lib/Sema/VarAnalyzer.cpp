@@ -2,11 +2,15 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/Type/FunctionType.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/Module.h"
+
+#include "tart/Expr/Exprs.h"
+
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/NativeType.h"
 
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
@@ -163,13 +167,14 @@ bool VarAnalyzer::resolveVarType() {
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope_;
       if (target->type() != NULL) {
-        if (target->type()->typeClass() == Type::Enum) {
+        const Type * targetType = dealias(target->type());
+        if (targetType->typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
           // to the list of scopes.
           // TODO: Eliminate the notion of delegating scopes, and instead use a scope stack.
           DelegatingScope * enumScope =
               new DelegatingScope(const_cast<IterableScope *>(
-                  target->type()->memberScope()), activeScope_);
+                  targetType->memberScope()), activeScope_);
           savedScope = setActiveScope(enumScope);
         }
       }
@@ -202,6 +207,13 @@ bool VarAnalyzer::resolveVarType() {
         if (target->type() == NULL) {
           setTargetType(initType);
           analyzeType(initType, Task_PrepTypeComparison);
+        }
+
+        // Special case for native array initializers.
+        if (const NativeArrayType * nat = dyn_cast<NativeArrayType>(dealias(target->type()))) {
+          if (ast->value()->nodeType() == ASTNode::ArrayLiteral) {
+            initExpr = initializeNativeArray(initExpr);
+          }
         }
 
         // TODO: Fold this into inferTypes.
@@ -284,6 +296,25 @@ bool VarAnalyzer::resolveInitializers() {
   }
 
   return true;
+}
+
+Expr * VarAnalyzer::initializeNativeArray(Expr * initValue) {
+  const NativeArrayType * nat = static_cast<const NativeArrayType *>(target->type());
+  FnCallExpr * call = cast<FnCallExpr>(initValue);
+  ArrayLiteralExpr * alit = cast<ArrayLiteralExpr>(call->arg(0));
+  if (target->storageClass() != Storage_Global && target->storageClass() != Storage_Static) {
+    diag.error(target) << "Initialization of native arrays is only supported for globals";
+    return initValue;
+  }
+
+  if (alit->argCount() != nat->size()) {
+    diag.error(target) << "Initializing native array of size " << nat->size() <<
+        " with " << alit->argCount() << " elements";
+    return initValue;
+  }
+
+  alit->setType(nat);
+  return alit;
 }
 
 }

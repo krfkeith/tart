@@ -59,24 +59,24 @@ class LexGenScanner : ScannerBase {
     def matchAny -> bool {
        return matchRange(char(1),char(65534));
     }
-  
+
     def matchIdentChar -> bool {
        return matchRange('0','9') or matchRange('A','Z') or matchChar('_') or matchRange('a','z');
     }
-  
+
     def matchIdentStart -> bool {
        return (matchRange('A','Z') or matchChar('_') or matchRange('a','z'));
     }
-  
+
     def matchHexDigit -> bool {
        return (matchRange('0','9') or matchRange('A','F') or matchRange('a','f'));
     }
-  
+
     def matchDigit -> bool {
        return (matchRange('0','9'));
     }
   }
-  
+
   def construct(file:String, reader:TextReader, log:LogWriter) {
     super(file, reader, log);
     _tokenLoc.file = file;
@@ -104,12 +104,14 @@ class LexGenScanner : ScannerBase {
   }
 
   protected def scan -> LToken {
-    return LToken.EOF if _ch == TextReader.EOF; // WRONG -- ch is unsigned
+    if _ch == TextReader.EOF { // WRONG -- ch is unsigned
+	    return LToken.EOF;
+    }
     switch _state {
       case LState.START {
         return startState();
       }
-      
+
       case LState.STRING {
         return stringState();
       }
@@ -117,15 +119,15 @@ class LexGenScanner : ScannerBase {
       case LState.ACTION {
         return actionState();
       }
-        
+
        case LState.PARAMETER {
         return parameterState();
        }
     }
-    
+
     return LToken.ERROR;
   }
-    
+
   def startState -> LToken {
     switch _ch {
       case '\t' {
@@ -221,7 +223,7 @@ class LexGenScanner : ScannerBase {
           take();
           return L3();
         }
-       
+
         matchFail("Any except \\t-\\n, \\f-\\r or \\'");
         return LToken.ERROR;
       }
@@ -410,7 +412,7 @@ class LexGenScanner : ScannerBase {
 
     return LToken.ERROR;
   }
-  
+
   def stringState -> LToken {
     while (_ch >= 0) {
       if (matchChar('\"')) {
@@ -425,7 +427,7 @@ class LexGenScanner : ScannerBase {
             replace(2, "\"");
             continue;
           }
-          
+
           case '\'' {
             take();
             replace(2, "\'");
@@ -525,14 +527,14 @@ class LexGenScanner : ScannerBase {
           take();
           nl();
         }
-  
+
         case '\r' {
           read();
           if not matchChar('\n') {
 	          append('\n');
           }
         }
-  
+
         case '\\' {
           take();
         }
@@ -542,7 +544,7 @@ class LexGenScanner : ScannerBase {
 				case TextReader.EOF {
 	        return LToken.ACTION_TEXT;
         }
-  
+
         else {
           take();
         }
@@ -560,29 +562,29 @@ class LexGenScanner : ScannerBase {
              take();
              nl();
              goto L12;
-  
+
           case '\r':
              take();
              goto L13;
-  
+
           case ',':
              take();
              return LToken.Comma;
-  
+
           case '[':
              take();
              return LToken.OpenBracket;
-  
+
           case ']':
              take();
              return LToken.CloseBracket;
-  
+
           default:
              if (matchIdentChar() or matchChar('\t') or matchChar(' ') or matchRange('$','&') or matchRange('*','+') or matchChar('-') or matchChar(':') or matchChar('=') or matchChar('@')) goto L12;
              IllegalChar();
              return LToken.Error;
           }
-  
+
        default {
           Fail("Invalid State Transition");
           return LToken.Error;
