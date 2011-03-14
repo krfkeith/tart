@@ -456,7 +456,7 @@ public:
   /** Return the debug compile unit for the specified source file. */
   void genDICompileUnit();
   llvm::DIScope compileUnit();
-  llvm::DIFile genDIFile(const SourceRegion * source);
+  llvm::DIFile genDIFile(const ProgramSource * source);
   llvm::DIFile genDIFile(const Defn * defn);
   llvm::DISubprogram genDISubprogram(const FunctionDefn * fn);
   llvm::DIDescriptor genDefnScope(const Defn * de);
@@ -628,7 +628,6 @@ private:
   llvm::DIScope dbgInlineContext_;
   DITypeMap dbgTypeMap_;
   SourceLocation dbgLocation_;
-  SourceRegion * functionRegion_;
 
   BlockExits * blockExits_;
   bool isUnwindBlock_;

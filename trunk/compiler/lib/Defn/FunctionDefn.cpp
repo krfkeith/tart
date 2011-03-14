@@ -56,7 +56,6 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * a
   , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
-  , region_(NULL)
   , mergeTo_(NULL)
 {
   if (modifiers_.flags & tart::Undef) {
@@ -84,7 +83,6 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
   , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
-  , region_(NULL)
   , mergeTo_(NULL)
 {}
 
@@ -96,7 +94,6 @@ FunctionDefn::FunctionDefn(Module * m, const char * name, FunctionType * ty)
   , body_(NULL)
   , dispatchIndex_(-1)
   , intrinsic_(NULL)
-  , region_(NULL)
   , mergeTo_(NULL)
 {}
 

@@ -38,43 +38,43 @@
 namespace tart {
 
 Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
-  return new ConstantNull(astLoc(ast));
+  return new ConstantNull(ast->location());
 }
 
 Expr * ExprAnalyzer::reduceIntegerLiteral(const ASTIntegerLiteral * ast) {
   return new ConstantInteger(
-      astLoc(ast),
+      ast->location(),
       &UnsizedIntType::instance,
       llvm::ConstantInt::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceFloatLiteral(const ASTFloatLiteral * ast) {
   return new ConstantFloat(
-      astLoc(ast),
+      ast->location(),
       &FloatType::instance,
       llvm::ConstantFP::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceDoubleLiteral(const ASTDoubleLiteral * ast) {
   return new ConstantFloat(
-      astLoc(ast),
+      ast->location(),
       &DoubleType::instance,
       llvm::ConstantFP::get(llvm::getGlobalContext(), ast->value()));
 }
 
 Expr * ExprAnalyzer::reduceCharLiteral(const ASTCharLiteral * ast) {
   return new ConstantInteger(
-      astLoc(ast),
+      ast->location(),
       &CharType::instance,
       llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), ast->value(), false));
 }
 
 Expr * ExprAnalyzer::reduceStringLiteral(const ASTStringLiteral * ast) {
-  return new ConstantString(astLoc(ast), ast->value());
+  return new ConstantString(ast->location(), ast->value());
 }
 
 Expr * ExprAnalyzer::reduceBoolLiteral(const ASTBoolLiteral * ast) {
-  return ConstantInteger::getConstantBool(astLoc(ast), ast->value());
+  return ConstantInteger::getConstantBool(ast->location(), ast->value());
 }
 
 Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
@@ -133,7 +133,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       envBaseExpr->setType(envType);
 
       ClosureEnvExpr * env = new ClosureEnvExpr(
-          astLoc(ast), activeScope(), &currentFunction_->parameterScope(), envType, envBaseExpr);
+          ast->location(), activeScope(), &currentFunction_->parameterScope(), envType, envBaseExpr);
       env->setType(envType);
       currentFunction_->closureEnvs().push_back(env);
 
@@ -184,7 +184,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       return env;
     } else {
       // It's merely a function type declaration
-      return new TypeLiteralExpr(astLoc(ast), ftype);
+      return new TypeLiteralExpr(ast->location(), ftype);
     }
   }
 
@@ -193,9 +193,9 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
 
 Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
   DefnList fnlist;
-  if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", astLoc(ast))) {
+  if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", ast->location())) {
     DASSERT(fnlist.size() == 1);
-    CallExpr * call = new CallExpr(Expr::Call, astLoc(ast), NULL);
+    CallExpr * call = new CallExpr(Expr::Call, ast->location(), NULL);
     call->setExpectedReturnType(expected);
     addOverload(call, Builtins::typeArray->typeDefn()->asExpr(),
         cast<FunctionDefn>(fnlist.front()), ast->args());
@@ -220,7 +220,7 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
     }
   }
 
-  TupleCtorExpr * tuple = new TupleCtorExpr(astLoc(ast), NULL);
+  TupleCtorExpr * tuple = new TupleCtorExpr(ast->location(), NULL);
   ConstTypeList types;
   size_t numParams = ast->count();
   bool isSingular = true;

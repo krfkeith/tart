@@ -137,7 +137,7 @@ public:
 
   /** The source file for this module. */
   ProgramSource * moduleSource() const { return moduleSource_; }
-  void setModuleSource(ProgramSource * src) { moduleSource_ = src; loc.region = src; }
+  void setModuleSource(ProgramSource * src) { moduleSource_ = src; loc.file = src; }
 
   /** The module time stamp. */
   const llvm::sys::TimeValue & timestamp() const { return timestamp_; }

@@ -259,7 +259,7 @@ protected:
 
 private:
   ConstantExpr * reduceCaseValue(const ASTNode * ast, const Type * testType);
-  LocalScope * createLocalScope(const char * scopeName, SourceRegion * region = NULL);
+  LocalScope * createLocalScope(const char * scopeName);
   Defn * createLocalDefn(const ASTDecl * ast);
   Expr * createTempVar(Defn::DefnType kind, const char * name, Expr * value);
   VariableDefn * createTempVar(

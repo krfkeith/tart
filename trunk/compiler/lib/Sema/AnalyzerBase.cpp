@@ -969,14 +969,6 @@ void AnalyzerBase::dumpScopeList(const ExprList & lvals) {
   diag.recovered();
 }
 
-SLC AnalyzerBase::astLoc(const ASTNode * ast) {
-  if (activeScope_ == NULL) {
-    return ast->location();
-  } else {
-    return ast->location().forRegion(activeScope_->region());
-  }
-}
-
 Defn * AnalyzerBase::findLessSpecializedInstance(Defn * de) {
   if (de->isTemplateInstance()) {
     return de->templateInstance()->findLessSpecializedInstance();

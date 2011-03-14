@@ -37,8 +37,7 @@ namespace tart {
 #define CHECK_EXPR(e) if (isErrorResult(e)) return &Expr::ErrorVal
 
 Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected) {
-  SourceRegion * region = activeScope()->region();
-  LocalScope * blockScope = createLocalScope("block-scope", region);
+  LocalScope * blockScope = createLocalScope("block-scope");
   Scope * savedScope = setActiveScope(blockScope);
 
   const StmtList & stlist = st->stmts();
@@ -229,8 +228,8 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
   LocalScope * forScope = createLocalScope("for-scope");
   setActiveScope(forScope);
 
-  SourceLocation stLoc = astLoc(st);
-  SourceLocation iterLoc = astLoc(st->iterExpr());
+  SourceLocation stLoc = st->location();
+  SourceLocation iterLoc = st->iterExpr()->location();
 
   ForEachExpr * foreach = new ForEachExpr(stLoc, forScope);
 
@@ -568,7 +567,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
 Expr * ExprAnalyzer::reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr,
     Expr::ExprType castType, const Type * expected) {
   const ASTDecl * asDecl = st->asDecl();
-  SourceLocation stLoc = astLoc(asDecl);
+  SourceLocation stLoc = asDecl->location();
   LocalScope * caseScope = createLocalScope("as-scope");
   Scope * savedScope = setActiveScope(caseScope);
 
@@ -614,7 +613,7 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, const Type * expected) {
     // Generate the catch cases
     for (StmtList::const_iterator it = catchList.begin(); it != catchList.end(); ++it) {
       CatchStmt * cst = static_cast<CatchStmt*>(*it);
-      const SourceLocation loc = astLoc(cst);
+      const SourceLocation loc = cst->location();
 
       if (cst->exceptDecl() == NULL) {
         // 'catch-all' block.
@@ -743,8 +742,8 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
     const UnionType * utype = static_cast<const UnionType *>(returnType_);
     if (utype->hasVoidType()) {
       int typeIndex = utype->getTypeIndex(&VoidType::instance);
-      CastExpr * voidValue = new CastExpr(Expr::UnionCtorCast, astLoc(st), utype,
-          ConstantNull::get(astLoc(st), &VoidType::instance));
+      CastExpr * voidValue = new CastExpr(Expr::UnionCtorCast, st->location(), utype,
+          ConstantNull::get(st->location(), &VoidType::instance));
       voidValue->setTypeIndex(typeIndex);
       resultVal = voidValue;
     } else {
@@ -761,15 +760,15 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
       // Do the assignment and branch to the macro exit.
       DASSERT(returnType_->isEqual(macroReturnVal_->type()));
       return new BinaryExpr(Expr::Prog2, st->location(), &VoidType::instance,
-          new AssignmentExpr(astLoc(st), macroReturnVal_, resultVal),
-          new BranchExpr(Expr::LocalReturn, astLoc(st)));
+          new AssignmentExpr(st->location(), macroReturnVal_, resultVal),
+          new BranchExpr(Expr::LocalReturn, st->location()));
     } else {
       // Simply return, don't set the return value.
-      return new BranchExpr(Expr::LocalReturn, astLoc(st));
+      return new BranchExpr(Expr::LocalReturn, st->location());
     }
   }
 
-  return new ReturnExpr(Expr::Return, astLoc(st), resultVal);
+  return new ReturnExpr(Expr::Return, st->location(), resultVal);
 }
 
 Expr * ExprAnalyzer::reduceYieldStmt(const ReturnStmt * st, const Type * expected) {
@@ -832,7 +831,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, Ex
         VariableDefn * var = static_cast<VariableDefn *>(*it);
         Expr * initVal = new BinaryExpr(Expr::ElementRef, var->ast()->location(), tt->member(
             memberIndex), initExpr, ConstantInteger::getUInt32(memberIndex));
-        exprs.push_back(new InitVarExpr(astLoc(st), var, initVal));
+        exprs.push_back(new InitVarExpr(st->location(), var, initVal));
         if (var->type() == NULL) {
           DASSERT(initVal->canonicalType() != &AnyType::instance);
           var->setType(initVal->canonicalType());
@@ -857,7 +856,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, Ex
 //    }
     Expr * initVal = var->initValue();
     var->setInitValue(NULL);
-    exprs.push_back(new InitVarExpr(astLoc(st), var, initVal));
+    exprs.push_back(new InitVarExpr(st->location(), var, initVal));
   }
   return true;
 }
@@ -876,7 +875,7 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
     }
 
     ValueDefn * testValueDefn = cast<ValueDefn>(testDefn);
-    testExpr = LValueExpr::get(astLoc(test), NULL, testValueDefn);
+    testExpr = LValueExpr::get(test->location(), NULL, testValueDefn);
     implicitScope = testScope;
   } else {
     testExpr = reduceExpr(test, castToBool ? &BoolType::instance : NULL);
@@ -910,15 +909,15 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
 
   // Compare reference type with null.
   if (testExpr->type()->isReferenceType()) {
-    return new CompareExpr(astLoc(test), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
-        astLoc(test), testExpr->type()));
+    return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
+        test->location(), testExpr->type()));
   } else if (const AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
-    return new CompareExpr(astLoc(test), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
-        astLoc(test), testExpr->type()));
+    return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
+        test->location(), testExpr->type()));
   }
 
   // Cast to boolean.
-  return BoolType::instance.implicitCast(astLoc(test), testExpr);
+  return BoolType::instance.implicitCast(test->location(), testExpr);
 }
 
 Defn * ExprAnalyzer::astToDefn(const ASTDecl * ast) {
@@ -927,23 +926,23 @@ Defn * ExprAnalyzer::astToDefn(const ASTDecl * ast) {
   }
 
   Defn * var = createLocalDefn(ast);
-  var->setLocation(astLoc(ast));
+  var->setLocation(ast->location());
   return var;
 }
 
 bool ExprAnalyzer::astToDefnList(const ASTVarDecl * ast, DefnList & vars) {
   for (ASTDeclList::const_iterator it = ast->members().begin(); it != ast->members().end(); ++it) {
     Defn * var = createLocalDefn(*it);
-    var->setLocation(astLoc(*it));
+    var->setLocation((*it)->location());
     vars.push_back(var);
   }
 
   return true;
 }
 
-LocalScope * ExprAnalyzer::createLocalScope(const char * scopeName, SourceRegion * region) {
+LocalScope * ExprAnalyzer::createLocalScope(const char * scopeName) {
   DASSERT(activeScope() != NULL);
-  LocalScope * newScope = new LocalScope(activeScope(), region ? region : activeScope()->region());
+  LocalScope * newScope = new LocalScope(activeScope());
   newScope->setScopeName(scopeName);
   DASSERT(newScope->parentScope() != NULL);
   currentFunction_->localScopes().push_back(newScope);

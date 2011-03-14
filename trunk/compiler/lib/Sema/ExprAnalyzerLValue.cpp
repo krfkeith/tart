@@ -38,8 +38,8 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        checkAccess(astLoc(ast), prop);
-        return reduceGetParamPropertyValue(astLoc(ast), call);
+        checkAccess(ast->location(), prop);
+        return reduceGetParamPropertyValue(ast->location(), call);
       }
     }
   }
@@ -163,7 +163,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     if (elemType == NULL) {
       return &Expr::ErrorVal;
     }
-    return new TypeLiteralExpr(astLoc(ast), getArrayTypeForElement(elemType));
+    return new TypeLiteralExpr(ast->location(), getArrayTypeForElement(elemType));
   }
 
   // If it's a name, see if it's a specializable name.
@@ -193,7 +193,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       if (isTypeOrFunc) {
         ASTNodeList args;
         args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-        Expr * specResult = specialize(astLoc(ast), values, args, true);
+        Expr * specResult = specialize(ast->location(), values, args, true);
         if (specResult != NULL) {
           return specResult;
         } else {
@@ -261,7 +261,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     // TODO: Attempt to cast arg to an integer type of known size.
 
     // First dereference the pointer and then get the element.
-    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, args[0]);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, args[0]);
   }
 
   // Do automatic pointer dereferencing
@@ -295,7 +295,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, indexExpr);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
   }
 
   // Handle flexible arrays.
@@ -320,7 +320,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
     }
 
     // TODO: Attempt to cast arg to an integer type of known size.
-    return new BinaryExpr(Expr::ElementRef, astLoc(ast), elemType, arrayExpr, indexExpr);
+    return new BinaryExpr(Expr::ElementRef, ast->location(), elemType, arrayExpr, indexExpr);
   }
 
   // Handle tuples
@@ -348,7 +348,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
       }
 
       uint32_t index = uint32_t(indexVal.getZExtValue());
-      return new BinaryExpr(Expr::ElementRef, astLoc(ast), tt->member(index), arrayExpr, cint);
+      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
     } else {
       diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
       return &Expr::ErrorVal;
@@ -386,8 +386,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // CallExpr type used to hold the array reference and parameters.
-  LValueExpr * callable = LValueExpr::get(astLoc(ast), arrayExpr, indexer);
-  CallExpr * call = new CallExpr(Expr::Call, astLoc(ast), callable);
+  LValueExpr * callable = LValueExpr::get(ast->location(), arrayExpr, indexer);
+  CallExpr * call = new CallExpr(Expr::Call, ast->location(), callable);
   call->args().append(args.begin(), args.end());
   call->setType(indexer->type());
   return call;

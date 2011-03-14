@@ -7,8 +7,6 @@
 #include "tart/Defn/Defn.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/CFG/FunctionRegion.h"
-#include "tart/CFG/LexicalBlockRegion.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"

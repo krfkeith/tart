@@ -26,7 +26,7 @@ Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  return reduceStoreValue(astLoc(ast), lhs, rhs);
+  return reduceStoreValue(ast->location(), lhs, rhs);
 }
 
 Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
@@ -41,7 +41,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
       if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
-        Expr * setProp = reduceSetParamPropertyValue(astLoc(ast), call, newValue);
+        Expr * setProp = reduceSetParamPropertyValue(ast->location(), call, newValue);
         if (isErrorResult(setProp)) {
           return &Expr::ErrorVal;
         }
@@ -51,7 +51,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
     }
   }
 
-  return new AssignmentExpr(Expr::PostAssign, astLoc(ast), lvalue, newValue);
+  return new AssignmentExpr(Expr::PostAssign, ast->location(), lvalue, newValue);
 }
 
 Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
@@ -76,10 +76,10 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
   }
 
   // Create a multi-assign node.
-  MultiAssignExpr * ma = new MultiAssignExpr(astLoc(ast), rhs->type());
+  MultiAssignExpr * ma = new MultiAssignExpr(ast->location(), rhs->type());
   if (TupleCtorExpr * tce = dyn_cast<TupleCtorExpr>(rhs)) {
     for (size_t i = 0; i < dstVars.size(); ++i) {
-      ma->appendArg(reduceStoreValue(astLoc(ast), dstVars[i], tce->arg(i)));
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], tce->arg(i)));
     }
   } else {
     rhs = SharedValueExpr::get(rhs);
@@ -88,7 +88,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
           Expr::ElementRef, rhs->location(), tt->member(i),
           rhs, ConstantInteger::getUInt32(i));
 
-      ma->appendArg(reduceStoreValue(astLoc(ast), dstVars[i], srcVal));
+      ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
     }
   }
 
@@ -151,16 +151,16 @@ Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
   }
 
   // Attempt to call augmented assignment operator as member function
-  ASTMemberRef augMethodRef(astLoc(ast), const_cast<ASTNode *>(ast->arg(0)), assignOperName);
+  ASTMemberRef augMethodRef(ast->location(), const_cast<ASTNode *>(ast->arg(0)), assignOperName);
   ASTNodeList args;
   args.push_back(const_cast<ASTNode *>(ast->arg(1)));
-  Expr * callExpr = callName(astLoc(ast), &augMethodRef, args, NULL, true);
+  Expr * callExpr = callName(ast->location(), &augMethodRef, args, NULL, true);
   if (callExpr != NULL) {
     return callExpr;
   }
 
   // Otherwise call the regular infix operator and assign to the same location.
-  Expr * callResult = callName(astLoc(ast), infixOperIdent, ast->args(), NULL, false);
+  Expr * callResult = callName(ast->location(), infixOperIdent, ast->args(), NULL, false);
   if (isErrorResult(callResult)) {
     return callResult;
   }
@@ -170,7 +170,7 @@ Expr * ExprAnalyzer::reduceAugmentedAssign(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  return reduceStoreValue(astLoc(ast), lhs, callResult);
+  return reduceStoreValue(ast->location(), lhs, callResult);
 }
 
 }

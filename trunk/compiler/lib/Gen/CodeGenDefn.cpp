@@ -12,7 +12,6 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/CFG/FunctionRegion.h"
 #include "tart/Type/PrimitiveType.h"
 
 #include "tart/Objects/Builtins.h"
@@ -136,8 +135,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
       dbgInlineContext_ = DIScope();
-      setDebugLocation(fdef->location().forRegion(fdef->region()));
-      functionRegion_ = fdef->region();
+      setDebugLocation(fdef->location());
     }
 
     BasicBlock * prologue = BasicBlock::Create(context_, "prologue", f);
@@ -293,7 +291,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     dbgContext_ = DIScope();
     dbgInlineContext_ = DIScope();
-    functionRegion_ = NULL;
     builder_.ClearInsertionPoint();
     builder_.SetCurrentDebugLocation(llvm::DebugLoc());
   }

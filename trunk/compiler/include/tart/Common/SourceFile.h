@@ -9,8 +9,8 @@
 #include "tart/Common/GC.h"
 #endif
 
-#ifndef TART_COMMON_SOURCEREGION_H
-#include "tart/Common/SourceRegion.h"
+#ifndef TART_COMMON_SOURCELOCATION_H
+#include "tart/Common/SourceLocation.h"
 #endif
 
 #include "llvm/Support/Path.h"
@@ -26,7 +26,7 @@ namespace tart {
 
 // -------------------------------------------------------------------
 // Abstract interface representing the source of program text.
-class ProgramSource : public SourceRegion {
+class ProgramSource : public GC {
 public:
   ProgramSource(llvm::StringRef path)
     : filePath(path)
@@ -67,16 +67,9 @@ public:
 
   // Overrides
 
-  RegionType regionType() const { return FILE; }
-  SourceRegion * parentRegion() const { return NULL; }
   void trace() const {}
 
   // Casting
-
-  static inline bool classof(const ProgramSource *) { return true; }
-  static inline bool classof(const SourceRegion * ss) {
-    return ss->regionType() == FILE;
-  }
 
 protected:
   llvm::SmallString<128> filePath;       // Path to the file
@@ -125,8 +118,8 @@ public:
 // -------------------------------------------------------------------
 // Get the token position for a given source location.
 static TokenPosition tokenPosition(const SourceLocation & loc) {
-  if (loc.region) {
-    return loc.region->tokenPosition(loc);
+  if (loc.file) {
+    return loc.file->tokenPosition(loc);
   } else {
     return TokenPosition();
   }
