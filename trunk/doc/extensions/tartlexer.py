@@ -22,8 +22,8 @@ class TartLexer(RegexLexer):
             (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
             (r'(abstract|as|base|break|case|catch|continue|default|'
              r'do|else|explicit|finally|fn|for|if|in|'
-             r'internal|is|out|override|private|protected|public|'
-             r'repeat|require|return|static|switch|throw|try|typeof|typeselect|'
+             r'internal|is|match|out|override|private|protected|public|'
+             r'repeat|require|return|static|switch|throw|try|typeof|typealias|'
              r'virtual|void|with|while|get|set)\b', Keyword),
             (r'(false|null|self|true)\b', Name.Builtin.Pseudo),
             (r'(bool|byte|char|double|float|int|long|object|'
@@ -37,7 +37,6 @@ class TartLexer(RegexLexer):
             (r'(let|var)\b(\s*)', bygroups(Keyword, Text), 'var'),
             (r'(def|macro)\b(\s*)', bygroups(Keyword, Text), 'def'),
             (r'!\[', Punctuation, 'typeparams'),
-            (r'<\[', Punctuation, 'typeargs'),
             ('"', String, 'dqs'),
             ("'", String, 'sqs'),
             (re_ident, Name.Variable),
@@ -63,7 +62,7 @@ class TartLexer(RegexLexer):
         'class': [
             (re_ident, Name.Class),
             (r'\[', Punctuation, 'typeparams'),
-            (r'<\[', Punctuation, 'typeparams'),
+            (r'\s+', Text),
             (r'\:', Punctuation, 'baselist'),
             (r'', Text, '#pop'),
         ],
@@ -89,7 +88,6 @@ class TartLexer(RegexLexer):
         'def': [
             (re_ident, Name.Function),
             (r'\[', Punctuation, 'typeparams'),
-            (r'<\[', Punctuation, 'typeargs'),
             (r'\(', Punctuation, 'arglist'),
             (r'\s+', Text),
             (r'', Text, '#pop'),
@@ -98,7 +96,6 @@ class TartLexer(RegexLexer):
             (r'\s+', Text),
             (re_ident, Name.Class),
             (r'\!\[', Punctuation, 'typeparams'),
-            (r'<\[', Punctuation, 'typeargs'),
             (r',', Punctuation),
             (r'', Text, '#pop'),
         ],
@@ -110,7 +107,6 @@ class TartLexer(RegexLexer):
             (r',', Punctuation),
             (r';', Punctuation),
             (r'=[\s\d\w]+', Punctuation),
-            (r'<\[', Punctuation, 'typeargs'),
             (r'[^);]+', Generic.Error),
         ],
         'typeparams': [
@@ -126,19 +122,11 @@ class TartLexer(RegexLexer):
             (r'!\[', Punctuation, 'typeparams'),
             (r'[^>]+', Generic.Error),
         ],
-        'typeargs': [
-            (r']>', Punctuation, '#pop'),
-            (re_ident, Name.Class),
-            (r'\s+', Text),
-            include('operators'),
-            include('numbers'),
-            (r',', Punctuation),
-            (r'<\[', Punctuation, 'typeargs'),
-            (r'[^>]+', Generic.Error),
-        ],
         'type': [
             (r'\s+', Text),
             (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
+            (r'(bool|byte|char|double|float|int|long|object|'
+             r'short|String|ubyte|uint|ulong|ushort)\b', Keyword.Type),
             (re_ident, Name.Class),
             (r'\[\]', Punctuation),
             (r'', Text, '#pop'),

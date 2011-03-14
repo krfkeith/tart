@@ -40,7 +40,6 @@ class TypeDefn;
 class TupleType;
 
 typedef std::vector<llvm::Constant *> ConstantList;
-typedef llvm::StringMap<llvm::GlobalVariable *> GlobalVarMap;
 
 /// -------------------------------------------------------------------
 /// Class to handle generation of reflection data.
@@ -163,6 +162,8 @@ private:
   NameTable::Name * addQualifiedName(llvm::StringRef name);
   NameTable::Name * addName(const llvm::StringRef name);
 
+  llvm::GlobalVariable * findGlobal(const llvm::Twine & name);
+
   Module * module();
 
   llvm::Constant * getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName);
@@ -175,8 +176,6 @@ private:
   llvm::IRBuilder<true> builder_;    // LLVM builder
   llvm::Module * irModule_;
   llvm::GlobalVariable * nameTableVar_;
-
-  GlobalVarMap globals_;
 
   // Set of types exported by this module.
   Agenda<const Defn> defnExports_;

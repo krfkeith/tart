@@ -500,7 +500,7 @@ Expr * EvalPass::evalComplement(UnaryExpr * in) {
 }
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
-  const CompositeType * arrayType = cast<CompositeType>(in->type());
+  const Type * arrayType = in->type();
   if (!AnalyzerBase::analyzeType(arrayType, Task_PrepEvaluation)) {
     return NULL;
   }
@@ -524,13 +524,18 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
     arrayData->elements().push_back(element);
   }
 
+  if (in->type()->typeClass() == Type::NArray) {
+    return arrayData;
+  }
+
   // If it's empty, then prepare the empty list singleton.
+  const CompositeType * arrayClass = cast<CompositeType>(arrayType);
   if (arrayData->elements().empty()) {
-    return new ConstantEmptyArray(in->location(), arrayType);
+    return new ConstantEmptyArray(in->location(), arrayClass);
   }
 
   // Constant array objects are special because of their variable size.
-  ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayType);
+  ConstantObjectRef * arrayObj = new ConstantObjectRef(in->location(), arrayClass);
   arrayObj->setMemberValue("_size",
       ConstantInteger::getUInt(arrayData->elements().size())->at(in->location()));
   arrayObj->setMemberValue("_data", arrayData);

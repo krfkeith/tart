@@ -94,6 +94,7 @@ public:
 
   const llvm::Type * irType() const { return createIRType(); }
   const llvm::Type * createIRType() const;
+  const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;

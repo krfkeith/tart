@@ -25,3 +25,5 @@ target_link_libraries(tartln
     ${LLVM_TARTLN_LIBS}
     )
 set_target_properties(tartln PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
+
+install(TARGETS tartln RUNTIME DESTINATION bin)

@@ -298,6 +298,7 @@ private:
   /** Remove from consideration overloads that have a low conversion rank. */
   void cullByConversionRank();
   void cullByConversionRank(ConversionRank lowerLimit);
+  bool cullEachSiteByConversionRank();
 
   /** Remove from consideration overloads that are less specific. */
   void cullBySpecificity();

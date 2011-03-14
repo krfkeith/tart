@@ -186,6 +186,80 @@ void typeLinkageName(std::string & out, const Type * ty) {
   }
 }
 
+void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
+  ty = dealias(ty);
+  if (TypeDefn * td = ty->typeDefn()) {
+    out << td->linkageName();
+  } else if (const FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
+    out << "fn";
+    if (ftype->selfParam() != NULL) {
+      out << ':';
+      typeLinkageName(out, ftype->selfParam()->type());
+    }
+
+    if (!ftype->params().empty()) {
+      out << '(';
+
+      const ParameterList & params = ftype->params();
+      for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
+        if (it != params.begin()) {
+          out << ',';
+        }
+
+        typeLinkageName(out, (*it)->type());
+        if ((*it)->isVariadic()) {
+          out << "...";
+        }
+      }
+      out << ')';
+    }
+
+    if (!ftype->isVoidType()) {
+      out << "->";
+      typeLinkageName(out, ftype->returnType());
+    }
+  } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
+    out << '(';
+    for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
+      if (it != ttype->begin()) {
+        out << ',';
+      }
+
+      typeLinkageName(out, *it);
+    }
+    out << ')';
+  } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
+    for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
+        ++it) {
+      if (it != utype->members().begin()) {
+        out << '|';
+      }
+
+      typeLinkageName(out, *it);
+    }
+  } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
+    typeLinkageName(out, mat->typeParam(0));
+    out << '^';
+  } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
+    out << "tart.reflect.Type";
+  } else if (const TypeVariable * tvar = dyn_cast<TypeVariable>(ty)) {
+    out << tvar->name();
+  } else if (const FlexibleArrayType * fa = dyn_cast<FlexibleArrayType>(ty)) {
+    out << "FlexibleArray[";
+    typeLinkageName(out, fa->typeParam(0));
+    out << ']';
+  } else if (const NativeArrayType * na = dyn_cast<NativeArrayType>(ty)) {
+    out << "NativeArray[";
+    typeLinkageName(out, na->typeParam(0));
+    out << ',';
+    out << na->size();
+    out << ']';
+  } else {
+    diag.error() << "Type: " << ty;
+    TFAIL << "Can't compute linkage name of type: " << ty;
+  }
+}
+
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
 Conversion::Conversion(const Type * from)
