@@ -1,6 +1,7 @@
 import tart.core.Memory.addressOf;
 import tart.core.Memory.Address;
 import tart.text.encodings.Codecs;
+import tart.text.Character;
 
 /** The built-in string class. Strings are immutable. */
 public final class String : Iterable[char] {
@@ -318,6 +319,24 @@ public final class String : Iterable[char] {
     }
 
     return copied, index;
+  }
+
+	/** Return the value of this string, converted to upper case. */
+  def toUpperCase -> String {
+    var sb = StringBuilder(_size);
+    for ch in iterate() {
+      sb.append(Character.toUpperCase(ch));
+    }
+    return sb.toString();
+  }
+
+	/** Return the value of this string, converted to lower case. */
+  def toLowerCase -> String {
+    var sb = StringBuilder(_size);
+    for ch in iterate() {
+      sb.append(Character.toLowerCase(ch));
+    }
+    return sb.toString();
   }
 
   /** A protocol for types that have a 'toString' method. */

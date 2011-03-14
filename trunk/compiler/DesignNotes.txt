@@ -1,38 +1,29 @@
 // ------------------------------------------------------------------------
 
 Next up:
-* Type constraints - eliminated un-needed methods.
+
+* Unit tests crashing in OS X Leopard
+* Get DWARF working again.
 * statements returning values - if, switch, match.
 * type inference for blocks returning expressions.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
+* Type constraints - eliminated un-needed methods.
+* Undef'd methods should throw UnsupportedOperationException. (test)
 
 Design TODOS:
 
 * Const-ness "const" and "const? / constable"
 * Need a way to collect all declarations that a given attribute is assigned to.
-* Collector classes:
-  * TLAB
-  * LinearAllocator
-  * Eden
-    * Linked-list of TLABs.
-    * Lock for the TLAB list.
-      * Each TLAB is 32k.
-      * Eden size is 2 + 2 * numThreads TLABS.
-      * TLABS do not need to be contiguous
-      * Thread local ptr to TLAB.
-  * SS1 and SS2. These have SSABs. = 50% Eden size.
-  * SSAB.
-  * Problems to solve:
-    Still need to know how to mark objects in different spaces.
-  * Some way to import C++ data structures into Tart - for things like pthreads.
-  
+
 Hard problems:
+
   -- Dynamic linking.
   -- Exception backtrace
   -- Dynamic reification of types.
 
 More things to do:
+
   -- Get static ctors working.
   -- BitTricks tests.
   -- Static If
@@ -54,7 +45,6 @@ Implementation TODOS:
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
 * Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
-* Undef'd methods should throw UnsupportedOperationException.
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
@@ -133,6 +123,22 @@ Implementation TODOS:
 * Implement BoundMethodExpr as an implementation of Function.
 * Insure typealiases aren't circular.
 
+* Collector classes:
+  * TLAB
+  * LinearAllocator
+  * Eden
+    * Linked-list of TLABs.
+    * Lock for the TLAB list.
+      * Each TLAB is 32k.
+      * Eden size is 2 + 2 * numThreads TLABS.
+      * TLABS do not need to be contiguous
+      * Thread local ptr to TLAB.
+  * SS1 and SS2. These have SSABs. = 50% Eden size.
+  * SSAB.
+  * Problems to solve:
+    Still need to know how to mark objects in different spaces.
+  * Some way to import C++ data structures into Tart - for things like pthreads.
+  
 Doc errors:
 
 * Fix operator overload syntax (infixX notation used now.)
