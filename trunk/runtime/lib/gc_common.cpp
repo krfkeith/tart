@@ -66,7 +66,7 @@ namespace {
 
   /** Given an address, compute a hash of that address. */
 static size_t GC_hashAddress(void * addr) {
-  return (uintptr_t(addr) ^ (uintptr_t(addr) << 7)) * 2654435769;
+  return (uintptr_t(addr) ^ (uintptr_t(addr) << 7)) * 2654435769u;
 }
 
 size_t GC_getPageSize() {

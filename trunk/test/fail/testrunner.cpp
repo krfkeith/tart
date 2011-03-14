@@ -10,8 +10,8 @@
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/System/Signals.h"
-#include "llvm/System/Path.h"
+#include "llvm/Support/Signals.h"
+#include "llvm/Support/Path.h"
 
 using namespace tart;
 

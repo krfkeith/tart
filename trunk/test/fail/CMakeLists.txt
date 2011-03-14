@@ -5,18 +5,15 @@
 # Create a command for each source file
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
 
+execute_process(
+  COMMAND ${LLVM_CONFIG} --libs bitreader bitwriter ${LLVM_TARGETS}
+  OUTPUT_VARIABLE LLVM_TESTRUNNER_LIBS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 add_executable(testrunner testrunner.cpp)
 add_dependencies(testrunner compiler unittest.run)
-target_link_libraries(testrunner
-    compiler
-    ${LLVM_BIT_READER}
-    ${LLVM_BIT_WRITER}
-    ${LLVM_SELECTION_DAG}
-    ${LLVM_ANALYSIS}
-    ${LLVM_TARGET}
-    ${LLVM_CORE}
-    ${LLVM_SUPPORT}
-    )
+target_link_libraries(testrunner compiler ${LLVM_TESTRUNNER_LIBS})
 set_target_properties(testrunner PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")
 
 # Now run the tests on these files.

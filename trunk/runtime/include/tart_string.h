@@ -9,7 +9,7 @@
 #include "tart_object.h"
 #endif
 
-#include "llvm/System/DataTypes.h"
+#include "llvm/Support/DataTypes.h"
 
 /** Tart string class. */
 typedef struct TartString {

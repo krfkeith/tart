@@ -35,21 +35,10 @@ add_library(linker_reflect STATIC
   ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
 
 add_library(gc SHARED ${GC_SOURCES} ${GC_HEADERS})
-target_link_libraries(gc
-#    ${LLVM_CODE_GEN}
-#    ${LLVM_ASM_PRINTER}
-#    ${LLVM_MC_PARSER}
-#    ${LLVM_ANALYSIS}
-#    ${LLVM_TARGET}
-#    ${LLVM_MC}
-#    ${LLVM_CORE}
-#    ${LLVM_SUPPORT}
-    )
-
 add_library(reflector SHARED ${COMMON_SOURCES} ${REFLECT_SOURCES} ${COMMON_HEADERS} ${REFLECT_HEADERS})
-target_link_libraries(reflector
-#    ${LLVM_ANALYSIS}
-#    ${LLVM_TARGET}
-#    ${LLVM_CORE}
-#    ${LLVM_SUPPORT}
-    )
+
+if (APPLE)
+  # Darwin-specific linker flags for loadable modules.
+  set_target_properties(gc PROPERTIES LINK_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
+  set_target_properties(reflector PROPERTIES LINK_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
+endif()
