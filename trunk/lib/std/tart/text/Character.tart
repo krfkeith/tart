@@ -1,98 +1,108 @@
 namespace Character {
   enum Category {
-  	Cn = 0, // Unassigned
-	  Lu, // Uppercase_Letter
-  	Ll, // Lowercase_Letter
-  	Lt, // Titlecase_Letter
-  	Lm, // Modifier_Letter
-  	Lo, // Other_Letter
-  	Mn, // Nonspacing_Mark
-  	Mc, // Spacing_Mark
-  	Me, // Enclosing_Mark
-  	Nd, // Decimal_Number
-  	Nl, // Letter_Number
-  	No, // Other_Number
-  	Pc, // Connector_Punctuation
-  	Pd, // Dash_Punctuation
-  	Ps, // Open_Punctuation
-  	Pe, // Close_Punctuation
-  	Pi, // Initial_Punctuation
-  	Pf, // Final_Punctuation
-  	Po, // Other_Punctuation
-  	Sm, // Math_Symbol
-  	Sc, // Currency_Symbol
-  	Sk, // Modifier_Symbol
-  	So, // Other_Symbol
-  	Zs, // Space_Separator
-  	Zl, // Line_Separator
-  	Zp, // Paragraph_Separator
-  	Cc, // Control
-  	Cf, // Format
-  	Cs, // Surrogate
-  	Co, // Private_Use
+    UNASSIGNED = 0,         // Cn = 0
+    UPPERCASE_LETTER,       // Lu = 1
+    LOWERCASE_LETTER,       // Ll = 2
+    TITLECASE_LETTER,       // Lt = 3
+    MODIFIER_LETTER,        // Lm = 4
+    OTHER_LETTER,           // Lo = 5
+    NONSPACING_MARK,        // Mn = 6
+    SPACING_MARK,           // Mc = 7
+    ENCLOSING_MARK,         // Me = 8
+    DECIMAL_NUMBER,         // Nd = 9
+    LETTER_NUMBER,          // Nl = 10
+    OTHER_NUMBER,           // No = 11
+    CONNECTOR_PUNCTUATION,  // Pc = 12
+    DASH_PUNCTUATION,       // Pd = 13
+    OPEN_PUNCTUATION,       // Ps = 14
+    CLOSE_PUNCTUATION,      // Pe = 15
+    INITIAL_PUNCTUATION,    // Pi = 16
+    FINAL_PUNCTUATION,      // Pf = 17
+    OTHER_PUNCTUATION,      // Po = 18
+    MATH_SYMBOL,            // Sm = 19
+    CURRENCY_SYMBOL,        // Sc = 20
+    MODIFIER_SYMBOL,        // Sk = 21
+    OTHER_SYMBOL,           // So = 22
+    SPACE_SEPARATOR,        // Zs = 23
+    LINE_SEPARATOR,         // Zl = 24
+    PARAGRAPH_SEPARATOR,    // Zp = 25
+    CONTROL,                // Cc = 26
+    FORMAT,                 // Cf = 27
+    SURROGATE,              // Cs = 28
+    PRIVATE_USE,            // Co = 29
+  }
+
+	// Bitmasks to allow fast testing of group membership.
+  @Flags enum CategoryGroups {
+    LETTER = (1 << uint32(Category.UPPERCASE_LETTER)) |
+             (1 << uint32(Category.LOWERCASE_LETTER)) |
+             (1 << uint32(Category.TITLECASE_LETTER)) |
+             (1 << uint32(Category.MODIFIER_LETTER))  |
+             (1 << uint32(Category.OTHER_LETTER)),
+    LETTER_OR_DIGIT = LETTER | (1 << uint32(Category.DECIMAL_NUMBER)),
   }
 
   private def category(ch:char) -> Category {
-	  return Category(CharacterTables.category(ch));
+    return Category(CharacterTables.category(ch));
+  }
+
+  /** True if the character 'ch' is a defined Unicode character. */
+  def isDefined(ch:char) -> bool {
+    return CharacterTables.category(ch) != Category.UNASSIGNED;
+  }
+
+  /** True if the character 'ch' is an ISO control character. */
+  def isControl(ch:char) -> bool {
+    return CharacterTables.category(ch) == Category.CONTROL;
   }
 
   /** True if the character 'ch' is a letter. */
-	def isLetter(ch:char) -> bool {
-	  let c = category(ch);
-	  switch c {
-	    case Lu
-	    case Ll
-	    case Lt
-	    case Lm
-	    case Lo
-	    case Nl {
-	      return true;
-	  	}
+  def isLetter(ch:char) -> bool {
+    let c = category(ch);
+    return ((1 << uint(c)) & uint(CategoryGroups.LETTER)) != 0;
+  }
 
-	  	else {
-	  	  return false;
-	  	}
-	  }
-	}
+  /** True if the character 'ch' is a letter. */
+  def isLetterOrDigit(ch:char) -> bool {
+    let c = category(ch);
+    return ((1 << uint(c)) & uint(CategoryGroups.LETTER_OR_DIGIT)) != 0;
+  }
 
-  /** True if the character 'ch' is a defined Unicode character. */
-	def isDefined(ch:char) -> bool {
-	  return CharacterTables.category(ch) != Category.Cn;
-	}
-
-  /** True if the character 'ch' is an ISO control character. */
-	def isControl(ch:char) -> bool {
-	  return CharacterTables.category(ch) == Category.Cc;
-	}
+  /** True if the character 'ch' is a decimal digit. */
+  def isDigit(ch:char) -> bool {
+    return CharacterTables.category(ch) == Category.DECIMAL_NUMBER;
+  }
 
   /** True if the character 'ch' is an upper case character. */
-	def isUpperCase(ch:char) -> bool {
-	  return CharacterTables.category(ch) == Category.Lu;
-	}
+  def isUpperCase(ch:char) -> bool {
+    return CharacterTables.category(ch) == Category.UPPERCASE_LETTER;
+  }
 
   /** True if the character 'ch' is a lower case character. */
-	def isLowerCase(ch:char) -> bool {
-	  return CharacterTables.category(ch) == Category.Ll;
-	}
+  def isLowerCase(ch:char) -> bool {
+    return CharacterTables.category(ch) == Category.LOWERCASE_LETTER;
+  }
 
   /** True if the character 'ch' is cased. */
-	def isCased(ch:char) -> bool {
-	  let c = category(ch);
-	  return ch == Category.Lu or ch == Category.Ll or ch == Category.Lt;
-	}
+  def isCased(ch:char) -> bool {
+    let c = category(ch);
+    return ch == Category.UPPERCASE_LETTER or
+           ch == Category.LOWERCASE_LETTER or
+           ch == Category.TITLECASE_LETTER;
+  }
 
   /** Conver the character 'ch' to upper case. */
-	def toUpperCase(ch:char) -> char {
-	  return ch + char(CharacterTables.uppercaseMapping(ch));
-	}
+  def toUpperCase(ch:char) -> char {
+    return ch + char(CharacterTables.uppercaseMapping(ch));
+  }
 
   /** Conver the character 'ch' to lower case. */
-	def toLowerCase(ch:char) -> char {
-	  return ch + char(CharacterTables.lowercaseMapping(ch));
-	}
+  def toLowerCase(ch:char) -> char {
+    return ch + char(CharacterTables.lowercaseMapping(ch));
+  }
 
   /** Conver the character 'ch' to title case. */
-	def toTitleCase(ch:char) -> char {
-	  return ch + char(CharacterTables.titlecaseMapping(ch));
-	}
+  def toTitleCase(ch:char) -> char {
+    return ch + char(CharacterTables.titlecaseMapping(ch));
+  }
 }

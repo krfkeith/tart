@@ -18,7 +18,7 @@ public final class StringBuilder {
 
       self._size = newSize;
     }
-    
+
 		/** Expand the size of the buffer, leaving room for new elements at position 'insertPos'. */
     def grow(amount:int, insertPos:int) {
       let remaining = self._size - insertPos;
@@ -31,6 +31,15 @@ public final class StringBuilder {
   /** Construct an empty StringBuilder. */
   def construct() {
     value = char[](0);
+    self._size = 0;
+  }
+
+  /** Construct an empty StringBuilder.
+      Parameters:
+        reservedSize - The reserved size of the buffer, in characters.
+   */
+  def construct(reservedSize:int) {
+    value = char[](reservedSize);
     self._size = 0;
   }
 
@@ -50,7 +59,7 @@ public final class StringBuilder {
     char[].copyElements(value, 0, chars, start, count);
     self._size = count;
   }
-  
+
   /** The number of characters in the buffer. */
   def size:int {
     get { return self._size; }
@@ -69,30 +78,30 @@ public final class StringBuilder {
     grow(1);
     value[n] = c;
   }
-  
+
   /** Append all or part of a character array to the buffer. */
   def append(c:char[], start:int = 0, count:int = int.maxVal) {
     insert(self._size, c, start, count);
   }
-  
+
   /** Append all or part of a String to the buffer. */
   def append(s:String, start:int = 0, count:int = int.maxVal) {
     append(s.toCharArray(), start, count);
   }
-  
+
   def append(s:Collection[char]) {
     insert(self._size, s);
   }
-  
+
   def append(s:Iterator[char]) {
     insert(self._size, s);
   }
-  
+
   def insert(insertPos:int, c:char) {
     grow(1, insertPos);
     value[insertPos] = c;
   }
-  
+
   /** Insert all or part of a character array to the buffer at position 'insertPos'. */
   def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) {
     Preconditions.checkIndex(insertPos >= 0 and insertPos <= self._size);
@@ -106,9 +115,9 @@ public final class StringBuilder {
       }
     }
   }
-  
+
   /** Append all or part of a String to the buffer at position 'insertPos'.
-      
+
       Parameters:
         insertPos: Where to insert the characters.
         src: The source String.
@@ -116,7 +125,7 @@ public final class StringBuilder {
           the end of the source string.
         count: The number of characters to insert. This will be clamped to the number
           of characters actually available.
-          
+
       Exceptions:
         IndexOutOfRangeException: If 'count' or 'start' are less than zero, or if the
           insertPos is outside of the range of the buffer.
@@ -130,7 +139,7 @@ public final class StringBuilder {
       char[].copyElements(value, insertPos, chars, 0, chars.size);
     }
   }
-  
+
   def insert(insertPos:int, s:Collection[char]) {
     if s.size > 0 {
       grow(s.size, insertPos);
@@ -182,13 +191,13 @@ public final class StringBuilder {
     _size -= count;
   }
 
-  /** Remove all characters from the buffer. */  
+  /** Remove all characters from the buffer. */
   def clear() {
     self._size = 0;
   }
-  
-  /** Return the character buffer as a String. */  
+
+  /** Return the character buffer as a String. */
   override toString() -> String {
     return String(value, 0, self._size);
-  }  
+  }
 }
