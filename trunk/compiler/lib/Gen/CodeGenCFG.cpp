@@ -103,7 +103,7 @@ Value * CodeGenerator::genSeq(const SeqExpr * in) {
   pushRoots(in->scope());
 
   DIScope saveContext = dbgContext_;
-  if (in->scope() != NULL) {
+  if (in->scope() != NULL && debug_) {
     dbgContext_ = genLexicalBlock(in->location());
   }
 

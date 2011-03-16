@@ -102,6 +102,7 @@ void CodeGenerator::generate() {
   if (debug_) {
     genDICompileUnit();
     dbgFile_ = genDIFile(module_->moduleSource());
+    DASSERT(dbgFile_.Verify());
   }
 
   addTypeName(Builtins::typeObject);

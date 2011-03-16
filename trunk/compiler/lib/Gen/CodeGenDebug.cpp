@@ -98,21 +98,16 @@ llvm::DIScope CodeGenerator::compileUnit() {
 }
 
 DIFile CodeGenerator::genDIFile(const ProgramSource * source) {
-  DIFile & file = dbgFiles_[source->getFilePath()];
+  DASSERT(source != NULL);
+  if (source->getFilePath().empty()) {
+    DASSERT(dbgFile_.Verify());
+    return dbgFile_;
+  }
+  llvm::StringRef srcPath(source->getFilePath());
+  DIFile & file = dbgFiles_[srcPath];
   if ((MDNode *)file == NULL) {
-    if (source != NULL) {
-      llvm::StringRef srcPath(source->getFilePath());
-      if (!srcPath.empty()) {
-        DASSERT(path::is_absolute(srcPath));
-        file = diBuilder_.createFile(
-            path::filename(srcPath),
-            path::parent_path(srcPath));
-      } else {
-        file = dbgFile_;
-      }
-    } else {
-      DFAIL("No source?");
-    }
+    DASSERT(path::is_absolute(srcPath));
+    file = diBuilder_.createFile(path::filename(srcPath), path::parent_path(srcPath));
   }
 
   DASSERT(file.Verify());
@@ -193,7 +188,6 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
 void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
   // Generate debugging information (this has to be done after local variable allocas.)
   if (debug_ && (MDNode *)dbgContext_ != NULL) {
-    DASSERT(dbgFile_.Verify());
     const FunctionType * ftype = fn->functionType();
     if (ftype->selfParam() != NULL) {
       genDIParameter(ftype->selfParam());
@@ -215,7 +209,7 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
             /// createVariable - create a new descriptor for the specified variable.
             DIVariable dbgVar = diBuilder_.createLocalVariable(
                 dwarf::DW_TAG_auto_variable, dbgContext_,
-                var->name(), dbgFile_, getSourceLineNumber(var->location()),
+                var->name(), genDIFile(fn), getSourceLineNumber(var->location()),
                 genDIEmbeddedType(var->type()));
             setDebugLocation(var->location());
             Instruction * declareInst = diBuilder_.insertDeclare(
@@ -230,10 +224,9 @@ void CodeGenerator::genDISubprogramStart(const FunctionDefn * fn) {
 
 void CodeGenerator::genDIParameter(const ParameterDefn * param) {
   // TODO: Need to take 'shape' into account, esp for return type.
-  DASSERT(dbgFile_.Verify());
   DIVariable dbgVar = diBuilder_.createLocalVariable(
       dwarf::DW_TAG_arg_variable, dbgContext_,
-      param->name(), dbgFile_, getSourceLineNumber(param->location()),
+      param->name(), genDIFile(param), getSourceLineNumber(param->location()),
       genDIParameterType(param->type()));
   if (param->isLValue()) {
     diBuilder_.insertDeclare(param->irValue(), dbgVar, builder_.GetInsertBlock());
@@ -275,10 +268,9 @@ void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) 
     // first assignment.
     if (!var->hasStorage()) {
       /// createVariable - create a new descriptor for the specified variable.
-      DASSERT(dbgFile_.Verify());
       DIVariable dbgVar = diBuilder_.createLocalVariable(
           dwarf::DW_TAG_auto_variable, dbgContext_,
-          var->name(), dbgFile_, getSourceLineNumber(var->location()),
+          var->name(), genDIFile(var), getSourceLineNumber(var->location()),
           genDIEmbeddedType(var->type()));
       setDebugLocation(var->location());
       Instruction * valueInst = diBuilder_.insertDbgValueIntrinsic(
@@ -357,7 +349,6 @@ DIType CodeGenerator::genDIType(const Type * type) {
 DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   /// createBasicType - create a basic type like int, float, etc.
   const llvm::Type * irType = type->irType();
-  DASSERT(dbgFile_.Verify());
   DIType di = diBuilder_.createBasicType(
       type->typeDefn()->qualifiedName().c_str(),
       getSizeOfInBits(irType),
