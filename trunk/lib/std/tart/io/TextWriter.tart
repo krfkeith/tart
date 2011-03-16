@@ -1,0 +1,35 @@
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** A class which can read a sequence of characters. */
+interface TextWriter : IOStream {
+  // Need encoding
+
+  /** Close the reader and release any resources held by the reader instance. */
+  def close();
+
+  /** Flush any pending writes. */
+  def flush();
+  
+  def writeChars(chars:char[], start:int = 0, count:int = int.maxVal) -> int;
+
+  def writeChars(text:String, start:int = 0, count:int = int.maxVal) -> int;
+
+  /** Write a string of text to the output stream. */
+  def write(text:String) -> TextWriter;
+
+  /** Concatenate strings and write them to the output stream. */
+  def write(text:String...) -> TextWriter;
+
+  /** Write a string of text to the output stream followed by a line break. */
+  def writeLn(text:String) -> TextWriter;
+
+  /** Concatenate strings and write them to the output stream, followed by a line break. */
+  def writeLn(text:String...) -> TextWriter;
+
+  /** Write values to the output stream using a format string. */
+  def writeFmt(format:String, values:Object...) -> TextWriter;
+
+  /** Write values to the output stream using a format string, followed by a line break. */
+  def writeLnFmt(format:String, values:Object...) -> TextWriter;
+}

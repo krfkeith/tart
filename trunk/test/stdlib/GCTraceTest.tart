@@ -1,0 +1,42 @@
+// Test low-level GC functions
+import tart.testing.Test;
+import tart.gc.GC;
+
+struct RefContainer {
+  var a:String;
+  var b:int;
+  var c:String;
+}
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(GCTraceTest);
+}
+
+class GCTraceTest : Test {
+  def testGCTrace {
+    var a = "S1";
+    f2();
+  }
+
+  def f2 {
+    var a = "S3a";
+    var b = "S3b";
+    var c = b;
+    f3();
+  }
+
+  def f3 {
+    var a = "S3a";
+    var b = "S3b";
+    var c = b;
+    f4();
+  }
+
+  def f4 {
+    var a = RefContainer();
+    var b = "S3b";
+    var c = b;
+    //GC.collect();
+  }
+}

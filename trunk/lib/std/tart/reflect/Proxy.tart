@@ -1,0 +1,30 @@
+import tart.annex.Intrinsic;
+
+/** A class which can be used to synthesize an implementation of an interface. */
+namespace Proxy {
+  /** Object which intercepts method calls and property accesses to the interface proxy. */
+  interface InvocationHandler {
+	  /// Get the value of the specified property.
+	  def getPropertyValue(obj:Object, property:Property) -> Object;
+
+	  /// Set the value of the specified property.
+	  def setPropertyValue(obj:Object, property:Property, value:Object);
+
+	  /// Call the given method with the given arguments.
+	  def callMethod(obj:Object, method:Method, args:Object[]) -> Object;
+  }
+
+	// Create a proxy of type T.
+  //require T <= Object;
+  //require T isa Interface[T];
+  //@Intrinsic def create[%T](typeName:TypeLiteral[T], handler:InvocationHandler) -> T;
+  /** Create a proxy object that implements the listed interfaces. */
+  @Intrinsic def create[%T <: Object...](handler:InvocationHandler) -> Object;
+
+  //@Intrinsic def proxyClass[%T...](handler:InvocationHandler[T]) -> CompositeType;
+
+	// Internal class used to implement Proxy.
+  private class ProxyImpl[%T] {
+    var handler:InvocationHandler;
+  }
+}

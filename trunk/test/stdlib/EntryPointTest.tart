@@ -1,0 +1,9 @@
+import tart.testing.Test;
+import namespace tart.testing.Asserts;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  assertEq(1, args.size);
+  assertTrue(args[0].endsWith("EntryPointTest"));
+  return 0;
+}

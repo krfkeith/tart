@@ -1,0 +1,4 @@
+/** Interface that represents a callable object. */
+interface Function[%ReturnType, %ParamTypes...] {
+  def (params:*ParamTypes) -> ReturnType;
+}

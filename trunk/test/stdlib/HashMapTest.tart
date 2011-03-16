@@ -1,0 +1,129 @@
+import tart.collections.HashMap;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(HashMapTest);
+}
+
+class HashMapTest : Test {
+  def testEmptyMap {
+    let h = HashMap[String, int32]();
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+
+  def testAdd {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertEq(1, h["Hello"]);
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+
+  def testRemoveNonExisting {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertFalse(h.remove("World"));
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+
+  def testAddRemove {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    assertTrue(h.remove("Hello"));
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+
+  def testAddTwice {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    h["Hello"] = 2;
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+  }
+  
+  def testAddRemoveOutOfOrder {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    h["World"] = 2;
+    assertTrue("Hello" in h);
+    assertTrue("World" in h);
+    assertTrue(h.remove("Hello"));
+    assertFalse("Hello" in h);
+    assertTrue("World" in h);
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+  }
+  
+  def testClear {
+    let h = HashMap[String, int32]();
+    h["Hello"] = 1;
+    h.clear();
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+  
+  def testAddTuple {
+    let h = HashMap[String, int32]();
+    h.add(("One", 1));
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("One" in h);
+    assertEq(1, h["One"]);
+    //assertTrue("Two" in h);
+    //assertTrue("Three" in h);
+    //assertTrue("Four" in h);
+  }
+
+  def testAddAll {
+    let h = HashMap[String, int32]();
+    h.addAll(("One", 1), ("Two", 2), ("Three", 3), ("Four", 4));
+    assertEq(4, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("One" in h);
+    assertTrue("Two" in h);
+    assertTrue("Three" in h);
+    assertTrue("Four" in h);
+  }
+
+/*  def testAddMany {
+    let h = HashSet[String]();
+    h.addAll("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
+             "15", "16", "17");
+    assertEq(17, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("1" in h);
+    assertTrue("2" in h);
+    assertTrue("3" in h);
+    assertTrue("4" in h);
+    assertTrue("16" in h);
+    assertTrue("17" in h);
+  }
+  
+  def testIterate() {
+    let h = buildLargeStringSet();
+    var i = 0;
+    for entry in h {
+      i++;
+    }
+    assertEq(26, i);
+  }
+  
+  def buildLargeStringSet() -> HashSet[String] {
+    let h = HashSet[String]();
+    h.addAll("a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+             "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+             "u", "v", "w", "x", "y", "z");
+    return h;
+  }
+  
+  */
+}

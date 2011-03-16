@@ -1,0 +1,138 @@
+Record of size measurements.
+-------------------------------------------------------------------
+*** Baseline before removal of compressed symbols.
+
+Total size:  120016
+
+Category                          Count   Size Average Percent
+================================ ====== ====== ======= =======
+Reflection                           --  36096      --    30.1
+  Composite types                   128  22528     176    18.8
+  Enum types                          1     64      64     0.1
+  Other types                         9    576      64     0.5
+  Type references                     2     80      40     0.1
+  Type lists                         45   1536      34     1.3
+  Invokers                            8   3504     438     2.9
+  Name tables (head)                 43   2944      68     2.5
+  Name tables (simple)               42   3588      85     3.0
+  Name tables (compound)             42    668      15     0.6
+  Field offsets                      48    608      12     0.5
+
+TIB                                  --  13968      --    11.6
+  TypeInfoBlocks                    128   7016      54     5.8
+  Base class lists                  128   3464      27     2.9
+  IDispatch functions                91   3488      38     2.9
+
+Standard Library                     --  62156      --    51.8
+  tart.core                         249  13288      53    11.1
+  tart.collections                  216  21912     101    18.3
+  tart.gc                            19   1068      56     0.9
+  tart.io                             0      0       0     0.0
+  tart.reflect                      187  20624     110    17.2
+  tart.testing                       11   2344     213     2.0
+  tart.text                          24   2920     121     2.4
+
+Classes                              --  37362      --    31.1
+  tart.core.Array                   214  12482      58    10.4
+  tart.core.String                   22   4080     185     3.4
+  tart.collections.ArrayList         83  12032     144    10.0
+  tart.collections.ImmutableList     74   7488     101     6.2
+  tart.collections.List              21   1280      60     1.1
+
+Static strings                      151  10720      70     8.9
+Trace tables                         48    992      20     0.8
+
+.methodRefs 2
+.members 108
+-------------------------------------------------------------------
+*** Reflection V4 - only names are dynamic now. (25K reduction).
+
+Total size:  97280
+
+Category                          Count   Size Average Percent
+================================ ====== ====== ======= =======
+Reflection                           --  33160      --    34.1
+  Composite types                   123  17392     141    17.9
+  Enum types                          1     64      64     0.1
+  Other types                         9    576      64     0.6
+  Methods                            20   1568      78     1.6
+  Properties                          1     32      32     0.0
+  Fields                             36    520      14     0.5
+  Type lists                         52   1872      36     1.9
+  Invokers                            8   3632     454     3.7
+  Name tables (head)                 42   2656      63     2.7
+  Name tables (simple)               42   3361      80     3.5
+  Name tables (compound)             42   1487      35     1.5
+  Field offsets                       0      0       0     0.0
+
+TIB                                  --  12768      --    13.1
+  TypeInfoBlocks                    123   6672      54     6.9
+  Base class lists                  123   3344      27     3.4
+  IDispatch functions                79   2752      34     2.8
+
+Standard Library                     --  45612      --    46.9
+  tart.core                         245  12856      52    13.2
+  tart.collections                   89   6408      72     6.6
+  tart.gc                            19   1060      55     1.1
+  tart.io                             0      0       0     0.0
+  tart.reflect                      222  19680      88    20.2
+  tart.testing                       11   2344     213     2.4
+  tart.text                          25   3264     130     3.4
+
+Classes                              --  17392      --    17.9
+  tart.core.Array                   137   8064      58     8.3
+  tart.core.String                   23   4000     173     4.1
+  tart.collections.ArrayList         21   2992     142     3.1
+  tart.collections.ImmutableList     14   1296      92     1.3
+  tart.collections.List              19   1040      54     1.1
+
+Static strings                      125   9336      74     9.6
+Trace tables                         35    624      17     0.6
+
+-------------------------------------------------------------------
+*** Empty array optimization - all empty arrays are now static
+    singletons.
+
+Total size:  97024
+
+Category                          Count   Size Average Percent
+================================ ====== ====== ======= =======
+Reflection                           --  33144      --    34.2
+  Composite types                   123  17376     141    17.9
+  Enum types                          1     64      64     0.1
+  Other types                         9    576      64     0.6
+  Methods                            20   1568      78     1.6
+  Properties                          1     32      32     0.0
+  Fields                             36    520      14     0.5
+  Type lists                         52   1872      36     1.9
+  Invokers                            8   3632     454     3.7
+  Name tables (head)                 42   2656      63     2.7
+  Name tables (simple)               42   3361      80     3.5
+  Name tables (compound)             42   1487      35     1.5
+  Field offsets                       0      0       0     0.0
+  Retained attributes                 0      0       0     0.0
+
+TIB                                  --  12768      --    13.2
+  TypeInfoBlocks                    123   6672      54     6.9
+  Base class lists                  123   3344      27     3.4
+  IDispatch functions                79   2752      34     2.8
+
+Standard Library                     --  45436      --    46.8
+  tart.core                         249  12976      52    13.4
+  tart.collections                   88   6104      69     6.3
+  tart.gc                            20   1092      54     1.1
+  tart.io                             0      0       0     0.0
+  tart.reflect                      223  19736      88    20.3
+  tart.testing                       11   2264     205     2.3
+  tart.text                          25   3264     130     3.4
+
+Classes                              --  17240      --    17.8
+  tart.core.Array                   142   8216      57     8.5
+  tart.core.String                   23   4000     173     4.1
+  tart.collections.ArrayList         20   2752     137     2.8
+  tart.collections.ImmutableList     14   1232      88     1.3
+  tart.collections.List              19   1040      54     1.1
+
+Static strings                      123   9240      75     9.5
+Trace tables                         35    624      17     0.6
+

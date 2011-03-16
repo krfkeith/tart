@@ -1,0 +1,11 @@
+/** Exception that is thrown when attempting to convert a string to another type, such
+		as a number or boolean, but the input string does not have the proper format. */
+public class InputFormatError : InvalidArgumentError {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

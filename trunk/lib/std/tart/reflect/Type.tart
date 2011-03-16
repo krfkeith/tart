@@ -1,0 +1,102 @@
+import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
+
+/** The metatype object - the class that describes a type. */
+abstract class Type {
+  enum TypeKind : ubyte {
+    OPAQUE,
+    PRIMITIVE,
+    CLASS,
+    STRUCT,
+    INTERFACE,
+    PROTOCOL,
+    ENUM,
+    FUNCTION,
+    TUPLE,
+    UNION,
+    ADDRESS,
+    NATIVE_ARRAY,
+    UNIT,
+  }
+
+  private {
+    var _typeKind:TypeKind;
+  }
+
+  protected def construct(typeKind:TypeKind) {
+    self._typeKind = typeKind;
+  }
+
+  /** What general kind of type this is (CLASS, STRUCT, etc.) */
+  final def typeKind:TypeKind { get { return _typeKind; } }
+
+	/** If 'obj' is castable to this type, do the cast and return the raw address,
+			otherwise throw a typecast exception. */
+  @Unsafe def downCast(obj:Object) -> Address[void] {
+    throw TypecastError(obj, self);
+  }
+  
+	/** If 'obj' is castable to this type, do the cast and return the object,
+			otherwise throw a typecast exception. */
+  @Unsafe def checkCast(obj:Object) -> Object {
+    throw TypecastError(obj, self);
+  }
+  
+  /** True if this is the void type. */
+  def isVoidType:bool { get { return false; } }
+
+  /** True if this is the null type. */
+  def isNullType:bool { get { return false; } }
+
+  /** True if this is a boolean type. */
+  def isBooleanType:bool { get { return false; } }
+
+  /** True if this is a boolean type. */
+  def isCharType:bool { get { return false; } }
+
+  /** True if this is an integer type. */
+  def isIntegerType:bool { get { return false; } }
+
+  /** True if this is a signed integer type. */
+  def isSignedIntegerType:bool { get { return false; } }
+
+  /** True if this is an unsigned integer type. */
+  def isUnsignedIntegerType:bool { get { return false; } }
+
+  /** True if this is a floating-point type. */
+  def isFloatType:bool { get { return false; } }
+
+  /** True if this is a class. */
+  def isClass:bool { get { return _typeKind == TypeKind.CLASS; } }
+
+  /** True if this is a struct. */
+  def isStruct:bool { get { return _typeKind == TypeKind.STRUCT; } }
+
+  /** Return a string representation of this type. */
+  abstract override toString() -> String;
+  
+  /** Given the address of a field of this type, return a boxed copy of the field value. */
+  @Unsafe /* abstract */ def getFieldValue(fieldAddr:Address[void]) -> Object {
+    // TODO: Implement
+    return self;
+  }
+  
+  /** Given the address of a field of this type, and a boxed value, set the field to the unboxed
+  		value. */
+  @Unsafe /* abstract */ def setFieldValue(fieldAddr:Address[void], value:Object) {}
+
+	/** Given an object reference and a pointer to a getter function which returns this type,
+			invoke the getter and return the result, boxing the result if needed. */  
+  @Unsafe /* abstract */ def getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    // TODO: Implement
+    return self;
+  }
+
+	/** Given an object reference and a pointer to a setter function which takes a value of this
+			type, unbox the value yielding a value of this type, and pass that to the setter. */  
+  @Unsafe /* abstract */ def setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+  }
+
+  /** Given a type literal, return the reflected type object. */
+  @Intrinsic static def of[%T](typeName:TypeLiteral[T]) -> Type;
+}

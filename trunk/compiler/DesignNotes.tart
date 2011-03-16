@@ -1,0 +1,739 @@
+struct ParseState {
+  var s:String;
+  var pos:int;
+  var end:int;
+}
+
+struct ConversionSpec {
+  enum Alignment {
+    DEFAULT,
+    LEFT,
+    RIGHT,
+    CENTER,
+    SIGN,   // Padding between sign and digits.
+  }
+  
+  enum Sign {
+    ALWAYS,
+    SPACE_IF_POSITIVE,
+    IF_NEGATIVE,
+  }
+  
+  var fill:char = ' ';
+  var align:Alignment = Alignment.DEFAULT;
+  var sign:Sign = Sign.IF_NEGATIVE;
+  var altForm:bool = false;
+  var zeroPad:bool = false;
+  var width:int;
+  var precision:int = 0;
+  var type:char;
+
+  def construct() {}
+  
+  static def parse(in:String) -> ConversionSpec {
+    return parse(in, 0, in.length);
+  }
+
+  static def parse(in:String, start:int, length:int) -> ConversionSpec {
+    let end = Math.min(in.length, start + length);
+    var c:char;
+    ConversionSpec result;
+
+    if (start < end) {
+    }
+  }
+}
+
+class StringConverter {
+  def convert(value:Object) -> String {
+    match value {
+    }
+  }
+}
+
+class StringFormatter {
+  private {
+	  enum State {
+	    LITERAL_TEXT,
+	    FIELD_BEGIN,
+	    FIELD_INDEX,
+	    FIELD_CONVERSION,
+	  }
+	  
+	  var _formatStr:char[];
+  }
+  
+  def format(args:Object[]) -> String {
+    var pos:int = 0;
+    var result = StringBuilder();
+    var state = LITERAL_TEXT;
+    var fieldIndex:uint = 0;
+    var conversionSpec:StringBuilder;
+    while _pos < _formatStr.length {
+      let c = _formatStr[pos++];
+      switch (state) {
+        case LITERAL_TEXT {
+          if c == '{' {
+            state_ = FIELD_BEGIN;
+          } else {
+          }
+        }
+        
+        case FIELD_BEGIN {
+          if c == '{' {
+            result.append('{');
+          } else if c >= '0' and c <= '9' {
+            state = FIELD_INDEX;
+            fieldIndex = uint(c - '0');
+          } else {
+            throw StringFormatException("Field index expected after '{' at ", pos - 1);
+          }
+        }
+        
+        case FIELD_INDEX {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], "");
+            _state = LITERAL_TEXT;
+          } else if c == ':' {
+            conversionSpec = StringBuilder();
+            state = FIELD_CONVERSION;
+          } else if c >= '0' and c <= '9' {
+            fieldIndex = fieldIndex * 10 + uint(c - '0');
+          } else {
+            throw StringFormatException("Invalid field index at ", (pos - 1).toString());
+          }
+        }
+
+        case CONVERSION_SPEC {
+          if c == '}' {
+            convertAndAppend(args[fieldIndex], conversionSpec.toString());
+            state = LITERAL_TEXT;
+          } else {
+            conversionSpec.append(c);
+          }
+        }
+      }
+    }
+    
+    switch (state_) {
+      case FIELD_BEGIN {
+        result.append('{');
+      }
+      
+      case FIELD_INDEX
+      case CONVERSION_SPEC {
+        throw StringFormatException("Unexpected end of string");
+      }
+    }
+    
+    return result_.toString();
+  }
+
+  def convertAndAppend(arg:Object, conversionSpec:String) {
+  }
+}
+
+interface ContextHandler {
+  def enter();
+  def exit(e:Exception or Nothing) -> Exception or Nothing;
+
+  def exit();
+  def exit(e:Exception);
+}
+
+struct Vector4D[%T] require T issubtype Number {
+  private var data:NativeArray[T, 4];
+
+  def x:T {
+    get { return data[0]; }
+    set { data[0] = value; }
+  }
+
+  def y:T {
+    get { return data[1]; }
+    set { data[1] = value; }
+  }
+
+  def z:T {
+    get { return data[2]; }
+    set { data[2] = value; }
+  }
+
+  def w:T {
+    get { return data[3]; }
+    set { data[3] = value; }
+  }
+
+  def [index:int]:T {
+    get {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      return data[index];
+    }
+    set {
+      IndexOutOfRangeError.when(index < 0 || index > 3);
+      data[index] = value;
+    }
+  }
+}
+
+struct Matrix[%T, %Rows:int, %Cols:int] require T issubtype Number {
+  private var data:NativeArray[T, Rows * Cols];
+
+  def [row:int, col:int]:T {
+    get {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      return data[row * Cols + col];
+    }
+    set {
+      IndexOutOfRangeError.when(row < 0 || row >= Rows);
+      IndexOutOfRangeError.when(col < 0 || col >= Cols);
+      data[row * Cols + col] = value;
+    }
+  }
+  
+  def construct() {
+    for i = 0; i < Rows * Cols; ++i {
+      data[i] = 0;
+    }
+  }
+}
+
+typealias Matrix4f:Matrix<[float, 4, 4]>;
+typealias Matrix4d:Matrix<[double, 4, 4]>;
+
+class Transform {
+  private var m:Matrix4d;
+}
+
+
+class DocParser {
+public:
+  enum Token {
+    Token_End,
+    Token_Paragraph,
+    Token_Preformatted,
+    Token_Indent,
+    Token_Dedent,
+    
+  };
+
+  DocParser(const std::string & docString);
+  
+  
+};
+
+class DocNode {
+  enum NodeType {
+    Section,
+    Paragraph,
+    Preformatted,
+    ListItem,
+    Definition,
+    Link,
+  };
+  
+  enum DefinitionType {
+    Parameter,
+    Return,
+    Exception,
+  }
+};
+
+class Paragraph {
+};
+
+class Doc {
+public:
+  const std::string & name() const;
+  const std::string & qualifiedName() const;
+private:
+};
+
+class ProgramElementDoc : public Doc {
+public:
+  const ASTDecl * decl() const { return decl_; }
+
+private:
+  const ASTDecl * decl_;
+};
+
+class ClassDoc : public ProgramElementDoc {
+};
+
+class ConstructorDoc : public ProgramElementDoc {
+};
+
+class FieldDoc : public ProgramElementDoc {
+};
+
+class PropertyDoc : public ProgramElementDoc {
+};
+
+class MethodDoc : public ProgramElementDoc {
+};
+
+class PackageDoc : public ProgramElementDoc {
+};
+
+class NamespaceDoc : public ProgramElementDoc {
+};
+
+
+depends "tart/core/String.tart"; 
+depends "tart/core/Iterator.tart";
+
+import tart.core.String = 1;
+import tart.core.Iterator[char] = 2;
+
+// Compiled module format
+public final class StringBuilder : %2 {
+  private var value:char[];
+  private var _length:int;
+  private def grow(amount:int);
+  private static def insertionCount(inputLength:int, start:int, count:int) -> int;
+  public def construct();
+  public def construct(s:%1, start:int = 0, count:int = int.maxVal);
+  public def construct(c:char[], start:int = 0, count:int = int.maxVal);
+  public def length:int { get; }
+  public def append(c:char);
+  public def append(c:char[], start:int = 0, count:int = int.maxVal);
+  public def append(s:%1, start:int = 0, count:int = int.maxVal);
+  public def append(s:%2);
+  public def insert(n:int, c:char);
+  public def insert(n:int, c:char[], start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:String, start:int = 0, count:int = int.maxVal);
+  public def insert(n:int, s:%2);
+  public def remove(n:int);
+  public def remove(n:int, count:int);
+  public def clear();
+}
+
+// -------------------------------------------------------------
+
+interface OptionParserBase {
+  enum ParseError {
+    BAD_FORMAT,
+  }
+
+  def parse -> Object or ParseError;
+}
+
+interface OptionParser[%T] : OptionParserBase {
+  def parse -> Object or ParseError;
+}
+
+class Option[bool] : OptionBase[bool] {
+  private {
+    var name:String;
+  }
+  
+  def value:bool {
+    get {}
+  }
+  
+  def isPresent {
+    get { return present; }
+  }
+}
+
+class Option[%T, %Parser=OptionParsers[T]] {
+  
+}
+
+  var debug = Option[bool](
+      name = "debug",
+      help = "Enable debugging");
+
+class Option[%T] {
+  private {
+    var name:String;
+    var help:String;
+    var value:optional T;
+    var present:bool;
+    var parser = OptionParser[T]();
+    
+    static var options:Map[String, Option];
+  }
+
+  def construct(name:String = "", help:String = "") {
+    self.name = name;
+    self.help = help;
+    self.value = value;
+    self.present = false;
+
+    if name in options {
+      // Duplicate option definition 'name'.
+    } else {
+      options[name] = self;
+    }
+  }
+
+  def setDefault(value:T) -> Option {
+    self.value = value;
+    return self;
+  }
+
+  def parse(s:String) {
+    let v = parser.parse(s);
+    present = true;
+    
+  }
+
+  def isPresent { get { return present; } }
+}
+
+
+// ------------------------------------------------------------------------------
+// Option parsing.
+
+Decoder
+Encoding
+Filter
+Parser
+Deserializer
+Reader
+Validator
+
+var useSource = Option(bool);
+var logLevel = Option(int);
+var detail = Option(DetailLevel, DetailLevel.LOW);
+
+// Enum parsing would be a good thing to do.
+
+// 
+
+interface OptionParser[T] {
+  def parse(s:String) -> T;
+}
+
+class StringOptionParser : OptionParser[String] {
+  def parse(s:String) -> String {
+    return s;
+  }
+}
+
+class IntOptionParser : OptionParser[int] {
+  def parse(s:String) -> int {
+    return int.parse(s);
+  }
+}
+
+class Int32OptionParser : OptionParser[int32] {
+  def parse(s:String) -> int32 {
+    return int32.parse(s);
+  }
+}
+
+class BoolOptionParser : OptionParser[bool] {
+  def parse(s:String) -> bool {
+    return bool.parse(s);
+  }
+}
+
+interface OptionBase {
+  def isPresent:bool;
+  def parse(s:optionName, s:String);
+}
+
+class Option[%T] : OptionBase {
+  private {
+    var _present = false;
+    var _value:T;
+  }
+
+  def construct(type:TypeLiteral[T]) {
+    _reader = optionReader[T]();
+  }
+
+  def construct(type:TypeLiteral[T], default:T) {
+    _value = default;
+    _reader = optionReader[T]();
+  }
+
+  def construct(type:TypeLiteral[T], reader:OptionReader[T]) {
+    _value = default;
+    _reader = reader;
+  }
+
+  def construct(type:TypeLiteral[T], default:T, reader:OptionReader[T]) {
+    _value = default;
+    _reader = reader;
+  }
+
+  final def isPresent:bool { get { return _present; } }
+
+  final def value -> T {
+    Preconditions.checkState(_present);
+    return _value;
+  }
+
+  final def setValue(value:T) {
+    _value = value;
+    _present = true;
+  }
+  
+  final def parse(s:optionName, s:String) {
+    if _present {
+      throw OptionParseException("Error parsing option '{0}': value is already set".format(optionName);
+    }
+
+    try {
+	    _value = _reader.parse(s);
+    } catch e:InputFormatError {
+      throw OptionParseException("Error parsing option '{0}' value '{1}': Invalid input format".format(
+      		optionName, s);
+    } catch e:Exception {
+      throw OptionParseException("Error parsing option '{0}' value '{1}': {2}".format(
+      		optionName, s, e.toString());
+    }
+
+    _present = true;
+  }
+}
+
+class OptionMap {
+  def construct(type:TypeLiteral[T]) {
+    collectOptions(CompositeType.of(type));
+  }
+
+  def collectOptions(type:CompositeType) {
+    Debug.writeLn("Collecting options for type: ", type.toString());
+    for field in type.fields {
+      if field.type isa CompositeType {
+        var ctype = typecast[CompositeType](field.type);
+        if ctype.isSubclass(OptionBase) {
+          readable = 
+        }
+      }
+    }
+    
+    for prop in type.properties {
+    }
+  }
+  
+  def parseOption(obj:Object, name:String, value:String) {
+  }
+}
+
+@Flags enum ParseOptions {
+  ALLOW_WS,				// Allow leading whitespace.
+  ALLOW_PARTIAL,	// Allow trailing junk - parse until first invalid char.
+}
+
+// ------------------------------------------------------------------------------------------------
+
+final class PrimitiveTypeImpl[%T] : PrimitiveType {
+  final override getFieldValue(fieldAddr:Address[void]) -> Object {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    return addr[0];
+  }
+
+  final override setFieldValue(fieldAddr:Address[void], value:Object) {
+    let addr:Address[T] = Memory.reinterpretPtr(fieldAddr);
+    addr[0] = Refs.valueOf(value);
+  }
+
+  final override getPropertyValue(obj:Object, getterFn:Address[void]) -> Object {
+    let getterFn:static fn (obj:Object) -> T = reinterpretPtr(getter);
+    return getterFn(obj);
+  }
+
+  final override setPropertyValue(obj:Object, setterFn:Address[void], value:Object) {
+    let setterFn:static fn (obj:Object, value:T) = reinterpretPtr(setter);
+    setterFn(obj, Refs.valueOf(value));
+  }
+}
+
+
+
+
+class TypeAdapterImpl[%T] : TypeAdapter {
+  def getFieldValue(obj:Address[void], offset:int) -> Object {
+    let baseAddr:Address[ubyte] = reinterpretPtr(obj);
+    var fieldAddr:Address[T] = reinterpretPtr(addressOf(baseAddr[offset]));
+    return deref(fieldAddr);
+  }
+
+  def setFieldValue(obj:Address[void], offset:int, value:Object) {
+    let baseAddr:Address[ubyte] = reinterpretPtr(obj);
+    var fieldAddr:Address[T] = reinterpretPtr(addressOf(baseAddr[offset]));
+    fieldAddr[0] = Refs.valueOf(value);
+  }
+
+  def getPropValue(obj:Address[void], getter:Address[void]) -> Object {
+    let getterFn:static fn (obj:Address[void]) -> T = reinterpretPtr(getter);
+    return getterFn(obj);
+  }
+  
+  def setPropValue(obj:Address[void], setter:Address[void], value:Object) {
+    let setterFn:static fn (obj:Address[void], value:T) = reinterpretPtr(setter);
+    setterFn(obj, Refs.valueOf(value));
+  }
+}
+
+struct TypeAdapter {
+  // The get adapter reads the field data and the boxes the return type.
+  readonly var getFieldAdapter:static fn(fieldAddr:Address[void], offset:int) -> Object;
+  
+  // The set adapter unboxes the value, and then writes the field data.
+  readonly var setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object);
+
+  // The getter adapter calls the getter function and the boxes the return type.
+  readonly var getPropAdapter:static fn(obj:Address[void], getter:Address[void]) -> Object;
+  
+  // The setter adapter unboxes the value, and then calls the setter.
+  readonly var setPropAdapter:static fn(obj:Address[void], setter:Address[void], value:Object);
+  
+  def construct(
+  	getFieldAdapter:static fn(obj:Address[void], offset:int) -> Object,
+  	setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object),
+  	getPropAdapter:static fn(obj:Address[void], getter:Address[void]) -> Object,
+  	setPropAdapter:static fn(obj:Address[void], setter:Address[void], value:Object)) {
+  	self.getFieldAdapter = getFieldAdapter;
+  	self.setFieldAdapter = setFieldAdapter;
+  	self.getPropAdapter = getPropAdapter;
+  	self.setPropAdapter = setPropAdapter;
+  }
+}
+
+
+import tart.core.Memory.Address;
+import tart.collections.ArrayList;
+import tart.collections.ImmutableList;
+
+/** The compressed and encoded reflection data for a type, namespace or module. */
+final class DerivedTypeDescriptor {
+  private {
+    var _value:optional DerivedType; // Has to be mutable!
+    var _typeKind:Type.TypeKind;
+    var _descriptorData:Address[ubyte];
+    var _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
+    var _compositeTypeRefs:Address[Address[TypeInfoBlock]];
+	  var _fieldGetValueAdapter:static fn (fieldAddr:Address[void]) -> Object {
+	  var _fieldSetValueAdapter:static fn (fieldAddr:Address[void], value:Object) {}
+  	var _propGetValueAdapter:static fn(obj:Object, getterFn:Address[void]) -> Object {
+  	var _propSetValueAdapter:static fn(obj:Object, setterFn:Address[void], value:Object) {
+  }
+}
+
+final class TypeDecoder : StreamDecoder {
+  private {
+    let _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
+    let _compositeTypeRefs:Address[Address[TypeInfoBlock]];
+  }
+  
+  def construct(
+    	derivedTypeRefs:Address[Address[DerivedTypeDescriptor]],
+    	compositeTypeRefs:Address[Address[TypeInfoBlock]],
+  		data:Address[ubyte]) {
+    Preconditions.checkArgument(data is not null);
+    self._derivedTypeRefs = derivedTypeRefs;
+    self._compositeTypeRefs = compositeTypeRefs;
+    self._data = data;
+    self._pos = 0;
+  }
+
+  def decodeType(decoder:StreamDecoder, selfType:optional Type) -> Type {
+  }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+class DerivedType : Type {
+  struct MutableState {
+    let _typeParams:Type[]?;
+  }
+
+  private {
+    let _state:Address[MutableState];
+    let _streamData:Address[ubyte];
+    let _typeRefs:Address[Type];
+    let _size:uint;
+  }
+}
+
+class AddressType : DerivedType {
+}
+
+class TupleType : DerivedType {
+}
+
+class UnionType : DerivedType {
+}
+
+// 160
+
+class CompositeType : Type {
+  struct MutableState {
+    var _superType:CompositeType?
+    var _interfaces:CompositeType[]?;
+    var _typeParams:Type[]?;
+    var _attributes:Object[]?
+    var _fields:Field[]?
+    var _properties:Property[]?
+    var _constructors:Method[]?
+    var _methods:Method[]?
+    var _innerTypes:Type[]?
+  }
+
+  private {
+    let _state:Address[MutableState];
+    let _streamData:Address[ubyte];
+    let _typeRefs:Address[Type];
+    let _globalRefs:Address[Address[void]];
+    let _names:NameTable;
+    let _nameIndex:int16;
+    let _methodBaseIndex:int16;
+    let _size:uint32;
+    let _typeInfo:Address[TypeInfoBlock];
+//    var _attributes:Object[]?
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
+  }
+  
+  /* private {
+    let _descriptor:CompositeTypeDecriptor;
+    var _superType:CompositeType?
+    var _interfaces:CompositeType[]?;
+    var _typeParams:Type[]?;
+    var _attributes:Object[]?
+    var _fields:Field[]?
+    var _properties:Property[]?
+    var _constructors:Method[]?
+    var _methods:Method[]?
+    var _innerTypes:Type[]?
+    var _alloc:static fn -> Object;
+    var _noArgCtor:static fn :Object -> Object;
+  } */
+}
+
+class ClassType : CompositeType {
+}
+
+class InterfaceType : CompositeType {
+}
+
+class StructType : CompositeType {
+}
+
+class ProtocolType : CompositeType {
+}
+
+class Module {
+  struct MutableState {
+    var _memberTypes:Type[]?
+    var _methods:Method[]?
+  }
+
+  private {
+    let _state:Address[MutableState];
+  	let _streamData:Address[ubyte];
+	  let _typeRefs:Address[Type];
+  	let _globalRefs:Address[Address[void]]
+  	let _names:NameTable;
+  	let _nameIndex:int16;
+  }
+  
+  _state[0]._memberTypes;
+}

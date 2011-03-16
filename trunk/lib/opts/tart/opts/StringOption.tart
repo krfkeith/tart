@@ -1,0 +1,17 @@
+class StringOption : OptionBase {
+  private {
+    var _value:optional String;
+    var _default:optional String;
+  }
+
+  def construct(name:String,
+      altName:String = "",
+      varName:String = "value",
+      help:String = "",
+      default:String = "") {
+    super(name, altName, varName, help);
+    self._default = default;
+  }
+
+  def value:String { get { return _value; } }
+}

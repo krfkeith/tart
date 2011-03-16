@@ -1,0 +1,39 @@
+import tart.collections.Map;
+import tart.collections.HashMap;
+
+abstract class OptionBase {
+  private {
+//	  static var _argMap = HashMap[String, OptionBase]();
+		var _name:String;
+		var _altName:String;
+		var _varName:String;
+	  var _help:String;
+	  var _present:bool;
+  }
+
+  def construct(name:String, altName:String = "", varName:String = "value", help:String = "") {
+    self._name = name;
+    self._altName = altName;
+    self._varName = varName;
+    self._help = help;
+    self._present = false;
+
+//    if name in _argMap {
+//      throw NameConflictError("more than one program option named '{0}'".format(name));
+//    } else {
+//	    _argMap[name] = self;
+//    }
+  }
+
+	/** The argument name. */
+  def name:String { get { return _name; } }
+
+	/** The argument help string. */
+  def help:String { get { return _help; } }
+
+  /** True if the argument was present in the command line. */
+  def present:bool { get { return _present; } }
+
+  /** List of all declared arguments. */
+//  static def argMap:Map[String, OptionBase] { get { return _argMap; } }
+}
