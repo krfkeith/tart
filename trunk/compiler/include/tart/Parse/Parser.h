@@ -290,8 +290,8 @@ public:
   ASTNode * parseCharLiteral();
 
   /** Return the current doc comment string. */
-  const std::string & docComment() const { return lexer.docComment(); }
-  std::string & docComment() { return lexer.docComment(); }
+  const DocComment & docComment() const { return lexer.docComment(); }
+  DocComment & docComment() { return lexer.docComment(); }
 };
 
 }

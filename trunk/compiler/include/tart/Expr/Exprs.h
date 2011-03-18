@@ -114,6 +114,7 @@ public:
     return fromExpr_->isSingular() && toExpr_->isSingular();
   }
   void format(FormatStream & out) const;
+  void trace() const;
 
   static inline bool classof(const AssignmentExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
@@ -156,6 +157,7 @@ public:
   bool isSideEffectFree() const { return false; }
   bool isSingular() const;
   void format(FormatStream & out) const;
+  void trace() const;
 
   static inline bool classof(const InitVarExpr *) { return true; }
   static inline bool classof(const Expr * ex) {
@@ -179,6 +181,7 @@ public:
   bool isSideEffectFree() const { return false; }
   bool isSingular() const;
   void format(FormatStream & out) const;
+  void trace() const;
 
   static inline bool classof(const ClearVarExpr *) { return true; }
   static inline bool classof(const Expr * ex) {

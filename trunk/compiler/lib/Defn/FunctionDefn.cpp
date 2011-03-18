@@ -123,7 +123,9 @@ void FunctionDefn::trace() const {
   parameterScope_.trace();
   safeMark(type_);
   safeMark(body_);
+  safeMark(mergeTo_);
   markList(localScopes_.begin(), localScopes_.end());
+  markList(closureEnvs_.begin(), closureEnvs_.end());
 }
 
 bool FunctionDefn::isOverrideOf(const FunctionDefn * baseFunction) {

@@ -9,10 +9,10 @@
 
 namespace tart {
 
-// -------------------------------------------------------------------
-// An agenda is a queue of items that need to be processed in some way.
-// Once added to the queue, items are never removed, however they can
-// be marked as "finished". Adding an item a second time has no effect.
+/// -------------------------------------------------------------------
+/// An agenda is a queue of items that need to be processed in some way.
+/// Once added to the queue, items are never removed, however they can
+/// be marked as "finished". Adding an item a second time has no effect.
 template<class T>
 class Agenda {
 public:

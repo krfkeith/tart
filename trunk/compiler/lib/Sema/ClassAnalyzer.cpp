@@ -440,7 +440,9 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   // If no base was specified, use Object.
   if (dtype == Type::Class && primaryBase == NULL && type != Builtins::typeObject) {
     primaryBase = static_cast<CompositeType *>(Builtins::typeObject);
-    module_->addSymbol(primaryBase->typeDefn());
+    if (target->isSingular()) {
+      module_->addSymbol(primaryBase->typeDefn());
+    }
   }
 
   type->setSuper(primaryBase);

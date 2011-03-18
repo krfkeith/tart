@@ -38,6 +38,7 @@ VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
 void VariableDefn::trace() const {
   ValueDefn::trace();
   safeMark(type_);
+  safeMark(sharedRefType_);
   safeMark(initValue_);
 }
 

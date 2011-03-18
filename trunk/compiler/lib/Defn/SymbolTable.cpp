@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/SymbolTable.h"
 
@@ -19,7 +19,7 @@ void SymbolTable::trace() const {
   for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     const SymbolTable::Entry & entry = it->second;
     for (SymbolTable::Entry::const_iterator si = entry.begin(); si != entry.end(); ++si) {
-      (*si)->mark();
+      (*si)->markDeferred();
     }
   }
 }

@@ -65,3 +65,12 @@ add_custom_command(
     COMMENT "Generating dependencies for libstd.bc")
 
 add_custom_target(libstd DEPENDS libstd.bc libstd.deps)
+
+# Extract doc comments
+add_custom_command(
+  OUTPUT libstd.xml
+  COMMAND docexport -o libstd.xml  -sourcepath ${SRCDIR} -i${MODPATH} ${TART_STDLIB_SRC}
+  DEPENDS ${TART_STDLIB_SRC} docexport
+  COMMENT "Extracting doc comments for libstd.xml")
+
+add_custom_target(libstd.doc DEPENDS libstd.xml)

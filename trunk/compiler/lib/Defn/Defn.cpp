@@ -255,7 +255,8 @@ void Defn::trace() const {
   safeMark(tsig_);
   safeMark(tinst_);
   safeMark(module_);
-  safeMark(parentDefn_);
+  //safeMark(parentDefn_);
+  markList(attrs_.begin(), attrs_.end());
 }
 
 // -------------------------------------------------------------------

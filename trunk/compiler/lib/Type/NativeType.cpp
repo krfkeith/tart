@@ -21,6 +21,25 @@
 
 namespace tart {
 
+namespace {
+  /** Code to clear the cached type maps during a collection. */
+  template<class TypeMap>
+  class TypeMapRoot : public GCRootBase {
+  public:
+    TypeMapRoot(TypeMap & typeMap) : typeMap_(typeMap) {}
+
+  private:
+    void trace() const {
+      for (typename TypeMap::const_iterator it = typeMap_.begin(); it != typeMap_.end(); ++it) {
+        it->first->mark();
+        it->second->mark();
+      }
+    }
+
+    TypeMap & typeMap_;
+  };
+}
+
 // -------------------------------------------------------------------
 // AddressType
 
@@ -30,6 +49,9 @@ AddressType::TypeMap AddressType::uniqueTypes_;
 ASTBuiltIn AddressType::biDef(&AddressType::typedefn);
 
 void AddressType::initBuiltin() {
+  // Make the type map a garbage collection root
+  static TypeMapRoot<TypeMap> root(uniqueTypes_);
+
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
@@ -164,6 +186,11 @@ void AddressType::format(FormatStream & out) const {
   out << elementType_ << "^";
 }
 
+void AddressType::trace() const {
+  Type::trace();
+  safeMark(elementType_);
+}
+
 // -------------------------------------------------------------------
 // NativeArrayType
 
@@ -172,6 +199,9 @@ TypeDefn NativeArrayType::typedefn(&Builtins::module, "NativeArray", NULL);
 NativeArrayType::TypeMap NativeArrayType::uniqueTypes_;
 
 void NativeArrayType::initBuiltin() {
+  // Make the type map a garbage collection root
+  static TypeMapRoot<TypeMap> root(uniqueTypes_);
+
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
   typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &Int32Type::instance));
@@ -299,6 +329,11 @@ void NativeArrayType::format(FormatStream & out) const {
   out << "NativeArray[" << elementType() << ", " << size() << "]";
 }
 
+void NativeArrayType::trace() const {
+  Type::trace();
+  safeMark(typeArgs_);
+}
+
 // -------------------------------------------------------------------
 // FlexibleArrayType
 
@@ -307,6 +342,9 @@ TypeDefn FlexibleArrayType::typedefn(&Builtins::module, "FlexibleArray", NULL);
 FlexibleArrayType::TypeMap FlexibleArrayType::uniqueTypes_;
 
 void FlexibleArrayType::initBuiltin() {
+  // Make the type map a garbage collection root
+  static TypeMapRoot<TypeMap> root(uniqueTypes_);
+
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
 
@@ -406,5 +444,11 @@ unsigned FlexibleArrayType::getHashValue() const {
 void FlexibleArrayType::format(FormatStream & out) const {
   out << "FlexibleArray[" << elementType() << "]";
 }
+
+void FlexibleArrayType::trace() const {
+  Type::trace();
+  safeMark(typeArgs_);
+}
+
 
 } // namespace tart

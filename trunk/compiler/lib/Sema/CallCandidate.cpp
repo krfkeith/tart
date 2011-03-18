@@ -97,8 +97,10 @@ CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
 
     // Same with function parameter types.
     for (ConstTypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
-      *pt = bindingEnv_.subst(*pt);
-      AnalyzerBase::analyzeType(*pt, Task_PrepTypeComparison);
+      const Type * paramType = bindingEnv_.subst(*pt);
+      if (AnalyzerBase::analyzeType(paramType, Task_PrepTypeComparison)) {
+        *pt = paramType;
+      }
     }
 
     if (ts != NULL) {
@@ -451,9 +453,18 @@ bool CallCandidate::isSingular() const {
 }
 
 void CallCandidate::trace() const {
+  safeMark(callExpr_);
   safeMark(base_);
+  safeMark(method_);
   bindingEnv_.trace();
   safeMark(method_);
+  safeMark(fnType_);
+  safeMark(resultType_);
+  safeMark(typeParams_);
+  safeMark(typeArgs_);
+  safeMark(spCandidate_);
+  markList(paramTypes_.begin(), paramTypes_.end());
+  markList(conditions_.begin(), conditions_.end());
 }
 
 FormatStream & operator<<(FormatStream & out, const CallCandidate & cc) {
