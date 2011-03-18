@@ -6,9 +6,9 @@
 Annotations
 ===========
 
-Tart uses the C# syntax for declaring annotations::
+Tart uses the Java syntax for declaring annotations::
 
-  [throws(ArrayBoundsException)]
+  @Throws(ArrayBoundsException)
   def lookup(index:int) {
       return table[index];
   }
@@ -35,7 +35,7 @@ try/catch can remove the effect of a 'throws' in Java, you can have statements
 that remove effects from a block of code. You can also have annotations that
 verify that a particular effect is present or absent::
 
-  [assertEffect(threadSafe)]
+  @AssertEffect(threadSafe)
   def threadSafeFunc() {
       // m.withLock removes the 'not threadsafe' effect.
       m.withLock({

@@ -140,3 +140,7 @@ def setup(app):
     app.add_description_unit('statement', 'stmt', 'pair: %s; statement')
     app.add_description_unit('operator', 'oper', 'pair: %s; operator')
     app.add_description_unit('macro', 'macro', 'pair: %s; macro')
+
+tart_import_paths = [
+  os.path.abspath("../../lib/std/")
+]

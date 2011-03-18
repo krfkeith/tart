@@ -7,11 +7,11 @@ Core Attributes
 
   :Summary: The base class for all attributes.
 
-.. class:: EntryPointAttribute
+.. class:: EntryPoint
 
   :Summary: Designates the `main` method of an application.
 
-.. class:: ThreadLocalAttribute
+.. class:: ThreadLocal
 
   :Summary: Indicates that the associated variable is thread local data.
 
