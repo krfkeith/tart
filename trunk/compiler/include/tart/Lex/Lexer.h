@@ -13,6 +13,10 @@
 #include "tart/Lex/Tokens.h"
 #endif
 
+#ifndef TART_AST_DOCCOMMENT_H
+#include "tart/AST/DocComment.h"
+#endif
+
 namespace tart {
 
 // -------------------------------------------------------------------
@@ -28,6 +32,13 @@ public:
     INVALID_UNICODE_CHAR,
     EMPTY_CHAR_LITERAL,
     MULTI_CHAR_LITERAL,
+  };
+
+  /** Comments can point forward to the next declaration, or backwards to the previous one. */
+  enum CommentDirection {
+    UNKNOWN = 0,
+    FORWARD,
+    BACKWARD,
   };
 
   /** Constructor */
@@ -51,11 +62,20 @@ public:
   }
 
   /** Get the current accumulated doc comment for this token. */
-  const std::string & docComment() const { return docComment_; }
-  std::string & docComment() { return docComment_; }
+  const DocComment & docComment() const { return docComment_; }
+  DocComment & docComment() { return docComment_; }
 
   /** Clear the accumulated doc comment. */
-  void clearDocComment() { docComment_.clear(); }
+  void clearDocComment();
+
+  /** Get the current doc comment, and transfer its contents to 'dst', which must be empty.
+      'direction' specifies whether we want a forward or backward comment; If the current
+      comment's direction is not the requested direction, then no action is taken.
+   */
+  void takeDocComment(DocComment & dst, CommentDirection direction = FORWARD);
+
+  /** Set the direction of the current doc comment. You can't change direction once it's known */
+  void setCommentDirection(CommentDirection dir);
 
   /** Current error code. */
   LexerError errorCode() const { return errorCode_; }
@@ -68,12 +88,13 @@ private:
   ProgramSource     * srcFile_;         // Pointer to source file buffer
   std::istream      & stream_;          // Input stream
   int                 ch_;              // Previously read char.
-  size_t              currentOffset_;   // Current char count in file
-  size_t              lineStartOffset_; // Read position at line start
-  size_t              tokenStartOffset_;// Start position of current token
+  uint32_t            currentOffset_;   // Current char count in file
+  uint32_t            lineStartOffset_; // Read position at line start
+  uint32_t            tokenStartOffset_;// Start position of current token
   SourceLocation      tokenLocation_;   // Start source location of current token
   std::string         tokenValue_;      // String value of token
-  std::string         docComment_;      // Accumulated doc comment
+  DocComment          docComment_;      // Accumulated doc comment
+  CommentDirection    docCommentDir_;   // Comment direction
   uint16_t            lineIndex_;       // Current line index
   LexerError          errorCode_;       // Error code
 

@@ -52,7 +52,7 @@ public:
 /// -------------------------------------------------------------------
 /// Keeps track of which modules have been compiled and where they are
 
-class PackageMgr {
+class PackageMgr : public GCRootBase {
 public:
   /** Add a path to the list of module search paths. The path can either be
       a directory, or a bitcode library file. */
@@ -74,7 +74,7 @@ public:
   static PackageMgr & get() { return instance_; }
 
   /** Garbage collection for modules. */
-  void trace();
+  void trace() const;
 
 private:
   typedef llvm::StringMap<Module *> ModuleMap;

@@ -190,6 +190,16 @@ llvm::Module * Module::irModule() {
 
 bool Module::addSymbol(Defn * de) {
   if (isPassFinished(Pass_ResolveModuleMembers)) {
+    // It's ok to add it if it was already added.
+    if (de->module() == this || de->isSynthetic()) {
+      if (exportDefs_.count(de)) {
+        return false;
+      }
+    } else {
+      if (importDefs_.count(de)) {
+        return false;
+      }
+    }
     diag.fatal(de) << Format_Verbose << "Too late to add symbol '" << de <<
         "', analysis for module '" << this << "' has already finished.";
   }
@@ -261,6 +271,7 @@ void Module::trace() const {
   safeMark(moduleSource_);
   markList(decls_.begin(), decls_.end());
   markList(primaryDefs_.begin(), primaryDefs_.end());
+  markList(imports_.begin(), imports_.end());
 }
 
 }

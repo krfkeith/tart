@@ -198,7 +198,7 @@ void PackageMgr::addModule(Module * mod) {
   modules_[mod->qualifiedName()] = mod;
 }
 
-void PackageMgr::trace() {
+void PackageMgr::trace() const {
   for (ModuleMap::const_iterator it = modules_.begin(); it != modules_.end(); ++it) {
     if (it->second != NULL) {
       it->second->mark();

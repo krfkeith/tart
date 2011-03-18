@@ -361,6 +361,12 @@ void AssignmentExpr::format(FormatStream & out) const {
   }
 }
 
+void AssignmentExpr::trace() const {
+  Expr::trace();
+  safeMark(fromExpr_);
+  safeMark(toExpr_);
+}
+
 // -------------------------------------------------------------------
 // MultiAssignExpr
 
@@ -390,6 +396,12 @@ void InitVarExpr::format(FormatStream & out) const {
   out << var_ << " = " << initExpr_;
 }
 
+void InitVarExpr::trace() const {
+  Expr::trace();
+  var_->mark();
+  initExpr_->mark();
+}
+
 // -------------------------------------------------------------------
 // ClearVarExpr
 
@@ -405,6 +417,11 @@ bool ClearVarExpr::isSingular() const {
 
 void ClearVarExpr::format(FormatStream & out) const {
   out << "clear " << var_;
+}
+
+void ClearVarExpr::trace() const {
+  Expr::trace();
+  var_->mark();
 }
 
 // -------------------------------------------------------------------
@@ -627,6 +644,7 @@ bool FnCallExpr::isSingular() const {
 
 void FnCallExpr::trace() const {
   ArglistExpr::trace();
+  safeMark(selfArg_);
   function_->mark();
 }
 

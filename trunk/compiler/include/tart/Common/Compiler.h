@@ -2,31 +2,22 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-// Compiler class
+#ifndef TART_COMMON_COMPILER_H
+#define TART_COMMON_COMPILER_H
 
-#include "tart/Parse/Parser.h"
-#include "tart/Common/Diagnostics.h"
-#include "llvm/ADT/StringRef.h"
+#ifndef TART_COMMON_ABSTRACTCOMPILER_H
+#include "tart/Common/AbstractCompiler.h"
+#endif
 
 namespace tart {
 
-// The compiler class
-class Compiler {
-public:
-  Compiler();
-
-  void processInputFile(llvm::StringRef infile);
-  void setGenerateBitcode(bool generate) {
-    generateBitcode_ = generate;
-  }
-
-  void setGenerateDependencies(bool generate) {
-    generateDependencies_ = generate;
-  }
-
-private:
-  bool generateBitcode_;
-  bool generateDependencies_;
+/// ---------------------------------------------------------------
+/// The compiler class
+class Compiler : public AbstractCompiler {
+protected:
+  virtual void generate(Module * mod);
 };
 
 }
+
+#endif // TART_COMMON_COMPILER_H

@@ -196,6 +196,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
 
 void FunctionType::trace() const {
   safeMark(returnType_);
+  safeMark(selfParam_);
   markList(params_.begin(), params_.end());
   safeMark(paramTypes_);
 }
