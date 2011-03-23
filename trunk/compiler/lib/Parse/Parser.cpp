@@ -306,6 +306,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   decl->attributes().append(attributes.begin(), attributes.end());
   if (ASTTemplate * templ = dyn_cast<ASTTemplate>(decl)) {
     templ->body()->attributes().append(attributes.begin(), attributes.end());
+    templ->body()->docComment().take(templ->docComment());
   }
 
   dlist.push_back(decl);

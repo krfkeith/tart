@@ -241,20 +241,31 @@ TokenType Lexer::next() {
           inDocComment = true;
           if (ch_ == '<') {
             readCh();
-            setCommentDirection(BACKWARD);
+            commentLocation.begin = currentOffset_;
           } else if (docCommentDir_ == UNKNOWN) {
             // Set it to forward if they haven't otherwise said.
             setCommentDirection(FORWARD);
           }
+          commentLocation.begin = currentOffset_;
         }
 
         while (ch_ >= 0 && ch_ != '\n' && ch_ != '\r') {
-          if (inDocComment)
-            commentText.push_back(ch_);
+          if (inDocComment) {
+            // Expand tabs
+            if (ch_ == '\t') {
+              uint32_t col = currentOffset_ - lineStartOffset_;
+              while (col++ % 4) {
+                commentText.push_back(' ');
+              }
+            } else {
+              commentText.push_back(ch_);
+            }
+          }
           readCh();
         }
         if (inDocComment) {
           commentText.push_back('\n');
+          commentLocation.end = currentOffset_;
           docComment_.entries().push_back(
               new DocComment::Entry(commentLocation, commentText));
         }
@@ -272,6 +283,7 @@ TokenType Lexer::next() {
             // Set it to forward if they haven't otherwise said.
             setCommentDirection(FORWARD);
           }
+          commentLocation.begin = currentOffset_;
         }
 
         for (;;) {
@@ -308,14 +320,24 @@ TokenType Lexer::next() {
               lineIndex_ += 1;
             } else {
               if (inDocComment) {
-                commentText.push_back(ch_);
+                // Expand tabs
+                if (ch_ == '\t') {
+                  uint32_t col = currentOffset_ - lineStartOffset_;
+                  while (col++ % 4) {
+                    commentText.push_back(' ');
+                  }
+                } else {
+                  commentText.push_back(ch_);
+                }
               }
               readCh();
             }
           }
         }
         if (inDocComment) {
-          commentText.push_back('\n');
+          commentLocation.end = currentOffset_;
+          docComment_.entries().push_back(
+              new DocComment::Entry(commentLocation, commentText));
         }
       } else {
         // What comes after a '/' char.

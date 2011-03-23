@@ -1,0 +1,208 @@
+/** Stylesheet for API docs. */
+
+body {
+  background-color: #e7ecb7;
+  font-family: sans-serif, "Trebuchet MS, Arial";
+  margin: 0;
+}
+
+p {
+  margin: 1ex 0;
+}
+  
+.page-header {
+  background-color: #d9eda1;
+  color: #718832;
+  border-bottom: 1px solid #96b63e;
+}
+
+.page-header-title {
+  padding: 8px 12px;
+  font-family: 'Ubuntu', 'Trebuchet MS', sans-serif;
+  font-size: 240%;
+}
+
+.nav-section {
+  padding: 2px 12px;
+  background-color: #ced790;
+  border-top: 1px solid #f2f9d9;
+  border-bottom: 1px solid #657f08;
+}
+
+.nav-item {
+  display: inline;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 90%;
+}
+
+.nav-link {
+  color: #336200;
+}
+
+.nav-item-selected {
+  color: #192300;
+  font-weight: bold;
+}
+
+.content-section {
+  border-top: 2px solid #d2d898;
+  padding: 4px 12px;
+  border-bottom: 1px solid #b0b864;
+}
+
+.page-footer {
+  font-size: 80%;
+  color: #767f22;
+  padding: 1px 12px;
+  border-top: 1px solid white;
+}
+
+.content-header {
+  padding: 4px;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-size: 170%;
+}
+
+.defn-name {
+  font-weight: bold;
+}
+
+.overview-package-list {
+  margin: 6px 4px;
+}
+
+.overview-package-name {
+  color: #6d5100;
+}
+
+.defn-list-header, .member-table-header, .defn-description-header, .member-details-section-header {
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  font-size: 120%;
+  padding: 4px 8px;
+  background-color: #cbd381;
+}
+
+.defn-list-link {
+  font-size: 120%;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  color: #6d5100;
+}
+
+.defn-declarator {
+  color: #919966;
+}
+
+.defn-section-description {
+  margin-left: 6px;
+}
+
+.member-table-box {
+  margin: 12px 6em;
+  box-shadow: 0px 0px 8px #919946;
+  border: 2px solid #919946;
+  border-radius: 3px;
+}
+
+.member-table {
+  border-collapse: collapse;
+  border: 2px solid black;
+  width: 100%;
+}
+
+.member-table-col-header {
+  padding: 4px 10px;
+  border-bottom: 1px double black;
+  background-color: #f4f6e5;
+}
+
+.member-table-row-header {
+  vertical-align: top;
+  padding: 8px 10px;
+  border-bottom: 1px solid #919946;
+  border-right: 1px solid black;
+  background-color: #e0e3ad;
+  text-align: right;
+  color: #52511d;
+  font-weight: normal;
+}
+
+.row-even .member-table-row-header {
+  background-color: #e8e9bd;
+}
+
+.sig1 {
+  line-height: 110%;
+  white-space: nowrap;
+  vertical-align: top;
+  text-align: right;
+}
+
+.sig2 {
+  line-height: 110%;
+  vertical-align: top;
+  text-align: left;
+}
+
+.member-table-data {
+  vertical-align: top;
+  padding: 8px 10px;
+  background-color: #e7ecba;
+  border-bottom: 1px solid #a8b154;
+}
+
+.row-even .member-table-data {
+  background-color: #eff3d1;
+}
+
+.member-table-link {
+  font-weight: bold;
+  color: black;
+}
+
+.member-section {
+  margin: 22px 0;
+  background-color: #eff3d1;
+  border: 1px solid #b7be7f;
+  box-shadow: 0px 0px 8px #d9dfa2;
+}
+
+.member-header {
+  background-color: #f4f6e5;
+  padding: 4px 12px;
+  font-size: 120%;
+  border-bottom: 1px solid #a8b154;
+}
+
+.member-description {
+  margin: 6px 3em;
+}
+
+.member-features-table {
+  margin-left: 3em;
+}
+
+.member-feature {
+  padding: 2px 12px;
+  border-right: 6px solid #cbd381;
+}
+
+.member-feature-data {
+  padding: 2px 12px;
+}
+
+.type-alpha-list-section {
+  -moz-column-width: 20em;
+  -webkit-column-width: 20em; 
+}
+
+.type-alpha-list-link {
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  color: #6d5100;
+}
+
+.symbol {
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: bold;
+}

@@ -8,17 +8,17 @@ public class Object : Hashable {
   private var __tib:Address[TypeInfoBlock];
   private var __gcstate:int;
 
-	/** Compiler intrinsic used to create and initialize instances of
-	    variable-length object types.
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length object types.
 
-	    Type 'T' represents a user-defined type whose last data member
-	    is a FlexibleArray. 'count' represents the number of elements
-	    in the FlexibleArray.
+      Type 'T' represents a user-defined type whose last data member
+      is a FlexibleArray. 'count' represents the number of elements
+      in the FlexibleArray.
 
-	    '__flexAlloc' allocates a block of memory large enough to hold
-	    the object, using the default allocator, then initializes its
-	    TIB pointer to the TIB for 'T'.
-	 */
+      '__flexAlloc' allocates a block of memory large enough to hold
+      the object, using the default allocator, then initializes its
+      TIB pointer to the TIB for 'T'.
+   */
   @Intrinsic @Unsafe
   protected static def __flexAlloc[%T](count:int) -> T;
 
@@ -43,12 +43,12 @@ public class Object : Hashable {
   /** Return trace descriptors for this object. */
   final def __traceTable:Address[TraceDescriptor] { get { return __tib.traceTable; } }
 
-	/** Return the reflected type of this object. */
+  /** Return the reflected type of this object. */
   final def type:CompositeType { get {
     return __tib.type;
   } }
 
-	/** Return true if the type of this object is (or is a subtype of) 'baseType'. */
+  /** Return true if the type of this object is (or is a subtype of) 'baseType'. */
   final def __typeHasBase(baseType:Address[TypeInfoBlock]) -> bool {
     return Memory.deref(__tib).hasBase(baseType);
   }

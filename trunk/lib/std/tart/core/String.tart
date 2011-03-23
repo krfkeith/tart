@@ -60,7 +60,7 @@ public final class String : Iterable[char] {
   }
 
   /** Construct a string from a subrange of another string. Note that the bytes that make
-  		up the string are shared between the two instances rather than copied.
+      up the string are shared between the two instances rather than copied.
       Parameters:
         bytes: The source string.
         start: The starting index within the byte array.
@@ -121,7 +121,7 @@ public final class String : Iterable[char] {
     }
     for i:int = 0; i < s.size; ++i {
       if s[i] != self._data[i] {
-				return false;
+        return false;
       }
     }
 
@@ -131,7 +131,7 @@ public final class String : Iterable[char] {
   /** Return true if this string ends with the substring 's'. */
   def endsWith(s:String) -> bool {
     if s.size > self._size {
-			return false;
+      return false;
     }
     let offset = self.size - s.size;
     for i:int = 0; i < s.size; ++i {
@@ -265,8 +265,8 @@ public final class String : Iterable[char] {
     var index = 0;
     for s in strings {
       if index != 0 {
-	      Memory.arrayCopy(addressOf(result._data[index]), addressOf(sep._data[0]), sepSize);
-  	    index += sepSize;
+        Memory.arrayCopy(addressOf(result._data[index]), addressOf(sep._data[0]), sepSize);
+        index += sepSize;
       }
       Memory.arrayCopy(addressOf(result._data[index]), addressOf(s._data[0]), s._size);
       index += s._size;
@@ -283,29 +283,29 @@ public final class String : Iterable[char] {
     return String(self, beginIndex, self._size);
   }
 
-	/** Given a byte index into the string, return the character at the given index,
-			as well as the byte index of the next character. */
+  /** Given a byte index into the string, return the character at the given index,
+      as well as the byte index of the next character. */
   def nextCh(index:int) -> (char, int) {
-	  return Codecs.UTF_8.decodeOne(_start, index, _size);
+    return Codecs.UTF_8.decodeOne(_start, index, _size);
   }
 
-	/** Given a byte index into the string, return the character at the given index. */
+  /** Given a byte index into the string, return the character at the given index. */
   def charAt(index:int) -> char {
-	  return Codecs.UTF_8.decodeOne(_start, index, _size)[0];
+    return Codecs.UTF_8.decodeOne(_start, index, _size)[0];
   }
 
-	/** Copy characters from this string into a character array.
-			Parameters:
-				index - the byte index into this string.
-				dst - the destination character buffer.
-				start - the starting index in the character buffer.
-				count - the maximum number of characters to copy.
-			Returns: A tuple containing the number of characters actually copied,
-				and the byte index of the last character copied plus one.
-			Throws:
-				IndexError - if 'start' or 'index' are out of range.
-				InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
-		*/
+  /** Copy characters from this string into a character array.
+      Parameters:
+        index - the byte index into this string.
+        dst - the destination character buffer.
+        start - the starting index in the character buffer.
+        count - the maximum number of characters to copy.
+      Returns: A tuple containing the number of characters actually copied,
+        and the byte index of the last character copied plus one.
+      Throws:
+        IndexError - if 'start' or 'index' are out of range.
+        InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
+    */
   def copyChars(index:int, dst:char[], start:int, count:int) -> (int, int) {
     var copied:int = 0;
     Preconditions.checkIndex(index >= 0 and start >= 0 and count >= 0);
@@ -321,7 +321,7 @@ public final class String : Iterable[char] {
     return copied, index;
   }
 
-	/** Return the value of this string, converted to upper case. */
+  /** Return the value of this string, converted to upper case. */
   def toUpperCase -> String {
     var sb = StringBuilder(_size);
     for ch in iterate() {
@@ -330,7 +330,7 @@ public final class String : Iterable[char] {
     return sb.toString();
   }
 
-	/** Return the value of this string, converted to lower case. */
+  /** Return the value of this string, converted to lower case. */
   def toLowerCase -> String {
     var sb = StringBuilder(_size);
     for ch in iterate() {
@@ -359,7 +359,7 @@ public final class String : Iterable[char] {
     return Hashing.hash(asBuffer());
   }
 
-	/** Iterate over the characters in this string. */
+  /** Iterate over the characters in this string. */
   def iterate -> Iterator[char] {
     return StringIterator(self);
   }
@@ -379,8 +379,8 @@ public final class String : Iterable[char] {
     def next -> char or void {
       var charVal:char;
       if index < str._size {
-	      charVal, index = str.nextCh(index);
-  	    return charVal;
+        charVal, index = str.nextCh(index);
+        return charVal;
       } else {
         return;
       }

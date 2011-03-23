@@ -15,14 +15,18 @@ namespace {
 
 XmlWriter & XmlWriter::writeXmlPrologue() {
   beginProcessingInstruction("xml");
+  appendAttribute("version", "1.0");
   appendAttribute("encoding", "UTF-8");
   endProcessingInstruction();
+  strm_ << "\n";
   return *this;
 }
 
-XmlWriter & XmlWriter::beginElement(StringRef elName) {
-  closeCurrentElement();
-  writeIndent();
+XmlWriter & XmlWriter::beginElement(StringRef elName, bool newline) {
+  closeCurrentElement(newline);
+  if (newline) {
+    writeIndent();
+  }
   strm_ << '<' << elName;
   state_ = ELEMENT;
   simpleElement_ = true;
@@ -30,7 +34,7 @@ XmlWriter & XmlWriter::beginElement(StringRef elName) {
   return *this;
 }
 
-XmlWriter & XmlWriter::endElement(StringRef elName) {
+XmlWriter & XmlWriter::endElement(StringRef elName, bool newline) {
   --indentLevel_;
   switch (state_) {
     case PI:
@@ -38,22 +42,26 @@ XmlWriter & XmlWriter::endElement(StringRef elName) {
 
     case ELEMENT:
       state_ = CHARACTERS;
-      simpleElement_ = false;
-      strm_ << (formatPretty_ ? "/>\n" : "/>");
+      if (newline) {
+        simpleElement_ = false;
+      }
+      strm_ << (newline && formatPretty_ ? "/>\n" : "/>");
       break;
 
     case CDATA:
-      closeCurrentElement();
-      strm_ << "</" << elName << (formatPretty_ ? ">\n" : ">");
+      closeCurrentElement(newline);
+      strm_ << "</" << elName << (newline && formatPretty_ ? ">\n" : ">");
       simpleElement_ = false;
       break;
 
     case CHARACTERS:
-      if (!simpleElement_) {
-        writeIndent();
+      if (newline) {
+        if (!simpleElement_) {
+          writeIndent();
+        }
+        simpleElement_ = false;
       }
-      simpleElement_ = false;
-      strm_ << "</" << elName << (formatPretty_ ? ">\n" : ">");
+      strm_ << "</" << elName << (newline && formatPretty_ ? ">\n" : ">");
       break;
   }
   return *this;
