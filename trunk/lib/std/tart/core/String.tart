@@ -32,7 +32,8 @@ public final class String : Iterable[char] {
     }
   }
 
-  /** Construct a string from a byte array.
+  /** Construct a string from a byte array. The byte array is presumed to contain character
+      data encoded as UTF-8.
       Parameters:
         bytes: The byte array.
    */
@@ -42,12 +43,16 @@ public final class String : Iterable[char] {
     return self;
   }
 
-  /** Construct a string from a subrange of a byte array.
+  /** Construct a string from a subrange of a byte array. The byte array is presumed to contain
+      character data encoded as UTF-8.
       Parameters:
         bytes: The byte array.
         start: The starting index within the byte array.
         count: The number of bytes to use in constructing the string. Will be clamped
             to the end of the string if there are fewer than 'count' bytes following 'start'.
+      Throws:
+        IndexError - if 'start' is less than zero.
+        ArgumentError - if 'count' is less than zero.
    */
   static def create(bytes:ubyte[], start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
@@ -63,9 +68,13 @@ public final class String : Iterable[char] {
       up the string are shared between the two instances rather than copied.
       Parameters:
         bytes: The source string.
-        start: The starting index within the byte array.
+        start: The starting index within the byte array. This will be clamped to the
+               end of the source string.
         count: The number of bytes to use in constructing the string. Will be clamped
-            to the end of the string if there are fewer than 'count' bytes following 'start'.
+                to the end of the string if there are fewer than 'count' bytes following 'start'.
+      Throws:
+        IndexError - if 'start' is less than zero.
+        ArgumentError - if 'count' is less than zero.
    */
   static def create(str:String, start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
@@ -79,12 +88,15 @@ public final class String : Iterable[char] {
     return self;
   }
 
-  /** Construct a string from a char array.
+  /** Construct a string from an array of characters.
       Parameters:
         chars: The character array.
         start: The starting index within the character array.
         count: The number of characters to use in constructing the string. Will be clamped
             to the end of the string if there are fewer than 'count' characters following 'start'.
+      Throws:
+        IndexError - if 'start' is less than zero.
+        ArgumentError - if 'count' is less than zero.
    */
   static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
     let length = Codecs.UTF_8.encodedLength(chars, start, count);
@@ -103,7 +115,11 @@ public final class String : Iterable[char] {
 
   /** Explicitly convert values to String types. */
   static def create[%T] (value:T) -> String { return "<??>"; }
+
+  /** Create a string from a type that has a 'toString' method. */
   static def create[%T <: HasToString] (value:T) -> String { return value.toString(); }
+
+  /** Create a string from a subclass of 'Object' using the object's 'toString' method. */
   static def create(value:Object) -> String { return value.toString(); }
 
   /** 'true' if this is an empty string. */
@@ -198,31 +214,63 @@ public final class String : Iterable[char] {
   //  return Memory.Buffer(self, addressOf(start[0]), addressOf(start[len]));
   //}
 
-  /** Coerce a String to a String simply returns 'self'. */
+  /** Converting a 'String' to a 'String' simply returns 'self'. */
   override toString -> String {
     return self;
   }
 
+  /** Create a new 'String' object using a format string and a list of arguments.
+      Parameters:
+        formatString - the format string.
+        args - the values to be substituted into the format string.
+      Returns: the result of the format operation.
+   */
   static def format(formatString:String, args:Object...) -> String {
     return formatString.format(args);
   }
 
+  /** Create a new 'String' object using a format string and an array of arguments.
+      Parameters:
+        formatString - the format string.
+        args - the values to be substituted into the format string.
+      Returns: the result of the format operation.
+   */
   static def format(formatString:String, args:Object[]) -> String {
     return formatString.format(args);
   }
 
+  /** Create a new 'String' object using this 'String' as the format string.
+      Parameters:
+        args - the values to be substituted into the format string.
+      Returns: the result of the format operation.
+   */
   def format(args:Object...) -> String {
     return format(args);
   }
 
+  /** Create a new 'String' object using this 'String' as the format string.
+      Parameters:
+        args - the values to be substituted into the format string.
+      Returns: the result of the format operation.
+   */
   def format(args:Object[]) -> String {
     return StringFormatter(self, args).build();
   }
 
+  /** Concatenate a list of strings.
+      Parameters:
+        s - the list of strings to concatenate.
+      Returns: the concatenation of the input strings.
+   */
   static def concat(s:String...) -> String {
     return concat(s);
   }
 
+  /** Concatenate a list of strings.
+      Parameters:
+        s - an 'Iterable' which returns the strings to be concatenated.
+      Returns: the concatenation of the input strings.
+   */
   static def concat(strings:Iterable[String]) -> String {
     var length:int = 0;
     for s in strings {
@@ -239,18 +287,40 @@ public final class String : Iterable[char] {
     return result;
   }
 
+  /** Join together a list of strings using this string as a separator.
+      Parameters:
+        s - the list of strings to join.
+      Returns: the joined string.
+   */
   def join(s:String...) -> String {
     return String.join(self, s);
   }
 
+  /** Join together a list of strings using this string as a separator.
+      Parameters:
+        s - an 'Iterable' which produces the strings to join.
+      Returns: the joined string.
+   */
   def join(strings:Iterable[String]) -> String {
     return String.join(self, strings);
   }
 
+  /** Join together a list of strings with a separator string.
+      Parameters:
+        sep - the separator string which is inserted between each pair of input strings.
+        s - the list of strings to join.
+      Returns: the joined string.
+   */
   static def join(sep:String, s:String...) -> String {
     return String.join(sep, s);
   }
 
+  /** Join together a list of strings with a separator string.
+      Parameters:
+        sep - the separator string which is inserted between each pair of input strings.
+        s - an 'Iterable' which produces the strings to join.
+      Returns: the joined string.
+   */
   static def join(sep:String, strings:Iterable[String]) -> String {
     let sepSize = sep.size;
     var length:int = 0;
@@ -275,10 +345,31 @@ public final class String : Iterable[char] {
     return result;
   }
 
+  /** Return a new 'String' which containing all of the characters between 'beginIndex'
+      and 'endIndex'.
+      Parameters:
+        beginIndex - the starting index of the substring. This value will be clamped to
+                     the end of the string.
+        endIndex - the ending index of the substring. This value will be clamped to the
+                   end of the string.
+      Returns: the substring.
+      Throws:
+        IndexError - if 'beginIndex' is less than zero.
+        ArgumentError - if 'endIndex' is less than 'beginIndex'.
+   */
   def substr(beginIndex:int, endIndex:int) -> String {
     return String(self, beginIndex, endIndex - beginIndex);
   }
 
+  /** Return a new 'String' containing all of the characters starting from position
+      'beginIndex' until the end of the string.
+      Parameters:
+        beginIndex - the starting index of the substring.
+        endIndex - the ending index of the substring.
+      Returns: the substring.
+      Throws:
+        IndexError - if 'beginIndex' is less than zero.
+   */
   def substr(beginIndex:int) -> String {
     return String(self, beginIndex, self._size);
   }

@@ -137,12 +137,14 @@ p {
   white-space: nowrap;
   vertical-align: top;
   text-align: right;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
 }
 
 .sig2 {
   line-height: 110%;
   vertical-align: top;
   text-align: left;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
 }
 
 .member-table-data {
@@ -172,6 +174,7 @@ p {
   background-color: #f4f6e5;
   padding: 4px 12px;
   font-size: 120%;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
   border-bottom: 1px solid #a8b154;
 }
 
@@ -198,11 +201,15 @@ p {
 }
 
 .type-alpha-list-link {
-  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
   color: #6d5100;
 }
 
 .symbol {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+}
+
+.type-variable-name {
   font-weight: bold;
 }

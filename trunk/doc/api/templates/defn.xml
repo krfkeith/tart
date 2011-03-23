@@ -9,7 +9,7 @@
   <section class="content-section">
     <header class="content-header">
       <span class="defn-declarator">${d.typename()}</span>
-      ${d.package()}.<span class="defn-name">${d.name()}</span>
+      ${d.package()}.<span class="defn-name">${d.name()}</span>${d.format_type_args('tsig')}
     </header>
 
     <py:with vars="desc = d.description()">
@@ -94,7 +94,11 @@
       </py:if>
     </py:def>
 
-    ${member_list("Static Constants Summary", d.members('let', filter.is_static()))}
+    ${member_list("Enumerations", d.members('typedef', filter.type_eq('enum')))}
+
+    ${member_list("Inner Classes", d.members('typedef', filter.type_eq('class')))}
+
+    ${member_list("Static Constants", d.members('let', filter.is_static()))}
 
     ${member_list("Static Methods Summary", d.members('method', filter.is_static()))}
 
