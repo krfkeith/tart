@@ -48,15 +48,16 @@ public:
   void exportVariable(const VariableDefn * var);
   void exportProperty(const PropertyDefn * prop);
   void exportIndexer(const IndexerDefn * idx);
-  void writeAttributes(const Defn * de);
 
 protected:
   void generate(Module * mod);
 
 private:
+  void writeAttributes(const Defn * de);
+  void writeTypeArgs(const Type * type);
   void writeModifiers(const Defn * de);
   void writeMembers(const IterableScope * scope);
-  void writeTypeExpression(llvm::StringRef tagName, const Type * ty);
+  void writeTypeExpression(llvm::StringRef tagName, const Type * ty, bool variadic = false);
   void writeTypeRef(const Type * ty);
   void writeDocComment(const Defn * de);
   void writeDocCommentNode(const Doc::Node * node);

@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
-# TODO: Type params
+# TODO: Type params in classes
+# TODO: Type params in methods
+# TODO: Type params in type expressions
+# TODO: Template classes
+# TODO: Template methods
 # TODO: Variables
 # TODO: Enums
 # TODO: Name index
@@ -206,6 +210,9 @@ class Definition(object):
   def sigpart2(self):
     result = []
     tag = self.el.tag
+    if tag == 'method' or tag == 'typedef':
+      if self.el.find("type-arg/*") is not None:
+        result.append(self.format_type_args())
     if tag == 'method':
       params = []
       for param in self.el.findall('param'):
@@ -229,6 +236,15 @@ class Definition(object):
     
     return Markup('').join(result)
   
+  def format_type_args(self, *options):
+    options = set(options)
+    args = self.el.findall("type-arg/*")
+    if args:
+      type_args = [self.helper.format_type(arg_type, options) for arg_type in args]
+      return Markup('').join(['[', Markup(", ").join(type_args), ']'])
+    else:
+      return ''
+    
   def supertypes(self, type):
     if 'bases' in self.el.attrib:
       return []
@@ -314,32 +330,43 @@ class TemplateHelper(object):
     parts = [kind] + qname.split('.')
     return "-".join(parts) + ".html"
   
-  def format_type(self, el, hyperlink=False):
+  def format_type(self, el, options=set()):
     result = []
-    self.format_type_impl(el, result, hyperlink)
+    self.format_type_impl(el, result, options)
     return Markup('').join(result)
   
-  def format_type_impl(self, el, result, hyperlink):
+  def format_type_impl(self, el, result, options):
     if el.tag == 'typename':
-      #result.append(Markup('<span class="symbol">'))
+      result.append(Markup('<span class="type-name">'))
       name = el.text
       if name.startswith("tart.core."):
         name = name[10:]
       result.append(name)
-      #result.append(Markup('</span>'))
+      result.append(Markup('</span>'))
+    elif el.tag == 'type-variable':
+      if 'tsig' in options:
+        result.append('%')
+        result.append(Markup('<span class="type-variable-name">'))
+      else:
+        result.append(Markup('<span class="type-name">'))
+      result.append(el.attrib['name'])
+      result.append(Markup('</span>'))
     elif el.tag == 'array':
-      self.format_type_impl(list(el)[0], result, hyperlink)
+      self.format_type_impl(list(el)[0], result, options)
       result.append("[]")
+    elif el.tag == 'variadic':
+      self.format_type_impl(list(el)[0], result, options)
+      result.append("...")
     elif el.tag == 'address':
       result.append('Address[')
       if el:
-        self.format_type_impl(list(el)[0], result, hyperlink)
+        self.format_type_impl(list(el)[0], result, options)
       result.append("]")
     elif el.tag == 'tuple':
       result.append('(')
       types = []
       for child in el.findall("*"):
-        types.append(self.format_type(child, hyperlink))
+        types.append(self.format_type(child, options))
       result.append(Markup(', ').join(types))
       result.append(')')
     else:

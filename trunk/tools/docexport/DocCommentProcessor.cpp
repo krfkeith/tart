@@ -448,6 +448,7 @@ void DocCommentProcessor::parameters(Node * parent) {
 
 void DocCommentProcessor::returns(Node * parent) {
   Node * retNode = new Node(RETURNS);
+  parent->append(retNode);
 
   // Append any characters remaining on the starting line
   paragraphText_.append(currentLine_->text.begin() + currentPos_, currentLine_->text.end());

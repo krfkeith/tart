@@ -11,6 +11,7 @@
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/NamespaceDefn.h"
+#include "tart/Defn/Template.h"
 
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
@@ -95,6 +96,7 @@ void DocExporter::exportCompositeType(const CompositeType * ctype) {
     xml_.appendAttribute("group", group);
   }
   writeModifiers(td);
+  writeTypeArgs(ctype);
   writeAttributes(td);
   for (ClassList::const_iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
     writeTypeExpression("base-type", *it);
@@ -136,7 +138,13 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
   xml_.appendAttribute("name", method->name());
   writeModifiers(method);
   writeAttributes(method);
-  writeDocComment(method);
+  if (method->isTemplateInstance()) {
+    const TemplateInstance * ti = method->templateInstance();
+    for (TupleType::const_iterator it = ti->typeArgs()->begin();
+        it != ti->typeArgs()->end(); ++it) {
+      writeTypeExpression("type-arg", *it);
+    }
+  }
   if (method->type() != NULL) {
     if (!method->returnType()->isVoidType()) {
       writeTypeExpression("return-type", method->returnType());
@@ -147,11 +155,12 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
       xml_.beginElement("param");
       xml_.appendAttribute("name", p->name());
       writeAttributes(p);
-      writeTypeExpression("type", p->type());
+      writeTypeExpression("type", p->type(), p->isVariadic());
       writeDocComment(p);
       xml_.endElement("param");
     }
   }
+  writeDocComment(method);
   xml_.endElement(elName);
 }
 
@@ -203,6 +212,13 @@ void DocExporter::writeAttributes(const Defn * de) {
   }
 }
 
+void DocExporter::writeTypeArgs(const Type * type) {
+  size_t numParams = type->numTypeParams();
+  for (size_t i = 0; i < numParams; ++i) {
+    writeTypeExpression("type-arg", type->typeParam(i));
+  }
+}
+
 void DocExporter::writeMembers(const IterableScope * scope) {
   for (const Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
     switch (de->defnType()) {
@@ -244,13 +260,20 @@ void DocExporter::writeMembers(const IterableScope * scope) {
   }
 }
 
-void DocExporter::writeTypeExpression(llvm::StringRef tagName, const Type * ty) {
+void DocExporter::writeTypeExpression(llvm::StringRef tagName, const Type * ty, bool variadic) {
   xml_.beginElement(tagName);
+  if (variadic) {
+    xml_.beginElement("variadic", false);
+  }
   writeTypeRef(ty);
+  if (variadic) {
+    xml_.endElement("variadic", false);
+  }
   xml_.endElement(tagName);
 }
 
 void DocExporter::writeTypeRef(const Type * ty) {
+  ty = dealias(ty);
   switch (ty->typeClass()) {
     case Type::Class:
     case Type::Struct:
@@ -401,7 +424,20 @@ void DocExporter::writeTypeRef(const Type * ty) {
       break;
     }
 
+    case Type::TypeVar: {
+      const TypeVariable * tv = static_cast<const TypeVariable *>(ty);
+      xml_.beginElement("type-variable", false);
+      xml_.appendAttribute("name", tv->name());
+      if (tv->isVariadic()) {
+        xml_.appendAttribute("variadic", "true");
+      }
+      // TODO: Constraints?
+      xml_.endElement("type-variable", false);
+      break;
+    }
+
     default:
+      diag.error() << "What type is " << ty;
       break;
   }
 }
