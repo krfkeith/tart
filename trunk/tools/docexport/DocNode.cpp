@@ -9,7 +9,10 @@ namespace Doc {
 
 using llvm::dyn_cast;
 
-void Doc::Node::~Node() {
+Doc::Node::~Node() {
+  for (NodeList::const_iterator it = children_.begin(); it != children_.end(); ++it) {
+    delete *it;
+  }
 }
 
 }}

@@ -27,6 +27,10 @@ class IndexerDefn;
 class IterableScope;
 class Type;
 
+namespace Doc {
+  class Node;
+}
+
 /// -------------------------------------------------------------------
 /// Writes out the contents of a module as XML.
 class DocExporter : public AbstractCompiler {
@@ -55,6 +59,8 @@ private:
   void writeTypeExpression(llvm::StringRef tagName, const Type * ty);
   void writeTypeRef(const Type * ty);
   void writeDocComment(const Defn * de);
+  void writeDocCommentNode(const Doc::Node * node);
+  void writeDocCommentNodeList(const Doc::Node * node);
   void writeElement(llvm::StringRef elName, llvm::StringRef content);
 
   XmlWriter xml_;

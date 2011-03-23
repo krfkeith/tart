@@ -1,0 +1,18 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<head>
+  <xi:include href="common.xml"/>
+  <title>Overview</title>
+</head>
+<body>
+  ${page_header('overview')}
+  <section class="content-section">
+	  <header class="content-header">Packages</header>
+	  <ul class="overview-package-list">
+	    <li py:for="pkname in sorted(data.keys())">
+        <a href="${th.package_url(pkname)}" class='overview-package-name defn-name'>${pkname}</a>
+	    </li>
+	  </ul>
+  </section>
+  ${page_footer()}
+</body>
+</html>

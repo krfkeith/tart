@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "DocExporter.h"
+#include "DocCommentProcessor.h"
 
 #include "tart/Defn/Module.h"
 #include "tart/Defn/TypeDefn.h"
@@ -14,6 +15,12 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/EnumType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/UnionType.h"
+
+#include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 namespace tart {
 
@@ -22,6 +29,7 @@ using llvm::dyn_cast;
 void DocExporter::begin() {
   xml_.writeXmlPrologue();
   xml_.beginElement("module-list");
+  xml_.appendAttribute("xmlns", "http://org.viridia/2011/tart/doc");
 }
 
 void DocExporter::end() {
@@ -47,16 +55,23 @@ void DocExporter::exportNamespace(const NamespaceDefn * ns) {
   xml_.appendAttribute("name", ns->name());
   writeModifiers(ns);
   writeAttributes(ns);
-  writeMembers(&ns->memberScope());
   writeDocComment(ns);
+  writeMembers(&ns->memberScope());
   xml_.endElement("namespace");
 }
 
 void DocExporter::exportCompositeType(const CompositeType * ctype) {
   const char * kind = NULL;
+  const char * group = NULL;
+
   switch (ctype->typeClass()) {
     case Type::Class:
       kind = "class";
+      if (ctype->isAttribute()) {
+        group = "attribute";
+      } else if (ctype->isSubclassOf(Builtins::typeThrowable)) {
+        group = "exception";
+      }
       break;
     case Type::Interface:
       kind = "interface";
@@ -76,10 +91,16 @@ void DocExporter::exportCompositeType(const CompositeType * ctype) {
   xml_.beginElement("typedef");
   xml_.appendAttribute("type", kind);
   xml_.appendAttribute("name", td->name());
+  if (group != NULL) {
+    xml_.appendAttribute("group", group);
+  }
   writeModifiers(td);
   writeAttributes(td);
-  writeMembers(ctype->memberScope());
+  for (ClassList::const_iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
+    writeTypeExpression("base-type", *it);
+  }
   writeDocComment(td);
+  writeMembers(ctype->memberScope());
   xml_.endElement("typedef");
 }
 
@@ -91,8 +112,8 @@ void DocExporter::exportEnumType(const EnumType * etype) {
   xml_.appendAttribute("name", td->name());
   writeModifiers(td);
   writeAttributes(td);
-  // TODO: Members
   writeDocComment(td);
+  // TODO: Members
   xml_.endElement("typedef");
 }
 
@@ -115,9 +136,10 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
   xml_.appendAttribute("name", method->name());
   writeModifiers(method);
   writeAttributes(method);
+  writeDocComment(method);
   if (method->type() != NULL) {
     if (!method->returnType()->isVoidType()) {
-      writeTypeExpression("returnType", method->returnType());
+      writeTypeExpression("return-type", method->returnType());
     }
     for (ParameterList::const_iterator it = method->params().begin(); it != method->params().end();
         ++it) {
@@ -130,7 +152,6 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
       xml_.endElement("param");
     }
   }
-  writeDocComment(method);
   xml_.endElement(elName);
 }
 
@@ -235,52 +256,125 @@ void DocExporter::writeTypeRef(const Type * ty) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol: {
-      // TODO: Arrays
 
-      const CompositeType * ctype = static_cast<const CompositeType *>(ty);
-      TypeDefn * td = ctype->typeDefn();
-      xml_.writeCharacterData(td->qualifiedName());
+      const CompositeType * cty = static_cast<const CompositeType *>(ty);
+      TypeDefn * td = cty->typeDefn();
+
+      // Special case for arrays
+      if (td->ast() != NULL &&
+          td->ast() == Builtins::typeArray->typeDefn()->ast() &&
+          td->isTemplateInstance()) {
+        xml_.beginElement("array");
+        writeTypeRef(cty->typeParam(0));
+        xml_.endElement("array");
+        break;
+      }
+
+      const char * kind = "class";
+      switch (ty->typeClass()) {
+        case Type::Struct: kind = "struct"; break;
+        case Type::Interface: kind = "interface"; break;
+        case Type::Protocol: kind = "protocol"; break;
+        default: break;
+      }
+
+      if (td->isTemplateInstance()) {
+        // TODO:
+      }
+
       // TODO: template instance params.
+      xml_.beginElement("typename", false);
+      xml_.appendAttribute("kind", kind);
+      xml_.writeCharacterData(td->qualifiedName());
+      xml_.endElement("typename", false);
+
+      if (td->isTemplateInstance()) {
+        // TODO:
+      }
       break;
     }
 
     case Type::Enum: {
-      const EnumType * etype = static_cast<const EnumType *>(ty);
-      TypeDefn * td = etype->typeDefn();
-      xml_.beginElement("enum");
+      const EnumType * ety = static_cast<const EnumType *>(ty);
+      TypeDefn * td = ety->typeDefn();
+      xml_.beginElement("typename", false);
+      xml_.appendAttribute("kind", "enum");
       xml_.writeCharacterData(td->qualifiedName());
-      xml_.endElement("enum");
+      xml_.endElement("typename", false);
       break;
     }
 
     case Type::Primitive: {
-      const PrimitiveType * ptype = static_cast<const PrimitiveType *>(ty);
-      TypeDefn * td = ptype->typeDefn();
+      const PrimitiveType * pty = static_cast<const PrimitiveType *>(ty);
+      TypeDefn * td = pty->typeDefn();
+      xml_.beginElement("typename", false);
+      xml_.appendAttribute("kind", "primitive");
+      xml_.writeCharacterData(td->name());
+      xml_.endElement("typename", false);
       break;
-
     }
 
     case Type::Function: {
+      const FunctionType * fty = static_cast<const FunctionType *>(ty);
+      xml_.beginElement("fn-type");
+      if (!fty->returnType()->isVoidType()) {
+        writeTypeExpression("return-type", fty->returnType());
+        for (ParameterList::const_iterator it = fty->params().begin(); it != fty->params().end();
+            ++it) {
+          ParameterDefn * p = *it;
+          xml_.beginElement("param");
+          if (p->name() != NULL) {
+            xml_.appendAttribute("name", p->name());
+          }
+          writeAttributes(p);
+          writeTypeExpression("type", p->type());
+          writeDocComment(p);
+          xml_.endElement("param");
+        }
+      }
+      xml_.endElement("fn-type");
       break;
     }
 
     case Type::Tuple: {
+      const TupleType * tty = static_cast<const TupleType *>(ty);
+      xml_.beginElement("tuple");
+      for (TupleType::const_iterator it = tty->begin(); it != tty->end(); ++it) {
+        writeTypeRef(*it);
+      }
+      xml_.endElement("tuple");
       break;
     }
 
     case Type::Union: {
+      const UnionType * uty = static_cast<const UnionType *>(ty);
+      xml_.beginElement("union");
+      for (TupleType::const_iterator it = uty->members().begin();
+          it != uty->members().end(); ++it) {
+        writeTypeRef(*it);
+      }
+      xml_.endElement("union");
       break;
     }
 
     case Type::NAddress: {
+      xml_.beginElement("address");
+      writeTypeRef(ty->typeParam(0));
+      xml_.endElement("address");
       break;
     }
 
     case Type::NArray: {
+      xml_.beginElement("native-array");
+      writeTypeRef(ty->typeParam(0));
+      xml_.endElement("native-array");
       break;
     }
 
     case Type::FlexibleArray: {
+      xml_.beginElement("flexible-array");
+      writeTypeRef(ty->typeParam(0));
+      xml_.endElement("flexible-array");
       break;
     }
 
@@ -289,10 +383,21 @@ void DocExporter::writeTypeRef(const Type * ty) {
     }
 
     case Type::TypeLiteral: {
+      xml_.beginElement("type-literal");
+      xml_.endElement("type-literal");
       break;
     }
 
     case Type::Alias: {
+      const TypeAlias * ta = static_cast<const TypeAlias *>(ty);
+      if (ty->typeDefn() != NULL) {
+        xml_.beginElement("typename", false);
+        xml_.appendAttribute("kind", "alias");
+        xml_.writeCharacterData(ty->typeDefn()->qualifiedName());
+        xml_.endElement("typename", false);
+      } else {
+        writeTypeRef(ta->value());
+      }
       break;
     }
 
@@ -303,11 +408,139 @@ void DocExporter::writeTypeRef(const Type * ty) {
 
 void DocExporter::writeDocComment(const Defn * de) {
   if (de->ast() != NULL && !de->ast()->docComment().empty()) {
-    xml_.beginElement("doc");
-    llvm::SmallString<256> docCommentText;
-    de->ast()->docComment().toString(docCommentText);
-    xml_.writeCharacterData(docCommentText);
-    xml_.endElement("doc");
+    DocCommentProcessor processor(de->ast()->docComment());
+    Doc::Node * node = processor.process();
+    if (node != NULL) {
+      xml_.beginElement("doc");
+      writeDocCommentNodeList(node);
+      xml_.endElement("doc");
+      delete node;
+    }
+  }
+}
+
+void DocExporter::writeDocCommentNode(const Doc::Node * node) {
+  switch (node->type()) {
+    case Doc::TEXT: {
+      const Doc::TextNode * tn = static_cast<const Doc::TextNode *>(node);
+      xml_.writeCharacterData(tn->text());
+      break;
+    }
+
+    case Doc::PARAGRAPH:
+      xml_.beginElement("p");
+      writeDocCommentNodeList(node);
+      xml_.endElement("p");
+      break;
+
+    case Doc::BLOCKQUOTE:
+      xml_.beginElement("blockquote");
+      writeDocCommentNodeList(node);
+      xml_.endElement("blockquote");
+      break;
+
+    case Doc::SECTION: {
+      const Doc::SectionNode * sn = static_cast<const Doc::SectionNode *>(node);
+      switch (sn->sectionType()) {
+        case Doc::GENERIC:
+          DFAIL("Implement GENERIC");
+          break;
+        case Doc::DESCRIPTION:
+          xml_.beginElement("description");
+          writeDocCommentNodeList(node);
+          xml_.endElement("description");
+          break;
+        case Doc::ATTRIBUTES:
+          DFAIL("Implement ATTRIBUTES");
+          break;
+        case Doc::SEE_ALSO:
+          DFAIL("Implement SEE_ALSO");
+          break;
+      }
+      break;
+    }
+
+    case Doc::STYLE: {
+      const Doc::StyleNode * sn = static_cast<const Doc::StyleNode *>(node);
+      switch (sn->style()) {
+        case Doc::STYLE_STRONG:
+          xml_.beginElement("strong", false);
+          writeDocCommentNodeList(node);
+          xml_.endElement("strong", false);
+          break;
+
+        case Doc::STYLE_EMPHATIC:
+          xml_.beginElement("em", false);
+          writeDocCommentNodeList(node);
+          xml_.endElement("em", false);
+          break;
+
+        case Doc::STYLE_CODE:
+          xml_.beginElement("code", false);
+          writeDocCommentNodeList(node);
+          xml_.endElement("code", false);
+          break;
+
+        case Doc::STYLE_SYMBOL:
+          xml_.beginElement("span", false);
+          xml_.appendAttribute("class", "symbol");
+          writeDocCommentNodeList(node);
+          xml_.endElement("span", false);
+          break;
+      }
+      break;
+    }
+
+    case Doc::PARAMETER: {
+      const Doc::DefinitionNode * nin = static_cast<const Doc::DefinitionNode *>(node);
+      xml_.beginElement("parameter");
+      xml_.appendAttribute("name", nin->name());
+      writeDocCommentNodeList(node);
+      xml_.endElement("parameter");
+      break;
+    }
+
+    case Doc::EXCEPTION: {
+      const Doc::DefinitionNode * nin = static_cast<const Doc::DefinitionNode *>(node);
+      xml_.beginElement("exception");
+      xml_.appendAttribute("name", nin->name());
+      writeDocCommentNodeList(node);
+      xml_.endElement("exception");
+      break;
+    }
+
+    case Doc::RETURNS:
+      xml_.beginElement("returns");
+      writeDocCommentNodeList(node);
+      xml_.endElement("returns");
+      break;
+
+    case Doc::SECTION_HEADING:
+      DFAIL("Implement SECTION_HEADING");
+      break;
+    case Doc::PROPERTY:
+      DFAIL("Implement PROPERTY");
+      break;
+    case Doc::UNORDERED_LIST:
+      DFAIL("Implement UL");
+      break;
+    case Doc::ORDERED_LIST:
+      DFAIL("Implement OL");
+      break;
+    case Doc::LIST_ITEM:
+      DFAIL("Implement LI");
+      break;
+    case Doc::CODE:
+      DFAIL("Implement CODE");
+      break;
+    default:
+      DFAIL("Invalid node type");
+  }
+}
+
+void DocExporter::writeDocCommentNodeList(const Doc::Node * node) {
+  for (Doc::Node::const_iterator it = node->begin(), itEnd = node->end(); it != itEnd; ++it) {
+    writeDocCommentNode(*it);
   }
 }
 

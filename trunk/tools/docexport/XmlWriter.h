@@ -35,10 +35,10 @@ public:
   XmlWriter & writeXmlPrologue();
 
   /** Begin a new element. */
-  XmlWriter & beginElement(llvm::StringRef elName);
+  XmlWriter & beginElement(llvm::StringRef elName, bool newline = true);
 
   /** End the current element. */
-  XmlWriter & endElement(llvm::StringRef elName);
+  XmlWriter & endElement(llvm::StringRef elName, bool newline = true);
 
   /** Begin a new processing instruction. */
   XmlWriter & beginProcessingInstruction(llvm::StringRef psName);

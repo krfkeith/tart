@@ -1,0 +1,19 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<xi:include href="common.xml"/>
+<head>
+  <title>Class List</title>
+  <link rel="stylesheet" type="text/css" href="apidoc.css"/>
+  </head>
+<body>
+  ${page_header('types')}
+  <section class="content-section">
+    <header class="content-header">Type List [alphabetical]</header>
+    <section class="type-alpha-list-section">
+      <div py:for="type in data">
+        <a href="${type.url()}" class="type-alpha-list-link">${type.qualified_name()}</a>
+      </div>
+    </section>
+  </section>
+  ${page_footer()}
+</body>
+</html>

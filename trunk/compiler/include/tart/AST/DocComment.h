@@ -33,7 +33,7 @@ public:
     }
 
     /** The location of this doc comment. */
-    const SourceLocation & location() { return location_; }
+    const SourceLocation & location() const { return location_; }
 
     /** The text of this doc comment entry. */
     llvm::StringRef text() const { return text_; }

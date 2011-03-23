@@ -1,0 +1,114 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<xi:include href="common.xml"/>
+<head>
+  <title>${d.typename()} ${d.name()}</title>
+  <link rel="stylesheet" type="text/css" href="apidoc.css"/>
+  </head>
+<body>
+  ${page_header('defn')}
+  <section class="content-section">
+    <header class="content-header">
+      <span class="defn-declarator">${d.typename()}</span>
+      ${d.package()}.<span class="defn-name">${d.name()}</span>
+    </header>
+
+    <py:with vars="desc = d.description()">
+	    <section py:if="desc" class="defn-section-description">
+	      ${desc}
+	    </section>
+    </py:with>
+
+    <!--! Function to write a table of members of this definition -->
+    <py:def function="member_list(title, members)">
+      <py:if test="members">
+        <section class="member-list-section">
+          <header class="member-table-header">${title}</header>
+          <div class="member-table-box">
+	          <table class="member-table" cellspacing="0" cellpadding="0">${th.resetcounter()}
+	            <tr>
+	            	 <th class="member-table-col-header">Method</th>
+	            	 <th class="member-table-col-header" width="66%">Description</th>
+	            </tr>
+	            <tr class="member-table-row ${th.evenodd()}" py:for="m in members">
+                <td class="member-table-row-header">
+                  <table border="0" cellspacing="0" cellpadding="0"><tr>
+                    <td class="sig1">${m.sigpart1(True)}</td>
+                    <td class="sig2">${m.sigpart2()}</td>
+                  </tr></table>
+                </td>
+	              <td class="member-table-data">${m.summary()}</td>
+	            </tr>
+	          </table>
+          </div>
+        </section>
+      </py:if>
+    </py:def>
+
+    <!--! Function to write a table of members of this definition -->
+    <py:def function="member_details(title, members)">
+      <py:if test="members">
+        <section class="member-details-section">
+          <header class="member-details-section-header">${title} Details</header>
+          <section class="member-section" py:for="m in members">
+            <header class="member-header">
+              <a name="${m.name()}">
+	              ${m.sigpart1(False)}${m.sigpart2()}
+              </a>
+            </header>
+            <div class="member-description" py:if="m.has_description()">
+              ${m.description()}
+            </div>
+            <py:if test="m.params() or m.returns() or m.throws()">
+              <table class="member-features-table" cellspacing="6px">
+                <tr py:if="m.params()">
+                  <th class="member-feature">Parameters</th>
+                  <td class="member-feature-data">
+                    <div class="parameter-name" py:for="param in m.params()">
+                      <span class="symbol">${param.attrib['name']}</span>
+                      - ${m.compressed_text(param)}
+                    </div>
+                  </td>
+                </tr>
+                <tr py:if="m.returns()">
+                  <th class="member-feature">Returns</th>
+                  <td class="member-feature-data">
+                    <div class="returns-desc">
+                      ${m.compressed_text(m.returns())}
+                    </div>
+                  </td>
+                </tr>
+                <tr py:if="m.throws()">
+                  <th class="member-feature">Exceptions</th>
+                  <td class="member-feature-data">
+                    <div class="exception-name" py:for="ex in m.throws()">
+                      <span class="symbol">${ex.attrib['name']}</span>
+                      - ${m.compressed_text(ex)}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </py:if>
+            <!--! TODO: Parameters, Returns, Exception, See Also, etc. -->
+          </section>
+        </section>
+      </py:if>
+    </py:def>
+
+    ${member_list("Static Constants Summary", d.members('let', filter.is_static()))}
+
+    ${member_list("Static Methods Summary", d.members('method', filter.is_static()))}
+
+    ${member_list("Instance Methods Summary", d.members('method', filter.is_not_static()))}
+
+    ${member_list("Macros Summary", d.members('macro', filter.is_not_static()))}
+
+    ${member_list("Overridden Methods Summary", d.members('override'))}
+
+    ${member_list("Undefined Methods", d.members('undef'))}
+
+    ${member_details("Method", d.members('method'))}
+
+  </section>
+  ${page_footer()}
+</body>
+</html>
