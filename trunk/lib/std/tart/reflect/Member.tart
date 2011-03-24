@@ -63,15 +63,12 @@ class Member {
     return false;
   }
 
-  /** The class that declared this member, or null if it's a global function. */
-  //let definingScope:Type;
-
-  /** True if this member has static or global storage class. */
+  /* True if this member has static or global storage class. */
   //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }
 
-  /** True if this member was declared 'final'. */
+  /* True if this member was declared 'final'. */
   //def isFinal:bool { get { return (Traits.FINAL in _traits) != 0; } }
 
-  /** True if this member is abstract. */
+  /* True if this member is abstract. */
   //def isAbstract:bool { get { return (Traits.ABSTRACT in _traits) != 0; } }
 }
