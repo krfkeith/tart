@@ -17,6 +17,7 @@
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/TypeTransform.h"
+#include "tart/Sema/AnalyzerBase.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -226,9 +227,31 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
       return NULL;
     }
   } else if (in->typeDefn()->isTemplateMember()) {
+    if (const TypeDefn * td = dyn_cast_or_null<TypeDefn>(in->typeDefn()->parentDefn())) {
+      // Transform the parent (recursively)
+      if (const CompositeType * parent = dyn_cast<CompositeType>(td->typeValue())) {
+        const CompositeType * transformedParent = cast<CompositeType>(visitCompositeType(parent));
+        // Now look for a matching entry
+        DefnList defns;
+        AnalyzerBase::analyzeType(transformedParent, Task_PrepMemberLookup);
+        transformedParent->memberScope()->lookupMember(in->typeDefn()->name(), defns, false);
+
+        // Attempt to find the instantiated definition that corresponds with the original template
+        // definition 'def'. This can be identified because it has the same value for 'ast'.
+        for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
+          if ((*it)->ast() == in->typeDefn()->ast()) {
+            return cast<TypeDefn>(*it)->typeValue();
+          }
+        }
+      }
+    }
+
     DFAIL("Implement");
   } else if (in->typeDefn()->isPartialInstantiation()) {
     TemplateInstance * tinst = in->typeDefn()->templateInstance();
+    if (tinst == NULL) {
+      return in;
+    }
     TemplateSignature * tsig = tinst->templateDefn()->templateSignature();
     BindingEnv partialEnv(env_);
     // Add type param mappings.
@@ -250,25 +273,6 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
       return NULL;
     }
   }
-
-#if 0
-  if (in->typeDefn() == NULL) {
-    return in;
-  } else if (in->typeDefn()->isTemplate()) {
-    Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), *this);
-    if (def != NULL) {
-      assureNoTypeVariables(cast<TypeDefn>(def)->typeValue());
-      return cast<TypeDefn>(def)->typeValue();
-    } else {
-      return NULL;
-    }
-  } else if (in->typeDefn()->isTemplateMember()) {
-    DFAIL("Implement");
-  } else if (in->typeDefn()->isPartialInstantiation()) {
-  }
-
-  return in;
-#endif
 
   //assureNoTypeVariables(in);
   return in;

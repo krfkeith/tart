@@ -99,7 +99,9 @@
     ${member_list("Inner Classes", d.members('typedef', filter.type_eq('class')))}
 
     ${member_list("Static Constants", d.members('let', filter.is_static()))}
-
+    
+    ${member_list("Properties", d.members('property'))}
+    
     ${member_list("Static Methods Summary", d.members('method', filter.is_static()))}
 
     ${member_list("Instance Methods Summary", d.members('method', filter.is_not_static()))}
@@ -110,8 +112,10 @@
 
     ${member_list("Undefined Methods", d.members('undef'))}
 
-    ${member_details("Method", d.members('method'))}
+    ${member_details("Property", d.members('property'))}
 
+    ${member_details("Method", d.members('method'))}
+    
   </section>
   ${page_footer()}
 </body>

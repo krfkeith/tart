@@ -189,6 +189,7 @@ p {
 .member-feature {
   padding: 2px 12px;
   border-right: 6px solid #cbd381;
+  text-align: right;
 }
 
 .member-feature-data {

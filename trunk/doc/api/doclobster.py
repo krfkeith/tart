@@ -13,6 +13,8 @@
 # TODO: Hierarchy
 # TODO: Frames
 # TODO: Publish
+# TODO: Deprecated
+# TODO: Attributes (well, some)
 
 import sys, os
 from optparse import OptionParser
@@ -184,15 +186,17 @@ class Definition(object):
     if self.el.attrib.get('static') == 'true':
       result.append('static ')
     result.append(self.declarator() + ' ')
-    if link_name:
-      result.append(Markup('<a class="member-table-link symbol" href="#%s">' % self.name()))
-    else:
-      result.append(Markup('<span class="symbol">'))
-    result.append(self.name())
-    if link_name:
-      result.append(Markup('</a>'))
-    else:
-      result.append(Markup('</span>'))
+    name = self.name()
+    if name != "$call":
+      if link_name:
+        result.append(Markup('<a class="member-table-link symbol" href="#%s">' % name))
+      else:
+        result.append(Markup('<span class="symbol">'))
+      result.append(name)
+      if link_name:
+        result.append(Markup('</a>'))
+      else:
+        result.append(Markup('</span>'))
     if tag == 'method':
       # TODO: Type params
       result.append("(")
@@ -201,7 +205,7 @@ class Definition(object):
       pass
     elif tag == 'namespace':
       pass # return 'namespace ' + self.name()
-    elif tag == 'let' or tag == 'var':
+    elif tag == 'let' or tag == 'var' or tag == 'property':
       result.append(":")
       # TODO: Type
     
@@ -230,9 +234,9 @@ class Definition(object):
         result.append(" -> ")
         result.append(self.helper.format_type(ret))
       result.append(Markup('</span>'))
-    elif tag == 'let' or tag == 'var':
-      # TODO: Type
-      pass
+    elif tag == 'let' or tag == 'var' or tag == 'property':
+      ty = self.el.find('type/*')
+      result.append(self.helper.format_type(ty))
     
     return Markup('').join(result)
   
