@@ -167,7 +167,7 @@ foreach(SRC_FILE ${TART_SRC})
         COMMENT "Generating object file ${OBJ_FILE}")
 
     # Link executable
-    add_executable(${EXE_FILE} ${OBJ_FILE})
+    add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
     add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
@@ -187,7 +187,7 @@ foreach(SRC_FILE ${TART_SRC})
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Link executable
-    add_executable(${EXE_FILE} ${OBJ_FILE})
+    add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
     add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})

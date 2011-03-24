@@ -66,10 +66,23 @@ namespace {
   Type * const TypeTupleKeyInfo ::emptyKey = NULL;
   Type * const TypeTupleKeyInfo ::tombstoneKey = NULL;
 
+  class TupleTypeWeakPtr : public GCWeakPtr<TupleType> {
+  public:
+    TupleTypeWeakPtr() {}
+    TupleTypeWeakPtr(TupleType * ptr) : GCWeakPtr<TupleType>(ptr) {}
+    TupleTypeWeakPtr(TupleTypeWeakPtr & wp) : GCWeakPtr<TupleType>(wp) {}
+  private:
+    void finalize() const;
+  };
+
   typedef llvm::DenseMap<TypeTupleKey, TupleType *, TypeTupleKeyInfo> TupleTypeMap;
 
   TupleTypeMap uniqueValues_;
   bool initFlag = false;
+
+  void TupleTypeWeakPtr::finalize() const {
+    uniqueValues_.erase(iterPair(get()));
+  }
 
   class CleanupHook : public GC::Callback {
     void call() {
@@ -78,8 +91,17 @@ namespace {
     }
   };
 
-
   CleanupHook hook;
+
+  class TupleTypeRoot : public GCRootBase {
+    void trace() const {
+      for (TupleTypeMap::const_iterator it = uniqueValues_.begin(); it != uniqueValues_.end();
+          ++it) {
+        // The key contains pointers to the value, so only trace the value.
+        it->second->mark();
+      }
+    }
+  };
 }
 
 // -------------------------------------------------------------------
@@ -90,6 +112,9 @@ TupleType * TupleType::get(const Type * typeArg) {
 }
 
 TupleType * TupleType::get(TupleType::const_iterator first, TupleType::const_iterator last) {
+  // Make the type map a garbage collection root.
+  static TupleTypeRoot root;
+
   if (!initFlag) {
     initFlag = true;
     GC::registerUninitCallback(&hook);

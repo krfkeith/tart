@@ -14,6 +14,25 @@
 
 namespace tart {
 
+namespace {
+  /** Code to clear the cached type maps during a collection. */
+  template<class TypeMap>
+  class TypeMapRoot : public GCRootBase {
+  public:
+    TypeMapRoot(TypeMap & typeMap) : typeMap_(typeMap) {}
+
+  private:
+    void trace() const {
+      for (typename TypeMap::const_iterator it = typeMap_.begin(); it != typeMap_.end(); ++it) {
+        it->first->mark();
+        it->second->mark();
+      }
+    }
+
+    TypeMap & typeMap_;
+  };
+}
+
 // -------------------------------------------------------------------
 // TypeLiteralType
 
@@ -22,6 +41,9 @@ TypeDefn TypeLiteralType::typedefn(&Builtins::module, "TypeLiteral", NULL);
 TypeLiteralType::TypeMap TypeLiteralType::uniqueTypes_;
 
 void TypeLiteralType::initBuiltin() {
+  // Make the type map a garbage collection root
+  static TypeMapRoot<TypeMap> root(uniqueTypes_);
+
   // Create type parameters
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "T"));

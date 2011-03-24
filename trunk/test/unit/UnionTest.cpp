@@ -25,7 +25,7 @@ protected:
 
   UnionTest() : testSource(""), testModule(&testSource, "test") {
     // Set up test class.
-    TypeDefn * testClassDef = new TypeDefn(&testModule, "Test");
+    TypeDefn * testClassDef = new TypeDefn(NULL, "Test");
     testClass = new CompositeType(Type::Class, testClassDef, &testModule);
     testClassDef->addTrait(Defn::Singular);
     testClassDef->setTypeValue(testClass);

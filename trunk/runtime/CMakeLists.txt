@@ -21,3 +21,5 @@ include_directories(include)
 file(GLOB sources lib/*.c lib/*.cpp)
 file(GLOB headers include/*.h)
 add_library(runtime STATIC ${sources} ${headers})
+
+install(TARGETS runtime ARCHIVE DESTINATION lib/tart/static)

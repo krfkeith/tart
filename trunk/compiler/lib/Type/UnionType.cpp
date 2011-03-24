@@ -555,7 +555,7 @@ void UnionType::format(FormatStream & out) const {
 }
 
 void UnionType::trace() const {
-  members_->trace();
+  members_->mark();
 }
 
 } // namespace tart

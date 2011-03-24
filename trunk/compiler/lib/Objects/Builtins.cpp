@@ -94,6 +94,9 @@ FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
 
 void Builtins::init() {
+  static GCPointerRoot moduleRoot(&module);
+  static GCPointerRoot syntheticModuleRoot(&syntheticModule);
+
   // Initialize primitive types
   PrimitiveType::initPrimitiveTypes(&module);
 

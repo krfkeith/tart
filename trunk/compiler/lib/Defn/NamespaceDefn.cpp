@@ -33,7 +33,7 @@ NamespaceDefn::NamespaceDefn(Module * m, const ASTDecl * de)
 }
 
 void NamespaceDefn::format(FormatStream & out) const {
-  out << "namespace " << name_;
+  out << name_;
 }
 
 void NamespaceDefn::trace() const {

@@ -9,6 +9,10 @@
 #include "tart/AST/ASTNode.h"
 #endif
 
+#ifndef TART_AST_DOCCOMMENT_H
+#include "tart/AST/DocComment.h"
+#endif
+
 namespace tart {
 
 class Stmt;
@@ -93,7 +97,7 @@ protected:
   ASTDeclList members_;
   ASTNodeList imports_;
   ASTNodeList attributes_;
-  std::string docComment_;
+  DocComment docComment_;
 
   // Protected constructor, since this type is abstract. */
   ASTDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
@@ -130,8 +134,8 @@ public:
   ASTNodeList & attributes() { return attributes_; }
 
   /** The doc comment for this declaration. */
-  const std::string & docComment() const { return docComment_; }
-  std::string & docComment() { return docComment_; }
+  const DocComment & docComment() const { return docComment_; }
+  DocComment & docComment() { return docComment_; }
 
   // Overrides
 

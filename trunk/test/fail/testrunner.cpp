@@ -97,7 +97,8 @@ int main(int argc, char **argv) {
       std::string testName(llvm::sys::path::filename(filePath));
       std::string testMsg;
       if (!parser.docComment().empty()) {
-        const std::string & doc = parser.docComment();
+        std::string doc;
+        parser.docComment().toString(doc);
         size_t pos = 0;
         skipSpace(doc, pos);
         if (match(doc, pos, "TEST ")) {

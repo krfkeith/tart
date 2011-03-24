@@ -205,7 +205,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
             param->setFlag(ParameterDefn::KeywordOnly, true);
           }
         }
-      } else {
+      } else if (paramType->typeClass() != Type::TypeVar) {
         diag.error(aparam) << "Type " << paramType << " cannot be expanded with '*'";
       }
     } else {
