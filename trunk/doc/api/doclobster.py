@@ -12,9 +12,10 @@
 # TODO: Sub list
 # TODO: Hierarchy
 # TODO: Frames
-# TODO: Publish
 # TODO: Deprecated
-# TODO: Attributes (well, some)
+# TODO: Attributes (well, some) Unsafe for sure.
+# TODO: Search
+# TODO: Accordion
 
 import sys, os
 from optparse import OptionParser
