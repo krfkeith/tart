@@ -7,17 +7,17 @@ interface Codec {
     REPLACE,/** Replace bad characters with the encoder's replacement character. */
     ABORT,  /** Throw an exception. TODO: What kind? */
   }
-  
+
   struct CodecState {
     var dstIndex:int32;     /** Next available position in the destination array. */
     var srcIndex:int32;     /** Next position to read in the source array. */
     var errorState:int32;   /** The current error state. */
     var partial:int32;      /** Used to save the state of a partially-decoded character. */
   }
-  
+
   /** Name of this codec. */
   def name:String { get; }
-  
+
   /** Return the length, in bytes, of the character array when encoded.
       Parameters:
         src: The characters to be encoded.
@@ -39,7 +39,7 @@ interface Codec {
   /** Encode the characters in 'src'.
       Parameters:
         dst: The destination byte array.
-        dstOffset: The start position in the destination array to write to. 
+        dstOffset: The start position in the destination array to write to.
         src: The characters to be encoded.
         srcOffset: The starting position within the character array.
         count: The number of characters to encode.
@@ -50,7 +50,7 @@ interface Codec {
   /** Decode the characters in 'src'.
       Parameters:
         dst: The destination character array.
-        dstOffset: The start position in the destination array to write to. 
+        dstOffset: The start position in the destination array to write to.
         src: The bytes to be decoded.
         srcOffset: The starting position within the byte array.
         count: The number of bytes to decode.

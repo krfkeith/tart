@@ -180,37 +180,37 @@ static const unsigned char * readEncodedValue(
     _Unwind_Ptr * out) {
   uintptr_t result;
 
-  // LLVM only emits format DW_EH_PE_udata4 and DW_EH_PE_absptr encoding.
+  const unsigned char *u = pos; // save this for relative offset
   switch (encoding & 0x0f) {
-    case DW_EH_PE_udata4: {
-      uint32_t offset;
-      memcpy(&offset, pos, sizeof(offset));
-      pos += sizeof(offset);
-      result = offset;
+    case DW_EH_PE_udata4:
+      result = *(uint32_t*)pos;
+      pos += sizeof(uint32_t);
       break;
-    }
     
-    case DW_EH_PE_sdata4: {
-      int32_t offset;
-      memcpy(&offset, pos, sizeof(offset));
-      pos += sizeof(offset);
-      result = offset;
+    case DW_EH_PE_sdata4:
+      result = *(int32_t*)pos;
+      pos += sizeof(int32_t);
       break;
-    }
 
-    case DW_EH_PE_absptr: {
-      memcpy(&result, pos, sizeof(result));
+    case DW_EH_PE_absptr:
+      result = *(uintptr_t*)pos;
       pos += sizeof(result);
       break;
-    }
 
     default:
       // Other encodings not implemented.
       fprintf(stderr, "readEncodedValue(): Unsupported exception encoding type %d\n", encoding);
       abort();
   }
+  
+  if (result != 0) {
+	  result += ((encoding & 0x70) == DW_EH_PE_pcrel ? (_Unwind_Internal_Ptr) u : baseAddr);
+	  if (encoding & DW_EH_PE_indirect) {
+	    result = *(_Unwind_Internal_Ptr *) result;
+    }
+  }
 
-  *out = baseAddr + (_Unwind_Ptr) result;
+  *out = result;
   return pos;
 }
 

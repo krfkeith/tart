@@ -29,12 +29,12 @@ public class Object : Hashable {
   static def coerce[%T] (value:T) -> Object { return ValueRef[T](value); }
   static def coerce(value:Object) -> Object { return value; }
 
-  /** Set a finalization callback to be called when this object has been deleted.
+  /* Set a finalization callback to be called when this object has been deleted.
       Note that the finalizer must *not* hold a reference to the object or it
       will never be deleted. */
   //final def addFinalizer(finalizer:fn) {}
 
-  /** Remove a finalizer that was registered via addFinalizer. */
+  /* Remove a finalizer that was registered via addFinalizer. */
   //final def removeFinalizer(finalizer:fn) {}
 
   /** Return the fully-qualified name of this object's class. */
