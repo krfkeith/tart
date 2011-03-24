@@ -280,7 +280,7 @@ bool VarAnalyzer::resolveInitializers() {
           // if you queue it, analyze it, and then later addSymbol it again - doesn't get
           // fully analyzed.)
           TypeDefn * typeDef = var->type()->typeDefn();
-          if (typeDef != NULL) {
+          if (typeDef != NULL && typeDef->isSingular()) {
             module_->addSymbol(typeDef);
           }
           break;

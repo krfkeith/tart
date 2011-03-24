@@ -25,7 +25,6 @@ namespace tart {
 /// Forward declarations.
 class ASTDecl;
 class ASTVarDecl;
-class CodeGenerator;
 
 // -------------------------------------------------------------------
 // Statement base class

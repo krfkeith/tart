@@ -1,5 +1,3 @@
-/** Defines the typecast function */
-
 import tart.annex.Intrinsic;
 
 /** The generic typecast function. Throws an exception if the cast fails. */

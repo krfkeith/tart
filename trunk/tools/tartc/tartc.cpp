@@ -29,9 +29,6 @@ ModulePaths("i", llvm::cl::Prefix, llvm::cl::desc("Module search path"));
 static llvm::cl::list<std::string>
 InputFilenames(llvm::cl::Positional, llvm::cl::desc("<input files>"));
 
-static llvm::cl::opt<std::string>
-Depends("depends", llvm::cl::desc("Name of file to write dependency information to"));
-
 int main(int argc, char **argv) {
   llvm::sys::PrintStackTraceOnErrorSignal();
   llvm::cl::ParseCommandLineOptions(argc, argv, " tart\n");
@@ -63,22 +60,9 @@ int main(int argc, char **argv) {
 
   // Process the input files.
   Compiler compiler;
-  if (!Depends.empty()) {
-    compiler.setGenerateDependencies(true);
-    compiler.setGenerateBitcode(false);
-  }
-
   for (unsigned i = 0, e = InputFilenames.size(); i != e; ++i) {
     const std::string &inFile = InputFilenames[i];
     compiler.processInputFile(inFile);
-  }
-
-  if (!Depends.empty()) {
-    llvm::sys::Path dependsPath(Depends);
-    fprintf(stderr, "Depends path: %s\n", dependsPath.c_str());
-    std::ofstream dependsOut(dependsPath.c_str());
-    dependsOut.close();
-    return 0;
   }
 
 #if 0

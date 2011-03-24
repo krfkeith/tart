@@ -361,11 +361,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
 
 Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeList & args) {
   Type * type = tdef->typeValue();
-  //TypeDefn * tdef = type->typeDefn();
   checkAccess(loc, tdef);
-  if (!tdef->isTemplate() && !tdef->isTemplateMember()) {
-    module_->addSymbol(tdef);
-  }
 
   // First thing we need to know is how much tdef has been analyzed.
   if (!AnalyzerBase::analyzeType(type, Task_PrepConstruction)) {

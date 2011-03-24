@@ -1,0 +1,49 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<head>
+  <xi:include href="common.xml"/>
+  <title>Package ${pkg.name}</title>
+</head>
+<body>
+  ${page_header('packages')}
+  <section class="content-section">
+    <header class="content-header">
+      Package: <span class="defn-name">${pkg.name}</span>
+    </header>
+
+    <!--! Function to write a table of definitions in the package -->
+    <py:def function="defn_list(title, defs)">
+      <py:if test="defs">
+	      <section class="defn-list-section">
+	        <header class="defn-list-header">${title}</header>
+	        <ul class="defn-list">
+            <li py:for="item in defs">
+              <a class="defn-list-link" href="${item.url()}">${item.name()}</a>
+              - ${item.summary()}
+            </li>
+	        </ul>
+	      </section>
+      </py:if>
+    </py:def>
+
+    ${defn_list("Namespaces", pkg.members('namespace'))}
+    
+	  ${defn_list("Interfaces",
+        pkg.members('typedef', filter.type_eq('interface')))}
+    
+	  ${defn_list("General Classes",
+        pkg.members('typedef', filter.type_eq('class'), filter.group_eq(None)))}
+    
+	  ${defn_list("Exceptions",
+        pkg.members('typedef', filter.type_eq('class'), filter.group_eq('exception')))}
+    
+	  ${defn_list("Attributes",
+        pkg.members('typedef', filter.type_eq('class'), filter.group_eq('attribute')))}
+    
+	  ${defn_list("Structs", pkg.members('typedef', filter.type_eq('struct')))}
+	  ${defn_list("Enumerations", pkg.members('typedef', filter.type_eq('enum')))}
+	  ${defn_list("Functions", pkg.members('method'))}
+
+  </section>
+  ${page_footer()}
+</body>
+</html>

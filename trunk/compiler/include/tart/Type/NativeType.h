@@ -44,6 +44,7 @@ public:
   bool isReferenceType() const { return false; }
   bool includes(const Type * other) const;
   void format(FormatStream & out) const;
+  void trace() const;
   Expr * nullInitValue() const;
   unsigned getHashValue() const;
 
@@ -101,6 +102,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
+  void trace() const;
   unsigned getHashValue() const;
 
   static inline bool classof(const NativeArrayType *) { return true; }
@@ -152,6 +154,7 @@ public:
   bool isSubtype(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
+  void trace() const;
   unsigned getHashValue() const;
 
   static inline bool classof(const FlexibleArrayType *) { return true; }

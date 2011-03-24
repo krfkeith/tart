@@ -13,7 +13,7 @@ class StringTest : Test {
 	  assertTrue("".isEmpty);
 	  assertFalse("a".isEmpty);
 	}
-	
+
 	def testStringComparison() {
 	  let s = "Hello";
 	  let t = "Goodbye";
@@ -22,43 +22,43 @@ class StringTest : Test {
 	  assertTrue(s == "Hello");
 	  assertFalse(s == "Goodbye");
 	//  assertTrue(s != "Yello");
-	  
+
 	  // TODO: Test !=
-	  
+
 	  assertTrue("Hello, World".startsWith("Hello"));
 	  assertFalse("Hello, World".startsWith("Jello"));
 	  assertFalse("Hello".startsWith("Hello, World"));
 	  assertTrue("Hello, World".startsWith("Hello, World"));
-	
+
 	  assertTrue("Hello, World".endsWith("World"));
 	  assertFalse("Hello, World".endsWith("Wirld"));
 	  assertFalse("Hello".endsWith("Hello, World"));
 	  assertTrue("Hello, World".endsWith("Hello, World"));
 	}
-	
+
 	def testStringGetChar() {
 	  let s = "Hello";
 	  assertTrue(s[0] == 'H');
 	  assertTrue(s[1] == 'e');
 	}
-	
+
 	def testStringFromArray() {
 	  let a = ubyte[](0); // Zero-length array
 	  let s = String(a);
 	  assertTrue(s == "");
 	}
-	
+
 	def testStringToString() {
 	  // TODO: Type inference problem.
 	  assertEq("Hello", "Hello".toString());
 	}
-	
+
 	def testStringConcatenation() {
 	  let s = String.concat("This", "Is", "A", "Test");
 	  assertEq(11, s.size);
 	  assertEq("ThisIsATest", s);
 	}
-	
+
 	def testStringJoin() {
 	  let s = ", ".join("This", "Is", "A", "Test");
 	  assertEq("This, Is, A, Test", s);
@@ -67,7 +67,7 @@ class StringTest : Test {
 	  let s3 = ", ".join("This");
 	  assertEq("This", s3);
 	}
-	
+
 	def testIterableStringJoin() {
 	  let a = tart.collections.ArrayList[String]();
 	  a.add("One");
@@ -76,7 +76,7 @@ class StringTest : Test {
 	  let s = ", ".join(a);
 	  assertEq("One, Two, Three", s);
 	}
-	
+
 	def testUnicode() {
 	  assertEq(2, "\u0200".size);
 	  assertEq(1, "\u0200".charLength());
@@ -89,7 +89,7 @@ class StringTest : Test {
 	  assertEq(4, "\U20000".size);
 	  assertEq(1, "\U20000".charLength());
 	}
-	
+
 	def testToCharArray() {
 	  let s = "Hello";
 	  let a = s.toCharArray();
@@ -99,13 +99,13 @@ class StringTest : Test {
 	  assertEq('l', a[2]);
 	  assertEq('l', a[3]);
 	  assertEq('o', a[4]);
-	
+
 	  let s2 = "\u2100";
 	  let a2 = s2.toCharArray();
 	  assertEq(1, a2.size);
 	  assertEq('\u2100', a2[0]);
 	}
-	
+
 	def testStringConversion() {
 	  assertEq("1", String(1));
 	}
@@ -117,7 +117,7 @@ class StringTest : Test {
 	  assertEq('s', typecast[char](i.next()));
 	  assertEq('t', typecast[char](i.next()));
 	  assertTrue(i.next() isa void);
-	  
+
 	  let i2 = "\u2100".iterate();
 	  assertEq(0x2100, typecast[char](i2.next()));
 	  assertTrue(i2.next() isa void);
@@ -136,5 +136,13 @@ class StringTest : Test {
 	  assertEq("Hello", "Test Hello".substr(5));
 	  assertEq("Hello", "Test Hello".substr(5, 20));
 	  assertEq("He", "Test Hello".substr(5, 7));
+	}
+
+	def testToUpperCase() {
+	  assertEq("HELLO", "Hello".toUpperCase());
+	}
+
+	def testToLowerCase() {
+	  assertEq("hello", "Hello".toLowerCase());
 	}
 }

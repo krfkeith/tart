@@ -1,9 +1,11 @@
+import tart.annex.Intrinsic;
+
 /** An atomic pointer type. */
 struct AtomicPtr[%T <: Object] {
   def construct(n:T) {
     _value = n;
   }
-  
+
   def value:T {
     get { return _value; }
     set { _value = value; }

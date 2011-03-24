@@ -59,6 +59,7 @@ find_package(LLVM REQUIRED)
 find_program(LLVM_LLC llc PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_LD llvm-ld PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_OPT opt PATHS ${LLVM_BIN_DIR})
+find_program(PYTHON3 python3)
 
 # Find libraries
 find_library(LIB_DL dl)
@@ -156,3 +157,4 @@ add_subdirectory(lib)
 #add_subdirectory(test/nolib)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/fail)
+add_subdirectory(doc/api)

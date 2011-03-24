@@ -195,6 +195,8 @@ void TemplateSignature::trace() const {
   safeMark(ast_);
   safeMark(typeParams_);
   markList(conditions_.begin(), conditions_.end());
+  safeMarkList(typeParamDefaults_.begin(), typeParamDefaults_.end());
+  markList(vars_.begin(), vars_.end());
   for (SpecializationMap::const_iterator it = specializations_.begin();
       it != specializations_.end(); ++it) {
     it->first->mark();
@@ -520,7 +522,9 @@ void TemplateInstance::trace() const {
   paramDefns_.trace();
   safeMark(value_);
   safeMark(typeArgs_);
+  safeMark(templateDefn_);
   safeMark(patternVarValues_);
+  safeMark(lessSpecialized_);
 }
 
 } // namespace Tart

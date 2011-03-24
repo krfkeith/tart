@@ -156,7 +156,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       }
 
       getter->setFunctionType(getterType);
-      if (!getter->isAbstract()) {
+      if (!getter->isAbstract() && getter->isSingular()) {
         module()->addSymbol(getter);
       }
     }
@@ -210,7 +210,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
       setterType->setReturnType(&VoidType::instance);
 
       setter->setFunctionType(setterType);
-      if (!setter->isAbstract()) {
+      if (!setter->isAbstract() && setter->isSingular()) {
         module()->addSymbol(setter);
       }
     }

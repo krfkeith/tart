@@ -287,8 +287,8 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   }
 
   // Grab the doc comment if there is one.
-  std::string docComment;
-  docComment.swap(lexer.docComment());
+  DocComment docComment;
+  lexer.takeDocComment(docComment);
 
   ASTDecl * decl = declarator(mods);
   if (decl == NULL) {
@@ -300,10 +300,13 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     return true;
   }
 
-  docComment.swap(decl->docComment());
+  decl->docComment().take(docComment);
+  lexer.takeDocComment(decl->docComment(), Lexer::BACKWARD);
+
   decl->attributes().append(attributes.begin(), attributes.end());
   if (ASTTemplate * templ = dyn_cast<ASTTemplate>(decl)) {
     templ->body()->attributes().append(attributes.begin(), attributes.end());
+    templ->body()->docComment().take(templ->docComment());
   }
 
   dlist.push_back(decl);

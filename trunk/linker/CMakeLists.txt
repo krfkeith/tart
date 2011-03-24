@@ -42,3 +42,5 @@ if (APPLE)
   set_target_properties(gc PROPERTIES LINK_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
   set_target_properties(reflector PROPERTIES LINK_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
 endif()
+
+install(TARGETS gc reflector LIBRARY DESTINATION lib/tart/plugin)
