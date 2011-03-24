@@ -23,6 +23,8 @@
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
 
+#include "tart/Sema/DefnAnalyzer.h"
+
 namespace tart {
 
 using llvm::dyn_cast;
@@ -38,6 +40,15 @@ void DocExporter::end() {
 }
 
 void DocExporter::generate(tart::Module * mod) {
+  // The compiler normally doesn't analyze templates unless they are instantiated.
+  // However for this we want everything.
+  // Also mark the module resolve members pass as unfinished, so we don't get
+  // warnings about adding symbols.
+  mod->finished().remove(Pass_ResolveModuleMembers);
+  for (Defn * de = mod->firstMember(); de != NULL; de = de->nextInScope()) {
+    DefnAnalyzer::analyzeCompletely(de);
+  }
+
   if (!mod->astMembers().empty()) {
     exportModule(mod);
   }
@@ -221,6 +232,7 @@ void DocExporter::writeTypeArgs(const Type * type) {
 
 void DocExporter::writeMembers(const IterableScope * scope) {
   for (const Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
+    DefnAnalyzer::analyzeCompletely(const_cast<Defn *>(de));
     switch (de->defnType()) {
       case Defn::Typedef: {
         const TypeDefn * td = static_cast<const TypeDefn *>(de);
