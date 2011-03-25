@@ -290,8 +290,7 @@ public:
   ASTNode * parseCharLiteral();
 
   /** Return the current doc comment string. */
-  const DocComment & docComment() const { return lexer.docComment(); }
-  DocComment & docComment() { return lexer.docComment(); }
+  DocComment & docComment(Lexer::CommentDirection dir) { return lexer.docComment(dir); }
 };
 
 }

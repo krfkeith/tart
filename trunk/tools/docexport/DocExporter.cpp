@@ -107,6 +107,12 @@ void DocExporter::exportCompositeType(const CompositeType * ctype) {
     xml_.appendAttribute("group", group);
   }
   writeModifiers(td);
+  if (ctype->isAbstract()) {
+    xml_.appendAttribute("abstract", "true");
+  }
+  if (ctype->isFinal()) {
+    xml_.appendAttribute("final", "true");
+  }
   writeTypeArgs(ctype);
   writeAttributes(td);
   for (ClassList::const_iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
@@ -123,10 +129,25 @@ void DocExporter::exportEnumType(const EnumType * etype) {
   xml_.beginElement("typedef");
   xml_.appendAttribute("type", "enum");
   xml_.appendAttribute("name", td->name());
+  if (etype->isFlags()) {
+    xml_.appendAttribute("flags", "true");
+  }
   writeModifiers(td);
   writeAttributes(td);
   writeDocComment(td);
-  // TODO: Members
+  for (Defn * ec = etype->memberScope()->firstMember(); ec != NULL; ec = ec->nextInScope()) {
+    if (ec->defnType() == Defn::Let && !ec->isSynthetic()) {
+      const VariableDefn * ecvar = cast<VariableDefn>(ec);
+      StrFormatStream valueStrm;
+      valueStrm << ecvar->initValue();
+      valueStrm.flush();
+      xml_.beginElement("econst");
+      xml_.appendAttribute("name", ec->name());
+      xml_.appendAttribute("value", valueStrm.str());
+      writeDocComment(ecvar);
+      xml_.endElement("econst");
+    }
+  }
   xml_.endElement("typedef");
 }
 
@@ -147,6 +168,15 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
 
   xml_.beginElement(elName);
   xml_.appendAttribute("name", method->name());
+  if (method->isUnsafe()) {
+    xml_.appendAttribute("unsafe", "true");
+  }
+  if (method->isAbstract()) {
+    xml_.appendAttribute("abstract", "true");
+  }
+  if (method->isFinal()) {
+    xml_.appendAttribute("final", "true");
+  }
   writeModifiers(method);
   writeAttributes(method);
   if (method->isTemplateInstance()) {

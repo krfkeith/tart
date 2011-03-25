@@ -182,7 +182,6 @@ namespace {
 Lexer::Lexer(ProgramSource * src)
   : srcFile_(src)
   , stream_(src->open())
-  , docCommentDir_(UNKNOWN)
   , errorCode_(ERROR_NONE)
 {
   ch_ = 0;
@@ -230,7 +229,7 @@ TokenType Lexer::next() {
     } else if (ch_ == '/') {
       // Check for comment start
       readCh();
-      bool inDocComment = false;
+      DocComment * docComment = NULL;
       SourceLocation commentLocation(tokenLocation_.file, currentOffset_, currentOffset_);
       llvm::SmallString<128> commentText;
       if (ch_ == '/') {
@@ -238,19 +237,19 @@ TokenType Lexer::next() {
         if (ch_ == '/') {
           // Doc comment
           readCh();
-          inDocComment = true;
+          docComment = &docCommentFwd_;
           if (ch_ == '<') {
+            if (!docCommentFwd_.empty()) {
+              diag.warn(tokenLocation_) << "Conflicting comment directions.";
+            }
+            docComment = &docCommentBwd_;
             readCh();
-            commentLocation.begin = currentOffset_;
-          } else if (docCommentDir_ == UNKNOWN) {
-            // Set it to forward if they haven't otherwise said.
-            setCommentDirection(FORWARD);
           }
           commentLocation.begin = currentOffset_;
         }
 
         while (ch_ >= 0 && ch_ != '\n' && ch_ != '\r') {
-          if (inDocComment) {
+          if (docComment != NULL) {
             // Expand tabs
             if (ch_ == '\t') {
               uint32_t col = currentOffset_ - lineStartOffset_;
@@ -263,10 +262,10 @@ TokenType Lexer::next() {
           }
           readCh();
         }
-        if (inDocComment) {
+        if (docComment != NULL) {
           commentText.push_back('\n');
           commentLocation.end = currentOffset_;
-          docComment_.entries().push_back(
+          docComment->entries().push_back(
               new DocComment::Entry(commentLocation, commentText));
         }
       } else if (ch_ == '*') {
@@ -274,14 +273,14 @@ TokenType Lexer::next() {
         if (ch_ == '*') {
           // Doc comment
           readCh();
-          inDocComment = true;
+          docComment = &docCommentFwd_;
           clearDocComment();
           if (ch_ == '<') {
+            if (!docCommentFwd_.empty()) {
+              diag.warn(tokenLocation_) << "Conflicting comment directions.";
+            }
+            docComment = &docCommentBwd_;
             readCh();
-            setCommentDirection(BACKWARD);
-          } else if (docCommentDir_ == UNKNOWN) {
-            // Set it to forward if they haven't otherwise said.
-            setCommentDirection(FORWARD);
           }
           commentLocation.begin = currentOffset_;
         }
@@ -297,7 +296,7 @@ TokenType Lexer::next() {
               readCh();
               break;
             } else {
-              if (inDocComment) {
+              if (docComment != NULL) {
                 commentText.push_back('*');
               }
               // Push the star we skipped, and reprocess the following char
@@ -312,14 +311,14 @@ TokenType Lexer::next() {
               if (ch_ == '\n') {
                 readCh();
               }
-              if (inDocComment) {
+              if (docComment != NULL) {
                 commentText.push_back('\n');
               }
               srcFile_->newLine(currentOffset_);
               lineStartOffset_ = currentOffset_;
               lineIndex_ += 1;
             } else {
-              if (inDocComment) {
+              if (docComment != NULL) {
                 // Expand tabs
                 if (ch_ == '\t') {
                   uint32_t col = currentOffset_ - lineStartOffset_;
@@ -334,9 +333,9 @@ TokenType Lexer::next() {
             }
           }
         }
-        if (inDocComment) {
+        if (docComment != NULL) {
           commentLocation.end = currentOffset_;
-          docComment_.entries().push_back(
+          docComment->entries().push_back(
               new DocComment::Entry(commentLocation, commentText));
         }
       } else {
@@ -839,31 +838,23 @@ TokenType Lexer::next() {
 }
 
 void Lexer::takeDocComment(DocComment & dst, CommentDirection direction) {
-  if (docCommentDir_ == direction && !docComment_.empty()) {
+  DocComment * src = (direction == FORWARD ? &docCommentFwd_ : &docCommentBwd_);
+  if (!src->empty()) {
     if (!dst.empty()) {
       diag.warn(tokenLocation_) << "Can't have two doc-comments for one declaration";
-      docComment_.clear();
+      src->clear();
     } else {
-      dst.take(docComment_);
+      dst.take(*src);
     }
-    docCommentDir_ = UNKNOWN;
   }
 }
 
 void Lexer::clearDocComment() {
-  if (!docComment_.empty()) {
-    diag.warn(docComment_.entries()[0]->location()) << "Comment entries lost";
+  if (!docCommentFwd_.empty() || !docCommentBwd_.empty()) {
+    diag.warn(tokenLocation_) << "Comment entries lost";
   }
-  docComment_.clear();
-  docCommentDir_ = UNKNOWN;
-}
-
-void Lexer::setCommentDirection(CommentDirection dir) {
-  if (dir == UNKNOWN || docCommentDir_ == UNKNOWN) {
-    docCommentDir_ = dir;
-  } else {
-    diag.warn(tokenLocation_) << "Conflicting comment directions.";
-  }
+  docCommentFwd_.clear();
+  docCommentBwd_.clear();
 }
 
 bool Lexer::encodeUnicodeChar(long charVal) {

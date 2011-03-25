@@ -54,7 +54,8 @@ DEFN_TAGS = set([
   "var",
   "let",
   "property",
-  "indexer"])
+  "indexer",
+  "econst"])
 
 class Filter(object):
   "Filter predicates for selecting members of a scope"
@@ -183,7 +184,8 @@ class Definition(object):
   def sigpart1(self, link_name):
     tag = self.el.tag
     result = []
-    result.append(self.visibility() + ' ')
+    if self.visibility() != 'public':
+      result.append(self.visibility() + ' ')
     if self.el.attrib.get('static') == 'true':
       result.append('static ')
     result.append(self.declarator() + ' ')
@@ -263,7 +265,7 @@ class Definition(object):
     for member in self.el.findall(tag):
       if member.tag in DEFN_TAGS \
         and Filter.accept(member, filters) \
-        and member.attrib['visibility'] != 'private':
+        and member.attrib.get('visibility') != 'private':
         result.append(Definition(self.helper, member))
     result.sort(key=lambda x: x.el.attrib['name'])
     return result

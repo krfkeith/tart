@@ -88,32 +88,53 @@
                 </tr>
               </table>
             </py:if>
-            <!--! TODO: Parameters, Returns, Exception, See Also, etc. -->
+            <!--! TODO: See Also, etc. -->
+          </section>
+        </section>
+      </py:if>
+    </py:def>
+
+    <!--! Function to write the details of an enumeration -->
+    <py:def function="enum_details(title, members)">
+      <py:if test="members">
+        <section class="member-details-section">
+          <header class="member-details-section-header">${title} Details</header>
+          <section class="member-section" py:for="m in members">
+            <header class="member-header">
+              <a name="${m.name()}">
+                ${m.sigpart1(False)}${m.sigpart2()}
+              </a>
+            </header>
+            <div class="member-description" py:if="m.has_description()">
+              ${m.description()}
+            </div>
+            <table class="enum-constants-table" border="0" cellspacing="0" cellpadding="0">
+              <tr class="enum-constant-header">
+                <th class="enum-constant-name-header">Name</th>
+                <th class="enum-constant-value-header">Description</th>
+              </tr>
+              <tr py:for="ec in m.members('econst')">
+                <th class="enum-constant-name">${ec.name()}</th>
+                <td class="enum-constant-value">${ec.description()}</td>
+              </tr>
+            </table>
           </section>
         </section>
       </py:if>
     </py:def>
 
     ${member_list("Enumerations", d.members('typedef', filter.type_eq('enum')))}
-
     ${member_list("Inner Classes", d.members('typedef', filter.type_eq('class')))}
-
     ${member_list("Static Constants", d.members('let', filter.is_static()))}
-    
     ${member_list("Properties", d.members('property'))}
-    
     ${member_list("Static Methods Summary", d.members('method', filter.is_static()))}
-
     ${member_list("Instance Methods Summary", d.members('method', filter.is_not_static()))}
-
     ${member_list("Macros Summary", d.members('macro', filter.is_not_static()))}
-
     ${member_list("Overridden Methods Summary", d.members('override'))}
-
     ${member_list("Undefined Methods", d.members('undef'))}
 
+    ${enum_details("Enum", d.members('typedef', filter.type_eq('enum')))}
     ${member_details("Property", d.members('property'))}
-
     ${member_details("Method", d.members('method'))}
     
   </section>

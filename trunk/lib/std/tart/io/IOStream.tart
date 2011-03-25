@@ -1,5 +1,4 @@
 /** Abstract interface for i/o streams. */
-/** Interface to a stream of bytes, which may be readable and/or writeable. */
 interface IOStream : ScopedObject {
   enum SeekFrom {
     CURRENT,

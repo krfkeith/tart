@@ -327,6 +327,7 @@ bool EnumAnalyzer::createMembers() {
   if (!isFlags && minValue_ != NULL) {
     VariableDefn * minDef = new VariableDefn(Defn::Let, module(), "minVal", minValue_);
     minDef->setType(enumType);
+    minDef->addTrait(Defn::Synthetic);
     minDef->setLocation(target_->location());
     minDef->passes().finish(VariableDefn::AttributePass);
     minDef->passes().finish(VariableDefn::VariableTypePass);
@@ -336,6 +337,7 @@ bool EnumAnalyzer::createMembers() {
 
     VariableDefn * maxDef = new VariableDefn(Defn::Let, module(), "maxVal", maxValue_);
     maxDef->setType(enumType);
+    maxDef->addTrait(Defn::Synthetic);
     maxDef->setLocation(target_->location());
     maxDef->passes().finish(VariableDefn::AttributePass);
     maxDef->passes().finish(VariableDefn::VariableTypePass);

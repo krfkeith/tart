@@ -201,6 +201,43 @@ p {
   -webkit-column-width: 20em; 
 }
 
+.enum-constants-table {
+  border: 2px solid black;
+  margin-left: 5em;
+  margin-bottom: 12px;
+  border-collapse: collapse;
+}
+
+.enum-constant-name-header {
+  text-align: left;
+  padding: 2px 8px;
+  border-bottom: 1px solid black;
+  background-color: #f4f6e5;
+}
+  
+.enum-constant-value-header {
+  text-align: left;
+  padding: 2px 8px;
+  border-bottom: 1px solid black;
+  background-color: #f4f6e5;
+}
+  
+.enum-constant-name {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid #919946;
+  border-right: 1px solid #919946;
+  background-color: #e0e3ad;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+}
+  
+.enum-constant-value {
+  text-align: left;
+  padding: 0 8px;
+  border-bottom: 1px solid #919946;
+  background-color: #e7ecba;
+}
+
 .type-alpha-list-link {
   font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
   color: #6d5100;

@@ -62,8 +62,9 @@ public:
   }
 
   /** Get the current accumulated doc comment for this token. */
-  const DocComment & docComment() const { return docComment_; }
-  DocComment & docComment() { return docComment_; }
+  DocComment & docComment(CommentDirection dir) {
+    return dir == FORWARD ? docCommentFwd_ : docCommentBwd_;
+  }
 
   /** Clear the accumulated doc comment. */
   void clearDocComment();
@@ -73,9 +74,6 @@ public:
       comment's direction is not the requested direction, then no action is taken.
    */
   void takeDocComment(DocComment & dst, CommentDirection direction = FORWARD);
-
-  /** Set the direction of the current doc comment. You can't change direction once it's known */
-  void setCommentDirection(CommentDirection dir);
 
   /** Current error code. */
   LexerError errorCode() const { return errorCode_; }
@@ -93,8 +91,8 @@ private:
   uint32_t            tokenStartOffset_;// Start position of current token
   SourceLocation      tokenLocation_;   // Start source location of current token
   std::string         tokenValue_;      // String value of token
-  DocComment          docComment_;      // Accumulated doc comment
-  CommentDirection    docCommentDir_;   // Comment direction
+  DocComment          docCommentFwd_;   // Accumulated doc comment (forward)
+  DocComment          docCommentBwd_;   // Accumulated doc comment (backward)
   uint16_t            lineIndex_;       // Current line index
   LexerError          errorCode_;       // Error code
 
