@@ -2,9 +2,9 @@
 class StringFormatter {
   private {
     enum State {
-      TEXT,
-      FIELD_INDEX,
-      FIELD_CONVERSION,
+      TEXT,							///< Within a literal text run.
+      FIELD_INDEX,			///< Within a field value specifier
+      FIELD_CONVERSION,	///< Within a field conversion specifier
     }
 
     static let LBRACE = '{';

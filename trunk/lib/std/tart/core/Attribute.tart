@@ -3,36 +3,41 @@
 class Attribute {
   /** Defines what types of elements the attribute can be attached to. */
   @Flags enum Target {
-    CLASS,
-    STRUCT,
-    INTERFACE,
-    ENUM,
-    NAMESPACE,
-    FUNCTION,
-    CONSTRUCTOR,
-    PARAMETER,
-    VARIABLE,
-    PROPERTY,
-    MACRO,
+    CLASS, 				///< Attribute can annotate class types.
+    STRUCT,				///< Attribute can annotate struct types.
+    INTERFACE, 		///< Attribute can annotate interface types.
+    ENUM,			 		///< Attribute can annotate enum types.
+    NAMESPACE, 		///< Attribute can annotate namespaces.
+    FUNCTION, 		///< Attribute can annotate functions and methods.
+    CONSTRUCTOR, 	///< Attribute can annotate constructors.
+    PARAMETER, 		///< Attribute can annotate parameters.
+    VARIABLE, 		///< Attribute can annotate variables and constants.
+    PROPERTY, 		///< Attribute can annotate properties.
+    MACRO, 				///< Attribute can annotate macros.
 
+		/// Attribute can annotate any type definition.
     TYPE = CLASS | STRUCT | INTERFACE | ENUM,
+
+		/// Attribute can annotate any callable.
     CALLABLE = CONSTRUCTOR | FUNCTION | MACRO,
+
+		/// Attribute can annotate any declaration.
     ANY = TYPE | NAMESPACE | CALLABLE | PARAMETER | VARIABLE | PROPERTY,
   }
 
   /** Indicates whether the attribute is retained in the compiled binary. */
   enum Retention {
-    NONE,
-    RUNTIME,
-    RUNTIME_ITERABLE, // Retained at runtime, and all instances iterable.
+    NONE,							///< Attribute is only present during compilation.
+    RUNTIME,					///< Attribute is retained at runtime.
+    RUNTIME_ITERABLE, ///< Attribute is retained at runtime, and all instances are iterable.
   }
 
   /** Indicates whether derived elements (callers, subclasses) get the attribute as well. */
   @Flags enum Propagation {
     NONE = 0,
-    SUBTYPES,   // Attribute propagates to subtypes
-    MEMBERS,    // Attribute propagates to members of attached type
-    CALLERS,    // Attribute propagates to callers
+    SUBTYPES,   ///< Attribute propagates to subtypes
+    MEMBERS,    ///< Attribute propagates to members of attached type
+    CALLERS,    ///< Attribute propagates to callers
   }
 
   var target:Target;

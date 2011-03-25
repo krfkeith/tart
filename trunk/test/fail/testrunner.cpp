@@ -96,9 +96,9 @@ int main(int argc, char **argv) {
     while (!parser.finished() && running) {
       std::string testName(llvm::sys::path::filename(filePath));
       std::string testMsg;
-      if (!parser.docComment().empty()) {
+      if (!parser.docComment(Lexer::FORWARD).empty()) {
         std::string doc;
-        parser.docComment().toString(doc);
+        parser.docComment(Lexer::FORWARD).toString(doc);
         size_t pos = 0;
         skipSpace(doc, pos);
         if (match(doc, pos, "TEST ")) {
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 
       // Attempt to parse and analyze the declaration.
       if (parser.declaration(module.astMembers(), DeclModifiers())) {
-        while (!parser.finished() && parser.docComment().empty() &&
+        while (!parser.finished() && parser.docComment(Lexer::FORWARD).empty() &&
             parser.declaration(module.astMembers(), DeclModifiers())) {}
       } else {
         running = false;

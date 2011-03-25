@@ -775,6 +775,11 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
       return false;
     }
 
+    // Save doc comments
+    DocComment docComment;
+    lexer.takeDocComment(docComment);
+
+    // Get the enum constant name.
     const char * ecName = matchIdent();
     if (!ecName) {
       break;
@@ -790,8 +795,14 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
     ecDecl->attributes().append(attributes.begin(), attributes.end());
     enumDef->addMember(ecDecl);
 
+    bool comma = match(Token_Comma);
+
+    // Grab doc comments
+    ecDecl->docComment().take(docComment);
+    lexer.takeDocComment(ecDecl->docComment(), Lexer::BACKWARD);
+
     // OK to have extra comma.
-    if (!match(Token_Comma)) {
+    if (!comma) {
       break;
     }
   }
