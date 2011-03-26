@@ -276,6 +276,7 @@ void DocExporter::writeMembers(const IterableScope * scope) {
       }
 
       case Defn::Function:
+      case Defn::Macro:
         exportMethod(static_cast<const FunctionDefn *>(de));
         break;
 
@@ -344,17 +345,20 @@ void DocExporter::writeTypeRef(const Type * ty) {
       }
 
       if (td->isTemplateInstance()) {
-        // TODO:
+        xml_.beginElement("template-instance");
       }
 
-      // TODO: template instance params.
-      xml_.beginElement("typename", false);
-      xml_.appendAttribute("kind", kind);
+      xml_.beginElement("typename", td->isTemplateInstance());
+      xml_.appendAttribute("type", kind);
       xml_.writeCharacterData(td->qualifiedName());
-      xml_.endElement("typename", false);
+      xml_.endElement("typename", td->isTemplateInstance());
 
       if (td->isTemplateInstance()) {
-        // TODO:
+        const TemplateInstance * ti = td->templateInstance();
+        for (size_t i = 0; i < ti->typeArgs()->size(); ++i) {
+          writeTypeExpression("template-arg", ti->typeArg(i));
+        }
+        xml_.endElement("template-instance");
       }
       break;
     }
@@ -363,7 +367,7 @@ void DocExporter::writeTypeRef(const Type * ty) {
       const EnumType * ety = static_cast<const EnumType *>(ty);
       TypeDefn * td = ety->typeDefn();
       xml_.beginElement("typename", false);
-      xml_.appendAttribute("kind", "enum");
+      xml_.appendAttribute("type", "enum");
       xml_.writeCharacterData(td->qualifiedName());
       xml_.endElement("typename", false);
       break;
@@ -373,7 +377,7 @@ void DocExporter::writeTypeRef(const Type * ty) {
       const PrimitiveType * pty = static_cast<const PrimitiveType *>(ty);
       TypeDefn * td = pty->typeDefn();
       xml_.beginElement("typename", false);
-      xml_.appendAttribute("kind", "primitive");
+      xml_.appendAttribute("type", "primitive");
       xml_.writeCharacterData(td->name());
       xml_.endElement("typename", false);
       break;
@@ -457,7 +461,7 @@ void DocExporter::writeTypeRef(const Type * ty) {
       const TypeAlias * ta = static_cast<const TypeAlias *>(ty);
       if (ty->typeDefn() != NULL) {
         xml_.beginElement("typename", false);
-        xml_.appendAttribute("kind", "alias");
+        xml_.appendAttribute("type", "alias");
         xml_.writeCharacterData(ty->typeDefn()->qualifiedName());
         xml_.endElement("typename", false);
       } else {

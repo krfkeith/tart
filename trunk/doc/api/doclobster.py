@@ -1,12 +1,14 @@
-#!/usr/bin/python3
+#/bin/python
 
+# We need to be able to create a unique key for each reference of a symbol name,
+# even if that name is incomplete.
+#
 # TODO: Type params in classes
 # TODO: Type params in methods
 # TODO: Type params in type expressions
 # TODO: Template classes
 # TODO: Template methods
 # TODO: Variables
-# TODO: Enums
 # TODO: Name index
 # TODO: Base list
 # TODO: Sub list
@@ -15,7 +17,9 @@
 # TODO: Deprecated
 # TODO: Attributes (well, some) Unsafe for sure.
 # TODO: Search
-# TODO: Accordion
+# TODO: Accordion Index
+# TODO: InheritDoc
+# TODO: link to a specific overload.
 
 import sys, os
 from optparse import OptionParser
@@ -51,47 +55,56 @@ DEFN_TAGS = set([
   "namespace",
   "typedef",
   "method",
+  "macro",
   "var",
   "let",
   "property",
   "indexer",
-  "econst"])
+  "econst",
+  "override",
+  "undef"])
+
+CALLABLES = set([
+  "method",
+  "macro",
+  "override",
+  "undef"])
 
 class Filter(object):
   "Filter predicates for selecting members of a scope"
   @staticmethod
   def group_eq(group):
     "A filter that accepts definitions in a particular group, such as exceptions or attributes"
-    def filter(el):
-      return el.attrib.get('group') == group
+    def filter(decl):
+      return decl.el.attrib.get('group') == group
     return filter
   
   @staticmethod
   def group_nil(el):
     "A filter that only accepts definitions with no group attribute"
-    def filter(el):
-      return 'group' not in el.attrib
+    def filter(decl):
+      return 'group' not in decl.el.attrib
     return filter
 
   @staticmethod
   def type_eq(type):
     "A filter that accepts elements with a given metatype, such as 'class' or 'enun'"
-    def filter(el):
-      return el.attrib.get('type') == type
+    def filter(decl):
+      return decl.el.attrib.get('type') == type
     return filter
   
   @staticmethod
   def is_static():
     "A filter that accepts only static elements"
-    def filter(el):
-      return el.attrib.get('static') == "true"
+    def filter(decl):
+      return decl.el.attrib.get('static') == "true"
     return filter
   
   @staticmethod
   def is_not_static():
     "A filter that accepts only non-static elements"
-    def filter(el):
-      return el.attrib.get('static') != "true"
+    def filter(decl):
+      return decl.el.attrib.get('static') != "true"
     return filter
   
   @staticmethod
@@ -101,58 +114,154 @@ class Filter(object):
       if not filter(el): return False
     return True
 
-class Definition(object):
+#class Definition(object):
+#  def compressed_text(self, el):
+#    result = []
+#    first = True
+#    for child in el:
+#      if first and child.tag == "p":
+#        result.append(inner_html(child))
+#        first = False
+#      else:
+#        result.append(outer_html(child))
+#    return Markup('').join(result)
+#  
+#  def supertypes(self, type):
+#    if 'bases' in self.el.attrib:
+#      return []
+#    return []
+#    
+#  def subtypes(self, type):
+#    return []
+    
+class Declaration(object):
   "A wrapper around an XML element for a definition"
-  def __init__(self, helper, el):
-    assert el.attrib['name']
-    assert el.attrib['qualified-name']
-    assert el.attrib['package']
+  def __init__(self, index, package, qualifiedName, name, el, uri):
+    self.index = index
+    self.package = package
+    self.qualifiedName = qualifiedName
+    self.name = name
     self.el = el
-    self.helper = helper
+    self.tag = el.tag
+    self.uri = uri
+    self._members = []
     
-  def name(self):
-    return self.el.attrib['name']
+  def __lt__(self, other):
+    return self.qualifiedName.__lt__(other.qualifiedName)
   
-  def qualified_name(self):
-    return self.el.attrib['qualified-name']
-  
-  def package(self):
-    return self.el.attrib['package']
-  
-  def url(self):
-    return self.helper.url(self.el)
+  def __str__(self):
+    return self.qualifiedName
     
+  def __repr__(self):
+    return self.tag + ':' + self.qualifiedName
+    
+  def addMember(self, m):
+    "Add a child member to this member's scope"
+    assert m
+    self._members.append(m)
+
+  def declarator(self):
+    "Returns the declaring keyword of this definition"
+    return self.el.tag
+
+  def visibility(self):
+    return self.el.attrib.get('visibility')
+  
+  def storage(self):
+    "Returns the storage-class of this definition"
+    return 'static' if self.el.attrib.get('static') == 'true' else ''
+  
+  def members(self, tag=None, *filters):
+    result = []
+    for member in self._members:
+      if member.tag == tag \
+        and Filter.accept(member, filters) \
+        and member.el.attrib.get('visibility') != 'private':
+        result.append(member)
+    result.sort()
+    return result
+
+  def inherits(self):
+    "Return the list of all base types"
+    return []
+
+  def implements(self):
+    "Return the list of all implemented interfaces"
+    return []
+
+  def params(self):
+    return self.el.findall("./doc/parameter")
+    
+  def returns(self):
+    return self.el.find("./doc/returns")
+    
+  def throws(self):
+    return self.el.findall("./doc/exception")
+
   def summary(self):
-    summary = self.el.find(".//summary")
+    summary = self.el.find("./doc/summary")
     if summary is not None:
       return inner_html(summary)
 
-    first_para = self.el.find(".//description/p")
+    first_para = self.el.find("./doc/description/p")
     if first_para is not None:
       return inner_html(first_para)
     
     return ""
 
-  def has_description(self):
-    return self.el.find(".//description")
+  def hasDescription(self):
+    return self.el.find("./doc/description")
     
   def description(self):
-    desc = self.el.find(".//description")
+    desc = self.el.find("./doc/description")
     if desc is not None:
       return inner_html(desc)
-    
     return ""
   
-  def params(self):
-    return self.el.findall(".//parameter")
-    
-  def returns(self):
-    return self.el.find(".//returns")
-    
-  def throws(self):
-    return self.el.findall(".//exception")
+  def typeArgs(self):
+    return self.el.findall("type-arg/*")
 
-  def compressed_text(self, el):
+  def formatDeclarator(self):
+    mods = []
+    if self.visibility() != 'public':
+      mods.append(self.visibility())
+    if self.el.attrib.get('static') == 'true':
+      mods.append('static')
+    if self.el.attrib.get('abstract') == 'true':
+      mods.append('abstract')
+    if self.el.attrib.get('final') == 'true':
+      mods.append('final')
+    mods.append(self.declarator())
+    mods.append(' ')
+    return Markup(' ').join(mods)
+  
+  def formatName(self, makeLink):
+    if self.name == "$call": return ''
+    if makeLink:
+      return Markup('').join([
+          Markup('<a class="member-table-link symbol" href="%s">' % self.uri),
+          self.name,
+          Markup('</a>')])
+    else:
+      return Markup('').join([
+          Markup('<span class="symbol">'),
+          self.name,
+          Markup('</span>')])
+      
+  def formatTypeSignature(self):
+    return ''
+    tag = self.el.tag
+    if tag == 'let' or tag == 'var' or tag == 'property':
+      return Markup('').join([':', self.index.formatType(self.el.find('type/*'))])
+    return ''
+  
+  def formatDeclaration(self, makeLink):
+    return Markup('').join([
+        self.formatName(makeLink),
+        self.index.formatTypeParamList(self.typeArgs()),
+        self.formatTypeSignature()])
+    
+  def compressedText(self, el):
     result = []
     first = True
     for child in el:
@@ -163,223 +272,284 @@ class Definition(object):
         result.append(outer_html(child))
     return Markup('').join(result)
   
-  def typename(self):
-    if self.el.tag == "typedef":
-      return self.el.attrib['type']
-    else:
-      return self.el.tag
-    
-  def visibility(self):
-    return self.el.attrib.get('visibility')
-  
-  def storage(self):
-    "Returns the storage-class of this definition"
-    return 'static' if self.el.attrib.get('static') == 'true' else ''
-  
+class Module(Declaration):
+  "Represents a Tart module."
+  def __init__(self, index, package, qualifiedName, name, el, uri):
+    super(Module, self).__init__(index, package, qualifiedName, name, el, uri)
+
+class Typedef(Declaration):
+  "Represents a Tart type definition."
+  def __init__(self, index, package, qualifiedName, name, el, uri):
+    super(Typedef, self).__init__(index, package, qualifiedName, name, el, uri)
+
+    # Preprocess list of bases
+    self.baseInherits = []
+    self.baseImplements = []
+    kind = el.attrib['type']
+    for base in el.findall('./base-type/*'):
+      baseKind = typeKind(base)
+      if kind == baseKind:
+        self.baseInherits.append(base)
+      else:
+        self.baseImplements.append(base)
+
   def declarator(self):
-    "Returns the declaring keyword of this definition"
-    if self.el.tag == "method": return "def"
-    return self.typename()
+    return self.el.attrib['type']
+
+  def inherits(self):
+    return self.baseInherits
+
+  def implements(self):
+    return self.baseImplements
   
-  def sigpart1(self, link_name):
-    tag = self.el.tag
-    result = []
-    if self.visibility() != 'public':
-      result.append(self.visibility() + ' ')
-    if self.el.attrib.get('static') == 'true':
-      result.append('static ')
-    result.append(self.declarator() + ' ')
-    name = self.name()
-    if name != "$call":
-      if link_name:
-        result.append(Markup('<a class="member-table-link symbol" href="#%s">' % name))
-      else:
-        result.append(Markup('<span class="symbol">'))
-      result.append(name)
-      if link_name:
-        result.append(Markup('</a>'))
-      else:
-        result.append(Markup('</span>'))
-    if tag == 'method':
-      # TODO: Type params
-      result.append("(")
-    elif tag == 'typedef':
-      # TODO: Type params
-      pass
-    elif tag == 'namespace':
-      pass # return 'namespace ' + self.name()
-    elif tag == 'let' or tag == 'var' or tag == 'property':
-      result.append(":")
-      # TODO: Type
-    
+class Method(Declaration):
+  "Represents a Tart method."
+  def declarator(self):
+    if self.el.tag == 'method': return "def"
+    return self.el.tag
+
+  def formatTypeSignature(self):
+    params = []
+    for param in self.el.findall('param'):
+      psig = Markup('').join(
+          [Markup('<span class="symbol">'), param.attrib['name'], Markup('</span>')])
+      param_type = param.find('type/*')
+      if param_type is not None:
+        psig = Markup(':').join([psig, self.index.formatType(param_type)])
+      params.append(psig)
+    result = [
+        "(",
+        Markup(", ").join(params),
+        Markup('<span style="white-space: nowrap">'),
+        ")"]
+    ret = self.el.find('return-type/*')
+    if ret is not None:
+      result.append(" -> ")
+      result.append(self.index.formatType(ret))
+    result.append(Markup('</span>'))
     return Markup('').join(result)
 
-  def sigpart2(self):
-    result = []
-    tag = self.el.tag
-    if tag == 'method' or tag == 'typedef':
-      if self.el.find("type-arg/*") is not None:
-        result.append(self.format_type_args())
-    if tag == 'method':
-      params = []
-      for param in self.el.findall('param'):
-        psig = Markup('').join(
-            [Markup('<span class="symbol">'), param.attrib['name'], Markup('</span>')])
-        param_type = param.find('type/*')
-        if param_type is not None:
-          psig = Markup(':').join([psig, self.helper.format_type(param_type)])
-        params.append(psig)
-      result.append(Markup(", ").join(params))
-      result.append(Markup('<span style="white-space: nowrap">'))
-      result.append(")")
-      ret = self.el.find('return-type/*')
-      if ret is not None:
-        result.append(" -> ")
-        result.append(self.helper.format_type(ret))
-      result.append(Markup('</span>'))
-    elif tag == 'let' or tag == 'var' or tag == 'property':
-      ty = self.el.find('type/*')
-      result.append(self.helper.format_type(ty))
-    
-    return Markup('').join(result)
-  
-  def format_type_args(self, *options):
-    options = set(options)
-    args = self.el.findall("type-arg/*")
-    if args:
-      type_args = [self.helper.format_type(arg_type, options) for arg_type in args]
-      return Markup('').join(['[', Markup(", ").join(type_args), ']'])
-    else:
-      return ''
-    
-  def supertypes(self, type):
-    if 'bases' in self.el.attrib:
-      return []
-    return []
-    
-  def subtypes(self, type):
-    return []
-    
-  def members(self, tag=None, *filters):
-    result = []
-    for member in self.el.findall(tag):
-      if member.tag in DEFN_TAGS \
-        and Filter.accept(member, filters) \
-        and member.attrib.get('visibility') != 'private':
-        result.append(Definition(self.helper, member))
-    result.sort(key=lambda x: x.el.attrib['name'])
-    return result
+class Field(Declaration):
+  "Represents a Tart variable or property."
+  def formatTypeSignature(self):
+    return Markup('').join([':', self.index.formatType(self.el.find('type/*'))])
   
 class Package(object):
-  "An object representing a package."
-  def __init__(self, helper, name, modules):
-    self.helper = helper
+  "Represents a package."
+  def __init__(self, index, name, url):
+    self.index = index
     self.name = name
-    self.modules = modules
+    self.url = url
+    self._modules = []
+    self._members = []
+    
+  def __lt__(self, other):
+    return self.name.__lt__(other.name)
+    
+  def addModule(self, m):
+    self._modules.append(m)
 
+  def addMember(self, m):
+    self._members.append(m)
+
+  def modules(self, tag=None, *filters):
+    "Return the members of this package which match the given query criteria"
+    result = []
+    for module in self._modules:
+      result.extend(module.members(tag, *filters))
+    result.sort()
+    return result
+  
   def members(self, tag=None, *filters):
     "Return the members of this package which match the given query criteria"
     result = []
-    for module in self.modules:
-      for defn in module.findall(tag):
-        if defn.tag in DEFN_TAGS and Filter.accept(defn, filters):
-          result.append(Definition(self.helper, defn))
+    for member in self._members:
+      if (tag == member.tag or (tag is None and member.tag in DEFN_TAGS)) \
+        and Filter.accept(member, filters) \
+        and member.el.attrib.get('visibility') != 'private':
+        result.append(member)
+    result.sort()
     return result
-
-# Helper class called from the template
-class TemplateHelper(object):
-  def __init__(self, doc):
-    # Strip off XML namespaces
-    strip_xml_namespace(doc.getroot())
-
-    # Divide into package
-    self.packages = defaultdict(list)
-    for mod in doc.getroot():
-      qname = mod.attrib['name']
-      pkname, name = qname.rsplit('.', 1)
-      mod.attrib['package'] = pkname
-      mod.attrib['name'] = name
-      mod.attrib['qualified-name'] = qname
-      self.packages[pkname].append(mod)
-        
-      for defn in mod:
-        self.process_defn(defn, pkname, pkname)
+  
+class SymbolIndex(object):
+  "Index of all declared symbols"
+  def __init__(self, document):
+    self.nameIndex = defaultdict(list)
+    self.packageIndex = {}
+    self.buildModuleIndex(document.getroot())
     
-    # Sort the list of modules    
-    for pkname, modules in self.packages.items():
-      modules.sort(key=lambda x: x.attrib['name'])
+  def makeUri(self, prefix, qualifiedName, relativeTo=None):
+    # The 'outer' path is the path to the top-level symbol within a module.
+    # The 'inner' path is the relative path from the top-level symbol to the declaration.
+    outerPath = qualifiedName.split('.')
+    innerPath = []
+    while outerPath:
+      testPath = tuple(outerPath[:-1])
+      if testPath in self.packageIndex: break
+      innerPath.insert(0, outerPath.pop())
+
+    # If we never found a package, then restore the outer path.
+    if not outerPath:
+      outerPath, innerPath = innerPath, outerPath
+      
+    # TODO: What if we never find a matching package?
+    result = "-".join([prefix] + outerPath)
+    if result == relativeTo:
+      result = ''
+    result += ".html"
+    if innerPath:
+      result += '#' + ".".join(innerPath)
+    return result
+  
+  def buildModuleIndex(self, rootEl):
+    for el in rootEl:
+      module = self.module(el)
+
+  def module(self, el):
+    path = tuple(el.attrib['name'].split('.'))
+    qualifiedName = ".".join(path)
+    packagePath = path[:-1]
+    name = path[-1]
+    package = self.getOrCreatePackage(packagePath)
+    uri = self.makeUri("module", qualifiedName)
+    module = Module(self, package, qualifiedName, name, el, uri)
+    package.addModule(module)
+    for childEl in el:
+      if childEl.tag in DEFN_TAGS:
+        decl = self.declaration(childEl, module, True, None)
+        module.addMember(decl)
+        if decl.name == module.name:
+          package.addMember(decl)
+
+  def declaration(self, el, parent, topLevel, uriBase):
+    name = el.attrib['name']
+    uriPrefix = el.attrib['type'] if el.tag == 'typedef' else el.tag
+    if topLevel:
+      qualifiedName = parent.package.name + '.' + name;
+    else:
+      qualifiedName = parent.qualifiedName + '.' + name;
+    path = tuple(qualifiedName.split('.'))
+
+    if uriBase:
+      uri = uriBase
+      if '#' in uri:
+        uri += '-' + name
+      else:
+        uri += '#' + name
+    else:
+      uri = self.makeUri(uriPrefix, qualifiedName)
+
+    if el.tag in CALLABLES:
+      decl = Method(self, parent.package, qualifiedName, name, el, uri)
+    elif el.tag == 'typedef':
+      decl = Typedef(self, parent.package, qualifiedName, name, el, uri)
+    elif el.tag == 'let' or el.tag == 'var' or el.tag == 'property':
+      decl = Field(self, parent.package, qualifiedName, name, el, uri)
+    else:
+      decl = Declaration(self, parent.package, qualifiedName, name, el, uri)
+    parent.addMember(decl)
+    self.nameIndex[path].append(decl)
+    for childEl in el:
+      if childEl.tag in DEFN_TAGS:
+        parent.addMember(self.declaration(childEl, decl, False, uri))
+    return decl
+    
+  def getOrCreatePackage(self, path):
+    if path not in self.packageIndex:
+      name = ".".join(path)
+      uri = 'package-' + "-".join(path) + ".html"
+      self.packageIndex[path] = package = Package(self, name, uri)
+      return package
+    else:
+      return self.packageIndex[path]
+    
+  def packages(self):
+    return self.packageIndex.values()
+  
+  def formatTypeParamList(self, types, *options):
+    "Format 'types' as a list of template arguments. Returns a Markup object"
+    return TypeFormatter(self, options).typeParamList(types)
+
+  def formatTypeList(self, types, *options):
+    "Format 'types' as a comma-separated list. Returns a Markup object"
+    return TypeFormatter(self, options).typeList(types)
+
+  def formatType(self, ty, *options):
+    "Format 'type' as text. Returns a Markup object"
+    return TypeFormatter(self, options).type(ty)
+
+class TypeFormatter(object):
+  "Helper class that formats type expressions as markup objects"
+  def __init__(self, index, options):
+    self.index = index
+    self.options = set(options)
+
+  def typeParamList(self, types):
+    if types:
+      return Markup('').join(['[', self.typeList(types), ']'])
+    return ''
+
+  def typeList(self, types):
+    return Markup(", ").join(self.type(ty) for ty in types)
+
+  def typeContent(self, el):
+    return self.type(list(el)[0])
+    
+  def type(self, el):
+    "Format 'types' and transform into a template argument list"
+    M = Markup
+    if el.tag == 'typename':
+      name = el.text
+      if name.startswith("tart.core."): name = name[10:]
+      if 'hlink' in self.options and el.attrib['type'] != 'primitive':
+        uri = self.index.makeUri(el.attrib['type'], el.text)
+        return self.concat(M('<a href="%s" class="type-name-link">' % uri), name, M('</a>'))
+      else:
+        return self.span(name, 'type-name')
+    elif el.tag == 'type-variable':
+      name = el.attrib['name']
+      if 'tsig' in self.options: return self.concat('%', self.span(name, 'type-variable-name'))
+      else: return self.span(name, 'type-name')
+    elif el.tag == 'array':
+      return self.concat(self.typeContent(el), "[]")
+    elif el.tag == 'variadic':
+      return self.concat(self.typeContent(el), "...")
+    elif el.tag == 'address':
+      return self.concat('Address[', self.typeContent(el), ']')
+    elif el.tag == 'tuple':
+      return self.concat('(', self.typeList(el.findall("*")), ')')
+    elif el.tag == 'template-instance':
+      return self.concat(
+          self.typeContent(el),
+          self.typeParamList(el.findall("template-arg/*")))
+    else:
+      return self.concat(el.tag, "??")
+
+  def concat(self, *args):
+    return Markup('').join(args)
+  
+  def span(self, content, cls):
+    return self.concat(
+        Markup('<span class="%s">' % cls), content, Markup('</span>'))
+
+class DocGenerator(object):
+  "The main driver class"
+  def __init__(self, index, custom=[]):
+    # Create the template loader
+    self.loader = TemplateLoader(os.path.join(os.path.dirname(__file__), 'templates'))
+    
+    # Symbol index
+    self.index = index
 
     # Custom templates    
-    self.custom_templates = options.cust
-    
-  def process_defn(self, defn, parent_qname, pkname):
-    qname = parent_qname + '.' + defn.attrib['name']
-    defn.attrib['package'] = pkname
-    defn.attrib['qualified-name'] = qname
-    for child in defn:
-      if child.tag in DEFN_TAGS:
-        self.process_defn(child, parent_qname, pkname)
-    
-  def url(self, el):
-    # Check to see if package is in packages.
-    assert el.attrib['package']
-    if el.attrib['package'] not in self.packages:
-      return None
+    self.custom = custom
+   
+  def generate(self):
+    self.writePackageIndex()
+    self.writePackages()
+    self.writeDefinitions()
+    self.writeTypes()
 
-    if el.tag == "typedef": kind = el.attrib['type']
-    else: kind = el.tag
-    return self.make_url(kind, el.attrib['qualified-name'])
-
-  def package_url(self, qname):
-    return self.make_url('package', qname)
-
-  def make_url(self, kind, qname):
-    parts = [kind] + qname.split('.')
-    return "-".join(parts) + ".html"
-  
-  def format_type(self, el, options=set()):
-    result = []
-    self.format_type_impl(el, result, options)
-    return Markup('').join(result)
-  
-  def format_type_impl(self, el, result, options):
-    if el.tag == 'typename':
-      result.append(Markup('<span class="type-name">'))
-      name = el.text
-      if name.startswith("tart.core."):
-        name = name[10:]
-      result.append(name)
-      result.append(Markup('</span>'))
-    elif el.tag == 'type-variable':
-      if 'tsig' in options:
-        result.append('%')
-        result.append(Markup('<span class="type-variable-name">'))
-      else:
-        result.append(Markup('<span class="type-name">'))
-      result.append(el.attrib['name'])
-      result.append(Markup('</span>'))
-    elif el.tag == 'array':
-      self.format_type_impl(list(el)[0], result, options)
-      result.append("[]")
-    elif el.tag == 'variadic':
-      self.format_type_impl(list(el)[0], result, options)
-      result.append("...")
-    elif el.tag == 'address':
-      result.append('Address[')
-      if el:
-        self.format_type_impl(list(el)[0], result, options)
-      result.append("]")
-    elif el.tag == 'tuple':
-      result.append('(')
-      types = []
-      for child in el.findall("*"):
-        types.append(self.format_type(child, options))
-      result.append(Markup(', ').join(types))
-      result.append(')')
-    else:
-      result.append(el.tag)
-      result.append("??")
-  
   def resetcounter(self):
     self.counter = 0
     
@@ -387,45 +557,41 @@ class TemplateHelper(object):
     self.counter += 1
     return 'row-even' if (self.counter & 1) == 0 else ''
   
-  def write_index(self):
-    self.write_template("index.xml", "index.html", data=self.packages)
+  def writeTemplate(self, template, outputfile, **kwargs):
+    if not os.path.exists(options.outdir):
+      os.makedirs(options.outdir)
+    outfile = os.path.join(options.outdir, outputfile)
+    # print "Generating:", outfile
+    template = loader.load(template)
+    stream = template.generate(gen=self, si=self.index, **kwargs)
+    content = stream.render('html', doctype='html5', encoding="UTF-8", strip_whitespace=True)
+    fh = open(outfile, "w")
+    fh.write(content)
+    fh.close()
+
+  def writePackageIndex(self):
+    self.writeTemplate("index.xml", "index.html", data=self.index.packages())
     
-  def write_packages(self):
-    for pkname, modules in self.packages.items():
-      url = self.package_url(pkname)
-      self.write_template("package.xml", url, pkg=Package(self, pkname, modules), filter=Filter)
+  def writePackages(self):
+    for pkg in self.index.packages():
+      self.writeTemplate("package.xml", pkg.url, pkg=pkg, filter=Filter)
 
-  def write_definitions(self):
-    for pkname, modules in self.packages.items():
-      package = Package(self, pkname, modules)
-      for defn in package.members("*"):
-        url = defn.url()
-        self.write_template("defn.xml", url, d=defn, filter=Filter)
+  def writeDefinitions(self):
+    for pkg in self.index.packages():
+      for defn in pkg.members():
+        self.writeTemplate("defn.xml", defn.uri, d=defn, filter=Filter)
 
-  def write_types(self):
+  def writeTypes(self):
     types = []
-    for pkname, modules in self.packages.items():
-      package = Package(self, pkname, modules)
+    for package in self.index.packages():
       for defn in package.members("typedef"):
           types.append(defn)
           for inner in defn.members("typedef"):
             types.append(inner)
  
-    types.sort(key = lambda x: x.qualified_name())   
-    self.write_template("types.xml", "types.html", data=types)
-
-  def write_template(self, template, outputfile, **kwargs):
-    if not os.path.exists(options.outdir):
-      os.makedirs(options.outdir)
-    outfile = os.path.join(options.outdir, outputfile)
-    #print "Generating:", outfile
-    template = loader.load(template)
-    stream = template.generate(th=self, **kwargs)
-    content = stream.render('html', doctype='html5', encoding="UTF-8", strip_whitespace=True)
-    fh = open(outfile, "w")
-    fh.write(content)
-    fh.close()
-    
+    types.sort()   
+    self.writeTemplate("types.xml", "types.html", data=types)
+  
 # Strip the namespace off of all XML elements. This makes them much easier to work with.
 def strip_xml_namespace(el):
   _, el.tag = el.tag.split('}')
@@ -458,9 +624,20 @@ def flatten(el, result):
   flatten_children(el, result)
   result.append(Markup("</%s>" % el.tag))
   
+def typeKind(el):
+  if el.tag == 'typename':
+    return el.attrib.get('type')
+  elif el.tag == 'template-instance':
+    return typeKind(el.find('typename'))
+  else:
+    return None
+  
 # Load the input XML file
-th=TemplateHelper(ElementTree.parse(options.infile))
-th.write_index()
-th.write_packages()
-th.write_definitions()
-th.write_types()
+doc = ElementTree.parse(options.infile)
+strip_xml_namespace(doc.getroot())
+
+# Generate the index of all symbols
+si = SymbolIndex(doc)
+
+# Generate all output files
+DocGenerator(si, options.cust).generate()

@@ -3,7 +3,7 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       py:strip="True">
 
-<xi:include href="${template}" py:for="template in th.custom_templates"/>
+<xi:include href="${template}" py:for="template in gen.custom"/>
 
 <link href='http://fonts.googleapis.com/css?family=Ubuntu:regular,italic'
       rel='stylesheet' type='text/css'/>
@@ -25,11 +25,7 @@
     <header id="header-title" class="page-header-title">Page Title</header>
   </section>
   <section class="nav-section">
-    ${nav_item("Overview", "index.html", current == "overview")}
-    &#8226;
-    ${nav_item("Packages", "packages.html", current == "packages")}
-    &#8226;
-    ${nav_item("Modules", "modules.html", current == "modules")}
+    ${nav_item("Packages", "index.html", current == "packages")}
     &#8226;
     ${nav_item("Types", "types.html", current == "types")}
     &#8226;
