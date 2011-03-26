@@ -174,7 +174,7 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
   if (method->isAbstract()) {
     xml_.appendAttribute("abstract", "true");
   }
-  if (method->isFinal()) {
+  if (method->isExplicitFinal()) {
     xml_.appendAttribute("final", "true");
   }
   writeModifiers(method);

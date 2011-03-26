@@ -71,7 +71,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * a
   }
 
   if (modifiers_.flags & tart::Final) {
-    flags_ |= Final;
+    flags_ |= Final | ExplicitFinal;
   }
 }
 
