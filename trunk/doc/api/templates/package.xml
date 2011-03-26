@@ -17,7 +17,7 @@
 	        <header class="defn-list-header">${title}</header>
 	        <ul class="defn-list">
             <li py:for="item in defs">
-              <a class="defn-list-link" href="${item.url()}">${item.name()}</a>
+              <a class="defn-list-link" href="${item.uri}">${item.name}</a>
               - ${item.summary()}
             </li>
 	        </ul>

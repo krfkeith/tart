@@ -10,7 +10,7 @@
     <header class="content-header">Type List [alphabetical]</header>
     <section class="type-alpha-list-section">
       <div py:for="type in data">
-        <a href="${type.url()}" class="type-alpha-list-link">${type.qualified_name()}</a>
+        <a href="${type.uri}" class="type-alpha-list-link">${type.qualifiedName}</a>
       </div>
     </section>
   </section>

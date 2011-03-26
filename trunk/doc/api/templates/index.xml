@@ -4,12 +4,12 @@
   <title>Overview</title>
 </head>
 <body>
-  ${page_header('overview')}
+  ${page_header('packages')}
   <section class="content-section">
 	  <header class="content-header">Packages</header>
 	  <ul class="overview-package-list">
-	    <li py:for="pkname in sorted(data.keys())">
-        <a href="${th.package_url(pkname)}" class='overview-package-name defn-name'>${pkname}</a>
+	    <li py:for="pkg in sorted(si.packages())">
+        <a href="${pkg.url}" class='overview-package-name defn-name'>${pkg.name}</a>
 	    </li>
 	  </ul>
   </section>

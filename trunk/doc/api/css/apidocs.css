@@ -98,6 +98,21 @@ p {
   margin-left: 6px;
 }
 
+.base-class-section {
+  margin-left: 6px;
+}
+
+.base-class-section-header {
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.base-class {
+  margin-left: 2em;
+  margin-bottom: 6px;
+  font-family: 'Ubuntu', 'Trebuchet MS', sans-serif;
+}
+
 .member-table-box {
   margin: 12px 6em;
   box-shadow: 0px 0px 8px #919946;
@@ -109,35 +124,52 @@ p {
   border-collapse: collapse;
   border: 2px solid black;
   width: 100%;
+  background-color: #e7ecba;
 }
 
 .member-table-col-header {
   padding: 4px 10px;
+  text-align: left;
   border-bottom: 1px double black;
   background-color: #f4f6e5;
 }
 
-.member-table-row-header {
-  vertical-align: top;
-  padding: 8px 10px;
-  border-bottom: 1px solid #919946;
-  border-right: 1px solid black;
-  background-color: #e0e3ad;
-  text-align: right;
-  color: #52511d;
-  font-weight: normal;
-}
-
-.row-even .member-table-row-header {
-  background-color: #e8e9bd;
-}
-
-.sig1 {
+.member-declarator {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
   line-height: 110%;
   white-space: nowrap;
   vertical-align: top;
+  padding: 5px 3px 5px 10px;
+  border-bottom: 1px solid #919946;
   text-align: right;
+  color: #32311d;
+  font-weight: normal;
+}
+
+.member-table-data {
+  vertical-align: top;
+  padding: 5px 10px 5px 3px;
+  border-bottom: 1px solid #a8b154;
+}
+
+.member-signature {
   font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  line-height: 110%;
+}
+
+.member-summary {
+  color: #6d584a;
+  font-size: 95%;
+  margin-left: 1em;
+  margin-top: 8px;
+}
+
+.row-even {
+  background-color: #eff3d1;
+}
+
+.sig1 {
+  vertical-align: top;
 }
 
 .sig2 {
@@ -145,17 +177,6 @@ p {
   vertical-align: top;
   text-align: left;
   font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
-}
-
-.member-table-data {
-  vertical-align: top;
-  padding: 8px 10px;
-  background-color: #e7ecba;
-  border-bottom: 1px solid #a8b154;
-}
-
-.row-even .member-table-data {
-  background-color: #eff3d1;
 }
 
 .member-table-link {
@@ -240,6 +261,10 @@ p {
 
 .type-alpha-list-link {
   font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  color: #6d5100;
+}
+
+.type-name-link {
   color: #6d5100;
 }
 
