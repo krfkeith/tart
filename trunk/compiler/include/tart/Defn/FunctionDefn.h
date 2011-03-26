@@ -116,6 +116,7 @@ public:
     MakesAllocs = (1<<8),       // This function allocates memory.
     NoInline = (1<<9),          // Don't inline this function
     HasSafePoints = (1<<10),    // This function has safe points, requires GC.
+    ExplicitFinal = (1<<11),    // Function was explicitly declared as final (for doc purposes)
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };
@@ -207,6 +208,7 @@ public:
   bool isExtern() const { return (flags_ & Extern) != 0; }
   bool isCtor() const { return (flags_ & Ctor) != 0; }
   bool isFinal() const { return (flags_ & Final) != 0; }
+  bool isExplicitFinal() const { return (flags_ & ExplicitFinal) != 0; }
   bool isNested() const { return (flags_ & Nested) != 0; }
   bool hasSafePoints() const { return (flags_ & HasSafePoints) != 0; }
 

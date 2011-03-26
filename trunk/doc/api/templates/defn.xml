@@ -8,7 +8,7 @@
   ${page_header('defn')}
   <section class="content-section">
     <header class="content-header">
-      <span class="defn-declarator">${d.declarator()}</span>
+      <span class="defn-declarator">${d.formatDeclarator()}</span>
       ${d.package.name}.<span class="defn-name">${d.name}</span>${si.formatTypeParamList(
           d.typeArgs(), 'tsig')}
     </header>

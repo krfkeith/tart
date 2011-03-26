@@ -451,7 +451,7 @@ class SymbolIndex(object):
     self.nameIndex[path].append(decl)
     for childEl in el:
       if childEl.tag in DEFN_TAGS:
-        parent.addMember(self.declaration(childEl, decl, False, uri))
+        decl.addMember(self.declaration(childEl, decl, False, uri))
     return decl
     
   def getOrCreatePackage(self, path):
