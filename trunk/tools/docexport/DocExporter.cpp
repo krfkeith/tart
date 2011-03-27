@@ -13,6 +13,8 @@
 #include "tart/Defn/NamespaceDefn.h"
 #include "tart/Defn/Template.h"
 
+#include "tart/Expr/Exprs.h"
+
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/EnumType.h"
@@ -55,6 +57,7 @@ void DocExporter::generate(tart::Module * mod) {
 }
 
 void DocExporter::exportModule(const Module * mod) {
+  docOptions_.clear();
   xml_.beginElement("module");
   xml_.appendAttribute("name", mod->qualifiedName());
   writeModifiers(mod);
@@ -152,6 +155,11 @@ void DocExporter::exportEnumType(const EnumType * etype) {
 }
 
 void DocExporter::exportMethod(const FunctionDefn * method) {
+  // Don't document methods that were added by the compiler.
+  if (method->ast() == NULL && method->isSynthetic()) {
+    return;
+  }
+
   const char * elName = NULL;
   if (method->defnType() == Defn::Macro) {
     elName = "macro";
@@ -184,6 +192,12 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
     for (TupleType::const_iterator it = ti->typeArgs()->begin();
         it != ti->typeArgs()->end(); ++it) {
       writeTypeExpression("type-arg", *it);
+    }
+  } else if (method->isTemplate()) {
+    const TemplateSignature * ts = method->templateSignature();
+    for (TupleType::const_iterator it = ts->typeParams()->begin();
+        it != ts->typeParams()->end(); ++it) {
+      writeTypeExpression("type-param", *it);
     }
   }
   if (method->type() != NULL) {
@@ -249,6 +263,8 @@ void DocExporter::writeAttributes(const Defn * de) {
       it != itEnd; ++it) {
     if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type())) {
       DASSERT(attrType->isAttribute());
+      // Ones we don't want: Essential, Noinline
+      writeExpression("attribute", *it);
     }
   }
 }
@@ -262,6 +278,7 @@ void DocExporter::writeTypeArgs(const Type * type) {
 
 void DocExporter::writeMembers(const IterableScope * scope) {
   for (const Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
+    DocOptions savedOptions = docOptions_;
     DefnAnalyzer::analyzeCompletely(const_cast<Defn *>(de));
     switch (de->defnType()) {
       case Defn::Typedef: {
@@ -300,6 +317,7 @@ void DocExporter::writeMembers(const IterableScope * scope) {
       default:
         break;
     }
+    docOptions_ = savedOptions;
   }
 }
 
@@ -488,16 +506,63 @@ void DocExporter::writeTypeRef(const Type * ty) {
   }
 }
 
+void DocExporter::writeExpression(llvm::StringRef tagName, const Expr * e) {
+  xml_.beginElement(tagName);
+  writeExpression(e);
+  xml_.endElement(tagName);
+}
+
+void DocExporter::writeExpression(const Expr * e) {
+  switch (e->exprType()) {
+    case Expr::ConstObjRef: {
+      const ConstantObjectRef * cobj = static_cast<const ConstantObjectRef *>(e);
+      xml_.beginElement("const-object", false);
+      writeTypeRef(cobj->type());
+      xml_.endElement("const-object", false);
+      break;
+    }
+
+    case Expr::CtorCall: {
+      const FnCallExpr * call = static_cast<const FnCallExpr *>(e);
+      xml_.beginElement("ctor-call", false);
+      writeTypeRef(call->type());
+      xml_.endElement("ctor-call", false);
+      break;
+    }
+
+    default:
+      diag.fatal(e) << "Unimplemented expression type: '" << exprTypeName(e->exprType()) << "'";
+      DFAIL("Unimplemented");
+  }
+}
+
 void DocExporter::writeDocComment(const Defn * de) {
+  Doc::Node * node = NULL;
+  Doc::Node * inherited = NULL;
   if (de->ast() != NULL && !de->ast()->docComment().empty()) {
     DocCommentProcessor processor(de->ast()->docComment());
-    Doc::Node * node = processor.process();
+    node = processor.process();
     if (node != NULL) {
-      xml_.beginElement("doc");
-      writeDocCommentNodeList(node);
-      xml_.endElement("doc");
-      delete node;
+      getDocOptions(node);
     }
+  }
+
+  if (docOptions_.inherit) {
+    inherited = getInheritedDocComment(de);
+  }
+
+  if (node != NULL || inherited != NULL) {
+    xml_.beginElement("doc");
+
+    if (node != NULL) {
+      writeDocCommentNodeList(node);
+      delete node;
+    } else if (inherited != NULL) {
+      writeDocCommentNodeList(inherited);
+      delete inherited;
+    }
+
+    xml_.endElement("doc");
   }
 }
 
@@ -615,6 +680,10 @@ void DocExporter::writeDocCommentNode(const Doc::Node * node) {
     case Doc::CODE:
       DFAIL("Implement CODE");
       break;
+
+    case Doc::INHERIT:
+      break;
+
     default:
       DFAIL("Invalid node type");
   }
@@ -623,6 +692,35 @@ void DocExporter::writeDocCommentNode(const Doc::Node * node) {
 void DocExporter::writeDocCommentNodeList(const Doc::Node * node) {
   for (Doc::Node::const_iterator it = node->begin(), itEnd = node->end(); it != itEnd; ++it) {
     writeDocCommentNode(*it);
+  }
+}
+
+Doc::Node * DocExporter::getInheritedDocComment(const Defn * de) {
+  if (const FunctionDefn * fn = dyn_cast<FunctionDefn>(de)) {
+    for (FunctionDefn::FunctionSet::const_iterator it = fn->overriddenMethods().begin();
+        it != fn->overriddenMethods().end(); ++it) {
+      const FunctionDefn * overridden = *it;
+      if (overridden->ast() != NULL && !overridden->ast()->docComment().empty()) {
+        DocCommentProcessor processor(overridden->ast()->docComment());
+        Doc::Node * node = processor.process();
+        if (node != NULL) {
+          return node;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
+void DocExporter::getDocOptions(const Doc::Node * node) {
+  for (Doc::Node::const_iterator it = node->begin(), itEnd = node->end(); it != itEnd; ++it) {
+    const Doc::Node * node = *it;
+    if (node->type() == Doc::INHERIT) {
+      docOptions_.inherit = true;
+    } else {
+      getDocOptions(node);
+    }
   }
 }
 

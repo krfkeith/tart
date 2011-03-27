@@ -1,25 +1,17 @@
 #/bin/python
 
-# We need to be able to create a unique key for each reference of a symbol name,
-# even if that name is incomplete.
-#
+# TODO: Better hyperlinking (calculate correct URL from path.)
+# TODO: Type params and method params in urls to disambiguate identical names
 # TODO: Type params in classes
-# TODO: Type params in methods
-# TODO: Type params in type expressions
-# TODO: Template classes
-# TODO: Template methods
-# TODO: Variables
 # TODO: Name index
-# TODO: Base list
-# TODO: Sub list
-# TODO: Hierarchy
 # TODO: Frames
 # TODO: Deprecated
-# TODO: Attributes (well, some) Unsafe for sure.
+# TODO: Attributes
 # TODO: Search
 # TODO: Accordion Index
-# TODO: InheritDoc
-# TODO: link to a specific overload.
+# TODO: Improved InheritDoc
+# TODO: "Optional" unions
+# TODO: Indexers
 
 import sys, os
 from optparse import OptionParser
@@ -70,6 +62,12 @@ CALLABLES = set([
   "override",
   "undef"])
 
+COMPOSITES = set([
+  "class",
+  "interface",
+  "struct",
+  "protocol"])
+
 class Filter(object):
   "Filter predicates for selecting members of a scope"
   @staticmethod
@@ -87,10 +85,11 @@ class Filter(object):
     return filter
 
   @staticmethod
-  def type_eq(type):
+  def type_eq(*types):
     "A filter that accepts elements with a given metatype, such as 'class' or 'enun'"
+    types = set(types)
     def filter(decl):
-      return decl.el.attrib.get('type') == type
+      return decl.el.attrib.get('type') in types
     return filter
   
   @staticmethod
@@ -113,27 +112,7 @@ class Filter(object):
     for filter in filters:
       if not filter(el): return False
     return True
-
-#class Definition(object):
-#  def compressed_text(self, el):
-#    result = []
-#    first = True
-#    for child in el:
-#      if first and child.tag == "p":
-#        result.append(inner_html(child))
-#        first = False
-#      else:
-#        result.append(outer_html(child))
-#    return Markup('').join(result)
-#  
-#  def supertypes(self, type):
-#    if 'bases' in self.el.attrib:
-#      return []
-#    return []
-#    
-#  def subtypes(self, type):
-#    return []
-    
+  
 class Declaration(object):
   "A wrapper around an XML element for a definition"
   def __init__(self, index, package, qualifiedName, name, el, uri):
@@ -145,7 +124,18 @@ class Declaration(object):
     self.tag = el.tag
     self.uri = uri
     self._members = []
-    
+    self._typeArgs = el.findall("type-arg/*")
+    self._typeParams = el.findall("type-param/*")
+    self.path = self.computePath(qualifiedName)
+      
+  def computePath(self, qualifiedName):
+    path = qualifiedName.split('.')
+    if self._typeParams:
+      path += tuple(typeidlist(self._typeParams))
+    if self._typeArgs:
+      path += tuple(typeidlist(self._typeArgs))
+    return tuple(path)
+
   def __lt__(self, other):
     return self.qualifiedName.__lt__(other.qualifiedName)
   
@@ -163,6 +153,9 @@ class Declaration(object):
   def declarator(self):
     "Returns the declaring keyword of this definition"
     return self.el.tag
+  
+  def scopeName(self):
+    return self.qualifiedName.rsplit('.', 1)[0]
 
   def visibility(self):
     return self.el.attrib.get('visibility')
@@ -187,6 +180,14 @@ class Declaration(object):
 
   def implements(self):
     "Return the list of all implemented interfaces"
+    return []
+
+  def inheritedBy(self):
+    "Return the list of all sub classes"
+    return []
+
+  def implementedBy(self):
+    "Return the list of all implementing classes"
     return []
 
   def params(self):
@@ -219,7 +220,10 @@ class Declaration(object):
     return ""
   
   def typeArgs(self):
-    return self.el.findall("type-arg/*")
+    return self._typeArgs
+
+  def typeParams(self):
+    return self._typeParams
 
   def formatDeclarator(self):
     mods = []
@@ -259,6 +263,7 @@ class Declaration(object):
     return Markup('').join([
         self.formatName(makeLink),
         self.index.formatTypeParamList(self.typeArgs()),
+        self.index.formatTypeParamList(self.typeParams()),
         self.formatTypeSignature()])
     
   def compressedText(self, el):
@@ -283,24 +288,32 @@ class Typedef(Declaration):
     super(Typedef, self).__init__(index, package, qualifiedName, name, el, uri)
 
     # Preprocess list of bases
-    self.baseInherits = []
-    self.baseImplements = []
+    self._inherits = []
+    self._implements = []
+    self._inheritedBy = []
+    self._implementedBy = []
     kind = el.attrib['type']
     for base in el.findall('./base-type/*'):
       baseKind = typeKind(base)
       if kind == baseKind:
-        self.baseInherits.append(base)
+        self._inherits.append(base)
       else:
-        self.baseImplements.append(base)
+        self._implements.append(base)
 
   def declarator(self):
     return self.el.attrib['type']
 
   def inherits(self):
-    return self.baseInherits
+    return self._inherits
 
   def implements(self):
-    return self.baseImplements
+    return self._implements
+  
+  def inheritedBy(self):
+    return self._inheritedBy
+
+  def implementedBy(self):
+    return self._implementedBy
   
 class Method(Declaration):
   "Represents a Tart method."
@@ -342,7 +355,7 @@ class Package(object):
     self.url = url
     self._modules = []
     self._members = []
-    
+
   def __lt__(self, other):
     return self.name.__lt__(other.name)
     
@@ -375,35 +388,57 @@ class SymbolIndex(object):
   "Index of all declared symbols"
   def __init__(self, document):
     self.nameIndex = defaultdict(list)
+    self.pathIndex = defaultdict(list)
     self.packageIndex = {}
+    self.pages = []
     self.buildModuleIndex(document.getroot())
-    
-  def makeUri(self, prefix, qualifiedName, relativeTo=None):
+    self.buildSubclassIndex()
+
+  def makeUri(self, qualifiedName, relativeTo=None):
     # The 'outer' path is the path to the top-level symbol within a module.
     # The 'inner' path is the relative path from the top-level symbol to the declaration.
     outerPath = qualifiedName.split('.')
     innerPath = []
     while outerPath:
-      testPath = tuple(outerPath[:-1])
-      if testPath in self.packageIndex: break
+      pages = self.pathIndex.get(tuple(outerPath))
+      if pages: break
       innerPath.insert(0, outerPath.pop())
 
-    # If we never found a package, then restore the outer path.
-    if not outerPath:
-      outerPath, innerPath = innerPath, outerPath
-      
-    # TODO: What if we never find a matching package?
-    result = "-".join([prefix] + outerPath)
-    if result == relativeTo:
-      result = ''
-    result += ".html"
+    # If we never found a package, then no link.
+    if not pages:
+      return None
+
+    # Construct the URL
+    result = pages[0].uri
     if innerPath:
       result += '#' + ".".join(innerPath)
     return result
   
+  def makePageUri(self, prefix, path):
+    return "-".join((prefix,) + path) + ".html"
+    
+  def lookup(self, path, basePath=None):
+    result = self.pathIndex.get(path)
+#    if not result:
+#      pass
+    return result
+
   def buildModuleIndex(self, rootEl):
     for el in rootEl:
       module = self.module(el)
+      
+  def buildSubclassIndex(self):
+    for mlist in self.pathIndex.values():
+      for m in mlist:
+        if isinstance(m, Typedef):
+          for base in m.inherits():
+            baseType = self.findBase(base)
+            if baseType:
+              baseType._inheritedBy.append(m)
+          for base in m.implements():
+            baseType = self.findBase(base)
+            if baseType:
+              baseType._implementedBy.append(m)
 
   def module(self, el):
     path = tuple(el.attrib['name'].split('.'))
@@ -411,7 +446,7 @@ class SymbolIndex(object):
     packagePath = path[:-1]
     name = path[-1]
     package = self.getOrCreatePackage(packagePath)
-    uri = self.makeUri("module", qualifiedName)
+    uri = self.makePageUri("module", path)
     module = Module(self, package, qualifiedName, name, el, uri)
     package.addModule(module)
     for childEl in el:
@@ -429,15 +464,19 @@ class SymbolIndex(object):
     else:
       qualifiedName = parent.qualifiedName + '.' + name;
     path = tuple(qualifiedName.split('.'))
+    
+    hasOwnPage = topLevel
+    if el.tag == 'typedef' and el.attrib['type'] in COMPOSITES:
+      hasOwnPage = True
 
-    if uriBase:
+    if hasOwnPage:
+      uri = self.makePageUri(uriPrefix, path)
+    else:
       uri = uriBase
       if '#' in uri:
         uri += '-' + name
       else:
         uri += '#' + name
-    else:
-      uri = self.makeUri(uriPrefix, qualifiedName)
 
     if el.tag in CALLABLES:
       decl = Method(self, parent.package, qualifiedName, name, el, uri)
@@ -448,10 +487,13 @@ class SymbolIndex(object):
     else:
       decl = Declaration(self, parent.package, qualifiedName, name, el, uri)
     parent.addMember(decl)
-    self.nameIndex[path].append(decl)
+    self.pathIndex[path].append(decl)
+    self.nameIndex[name].append(decl)
+    if hasOwnPage:
+      self.pages.append(decl)
     for childEl in el:
       if childEl.tag in DEFN_TAGS:
-        decl.addMember(self.declaration(childEl, decl, False, uri))
+        self.declaration(childEl, decl, False, uri)
     return decl
     
   def getOrCreatePackage(self, path):
@@ -476,7 +518,24 @@ class SymbolIndex(object):
 
   def formatType(self, ty, *options):
     "Format 'type' as text. Returns a Markup object"
+    if isinstance(ty, Typedef):
+      return TypeFormatter(self, options).a(ty.qualifiedName, ty.uri, 'type-name-link')
     return TypeFormatter(self, options).type(ty)
+
+  def findBase(self, el):
+    if el.tag == 'typename':
+      path = tuple(el.text.split('.'))
+      decl = self.lookup(path)
+      if decl and len(decl) == 1:
+        return decl[0]
+      if not decl:
+        return None
+      else:
+        assert False and "Ambiguous lookup: " + ElementTree.tostring(el.text)
+    elif el.tag == 'template-instance':
+      return self.findBase(el.find('typename'))
+    else:
+      assert False and ElementTree.tostring(el)
 
 class TypeFormatter(object):
   "Helper class that formats type expressions as markup objects"
@@ -494,16 +553,15 @@ class TypeFormatter(object):
 
   def typeContent(self, el):
     return self.type(list(el)[0])
-    
+
   def type(self, el):
-    "Format 'types' and transform into a template argument list"
     M = Markup
     if el.tag == 'typename':
       name = el.text
       if name.startswith("tart.core."): name = name[10:]
       if 'hlink' in self.options and el.attrib['type'] != 'primitive':
-        uri = self.index.makeUri(el.attrib['type'], el.text)
-        return self.concat(M('<a href="%s" class="type-name-link">' % uri), name, M('</a>'))
+        uri = self.index.makeUri(el.text)
+        return self.a(name, uri, 'type-name-link')
       else:
         return self.span(name, 'type-name')
     elif el.tag == 'type-variable':
@@ -518,6 +576,8 @@ class TypeFormatter(object):
       return self.concat('Address[', self.typeContent(el), ']')
     elif el.tag == 'tuple':
       return self.concat('(', self.typeList(el.findall("*")), ')')
+    elif el.tag == 'union':
+      return Markup(" or ").join(self.type(ty) for ty in el.findall("*"))
     elif el.tag == 'template-instance':
       return self.concat(
           self.typeContent(el),
@@ -528,6 +588,10 @@ class TypeFormatter(object):
   def concat(self, *args):
     return Markup('').join(args)
   
+  def a(self, content, href, cls):
+    return self.concat(
+        Markup('<a href="%s" class="%s">' % (href, cls)), content, Markup('</a>'))
+    
   def span(self, content, cls):
     return self.concat(
         Markup('<span class="%s">' % cls), content, Markup('</span>'))
@@ -549,6 +613,8 @@ class DocGenerator(object):
     self.writePackages()
     self.writeDefinitions()
     self.writeTypes()
+    self.writeNamespaces()
+    self.writeHierarchy()
 
   def resetcounter(self):
     self.counter = 0
@@ -577,20 +643,41 @@ class DocGenerator(object):
       self.writeTemplate("package.xml", pkg.url, pkg=pkg, filter=Filter)
 
   def writeDefinitions(self):
-    for pkg in self.index.packages():
-      for defn in pkg.members():
-        self.writeTemplate("defn.xml", defn.uri, d=defn, filter=Filter)
+    for defn in self.index.pages:
+      self.writeTemplate("defn.xml", defn.uri, d=defn, filter=Filter)
 
   def writeTypes(self):
-    types = []
+    decls = []
     for package in self.index.packages():
       for defn in package.members("typedef"):
-          types.append(defn)
+          decls.append(defn)
           for inner in defn.members("typedef"):
-            types.append(inner)
+            decls.append(inner)
  
-    types.sort()   
-    self.writeTemplate("types.xml", "types.html", data=types)
+    decls.sort()   
+    self.writeTemplate("types.xml", "types.html", data=decls)
+  
+  def writeHierarchy(self):
+    classes = []
+    for package in self.index.packages():
+      for cls in package.members("typedef"):
+        if cls.tag == 'typedef':
+          type = cls.el.attrib['type']
+          if type == 'class':
+            if not cls.inherits() and cls.visibility() != 'private':
+              classes.append(cls)
+    self.writeTemplate("hierarchy.xml", "hierarchy.html", data=classes)
+
+  def writeNamespaces(self):
+    decls = []
+    for package in self.index.packages():
+      for defn in package.members("namespace"):
+          decls.append(defn)
+          for inner in defn.members("namespace"):
+            decls.append(inner)
+ 
+    decls.sort()   
+    self.writeTemplate("namespaces.xml", "namespaces.html", data=decls)
   
 # Strip the namespace off of all XML elements. This makes them much easier to work with.
 def strip_xml_namespace(el):
@@ -631,6 +718,26 @@ def typeKind(el):
     return typeKind(el.find('typename'))
   else:
     return None
+
+def typeid(el):
+  tag = el.tag
+  if tag == 'typename':           return el.text
+  elif el.tag == 'type-variable': return '%' + el.attrib['name']
+  elif el.tag == 'array':         return contentid(el) + '[]'
+  elif el.tag == 'variadic':      return contentid(el) + '...'
+  elif el.tag == 'address':       return 'Address[%s]' % contentid(el)
+  elif el.tag == 'tuple':         return '(%s)' % ",".join(typeidlist(el.findall('*')))
+  elif el.tag == 'union':         return " or ".join(typeidlist(el.findall('*')))
+  elif el.tag == 'template-instance':
+    return contentid(el) + '[%s]' % ",".join(typeidlist(el.findall('template-arg/*')))
+  else:
+    assert False and ElementTree.tostring(el)
+
+def typeidlist(els):
+  return [typeid(el) for el in els]
+
+def contentid(el):
+  return typeid(list(el)[0])
   
 # Load the input XML file
 doc = ElementTree.parse(options.infile)

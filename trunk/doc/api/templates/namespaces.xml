@@ -1,16 +1,16 @@
 <html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
 <xi:include href="common.xml"/>
 <head>
-  <title>Type List</title>
+  <title>Namespace List</title>
   <link rel="stylesheet" type="text/css" href="apidoc.css"/>
   </head>
 <body>
-  ${page_header('types')}
+  ${page_header('namespaces')}
   <section class="content-section">
-    <header class="content-header">Type List [alphabetical]</header>
+    <header class="content-header">Namespace List [alphabetical]</header>
     <section class="type-alpha-list-section">
-      <div py:for="type in data">
-        <a href="${type.uri}" class="type-alpha-list-link">${type.qualifiedName}</a>
+      <div py:for="ns in data">
+        <a href="${ns.uri}" class="type-alpha-list-link">${ns.qualifiedName}</a>
       </div>
     </section>
   </section>

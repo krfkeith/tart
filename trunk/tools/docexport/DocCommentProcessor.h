@@ -37,7 +37,10 @@ public:
 
   // Parsers for various doc tags.
   void authors(Doc::Node * parent);
+  void deprecated(Doc::Node * parent);
   void example(Doc::Node * parent);
+  void include(Doc::Node * parent);
+  void inherit(Doc::Node * parent);
   void note(Doc::Node * parent);
   void parameters(Doc::Node * parent);
   void returns(Doc::Node * parent);

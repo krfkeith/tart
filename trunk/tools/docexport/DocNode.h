@@ -38,6 +38,9 @@ enum NodeType {
   LIST_ITEM,
   CODE,
   STYLE,
+  DEPRECATED,
+  INHERIT,
+  INCLUDE,
 };
 
 enum SectionType {

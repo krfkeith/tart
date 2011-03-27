@@ -1456,7 +1456,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
   constructorDef->setStorageClass(Storage_Instance);
   constructorDef->setVisibility(Public);
   constructorDef->setFlag(FunctionDefn::Ctor);
-  constructorDef->copyTrait(target, Defn::Synthetic);
+  constructorDef->addTrait(Defn::Synthetic);
   constructorDef->setBody(constructorBody);
   constructorDef->passes().finished().addAll(
       FunctionDefn::PassSet::of(

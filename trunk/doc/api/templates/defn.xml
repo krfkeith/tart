@@ -9,7 +9,7 @@
   <section class="content-section">
     <header class="content-header">
       <span class="defn-declarator">${d.formatDeclarator()}</span>
-      ${d.package.name}.<span class="defn-name">${d.name}</span>${si.formatTypeParamList(
+      ${d.scopeName()}.<span class="defn-name">${d.name}</span>${si.formatTypeParamList(
           d.typeArgs(), 'tsig')}
     </header>
 
@@ -17,13 +17,17 @@
     <py:def function="base_list(title, bases)">
       <section class="base-class-section" py:if="bases">
         <header class="base-class-section-header">${title}</header>
-        <div class="base-class" py:for="base in bases">${si.formatType(base, 'hlink')}</div>
+        <div class="base-class">${si.formatType(bases[0], 'hlink')}
+        <py:for each="base in bases[1:]">, ${si.formatType(base, 'hlink')}</py:for>
+        </div>
       </section>
     </py:def>
-   
+
     ${base_list("Inherits from:", d.inherits())}
     ${base_list("Implements:", d.implements())}
-        
+    ${base_list("Inherited by:", sorted(d.inheritedBy()))}
+    ${base_list("Implemented by:", sorted(d.implementedBy()))}
+
     <py:with vars="desc = d.description()">
 	    <section py:if="desc" class="defn-section-description">
 	      ${desc}
@@ -134,11 +138,12 @@
     <header class="member-table-header">Member Summary</header>
 
     ${member_list("Enumerations", d.members('typedef', filter.type_eq('enum')))}
-    ${member_list("Inner Classes", d.members('typedef', filter.type_eq('class')))}
+    ${member_list("Inner Types", d.members('typedef', filter.type_eq('class', 'struct', 'interface')))}
     ${member_list("Static Constants", d.members('let', filter.is_static()))}
-    ${member_list("Properties", d.members('property'))}
+    ${member_list("Fields", d.members('var', filter.is_not_static()))}
+    ${member_list("Properties", d.members('property', filter.is_not_static()))}
+    ${member_list("Methods", d.members('method', filter.is_not_static()))}
     ${member_list("Static Methods", d.members('method', filter.is_static()))}
-    ${member_list("Instance Methods", d.members('method', filter.is_not_static()))}
     ${member_list("Macros", d.members('macro', filter.is_not_static()))}
     ${member_list("Overridden Methods", d.members('override'))}
     ${member_list("Undefined Methods", d.members('undef'))}

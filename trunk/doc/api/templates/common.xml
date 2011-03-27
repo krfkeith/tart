@@ -29,6 +29,10 @@
     &#8226;
     ${nav_item("Types", "types.html", current == "types")}
     &#8226;
+    ${nav_item("Hierarchy", "hierarchy.html", current == "hierarchy")}
+    &#8226;
+    ${nav_item("Namespaces", "namespaces.html", current == "namespaces")}
+    &#8226;
     ${nav_item("Index", "names.html", current == "names")}
   </section>
 </py:def>
