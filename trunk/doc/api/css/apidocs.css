@@ -226,6 +226,7 @@ p {
   border: 2px solid black;
   margin-left: 5em;
   margin-bottom: 12px;
+  margin-top: 12px;
   border-collapse: collapse;
 }
 
@@ -268,9 +269,23 @@ p {
   color: #6d5100;
 }
 
+.class-hierarchy {
+}
+
+.class-hierarchy-link {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  color: #6d5100;
+}
+
+.class-hierarchy-link:visited, .type-name-link:visited, .type-alpha-list-link:visited {
+  color: #7d8130;
+}
+
 .symbol {
   font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
   font-weight: bold;
+  color: black;
 }
 
 .type-variable-name {

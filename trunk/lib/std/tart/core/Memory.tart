@@ -10,7 +10,7 @@ namespace Memory {
   interface Allocator {
     /** Allocate 'size' bytes of memory and return it. The memory will not be initialized, and
         may contain random data. If the allocator is one that supports garbage collection,
-        it must fill in any fields that it needs, such as the __gcstate field of class Object. */
+        it must fill in any fields that it needs, such as the '__gcstate' field of class Object. */
     def alloc(size:uint) -> Address[ubyte];
 
     /** Explicitly free a region of memory previously allocated by 'alloc'. Not supported by
@@ -25,6 +25,8 @@ namespace Memory {
 
     @Intrinsic private def __alloc(size:uint) -> Address[ubyte];
 
+    /** Allocate 'size' bytes of memory from the garbage collector's primary heap. The
+        memory will not be initialized, and may contain random data. */
     def alloc(size:uint) -> Address[ubyte] {
       return __alloc(size);
     }

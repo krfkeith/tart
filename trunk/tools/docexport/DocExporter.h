@@ -16,6 +16,7 @@
 namespace tart {
 
 class Module;
+class Expr;
 class Defn;
 class NamespaceDefn;
 class CompositeType;
@@ -53,17 +54,30 @@ protected:
   void generate(Module * mod);
 
 private:
+  struct DocOptions {
+    bool inherit;
+
+    void clear() {
+      inherit = false;
+    }
+  };
+
   void writeAttributes(const Defn * de);
   void writeTypeArgs(const Type * type);
   void writeModifiers(const Defn * de);
   void writeMembers(const IterableScope * scope);
   void writeTypeExpression(llvm::StringRef tagName, const Type * ty, bool variadic = false);
   void writeTypeRef(const Type * ty);
+  void writeExpression(llvm::StringRef tagName, const Expr * e);
+  void writeExpression(const Expr * e);
   void writeDocComment(const Defn * de);
   void writeDocCommentNode(const Doc::Node * node);
   void writeDocCommentNodeList(const Doc::Node * node);
   void writeElement(llvm::StringRef elName, llvm::StringRef content);
+  void getDocOptions(const Doc::Node * node);
+  Doc::Node * getInheritedDocComment(const Defn * de);
 
+  DocOptions docOptions_;
   XmlWriter xml_;
 };
 

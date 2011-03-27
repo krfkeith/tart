@@ -57,9 +57,13 @@ struct DocTag {
 DocTag tags[] = {
   { "Author", &DocCommentProcessor::authors },
   { "Authors", &DocCommentProcessor::authors },
+  { "Deprecated", &DocCommentProcessor::deprecated },
   { "Example", &DocCommentProcessor::example },
   { "Exceptions", &DocCommentProcessor::throws },
+  { "IncludeDoc", &DocCommentProcessor::include },
+  { "InheritDoc", &DocCommentProcessor::inherit },
   { "Note", &DocCommentProcessor::note },
+  { "Params", &DocCommentProcessor::parameters },
   { "Parameters", &DocCommentProcessor::parameters },
   { "Returns", &DocCommentProcessor::returns },
   { "Section", &DocCommentProcessor::genericSection },
@@ -420,9 +424,28 @@ void DocCommentProcessor::authors(Node * parent) {
   }
 }
 
+void DocCommentProcessor::deprecated(Node * parent) {
+  diag.debug(location()) << currentLine_->text;
+  DFAIL("Implement");
+  nextLine();
+}
+
 void DocCommentProcessor::example(Node * parent) {
   diag.debug(location()) << currentLine_->text;
   DFAIL("Implement");
+  nextLine();
+}
+
+void DocCommentProcessor::include(Node * parent) {
+  diag.debug(location()) << currentLine_->text;
+  DFAIL("Implement");
+  nextLine();
+}
+
+void DocCommentProcessor::inherit(Node * parent) {
+  Node * node = new Node(INHERIT);
+  // TODO: Parse arguments to inherit
+  parent->append(node);
   nextLine();
 }
 
