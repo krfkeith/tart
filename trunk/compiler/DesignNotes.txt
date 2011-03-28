@@ -37,8 +37,6 @@ Implementation TODOS:
 * Add a unit test for converting invalid enum values to strings.
 * Fix coercion of enum values to objects.
 
-* Sphinx extension for Tart autoocs?
-* Sphinx domain for Tart?
 * Coalesced templates
 * Case * (what about classify? - short form needs an 'else')
 * Implicit downcast in if-block. (Includes unions as well.)
@@ -106,8 +104,7 @@ Implementation TODOS:
   * with (what interface for using?)
   * yield
   * fork/threading primitives
-* Tartdoc
-  * Requires command-line parsing lib.
+* Command-line parsing lib.
 * Ranges
   * Syntax for open, closed, and half-open intervals.
   * Literals
@@ -122,6 +119,7 @@ Implementation TODOS:
 * Anonymous inner classes.
 * Implement BoundMethodExpr as an implementation of Function.
 * Insure typealiases aren't circular.
+* Sphinx domain for Tart?
 
 * Collector classes:
   * TLAB

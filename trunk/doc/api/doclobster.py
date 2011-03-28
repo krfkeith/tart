@@ -1,17 +1,17 @@
 #/bin/python
 
+# TODO: Indexers
+# TODO: Attributes
+# TODO: Name index
+# TODO: Improved InheritDoc
+# TODO: "Optional" unions
 # TODO: Better hyperlinking (calculate correct URL from path.)
 # TODO: Type params and method params in urls to disambiguate identical names
 # TODO: Type params in classes
-# TODO: Name index
 # TODO: Frames
 # TODO: Deprecated
-# TODO: Attributes
 # TODO: Search
 # TODO: Accordion Index
-# TODO: Improved InheritDoc
-# TODO: "Optional" unions
-# TODO: Indexers
 
 import sys, os
 from optparse import OptionParser
@@ -391,6 +391,7 @@ class SymbolIndex(object):
     self.pathIndex = defaultdict(list)
     self.packageIndex = {}
     self.pages = []
+    self.undocPages = defaultdict(lambda: 0)
     self.buildModuleIndex(document.getroot())
     self.buildSubclassIndex()
 
@@ -413,7 +414,7 @@ class SymbolIndex(object):
     if innerPath:
       result += '#' + ".".join(innerPath)
     return result
-  
+
   def makePageUri(self, prefix, path):
     return "-".join((prefix,) + path) + ".html"
     
@@ -451,12 +452,12 @@ class SymbolIndex(object):
     package.addModule(module)
     for childEl in el:
       if childEl.tag in DEFN_TAGS:
-        decl = self.declaration(childEl, module, True, None)
+        decl = self.declaration(childEl, module, True, None, None)
         module.addMember(decl)
         if decl.name == module.name:
           package.addMember(decl)
 
-  def declaration(self, el, parent, topLevel, uriBase):
+  def declaration(self, el, parent, topLevel, uriBase, pageDecl):
     name = el.attrib['name']
     uriPrefix = el.attrib['type'] if el.tag == 'typedef' else el.tag
     if topLevel:
@@ -473,10 +474,8 @@ class SymbolIndex(object):
       uri = self.makePageUri(uriPrefix, path)
     else:
       uri = uriBase
-      if '#' in uri:
-        uri += '-' + name
-      else:
-        uri += '#' + name
+      if '#' in uri: uri += '-' + name
+      else: uri += '#' + name
 
     if el.tag in CALLABLES:
       decl = Method(self, parent.package, qualifiedName, name, el, uri)
@@ -490,12 +489,15 @@ class SymbolIndex(object):
     self.pathIndex[path].append(decl)
     self.nameIndex[name].append(decl)
     if hasOwnPage:
+      pageDecl = decl
       self.pages.append(decl)
+    if decl.visibility() != 'private' and el.tag != 'econst' and el.find("./doc") is None:
+      self.undocPages[pageDecl] += 1
     for childEl in el:
       if childEl.tag in DEFN_TAGS:
-        self.declaration(childEl, decl, False, uri)
+        self.declaration(childEl, decl, False, uri, pageDecl)
     return decl
-    
+
   def getOrCreatePackage(self, path):
     if path not in self.packageIndex:
       name = ".".join(path)
@@ -615,6 +617,7 @@ class DocGenerator(object):
     self.writeTypes()
     self.writeNamespaces()
     self.writeHierarchy()
+    self.writeTODO()
 
   def resetcounter(self):
     self.counter = 0
@@ -679,6 +682,10 @@ class DocGenerator(object):
     decls.sort()   
     self.writeTemplate("namespaces.xml", "namespaces.html", data=decls)
   
+  def writeTODO(self):
+    items = sorted(self.index.undocPages.items(), key=lambda x:-x[1])
+    self.writeTemplate("todo.xml", "todo.html", undoc=items)
+
 # Strip the namespace off of all XML elements. This makes them much easier to work with.
 def strip_xml_namespace(el):
   _, el.tag = el.tag.split('}')

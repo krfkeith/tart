@@ -2,7 +2,9 @@ import tart.core.Memory.Address;
 import tart.core.Memory.reinterpretPtr;
 import tart.core.Memory.bitCast;
 
-/** Reflection type class for primitive and enum types. */
+/** Reflection type class for primitive and enum types.
+    InheritDoc: members
+ */
 class PrimitiveType : Type {
   enum SubtypeId : ubyte {
     NONE = 0,
@@ -99,6 +101,7 @@ class PrimitiveType : Type {
   }
 }
 
+/** InheritDoc: members */
 private final class PrimitiveTypeImpl[%T] : PrimitiveType {
   def construct(subtype:SubtypeId, name:String, size:uint32) {
     super(subtype, name, size);
@@ -125,6 +128,7 @@ private final class PrimitiveTypeImpl[%T] : PrimitiveType {
   }
 }
 
+/** InheritDoc: members */
 private final class PrimitiveNullType : PrimitiveType {
   def construct(subtype:SubtypeId, name:String, size:uint32) {
     super(subtype, name, size);

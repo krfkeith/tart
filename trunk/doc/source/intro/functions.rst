@@ -10,13 +10,9 @@ Function Type Expressions
 =========================
 
 The keyword :keyword:`fn` declares an expression having function type. It
-can be used to declare a named function or an anonymous function (also known
-as a 'function literal'.)
-
-Normally, its easier to use :keyword:`def` to define a function and bind it to
-a name in one step. Def requires that the function have a *name*, however, and
-when working with with function *types* (where we don't know the name of the
-specific function) then we have have to use :keyword:`fn`.
+is often used to declare an anonymous function (also known as a
+'function literal'), but it can also be used to declare a variable
+containing a pointer to a function.
 
 The :keyword:`fn` keyword is optionally followed by an argument list. Usually
 the argument list will be in parentheses, however if there is only a single
@@ -61,12 +57,7 @@ A function returning no value (i.e. a pure procedure) can be specified in severa
   fn :int -> ();      // A function returning no values.
   fn;                 // A function with no arguments and no return.
 
-If you don't declare a return type, it is assumed to be :ctype:`void` -
-unless the function has a body containing a :stmt:`return` statement.
-If there is a :stmt:`return` statement, then the type of the value being
-returned determines the function's return type. If there's more than one
-:stmt:`return` statement, then it attempts to choose a return type that
-encompasses all of them, or signals an error if it can't.
+If you don't declare a return type, it is assumed to be :ctype:`void`.
 
 .. index::
   pair: return; multiple values
@@ -169,3 +160,52 @@ Here's an example of a function with no arguments and void return type being
 used as a callback to a timer. As you can see, the syntax is minimal::
 
   timer.start(1000, fn { alarm.trigger(); });
+
+.. index::
+  pair: function; closure
+
+Closures
+--------
+
+Function literals that are declared in a local scope automatically become closures,
+meaning that they retain references to the local variables that were in scope
+at the point where the function was defined::
+
+  // Returns a function that increments an counter and returns its value each time
+  // it is called.
+  def createCounter() -> fn -> int {
+    var counter = 0;
+    return fn -> int { return counter++; }
+  }
+
+In the above example, the closure captures the :cdata:`counter` variable. The compiler
+will create a special 'closure cell' object containing the variable. The closure cell
+is allocated on the heap rather than on the stack, so that it can continue to exist
+after the outer function has returned.
+
+.. note::
+  The compiler only creates closure cells for function parameters and variables declared
+  with :keyword:`var`. For values declared with :keyword:`let`, the compiler instead
+  creates a copy of the variable in the closure itself, which is more efficient,
+  since it avoids the extra heap allocation. Because values declared with
+  :keyword:`let` cannot be changed, there's no need for the closure and the
+  enclosing function to share a reference to the same variable.
+
+.. index::
+  pair: Function; interface
+
+The Function Interface
+----------------------
+
+Expressions of function type (as declared using the :keyword:`fn` keyword) can be treated
+like objects that implement the :interface:`Function` interface. In fact, the
+:keyword:`fn` keyword is simply a shortcut - so for example, the declaration::
+
+  var func:fn (:int, :int) -> String;
+  
+is actually equivalent to::
+
+  var func:Function[String, int, int];
+
+What this means is that any class that implements the :interface:`Function` interface can
+be called like a function, and can be assigned to any variable of function type.

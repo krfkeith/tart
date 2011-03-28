@@ -32,7 +32,7 @@ namespace Character {
     PRIVATE_USE,            // Co = 29
   }
 
-	// Bitmasks to allow fast testing of group membership.
+	/// Bitmasks to allow fast testing of group membership.
   @Flags enum CategoryGroups {
     LETTER = (1 << uint32(Category.UPPERCASE_LETTER)) |
              (1 << uint32(Category.LOWERCASE_LETTER)) |

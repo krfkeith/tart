@@ -4,7 +4,6 @@
 .. index::
   keyword: let
   keyword: var
-  keyword: def
 
 Declaring variables and functions
 =================================
@@ -92,6 +91,10 @@ for the iteration variable::
     // do something
   }
 
+.. index::
+  keyword: def
+  pair: function; declaring
+
 Function Declarations
 ---------------------
 
@@ -116,13 +119,16 @@ have :keyword:`def` which is a shortcut::
     return 1;
   }
 
-Of course, you can just leave off the return type, since its inferable
-from the :stmt:`return` statement::
+If you leave off the return type, the compiler assumes that the function's return type is
+:ctype:`void`::
 
   def f1(x:int, y:int) {
     sys.stdout.println("Hello, World!");
-    return 1;
   }
+
+.. index::
+  keyword: def
+  pair: property; declaring
 
 Property Declarations
 ---------------------
@@ -140,7 +146,8 @@ will be called.::
 
   myProp = 1;   // Calls "myProp.set(1)"
 
-.. note::
+.. topic:: Let, Var, and Def
+
   At this point, you may be wondering why have three keywords - :keyword:`let`,
   :keyword:`var` and :keyword:`def` - when in fact with a smart compiler, one
   keyword could do the job. Indeed, an earlier version of Tart didn't use any

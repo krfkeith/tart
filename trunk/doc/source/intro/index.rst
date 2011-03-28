@@ -11,13 +11,13 @@ Contents:
    types
    declarations
    functions
-   collections
    classes
    conversions
    statements
    operators
    reflection
    annotations
+   collections
    foreign
    macros
    generics
