@@ -44,7 +44,7 @@ class TartLexer(RegexLexer):
             (r'[^/]+', Generic.Error),
         ],
         'operators': [
-            ("(->|>=|<=|!=|==|=|<:|\*|\+|\?|-|\.|<|>|\$)", Operator),
+            ("(->|>=|<=|!=|==|=|<:|\*|\+|\?|-|\.|<|>|\||\&|\$)", Operator),
             ("(and|or|not)\b", Operator.Word),
         ],
         'numbers': [

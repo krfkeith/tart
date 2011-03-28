@@ -1,4 +1,6 @@
-/** Class that reads characters from a string. */
+/** Class that reads characters from a string.
+    InheritDoc: members
+ */
 final class StringReader : TextReader {
   private {
     var pos:int;

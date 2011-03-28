@@ -3,7 +3,9 @@ import tart.core.Memory.Address;
 import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
-/** An immutable list of methods that points to a statically-initialized array. */
+/** An immutable list of methods that points to a statically-initialized array.
+    InheritDoc: members
+ */
 final class MethodList : List[Method] {
   /** Static singleton empty list. */
   //static let EMPTY_LIST = MethodList();

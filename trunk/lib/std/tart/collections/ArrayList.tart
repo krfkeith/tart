@@ -1,7 +1,9 @@
 import tart.annex.Coalesce;
 import tart.core.Math.max;
 
-/** Array-backed list type. */
+/** Array-backed list type.
+    InheritDoc: members
+ */
 @Coalesce final class ArrayList[%ElementType] : List[ElementType] {
   private {
     var _data:ElementType[];

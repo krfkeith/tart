@@ -757,6 +757,14 @@ table.highlighttable td {
     padding: 0 0.5em 0 0.5em;
 }
 
+.pre {
+  font-family: "courier", "liberation mono", "andale mono", "inconsolata", "consolas", monospace;
+}
+
+.code {
+  font-family: "inconsolata", "consolas", "liberation mono", "andale mono", "courier", monospace;
+}
+
 tt {
     padding: 0 1px 0 1px;
     font-weight: bold;

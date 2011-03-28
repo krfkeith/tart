@@ -3,7 +3,9 @@ import tart.core.Memory.Address;
 import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
-/** An immutable list of attributes that points to a statically-initialized array. */
+/** An immutable list of attributes that points to a statically-initialized array.
+    InheritDoc: members
+ */
 final class PropertyList : List[Property] {
   private {
     var _size:int;
