@@ -2,8 +2,8 @@
   :linenothreshold: 30
 
 .. index::
-  keyword: let
-  keyword: var
+  single: let
+  single: var
 
 Declaring variables and functions
 =================================
@@ -92,7 +92,7 @@ for the iteration variable::
   }
 
 .. index::
-  keyword: def
+  single: def
   pair: function; declaring
 
 Function Declarations
@@ -127,7 +127,7 @@ If you leave off the return type, the compiler assumes that the function's retur
   }
 
 .. index::
-  keyword: def
+  single: def
   pair: property; declaring
 
 Property Declarations
