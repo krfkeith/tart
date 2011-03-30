@@ -2,14 +2,14 @@
   :linenothreshold: 30
 
 .. index:: classes
-  keyword: struct
-  keyword: class
-  keyword: interface
-  keyword: protocol
-  keyword: private
-  keyword: public
-  keyword: protected
-  keyword: friend
+  single: struct
+  single: class
+  single: interface
+  single: protocol
+  single: private
+  single: public
+  single: protected
+  single: friend
   pair: declaring; types
 
 Classes
@@ -106,7 +106,7 @@ functions are dynamically overridable (``virtual`` in C++ parlance) unless decla
 
 .. index::
   pair: class; members
-  keyword: self
+  single: self
 
 Class members
 -------------
@@ -306,8 +306,8 @@ to a default, then the compiler will emit an error.
 
 .. index::
   pair: construct; super
-  keyword: constructor
-  keyword: construction
+  single: constructor
+  single: construction
 
 Constructor Execution
 ---------------------
