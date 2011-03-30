@@ -1,0 +1,7 @@
+/** Output logging stream */
+interface LogWriter {
+  def fatal(loc:Location, mgs:String...);
+  def error(loc:Location, mgs:String...);
+  def warn(loc:Location, mgs:String...);
+  def info(loc:Location, mgs:String...);
+}

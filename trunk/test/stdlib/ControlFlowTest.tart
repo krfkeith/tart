@@ -1,0 +1,18 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ControlFlowTest);
+}
+
+class ControlFlowTest : Test {
+  def testIf {
+  }
+
+  def testDoWhile {
+    var a = 5;
+    do {
+      --a;
+    } while a > 0;
+  }
+}

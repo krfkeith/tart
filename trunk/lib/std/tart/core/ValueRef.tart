@@ -1,0 +1,17 @@
+/** A reference type used to contain an immutable value type. */
+class ValueRef[%T] : Ref[T] {
+  private let _value:T;
+
+	/** Construct a new 'ValueRef'. */
+  def construct(value:T) {
+    self._value = value;
+  }
+
+	/** Return the wrapped value. */
+  override value:T { get { return _value; } }
+
+  /** Return a string representation of the contained value. */
+  override toString() -> String {
+    return String(self._value);
+  }
+}

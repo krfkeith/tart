@@ -1,0 +1,10 @@
+/** Exception thrown when a method does not have an implementation. */
+public class UnsupportedOperationError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

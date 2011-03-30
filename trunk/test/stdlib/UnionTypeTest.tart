@@ -1,0 +1,190 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(UnionTypeTest);
+}
+
+class UnionTypeTest : Test {
+	def testValueTypeUnion() {
+	  var x:int32 or float;
+	  
+	  // Integer type
+	  x = 1;
+	
+	  // isa tests
+	  assertTrue(x isa int32);
+	  assertFalse(x isa float);
+	  assertFalse(x isa String);
+	  
+	  // Type casts
+	  assertEq(1, typecast[int32](x));
+	  try {
+	    assertEq(1.0, typecast[float](x));
+	    fail("union member test failed");
+	  } catch t:TypecastError {}
+	
+	  // match  
+	  match x as xi:int32 {
+	    assertTrue(xi == 1);
+	  } else {
+	    fail("union member test failed");
+	  }
+	
+	  // Float type
+	  x = 1.0;
+	  
+	  // isa tests
+	  assertTrue(x isa float);
+	  assertFalse(x isa int32);
+	  assertFalse(x isa String);
+	  
+	  // Typecasts
+	  assertEq(1.0, typecast[float](x));
+	  assertTrue(typecast[float](x) == 1.0);
+	  try {
+	    assertEq(1, typecast[int32](x));
+	    fail("union member test failed");
+	  } catch t:TypecastError {}
+	  
+	  // match
+	  match x as xf:float {
+	    assertTrue(xf == 1.0);
+	  } else {
+	    fail("union member test failed");
+	  }
+	}
+	
+	def testRefOrNoneTypeUnion() {
+	  var x:Throwable or String or void;
+	  
+	  // String type
+	  x = "Hello";
+	  
+	  // isa tests
+	  assertFalse(x isa float);
+	  assertFalse(x isa int32);
+	  assertFalse(x isa Throwable);
+	  assertFalse(x isa void);
+	  assertTrue(x isa String);
+	
+	  // type casts
+	  assertEq("Hello", typecast[String](x));
+	  try {
+	    //assertEq(1.0, typecast[Throwable](x));
+	  } catch t:TypecastError {}
+	
+	  // match  
+	  match x as xs:String {
+	    assertTrue(xs == "Hello");
+	  } else {
+	    fail("union member test failed");
+	  }
+	  
+	  x = void();
+	  // isa tests
+	  assertFalse(x isa float);
+	  assertFalse(x isa int32);
+	  assertFalse(x isa Throwable);
+	  assertTrue(x isa void);
+	  assertFalse(x isa String);
+	}
+	
+	def testRefOrValueTypeUnion() {
+	  var x:String or int32;
+	
+	  // Integer type
+	  x = 1;
+	
+	  // isa tests
+	  assertTrue(x isa int32);
+	  assertFalse(x isa float);
+	  assertFalse(x isa String);
+	  
+	  // Type casts
+	  assertEq(1, typecast[int32](x));
+	  try {
+	    assertEq(1.0, typecast[float](x));
+	    fail("union member test failed");
+	  } catch t:TypecastError {}
+	
+	  // match  
+	  match x as xi:int32 {
+	    // For some reason this fails with -O1
+	    assertEq(1, xi);
+	  } else {
+	    fail("union member test failed");
+	  }
+	
+	  // String type
+	  x = "Hello";
+	  
+	  // isa tests
+	  assertFalse(x isa float);
+	  assertFalse(x isa int32);
+	  assertTrue(x isa String);
+	  
+	  // Typecasts
+	  assertEq("Hello", typecast[String](x));
+	  try {
+	    assertEq(1, typecast[int32](x));
+	    fail("union member test failed");
+	  } catch t:TypecastError {}
+	  
+	  // match
+	  match x as xs:String {
+	    assertTrue(xs == "Hello");
+	  } else {
+	    fail("union member test failed");
+	  }
+	}
+	
+	def testRefTypeUnion() {
+	  var x:String or TestClass;
+	
+	  // String type
+	  x = "Hello";
+	  
+	  // isa tests
+	  assertFalse(x isa float);
+	  assertFalse(x isa int32);
+	  assertFalse(x isa TestClass);
+	  assertTrue(x isa String);
+	  
+	  // Typecasts
+	  assertEq("Hello", typecast[String](x));
+	  try {
+	    assertTrue(TestClass() is typecast[TestClass](x));
+	    fail("union member test failed");
+	  } catch t:TypecastError {}
+	  
+	  // match
+	  match x as xs:String {
+	    assertTrue(xs == "Hello");
+	  } else {
+	    fail("union member test failed");
+	  }
+	}
+	
+	def testOrderIndependent() {
+	  var x:String or int32 = 1;
+	  var y:int32 or String = x;
+	  assertTrue(y isa int32);
+	}
+	
+	def testOptionalType {
+    var x:optional String;
+    
+    x = "Hello";
+    assertEq(5, x.size);
+    
+    x = null;
+    try {
+      assertEq(5, x.size);
+      fail("union member test failed");
+    } catch t:TypecastError {}
+	}
+}
+
+class TestClass {}

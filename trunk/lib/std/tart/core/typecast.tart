@@ -1,0 +1,4 @@
+import tart.annex.Intrinsic;
+
+/** The generic typecast function. Throws an exception if the cast fails. */
+@Intrinsic def typecast[%T](value:__Any) -> T;

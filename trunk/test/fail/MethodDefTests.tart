@@ -1,0 +1,35 @@
+/// TEST AbstractMethod: body required
+class Test {
+  def func() -> void;
+}
+
+/// TEST AbstractMethodInConcreteClass: declared abstract
+class Test {
+  abstract def func() -> void;
+}
+
+/// TEST AbstractMethodWithBody: cannot have a body
+abstract class Test {
+  abstract def func() -> void {}
+}
+
+/// TEST SignatureConflict: signature conflict
+class Test {
+  def func() {}
+  def func() {}
+}
+
+/// TEST ExternMethodWithBody: cannot have a body
+abstract class Test {
+  @Extern("foo") def func() -> void {}
+}
+
+/// TEST UndefMethodWithBody: cannot have a body
+abstract class Test {
+  undef func() -> void {}
+}
+
+/// TEST UndefMethodWithNoOverride: does not override
+abstract class Test {
+  undef func() -> void;
+}

@@ -1,0 +1,200 @@
+import tart.collections.List;
+import tart.collections.ArrayList;
+
+/** An ordered set of character ranges, used to define a character class pattern
+    such as [a-zA-Z]. */
+class CharacterClass : Iterable[CharacterRange] {
+  private {
+    var ranges = ArrayList[CharacterRange]();
+  }
+
+  /** No-arg constructor. */
+  def construct() {}
+
+  /** Copy constructor. */
+  def construct(toCopy:CharacterClass) {
+    add(toCopy);
+  }
+
+  /** Single character range constructor */
+  def construct(a:char) {
+    add(a);
+  }
+
+  /** Character range constructor. */
+  def construct(low:char, high:char) {
+    add(low, high);
+  }
+
+  /** Multiple character range constructor. */
+  def construct(ranges:CharacterRange...) {
+    for rg in ranges {
+    	add(rg);
+    }
+  }
+
+  /** Return the number of ranges in this character class. */
+  def count:int { get { return ranges.size; } }
+
+  /** Return true if this character class contains no characters. */
+  def empty:bool { get { return ranges.size == 0; } }
+
+  /** Iterate through the list of ranges. */
+  def iterate -> Iterator[CharacterRange] {
+    return ranges.iterate();
+  }
+
+  /** Returns true if this appears to be an inverted (^) character range. */
+  def inverted(vocabulary:CharacterRange) -> bool {
+    return ranges.size > 1
+        and ranges[0].begin == vocabulary.begin
+        and ranges[ranges.size - 1].end == vocabulary.end;
+  }
+
+  /** Add a single character to this character class. */
+  def add(c:char) {
+    add(CharacterRange(c, c + 1));
+  }
+
+  /** Add a range of characters to this class. */
+  def add(low:char, high:char) {
+    add(CharacterRange(low, high));
+  }
+
+  /** Add a range of characters to this class, including the high character. */
+  def addInclusive(low:char, high:char) {
+    add(CharacterRange(low, high + 1));
+  }
+
+  /** Add a range of characters to this class. */
+  def add(toAdd:CharacterRange) {
+    var index:int = 0;
+    while index < ranges.size {
+      let rg:CharacterRange = ranges[index];
+      if toAdd.begin > rg.end {
+        index++;
+      } else if toAdd.end < rg.begin {
+        break;
+      } else if toAdd.end < rg.end {
+        ranges[index] = CharacterRange(toAdd.begin, rg.end);
+        return;
+      } else {
+        var end = toAdd.end;
+        while index + 1 < ranges.size {
+          let rnext = ranges[index + 1];
+          if rnext.begin <= end {
+            if rnext.end > end {
+              end = rnext.end;
+            }
+
+            ranges.remove(index + 1);
+          } else {
+            break;
+          }
+        }
+
+        ranges[index] = CharacterRange(rg.begin, end);
+        return;
+      }
+    }
+
+    ranges.insert(index, toAdd);
+  }
+
+  /** Add (i.e. union) all characters in the character class 'cl' to this class. */
+  def add(cl:CharacterClass) {
+    var index:int = 0;
+    for toAdd:CharacterRange in cl.ranges {
+      repeat {
+        if index >= ranges.size {
+          ranges.add(toAdd);
+          index++;
+          break;
+        }
+
+        var rg:CharacterRange = ranges[index];
+        if toAdd.begin > rg.end {
+          index++;
+        } else if toAdd.end < rg.begin {
+          ranges.insert(index, toAdd);
+          index++;
+          break;
+        } else if toAdd.end < rg.end {
+          ranges[index] = CharacterRange(Math.min(toAdd.begin, rg.begin), rg.end);
+          break;
+        } else {
+          rg = CharacterRange(Math.min(toAdd.begin, rg.begin), toAdd.end);
+          while index + 1 < ranges.size {
+            let rnext:CharacterRange = ranges[index + 1];
+            if rnext.begin <= rg.end {
+              if rnext.end > rg.end {
+                rg = CharacterRange(rg.begin, rnext.end);
+              }
+              ranges.remove(index + 1);
+            } else {
+              break;
+            }
+          }
+          ranges[index] = rg;
+          break;
+        }
+      }
+    }
+  }
+
+	/** Remove all characters in the character class 'cl' from this class. */
+  def remove(cl:CharacterClass) {
+    var index:int = 0;
+    for toRemove in cl.ranges {
+      while index < ranges.size {
+        let rg = ranges[index];
+        if rg.end <= toRemove.begin {
+          index++;
+        } else if rg.begin >= toRemove.end {
+          break;
+        } else if rg.begin < toRemove.begin {
+          // Add a new range because we created a hole
+          if rg.end > toRemove.end {
+            ranges.insert(index + 1, CharacterRange(toRemove.end, rg.end));
+          }
+
+          ranges[index] = CharacterRange(rg.begin, toRemove.begin);
+          index++;
+        } else if rg.end > toRemove.end {
+          ranges[index] = CharacterRange(toRemove.end, rg.end);
+        } else {
+          ranges.remove(index);
+        }
+      }
+    }
+  }
+
+  def invert(vocab:CharacterRange) {
+  }
+
+  def contains(ch:char) -> bool {
+    return contains(CharacterRange(ch, ch + 1));
+  }
+
+  def contains(low:char, high:char) -> bool {
+    return contains(CharacterRange(low, high));
+  }
+
+  def contains(range:CharacterRange) -> bool {
+    for r in ranges {
+      break if r.begin >= range.end;
+      if range in r { return true; }
+    }
+
+    return false;
+  }
+
+  override toString -> String {
+    let sb = StringBuilder();
+    for r in ranges {
+      r.format(sb);
+    }
+
+    return sb.toString();
+  }
+}
