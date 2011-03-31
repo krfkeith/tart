@@ -68,3 +68,5 @@
 #cmakedefine SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 #cmakedefine SIZEOF_VOID_PTR @SIZEOF_VOID_PTR@
 
+/** Install prefix */
+

@@ -1,6 +1,8 @@
 import tart.collections.KeyError;
 
-/** A quadratically-probed hash map. */
+/** A quadratically-probed hash map.
+    InheritDoc: members
+ */
 final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : Map[KeyType, ValueType] {
   private {
     enum EntryState : uint8 {

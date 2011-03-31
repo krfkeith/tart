@@ -217,7 +217,11 @@ bool VarAnalyzer::resolveVarType() {
         }
 
         // TODO: Fold this into inferTypes.
-        initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
+        if (target->storageClass() == Storage_Local) {
+          initExpr = ea.doImplicitCast(initExpr, target->type(), true);
+        } else {
+          initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
+        }
         target->setInitValue(initExpr);
       }
     }
