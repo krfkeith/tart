@@ -112,9 +112,9 @@ Expr * FinalizeTypesPassImpl::visitAssignImpl(AssignmentExpr * in) {
       return in;
     }
 
-    from = to->type()->implicitCast(from->location(), from);
-    if (!isErrorResult(from)) {
-      in->setFromExpr(from);
+    Expr * castResult = addCastIfNeeded(from, to->type());
+    if (!isErrorResult(castResult)) {
+      in->setFromExpr(castResult);
       in->setToExpr(to);
     }
 
@@ -791,12 +791,6 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
   //DASSERT_OBJ(in->isSingular(), in);
   return in;
 }
-
-/*Expr * FinalizeTypesPassImpl::visitInitVar(InitVarExpr * in) {
-  DFAIL("Implement");
-  //in->setInitExpr(visitExpr(in->initExpr()));
-  //return in;
-}*/
 
 Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)

@@ -96,15 +96,26 @@ check_type_size("void*" SIZEOF_VOID_PTR)
 # Check for dsymutil
 find_program(DSYMUTIL dsymutil)
 
+# Directory paths for installed libraries
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/static  TART_INSTALL_DIR_LIB_STATIC)
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/linker  TART_INSTALL_DIR_LIB_PLUGIN)
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/bc      TART_INSTALL_DIR_LIB_BC)
+
 # Generate the config.h file
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-# Generate the config.h file
+# Generate the runtime config.h file
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/include/runtime_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/runtime/include/runtime_config.h)
+
+# Generate the config_paths.h file
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/config_paths.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/config_paths.h
+    ESCAPE_QUOTES)
 
 # Include directory paths
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

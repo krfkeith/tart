@@ -145,4 +145,19 @@ class StringTest : Test {
 	def testToLowerCase() {
 	  assertEq("hello", "Hello".toLowerCase());
 	}
+
+	def testStringCoercion() {
+	  var s:String = String.concat(Exception("foo"));
+	  assertEq("tart.core.Exception: foo", s);
+	  s = Exception("foo");
+	  assertEq("tart.core.Exception: foo", s);
+	  var s2:String = Exception("foo");
+	  assertEq("tart.core.Exception: foo", s2);
+	  assertEq("tart.core.Exception: foo", Exception("foo"));
+	}
+
+	def testOperatorPlus() {
+	  var s = "a" + "b";
+	  assertEq("ab", s);
+	}
 }
