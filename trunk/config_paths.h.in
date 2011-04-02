@@ -1,0 +1,7 @@
+/* ================================================================== *
+ * Compiler Built-in Paths
+ * ================================================================== */
+
+#define TART_INSTALL_DIR_LIB_STATIC "@TART_INSTALL_DIR_LIB_STATIC@"
+#define TART_INSTALL_DIR_LIB_PLUGIN "@TART_INSTALL_DIR_LIB_PLUGIN@"
+#define TART_INSTALL_DIR_LIB_BC "@TART_INSTALL_DIR_LIB_BC@"

@@ -444,6 +444,15 @@ class NoInlineApplyIntrinsic : public Intrinsic {
 };
 
 // -------------------------------------------------------------------
+// Associative.apply intrinsic
+class AssociativeApplyIntrinsic : public Intrinsic {
+  static AssociativeApplyIntrinsic instance;
+  AssociativeApplyIntrinsic() : Intrinsic("tart.core.Associative.apply") {}
+  Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
+      Expr * self, const ExprList & args, Type * expectedReturn) const;
+};
+
+// -------------------------------------------------------------------
 // Proxy.create intrinsic
 class ProxyCreateIntrinsic : public Intrinsic {
   static ProxyCreateIntrinsic instance;

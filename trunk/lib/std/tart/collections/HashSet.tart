@@ -1,4 +1,6 @@
-/** A quadratically-probed hash set. */
+/** A quadratically-probed hash set.
+    InheritDoc: members
+ */
 final class HashSet[%ItemType, %HashFn = Hashing.HashFn[ItemType]] : Set[ItemType] {
 
   private {

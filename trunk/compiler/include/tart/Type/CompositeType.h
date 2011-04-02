@@ -116,7 +116,7 @@ public:
   const DefnList & staticFields() const { return staticFields_; }
 
   /** List of methods which have storage type Storage_Instance. */
-  const MethodsList & instanceMethods() const { return instanceMethods_; }
+  const MethodList & instanceMethods() const { return instanceMethods_; }
 
   /** Return the number of instance methods. */
   size_t instanceMethodCount() const { return instanceMethods_.size(); }

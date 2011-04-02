@@ -1,0 +1,8 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that the associated function is an associative operation, meaning
+    that nested calls to the function can be combined: {{{A(a1, A(a2, a3)) == A(a1, a2, a3)}}}. */
+@Attribute(Attribute.Target.CALLABLE)
+class Associative {
+  @Intrinsic def apply(t:tart.reflect.Method);
+}
