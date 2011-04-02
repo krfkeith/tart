@@ -21,14 +21,14 @@ namespace tart {
 using namespace llvm;
 
 void CodeGenerator::genModuleMetadata() {
-  ProgramSource * source = module_->moduleSource();
+/*  ProgramSource * source = module_->moduleSource();
   SmallString<128> mdName("xdef.");
   mdName += module_->qualifiedName();
   NamedMDNode * md = irModule_->getOrInsertNamedMetadata(mdName);
   // TODO: Add compiler version.
   md->addOperand(getModuleDeps());
   md->addOperand(getModuleTimestamp());
-  md->addOperand(getMemberExports(module_));
+  md->addOperand(getMemberExports(module_)); */
 }
 
 MDNode * CodeGenerator::getModuleDeps() {

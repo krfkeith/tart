@@ -18,6 +18,8 @@ class Module;
 /// but doesn't generate code.
 class AbstractCompiler {
 public:
+  virtual ~AbstractCompiler() {}
+
   void processInputFile(llvm::StringRef infile);
 
 protected:

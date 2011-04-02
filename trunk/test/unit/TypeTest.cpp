@@ -17,8 +17,8 @@ using namespace tart;
 
 class TupleTest : public testing::Test {
 public:
-  SourceFile testSource;
-  Module testModule;
+  Module * testModule;
+  TypeDefn * testTypeDefn;
   Type * testClass;
 
   Type * intTypes[4];
@@ -26,12 +26,13 @@ public:
   Type * testClassTypes[1];
   Type * intAndTestClass[4];
 
-  TupleTest() : testSource(""), testModule(&testSource, "test") {
+  TupleTest() {
     // Set up test class.
-    TypeDefn * de = new TypeDefn(&testModule, "test");
-    testClass = new CompositeType(Type::Class, de, &testModule);
-    de->addTrait(Defn::Singular);
-    de->setTypeValue(testClass);
+    testModule = new Module(new SourceFile("TypeTest"), "test");
+    testTypeDefn = new TypeDefn(testModule, "test");
+    testClass = new CompositeType(Type::Class, testTypeDefn, testModule);
+    testTypeDefn->addTrait(Defn::Singular);
+    testTypeDefn->setTypeValue(testClass);
 
     // Set up arrays of types
     intTypes[0] = intTypes[1] = intTypes[2] = intTypes[3] = &Int32Type::instance;
