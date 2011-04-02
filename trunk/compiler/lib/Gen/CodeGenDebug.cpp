@@ -152,7 +152,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
     if (fn->storageClass() == Storage_Instance) {
       sp = diBuilder_.createMethod(
-          genDefnScope(fn),
+          compileUnit(), // genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
           genDIFile(fn),
@@ -165,7 +165,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
           fval);
     } else {
       sp = diBuilder_.createFunction(
-          genDefnScope(fn),
+          compileUnit(), // genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
           genDIFile(fn),
@@ -410,12 +410,43 @@ DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memb
   return result;
 }
 
+#if 0
+DISubprogram CodeGenerator::genDITypeMemberFunction(const FunctionDefn * fn) {
+  DASSERT(fn != NULL);
+  DISubprogram & sp = dbgSubprograms_[fn];
+  if ((MDNode *)sp == NULL) {
+    DIType diFuncType = genDIFunctionType(fn->functionType());
+    DASSERT_OBJ(fn->hasBody(), fn);
+    Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
+    sp = diBuilder_.createMethod(
+        compileUnit(), // genDefnScope(fn),
+        fn->name(),
+        fn->linkageName(),
+        genDIFile(fn),
+        getSourceLineNumber(fn->location()),
+        diFuncType,
+        fn->isSynthetic() /* isLocalToUnit */,
+        fn->hasBody() /* isDefinition */,
+        0, 0, NULL,
+        0 /* Flags */,
+        fval);
+    if (!sp.Verify()) {
+      sp.Verify();
+      DFAIL("Bad DBG");
+    }
+  }
+
+  return sp;
+}
+#endif
+
 DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
   DIType placeHolder = diBuilder_.createTemporaryType();
   dbgTypeMap_[type] = placeHolder;
   TypeDefn * td = type->typeDefn();
 
   const DefnList & fields = type->instanceFields();
+  const MethodList & methods = type->instanceMethods();
   ValueArray members;
 
   uint64_t memberOffset = 0;
@@ -432,6 +463,9 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
       const VariableDefn * var = cast<VariableDefn>(*it);
       members.push_back(genDITypeMember(var, memberOffset));
     }
+  }
+
+  for (MethodList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
   }
 
   DIType di;
