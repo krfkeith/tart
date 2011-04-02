@@ -3,7 +3,7 @@
 Front Matter
 ============
 
-Copyright |copy| 2008 Talin. All rights reserved.
+Copyright |copy| 2008-2011 Talin. All rights reserved.
 
 Abstract
 --------

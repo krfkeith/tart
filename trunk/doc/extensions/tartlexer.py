@@ -6,7 +6,7 @@ class TartLexer(RegexLexer):
     aliases = ['tart']
     filenames = ['*.tart']
     
-    re_ident = '@?[_a-zA-Z][a-zA-Z0-9_]*'
+    re_ident = '[_a-zA-Z][a-zA-Z0-9_]*'
 
     tokens = {
         'root': [
@@ -20,6 +20,7 @@ class TartLexer(RegexLexer):
             include('operators'),
             (r'[\[\]:(),;]', Punctuation),
             (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
+            ('@', Name.Attribute, 'attribute'),
             (r'(abstract|as|base|break|case|catch|continue|default|'
              r'do|else|explicit|finally|fn|for|if|in|'
              r'internal|is|match|out|override|private|protected|public|'
@@ -83,6 +84,10 @@ class TartLexer(RegexLexer):
             (r'\s+', Text),
             (r':', Punctuation, 'type'),
             (r',', Punctuation),
+            (r'', Text, '#pop'),
+        ],
+        'attribute': [
+            (re_ident, Name.Attribute),
             (r'', Text, '#pop'),
         ],
         'def': [
@@ -149,10 +154,6 @@ class TartLexer(RegexLexer):
             (r"'", String, '#pop'),
             include('strings')
         ],
-#        'namespace': [
-#            (r'(?=\()', Text, '#pop'), # using (resource)
-#            ('(' + cs_ident + r'|\.)+', Name.Namespace, '#pop')
-#        ],
     }
 
 __all__ = ['TartLexer']

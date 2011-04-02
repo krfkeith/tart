@@ -15,21 +15,21 @@
 User-defined types: Composites
 ==============================
 
-The :keyword:`class` keyword is one of the four keywords that are used to define a new
-aggregate type. The others are :keyword:`struct`, :keyword:`interface` and :keyword:`protocol`.
+The :kw:`class` keyword is one of the four keywords that are used to define a new
+aggregate type. The others are :kw:`struct`, :kw:`interface` and :kw:`protocol`.
 
-* A :keyword:`class` is *reference* type, meaning it is always passed around by reference.
+* A :kw:`class` is *reference* type, meaning it is always passed around by reference.
   When you assign a value of class type to a variable, all that gets copied is a pointer to
   the object, not the object's contents.
 
-* A :keyword:`struct` is a *value* type. That means that normally when you assign one struct
+* A :kw:`struct` is a *value* type. That means that normally when you assign one struct
   variable to another, it does a member-wise copy of the entire thing.
 
-* An :keyword:`interface` defines an pure abstract type which can only contain methods, types
+* An :kw:`interface` defines an pure abstract type which can only contain methods, types
   and constants. Like Java and C#, Tart does not support multiple inheritance, but does allow
   classes to derive from multiple interfaces. See the section on :ref:`interfaces`.
  
-* A :keyword:`protocol` represents a contract which a type may conform to. A class or struct
+* A :kw:`protocol` represents a contract which a type may conform to. A class or struct
   is said to *support* the protocol if that class or struct defines all of the method signatures
   that are defined by the protocol. Template arguments can be constrained to only match types
   which support a specified protocol. Classes may declare explicitly that they support a protocol,
@@ -44,7 +44,7 @@ aggregate type. The others are :keyword:`struct`, :keyword:`interface` and :keyw
 Declaring a new class
 ---------------------
 
-The :keyword:`class` keyword defines a new class. Here is a sample of a class definition::
+The :kw:`class` keyword defines a new class. Here is a sample of a class definition::
 
   // Declare a class. The base class is 'ListNode'.
   class Shape : ListNode {
@@ -89,14 +89,14 @@ A couple of things are worth noticing in this example:
 **Dynamic dispatch is the default**: Like most object-oriented languages (other than C++), all
 functions are dynamically overridable (``virtual`` in C++ parlance) unless declared ``final``.
 
-**Private members:** You can declare a block of variables as :keyword:`private`, rather than having
-to put the word :keyword:`private` in front of every variable name. Within a :keyword:`private` or
-:keyword:`protected` block, you can declare :keyword:`friend` classes that have direct access to
+**Private members:** You can declare a block of variables as :kw:`private`, rather than having
+to put the word :kw:`private` in front of every variable name. Within a :kw:`private` or
+:kw:`protected` block, you can declare :kw:`friend` classes that have direct access to
 just these class members.
 
 .. note:: The last point deserves some additional explanation: With C++, you can
-  only declare a :keyword:`friend` of an entire class. In Java, you can't declare a
-  :keyword:`friend` at all. Both of these feature choices cause programmers to expose
+  only declare a :kw:`friend` of an entire class. In Java, you can't declare a
+  :kw:`friend` at all. Both of these feature choices cause programmers to expose
   too much encapsulated data. In the case of C++, you can't expose a private
   member without exposing everything. In Java, not having the ability to
   expose private data to certain classes causes Java programmers to declare
@@ -112,7 +112,7 @@ Class members
 -------------
 
 There is no restriction on the kinds of declarations which can appear in the body of a
-:keyword:`class` or :keyword:`struct`, but most commonly they will be variable or method
+:kw:`class` or :kw:`struct`, but most commonly they will be variable or method
 declarations.
 
 Variable declarations can include an optional initialization expression. If present, the
@@ -132,8 +132,8 @@ with :cdata:`self` unless you also have a local variable or parameter with the s
   }
   
 In most cases the :cdata:`self` parameter works exactly like other, explicitly declared
-parameters. The exception to this rule is in :keyword:`struct` methods. Normally when
-the type of a function parameter is a :keyword:`struct` type, the value that is passed is
+parameters. The exception to this rule is in :kw:`struct` methods. Normally when
+the type of a function parameter is a :kw:`struct` type, the value that is passed is
 a *copy* of the struct, however in the case of :cdata:`self`, what gets passed is a *pointer* to
 the struct. If this were not true, it would be impossible to write methods that modify
 struct members, since the method could only modify the temporary copy. Note, however,
@@ -153,14 +153,14 @@ to call the class as if it were a function::
   var s = Rectangle(10, 10, 20, 20);
 
 The creation syntax is the same regardless of whether an object is a value or reference type. If
-it's a value (:keyword:`struct`) type, the new object will be constructed in place; If it's a
-reference (:keyword:`class`) type, then space for the object will be allocated on the global heap,
+it's a value (:kw:`struct`) type, the new object will be constructed in place; If it's a
+reference (:kw:`class`) type, then space for the object will be allocated on the global heap,
 and a pointer to the object assigned to the variable.
 
 .. note::
   .. compound::
 
-    Value (:keyword:`struct`) types can never exist on the heap except as instance variables
+    Value (:kw:`struct`) types can never exist on the heap except as instance variables
     inside other, reference types. The reason for this is fairly involved, but the short explanation
     is this: The garbage collector only deals with reference types. Every reference type has
     a special, invisible header field that is used by the garbage collector to track the status
@@ -317,10 +317,10 @@ the constructor. Fields which have no defaults must be assigned in the construct
 which do have defaults (either explicitly specified or implicit based on the type) may not be.
 If the compiler detects that any field is not fully initialized, then it will report an error.
 
-Member variables that are declared with :keyword:`let` cannot be assigned a value after the
+Member variables that are declared with :kw:`let` cannot be assigned a value after the
 constructor has finished execution. In most cases, these kinds of variables will be constants
 anyway, meaning that their values are fixed at compile time. However, Tart also allows
-:keyword:`let` variables to be assigned in the constructor, in which case they are constant for
+:kw:`let` variables to be assigned in the constructor, in which case they are constant for
 the life of that instance (similar to the way "final" is used in Java). Note that such variables
 may only be assigned once in the constructor body.
 
@@ -336,7 +336,7 @@ Constructors can also invoke other constructors of the same class, by explicitly
   were assigned during the call.
   
   This means that once you delegate to another constructor, you cannot assign to any
-  :keyword:`let`-defined members afterwards.
+  :kw:`let`-defined members afterwards.
 
 .. index::
   pair: array; constructor
@@ -351,8 +351,8 @@ by the dimension of the array in square brackets::
   // Allocate an array of 10 rectangles.
   let a = Rectangle[10];
   
-If the element type of the array is a reference (:keyword:`class`) type, then what is actually
-allocated is an array of pointers to that type. If it's a value (:keyword:`struct`) type, then
+If the element type of the array is a reference (:kw:`class`) type, then what is actually
+allocated is an array of pointers to that type. If it's a value (:kw:`struct`) type, then
 the array actually contains embedded instances of that type.
 
 The array constructor call is actually implemented as a call to the Array
@@ -451,9 +451,9 @@ has no effect on the generated code for that type.
 Extending types
 ---------------
 
-.. warning:: :keyword:`extend` is not implemented in the current release.
+.. warning:: :kw:`extend` is not implemented in the current release.
 
-The :keyword:`extend` keyword allows you to add additional methods to a user-defined type::
+The :kw:`extend` keyword allows you to add additional methods to a user-defined type::
 
   /* Add an additional method to the String class. */
   extend String {
@@ -461,7 +461,7 @@ The :keyword:`extend` keyword allows you to add additional methods to a user-def
   }
 
 Note however, that you can't actually change the runtime representation of a type this way. The
-reason is simple: The :keyword:`extend` declaration may not be visible everywhere in the program. If
+reason is simple: The :kw:`extend` declaration may not be visible everywhere in the program. If
 you extend class :class:`String`, some modules may only see the original, unextended class, while
 other modules will see the extended version of the class. In order for all of the code to
 interoperate, the runtime implementation of the class must be the same, regardless of the extension.

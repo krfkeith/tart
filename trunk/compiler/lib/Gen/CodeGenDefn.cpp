@@ -73,9 +73,10 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ReturnTypePass), fdef);
   DASSERT_OBJ(fdef->defnType() != Defn::Macro, fdef);
 
+  const FunctionType * funcType = fdef->functionType();
+
   // If it's a function from a different module...
   if (fdef->module() != module_) {
-    const FunctionType * funcType = fdef->functionType();
     fn = Function::Create(
         cast<llvm::FunctionType>(funcType->irType()),
         Function::ExternalLinkage, fdef->linkageName(),
@@ -84,7 +85,6 @@ Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   }
 
   // Generate the function reference
-  const FunctionType * funcType = fdef->functionType();
   DASSERT_OBJ(funcType->isSingular(), fdef);
 
   fn = Function::Create(

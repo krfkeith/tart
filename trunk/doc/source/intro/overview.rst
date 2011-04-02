@@ -36,7 +36,7 @@ from all the others. Some of these motivations are:
 
 * The desire for a language that would combine the simplicity and
   readability of Python with the power of static typing and
-  template metapgrogramming, as well as modern language features
+  template metaprogramming, as well as modern language features
   such as closures and generic functions.
 * The desire for a compiler that compiles to highly efficient
   native code instead of a virtual instruction set.

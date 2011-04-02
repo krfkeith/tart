@@ -25,7 +25,7 @@ instance of the type. So the expression ``Point(10, 10)`` creates a new
 ``Point`` instance.
 
 In the example, we assign the new ``Point`` object to a variable named ``p`` which is defined using
-the :keyword:`var` keyword. Since the compiler knows what type is being assigned to ``p``, there is
+the :kw:`var` keyword. Since the compiler knows what type is being assigned to ``p``, there is
 not need to specify the variable type. We could just as easily have declared ``p`` like this::
 
   var p:Point = Point(10, 10);
@@ -70,12 +70,12 @@ Here's a somewhat more interesting example::
 
 The example is somewhat contrived, but it does illustrate a number of important points:
 
-* Members are public by default. The :keyword:`private` modifier can be used to declare individual
+* Members are public by default. The :kw:`private` modifier can be used to declare individual
   members as private, or you can use the block syntax to declare a whole group of members private.
 * The constructor method for a type is always called :meth:`construct`.
-* Class methods are declared with the :keyword:`def` keyword.
+* Class methods are declared with the :kw:`def` keyword.
 * You can declare named properties which have custom getters and setters that are defined with
-  :keyword:`get` and :keyword:`set`.
+  :kw:`get` and :kw:`set`.
 
 .. note:: In real code, you would probably want to use a naming convention - such as a leading
   underscore - for private member variables. Such style conventions are not required by Tart,

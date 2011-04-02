@@ -2,37 +2,54 @@ import tart.annex.Intrinsic;
 
 /** Simple debug printing facility for testing the compiler. */
 namespace Debug {
+  /** Return a string representation of the source expression 'expr'. */
   @Intrinsic
   def stringify[%T](expr:T) -> String;
 
+  /** Return a string containing the source file path and line number of the expression. */
   @Intrinsic
   def locationOf[%T](expr:T) -> String;
 
+  /** Write the message string 'msg' to the standard error stream. */
   @Extern("Debug_write")
   def write(msg:String);
 
+  /** Write a variable number of strings to the standard error stream. */
   def write(msgs:String...) {
     write(String.concat(msgs));
   }
 
+  /** Write the message string 'msg' to the standard error stream, followed by a newline. */
   @Extern("Debug_writeLn")
   def writeLn(msg:String);
 
+  /** Write a variable number of strings to the standard error stream, followed by a newline. */
   def writeLn(msgs:String...) {
     writeLn(String.concat(msgs));
   }
 
+  /** Write a message produced using a format string and a variable number of arguments
+      to the standard error stream, followed by a newline.
+      Parameters:
+        fmt - the format string.
+        args - the list of arguments.
+   */
   def writeLnFmt(fmt:String, args:Object...) {
     writeLn(String.format(fmt, args));
   }
 
+  /** Write a message to the standard error stream, and then terminate the program. */
   @Extern("Debug_fail")
   def fail(msg:String);
 
+  /** Write a variable number of message strings to the standard error stream, and then
+      terminate the program. */
   def fail(msgs:String...) {
     fail(String.concat(msgs));
   }
 
+  /** Write a message produced using a format string and a variable number of arguments
+      to the standard error stream, and then terminate the program. */
   def failFmt(fmt:String, args:Object...) {
     fail(String.format(fmt, args));
   }
@@ -42,28 +59,32 @@ namespace Debug {
   @Extern("Debug_writeIntLn")
   def writeIntLn(msg:String, val:int);
 
-  def assertTrueFailed(loc:String, cond:String) {
+  private def assertTrueFailed(loc:String, cond:String) {
     fail(loc, " Assertion failed: ", cond);
   }
 
-  def assertFalseFailed(loc:String, cond:String) {
+  private def assertFalseFailed(loc:String, cond:String) {
     fail(loc, " Assertion failed, expected false: ", cond);
   }
 
-  def assertEqFailed(loc:String, expected:String, actual:String) {
+  private def assertEqFailed(loc:String, expected:String, actual:String) {
     fail(loc, " Assertion failure, expected: ", expected, ", actual value: ", actual);
   }
 
-  def assertNeFailed(loc:String, expected:String, actual:String) {
+  private def assertNeFailed(loc:String, expected:String, actual:String) {
     fail(loc, " Assertion failure: ", expected, " not expected to equal ", actual);
   }
 
+	/** Terminate the program and print an error if 'cond' is not true.
+	    Deprecated: Use tart.test.Asserts.assertTrue. */
   macro assertTrue(cond:bool) {
     if not cond {
   		assertTrueFailed(locationOf(cond), stringify(cond));
     }
   }
 
+	/** Terminate the program and print an error if 'cond' is not false.
+	    Deprecated: Use tart.test.Asserts.assertTrue. */
   macro assertFalse(cond:bool) {
     if cond {
   		assertFalseFailed(locationOf(cond), stringify(cond));

@@ -556,7 +556,7 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
   builder_.CreateBr(blkNext);
 
   builder_.SetInsertPoint(blkNext);
-  PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
+  PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty(), 2);
   phi->addIncoming(ConstantInt::getTrue(context_), blkTrue);
   phi->addIncoming(ConstantInt::getFalse(context_), blkFalse);
   return phi;
