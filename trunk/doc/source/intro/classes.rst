@@ -12,8 +12,8 @@
   single: friend
   pair: declaring; types
 
-Classes
-=======
+User-defined types: Composites
+==============================
 
 The :keyword:`class` keyword is one of the four keywords that are used to define a new
 aggregate type. The others are :keyword:`struct`, :keyword:`interface` and :keyword:`protocol`.
@@ -27,7 +27,7 @@ aggregate type. The others are :keyword:`struct`, :keyword:`interface` and :keyw
 
 * An :keyword:`interface` defines an pure abstract type which can only contain methods, types
   and constants. Like Java and C#, Tart does not support multiple inheritance, but does allow
-  classes to derive from multiple interfaces.
+  classes to derive from multiple interfaces. See the section on :ref:`interfaces`.
  
 * A :keyword:`protocol` represents a contract which a type may conform to. A class or struct
   is said to *support* the protocol if that class or struct defines all of the method signatures
@@ -86,6 +86,9 @@ The :keyword:`class` keyword defines a new class. Here is a sample of a class de
 
 A couple of things are worth noticing in this example:
 
+**Dynamic dispatch is the default**: Like most object-oriented languages (other than C++), all
+functions are dynamically overridable (``virtual`` in C++ parlance) unless declared ``final``.
+
 **Private members:** You can declare a block of variables as :keyword:`private`, rather than having
 to put the word :keyword:`private` in front of every variable name. Within a :keyword:`private` or
 :keyword:`protected` block, you can declare :keyword:`friend` classes that have direct access to
@@ -100,9 +103,6 @@ just these class members.
   class members ``public`` far more than the would otherwise.
   
 .. warning:: ``friend`` is not implemented in the current release.
-
-**Dynamic dispatch is the default**: Like most object-oriented languages (other than C++), all
-functions are dynamically overridable (``virtual`` in C++ parlance) unless declared ``final``.
 
 .. index::
   pair: class; members
@@ -133,8 +133,8 @@ with :cdata:`self` unless you also have a local variable or parameter with the s
   
 In most cases the :cdata:`self` parameter works exactly like other, explicitly declared
 parameters. The exception to this rule is in :keyword:`struct` methods. Normally when
-the type of a parameter is a :keyword:`struct`, the value that is passed is a copy of
-the struct, however in the case of :cdata:`self`, what gets passed is a pointer to
+the type of a function parameter is a :keyword:`struct` type, the value that is passed is
+a *copy* of the struct, however in the case of :cdata:`self`, what gets passed is a *pointer* to
 the struct. If this were not true, it would be impossible to write methods that modify
 struct members, since the method could only modify the temporary copy. Note, however,
 that if you assign the :cdata:`self` parameter to another variable, the variable will
@@ -400,6 +400,53 @@ or the static :func:`of` method of the Array class. Both are equivalent::
     causes even greater grammatical ambiguities due to confusion with the less-than
     and greater-than operators, and makes the parser even more complicated and less
     context-free.
+    
+    
+.. _interfaces:
+
+Interfaces
+----------
+
+.. _protocols:
+
+Protocols
+---------
+
+A *protocol* is a kind of abstract type that defines a *contract* which another type can
+support. An example would be a "HasToString" protocol::
+
+  protocol HasToString {
+    def toString -> String;
+  }
+
+What this says is that in order to support the ``HasToString`` protocol, a class must define
+a :meth:`toString` method that returns a String. There are two ways that a type can support
+a protocol, *explicit* and *implicit*. Explicitly supporting a protocol is done by declaring
+the protocol in the list of base types::
+
+  class A : HasToString {
+    // It would be an error to declare support for HasToString and then
+    // fail to define a toString() method.
+    def toString -> String {
+      return "Hi there";
+    }
+  }
+
+You can also support a protocol implicitly simply by adding the required methods to your type,
+without declaring the protocol as a base type. Moreover, this applies even to classes that
+know nothing about the protocol - as long as they have the right set of methods, they support
+the protocol. So for example, any class that has a ``toString -> String`` method supports the
+``HasToString`` protocol, even if that class were written before ``HasToString`` ever existed!
+
+Protocols can only be used as matching constraints - you can't declare a variable or a
+function parameter whose type is a protocol. (Although, maybe someday...)
+
+Protocols are primarily used in instantiating templates. You can define a template and then
+add constraints to its template parameters, such that a parameter can only be bound to a type
+that supports the proper protocol.
+
+Note that protocols exist only at compile time, and declararing a protocol as a base type
+has no effect on the generated code for that type.
 
 Extending types
 ---------------

@@ -67,6 +67,10 @@
 	              ${m.formatDeclarator()}${m.formatDeclaration(False)}
               </a>
             </header>
+            <div class="member-deprecated" py:if="m.hasDeprecated()">
+              <p class="member-deprecated-prologue">This member is deprecated.</p>
+              ${m.deprecated()}
+            </div>
             <div class="member-description" py:if="m.hasDescription()">
               ${m.description()}
             </div>
@@ -150,7 +154,7 @@
 
     ${enum_details("Enum", d.members('typedef', filter.type_eq('enum')))}
     ${member_details("Property", d.members('property'))}
-    ${member_details("Method", d.members('method'))}
+    ${member_details("Method", d.members('method') + d.members('macro'))}
     
   </section>
   ${page_footer()}
