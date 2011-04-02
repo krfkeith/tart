@@ -14,10 +14,10 @@ Tart fall into one of the following groups:
 Type Group  Explanation
 ==========  =========================================================================
 primitive   Primitive types such as :ctype:`int`, :ctype:`float`, :ctype:`bool`, etc.
-composite   Includes :keyword:`class`, :keyword:`struct`, :keyword:`interface` and
-            :keyword:`protocol`. Arrays and maps are part of this group as well.
-enumerated  Enumerated types declared with :keyword:`enum`.
-disjoint    Also known as union types, declared with :keyword:`or` such as
+composite   Includes :kw:`class`, :kw:`struct`, :kw:`interface` and
+            :kw:`protocol`. Arrays and maps are part of this group as well.
+enumerated  Enumerated types declared with :kw:`enum`.
+disjoint    Also known as union types, declared with :kw:`or` such as
             :samp:`int or float`.
 function    The type of a function.
 tuple       An unnamed sequence of types, such as :samp:`(int, String)`.

@@ -4,6 +4,12 @@
 Statements
 ==========
 
+.. statement:: if
+.. statement:: else
+.. statement:: do
+.. statement:: while
+.. statement:: repeat
+
 Basic control-flow statements
 -----------------------------
 
@@ -41,6 +47,8 @@ The syntax is a little bit different from C or Java: You aren't required to
 put parentheses around the test expression, but the braces around the statement
 body are always required.
 
+.. statement:: for
+
 Tart supports both forms of :stmt:`for` (the C++ and Python forms), just
 like Java & JavaScript do::
 
@@ -56,6 +64,12 @@ like Java & JavaScript do::
     fact *= n;
   }
     
+.. statement:: break
+.. statement:: continue
+
+Break and Continue Statements
+-----------------------------
+
 Because the :stmt:`break` and :stmt:`continue` statements
 are so often used conditionally, the Perl syntax of *post-statement conditions*
 is supported for these statement types::
@@ -117,8 +131,8 @@ based on the type of the input expression::
 If the input value is one of the types specified, then the value is bound to
 the corresponding variable (``str`` in the case of a :class:`String` in the example
 above) and that variable will be available within the scope of the case body.
-If the input does not match any of the types listed, then the :keyword:`else` case
-will be executed, or if there is no :keyword:`else` case then the entire statement
+If the input does not match any of the types listed, then the :kw:`else` case
+will be executed, or if there is no :kw:`else` case then the entire statement
 is skipped.
 
 .. statement:: with

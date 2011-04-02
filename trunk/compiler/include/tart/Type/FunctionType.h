@@ -40,7 +40,7 @@ public:
   void setReturnType(const Type * type) { returnType_ = type; }
 
   /** True if this function type uses 'struct return' calling convention. */
-  bool isStructReturn() const { return isStructReturn_; }
+  bool isStructReturn() const;
 
   const llvm::Type * irType() const;
 

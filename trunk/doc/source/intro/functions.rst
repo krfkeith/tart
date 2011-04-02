@@ -9,12 +9,12 @@
 Function Type Expressions
 =========================
 
-The keyword :keyword:`fn` declares an expression having function type. It
+The keyword :kw:`fn` declares an expression having function type. It
 is often used to declare an anonymous function (also known as a
 'function literal'), but it can also be used to declare a variable
 containing a pointer to a function.
 
-The :keyword:`fn` keyword is optionally followed by an argument list. Usually
+The :kw:`fn` keyword is optionally followed by an argument list. Usually
 the argument list will be in parentheses, however if there is only a single
 argument, or no arguments at all, then the parentheses can be omitted::
 
@@ -142,7 +142,7 @@ argument? Like this::
   fn (:fn i:int) -> int;
   
 .. note:: The parentheses are needed because the precedence of the ``->``
-  operator is higher than that of the :keyword:`fn` keyword.
+  operator is higher than that of the :kw:`fn` keyword.
 
 .. index::
   pair: function; anonymous
@@ -185,10 +185,10 @@ after the outer function has returned.
 
 .. note::
   The compiler only creates closure cells for function parameters and variables declared
-  with :keyword:`var`. For values declared with :keyword:`let`, the compiler instead
+  with :kw:`var`. For values declared with :kw:`let`, the compiler instead
   creates a copy of the variable in the closure itself, which is more efficient,
   since it avoids the extra heap allocation. Because values declared with
-  :keyword:`let` cannot be changed, there's no need for the closure and the
+  :kw:`let` cannot be changed, there's no need for the closure and the
   enclosing function to share a reference to the same variable. Of course, if the variable
   is a reference type, then the closure will have a copy of the *pointer*,
   not the object itself, which will still be shared.
@@ -199,9 +199,9 @@ after the outer function has returned.
 The Function Interface
 ----------------------
 
-Expressions of function type (as declared using the :keyword:`fn` keyword) can be treated
+Expressions of function type (as declared using the :kw:`fn` keyword) can be treated
 like objects that implement the :interface:`Function` interface. In fact, the
-:keyword:`fn` keyword is simply a shortcut - so for example, the declaration::
+:kw:`fn` keyword is simply a shortcut - so for example, the declaration::
 
   var func:fn (:int, :int) -> String;
   

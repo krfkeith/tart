@@ -2,6 +2,8 @@
 
 Next up:
 
+* Finish @Associative.
+* Finish config_paths.h.
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
 * statements returning values - if, switch, match.

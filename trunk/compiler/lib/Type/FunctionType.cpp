@@ -120,6 +120,13 @@ TupleType * FunctionType::paramTypes() const {
   return paramTypes_;
 }
 
+bool FunctionType::isStructReturn() const {
+  DASSERT_MSG(!isa<llvm::OpaqueType>(irType_.get()),
+      "Getting isStructReturn before irType has been settled.");
+
+  return isStructReturn_;
+}
+
 const llvm::Type * FunctionType::irType() const {
   if (llvm::OpaqueType * otype = dyn_cast<llvm::OpaqueType>(irType_.get())) {
     if (!isCreatingType) {
@@ -145,12 +152,6 @@ const llvm::Type * FunctionType::createIRType() const {
   const Type * selfType = NULL;
   if (selfParam_ != NULL && !isStatic()) {
     selfType = selfParam_->type();
-  }
-
-  // Get the return type
-  const Type * retType = returnType_;
-  if (retType == NULL) {
-    retType = &VoidType::instance;
   }
 
   // Create the function type

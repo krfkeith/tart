@@ -15,8 +15,8 @@ Contents:
    conversions
    statements
    operators
-   reflection
    annotations
+   reflection
    collections
    foreign
    macros
@@ -24,5 +24,3 @@ Contents:
 
    templates
    modules
-
-   

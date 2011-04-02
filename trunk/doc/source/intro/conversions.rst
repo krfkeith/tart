@@ -93,7 +93,7 @@ Conditional casts
 The :stmt:`match` statement is used for doing conditional casts.
 
 .. 
-  The :keyword:`as` operator represents one type of *conditional cast*,
+  The :kw:`as` operator represents one type of *conditional cast*,
   meaning that the conversion may silently fail if the destination variable
   is the wrong type to contain the value.
   
@@ -130,7 +130,7 @@ The :stmt:`match` statement is used for doing conditional casts.
 Type testing
 ------------
 
-Sometimes you need to test the type of a variable, the :keyword:`isa` keyword
+Sometimes you need to test the type of a variable, the :kw:`isa` keyword
 can be used for this. It works for both reference types and union types::
 
   if a isa float {

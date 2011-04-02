@@ -12,13 +12,13 @@ Variable Declarations
 ---------------------
 
 In Tart, there are three keywords that are most often used to declare a named value:
-:keyword:`var`, :keyword:`let`, and :keyword:`def`.
+:kw:`var`, :kw:`let`, and :kw:`def`.
 
- * :keyword:`var` defines a mutable variable.
- * :keyword:`let` defines an immutable variable.
- * :keyword:`def` defines a function or property.
+ * :kw:`var` defines a mutable variable.
+ * :kw:`let` defines an immutable variable.
+ * :kw:`def` defines a function or property.
 
-Let's start by looking at :keyword:`let` and :keyword:`var`. Both allow the
+Let's start by looking at :kw:`let` and :kw:`var`. Both allow the
 type of a declaration to be deduced from its initialization expression::
 
   // Type can be explicitly specified.
@@ -37,7 +37,7 @@ type of a declaration to be deduced from its initialization expression::
 As you can see, you don't have to include the type if it can be inferred by
 the compiler.
 
-.. note:: In the case of :keyword:`let`, the compiler may or may not allocate
+.. note:: In the case of :kw:`let`, the compiler may or may not allocate
     storage for the variable, depending on the circumstance.
 
 .. index:: array
@@ -53,7 +53,7 @@ Another example of a type expression is a *disjoint* or *union* type::
   // Variable can be either an integer or a String
   var value:int or String;
 
-The :keyword:`let` and :keyword:`var` keywords can be used almost anywhere.
+The :kw:`let` and :kw:`var` keywords can be used almost anywhere.
 For example, they can be used inside a class to declare a class or struct
 member, as we saw before. They can also be used to declare local variables::
 
@@ -62,11 +62,11 @@ member, as we saw before. They can also be used to declare local variables::
     return x2;
   }
 
-Note that even though :keyword:`let` declares an immutable value, it does not
-have to be a compile-time constant. What :keyword:`let` really means is "bind
+Note that even though :kw:`let` declares an immutable value, it does not
+have to be a compile-time constant. What :kw:`let` really means is "bind
 this name to this value in this scope". Once bound, the binding cannot be
-changed. (In fact, if you only use :keyword:`let` and never use
-:keyword:`var`, you are essentially doing pure functional programming.)
+changed. (In fact, if you only use :kw:`let` and never use
+:kw:`var`, you are essentially doing pure functional programming.)
 
 Like many programming languages, you aren't allowed to put an assignment in
 a conditional expression::
@@ -77,14 +77,14 @@ a conditional expression::
   }
 
 You can, however, introduce a new variable inside a conditional expression
-using :keyword:`let` or :keyword:`var` and assign to it. The scope of the
+using :kw:`let` or :kw:`var` and assign to it. The scope of the
 variable includes the body of the :stmt:`if`-statement::
 
   if let m = re_ident.match(s) {
      return m.group();
   }
 
-In the case of the 'for...in' statement, there's an implicit :keyword:`let`
+In the case of the 'for...in' statement, there's an implicit :kw:`let`
 for the iteration variable::
 
   for a in 1..10 {
@@ -98,8 +98,8 @@ for the iteration variable::
 Function Declarations
 ---------------------
 
-You can declare variables of function type using the :keyword:`fn` keyword, which introduces an
-anonymous function type declaration. Here's how you might combine :keyword:`let` and :keyword:`fn`
+You can declare variables of function type using the :kw:`fn` keyword, which introduces an
+anonymous function type declaration. Here's how you might combine :kw:`let` and :kw:`fn`
 to declare a function::
 
   let f1 = fn (x:int, x:int) -> int {
@@ -111,8 +111,8 @@ The symbol ``->`` means "returns type". It's used to indicate the return type
 of a function. So ``fn (x:int, y:int) -> int`` is actually the complete
 type of the function.
 
-Using the :keyword:`let` keyword to define functions is kind of cumbersome though, so we
-have :keyword:`def` which is a shortcut::
+Using the :kw:`let` keyword to define functions is kind of cumbersome though, so we
+have :kw:`def` which is a shortcut::
 
   def f1(x:int, y:int) -> int {
     sys.stdout.println("Hello, World!");
@@ -133,7 +133,7 @@ If you leave off the return type, the compiler assumes that the function's retur
 Property Declarations
 ---------------------
 
-The :keyword:`def` keyword can also be used to define a *property*. Properties
+The :kw:`def` keyword can also be used to define a *property*. Properties
 are like variables, except that they are implemented using functions. Whenever
 you attempt to read from the property, the property's ``get`` function will be
 invoked, and when you attempt to modify the value, the ``set`` function
@@ -148,8 +148,8 @@ will be called.::
 
 .. topic:: Let, Var, and Def
 
-  At this point, you may be wondering why have three keywords - :keyword:`let`,
-  :keyword:`var` and :keyword:`def` - when in fact with a smart compiler, one
+  At this point, you may be wondering why have three keywords - :kw:`let`,
+  :kw:`var` and :kw:`def` - when in fact with a smart compiler, one
   keyword could do the job. Indeed, an earlier version of Tart didn't use any
   keyword at all, just a punctuation symbol to introduce a new name. The problem
   with this earlier syntax is that the syntax was *too* regular - it was hard to
