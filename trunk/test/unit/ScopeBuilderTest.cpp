@@ -15,18 +15,17 @@ using namespace tart;
 
 class ScopeBuilderTest : public testing::Test {
 protected:
-  FakeSourceFile testSource;
   Module testModule;
   ScopeBuilder builder;
 
 public:
   ScopeBuilderTest()
-    : testSource("")
-    , testModule("test.test", &Builtins::module)
+    : testModule("test.test", &Builtins::module)
     , builder()
   {
-    testModule.setModuleSource(&testSource);
+    testModule.setModuleSource(new FakeSourceFile(""));
   }
+
 
   virtual void SetUp() {}
   virtual void TearDown() {}

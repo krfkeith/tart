@@ -14,17 +14,15 @@ using namespace tart;
 
 class DefnAnalyzerTest : public testing::Test {
 protected:
-  FakeSourceFile testSource;
-  Module testModule;
+  Module * testModule;
   DefnAnalyzer declAnalyzer;
 
 public:
   DefnAnalyzerTest()
-    : testSource("")
-    , testModule("test", &Builtins::module)
-    , declAnalyzer(&testModule, &testModule, &testModule, NULL)
+    : testModule(new Module("test", &Builtins::module))
+    , declAnalyzer(testModule, testModule, testModule, NULL)
   {
-    testModule.setModuleSource(&testSource);
+    testModule->setModuleSource(new FakeSourceFile(""));
   }
 
   virtual void SetUp() {}

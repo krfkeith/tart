@@ -119,6 +119,7 @@ private:
 class GCRootBase {
 public:
   GCRootBase();
+  virtual ~GCRootBase() {}
 
   /** Trace this root. */
   virtual void trace() const = 0;
@@ -144,6 +145,7 @@ class GCWeakPtrBase {
 public:
   GCWeakPtrBase() : ptr_(NULL) {}
   GCWeakPtrBase(GC * ptr) : ptr_(ptr) {}
+  virtual ~GCWeakPtrBase() {}
 
   virtual void finalize() const = 0;
   void trace() const;
