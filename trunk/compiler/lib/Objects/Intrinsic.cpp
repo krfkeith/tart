@@ -1028,6 +1028,24 @@ Expr * NoInlineApplyIntrinsic::eval(const SourceLocation & loc, Module * calling
 }
 
 // -------------------------------------------------------------------
+// AssociativeApplyIntrinsic
+AssociativeApplyIntrinsic AssociativeApplyIntrinsic::instance;
+
+Expr * AssociativeApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
+    const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  assert(args.size() == 1);
+  if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
+    if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+      //fn->setFlag(FunctionDefn::Associative, true);
+      return args[0];
+    }
+  }
+
+  diag.error(loc) << "Invalid target for 'Associative'";
+  return args[0];
+}
+
+// -------------------------------------------------------------------
 // ProxyCreateIntrinsic
 ProxyCreateIntrinsic ProxyCreateIntrinsic::instance;
 

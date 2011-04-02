@@ -708,6 +708,30 @@ Doc::Node * DocExporter::getInheritedDocComment(const Defn * de) {
         }
       }
     }
+  } else if (const PropertyDefn * prop = dyn_cast<PropertyDefn>(de)) {
+    const CompositeType * cls = prop->definingClass();
+    ClassSet bases;
+    cls->ancestorClasses(bases);
+    for (ClassSet::const_iterator it = bases.begin(); it != bases.end(); ++it) {
+      DefnList defns;
+      (*it)->lookupMember(prop->name(), defns, false);
+      if (!defns.empty()) {
+        for (DefnList::const_iterator d = defns.begin(); d != defns.end(); ++d) {
+          if (const PropertyDefn * baseProp = dyn_cast<PropertyDefn>(*d)) {
+            if (baseProp->type() != NULL &&
+                baseProp->type()->isEqual(prop->type()) &&
+                baseProp->ast() != NULL &&
+                !baseProp->ast()->docComment().empty()) {
+              DocCommentProcessor processor(baseProp->ast()->docComment());
+              Doc::Node * node = processor.process();
+              if (node != NULL) {
+                return node;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   return NULL;

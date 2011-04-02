@@ -3,8 +3,8 @@
 
 .. index::
   pair: function; type
-  keyword: def
-  keyword: fn
+  single: def
+  single: fn
 
 Function Type Expressions
 =========================
@@ -189,7 +189,9 @@ after the outer function has returned.
   creates a copy of the variable in the closure itself, which is more efficient,
   since it avoids the extra heap allocation. Because values declared with
   :keyword:`let` cannot be changed, there's no need for the closure and the
-  enclosing function to share a reference to the same variable.
+  enclosing function to share a reference to the same variable. Of course, if the variable
+  is a reference type, then the closure will have a copy of the *pointer*,
+  not the object itself, which will still be shared.
 
 .. index::
   pair: Function; interface

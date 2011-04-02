@@ -411,7 +411,8 @@ ConversionRank Type::convert(const Conversion & cn) const {
           bestRank = std::max(bestRank, rank);
         }
 
-        rank = bestRank;
+        // Coerced conversions are at best non-preferred.
+        rank = std::min(bestRank, NonPreferred);
       }
     }
   }

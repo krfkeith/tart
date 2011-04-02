@@ -22,7 +22,7 @@ using namespace llvm;
 
 void CodeGenerator::genModuleMetadata() {
 /*  ProgramSource * source = module_->moduleSource();
-  SmallString<128> mdName("xdef.");
+  SmallString<128> mdName("tart.xdef.");
   mdName += module_->qualifiedName();
   NamedMDNode * md = irModule_->getOrInsertNamedMetadata(mdName);
   // TODO: Add compiler version.

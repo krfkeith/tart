@@ -257,11 +257,21 @@ public final class String : Iterable[char] {
     return StringFormatter(self, args).build();
   }
 
+  /** Degenerate form of concat which takes a single string.
+      Parameters:
+        s - the input string.
+      Returns: the input string.
+   */
+  static def concat(s:String) -> String {
+    return s;
+  }
+
   /** Concatenate a list of strings.
       Parameters:
         s - the list of strings to concatenate.
       Returns: the concatenation of the input strings.
    */
+  @Associative
   static def concat(s:String...) -> String {
     return concat(s);
   }
@@ -271,6 +281,7 @@ public final class String : Iterable[char] {
         s - an 'Iterable' which returns the strings to be concatenated.
       Returns: the concatenation of the input strings.
    */
+  @Associative
   static def concat(strings:Iterable[String]) -> String {
     var length:int = 0;
     for s in strings {
@@ -436,9 +447,9 @@ public final class String : Iterable[char] {
   }
 
   /* Implicitly convert values to String types. */
-//  static def coerce[%T] (value:T) -> String { return "<??>"; }
-//  static def coerce[%T <: HasToString] (value:T) -> String { return value.toString(); }
-//  static def coerce(value:Object) -> String { return value.toString(); }
+  //static def coerce[%T] (value:T) -> String { return "<??>"; }
+  static def coerce[%T <: HasToString] (value:T) -> String { return value.toString(); }
+  static def coerce(value:Object) -> String { return value.toString(); }
 
   /** Return an immutable buffer representation of this string's data. */
   def asBuffer() -> Memory.Buffer[ubyte] {
@@ -482,4 +493,9 @@ public final class String : Iterable[char] {
 /** Equality comparison operator for strings. */
 public def infixEQ(s1:String, s2:String) -> bool {
   return s1.equals(s2);
+}
+
+/** Addition operator for strings. */
+public macro infixAdd(s1:String, s2:String) -> String {
+  return String.concat(s1, s2);
 }

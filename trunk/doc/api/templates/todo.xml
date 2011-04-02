@@ -1,0 +1,21 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<head>
+  <xi:include href="common.xml"/>
+  <title>TODOs</title>
+</head>
+<body>
+  ${page_header(None)}
+  <section class="content-section">
+    <header class="content-header">TODOs</header>
+    
+    <header class="member-table-header">Undocumented Members</header>
+    <ul>
+      <li py:for="decl, count in undoc">
+        <a class="type-alpha-list-link" href="${decl.uri}">${decl.qualifiedName}</a> (${count})
+      </li>
+    </ul>
+
+  </section>
+  ${page_footer()}
+</body>
+</html>
