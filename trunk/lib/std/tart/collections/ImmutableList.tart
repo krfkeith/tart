@@ -19,18 +19,12 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     self.data = data;
   }
 
-  // TODO: Test
-  def add(e:ElementType) {
-    throw UnsupportedOperationError();
-  }
-
-  def insert(position:int, e:ElementType) {
-    throw UnsupportedOperationError();
-  }
-
-  def remove(index:int) {
-    throw UnsupportedOperationError();
-  }
+  undef add(e:ElementType) ;
+  undef addAll(collection:Collection[ElementType]);
+  undef insert(position:int, e:ElementType);
+  undef insertAll(position:int, collection:Collection[ElementType]);
+  undef remove(index:int);
+  undef clear();
 
   def [index:int]:ElementType {
     get {
@@ -40,10 +34,6 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     set {
       throw UnsupportedOperationError();
     }
-  }
-
-  def clear {
-    throw UnsupportedOperationError();
   }
 
   def size:int {

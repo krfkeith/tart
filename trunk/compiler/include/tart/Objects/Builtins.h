@@ -51,7 +51,6 @@ public:
   static SystemClass typeRange;
   static SystemClass typeThrowable;
   static SystemClass typeFunction;
-  static SystemClass typeUnsupportedOperationError;
   static Type * typeUnwindException;
   static Type * typeIterable;
   static Type * typeIterator;
@@ -97,6 +96,7 @@ public:
   // System functions
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
+  static FunctionDefn * funcUndefinedMethod;
 
   /** Initialization function for builtins. */
   static void init();

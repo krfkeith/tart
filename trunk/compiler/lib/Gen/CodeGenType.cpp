@@ -274,6 +274,8 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
       if (method->isExtern()) {
         DASSERT_OBJ(method->isSingular(), method);
         methodVal = genFunctionValue(method);
+      } else if (method->isUndefined()) {
+        methodVal = genCallableDefn(method);
       } else {
         // TODO: Replace this with call to throw an exception.
         methodVal = ConstantPointerNull::get(methodPtrType_);

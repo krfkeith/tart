@@ -224,17 +224,21 @@ bool VarAnalyzer::resolveVarType() {
         }
         target->setInitValue(initExpr);
       }
+    } else if (target->type() == NULL) {
+      diag.error(target) << "Type of '" << target << "' cannot be determined";
     }
 
-    DASSERT(target->type() != NULL);
-    if (target->type()->isSingular()) {
+    if (target->type() != NULL && target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
     target->passes().finish(VariableDefn::VariableTypePass);
   }
 
-  DASSERT(target->type() != NULL);
+  if (target->type() == NULL) {
+    target->setType(&BadType::instance);
+    return false;
+  }
   DASSERT_OBJ(!target->type()->isVoidType(), target);
   return true;
 }

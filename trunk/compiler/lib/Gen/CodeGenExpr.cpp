@@ -1091,7 +1091,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   // Arguments to the array-creation function
   ValueList args;
   args.push_back(getIntVal(arrayLength));
-  Function * allocFunc = findMethod(arrayType, "alloc");
+  Constant * allocFunc = findMethod(arrayType, "alloc");
   Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
 
   // Evaluate the array elements.

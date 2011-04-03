@@ -1,3 +1,4 @@
+import tart.collections.Collection;
 import tart.collections.List;
 import tart.core.Memory.Address;
 import tart.gc.TraceMethod;
@@ -27,18 +28,12 @@ final class MethodList : List[Method] {
 		//}
   }
 
-  // TODO: Make this undef. (Undefs should automatically throw UnsupportedOperationError().) */
-  def add(e:Method) {
-    throw UnsupportedOperationError();
-  }
-
-  def insert(position:int, e:Method) {
-    throw UnsupportedOperationError();
-  }
-
-  def remove(index:int) {
-    throw UnsupportedOperationError();
-  }
+  undef add(e:Method);
+  undef addAll(e:Collection[Method]);
+  undef insert(position:int, e:Method);
+  undef insertAll(position:int, e:Collection[Method]);
+  undef remove(index:int);
+  undef clear;
 
   def [index:int]:Method {
     get {
@@ -48,10 +43,6 @@ final class MethodList : List[Method] {
     set {
       throw UnsupportedOperationError();
     }
-  }
-
-  def clear {
-    throw UnsupportedOperationError();
   }
 
   def size:int {

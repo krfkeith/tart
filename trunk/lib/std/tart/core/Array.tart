@@ -26,10 +26,6 @@ import tart.gc.TraceAction;
         action.trace(_data[i]);
       }
     }
-
-    //def asBuffer() {
-    //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
-    //}
   }
 
   /** Construct an array of a given length */
@@ -94,6 +90,11 @@ import tart.gc.TraceAction;
       Preconditions.checkArgument(index >= 0 and index < _size);
       self._data[index] = value;
     }
+  }
+
+  /** Return an immutable buffer representation of this array's data. */
+  def asBuffer() -> Memory.Buffer[ElementType] {
+    return Memory.Buffer[ElementType](self, addressOf(self._data[0]), _size);
   }
 
   /** Make a copy of this array. */

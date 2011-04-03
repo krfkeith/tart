@@ -203,6 +203,7 @@ public:
   llvm::Value * genLetValue(const VariableDefn * let);
   llvm::Value * genVarValue(const VariableDefn * var);
   llvm::Constant * genGlobalVar(const VariableDefn * var);
+  llvm::Constant * genCallableDefn(const FunctionDefn * fn);
 
   // Methods to generate the contents of a definition
 

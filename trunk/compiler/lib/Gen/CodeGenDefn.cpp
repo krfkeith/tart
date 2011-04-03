@@ -58,6 +58,31 @@ bool CodeGenerator::genXDef(Defn * de) {
   }
 }
 
+Constant * CodeGenerator::genCallableDefn(const FunctionDefn * fdef) {
+  Function * fn = irModule_->getFunction(fdef->linkageName());
+  if (fn != NULL) {
+    return fn;
+  }
+
+  const FunctionType * funcType = fdef->functionType();
+
+  if (fdef->isUndefined()) {
+    // Return a function that throws an UnsupportedOperationError.
+    Function * undefinedMethod = cast<Function>(genFunctionValue(Builtins::funcUndefinedMethod));
+    undefinedMethod->setDoesNotReturn(true);
+    return llvm::ConstantExpr::getPointerCast(undefinedMethod, funcType->irType()->getPointerTo());
+  }
+
+  if (fdef->mergeTo() != NULL) {
+    // Return the merged function
+    Function * fnVal = genFunctionValue(fdef->mergeTo());
+    return llvm::ConstantExpr::getPointerCast(
+        fnVal, fdef->functionType()->irType()->getPointerTo());
+  }
+
+  return genFunctionValue(fdef);
+}
+
 Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
   Function * fn = irModule_->getFunction(fdef->linkageName());
   if (fn != NULL) {
@@ -114,7 +139,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   }
 
   // Don't generate a function if it has been merged to another function
-  if (fdef->mergeTo() != NULL) {
+  if (fdef->mergeTo() != NULL || fdef->isUndefined()) {
     return true;
   }
 

@@ -725,8 +725,7 @@ void Reflector::emitMethod(const FunctionDefn * fn) {
   sb.addNullField(reflect::Method::params.type());
 
   // Method._methodPointer
-  sb.addPointerField(reflect::Method::methodPointer,
-      cg_.genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn));
+  sb.addPointerField(reflect::Method::methodPointer, cg_.genCallableDefn(fn));
 
   // Method._isConstructor
   sb.addIntegerField(reflect::Method::isConstructor, fn->isCtor() ? 1 : 0);

@@ -209,11 +209,6 @@ public final class String : Iterable[char] {
     }
   }
 
-  /* Return this string as a memory buffer. */
-  //def asBuffer -> Memory.Buffer[ubyte] {
-  //  return Memory.Buffer(self, addressOf(start[0]), addressOf(start[len]));
-  //}
-
   /** Converting a 'String' to a 'String' simply returns 'self'. */
   override toString -> String {
     return self;
@@ -453,7 +448,7 @@ public final class String : Iterable[char] {
 
   /** Return an immutable buffer representation of this string's data. */
   def asBuffer() -> Memory.Buffer[ubyte] {
-    return Memory.Buffer[ubyte](self, _start, addressOf(_start[self._size]));
+    return Memory.Buffer[ubyte](self, _start, _size);
   }
 
   /** Compute a hash value for this string. */

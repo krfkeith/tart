@@ -31,44 +31,64 @@ namespace Memory {
       return __alloc(size);
     }
 
-    def free(ptr:Address[ubyte]) {
-      throw UnsupportedOperationError();
-    }
+    undef free(ptr:Address[ubyte]);
   }
 
   /** Represents a sub-range of an array or list or other container that uses
       contiguous storage of elements. */
   struct Buffer[%T] {
     protected {
-      // Reference to the container for GC purposes.
-      var _container:Object;
-      var _begin:Address[T];
-      var _end:Address[T];
+      var _container:Object;  // Reference to the container for GC purposes.
+      var _offset:int;        // Offset from the start of '_container' to the first element.
+      var _size:int;          // Number of elements in the sequence.
+
+      def baseAddress:Address[ubyte] { get {
+        let containerAddress:Address[ubyte] = reinterpretPtr(objectAddress(_container));
+        return addressOf(containerAddress[_offset]);
+      } }
     }
 
-    def construct(container:Object, begin:Address[T], end:Address[T]) {
+    /** Construct a Buffer object.
+        Parameters:
+          container - the object that contains the sequence of elements.
+          begin - the address of the first element of the sequence.
+          size - the number of elements in the sequence.
+     */
+    def construct(container:Object, begin:Address[T], size:int) {
+      let offset:int = ptrDiff[ubyte](
+          reinterpretPtr(objectAddress(container)),
+          reinterpretPtr(begin));
+      self.construct(container, offset, size);
+    }
+
+    /** Construct a Buffer object.
+        Parameters:
+          container - the object that contains the sequence of elements.
+          offset - the offset from the container address to the first element.
+          size - the number of elements in the sequence.
+     */
+    def construct(container:Object, offset:int, size:int) {
+      Preconditions.checkArgument(offset > 0);
+      Preconditions.checkArgument(size >= 0);
       self._container = container;
-      self._begin = begin;
-      self._end = end;
+      self._offset = offset;
+      self._size = size;
     }
-
-    // TODO: Mark T as const.
 
     /** Read-only access to the beginning of the buffer. */
-    def begin:Address[T] { get { return _begin; } }
+    def begin:Address[T] { get { return reinterpretPtr(baseAddress); } }
 
     /** Read-only access to the end of the buffer. */
-    def end:Address[T] { get { return _end; } }
+    def end:Address[T] { get { return addressOf(begin[_size]); } }
 
-    def length:int {
-      get { return ptrDiff(_begin, _end); }
-    }
+    /** The number of elements in the sequence. */
+    def size:int { get { return _size; } }
   }
 
   /** Extension of Buffer to support mutatbility of elements. */
   struct MutableBuffer[%T] : Buffer[T] {
-    def mutableBegin:Address[T] { get { return _begin; } }
-    def mutableEnd:Address[T] { get { return _end; } }
+    def mutableBegin:Address[T] { get { return begin(); } }
+    def mutableEnd:Address[T] { get { return end(); } }
   }
 
   /** The null pointer, converted to an object reference. */
