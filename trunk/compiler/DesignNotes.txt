@@ -252,58 +252,7 @@ namespace Numbers {
 
   extend short : PrimitiveInt {
   }
-
-  //extend NativePointer<byte> {
-  //}
-
-  protocol_map PrimitiveInt<int> {}
-  protocol_map PrimitiveInt<long> {}
-  protocol_map PrimitiveInt<ubyte> {}
-  protocol_map PrimitiveInt<ushort> {}
-  protocol_map PrimitiveInt<uint> {}
-  protocol_map PrimitiveInt<ulong> {}
-
-  protocol_map PrimitiveFloat<float> {}
-  protocol_map PrimitiveFloat<double> {}
-  
-
-  protocol PrimitiveNumber {}
 }
-
-// ------------------------------------------------------------------------
-
-Weak references implemented in terms of finalization:
-
-class WeakReference[%T:Object] {
-  @Untraced value:T;
-  
-  def construct {
-    value = null;
-  }
-  
-  def construct(value:T) {
-    value = null;
-    set(value);
-  }
-  
-  def get() { return value; }
-  
-  def set(value:T) {
-    if self.value is not null {
-      self.value.removeFinalizer(self.finalize);
-    }
-
-    self.value = value;
-
-    if self.value is not null {
-      self.value.addFinalizer(self.finalize);
-    }
-  }
-  
-  def finalize() {
-    value = null;
-  }
-}  
 
 // ------------------------------------------------------------------------
 

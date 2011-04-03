@@ -303,12 +303,14 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
         std::min(diag.indentLevel, MAX_INDENT) * 2,
         INDENTATION,
         msg.c_str());
+    fflush(stderr);
   } else {
     fprintf(stderr, "%s%.*s%s\n",
         severityNames[(int)sev],
         std::min(diag.indentLevel, MAX_INDENT) * 2,
         INDENTATION,
         msg.c_str());
+    fflush(stderr);
   }
 }
 

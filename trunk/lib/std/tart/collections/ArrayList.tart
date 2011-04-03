@@ -53,12 +53,26 @@ import tart.core.Math.max;
     _data[index] = e;
   }
 
+  def addAll(collection:Collection[ElementType]) {
+    let index = _size;
+    grow(collection.size);
+    //_data[index] = e;
+    throw UnsupportedOperationError();
+  }
+
   def insert(index:int, e:ElementType) {
     Preconditions.checkIndex(index >= 0);
     Preconditions.checkIndex(index <= _size);
     grow(1);
     ElementType[].copyElements(_data, index + 1, _data, index, _size - index);
     _data[index] = e;
+  }
+
+  def insertAll(index:int, collection:Collection[ElementType]) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index <= _size);
+    grow(collection.size);
+    throw UnsupportedOperationError();
   }
 
   def remove(index:int) {

@@ -96,12 +96,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
       fnVal = genFunctionValue(fn);
     }
   } else {
-    if (fn->mergeTo() != NULL) {
-      fnVal = genFunctionValue(fn->mergeTo());
-      fnVal = builder_.CreatePointerCast(fnVal, fn->functionType()->irType()->getPointerTo());
-    } else {
-      fnVal = genFunctionValue(fn);
-    }
+    fnVal = genCallableDefn(fn);
   }
 
   Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());

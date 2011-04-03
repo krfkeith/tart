@@ -215,8 +215,10 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterList & params = ftype->params();
       for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
         ParameterDefn * param = *it;
-        VarAnalyzer(param, target->definingScope(), module_, target, target)
-            .analyze(Task_PrepTypeComparison);
+        if (!VarAnalyzer(param, target->definingScope(), module_, target, target)
+            .analyze(Task_PrepTypeComparison)) {
+          success = false;
+        }
         param->setLocation(param->location());
 
         if (param->type() == NULL) {
@@ -439,11 +441,7 @@ bool FunctionAnalyzer::createCFG() {
         visitClosureEnvs(target->closureEnvs());
       }
     } else if (target->isUndefined()) {
-      // Push a dummy block for undefined method.
-//      Block * block = new Block("undef_entry");
-//      target->blocks().push_back(block);
-      //DFAIL("Implement");
-      module()->addSymbol(Builtins::typeUnsupportedOperationError->typeDefn());
+      module()->addSymbol(Builtins::funcUndefinedMethod);
     }
 
     target->passes().finish(FunctionDefn::ControlFlowPass);
