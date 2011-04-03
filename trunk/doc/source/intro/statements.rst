@@ -4,7 +4,6 @@
 Statements
 ==========
 
-.. statement:: if
 .. statement:: else
 .. statement:: do
 .. statement:: while
@@ -134,33 +133,6 @@ above) and that variable will be available within the scope of the case body.
 If the input does not match any of the types listed, then the :kw:`else` case
 will be executed, or if there is no :kw:`else` case then the entire statement
 is skipped.
-
-.. statement:: with
-
-The "with" statement
---------------------
-
-.. warning: This statement is not implemented in the current release.
-
-Another useful statement is the :stmt:`with` statement::
-
-  // Declare a new variable 'fh' and assign an open file handle to it.
-  with fh = File.open("unicode.txt) {
-    // Do something with fh.
-    // It will be closed when the block exits.
-  }
-  
-The :stmt:`with` statement can be used to guarantee that the appropriate cleanup
-code is called after you are finished with an object. In the above example,
-the file handle ``fh`` will be closed upon exit from the :stmt:`with` block,
-regardless of how the block was existed (even if via :stmt:`return` or an
-exception.)
-
-The :stmt:`with` statement can also influence the set of effect annotations
-that propagate outward from within the contained block. Similar to the way a
-:stmt:`try` statement can filter out an exception effect, a :stmt:`with`
-statement that acquires and then releases a mutex could potentially
-remove a 'thread-unsafe' effect.
 
 .. statement:: try
 .. statement:: catch
