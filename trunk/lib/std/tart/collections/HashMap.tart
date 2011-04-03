@@ -213,7 +213,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     } else if _data.size > 0 {
       for i = 0; i < _size; ++i {
         if _data[i].key == key {
-          Memory.arrayMove(_data.elementAddress(i), _data.elementAddress(i+1), _size - i - 1);
+          _data.moveElements(i, i + 1, _size - i - 1);
           --_size;
           return true;
         }

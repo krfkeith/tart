@@ -39,7 +39,7 @@ public final class String : Iterable[char] {
    */
   static def create(bytes:ubyte[]) -> String {
     let self = alloc(bytes.size);
-    Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes.data[0]), bytes.size);
+    bytes.copyElements(addressOf(self._data[0]), 0, bytes.size);
     return self;
   }
 
@@ -60,7 +60,7 @@ public final class String : Iterable[char] {
     start = Math.min(start, bytes.size);
     count = Math.min(count, bytes.size - start);
     let self = alloc(count);
-    Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes.data[start]), count);
+    bytes.copyElements(addressOf(self._data[0]), start, bytes.size);
     return self;
   }
 
