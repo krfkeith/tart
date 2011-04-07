@@ -19,10 +19,9 @@ class TartLexer(RegexLexer):
             (r'[\{\}]', Keyword),
             include('operators'),
             (r'[\[\]:(),;]', Punctuation),
-            (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
             ('@', Name.Attribute, 'attribute'),
             (r'(abstract|as|base|break|case|catch|continue|default|'
-             r'do|else|explicit|finally|fn|for|if|in|'
+             r'do|else|explicit|finally|for|if|in|'
              r'internal|is|match|out|override|private|protected|public|'
              r'repeat|require|return|static|switch|throw|try|typeof|typealias|'
              r'virtual|void|with|while|get|set)\b', Keyword),
@@ -36,7 +35,7 @@ class TartLexer(RegexLexer):
             (r'(namespace)\b(\s+)',
                 bygroups(Keyword, Text), 'namespace'),
             (r'(let|var)\b(\s*)', bygroups(Keyword, Text), 'var'),
-            (r'(def|macro)\b(\s*)', bygroups(Keyword, Text), 'def'),
+            (r'(def|macro|fn)\b(\s*)', bygroups(Keyword, Text), 'def'),
             (r'!\[', Punctuation, 'typeparams'),
             ('"', String, 'dqs'),
             ("'", String, 'sqs'),
@@ -129,7 +128,7 @@ class TartLexer(RegexLexer):
         ],
         'type': [
             (r'\s+', Text),
-            (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
+            (r'(fn)(\s*)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
             (r'(bool|byte|char|double|float|int|long|object|'
              r'short|String|ubyte|uint|ulong|ushort)\b', Keyword.Type),
             (re_ident, Name.Class),

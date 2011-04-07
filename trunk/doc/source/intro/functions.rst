@@ -211,3 +211,12 @@ is actually equivalent to::
 
 What this means is that any class that implements the :interface:`Function` interface can
 be called like a function, and can be assigned to any variable of function type.
+
+To declare a :interface:`Function` with no return value, simply declare the return value
+as :ctype:`void`::
+
+  var func:Function[void, int, int];
+
+For functions with multiple return values, use a tuple type::
+
+  var func:Function[(int, float), int, int];

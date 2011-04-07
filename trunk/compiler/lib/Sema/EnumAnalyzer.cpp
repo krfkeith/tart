@@ -288,23 +288,22 @@ bool EnumAnalyzer::analyzeBase() {
   DASSERT_OBJ(enumType->baseType() == NULL, enumType);
 
   // Analyze the base type of the enum.
-  const PrimitiveType * intValueType = &Int32Type::instance;
-  //const Type * superType = ast->super();
+  intValueType_ = &Int32Type::instance;
   if (!ast->bases().empty()) {
     // For the moment, we require enums to be derived from integer types only.
     DASSERT(ast->bases().size() == 1);
     TypeAnalyzer ta(module(), activeScope());
     Type * baseType = ta.typeFromAST(ast->bases().front());
     if (baseType != NULL) {
-      intValueType = dyn_cast<PrimitiveType>(baseType);
-      if (intValueType == NULL || !isIntegerTypeId(intValueType->typeId())) {
+      intValueType_ = dyn_cast<PrimitiveType>(baseType);
+      if (intValueType_ == NULL || !intValueType_->isIntType()) {
         diag.fatal(ast) << "Enumerations can only derive from integer types.";
         return false;
       }
     }
   }
 
-  enumType->setBaseType(intValueType);
+  enumType->setBaseType(intValueType_);
   return true;
 }
 
@@ -318,9 +317,10 @@ bool EnumAnalyzer::createMembers() {
 
   Scope * savedScope = setActiveScope(enumType->memberScope());
   const ASTDeclList & members = ast->members();
+  bool success = true;
   for (ASTDeclList::const_iterator it = members.begin(); it != members.end(); ++it) {
     if (!createEnumConstant(cast<ASTVarDecl>(*it))) {
-      return false;
+      success = false;
     }
   }
 
@@ -347,7 +347,7 @@ bool EnumAnalyzer::createMembers() {
   }
 
   setActiveScope(savedScope);
-  return true;
+  return success;
 }
 
 bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
@@ -364,23 +364,22 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   bool isSigned = !enumType->baseType()->isUnsignedType();
   VariableDefn * ec = new VariableDefn(Defn::Let, module(), ast);
   ConstantInteger * value = NULL;
+  bool success = true;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
     ExprAnalyzer ea(this, NULL);
-    Expr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
-    if (isErrorResult(enumValue)) {
-      return false;
+    Expr * enumValue = ea.reduceConstantExpr(ast->value(), NULL /*intValueType_*/);
+    if (!isErrorResult(enumValue)) {
+      if (!isa<ConstantInteger>(enumValue)) {
+        diag.fatal(ast) << "Not an integer constant " << enumValue;
+      } else {
+        llvm::ConstantInt * enumIntVal = static_cast<ConstantInteger *>(enumValue)->value();
+        enumIntVal = cast<llvm::ConstantInt>(
+            llvm::ConstantExpr::getIntegerCast(enumIntVal, irType, isSigned));
+        value = ConstantInteger::get(ast->location(), enumType, enumIntVal);
+        assert(value->value() != NULL);
+      }
     }
-
-    if (!isa<ConstantInteger>(enumValue)) {
-      diag.fatal(ast) << "Not an integer constant " << enumValue;
-    }
-
-    llvm::ConstantInt * enumIntVal = static_cast<ConstantInteger *>(enumValue)->value();
-    enumIntVal = cast<llvm::ConstantInt>(
-        llvm::ConstantExpr::getIntegerCast(enumIntVal, irType, isSigned));
-    value = ConstantInteger::get(ast->location(), enumType, enumIntVal);
-    assert(value->value() != NULL);
   } else {
     // No explicit value, use the previous value.
     llvm::ConstantInt * irVal;
@@ -416,6 +415,10 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ec->passes().finish(VariableDefn::InitializerPass);
   ec->passes().finish(VariableDefn::CompletionPass);
   enumType->memberScope()->addMember(ec);
+
+  if (value == NULL) {
+    return false;
+  }
 
   prevValue_ = value;
 

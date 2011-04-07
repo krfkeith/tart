@@ -26,6 +26,10 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
   const ASTNode * callable = call->func();
   const ASTNodeList & args = call->args();
 
+  if (expected == &AnyType::instance) {
+    expected = NULL;
+  }
+
   if (callable->nodeType() == ASTNode::Id ||
       callable->nodeType() == ASTNode::Member ||
       callable->nodeType() == ASTNode::Specialize) {

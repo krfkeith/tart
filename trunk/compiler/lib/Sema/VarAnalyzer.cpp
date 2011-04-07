@@ -7,6 +7,7 @@
 #include "tart/Defn/Module.h"
 
 #include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
 
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
@@ -180,7 +181,8 @@ bool VarAnalyzer::resolveVarType() {
       }
 
       ExprAnalyzer ea(this, currentFunction_);
-      Expr * initExpr = ea.analyze(ast->value(), target->type());
+      Expr * initExpr = ea.analyze(ast->value(),
+          target->type() != NULL ? target->type() : &AnyType::instance);
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
         target->passes().finish(VariableDefn::VariableTypePass);
@@ -201,7 +203,16 @@ bool VarAnalyzer::resolveVarType() {
 
         if (initType->isUnsizedIntType()) {
           // TODO: Only if this is a var, not a let
-          initType = PrimitiveType::intType();
+          if (!isa<ConstantInteger>(initExpr) && !isa<SeqExpr>(initExpr)) {
+            diag.debug() << initExpr;
+            DASSERT_OBJ(!initType->isUnsizedIntType(), target);
+            // Need to choose an appropriate type and coerce.
+            //initExpr = FinalizeTypesPass::run(currentFunction_, initExpr, true);
+//            initType = initExpr->type();
+//            DASSERT(!initType->isUnsizedIntType());
+          } else {
+            initType = PrimitiveType::intType();
+          }
         }
 
         if (target->type() == NULL) {

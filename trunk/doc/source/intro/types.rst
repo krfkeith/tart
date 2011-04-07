@@ -104,7 +104,7 @@ throw an exception if the string cannot be converted::
 In addition, each of the integer types also define two constants, ``minVal`` and ``maxVal``, which
 represent the minimum and maximum values that can be represented by that type::
 
-  var x = uint8.minVal; // Assigns the value 256 to x.
+  var x = uint8.maxVal; // Assigns the value 255 to x.
 
 .. note:: Even though you can call the :meth:`toString()` method on a variable of
   type :ctype:`int`, this does not mean that integers are actually objects. Unlike some
@@ -160,6 +160,22 @@ Tart supports enumeration types similar to those in C++::
 As you can see, enumeration constants can be defined with an integer expression. Also,
 a trailing comma is allowed in enumeration lists - this makes it easier to add new enumeration
 constants.
+
+Enum constants normally need to be qualified with the name of the enum, however there are a few
+exceptions:
+
+  * Within the body of the enum declaration itself.
+  * In a switch statement, if the switch value has an enum type, then the case values do not
+    need to include the qualifier. So for example::
+    
+      let x:Direction = turnLeft(previousDirection);
+      switch x {
+        // Enum name not required for case values.
+        case NORTH { Console.out.writeLn("Now heading NORTH"); }
+        case EAST  { Console.out.writeLn("Now heading EAST"); }
+        case SOUTH { Console.out.writeLn("Now heading SOUTH"); }
+        case WEST  { Console.out.writeLn("Now heading WEST"); }
+      }
 
 In addition to the explicitly created enumeration constants, the compiler will automatically
 generate the constants ``minVal`` and ``maxVal``, representing the smallest and largest values

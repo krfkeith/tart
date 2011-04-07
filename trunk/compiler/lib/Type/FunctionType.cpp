@@ -250,7 +250,7 @@ bool FunctionType::isEqual(const Type * other) const {
 }
 
 bool FunctionType::isReferenceType() const {
-  return true; // TODO: Should be false
+  return true;
 }
 
 unsigned FunctionType::getHashValue() const {

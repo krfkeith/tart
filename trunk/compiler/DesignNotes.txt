@@ -6,17 +6,16 @@ Next up:
 * Finish config_paths.h.
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
-* statements returning values - if, switch, match.
-* type inference for blocks returning expressions.
+* statements returning values - try/catch. Also unsized ints.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
 * Type constraints - eliminated un-needed methods.
-* Undef'd methods should throw UnsupportedOperationException. (test)
 
 Design TODOS:
 
 * Const-ness "const" and "const? / constable"
 * Need a way to collect all declarations that a given attribute is assigned to.
+* With-statement multiple vars and tuple unpacking.
 
 Hard problems:
 
@@ -45,6 +44,7 @@ Implementation TODOS:
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
 * Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
+* Fix problems with eclipse update site.
 * Refactoring
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
@@ -66,7 +66,7 @@ Implementation TODOS:
 * Finish array unit tests. (One test remaining)
 * Proxy types.
 * Enum types
-   * Enum operators (relational).
+  * Enum operators (relational).
   * .parse or valueOf.
 * Tuple types
   * Test struct members, params.
@@ -78,9 +78,6 @@ Implementation TODOS:
     with the same template args.
   * Classes with create still need a default constructor? (Unless undef'd).
 * Import-as.
-* Source-level debug info.
-  * Finish debug support.
-  * Isolate and report bugs.
 * Generator functions.
   * Yield statement.
   * State machine.
@@ -88,8 +85,7 @@ Implementation TODOS:
   * Conversion specs.
   * Define toStringFmt() - custom string formatting.
   * Other string-related functions
-  * Characters.tart
-  * text functions - substr, toLower, etc. (Character classes, need unicode stuff)
+  * text functions - substr, etc. (Character classes, need unicode stuff)
   * Unicode character class tests.
 * Let with instance scope.
   * Insure that it cannot be assigned to in non-constructor.
@@ -116,12 +112,19 @@ Implementation TODOS:
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.
-* Map literals
+* Map literals -> Map.of((a, b))
 * Matrix literals + Matrix class.
 * Anonymous inner classes.
 * Implement BoundMethodExpr as an implementation of Function.
 * Insure typealiases aren't circular.
 * Sphinx domain for Tart?
+* Garbage collection test for uninitialized array elements.
+* Insure last field of base class isn't a flex array.
+* Get default ctor working again (and call super ctor).
+* Flag enum bitwise operator tests.
+* If an if statement casts a nullable to non-nullable type, then assume non-nullable in then block.
+  (Same for while).
+* Change assignment syntax for tuple unpacking (x:type, y:type).
 
 * Collector classes:
   * TLAB
@@ -313,3 +316,4 @@ Idea #1: Make a bare template parameter really mean [T <: __Any].
   -- Redo templates so that template parameters really are opaque.
 
 // ------------------------------------------------------------------------
+
