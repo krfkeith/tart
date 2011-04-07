@@ -2475,6 +2475,11 @@ ASTNode * Parser::primaryExpression() {
       }
       break;
 
+    case Token_LBrace:
+      next();
+      result = blockStmt();
+      break;
+
     case Token_Integer:
       result = parseIntegerLiteral();
       break;

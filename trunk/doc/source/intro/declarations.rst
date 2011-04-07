@@ -94,6 +94,8 @@ for the iteration variable::
 .. index::
   single: def
   pair: function; declaring
+  
+.. _functionDeclarations:
 
 Function Declarations
 ---------------------
@@ -102,7 +104,7 @@ You can declare variables of function type using the :kw:`fn` keyword, which int
 anonymous function type declaration. Here's how you might combine :kw:`let` and :kw:`fn`
 to declare a function::
 
-  let f1 = fn (x:int, x:int) -> int {
+  let f1 = fn (x:int, y:int) -> int {
     sys.stdout.println("Hello, World!");
     return 1;
   }

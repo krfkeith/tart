@@ -35,19 +35,8 @@ class DeclStmt;
 class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
-    : AnalyzerBase(mod, activeScope, subject, currentFunction)
-    , returnType_(NULL)
-    , macroReturnVal_(NULL)
-    , inMacroExpansion_(false)
-  {}
-
-  ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
-    : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
-    , returnType_(NULL)
-    , macroReturnVal_(NULL)
-    , inMacroExpansion_(false)
-  {}
+  ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction);
+  ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction);
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {

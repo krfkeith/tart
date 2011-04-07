@@ -3,22 +3,27 @@
  * ================================================================ */
 
 #include "tart/AST/ASTDecl.h"
-#include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/DefnAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Defn/TypeDefn.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/TupleType.h"
-#include "tart/Defn/Template.h"
-#include "tart/Defn/Module.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/InternedString.h"
+
+#include "tart/Sema/TypeAnalyzer.h"
+#include "tart/Sema/DefnAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
+
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/Module.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/TupleType.h"
+
 #include "tart/Objects/Builtins.h"
 
 namespace tart {

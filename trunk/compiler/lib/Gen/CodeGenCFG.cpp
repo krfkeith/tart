@@ -188,9 +188,9 @@ Value * CodeGenerator::genIf(const IfExpr * in) {
         // If both branches returned a result, then combine them with a phi-node.
         DASSERT(thenVal != NULL);
         DASSERT(elseVal != NULL);
-        PHINode * phi = builder_.CreatePHI(in->type()->irType(), 2, "if");
-        phi->addIncoming(thenVal, blkThen);
-        phi->addIncoming(elseVal, blkElse);
+        PHINode * phi = builder_.CreatePHI(thenVal->getType(), 2, "if");
+        phi->addIncoming(thenVal, blkThenLast);
+        phi->addIncoming(elseVal, blkElseLast);
         return phi;
       } else if (blkThenLast) {
         DASSERT(thenVal != NULL);

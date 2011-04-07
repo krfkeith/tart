@@ -26,3 +26,5 @@ TYPE_CLASS(ResultOf)      // Type constraint - result of function
 TYPE_CLASS(ParameterOf)   // Type constraint - param of function
 TYPE_CLASS(TupleOf)       // Type constraint - tuple of constraints
 TYPE_CLASS(SingleTypeParamOf) // Type constraint - type parameter of another constraint
+TYPE_CLASS(UnsizedInt)    // Type constraint - unsized constant integer
+TYPE_CLASS(PhiType)       // Type constraint - possible alternate values

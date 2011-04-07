@@ -40,7 +40,7 @@ Some examples of using the reflection functions::
   pair: @Reflect; attribute
 
 The @Reflect Attribute
-======================
+----------------------
 
 The compiler can generate a set of reflection tables that contains all of the
 information about a classes methods, properties, fields, and so on. However, this information

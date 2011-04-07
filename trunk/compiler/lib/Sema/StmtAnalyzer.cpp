@@ -68,7 +68,6 @@ public:
 StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
   : ExprAnalyzer(func->module(), &func->parameterScope(), func, func)
 {
-  returnType_ = function()->returnType();
 }
 
 bool StmtAnalyzer::buildCFG() {

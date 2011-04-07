@@ -276,9 +276,10 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
         methodVal = genFunctionValue(method);
       } else if (method->isUndefined()) {
         methodVal = genCallableDefn(method);
-      } else {
-        // TODO: Replace this with call to throw an exception.
+      } else if (method->isAbstract()) {
         methodVal = ConstantPointerNull::get(methodPtrType_);
+      } else {
+        diag.fatal(method) << "Method with no body: " << method;
       }
     } else {
       DASSERT_OBJ(method->isSingular(), method);

@@ -94,7 +94,7 @@ Declaration Statement
 .. productionlist::
    decl_stmt: `declaration`
 
-A declaration statement declares a variable in the current scope:
+A declaration statement declares a variable in the current scope.
 
 .. statement:: with
 

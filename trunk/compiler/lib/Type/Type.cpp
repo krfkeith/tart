@@ -444,6 +444,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   }
   return result;
 }
+
 bool Type::equivalent(const Type * type1, const Type * type2) {
   while (const TypeBinding * pval = dyn_cast<TypeBinding>(type1)) {
     type1 = pval->value();
@@ -613,7 +614,6 @@ Type * dealias(Type * t) {
 }
 
 void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & numBits) {
-
   switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
     case llvm::Type::FloatTyID:

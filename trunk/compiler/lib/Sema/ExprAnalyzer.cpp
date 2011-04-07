@@ -24,6 +24,20 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
+ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
+  : AnalyzerBase(mod, activeScope, subject, currentFunction)
+  , returnType_(currentFunction ? currentFunction->returnType() : NULL)
+  , macroReturnVal_(NULL)
+  , inMacroExpansion_(false)
+{}
+
+ExprAnalyzer::ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
+  : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
+  , returnType_(currentFunction ? currentFunction->returnType() : NULL)
+  , macroReturnVal_(NULL)
+  , inMacroExpansion_(false)
+{}
+
 Expr * ExprAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
   expr = inferTypes(subject_, expr, expectedType);
   if (isErrorResult(expr)) {
@@ -55,6 +69,10 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;
   }
+
+//  if (expr->type()->isUnsizedIntType()) {
+//    diag.fatal(expr) << "Unsized int type: " << expr;
+//  }
 
   return expr;
 }

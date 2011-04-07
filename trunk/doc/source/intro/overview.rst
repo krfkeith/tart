@@ -82,7 +82,7 @@ Tart can't do everything! Here's some things that some other languages do that
 Tart doesn't:
 
 * Tart doesn't support run-time compilation of code or creation of
-  classes, although some implementations may provide this an an
+  classes, although some implementations may provide this as an
   extension. Many of the kinds of things you would want to do with
   run-time class creation (such as automatic creation of mock
   implementation classes for testing) can be done at compile time

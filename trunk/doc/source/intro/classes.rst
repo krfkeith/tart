@@ -19,7 +19,7 @@ The :kw:`class` keyword is one of the four keywords that are used to define a ne
 aggregate type. The others are :kw:`struct`, :kw:`interface` and :kw:`protocol`.
 
 * A :kw:`class` is *reference* type, meaning it is always passed around by reference.
-  When you assign a value of class type to a variable, all that gets copied is a pointer to
+  When a value of class type is assigned to a variable, all that gets copied is a pointer to
   the object, not the object's contents.
 
 * A :kw:`struct` is a *value* type. That means that normally when you assign one struct
@@ -106,21 +106,211 @@ just these class members.
 
 .. index::
   pair: class; members
-  single: self
 
-Class members
--------------
+Defining class members
+----------------------
 
 There is no restriction on the kinds of declarations which can appear in the body of a
 :kw:`class` or :kw:`struct`, but most commonly they will be variable or method
 declarations.
 
+.. index:: public; private; protected; visibility
+
+Member Visibility
+^^^^^^^^^^^^^^^^^
+
+A member definition can have one of three visibility levels:
+
+  * ``public``, which is visible from everywhere;
+  * ``protected``, which is visible only within the body of the class and its subclasses.
+  * ``private``, which is visible only within the body of the class itself.
+
+.. index::
+  pair: member; variables
+
+Member Variables
+^^^^^^^^^^^^^^^^
+
+A variable declared within a class body is a class instance variable, unless it the
+``static`` modifier is present, in which case it is a static variable.
+
 Variable declarations can include an optional initialization expression. If present, the
-variable will be initialized to this value, instead of the built-in default for that type,
-when the class instance is created.
+variable will be initialized to this value when the class instance is created, instead of
+the built-in default for that type.
+
+.. code-block:: tart
+
+  class Point {
+    var x:int = 0;
+    var y:int = 0;
+  }
+  
+Variables may be defined with either :kw:`let` or :kw:`var`. Variables defined with :kw:`let`
+are constant, and may not be changed once initialized.
+
+.. index::
+  pair: class; methods
+  single: def
+  single: undef
+
+Properties
+^^^^^^^^^^
+
+A *property* is a member definition that has a *getter* and *setter* function, and is otherwise
+accessed like a variable. Reading from the property calls the getter function, and writing to
+it calls the setter function. It is not required that both the getter and setter be defined,
+although at least one of them must be.
+
+Properties are defined with the :kw:`def` keyword, followed by a colon and the type of the
+property::
+
+  class Rectangle {
+    // Some member variables
+    var left:int = 0;
+    var top:int = 0;
+    var right:int = 0;
+    var bottom:int = 0;
+
+    // Width property    
+    def width:int {
+      get { return right - left; }
+      set { right = left + value; }
+    }
+
+    // Height property    
+    def height:int {
+      get { return bottom - top; }
+      set { bottom = top + value; }
+    }
+  }
+  
+  r = Rectangle(0, 0, 10, 10);
+  
+  // Calls the getter method of the rectangle's 'width' property
+  let w = r.width;
+  
+  // Calls the setter method of the rectangle's 'height' property
+  r.height = 3;
+  
+In the example above, we define two properties ``width`` and ``height`` which are synthesized
+from the coordinates of the rectangle. In the case of the ``get`` method, the return statement
+returns the value of the property.
+
+For ``set`` methods, the implicit pseudo-variable ``value`` contains the value being assigned
+to the property.
+  
+.. index::
+  pair: class; methods
+  pair: instance; methods
+  pair: overriding; methods
+  single: def
+
+Methods
+^^^^^^^
+
+In Tart, the term *Method* and *Function* are interchangeable - usually "Function" is used
+when speaking of global functions, and "Method" when speaking of member functions.
+
+The :kw:`def` keyword defines a new method, as previously describe in the section on
+:ref:`functionDeclarations`.
+
+Methods defined in a class are automatically inherited by subclasses of that class. An
+inherited method definition can be overridden using the :kw:`override` keyword. The subclass
+method definition must have the same name and type signature as the base class method
+being overridden::
+
+   class Base {
+     def doAction(code:ActionCode) -> ResultCode {
+       // Base class definition
+     }
+   }
+
+   class Subclass : Base {
+     override doAction(code:ActionCode) -> ResultCode {
+       // Subclass definition
+     }
+   }
+
+The :kw:`def` keyword cannot be used to override a base class method - it is an error
+to use :kw:`def` to define a method with the same name and type signature as a method
+in a base class.
+
+The :kw:`override` keyword is only required when overriding methods defined in a base class.
+It is *not* required (and is not allowed) when implementing a method defined in an interface.
+(Implementing an interface is not considered "inheritance".)
+
+Methods overridden using :kw:`override` use dynamic dispatching, much like the way
+virtual functions work in C++. The decision of which method body gets executed when a method
+gets called is based on the real type of the object, not it's declared type at that point
+in the code.
+
+.. index:: undef
+
+An inherited method definition can also be *undefined* using the :kw:`undef` keyword.
+An undefined method simply throws an :class:`UnsupportedOperationError` exception, and
+is a convenient way to signal that a subclass does not support an operation that is defined
+in the base class::
+
+  class Base {
+    def caption -> String {
+      return "Howdy!";
+    }
+  }
+  
+  class Subclass : Base {
+    undef caption -> String;
+  }
+
+Unlike :kw:`override`, :kw:`undef` works with methods defined in interfaces as well as base
+classes. There is an additional use
+for :kw:`undef`, which is to suppress the creation of implicit methods which would be added by the
+compiler, such as the default constructor. For example, suppose there is some data type which
+is never intended to be constructed within Tart code, but only created by some external C
+library::
+
+  struct TimeStamp {
+    var value:uint64;
+
+    // Tell the compiler not to generate a default constructor.    
+    undef construct;
+  }
+
+.. index:: final
+
+A method may be declared :kw:`final`, informing the compiler that it is not permitted to
+override that method in subclasses. This will in some cases allow the compiler to make additional
+optimizations, avoiding the need for a dynamic dispatch::
+
+  class Circle {
+    final def draw(dc:DrawContext) {
+      // Code to draw a circle
+    }
+  }
+
+The :kw:`final` keyword can also be applied to an entire class, which means that the class
+cannot be subclassed at all.
+
+.. index:: abstract
+
+A method declared as :kw:`abstract` has no method body. A class containing an abstract method
+must also be declared abstract::
+
+  abstract class Shape {
+    abstract def draw(dc:DrawContext);
+  }
+
+Abstract classes cannot be directly instantiated, only subclasses of the abstract class can be
+instantiated, and only if those subclasses are themselves concrete (i.e. not abstract).
+A concrete subclass of an abstract class must provide concrete definitions for all of the
+inherited abstract methods.
+
+.. index:: self
+
+The ``self`` parameter
+^^^^^^^^^^^^^^^^^^^^^^
 
 Within a class method, the special variable :cdata:`self` refers to the current instance.
-Unlike Python, you do not need to declare the  :cdata:`self` variable explicitly.
+You do not need to declare the  :cdata:`self` variable explicitly.
 
 Instance variables can be referred to directly by name, you do not need to qualify them
 with :cdata:`self` unless you also have a local variable or parameter with the same name.
@@ -132,13 +322,25 @@ with :cdata:`self` unless you also have a local variable or parameter with the s
   }
   
 In most cases the :cdata:`self` parameter works exactly like other, explicitly declared
-parameters. The exception to this rule is in :kw:`struct` methods. Normally when
-the type of a function parameter is a :kw:`struct` type, the value that is passed is
+parameters. The exception to this rule is the :cdata:`self` parameter of :kw:`struct` methods.
+Normally when the type of a function parameter is a :kw:`struct` type, the value that is
+passed to that function is
 a *copy* of the struct, however in the case of :cdata:`self`, what gets passed is a *pointer* to
 the struct. If this were not true, it would be impossible to write methods that modify
 struct members, since the method could only modify the temporary copy. Note, however,
 that if you assign the :cdata:`self` parameter to another variable, the variable will
 still get a copy.
+
+.. index::
+  pair: struct; members
+
+Struct members
+--------------
+
+Method definitions in structs are always implicitly :kw:`final` and cannot be overridden.
+The reason for  this is because structs do not have a hidden dispatch table like classes do,
+so the decision of which method body gets executed has to be determined at compile time using
+only the static type information at the calling site.
 
 .. index::
   pair: class; new instance
@@ -260,7 +462,7 @@ specified, then it uses the default value for that type.
   pair: keyword; arguments
 
 Default constructors
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 If the object has no :func:`construct` method and no :func:`create` method, then the compiler
 will attempt to create a default constructor. The default constructor takes no arguments,
@@ -310,7 +512,7 @@ to a default, then the compiler will emit an error.
   single: construction
 
 Constructor Execution
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 The compiler will attempt to ensure that all member fields are initialized during the execution of
 the constructor. Fields which have no defaults must be assigned in the constructor, whereas fields
@@ -342,8 +544,8 @@ Constructors can also invoke other constructors of the same class, by explicitly
   pair: array; constructor
   pair: array; literal
 
-Array constructors
-------------------
+Creating Array Instances
+------------------------
 
 The syntax for constructing a new array instance is the type name, followed
 by the dimension of the array in square brackets::
@@ -407,6 +609,52 @@ or the static :func:`of` method of the Array class. Both are equivalent::
 Interfaces
 ----------
 
+Tart supports "interface inheritance", which means that a class can only have one base class,
+but can derive from any number of interfaces::
+
+  // A sample base class
+  class Widget {
+    def draw(dc:DrawContext) {
+      // Method body...
+    }
+  }
+
+  // An interface
+  interface Selectable {
+    def select(selected:bool);
+  }
+
+  // Another interface
+  interface HasEventListeners {
+    def addListener(handler:fn(e:Event));
+  }
+
+  // A class that derives from one base class and two interfaces.
+  class Window : Widget, Selectable, HasEventListeners {
+    // Override method from base class
+    override draw(dc:DrawContext) {
+      // Draw the window...
+    }
+
+    def select(selected:bool) {
+      // Implement select
+    }
+
+    def addListener(handler:fn(e:Event)) {
+      // Implement addListener.
+    }
+  }
+
+Interfaces can only contain a retricted set of definitions:
+
+  * Interface methods (methods with no body).
+  * Type definitions
+  * Named constants
+
+A class that derives from an interface type must provide definitions of all of the methods in
+the interface, unless that class is declared abstract. Any missing definitions will be flagged
+by the compiler.
+
 .. _protocols:
 
 Protocols
@@ -419,7 +667,8 @@ support. An example would be a "HasToString" protocol::
     def toString -> String;
   }
 
-What this says is that in order to support the ``HasToString`` protocol, a class must define
+What this says is that in order to support the ``HasToString`` protocol, a class, interface
+or struct must define
 a :meth:`toString` method that returns a String. There are two ways that a type can support
 a protocol, *explicit* and *implicit*. Explicitly supporting a protocol is done by declaring
 the protocol in the list of base types::

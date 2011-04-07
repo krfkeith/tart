@@ -525,7 +525,6 @@ bool CompositeType::isSingular() const {
 }
 
 bool CompositeType::isReferenceType() const {
-  // TODO: Not if it's a static interface...
   return (typeClass() == Type::Class || typeClass() == Type::Interface);
 }
 
