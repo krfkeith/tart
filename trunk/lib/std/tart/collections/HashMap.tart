@@ -249,7 +249,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     protected def construct(map:HashMap) {
       self._entries = map._data;
       self._index = 0;
-      self._maxIndex = cond(_entries.size <= 16, map._size, _entries.size);
+      self._maxIndex = if _entries.size <= 16 { map._size } else { _entries.size };
     }
   }
 
