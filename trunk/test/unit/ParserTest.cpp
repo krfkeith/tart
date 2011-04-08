@@ -512,7 +512,7 @@ TEST_F(ParserTest, Statements) {
   ASSERT_EQ(ASTNode::Try, ast->nodeType());
   EXPECT_AST_EQ("Try ({} Catch (let e:Ex; {}); Else {} Finally {})", ast);
 
-  ast = parseStatement("switch n { case 1 {} case 2 {} else {}}");
+  ast = parseStatement("switch n { case 1 {} case 2 {} case * {}}");
   ASSERT_TRUE(ast != NULL);
   ASSERT_EQ(ASTNode::Switch, ast->nodeType());
   ASSERT_AST_EQ("Switch (n,  case 1 {{}}; case 2 {{}}; {};)", ast);

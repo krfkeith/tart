@@ -136,13 +136,13 @@ class ExpressionContextTest : Test {
     let a0:int = switch v {
       case 0 { dummy(); 1 }
       case 1 { dummy(); 2 }
-      else   { dummy(); 3 }
+      case * { dummy(); 3 }
     };
     assertEq(1, a0);
     let a1:int = switch 99 {
       case 0 { dummy(); 1 }
       case 1 { dummy(); 2 }
-      else   { dummy(); 3 }
+      case * { dummy(); 3 }
     };
     assertEq(3, a1);
   }

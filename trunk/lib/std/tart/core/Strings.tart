@@ -44,7 +44,7 @@ namespace Strings {
         return false;
       }
 
-      else { return ConversionError.INPUT_FORMAT; }
+      case * { return ConversionError.INPUT_FORMAT; }
     }
   }
 
