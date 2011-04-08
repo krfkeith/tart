@@ -1828,15 +1828,8 @@ Stmt * Parser::switchStmt() {
       if (caseSt != NULL) {
         st->caseList().push_back(caseSt);
       }
-    } else if (match(Token_Else)) {
-      Stmt * elseBody = bodyStmt();
-      if (elseBody == NULL) {
-        return NULL;
-      }
-
-      st->caseList().push_back(elseBody);
     } else {
-      expected("'case' or 'else' statement");
+      expected("'case' statement");
       return NULL;
     }
   }
@@ -1846,23 +1839,27 @@ Stmt * Parser::switchStmt() {
 
 Stmt * Parser::caseStmt() {
   SourceLocation loc = tokenLoc;
-  ASTNode * test = expression();
-  if (test != NULL) {
-    ASTNodeList exprs;
-    exprs.push_back(test);
-    while (match(Token_Case)) {
-      ASTNode * test = expression();
-      if (test == NULL) {
-        expected("expression after 'case'");
-        return NULL;
+  if (match(Token_Star)) {
+    return bodyStmt();
+  } else {
+    ASTNode * test = expression();
+    if (test != NULL) {
+      ASTNodeList exprs;
+      exprs.push_back(test);
+      while (match(Token_Case)) {
+        ASTNode * test = expression();
+        if (test == NULL) {
+          expected("expression after 'case'");
+          return NULL;
+        }
+
+        exprs.push_back(test);
       }
 
-      exprs.push_back(test);
-    }
-
-    Stmt * body = bodyStmt();
-    if (body != NULL) {
-      return new CaseStmt(loc, exprs, body);
+      Stmt * body = bodyStmt();
+      if (body != NULL) {
+        return new CaseStmt(loc, exprs, body);
+      }
     }
   }
 

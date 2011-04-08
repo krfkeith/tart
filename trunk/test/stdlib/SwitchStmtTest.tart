@@ -15,16 +15,16 @@ class SwitchStmtTest : Test {
 
 	  return "Other";
 	}
-	
+
   private def switchElseTest(value:int32) -> String {
     switch value {
       case 1 { return "One"; }
       case 2 { return "Two"; }
       case 3 { return "Three"; }
-      else { return "Other"; }
+      case * { return "Other"; }
     }
   }
-  
+
   enum ETEST {
     ONE = 1,
     TWO,
@@ -35,10 +35,10 @@ class SwitchStmtTest : Test {
     switch value {
       case ONE { return "One"; }
       case TWO { return "Two"; }
-      else { return "Other"; }
+      case * { return "Other"; }
     }
   }
-  
+
 	def testSimpleNonConstSwitch {
 		var s = switchTest(1);
 	  assertEq("One", s);
@@ -59,15 +59,15 @@ class SwitchStmtTest : Test {
     assertEq("Two", switchEnum(ETEST.TWO));
     assertEq("Other", switchEnum(ETEST.THREE));
   }
-  
+
   private def switchString(value:String) -> ETEST {
     switch value {
       case "One" { return ETEST.ONE; }
       case "Two" case "Three" { return ETEST.TWO; }
-      else { return ETEST.THREE; }
+      case * { return ETEST.THREE; }
     }
   }
-  
+
   def testStringSwitch {
     assertEq(ETEST.ONE, switchString("One"));
     assertEq(ETEST.TWO, switchString("Two"));

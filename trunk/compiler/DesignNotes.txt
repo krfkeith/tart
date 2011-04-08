@@ -39,8 +39,6 @@ Implementation TODOS:
 * Fix coercion of enum values to objects.
 
 * Coalesced templates
-* Case * (what about classify? - short form needs an 'else')
-* Implicit downcast in if-block. (Includes unions as well.)
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
 * Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
@@ -54,7 +52,6 @@ Implementation TODOS:
 * I/O library.
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
-* Garbage collector
 * Reflection
   * Struct Constructors
   * Properties and fields.
@@ -67,6 +64,7 @@ Implementation TODOS:
 * Proxy types.
 * Enum types
   * Enum operators (relational).
+  * test bitwise operators for flag enums.
   * .parse or valueOf.
 * Tuple types
   * Test struct members, params.
@@ -121,7 +119,6 @@ Implementation TODOS:
 * Garbage collection test for uninitialized array elements.
 * Insure last field of base class isn't a flex array.
 * Get default ctor working again (and call super ctor).
-* Flag enum bitwise operator tests.
 * If an if statement casts a nullable to non-nullable type, then assume non-nullable in then block.
   (Same for while).
 * Change assignment syntax for tuple unpacking (x:type, y:type).
