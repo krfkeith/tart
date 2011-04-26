@@ -9,7 +9,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 execute_process(
-  COMMAND ${LLVM_CONFIG} --libs bitwriter ${LLVM_TARGETS}
+  COMMAND ${LLVM_CONFIG} --libs bitwriter bitreader asmparser ${LLVM_TARGETS}
   OUTPUT_VARIABLE LLVM_TESTRUNNER_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
@@ -35,7 +35,9 @@ add_executable(unittest
   TypeInferenceTest.cpp
   UnionTest.cpp
   UnifyTest.cpp
-  NameTableTest.cpp)
+  NameTableTest.cpp
+  ASTSerializationTest.cpp
+  )
 target_link_libraries(unittest
     gtest gmock compiler
     ${LLVM_TESTRUNNER_LIBS}

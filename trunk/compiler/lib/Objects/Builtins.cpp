@@ -87,7 +87,7 @@ SystemNamespaceMember<FunctionDefn> gc_alloc(Builtins::nsGC, "alloc");
 
 Type * Builtins::typeUnwindException;
 
-TypeAlias Builtins::typeAliasString = NULL;
+TypeAlias Builtins::typeAliasString(NULL, NULL);
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
@@ -111,6 +111,7 @@ void Builtins::init() {
 
   DASSERT(module.module() != NULL);
   ScopeBuilder::createScopeMembers(&module);
+  module.passes().finish(Module::ScopeCreationPass);
 }
 
 Module * Builtins::loadSystemModule(const char * name) {
@@ -119,12 +120,16 @@ Module * Builtins::loadSystemModule(const char * name) {
     return mod;
   }
 
-  diag.fatal() << "Error: Can't load builtin definition for '" << name << "'";
+  diag.fatal() << "Can't locate builtin module for '" << name << "'";
   abort();
 }
 
 Defn * Builtins::loadSystemDef(const char * name) {
   Module * mod = loadSystemModule(name);
+  if (mod->primaryDefn() == NULL) {
+    diag.fatal(mod) << "Can't load builtin definition for '" << name << "'";
+    abort();
+  }
   return mod->primaryDefn();
 }
 

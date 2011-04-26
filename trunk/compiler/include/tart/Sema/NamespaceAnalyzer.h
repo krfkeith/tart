@@ -25,6 +25,7 @@ public:
   bool analyze(AnalysisTask task);
   bool runPasses(NamespaceDefn::PassSet passesToRun);
   bool analyzeImports();
+  void analyzeImportsImpl(const ASTNodeList & imports);
   bool analyzeMethods();
   bool resolveStaticInitializers();
 

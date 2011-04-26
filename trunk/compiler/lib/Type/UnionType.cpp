@@ -217,7 +217,9 @@ const llvm::Type * UnionType::createIRType() const {
   } else if (hasNullType_ && numReferenceTypes_ == 1) {
     // If it's Null or some reference type, then use the reference type.
     shape_ = Shape_Primitive;
-    return getFirstNonVoidType()->irEmbeddedType();
+    const llvm::Type * ty = getFirstNonVoidType()->irEmbeddedType();
+    DASSERT(!ty->isVoidTy());
+    return ty;
   } else {
     shape_ = Shape_Primitive;
     return Builtins::typeObject->irParameterType();

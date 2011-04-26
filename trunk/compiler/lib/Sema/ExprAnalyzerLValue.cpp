@@ -265,7 +265,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   }
 
   // Do automatic pointer dereferencing
-  /*if (NativePointerType * npt = dyn_cast<NativePointerType>(arrayType)) {
+  /*if (AddressType * npt = dyn_cast<AddressType>(arrayType)) {
    if (!AnalyzerBase::analyzeType(npt, Task_PrepTypeComparison)) {
    return &Expr::ErrorVal;
    }

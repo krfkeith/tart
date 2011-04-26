@@ -206,10 +206,6 @@ bool VarAnalyzer::resolveVarType() {
           if (!isa<ConstantInteger>(initExpr) && !isa<SeqExpr>(initExpr)) {
             diag.debug() << initExpr;
             DASSERT_OBJ(!initType->isUnsizedIntType(), target);
-            // Need to choose an appropriate type and coerce.
-            //initExpr = FinalizeTypesPass::run(currentFunction_, initExpr, true);
-//            initType = initExpr->type();
-//            DASSERT(!initType->isUnsizedIntType());
           } else {
             initType = PrimitiveType::intType();
           }
@@ -296,8 +292,8 @@ bool VarAnalyzer::resolveInitializers() {
           // however, since declaring a variable to be a type does not imply that we're
           // actually calling any of that type's methods.
           // (NOTE: changed it to add symbol, because queueSymbol has problems - what
-          // if you queue it, analyze it, and then later addSymbol it again - doesn't get
-          // fully analyzed.)
+          // if you queue it, partially analyze it, and then later addSymbol it
+          // again - it doesn't get fully analyzed.)
           TypeDefn * typeDef = var->type()->typeDefn();
           if (typeDef != NULL && typeDef->isSingular()) {
             module_->addSymbol(typeDef);

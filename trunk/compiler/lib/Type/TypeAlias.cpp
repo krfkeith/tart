@@ -10,9 +10,10 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeAlias
 
-TypeAlias::TypeAlias(const Type * val)
+TypeAlias::TypeAlias(const Type * val, TypeDefn * defn)
   : Type(Alias)
   , value_(val)
+  , defn_(defn)
 {
 }
 

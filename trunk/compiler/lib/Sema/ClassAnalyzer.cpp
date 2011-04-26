@@ -19,6 +19,8 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
 
+#include "tart/Meta/MDReader.h"
+
 #include "tart/Sema/ClassAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FunctionAnalyzer.h"
@@ -26,6 +28,8 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
+
+#include "llvm/Metadata.h"
 
 namespace tart {
 
@@ -155,6 +159,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
   }
 
   AutoIndent A(trace_);
+  diag.recovered();
 
   // Skip analysis of templates - for now.
   if (target->isTemplate()) {
@@ -191,6 +196,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     if (trace_) {
       diag.debug() << "Scope creation";
     }
+
     if (!createMembersFromAST(target)) {
       return false;
     }
@@ -203,6 +209,7 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     if (trace_) {
       diag.debug() << "Attributes";
     }
+
     if (!resolveAttributes(target)) {
       return false;
     }
@@ -317,7 +324,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   // internally by the compiler, in which case the compiler is responsible
   // for setting up the base class list correctly.
   const ASTTypeDecl * ast = cast_or_null<const ASTTypeDecl>(target->ast());
-  if (ast == NULL) {
+  if (ast == NULL && target->mdNode() == NULL) {
     return true;
   }
 
@@ -338,7 +345,6 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 
   // Resolve base class references to real types.
   Type::TypeClass dtype = type->typeClass();
-  const ASTNodeList & astBases = ast->bases();
   CompositeType * primaryBase = NULL;
   TypeAnalyzer ta(moduleForDefn(target), target->definingScope());
   ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
@@ -348,31 +354,48 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   type->passes().finish(CompositeType::BaseTypesPass);
   ta.setActiveScope(type->memberScope());
 
-  for (ASTNodeList::const_iterator it = astBases.begin(); it != astBases.end(); ++it) {
-    Type * baseType = ta.typeFromAST(*it);
-    if (isErrorResult(baseType)) {
+  TypeList bases;
+  if (target->mdNode() != NULL) {
+    if (!MDReader(module_, target).readCompositeDetails(type, bases)) {
       return false;
     }
+  } else {
+    const ASTNodeList & astBases = ast->bases();
+    for (ASTNodeList::const_iterator it = astBases.begin(); it != astBases.end(); ++it) {
+      Type * baseType = ta.typeFromAST(*it);
+      if (isErrorResult(baseType)) {
+        return false;
+      }
 
+      bases.push_back(baseType);
+    }
+  }
+
+  for (TypeList::const_iterator it = bases.begin(); it != bases.end(); ++it) {
+    Type * baseType = *it;
     TypeDefn * baseDefn = baseType->typeDefn();
     if (baseDefn == NULL || !isa<CompositeType>(baseType)) {
-      diag.error(*it) << "Cannot inherit from " << *it << " type";
+      type->setClassFlag(CompositeType::HasErrors);
+      diag.error(target) << "Cannot inherit from " << *it << " type";
       return false;
     }
 
     if (!baseType->isSingular() && !isFromTemplate) {
-      diag.error(*it) << "Base type '" << baseDefn << "' is a template, not a type";
+      type->setClassFlag(CompositeType::HasErrors);
+      diag.error(target) << "Base type '" << baseDefn << "' is a template, not a type";
       return false;
     }
 
     if (CompositeType * baseClass = dyn_cast<CompositeType>(baseType)) {
       if (baseClass->isFinal()) {
-        diag.error(*it) << "Base type '" << baseDefn << "' is final";
+        type->setClassFlag(CompositeType::HasErrors);
+        diag.error(target) << "Base type '" << baseDefn << "' is final";
       }
     }
 
     // Recursively analyze the bases of the base
     if (!ClassAnalyzer(baseDefn).analyze(Task_PrepMemberLookup)) {
+      type->setClassFlag(CompositeType::HasErrors);
       return false;
     }
 
@@ -385,9 +408,11 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
             // TODO: Insure last field of base isn't a flexible array.
             isPrimary = true;
           } else {
+            type->setClassFlag(CompositeType::HasErrors);
             diag.error(target) << "classes can only have a single concrete supertype";
           }
         } else if (baseKind != Type::Interface && baseKind != Type::Protocol) {
+          type->setClassFlag(CompositeType::HasErrors);
           diag.error(target) << "class '" << target <<
               "' can only inherit from a class, interface or protocol";
         }
@@ -395,6 +420,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 
       case Type::Struct:
         if (baseKind != Type::Struct && baseKind != Type::Protocol) {
+          type->setClassFlag(CompositeType::HasErrors);
           diag.error(target) <<
             "struct can only derive from a struct or static interface type";
         } else if (primaryBase == NULL) {
@@ -406,7 +432,8 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
 
       case Type::Interface:
         if (baseKind != Type::Interface && baseKind != Type::Protocol) {
-          diag.error(*it) << "interface can only inherit from interface or protocol";
+          type->setClassFlag(CompositeType::HasErrors);
+          diag.error(target) << "interface can only inherit from interface or protocol";
         } else if (primaryBase == NULL) {
           isPrimary = true;
         }
@@ -426,6 +453,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     }
 
     if (baseClass->isSubclassOf(type)) {
+      type->setClassFlag(CompositeType::HasErrors);
       diag.error(target) << "Circular inheritance not allowed";
       return false;
     }
@@ -467,18 +495,27 @@ bool ClassAnalyzer::analyzeImports() {
     if (trace_) {
       diag.debug() << "Imports";
     }
-    if (target->ast() != NULL) {
-      DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
-      const ASTNodeList & imports = target->ast()->imports();
-      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
-        da.importIntoScope(cast<ASTImport>(*it), type->memberScope());
+    if (target->mdNode() != NULL) {
+      ASTNodeList imports;
+      if (MDReader(module_, target).readImports(target, imports)) {
+        analyzeImportsImpl(imports);
       }
+    } else if (target->ast() != NULL) {
+      analyzeImportsImpl(target->ast()->imports());
     }
 
     type->passes().finish(CompositeType::ImportPass);
   }
 
   return true;
+}
+
+void ClassAnalyzer::analyzeImportsImpl(const ASTNodeList & imports) {
+  CompositeType * type = targetType();
+  DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
+  for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+    da.importIntoScope(cast<ASTImport>(*it), type->memberScope());
+  }
 }
 
 bool ClassAnalyzer::analyzeCoercers() {
@@ -583,8 +620,15 @@ bool ClassAnalyzer::analyzeFields() {
           //field->copyTrait(target, Defn::Final);
           field->copyTrait(target, Defn::Reflect);
 
+          // This prevents the analysis from going into an infinite loop when
+          // the class has a static variable whose type is the class itself.
           if (field->passes().isRunning(VariableDefn::VariableTypePass)) {
-            continue;
+            if (field->storageClass() == Storage_Static) {
+              module_->addSymbol(field);
+              type->staticFields_.push_back(field);
+              continue;
+            }
+            diag.fatal(field) << "Analysis is too tangled: " << field;
           }
 
           analyzeVariable(field, Task_PrepTypeComparison);
@@ -607,18 +651,9 @@ bool ClassAnalyzer::analyzeFields() {
               field->setMemberIndex(instanceFieldCount++);
               field->setMemberIndexRecursive(instanceFieldCountRecursive++);
               type->instanceFields_.push_back(field);
-
-              // Special case for non-reflective classes, we need to also export the types
-              // of members.
-              //if (target->isNonreflective()) {
-              //  module->addSymbol(field);
-              //}
-
               if (!type->isAttribute() && type != Builtins::typeObject) {
                 analyzeType(field->type(), Task_PrepConstruction);
               }
-
-              //analyzeType(field->type(), Task_PrepTypeGeneration);
             } else if (field->storageClass() == Storage_Static) {
               module_->addSymbol(field);
               type->staticFields_.push_back(field);
@@ -702,12 +737,12 @@ bool ClassAnalyzer::analyzeConstructors() {
             }
 
             if (!ctor->returnType()->isVoidType()) {
-              diag.fatal(ctor) << "Constructor cannot declare a return type.";
+              diag.error(ctor) << "Constructor cannot declare a return type.";
               break;
             }
 
             if (ctor->storageClass() != Storage_Instance) {
-              diag.fatal(ctor) << "Constructor must be instance method.";
+              diag.error(ctor) << "Constructor must be instance method.";
               break;
             }
 
@@ -719,7 +754,7 @@ bool ClassAnalyzer::analyzeConstructors() {
             ctor->copyTrait(target, Defn::Reflect);
             analyzeConstructBase(ctor);
           } else {
-            diag.fatal(*it) << "Member named 'construct' must be a method.";
+            diag.error(*it) << "Member named 'construct' must be a method.";
             break;
           }
         }
@@ -774,6 +809,11 @@ void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
 bool ClassAnalyzer::analyzeMethods() {
   CompositeType * type = targetType();
   if (type->passes().begin(CompositeType::MethodPass)) {
+    if (type->hasErrors()) {
+      type->passes().finish(CompositeType::MethodPass);
+      return true;
+    }
+
     if (trace_) {
       diag.debug() << "Methods";
     }
@@ -830,7 +870,7 @@ bool ClassAnalyzer::analyzeMethods() {
           // Compare with all previous defns
           for (SymbolTable::Entry::const_iterator m = defns.begin(); m != it; ++m) {
             ValueDefn * prevVal = cast<ValueDefn>(*m);
-            if (prevVal->hasUnboundTypeParams()) {
+            if (prevVal->hasUnboundTypeParams() || type->hasErrors()) {
               continue;
             }
 
@@ -841,6 +881,7 @@ bool ClassAnalyzer::analyzeMethods() {
                 diag.error(p2) << "Definition of property << '" << p2 <<
                     "' conflicts with earlier definition:";
                 diag.info(p1) << p1;
+                type->setClassFlag(CompositeType::HasErrors);
               }
             } else if (dtype == Defn::Indexer) {
               IndexerDefn * i1 = cast<IndexerDefn>(val);
@@ -849,8 +890,10 @@ bool ClassAnalyzer::analyzeMethods() {
               FunctionDefn * f1 = cast<FunctionDefn>(val);
               FunctionDefn * f2 = cast<FunctionDefn>(prevVal);
               if (f1->hasSameSignature(f2)) {
-                diag.error(f2) << "Member type signature conflict";
+                diag.error(f2) << Format_Type << "Member type signature conflict for " << f1;
                 diag.info(f1) << "From here";
+                type->setClassFlag(CompositeType::HasErrors);
+                break;
               }
             }
           }
@@ -1059,11 +1102,17 @@ void ClassAnalyzer::overrideMembers() {
 }
 
 void ClassAnalyzer::ensureUniqueSignatures(MethodList & methods) {
+  CompositeType * type = targetType();
+  if (type->hasErrors()) {
+    return;
+  }
   for (size_t i = 0; i < methods.size(); ++i) {
     for (size_t j = i + 1; j < methods.size(); ++j) {
       if (methods[i]->hasSameSignature(methods[j])) {
+        type->setClassFlag(CompositeType::HasErrors);
         diag.error(methods[j]) << "Member type signature conflict";
         diag.info(methods[i]) << "From here";
+        break;
       }
     }
   }
@@ -1117,7 +1166,7 @@ void ClassAnalyzer::checkForRequiredMethods() {
   typedef CompositeType::InterfaceList InterfaceList;
 
   CompositeType * type = targetType();
-  if (type->isAbstract()) {
+  if (type->isAbstract() || type->hasErrors()) {
     return;
   }
 
@@ -1129,7 +1178,8 @@ void ClassAnalyzer::checkForRequiredMethods() {
     MethodList abstractMethods;
     for (MethodList::iterator it = methods.begin(); it != methods.end(); ++it) {
       FunctionDefn * func = *it;
-      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
+//      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
+      if (func->isAbstract() || func->isInterfaceMethod()) {
         abstractMethods.push_back(func);
       }
     }
@@ -1153,7 +1203,8 @@ void ClassAnalyzer::checkForRequiredMethods() {
     MethodList unimpMethods;
     for (MethodList::iterator di = it->methods.begin(); di != it->methods.end(); ++di) {
       FunctionDefn * func = *di;
-      if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
+      if (func->isAbstract() || func->isInterfaceMethod()) {
+      //if (!func->hasBody() && !func->isExtern() && !func->isIntrinsic() && !func->isUndefined()) {
         unimpMethods.push_back(func);
       }
     }
@@ -1271,7 +1322,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->defaultConstructor() == NULL) {
-    diag.fatal(target) << "Cannot create a default constructor for '" <<
+    diag.error(target) << "Cannot create a default constructor for '" <<
         target << "' because super type '" << super <<
         "' has no default constructor";
     return false;
@@ -1354,7 +1405,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
   CompositeType * super = type->super();
   FunctionDefn * superCtor = NULL;
   if (super != NULL && super->defaultConstructor() == NULL) {
-    diag.fatal(target) << "Cannot create a no-arg constructor for '" <<
+    diag.error(target) << "Cannot create a no-arg constructor for '" <<
         target << "' because super type '" << super <<
         "' has no default constructor";
     return false;
@@ -1395,6 +1446,10 @@ bool ClassAnalyzer::createNoArgConstructor() {
 
 Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
   const Type * fieldType = var->type();
+  if (fieldType->isErrorType()) {
+    return NULL;
+  }
+
   if (var->initValue() != NULL) {
     return var->initValue();
   }
@@ -1440,7 +1495,7 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
 
   // TODO: Write tests for this case (private instance variables
   // being initialized to default values.)
-  diag.fatal(var) << "Unimplemented default initialization: " << var;
+  diag.error(var) << "Unimplemented default initialization: " << var;
   DFAIL("Implement");
 }
 
@@ -1531,6 +1586,10 @@ bool ClassAnalyzer::analyzeCompletely() {
     }
 
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
+      // No need to completely analyze imported functions.
+      if (member->defnType() == Defn::Function && member->mdNode() != NULL) {
+        continue;
+      }
       AnalyzerBase::analyzeCompletely(member);
     }
 

@@ -33,6 +33,7 @@ namespace llvm {
 class Value;
 class Function;
 class Type;
+class MDNode;
 }
 
 namespace tart {
@@ -43,23 +44,6 @@ class TemplateInstance;
 class Intrinsic;
 class PropertyDefn;
 class Module;
-
-/// -------------------------------------------------------------------
-/// The various passes of analysis for a definition.
-enum DefnPass {
-
-  /** Resolve an import statement. */
-  Pass_ResolveImport,
-
-  /** Resolve all module members. */
-  Pass_ResolveModuleMembers,
-
-  /** Number of analysis passes. */
-  DefnPassCount
-};
-
-/** EnumSet of defn states. */
-typedef SmallEnumSet<DefnPass, DefnPassCount> DefnPasses;
 
 /// -------------------------------------------------------------------
 /// A binding of a name to an object.
@@ -108,19 +92,19 @@ protected:
   DefnType defnType_;         // What type of defn this is
   SourceLocation loc;         // Location where this was defined.
   const char * name_;         // Local name (copied from decl)
-  const ASTDecl * ast_;        // The source declaration of this defintion
+  const ASTDecl * ast_;       // The source declaration of this defintion
+  const llvm::MDNode * md_;   // Metadata node.
   DeclModifiers modifiers_;   // Modifier flags
+  StorageClass storage_;      // Storage class for the defn.
   Module * module_;           // Module in which this symbol is defined.
   Defn * parentDefn_;         // Definition which encloses this one.
   Defn * nextInScope_;        // Pointer to the next defn in parent scope
-  std::string qname_;         // Fully-qualified name.
+  llvm::SmallString<0> qname_;// Fully-qualified name.
   mutable std::string lnkName;// External linkage name
   TemplateSignature * tsig_;  // Template signature
   TemplateInstance * tinst_;  // Template arguments
-  DefnPasses running_;         // Analysis passes currently in progress
-  DefnPasses finished_;        // Analysis passes completed
-  ExprList attrs_;             // List of attributes
-  Traits traits_;              // Traits of this defn
+  ExprList attrs_;            // List of attributes
+  Traits traits_;             // Traits of this defn
 
 public:
   /** Constructor that takes a name */
@@ -136,11 +120,10 @@ public:
   const char * name() const { return name_; }
 
   /** Get the fully qualified name of the definition. */
-  const std::string & qualifiedName() const;
-  std::string & qualifiedName();
+  llvm::StringRef qualifiedName() const;
 
   /** Set the fully qualified name of the definition. */
-  void setQualifiedName(const std::string & name) { qname_ = name; }
+  void setQualifiedName(llvm::StringRef name) { qname_ = name; }
 
   /** Get the linkage name of this definition. */
   virtual llvm::StringRef linkageName() const;
@@ -158,6 +141,10 @@ public:
   virtual const ASTDeclList & astMembers() const {
     return ast_->members();
   }
+
+  /** Get the Metadata node that declared this definition. */
+  const llvm::MDNode * mdNode() const { return md_; }
+  void setMDNode(const llvm::MDNode * md) { md_ = md; }
 
   /** Get the source location where this definition was defined. */
   const SourceLocation & location() const;
@@ -210,6 +197,10 @@ public:
   Defn * parentDefn() const { return parentDefn_; }
   void setParentDefn(Defn * defn) { parentDefn_ = defn; }
 
+  /** Return the ancestor of this definition that is defined at the top level within the
+      module.  */
+  Defn * moduleLevelParent() const;
+
   /** If the immediate enclosing decl is a class or struct, return it.
       If it's a property, then return the class enclosing the property. */
   TypeDefn * enclosingClassDefn() const;
@@ -253,36 +244,13 @@ public:
   void setVisibility(Visibility vis) { modifiers_.visibility = vis; }
 
   /** The storage class of this value. */
-  StorageClass storageClass() const { return modifiers_.storageClass; }
-  void setStorageClass(StorageClass sc) { modifiers_.storageClass = sc; }
+  StorageClass storageClass() const { return storage_; }
+  void setStorageClass(StorageClass sc) { storage_ = sc; }
 
 #if 0
   /** The condition that indicates whether this symbol is enabled. */
   const Expr * getCondition() const { return modifiers.condition; }
 #endif
-
-  // Analysis pass methods
-
-  /** Return the set of passes in progress. */
-  DefnPasses & running() { return running_; }
-
-  /** Return true if the specified pass is running. */
-  bool isPassRunning(DefnPass pass) const { return running_.contains(pass); }
-
-  /** Return true if the specified pass is finished. */
-  bool isPassFinished(DefnPass pass) const { return finished_.contains(pass); }
-
-  /** Return the set of analysis passes completed so far. */
-  DefnPasses & finished() { return finished_; }
-
-  /** Mark a pass has started. */
-  bool beginPass(DefnPass pass);
-
-  /** Mark a pass as ended. */
-  void finishPass(DefnPass pass) {
-    running_.remove(pass);
-    finished_.add(pass);
-  }
 
   // Internal methods made visible for testing
 
@@ -384,12 +352,6 @@ public:
 
 /** Format a list of parameters as comma-separated values. */
 void formatParameterList(FormatStream & out, const ParameterList & params);
-
-/** Return the string name of a pass. */
-const char * getPassName(DefnPass pass);
-
-/** Stream operator for pass names. */
-FormatStream & operator<<(FormatStream & out, DefnPass pass);
 
 } // namespace tart
 

@@ -34,8 +34,8 @@ public:
   size_t count() const { return map_.size(); }
 
   /** Find a declaration by name */
-  const Entry * findSymbol(const char * key) const {
-    decl_map_t::const_iterator it = map_.find(llvm::StringRef(key));
+  const Entry * findSymbol(llvm::StringRef key) const {
+    decl_map_t::const_iterator it = map_.find(key);
     if (it != map_.end()) {
       return &it->second;
     } else {

@@ -23,6 +23,8 @@
 #include "tart/Common/InternedString.h"
 #include "tart/Common/PackageMgr.h"
 
+#include "tart/Meta/MDReader.h"
+
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Sema/TemplateParamAnalyzer.h"
@@ -33,8 +35,8 @@
 #include "tart/Sema/EvalPass.h"
 
 #include "tart/Objects/Builtins.h"
-#include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/SystemDefs.h"
+#include "tart/Type/Attribute.h"
 
 namespace tart {
 
@@ -46,6 +48,7 @@ namespace reflect {
 
 extern SystemNamespaceMember<FunctionDefn> gc_allocContext;
 extern SystemNamespaceMember<FunctionDefn> gc_alloc;
+extern SystemClassMember<FunctionDefn> functionType_checkArgs;
 
 // -------------------------------------------------------------------
 // DefnAnalyzer
@@ -53,8 +56,11 @@ extern SystemNamespaceMember<FunctionDefn> gc_alloc;
 bool DefnAnalyzer::analyzeModule() {
   bool success = true;
 
-  if (!createMembersFromAST(module_)) {
-    return false;
+  if (module_->passes().begin(Module::ScopeCreationPass)) {
+    if (!createMembersFromAST(module_)) {
+      return false;
+    }
+    module_->passes().finish(Module::ScopeCreationPass);
   }
 
   if (module_->firstMember() == NULL) {
@@ -83,25 +89,27 @@ bool DefnAnalyzer::analyzeModule() {
   if (module_->isReflectionEnabled()) {
     module_->addSymbol(Builtins::typeModule.typeDefn());
     module_->addSymbol(Builtins::typeTypeList.typeDefn());
-    analyzeType(Builtins::typeCompositeType.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeEnumType.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeDerivedType.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typePrimitiveType.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeTypeList.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeAttributeList.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeMethod.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeMethodList.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeProperty.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typePropertyList.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeField.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeFieldList.get(), Task_PrepCodeGeneration);
-    analyzeType(Builtins::typeDataMember.get(), Task_PrepCodeGeneration);
+    analyzeType(Builtins::typeCompositeType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeEnumType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeDerivedType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typePrimitiveType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeFunctionType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeTypeList.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeAttributeList.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeMethod.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeMethodList.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeProperty.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typePropertyList.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeField.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeFieldList.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeDataMember.get(), Task_PrepConstruction);
+    analyzeDefn(functionType_checkArgs.get(), Task_PrepCodeGeneration);
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
-  analyzeType(Builtins::typeTraceAction.get(), Task_PrepCodeGeneration);
+  analyzeType(Builtins::typeTraceAction.get(), Task_PrepConstruction);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
   analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
-  analyzeFunction(gc_alloc, Task_PrepCodeGeneration);
+  analyzeFunction(gc_alloc, Task_PrepConstruction);
   analyzeDefn(reflect::FunctionType::CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the
@@ -136,13 +144,13 @@ bool DefnAnalyzer::analyzeModule() {
   }
 
   // Prevent further symbols from being added.
-  module_->finishPass(Pass_ResolveModuleMembers);
+  module_->passes().finish(Module::CompletionPass);
   return success;
 }
 
 bool DefnAnalyzer::createMembersFromAST(Defn * in) {
   // Create members of this scope.
-  if (in->ast() != NULL) {
+  if (in->ast() != NULL || in->mdNode() != NULL) {
     ScopeBuilder::createScopeMembers(in);
   }
 
@@ -155,11 +163,15 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
     CompositeType * attrType = Builtins::typeAttribute.get();
     attrType->setClassFlag(CompositeType::Attribute, true);
     attrType->attributeInfo().setTarget(AttributeInfo::CLASS);
-    attrType->attributeInfo().setRetained(false);
+    attrType->attributeInfo().setRetention(AttributeInfo::NONE);
     return true;
   }
 
-  if (in->ast() != NULL) {
+  if (in->mdNode() != NULL) {
+    if (!MDReader(module_, in).readAttributeList(in)) {
+      return false;
+    }
+  } else if (in->ast() != NULL) {
     ExprAnalyzer ea(this, NULL);
     const ASTNodeList & attrs = in->ast()->attributes();
     for (ASTNodeList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
@@ -264,42 +276,45 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     if (attrExpr->exprType() == Expr::CtorCall) {
       const CompositeType * attrClass = cast<CompositeType>(attrType);
       if (!attrClass->isAttribute()) {
-        diag.error(*it) << "Invalid attribute expression @" << *it;
+        diag.error(attrExpr) << "Invalid attribute type: " << attrType;
+        diag.recovered();
         continue;
       }
 
       if (!attrClass->attributeInfo().canAttachTo(in)) {
-        diag.error(*it) << "Attribute '" << attrClass << "' cannot apply to target '" << in << "'";
+        diag.error(attrExpr) << "Attribute '" << attrClass << "' cannot apply to target '" << in << "'";
+        diag.recovered();
         continue;
       }
 
       // Evaluate the attribute. If it returns NULL, it simply means that it could not
       // be evaluated at compile-time.
-      Expr * attrVal = EvalPass::eval(module_, attrExpr, true);
-      if (isErrorResult(attrVal)) {
+      attrExpr = EvalPass::eval(module_, attrExpr, true);
+      if (isErrorResult(attrExpr)) {
         continue;
       }
 
       // Replace the attribute with its compiled representation.
-      *it = attrVal;
+      *it = attrExpr;
+    }
 
-      if (attrVal->exprType() == Expr::ConstObjRef) {
-        ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrVal);
-        DASSERT_OBJ(attrVal->type()->isEqual(attrClass), attrVal->type());
+    if (attrExpr->exprType() == Expr::ConstObjRef) {
+      const CompositeType * attrClass = cast<CompositeType>(attrType);
+      ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrExpr);
+      DASSERT_OBJ(attrExpr->type()->isEqual(attrClass), attrExpr->type());
 
-        // Special case for @Attribute
-        if (attrClass == Builtins::typeAttribute) {
-          handleAttributeAttribute(in, attrObj);
-          continue;
-        }
+      // Special case for @Attribute
+      if (attrClass == Builtins::typeAttribute) {
+        handleAttributeAttribute(in, attrObj);
+        continue;
+      }
 
-        FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
-            attrClass->lookupSingleMember("apply", true));
-        if (applyMethod != NULL) {
-          applyAttribute(in, attrObj, applyMethod);
-        } else if (!attrClass->attributeInfo().isRetained()) {
-          diag.info(in) << "Unhandled attribute " << *it;
-        }
+      FunctionDefn * applyMethod = dyn_cast_or_null<FunctionDefn>(
+          attrClass->lookupSingleMember("apply", true));
+      if (applyMethod != NULL) {
+        applyAttribute(in, attrObj, applyMethod);
+      } else if (!attrClass->attributeInfo().isRetained()) {
+        diag.info(in) << "Unhandled attribute " << *it;
       }
     }
   }
@@ -323,7 +338,7 @@ void DefnAnalyzer::applyAttribute(Defn * de, ConstantObjectRef * attrObj,
 
 void DefnAnalyzer::handleIntrinsicAttribute(Defn * de, Expr * attrExpr) {
   if (FunctionDefn * func = dyn_cast<FunctionDefn>(de)) {
-    func->setIntrinsic(Intrinsic::get(func->location(), func->qualifiedName().c_str()));
+    func->setFlag(FunctionDefn::Intrinsic);
     func->setFlag(FunctionDefn::Final);
   } else {
     diag.fatal(attrExpr) << "Only functions can be Intrinsics";
@@ -339,7 +354,7 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   CompositeType * targetType = cast<CompositeType>(targetTypeDefn->typeValue());
   targetType->setClassFlag(CompositeType::Attribute, true);
   targetType->attributeInfo().setTarget(target);
-  targetType->attributeInfo().setRetained(retention);
+  targetType->attributeInfo().setRetention(retention);
   targetType->attributeInfo().setPropagation(propagation);
 }
 
@@ -359,6 +374,7 @@ bool DefnAnalyzer::hasAnyRetainedAttrs(Defn * in) {
 void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
   ExprList importDefs;
   Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
+  diag.recovered();
   bool found = lookupName(importDefs, import->path(), LOOKUP_ABS_PATH);
   if (!found) {
     found = lookupName(importDefs, import->path(), LOOKUP_DEFAULT);
@@ -369,6 +385,7 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * tar
       if (importDefs.size() > 1) {
         diag.error(import) << "Ambiguous import statement due to multiple definitions of " <<
             import->path();
+        diag.recovered();
       }
 
       Expr * impExpr = importDefs.front();
@@ -393,12 +410,14 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * tar
         targetScope->auxScopes().insert(impScope);
       } else {
         diag.error(import) << "Invalid type for import: " << impExpr;
+        diag.recovered();
       }
     } else {
       targetScope->addMember(new ExplicitImportDefn(module_, import->asName(), importDefs));
     }
   } else {
     diag.error(import) << "Not found '" << import << "'";
+    diag.recovered();
   }
 
   setActiveScope(saveScope);
@@ -408,7 +427,12 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   TemplateSignature * tsig = de->templateSignature();
   DASSERT_OBJ(tsig != NULL, de);
 
-  if (tsig->ast() != NULL) {
+  if (de->mdNode() != NULL && tsig->ast() == NULL) {
+    // Create definitions from Metadata Node.
+    MDReader(de->module(), de).readMembers(de);
+  }
+
+  if (tsig->typeParams() == NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tsig->ast()->params();
     TypeList params;
@@ -457,9 +481,6 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     if (!de->hasUnboundTypeParams()) {
       de->addTrait(Defn::Singular);
     }
-
-    // Remove the AST so that we don't re-analyze this template.
-    tsig->setAST(NULL);
   }
 }
 

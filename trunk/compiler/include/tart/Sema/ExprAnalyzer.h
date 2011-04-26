@@ -224,6 +224,9 @@ public:
   /** Return the function to downcast to the specified type. */
   FunctionDefn * getDowncastFn(const SourceLocation & loc, const Type * toType);
 
+  /** Check to see if a call to infixLogicalOr is really a union type expression. */
+  bool getUnionTypeArgs(Expr * ex, ConstTypeList & types);
+
   /** Report that there were no matching candidates. */
   void noCandidatesError(CallExpr * call, const ExprList & methods);
 

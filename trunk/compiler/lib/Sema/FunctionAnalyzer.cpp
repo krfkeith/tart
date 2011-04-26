@@ -22,6 +22,9 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
+#include "tart/Objects/Intrinsic.h"
+
+#include "tart/Meta/MDReader.h"
 
 #define INFER_RETURN_TYPE 0
 
@@ -116,6 +119,19 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
       target->addTrait(Defn::Reflect);
     }
 
+    if (target->isIntrinsic() && target->intrinsic() == NULL) {
+      target->setIntrinsic(Intrinsic::get(target->location(), target->qualifiedName()));
+      if (target->intrinsic() == NULL) {
+        diag.error(target) << "No such intrinsic: " << target->qualifiedName();
+      }
+    }
+
+    if (target->isTraceMethod()) {
+      CompositeType * ctype = target->definingClass();
+      DASSERT_OBJ(ctype != NULL, target);
+      ctype->traceMethods().push_back(target);
+    }
+
     target->passes().finish(FunctionDefn::AttributePass);
   }
 
@@ -168,15 +184,18 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
 bool FunctionAnalyzer::resolveParameterTypes() {
   bool success = true;
   if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
-    FunctionType * ftype = target->functionType();
-
-    bool trace = isTraceEnabled(target);
+     bool trace = isTraceEnabled(target);
     if (trace) {
       diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
     }
 
-    // Set the module reference for the parameter scope.
-    //target->parameterScope().setModule(module);
+    if (target->mdNode() != NULL) {
+      if (!MDReader(module_, target).readFunctionType(target)) {
+        return false;
+      }
+    }
+
+    FunctionType * ftype = target->functionType();
 
     // For non-template functions, the active scope is the scope that
     // encloses the function. For a template instance, the parent scope
@@ -219,7 +238,6 @@ bool FunctionAnalyzer::resolveParameterTypes() {
             .analyze(Task_PrepTypeComparison)) {
           success = false;
         }
-        param->setLocation(param->location());
 
         if (param->type() == NULL) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
@@ -266,6 +284,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       selfParam->setType(selfType->typeValue());
       selfParam->setInternalType(selfType->typeValue());
       selfParam->addTrait(Defn::Singular);
+      selfParam->addTrait(Defn::Synthetic);
       selfParam->setFlag(ParameterDefn::Reference);
       ftype->setSelfParam(selfParam);
       target->parameterScope().addMember(selfParam);
@@ -349,6 +368,7 @@ bool FunctionAnalyzer::resolveModifiers() {
         }
 
         default:
+          DFAIL("What?");
           break;
       }
 
@@ -414,34 +434,33 @@ bool FunctionAnalyzer::createCFG() {
   }
 
   if (target->passes().begin(FunctionDefn::ControlFlowPass)) {
-    if (target->hasBody() && target->body() == NULL) {
+    if (target->isUndefined()) {
+      module()->addSymbol(Builtins::funcUndefinedMethod);
+    } else if (target->body() == NULL) {
+      const Stmt * astBody = NULL;
+      if (target->functionDecl() != NULL) {
+        astBody = target->functionDecl()->body();
+      } else if (target->mdNode() != NULL) {
+        astBody = MDReader(module_, target).readFunctionBody(target);
+      }
 
-      StmtAnalyzer sa(target);
-      success = sa.buildCFG();
+      if (astBody != NULL) {
+        StmtAnalyzer sa(target, astBody);
+        success = sa.buildCFG();
 
-      // Generate the list of predecessor blocks for each block.
-//      for (BlockList::iterator b = target->blocks().begin(); b != target->blocks().end(); ++b) {
-//        Block * blk = *b;
-//        BlockList & succs = blk->succs();
-//        for (BlockList::iterator s = succs.begin(); s != succs.end(); ++s) {
-//          (*s)->preds().push_back(blk);
-//        }
-//      }
+        // Make sure that the constructor calls the superclass and initializes all fields.
+        if (target->isCtor() && target->isSingular()) {
+          TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
+          CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
+          if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
+            ConstructorAnalyzer(cls).run(target);
+          }
+        }
 
-      // Make sure that the constructor calls the superclass and initializes all fields.
-      if (target->isCtor() && target->isSingular()) {
-        TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
-        CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
-        if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
-          ConstructorAnalyzer(cls).run(target);
+        if (!target->isNested() && !target->closureEnvs().empty()) {
+          visitClosureEnvs(target->closureEnvs());
         }
       }
-
-      if (!target->isNested() && !target->closureEnvs().empty()) {
-        visitClosureEnvs(target->closureEnvs());
-      }
-    } else if (target->isUndefined()) {
-      module()->addSymbol(Builtins::funcUndefinedMethod);
     }
 
     target->passes().finish(FunctionDefn::ControlFlowPass);

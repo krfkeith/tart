@@ -10,6 +10,10 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef LLVM_ADT_STRINGREF_H
+#include "llvm/ADT/StringRef.h"
+#endif
+
 #include <ostream>
 #include <sstream>
 
@@ -24,6 +28,12 @@ namespace tart {
   // Make node types streamable
   inline std::ostream & operator<<(std::ostream & out, const ASTNode::NodeType nt) {
     out << nodeTypeName(nt);
+    return out;
+  }
+
+  // Make node types streamable
+  inline std::ostream & operator<<(std::ostream & out, llvm::StringRef str) {
+    out << str.str();
     return out;
   }
 

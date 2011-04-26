@@ -47,7 +47,7 @@ StructBuilder & StructBuilder::addIntegerField(VariableDefn * var, int32_t value
   return addIntegerField(var->type(), value);
 }
 
-StructBuilder & StructBuilder::addStringField(const std::string & strval) {
+StructBuilder & StructBuilder::addStringField(llvm::StringRef strval) {
   return addField(gen_.genStringLiteral(strval));
 }
 

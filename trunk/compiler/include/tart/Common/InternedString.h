@@ -19,11 +19,15 @@ public:
   ~InternedStrings();
 
   const char * intern(const char * str);
-  const char * intern(const std::string & str);
+  const char * intern(llvm::StringRef str);
 
   // Language variables
-  const char * idSelf;    // The self parameter
-  const char * idValue;   // Name of default setter argument
+  const char * idSelf;      // The self parameter
+  const char * idValue;     // Name of default setter argument
+
+  // Getter / Setter names
+  const char * idGet;       // Getter
+  const char * idSet;       // Setter
 
   // Special IDs, all of which begin with a dot.
   const char * idConstruct; // Name of constructors

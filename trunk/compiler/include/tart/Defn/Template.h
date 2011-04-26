@@ -182,7 +182,7 @@ public:
   bool allowOverloads() { return false; }
   Scope * parentScope() const { return parentScope_; }
   void addMember(Defn * d);
-  bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
+  bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full = true) const;
   void trace() const;
   void format(FormatStream & out) const;

@@ -2,15 +2,19 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Expr/Exprs.h"
-#include "tart/Expr/StmtExprs.h"
-#include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/TypeDefn.h"
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Defn/Module.h"
 
+#include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/PrimitiveType.h"
+
 #include "tart/AST/Stmt.h"
+
+#include "tart/Meta/MDReader.h"
 
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Common/Diagnostics.h"
@@ -87,7 +91,22 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     bool saveInMacroExpansion = stAn.setInMacroExpansion(true);
     const Type * savedReturnType = stAn.setReturnType(returnType);
-    const Stmt * macroBody = macro->functionDecl()->body();
+
+    const Stmt * macroBody;
+    if (macro->ast() != NULL) {
+      macroBody = macro->functionDecl()->body();
+    } else if (macro->mdNode() != NULL) {
+      macroBody = MDReader(macro->module(), macro).readFunctionBody(macro);
+      if (macroBody == NULL) {
+        return &Expr::ErrorVal;
+      }
+
+      // Save the AST
+      ASTFunctionDecl * ast = new ASTFunctionDecl(ASTNode::Macro, macro->location(), macro->name(),
+          ASTParamList(), NULL, DeclModifiers());
+      ast->setBody(const_cast<Stmt *>(macroBody));
+      macro->setAst(ast);
+    }
 
     Defn * saveSubject = stAn.setSubject(macro);
     Expr * bodyExpr = stAn.reduceExpr(macroBody, NULL);

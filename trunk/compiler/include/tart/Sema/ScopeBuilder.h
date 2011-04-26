@@ -19,14 +19,18 @@ public:
   /** Set up the scope represented by this definition, by populating it with all of the members. */
   static void createScopeMembers(Defn * parent);
   static void createScopeMembers(Defn * parent, const ASTDeclList & decs);
-  static void createScopeMembers(IterableScope * scope, Defn * parent, const ASTDeclList & decs);
+  static void createScopeMembers(IterableScope * scope, Defn * parent, const ASTDeclList & decs,
+      StorageClass scDefault);
   static void createAccessors(PropertyDefn * prop);
 
   /** Create a new definition in the current scope from the given decl. */
-  static Defn * createDefn(Scope * parent, Module * m, const ASTDecl * de);
-  static Defn * createMemberDefn(Scope * parentScope, Defn * parentDefn, const ASTDecl * de);
+  static Defn * createDefn(Scope * parent, Module * m, const ASTDecl * de,
+      StorageClass scDefault);
+  static Defn * createMemberDefn(Scope * parentScope, Defn * parentDefn, const ASTDecl * de,
+      StorageClass scDefault);
   static Defn * createLocalDefn(Scope * parentScope, Defn * parentDefn, const ASTDecl * de);
-  static Defn * createTemplateDefn(Scope * parent, Module * m, const ASTTemplate * tp);
+  static Defn * createTemplateDefn(Scope * parent, Module * m, const ASTTemplate * tp,
+      StorageClass scDefault);
   static Defn * mergeNamespace(Scope * parent, const ASTDecl * de);
 
   /** Ensure that it's OK to define a variable with the given name in this local scope. */

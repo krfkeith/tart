@@ -257,6 +257,7 @@ bool EvalPass::evalBlocks(BlockList & blocks) {
 
 Expr * EvalPass::evalFnCall(FnCallExpr * in) {
   FunctionDefn * func = in->function();
+  AnalyzerBase::analyzeFunction(func, Task_PrepEvaluation);
   CallFrame frame(callFrame_);
   frame.setFunction(func);
   frame.setCallLocation(in->location());
@@ -285,6 +286,7 @@ Expr * EvalPass::evalFnCall(FnCallExpr * in) {
   }
 
   if (!func->hasBody()) {
+    DASSERT_OBJ(func->passes().isFinished(FunctionDefn::ControlFlowPass), func);
     if (!allowPartial_) {
       diag.error(in) << "Cannot evaluate function " << func << " at compile time";
     }

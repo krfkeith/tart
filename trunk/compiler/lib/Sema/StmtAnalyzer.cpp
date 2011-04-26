@@ -65,59 +65,56 @@ public:
 /// -------------------------------------------------------------------
 /// StmtAnalyzer
 
-StmtAnalyzer::StmtAnalyzer(FunctionDefn * func)
+StmtAnalyzer::StmtAnalyzer(FunctionDefn * func, const Stmt * body)
   : ExprAnalyzer(func->module(), &func->parameterScope(), func, func)
+  , body_(body)
 {
 }
 
 bool StmtAnalyzer::buildCFG() {
-  if (function()->functionDecl() && function()->functionDecl()->body() != NULL) {
+  DASSERT(body_ != NULL);
 
-    // Create a temporary scope to allow lookup of the function parameters.
-    DelegatingScope parameterScope(&function()->parameterScope(), function()->definingScope());
-    setActiveScope(&parameterScope);
+  // Create a temporary scope to allow lookup of the function parameters.
+  DelegatingScope parameterScope(&function()->parameterScope(), function()->definingScope());
+  setActiveScope(&parameterScope);
 
-    // If this is an instance method, then set up the implicit 'self'
-    // scope as well. This scope searches the type of the self parameter,
-    // and is always searched immediately after the parameter scope.
-    if (function()->storageClass() == Storage_Instance) {
-      ParameterDefn * selfParam = function()->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function());
-      DASSERT_OBJ(selfParam->type() != NULL, function());
-      TypeDefn * selfType = selfParam->type()->typeDefn();
-      DASSERT_OBJ(selfType != NULL, function());
+  // If this is an instance method, then set up the implicit 'self'
+  // scope as well. This scope searches the type of the self parameter,
+  // and is always searched immediately after the parameter scope.
+  if (function()->storageClass() == Storage_Instance) {
+    ParameterDefn * selfParam = function()->functionType()->selfParam();
+    DASSERT_OBJ(selfParam != NULL, function());
+    DASSERT_OBJ(selfParam->type() != NULL, function());
+    TypeDefn * selfType = selfParam->type()->typeDefn();
+    DASSERT_OBJ(selfType != NULL, function());
 
 #if IMPLICIT_SELF
-      // Uncomment to allow 'self' to be searched implicitly.
-      SelfScope * selfScope =
-          new SelfScope(selfType->typeValue()->memberScope(), function()->definingScope());
-      selfScope->setSelfParam(selfParam);
-      parameterScope.setParentScope(selfScope);
+    // Uncomment to allow 'self' to be searched implicitly.
+    SelfScope * selfScope =
+        new SelfScope(selfType->typeValue()->memberScope(), function()->definingScope());
+    selfScope->setSelfParam(selfParam);
+    parameterScope.setParentScope(selfScope);
 #endif
-    } else if (function()->storageClass() == Storage_Local) {
-      ParameterDefn * selfParam = function()->functionType()->selfParam();
-      DASSERT_OBJ(selfParam != NULL, function());
-      DASSERT_OBJ(selfParam->type() != NULL, function());
-      DASSERT_OBJ(selfParam->initValue() != NULL, function());
-      if (ClosureEnvExpr * env = dyn_cast<ClosureEnvExpr>(selfParam->initValue())) {
-        parameterScope.setParentScope(env);
-      }
+  } else if (function()->storageClass() == Storage_Local) {
+    ParameterDefn * selfParam = function()->functionType()->selfParam();
+    DASSERT_OBJ(selfParam != NULL, function());
+    DASSERT_OBJ(selfParam->type() != NULL, function());
+    DASSERT_OBJ(selfParam->initValue() != NULL, function());
+    if (ClosureEnvExpr * env = dyn_cast<ClosureEnvExpr>(selfParam->initValue())) {
+      parameterScope.setParentScope(env);
     }
-
-    // Create the initial block.
-    const Stmt * body = function()->functionDecl()->body();
-    Expr * bodyExpr = dyn_cast_or_null<SeqExpr>(reduceExpr(body, NULL));
-    bodyExpr = MacroExpansionPass::run(*this, bodyExpr);
-    if (bodyExpr == NULL) {
-      return false;
-    }
-
-    function()->setBody(bodyExpr);
-    // Convert all property accesses to getters and setters.
-    PropertyAccessorPass::run(module(), subject(), function()->body());
-    return true;
   }
 
+  // Create the initial block.
+  Expr * bodyExpr = dyn_cast_or_null<SeqExpr>(reduceExpr(body_, NULL));
+  bodyExpr = MacroExpansionPass::run(*this, bodyExpr);
+  if (bodyExpr == NULL) {
+    return false;
+  }
+
+  function()->setBody(bodyExpr);
+  // Convert all property accesses to getters and setters.
+  PropertyAccessorPass::run(module(), subject(), function()->body());
   return true;
 }
 

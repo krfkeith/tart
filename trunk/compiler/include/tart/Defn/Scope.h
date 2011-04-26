@@ -13,10 +13,17 @@
 #include "tart/Common/GC.h"
 #endif
 
-#include <string>
-#include <llvm/ADT/StringMap.h>
-#include <llvm/ADT/SmallVector.h>
-#include <llvm/ADT/SetVector.h>
+#ifndef LLVM_ADT_STRINGMAP_H
+#include "llvm/ADT/StringMap.h"
+#endif
+
+#ifndef LLVM_ADT_SMALLVECTOR_H
+#include "llvm/ADT/SmallVector.h"
+#endif
+
+#ifndef LLVM_ADT_SETVECTOR_H
+#include "llvm/ADT/SetVector.h"
+#endif
 
 namespace tart {
 
@@ -39,7 +46,7 @@ public:
   virtual void addMember(Defn * d) = 0;
 
   /** Find a declaration by name */
-  virtual bool lookupMember(const char * ident, DefnList & defs, bool inherit = false) const = 0;
+  virtual bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit = false) const = 0;
 
   /** Convenience function used to look up a member with no overloads. */
   Defn * lookupSingleMember(const char * ident, bool inherit = false) const;
@@ -105,7 +112,7 @@ public:
   // Overrides
 
   void addMember(Defn * d);
-  bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
+  bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const;
   bool allowOverloads() { return true; }
   size_t count() { return members_.count(); }
   void clear() { members_.clear(); }
@@ -155,7 +162,7 @@ public:
 
   Scope * parentScope() const { return parent_; }
   void addMember(Defn * d) { delegate_->addMember(d); }
-  bool lookupMember(const char * ident, DefnList & defs, bool inherit) const {
+  bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const {
     return delegate_->lookupMember(ident, defs, inherit);
   }
 

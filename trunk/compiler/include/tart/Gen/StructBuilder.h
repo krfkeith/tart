@@ -38,7 +38,7 @@ public:
   StructBuilder & addIntegerField(VariableDefn * var, int32_t value);
 
   /** Add a String field. */
-  StructBuilder & addStringField(const std::string & strval);
+  StructBuilder & addStringField(llvm::StringRef strval);
 
   /** Add an pointer field with the same type as the variable 'var'. */
   StructBuilder & addPointerField(VariableDefn * var, llvm::Constant * value);

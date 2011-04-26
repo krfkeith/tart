@@ -80,6 +80,7 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
   if (exprs.empty()) {
     return new SeqExpr(st->location(), blockScope, exprs, &VoidType::instance);
   } else if (exprs.size() == 1 && blockScope->count() == 0 &&
+      currentFunction_->functionDecl() != NULL &&
       st != currentFunction_->functionDecl()->body()) {
     // There's only one expression in the block, so just return it.
     return exprs.front();
@@ -566,7 +567,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
-    if (s->nodeType() == ASTNode::Case) {
+    if (s->nodeType() == ASTNode::MatchAs) {
       Expr * asExpr = reduceMatchAsStmt(
           static_cast<const MatchAsStmt *>(s), testExpr, castType, expected);
       if (!isErrorResult(asExpr)) {

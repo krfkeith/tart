@@ -64,8 +64,6 @@ namespace {
     result->append(arg);
     return result;
   }
-
-  ASTDecl * DECL_ERROR = (ASTDecl *) - 1;
 }
 
 Parser::Parser(ProgramSource * src, Module * m)
@@ -261,7 +259,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
   for (;;) {
     if (match(Token_Static)) {
       modifier = true;
-      mods.storageClass = Storage_Static;
+      mods.flags |= Static;
     } else if (match(Token_Final)) {
       mods.flags |= Final;
       modifier = true;
@@ -296,7 +294,7 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
       diag.error(lexer.tokenLocation()) << "Expected declaration after modifier";
     }
     return false;
-  } else if (decl == DECL_ERROR) {
+  } else if (decl->isInvalid()) {
     return true;
   }
 
@@ -397,7 +395,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
     loc = tokenLoc;
     if (declName == NULL) {
       expectedIdentifier();
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
 
     if (match(Token_Colon)) {
@@ -412,12 +410,12 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
     declValue = expressionList();
     if (declValue == NULL) {
       expectedExpression();
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
   }
 
   if (!needSemi()) {
-    return DECL_ERROR;
+    return (ASTDecl *)&ASTNode::INVALID;
   }
 
   ASTVarDecl * var;
@@ -428,7 +426,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
       ASTVarDecl * v = static_cast<ASTVarDecl *>(*it);
       if (v->type() == NULL && declValue == NULL) {
         diag.fatal(lexer.tokenLocation()) << "Can't infer type for '" << v->name() << "'";
-        return DECL_ERROR;
+        return (ASTDecl *)&ASTNode::INVALID;
       }
 
       var->addMember(v);
@@ -438,7 +436,7 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
     var = static_cast<ASTVarDecl *>(vars.front());
     if (var->type() == NULL && declValue == NULL) {
       diag.fatal(lexer.tokenLocation()) << "Can't infer type for '" << var->name() << "'";
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
 
     var->setValue(declValue);
@@ -454,12 +452,12 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     ASTParamList params;
 
     if (!formalArgumentList(params, Token_RBracket)) {
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
 
     if (params.empty()) {
       diag.error(lexer.tokenLocation()) << "Indexer must have at least one argument";
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
 
     // See if there's a return type declared
@@ -473,7 +471,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     if (match(Token_LBrace)) {
       // Parse accessors for indexer
       if (!accessorMethodList(indexer, params, mods)) {
-        return DECL_ERROR;
+        return (ASTDecl *)&ASTNode::INVALID;
       }
     }
 
@@ -501,7 +499,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     // It's a property
     ASTNode * declType = typeExpression();
     if (declType == NULL) {
-      return DECL_ERROR;
+      return (ASTDecl *)&ASTNode::INVALID;
     }
 
     ASTParamList params;
@@ -509,7 +507,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     if (match(Token_LBrace)) {
       // Parse accessors
       if (!accessorMethodList(prop, params, mods)) {
-        return DECL_ERROR;
+        return (ASTDecl *)&ASTNode::INVALID;
       }
     }
 
@@ -530,7 +528,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     if (match(Token_LParen)) {
       // Argument list
       if (!formalArgumentList(params, Token_RParen)) {
-        return DECL_ERROR;
+        return (ASTDecl *)&ASTNode::INVALID;
       }
 
     } else {
@@ -562,7 +560,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       body = bodyStmt();
       if (body == NULL) {
         diag.error(loc) << "Function definition with no body";
-        return DECL_ERROR;
+        return (ASTDecl *)&ASTNode::INVALID;
       }
       fd->setBody(body);
     }
@@ -586,7 +584,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   const char * declName = matchIdent();
   if (declName == NULL) {
     expectedIdentifier();
-    return DECL_ERROR;
+    return (ASTDecl *)&ASTNode::INVALID;
   }
 
   SourceLocation loc = tokenLoc;
@@ -608,7 +606,7 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
   body = bodyStmt();
   if (body == NULL) {
     diag.error(loc) << "Macro definition requires a body";
-    return DECL_ERROR;
+    return (ASTDecl *)&ASTNode::INVALID;
   }
   function = saveFunction;
   fd->setBody(body);
@@ -679,7 +677,7 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
   }
 
   parseImports(typeDecl->imports());
-  declarationList(typeDecl->members(), DeclModifiers(Storage_Instance));
+  declarationList(typeDecl->members(), DeclModifiers());
 
   if (!match(Token_RBrace)) {
     expected("declaration or '}'");
@@ -711,7 +709,6 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
     declName = "#ERROR";
   }
 
-  mods.storageClass = Storage_Global; // Namespaces are always global
   ASTNamespace * nsDef = new ASTNamespace(tokenLoc, declName);
 
   if (!match(Token_LBrace)) {
@@ -723,7 +720,6 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
   }
 
   mods.visibility = Public;
-  mods.storageClass = Storage_Global;
   parseImports(nsDef->imports());
   declarationList(nsDef->members(), mods);
 
@@ -755,8 +751,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
   }
 
   DeclModifiers enumMods(mods);
-  enumMods.storageClass = Storage_Static;
-  //enumMods.flags = Final | Available;
+  enumMods.flags |= Static;
   ASTTypeDecl * enumDef = new ASTTypeDecl(ASTNode::Enum, loc, declName, bases, enumMods);
 
   if (!match(Token_LBrace)) {
@@ -878,11 +873,11 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
 
     TokenType tok = token;
     if (match(Token_Get) || match(Token_Set)) {
-      std::string accessorName;
+      const char * accessorName;
       if (tok == Token_Get) {
-        accessorName.append("get");
+        accessorName = istrings.idGet;
       } else {
-        accessorName.append("set");
+        accessorName = istrings.idSet;
       }
 
       SourceLocation loc = lexer.tokenLocation();
@@ -1109,7 +1104,7 @@ ASTNode * Parser::typeExprPrimary() {
   } else if (match(Token_Static)) {
     if (match(Token_Function)) {
       // Function type.
-      result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers(Storage_Static));
+      result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers(Static));
     } else {
       expected("function type after 'static'");
       return NULL;
@@ -1175,7 +1170,7 @@ ASTNode * Parser::typeSuffix(ASTNode * result) {
       }
 
       if (templateArgs.empty()) {
-        result = ASTUnaryOp::get(ASTNode::Array, result->location() | tokenLoc, result);
+        result = new ASTOper(ASTNode::Array, result->location() | tokenLoc, result);
       } else {
         result = new ASTSpecialize(tokenLoc | result->location(), result, templateArgs);
       }
@@ -1556,8 +1551,7 @@ Stmt * Parser::yieldStmt() {
     expectedExpression();
   }
 
-  Stmt * st = new YieldStmt(expr->location(), expr,
-      function ? function->nextGeneratorIndex() : 0);
+  Stmt * st = new YieldStmt(expr->location(), expr);
   st = postCondition(st);
   needSemi();
   return st;
@@ -1633,7 +1627,6 @@ Stmt * Parser::tryStmt() {
       }
 
       DeclModifiers mods;
-      mods.storageClass = Storage_Local;
       mods.visibility = Public;
       ASTDecl * exceptDecl = new ASTVarDecl(ASTNode::Let, loc, exceptName, exceptType,
           NULL, mods);
@@ -1673,8 +1666,8 @@ Stmt * Parser::tryStmt() {
 }
 
 Stmt * Parser::declStmt() {
-  ASTDecl * decl = declarator(DeclModifiers(Storage_Local));
-  if (decl == NULL || decl == DECL_ERROR) {
+  ASTDecl * decl = declarator(DeclModifiers());
+  if (decl == NULL || decl->isInvalid()) {
     return NULL;
   }
 
@@ -1943,8 +1936,7 @@ Stmt * Parser::asStmt() {
     expected("type expression");
   }
 
-  ASTVarDecl * var = new ASTVarDecl(ASTNode::Let, loc, declName, declType, NULL,
-      DeclModifiers(Storage_Local));
+  ASTVarDecl * var = new ASTVarDecl(ASTNode::Let, loc, declName, declType, NULL, DeclModifiers());
   Stmt * body = bodyStmt();
   if (body == NULL) {
     return NULL;
@@ -1985,7 +1977,7 @@ ASTNode * Parser::testOrDecl() {
   if (match(Token_Let) || match(Token_Var)) {
     // It's a declaration - for example "if let x = f() { ... }"
     ASTVarDecl * decl = localDeclList(tok == Token_Let ? ASTNode::Let : ASTNode::Var);
-    if (decl != DECL_ERROR) {
+    if (!decl->isInvalid()) {
 
       // We require an initializer expression in this instance
       if (!match(Token_Assign)) {
@@ -2020,7 +2012,6 @@ ASTNode * Parser::testOrDecl() {
 
 ASTVarDecl * Parser::localDeclList(ASTNode::NodeType nt) {
   DeclModifiers mods;
-  mods.storageClass = Storage_Local;
   mods.visibility = Public;
 
   ASTDeclList decls;
@@ -2031,7 +2022,7 @@ ASTVarDecl * Parser::localDeclList(ASTNode::NodeType nt) {
 
     if (declName == NULL) {
       expectedIdentifier();
-      return static_cast<ASTVarDecl *>(DECL_ERROR);
+      return static_cast<ASTVarDecl *>(&ASTNode::INVALID);
     }
 
     if (match(Token_Colon)) {

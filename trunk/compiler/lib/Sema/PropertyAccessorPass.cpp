@@ -117,6 +117,11 @@ Expr * PropertyAccessorPass::getPropertyValue(SLC & loc, Expr * basePtr, Propert
     return &Expr::ErrorVal;
   }
 
+  if (prop->getter() == NULL) {
+    diag.error(loc) << "Missing 'get' accessor for property " << prop;
+    return &Expr::ErrorVal;
+  }
+
   DASSERT_OBJ(prop->isSingular(), prop);
   DASSERT_OBJ(prop->getter()->isSingular(), prop);
 

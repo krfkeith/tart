@@ -28,6 +28,7 @@ public:
   bool analyzeBaseClassesImpl();
   bool checkNameConflicts();
   bool analyzeImports();
+  void analyzeImportsImpl(const ASTNodeList & imports);
   bool analyzeCoercers();
   bool analyzeConstructors();
   bool analyzeMemberTypes();
