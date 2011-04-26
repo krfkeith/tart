@@ -4,7 +4,7 @@
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
 
 execute_process(
-  COMMAND ${LLVM_CONFIG} --libs bitwriter ${LLVM_TARGETS}
+  COMMAND ${LLVM_CONFIG} --libs bitwriter bitreader asmparser ${LLVM_TARGETS}
   OUTPUT_VARIABLE LLVM_TARTC_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )

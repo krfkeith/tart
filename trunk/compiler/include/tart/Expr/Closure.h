@@ -50,7 +50,7 @@ public:
   const SymbolTable & members() const { return envType_->members(); }
   SymbolTable & members() { return envType_->members(); }
   void addMember(Defn * d);
-  bool lookupMember(const char * ident, DefnList & defs, bool inherit) const;
+  bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const;
   Defn * firstMember() const { return envType_->firstMember(); }
   const SymbolTable::Entry * findSymbol(const char * key) const {
     return envType_->findSymbol(key);

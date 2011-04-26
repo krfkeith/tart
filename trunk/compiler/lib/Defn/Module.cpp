@@ -7,13 +7,16 @@
 #include "tart/Defn/Template.h"
 
 #include "tart/Sema/DefnAnalyzer.h"
+#include "tart/Sema/ScopeBuilder.h"
 
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
 
-#include <llvm/Module.h>
-#include <llvm/Support/CommandLine.h>
+#include "tart/Meta/MDReader.h"
+
+#include "llvm/Module.h"
+#include "llvm/Support/CommandLine.h"
 
 static llvm::cl::opt<std::string>
 DebugXDefs("debug-xdefs",
@@ -35,7 +38,7 @@ Module::Module(llvm::StringRef qual, Scope * builtinScope)
   , irModule_(NULL)
 {
   loc.file = NULL;
-  qname_.assign(qual);
+  setQualifiedName(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
 
@@ -59,21 +62,35 @@ Module::Module(ProgramSource * src, llvm::StringRef qual)
   , irModule_(NULL)
 {
   loc.file = src;
-  qname_.assign(qual);
+  setQualifiedName(qual);
   addTrait(Singular);
   setScopeName(istrings.intern(qual));
 }
 
-const std::string Module::packageName() const {
-  std::string result(qname_);
-  size_t dot = result.rfind('.');
-  if (dot == result.npos) {
-    result.clear();
+void Module::setQualifiedName(llvm::StringRef qual) {
+  qname_ = qual;
+  size_t dot = qual.rfind('.');
+  if (dot == qual.npos) {
+    name_ = istrings.intern(qual);
+    packageName_.clear();
   } else {
-    result.erase(dot, result.npos);
+    name_ = istrings.intern(qual.substr(dot + 1, qual.npos));
+    packageName_ = qual.substr(0, dot);
   }
+}
 
-  return result;
+void Module::createMembers() {
+  if (passes_.begin(ScopeCreationPass)) {
+    ScopeBuilder::createScopeMembers(this);
+
+    // Look for the primary declaration. This is the one with the same name as the module.
+    if (!findPrimaryDefn()) {
+      IterableScope::dump();
+      diag.fatal() << "No primary symbol found in module '" << qualifiedName() << "'";
+    }
+
+    passes_.finish(ScopeCreationPass);
+  }
 }
 
 void Module::addModuleDependency(Defn * de) {
@@ -91,25 +108,19 @@ void Module::addModuleDependency(Defn * de) {
   }
 }
 
-bool Module::import(const char * name, DefnList & defs, bool absPath) {
+bool Module::import(llvm::StringRef name, DefnList & defs, bool absPath) {
   Module * mod = PackageMgr::get().getModuleForImportPath(name);
   if (mod == NULL && !absPath) {
     // Try our own package
-    std::string packageName(qname_);
-    size_t dot = packageName.rfind('.');
-    if (dot != packageName.npos) {
-      packageName.erase(dot, packageName.npos);
-    }
-
-    std::string importName(packageName);
+    llvm::SmallString<128> importName(packageName_);
     importName.push_back('.');
-    importName.append(name);
+    importName += name;
 
     mod = PackageMgr::get().getModuleForImportPath(importName);
-    if (mod == NULL && packageName != "tart.core") {
+    if (mod == NULL && packageName_ != "tart.core") {
       // Try tart.core
-      importName.assign("tart.core.");
-      importName.append(name);
+      importName = "tart.core.";
+      importName += name;
       mod = PackageMgr::get().getModuleForImportPath(importName);
     }
   }
@@ -128,18 +139,17 @@ bool Module::import(const char * name, DefnList & defs, bool absPath) {
 }
 
 bool Module::findPrimaryDefn() {
-  std::string primaryName(qname_);
+  llvm::StringRef primaryName = qname_;
   size_t dot = primaryName.rfind('.');
   if (dot != primaryName.npos) {
-    primaryName.erase(0, dot + 1);
+    primaryName = primaryName.substr(dot + 1, primaryName.npos);
   }
 
-  return IterableScope::lookupMember(primaryName.c_str(), primaryDefs_, false);
+  return IterableScope::lookupMember(primaryName, primaryDefs_, false);
 }
 
 Defn * Module::primaryDefn() const {
   Defn * result = NULL;
-  std::string moduleName(packageName());
   if (!primaryDefs_.empty()) {
     for (DefnList::const_iterator it = primaryDefs_.begin(); it != primaryDefs_.end(); ++it) {
       Defn * def = *it;
@@ -161,20 +171,20 @@ Defn * Module::primaryDefn() const {
 bool Module::processImportStatements() {
   // If not already done so, add the list of imported symbols to the
   // module's namespace.
-  if (beginPass(Pass_ResolveImport)) {
+  if (passes_.begin(ResolveImportsPass)) {
     DefnAnalyzer da(this, this, this, NULL);
     for (ASTNodeList::const_iterator it = imports_.begin(); it != imports_.end(); ++it) {
       da.importIntoScope(cast<ASTImport>(*it), this);
     }
 
-    finishPass(Pass_ResolveImport);
+    passes_.finish(ResolveImportsPass);
   }
 
   return true;
 }
 
-bool Module::lookupMember(const char * name, DefnList & defs, bool inherit) const {
-  if (!imports_.empty() && !isPassFinished(Pass_ResolveImport)) {
+bool Module::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
+  if (!imports_.empty() && !passes_.isFinished(ResolveImportsPass)) {
     const_cast<Module *>(this)->processImportStatements();
   }
 
@@ -189,7 +199,7 @@ llvm::Module * Module::irModule() {
 }
 
 bool Module::addSymbol(Defn * de) {
-  if (isPassFinished(Pass_ResolveModuleMembers)) {
+  if (passes_.isFinished(CompletionPass)) {
     // It's ok to add it if it was already added.
     if (de->module() == this || de->isSynthetic()) {
       if (exportDefs_.count(de)) {
@@ -236,7 +246,7 @@ bool Module::addSymbol(Defn * de) {
 bool Module::reflect(Defn * de) {
   DASSERT(de != NULL);
 
-  if (isPassFinished(Pass_ResolveModuleMembers)) {
+  if (passes_.isFinished(CompletionPass)) {
     diag.fatal(de) << Format_Verbose << "Too late to reflect symbol '" << de <<
         "', analysis for module '" << this << "' has already finished.";
   }
@@ -262,7 +272,7 @@ Defn * Module::nextDefToAnalyze() {
 }
 
 void Module::format(FormatStream & out) const {
-  out << moduleSource_->getFilePath();
+  out << moduleSource_->filePath();
 }
 
 void Module::trace() const {

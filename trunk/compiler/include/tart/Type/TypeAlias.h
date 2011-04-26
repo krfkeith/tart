@@ -16,7 +16,7 @@ namespace tart {
 class TypeAlias : public Type {
 public:
   /** Construct a new typealias. */
-  TypeAlias(const Type * val);
+  TypeAlias(const Type * val, TypeDefn * defn);
 
   /** The target of this alias. */
   const Type * value() const { return value_; }
@@ -24,6 +24,7 @@ public:
 
   // Overrides
 
+  TypeDefn * typeDefn() const { return defn_; }
   bool isSingular() const { return value_->isSingular(); }
   bool isEqual(const Type * other) const { return value_->isEqual(other); }
   bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
@@ -46,6 +47,7 @@ public:
 
 private:
   const Type * value_;
+  TypeDefn * defn_;
 };
 
 }

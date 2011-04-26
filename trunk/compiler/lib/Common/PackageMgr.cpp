@@ -12,14 +12,16 @@
 
 #include "tart/Parse/Parser.h"
 
+#include "tart/Meta/MDReader.h"
+
 #include "tart/Objects/Builtins.h"
 
-#include "tart/Sema/ScopeBuilder.h"
-
+#include "llvm/Module.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TimeValue.h"
+#include "llvm/Support/IRReader.h"
 
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -44,7 +46,7 @@ namespace {
     TimeValue result(0, 0);
 #if HAVE_STAT
     struct stat st;
-    llvm::SmallString<128> pathbuffer(path);
+    SmallString<128> pathbuffer(path);
     if (stat(pathbuffer.c_str(), &st) == 0) {
       result.fromEpochTime(st.st_mtime);
     } else {
@@ -60,7 +62,7 @@ namespace {
 // -------------------------------------------------------------------
 // DirectoryImporter
 
-bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
+bool DirectoryImporter::load(StringRef qualName, Module *& module) {
   // Transform dots into path separators to get the relative path.
   SmallString<128> relpath;
   for (StringRef::const_iterator ch = qualName.begin(); ch != qualName.end(); ++ch) {
@@ -75,9 +77,9 @@ bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
   SmallString<128> filepath(path_);
   path::append(filepath, Twine(relpath));
   path::replace_extension(filepath, ".tart");
-  bool exists = false;
 
   // Check for source file
+  bool exists = false;
   if (fs::exists(Twine(filepath), exists) == errc::success && exists) {
     // Get the file timestamp.
     llvm::sys::TimeValue timestamp = filetime(filepath);
@@ -100,12 +102,6 @@ bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
 
     Parser parser(module->moduleSource(), module);
     if (parser.parse()) {
-      // Look for the primary declaration. This is the one with the same name as the module.
-      ScopeBuilder::createScopeMembers(module);
-      if (!module->findPrimaryDefn()) {
-        diag.fatal() << "No primary symbol found in module '" << qualName << "'";
-      }
-
       return true;
     } else {
       delete module;
@@ -114,6 +110,7 @@ bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
     }
   }
 
+#if 0
   // If we haven't found a module yet, check for bitcode file
   if (module == NULL) {
     path::replace_extension(filepath, ".bc");
@@ -132,6 +129,55 @@ bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
       diag.debug() << "Import: Didn't find module '" << qualName << "' at " << filepath;
     }
   }
+#endif
+
+  return false;
+}
+
+// -------------------------------------------------------------------
+// ArchiveImporter
+
+bool ArchiveImporter::load(StringRef qualifiedName, Module *& module) {
+  if (!valid_) {
+    return false;
+  }
+
+  if (archive_ == NULL) {
+    SMDiagnostic smErr;
+    archive_ = ParseIRFile(path_.str(), smErr, getGlobalContext());
+    if (archive_ == NULL) {
+      bool exists = false;
+      if (fs::exists(path_.str(), exists) == errc::success && exists) {
+        diag.error() << "Cannot load library " << path_;
+        diag.info() << smErr.getMessage();
+      }
+      valid_ = false;
+      return false;
+    }
+
+    archiveSource_ = new ArchiveFile(path_);
+  }
+
+  Twine mdName("tart.xdef.");
+  NamedMDNode * md = archive_->getNamedMetadata(mdName.concat(qualifiedName));
+  if (md != NULL) {
+    // Convert the qualified name of the module to a relative path.
+    SmallString<128> relpath(path_);
+    relpath.reserve(path_.size() + qualifiedName.size() + 1);
+    relpath.push_back('#');
+    for (size_t i = 0; i < qualifiedName.size(); ++i) {
+      if (qualifiedName[i] == '.') {
+        relpath.push_back('/');
+      } else {
+        relpath.push_back(qualifiedName[i]);
+      }
+    }
+
+    // Create the module and read the header.
+    module = new Module(qualifiedName, &Builtins::module);
+    module->setModuleSource(new ArchiveEntry(relpath, archiveSource_));
+    return MDReader(module, module).read(md);
+  }
 
   return false;
 }
@@ -139,16 +185,22 @@ bool DirectoryImporter::load(llvm::StringRef qualName, Module *& module) {
 // -------------------------------------------------------------------
 // PackageMgr
 
-void PackageMgr::addImportPath(llvm::StringRef path) {
+void PackageMgr::addImportPath(StringRef path) {
   bool success = false;
   if (fs::is_directory(path, success) == errc::success && success) {
-    importPaths_.push_back(new DirectoryImporter(path));
+    importers_.push_back(new DirectoryImporter(path));
+  } else if (fs::is_regular_file(path, success) == errc::success && success) {
+    if (path::extension(path) == ".bc") {
+      importers_.push_back(new ArchiveImporter(path));
+    } else {
+      diag.error() << "Unsupported path type: " << path;
+    }
   } else {
     diag.error() << "Unsupported path type: " << path;
   }
 }
 
-Module * PackageMgr::getCachedModule(llvm::StringRef qname) {
+Module * PackageMgr::getCachedModule(StringRef qname) {
   // First, attempt to search the modules already loaded.
   ModuleMap::iterator it = modules_.find(qname);
   if (it != modules_.end()) {
@@ -158,7 +210,7 @@ Module * PackageMgr::getCachedModule(llvm::StringRef qname) {
   return NULL;
 }
 
-Module * PackageMgr::getModuleForImportPath(llvm::StringRef qname) {
+Module * PackageMgr::getModuleForImportPath(StringRef qname) {
   // First, attempt to search the modules already loaded.
   ModuleMap::iterator it = modules_.find(qname);
   if (it != modules_.end()) {
@@ -173,11 +225,11 @@ Module * PackageMgr::getModuleForImportPath(llvm::StringRef qname) {
   Module * mod = NULL;
 
   // Search each element on the import path list.
-  for (PathList::iterator it = importPaths_.begin(); it != importPaths_.end(); ++it) {
+  for (PathList::iterator it = importers_.begin(); it != importers_.end(); ++it) {
     Importer * imp = *it;
     if (imp->load(qname, mod)) {
-      // If the module failed to load (NULL), or we found a module with source, then we're done
-      if (mod == NULL || mod->moduleSource() != NULL) {
+      // If the module was there but failed to load (NULL) then we're done
+      if (mod == NULL) {
         break;
       }
     }
@@ -190,6 +242,12 @@ Module * PackageMgr::getModuleForImportPath(llvm::StringRef qname) {
   // Regardless of whether the module was found, record this result in the map
   // so we don't have to look it up again.
   modules_[qname] = mod;
+
+  // Do this *after* we add the module to the map, because createMembers() might
+  // do other module lookups.
+  if (mod != NULL) {
+    mod->createMembers();
+  }
   return mod;
 }
 
@@ -204,6 +262,8 @@ void PackageMgr::trace() const {
       it->second->mark();
     }
   }
+
+  GC::markList(importers_.begin(), importers_.end());
 }
 
 }

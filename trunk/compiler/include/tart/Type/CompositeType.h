@@ -47,6 +47,7 @@ public:
     Abstract = (1<<1),          // This class cannot be instantiated
     Final = (1<<2),             // This class cannot be subclassed
     Closure = (1<<3),           // This class is a closure environment
+    HasErrors = (1<<4),         // This class has errors
   };
 
   /** A table of methods that together implement a given interface. */
@@ -95,7 +96,7 @@ public:
     return (classFlags_ & flg) != 0;
   }
 
-  void setClassFlag(ClassFlags flg, bool enabled) {
+  void setClassFlag(ClassFlags flg, bool enabled = true) {
     if (enabled) classFlags_ |= flg;
     else classFlags_ &= ~flg;
   }
@@ -136,6 +137,7 @@ public:
   bool isAttribute() const { return (classFlags_ & Attribute) != 0; }
   bool isFinal() const { return (classFlags_ & Final) != 0; }
   bool isAbstract() const { return (classFlags_ & Abstract) != 0; }
+  bool hasErrors() const { return (classFlags_ & HasErrors) != 0; }
 
   const AttributeInfo & attributeInfo() const { return attributeInfo_; }
   AttributeInfo & attributeInfo() { return attributeInfo_; }
@@ -187,7 +189,7 @@ public:
 
   // Overrides
 
-  bool lookupMember(const char * name, DefnList & defs, bool inherit) const;
+  bool lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full) const;
   const llvm::Type * irType() const;
   const llvm::Type * createIRType() const;
@@ -211,7 +213,7 @@ public:
   }
 
 private:
-  llvm::PATypeHolder irTypeHolder_;
+  //llvm::PATypeHolder irTypeHolder_;
   ClassList bases_;
   CompositeType * super_;
   int classFlags_;

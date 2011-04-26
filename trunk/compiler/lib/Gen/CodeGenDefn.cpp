@@ -84,6 +84,7 @@ Constant * CodeGenerator::genCallableDefn(const FunctionDefn * fdef) {
 }
 
 Function * CodeGenerator::genFunctionValue(const FunctionDefn * fdef) {
+  DASSERT_OBJ(fdef->passes().isFinished(FunctionDefn::ParameterTypePass), fdef);
   Function * fn = irModule_->getFunction(fdef->linkageName());
   if (fn != NULL) {
     return fn;

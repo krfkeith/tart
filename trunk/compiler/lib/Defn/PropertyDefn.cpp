@@ -5,7 +5,9 @@
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/TypeDefn.h"
+
 #include "tart/Common/Diagnostics.h"
+#include "tart/Common/InternedString.h"
 
 namespace tart {
 
@@ -21,12 +23,41 @@ PropertyDefn::PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * a
   accessorScope_.setScopeName(ast_->name());
 }
 
+PropertyDefn::PropertyDefn(DefnType dtype, Module * m, const char * name)
+  : ValueDefn(dtype, m, name)
+  , type_(NULL)
+  , getter_(NULL)
+  , setter_(NULL)
+{
+  accessorScope_.setScopeName(name);
+}
+
 void PropertyDefn::trace() const {
   ValueDefn::trace();
   accessorScope_.trace();
   safeMark(type_);
   safeMark(getter_);
   safeMark(setter_);
+}
+
+void PropertyDefn::addAccessor(FunctionDefn * accessor) {
+  if (accessor->name() == istrings.idGet) {
+    if (getter_ != NULL) {
+      diag.error(this) << "Multiple getters not supported";
+      return;
+    }
+    getter_ = accessor;
+  } else if (accessor->name() == istrings.idSet) {
+    if (setter_ != NULL) {
+      diag.error(this) << "Multiple setters not supported";
+      return;
+    }
+    setter_ = accessor;
+  }
+
+  accessorScope_.addMember(accessor);
+  accessor->setParentDefn(this);
+  accessor->createQualifiedName(this);
 }
 
 void PropertyDefn::format(FormatStream & out) const {

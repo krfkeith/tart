@@ -66,7 +66,6 @@ namespace {
 CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parentScope,
     uint32_t flags)
   : DeclaredType(tcls, de, parentScope, Shape_Unset)
-  , irTypeHolder_(llvm::OpaqueType::get(llvm::getGlobalContext()))
   , super_(NULL)
   , classFlags_(0)
 {
@@ -180,7 +179,7 @@ FunctionDefn * CompositeType::noArgConstructor() const {
   return NULL;
 }
 
-bool CompositeType::lookupMember(const char * name, DefnList & defs, bool inherit) const {
+bool CompositeType::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
   if (DeclaredType::lookupMember(name, defs, inherit)) {
     return true;
   }
@@ -214,15 +213,7 @@ void CompositeType::dumpHierarchy(bool full) const {
 }
 
 const llvm::Type * CompositeType::irType() const {
-  // User irType_ as a flag to detect whether or not we've started to build the IR type,
-  // but don't actually use its value, because that is unsafe in this case.
-  // TODO: Refactor to use PATypeHolder where possible.
-  if (irType_ == NULL) {
-    irType_ = irTypeHolder_.get();
-    createIRType();
-  }
-
-  return irTypeHolder_.get();
+  return irTypeSafe();
 }
 
 const llvm::Type * CompositeType::createIRType() const {
@@ -288,8 +279,10 @@ const llvm::Type * CompositeType::createIRType() const {
       DFAIL("Invalid composite");
   }
 
-  cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
-  return irTypeHolder_.get();
+  return finalType;
+
+//  cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
+//  return irTypeHolder_.get();
 }
 
 const llvm::Type * CompositeType::irEmbeddedType() const {

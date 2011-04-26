@@ -21,9 +21,7 @@ class EnumAnalyzer : public DefnAnalyzer {
 private:
   TypeDefn * target_;
   ConstantInteger * prevValue_;
-  ConstantInteger * minValue_;
-  ConstantInteger * maxValue_;
-  Type * intValueType_;
+  const Type * intValueType_;
 
 public:
   /** Constructor. */

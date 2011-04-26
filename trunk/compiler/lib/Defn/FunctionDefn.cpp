@@ -147,6 +147,10 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
   const FunctionType * ft0 = functionType();
   const FunctionType * ft1 = otherFn->functionType();
 
+  if (ft0 == NULL || ft1 == NULL) {
+    return false;
+  }
+
   if (isErrorResult(ft0->returnType()) || isErrorResult(ft1->returnType())) {
     return false;
   }

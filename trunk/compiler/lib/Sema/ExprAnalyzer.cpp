@@ -4,39 +4,47 @@
 
 #include "tart/AST/Stmt.h"
 
-#include "tart/Expr/Exprs.h"
 #include "tart/Defn/Module.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/CompositeType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
+
+#include "tart/Expr/Exprs.h"
+
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 
 #include "tart/Common/Diagnostics.h"
+
+#include "tart/Objects/Intrinsics.h"
 
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FinalizeTypesPass.h"
+#include "tart/Sema/CallCandidate.h"
 
 namespace tart {
 
 /// -------------------------------------------------------------------
 /// ExprAnalyzer
 
-ExprAnalyzer::ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
+ExprAnalyzer::ExprAnalyzer(
+    Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
   : AnalyzerBase(mod, activeScope, subject, currentFunction)
   , returnType_(currentFunction ? currentFunction->returnType() : NULL)
   , macroReturnVal_(NULL)
   , inMacroExpansion_(false)
-{}
+{
+}
 
 ExprAnalyzer::ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
   : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
   , returnType_(currentFunction ? currentFunction->returnType() : NULL)
   , macroReturnVal_(NULL)
   , inMacroExpansion_(false)
-{}
+{
+}
 
 Expr * ExprAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
   expr = inferTypes(subject_, expr, expectedType);
@@ -117,6 +125,7 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) 
       return reduceBuiltInDefn(static_cast<const ASTBuiltIn *> (ast));
 
     case ASTNode::Id:
+    case ASTNode::QName:
     case ASTNode::Member:
     case ASTNode::GetElement:
     case ASTNode::Specialize:
@@ -280,7 +289,7 @@ Expr * ExprAnalyzer::reduceTemplateArgExpr(const ASTNode * ast, bool doInference
   }
 
   if (isErrorResult(expr)) {
-    return NULL;
+    return &Expr::ErrorVal;
   }
 
   Expr * letConst = LValueExpr::constValue(expr);
@@ -291,7 +300,7 @@ Expr * ExprAnalyzer::reduceTemplateArgExpr(const ASTNode * ast, bool doInference
   if (!expr->isConstant()) {
     diag.error(expr) << "Non-constant expression: " << expr << " [" << exprTypeName(
         expr->exprType()) << "]";
-    return NULL;
+    return &Expr::ErrorVal;
   }
 
   return expr;
@@ -389,7 +398,43 @@ Expr * ExprAnalyzer::reduceLogicalOper(const ASTOper * ast) {
   ASTNodeList args;
   args.push_back(const_cast<ASTNode *>(ast->arg(0)));
   args.push_back(const_cast<ASTNode *>(ast->arg(1)));
-  return callName(ast->location(), opIdent, args, NULL, true);
+  Expr * result = callName(ast->location(), opIdent, args, NULL, true);
+  if (op == ASTNode::LogicalOr) {
+    ConstTypeList types;
+    if (getUnionTypeArgs(result, types)) {
+      const UnionType * ut = UnionType::get(types);
+      return new TypeLiteralExpr(ast->location(), ut);
+    }
+  }
+  return result;
+}
+
+bool ExprAnalyzer::getUnionTypeArgs(Expr * ex, ConstTypeList & types) {
+  if (CallExpr * call = dyn_cast_or_null<CallExpr>(ex)) {
+    FunctionDefn * fn = NULL;
+    if (LValueExpr * lval = dyn_cast_or_null<LValueExpr>(call->function())) {
+      fn = dyn_cast_or_null<FunctionDefn>(lval->value());
+    }
+    if (fn == NULL && call->candidates().size() == 1) {
+      fn = call->candidates().front()->method();
+    }
+
+    if (fn != NULL) {
+      if (fn->intrinsic() == &LogicalOrIntrinsic::instance) {
+        ExprList & args = call->args();
+        for (ExprList::const_iterator it = args.begin(); it != args.end(); ++it) {
+          Expr * arg = *it;
+          if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(arg)) {
+            types.push_back(tl->type()->typeParam(0));
+          } else if (!getUnionTypeArgs(arg, types)) {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {

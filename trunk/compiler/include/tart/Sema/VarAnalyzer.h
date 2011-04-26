@@ -26,11 +26,12 @@ public:
   bool resolveVarType();
   bool resolveInitializers();
 
+  void setTargetType(const Type * type);
+
 private:
   VariableDefn * target;
   bool trace_;
 
-  void setTargetType(const Type * type);
   Expr * initializeNativeArray(Expr * initValue);
 };
 

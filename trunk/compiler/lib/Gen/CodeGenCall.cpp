@@ -2,10 +2,12 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Expr/Exprs.h"
 #include "tart/Defn/TypeDefn.h"
-#include "tart/Type/CompositeType.h"
 #include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Expr/Exprs.h"
+
+#include "tart/Type/CompositeType.h"
 
 #include "tart/Gen/CodeGenerator.h"
 
@@ -92,6 +94,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     } else if (classType->typeClass() == Type::Interface) {
       fnVal = genITableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else {
+      DASSERT(classType->typeClass() == Type::Struct);
       // Struct or protocol.
       fnVal = genFunctionValue(fn);
     }
@@ -363,8 +366,8 @@ void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
     const llvm::Type * paramType = fnType->getContainedType(i + 1);
     const llvm::Type * argType = first[i]->getType();
     if (paramType != argType) {
-      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType;
-      diag.info() << "but was '" << *argType;
+      diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType << "'";
+      diag.info() << "but was '" << *argType << "'";
       diag.info() << "function value: '" << *fn;
       DFAIL("Called from here");
     }

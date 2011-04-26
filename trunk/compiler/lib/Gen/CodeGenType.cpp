@@ -278,6 +278,8 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
         methodVal = genCallableDefn(method);
       } else if (method->isAbstract()) {
         methodVal = ConstantPointerNull::get(methodPtrType_);
+      } else if (method->mdNode() != NULL) {
+        methodVal = genFunctionValue(method);
       } else {
         diag.fatal(method) << "Method with no body: " << method;
       }
@@ -633,7 +635,7 @@ const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
 }
 
 llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
-  const std::string & invokeName = fnType->invokeName();
+  llvm::StringRef invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
   if (invokeFn != NULL) {
     return invokeFn;

@@ -512,6 +512,27 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
 }
 
 // -------------------------------------------------------------------
+// TypeImpl
+
+const llvm::Type * TypeImpl::irType() const {
+  if (irType_.get() == NULL) {
+    irType_ = createIRType();
+  }
+
+  return irType_;
+}
+
+const llvm::Type * TypeImpl::irTypeSafe() const {
+  if (irType_.get() == NULL) {
+    irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
+    const llvm::Type * ty = createIRType();
+    cast<llvm::OpaqueType>(irType_.get())->refineAbstractTypeTo(ty);
+  }
+
+  return irType_.get();
+}
+
+// -------------------------------------------------------------------
 // DeclaredType
 
 DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope, TypeShape shape)

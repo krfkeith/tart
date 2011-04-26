@@ -69,6 +69,9 @@ void AddressType::initBuiltin() {
 }
 
 AddressType * AddressType::get(const Type * elemType) {
+  if (elemType == NULL) {
+    return NULL;
+  }
   elemType = dealias(elemType);
   TypeMap::iterator it = uniqueTypes_.find(elemType);
   if (it != uniqueTypes_.end()) {
@@ -89,15 +92,13 @@ AddressType::AddressType(const Type * elemType)
 
 AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
 
-AddressType::~AddressType() {
-  /*TypeMap::iterator it = uniqueTypes_.find(elementType_);
-  if (it != uniqueTypes_.end()) {
-    uniqueTypes_.erase(it);
-  }*/
-}
+AddressType::~AddressType() {}
 
 const llvm::Type * AddressType::createIRType() const {
   DASSERT_OBJ(elementType_ != NULL, this);
+  if (elementType_->isVoidType()) {
+    return llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+  }
   const llvm::Type * type = elementType_->irEmbeddedType();
   return type->getPointerTo();
 }

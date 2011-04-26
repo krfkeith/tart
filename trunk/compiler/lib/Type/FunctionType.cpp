@@ -23,7 +23,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // FunctionType
 
-FunctionType::FunctionType(Type * rtype, ParameterList & plist)
+FunctionType::FunctionType(const Type * rtype, ParameterList & plist)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -39,7 +39,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   }
 }
 
-FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
+FunctionType::FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -56,7 +56,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
 }
 
 FunctionType::FunctionType(
-    Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
+    const Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -334,7 +334,7 @@ ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
   return Incompatible;
 }
 
-const std::string & FunctionType::invokeName() const {
+llvm::StringRef FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {
       invokeName_.append(".invoke_static.");

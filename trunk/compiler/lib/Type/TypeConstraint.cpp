@@ -142,7 +142,7 @@ void ResultOfConstraint::expand(TypeExpansion & out) const {
 }
 
 bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  DFAIL("Check");
+  //DFAIL("Check");
   Substitution * saveSub = env.substitutions();
   Candidates & cd = callExpr->candidates();
   SourceContext callSite(callExpr, NULL, callExpr);

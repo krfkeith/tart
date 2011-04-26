@@ -35,9 +35,6 @@ More things to do:
 Implementation TODOS:
 
 * Add structure compares. (And tuple compares, and so on for all types.)
-* Add a unit test for converting invalid enum values to strings.
-* Fix coercion of enum values to objects.
-
 * Coalesced templates
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
@@ -66,6 +63,8 @@ Implementation TODOS:
   * Enum operators (relational).
   * test bitwise operators for flag enums.
   * .parse or valueOf.
+  * Add a unit test for converting invalid enum values to strings.
+  * Fix coercion of enum values to objects.
 * Tuple types
   * Test struct members, params.
   * Member-wise conversions.
@@ -76,9 +75,6 @@ Implementation TODOS:
     with the same template args.
   * Classes with create still need a default constructor? (Unless undef'd).
 * Import-as.
-* Generator functions.
-  * Yield statement.
-  * State machine.
 * Strings
   * Conversion specs.
   * Define toStringFmt() - custom string formatting.
@@ -89,8 +85,6 @@ Implementation TODOS:
   * Insure that it cannot be assigned to in non-constructor.
 * Disjoint types
   * Equality comparison (with member types, and with other disjoint types.)
-* SourceLocation - I would like to rethink this somewhat. Right now, giving everything a source
-	location means that its hard to fold constants together. Exprs really ought to be shallow.
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
 * AttributeSite failure tests.
 * Class "extension"
@@ -110,7 +104,7 @@ Implementation TODOS:
 * Generic functions.
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.
-* Map literals -> Map.of((a, b))
+* Map literals -> Map.of((a, b)) or Map.of(a => b, c => d) where '=>' means 2-tuple.
 * Matrix literals + Matrix class.
 * Anonymous inner classes.
 * Implement BoundMethodExpr as an implementation of Function.
@@ -122,6 +116,9 @@ Implementation TODOS:
 * If an if statement casts a nullable to non-nullable type, then assume non-nullable in then block.
   (Same for while).
 * Change assignment syntax for tuple unpacking (x:type, y:type).
+* Need a way to create an empty value for all types.
+* Namespace merging.
+* 'virtual' arguments for multi-methods. (Or 'dispatched')
 
 * Collector classes:
   * TLAB
@@ -158,20 +155,6 @@ Error TODOS: (things that should be an error)
 * LValueExpr.isSideEffectFree may not be true for property
   // Check for hiding similarly-named variable.
 
-TODOS from V1 Compiler:
-
-o  Our never-ending quest to get 'hello world' working!
-  o Do we want to use stdio open() or fopen()? (Do we want to do our own buffering?)
-  o Need stdin/stdout/stderr pointers.
-o  Namespace merging.
-o  'virtual' arguments for multi-methods. (Or 'dispatched')
-  o  implicit convert (silent)
-  o  explicit convert
-  o  dynamic convert
-o  Implement overriding struct assignment.
-
-o  Type conversions of non-constants.
-
 // ------------------------------------------------------------------------
 
 Command to create Eclipse project:
@@ -187,24 +170,13 @@ cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llv
 cmake -G "Visual Studio 10 2010" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
 
 cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
 
 // ------------------------------------------------------------------------
 
-Link-time code generation.
+Link-time code generation?
 
-var s:SomeClass = injector.create();
-
-def <T> InjectAttribute : Attribute {
-  def (target:T) {
-    for i in 0 .. T.params.length {
-      
-    }
-  }
-  
-  def getInstance(injector:Injector) -> T.result {
-    
-  }
-}
+// ------------------------------------------------------------------------
 
 namespace Numbers {
   protocol PrimitiveNumber<T> {
@@ -314,3 +286,30 @@ Idea #1: Make a bare template parameter really mean [T <: __Any].
 
 // ------------------------------------------------------------------------
 
+// Thoughts on a different dispatch algorithm.
+
+struct MethodInfoBlock {
+  struct Entry {
+    let typeId:uint32;
+    let method:MethodPtr; 
+  }
+  
+  // TODO: Support registration
+
+  let size_:int;
+  let entries_:FlexibleArray[Entry];
+}
+
+let methodTable:HashTable[MethodLookup, MethodPtr];
+
+// No, these two should not be combined.
+struct MethodLookup {
+  // Unique key of the method (name + defining class + static param types.)
+  // This should be a table by itself.
+  let methodId:uint;
+  // List of dynamic argument types.
+  // Hash code precomputed per type.
+  let methodParams:FlexibleArray[TypeInfoBlock^];
+}
+
+ClassRegistry

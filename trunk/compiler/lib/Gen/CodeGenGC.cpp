@@ -586,7 +586,7 @@ void CodeGenerator::emitStaticRoots() {
       Value * mdOperands[2];
       mdOperands[0] = it->first;
       mdOperands[1] = fields[1];
-      node->addOperand(MDNode::get(context_, mdOperands, 2));
+      node->addOperand(MDNode::get(context_, mdOperands));
     }
 
     ArrayType * arrayType = ArrayType::get(rootList.front()->getType(), rootList.size());

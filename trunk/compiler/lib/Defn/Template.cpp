@@ -279,8 +279,10 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // Create the definition
   DASSERT_OBJ(value_->ast() != NULL, value_);
+  DASSERT_OBJ(value_->parentDefn() != NULL, value_);
   Defn * result = NULL;
-  result = ScopeBuilder::createDefn(tinst, &Builtins::syntheticModule, value_->ast());
+  result = ScopeBuilder::createDefn(
+      tinst, &Builtins::syntheticModule, value_->ast(), value_->storageClass());
   tinst->setValue(result);
   result->setQualifiedName(value_->qualifiedName());
   result->addTrait(Defn::Synthetic);
@@ -310,6 +312,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     Defn * argDefn;
     if (const UnitType * ntc = dyn_cast<UnitType>(value)) {
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
+      argDefn->setStorageClass(Storage_Static);
     } else {
       argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value));
     }
@@ -435,7 +438,7 @@ void TemplateInstance::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool TemplateInstance::lookupMember(const char * ident, DefnList & defs, bool inherit) const {
+bool TemplateInstance::lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = paramDefns_.findSymbol(ident);
   if (entry != NULL) {
     defs.append(entry->begin(), entry->end());

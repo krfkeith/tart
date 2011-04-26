@@ -1015,8 +1015,7 @@ Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
   }
 }
 
-llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
-    const llvm::StringRef & symName) {
+llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::StringRef symName) {
   StringLiteralMap::iterator it = stringLiteralMap_.find(strval);
   if (it != stringLiteralMap_.end()) {
     return it->second;
