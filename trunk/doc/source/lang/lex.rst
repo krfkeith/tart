@@ -36,10 +36,10 @@ sequence.
 Input Elements and Tokens
 -------------------------
 
-White Space
------------
-
-TBW
+A Tart source file consists of a sequence of tokens: identifiers, keywords, operators,
+literal values, and punctuation. "White space" characters such as space and tab are not
+considered tokens - they have no meaning except to act as separators for tokens. Comments
+are treated the same as white space.
 
 Source-code Comments
 --------------------
@@ -85,16 +85,16 @@ Keywords
 
 The list of Tart keywords::
 
-    abstract   classify   finally    interface  null       set        switch     uint8
-    and        const      float      internal   or         short      throw      ulong
-    as         constable  fn         is         override   sint16     true       undef
-    bool       continue   for        isa        private    sint32     try        using
-    break      def        friend     let        protected  sint64     typecast   var
-    byte       double     get        long       protocol   sint8      ubyte      void
-    case       else       if         macro      public     static     uint       where
-    catch      enum       import     mutable    readonly   struct     uint16     while
-    char       false      in         namespace  repeat     short      uint32     yield
-    class      final      int        not        return     super      uint64
+    abstract   const      float      internal   or         static    uint16
+    and        constable  fn         is         override   struct    uint32
+    as         continue   for        isa        private    short     uint64
+    bool       def        friend     let        protected  super     uint8
+    break      double     get        macro      protocol   switch    undef
+    byte       else       if         match      public     throw     var
+    case       enum       import     mutable    readonly   true      void
+    catch      false      in         namespace  repeat     try       where
+    char       final      int        not        return     typecast  while
+    class      finally    interface  null       set        uint      yield
 
 Literals
 --------
@@ -102,7 +102,7 @@ Literals
 .. productionlist::
   literal: `int_lit` | `float_lit` | `string_lit` | `char_lit` | `null_lit` | `array_lit`
   int_lit: [0-9_]+
-  float_lit: [0-9_](.[0-9_]+)?(e[0-9_]+)
+   float_lit: [0-9_](.[0-9_]+)?(e[0-9_]+)
   string_lit: '"' chars '"'
   char_lit: "'" chars "'"
   bool_lit: "true" | "false"
@@ -153,13 +153,17 @@ String Literals
 ^^^^^^^^^^^^^^^
 
 String literals are delimited by double-quotes. A string literal creates
-a instance of class :ctype:`tart.core.String`.
+a instance of class :ctype:`tart.core.String`. String literals may contain
+:ref:`escape sequences <escapes>`.
 
 Character Literals
 ^^^^^^^^^^^^^^^^^^
 
 Character literals are delimited by single quotes. A character literal
-creates a single 32-bit Unicode character value.
+creates a single 32-bit Unicode character value. A character literal may also consist of
+a character :ref:`escape sequence <escapes>`.
+
+.. _escapes:
 
 Escape Sequences for Character and String Literals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

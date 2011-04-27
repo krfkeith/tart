@@ -67,7 +67,7 @@ llvm::Value * Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
   DFAIL("IllegalState");
 }
 
-Intrinsic * Intrinsic::get(const SourceLocation & loc, const char * name) {
+Intrinsic * Intrinsic::get(const SourceLocation & loc, llvm::StringRef name) {
   static bool init = false;
   if (!init) {
     init = true;
@@ -233,7 +233,7 @@ Value * LocationOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
   SourceLocation loc = arg->location();
   if (loc.file != NULL) {
     TokenPosition pos = loc.file->tokenPosition(loc);
-    strm << loc.file->getFilePath() << ":" << pos.beginLine << ":";
+    strm << loc.file->filePath() << ":" << pos.beginLine << ":";
   }
 
   return cg.genStringLiteral(strm.str());
@@ -996,10 +996,7 @@ Expr * TraceMethodApplyIntrinsic::eval(const SourceLocation & loc, Module * call
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
       if (fn->storageClass() == Storage_Instance) {
-        CompositeType * ctype = fn->definingClass();
-        DASSERT_OBJ(ctype != NULL, fn);
-        ctype->traceMethods().push_back(fn);
-        //callingModule->addSymbol(fn);
+        fn->setFlag(FunctionDefn::TraceMethod);
         return args[0];
       }
     }

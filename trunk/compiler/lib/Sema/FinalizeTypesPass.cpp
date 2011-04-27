@@ -3,15 +3,18 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/Template.h"
+
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Defn/TypeDefn.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Defn/Template.h"
 
 #include "tart/Sema/FinalizeTypesPassImpl.h"
 #include "tart/Sema/CallCandidate.h"
@@ -789,6 +792,66 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
   }
 
   //DASSERT_OBJ(in->isSingular(), in);
+  return in;
+}
+
+Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
+  CFGPass::visitIf(in);
+  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
+    if (phi->common() != NULL) {
+      in->setType(phi->common());
+    }
+  }
+
+  if (in->type() != NULL && !in->type()->isVoidType()) {
+    in->setThenVal(addCastIfNeeded(in->thenVal(), in->type()));
+    if (in->elseVal() != NULL) {
+      in->setElseVal(addCastIfNeeded(in->elseVal(), in->type()));
+    }
+  }
+
+  return in;
+}
+
+Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
+  CFGPass::visitSwitch(in);
+  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
+    if (phi->common() != NULL) {
+      in->setType(phi->common());
+    }
+  }
+
+  if (in->type() != NULL && !in->type()->isVoidType()) {
+    for (SwitchExpr::iterator it = in->begin(); it != in->end(); ++it) {
+      *it = addCastIfNeeded(*it, in->type());
+    }
+
+    if (in->elseCase() != NULL) {
+      in->setElseCase(addCastIfNeeded(in->elseCase(), in->type()));
+    }
+  }
+
+  return in;
+}
+
+Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
+  CFGPass::visitMatch(in);
+  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
+    if (phi->common() != NULL) {
+      in->setType(phi->common());
+    }
+  }
+
+  if (in->type() != NULL && !in->type()->isVoidType()) {
+    for (MatchExpr::iterator it = in->begin(); it != in->end(); ++it) {
+      *it = addCastIfNeeded(*it, in->type());
+    }
+
+    if (in->elseCase() != NULL) {
+      in->setElseCase(addCastIfNeeded(in->elseCase(), in->type()));
+    }
+  }
+
   return in;
 }
 

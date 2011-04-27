@@ -67,6 +67,12 @@ public class Object : Hashable {
   static def __downcast[%T <: Object](o:Object) -> T {
     return typecast[T](o);
   }
+
+  /** A method that simply throws an 'UndefinedMethodError'. Methods that are undef'd
+      just branch to this. */
+  static def __undefinedMethod {
+    throw UnsupportedOperationError("Undefined method");
+  }
 }
 
 /** Default comparison for all classes. */

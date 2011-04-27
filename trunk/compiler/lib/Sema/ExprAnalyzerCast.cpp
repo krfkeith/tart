@@ -3,13 +3,16 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+
 #include "tart/Defn/Module.h"
-#include "tart/Type/CompositeType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
-#include "tart/Type/TupleType.h"
 #include "tart/Defn/Template.h"
 #include "tart/Defn/NamespaceDefn.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/TupleType.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
@@ -25,6 +28,56 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoer
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
     return in;
+  }
+
+  // Special case handling for expressions that simply pass through an underlying type.
+  switch (in->exprType()) {
+    case Expr::Seq: {
+      SeqExpr * seq = static_cast<SeqExpr *>(in);
+      Expr * lastArg = doImplicitCast(seq->args().back(), toType, tryCoerce);
+      seq->setType(lastArg->type());
+      seq->args().back() = lastArg;
+      return in;
+    }
+
+    case Expr::Case: {
+      CaseExpr * ce = static_cast<CaseExpr *>(in);
+      ce->setBody(doImplicitCast(ce->body(), toType, tryCoerce));
+      ce->setType(ce->body()->type());
+      return in;
+    }
+
+    case Expr::MatchAs: {
+      MatchAsExpr * me = static_cast<MatchAsExpr *>(in);
+      me->setBody(doImplicitCast(me->body(), toType, tryCoerce));
+      me->setType(me->body()->type());
+      return in;
+    }
+
+    case Expr::Catch: {
+      CatchExpr * ce = static_cast<CatchExpr *>(in);
+      ce->setBody(doImplicitCast(ce->body(), toType, tryCoerce));
+      ce->setType(ce->body()->type());
+      return in;
+    }
+
+    case Expr::Try: {
+      TryExpr * te = static_cast<TryExpr *>(in);
+      te->setBody(doImplicitCast(te->body(), toType, tryCoerce));
+      te->setType(te->body()->type());
+      return in;
+    }
+
+    case Expr::Return:
+    case Expr::Yield:
+    case Expr::Break:
+    case Expr::Continue:
+    case Expr::Throw:
+      // Non-local exits don't have a result type and thus cannot be cast.
+      return in;
+
+    default:
+      break;
   }
 
   in = LValueExpr::constValue(in);

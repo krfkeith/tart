@@ -4,6 +4,11 @@
 Statements
 ==========
 
+.. statement:: else
+.. statement:: do
+.. statement:: while
+.. statement:: repeat
+
 Basic control-flow statements
 -----------------------------
 
@@ -41,6 +46,8 @@ The syntax is a little bit different from C or Java: You aren't required to
 put parentheses around the test expression, but the braces around the statement
 body are always required.
 
+.. statement:: for
+
 Tart supports both forms of :stmt:`for` (the C++ and Python forms), just
 like Java & JavaScript do::
 
@@ -52,26 +59,24 @@ like Java & JavaScript do::
 
   // Python-style for-loop
   var fact = 1;
-  for n in 1 .. 10 {
+  for n in range(10) {
     fact *= n;
   }
     
-Because the :stmt:`break`, :stmt:`continue` and :stmt:`return` statements
-are so often used conditionally, the Perl syntax of post-statement conditions
+.. statement:: break
+.. statement:: continue
+
+Break and Continue Statements
+-----------------------------
+
+Because the :stmt:`break` and :stmt:`continue` statements
+are so often used conditionally, the Perl syntax of *post-statement conditions*
 is supported for these statement types::
 
   break if a > 10;
   continue if a < 10 and a not in 0..5;
-  return 10 if a == 10;
-
-In the case of the :stmt:`throw` statement, there's no special syntax,
-but you can use the :meth:`when` method of the exception class::
-
-  // Throw IllegalArgumentError when index < 0
-  IllegalArgumentError.when(index < 0);
   
-This latter syntax is especially convenient for implementing pre- and
-post-conditions within a function body.
+.. statement:: switch
 
 Switch statements
 -----------------
@@ -92,60 +97,46 @@ Tart has a C-style 'switch' statement::
       // ...
     }
     
-    default {
-      // ...
+    else {
+      // The default case
     }
   }
   
 The braces around the case body are required. There is no need for a 'break'
 statement, as execution does not 'fall through' from one case body to the next.
 
-There is also a :stmt:`typeselect` statement which is used to differentiate
+.. statement:: match
+
+Match statements
+----------------
+
+There is also a :stmt:`match` statement which is used to differentiate
 based on the type of the input expression::
 
-  typeselect input {
-    case str:String {
+  match input {
+    as str:String {
       // ...
     }
     
-    case w:Widget {
+    as w:Widget {
       // ...
     }
     
     default {
-      // ...
+      // The default case
     }
   }
   
 If the input value is one of the types specified, then the value is bound to
-the corresponding variable (``str`` in the case of a String in the example
+the corresponding variable (``str`` in the case of a :class:`String` in the example
 above) and that variable will be available within the scope of the case body.
-If the input does not match any of the types listed, then the default case
-will be executed, or if there is no default case then the entire statement
+If the input does not match any of the types listed, then the :kw:`else` case
+will be executed, or if there is no :kw:`else` case then the entire statement
 is skipped.
 
-The "with" statement
---------------------
-
-Another useful statement is the :stmt:`with` statement::
-
-  // Declare a new variable 'fh' and assign an open file handle to it.
-  with fh = File.open("unicode.txt) {
-    // Do something with fh.
-    // It will be closed when the block exits.
-  }
-  
-The :stmt:`with` statement can be used to guarantee that the appropriate cleanup
-code is called after you are finished with an object. In the above example,
-the file handle ``fh`` will be closed upon exit from the :stmt:`with` block,
-regardless of how the block was existed (even if via :stmt:`return` or an
-exception.)
-
-The :stmt:`with` statement can also influence the set of effect annotations
-that propagate outward from within the contained block. Similar to the way a
-:stmt:`try` statement can filter out an exception effect, a :stmt:`with`
-statement that acquires and then releases a mutex could potentially
-remove a 'thread-unsafe' effect.
+.. statement:: try
+.. statement:: catch
+.. statement:: finally
 
 Exception Statements
 --------------------

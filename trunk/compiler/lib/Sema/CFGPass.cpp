@@ -389,6 +389,9 @@ Expr * CFGPass::visitSharedValue(SharedValueExpr * in) {
 
 Expr * CFGPass::visitSeq(SeqExpr * in) {
   visitExprArgs(in);
+  if (!in->args().empty()) {
+    in->setType(in->args().back()->type());
+  }
   return in;
 }
 

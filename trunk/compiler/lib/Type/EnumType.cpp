@@ -38,7 +38,8 @@ bool EnumType::includes(const Type * other) const {
 }
 
 ConversionRank EnumType::convertImpl(const Conversion & cn) const {
-  if (cn.getFromType() == this) {
+  const Type * fromType = cn.getFromType();
+  if (fromType == this) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
     }
@@ -47,7 +48,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   }
 
   // An integer 0 can be converted to a flags enum.
-  if (isFlags() && cn.getFromType()->isIntType() && cn.fromValue != NULL &&
+  if (isFlags() && fromType->isIntType() && cn.fromValue != NULL &&
       cn.fromValue->isConstant()) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
       if (cint->value()->isNullValue()) {
@@ -57,7 +58,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   }
 
   // An integer can be coerced to an enum.
-  if (cn.getFromType()->isIntType() && (cn.options & Conversion::Coerce)) {
+  if (fromType->isIntType() && (cn.options & Conversion::Coerce)) {
     ConversionRank rank = baseType_->convertImpl(cn);
     if (rank != Incompatible) {
       if (cn.resultValue != NULL) {
@@ -69,7 +70,7 @@ ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   }
 
   // Unboxing
-  if ((cn.options & Conversion::Checked) && cn.getFromType()->isReferenceType()) {
+  if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = new CastExpr(Expr::UnboxCast, cn.fromValue->location(),
           this, cn.fromValue);

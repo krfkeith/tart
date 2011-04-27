@@ -7,6 +7,7 @@
 #include "tart/Defn/Module.h"
 
 #include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
 
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
@@ -180,7 +181,8 @@ bool VarAnalyzer::resolveVarType() {
       }
 
       ExprAnalyzer ea(this, currentFunction_);
-      Expr * initExpr = ea.analyze(ast->value(), target->type());
+      Expr * initExpr = ea.analyze(ast->value(),
+          target->type() != NULL ? target->type() : &AnyType::instance);
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
         target->passes().finish(VariableDefn::VariableTypePass);
@@ -201,7 +203,12 @@ bool VarAnalyzer::resolveVarType() {
 
         if (initType->isUnsizedIntType()) {
           // TODO: Only if this is a var, not a let
-          initType = PrimitiveType::intType();
+          if (!isa<ConstantInteger>(initExpr) && !isa<SeqExpr>(initExpr)) {
+            diag.debug() << initExpr;
+            DASSERT_OBJ(!initType->isUnsizedIntType(), target);
+          } else {
+            initType = PrimitiveType::intType();
+          }
         }
 
         if (target->type() == NULL) {
@@ -224,17 +231,21 @@ bool VarAnalyzer::resolveVarType() {
         }
         target->setInitValue(initExpr);
       }
+    } else if (target->type() == NULL) {
+      diag.error(target) << "Type of '" << target << "' cannot be determined";
     }
 
-    DASSERT(target->type() != NULL);
-    if (target->type()->isSingular()) {
+    if (target->type() != NULL && target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
     target->passes().finish(VariableDefn::VariableTypePass);
   }
 
-  DASSERT(target->type() != NULL);
+  if (target->type() == NULL) {
+    target->setType(&BadType::instance);
+    return false;
+  }
   DASSERT_OBJ(!target->type()->isVoidType(), target);
   return true;
 }
@@ -281,8 +292,8 @@ bool VarAnalyzer::resolveInitializers() {
           // however, since declaring a variable to be a type does not imply that we're
           // actually calling any of that type's methods.
           // (NOTE: changed it to add symbol, because queueSymbol has problems - what
-          // if you queue it, analyze it, and then later addSymbol it again - doesn't get
-          // fully analyzed.)
+          // if you queue it, partially analyze it, and then later addSymbol it
+          // again - it doesn't get fully analyzed.)
           TypeDefn * typeDef = var->type()->typeDefn();
           if (typeDef != NULL && typeDef->isSingular()) {
             module_->addSymbol(typeDef);

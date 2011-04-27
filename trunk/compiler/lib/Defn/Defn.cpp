@@ -29,6 +29,8 @@ Defn::Defn(DefnType dtype, Module * m, const char * nm)
   , loc(SourceLocation())
   , name_(nm)
   , ast_(NULL)
+  , md_(NULL)
+  , storage_(Storage_Global)
   , module_(m)
   , parentDefn_(NULL)
   , nextInScope_(NULL)
@@ -42,7 +44,9 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   , loc(de->location())
   , name_(de->name())
   , ast_(de)
+  , md_(NULL)
   , modifiers_(de->modifiers())
+  , storage_(Storage_Global)
   , module_(m)
   , parentDefn_(NULL)
   , nextInScope_(NULL)
@@ -54,15 +58,7 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   }
 }
 
-const std::string & Defn::qualifiedName() const {
-  if (qname_.empty()) {
-    diag.fatal(this) << "Unqualified name " << name_;
-  }
-
-  return qname_;
-}
-
-std::string & Defn::qualifiedName() {
+llvm::StringRef Defn::qualifiedName() const {
   if (qname_.empty()) {
     diag.fatal(this) << "Unqualified name " << name_;
   }
@@ -167,6 +163,18 @@ Module * Defn::sourceModule() const {
   return module_;
 }
 
+Defn * Defn::moduleLevelParent() const {
+  Defn * de = const_cast<Defn *>(this);
+  for (;;) {
+    Defn * parent = de->parentDefn();
+    DASSERT_OBJ(parent != NULL, this);
+    if (parent->defnType() == Defn::Mod) {
+      return de;
+    }
+    de = parent;
+  }
+}
+
 TypeDefn * Defn::enclosingClassDefn() const {
   Defn * parent = parentDefn();
   if (parent == NULL) {
@@ -186,15 +194,6 @@ bool Defn::hasUnboundTypeParams() const {
   }
 
   return false;
-}
-
-bool Defn::beginPass(DefnPass pass) {
-  if (finished_.contains(pass)) {
-    return false;
-  }
-
-  running_.add(pass);
-  return true;
 }
 
 void Defn::dumpHierarchy(bool full) const {

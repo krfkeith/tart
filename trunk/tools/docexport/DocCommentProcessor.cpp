@@ -425,9 +425,16 @@ void DocCommentProcessor::authors(Node * parent) {
 }
 
 void DocCommentProcessor::deprecated(Node * parent) {
-  diag.debug(location()) << currentLine_->text;
-  DFAIL("Implement");
+  Node * depNode = new Node(DEPRECATED);
+  parent->append(depNode);
+
+  // Append any characters remaining on the starting line
+  paragraphText_.append(currentLine_->text.begin() + currentPos_, currentLine_->text.end());
+  size_t indent = currentLine_->indent + 1;
   nextLine();
+
+  // Gather any additional lines from the hanging indent.
+  parseLines(depNode, indent);
 }
 
 void DocCommentProcessor::example(Node * parent) {

@@ -36,7 +36,7 @@ from all the others. Some of these motivations are:
 
 * The desire for a language that would combine the simplicity and
   readability of Python with the power of static typing and
-  template metapgrogramming, as well as modern language features
+  template metaprogramming, as well as modern language features
   such as closures and generic functions.
 * The desire for a compiler that compiles to highly efficient
   native code instead of a virtual instruction set.
@@ -82,7 +82,7 @@ Tart can't do everything! Here's some things that some other languages do that
 Tart doesn't:
 
 * Tart doesn't support run-time compilation of code or creation of
-  classes, although some implementations may provide this an an
+  classes, although some implementations may provide this as an
   extension. Many of the kinds of things you would want to do with
   run-time class creation (such as automatic creation of mock
   implementation classes for testing) can be done at compile time

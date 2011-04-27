@@ -46,7 +46,7 @@ void IterableScope::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool IterableScope::lookupMember(const char * name, DefnList & defs, bool inherit) const {
+bool IterableScope::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = members_.findSymbol(name);
   bool found = false;
   if (entry != NULL) {

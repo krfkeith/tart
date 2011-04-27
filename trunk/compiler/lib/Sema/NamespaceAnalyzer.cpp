@@ -5,7 +5,11 @@
 #include "tart/Defn/Module.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
+
 #include "tart/Sema/NamespaceAnalyzer.h"
+
+#include "tart/Meta/MDReader.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -76,18 +80,26 @@ bool NamespaceAnalyzer::runPasses(NamespaceDefn::PassSet passesToRun) {
 
 bool NamespaceAnalyzer::analyzeImports() {
   if (target->passes().begin(NamespaceDefn::ImportPass)) {
-    if (target->ast() != NULL) {
-      DefnAnalyzer da(target->module(), &target->memberScope(), target, NULL);
-      const ASTNodeList & imports = target->ast()->imports();
-      for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
-        da.importIntoScope(cast<ASTImport>(*it), &target->memberScope());
+    if (target->mdNode() != NULL) {
+      ASTNodeList imports;
+      if (MDReader(module_, target).readImports(target, imports)) {
+        analyzeImportsImpl(imports);
       }
+    } else if (target->ast() != NULL) {
+      analyzeImportsImpl(target->ast()->imports());
     }
 
     target->passes().finish(NamespaceDefn::ImportPass);
   }
 
   return true;
+}
+
+void NamespaceAnalyzer::analyzeImportsImpl(const ASTNodeList & imports) {
+  DefnAnalyzer da(target->module(), &target->memberScope(), target, NULL);
+  for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
+    da.importIntoScope(cast<ASTImport>(*it), &target->memberScope());
+  }
 }
 
 bool NamespaceAnalyzer::analyzeMethods() {

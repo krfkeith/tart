@@ -80,7 +80,9 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
   if (exprs.empty()) {
     return new SeqExpr(st->location(), blockScope, exprs, &VoidType::instance);
   } else if (exprs.size() == 1 && blockScope->count() == 0 &&
+      currentFunction_->functionDecl() != NULL &&
       st != currentFunction_->functionDecl()->body()) {
+    // There's only one expression in the block, so just return it.
     return exprs.front();
   } else {
     return new SeqExpr(st->location(), blockScope, exprs, exprs.back()->type());
@@ -112,7 +114,18 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
   }
 
   setActiveScope(savedScope);
-  return new IfExpr(st->location(), implicitScope, testExpr, thenExpr, elseExpr);
+  IfExpr * result = new IfExpr(st->location(), implicitScope, testExpr, thenExpr, elseExpr);
+  if (expected != NULL) {
+    if (elseExpr == NULL) {
+      diag.error(st) << "If-statement used in expression context must have an else block";
+    } else {
+      PHIConstraint * phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+      phiType->add(thenExpr->type());
+      phiType->add(elseExpr->type());
+      result->setType(phiType);
+    }
+  }
+  return result;
 }
 
 Expr * ExprAnalyzer::reduceWhileStmt(const WhileStmt * st, const Type * expected) {
@@ -420,6 +433,12 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
     diag.error(st) << "Invalid expression type for switch statement: " << testType;
   }
 
+  PHIConstraint * phiType = NULL;
+  if (expected != NULL) {
+    phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+    swe->setType(phiType);
+  }
+
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     if ((*it)->nodeType() == ASTNode::Case) {
@@ -438,7 +457,11 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
       // Build the body of the case.
       Expr * body = reduceExpr(cst->body(), expected);
       if (!isErrorResult(body) && !caseVals.empty()) {
-        swe->appendArg(new CaseExpr(st->location(), caseVals, body));
+        CaseExpr * ce = new CaseExpr(st->location(), caseVals, body);
+        if (phiType != NULL && ce->type() != NULL) {
+          phiType->add(ce->type());
+        }
+        swe->appendArg(ce);
       }
     } else if ((*it)->nodeType() == ASTNode::Block) {
       if (swe->elseCase() != NULL) {
@@ -446,11 +469,18 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
       } else {
         Expr * defaultCase = reduceExpr(*it, expected);
         CHECK_EXPR(defaultCase);
+        if (phiType != NULL && defaultCase->type() != NULL) {
+          phiType->add(defaultCase->type());
+        }
         swe->setElseCase(defaultCase);
       }
     } else {
       DFAIL("Bad case statement");
     }
+  }
+
+  if (phiType != NULL && swe->elseCase() == NULL) {
+    diag.error(swe) << "Switch statement used in expression context must have an 'else' clause";
   }
 
   // Check for duplicate case value in switch statement.
@@ -527,14 +557,23 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
 
   MatchExpr * me = new MatchExpr(st->location(), implicitScope, testExpr);
 
+  PHIConstraint * phiType = NULL;
+  if (expected != NULL) {
+    phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+    me->setType(phiType);
+  }
+
   const Stmt * elseSt = NULL;
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
-    if (s->nodeType() == ASTNode::Case) {
-      Expr * asExpr = reduceMatchAsStmt(static_cast<const MatchAsStmt *>(s), testExpr, castType,
-          expected);
+    if (s->nodeType() == ASTNode::MatchAs) {
+      Expr * asExpr = reduceMatchAsStmt(
+          static_cast<const MatchAsStmt *>(s), testExpr, castType, expected);
       if (!isErrorResult(asExpr)) {
+        if (phiType != NULL && asExpr->type() != NULL) {
+          phiType->add(asExpr->type());
+        }
         me->appendArg(asExpr);
       }
     } else if (s->nodeType() == ASTNode::Block) {
@@ -543,6 +582,9 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
       } else {
         Expr * defaultCase = reduceExpr(s, expected);
         CHECK_EXPR(defaultCase);
+        if (phiType != NULL && defaultCase->type() != NULL) {
+          phiType->add(defaultCase->type());
+        }
         me->setElseCase(defaultCase);
       }
     } else {

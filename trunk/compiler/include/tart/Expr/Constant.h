@@ -118,7 +118,7 @@ public:
 /// String constant
 class ConstantString : public ConstantExpr {
 public:
-  ConstantString(SourceLocation l, const std::string & val);
+  ConstantString(SourceLocation l, llvm::StringRef val);
 
   llvm::StringRef value() const { return value_; }
 
@@ -132,7 +132,7 @@ public:
   }
 
 private:
-  std::string value_;
+  llvm::SmallString<0> value_;
 };
 
 /// -------------------------------------------------------------------

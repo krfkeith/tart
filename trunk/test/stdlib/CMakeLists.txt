@@ -6,8 +6,15 @@ file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 source_group(StdLibTests FILES ${TART_SRC})
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
-  -i ${TART_SOURCE_DIR}/lib/std
+  -i ${TART_BINARY_DIR}/lib/std/libstd.bc
+#  -i ${TART_SOURCE_DIR}/lib/std
   -i ${TART_SOURCE_DIR}/lib/testing)
+
+set(BC_LIBS
+  "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
+  "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
+  "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+  )
 
 set(TART_OPTIONS
   -debug-errors
@@ -105,14 +112,9 @@ foreach(SRC_FILE ${TART_SRC})
   if (GENERATE_ASM)
     add_custom_command(OUTPUT ${ASM_FILE}
         COMMAND tartln -disable-fp-elim -filetype=asm -o ${ASM_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+            ${BC_LIBS}
         MAIN_DEPENDENCY "${BC_FILE}" 
-        DEPENDS
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+        DEPENDS ${BC_LIBS}
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
       
     # Convert to assembly
@@ -134,15 +136,10 @@ foreach(SRC_FILE ${TART_SRC})
         COMMAND ${LLVM_LD}
             -disable-opt
             -link-as-library
-            -o ${OUT_BC_FILE} ${BC_FILE}
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+            -o ${OUT_BC_FILE}
+            ${BC_FILE} ${BC_LIBS}
         MAIN_DEPENDENCY "${BC_FILE}" 
-        DEPENDS
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+        DEPENDS ${BC_LIBS}
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Optimize object files
@@ -175,15 +172,11 @@ foreach(SRC_FILE ${TART_SRC})
     # Use tartln and don't generate assembly.
     add_custom_command(OUTPUT ${OBJ_FILE}
         COMMAND tartln -disable-fp-elim -filetype=obj -o ${OBJ_FILE} ${TARTLN_OPTIONS} ${BC_FILE}
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+            ${BC_LIBS}
         MAIN_DEPENDENCY "${BC_FILE}" 
         DEPENDS
 #            libstd libtesting libgc1
-            "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
-            "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
-            "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
+            ${BC_LIBS}
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Link executable

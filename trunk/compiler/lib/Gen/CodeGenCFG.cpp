@@ -188,9 +188,9 @@ Value * CodeGenerator::genIf(const IfExpr * in) {
         // If both branches returned a result, then combine them with a phi-node.
         DASSERT(thenVal != NULL);
         DASSERT(elseVal != NULL);
-        PHINode * phi = builder_.CreatePHI(in->type()->irType(), "if");
-        phi->addIncoming(thenVal, blkThen);
-        phi->addIncoming(elseVal, blkElse);
+        PHINode * phi = builder_.CreatePHI(thenVal->getType(), 2, "if");
+        phi->addIncoming(thenVal, blkThenLast);
+        phi->addIncoming(elseVal, blkElseLast);
         return phi;
       } else if (blkThenLast) {
         DASSERT(thenVal != NULL);
@@ -441,7 +441,7 @@ Value * CodeGenerator::genIntegerSwitch(const SwitchExpr * in) {
   // Create the PHI node if return type is not void.
   PHINode * phi = NULL;
   if (!in->type()->isVoidType()) {
-    phi = PHINode::Create(in->type()->irType());
+    phi = PHINode::Create(in->type()->irType(), in->argCount());
   }
 
   // Add cases
@@ -532,7 +532,7 @@ Value * CodeGenerator::genEqSwitch(const SwitchExpr * in) {
   // Create the PHI node if return type is not void.
   PHINode * phi = NULL;
   if (!in->type()->isVoidType()) {
-    phi = PHINode::Create(in->type()->irType());
+    phi = PHINode::Create(in->type()->irType(), in->argCount());
   }
 
   Function * eqTestFn = genFunctionValue(in->equalityTestFn());
@@ -650,7 +650,7 @@ Value * CodeGenerator::genMatch(const MatchExpr * in) {
   // Create the PHI node if return type is not void.
   PHINode * phi = NULL;
   if (!in->type()->isVoidType()) {
-    phi = PHINode::Create(in->type()->irType());
+    phi = PHINode::Create(in->type()->irType(), in->argCount());
   }
 
   // Add cases
@@ -766,7 +766,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
   // Create the PHI node if return type of the try statement is not void.
   PHINode * phi = NULL;
   if (!in->type()->isVoidType()) {
-    phi = PHINode::Create(in->type()->irType());
+    phi = PHINode::Create(in->type()->irType(), in->argCount() + 2);
   }
 
   // Set up block exits struct to hold cleanups for this scope.

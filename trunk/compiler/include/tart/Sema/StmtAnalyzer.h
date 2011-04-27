@@ -29,7 +29,7 @@ class FunctionDefn;
 class StmtAnalyzer : public ExprAnalyzer {
 public:
   /** Constructor. */
-  StmtAnalyzer(FunctionDefn * func);
+  StmtAnalyzer(FunctionDefn * func, const Stmt * body);
 
   /** The target function being analyzed. */
   FunctionDefn * function() { return currentFunction_; }
@@ -38,6 +38,7 @@ public:
   bool buildCFG();
 
 private:
+  const Stmt * body_;
   Type * yieldType_;
 };
 

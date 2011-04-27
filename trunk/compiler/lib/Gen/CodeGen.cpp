@@ -218,7 +218,7 @@ void CodeGenerator::verifyModule() {
 void CodeGenerator::outputModule() {
   // File handle for output bitcode
   llvm::sys::Path binPath(outputDir);
-  const std::string & moduleName = module_->linkageName();
+  llvm::StringRef moduleName = module_->linkageName();
   size_t pos = 0;
   for (;;) {
     size_t dot = moduleName.find('.', pos);
@@ -462,12 +462,23 @@ void CodeGenerator::addModuleDependencies() {
   using namespace llvm;
   const ModuleSet & modules = module_->importModules();
   if (!modules.empty()) {
-    ValueList deps;
+    llvm::StringMap<char> paths;
+
     for (ModuleSet::const_iterator it = modules.begin(); it != modules.end(); ++it) {
       Module * m = *it;
-      if (!m->moduleSource()->getFilePath().empty()) {
-        deps.push_back(MDString::get(context_, m->moduleSource()->getFilePath()));
+      ProgramSource * source = m->moduleSource();
+      if (source->container() != NULL) {
+        source = source->container();
       }
+
+      if (!source->filePath().empty()) {
+        paths[source->filePath()] = 1;
+      }
+    }
+
+    ValueList deps;
+    for (llvm::StringMap<char>::const_iterator it = paths.begin(); it != paths.end(); ++it) {
+      deps.push_back(MDString::get(context_, it->first()));
     }
 
     irModule_->getOrInsertNamedMetadata("tart.module_deps")->addOperand(

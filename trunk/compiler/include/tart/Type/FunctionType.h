@@ -23,9 +23,10 @@ class FunctionDefn;
 // Type class for functions and macros.
 class FunctionType : public Type {
 public:
-  FunctionType(Type * rtype, ParameterList & plist);
-  FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount);
-  FunctionType(Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount);
+  FunctionType(const Type * rtype, ParameterList & plist);
+  FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pcount);
+  FunctionType(const Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist,
+      size_t pcount);
 
   // isStatic
   bool isStatic() const { return isStatic_; }
@@ -40,7 +41,7 @@ public:
   void setReturnType(const Type * type) { returnType_ = type; }
 
   /** True if this function type uses 'struct return' calling convention. */
-  bool isStructReturn() const { return isStructReturn_; }
+  bool isStructReturn() const;
 
   const llvm::Type * irType() const;
 
@@ -72,7 +73,7 @@ public:
 
   /** Return the name of the 'invoke' trampoline function for this function type.
       This is used when calling methods via reflection. */
-  const std::string & invokeName() const;
+  llvm::StringRef invokeName() const;
 
   /** Return true if any of the parameter types in this function are of type BadType. */
   bool hasErrors() const;

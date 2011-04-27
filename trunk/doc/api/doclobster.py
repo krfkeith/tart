@@ -219,6 +219,15 @@ class Declaration(object):
       return inner_html(desc)
     return ""
   
+  def hasDeprecated(self):
+    return self.el.find("./doc/deprecated")
+    
+  def deprecated(self):
+    content = self.el.find("./doc/deprecated")
+    if content is not None:
+      return inner_html(content)
+    return ""
+  
   def typeArgs(self):
     return self._typeArgs
 

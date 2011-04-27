@@ -54,6 +54,7 @@ enum DeclFlags {
   ReadOnly = (1<<2),      // Can't be written to from non-privileged code
   Undef = (1<<3),         // Undefined method
   Override = (1<<4),      // Overridden method
+  Static = (1<<5),        // Was declared static
 };
 
 /// -------------------------------------------------------------------
@@ -69,22 +70,19 @@ enum ParameterFlags {
 /// Declaration modifiers
 struct DeclModifiers {
   uint32_t        flags;
-  StorageClass    storageClass;
   Visibility      visibility;
   ASTNode       * condition;
 
   DeclModifiers()
-    : flags(0), storageClass(Storage_Global), visibility(Public),
-      condition(NULL) {}
+    : flags(0), visibility(Public), condition(NULL) {}
 
   DeclModifiers(const DeclModifiers & src)
     : flags(src.flags)
-    , storageClass(src.storageClass)
     , visibility(src.visibility)
     , condition(src.condition) {}
 
-  DeclModifiers(StorageClass sc, uint32_t flg = 0)
-    : flags(flg), storageClass(sc), visibility(Public), condition(NULL) {}
+  DeclModifiers(uint32_t flg)
+    : flags(flg), condition(NULL) {}
 };
 
 /// ---------------------------------------------------------------
@@ -126,7 +124,7 @@ public:
   /** The modifier for this definition. */
   const DeclModifiers & modifiers() const { return modifiers_; }
   DeclModifiers & modifiers() { return modifiers_; }
-  StorageClass storageClass() const { return modifiers_.storageClass; }
+  //StorageClass storageClass() const { return modifiers_.storageClass; }
   Visibility visibility() const { return modifiers_.visibility; }
 
   /** The list of attributes. */
@@ -294,16 +292,14 @@ private:
   ASTParamList params_;
   ASTNode * returnType_;
   Stmt * body_;
-  int generatorIndex_;
 
 public:
   ASTFunctionDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
-      ASTParamList & paramList, ASTNode * rtype, const DeclModifiers & mods)
+      const ASTParamList & paramList, ASTNode * rtype, const DeclModifiers & mods)
     : ASTDecl(ntype, loc, nm, mods)
     , params_(paramList)
     , returnType_(rtype)
     , body_(NULL)
-    , generatorIndex_(0)
   {}
 
   /** The list of function parameters. */
@@ -318,9 +314,6 @@ public:
   const Stmt * body() const { return body_; }
   Stmt * body() { return body_; }
   void setBody(Stmt * b) { body_ = b; }
-
-  /** For functions that are generators, the number of yield statements. */
-  int nextGeneratorIndex() { return generatorIndex_++; }
 
   // Overrides
 
@@ -416,7 +409,7 @@ public:
   const ASTNodeList & params() const { return params_; }
   ASTNodeList & params() { return params_; }
 
-  /** The list of template parameters. */
+  /** The list of template constraints. */
   const ASTNodeList & requirements() const { return requirements_; }
   ASTNodeList & requirements() { return requirements_; }
 

@@ -758,11 +758,11 @@ table.highlighttable td {
 }
 
 .pre {
-  font-family: "courier", "liberation mono", "andale mono", "inconsolata", "consolas", monospace;
+    font-family: "courier", "liberation mono", "andale mono", "inconsolata", "consolas", monospace;
 }
 
 .code {
-  font-family: "inconsolata", "consolas", "liberation mono", "andale mono", "courier", monospace;
+    font-family: "inconsolata", "consolas", "liberation mono", "andale mono", "courier", monospace;
 }
 
 tt {
@@ -785,7 +785,6 @@ tt.descclassname {
 
 tt.xref, a tt {
     background-color: transparent;
-    font-weight: bold;
     color: black;
 }
 

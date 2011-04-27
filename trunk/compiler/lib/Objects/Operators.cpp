@@ -15,10 +15,6 @@
 
 #include "llvm/Instructions.h"
 
-#if MSVC
-  #define snprintf _snprintf
-#endif
-
 namespace tart {
 
 namespace {
@@ -292,8 +288,6 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 2);
-    //const Expr * arg0 = derefDeclaredConstant(args[0]);
-    //const Expr * arg1 = derefDeclaredConstant(args[1]);
     Expr * arg0 = args[0];
     Expr * arg1 = args[1];
 
@@ -422,7 +416,6 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
-    //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
     assert(arg->exprType() == Expr::ConstInt);
     ConstantInteger * cn = static_cast<ConstantInteger *>(arg);
@@ -465,7 +458,6 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
-    //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
     const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
@@ -502,7 +494,6 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
-    //const Expr * arg = derefDeclaredConstant(args[0]);
     Expr * arg = args[0];
 
     const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());

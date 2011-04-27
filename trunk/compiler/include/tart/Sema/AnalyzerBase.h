@@ -200,20 +200,26 @@ protected:
   // Lookup an unqualified identifier in the current scope.
   bool lookupIdent(ExprList & out, const char * name, SLC & loc);
 
+  // Lookup a fully-qualified identifier in the global scope.
+  bool lookupQName(ExprList & out, llvm::StringRef name, SLC & loc);
+
+  // Lookup a qualified identifier in the scope of a named module.
+  bool lookupNameInModule(ExprList & out, llvm::StringRef modName, llvm::StringRef name, SLC & loc);
+
   // Look up a name in an explicit scope.
-  bool findMemberOf(ExprList & out, Expr * context, const char * name, SLC & loc);
+  bool findMemberOf(ExprList & out, Expr * context, llvm::StringRef name, SLC & loc);
 
   // Find a name in a scope and return a list of matching expressions.
-  bool findInScope(ExprList & out, const char * name, const Scope * scope, Expr * context,
+  bool findInScope(ExprList & out, llvm::StringRef name, const Scope * scope, Expr * context,
       SLC & loc, MemberPreference pref);
 
   // Special lookup function for static members of templated types. Since the template
   // is never analyzed (only instances are), we need to search the ast.
-  bool findStaticTemplateMember(ExprList & out, TypeDefn * type, const char * name, SLC & loc);
+  bool findStaticTemplateMember(ExprList & out, TypeDefn * type, llvm::StringRef name, SLC & loc);
 
   // Special lookup function for members of templated types. Since the template
   // is never analyzed (only instances are), we need to search the ast.
-  bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name, SLC & loc);
+  bool lookupTemplateMember(DefnList & out, TypeDefn * typeDef, llvm::StringRef name, SLC & loc);
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
@@ -228,7 +234,7 @@ protected:
   void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de, TupleType * args);
 
   // Lookup helper function that attempts to load a module from 'path'.
-  bool importName(ExprList & out, const std::string & path, bool absPath, SLC & loc);
+  bool importName(ExprList & out, llvm::StringRef path, bool absPath, SLC & loc);
 
   // Create a reference to a definition.
   Expr * getDefnAsExpr(Defn * de, Expr * context, SLC & loc);

@@ -674,10 +674,12 @@ public:
     setStorageClass(Storage_Instance);
     addTrait(Singular);
     setLinkageName("toString");
+    setFlag(FunctionDefn::Final);
   }
 
   void init() {
     // Can't do this in constructor because it happens too early.
+    setFlag(FunctionDefn::Intrinsic);
     setIntrinsic(PrimitiveToStringIntrinsic::get(SourceLocation(), "PrimitiveType.toString"));
   }
 
@@ -717,6 +719,7 @@ public:
       ConstantInteger * defaultRadix = ConstantInteger::getSInt(10);
       type.addParam(new ParameterDefn(NULL, "radix", defaultRadix->type(), 0, defaultRadix));
     }
+    setFlag(FunctionDefn::Intrinsic);
     setIntrinsic(PrimitiveParseIntrinsic::get(SourceLocation(), "PrimitiveType.parse"));
   }
 
@@ -758,7 +761,7 @@ template<> TypeIdSet VoidType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet VoidType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void VoidType::initType() {
-  irType_ = llvm::StructType::get(llvm::getGlobalContext(), false);
+  irType_ = llvm::Type::getVoidTy(llvm::getGlobalContext());
 }
 
 template<> void VoidType::initMembers() {

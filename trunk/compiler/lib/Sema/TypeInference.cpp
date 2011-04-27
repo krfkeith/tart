@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TypeConstraint.h"
 #include "tart/Type/FunctionType.h"
@@ -26,8 +27,8 @@ ShowInference("show-inference",
 
 bool unifyVerbose = false;
 
-/// -------------------------------------------------------------------
-/// CallSite
+// -------------------------------------------------------------------
+// CallSite
 
 void CallSite::update() {
   lowestRank_ = IdenticalTypes;
@@ -191,11 +192,7 @@ bool CallSite::unify(int searchDepth) {
     // unify after a unification failure.
     for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
       CallCandidate * c = *cc;
-      //unifyVerbose = true;
-      if (c->unify(callExpr_)) {
-        canUnify = true;
-      }
-      //unifyVerbose = false;
+      c->unify(callExpr_);
     }
 
     reportErrors("No methods match calling signature: ");
@@ -297,85 +294,186 @@ void CallSite::reportErrors(const char * msg) {
   }
 }
 
-/// -------------------------------------------------------------------
-/// TupleCtorSite
+// -------------------------------------------------------------------
+// ConstantIntegerSite
 
-TupleCtorSite::TupleCtorSite(TupleCtorExpr * in)
-  : expr_(in)
-  , rank_(IdenticalTypes)
-{
+#if 0
+void ConstantIntegerSite::update() {
+  lowestRank_ = IdenticalTypes;
+  remaining_ = 0;
+  const UnsizedIntConstraint * uic = static_cast<const UnsizedIntConstraint *>(expr_->type());
+  for (int i = 0; i < UnsizedIntConstraint::NUM_TYPES; ++i) {
+    if (!uic->isCulled(i)) {
+      //ConversionRank rank = uic->types()[i]->updateConversionRank();
+      //lowestRank_ = std::min(lowestRank_, rank);
+      ++remaining_;
+    }
+  }
 }
 
-bool TupleCtorSite::unify(int cullingDepth) {
-/*  const TupleType * tt = cast<TupleType>(expr_->type());
-  size_t size = tt->size();
-  for (size_t i = 0; i < size; ++i) {
-    const Type * memberType = tt->member(i);
-    const Type * argType = expr_->arg(i)->type();
-    //rank_ = std::min(rank_, tt->member(i)->canConvert(expr_->arg(i)));
-  }
+size_t ConstantIntegerSite::count() const {
+  return UnsizedIntConstraint::NUM_TYPES;
+}
 
-  DFAIL("IMP"); */
+int ConstantIntegerSite::remaining() const {
+  return remaining_;
+}
+
+bool ConstantIntegerSite::unify(int cullingDepth) {
   return true;
 }
 
+ConversionRank ConstantIntegerSite::rank() const {
+  return lowestRank_;
+}
+
+bool ConstantIntegerSite::isCulled(int index) const {
+  const UnsizedIntConstraint * uic = static_cast<const UnsizedIntConstraint *>(expr_->type());
+  return uic->isCulled(index);
+}
+
+int ConstantIntegerSite::cullByConversionRank(ConversionRank lowerLimit, int searchDepth) {
+  return 0;
+}
+
+void ConstantIntegerSite::cullBySpecificity(int searchDepth) {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::cullAllExcept(int choice, int searchDepth) {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::cullAllExceptBest(int searchDepth) {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::finish() {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::reportErrors(const char * msg) {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::reportRanks() {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::saveBest() {
+  //DFAIL("Implement");
+}
+
+void ConstantIntegerSite::backtrack(int searchDepth) {
+  //DFAIL("Implement");
+}
+#endif
+
+// -------------------------------------------------------------------
+// AssignmentSite
+
+void AssignmentSite::update() {
+  const AssignmentExpr * assign = static_cast<const AssignmentExpr *>(expr_);
+  rank_ = assign->toExpr()->type()->canConvert(assign->fromExpr());
+}
+
+void AssignmentSite::report() {
+
+}
+
+// -------------------------------------------------------------------
+// TupleCtorSite
+
 // Update conversion rankings
 void TupleCtorSite::update() {
-  //diag.debug() << "Updating tuple ranking.";
   rank_ = IdenticalTypes;
-  if (const TupleType * tt = dyn_cast<TupleType>(expr_->type())) {
+  TupleCtorExpr * tct = static_cast<TupleCtorExpr *>(expr_);
+  if (const TupleType * tt = dyn_cast<TupleType>(tct->type())) {
     size_t size = tt->size();
     for (size_t i = 0; i < size; ++i) {
-      rank_ = std::min(rank_, tt->member(i)->canConvert(expr_->arg(i)));
+      rank_ = std::min(rank_, tt->member(i)->canConvert(tct->arg(i)));
     }
   }
 }
 
-void TupleCtorSite::reportRanks() {
-  DFAIL("IMP");
+void TupleCtorSite::report() {
+
 }
 
-/// -------------------------------------------------------------------
-/// ConstraintSite
+// -------------------------------------------------------------------
+// PHISite
 
-void ConstraintSite::update() {
-  switch (expr->exprType()) {
-    case Expr::Assign:
-    case Expr::PostAssign: {
-      const AssignmentExpr * assign = static_cast<const AssignmentExpr *>(expr);
-      rank = assign->toExpr()->type()->canConvert(assign->fromExpr());
-      //diag.debug(expr) << "Conversion rank for " << expr << " is " << rank;
-      //diag.debug(expr) << "Conversion rank " << rank;
-      break;
-    }
+void PHISite::update() {
+  const PHIConstraint * phiType = cast<PHIConstraint>(expr_->type());
+  TypeExpansion types;
+  ConstTypeList solutions;
 
-    case Expr::TupleCtor: {
-      diag.debug() << "Updating tuple ranking.";
-      const TupleCtorExpr * tce = static_cast<const TupleCtorExpr *>(expr);
-      rank = IdenticalTypes;
-      if (const TupleType * tt = dyn_cast<TupleType>(expr->type())) {
-        size_t size = tt->size();
-        for (size_t i = 0; i < size; ++i) {
-          rank = std::min(rank, tt->member(i)->canConvert(tce->arg(i)));
+  phiType->expand(types);
+  if (phiType->expected() != NULL) {
+    solutions.push_back(phiType->expected());
+  } else {
+    // Try to find a common type that encompasses all input types.
+    // TODO: Use coercions of needed.
+    for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
+      const Type * newType = *it;
+      DASSERT(newType != NULL);
+      bool addNew = true;
+      for (ConstTypeList::iterator s = solutions.begin(); s != solutions.end();) {
+        const Type * oldType = *s;
+        if (oldType->includes(newType)) {
+          addNew = false;
+          break;
+        } else if (newType->includes(oldType)) {
+          s = solutions.erase(s);
+        } else {
+          ++s;
         }
       }
 
-      break;
+      if (addNew) {
+        solutions.push_back(newType);
+      }
+    }
+  }
+
+  if (solutions.size() == 1) {
+    // Compute the lowest conversion ranking of all input types to the solution.
+    rank_ = IdenticalTypes;
+    const Type * solution = solutions.front();
+//    if (solution->isUnsignedType()) {
+//      solution = &Int32Type::instance;
+//    }
+    for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
+      rank_ = std::min(rank_, solution->canConvert(*it, Conversion::Coerce));
     }
 
-    default:
-      break;
+    phiType->setCommon(solution);
+  } else {
+    phiType->setCommon(NULL);
   }
 }
 
-/// -------------------------------------------------------------------
-/// GatherConstraintsPass
+void PHISite::report() {
+  const PHIConstraint * phiType = cast<PHIConstraint>(expr_->type());
+  TypeExpansion types;
+  phiType->expand(types);
+  diag.info() << "expression: " << expr_;
+  if (phiType->expected() != NULL) {
+    diag.info() << "expected result type: " << phiType->expected();
+  }
+  for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
+    diag.info() << "expression type: " << *it;
+  }
+}
+
+// -------------------------------------------------------------------
+// GatherConstraintsPass
 
 Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
   if (!in->candidates().empty() && visited_.insert(in)) {
     // Note: pre-order traversal.
     Expr * result = CFGPass::visitCall(in);
-    callSites_.push_back(new CallSite(in));
+    choicePoints_.push_back(new CallSite(in));
 
     // If the function is NULL, it means that the function reference is
     // in the individual candidates.
@@ -394,7 +492,7 @@ Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
 
 Expr * GatherConstraintsPass::visitAssign(AssignmentExpr * in) {
   if (!in->isSingular() && visited_.insert(in)) {
-    cstrSites_.push_back(ConstraintSite(in));
+    constraints_.push_back(new AssignmentSite(in));
   }
 
   CFGPass::visitAssign(in);
@@ -403,7 +501,7 @@ Expr * GatherConstraintsPass::visitAssign(AssignmentExpr * in) {
 
 Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
   if (!in->isSingular() && visited_.insert(in)) {
-    cstrSites_.push_back(ConstraintSite(in));
+    constraints_.push_back(new AssignmentSite(in));
   }
 
   CFGPass::visitPostAssign(in);
@@ -412,15 +510,50 @@ Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
 
 Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
   if (!in->isSingular() && visited_.insert(in)) {
-    callSites_.push_back(new TupleCtorSite(in));
+    constraints_.push_back(new TupleCtorSite(in));
   }
 
   CFGPass::visitTupleCtor(in);
   return in;
 }
 
-/// -------------------------------------------------------------------
-/// TypeInference
+Expr * GatherConstraintsPass::visitConstantInteger(ConstantInteger * in) {
+#if 0
+  if (in->type()->isUnsizedIntType()) {
+    in->setType(new UnsizedIntConstraint(in));
+    choicePoints_.push_back(new ConstantIntegerSite(in));
+  }
+#endif
+
+  return in;
+}
+
+Expr * GatherConstraintsPass::visitIf(IfExpr * in) {
+  CFGPass::visitIf(in);
+  visitPHI(in);
+  return in;
+}
+
+Expr * GatherConstraintsPass::visitSwitch(SwitchExpr * in) {
+  CFGPass::visitSwitch(in);
+  visitPHI(in);
+  return in;
+}
+
+Expr * GatherConstraintsPass::visitMatch(MatchExpr * in) {
+  CFGPass::visitMatch(in);
+  visitPHI(in);
+  return in;
+}
+
+void GatherConstraintsPass::visitPHI(Expr * in) {
+  if (const PHIConstraint * phi = dyn_cast<PHIConstraint>(in->type())) {
+    constraints_.push_back(new PHISite(in));
+  }
+}
+
+// -------------------------------------------------------------------
+// TypeInference
 
 Expr * TypeInferencePass::run(Module * module, Expr * in, const Type * expected, bool strict) {
   TypeInferencePass instance(module, in, expected, strict);
@@ -435,7 +568,34 @@ Expr * TypeInferencePass::runImpl() {
 
   GatherConstraintsPass(callSites_, cstrSites_).visitExpr(rootExpr_);
   if (callSites_.empty()) {
-    diag.fatal(rootExpr_) << "Can't solve '" << rootExpr_ << "'";
+    // Try running the constraints anyway, just to see what happens.
+    for (ConstraintList::const_iterator it = cstrSites_.begin(), itEnd = cstrSites_.end();
+        it != itEnd; ++it) {
+      (*it)->update();
+    }
+    if (rootExpr_->isSingular()) {
+      return rootExpr_;
+    }
+
+    for (ConstraintList::const_iterator it = cstrSites_.begin(), itEnd = cstrSites_.end();
+        it != itEnd; ++it) {
+      const Expr * e = (*it)->expr();
+      if (!e->isSingular()) {
+        diag.error(e) << "Can't find an unambiguous solution for '" << e << "'";
+        (*it)->report();
+        return rootExpr_;
+      }
+    }
+
+    diag.error(rootExpr_) << "Can't find an unambiguous solution for '" << rootExpr_ << "'";
+    diag.info() << "Total constraint count: " << cstrSites_.size();
+    diag.indent();
+    for (ConstraintList::const_iterator it = cstrSites_.begin(), itEnd = cstrSites_.end();
+        it != itEnd; ++it) {
+      (*it)->report();
+    }
+    diag.unindent();
+
     return rootExpr_;
   }
 
@@ -456,7 +616,7 @@ Expr * TypeInferencePass::runImpl() {
   reportRanks(FINAL);
 
   // Remove all culled candidates
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     (*it)->finish();
   }
 
@@ -479,7 +639,7 @@ void TypeInferencePass::update() {
 
   // TODO: How do we get the explicit arguments?
 
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
     ChoicePoint * cs = *it;
     cs->update();
     lowestRank_ = std::min(lowestRank_, cs->rank());
@@ -491,14 +651,9 @@ void TypeInferencePass::update() {
     }
   }
 
-  for (ConstraintSiteList::iterator it = cstrSites_.begin(); it != cstrSites_.end(); ++it) {
-    it->update();
-    lowestRank_ = std::min(lowestRank_, it->rank);
-    /*if (it->remaining == 0) {
-      overconstrained_ = true;
-    } else if (it->remaining > 1) {
-      underconstrained_ = true;
-    }*/
+  for (ConstraintList::iterator it = cstrSites_.begin(); it != cstrSites_.end(); ++it) {
+    (*it)->update();
+    lowestRank_ = std::min(lowestRank_, (*it)->rank());
   }
 }
 
@@ -512,10 +667,8 @@ void TypeInferencePass::checkSolution() {
     } else if (lowestRank_ > bestSolutionRank_) {
       bestSolutionCount_ = 1;
       bestSolutionRank_ = lowestRank_;
-      for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-        if (CullableChoicePoint * ccp = (*it)->asCullable()) {
-          ccp->saveBest();
-        }
+      for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+        (*it)->saveBest();
       }
 
       if (ShowInference) {
@@ -548,7 +701,7 @@ void TypeInferencePass::reportRanks(ReportLabel label) {
   diag.indent();
   diag.debug() << "lowest: " << lowestRank_;
   int siteIndex = 1;
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
     diag.debug() << "Call site #" << siteIndex << ": " << (*it)->remaining() <<
         " candidates for " << Format_Type << (*it)->expr();
     (*it)->reportRanks();
@@ -559,7 +712,7 @@ void TypeInferencePass::reportRanks(ReportLabel label) {
 bool TypeInferencePass::unifyCalls() {
   ++searchDepth_;
   bool success = true;
-  for (CallSiteList::iterator site = callSites_.begin(); site != callSites_.end(); ++site) {
+  for (ChoicePointList::iterator site = callSites_.begin(); site != callSites_.end(); ++site) {
     if (!(*site)->unify(searchDepth_)) {
       success = false;
     }
@@ -606,7 +759,7 @@ void TypeInferencePass::cullByConversionRank() {
 bool TypeInferencePass::cullEachSiteByConversionRank() {
   int siteIndex = 1;
   bool siteChanged = false;
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it, ++siteIndex) {
     ChoicePoint * site = *it;
     while (site->rank() < IdenticalTypes) {
       ConversionRank limit = ConversionRank(site->rank() + 1);
@@ -614,17 +767,15 @@ bool TypeInferencePass::cullEachSiteByConversionRank() {
         diag.debug() << "Site #" << siteIndex << ": culling overloads of rank < " << limit;
       }
       ++searchDepth_;
-      if (CullableChoicePoint * ccp = site->asCullable()) {
-        cullCount_ = ccp->cullByConversionRank(limit, searchDepth_);
-        update();
+      cullCount_ = site->cullByConversionRank(limit, searchDepth_);
+      update();
 
-        if (ShowInference) {
-          diag.indent();
-          diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
-              " remaining:";
-          site->reportRanks();
-          diag.unindent();
-        }
+      if (ShowInference) {
+        diag.indent();
+        diag.debug() << cullCount_ << " methods culled, " << site->remaining() <<
+            " remaining:";
+        site->reportRanks();
+        diag.unindent();
       }
 
       if (overconstrained_) {
@@ -651,10 +802,8 @@ bool TypeInferencePass::cullEachSiteByConversionRank() {
 void TypeInferencePass::cullByConversionRank(ConversionRank lowerLimit) {
   ++searchDepth_;
   cullCount_ = 0;
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-    if (CullableChoicePoint * ccp = (*it)->asCullable()) {
-      cullCount_ += ccp->cullByConversionRank(lowerLimit, searchDepth_);
-    }
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+    cullCount_ += (*it)->cullByConversionRank(lowerLimit, searchDepth_);
   }
 
   if (ShowInference) {
@@ -673,12 +822,10 @@ void TypeInferencePass::cullBySpecificity() {
     }
     diag.indent();
     ++searchDepth_;
-    for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+    for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
       ChoicePoint * cp = *it;
       if (cp->remaining() > 1) {
-        if (CullableChoicePoint * ccp = cp->asCullable()) {
-          ccp->cullBySpecificity(searchDepth_);
-        }
+        cp->cullBySpecificity(searchDepth_);
       }
     }
 
@@ -697,10 +844,8 @@ void TypeInferencePass::cullByElimination() {
     }
     cullByElimination(callSites_.begin(), callSites_.end());
     if (bestSolutionCount_ == 1) {
-      for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-        if (CullableChoicePoint * ccp = (*it)->asCullable()) {
-          ccp->cullAllExceptBest(searchDepth_);
-        }
+      for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+        (*it)->cullAllExceptBest(searchDepth_);
       }
     }
 
@@ -713,26 +858,25 @@ void TypeInferencePass::cullByElimination() {
 }
 
 void TypeInferencePass::cullByElimination(
-  CallSiteList::iterator first, CallSiteList::iterator last) {
+  ChoicePointList::iterator first, ChoicePointList::iterator last) {
   while (first < last && underconstrained_) {
     ChoicePoint * pt = *first;
-    CullableChoicePoint * ccp = pt->asCullable();
-    if (pt->remaining() <= 1 || ccp == NULL) {
+    if (pt->remaining() <= 1) {
       ++first;
     } else {
       int numChoices = pt->count();
       for (int ch = 0; ch < numChoices; ++ch) {
-        if (ccp->isCulled(ch)) {
+        if (pt->isCulled(ch)) {
           continue;
         }
 
         if (ShowInference) {
-          diag.debug() << Format_Type << "Trying " << ccp->expr();
+          diag.debug() << Format_Type << "Trying " << pt->expr();
           diag.indent();
         }
 
         ++searchDepth_;
-        ccp->cullAllExcept(ch, searchDepth_);
+        pt->cullAllExcept(ch, searchDepth_);
         cullByElimination(first + 1, last);
         backtrack();
 
@@ -754,10 +898,8 @@ void TypeInferencePass::cullAllButOne(CallSite * site, int choice) {
 }
 
 void TypeInferencePass::backtrack() {
-  for (CallSiteList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
-    if (CullableChoicePoint * ccp = (*it)->asCullable()) {
-      ccp->backtrack(searchDepth_);
-    }
+  for (ChoicePointList::iterator it = callSites_.begin(); it != callSites_.end(); ++it) {
+    (*it)->backtrack(searchDepth_);
   }
 
   --searchDepth_;

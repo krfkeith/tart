@@ -34,8 +34,8 @@ class DerivedType : Type {
 
       case NATIVE_ARRAY {
       }
-      
-      else {
+
+      case * {
         return "<bad type>";
       }
     }

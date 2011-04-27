@@ -203,6 +203,18 @@ p {
   margin: 6px 3em;
 }
 
+.member-deprecated {
+  margin: 8px 8px 8px 3em;
+  padding: 0 12px;
+  color: #800;
+  background-color: #fdd;
+  border: 3px solid #e77;
+}
+
+.member-deprecated-prologue {
+  font-weight: bold;
+}
+
 .member-features-table {
   margin-left: 3em;
 }

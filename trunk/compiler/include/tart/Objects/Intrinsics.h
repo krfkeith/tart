@@ -249,7 +249,10 @@ class LogicalAndIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Operator.infixLogicalOr intrinsic
 class LogicalOrIntrinsic : public Intrinsic {
+public:
   static LogicalOrIntrinsic instance;
+
+private:
   LogicalOrIntrinsic() : Intrinsic("infixLogicalOr") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -329,7 +332,10 @@ class AtomicCasIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Flags.apply intrinsic
 class FlagsApplyIntrinsic : public Intrinsic {
+public:
   static FlagsApplyIntrinsic instance;
+
+private:
   FlagsApplyIntrinsic() : Intrinsic("tart.core.Flags.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -338,7 +344,10 @@ class FlagsApplyIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Extern.apply intrinsic
 class ExternApplyIntrinsic : public Intrinsic {
+public:
   static ExternApplyIntrinsic instance;
+
+private:
   ExternApplyIntrinsic() : Intrinsic("tart.core.Extern.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -356,7 +365,10 @@ class LinkageNameApplyIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // EntryPoint.apply intrinsic
 class EntryPointApplyIntrinsic : public Intrinsic {
+public:
   static EntryPointApplyIntrinsic instance;
+
+private:
   EntryPointApplyIntrinsic() : Intrinsic("tart.core.EntryPoint.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -383,7 +395,10 @@ class GenerateStackTraceApplyIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Unsafe.apply intrinsic
 class UnsafeApplyIntrinsic : public Intrinsic {
+public:
   static UnsafeApplyIntrinsic instance;
+
+private:
   UnsafeApplyIntrinsic() : Intrinsic("tart.core.Unsafe.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -401,7 +416,10 @@ class CoalesceApplyIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // Reflect.apply intrinsic
 class ReflectApplyIntrinsic : public Intrinsic {
+public:
   static ReflectApplyIntrinsic instance;
+
+private:
   ReflectApplyIntrinsic() : Intrinsic("tart.reflect.Reflect.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;
@@ -428,7 +446,10 @@ class ThreadLocalApplyIntrinsic : public Intrinsic {
 // -------------------------------------------------------------------
 // TraceMethod.apply intrinsic
 class TraceMethodApplyIntrinsic : public Intrinsic {
+public:
   static TraceMethodApplyIntrinsic instance;
+
+private:
   TraceMethodApplyIntrinsic() : Intrinsic("tart.gc.TraceMethod.apply") {}
   Expr * eval(const SourceLocation & loc, Module * callingModule, const FunctionDefn * method,
       Expr * self, const ExprList & args, Type * expectedReturn) const;

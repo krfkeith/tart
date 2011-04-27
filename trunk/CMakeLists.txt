@@ -3,6 +3,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(TART)
 
+set(TART_VERSION 0)
+set(TART_MAJOR_REVISION 1)
+set(TART_MINOR_REVISION 0)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(PROFILE_TARTC 0)
 set(PROFILE_TARTLN 0)
@@ -97,9 +101,9 @@ check_type_size("void*" SIZEOF_VOID_PTR)
 find_program(DSYMUTIL dsymutil)
 
 # Directory paths for installed libraries
-file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/static  TART_INSTALL_DIR_LIB_STATIC)
-file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/linker  TART_INSTALL_DIR_LIB_PLUGIN)
-file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/bc      TART_INSTALL_DIR_LIB_BC)
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/tart/static       TART_INSTALL_DIR_LIB_STATIC)
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/tart/plugin       TART_INSTALL_DIR_LIB_PLUGIN)
+file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/lib/tart/bc/libstd.bc TART_INSTALL_DIR_LIB_STD_BC)
 
 # Generate the config.h file
 configure_file(

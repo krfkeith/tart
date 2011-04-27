@@ -13,6 +13,7 @@ class TartStyle(Style):
     Name.Class:             'bold #074',
     Name.Variable:          '#000',
     Name.Builtin.Pseudo:    'bold #80c',
+    Name.Attribute:         'bold #40a',
     String:                 '#551',
     Generic.Error:          'bold #c00',
   }

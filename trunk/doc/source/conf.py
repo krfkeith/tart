@@ -136,7 +136,8 @@ htmlhelp_basename = 'Tartdoc'
 # ------------------------
 
 def setup(app):
-    app.add_description_unit('interface', 'interface', 'pair: %s; interface')
-    app.add_description_unit('statement', 'stmt', 'pair: %s; statement')
-    app.add_description_unit('operator', 'oper', 'pair: %s; operator')
-    app.add_description_unit('macro', 'macro', 'pair: %s; macro')
+  app.add_description_unit('operator', 'oper', 'pair: %s; operator')
+  app.add_crossref_type('interface', 'interface', 'pair: %s; interface')
+  app.add_crossref_type('statement', 'stmt', 'pair: %s; statement')
+  app.add_crossref_type('macro', 'macro', 'pair: %s; macro')
+  app.add_crossref_type('kwd', 'kw', 'pair: %s; keyword')

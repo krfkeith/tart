@@ -274,9 +274,14 @@ Constant * CodeGenerator::genMethodArray(const MethodList & methods) {
       if (method->isExtern()) {
         DASSERT_OBJ(method->isSingular(), method);
         methodVal = genFunctionValue(method);
-      } else {
-        // TODO: Replace this with call to throw an exception.
+      } else if (method->isUndefined()) {
+        methodVal = genCallableDefn(method);
+      } else if (method->isAbstract()) {
         methodVal = ConstantPointerNull::get(methodPtrType_);
+      } else if (method->mdNode() != NULL) {
+        methodVal = genFunctionValue(method);
+      } else {
+        diag.fatal(method) << "Method with no body: " << method;
       }
     } else {
       DASSERT_OBJ(method->isSingular(), method);
@@ -630,7 +635,7 @@ const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
 }
 
 llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
-  const std::string & invokeName = fnType->invokeName();
+  llvm::StringRef invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
   if (invokeFn != NULL) {
     return invokeFn;

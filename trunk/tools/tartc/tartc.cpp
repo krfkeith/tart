@@ -14,28 +14,38 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Support/FileSystem.h"
+
 #include "llvm/Target/TargetSelect.h"
 
+#include "config_paths.h"
+
 using namespace tart;
+using namespace llvm;
+using namespace llvm::sys;
 
 // Global options
 
-static llvm::cl::opt<bool>
-Stats("showstats", llvm::cl::desc("Print performance metrics and statistics"));
+static cl::opt<bool>
+Stats("showstats", cl::desc("Print performance metrics and statistics"));
 
-static llvm::cl::list<std::string>
-ModulePaths("i", llvm::cl::Prefix, llvm::cl::desc("Module search path"));
+static cl::list<std::string>
+ModulePaths("i", cl::Prefix, cl::desc("Module search path"));
 
-static llvm::cl::list<std::string>
-InputFilenames(llvm::cl::Positional, llvm::cl::desc("<input files>"));
+static cl::list<std::string>
+InputFilenames(cl::Positional, cl::desc("<input files>"));
+
+static cl::opt<bool>
+StdInc("stdinc", cl::init(true),
+    cl::desc("Include the standard libraries on the module search path"));
 
 int main(int argc, char **argv) {
-  llvm::sys::PrintStackTraceOnErrorSignal();
-  llvm::cl::ParseCommandLineOptions(argc, argv, " tart\n");
-  llvm::PrettyStackTraceProgram X(argc, argv);
-  //llvm::llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
+  PrintStackTraceOnErrorSignal();
+  cl::ParseCommandLineOptions(argc, argv, " tart\n");
+  PrettyStackTraceProgram X(argc, argv);
+  //llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
-  llvm::InitializeAllTargets();
+  InitializeAllTargets();
 
   // Requires at least one input file
   if (InputFilenames.empty()) {
@@ -44,13 +54,19 @@ int main(int argc, char **argv) {
   }
 
   GC::init();
-  //GC::setDebugLevel(1);
 
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
     const std::string &modPath = ModulePaths[i];
     //fprintf(stderr, "Module path: %s\n", modPath.c_str());
     PackageMgr::get().addImportPath(modPath);
+  }
+
+  if (StdInc) {
+    bool exists = false;
+    if (fs::exists(TART_INSTALL_DIR_LIB_STD_BC, exists) == errc::success && exists) {
+      PackageMgr::get().addImportPath(TART_INSTALL_DIR_LIB_STD_BC);
+    }
   }
 
   // Now get the system classes we will need.

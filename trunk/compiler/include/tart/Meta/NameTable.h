@@ -30,6 +30,18 @@ struct TagInfo {
 };
 
 /// -------------------------------------------------------------------
+/// Tag definitions for module symbols.
+
+enum NameTag {
+  // The high bit of the first byte indicates whether the symbol is
+  // a simple or compound symbol. A simple name tag contains an
+  // index into the string table for the module. A compound name tag
+  // contains a pair of indices into the name table, representing
+  // a dotted pair of names.
+  COMPOUND_NAME_FLAG = 0x01,
+};
+
+/// -------------------------------------------------------------------
 /// Class used to build the module constants object.
 
 class NameTable {
