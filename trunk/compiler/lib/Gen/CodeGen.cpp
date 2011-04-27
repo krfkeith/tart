@@ -471,7 +471,7 @@ void CodeGenerator::addModuleDependencies() {
     }
 
     irModule_->getOrInsertNamedMetadata("tart.module_deps")->addOperand(
-        MDNode::get(context_, deps.data(), deps.size()));
+        MDNode::get(context_, deps));
   }
 }
 

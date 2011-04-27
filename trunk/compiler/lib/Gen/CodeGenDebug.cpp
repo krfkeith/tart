@@ -47,8 +47,6 @@ static unsigned typeEncoding(TypeId id) {
     return dwarf::DW_ATE_signed;
   } else if (isUnsignedIntegerTypeId(id)) {
     return dwarf::DW_ATE_unsigned;
-  } else if (id == TypeId_Void) {
-    return dwarf::DW_ATE_boolean;
   } else if (id == TypeId_Null) {
     return dwarf::DW_ATE_address;
   }
@@ -348,9 +346,12 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
 DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   /// createBasicType - create a basic type like int, float, etc.
+  if (type->isVoidType()) {
+    return DIType();
+  }
   const llvm::Type * irType = type->irType();
   DIType di = diBuilder_.createBasicType(
-      type->typeDefn()->qualifiedName().c_str(),
+      type->typeDefn()->name(),
       getSizeOfInBits(irType),
       getAlignOfInBits(irType),
       typeEncoding(type->typeId()));
@@ -400,7 +401,7 @@ DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memb
   offset = align(offset, memberAlign);
   DASSERT(dbgFile_.Verify());
   DIType result = diBuilder_.createMemberType(
-      name.str().c_str(),
+      name,
       dbgFile_,
       sourceLine,
       memberSize, memberAlign, offset, 0,
@@ -469,7 +470,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
   }
 
   DIType di;
-  if (type->typeClass() == Type::Class) {
+  if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
     di = diBuilder_.createClassType(
         genDefnScope(td),
         td->linkageName(),
