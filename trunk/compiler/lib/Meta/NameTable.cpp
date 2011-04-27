@@ -167,7 +167,7 @@ void NameTable::writeStringTable(llvm::raw_ostream & out) {
 #if 0
     diag.debug() << "Simple name: " << name << " " << (*it)->index();
 #endif
-    out << VarInt(name.size()) << name;
+    out << VarInt32(name.size()) << name;
   }
   out.flush();
 }
@@ -177,7 +177,7 @@ void NameTable::writeCompoundNameTable(llvm::raw_ostream & out) {
   for (CompoundNameArray::iterator it = sortedCompoundNames_.begin();
       it != sortedCompoundNames_.end(); ++it) {
     CompoundName * name = *it;
-    out << VarInt(name->first()->encodedIndex()) << VarInt(name->second()->encodedIndex());
+    out << VarInt32(name->first()->encodedIndex()) << VarInt32(name->second()->encodedIndex());
   }
   out.flush();
 }

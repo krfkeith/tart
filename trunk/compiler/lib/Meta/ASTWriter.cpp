@@ -247,7 +247,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
     case ASTNode::LitString: {
       const ASTStringLiteral * lit = static_cast<const ASTStringLiteral *>(ast);
       write(meta::AST::CONST_STRING);
-      stream_ << VarInt(lit->value().size());
+      stream_ << VarInt32(lit->value().size());
       stream_ << lit->value();
       break;
     }
@@ -926,14 +926,14 @@ void ASTWriter::writeQualId(llvm::StringRef id) {
     stream_ << VarInt(it->second);
   } else {
     write(meta::AST::QID_DEF);
-    stream_ << VarInt(id.size());
+    stream_ << VarInt32(id.size());
     stream_ << id;
     idMap_[id] = nextIndex_++;
   }
 }
 
 void ASTWriter::writeStr(llvm::StringRef str) {
-  stream_ << VarInt(str.size());
+  stream_ << VarInt32(str.size());
   stream_ << str;
 }
 

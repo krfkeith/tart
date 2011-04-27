@@ -17,8 +17,8 @@ namespace tart {
 namespace {
   // A 4095 character line, 100k lines per file ought to be long enough
   const uint32_t COL_BITS = 12;
-  const uint32_t COL_MAX = 0x0fff;
-  const uint32_t LINE_MAX = 0x000fffff;
+  const uint32_t MAX_COL_NUM = 0x0fff;
+  const uint32_t MAX_LINE_NUM = 0x000fffff;
 }
 
 // -------------------------------------------------------------------
@@ -147,17 +147,17 @@ void ArchiveEntry::trace() const {
 TokenPosition ArchiveEntry::tokenPosition(const SourceLocation & loc) {
   TokenPosition result;
   result.beginLine = loc.begin >> COL_BITS;
-  result.beginCol = loc.begin & COL_MAX;
+  result.beginCol = loc.begin & MAX_COL_NUM;
   result.endLine = loc.end >> COL_BITS;
-  result.endCol = loc.end & COL_MAX;
+  result.endCol = loc.end & MAX_COL_NUM;
   return result;
 }
 
 void ArchiveEntry::encodeLocation(const TokenPosition & pos, SourceLocation & loc) {
-  uint32_t beginLine = std::min(pos.beginLine, LINE_MAX);
-  uint32_t beginCol = std::min(pos.beginCol, COL_MAX);
-  uint32_t endLine = std::min(pos.endLine, LINE_MAX);
-  uint32_t endCol = std::min(pos.endCol, COL_MAX);
+  uint32_t beginLine = std::min(pos.beginLine, MAX_LINE_NUM);
+  uint32_t beginCol = std::min(pos.beginCol, MAX_COL_NUM);
+  uint32_t endLine = std::min(pos.endLine, MAX_LINE_NUM);
+  uint32_t endCol = std::min(pos.endCol, MAX_COL_NUM);
   loc.begin = (beginLine << COL_BITS) + beginCol;
   loc.end = (endLine << COL_BITS) + endCol;
 }

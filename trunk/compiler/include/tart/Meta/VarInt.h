@@ -72,8 +72,8 @@ private:
 
 inline VarInt32 VarInt( int32_t value) { return VarInt32(uint32_t(value)); }
 inline VarInt32 VarInt(uint32_t value) { return VarInt32(value); }
-inline VarInt64 VarInt(uint64_t value) { return VarInt64(uint64_t(value)); }
 inline VarInt64 VarInt( int64_t value) { return VarInt64(value); }
+inline VarInt64 VarInt(uint64_t value) { return VarInt64(uint64_t(value)); }
 
 } // namespace tart
 

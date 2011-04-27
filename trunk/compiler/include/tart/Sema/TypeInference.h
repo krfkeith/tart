@@ -196,6 +196,8 @@ public:
     , rank_(src.rank_)
   {}
 
+  virtual ~ConstraintSite() {}
+
   const ConstraintSite & operator=(const ConstraintSite & src) {
     expr_ = src.expr_;
     rank_ = src.rank_;
