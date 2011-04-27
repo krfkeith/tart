@@ -1,0 +1,17 @@
+import tart.testing.Test;
+import tart.atomic.AtomicInt;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(AtomicTest);
+}
+
+class AtomicTest : Test {
+  def testAtomicInt {
+    var a = AtomicInt[int32](0);
+    assertFalse(a.cas(1, 1));
+    assertEq(0, a.value);
+    assertTrue(a.cas(0, 1));
+    assertEq(1, a.value);
+  }
+}

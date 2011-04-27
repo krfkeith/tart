@@ -1,0 +1,49 @@
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+import tart.text.encodings.UTF8;
+import tart.text.encodings.InvalidCharacterError;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  testUTF8CharLength();
+  testUTF8InvalidCharLength();
+  testUTF8Encode();
+  return 0;
+}
+
+def testUTF8CharLength() {
+  let encoder = Codecs.UTF_8;
+  Debug.assertEq(3, encoder.encodedLength(['a', 'b', 'c'], 0, 3));
+  Debug.assertEq(1, encoder.encodedLength(['a'], 0, 1));
+  Debug.assertEq(1, encoder.encodedLength(['\u7f'], 0, 1));
+  Debug.assertEq(2, encoder.encodedLength(['\u80'], 0, 1));
+  Debug.assertEq(2, encoder.encodedLength(['\u7ff'], 0, 1));
+  Debug.assertEq(3, encoder.encodedLength(['\u800'], 0, 1));
+  Debug.assertEq(3, encoder.encodedLength(['\uffff'], 0, 1));
+  Debug.assertEq(4, encoder.encodedLength(['\U10000'], 0, 1));
+  Debug.assertEq(4, encoder.encodedLength(['\U10ffff'], 0, 1));
+  Debug.assertEq(11, encoder.encodedLength(['\u2100', '\U21000', '\U10000'], 0, 3));
+}
+
+def testUTF8InvalidCharLength() {
+  Debug.assertEq(1, UTF8(UTF8.ErrorAction.REPLACE).encodedLength(['\U200000'], 0, 1));
+  Debug.assertEq(0, UTF8(UTF8.ErrorAction.SKIP).encodedLength(['\U200000'], 0, 1));
+
+  try {
+    UTF8(UTF8.ErrorAction.ABORT).encodedLength(['\U200000'], 0, 1);
+    Debug.fail("Failed to throw an exception for invalid input char.");
+  } catch e:InvalidCharacterError {}
+}
+
+def testUTF8Encode() {
+  assertEncodingEq("abc", ['a', 'b', 'c']);
+}
+
+def assertEncodingEq(expected:String, input:char[]) {
+  let encoder = Codecs.UTF_8;
+  let buffer = ubyte[](expected.size);
+  let length = encoder.encode(buffer, 0, input, 0, input.size);
+  Debug.assertEq(expected.size, int32(length));
+  let s = String(buffer);
+  Debug.assertEq(expected, s);
+}

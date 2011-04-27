@@ -1,0 +1,203 @@
+import tart.collections.Collection;
+
+/** A mutable, extensible string. */
+ /* : public Iterable[char] */
+public final class StringBuilder {
+  private {
+    var value:char[];
+    var _size:int;
+
+		/** Expand the size of the buffer, leaving room for new elements at the end. */
+    def grow(amount:int) {
+      let newSize = self._size + amount;
+      if value.size < newSize {
+        let newValue = char[](newSize + newSize / 2 + 16);
+        char[].copyElements(newValue, 0, value, 0, self._size);
+        value = newValue;
+      }
+
+      self._size = newSize;
+    }
+
+		/** Expand the size of the buffer, leaving room for new elements at position 'insertPos'. */
+    def grow(amount:int, insertPos:int) {
+      let remaining = self._size - insertPos;
+      // TODO: This could be more efficient. We're copying some chars twice.
+      grow(amount);
+      char[].copyElements(value, insertPos + amount, value, insertPos, remaining);
+    }
+  }
+
+  /** Construct an empty StringBuilder. */
+  def construct() {
+    value = char[](0);
+    self._size = 0;
+  }
+
+  /** Construct an empty StringBuilder.
+      Parameters:
+        reservedSize - The reserved size of the buffer, in characters.
+   */
+  def construct(reservedSize:int) {
+    value = char[](reservedSize);
+    self._size = 0;
+  }
+
+  /** Construct a StringBuilder from an existing String. */
+  def construct(str:String, start:int = 0, count:int = int.maxVal) {
+    value = str.toCharArray(start, count);
+    self._size = value.size;
+  }
+
+  /** Construct a StringBuilder from a character array. */
+  def construct(chars:char[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkIndex(count >= 0);
+    start = Math.min(start, chars.size);
+    count = Math.min(count, chars.size - start);
+    value = char[](count);
+    char[].copyElements(value, 0, chars, start, count);
+    self._size = count;
+  }
+
+  /** The number of characters in the buffer. */
+  def size:int {
+    get { return self._size; }
+    set {
+      // We can make the length shorter, but not longer.
+      self._size = Math.clamp(value, 0, self._size);
+    }
+  }
+
+  /** Append a single character to the buffer.
+      Parameters:
+        c: The character to append.
+    */
+  def append(c:char) {
+    let n = self._size;
+    grow(1);
+    value[n] = c;
+  }
+
+  /** Append all or part of a character array to the buffer. */
+  def append(c:char[], start:int = 0, count:int = int.maxVal) {
+    insert(self._size, c, start, count);
+  }
+
+  /** Append all or part of a String to the buffer. */
+  def append(s:String, start:int = 0, count:int = int.maxVal) {
+    append(s.toCharArray(), start, count);
+  }
+
+  def append(s:Collection[char]) {
+    insert(self._size, s);
+  }
+
+  def append(s:Iterator[char]) {
+    insert(self._size, s);
+  }
+
+  def insert(insertPos:int, c:char) {
+    grow(1, insertPos);
+    value[insertPos] = c;
+  }
+
+  /** Insert all or part of a character array to the buffer at position 'insertPos'. */
+  def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(insertPos >= 0 and insertPos <= self._size);
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(start >= 0);
+    if start < chars.size {
+      count = Math.min(count, chars.size - start);
+      if count > 0 {
+        grow(count, insertPos);
+        char[].copyElements(value, insertPos, chars, start, count);
+      }
+    }
+  }
+
+  /** Append all or part of a String to the buffer at position 'insertPos'.
+
+      Parameters:
+        insertPos: Where to insert the characters.
+        src: The source String.
+        start: The start position within the source String. This will be clamped to
+          the end of the source string.
+        count: The number of characters to insert. This will be clamped to the number
+          of characters actually available.
+
+      Exceptions:
+        IndexOutOfRangeException: If 'count' or 'start' are less than zero, or if the
+          insertPos is outside of the range of the buffer.
+   */
+  def insert(insertPos:int, src:String, start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(insertPos >= 0 and insertPos <= self._size);
+    let chars = src.toCharArray(start, count);
+    if chars.size > 0 {
+      count = Math.min(count, src.size);
+      grow(count, insertPos);
+      char[].copyElements(value, insertPos, chars, 0, chars.size);
+    }
+  }
+
+  def insert(insertPos:int, s:Collection[char]) {
+    if s.size > 0 {
+      grow(s.size, insertPos);
+      for c in s {
+        value[insertPos++] = c;
+      }
+    }
+  }
+
+  def insert(insertPos:int, s:Iterator[char]) {
+    match s {
+      as sequence:HasLength {
+        grow(sequence.length, insertPos);
+        for c in s {
+          value[insertPos++] = c;
+        }
+      } else {
+        for c in s {
+          insert(insertPos++, c);
+        }
+      }
+    }
+  }
+
+  /** Remove the character at position 'n'.
+      Parameters:
+        n: The index of the character to remove.
+   */
+  def remove(n:int) {
+    remove(n, 1);
+  }
+
+  /** Remove 'count' characters starting at position 'start'. If there are fewer than 'count'
+      elements following 'start', then all characters following 'start' will be removed.
+
+      Parameters:
+        start: The starting index of the range of characters to be removed.
+        count: The number of characters to remove.
+
+      Exceptions:
+        IndexOutOfRangeException: If 'count' or 'start' are less than zero.
+    */
+  def remove(start:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(start >= 0);
+    start = Math.min(start, self._size);
+    count = Math.min(count, self._size - start);
+    char[].copyElements(value, start, value, start + count, self._size - start - count);
+    _size -= count;
+  }
+
+  /** Remove all characters from the buffer. */
+  def clear() {
+    self._size = 0;
+  }
+
+  /** Return the character buffer as a String. */
+  override toString() -> String {
+    return String(value, 0, self._size);
+  }
+}

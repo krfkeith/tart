@@ -1,0 +1,8 @@
+/** Collection interface */
+interface Collection[%ItemType] : Iterable[ItemType] {
+  /** Return the number of items in the collection. */
+  def size:int { get; }
+
+  /** Return true if this collection has no items. */
+  def isEmpty:bool { get; }
+}

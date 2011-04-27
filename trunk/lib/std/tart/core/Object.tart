@@ -1,0 +1,75 @@
+import tart.annex.Intrinsic;
+import tart.core.Memory.Address;
+import tart.gc.TraceDescriptor;
+import tart.reflect.CompositeType;
+
+/** Base class of all reference types. */
+public class Object : Hashable {
+  private var __tib:Address[TypeInfoBlock];
+  private var __gcstate:int;
+
+  /** Compiler intrinsic used to create and initialize instances of
+      variable-length object types.
+
+      Type 'T' represents a user-defined type whose last data member
+      is a FlexibleArray. 'count' represents the number of elements
+      in the FlexibleArray.
+
+      '__flexAlloc' allocates a block of memory large enough to hold
+      the object, using the default allocator, then initializes its
+      TIB pointer to the TIB for 'T'.
+   */
+  @Intrinsic @Unsafe
+  protected static def __flexAlloc[%T](count:int) -> T;
+
+  /** Default constructor. */
+  def construct() {}
+
+  /** Implicitly convert non-object values to Boxed types. */
+  static def coerce[%T] (value:T) -> Object { return ValueRef[T](value); }
+  static def coerce(value:Object) -> Object { return value; }
+
+  /* Set a finalization callback to be called when this object has been deleted.
+      Note that the finalizer must *not* hold a reference to the object or it
+      will never be deleted. */
+  //final def addFinalizer(finalizer:fn) {}
+
+  /* Remove a finalizer that was registered via addFinalizer. */
+  //final def removeFinalizer(finalizer:fn) {}
+
+  /** Return the fully-qualified name of this object's class. */
+  final def __typeName:String { get { return __tib.type.qualifiedName; } }
+
+  /** Return trace descriptors for this object. */
+  final def __traceTable:Address[TraceDescriptor] { get { return __tib.traceTable; } }
+
+  /** Return the reflected type of this object. */
+  final def type:CompositeType { get {
+    return __tib.type;
+  } }
+
+  /** Return true if the type of this object is (or is a subtype of) 'baseType'. */
+  final def __typeHasBase(baseType:Address[TypeInfoBlock]) -> bool {
+    return Memory.deref(__tib).hasBase(baseType);
+  }
+
+  /** Return a string representation of this object. */
+  def toString() -> String {
+    return String.concat("<", __tib.type.qualifiedName, ">");
+  }
+
+  /** Return a hash value for this object. The base version hashes the object address. */
+  def computeHash -> uint64 {
+    return Hashing.hash(Memory.objectAddress(self));
+  }
+
+  /** Non-intrinsic version of typecast for object types. */
+  static def __downcast[%T <: Object](o:Object) -> T {
+    return typecast[T](o);
+  }
+}
+
+/** Default comparison for all classes. */
+public def infixEQ(o1:Object, o2:Object) -> bool {
+  return o1 is o2;
+}

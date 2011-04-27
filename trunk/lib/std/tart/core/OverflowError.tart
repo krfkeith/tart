@@ -1,0 +1,11 @@
+/** Exception that is thrown when an arithmetic, casting, or conversion operation on
+		a number produces a value that is outside the valid range for the number's type. */
+public class OverflowError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

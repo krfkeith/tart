@@ -1,0 +1,34 @@
+import tart.collections.List;
+import tart.core.Memory.Address;
+import tart.core.Memory.nullObject;
+
+/** Description of a property. */
+class Property : DataMember {
+  private {
+    let _getterFn:Address[void];
+    let _setterFn:Address[void];
+
+    undef construct;
+  }
+
+  final def isReadable:bool { get { return _getterFn is not null; } }
+  final def isWriteable:bool { get { return _setterFn is not null; } }
+
+  final def getValue(obj:Object) -> Object {
+    // TODO: Throw if not gettable
+    if selfType is not null {
+	    return type.getPropertyValue(selfType.downCast(obj), _getterFn);
+    } else {
+	    return type.getPropertyValue(nullObject(), _getterFn);
+    }
+  }
+
+  final def setValue(obj:Object, value:Object) {
+    // TODO: Throw if not settable
+    if selfType is not null {
+	    type.setPropertyValue(selfType.downCast(obj), _setterFn, value);
+    } else {
+	    type.setPropertyValue(nullObject(), _setterFn, value);
+    }
+  }
+}

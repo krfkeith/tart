@@ -1,0 +1,35 @@
+import tart.testing.Test;
+import tart.io.Console;
+import tart.io.StdFileStream;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ConsoleTest);
+}
+
+class ConsoleTest : Test {
+  def testConsoleProperties {
+    assertTrue(Console.cin.canRead);
+    assertFalse(Console.cin.canWrite);
+    assertFalse(Console.cin.canSeek);
+    assertEq(-1, Console.cin.size);
+    
+    assertFalse(Console.cout.canRead);
+    assertTrue(Console.cout.canWrite);
+    assertFalse(Console.cout.canSeek);
+    assertEq(-1, Console.cout.size);
+
+    assertFalse(Console.cerr.canRead);
+    assertTrue(Console.cerr.canWrite);
+    assertFalse(Console.cerr.canSeek);
+    assertEq(-1, Console.cerr.size);
+  }
+
+  def testConsoleOut {
+    Console.cerr.writeLn("Hello, world!");
+  }
+
+  def testChainedWrite {
+    Console.cerr.write("Hello,").writeLn(" world!");
+  }
+}
