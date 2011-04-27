@@ -341,7 +341,7 @@ DIType CodeGenerator::genDIType(const Type * type) {
       break;
   }
 
-  DASSERT(result.Verify());
+  //DASSERT(result.Verify());
   dbgTypeMap_[type] = result;
   return result;
 }
