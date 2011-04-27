@@ -50,7 +50,6 @@ SystemClass Builtins::typeThrowable("tart.core.Throwable");
 SystemClass Builtins::typeFunction("tart.core.Function");
 Type * Builtins::typeIterable;
 Type * Builtins::typeIterator;
-SystemClass Builtins::typeUnsupportedOperationError("tart.core.UnsupportedOperationError");
 
 SystemClass Builtins::typeType("tart.reflect.Type");
 SystemClass Builtins::typePrimitiveType("tart.reflect.PrimitiveType");
@@ -88,10 +87,11 @@ SystemNamespaceMember<FunctionDefn> gc_alloc(Builtins::nsGC, "alloc");
 
 Type * Builtins::typeUnwindException;
 
-TypeAlias Builtins::typeAliasString = NULL;
+TypeAlias Builtins::typeAliasString(NULL, NULL);
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
+FunctionDefn * Builtins::funcUndefinedMethod;
 
 void Builtins::init() {
   static GCPointerRoot moduleRoot(&module);
@@ -111,6 +111,7 @@ void Builtins::init() {
 
   DASSERT(module.module() != NULL);
   ScopeBuilder::createScopeMembers(&module);
+  module.passes().finish(Module::ScopeCreationPass);
 }
 
 Module * Builtins::loadSystemModule(const char * name) {
@@ -119,12 +120,16 @@ Module * Builtins::loadSystemModule(const char * name) {
     return mod;
   }
 
-  diag.fatal() << "Error: Can't load builtin definition for '" << name << "'";
+  diag.fatal() << "Can't locate builtin module for '" << name << "'";
   abort();
 }
 
 Defn * Builtins::loadSystemDef(const char * name) {
   Module * mod = loadSystemModule(name);
+  if (mod->primaryDefn() == NULL) {
+    diag.fatal(mod) << "Can't load builtin definition for '" << name << "'";
+    abort();
+  }
   return mod->primaryDefn();
 }
 
@@ -166,7 +171,6 @@ void Builtins::loadSystemClasses() {
   typeObject.get();
   typeString.get();
   typeThrowable.get();
-  typeUnsupportedOperationError.get();
   typeIntrinsicAttribute.get();
   typeTraceAction.get();
 
@@ -176,6 +180,9 @@ void Builtins::loadSystemClasses() {
   // Get the function that tests for a type
   funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "hasBase");
   funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastError");
+
+  // Get the function that throws an undefined method error
+  funcUndefinedMethod = getMember<FunctionDefn>(typeObject.get(), "__undefinedMethod");
 
   // Get the low-level exception structure
   typeUnwindException = getMember<TypeDefn>(typeThrowable.get(), "UnwindException")->typeValue();

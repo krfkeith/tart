@@ -35,10 +35,16 @@ public:
     CALLERS     = (1<<2),
   };
 
+  enum Retention {
+    NONE,
+    RUNTIME,
+    RUNTIME_ITERABLE,
+  };
+
   AttributeInfo()
     : target_(0)
     , propagation_(0)
-    , retained_(false)
+    , retention_(NONE)
   {
   }
 
@@ -47,8 +53,9 @@ public:
   void setTarget(short value) { target_ = value; }
 
   /** Whether this attribute is retained in the compiled binary. */
-  bool isRetained() const { return retained_; }
-  void setRetained(bool value) { retained_ = value; }
+  short retention() const { return retention_; }
+  void setRetention(short value) { retention_ = value; }
+  bool isRetained() const { return retention_ != NONE; }
 
   /** How this attribute is propagated. */
   short propagation() const { return propagation_; }
@@ -60,7 +67,7 @@ public:
 private:
   short target_;
   short propagation_;
-  bool retained_;
+  short retention_;
 };
 
 } // namespace tart

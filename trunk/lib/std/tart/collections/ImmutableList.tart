@@ -1,10 +1,11 @@
 import tart.core.Math.max;
 import tart.core.Memory.arrayCopy;
+import tart.core.Memory.Address;
 
 /** A list type with a fixed set of elements.
     InheritDoc: members
  */
-final class ImmutableList[%ElementType] : List[ElementType] {
+final class ImmutableList[%ElementType] : List[ElementType], Copyable[ElementType] {
   private {
     var data:ElementType[];
   }
@@ -19,18 +20,12 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     self.data = data;
   }
 
-  // TODO: Test
-  def add(e:ElementType) {
-    throw UnsupportedOperationError();
-  }
-
-  def insert(position:int, e:ElementType) {
-    throw UnsupportedOperationError();
-  }
-
-  def remove(index:int) {
-    throw UnsupportedOperationError();
-  }
+  undef add(e:ElementType) ;
+  undef addAll(collection:Collection[ElementType]);
+  undef insert(position:int, e:ElementType);
+  undef insertAll(position:int, collection:Collection[ElementType]);
+  undef remove(index:int);
+  undef clear();
 
   def [index:int]:ElementType {
     get {
@@ -40,10 +35,6 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     set {
       throw UnsupportedOperationError();
     }
-  }
-
-  def clear {
-    throw UnsupportedOperationError();
   }
 
   def size:int {
@@ -67,20 +58,22 @@ final class ImmutableList[%ElementType] : List[ElementType] {
     return self.data.iterate();
   }
 
+  def copyElements(dstAddr:Address[ElementType], srcOffset:int = 0, count:int = int.maxVal) {
+    self.data.copyElements(dstAddr, srcOffset, count);
+  }
+
+  /** Construct a new 'ImmutableList' from a variable number of elements. */
   static def of(elements:ElementType...) -> ImmutableList {
     return ImmutableList(elements);
   }
 
+  /** Construct a new 'ImmutableList' from a array ofelements. */
   static def copyOf(elements:ElementType[]) -> ImmutableList {
-    return ImmutableList(elements.copy());
+    return ImmutableList(Array.copyOf(elements));
   }
 
+  /** Construct a new 'ImmutableList' from a collection. */
   static def copyOf(elements:Collection[ElementType]) -> ImmutableList {
-    let data = Array[ElementType](elements.size);
-    var index = 0;
-    for element in elements {
-      data[index++] = element;
-    }
-    return ImmutableList(data);
+    return ImmutableList(Array.copyOf(elements));
   }
 }

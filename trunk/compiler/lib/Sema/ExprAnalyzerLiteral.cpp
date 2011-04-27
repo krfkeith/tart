@@ -192,6 +192,10 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
 }
 
 Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
+  if (expected == &AnyType::instance) {
+    expected = NULL;
+  }
+
   DefnList fnlist;
   if (lookupTemplateMember(fnlist, Builtins::typeArray->typeDefn(), "of", ast->location())) {
     DASSERT(fnlist.size() == 1);

@@ -24,7 +24,7 @@ public final class StringBuilder {
       let remaining = self._size - insertPos;
       // TODO: This could be more efficient. We're copying some chars twice.
       grow(amount);
-      char[].copyElements(value, insertPos + amount, value, insertPos, remaining);
+      value.moveElements(insertPos + amount, insertPos, remaining);
     }
   }
 

@@ -9,8 +9,8 @@
 #include "tart/Defn/Module.h"
 #endif
 
-#include <llvm/ADT/StringMap.h>
-#include <llvm/ADT/StringRef.h>
+#include "llvm/ADT/StringMap.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <vector>
 #include <list>
@@ -23,7 +23,7 @@ class Package;
 /// -------------------------------------------------------------------
 /// Represents a location where modules can be found.
 
-class Importer {
+class Importer : public GC {
 public:
   virtual bool load(llvm::StringRef qualifiedName, Module *& module) = 0;
   virtual ~Importer() {}
@@ -35,18 +35,37 @@ public:
 class DirectoryImporter : public Importer {
 public:
   DirectoryImporter(llvm::StringRef path) : path_(path) {}
+
+  // Overrides
+
   bool load(llvm::StringRef qualifiedName, Module *& module);
+  void trace() const {}
 
 private:
   llvm::SmallString<128> path_;
 };
 
 /// -------------------------------------------------------------------
-/// An import path which points to a library.
+/// An import path which points to a library archive.
 
 class ArchiveImporter : public Importer {
 public:
+  ArchiveImporter(llvm::StringRef path)
+    : path_(path)
+    , archive_(NULL)
+    , archiveSource_(NULL)
+    , valid_(true) {}
+
+  // Overrides
+
   bool load(llvm::StringRef qualifiedName, Module *& module);
+  void trace() const { safeMark(archiveSource_); }
+
+private:
+  llvm::SmallString<128> path_;
+  llvm::Module * archive_;
+  ProgramSource * archiveSource_;
+  bool valid_;
 };
 
 /// -------------------------------------------------------------------
@@ -62,8 +81,7 @@ public:
   void addModule(Module * mod);
 
   /** Given a fully-qualified name to a symbol, load the module containing
-      that symbol and return it. Optionally returns the number of
-      prefix characters that were actually used to locate the module.
+      that symbol and return it.
   */
   Module * getModuleForImportPath(llvm::StringRef importPath);
 
@@ -84,7 +102,7 @@ private:
   ModuleMap modules_;
 
   // Set of directories to search for modules.
-  PathList importPaths_;
+  PathList importers_;
 
   // The singleton instance.
   static PackageMgr instance_;

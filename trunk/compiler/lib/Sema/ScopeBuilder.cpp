@@ -2,17 +2,23 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Sema/ScopeBuilder.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/EnumType.h"
-#include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/NamespaceDefn.h"
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/Module.h"
 #include "tart/Defn/Template.h"
-#include "tart/Common/Diagnostics.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/EnumType.h"
+#include "tart/Type/FunctionType.h"
+
+#include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeAnalyzer.h"
+
+#include "tart/Common/Diagnostics.h"
+
+#include "tart/Meta/MDReader.h"
+
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
@@ -20,7 +26,13 @@ namespace tart {
 typedef ASTDeclList::const_iterator decl_iterator;
 
 void ScopeBuilder::createScopeMembers(Defn * parent) {
-  createScopeMembers(parent, parent->astMembers());
+  if (parent->mdNode()) {
+    // Create definitions from Metadata Node.
+    MDReader(parent->module(), parent).readMembers(parent);
+  } else {
+    // Create definitions from AST
+    createScopeMembers(parent, parent->astMembers());
+  }
 }
 
 void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
@@ -30,34 +42,32 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
       TypeDefn * tdef = static_cast<TypeDefn *>(parent);
       Type * type = tdef->typeValue();
       switch (type->typeClass()) {
-        case Type::Primitive:
         case Type::Class:
         case Type::Struct:
         case Type::Interface:
         case Type::Protocol:
-          createScopeMembers(type->memberScope(), parent, decs);
+          createScopeMembers(type->memberScope(), parent, decs, Storage_Instance);
           break;
 
+        case Type::Primitive:
         case Type::Enum:
         case Type::NAddress:
         case Type::NArray:
         case Type::Alias:
-          DFAIL("Unimplemented");
-          break;
-
         default:
-          DFAIL("Bad");
+          DFAIL("createScopeMembers: Invalid parent type");
       }
 
       break;
     }
 
     case Defn::Namespace:
-      createScopeMembers(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, decs);
+      createScopeMembers(&static_cast<NamespaceDefn *>(parent)->memberScope(), parent, decs,
+          Storage_Global);
       break;
 
     case Defn::Mod:
-      createScopeMembers(static_cast<Module *>(parent), parent, decs);
+      createScopeMembers(static_cast<Module *>(parent), parent, decs, Storage_Global);
       break;
 
     case Defn::Property:
@@ -74,10 +84,9 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
       break;
 
     case Defn::ExplicitImport:
-    //case Defn::TypeParameter:
     case Defn::DefnTypeCount:
     case Defn::MacroArg:
-      DFAIL("IllegalState");
+      DFAIL("createScopeMembers: Invalid parent type");
   }
 }
 
@@ -99,6 +108,7 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
       getter->setFlag(FunctionDefn::Override);
     }
     getter->setParentDefn(prop);
+    getter->setStorageClass(prop->storageClass());
     if (getter->templateSignature() == NULL) {
       getter->copyTrait(prop, Defn::Singular);
     }
@@ -120,6 +130,7 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
       setter->setFlag(FunctionDefn::Override);
     }
     setter->setParentDefn(prop);
+    setter->setStorageClass(prop->storageClass());
     if (setter->templateSignature() == NULL) {
       setter->copyTrait(prop, Defn::Singular);
     }
@@ -127,20 +138,21 @@ void ScopeBuilder::createAccessors(PropertyDefn * prop) {
 }
 
 void ScopeBuilder::createScopeMembers(
-    IterableScope * scope, Defn * parent, const ASTDeclList & decs) {
+    IterableScope * scope, Defn * parent, const ASTDeclList & decs, StorageClass scDefault) {
   for (decl_iterator it = decs.begin(); it != decs.end(); ++it) {
     const ASTDecl * de = *it;
     if (de->nodeType() == ASTNode::VarList) {
-      createScopeMembers(scope, parent, de->members());
+      createScopeMembers(scope, parent, de->members(), scDefault);
     } else {
-      createMemberDefn(scope, parent, de);
+      createMemberDefn(scope, parent, de, scDefault);
     }
   }
 
   checkNameConflicts(scope);
 }
 
-Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const ASTDecl * de) {
+Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const ASTDecl * de,
+    StorageClass scDefault) {
   DASSERT(scope != NULL);
   DASSERT(parentDefn != NULL);
 
@@ -152,7 +164,7 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
     }
   }
 
-  Defn * member = createDefn(scope, parentDefn->module(), de);
+  Defn * member = createDefn(scope, parentDefn->module(), de, scDefault);
   scope->addMember(member);
   member->setParentDefn(parentDefn);
   member->createQualifiedName(parentDefn);
@@ -163,11 +175,6 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
   if (parentDefn->isPartialInstantiation()) {
     member->addTrait(Defn::PartialInstantiation);
   }
-
-  //if (isa<ValueDefn>(member)) {
-  //  member->copyTrait(parentDefn, Defn::Final);
-  //}
-
   if (parentDefn->isSingular() && member->templateSignature() == NULL) {
     member->addTrait(Defn::Singular);
   }
@@ -177,9 +184,10 @@ Defn * ScopeBuilder::createMemberDefn(Scope * scope, Defn * parentDefn, const AS
 
 Defn * ScopeBuilder::createLocalDefn(Scope * scope, Defn * parent, const ASTDecl * ast) {
   DASSERT(scope != NULL);
-  Defn * defn = createDefn(scope, parent->module(), ast);
+  Defn * defn = createDefn(scope, parent->module(), ast, Storage_Local);
   checkVariableHiding(scope, defn);
   scope->addMember(defn);
+  DASSERT_OBJ((ast->modifiers().flags & Static) == 0, defn);
   defn->createQualifiedName(parent);
   if (defn->templateSignature() == NULL) {
     defn->addTrait(Defn::Singular);
@@ -189,9 +197,10 @@ Defn * ScopeBuilder::createLocalDefn(Scope * scope, Defn * parent, const ASTDecl
   return defn;
 }
 
-Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemplate * tp) {
+Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemplate * tp,
+    StorageClass scDefault) {
   DASSERT(scope != NULL);
-  Defn * body = createDefn(scope, m, tp->body());
+  Defn * body = createDefn(scope, m, tp->body(), scDefault);
   Scope * parentScope = scope;
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(body)) {
     TemplateSignature * tsig = TemplateSignature::get(body, NULL /*parentScope*/);
@@ -279,7 +288,10 @@ void ScopeBuilder::checkNameConflicts(IterableScope * scope) {
   }
 }
 
-Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast) {
+Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast, StorageClass sc) {
+  if (ast->modifiers().flags & Static) {
+    sc = Storage_Static;
+  }
   DASSERT(parent != NULL);
   switch (ast->nodeType()) {
     case ASTDecl::Class:
@@ -287,6 +299,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
     case ASTDecl::Interface:
     case ASTDecl::Protocol: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
+      tdef->setStorageClass(sc);
       Type::TypeClass tc;
 
       switch (int(ast->nodeType())) {
@@ -303,6 +316,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
 
     case ASTDecl::Enum: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
+      tdef->setStorageClass(Storage_Static);
       tdef->setTypeValue(new EnumType(tdef, parent));
       return tdef;
     }
@@ -313,33 +327,56 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast)
 
     #endif
 
-    case ASTDecl::Let:
-      return new VariableDefn(Defn::Let, m, static_cast<const ASTDecl *>(ast));
+    case ASTDecl::Let: {
+      VariableDefn * result = new VariableDefn(Defn::Let, m, static_cast<const ASTDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
-    case ASTDecl::Var:
-      return new VariableDefn(Defn::Var, m, static_cast<const ASTDecl *>(ast));
+    case ASTDecl::Var: {
+      VariableDefn * result = new VariableDefn(Defn::Var, m, static_cast<const ASTDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
-    case ASTDecl::Function:
-      return new FunctionDefn(Defn::Function, m, static_cast<const ASTFunctionDecl *>(ast));
+    case ASTDecl::Function: {
+      FunctionDefn * result = new FunctionDefn(
+          Defn::Function, m, static_cast<const ASTFunctionDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
-    case ASTDecl::Macro:
-      return new FunctionDefn(Defn::Macro, m, static_cast<const ASTFunctionDecl *>(ast));
+    case ASTDecl::Macro: {
+      FunctionDefn * result = new FunctionDefn(
+          Defn::Macro, m, static_cast<const ASTFunctionDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
-    case ASTDecl::Prop:
-      return new PropertyDefn(Defn::Property, m, static_cast<const ASTPropertyDecl *>(ast));
+    case ASTDecl::Prop: {
+      PropertyDefn * result = new PropertyDefn(
+          Defn::Property, m, static_cast<const ASTPropertyDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
-    case ASTDecl::Idx:
-      return new IndexerDefn(Defn::Indexer, m, static_cast<const ASTPropertyDecl *>(ast));
+    case ASTDecl::Idx: {
+      IndexerDefn * result = new IndexerDefn(
+          Defn::Indexer, m, static_cast<const ASTPropertyDecl *>(ast));
+      result->setStorageClass(sc);
+      return result;
+    }
 
     case ASTDecl::Template:
-      return createTemplateDefn(parent, m, static_cast<const ASTTemplate *>(ast));
+      return createTemplateDefn(parent, m, static_cast<const ASTTemplate *>(ast), sc);
 
     case ASTDecl::Namespace:
       return new NamespaceDefn(m, ast);
 
     case ASTDecl::TypeAlias: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
-      tdef->setTypeValue(new TypeAlias(NULL));
+      tdef->setStorageClass(Storage_Global);
+      tdef->setTypeValue(new TypeAlias(NULL, tdef));
       return tdef;
     }
 

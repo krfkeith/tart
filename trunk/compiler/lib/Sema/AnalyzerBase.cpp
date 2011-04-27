@@ -158,6 +158,23 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     out.push_back(expr);
     return true;
+  } else if (ast->nodeType() == ASTNode::QName) {
+    // A fully qualified, absolute path.
+    const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
+    llvm::StringRef name = ident->value();
+    size_t colon = name.rfind(':');
+    if (colon != name.npos) {
+      llvm::StringRef modName = name.substr(0, colon);
+      llvm::StringRef relName = name.substr(colon + 1, name.npos);
+      if (lookupNameInModule(out, modName, relName, loc)) {
+        return true;
+      }
+    } else if (lookupQName(out, ident->value(), loc)) {
+      return true;
+    }
+
+    diag.error(ast) << "Undefined symbol '" << ast << "'";
+    return false;
   } else {
     // It's not a name or anything like that.
     path.clear();
@@ -186,10 +203,57 @@ bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, SLC & loc) {
   return false;
 }
 
-bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * name, SLC & loc) {
+bool AnalyzerBase::lookupQName(ExprList & out, llvm::StringRef name, SLC & loc) {
+  if (importName(out, name, true, loc)) {
+    return true;
+  }
+
+  size_t dot = name.rfind('.');
+  if (dot == name.npos) {
+    // Try builtin definitions.
+    return findInScope(out, name, &Builtins::module, NULL, loc, NO_PREFERENCE);
+  }
+
+  ExprList lvals;
+  llvm::StringRef qual = name.substr(0, dot);
+  if (lookupQName(lvals, qual, loc)) {
+    if (lvals.size() > 1) {
+      diag.error(loc) << "Multiply defined symbol " << qual;
+      return false;
+    }
+
+    Expr * context = lvals.front();
+    if (findMemberOf(out, context, name.substr(dot + 1, name.npos), loc)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool AnalyzerBase::lookupNameInModule(ExprList & out, llvm::StringRef modName,
+    llvm::StringRef name, SLC & loc) {
+  DefnList primaries;
+  if (module_->import(modName, primaries, true)) {
+    DASSERT(!primaries.empty());
+    Module * m = primaries.front()->module();
+    size_t dot = name.rfind('.');
+    if (dot == name.npos) {
+      //m->createMembers();
+      return findInScope(out, name, m, NULL, loc, NO_PREFERENCE);
+    } else {
+      DFAIL("Implement");
+    }
+  }
+
+  return false;
+}
+
+bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, llvm::StringRef name, SLC & loc) {
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
     if (Module * m = dyn_cast<Module>(scopeName->value())) {
-      AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
+      //m->createMembers();
+      //AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
       if (findInScope(out, name, m, NULL, loc, NO_PREFERENCE)) {
         return true;
       }
@@ -272,7 +336,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, const char * nam
   return false;
 }
 
-bool AnalyzerBase::findInScope(ExprList & out, const char * name, const Scope * scope,
+bool AnalyzerBase::findInScope(ExprList & out, llvm::StringRef name, const Scope * scope,
     Expr * context, SLC & loc, MemberPreference pref) {
   DefnList defns;
   if (scope->lookupMember(name, defns, true)) {
@@ -312,8 +376,8 @@ bool AnalyzerBase::findInScope(ExprList & out, const char * name, const Scope * 
   return false;
 }
 
-bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef, const char * name,
-    SLC & loc) {
+bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef,
+    llvm::StringRef name, SLC & loc) {
   DefnList defns;
   if (lookupTemplateMember(defns, typeDef, name, loc)) {
     int numStaticDefns = 0;
@@ -340,7 +404,7 @@ bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef, 
   return false;
 }
 
-bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, const char * name,
+bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, llvm::StringRef name,
     SLC & loc) {
   DASSERT(typeDef->isTemplate());
   AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
@@ -364,8 +428,10 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     Expr * cb = ea.reduceTemplateArgExpr(*it, inferArgTypes);
     if (isErrorResult(cb)) {
-      return NULL;
+      return &Expr::ErrorVal;
     }
+
+    // This next section deals with converting normal expressions into type expressions.
 
     // Handle the case of a type argument that is a tuple type.
     if (TupleCtorExpr * tc = dyn_cast<TupleCtorExpr>(cb)) {
@@ -376,6 +442,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
       }
     }
 
+    // Handle the case of a type argument that is a type literal.
     const Type * typeArg = NULL;
     if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
       typeArg = dealias(ctype->value());
@@ -505,19 +572,13 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
   }
 }
 
-bool AnalyzerBase::importName(ExprList & out, const std::string & path, bool absPath, SLC & loc) {
+bool AnalyzerBase::importName(ExprList & out, llvm::StringRef path, bool absPath, SLC & loc) {
   if (module_ != NULL) {
     DefnList defns;
-    if (module_->import(path.c_str(), defns, absPath)) {
+    if (module_->import(path, defns, absPath)) {
       return getDefnListAsExprList(loc, defns, NULL, out);
     }
   }
-
-  //Module * m = PackageMgr::get().getModuleForImportPath(path);
-  //if (m != NULL) {
-  //  out.push_back(new ScopeNameExpr(loc, m));
-  //  return true;
-  //}
 
   return false;
 }
@@ -575,6 +636,8 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
     if (TypeLiteralExpr * tle = dyn_cast<TypeLiteralExpr>(*it)) {
       out.push_back(const_cast<Type *>(tle->value()));
+    } else if (isErrorResult(*it)) {
+      out.push_back(&BadType::instance);
     } else {
       numNonTypes++;
     }

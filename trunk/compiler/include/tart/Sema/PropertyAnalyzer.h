@@ -29,6 +29,7 @@ public:
   bool analyze(AnalysisTask task);
   bool runPasses(PropertyDefn::PassSet passesToRun);
   bool resolvePropertyType();
+  bool resolveAccessorType();
 };
 
 }

@@ -17,8 +17,13 @@
 #include "tart/Common/Formattable.h"
 #endif
 
-#include <llvm/ADT/SmallVector.h>
-#include <llvm/Constants.h>
+#ifndef LLVM_ADT_SMALLVECTOR_H
+#include "llvm/ADT/SmallVector.h"
+#endif
+
+#ifndef LLVM_CONSTANTS_H
+#include "llvm/Constants.h"
+#endif
 
 namespace tart {
 
@@ -58,7 +63,7 @@ public:
     DefLast = AnonClass,
 
     StmtFirst = Block,
-    StmtLast = Intrinsic
+    StmtLast = MatchAs
   };
 
 protected:
@@ -86,10 +91,16 @@ public:
   /** Produce a textual representation of this node and its children. */
   virtual void format(FormatStream & out) const;
 
+  /** True if this is an error node. */
+  bool isInvalid() const { return nodeType_ == Invalid; }
+
   // Overrides
 
   void trace() const { loc.trace(); }
-  static inline bool classof(const NodeType *) { return true; }
+  static inline bool classof(const ASTNode *) { return true; }
+
+  /** A placeholder node used to signal an error in parsing. */
+  static ASTNode INVALID;
 };
 
 /// -------------------------------------------------------------------
@@ -102,6 +113,12 @@ public:
   // Constructor needs to be public because we create static versions of this.
   ASTIdent(const SourceLocation & loc, const char * v)
     : ASTNode(Id, loc)
+    , value_(v)
+  {}
+
+  // Alternate version of the constructor used for qualified names.
+  ASTIdent(NodeType nt, const SourceLocation & loc, const char * v)
+    : ASTNode(nt, loc)
     , value_(v)
   {}
 
@@ -217,46 +234,6 @@ typedef ASTLiteral<llvm::APFloat, ASTNode::LitDouble> ASTDoubleLiteral;
 typedef ASTLiteral<std::string, ASTNode::LitString> ASTStringLiteral;
 typedef ASTLiteral<uint32_t, ASTNode::LitChar> ASTCharLiteral;
 typedef ASTLiteral<bool, ASTNode::LitBool> ASTBoolLiteral;
-
-/// -------------------------------------------------------------------
-/// A node which has a single fixed argument
-class ASTUnaryOp : public ASTNode {
-private:
-  ASTNode * arg_;
-
-public:
-  ASTUnaryOp(NodeType nt, const SourceLocation & loc, ASTNode * a)
-    : ASTNode(nt, loc)
-    , arg_(a)
-  {}
-
-  static ASTUnaryOp * get(NodeType nt, const SourceLocation & loc, ASTNode * arg = NULL) {
-    return new ASTUnaryOp(nt, loc, arg);
-  }
-
-  static ASTUnaryOp * get(NodeType nt, ASTNode * arg) {
-    return new ASTUnaryOp(nt, arg->location(), arg);
-  }
-
-  /** The single argument. */
-  const ASTNode * arg() const { return arg_; }
-  ASTNode * arg() { return arg_; }
-
-  // Overrides
-
-  void format(FormatStream & out) const;
-  void trace() const;
-  static inline bool classof(const ASTUnaryOp *) { return true; }
-  static inline bool classof(const ASTNode * ast) {
-    switch (ast->nodeType()) {
-      case ASTNode::Array:
-        return true;
-
-      default:
-        return false;
-    }
-  }
-};
 
 /// -------------------------------------------------------------------
 /// A node that contains one or more child nodes.

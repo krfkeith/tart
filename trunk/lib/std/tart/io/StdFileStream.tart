@@ -1,11 +1,12 @@
 import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
 import tart.text.encodings.Codec;
 import tart.text.encodings.Codecs;
 
 /** A stream which can read / write to a C stdio FILE handle. */
 final class StdFileStream : TextReader, TextWriter {
   struct FILE {}
-  
+
   private {
     var _file:Address[FILE];
     let _canRead:bool;
@@ -44,7 +45,7 @@ final class StdFileStream : TextReader, TextWriter {
   def read -> int32 {
     return _readByte(_file);
   }
-  
+
   def readCh -> char {
     return EOF;
   }
@@ -54,11 +55,11 @@ final class StdFileStream : TextReader, TextWriter {
   def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
     return 0;
   }
-  
+
   def read(buffer:char[], start:int = 0, length:int = int.maxVal) -> int {
     return 0;
   }
-  
+
   def readLn -> String {
     return "";
   }
@@ -80,7 +81,7 @@ final class StdFileStream : TextReader, TextWriter {
     start = Math.min(start, buffer.size);
     count = Math.min(count, buffer.size - start);
     if count > 0 {
-      IOError.checkResult(_writeBytes(_file, buffer.elementAddress(start), count));
+      IOError.checkResult(_writeBytes(_file, addressOf(buffer.data[start]), count));
     }
   }
 
@@ -110,7 +111,7 @@ final class StdFileStream : TextReader, TextWriter {
     if count > 0 {
       writeChars(text.toCharArray(int32(start), int32(count)), 0, count);
     }
-    
+
     return 0;
   }
 
@@ -153,40 +154,40 @@ final class StdFileStream : TextReader, TextWriter {
 
   /** Change the current read/write position of the stream. */
   //@Throws(IOError)
-  @Extern("StdFileStream_seek") 
+  @Extern("StdFileStream_seek")
   def seek(from:SeekFrom, offset:int64) -> int64;
-  
+
   /** True if we've reached the end of available input. */
   //@Throws(IOError)
   def atEnd: bool { get { return _atEnd(_file); } }
-  
+
   /** True if the stream supports reading. */
   def canRead:bool { get { return _canRead; } }
-  
+
   /** True if the stream supports writing. */
   def canWrite:bool { get { return _canWrite; } }
-  
+
   /** True if this stream supports seek operations. */
   def canSeek:bool { get { return _canSeek; } }
-  
+
   /** Returns the current position in the stream. */
   def position:int64 { get { return _position(_file); } }
-  
+
   /** Return the length of the stream, or -1 if indeterminate. */
   def size:int64 { get { return _length(_file); } }
-  
+
   /** Flush any pending writes. */
   //@Throws(IOError)
   def flush {
     IOError.checkResult(_flush(_file));
   }
-  
+
   /** Close the stream. */
   //@Throws(IOError)
   def close {
     IOError.checkResult(_close(_file));
   }
-  
+
   def acquire() {}
   def release() { close(); }
 }

@@ -213,7 +213,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     } else if _data.size > 0 {
       for i = 0; i < _size; ++i {
         if _data[i].key == key {
-          Memory.arrayMove(_data.elementAddress(i), _data.elementAddress(i+1), _size - i - 1);
+          _data.moveElements(i, i + 1, _size - i - 1);
           --_size;
           return true;
         }
@@ -249,7 +249,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     protected def construct(map:HashMap) {
       self._entries = map._data;
       self._index = 0;
-      self._maxIndex = cond(_entries.size <= 16, map._size, _entries.size);
+      self._maxIndex = if _entries.size <= 16 { map._size } else { _entries.size };
     }
   }
 

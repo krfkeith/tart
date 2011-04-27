@@ -186,6 +186,91 @@ public:
 private:
   TupleCtorExpr * tuple_;
 };
+
+/// -------------------------------------------------------------------
+/// A type constraint representing a set of possible alternative values
+/// which could be the result of expression. The goal will be to find
+/// a common type which fits all of them.
+
+class PHIConstraint : public TypeConstraint {
+public:
+  PHIConstraint(const Type * expected)
+    : TypeConstraint(PhiType)
+    , expected_(expected)
+    , common_(NULL)
+  {}
+
+  // Add a possible type.
+  void add(const Type * type);
+
+  // The set of input types
+  const ConstTypeList & types() const { return types_; }
+
+  // The common type of the input types
+  const Type * common() const { return common_; }
+  void setCommon(const Type * ty) const { common_ = ty; }
+
+  // The type we're attempting to assign to, which might be NULL.
+  const Type * expected() const { return expected_; }
+
+  // Overrides
+
+  void expand(TypeExpansion & out) const;
+  const Type * singularValue() const;
+  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool includes(const Type * other) const;
+  bool isSubtype(const Type * other) const;
+  bool isSingular() const;
+  bool isReferenceType() const;
+  void trace() const;
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const PHIConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == PhiType;
+  }
+
+private:
+  ConstTypeList types_;
+  const Type * expected_;
+  mutable const Type * common_;
+};
+
+#if 0
+/// -------------------------------------------------------------------
+/// A type constraint representing the possible types of an unsized
+/// integer.
+
+class UnsizedIntConstraint : public TypeSetConstraint {
+public:
+  static const int NUM_TYPES = 8;
+
+  UnsizedIntConstraint(ConstantInteger * expr);
+
+  // Overrides
+
+  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
+  void expand(TypeExpansion & out) const;
+  void trace() const;
+  void format(FormatStream & out) const;
+  bool isCulled(int index) const { return culled_[index] != 0; }
+  Type ** types() const { return types_; }
+
+  static inline bool classof(const UnsizedIntConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == UnsizedInt;
+  }
+
+private:
+  static Type * types_[NUM_TYPES];
+
+  ConstantInteger * expr_;
+  uint16_t culled_[NUM_TYPES];
+};
+#endif
+
 } // namespace tart
 
 #endif

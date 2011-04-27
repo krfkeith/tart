@@ -6,7 +6,7 @@ class TartLexer(RegexLexer):
     aliases = ['tart']
     filenames = ['*.tart']
     
-    re_ident = '@?[_a-zA-Z][a-zA-Z0-9_]*'
+    re_ident = '[_a-zA-Z][a-zA-Z0-9_]*'
 
     tokens = {
         'root': [
@@ -19,9 +19,9 @@ class TartLexer(RegexLexer):
             (r'[\{\}]', Keyword),
             include('operators'),
             (r'[\[\]:(),;]', Punctuation),
-            (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
+            ('@', Name.Attribute, 'attribute'),
             (r'(abstract|as|base|break|case|catch|continue|default|'
-             r'do|else|explicit|finally|fn|for|if|in|'
+             r'do|else|explicit|finally|for|if|in|'
              r'internal|is|match|out|override|private|protected|public|'
              r'repeat|require|return|static|switch|throw|try|typeof|typealias|'
              r'virtual|void|with|while|get|set)\b', Keyword),
@@ -35,7 +35,7 @@ class TartLexer(RegexLexer):
             (r'(namespace)\b(\s+)',
                 bygroups(Keyword, Text), 'namespace'),
             (r'(let|var)\b(\s*)', bygroups(Keyword, Text), 'var'),
-            (r'(def|macro)\b(\s*)', bygroups(Keyword, Text), 'def'),
+            (r'(def|macro|fn)\b(\s*)', bygroups(Keyword, Text), 'def'),
             (r'!\[', Punctuation, 'typeparams'),
             ('"', String, 'dqs'),
             ("'", String, 'sqs'),
@@ -85,6 +85,10 @@ class TartLexer(RegexLexer):
             (r',', Punctuation),
             (r'', Text, '#pop'),
         ],
+        'attribute': [
+            (re_ident, Name.Attribute),
+            (r'', Text, '#pop'),
+        ],
         'def': [
             (re_ident, Name.Function),
             (r'\[', Punctuation, 'typeparams'),
@@ -124,7 +128,7 @@ class TartLexer(RegexLexer):
         ],
         'type': [
             (r'\s+', Text),
-            (r'(fn)(\s+)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
+            (r'(fn)(\s*)(\()', bygroups(Keyword, Text, Punctuation), 'arglist'),
             (r'(bool|byte|char|double|float|int|long|object|'
              r'short|String|ubyte|uint|ulong|ushort)\b', Keyword.Type),
             (re_ident, Name.Class),
@@ -149,10 +153,6 @@ class TartLexer(RegexLexer):
             (r"'", String, '#pop'),
             include('strings')
         ],
-#        'namespace': [
-#            (r'(?=\()', Text, '#pop'), # using (resource)
-#            ('(' + cs_ident + r'|\.)+', Name.Namespace, '#pop')
-#        ],
     }
 
 __all__ = ['TartLexer']

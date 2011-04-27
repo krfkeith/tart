@@ -556,7 +556,7 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
   builder_.CreateBr(blkNext);
 
   builder_.SetInsertPoint(blkNext);
-  PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty());
+  PHINode * phi = builder_.CreatePHI(builder_.getInt1Ty(), 2);
   phi->addIncoming(ConstantInt::getTrue(context_), blkTrue);
   phi->addIncoming(ConstantInt::getFalse(context_), blkFalse);
   return phi;
@@ -1015,8 +1015,7 @@ Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
   }
 }
 
-llvm::Constant * CodeGenerator::genStringLiteral(const llvm::StringRef & strval,
-    const llvm::StringRef & symName) {
+llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::StringRef symName) {
   StringLiteralMap::iterator it = stringLiteralMap_.find(strval);
   if (it != stringLiteralMap_.end()) {
     return it->second;
@@ -1091,7 +1090,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   // Arguments to the array-creation function
   ValueList args;
   args.push_back(getIntVal(arrayLength));
-  Function * allocFunc = findMethod(arrayType, "alloc");
+  Constant * allocFunc = findMethod(arrayType, "alloc");
   Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
 
   // Evaluate the array elements.

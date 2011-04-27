@@ -29,6 +29,8 @@ class MDString;
 
 namespace tart {
 
+class ASTNode;
+class ASTDecl;
 class Module;
 class Expr;
 class CastExpr;
@@ -203,6 +205,7 @@ public:
   llvm::Value * genLetValue(const VariableDefn * let);
   llvm::Value * genVarValue(const VariableDefn * var);
   llvm::Constant * genGlobalVar(const VariableDefn * var);
+  llvm::Constant * genCallableDefn(const FunctionDefn * fn);
 
   // Methods to generate the contents of a definition
 
@@ -396,8 +399,7 @@ public:
   llvm::Function * getGcAlloc();
 
   /** Generate data structures for a string literal. */
-  llvm::Constant * genStringLiteral(const llvm::StringRef & strval,
-      const llvm::StringRef & symName = "");
+  llvm::Constant * genStringLiteral(llvm::StringRef strval, llvm::StringRef symName = "");
 
   /** Generate an array literal. */
   llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
@@ -512,17 +514,10 @@ public:
 
   // Module metadata methods
   void genModuleMetadata();
+  llvm::MDNode * getFormatVersion();
+  llvm::MDNode * getModuleSource();
   llvm::MDNode * getModuleDeps();
   llvm::MDNode * getModuleTimestamp();
-  llvm::MDNode * getMemberExports(const IterableScope * scope);
-  llvm::MDNode * exportType(const TypeDefn * td);
-  llvm::MDNode * exportNamespace(const NamespaceDefn * td);
-  llvm::MDNode * exportVar(const VariableDefn * td);
-  llvm::MDNode * exportProperty(const PropertyDefn * td);
-  llvm::MDNode * exportIndexer(const IndexerDefn * idx);
-  llvm::MDNode * exportFunction(const FunctionDefn * td);
-  llvm::Value * exportModifiers(const Defn * de);
-  llvm::MDString * exportTypeRef(const Type * type);
 
 private:
   typedef llvm::StringMap<llvm::DIFile> DIFileMap;
@@ -678,6 +673,6 @@ FormatStream & operator<<(FormatStream & out, const llvm::Type * type);
 FormatStream & operator<<(FormatStream & out, const llvm::Value * value);
 FormatStream & operator<<(FormatStream & out, const ValueList & values);
 
-}
+} // namespace tart
 
 #endif

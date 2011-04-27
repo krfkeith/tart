@@ -444,6 +444,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   }
   return result;
 }
+
 bool Type::equivalent(const Type * type1, const Type * type2) {
   while (const TypeBinding * pval = dyn_cast<TypeBinding>(type1)) {
     type1 = pval->value();
@@ -508,6 +509,27 @@ bool Type::equivalent(const Type * type1, const Type * type2) {
   }
 
   return false;
+}
+
+// -------------------------------------------------------------------
+// TypeImpl
+
+const llvm::Type * TypeImpl::irType() const {
+  if (irType_.get() == NULL) {
+    irType_ = createIRType();
+  }
+
+  return irType_;
+}
+
+const llvm::Type * TypeImpl::irTypeSafe() const {
+  if (irType_.get() == NULL) {
+    irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
+    const llvm::Type * ty = createIRType();
+    cast<llvm::OpaqueType>(irType_.get())->refineAbstractTypeTo(ty);
+  }
+
+  return irType_.get();
 }
 
 // -------------------------------------------------------------------
@@ -613,7 +635,6 @@ Type * dealias(Type * t) {
 }
 
 void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & numBits) {
-
   switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
     case llvm::Type::FloatTyID:

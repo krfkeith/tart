@@ -35,19 +35,8 @@ class DeclStmt;
 class ExprAnalyzer : public AnalyzerBase {
 public:
   /** Constructor. */
-  ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
-    : AnalyzerBase(mod, activeScope, subject, currentFunction)
-    , returnType_(NULL)
-    , macroReturnVal_(NULL)
-    , inMacroExpansion_(false)
-  {}
-
-  ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
-    : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
-    , returnType_(NULL)
-    , macroReturnVal_(NULL)
-    , inMacroExpansion_(false)
-  {}
+  ExprAnalyzer(Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction);
+  ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction);
 
   /** Build expression tree from AST and do all type inferencing. */
   Expr * analyze(const ASTNode * ast, const Type * expected) {
@@ -234,6 +223,9 @@ public:
 
   /** Return the function to downcast to the specified type. */
   FunctionDefn * getDowncastFn(const SourceLocation & loc, const Type * toType);
+
+  /** Check to see if a call to infixLogicalOr is really a union type expression. */
+  bool getUnionTypeArgs(Expr * ex, ConstTypeList & types);
 
   /** Report that there were no matching candidates. */
   void noCandidatesError(CallExpr * call, const ExprList & methods);

@@ -6,6 +6,7 @@ import tart.core.Memory.bitCast;
     InheritDoc: members
  */
 class PrimitiveType : Type {
+  /** Enumeration representing the particular kind of primitive type. */
   enum SubtypeId : ubyte {
     NONE = 0,
     VOID,
@@ -30,26 +31,41 @@ class PrimitiveType : Type {
     let _size:uint32;
   }
 
-  def construct(subtype:SubtypeId, name:String, size:uint32) {
+	/** Construct a new 'PrimitiveType'. */
+  protected def construct(subtype:SubtypeId, name:String, size:uint32) {
     super(TypeKind.PRIMITIVE);
     self._subtype = subtype;
     self._name = name;
     self._size = size;
   }
 
+	/** Static definition of the 'void' primitive type. */
   static let VOID:PrimitiveType   = PrimitiveNullType(SubtypeId.VOID, "void", 0);
+	/** Static definition of the 'Null' primitive type. */
   static let NULL:PrimitiveType   = PrimitiveNullType(SubtypeId.NULL, "Null", 0);
+	/** Static definition of the 'bool' primitive type. */
   static let BOOL:PrimitiveType   = PrimitiveTypeImpl[bool](SubtypeId.BOOL, "bool", 1);
+	/** Static definition of the 'char' primitive type. */
   static let CHAR:PrimitiveType   = PrimitiveTypeImpl[char](SubtypeId.CHAR, "char", 4);
+	/** Static definition of the 'int8' primitive type. */
   static let INT8:PrimitiveType   = PrimitiveTypeImpl[int8](SubtypeId.INT8, "int8", 1);
+	/** Static definition of the 'int16' primitive type. */
   static let INT16:PrimitiveType  = PrimitiveTypeImpl[int16](SubtypeId.INT16, "int16", 2);
+	/** Static definition of the 'int32' primitive type. */
   static let INT32:PrimitiveType  = PrimitiveTypeImpl[int32](SubtypeId.INT32, "int32", 4);
+	/** Static definition of the 'int64' primitive type. */
   static let INT64:PrimitiveType  = PrimitiveTypeImpl[int64](SubtypeId.INT64, "int64", 8);
+	/** Static definition of the 'uint8' primitive type. */
   static let UINT8:PrimitiveType  = PrimitiveTypeImpl[uint8](SubtypeId.UINT8, "uint8", 1);
+	/** Static definition of the 'uint16' primitive type. */
   static let UINT16:PrimitiveType = PrimitiveTypeImpl[uint16](SubtypeId.UINT16, "uint16", 2);
+	/** Static definition of the 'uint32' primitive type. */
   static let UINT32:PrimitiveType = PrimitiveTypeImpl[uint32](SubtypeId.UINT32, "uint32", 4);
+	/** Static definition of the 'uint64' primitive type. */
   static let UINT64:PrimitiveType = PrimitiveTypeImpl[uint64](SubtypeId.UINT64, "uint64", 8);
+	/** Static definition of the 'float' primitive type. */
   static let FLOAT:PrimitiveType  = PrimitiveTypeImpl[float](SubtypeId.FLOAT, "float", 4);
+	/** Static definition of the 'double' primitive type. */
   static let DOUBLE:PrimitiveType = PrimitiveTypeImpl[double](SubtypeId.DOUBLE, "double", 8);
 
   /** Size of this type in bits. */

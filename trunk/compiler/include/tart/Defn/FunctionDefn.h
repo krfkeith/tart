@@ -117,6 +117,8 @@ public:
     NoInline = (1<<9),          // Don't inline this function
     HasSafePoints = (1<<10),    // This function has safe points, requires GC.
     ExplicitFinal = (1<<11),    // Function was explicitly declared as final (for doc purposes)
+    Intrinsic = (1<<12),        // This function is an intrinsic
+    TraceMethod = (1<<13),      // This overrides the compiler-generated trace strategy
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };
@@ -185,13 +187,15 @@ public:
     return static_cast<const ASTFunctionDecl *>(ast_);
   }
 
+  /** For macros which are read from an archive, we need to be able to set the AST. */
+  void setAst(ASTFunctionDecl * ast) { ast_ = ast; }
+
   /** The index into the dispatch table for the enclosing class. */
   int dispatchIndex() const { return dispatchIndex_; }
   void setDispatchIndex(int index) { dispatchIndex_ = index; }
 
-  Intrinsic * intrinsic() const { return intrinsic_; }
-  void setIntrinsic(Intrinsic * in) { intrinsic_ = in; }
-  bool isIntrinsic() const { return intrinsic_ != NULL; }
+  tart::Intrinsic * intrinsic() const { return intrinsic_; }
+  void setIntrinsic(tart::Intrinsic * in) { intrinsic_ = in; }
 
   FunctionDefn * mergeTo() const { return mergeTo_; }
   void setMergeTo(FunctionDefn * f) { mergeTo_ = f; }
@@ -210,6 +214,8 @@ public:
   bool isFinal() const { return (flags_ & Final) != 0; }
   bool isExplicitFinal() const { return (flags_ & ExplicitFinal) != 0; }
   bool isNested() const { return (flags_ & Nested) != 0; }
+  bool isIntrinsic() const { return (flags_ & Intrinsic) != 0; }
+  bool isTraceMethod() const { return (flags_ & TraceMethod) != 0; }
   bool hasSafePoints() const { return (flags_ & HasSafePoints) != 0; }
 
   /** True if this function has a body. */
@@ -258,7 +264,7 @@ private:
   IterableScope parameterScope_;
   LocalScopeList localScopes_;
   int dispatchIndex_;
-  Intrinsic * intrinsic_;
+  tart::Intrinsic * intrinsic_;
   FunctionSet overriddenMethods_;
   PassMgr passes_;
   FunctionDefn * mergeTo_;

@@ -5,7 +5,7 @@ interface Codec {
   enum ErrorAction {
     SKIP,   ///< Skip over erroneous characters.
     REPLACE,///< Replace bad characters with the encoder's replacement character.
-    ABORT,  ///< Throw an exception. TODO: What kind?
+    ABORT,  ///< Throw an exception.
   }
 
   struct CodecState {

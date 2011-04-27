@@ -26,6 +26,10 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
   const ASTNode * callable = call->func();
   const ASTNodeList & args = call->args();
 
+  if (expected == &AnyType::instance) {
+    expected = NULL;
+  }
+
   if (callable->nodeType() == ASTNode::Id ||
       callable->nodeType() == ASTNode::Member ||
       callable->nodeType() == ASTNode::Specialize) {
@@ -90,6 +94,9 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
     Expr * callableExpr = *it;
     const Type * callableType = callableExpr->type();
+    if (callableType == NULL) {
+      return &Expr::ErrorVal;
+    }
     if (const CompositeType * ctype = dyn_cast<CompositeType>(callableType)) {
       if (!addOverloads(call, callableExpr, ctype, args)) {
         diag.error(loc) << callableExpr << " is not callable.";

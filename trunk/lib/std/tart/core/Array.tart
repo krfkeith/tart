@@ -1,5 +1,6 @@
 import tart.annex.Coalesce;
 import tart.collections.Collection;
+import tart.collections.Copyable;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.ptrDiff;
 import tart.core.Memory.Address;
@@ -8,7 +9,7 @@ import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
 /** Built-in array class */
-@Coalesce public final class Array[%ElementType] : Collection[ElementType] {
+@Coalesce public final class Array[%ElementType] : Collection[ElementType], Copyable[ElementType] {
   private {
     var _size:int;
     var _data:FlexibleArray[ElementType];
@@ -26,10 +27,6 @@ import tart.gc.TraceAction;
         action.trace(_data[i]);
       }
     }
-
-    //def asBuffer() {
-    //  return MemoryBuffer.<ElementType>(self, addressOf(self.data[0]), end);
-    //}
   }
 
   /** Construct an array of a given length */
@@ -46,11 +43,12 @@ import tart.gc.TraceAction;
   }
 
   /** Static factory function which takes advantage of the built-in behavior of
-      variadic parameters to build an Array. */
+      variadic parameters to build an 'Array'. */
   static def of(elements:ElementType...) -> Array {
     return elements;
   }
 
+  /** Static factory function which builds a new 'Array' from a 'Collection'. */
   static def copyOf(collection:Collection[ElementType]) -> Array {
     let size = collection.size;
     if size == 0 {
@@ -58,9 +56,13 @@ import tart.gc.TraceAction;
     }
 
     let result:Array = alloc(size);
-    var index = 0;
-    for el in collection {
-      result._data[index++] = el;
+    match collection as copyable:Copyable[ElementType] {
+      copyable.copyElements(addressOf(result._data[0]), 0, size);
+    } else {
+      var index = 0;
+      for el in collection {
+        result._data[index++] = el;
+      }
     }
 
 		return result;
@@ -77,12 +79,6 @@ import tart.gc.TraceAction;
   }
 
   @Unsafe def data:Address[ElementType] { get { return addressOf(_data[0]); } }
-  @Unsafe def elementAddress(offset:int32) -> Address[ElementType] {
-    return addressOf(_data[offset]);
-  }
-  @Unsafe def elementAddress(offset:int64) -> Address[ElementType] {
-    return addressOf(_data[offset]);
-  }
 
   /** Array element access. */
   def [index:int]:ElementType {
@@ -96,11 +92,46 @@ import tart.gc.TraceAction;
     }
   }
 
-  /** Make a copy of this array. */
-  def copy() -> Array {
-    let result = Array(self._size);
-    Memory.arrayCopy(addressOf(result._data[0]), addressOf(self._data[0]), self._size);
-    return result;
+  /** Return an immutable buffer representation of this array's data. */
+  def asBuffer() -> Memory.Buffer[ElementType] {
+    return Memory.Buffer[ElementType](self, addressOf(self._data[0]), _size);
+  }
+
+  /** Copy the elements of this collection to a destination address. */
+  def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
+    count = min(count, _size - srcOffset);
+    if count > 0 {
+      Memory.arrayCopy(dstAddr, addressOf(_data[srcOffset]), count);
+    }
+  }
+
+  /** Move elements around in the array. */
+  def moveElements(dstOffset:int, srcOffset:int, count:int) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset + count <= _size);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset + count <= _size);
+    if count > 0 {
+      Memory.arrayMove(addressOf(_data[dstOffset]), addressOf(_data[srcOffset]), count);
+    }
+  }
+
+  /** Copy elements from the specified copyable into this array.
+      Parameters:
+        dstOffset - The destination index in this array.
+        src - The source collection to copy from.
+        srcOffset - The offset in the source collection to start copying from.
+        count - the number of elements to copy.
+  */
+  def copyFrom(dstOffset:int, src:Copyable[ElementType], srcOffset:int, count:int) {
+    let srcSize = src.size;
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= _size);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= srcSize);
+    Preconditions.checkIndex(srcOffset + count <= srcSize);
+    Preconditions.checkIndex(dstOffset + count <= _size);
+    src.copyElements(addressOf(_data[dstOffset]), srcOffset, count);
   }
 
   /** Iterate over the elements of the array. */

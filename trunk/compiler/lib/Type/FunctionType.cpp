@@ -23,7 +23,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // FunctionType
 
-FunctionType::FunctionType(Type * rtype, ParameterList & plist)
+FunctionType::FunctionType(const Type * rtype, ParameterList & plist)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -39,7 +39,7 @@ FunctionType::FunctionType(Type * rtype, ParameterList & plist)
   }
 }
 
-FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
+FunctionType::FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -56,7 +56,7 @@ FunctionType::FunctionType(Type * rtype, ParameterDefn ** plist, size_t pcount)
 }
 
 FunctionType::FunctionType(
-    Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
+    const Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -120,6 +120,13 @@ TupleType * FunctionType::paramTypes() const {
   return paramTypes_;
 }
 
+bool FunctionType::isStructReturn() const {
+  DASSERT_MSG(!isa<llvm::OpaqueType>(irType_.get()),
+      "Getting isStructReturn before irType has been settled.");
+
+  return isStructReturn_;
+}
+
 const llvm::Type * FunctionType::irType() const {
   if (llvm::OpaqueType * otype = dyn_cast<llvm::OpaqueType>(irType_.get())) {
     if (!isCreatingType) {
@@ -145,12 +152,6 @@ const llvm::Type * FunctionType::createIRType() const {
   const Type * selfType = NULL;
   if (selfParam_ != NULL && !isStatic()) {
     selfType = selfParam_->type();
-  }
-
-  // Get the return type
-  const Type * retType = returnType_;
-  if (retType == NULL) {
-    retType = &VoidType::instance;
   }
 
   // Create the function type
@@ -249,7 +250,7 @@ bool FunctionType::isEqual(const Type * other) const {
 }
 
 bool FunctionType::isReferenceType() const {
-  return true; // TODO: Should be false
+  return true;
 }
 
 unsigned FunctionType::getHashValue() const {
@@ -333,7 +334,7 @@ ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
   return Incompatible;
 }
 
-const std::string & FunctionType::invokeName() const {
+llvm::StringRef FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {
       invokeName_.append(".invoke_static.");

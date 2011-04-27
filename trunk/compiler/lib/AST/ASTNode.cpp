@@ -82,6 +82,8 @@ void ASTNode::format(FormatStream & out) const {
   out << nodeTypeName(nodeType_);
 }
 
+ASTNode ASTNode::INVALID(ASTNode::Invalid, SourceLocation());
+
 /// ---------------------------------------------------------------
 /// ASTIdent
 void ASTIdent::format(FormatStream & out) const {
@@ -130,18 +132,6 @@ void ASTStringLiteral::format(FormatStream & out) const {
 template<>
 void ASTBoolLiteral::format(FormatStream & out) const {
   out << (value_ ? "true" : "false");
-}
-
-/// -------------------------------------------------------------------
-/// ASTUnaryOp
-void ASTUnaryOp::format(FormatStream & out) const {
-  ASTNode::format(out);
-  out << "(" << arg_ << ")";
-}
-
-void ASTUnaryOp::trace() const {
-  ASTNode::trace();
-  arg_->mark();
 }
 
 /// ---------------------------------------------------------------

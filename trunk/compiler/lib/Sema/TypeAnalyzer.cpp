@@ -3,22 +3,27 @@
  * ================================================================ */
 
 #include "tart/AST/ASTDecl.h"
-#include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/DefnAnalyzer.h"
-#include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Defn/TypeDefn.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/TupleType.h"
-#include "tart/Defn/Template.h"
-#include "tart/Defn/Module.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/InternedString.h"
+
+#include "tart/Sema/TypeAnalyzer.h"
+#include "tart/Sema/DefnAnalyzer.h"
+#include "tart/Sema/ExprAnalyzer.h"
+
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/Module.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/TupleType.h"
+
 #include "tart/Objects/Builtins.h"
 
 namespace tart {
@@ -31,6 +36,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
   const SourceLocation & loc = ast->location();
   switch (ast->nodeType()) {
     case ASTNode::Id:
+    case ASTNode::QName:
     case ASTNode::Member:
     case ASTNode::Specialize: {
       // Most of the work is done by lookupName. The rest is just validating
@@ -40,7 +46,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
       if (typeExprs.empty()) {
         diag.error(loc) << "Undefined type '" << ast << "'";
-        //lookupName(typeExprs, ast, lookupOptions_);
+        lookupName(typeExprs, ast, lookupOptions_);
         return &BadType::instance;
       }
 
@@ -63,8 +69,8 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::Array: {
-      const ASTUnaryOp * arrayOp = static_cast<const ASTUnaryOp *>(ast);
-      Type * elementType = typeFromAST(arrayOp->arg());
+      const ASTOper * arrayOp = static_cast<const ASTOper *>(ast);
+      Type * elementType = typeFromAST(arrayOp->arg(0));
       DASSERT(elementType != NULL);
       return getArrayTypeForElement(elementType);
     }
@@ -115,7 +121,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         ftype->setReturnType(&VoidType::instance);
       }
 
-      if (fnDecl->storageClass() == Storage_Static) {
+      if (fnDecl->modifiers().flags & Static) {
         ftype->setIsStatic(true);
       } else {
         return getFunctionInterfaceType(ftype);
@@ -140,6 +146,24 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::TypeVar:
       return reduceTypeVariable(static_cast<const ASTTypeVariable *>(ast));
+
+    case ASTNode::Address: {
+      const ASTOper * op = static_cast<const ASTOper *>(ast);
+      Type * ty = typeFromAST(op->arg(0));
+      if (ty != NULL) {
+        ty = AddressType::get(ty);
+      }
+      return ty;
+    }
+
+    case ASTNode::FlexArray: {
+       const ASTOper * op = static_cast<const ASTOper *>(ast);
+       Type * ty = typeFromAST(op->arg(0));
+       if (ty != NULL) {
+         ty = FlexibleArrayType::get(TupleType::get(ty));
+       }
+       return ty;
+     }
 
     case ASTNode::TypeAlias:
       DFAIL("Implement");

@@ -60,7 +60,11 @@ void ReturnStmt::trace() const {
 }
 
 void ReturnStmt::format(FormatStream & out) const {
-  out << "return " << value() << ";";
+  if (value_) {
+    out << "return " << value_ << ";";
+  } else {
+    out << "return;";
+  }
 }
 
 // -------------------------------------------------------------------
@@ -91,7 +95,7 @@ void DeclStmt::trace() const {
 }
 
 void DeclStmt::format(FormatStream & out) const {
-  out << decl_;
+  out << decl_ << ";";
 }
 
 Stmt * DeclStmt::get(ASTDecl * de) {
@@ -142,7 +146,7 @@ void DoWhileStmt::trace() const {
 void DoWhileStmt::format(FormatStream & out) const {
   out << "Do ";
   if (body_) {
-    out << ", " << body_;
+    out << body_;
   }
   out << " While (" << testExpr_ << ")";
 }

@@ -535,16 +535,6 @@ int main(int argc, char **argv, char **envp) {
     std::auto_ptr<Module> composite(linker.releaseModule());
     std::auto_ptr<TargetMachine> targetMachine = selectTarget(*composite.get());
 
-/*    TargetData * TD = 0;
-    const std::string &ModuleDataLayout = M.get()->getDataLayout();
-    if (!ModuleDataLayout.empty())
-      TD = new TargetData(ModuleDataLayout);
-    else if (!DefaultDataLayout.empty())
-      TD = new TargetData(DefaultDataLayout);
-
-    if (TD)
-      Passes.add(TD);*/
-
     // Optimize the module
     optimize(composite.get(), targetMachine->getTargetData());
 

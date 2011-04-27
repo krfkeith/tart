@@ -10,6 +10,7 @@
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Common/Diagnostics.h"
 #include "FakeSourceFile.h"
+#include "TestHelpers.h"
 
 using namespace tart;
 
@@ -47,7 +48,7 @@ public:
 
 TEST_F(ScopeBuilderTest, TestAddMember) {
   ASTTypeDecl * cl1 = createTestClassDecl("cl1");
-  Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1);
+  Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1, Storage_Global);
 
   ASSERT_EQ(Defn::Typedef, cl1Defn->defnType());
   ASSERT_STREQ("cl1", cl1Defn->name());
@@ -71,13 +72,13 @@ TEST_F(ScopeBuilderTest, TestNameConflict) {
   ASTTypeDecl * cl3 = createTestClassDecl("cl2");
 
   // Adding two classes with dissimilar names should not produce an error
-  Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1);
-  Defn * cl2Defn = builder.createMemberDefn(&testModule, &testModule, cl2);
+  Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1, Storage_Global);
+  Defn * cl2Defn = builder.createMemberDefn(&testModule, &testModule, cl2, Storage_Global);
   EXPECT_EQ(0, diag.getErrorCount());
 
   // But adding a class with the same name should produce an error
   diag.setMinSeverity(Diagnostics::Off);
-  Defn * cl3Defn = builder.createMemberDefn(&testModule, &testModule, cl3);
+  Defn * cl3Defn = builder.createMemberDefn(&testModule, &testModule, cl3, Storage_Global);
   builder.checkNameConflicts(&testModule);
   EXPECT_EQ(1, diag.getErrorCount());
   diag.reset();
@@ -91,7 +92,7 @@ TEST_F(ScopeBuilderTest, CreateMembers) {
   ASTTypeDecl * innerdecl = createTestClassDecl("inner");
   cldecl->members().push_back(innerdecl);
 
-  Defn * cl = builder.createMemberDefn(&testModule, &testModule, cldecl);
+  Defn * cl = builder.createMemberDefn(&testModule, &testModule, cldecl, Storage_Global);
   DASSERT(cl->definingScope() != NULL);
   builder.createScopeMembers(cl);
   ASSERT_TRUE(hasMember(cl, "inner"));

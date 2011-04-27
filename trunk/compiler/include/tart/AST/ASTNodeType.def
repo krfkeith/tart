@@ -5,6 +5,7 @@ NODE_TYPE(Invalid)
 // Terminals
 NODE_TYPE(Null)
 NODE_TYPE(Id)
+NODE_TYPE(QName)
 NODE_TYPE(Super)
 NODE_TYPE(LitBool)
 NODE_TYPE(LitChar)
@@ -39,11 +40,11 @@ NODE_TYPE(TypeVar)
 NODE_TYPE(Namespace)
 NODE_TYPE(AnonClass)
 
-// Type modifiers
+// Derived types
 NODE_TYPE(AnonFn)
 NODE_TYPE(Array)
-NODE_TYPE(Pointer)
-NODE_TYPE(NativePointer)
+NODE_TYPE(Address)
+NODE_TYPE(FlexArray)
 NODE_TYPE(NativeArray)
 
 // Binary operators
@@ -101,8 +102,8 @@ NODE_TYPE(Yield)
 NODE_TYPE(Break)
 NODE_TYPE(Continue)
 NODE_TYPE(LocalDecl)
-NODE_TYPE(Intrinsic)
 NODE_TYPE(Import)
 NODE_TYPE(Switch)
 NODE_TYPE(Case)
 NODE_TYPE(Match)
+NODE_TYPE(MatchAs)

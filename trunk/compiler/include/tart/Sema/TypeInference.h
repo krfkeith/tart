@@ -15,8 +15,6 @@
 
 namespace tart {
 
-class CullableChoicePoint;
-
 /// -------------------------------------------------------------------
 /// Represents a point in the expression hierarchy where the AST node
 /// maps to multiple possible items. The type inferencer attempts to
@@ -53,13 +51,6 @@ public:
   // Print debugging info
   virtual void reportRanks() = 0;
 
-  /** Downcast. */
-  virtual CullableChoicePoint * asCullable() { return NULL; }
-};
-
-/// -------------------------------------------------------------------
-class CullableChoicePoint : public ChoicePoint {
-public:
   /** Return true if the specified choice has been culled. */
   virtual bool isCulled(int index) const = 0;
 
@@ -86,8 +77,10 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// Represents a call site within an expression.
-class CallSite : public CullableChoicePoint {
+/// Represents a site where a function is called. There are two
+/// kinds of choice: Selecting overloads, and binding template params.
+
+class CallSite : public ChoicePoint {
 public:
   CallSite()
     : callExpr_(NULL)
@@ -116,7 +109,6 @@ public:
   void removeCulled();
   void backtrack(int searchDepth);
   const Expr * expr() const { return callExpr_; }
-  CullableChoicePoint * asCullable() { return this; }
 
   // Eliminate culled candidates
   void finish();
@@ -145,17 +137,24 @@ private:
   CallCandidate * best_;
 };
 
-typedef llvm::SmallVector<ChoicePoint *, 16> CallSiteList;
+typedef llvm::SmallVector<ChoicePoint *, 16> ChoicePointList;
 typedef llvm::SmallSet<const Expr *, 16> ExprSet;
 
 /// -------------------------------------------------------------------
 /// A choice point for constant integers.
 class ConstantIntegerSite : public ChoicePoint {
 public:
+  ConstantIntegerSite(ConstantInteger * expr)
+    : expr_(expr)
+    , remaining_(0)
+    , lowestRank_(IdenticalTypes)
+  {}
+
   // Update conversion rankings
   void update();
   size_t count() const;
   int remaining() const;
+  bool unify(int cullingDepth);
   ConversionRank rank() const;
   bool isCulled(int index) const;
   int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
@@ -163,6 +162,12 @@ public:
   void cullAllExcept(int choice, int searchDepth);
   void cullAllExceptBest(int searchDepth);
   void removeCulled() {}
+  void finish();
+  void reportErrors(const char * msg);
+  void reportRanks();
+  void saveBest();
+  void backtrack(int searchDepth);
+
   const Expr * expr() const { return expr_; }
 
 private:
@@ -172,80 +177,113 @@ private:
 };
 
 /// -------------------------------------------------------------------
-/// A choice point for tuple constructors.
-class TupleCtorSite : public ChoicePoint {
-public:
-  TupleCtorSite(TupleCtorExpr * in);
-
-  // Update conversion rankings
-  void update();
-  size_t count() const { return 1; }
-  int remaining() const { return 1; }
-  ConversionRank rank() const { return rank_; }
-  bool unify(int cullingDepth);
-  void removeCulled() {}
-  void finish() {}
-  void reportErrors(const char * msg) {}
-  void reportRanks();
-  const Expr * expr() const { return expr_; }
-
-private:
-  TupleCtorExpr * expr_;
-  ConversionRank rank_;
-};
-
-/// -------------------------------------------------------------------
-/// Represents an additional type constraint that is not a call.
+/// Represents an additional type constraint that is not a choice
+/// point, meaning that it has an influence on the final
 struct ConstraintSite {
 public:
-  Expr * expr;              // Expression that defines the constraint.
-  ConversionRank rank;      // Conversion ranking for this constraint.
-
   ConstraintSite()
-    : expr(NULL)
-    , rank(IdenticalTypes)
+    : expr_(NULL)
+    , rank_(IdenticalTypes)
   {}
 
   ConstraintSite(Expr * ex)
-    : expr(ex)
-    , rank(IdenticalTypes)
+    : expr_(ex)
+    , rank_(IdenticalTypes)
   {}
 
   ConstraintSite(const ConstraintSite & src)
-    : expr(src.expr)
-    , rank(src.rank)
+    : expr_(src.expr_)
+    , rank_(src.rank_)
   {}
 
   const ConstraintSite & operator=(const ConstraintSite & src) {
-    expr = src.expr;
-    rank = src.rank;
+    expr_ = src.expr_;
+    rank_ = src.rank_;
     return *this;
   }
 
+  // The expression which is the source of the constraint.
+  const Expr * expr() const { return expr_; }
+
   // Update conversion rankings
-  void update();
+  virtual void update() = 0;
+
+  // Print the constraint
+  virtual void report() = 0;
+
+  /** Conversion ranking for this constraint. */
+  ConversionRank rank() const { return rank_; }
+
+protected:
+  Expr * expr_;              // Expression that defines the constraint.
+  ConversionRank rank_;
 };
 
-typedef llvm::SmallVector<ConstraintSite, 16> ConstraintSiteList;
+typedef llvm::SmallVector<ConstraintSite *, 16> ConstraintList;
+
+/// -------------------------------------------------------------------
+/// A constraint for assignment statements.
+
+class AssignmentSite : public ConstraintSite {
+public:
+  AssignmentSite(AssignmentExpr * in) : ConstraintSite(in) {}
+
+  // Update conversion rankings
+  void update();
+  void report();
+};
+
+/// -------------------------------------------------------------------
+/// A constraint for tuple constructors.
+
+class TupleCtorSite : public ConstraintSite {
+public:
+  TupleCtorSite(TupleCtorExpr * in) : ConstraintSite(in) {}
+
+  // Update conversion rankings
+  void update();
+  void report();
+};
+
+/// -------------------------------------------------------------------
+/// A constraint for PHI-class expressions, that is expressions which
+/// choose one of several alternate values to return. (Examples being
+/// 'if' and 'switch' expressions.)
+
+class PHISite : public ConstraintSite {
+public:
+  PHISite(Expr * in) : ConstraintSite(in) {}
+
+  // Update conversion rankings
+  void update();
+  void report();
+};
 
 /// -------------------------------------------------------------------
 /// Pass to collect all of the constraints in the expression tree.
 class GatherConstraintsPass : public CFGPass {
 public:
-  GatherConstraintsPass(CallSiteList & callSites, ConstraintSiteList & cstrSites)
-    : callSites_(callSites)
-    , cstrSites_(cstrSites)
+  GatherConstraintsPass(ChoicePointList & callSites, ConstraintList & cstrSites)
+    : choicePoints_(callSites)
+    , constraints_(cstrSites)
   {}
 
 private:
-  CallSiteList & callSites_;
-  ConstraintSiteList & cstrSites_;
+  ChoicePointList & choicePoints_;
+  ConstraintList & constraints_;
   ExprSet visited_;
 
   Expr * visitCall(CallExpr * in);
   Expr * visitAssign(AssignmentExpr * in);
   Expr * visitPostAssign(AssignmentExpr * in);
   Expr * visitTupleCtor(TupleCtorExpr * in);
+  Expr * visitConstantInteger(ConstantInteger * in);
+  Expr * visitIf(IfExpr * in);
+  Expr * visitSwitch(SwitchExpr * in);
+  Expr * visitMatch(MatchExpr * in);
+  //virtual Expr * visitTry(TryExpr * in);
+
+  void visitPHI(Expr * in);
 };
 
 /// -------------------------------------------------------------------
@@ -266,8 +304,8 @@ private:
   Module * module_;
   Expr * rootExpr_;
   const Type * expectedType_;
-  CallSiteList callSites_;
-  ConstraintSiteList cstrSites_;
+  ChoicePointList callSites_;
+  ConstraintList cstrSites_;
   ConversionRank lowestRank_;
   ConversionRank bestSolutionRank_;
   int bestSolutionCount_;
@@ -307,7 +345,7 @@ private:
   /** Try removing each from consideration and re-evaluate all conversion
       ranks for the entire AST. Choose the one with the best rank. */
   void cullByElimination();
-  void cullByElimination(CallSiteList::iterator first, CallSiteList::iterator last);
+  void cullByElimination(ChoicePointList::iterator first, ChoicePointList::iterator last);
   void cullByElimination(CallSite * site);
 
   /** Cull all candidates for a given site except for ch. */

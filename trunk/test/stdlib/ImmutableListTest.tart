@@ -14,7 +14,7 @@ class ImmutableListTest : Test {
     assertEq(2, a[1]);
     assertEq(3, a[2]);
   }
-	
+
   def testImplicitType() {
     let a = ImmutableList.of(1, 2, 3);
     assertEq(3, a.size);
@@ -22,7 +22,7 @@ class ImmutableListTest : Test {
     assertEq(2, a[1]);
     assertEq(3, a[2]);
   }
-	
+
 	def testOutOfRange() {
 	  let a = ImmutableList[int32].of(1, 2, 3);
 	  try {
@@ -30,7 +30,7 @@ class ImmutableListTest : Test {
 	    fail("Out of range access");
 	  } catch :IndexError {
 	  }
-	
+
 	  try {
 	    let s = a[-1];
 	    fail("Out of range access");
@@ -48,5 +48,20 @@ class ImmutableListTest : Test {
     assertEq(1, a[0]);
     assertEq(2, a[1]);
     assertEq(3, a[2]);
+  }
+
+  def testUndefMethods {
+    let a = ImmutableList.of(1, 2, 3);
+    try {
+      a.add(4);
+      fail("Expected UnsupportedOperationError");
+    } catch (e:UnsupportedOperationError) {
+    }
+
+    try {
+      a.clear();
+      fail("Expected UnsupportedOperationError");
+    } catch (e:UnsupportedOperationError) {
+    }
   }
 }

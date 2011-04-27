@@ -10,11 +10,14 @@ Typecasts and conversions
 Tart does not have a C-style casting operator. However, it does have syntax for converting or
 casting one type into another.
 
-.. note:: Although the words *cast* and *convert* are often used interchangeably when referring
-  to types, the design of Tart tries to maintain a distinction between them: "cast" or "type cast"
-  generally refers to taking an existing value and seeing it in a different way, but without
-  altering it, whereas "convert" generally implies a transformation of the data. Of course, in
-  real programs the dividing line is not always so clear-cut.
+Although the words *cast* and *convert* are often used interchangeably when referring
+to types, the design of Tart tries to maintain a distinction between them: "cast" or "type cast"
+generally refers to taking an existing value and seeing it in a different way, but without
+altering it, whereas "convert" generally implies a transformation of the data. Of course, in
+real programs the dividing line is not always so clear-cut.
+
+.. index::
+  pair: type; conversion
 
 Type Conversion
 ---------------
@@ -24,10 +27,8 @@ Type conversion is normally done by calling the destination type's constructor::
   let f = float(1);
   let i = int(1.0);
 
-In cases where the constructor is already being used for something else, a classes will usually
-have a static method named :func:`from`::
-
-  let s = String.from(10);
+.. index::
+  triple: implicit; type; conversion
 
 Implicit Conversion
 -------------------
@@ -41,17 +42,33 @@ The :meth:`coerce` method is a static method of the destination type. For exampl
 :class:`Object` class has a :meth:`coerce` method that handles auto-boxing: It wraps ("boxes")
 any value type inside of an object, making it usable as a reference type::
 
+  /** String.format takes a list of Objects as arguments. The integer argument
+      will be automatically converted into a ValueRef[int]. */
+  let s = String.format("Height: {0}", 20);
+
+Here's the actual definition of the :meth:`coerce` method in class :class:`Object`. There
+are two overloaded definitions, one for subclasses of :class:`Object` (which simply
+returns the value unchanged), and another for all other types which constructs a
+:class:`ValueRef` that wraps the value.::
+
   /** Implicitly convert non-object values to Boxed types. */
   static def coerce[%T] (value:T) -> Object { return ValueRef[T](value); }
   static def coerce(value:Object) -> Object { return value; }
 
+.. index::
+  triple: explicit; type; casting
+  keyword: typecast
+  
 Unconditional casting
 ---------------------
 
-An unconditional cast is one that either succeeds or throws an :class:`TypecastError`
-exception.
+.. method:: typecast
 
-The :func:`typecast` template function is used to do unconditional casts::
+The :func:`typecast` template function is used to do unconditional casts. If the cast operation
+succeeds, then execution proceeds as normal. If the cast fails for any reason, then a
+:class:`TypecastError` exception is thrown.
+
+An example of a typecast::
 
   let str = typecast[String](inVal);
 
@@ -59,7 +76,7 @@ Of course, the template parameters can be omitted if the type can be deduced by 
 
   let str:String = typecast(inVal);
 
-Unconditional casts work with disjoint types as well as pointer types:
+Unconditional casts work with disjoint types as well as pointer types::
 
   // A variable which can either be an int or a float.
   let number:int or float = 10;
@@ -76,7 +93,7 @@ Conditional casts
 The :stmt:`match` statement is used for doing conditional casts.
 
 .. 
-  The :keyword:`as` operator represents one type of *conditional cast*,
+  The :kw:`as` operator represents one type of *conditional cast*,
   meaning that the conversion may silently fail if the destination variable
   is the wrong type to contain the value.
   
@@ -106,15 +123,22 @@ The :stmt:`match` statement is used for doing conditional casts.
   
   See also the :stmt:`typeswitch` statement, described in a later section.
 
+.. index::
+  pair: type; testing
+  keyword: isa
+
 Type testing
 ------------
 
-Sometimes you need to test the type of a variable, the :keyword:`isa` keyword
+Sometimes you need to test the type of a variable, the :kw:`isa` keyword
 can be used for this. It works for both reference types and union types::
 
   if a isa float {
     // ...
   }
+
+.. index::
+  triple: union; type; casting
 
 Casts and union types
 ---------------------
@@ -153,7 +177,7 @@ may optionally contain a value::
 
 In this case, the special :ctype:`void` type means that the variable does
 not contain a value at all. Because this feature is used fairly often,
-a shortcut syntax is available:
+a shortcut syntax is available::
 
   // Either holds an int, or it doesn't.
   var a:optional int;

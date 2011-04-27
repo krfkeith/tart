@@ -662,6 +662,12 @@ void DocExporter::writeDocCommentNode(const Doc::Node * node) {
       xml_.endElement("returns");
       break;
 
+    case Doc::DEPRECATED:
+      xml_.beginElement("deprecated");
+      writeDocCommentNodeList(node);
+      xml_.endElement("deprecated");
+      break;
+
     case Doc::SECTION_HEADING:
       DFAIL("Implement SECTION_HEADING");
       break;

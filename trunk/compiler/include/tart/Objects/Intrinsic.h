@@ -37,7 +37,10 @@ private:
   static llvm::StringMap<Intrinsic *> intrinsicMap;
 
 public:
-  Intrinsic(const char * n, bool canCoalesce = false) : name_(n), canCoalesce_(canCoalesce) {
+  Intrinsic(const char * n, bool canCoalesce = false)
+    : name_(n)
+    , canCoalesce_(canCoalesce)
+  {
     intrinsicMap[name_] = this;
   }
 
@@ -46,6 +49,7 @@ public:
   /** The fully qualified name of this intrinsic. */
   const char * name() const { return name_; }
 
+  /** True if this intrinsic can be coalesced. */
   bool canCoalesce() const { return canCoalesce_; }
 
   /** Analysis-time implementation of the intrinsic. This returns an
@@ -61,7 +65,7 @@ public:
   virtual llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 
   /** Lookup an intrinsic by name. */
-  static Intrinsic * get(const SourceLocation & loc, const char * name);
+  static Intrinsic * get(const SourceLocation & loc, llvm::StringRef name);
 };
 
 } // namespace tart

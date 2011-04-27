@@ -65,13 +65,15 @@ enum TypeId {
 };
 
 /// -------------------------------------------------------------------
-/// An enumeration of the different varieties of representation for
-/// a type.
+/// The term 'shape' is used here to mean the various ways that types
+/// are stored and passed around - by copying, by reference, whether
+/// the type can fit in registers, whether it's address can be taken,
+/// and so on.
 enum TypeShape {
   Shape_Unset = 0,          // Shape hasn't been determined yet
   Shape_None,               // Can't be instantiated
   Shape_ZeroSize,           // A type of size 0.
-  Shape_Primitive,          // A primitive type
+  Shape_Primitive,          // A primitive type - int, float, pointer.
   Shape_Small_RValue,       // A small value which cannot be addressed.
   Shape_Small_LValue,       // A small value which can be addressed.
   Shape_Large_Value,        // A large aggregate value
@@ -290,27 +292,21 @@ protected:
 class TypeImpl : public Type {
 public:
 
-  const llvm::Type * irType() const {
-    if (irType_ == NULL) {
-      irType_ = createIRType();
-    }
-
-    return irType_;
-  }
-
+  // Method to lazily create the IR type.
+  const llvm::Type * irType() const;
   TypeShape typeShape() const { return shape_; }
 
 protected:
-  mutable const llvm::Type * irType_;
+  mutable llvm::PATypeHolder irType_;
   mutable TypeShape shape_;
 
   TypeImpl(TypeClass cls, TypeShape shape)
     : Type(cls)
-    , irType_(NULL)
     , shape_(shape)
   {}
 
   virtual const llvm::Type * createIRType() const = 0;
+  const llvm::Type * irTypeSafe() const;
 };
 
 /// -------------------------------------------------------------------

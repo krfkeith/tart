@@ -456,7 +456,8 @@ void Reflector::emitModule(Module * module) {
   if (hasReflectedDefns) {
     GlobalVariable * modulePtr = getModulePtr(module);
     if (!modulePtr->hasInitializer()) {
-      std::string moduleName = module->qualifiedName() + "#module";
+      llvm::SmallString<128> moduleName = module->qualifiedName();
+      moduleName += "#module";
 
       // First visit members which are explicitly declared in this module.
       for (DefnSet::const_iterator it = reflectedDefs.begin(); it != reflectedDefs.end(); ++it) {
@@ -725,8 +726,7 @@ void Reflector::emitMethod(const FunctionDefn * fn) {
   sb.addNullField(reflect::Method::params.type());
 
   // Method._methodPointer
-  sb.addPointerField(reflect::Method::methodPointer,
-      cg_.genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn));
+  sb.addPointerField(reflect::Method::methodPointer, cg_.genCallableDefn(fn));
 
   // Method._isConstructor
   sb.addIntegerField(reflect::Method::isConstructor, fn->isCtor() ? 1 : 0);
@@ -1045,18 +1045,18 @@ llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
 }
 
 llvm::Constant * Reflector::emitAttributeList(const ExprList & attrs, llvm::StringRef name) {
-  const llvm::Type * attrType = Builtins::typeAttribute->irEmbeddedType();
+  const llvm::Type * objType = Builtins::typeObject->irEmbeddedType();
   ConstantList retainedAttrs;
   for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
     llvm::Constant * retainedAttr = getRetainedAttr(*it, name);
     if (retainedAttr != NULL) {
       retainedAttrs.push_back(
-          llvm::ConstantExpr::getPointerCast(retainedAttr, attrType));
+          llvm::ConstantExpr::getPointerCast(retainedAttr, objType));
     }
   }
 
   return emitStaticList(retainedAttrs, ".attrs.", name,
-      Builtins::typeAttributeList, Builtins::typeAttribute);
+      Builtins::typeAttributeList, Builtins::typeObject);
 }
 
 llvm::Constant * Reflector::emitMethodList(const IterableScope * scope, bool ctors,
@@ -1108,138 +1108,6 @@ llvm::Constant * Reflector::emitFieldList(const IterableScope * scope, llvm::Str
   return emitStaticList(fields, ".fields.", name,
       Builtins::typeFieldList, Builtins::typeField);
 }
-
-#if 0
-void Reflector::emitReflectedMembers(ReflectionMetadata * rmd, const IterableScope * scope) {
-  if (!namespaces.empty()) {
-  }
-}
-
-void Reflector::emitTemplateParamsSection(ReflectionMetadata * rmd, const Defn * def) {
-  const TemplateSignature * ts = def->templateSignature();
-  if (ts != NULL) {
-    std::string paramData;
-    raw_string_ostream paramStrm(paramData);
-
-    paramStrm.flush();
-    if (!paramData.empty()) {
-      rmd->strm() << char(TAG_SECTION_TEMPLATE_PARAMS) << VarInt(paramData.size()) << paramData;
-    }
-  }
-}
-
-void Reflector::emitTemplateSection(ReflectionMetadata * rmd, const Defn * def) {
-  const TemplateInstance * ti = def->templateInstance();
-  if (ti != NULL) {
-    std::string templateData;
-    raw_string_ostream templateStrm(templateData);
-    rmd->encodeTypeRef(cast<TypeDefn>(ti->templateDefn())->typeValue(), templateStrm);
-
-    templateStrm.flush();
-    if (!templateData.empty()) {
-      rmd->strm() << char(TAG_SECTION_BASE_TEMPLATE) << VarInt(templateData.size()) << templateData;
-    }
-  }
-}
-
-void Reflector::emitMethodDefn(ReflectionMetadata * rmd, const FunctionDefn * fn, raw_ostream & out) {
-  if (!fn->isSingular() || !fn->isReflected()) {
-    // TODO: Implement.
-    return;
-  }
-
-  char tag = TAG_DEF_METHOD;
-  if (fn->defnType() == Defn::Macro) {
-    tag = TAG_DEF_MACRO;
-  } else if (fn->isOverride()) {
-    tag = TAG_DEF_OVERRIDE;
-  } else if (fn->isUndefined()) {
-    tag = TAG_DEF_UNDEF;
-  } else if (fn->isCtor()) {
-    tag = TAG_DEF_CONSTRUCTOR;
-  }
-
-  char flags = 0;
-  if (fn->visibility() == Private) {
-    flags |= DEFNFLAG_PRIVATE;
-  } else if (fn->visibility() == Protected) {
-    flags |= DEFNFLAG_PROTECTED;
-  }
-
-  // Definition modifiers
-  if (fn->isFinal()) {
-    flags |= DEFNFLAG_FINAL;
-  }
-
-  if (fn->isAbstract()) {
-    flags |= DEFNFLAG_ABSTRACT;
-  }
-
-  if (fn->isUnsafe()) {
-    flags |= DEFNFLAG_UNSAFE;
-  }
-
-  if (fn->storageClass() == Storage_Static) {
-    flags |= DEFNFLAG_STATIC;
-  }
-
-  NameTable::Name * name = cg_.nameTable().getName(fn->name());
-  DASSERT_OBJ(name != NULL, fn);
-
-  size_t methodIndex;
-  if (fn->isAbstract() || fn->isUndefined() || fn->isIntrinsic() || fn->isInterfaceMethod()) {
-    methodIndex = 0;
-  } else if (fn->dispatchIndex() != -1) {
-    methodIndex = fn->dispatchIndex();
-  } else {
-    const FunctionDefn * coalescedFn = fn->mergeTo() != NULL ? fn->mergeTo() : fn;
-    const llvm::Type * methodType = cg_.getMethodPointerType();
-    llvm::Constant * methodVal = llvm::ConstantExpr::getBitCast(
-        cg_.genFunctionValue(coalescedFn), methodType);
-    methodIndex = rmd->methodBaseIndex() + rmd->methodRefs().size();
-    rmd->methodRefs().push_back(methodVal);
-  }
-
-  // Definition tag and name
-  out << tag << flags << VarInt(name->encodedIndex());
-  rmd->encodeTypeRef(fn->functionType(), out);
-  out << VarInt(uint32_t(methodIndex));
-
-  // Declare parameters
-  const ParameterList & params = fn->functionType()->params();
-  for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
-    const ParameterDefn * p = *it;
-
-    // Deal with any parameter attributes
-    for (ExprList::const_iterator attr = p->attrs().begin(); attr != p->attrs().end(); ++it) {
-      //var << TAG_DEFMOD_ATTRIBUTE << VarInt(attribute-index);
-    }
-
-    if (p->isVariadic()) {
-      out << char(TAG_DEFMOD_VARIADIC);
-    }
-    if (p->isKeywordOnly()) {
-      out << char(TAG_DEFMOD_KEYWORD_ONLY);
-    }
-
-    NameTable::Name * paramName = cg_.nameTable().getName(p->name());
-    DASSERT_OBJ(paramName != NULL, fn);
-    out << char(TAG_DEF_PARAM) << VarInt(paramName->encodedIndex());
-    //rmd->encodeTypeRef(p->type(), out);
-  }
-
-  // Method attributes
-  for (ExprList::const_iterator it = fn->attrs().begin(); it != fn->attrs().end(); ++it) {
-    llvm::Constant * retainedAttr = getRetainedAttr(*it);
-    if (retainedAttr != NULL) {
-      size_t attrIndex = rmd->addGlobalRef(retainedAttr);
-      out << char(TAG_DEF_ATTRIBUTE) << VarInt(attrIndex);
-    }
-  }
-
-  out << char(TAG_DEF_SCOPE_END);
-}
-#endif
 
 llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
   // Generate the symbolic name of the type list.

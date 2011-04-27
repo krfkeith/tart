@@ -129,7 +129,7 @@ void ConstantFloat::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // ConstantString
-ConstantString::ConstantString(SourceLocation l, const std::string & val)
+ConstantString::ConstantString(SourceLocation l, llvm::StringRef val)
   : ConstantExpr(ConstString, l, Builtins::typeString.peek())
   , value_(val)
 {

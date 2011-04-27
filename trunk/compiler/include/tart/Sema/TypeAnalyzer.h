@@ -29,6 +29,12 @@ public:
     , lookupOptions_(LOOKUP_DEFAULT)
   {}
 
+  /** Constructor. */
+  TypeAnalyzer(AnalyzerBase * parent, Scope * activeScope)
+    : AnalyzerBase(parent->module(), activeScope, parent->subject(), parent->currentFunction())
+    , lookupOptions_(LOOKUP_DEFAULT)
+  {}
+
   virtual ~TypeAnalyzer() {}
 
   /** Set the options for looking up type names. */

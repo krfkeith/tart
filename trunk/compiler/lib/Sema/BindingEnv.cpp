@@ -752,7 +752,6 @@ const Type * BindingEnv::subst(const Type * in) const {
   return SubstitutionTransform(*this).transform(in);
 }
 
-
 const Type * BindingEnv::selectLessSpecificType(SourceContext * source, const Type * type1,
     const Type * type2) {
   if (type2->includes(type1)) {

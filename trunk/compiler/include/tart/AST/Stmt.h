@@ -124,17 +124,12 @@ public:
 // Yield statement
 class YieldStmt: public ExprStmt {
 public:
-  YieldStmt(SourceLocation loc, ASTNode * ex, int index) :
-    ExprStmt(Yield, loc, ex), stateIndex_(index) {
+  YieldStmt(SourceLocation loc, ASTNode * ex) :
+    ExprStmt(Yield, loc, ex) {
   }
-
-  int stateIndex() const { return stateIndex_; }
 
   void trace() const;
   void format(FormatStream & out) const;
-
-private:
-  int stateIndex_;
 };
 
 // -------------------------------------------------------------------
@@ -386,7 +381,7 @@ public:
     Stmt(Catch, loc), exceptDecl_(ex), body_(body) {
   }
 
-  ASTDecl * exceptDecl() { return exceptDecl_; }
+  ASTDecl * exceptDecl() const { return exceptDecl_; }
   Stmt * body() const { return body_; }
 
   void trace() const;
@@ -464,7 +459,7 @@ private:
 class MatchAsStmt: public Stmt {
 public:
   MatchAsStmt(SourceLocation loc, ASTDecl * asDecl, Stmt * body)
-    : Stmt(Case, loc), asDecl_(asDecl), body_(body) {
+    : Stmt(MatchAs, loc), asDecl_(asDecl), body_(body) {
   }
 
   const ASTDecl * asDecl() const { return asDecl_; }

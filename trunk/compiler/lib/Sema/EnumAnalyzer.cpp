@@ -3,12 +3,14 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
-#include "tart/Type/EnumType.h"
-#include "tart/Type/PrimitiveType.h"
+
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/Type/FunctionType.h"
 #include "tart/Defn/Module.h"
+
+#include "tart/Type/EnumType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/FunctionType.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -19,6 +21,8 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
+
+#include "tart/Meta/MDReader.h"
 
 #include "llvm/Instructions.h"
 
@@ -199,8 +203,6 @@ EnumAnalyzer::EnumAnalyzer(TypeDefn * de)
   : DefnAnalyzer(de->module(), de->definingScope(), de, NULL)
   , target_(de)
   , prevValue_(NULL)
-  , minValue_(NULL)
-  , maxValue_(NULL)
   , intValueType_(NULL)
 {
   DASSERT(de != NULL);
@@ -244,10 +246,9 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
       // Don't evaluate the attributes if the enclosing class is Attribute, because that creates
       // a circular dependency. For now, assume that any Enum defined within Attribute that has
       // any attributes at all is a Flags enum.
-      if (!target_->ast()->attributes().empty()) {
+      if (target_->mdNode() == NULL && !target_->ast()->attributes().empty()) {
         type->setIsFlags(true);
       }
-
     } else if (!resolveAttributes(target_)) {
       return false;
     }
@@ -283,71 +284,116 @@ bool EnumAnalyzer::analyzeBase() {
 
   enumType->passes().finish(EnumType::BaseTypePass);
 
-  const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
   DASSERT_OBJ(enumType->isSingular(), enumType);
   DASSERT_OBJ(enumType->baseType() == NULL, enumType);
 
   // Analyze the base type of the enum.
-  const PrimitiveType * intValueType = &Int32Type::instance;
-  //const Type * superType = ast->super();
-  if (!ast->bases().empty()) {
-    // For the moment, we require enums to be derived from integer types only.
-    DASSERT(ast->bases().size() == 1);
-    TypeAnalyzer ta(module(), activeScope());
-    Type * baseType = ta.typeFromAST(ast->bases().front());
-    if (baseType != NULL) {
-      intValueType = dyn_cast<PrimitiveType>(baseType);
-      if (intValueType == NULL || !isIntegerTypeId(intValueType->typeId())) {
-        diag.fatal(ast) << "Enumerations can only derive from integer types.";
-        return false;
+  intValueType_ = &Int32Type::instance;
+
+  if (target_->mdNode() != NULL) {
+    // Read the base type from the metadata
+    const Type * base = MDReader(module_, target_).readEnumBase(target_);
+    if (base != NULL) {
+      intValueType_ = cast<PrimitiveType>(base);
+    }
+  } else {
+    const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
+    if (!ast->bases().empty()) {
+      // For the moment, we require enums to be derived from integer types only.
+      DASSERT(ast->bases().size() == 1);
+      TypeAnalyzer ta(module(), activeScope());
+      Type * baseType = ta.typeFromAST(ast->bases().front());
+      if (baseType != NULL) {
+        intValueType_ = dyn_cast<PrimitiveType>(baseType);
+        if (intValueType_ == NULL || !intValueType_->isIntType()) {
+          diag.fatal(ast) << "Enumerations can only derive from integer types.";
+          return false;
+        }
       }
     }
   }
 
-  enumType->setBaseType(intValueType);
+  enumType->setBaseType(intValueType_);
   return true;
 }
 
 bool EnumAnalyzer::createMembers() {
   EnumType * enumType = cast<EnumType>(target_->typeValue());
-  const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
   bool isFlags = enumType->isFlags();
+  bool success = true;
 
   // Mark as finished so that we don't recurse when referring to members.
   enumType->passes().finish(EnumType::ScopeCreationPass);
 
-  Scope * savedScope = setActiveScope(enumType->memberScope());
-  const ASTDeclList & members = ast->members();
-  for (ASTDeclList::const_iterator it = members.begin(); it != members.end(); ++it) {
-    if (!createEnumConstant(cast<ASTVarDecl>(*it))) {
-      return false;
+  if (target_->mdNode() != NULL) {
+    if (!MDReader(module_, target_).readEnumConstants(target_)) {
+      success = false;
+    }
+  } else {
+    Scope * savedScope = setActiveScope(enumType->memberScope());
+    const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
+    const ASTDeclList & members = ast->members();
+    bool success = true;
+    for (ASTDeclList::const_iterator it = members.begin(); it != members.end(); ++it) {
+      if (!createEnumConstant(cast<ASTVarDecl>(*it))) {
+        success = false;
+      }
+    }
+    setActiveScope(savedScope);
+  }
+
+  // Compute min and max values.
+  if (!enumType->isFlags()) {
+    ConstantInteger * minValue = NULL;
+    ConstantInteger * maxValue = NULL;
+
+    for (Defn * de = enumType->memberScope()->firstMember(); de != NULL; de = de->nextInScope()) {
+      if (VariableDefn * var = dyn_cast<VariableDefn>(de)) {
+        ConstantInteger * value = cast<ConstantInteger>(var->initValue());
+        if (minValue == NULL) {
+          minValue = maxValue = value;
+        } else {
+          llvm::Constant * cval = value->value();
+          llvm::ConstantInt * cmin = minValue->value();
+          llvm::ConstantInt * cmax = maxValue->value();
+          if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cmin, cval)->isNullValue()) {
+            minValue = value;
+          }
+          if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cval, cmax)->isNullValue()) {
+            maxValue = value;
+          }
+        }
+      } else if (!de->isSynthetic()) {
+        diag.fatal(de) << "Invalid member for enum: " << de;
+      }
+    }
+
+    if (minValue != NULL) {
+      VariableDefn * minDef = new VariableDefn(Defn::Let, module(), "minVal", minValue);
+      minDef->setType(enumType);
+      minDef->addTrait(Defn::Synthetic);
+      minDef->setLocation(target_->location());
+      minDef->setStorageClass(Storage_Static);
+      minDef->passes().finish(VariableDefn::AttributePass);
+      minDef->passes().finish(VariableDefn::VariableTypePass);
+      minDef->passes().finish(VariableDefn::InitializerPass);
+      minDef->passes().finish(VariableDefn::CompletionPass);
+      enumType->memberScope()->addMember(minDef);
+
+      VariableDefn * maxDef = new VariableDefn(Defn::Let, module(), "maxVal", maxValue);
+      maxDef->setType(enumType);
+      maxDef->addTrait(Defn::Synthetic);
+      maxDef->setLocation(target_->location());
+      maxDef->setStorageClass(Storage_Static);
+      maxDef->passes().finish(VariableDefn::AttributePass);
+      maxDef->passes().finish(VariableDefn::VariableTypePass);
+      maxDef->passes().finish(VariableDefn::InitializerPass);
+      maxDef->passes().finish(VariableDefn::CompletionPass);
+      enumType->memberScope()->addMember(maxDef);
     }
   }
 
-  if (!isFlags && minValue_ != NULL) {
-    VariableDefn * minDef = new VariableDefn(Defn::Let, module(), "minVal", minValue_);
-    minDef->setType(enumType);
-    minDef->addTrait(Defn::Synthetic);
-    minDef->setLocation(target_->location());
-    minDef->passes().finish(VariableDefn::AttributePass);
-    minDef->passes().finish(VariableDefn::VariableTypePass);
-    minDef->passes().finish(VariableDefn::InitializerPass);
-    minDef->passes().finish(VariableDefn::CompletionPass);
-    enumType->memberScope()->addMember(minDef);
-
-    VariableDefn * maxDef = new VariableDefn(Defn::Let, module(), "maxVal", maxValue_);
-    maxDef->setType(enumType);
-    maxDef->addTrait(Defn::Synthetic);
-    maxDef->setLocation(target_->location());
-    maxDef->passes().finish(VariableDefn::AttributePass);
-    maxDef->passes().finish(VariableDefn::VariableTypePass);
-    maxDef->passes().finish(VariableDefn::InitializerPass);
-    maxDef->passes().finish(VariableDefn::CompletionPass);
-    enumType->memberScope()->addMember(maxDef);
-  }
-
-  setActiveScope(savedScope);
-  return true;
+  return success;
 }
 
 bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
@@ -364,23 +410,22 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   bool isSigned = !enumType->baseType()->isUnsignedType();
   VariableDefn * ec = new VariableDefn(Defn::Let, module(), ast);
   ConstantInteger * value = NULL;
+  bool success = true;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
     ExprAnalyzer ea(this, NULL);
-    Expr * enumValue = ea.reduceConstantExpr(ast->value(), intValueType_);
-    if (isErrorResult(enumValue)) {
-      return false;
+    Expr * enumValue = ea.reduceConstantExpr(ast->value(), NULL /*intValueType_*/);
+    if (!isErrorResult(enumValue)) {
+      if (!isa<ConstantInteger>(enumValue)) {
+        diag.fatal(ast) << "Not an integer constant " << enumValue;
+      } else {
+        llvm::ConstantInt * enumIntVal = static_cast<ConstantInteger *>(enumValue)->value();
+        enumIntVal = cast<llvm::ConstantInt>(
+            llvm::ConstantExpr::getIntegerCast(enumIntVal, irType, isSigned));
+        value = ConstantInteger::get(ast->location(), enumType, enumIntVal);
+        assert(value->value() != NULL);
+      }
     }
-
-    if (!isa<ConstantInteger>(enumValue)) {
-      diag.fatal(ast) << "Not an integer constant " << enumValue;
-    }
-
-    llvm::ConstantInt * enumIntVal = static_cast<ConstantInteger *>(enumValue)->value();
-    enumIntVal = cast<llvm::ConstantInt>(
-        llvm::ConstantExpr::getIntegerCast(enumIntVal, irType, isSigned));
-    value = ConstantInteger::get(ast->location(), enumType, enumIntVal);
-    assert(value->value() != NULL);
   } else {
     // No explicit value, use the previous value.
     llvm::ConstantInt * irVal;
@@ -407,6 +452,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
     }
   }
 
+  ec->setStorageClass(Storage_Static);
   ec->setLocation(ast->location());
   ec->addTrait(Defn::Singular);
   ec->setInitValue(value);
@@ -417,25 +463,11 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ec->passes().finish(VariableDefn::CompletionPass);
   enumType->memberScope()->addMember(ec);
 
-  prevValue_ = value;
-
-  // Compute min and max values.
-  if (!isFlags) {
-    if (minValue_ == NULL) {
-      minValue_ = maxValue_ = value;
-    } else {
-      llvm::Constant * cval = value->value();
-      llvm::ConstantInt * cmin = minValue_->value();
-      llvm::ConstantInt * cmax = maxValue_->value();
-      if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cmin, cval)->isNullValue()) {
-        minValue_ = value;
-      }
-      if (llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_SLT, cval, cmax)->isNullValue()) {
-        maxValue_ = value;
-      }
-    }
+  if (value == NULL) {
+    return false;
   }
 
+  prevValue_ = value;
   return true;
 }
 

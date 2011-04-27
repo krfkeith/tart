@@ -21,6 +21,11 @@
 #include "tart/Common/SourceFile.h"
 #endif
 
+#ifndef TART_COMMON_PASSMGR_H
+#include "tart/Common/PassMgr.h"
+#endif
+
+
 #ifndef LLVM_ADT_SETVECTOR_H
 #include "llvm/ADT/SetVector.h"
 #endif
@@ -56,6 +61,16 @@ class Module : public Defn, public IterableScope {
 public:
   typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
 
+  enum AnalysisPass {
+    ResolveImportsPass,
+    ScopeCreationPass,
+    CompletionPass,
+    PassCount
+  };
+
+  typedef tart::PassMgr<AnalysisPass, PassCount> PassMgr;
+  typedef PassMgr::PassSet PassSet;
+
   enum ModuleFlags {
     Module_Debug = (1<<0),      // Print debug options
     Module_Reflect = (1<<1),    // Generate reflection metadata
@@ -66,6 +81,8 @@ public:
 
   /** Construct a builtin module. */
   Module(ProgramSource * src, llvm::StringRef qual);
+
+  void createMembers();
 
   /** List of import statements. */
   const ASTNodeList & imports() const { return imports_; }
@@ -82,7 +99,7 @@ public:
   ASTDeclList & astMembers() { return decls_; }
 
   /** Get the qualified name of this module's package. */
-  const std::string packageName() const;
+  llvm::StringRef packageName() const { return packageName_; }
 
   /** The 'main' function for this module. */
   FunctionDefn * entryPoint() const { return entryPoint_; }
@@ -129,7 +146,7 @@ public:
   ConverterMap & converters() { return converters_; }
 
   /** Attempt to import a module by name. Returns the set of primary definitions for that module. */
-  bool import(const char * qname, DefnList & defs, bool absPath);
+  bool import(llvm::StringRef qname, DefnList & defs, bool absPath);
 
   /** Process all import statements by adding an explicit import reference
       for each import into this module's symbol table. */
@@ -147,8 +164,12 @@ public:
   void clearDefns() {
     IterableScope::clear();
     decls_.clear();
-    finished_.remove(Pass_ResolveModuleMembers);
+    passes_.finished().remove(CompletionPass);
   }
+
+  /** The current passes state. */
+  const PassMgr & passes() const { return passes_; }
+  PassMgr & passes() { return passes_; }
 
   bool isDebug() const { return (flags_ & Module_Debug) != 0; }
   bool isReflectionEnabled() const { return (flags_ & Module_Reflect) != 0; }
@@ -159,7 +180,7 @@ public:
 
   Scope * definingScope() const { return IterableScope::parentScope(); }
   void setDefiningScope(Scope * scope) { IterableScope::setParentScope(scope); }
-  bool lookupMember(const char * name, DefnList & defs, bool inherit) const;
+  bool lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const;
   void format(FormatStream & out) const;
   void trace() const;
 
@@ -169,9 +190,12 @@ public:
   }
 
 private:
+  void setQualifiedName(llvm::StringRef qual);
+
   friend class tart::PackageMgr;
 
   ProgramSource * moduleSource_;
+  llvm::SmallString<0> packageName_;
   ASTNodeList imports_;
   ModuleSet importModules_;
   ASTDeclList decls_;
@@ -185,6 +209,7 @@ private:
   FunctionDefn * programStartup_;
   ConverterMap converters_;
   short flags_;
+  PassMgr passes_;
   llvm::sys::TimeValue timestamp_;
 
   // The LLVM module
