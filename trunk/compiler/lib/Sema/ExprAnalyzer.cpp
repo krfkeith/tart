@@ -382,7 +382,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   }
 
   // See if the value is a union.
-  if (const UnionType * ut = dyn_cast<UnionType>(value->type())) {
+  if (isa<UnionType>(value->type())) {
     return new InstanceOfExpr(ast->location(), value, type);
   }
 
@@ -447,7 +447,7 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
   if (ConstantExpr * cval = dyn_cast<ConstantExpr>(value)) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cval)) {
       return ConstantInteger::getConstantBool(ast->location(), cint->value() == 0);
-    } else if (ConstantNull * cnull = dyn_cast<ConstantNull>(cval)) {
+    } else if (isa<ConstantNull>(cval)) {
       return ConstantInteger::getConstantBool(ast->location(), true);
     }
 

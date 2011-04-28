@@ -164,8 +164,8 @@ bool NamespaceAnalyzer::analyzeMethods() {
                 diag.info(p1) << p1;
               }
             } else if (dtype == Defn::Indexer) {
-              IndexerDefn * i1 = cast<IndexerDefn>(val);
-              IndexerDefn * i2 = cast<IndexerDefn>(prevVal);
+              //IndexerDefn * i1 = cast<IndexerDefn>(val);
+              //IndexerDefn * i2 = cast<IndexerDefn>(prevVal);
             } else {
               FunctionDefn * f1 = cast<FunctionDefn>(val);
               FunctionDefn * f2 = cast<FunctionDefn>(prevVal);

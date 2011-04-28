@@ -101,7 +101,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
         Type * fieldType = typeFromAST(*it);
         if (isErrorResult(fieldType)) {
-          return false;
+          return NULL;
         }
 
         fieldTypes.push_back(fieldType);

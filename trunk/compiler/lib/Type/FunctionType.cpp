@@ -76,7 +76,7 @@ void FunctionType::addParam(ParameterDefn * param) {
   params_.push_back(param);
 }
 
-ParameterDefn * FunctionType::addParam(const char * name, Type * ty) {
+ParameterDefn * FunctionType::addParam(const char * name, const Type * ty) {
   ParameterDefn * param = new ParameterDefn(NULL, name, ty, NULL);
   addParam(param);
   return param;
@@ -96,6 +96,7 @@ bool FunctionType::isSubtype(const Type * other) const {
   // TODO: For self param as well.
 
   if (const FunctionType * otherFunc = dyn_cast<FunctionType>(other)) {
+    (void)otherFunc;
     DFAIL("Implement");
   }
 

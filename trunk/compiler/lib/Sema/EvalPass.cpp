@@ -447,6 +447,7 @@ void EvalPass::store(Expr * value, Expr * dest) {
           break;
       }
     } else if (ParameterDefn * param = dyn_cast<ParameterDefn>(lvalue->value())) {
+      (void)param;
       diag.debug() << dest;
       DFAIL("Implement assign to param");
     }

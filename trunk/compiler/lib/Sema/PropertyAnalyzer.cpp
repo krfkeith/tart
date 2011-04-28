@@ -187,7 +187,6 @@ bool PropertyAnalyzer::resolveAccessorType() {
         const ASTParamList & astParams = ast->params();
         for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
           ASTParameter * aparam = *it;
-          ParameterDefn * param = new ParameterDefn(module(), aparam);
           getterType->addParam(new ParameterDefn(module(), aparam));
         }
 
@@ -221,7 +220,6 @@ bool PropertyAnalyzer::resolveAccessorType() {
         const ASTParamList & astParams = ast->params();
         for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
           ASTParameter * aparam = *it;
-          ParameterDefn * param = new ParameterDefn(module(), aparam);
           setterType->addParam(new ParameterDefn(module(), aparam));
         }
 

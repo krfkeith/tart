@@ -434,7 +434,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     // This next section deals with converting normal expressions into type expressions.
 
     // Handle the case of a type argument that is a tuple type.
-    if (TupleCtorExpr * tc = dyn_cast<TupleCtorExpr>(cb)) {
+    if (isa<TupleCtorExpr>(cb)) {
       const Type * ttype = getTupleTypesFromTupleExpr(cb);
       if (ttype != NULL) {
         DASSERT(!inferArgTypes || ttype->isSingular());
@@ -480,13 +480,13 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
         if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
           addSpecCandidate(loc, candidates, NULL, typeDefn, typeArgs);
         }
-      } else if (const AddressType * np = dyn_cast<AddressType>(type)) {
+      } else if (isa<AddressType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, typeArgs);
-      } else if (const NativeArrayType * np = dyn_cast<NativeArrayType>(type)) {
+      } else if (isa<NativeArrayType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, typeArgs);
-      } else if (const FlexibleArrayType * np = dyn_cast<FlexibleArrayType>(type)) {
+      } else if (isa<FlexibleArrayType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &FlexibleArrayType::typedefn, typeArgs);
-      } else if (const TypeLiteralType * np = dyn_cast<TypeLiteralType>(type)) {
+      } else if (isa<TypeLiteralType>(type)) {
         addSpecCandidate(loc, candidates, NULL, &TypeLiteralType::typedefn, typeArgs);
       }
     } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
@@ -516,7 +516,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
   SpCandidate * sp = *candidates.begin();
   Defn * defn = sp->def();
   TemplateSignature * tsig = defn->templateSignature();
-  if (TypeDefn * typeDefn = dyn_cast<TypeDefn>(defn)) {
+  if (isa<TypeDefn>(defn)) {
     Type * type = tsig->instantiateType(loc, sp->env());
     if (type != NULL) {
       return new TypeLiteralExpr(loc, type);
@@ -1018,9 +1018,9 @@ void AnalyzerBase::dumpScopeList(const ExprList & lvals) {
   for (ExprList::const_iterator it = lvals.begin(); it != lvals.end(); ++it) {
     const Expr * ex = *it;
     if (const ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(ex)) {
-      diag.info(ex) << ex;
+      diag.info(ex) << scopeName;
     } else if (const TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(ex)) {
-      diag.info(ex) << ex;
+      diag.info(ex) << typeNameExpr;
     } else if (ex->type() != NULL) {
       diag.info(ex) << ex->type();
     } else {
@@ -1053,7 +1053,7 @@ Defn * AnalyzerBase::findDefnByAst(Defn * parent, Defn * toFind) {
     AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup);
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
       if (!ctype->memberScope()->lookupMember(toFind->name(), cdefs, false)) {
-        return false;
+        return NULL;
       }
     }
 

@@ -17,12 +17,6 @@
 
 namespace tart {
 
-namespace {
-  bool isOverloadable(Defn::DefnType dt) {
-    return dt == Defn::Function || dt == Defn::Macro;
-  }
-}
-
 // -------------------------------------------------------------------
 // ParameterDefn
 

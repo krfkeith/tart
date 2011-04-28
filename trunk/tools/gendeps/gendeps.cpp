@@ -98,7 +98,7 @@ int main(int argc, char **argv, char **envp) {
     if (outPath.canRead()) {
       const sys::FileStatus * fstat = outPath.getFileStatus();
       if (fstat != NULL) {
-        size_t bufSize = fstat->fileSize;
+        //size_t bufSize = fstat->fileSize;
       }
     }
 

@@ -1,7 +1,7 @@
 /* ================================================================ *
     TART - A Sweet Programming Language.
  * ================================================================ */
- 
+
 #include <gtest/gtest.h>
 #include "tart/Sema/ParameterAssignments.h"
 #include "tart/Type/StaticType.h"
@@ -11,9 +11,9 @@ using namespace tart;
 
 TEST(ParameterAssigmentsTest, TestNoArgs) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
-    &StaticFnType0<TypeId_SInt32>::value);
-      
+  ParameterAssignmentsBuilder builder(target,
+      &StaticFnType0<Int32Type>::value);
+
   ASSERT_TRUE(builder.check());
   ASSERT_TRUE(builder.isValid());
   ASSERT_EQ(size_t(0), target.size());
@@ -21,10 +21,10 @@ TEST(ParameterAssigmentsTest, TestNoArgs) {
 
 TEST(ParameterAssigmentsTest, TestPositionalAssignment) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
@@ -37,10 +37,10 @@ TEST(ParameterAssigmentsTest, TestPositionalAssignment) {
 
 TEST(ParameterAssigmentsTest, TestKeywordAssignment) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_TRUE(builder.addKeywordArg("a1"));
   ASSERT_TRUE(builder.addKeywordArg("a0"));
   ASSERT_TRUE(builder.addKeywordArg("a2"));
@@ -54,10 +54,10 @@ TEST(ParameterAssigmentsTest, TestKeywordAssignment) {
 
 TEST(ParameterAssigmentsTest, TestPositionalAndKeywordAssignment) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addKeywordArg("a2"));
@@ -71,10 +71,10 @@ TEST(ParameterAssigmentsTest, TestPositionalAndKeywordAssignment) {
 
 TEST(ParameterAssigmentsTest, TestMissingArg) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_FALSE(builder.check());
@@ -83,10 +83,10 @@ TEST(ParameterAssigmentsTest, TestMissingArg) {
 
 TEST(ParameterAssigmentsTest, TestReusedArg) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_FALSE(builder.addKeywordArg("a0"));
@@ -96,10 +96,10 @@ TEST(ParameterAssigmentsTest, TestReusedArg) {
 
 TEST(ParameterAssigmentsTest, TestBadKeywordAssignment) {
   ParameterAssignments target;
-  ParameterAssignmentsBuilder builder(target, 
+  ParameterAssignmentsBuilder builder(target,
     &StaticFnType3<
-      TypeId_SInt32, TypeId_SInt32, TypeId_SInt32, TypeId_SInt32>::value);
-      
+      Int32Type, Int32Type, Int32Type, Int32Type>::value);
+
   ASSERT_FALSE(builder.addKeywordArg("a4"));
   ASSERT_FALSE(builder.check());
   ASSERT_FALSE(builder.isValid());
@@ -107,14 +107,14 @@ TEST(ParameterAssigmentsTest, TestBadKeywordAssignment) {
 
 TEST(ParameterAssigmentsTest, TestVariadicArg) {
   static ParameterDefn * variadicArgs[] = {
-      &StaticParamDefn<TypeId_SInt32, 0>::value,
-      &StaticParamDefn<TypeId_SInt32, 1, ParameterDefn::Variadic>::value,
-      &StaticParamDefn<TypeId_SInt32, 2, ParameterDefn::KeywordOnly>::value,
+      &StaticParamDefn<Int32Type, 0>::value,
+      &StaticParamDefn<Int32Type, 1, ParameterDefn::Variadic>::value,
+      &StaticParamDefn<Int32Type, 2, ParameterDefn::KeywordOnly>::value,
   };
   static FunctionType variadicFunction(&Int32Type::instance, variadicArgs, 3);
   ParameterAssignments target;
   ParameterAssignmentsBuilder builder(target, &variadicFunction);
-      
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addPositionalArg());
@@ -136,14 +136,14 @@ TEST(ParameterAssigmentsTest, TestVariadicArg) {
 
 TEST(ParameterAssigmentsTest, TestEmptyVariadicArg) {
   static ParameterDefn * variadicArgs[] = {
-      &StaticParamDefn<TypeId_SInt32, 0>::value,
-      &StaticParamDefn<TypeId_SInt32, 1, ParameterDefn::Variadic>::value,
-      &StaticParamDefn<TypeId_SInt32, 2, ParameterDefn::KeywordOnly>::value,
+      &StaticParamDefn<Int32Type, 0>::value,
+      &StaticParamDefn<Int32Type, 1, ParameterDefn::Variadic>::value,
+      &StaticParamDefn<Int32Type, 2, ParameterDefn::KeywordOnly>::value,
   };
   static FunctionType variadicFunction(&Int32Type::instance, variadicArgs, 3);
   ParameterAssignments target;
   ParameterAssignmentsBuilder builder(target, &variadicFunction);
-      
+
   ASSERT_TRUE(builder.addPositionalArg());
   ASSERT_TRUE(builder.addKeywordArg("a2"));
   ASSERT_TRUE(builder.check());

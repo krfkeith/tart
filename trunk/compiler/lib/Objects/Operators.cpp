@@ -34,11 +34,11 @@ inline bool areBothConstFloats(const Expr * a0, const Expr * a1) {
     The operator takes two arguments and returns a single value,
     all of which are the same type.
 */
-template<int typ, Instruction::BinaryOps opCode>
+template<class T, Instruction::BinaryOps opCode>
 class IntegerBinOpFunction : public FunctionDefn {
 public:
   IntegerBinOpFunction(const char * name)
-      : FunctionDefn(NULL, name, &StaticFnType2<typ, typ, typ>::value) {}
+      : FunctionDefn(NULL, name, &StaticFnType2<T, T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
@@ -59,150 +59,150 @@ public:
             cast<ConstantInt>(
                 llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
     } else {
-      return new BinaryOpcodeExpr(opCode, loc, &StaticType<typ>::value, arg0, arg1);
+      return new BinaryOpcodeExpr(opCode, loc, &T::instance, arg0, arg1);
     }
   }
 };
 
 /** The builtin add operator. */
-template<int type>
+template<class T>
 class OperatorAddDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Add> value;
+  static IntegerBinOpFunction<T, Instruction::Add> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Add> OperatorAddDecl<type>::value("infixAdd");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Add> OperatorAddDecl<T>::value("infixAdd");
 
 /** The builtin subtract operator. */
-template<int type>
+template<class T>
 class OperatorSubDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Sub> value;
+  static IntegerBinOpFunction<T, Instruction::Sub> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Sub> OperatorSubDecl<type>::value("infixSubtract");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Sub> OperatorSubDecl<T>::value("infixSubtract");
 
 /** The builtin multiply operator. */
-template<int type>
+template<class T>
 class OperatorMulDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Mul> value;
+  static IntegerBinOpFunction<T, Instruction::Mul> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Mul> OperatorMulDecl<type>::value("infixMultiply");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Mul> OperatorMulDecl<T>::value("infixMultiply");
 
 /** The builtin divide operator (signed). */
-template<int type>
+template<class T>
 class OperatorSDivDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::SDiv> value;
+  static IntegerBinOpFunction<T, Instruction::SDiv> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::SDiv> OperatorSDivDecl<type>::value("infixDivide");
+template<class T>
+IntegerBinOpFunction<T, Instruction::SDiv> OperatorSDivDecl<T>::value("infixDivide");
 
 /** The builtin divide operator (unsigned). */
-template<int type>
+template<class T>
 class OperatorUDivDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::UDiv> value;
+  static IntegerBinOpFunction<T, Instruction::UDiv> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::UDiv> OperatorUDivDecl<type>::value("infixDivide");
+template<class T>
+IntegerBinOpFunction<T, Instruction::UDiv> OperatorUDivDecl<T>::value("infixDivide");
 
 /** The builtin modulus operator (signed). */
-template<int type>
+template<class T>
 class OperatorSModDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::SRem> value;
+  static IntegerBinOpFunction<T, Instruction::SRem> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::SRem> OperatorSModDecl<type>::value("infixModulus");
+template<class T>
+IntegerBinOpFunction<T, Instruction::SRem> OperatorSModDecl<T>::value("infixModulus");
 
 /** The builtin modulus operator (unsigned). */
-template<int type>
+template<class T>
 class OperatorUModDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::URem> value;
+  static IntegerBinOpFunction<T, Instruction::URem> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::URem> OperatorUModDecl<type>::value("infixModulus");
+template<class T>
+IntegerBinOpFunction<T, Instruction::URem> OperatorUModDecl<T>::value("infixModulus");
 
 /** The builtin bitwise 'or' operator. */
-template<int type>
+template<class T>
 class BitwiseOrDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Or> value;
+  static IntegerBinOpFunction<T, Instruction::Or> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Or> BitwiseOrDecl<type>::value("infixBitOr");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Or> BitwiseOrDecl<T>::value("infixBitOr");
 
 /** The builtin bitwise 'and' operator. */
-template<int type>
+template<class T>
 class BitwiseAndDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::And> value;
+  static IntegerBinOpFunction<T, Instruction::And> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::And> BitwiseAndDecl<type>::value("infixBitAnd");
+template<class T>
+IntegerBinOpFunction<T, Instruction::And> BitwiseAndDecl<T>::value("infixBitAnd");
 
 /** The builtin bitwise 'xor' operator. */
-template<int type>
+template<class T>
 class BitwiseXorDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Xor> value;
+  static IntegerBinOpFunction<T, Instruction::Xor> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Xor> BitwiseXorDecl<type>::value("infixBitXor");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Xor> BitwiseXorDecl<T>::value("infixBitXor");
 
 /** The builtin shift left operator. */
-template<int type>
+template<class T>
 class OperatorLShiftDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::Shl> value;
+  static IntegerBinOpFunction<T, Instruction::Shl> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::Shl> OperatorLShiftDecl<type>::value("infixLShift");
+template<class T>
+IntegerBinOpFunction<T, Instruction::Shl> OperatorLShiftDecl<T>::value("infixLShift");
 
 /** The builtin arithmetic shift right operator. */
-template<int type>
+template<class T>
 class OperatorARShiftDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::AShr> value;
+  static IntegerBinOpFunction<T, Instruction::AShr> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::AShr> OperatorARShiftDecl<type>::value("infixRShift");
+template<class T>
+IntegerBinOpFunction<T, Instruction::AShr> OperatorARShiftDecl<T>::value("infixRShift");
 
 /** The builtin logical shift right operator. */
-template<int type>
+template<class T>
 class OperatorRShiftDecl {
 public:
-  static IntegerBinOpFunction<type, Instruction::LShr> value;
+  static IntegerBinOpFunction<T, Instruction::LShr> value;
 };
 
-template<int type>
-IntegerBinOpFunction<type, Instruction::LShr> OperatorRShiftDecl<type>::value("infixRShift");
+template<class T>
+IntegerBinOpFunction<T, Instruction::LShr> OperatorRShiftDecl<T>::value("infixRShift");
 
 /** A class representing a binary operator on floating point types.
     The operator takes two arguments and returns a single value,
     all of which are the same type.
 */
-template<int typ, Instruction::BinaryOps opCode>
+template<class T, Instruction::BinaryOps opCode>
 class FloatBinOpFunction : public FunctionDefn {
 public:
   FloatBinOpFunction(const char * name)
-      : FunctionDefn(NULL, name, &StaticFnType2<typ, typ, typ>::value) {}
+      : FunctionDefn(NULL, name, &StaticFnType2<T, T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
@@ -223,67 +223,67 @@ public:
             cast<ConstantFP>(
                 llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
     } else {
-      return new BinaryOpcodeExpr(opCode, loc, &StaticType<typ>::value, arg0, arg1);
+      return new BinaryOpcodeExpr(opCode, loc, &T::instance, arg0, arg1);
     }
   }
 };
 
 /** The builtin add operator (float). */
-template<int type>
+template<class T>
 class OperatorFAddDecl {
 public:
-  static FloatBinOpFunction<type, Instruction::FAdd> value;
+  static FloatBinOpFunction<T, Instruction::FAdd> value;
 };
 
-template<int type>
-FloatBinOpFunction<type, Instruction::FAdd> OperatorFAddDecl<type>::value("infixAdd");
+template<class T>
+FloatBinOpFunction<T, Instruction::FAdd> OperatorFAddDecl<T>::value("infixAdd");
 
 /** The builtin subtract operator (float). */
-template<int type>
+template<class T>
 class OperatorFSubDecl {
 public:
-  static FloatBinOpFunction<type, Instruction::FSub> value;
+  static FloatBinOpFunction<T, Instruction::FSub> value;
 };
 
-template<int type>
-FloatBinOpFunction<type, Instruction::FSub> OperatorFSubDecl<type>::value("infixSubtract");
+template<class T>
+FloatBinOpFunction<T, Instruction::FSub> OperatorFSubDecl<T>::value("infixSubtract");
 
 /** The builtin multiply operator (float). */
-template<int type>
+template<class T>
 class OperatorFMulDecl {
 public:
-  static FloatBinOpFunction<type, Instruction::FMul> value;
+  static FloatBinOpFunction<T, Instruction::FMul> value;
 };
 
-template<int type>
-FloatBinOpFunction<type, Instruction::FMul> OperatorFMulDecl<type>::value("infixMultiply");
+template<class T>
+FloatBinOpFunction<T, Instruction::FMul> OperatorFMulDecl<T>::value("infixMultiply");
 
 /** The builtin divide operator (float). */
-template<int type>
+template<class T>
 class OperatorFDivDecl {
 public:
-  static FloatBinOpFunction<type, Instruction::FDiv> value;
+  static FloatBinOpFunction<T, Instruction::FDiv> value;
 };
 
-template<int type>
-FloatBinOpFunction<type, Instruction::FDiv> OperatorFDivDecl<type>::value("infixDivide");
+template<class T>
+FloatBinOpFunction<T, Instruction::FDiv> OperatorFDivDecl<T>::value("infixDivide");
 
 /** The builtin modulus operator (float). */
-template<int type>
+template<class T>
 class OperatorFModDecl {
 public:
-  static FloatBinOpFunction<type, Instruction::FRem> value;
+  static FloatBinOpFunction<T, Instruction::FRem> value;
 };
 
-template<int type>
-FloatBinOpFunction<type, Instruction::FRem> OperatorFModDecl<type>::value("infixModulus");
+template<class T>
+FloatBinOpFunction<T, Instruction::FRem> OperatorFModDecl<T>::value("infixModulus");
 
 /** Comparison op */
-template<int typ, CmpInst::Predicate pred>
+template<class T, CmpInst::Predicate pred>
 class ComparisonOp : public FunctionDefn {
 public:
   ComparisonOp(const char * name)
-      : FunctionDefn(NULL, name, &StaticFnType2<TypeId_Bool, typ, typ>::value) {}
+      : FunctionDefn(NULL, name, &StaticFnType2<BoolType, T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
@@ -318,43 +318,43 @@ public:
 };
 
 /** Integer comparison. */
-template<int type, CmpInst::Predicate pred>
+template<class T, CmpInst::Predicate pred>
 class OperatorCmp {
 public:
-  static ComparisonOp<type, pred> equal;
-  static ComparisonOp<type, pred> unequal;
-  static ComparisonOp<type, pred> less;
-  static ComparisonOp<type, pred> greater;
-  static ComparisonOp<type, pred> lessOrEqual;
-  static ComparisonOp<type, pred> greaterOrEqual;
+  static ComparisonOp<T, pred> equal;
+  static ComparisonOp<T, pred> unequal;
+  static ComparisonOp<T, pred> less;
+  static ComparisonOp<T, pred> greater;
+  static ComparisonOp<T, pred> lessOrEqual;
+  static ComparisonOp<T, pred> greaterOrEqual;
 };
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::equal("infixEQ");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::equal("infixEQ");
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::unequal("infixNE");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::unequal("infixNE");
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::less("infixLT");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::less("infixLT");
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::greater("infixGT");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::greater("infixGT");
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::lessOrEqual("infixLE");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::lessOrEqual("infixLE");
 
-template<int type, CmpInst::Predicate pred>
-ComparisonOp<type, pred> OperatorCmp<type, pred>::greaterOrEqual("infixGE");
+template<class T, CmpInst::Predicate pred>
+ComparisonOp<T, pred> OperatorCmp<T, pred>::greaterOrEqual("infixGE");
 
 /** The negation unary operator. In LLVM, negation is implemented by
     subtractions from zero.
 */
-template<int typ>
+template<class T>
 class NegateOp : public FunctionDefn {
 public:
   NegateOp()
-      : FunctionDefn(NULL, "unaryNegate", &StaticFnType1<typ, typ>::value) {}
+      : FunctionDefn(NULL, "unaryNegate", &StaticFnType1<T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
@@ -402,16 +402,16 @@ public:
   static NegateOp value;
 };
 
-template<int typ>
-NegateOp<typ> NegateOp<typ>::value;
+template<class T>
+NegateOp<T> NegateOp<T>::value;
 
 /** The negation operator for unsized integers. */
 template<>
-class NegateOp<TypeId_UnsizedInt> : public FunctionDefn {
+class NegateOp<UnsizedIntType> : public FunctionDefn {
 public:
   NegateOp()
       : FunctionDefn(NULL, "unaryNegate",
-            &StaticFnType1<TypeId_UnsizedInt, TypeId_UnsizedInt>::value) {}
+            &StaticFnType1<UnsizedIntType, UnsizedIntType>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
@@ -447,20 +447,20 @@ public:
   static NegateOp value;
 };
 
-NegateOp<TypeId_UnsizedInt> NegateOp<TypeId_UnsizedInt>::value;
+NegateOp<UnsizedIntType> NegateOp<UnsizedIntType>::value;
 
 /** The successor operator. Calculates the successor of the current value. */
-template<int typ>
+template<class T>
 class SuccessorOp : public FunctionDefn {
 public:
-  SuccessorOp() : FunctionDefn(NULL, "successorOf", &StaticFnType1<typ, typ>::value) {}
+  SuccessorOp() : FunctionDefn(NULL, "successorOf", &StaticFnType1<T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
@@ -482,21 +482,21 @@ public:
   static SuccessorOp value;
 };
 
-template<int typ>
-SuccessorOp<typ> SuccessorOp<typ>::value;
+template<class T>
+SuccessorOp<T> SuccessorOp<T>::value;
 
 /** The predececessor operator. Calculates the predececessor of the current value. */
-template<int typ>
+template<class T>
 class PredeccessorOp : public FunctionDefn {
 public:
-  PredeccessorOp() : FunctionDefn(NULL, "predeccessorOf", &StaticFnType1<typ, typ>::value) {}
+  PredeccessorOp() : FunctionDefn(NULL, "predeccessorOf", &StaticFnType1<T, T>::value) {}
 
   Expr * eval(const SourceLocation & loc, Module * callingModule, Expr * self,
       const ExprList & args) const {
     assert(args.size() == 1);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(tart::StaticType<typ>::value.irType());
+    const llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
@@ -518,8 +518,8 @@ public:
   static PredeccessorOp value;
 };
 
-template<int typ>
-PredeccessorOp<typ> PredeccessorOp<typ>::value;
+template<class T>
+PredeccessorOp<T> PredeccessorOp<T>::value;
 
 static SourceString infixAddrCmpSrc(
     " @tart.annex.Intrinsic def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
@@ -553,235 +553,235 @@ static SourceString infixAddSrc(
 void Builtins::initOperators() {
   using namespace llvm;
 
-  module.addMember(&OperatorAddDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorAddDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorAddDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorAddDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorAddDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorAddDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorAddDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorAddDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorFAddDecl<TypeId_Float>::value);
-  module.addMember(&OperatorFAddDecl<TypeId_Double>::value);
-  module.addMember(&OperatorAddDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorAddDecl<Int8Type>::value);
+  module.addMember(&OperatorAddDecl<Int16Type>::value);
+  module.addMember(&OperatorAddDecl<Int32Type>::value);
+  module.addMember(&OperatorAddDecl<Int64Type>::value);
+  module.addMember(&OperatorAddDecl<UInt8Type>::value);
+  module.addMember(&OperatorAddDecl<UInt16Type>::value);
+  module.addMember(&OperatorAddDecl<UInt32Type>::value);
+  module.addMember(&OperatorAddDecl<UInt64Type>::value);
+  module.addMember(&OperatorFAddDecl<FloatType>::value);
+  module.addMember(&OperatorFAddDecl<DoubleType>::value);
+  module.addMember(&OperatorAddDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorSubDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorSubDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorSubDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorSubDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorSubDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorSubDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorSubDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorSubDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorFSubDecl<TypeId_Float>::value);
-  module.addMember(&OperatorFSubDecl<TypeId_Double>::value);
-  module.addMember(&OperatorSubDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorSubDecl<Int8Type>::value);
+  module.addMember(&OperatorSubDecl<Int16Type>::value);
+  module.addMember(&OperatorSubDecl<Int32Type>::value);
+  module.addMember(&OperatorSubDecl<Int64Type>::value);
+  module.addMember(&OperatorSubDecl<UInt8Type>::value);
+  module.addMember(&OperatorSubDecl<UInt16Type>::value);
+  module.addMember(&OperatorSubDecl<UInt32Type>::value);
+  module.addMember(&OperatorSubDecl<UInt64Type>::value);
+  module.addMember(&OperatorFSubDecl<FloatType>::value);
+  module.addMember(&OperatorFSubDecl<DoubleType>::value);
+  module.addMember(&OperatorSubDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorMulDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorMulDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorMulDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorMulDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorMulDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorMulDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorMulDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorMulDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorFMulDecl<TypeId_Float>::value);
-  module.addMember(&OperatorFMulDecl<TypeId_Double>::value);
-  module.addMember(&OperatorMulDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorMulDecl<Int8Type>::value);
+  module.addMember(&OperatorMulDecl<Int16Type>::value);
+  module.addMember(&OperatorMulDecl<Int32Type>::value);
+  module.addMember(&OperatorMulDecl<Int64Type>::value);
+  module.addMember(&OperatorMulDecl<UInt8Type>::value);
+  module.addMember(&OperatorMulDecl<UInt16Type>::value);
+  module.addMember(&OperatorMulDecl<UInt32Type>::value);
+  module.addMember(&OperatorMulDecl<UInt64Type>::value);
+  module.addMember(&OperatorFMulDecl<FloatType>::value);
+  module.addMember(&OperatorFMulDecl<DoubleType>::value);
+  module.addMember(&OperatorMulDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorSDivDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorSDivDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorSDivDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorSDivDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorUDivDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorUDivDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorUDivDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorUDivDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorFDivDecl<TypeId_Float>::value);
-  module.addMember(&OperatorFDivDecl<TypeId_Double>::value);
-  module.addMember(&OperatorSDivDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorSDivDecl<Int8Type>::value);
+  module.addMember(&OperatorSDivDecl<Int16Type>::value);
+  module.addMember(&OperatorSDivDecl<Int32Type>::value);
+  module.addMember(&OperatorSDivDecl<Int64Type>::value);
+  module.addMember(&OperatorUDivDecl<UInt8Type>::value);
+  module.addMember(&OperatorUDivDecl<UInt16Type>::value);
+  module.addMember(&OperatorUDivDecl<UInt32Type>::value);
+  module.addMember(&OperatorUDivDecl<UInt64Type>::value);
+  module.addMember(&OperatorFDivDecl<FloatType>::value);
+  module.addMember(&OperatorFDivDecl<DoubleType>::value);
+  module.addMember(&OperatorSDivDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorSModDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorSModDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorSModDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorSModDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorUModDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorUModDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorUModDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorUModDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorFModDecl<TypeId_Float>::value);
-  module.addMember(&OperatorFModDecl<TypeId_Double>::value);
-  module.addMember(&OperatorSModDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorSModDecl<Int8Type>::value);
+  module.addMember(&OperatorSModDecl<Int16Type>::value);
+  module.addMember(&OperatorSModDecl<Int32Type>::value);
+  module.addMember(&OperatorSModDecl<Int64Type>::value);
+  module.addMember(&OperatorUModDecl<UInt8Type>::value);
+  module.addMember(&OperatorUModDecl<UInt16Type>::value);
+  module.addMember(&OperatorUModDecl<UInt32Type>::value);
+  module.addMember(&OperatorUModDecl<UInt64Type>::value);
+  module.addMember(&OperatorFModDecl<FloatType>::value);
+  module.addMember(&OperatorFModDecl<DoubleType>::value);
+  module.addMember(&OperatorSModDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorCmp<TypeId_Bool,  CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_EQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_OEQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_OEQ>::equal);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<BoolType,  CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_EQ>::equal);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_OEQ>::equal);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_OEQ>::equal);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_EQ>::equal);
 
-  module.addMember(&OperatorCmp<TypeId_Bool,  CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_NE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_ONE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_ONE>::unequal);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<BoolType,  CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_NE>::unequal);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_ONE>::unequal);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_ONE>::unequal);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_NE>::unequal);
 
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_ULT>::less);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_SLT>::less);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_SLT>::less);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_SLT>::less);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_SLT>::less);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_ULT>::less);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_ULT>::less);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_ULT>::less);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_ULT>::less);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_OLT>::less);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_OLT>::less);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_SLT>::less);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_ULT>::less);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_SLT>::less);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_SLT>::less);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_SLT>::less);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_SLT>::less);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_ULT>::less);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_ULT>::less);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_ULT>::less);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_ULT>::less);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_OLT>::less);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_OLT>::less);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_SLT>::less);
 
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_UGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_SGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_SGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_SGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_SGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_UGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_UGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_UGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_UGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_OGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_OGT>::greater);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_SGT>::greater);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_UGT>::greater);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_SGT>::greater);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_SGT>::greater);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_SGT>::greater);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_SGT>::greater);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_UGT>::greater);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_UGT>::greater);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_UGT>::greater);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_UGT>::greater);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_OGT>::greater);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_OGT>::greater);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_SGT>::greater);
 
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_ULE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_SLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_SLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_SLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_SLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_ULE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_ULE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_ULE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_ULE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_OLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_OLE>::lessOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_SLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_ULE>::lessOrEqual);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_SLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_SLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_SLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_SLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_ULE>::lessOrEqual);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_ULE>::lessOrEqual);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_ULE>::lessOrEqual);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_ULE>::lessOrEqual);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_OLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_OLE>::lessOrEqual);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_SLE>::lessOrEqual);
 
-  module.addMember(&OperatorCmp<TypeId_Char,  CmpInst::ICMP_UGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt8, CmpInst::ICMP_SGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt16, CmpInst::ICMP_SGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt32, CmpInst::ICMP_SGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_SInt64, CmpInst::ICMP_SGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt8, CmpInst::ICMP_UGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt16, CmpInst::ICMP_UGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt32, CmpInst::ICMP_UGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UInt64, CmpInst::ICMP_UGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_Float, CmpInst::FCMP_OGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_Double, CmpInst::FCMP_OGE>::greaterOrEqual);
-  module.addMember(&OperatorCmp<TypeId_UnsizedInt, CmpInst::ICMP_SGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<CharType,  CmpInst::ICMP_UGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<Int8Type, CmpInst::ICMP_SGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<Int16Type, CmpInst::ICMP_SGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<Int32Type, CmpInst::ICMP_SGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<Int64Type, CmpInst::ICMP_SGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<UInt8Type, CmpInst::ICMP_UGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<UInt16Type, CmpInst::ICMP_UGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<UInt32Type, CmpInst::ICMP_UGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<UInt64Type, CmpInst::ICMP_UGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<FloatType, CmpInst::FCMP_OGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<DoubleType, CmpInst::FCMP_OGE>::greaterOrEqual);
+  module.addMember(&OperatorCmp<UnsizedIntType, CmpInst::ICMP_SGE>::greaterOrEqual);
 
   // TODO: Emit a warning about negating unsigneds...
-  module.addMember(&NegateOp<TypeId_SInt8>::value);
-  module.addMember(&NegateOp<TypeId_SInt16>::value);
-  module.addMember(&NegateOp<TypeId_SInt32>::value);
-  module.addMember(&NegateOp<TypeId_SInt64>::value);
-  module.addMember(&NegateOp<TypeId_UInt8>::value);
-  module.addMember(&NegateOp<TypeId_UInt16>::value);
-  module.addMember(&NegateOp<TypeId_UInt32>::value);
-  module.addMember(&NegateOp<TypeId_UInt64>::value);
-  module.addMember(&NegateOp<TypeId_Float>::value);
-  module.addMember(&NegateOp<TypeId_Double>::value);
-  module.addMember(&NegateOp<TypeId_UnsizedInt>::value);
+  module.addMember(&NegateOp<Int8Type>::value);
+  module.addMember(&NegateOp<Int16Type>::value);
+  module.addMember(&NegateOp<Int32Type>::value);
+  module.addMember(&NegateOp<Int64Type>::value);
+  module.addMember(&NegateOp<UInt8Type>::value);
+  module.addMember(&NegateOp<UInt16Type>::value);
+  module.addMember(&NegateOp<UInt32Type>::value);
+  module.addMember(&NegateOp<UInt64Type>::value);
+  module.addMember(&NegateOp<FloatType>::value);
+  module.addMember(&NegateOp<DoubleType>::value);
+  module.addMember(&NegateOp<UnsizedIntType>::value);
 
-  module.addMember(&SuccessorOp<TypeId_Char>::value);
-  module.addMember(&SuccessorOp<TypeId_SInt8>::value);
-  module.addMember(&SuccessorOp<TypeId_SInt16>::value);
-  module.addMember(&SuccessorOp<TypeId_SInt32>::value);
-  module.addMember(&SuccessorOp<TypeId_SInt64>::value);
-  module.addMember(&SuccessorOp<TypeId_UInt8>::value);
-  module.addMember(&SuccessorOp<TypeId_UInt16>::value);
-  module.addMember(&SuccessorOp<TypeId_UInt32>::value);
-  module.addMember(&SuccessorOp<TypeId_UInt64>::value);
-  module.addMember(&SuccessorOp<TypeId_UnsizedInt>::value);
+  module.addMember(&SuccessorOp<CharType>::value);
+  module.addMember(&SuccessorOp<Int8Type>::value);
+  module.addMember(&SuccessorOp<Int16Type>::value);
+  module.addMember(&SuccessorOp<Int32Type>::value);
+  module.addMember(&SuccessorOp<Int64Type>::value);
+  module.addMember(&SuccessorOp<UInt8Type>::value);
+  module.addMember(&SuccessorOp<UInt16Type>::value);
+  module.addMember(&SuccessorOp<UInt32Type>::value);
+  module.addMember(&SuccessorOp<UInt64Type>::value);
+  module.addMember(&SuccessorOp<UnsizedIntType>::value);
 
-  module.addMember(&PredeccessorOp<TypeId_Char>::value);
-  module.addMember(&PredeccessorOp<TypeId_SInt8>::value);
-  module.addMember(&PredeccessorOp<TypeId_SInt16>::value);
-  module.addMember(&PredeccessorOp<TypeId_SInt32>::value);
-  module.addMember(&PredeccessorOp<TypeId_SInt64>::value);
-  module.addMember(&PredeccessorOp<TypeId_UInt8>::value);
-  module.addMember(&PredeccessorOp<TypeId_UInt16>::value);
-  module.addMember(&PredeccessorOp<TypeId_UInt32>::value);
-  module.addMember(&PredeccessorOp<TypeId_UInt64>::value);
-  module.addMember(&PredeccessorOp<TypeId_UnsizedInt>::value);
+  module.addMember(&PredeccessorOp<CharType>::value);
+  module.addMember(&PredeccessorOp<Int8Type>::value);
+  module.addMember(&PredeccessorOp<Int16Type>::value);
+  module.addMember(&PredeccessorOp<Int32Type>::value);
+  module.addMember(&PredeccessorOp<Int64Type>::value);
+  module.addMember(&PredeccessorOp<UInt8Type>::value);
+  module.addMember(&PredeccessorOp<UInt16Type>::value);
+  module.addMember(&PredeccessorOp<UInt32Type>::value);
+  module.addMember(&PredeccessorOp<UInt64Type>::value);
+  module.addMember(&PredeccessorOp<UnsizedIntType>::value);
 
-  module.addMember(&BitwiseAndDecl<TypeId_Char>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_SInt8>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_SInt16>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_SInt32>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_SInt64>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_UInt8>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_UInt16>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_UInt32>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_UInt64>::value);
-  module.addMember(&BitwiseAndDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&BitwiseAndDecl<CharType>::value);
+  module.addMember(&BitwiseAndDecl<Int8Type>::value);
+  module.addMember(&BitwiseAndDecl<Int16Type>::value);
+  module.addMember(&BitwiseAndDecl<Int32Type>::value);
+  module.addMember(&BitwiseAndDecl<Int64Type>::value);
+  module.addMember(&BitwiseAndDecl<UInt8Type>::value);
+  module.addMember(&BitwiseAndDecl<UInt16Type>::value);
+  module.addMember(&BitwiseAndDecl<UInt32Type>::value);
+  module.addMember(&BitwiseAndDecl<UInt64Type>::value);
+  module.addMember(&BitwiseAndDecl<UnsizedIntType>::value);
 
-  module.addMember(&BitwiseOrDecl<TypeId_Char>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_SInt8>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_SInt16>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_SInt32>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_SInt64>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_UInt8>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_UInt16>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_UInt32>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_UInt64>::value);
-  module.addMember(&BitwiseOrDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&BitwiseOrDecl<CharType>::value);
+  module.addMember(&BitwiseOrDecl<Int8Type>::value);
+  module.addMember(&BitwiseOrDecl<Int16Type>::value);
+  module.addMember(&BitwiseOrDecl<Int32Type>::value);
+  module.addMember(&BitwiseOrDecl<Int64Type>::value);
+  module.addMember(&BitwiseOrDecl<UInt8Type>::value);
+  module.addMember(&BitwiseOrDecl<UInt16Type>::value);
+  module.addMember(&BitwiseOrDecl<UInt32Type>::value);
+  module.addMember(&BitwiseOrDecl<UInt64Type>::value);
+  module.addMember(&BitwiseOrDecl<UnsizedIntType>::value);
 
-  module.addMember(&BitwiseXorDecl<TypeId_Char>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_SInt8>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_SInt16>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_SInt32>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_SInt64>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_UInt8>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_UInt16>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_UInt32>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_UInt64>::value);
-  module.addMember(&BitwiseXorDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&BitwiseXorDecl<CharType>::value);
+  module.addMember(&BitwiseXorDecl<Int8Type>::value);
+  module.addMember(&BitwiseXorDecl<Int16Type>::value);
+  module.addMember(&BitwiseXorDecl<Int32Type>::value);
+  module.addMember(&BitwiseXorDecl<Int64Type>::value);
+  module.addMember(&BitwiseXorDecl<UInt8Type>::value);
+  module.addMember(&BitwiseXorDecl<UInt16Type>::value);
+  module.addMember(&BitwiseXorDecl<UInt32Type>::value);
+  module.addMember(&BitwiseXorDecl<UInt64Type>::value);
+  module.addMember(&BitwiseXorDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorLShiftDecl<TypeId_Char>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorLShiftDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorLShiftDecl<CharType>::value);
+  module.addMember(&OperatorLShiftDecl<Int8Type>::value);
+  module.addMember(&OperatorLShiftDecl<Int16Type>::value);
+  module.addMember(&OperatorLShiftDecl<Int32Type>::value);
+  module.addMember(&OperatorLShiftDecl<Int64Type>::value);
+  module.addMember(&OperatorLShiftDecl<UInt8Type>::value);
+  module.addMember(&OperatorLShiftDecl<UInt16Type>::value);
+  module.addMember(&OperatorLShiftDecl<UInt32Type>::value);
+  module.addMember(&OperatorLShiftDecl<UInt64Type>::value);
+  module.addMember(&OperatorLShiftDecl<UnsizedIntType>::value);
 
-  module.addMember(&OperatorARShiftDecl<TypeId_Char>::value);
-  module.addMember(&OperatorARShiftDecl<TypeId_SInt8>::value);
-  module.addMember(&OperatorARShiftDecl<TypeId_SInt16>::value);
-  module.addMember(&OperatorARShiftDecl<TypeId_SInt32>::value);
-  module.addMember(&OperatorARShiftDecl<TypeId_SInt64>::value);
-  module.addMember(&OperatorRShiftDecl<TypeId_UInt8>::value);
-  module.addMember(&OperatorRShiftDecl<TypeId_UInt16>::value);
-  module.addMember(&OperatorRShiftDecl<TypeId_UInt32>::value);
-  module.addMember(&OperatorRShiftDecl<TypeId_UInt64>::value);
-  module.addMember(&OperatorARShiftDecl<TypeId_UnsizedInt>::value);
+  module.addMember(&OperatorARShiftDecl<CharType>::value);
+  module.addMember(&OperatorARShiftDecl<Int8Type>::value);
+  module.addMember(&OperatorARShiftDecl<Int16Type>::value);
+  module.addMember(&OperatorARShiftDecl<Int32Type>::value);
+  module.addMember(&OperatorARShiftDecl<Int64Type>::value);
+  module.addMember(&OperatorRShiftDecl<UInt8Type>::value);
+  module.addMember(&OperatorRShiftDecl<UInt16Type>::value);
+  module.addMember(&OperatorRShiftDecl<UInt32Type>::value);
+  module.addMember(&OperatorRShiftDecl<UInt64Type>::value);
+  module.addMember(&OperatorARShiftDecl<UnsizedIntType>::value);
 
   compileBuiltins(infixAddrCmpSrc);
   compileBuiltins(infixNeSrc);

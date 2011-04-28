@@ -272,7 +272,6 @@ bool ClassAnalyzer::checkNameConflicts() {
     if (trace_) {
       diag.debug() << "Check name conflicts";
     }
-    Defn::DefnType dtype = target->defnType();
     const SymbolTable & symbols = type->members();
     for (SymbolTable::const_iterator entry = symbols.begin(); entry != symbols.end(); ++entry) {
       const SymbolTable::Entry & defns = entry->second;
@@ -793,8 +792,8 @@ bool ClassAnalyzer::analyzeConstructors() {
 }
 
 void ClassAnalyzer::analyzeConstructBase(FunctionDefn * ctor) {
-  CompositeType * type = targetType();
-  CompositeType * superType = cast_or_null<CompositeType>(type->super());
+  //CompositeType * type = targetType();
+  //CompositeType * superType = cast_or_null<CompositeType>(type->super());
 /*  if (superType != NULL) {
     BlockList & blocks = ctor->blocks();
     for (BlockList::iterator blk = blocks.begin(); blk != blocks.end(); ++blk) {
@@ -817,7 +816,6 @@ bool ClassAnalyzer::analyzeMethods() {
     if (trace_) {
       diag.debug() << "Methods";
     }
-    Defn::DefnType dtype = target->defnType();
 
     // Analyze all methods
     for (Defn * member = type->firstMember(); member != NULL; member = member->nextInScope()) {
@@ -884,8 +882,8 @@ bool ClassAnalyzer::analyzeMethods() {
                 type->setClassFlag(CompositeType::HasErrors);
               }
             } else if (dtype == Defn::Indexer) {
-              IndexerDefn * i1 = cast<IndexerDefn>(val);
-              IndexerDefn * i2 = cast<IndexerDefn>(prevVal);
+              //IndexerDefn * i1 = cast<IndexerDefn>(val);
+              //IndexerDefn * i2 = cast<IndexerDefn>(prevVal);
             } else {
               FunctionDefn * f1 = cast<FunctionDefn>(val);
               FunctionDefn * f2 = cast<FunctionDefn>(prevVal);
@@ -1037,7 +1035,7 @@ void ClassAnalyzer::overrideMembers() {
     MethodList methods;
     MethodList getters;
     MethodList setters;
-    FunctionDefn * uniqueGetter = NULL;
+    //FunctionDefn * uniqueGetter = NULL;
     PropertyDefn * prop = NULL;
 
     // Look for properties and methods. Methods can have more than one implementation

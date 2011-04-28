@@ -111,7 +111,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
         //}
       } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
         if (!analyzeVariable(var, Task_PrepTypeComparison)) {
-          return false;
+          return &Expr::ErrorVal;
         }
 
         const Type * varType = dealias(var->type());
@@ -165,7 +165,6 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
 
     diag.error(loc) << "No matching method for call to " << fs.str() << ", candidates are:";
     for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
-      Expr * resultMethod = *it;
       if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
         diag.info(lval->value()) << Format_Type << lval->value();
       } else {

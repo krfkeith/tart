@@ -60,10 +60,10 @@ ComparisonResult operator-(ComparisonResult cr) {
 // TypeOrdering
 
 ComparisonResult TypeOrdering::compare(const Type * t1, const Type * t2) {
+#if 0
   ComparisonResult result = EQUAL;
     //case Type::Alias:
 
-#if 0
   switch (t1->typeClass()) {
     case Type::Alias:
       break;
@@ -342,8 +342,8 @@ int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {
           static_cast<const FlexibleArrayType *>(t1));
 
     case Type::Unit: {
-      const ConstantExpr * v0 = static_cast<const UnitType *>(t0)->value();
-      const ConstantExpr * v1 = static_cast<const UnitType *>(t1)->value();
+      //const ConstantExpr * v0 = static_cast<const UnitType *>(t0)->value();
+      //const ConstantExpr * v1 = static_cast<const UnitType *>(t1)->value();
       DFAIL("Implement");
       return false;
     }

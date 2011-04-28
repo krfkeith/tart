@@ -439,7 +439,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
     // TODO: What if the spread is greater than 2^63?
 #if 1
     int64_t spread = baseType->isUnsignedType() ?
-        (maxValInt - minValInt).getZExtValue() :
+        int64_t((maxValInt - minValInt).getZExtValue()) :
         (maxValInt - minValInt).getSExtValue();
     DASSERT(spread >= 0);
     if ((spread < 16 || spread < int64_t(enumMembers.size()) * 2) && spread < 0x10000) {
@@ -497,6 +497,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
 
       // Check if it's in range - unsigned less than or equal to 'spread'.
       Value * rangeCheck = builder_.CreateICmpULE(index, ConstantInt::get(selfType, spread));
+      (void)rangeCheck;
 
       // Create a GEP into the string table and load it.
       ValueList args;
@@ -587,6 +588,7 @@ llvm::Value * CodeGenerator::getTypeObjectPtr(const Type * type) {
   // We need a module pointer
   //DASSERT_OBJ(module_->reflectedTypes().count(type), type);
   llvm::Constant * moduleObject = createModuleObjectPtr();
+  (void)moduleObject;
 
   // Need a function call...
 
@@ -814,6 +816,7 @@ llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
   }
 
   Value * selfArg = it++;
+  (void)selfArg;
   // Need to upcast to object.
 
 

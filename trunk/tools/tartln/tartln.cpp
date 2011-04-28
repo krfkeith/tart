@@ -190,7 +190,6 @@ static inline void addPass(PassManager & pm, Pass * pass) {
 /// inter-procedural optimizations if applicable.
 void optimize(Module * module, const TargetData * targetData) {
   // Add an appropriate TargetData instance for this module...
-  FunctionPassManager *FPasses = NULL;
   if (optOptimizationLevel >= O1) {
     FunctionPassManager fpm(module);
     if (targetData) {
@@ -489,7 +488,7 @@ int main(int argc, char **argv, char **envp) {
   InitializeAllTargets();
   InitializeAllAsmPrinters();
 
-  try {
+//  try {
     // Parse the command line options
     cl::ParseCommandLineOptions(argc, argv, "tartln\n");
 
@@ -617,11 +616,11 @@ int main(int argc, char **argv, char **envp) {
     } else {
       printAndExit("Unsupported output type");
     }
-  } catch (const std::string & msg) {
-    printAndExit(msg, 2);
-  } catch (...) {
-    printAndExit("Unexpected unknown exception occurred.", 2);
-  }
+//  } catch (const std::string & msg) {
+//    printAndExit(msg, 2);
+//  } catch (...) {
+//    printAndExit("Unexpected unknown exception occurred.", 2);
+//  }
 
   // Graceful exit
   return 0;

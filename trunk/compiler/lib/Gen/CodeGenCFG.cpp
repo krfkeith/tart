@@ -628,8 +628,8 @@ Value * CodeGenerator::genMatch(const MatchExpr * in) {
 
   // TODO: For union with a discriminator, we could use a switch instruction.
   const Type * matchType = dealias(in->value()->type());
-  TypeShape matchTypeShape = matchType->typeShape();
-  bool matchIsLValue = matchTypeShape == Shape_Large_Value;
+  //TypeShape matchTypeShape = matchType->typeShape();
+  //bool matchIsLValue = matchTypeShape == Shape_Large_Value;
   if (const UnionType * utype = dyn_cast<UnionType>(matchType)) {
     if (utype->hasRefTypesOnly()) {
     } else {
@@ -749,7 +749,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
   // Create the 'else' block if any.
   BasicBlock * blkElse = NULL;
   if (in->elseBlock() != NULL) {
-    BasicBlock * blkElse = createBlock("try.else");
+    blkElse = createBlock("try.else");
   }
 
   // Create a block for the 'finally' statement if any.
@@ -815,7 +815,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
         irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
     Value * ehPtr = builder_.CreateCall(ehException, "eh_ptr");
     const StructType * throwableType = cast<StructType>(Builtins::typeThrowable->irType());
-    const llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
+    //const llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
 
     // Build the selector list, and detect if there is a 'catch-everything' block.
     // Note that a 'catch-everything' block may catch foreign exceptions, which
@@ -1232,7 +1232,7 @@ llvm::Value * CodeGenerator::genThrow(const ThrowExpr * in) {
   if (isUnwindBlock_) {
     // If the 'throw' statement is in a try block, then use invoke.
     BasicBlock * blkUnreachable = createBlock("unreachable");
-    Value * result = builder_.CreateInvoke(
+    builder_.CreateInvoke(
         unwindFunc, blkUnreachable, getUnwindBlock(), ehPtr, "throw");
     builder_.SetInsertPoint(blkUnreachable);
   } else {

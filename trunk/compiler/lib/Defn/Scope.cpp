@@ -42,7 +42,7 @@ void IterableScope::setParentScope(Scope * parent)  {
 
 void IterableScope::addMember(Defn * d) {
   DASSERT_OBJ(d->definingScope() == NULL, d);
-  SymbolTable::Entry * entry = members_.add(d);
+  members_.add(d);
   d->setDefiningScope(this);
 }
 

@@ -3,9 +3,6 @@
 if (CMAKE_COMPILER_IS_GNUCC)
   add_definitions(
       -g
-      -Wall
-      -Wcast-align
-      -Wpointer-arith
       -fno-exceptions)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
@@ -15,6 +12,14 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       )
   set_source_files_properties(lib/GC.cpp PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -fno-rtti")
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+if (CMAKE_COMPILER_IS_CLANG)
+  add_definitions(
+#      -Woverloaded-virtual
+      -fno-rtti
+      -fno-exceptions
+      )
+endif (CMAKE_COMPILER_IS_CLANG)
 
 include_directories(include)
 

@@ -709,7 +709,7 @@ void CastExpr::format(FormatStream & out) const {
 
 void ClosureEnvExpr::addMember(Defn * d) {
   DASSERT_OBJ(d->definingScope() == NULL, d);
-  SymbolTable::Entry * entry = envType_->members().add(d);
+  envType_->members().add(d);
   d->setDefiningScope(this);
 }
 
