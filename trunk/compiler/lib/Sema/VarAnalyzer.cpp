@@ -217,7 +217,7 @@ bool VarAnalyzer::resolveVarType() {
         }
 
         // Special case for native array initializers.
-        if (const NativeArrayType * nat = dyn_cast<NativeArrayType>(dealias(target->type()))) {
+        if (isa<NativeArrayType>(dealias(target->type()))) {
           if (ast->value()->nodeType() == ASTNode::ArrayLiteral) {
             initExpr = initializeNativeArray(initExpr);
           }

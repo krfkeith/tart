@@ -165,7 +165,7 @@ private:
 
 // -------------------------------------------------------------------
 // Get the token position for a given source location.
-static TokenPosition tokenPosition(const SourceLocation & loc) {
+inline TokenPosition tokenPosition(const SourceLocation & loc) {
   if (loc.file) {
     return loc.file->tokenPosition(loc);
   } else {

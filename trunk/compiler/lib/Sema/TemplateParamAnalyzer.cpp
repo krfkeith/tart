@@ -32,7 +32,6 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   }
 
   // See if the type variable has constraints
-  Type * type = NULL;
   if (ast->type() != NULL) {
     Type * type = typeFromAST(ast->type());
     if (type != NULL) {

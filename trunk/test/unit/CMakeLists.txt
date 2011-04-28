@@ -8,14 +8,21 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       )
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
+if (CMAKE_COMPILER_IS_CLANG)
+  add_definitions(
+      -Woverloaded-virtual
+      -fno-rtti
+      )
+endif (CMAKE_COMPILER_IS_CLANG)
+
 execute_process(
   COMMAND ${LLVM_CONFIG} --libs bitwriter bitreader asmparser ${LLVM_TARGETS}
   OUTPUT_VARIABLE LLVM_TESTRUNNER_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-include_directories(${TART_SOURCE_DIR}/third-party/gtest-1.3.0/include)
-include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.1.0/include)
+include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.6.0/include)
+include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.6.0/gtest/include)
 
 # Unit test executable. We specify the sources explicitly because we want
 # the tests to run in that order.
@@ -41,13 +48,6 @@ add_executable(unittest
 target_link_libraries(unittest
     gtest gmock compiler
     ${LLVM_TESTRUNNER_LIBS}
-
-#    ${LLVM_BIT_WRITER}
-#    ${LLVM_ANALYSIS} 
-#    ${LLVM_TARGET}
-#    ${LLVM_MMC}
-#    ${LLVM_CORE}
-#    ${LLVM_SUPPORT}
     )
 if (LIB_DL)
   target_link_libraries(unittest dl)

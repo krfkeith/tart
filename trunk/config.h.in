@@ -66,6 +66,7 @@
 #cmakedefine SIZEOF_INT @SIZEOF_INT@
 #cmakedefine SIZEOF_LONG @SIZEOF_LONG@
 #cmakedefine SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
+#cmakedefine SIZEOF_SIZE_T @SIZEOF_SIZE_T@
 #cmakedefine SIZEOF_VOID_PTR @SIZEOF_VOID_PTR@
 
 /** Install prefix */

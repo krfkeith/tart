@@ -55,7 +55,7 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
           module_->addSymbol(de);
         } else if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
           // Add inner types
-          module_->addSymbol(de);
+          module_->addSymbol(td);
         }
       }
 

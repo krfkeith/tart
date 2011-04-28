@@ -16,7 +16,6 @@ namespace tart {
 using namespace llvm;
 
 void CodeGenerator::genModuleMetadata() {
-  ProgramSource * source = module_->moduleSource();
   MDWriter writer(*this);
   SmallString<128> mdName("tart.xdef.");
   mdName += module_->qualifiedName();

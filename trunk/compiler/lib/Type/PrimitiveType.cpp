@@ -32,32 +32,6 @@ PrimitiveType * PrimitiveType::primitiveTypeList;
 ASTBuiltIn PrimitiveType::intDef(NULL);
 ASTBuiltIn PrimitiveType::uintDef(NULL);
 
-void PrimitiveType::initPrimitiveTypes(Module * module) {
-  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
-    ptype->initType();
-    TypeDefn * de = ptype->typeDefn();
-    de->setQualifiedName(de->name());
-    if (!ptype->isUnsizedIntType()) {
-      de->addTrait(Defn::Singular);
-    }
-
-    module->addMember(de);
-  }
-
-  unsigned pointerSize = 32;
-  const llvm::TargetData * td = TargetSelection::instance.targetData();
-  if (td != NULL) {
-    pointerSize = td->getPointerSizeInBits();
-  }
-
-  intDef.setValue(pointerSize == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
-  uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
-
-  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
-    ptype->initMembers();
-  }
-}
-
 const Type * PrimitiveType::intType() {
   return static_cast<TypeDefn *>(intDef.value())->typeValue();
 }
@@ -101,6 +75,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
   }
 
   if (ConstantExpr * cbase = dyn_cast_or_null<ConstantExpr>(cn.fromValue)) {
+    (void) cbase;
     return convertConstantToInteger(cn);
   }
 
@@ -146,6 +121,9 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         return SignedUnsigned;
       } else if (isFloatingTypeId(srcId)) {
+        if (!cn.isExplicit()) {
+          return Incompatible;
+        }
         if (cn.fromValue && cn.resultValue) {
           // Convert from float
           diag.debug() << cn.fromValue;
@@ -194,6 +172,9 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
         return result;
       } else if (isFloatingTypeId(srcId)) {
+        if (!cn.isExplicit()) {
+          return Incompatible;
+        }
         if (cn.fromValue && cn.resultValue) {
           //return new CastExpr(llvm::Instruction::FPToSI, expr, this);
           diag.debug() << cn.fromValue;
@@ -231,7 +212,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
     diag.fatal() << "cannot convert " << fromType << " to " << this;
     DFAIL("Illegal State");
-  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
+  } else if (cn.isChecked() && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;
@@ -247,8 +228,6 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
   fromType = derefEnumType(fromType);
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
-
-  bool dstIsSigned = isSignedIntegerTypeId(dstId);
 
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
@@ -315,8 +294,12 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
       DFAIL("ConstantInteger expression with non-integer type");
     }
   } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
+    if (!cn.isExplicit()) {
+      return Incompatible;
+    }
     const PrimitiveType * fromType = cast<PrimitiveType>(fromType);
     llvm::ConstantFP * floatVal = cfloat->value();
+    (void) floatVal;
 
     if (cn.resultValue) {
       DFAIL("Implement");
@@ -392,6 +375,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
   uint32_t dstBits = this->numBits();
 
   if (ConstantExpr * cbase = dyn_cast_or_null<ConstantExpr>(cn.fromValue)) {
+    (void) cbase;
     return convertConstantToFloat(cn);
   }
 
@@ -410,9 +394,12 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
       DASSERT(srcBits != dstBits);
       return srcBits > dstBits ? Truncation : ExactConversion;
     } else if (isUnsignedIntegerTypeId(srcId)) {
+      if (!cn.isExplicit()) {
+        return Incompatible;
+      }
       ConversionRank result = NonPreferred;
       if (srcBits > 48 || (dstId == TypeId_Float && srcBits > 24)) {
-        ConversionRank result = PrecisionLoss;
+        result = PrecisionLoss;
       }
 
       if (cn.fromValue && cn.resultValue) {
@@ -423,9 +410,12 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       return result;
     } else if (isSignedIntegerTypeId(srcId)) {
+      if (!cn.isExplicit()) {
+        return Incompatible;
+      }
       ConversionRank result = NonPreferred;
       if (srcBits > 48 || (dstId == TypeId_Float && srcBits > 24)) {
-        ConversionRank result = PrecisionLoss;
+        result = PrecisionLoss;
       }
 
       if (cn.fromValue && cn.resultValue) {
@@ -436,7 +426,7 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 
       return result;
     }
-  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
+  } else if (cn.isChecked() && fromType->isReferenceType()) {
     return convertFromObject(cn);
   }
 
@@ -453,7 +443,6 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  bool dstIsSigned = isSignedIntegerTypeId(dstId);
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
@@ -555,6 +544,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
   }
 
   if (ConstantExpr * cbase = dyn_cast_or_null<ConstantExpr>(cn.fromValue)) {
+    (void) cbase;
     return convertConstantToBool(cn);
   }
 
@@ -571,7 +561,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     }
 
     return Incompatible;
-  } else if ((cn.options & Conversion::Checked) && fromType->isReferenceType()) {
+  } else if (cn.isChecked() && fromType->isReferenceType()) {
     return convertFromObject(cn);
   } else {
     return Incompatible;
@@ -605,6 +595,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
 
     return IntegerToBool;
   } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
+    (void) cfloat;
     return Incompatible;
   } else {
     return Incompatible;
@@ -632,10 +623,10 @@ void PrimitiveType::defineConstant(const char * name, ConstantExpr * value) {
 
 /// -------------------------------------------------------------------
 /// Class which defines conversion constructors for primitive types.
-template<int to, int from>
+template<class To, class From>
 class PrimitiveConstructor : public FunctionDefn {
 public:
-  PrimitiveConstructor() : FunctionDefn(NULL, "create", &StaticFnType1<to, from>::value) {
+  PrimitiveConstructor() : FunctionDefn(NULL, "create", &StaticFnType1<To, From>::value) {
     setStorageClass(Storage_Static);
   }
 
@@ -643,7 +634,7 @@ public:
       const ExprList & args) const {
     DASSERT(args.size() == 1);
     Expr * arg = args[0];
-    return StaticType<to>::value.explicitCast(loc, arg);
+    return To::instance.explicitCast(loc, arg);
   }
 
   // Override format so that we can print the type name instead of just 'create'.
@@ -652,22 +643,22 @@ public:
       out << "def ";
     }
 
-    out << &PrimitiveTypeImpl<TypeId(to)>::instance;
+    out << &To::instance;
     if (out.getShowType()) {
-      out << "(" << &PrimitiveTypeImpl<TypeId(from)>::instance << ")";
-      out << " -> " << &PrimitiveTypeImpl<TypeId(to)>::instance;
+      out << "(" << &From::instance << ")";
+      out << " -> " << &To::instance;
     }
   }
 
   static PrimitiveConstructor value;
 };
 
-template<int to, int from>
-PrimitiveConstructor<to, from> PrimitiveConstructor<to, from>::value;
+template<class To, class From>
+PrimitiveConstructor<To, From> PrimitiveConstructor<To, From>::value;
 
 /// -------------------------------------------------------------------
 /// Class which defines a 'toString' function for each primitive type.
-template<int kTypeId>
+template<class Type>
 class PrimitiveToString : public FunctionDefn {
 public:
   PrimitiveToString() : FunctionDefn(NULL, "toString", &type) {
@@ -688,22 +679,22 @@ public:
   static PrimitiveToString value;
 };
 
-template<int kTypeId>
-ParameterDefn PrimitiveToString<kTypeId>::selfParam(
+template<class Type>
+ParameterDefn PrimitiveToString<Type>::selfParam(
     NULL,
     "self",
-    &StaticType<kTypeId>::value, NULL);
+    &Type::instance, NULL);
 
-template<int kTypeId>
-FunctionType PrimitiveToString<kTypeId>::type(
-    &StaticType<TypeId_String>::value, &selfParam, NULL, 0);
+template<class Type>
+FunctionType PrimitiveToString<Type>::type(
+    &Builtins::typeAliasString, &selfParam, NULL, 0);
 
-template<int kTypeId>
-PrimitiveToString<kTypeId> PrimitiveToString<kTypeId>::value;
+template<class Type>
+PrimitiveToString<Type> PrimitiveToString<Type>::value;
 
 /// -------------------------------------------------------------------
 /// Class which defines a 'parse' function for each primitive type.
-template<int kTypeId>
+template<class Type>
 class PrimitiveParse : public FunctionDefn {
 public:
   PrimitiveParse() : FunctionDefn(NULL, "parse", &type) {
@@ -715,7 +706,7 @@ public:
   void init() {
     // Can't do this in constructor because it happens too early.
     type.addParam(new ParameterDefn(NULL, "s", &Builtins::typeAliasString, 0));
-    if (kTypeId >= TypeId_SInt8 && kTypeId <= TypeId_UInt64) {
+    if (Type::id >= TypeId_SInt8 && Type::id <= TypeId_UInt64) {
       ConstantInteger * defaultRadix = ConstantInteger::getSInt(10);
       type.addParam(new ParameterDefn(NULL, "radix", defaultRadix->type(), 0, defaultRadix));
     }
@@ -728,11 +719,11 @@ public:
   static PrimitiveParse value;
 };
 
-template<int kTypeId>
-FunctionType PrimitiveParse<kTypeId>::type(&StaticType<kTypeId>::value, NULL, NULL, 0);
+template<class Type>
+FunctionType PrimitiveParse<Type>::type(&Type::instance, NULL, NULL, 0);
 
-template<int kTypeId>
-PrimitiveParse<kTypeId> PrimitiveParse<kTypeId>::value;
+template<class Type>
+PrimitiveParse<Type> PrimitiveParse<Type>::value;
 
 /// -------------------------------------------------------------------
 /// Primitive type: Void
@@ -740,7 +731,7 @@ PrimitiveParse<kTypeId> PrimitiveParse<kTypeId>::value;
 // Yes, void values can be constructed.
 class VoidConstructor : public FunctionDefn {
 public:
-  VoidConstructor() : FunctionDefn(NULL, "create", &StaticFnType0<TypeId_Void>::value) {
+  VoidConstructor() : FunctionDefn(NULL, "create", &StaticFnType0<VoidType>::value) {
     setStorageClass(Storage_Static);
   }
 
@@ -801,15 +792,15 @@ template<> void BoolType::initType() {
 }
 
 template<> void BoolType::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_Bool, TypeId_Bool>::value);
-  addMember(&PrimitiveToString<TypeId_Bool>::value);
-  addMember(&PrimitiveParse<TypeId_Bool>::value);
+  addMember(&PrimitiveConstructor<BoolType, BoolType>::value);
+  addMember(&PrimitiveToString<BoolType>::value);
+  addMember(&PrimitiveParse<BoolType>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(1), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(1), this));
 
-  PrimitiveToString<TypeId_Bool>::value.init();
-  PrimitiveParse<TypeId_Bool>::value.init();
+  PrimitiveToString<BoolType>::value.init();
+  PrimitiveParse<BoolType>::value.init();
 }
 
 template<> uint32_t BoolType::numBits() const {
@@ -837,20 +828,20 @@ template<> void CharType::initType() {
 }
 
 template<> void CharType::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_Char, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_Char>::value);
-  addMember(&PrimitiveParse<TypeId_Char>::value);
+  addMember(&PrimitiveConstructor<CharType, CharType>::value);
+  addMember(&PrimitiveConstructor<CharType, Int32Type>::value);
+  addMember(&PrimitiveConstructor<CharType, Int64Type>::value);
+  addMember(&PrimitiveConstructor<CharType, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<CharType, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<CharType, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<CharType>::value);
+  addMember(&PrimitiveParse<CharType>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(32), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(32), this));
 
-  PrimitiveToString<TypeId_Char>::value.init();
-  PrimitiveParse<TypeId_Char>::value.init();
+  PrimitiveToString<CharType>::value.init();
+  PrimitiveParse<CharType>::value.init();
 }
 
 template<> uint32_t CharType::numBits() const {
@@ -880,24 +871,24 @@ template<> void Int8Type::initType() {
 template<> void Int8Type::initMembers() {
 
   // Conversion constructors
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt8, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SInt8>::value);
-  addMember(&PrimitiveParse<TypeId_SInt8>::value);
+  addMember(&PrimitiveConstructor<Int8Type, CharType>::value);
+  addMember(&PrimitiveConstructor<Int8Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<Int8Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<Int8Type>::value);
+  addMember(&PrimitiveParse<Int8Type>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(8), this));
   defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(8), this));
 
-  PrimitiveToString<TypeId_SInt8>::value.init();
-  PrimitiveParse<TypeId_SInt8>::value.init();
+  PrimitiveToString<Int8Type>::value.init();
+  PrimitiveParse<Int8Type>::value.init();
 }
 
 template<> uint32_t Int8Type::numBits() const {
@@ -926,24 +917,24 @@ template<> void Int16Type::initType() {
 }
 
 template<> void Int16Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt16, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SInt16>::value);
-  addMember(&PrimitiveParse<TypeId_SInt16>::value);
+  addMember(&PrimitiveConstructor<Int16Type, CharType>::value);
+  addMember(&PrimitiveConstructor<Int16Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<Int16Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<Int16Type>::value);
+  addMember(&PrimitiveParse<Int16Type>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(16), this));
   defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(16), this));
 
-  PrimitiveToString<TypeId_SInt16>::value.init();
-  PrimitiveParse<TypeId_SInt16>::value.init();
+  PrimitiveToString<Int16Type>::value.init();
+  PrimitiveParse<Int16Type>::value.init();
 }
 
 template<> uint32_t Int16Type::numBits() const {
@@ -974,24 +965,24 @@ template<> void Int32Type::initType() {
 }
 
 template<> void Int32Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt32, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SInt32>::value);
-  addMember(&PrimitiveParse<TypeId_SInt32>::value);
+  addMember(&PrimitiveConstructor<Int32Type, CharType>::value);
+  addMember(&PrimitiveConstructor<Int32Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<Int32Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<Int32Type>::value);
+  addMember(&PrimitiveParse<Int32Type>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(32), this));
   defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(32), this));
 
-  PrimitiveToString<TypeId_SInt32>::value.init();
-  PrimitiveParse<TypeId_SInt32>::value.init();
+  PrimitiveToString<Int32Type>::value.init();
+  PrimitiveParse<Int32Type>::value.init();
 }
 
 template<> uint32_t Int32Type::numBits() const {
@@ -1021,24 +1012,24 @@ template<> void Int64Type::initType() {
 }
 
 template<> void Int64Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_SInt64, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_SInt64>::value);
-  addMember(&PrimitiveParse<TypeId_SInt64>::value);
+  addMember(&PrimitiveConstructor<Int64Type, CharType>::value);
+  addMember(&PrimitiveConstructor<Int64Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<Int64Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<Int64Type>::value);
+  addMember(&PrimitiveParse<Int64Type>::value);
 
   defineConstant("minVal", ConstantInteger::getSigned(llvm::APInt::getSignedMinValue(64), this));
   defineConstant("maxVal", ConstantInteger::getSigned(llvm::APInt::getSignedMaxValue(64), this));
 
-  PrimitiveToString<TypeId_SInt64>::value.init();
-  PrimitiveParse<TypeId_SInt64>::value.init();
+  PrimitiveToString<Int64Type>::value.init();
+  PrimitiveParse<Int64Type>::value.init();
 }
 
 template<> uint32_t Int64Type::numBits() const {
@@ -1069,24 +1060,24 @@ template<> void UInt8Type::initType() {
 }
 
 template<> void UInt8Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt8, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UInt8>::value);
-  addMember(&PrimitiveParse<TypeId_UInt8>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, CharType>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<UInt8Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<UInt8Type>::value);
+  addMember(&PrimitiveParse<UInt8Type>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(8), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(8), this));
 
-  PrimitiveToString<TypeId_UInt8>::value.init();
-  PrimitiveParse<TypeId_UInt8>::value.init();
+  PrimitiveToString<UInt8Type>::value.init();
+  PrimitiveParse<UInt8Type>::value.init();
 }
 
 template<> uint32_t UInt8Type::numBits() const {
@@ -1116,24 +1107,24 @@ template<> void UInt16Type::initType() {
 }
 
 template<> void UInt16Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt16, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UInt16>::value);
-  addMember(&PrimitiveParse<TypeId_UInt16>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, CharType>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<UInt16Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<UInt16Type>::value);
+  addMember(&PrimitiveParse<UInt16Type>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(16), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(16), this));
 
-  PrimitiveToString<TypeId_UInt16>::value.init();
-  PrimitiveParse<TypeId_UInt16>::value.init();
+  PrimitiveToString<UInt16Type>::value.init();
+  PrimitiveParse<UInt16Type>::value.init();
 }
 
 template<> uint32_t UInt16Type::numBits() const {
@@ -1162,24 +1153,24 @@ template<> void UInt32Type::initType() {
 }
 
 template<> void UInt32Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt32, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UInt32>::value);
-  addMember(&PrimitiveParse<TypeId_UInt32>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, CharType>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<UInt32Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<UInt32Type>::value);
+  addMember(&PrimitiveParse<UInt32Type>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(32), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(32), this));
 
-  PrimitiveToString<TypeId_UInt32>::value.init();
-  PrimitiveParse<TypeId_UInt32>::value.init();
+  PrimitiveToString<UInt32Type>::value.init();
+  PrimitiveParse<UInt32Type>::value.init();
 }
 
 template<> uint32_t UInt32Type::numBits() const {
@@ -1209,24 +1200,24 @@ template<> void UInt64Type::initType() {
 }
 
 template<> void UInt64Type::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_Char>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt8>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt16>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt32>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_SInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UInt64>::value);
-  addMember(&PrimitiveConstructor<TypeId_UInt64, TypeId_UnsizedInt>::value);
-  addMember(&PrimitiveToString<TypeId_UInt64>::value);
-  addMember(&PrimitiveParse<TypeId_UInt64>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, CharType>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, UInt8Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, UInt16Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, Int8Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, Int16Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, Int32Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, Int64Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<UInt64Type, UnsizedIntType>::value);
+  addMember(&PrimitiveToString<UInt64Type>::value);
+  addMember(&PrimitiveParse<UInt64Type>::value);
 
   defineConstant("minVal", ConstantInteger::getUnsigned(llvm::APInt::getMinValue(64), this));
   defineConstant("maxVal", ConstantInteger::getUnsigned(llvm::APInt::getMaxValue(64), this));
 
-  PrimitiveToString<TypeId_UInt64>::value.init();
-  PrimitiveParse<TypeId_UInt64>::value.init();
+  PrimitiveToString<UInt64Type>::value.init();
+  PrimitiveParse<UInt64Type>::value.init();
 }
 
 template<> uint32_t UInt64Type::numBits() const {
@@ -1255,13 +1246,17 @@ template<> void FloatType::initType() {
 }
 
 template<> void FloatType::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_Float, TypeId_Float>::value);
-  addMember(&PrimitiveConstructor<TypeId_Float, TypeId_Double>::value);
-  addMember(&PrimitiveToString<TypeId_Float>::value);
-  addMember(&PrimitiveParse<TypeId_Float>::value);
+  addMember(&PrimitiveConstructor<FloatType, Int32Type>::value);
+  addMember(&PrimitiveConstructor<FloatType, Int64Type>::value);
+  addMember(&PrimitiveConstructor<FloatType, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<FloatType, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<FloatType, FloatType>::value);
+  addMember(&PrimitiveConstructor<FloatType, DoubleType>::value);
+  addMember(&PrimitiveToString<FloatType>::value);
+  addMember(&PrimitiveParse<FloatType>::value);
 
-  PrimitiveToString<TypeId_Float>::value.init();
-  PrimitiveParse<TypeId_Float>::value.init();
+  PrimitiveToString<FloatType>::value.init();
+  PrimitiveParse<FloatType>::value.init();
 }
 
 template<> uint32_t FloatType::numBits() const {
@@ -1289,12 +1284,16 @@ template<> void DoubleType::initType() {
 }
 
 template<> void DoubleType::initMembers() {
-  addMember(&PrimitiveConstructor<TypeId_Double, TypeId_Double>::value);
-  addMember(&PrimitiveToString<TypeId_Double>::value);
-  addMember(&PrimitiveParse<TypeId_Double>::value);
+  addMember(&PrimitiveConstructor<DoubleType, Int32Type>::value);
+  addMember(&PrimitiveConstructor<DoubleType, Int64Type>::value);
+  addMember(&PrimitiveConstructor<DoubleType, UInt32Type>::value);
+  addMember(&PrimitiveConstructor<DoubleType, UInt64Type>::value);
+  addMember(&PrimitiveConstructor<DoubleType, DoubleType>::value);
+  addMember(&PrimitiveToString<DoubleType>::value);
+  addMember(&PrimitiveParse<DoubleType>::value);
 
-  PrimitiveToString<TypeId_Double>::value.init();
-  PrimitiveParse<TypeId_Double>::value.init();
+  PrimitiveToString<DoubleType>::value.init();
+  PrimitiveParse<DoubleType>::value.init();
 }
 
 template<> uint32_t DoubleType::numBits() const {
@@ -1467,6 +1466,32 @@ BadType::convertImpl(const Conversion & cn) const {
 
 template<> Expr * BadType::nullInitValue() const {
   return NULL;
+}
+
+void PrimitiveType::initPrimitiveTypes(Module * module) {
+  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
+    ptype->initType();
+    TypeDefn * de = ptype->typeDefn();
+    de->setQualifiedName(de->name());
+    if (!ptype->isUnsizedIntType()) {
+      de->addTrait(Defn::Singular);
+    }
+
+    module->addMember(de);
+  }
+
+  unsigned pointerSize = 32;
+  const llvm::TargetData * td = TargetSelection::instance.targetData();
+  if (td != NULL) {
+    pointerSize = td->getPointerSizeInBits();
+  }
+
+  intDef.setValue(pointerSize == 64 ? &Int64Type::typedefn : &Int32Type::typedefn);
+  uintDef.setValue(pointerSize == 64 ? &UInt64Type::typedefn : &UInt32Type::typedefn);
+
+  for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
+    ptype->initMembers();
+  }
 }
 
 }

@@ -193,7 +193,6 @@ PrimitiveParseIntrinsic PrimitiveParseIntrinsic::instance;
 
 Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const FunctionDefn * fn = call->function();
-  const Expr * self = call->selfArg();
 
   //Value * selfArg = cg.genExpr(self);
   Value * strArg = cg.genExpr(call->arg(0));
@@ -449,7 +448,6 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Should use uintptr_t instead of int32.
 
   DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
-  const Type * elemType = firstPtr->type()->typeParam(0);
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
@@ -659,7 +657,6 @@ inline Value * MathIntrinsic1i<id>::generate(CodeGenerator & cg, const FnCallExp
   const Expr * arg = call->arg(0);
   const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
   Value * argVal = cg.genExpr(arg);
-  const Type * retType = dealias(call->type());
 
   if (argType->typeId() != TypeId_SInt32 && argType->typeId() != TypeId_SInt64) {
     diag.fatal(arg->location()) << "Bad intrinsic type.";
@@ -687,7 +684,6 @@ inline Value * MathIntrinsic1f<id>::generate(CodeGenerator & cg, const FnCallExp
   const Expr * arg = call->arg(0);
   const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
   Value * argVal = cg.genExpr(arg);
-  const Type * retType = dealias(call->type());
 
   if (argType->typeId() != TypeId_Float && argType->typeId() != TypeId_Double) {
     diag.fatal(arg->location()) << "Bad intrinsic type.";
@@ -720,7 +716,6 @@ inline Value * MathIntrinsic2f<id>::generate(CodeGenerator & cg, const FnCallExp
   const Expr * arg1 = call->arg(1);
   const PrimitiveType * arg0Type = cast<PrimitiveType>(dealias(arg0->type()));
   const PrimitiveType * arg1Type = cast<PrimitiveType>(dealias(arg1->type()));
-  const Type * retType = dealias(call->type());
 
   if (arg0Type->typeId() != TypeId_Float && arg0Type->typeId() != TypeId_Double) {
     diag.fatal(arg0->location()) << "Bad intrinsic type.";
@@ -830,7 +825,6 @@ EntryPointApplyIntrinsic EntryPointApplyIntrinsic::instance;
 Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
-  ConstantObjectRef * selfObj = cast<ConstantObjectRef>(self);
   LValueExpr * lval = cast<LValueExpr>(args[0]);
   FunctionDefn * fn = cast<FunctionDefn>(lval->value());
 
@@ -954,7 +948,7 @@ Expr * TargetPropertyApplyIntrinsic::eval(const SourceLocation & loc, Module * c
   assert(args.size() == 1);
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (VariableDefn * var = dyn_cast<VariableDefn>(lval->value())) {
-
+      (void)var;
     } else {
       diag.fatal(loc) << "Invalid target for @TargetProperty.";
     }
@@ -1033,6 +1027,7 @@ Expr * AssociativeApplyIntrinsic::eval(const SourceLocation & loc, Module * call
   assert(args.size() == 1);
   if (LValueExpr * lval = dyn_cast<LValueExpr>(args[0])) {
     if (FunctionDefn * fn = dyn_cast<FunctionDefn>(lval->value())) {
+      (void)fn;
       //fn->setFlag(FunctionDefn::Associative, true);
       return args[0];
     }
@@ -1058,8 +1053,10 @@ Value * ProxyCreateIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
 
   // Handler arg will be an InvocationHandler[T].
   const Expr * handlerArg = call->arg(1);
+  (void)handlerArg;
 
   llvm::Constant * proxyTib = cg.genProxyType(static_cast<const CompositeType *>(type));
+  (void)proxyTib;
 
   // Note: We want to make sure that we generate this only once.
 

@@ -6,10 +6,17 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Woverloaded-virtual
       -fno-operator-names -ffor-scope
       )
-   if ($PROFILE_TARTC)
-     add_definitions(-pg)
-   endif ($PROFILE_TARTC)
+  if ($PROFILE_TARTC)
+    add_definitions(-pg)
+  endif ($PROFILE_TARTC)
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+if (CMAKE_COMPILER_IS_CLANG)
+  add_definitions(
+      -fno-rtti
+      -fno-exceptions
+      )
+endif (CMAKE_COMPILER_IS_CLANG)
 
 file(GLOB sources lib/*/*.cpp)
 file(GLOB headers include/*/*.h)

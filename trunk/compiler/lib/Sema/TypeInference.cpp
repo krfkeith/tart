@@ -244,7 +244,7 @@ void CallSite::saveBest() {
 }
 
 void CallSite::formatCallSignature(FormatStream & out) {
-  Expr * functionExpr = callExpr_->function();
+  //Expr * functionExpr = callExpr_->function();
   Candidates & cd = callExpr_->candidates();
   DASSERT_OBJ(!cd.empty(), callExpr_);
   out << cd.front()->method()->name() << "(";
@@ -547,7 +547,7 @@ Expr * GatherConstraintsPass::visitMatch(MatchExpr * in) {
 }
 
 void GatherConstraintsPass::visitPHI(Expr * in) {
-  if (const PHIConstraint * phi = dyn_cast<PHIConstraint>(in->type())) {
+  if (isa<PHIConstraint>(in->type())) {
     constraints_.push_back(new PHISite(in));
   }
 }

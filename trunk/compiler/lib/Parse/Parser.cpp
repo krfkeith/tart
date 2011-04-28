@@ -56,6 +56,7 @@ namespace {
     return new ASTCall(loc, opFunc, ASTNodeList());
   }
 
+#if 0
   ASTCall * callOperatorMethod(char * opname, const SourceLocation loc, ASTNode * base,
       ASTNode * arg) {
 
@@ -64,6 +65,7 @@ namespace {
     result->append(arg);
     return result;
   }
+#endif
 }
 
 Parser::Parser(ProgramSource * src, Module * m)
@@ -767,7 +769,7 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
     // Parse attributes
     ASTNodeList attributes;
     if (!attributeList(attributes)) {
-      return false;
+      return NULL;
     }
 
     // Save doc comments
@@ -1606,7 +1608,7 @@ Stmt * Parser::tryStmt() {
       // Parse attributes
       ASTNodeList attributes;
       if (!attributeList(attributes)) {
-        return false;
+        return NULL;
       }
 
       const char * exceptName = matchIdent();
@@ -2321,7 +2323,6 @@ ASTNode * Parser::binaryOperator() {
 #endif
 
       case Token_Is: {
-        TokenType tok = token;
         SourceLocation loc = lexer.tokenLocation();
         next();
 
@@ -2694,7 +2695,6 @@ ASTNode * Parser::arrayLiteral() {
     return arglist;
 
   // Parse individual arguments
-  bool ok = true;
   for (;;) {
     ASTNode * arg = expression();
     if (arg == NULL) {

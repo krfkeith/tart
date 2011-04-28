@@ -7,7 +7,7 @@ import tart.reflect.Reflect;
 
 @Reflect class Test {
   import namespace Asserts;
-  
+
   /** Run all of the test cases in the specified package. */
   static def runAllTests(package:Package) -> int32 {
     var overallStatus:int32 = 0;
@@ -17,7 +17,7 @@ import tart.reflect.Reflect;
         overallStatus = testStatus;
       }
     }
-    
+
     for sub in package.subpackages {
       let testStatus = runAllTests(sub);
       if testStatus != 0 {
@@ -39,11 +39,11 @@ import tart.reflect.Reflect;
 	      }
       }
     }
-    
+
     return 0;
   }
 
-	/** Run all tests in this class. */  
+	/** Run all tests in this class. */
   static def run[%T](testType:TypeLiteral[T]) -> int32 {
     var testClass:CompositeType = CompositeType.of(T);
     var testInstance = typecast[Test](testClass.create());
@@ -55,14 +55,16 @@ import tart.reflect.Reflect;
 
   /** Test fixture teardown method. Will be called after every test. */
   def tearDown() {}
-  
+
   final def runTests[%T](testType:TypeLiteral[T]) -> int32 {
     return runTests(CompositeType.of(T));
   }
 
   final def runTests(testClass:CompositeType) -> int32 {
+    var foundTests = false;
     for method in testClass.methods {
       if method.name.startsWith("test") {
+        foundTests = true;
         Debug.writeLn("[Running] ", self.__typeName, ".", method.name);
 	      if not runTestMethod(method) {
 	        Debug.writeLn("[FAIL   ]");
@@ -71,8 +73,13 @@ import tart.reflect.Reflect;
       }
     }
 
-    Debug.writeLn("[OK     ]");
-    return 0;
+    if foundTests {
+      Debug.writeLn("[OK     ]");
+      return 0;
+    } else {
+      Debug.writeLn(self.__typeName, ": No tests found!");
+      return 1;
+    }
   }
 
   def runTestMethod(test:Method) -> bool {

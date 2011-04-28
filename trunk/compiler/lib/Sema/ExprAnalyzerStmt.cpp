@@ -51,7 +51,6 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
 
   // Now process all of the statements
   ExprList exprs;
-  bool success = true;
   for (size_t i = 0; i < stcount; ++i) {
     const Type * ex = (i == stcount - 1) ? expected : NULL;
     const Stmt * st = stlist[i];
@@ -76,7 +75,6 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
 
   setActiveScope(savedScope);
 
-  Expr * result;
   if (exprs.empty()) {
     return new SeqExpr(st->location(), blockScope, exprs, &VoidType::instance);
   } else if (exprs.size() == 1 && blockScope->count() == 0 &&
@@ -531,18 +529,17 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
   Expr * testExpr = reduceTestExpr(st->testExpr(), implicitScope, false);
   DASSERT(implicitScope == NULL);
   if (isErrorResult(testExpr)) {
-    return false;
+    return &Expr::ErrorVal;
   }
 
   // TODO: There are lots of optimizations that could be done here.
   const Type * fromType = testExpr->type();
-  bool testIsLValue = true;
   Expr::ExprType castType = Expr::BitCast;
   if (fromType->isReferenceType()) {
     // For reference types, create a shared value so we don't re-evaluate the
     // test expression for each case.
     testExpr = new SharedValueExpr(testExpr);
-  } else if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
+  } else if (isa<UnionType>(fromType)) {
     // Because of the way union type tests work, we need a temporary variable to hold
     // the union value, so that we can take its address.
     if (implicitScope == NULL) {
@@ -563,7 +560,6 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
     me->setType(phiType);
   }
 
-  const Stmt * elseSt = NULL;
   const StmtList & cases = st->caseList();
   for (StmtList::const_iterator it = cases.begin(); it != cases.end(); ++it) {
     const Stmt * s = *it;
@@ -953,7 +949,7 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
   if (testExpr->type()->isReferenceType()) {
     return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
         test->location(), testExpr->type()));
-  } else if (const AddressType * mat = dyn_cast<AddressType>(testExpr->type())) {
+  } else if (isa<AddressType>(testExpr->type())) {
     return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
         test->location(), testExpr->type()));
   }

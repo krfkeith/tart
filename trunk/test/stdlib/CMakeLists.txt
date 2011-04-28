@@ -102,7 +102,7 @@ foreach(SRC_FILE ${TART_SRC})
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       MAIN_DEPENDENCY "${SRC_FILE}" 
-      DEPENDS tartc ${${DEPS_NAME}_DEPS}
+      DEPENDS tartc ${BC_LIBS} ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.

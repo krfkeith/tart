@@ -63,7 +63,16 @@ find_package(LLVM REQUIRED)
 find_program(LLVM_LLC llc PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_LD llvm-ld PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_OPT opt PATHS ${LLVM_BIN_DIR})
+find_program(CLANG clang PATHS ${LLVM_BIN_DIR})
 find_program(PYTHON3 python3)
+
+# Use clang if it's available
+#if (CLANG)
+#  set(CMAKE_CXX_COMPILER ${CLANG})
+#  set(CMAKE_COMPILER_IS_CLANG true)
+#  unset(CMAKE_COMPILER_IS_GNUCXX)
+#  set(CMAKE_EXE_LINKER_FLAGS -lstdc++)
+#endif (CLANG)
 
 # Find libraries
 find_library(LIB_DL dl)
@@ -94,6 +103,7 @@ endif (MSVC)
 # Check for type sizes
 check_type_size(int SIZEOF_INT)
 check_type_size(long SIZEOF_LONG)
+check_type_size(size_t SIZEOF_SIZE_T)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("void*" SIZEOF_VOID_PTR)
 
@@ -140,8 +150,23 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -Wall -Wextra -Werror -Wcast-align -Wpointer-arith
       -Wno-deprecated -Wno-unused
       -fmessage-length=0
-      )
+  )
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+if (CMAKE_COMPILER_IS_CLANG)
+  add_definitions(
+      -Wall
+      -Wextra
+      -Werror
+      -Wcast-align
+      -Wpointer-arith
+      -Wno-deprecated
+      -Wno-unused-parameter
+      -fno-rtti
+      -fno-exceptions
+      -fPIC
+  )
+endif (CMAKE_COMPILER_IS_CLANG)
 
 # Extra flags for MSVC (C only)
 if (MSVC)
