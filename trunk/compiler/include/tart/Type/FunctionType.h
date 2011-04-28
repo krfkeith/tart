@@ -57,7 +57,7 @@ public:
   ParameterDefn * param(int index) { return params_[index]; }
   const Type * paramType(int index) const;
   void addParam(ParameterDefn * param);
-  ParameterDefn * addParam(const char * name, Type * type);
+  ParameterDefn * addParam(const char * name, const Type * type);
 
   /** Return the parameter types as a type vector. */
   TupleType * paramTypes() const;

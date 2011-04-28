@@ -457,8 +457,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(NonPreferred, CharType::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(NonPreferred, CharType::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, CharType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(ExactConversion, Int8Type::instance.canConvert(&BoolType::instance));
@@ -471,8 +473,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(ExactConversion, Int16Type::instance.canConvert(&BoolType::instance));
@@ -485,8 +489,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(SignedUnsigned, Int16Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(ExactConversion, Int32Type::instance.canConvert(&BoolType::instance));
@@ -499,8 +505,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(NonPreferred, Int32Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(SignedUnsigned, Int32Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(ExactConversion, Int64Type::instance.canConvert(&BoolType::instance));
@@ -513,8 +521,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(SignedUnsigned, Int64Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&BoolType::instance));
@@ -527,8 +537,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&BoolType::instance));
@@ -541,8 +553,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(IdenticalTypes, UInt16Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&BoolType::instance));
@@ -555,8 +569,10 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(ExactConversion, UInt32Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(IdenticalTypes, UInt32Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(Truncation, UInt32Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&BoolType::instance));
@@ -569,34 +585,36 @@ TEST(TypeTest, ConversionTests) {
   EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&UInt16Type::instance));
   EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&UInt32Type::instance));
   EXPECT_EQ(IdenticalTypes, UInt64Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
 
   EXPECT_EQ(Incompatible, FloatType::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, FloatType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(IdenticalTypes, FloatType::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&CharType::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int8Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int16Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&Int32Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&Int64Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt8Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt16Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&UInt32Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&UInt64Type::instance, Conversion::Explicit));
+  EXPECT_EQ(IdenticalTypes, FloatType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
   EXPECT_EQ(Truncation, FloatType::instance.canConvert(&DoubleType::instance));
 
   EXPECT_EQ(Incompatible, DoubleType::instance.canConvert(&VoidType::instance));
   EXPECT_EQ(Incompatible, DoubleType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(ExactConversion, DoubleType::instance.canConvert(&FloatType::instance));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&CharType::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int8Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int16Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int32Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, DoubleType::instance.canConvert(&Int64Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt8Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt16Type::instance, Conversion::Explicit));
+  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt32Type::instance, Conversion::Explicit));
+  EXPECT_EQ(PrecisionLoss, DoubleType::instance.canConvert(&UInt64Type::instance, Conversion::Explicit));
+  EXPECT_EQ(ExactConversion, DoubleType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
   EXPECT_EQ(IdenticalTypes, DoubleType::instance.canConvert(&DoubleType::instance));
 }

@@ -59,9 +59,9 @@ namespace {
 const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator first,
     ValueList::const_iterator last) {
   for (ValueList::const_iterator it = first; it != last; ++it) {
-    if (const llvm::PointerType * atype = dyn_cast<llvm::PointerType>(type)) {
+    if (isa<llvm::PointerType>(type)) {
       type = type->getContainedType(0);
-    } else if (const ArrayType * atype = dyn_cast<ArrayType>(type)) {
+    } else if (isa<ArrayType>(type)) {
       type = type->getContainedType(0);
     } else {
       const ConstantInt * index = cast<ConstantInt> (*it);
@@ -351,7 +351,6 @@ llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, boo
 Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   VariableDefn * var = in->var();
   TypeShape typeShape = var->canonicalType()->typeShape();
-  const Type * initExprType = in->initExpr()->canonicalType();
   Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
@@ -436,7 +435,6 @@ Value * CodeGenerator::genMultiAssign(const MultiAssignExpr * in) {
   ValueList fromVals;
 
   // Evaluate all of the source args before setting a destination arg.
-  size_t numArgs = in->argCount();
   for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
     const AssignmentExpr * assign = cast<AssignmentExpr>(*it);
     Value * fromVal = genExpr(assign->fromExpr());
@@ -1076,7 +1074,6 @@ llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::S
 
 Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const CompositeType * arrayType = cast<CompositeType>(in->type());
-  const Type * elementType = arrayType->typeDefn()->templateInstance()->typeArg(0);
   size_t arrayLength = in->args().size();
 
   if (arrayLength == 0) {
@@ -1084,8 +1081,6 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   }
 
   //diag.debug() << "Generating array literal of type " << elementType << ", length " << arrayLength;
-
-  const llvm::Type * etype = elementType->irEmbeddedType();
 
   // Arguments to the array-creation function
   ValueList args;
@@ -1331,7 +1326,7 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
       }
       DASSERT(index >= 0);
 
-      Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
+      //Value * indexVal = ConstantInt::get(utype->irType()->getContainedType(0), index);
       DFAIL("Implement");
 #if 0
       Value * uvalue = builder_.CreateAlloca(utype->irType());

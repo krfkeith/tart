@@ -41,8 +41,6 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     // the module reference will be removed during the expansion.
     stAn.module()->addModuleDependency(macro);
 
-    FunctionDefn * scopeFn = stAn.function();
-
     // Note - type could be 'void'
     VariableDefn * retVal = NULL;
     if (!returnType->isVoidType()) {

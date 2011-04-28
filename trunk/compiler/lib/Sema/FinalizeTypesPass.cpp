@@ -733,7 +733,7 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
-  const Type * ty = dealias(in->type());
+  //const Type * ty = dealias(in->type());
 /*  const TupleType * ttype;
   if (const TupleOfConstraint * toc = dyn_cast<TupleOfConstraint>(ty)) {
     ty = toc->singularValue();
@@ -861,7 +861,7 @@ Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
 }
 
 Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
-  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->type())) {
+  if (isa<PrimitiveType>(in->type())) {
     return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doUnboxCast(in->arg(), in->type());
   }

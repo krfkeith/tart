@@ -30,6 +30,7 @@ namespace tart {
 
 extern bool unifyVerbose;
 
+#if 0
 static void assureNoTypeVars(Type * t) {
   for (size_t i = 0; i < t->numTypeParams(); ++i) {
     if (isa<TypeVariable>(t->typeParam(i))) {
@@ -44,6 +45,7 @@ static void assureNoTypeVars(Type * t) {
     }
   }
 }
+#endif
 
 // -------------------------------------------------------------------
 // TypeBinding
@@ -265,7 +267,7 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const T
     }
 
     return false;
-  } else if (const PrimitiveType * pval = dyn_cast<PrimitiveType>(pattern)) {
+  } else if (isa<PrimitiveType>(pattern)) {
     // Go ahead and unify - type inference will see if it can convert.
     return true;
   } else {
@@ -573,8 +575,8 @@ bool BindingEnv::unifyPattern(
       return true;
     }
 
-    const Type * upperBound = value;
-    const Type * lowerBound = value;
+    //const Type * upperBound = value;
+    //const Type * lowerBound = value;
 
     if (value->isUnsizedIntType()) {
       //upperBound =
@@ -674,7 +676,7 @@ bool BindingEnv::unifyWithBoundValue(
     diag.debug() << "   " << newValue;
   }
 
-  if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(prevValue)) {
+  if (isa<TypeConstraint>(prevValue)) {
     // For now, unification of a previous constraint with a new value always succeeds.
     // This will get further constrained later when we rank conversions.
     return true;
@@ -724,7 +726,7 @@ Type * BindingEnv::get(const TypeBinding * type) const {
 
 Type * BindingEnv::dereference(Type * type) const {
   while (type != NULL) {
-    if (TypeVariable * var = dyn_cast<TypeVariable>(type)) {
+    if (isa<TypeVariable>(type)) {
       Substitution * s = getSubstitutionFor(type);
       if (s != NULL) {
         type = const_cast<Type *>(s->right());

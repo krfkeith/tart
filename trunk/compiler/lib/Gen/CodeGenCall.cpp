@@ -74,7 +74,6 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     const Expr * arg = *it;
     const Type * argType = arg->canonicalType();
 
-    TypeShape argTypeShape = argType->typeShape();
     Value * argVal = genArgExpr(arg, saveIntermediateStackRoots);
     if (argVal == NULL) {
       return NULL;
@@ -406,7 +405,7 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
         const LValueExpr * lval = static_cast<const LValueExpr *>(in);
         const ValueDefn * value = lval->value();
         // Params are roots, so don't need this.
-        if (const ParameterDefn * param = dyn_cast<ParameterDefn>(value)) {
+        if (isa<ParameterDefn>(value)) {
           return genExpr(in);
         }
 
@@ -425,7 +424,7 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
             if (value->defnType() == Defn::Let && lval->base() != NULL) {
               if (const LValueExpr * baseLVal = dyn_cast<LValueExpr>(lval->base())) {
                 // Fields of params are taken care of as well.
-                if (const ParameterDefn * param = dyn_cast<ParameterDefn>(baseLVal->value())) {
+                if (isa<ParameterDefn>(baseLVal->value())) {
                   return genExpr(in);
                 }
               }

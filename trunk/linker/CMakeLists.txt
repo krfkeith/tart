@@ -16,6 +16,13 @@ if (CMAKE_COMPILER_IS_GNUCXX)
    endif ($PROFILE_TARTLN)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
+if (CMAKE_COMPILER_IS_CLANG)
+  add_definitions(
+      -Woverloaded-virtual
+      -fno-rtti
+      )
+endif (CMAKE_COMPILER_IS_CLANG)
+
 file(GLOB COMMON_SOURCES lib/Common/*.cpp)
 file(GLOB COMMON_HEADERS include/Common/*.h)
 

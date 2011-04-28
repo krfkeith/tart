@@ -117,6 +117,7 @@ ConstantInteger * ConstantInteger::getUnsigned(const llvm::APInt & value,
 // ConstantFloat
 bool ConstantFloat::isEqual(const ConstantExpr * cexpr) const {
   if (const ConstantFloat * cf = dyn_cast<ConstantFloat>(cexpr)) {
+    (void)cf;
     DFAIL("Implement");
   }
 

@@ -40,7 +40,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
 
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
-      if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+      if (isa<PropertyDefn>(lval->value())) {
         Expr * setProp = reduceSetParamPropertyValue(ast->location(), call, newValue);
         if (isErrorResult(setProp)) {
           return &Expr::ErrorVal;

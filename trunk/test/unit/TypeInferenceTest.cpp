@@ -27,6 +27,7 @@ protected:
 
 TEST_F(TypeInferenceTest, CallCandidateSpecificity) {
   CallExpr * call = createCall();
+  (void)call;
   //call->candidates().push_back(new CallCandidate(call, NULL, method, pa));
 
 

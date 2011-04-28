@@ -118,7 +118,7 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Ex
     }
   } else if (CallExpr * call = dyn_cast<CallExpr>(lhs)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
-      if (PropertyDefn * prop = dyn_cast<PropertyDefn>(lval->value())) {
+      if (isa<PropertyDefn>(lval->value())) {
         return reduceSetParamPropertyValue(loc, call, rhs);
       }
     }
@@ -150,6 +150,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
     } else {
       diag.error(ast) << "Not an l-value " << ast;
       DFAIL("Not an LValue");
+      return &Expr::ErrorVal;
     }
   }
 }

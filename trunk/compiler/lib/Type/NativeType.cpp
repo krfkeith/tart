@@ -7,7 +7,7 @@
 
 #include "tart/Type/NativeType.h"
 #include "tart/Type/CompositeType.h"
-#include "tart/Type/StaticType.h"
+#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
 

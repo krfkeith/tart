@@ -61,13 +61,16 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
       return genCompositeCast(in, cfrom, cto, true);
     } else if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
+      (void)pto;
       diag.debug() << "Need unbox cast from " << fromType << " to " << toType;
       DFAIL("Implement");
     } else if (const EnumType * eto = dyn_cast<EnumType>(toType)) {
       return genCast(in, fromType, eto->baseType());
     }
   } else if (const PrimitiveType * pfrom = dyn_cast<PrimitiveType>(fromType)) {
+    (void)pfrom;
     if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
+      (void)pto;
     } else if (toType == Builtins::typeObject) {
       const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
       const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
@@ -82,6 +85,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
       args.push_back(in);
       return genCallInstr(fnVal, args.begin(), args.end(), "coerce");
     } else if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
+      (void)cto;
       // TODO: This would be *much* easier to handle in the analysis phase.
       // But that means doing the invoke function in the analysis phase as well.
       //return tart.core.ValueRef[type].create(in).

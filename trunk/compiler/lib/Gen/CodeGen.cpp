@@ -165,6 +165,7 @@ void CodeGenerator::generate() {
           *irModule_, ctorArray->getType(), true,
           GlobalValue::AppendingLinkage,
           ctorArray, "llvm.global_ctors");
+      (void)initVar;
     }
   }
 
