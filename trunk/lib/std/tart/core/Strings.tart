@@ -405,7 +405,7 @@ namespace Strings {
         return ConversionError.INPUT_FORMAT;
       }
 
-			if digit >= radix {
+			if digit >= uint(radix) {
 	      return ConversionError.INPUT_FORMAT;
 			}
 			if n > cutoff or (n == cutoff and digit > cutlim) {

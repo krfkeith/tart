@@ -56,7 +56,7 @@ bool ReflectorPass::runOnModule(Module & module) {
         //errs() << globalVar->getName() << "\n";
         std::string packageName(globalVar->getName());
         packageName.erase(0, 9); // remove ".package."
-        Package * p = getOrCreatePackage(packageName, globalVar);
+        /*Package * p =*/ getOrCreatePackage(packageName, globalVar);
       }
     }
   }
@@ -106,7 +106,6 @@ bool ReflectorPass::runOnModule(Module & module) {
 
       // List of modules in package
 
-      Constant * moduleArray = NULL;
       if (!p->modules().empty()) {
         ConstantList modules;
         std::sort(p->modules().begin(), p->modules().end(), ModuleNameComparator());
@@ -122,7 +121,6 @@ bool ReflectorPass::runOnModule(Module & module) {
 
       // List of subpackages in package
 
-      Constant * packageArray = NULL;
       if (!p->subpackages().empty()) {
         ConstantList subpackages;
         std::sort(p->subpackages().begin(), p->subpackages().end(), PackageNameComparator());

@@ -141,6 +141,7 @@ bool MDReader::read(NamedMDNode * md) {
 
   // Get the timestamp of the original source file.
   if (MDNode * timestamp = dyn_cast<MDNode>(md->getOperand(FIELD_MODULE_TIMESTAMP))) {
+    (void)timestamp;
     ///
   } else {
     diag.error() << "No timestamp for compiled module " << module_->qualifiedName();
@@ -177,9 +178,9 @@ bool MDReader::readModuleImports(NodeRef node) {
 bool MDReader::readImports(Defn * de, ASTNodeList & imports) {
   NodeRef node = de->mdNode();
   NodeRef importsNode;
-  if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
+  if (isa<TypeDefn>(de)) {
     importsNode = node.optNodeArg(FIELD_TYPEDEF_IMPORTS);
-  } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(de)) {
+  } else if (isa<NamespaceDefn>(de)) {
     importsNode = node.optNodeArg(FIELD_NS_IMPORTS);
   } else {
     return false;
@@ -559,7 +560,7 @@ bool MDReader::readCompositeDetails(CompositeType * ty, TypeList & bases) {
         AttributeInfo & ai = ty->attributeInfo();
         ai.setTarget(el.intArg(1));
         ai.setRetention(el.intArg(2));
-        ai.setPropagation(el.intArg(2));
+        ai.setPropagation(el.intArg(3));
         break;
       }
 
@@ -578,7 +579,6 @@ bool MDReader::readEnumConstants(TypeDefn * tdef) {
   EnumType * ety = cast<EnumType>(tdef->typeValue());
   NodeRef node(tdef->mdNode());
   NodeRef members = node.nodeArg(FIELD_TYPEDEF_MEMBERS);
-  bool success = true;
   unsigned numOperands = members.size();
   for (unsigned i = 0; i < numOperands; ++i) {
     NodeRef econst = members.nodeArg(i);
@@ -763,7 +763,7 @@ Expr * MDReader::readExpression(SourceLocation loc, NodeRef node) {
           } else {
             Expr * e = readExpression(loc, cast<MDNode>(v));
             if (e == NULL) {
-              return false;
+              return &Expr::ErrorVal;
             }
             cobj->members()[i] = e;
           }
@@ -804,13 +804,13 @@ const Type * MDReader::readTypeRef(llvm::StringRef str) {
 Defn * MDReader::lookupSymbol(StringRef name) {
   DefnList defs;
   if (!lookupName(name, defs)) {
-    return false;
+    return NULL;
   }
 
   if (defs.size() > 1) {
     diag.error() << "Error reading compiled module " << module_->qualifiedName() <<
        ": ambiguous definition for " << name;
-    return false;
+    return NULL;
   }
 
   return defs.front();
@@ -827,6 +827,7 @@ bool MDReader::lookupName(StringRef qname, DefnList & defs) {
 
     StringRef baseName = qname.substr(0, dot);
     if (Defn * baseDefn = lookupSymbol(baseName)) {
+      (void)baseDefn;
       StringRef name = qname.substr(dot + 1, qname.npos);
       DFAIL("Implement");
     }

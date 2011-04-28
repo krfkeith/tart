@@ -221,7 +221,6 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     for (; it != f->arg_end(); ++it, ++param_index) {
-      Value * argVal = it;
 
       // Set the name of the Nth parameter
       ParameterDefn * param = ftype->params()[param_index];
@@ -364,7 +363,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
     }
 
     if (value == NULL) {
-      return false;
+      return NULL;
     }
   }
 

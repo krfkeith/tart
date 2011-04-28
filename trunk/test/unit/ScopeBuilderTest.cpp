@@ -74,11 +74,14 @@ TEST_F(ScopeBuilderTest, TestNameConflict) {
   // Adding two classes with dissimilar names should not produce an error
   Defn * cl1Defn = builder.createMemberDefn(&testModule, &testModule, cl1, Storage_Global);
   Defn * cl2Defn = builder.createMemberDefn(&testModule, &testModule, cl2, Storage_Global);
+  (void)cl1Defn;
+  (void)cl2Defn;
   EXPECT_EQ(0, diag.getErrorCount());
 
   // But adding a class with the same name should produce an error
   diag.setMinSeverity(Diagnostics::Off);
   Defn * cl3Defn = builder.createMemberDefn(&testModule, &testModule, cl3, Storage_Global);
+  (void)cl3Defn;
   builder.checkNameConflicts(&testModule);
   EXPECT_EQ(1, diag.getErrorCount());
   diag.reset();

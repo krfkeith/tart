@@ -211,6 +211,7 @@ void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
                   dyn_cast<ConstantAggregateZero>(fieldOffsetsVar->getInitializer())) {
                 // Array should never contain duplicate offsets, so an all-zero array
                 // can only have one entry.
+                (void)zero;
                 assert(fieldCount->isOne());
                 fieldOffsets.push_back(offset + dscOffset);
               } else {

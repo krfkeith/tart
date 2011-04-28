@@ -280,8 +280,6 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
 
 bool EnumAnalyzer::analyzeBase() {
   EnumType * enumType = cast<EnumType>(target_->typeValue());
-  bool isFlags = enumType->isFlags();
-
   enumType->passes().finish(EnumType::BaseTypePass);
 
   DASSERT_OBJ(enumType->isSingular(), enumType);
@@ -319,7 +317,6 @@ bool EnumAnalyzer::analyzeBase() {
 
 bool EnumAnalyzer::createMembers() {
   EnumType * enumType = cast<EnumType>(target_->typeValue());
-  bool isFlags = enumType->isFlags();
   bool success = true;
 
   // Mark as finished so that we don't recurse when referring to members.
@@ -410,7 +407,6 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   bool isSigned = !enumType->baseType()->isUnsignedType();
   VariableDefn * ec = new VariableDefn(Defn::Let, module(), ast);
   ConstantInteger * value = NULL;
-  bool success = true;
   if (ast->value() != NULL) {
     // The constant has an explicit value.
     ExprAnalyzer ea(this, NULL);

@@ -48,7 +48,7 @@ private:
 
     mixTail(data,len);
     while (len >= 4) {
-      uint32_t k = *(uint32_t *)data;
+      uint32_t k = *reinterpret_cast<const uint32_t *>(data);
       mmix(hash_, k);
       data += 4;
       len -= 4;

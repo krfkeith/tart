@@ -13,6 +13,10 @@
 #include "tart/Defn/Defn.h"
 #endif
 
+#ifndef TART_DEFN_TYPEDEFN_H
+#include "tart/Defn/TypeDefn.h"
+#endif
+
 namespace tart {
 
 class ASTBuiltIn;
@@ -113,6 +117,7 @@ protected:
 template<TypeId kTypeId>
 class PrimitiveTypeImpl : public PrimitiveType {
 public:
+  static const TypeId id = kTypeId;
 
   /** Construct a primitive type */
   PrimitiveTypeImpl() : PrimitiveType(&typedefn) {}

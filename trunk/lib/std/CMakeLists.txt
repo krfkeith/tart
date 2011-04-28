@@ -12,9 +12,9 @@ file(GLOB TART_STDLIB_SRC
     tart/concurrent/ThreadLocal.tart
     tart/gc/*.tart
     tart/gc/heap/*.tart
-    tart/inject/*.tart
-    tart/inject/binder/*.tart
-    tart/inject/impl/*.tart
+#    tart/inject/*.tart
+#    tart/inject/binder/*.tart
+#    tart/inject/impl/*.tart
     tart/io/*.tart
     tart/reflect/*.tart
     tart/text/*.tart

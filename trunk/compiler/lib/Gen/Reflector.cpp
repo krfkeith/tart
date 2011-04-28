@@ -629,7 +629,7 @@ void Reflector::getRefs(const Defn * def) {
     }
 
     case Defn::Namespace: {
-      const NamespaceDefn * ns = static_cast<const NamespaceDefn *>(def);
+      //const NamespaceDefn * ns = static_cast<const NamespaceDefn *>(def);
 #if DEBUG_VERBOSE
       diag.debug() << "Emitting metadata for namespace " << def;
       diag.indent();
@@ -1214,7 +1214,7 @@ Module * Reflector::module() { return cg_.module(); }
 llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName) {
   const CompositeType * ctype = cast<CompositeType>(attrExpr->type());
   if (ctype->attributeInfo().isRetained()) {
-    if (const ConstantObjectRef * cobj = dyn_cast<ConstantObjectRef>(attrExpr)) {
+    if (isa<ConstantObjectRef>(attrExpr)) {
       // Construct a unique name for this attribute instance.
       int index = 0;
       llvm::StringRef attrInstanceName;

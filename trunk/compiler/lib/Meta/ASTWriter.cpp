@@ -230,6 +230,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
       const ASTFloatLiteral * lit = static_cast<const ASTFloatLiteral *>(ast);
       const APFloat & fp = lit->value();
       write(meta::AST::CONST_FLOAT);
+      (void)fp;
       // TODO: Serialize value
       //DFAIL("Implement");
       break;
@@ -239,6 +240,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
       const ASTDoubleLiteral * lit = static_cast<const ASTDoubleLiteral *>(ast);
       const APFloat & fp = lit->value();
       write(meta::AST::CONST_DOUBLE);
+      (void)fp;
       // TODO: Serialize value
       //DFAIL("Implement");
       break;
@@ -521,6 +523,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
         }
         write(tag);
       } else if (const NativeArrayType * nat = dyn_cast<NativeArrayType>(td->typeValue())) {
+        (void)nat;
         DFAIL("Implement");
       } else {
         DFAIL("Not a builtin type");

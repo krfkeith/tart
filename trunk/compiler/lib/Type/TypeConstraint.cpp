@@ -310,7 +310,7 @@ ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversio
 
     return rank;
   } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(toType)) {
-    if (ttype->numTypeParams() != tuple_->argCount()) {
+    if (tctype->numTypeParams() != tuple_->argCount()) {
       return Incompatible;
     }
 
@@ -354,7 +354,7 @@ ConversionRank TupleOfConstraint::convertImpl(const Conversion & conversion) con
 
     DFAIL("Implement");
   } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(conversion.fromType)) {
-    if (ttype->numTypeParams() != tuple_->argCount()) {
+    if (tctype->numTypeParams() != tuple_->argCount()) {
       return Incompatible;
     }
 
@@ -438,7 +438,6 @@ bool TupleOfConstraint::isSubtype(const Type * other) const {
 
 bool TupleOfConstraint::includes(const Type * other) const {
   DFAIL("Check");
-  ConversionRank rank = IdenticalTypes;
   if (const TupleType * ttype = dyn_cast<TupleType>(other)) {
     if (ttype->numTypeParams() != tuple_->argCount()) {
       return false;
@@ -446,7 +445,7 @@ bool TupleOfConstraint::includes(const Type * other) const {
 
     DFAIL("Implement");
   } else if (const TupleOfConstraint * tctype = cast<TupleOfConstraint>(other)) {
-    if (ttype->numTypeParams() != tuple_->argCount()) {
+    if (tctype->numTypeParams() != tuple_->argCount()) {
       return false;
     }
 

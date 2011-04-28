@@ -175,7 +175,7 @@ void typeLinkageName(std::string & out, const Type * ty) {
   } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
     typeLinkageName(out, mat->typeParam(0));
     out.append("^");
-  } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
+  } else if (isa<TypeLiteralType>(ty)) {
     out.append("tart.reflect.Type");
   } else if (const TypeVariable * tvar = dyn_cast<TypeVariable>(ty)) {
     //out.append("%");
@@ -240,7 +240,7 @@ void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
   } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
     typeLinkageName(out, mat->typeParam(0));
     out << '^';
-  } else if (const TypeLiteralType * npt = dyn_cast<TypeLiteralType>(ty)) {
+  } else if (isa<TypeLiteralType>(ty)) {
     out << "tart.reflect.Type";
   } else if (const TypeVariable * tvar = dyn_cast<TypeVariable>(ty)) {
     out << tvar->name();
@@ -438,7 +438,7 @@ Expr * Type::implicitCast(const SourceLocation & loc, Expr * from, int options) 
 
 Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) const {
   Expr * result = NULL;
-  ConversionRank tc = convert(Conversion(from, &result, options));
+  ConversionRank tc = convert(Conversion(from, &result, options | Conversion::Explicit));
   if (tc == Incompatible) {
     compatibilityWarning(loc, tc, from, this);
   }

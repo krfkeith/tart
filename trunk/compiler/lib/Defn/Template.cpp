@@ -434,7 +434,7 @@ const Type * TemplateInstance::typeArg(int index) const {
 void TemplateInstance::addMember(Defn * d) {
   DASSERT(d->storageClass() != Storage_Local);
   DASSERT(d->definingScope() == NULL);
-  SymbolTable::Entry * entry = paramDefns_.add(d);
+  paramDefns_.add(d);
   d->setDefiningScope(this);
 }
 
