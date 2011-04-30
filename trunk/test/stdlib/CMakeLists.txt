@@ -83,6 +83,8 @@ else (GENERATE_DEBUG_INFO)
   )
 endif (GENERATE_DEBUG_INFO)
 
+set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
+
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
   # Source file name
@@ -99,10 +101,11 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE "[^a-zA-Z0-9]" "_" DEPS_NAME "${DEPS_NAME}")
   
   # Compile tart source
+  set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       MAIN_DEPENDENCY "${SRC_FILE}" 
-      DEPENDS tartc ${BC_LIBS} ${${DEPS_NAME}_DEPS}
+      DEPENDS "${PROJECT_BINARY_DIR}/lib/std/libstd.bc" ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.

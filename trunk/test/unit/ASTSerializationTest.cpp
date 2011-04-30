@@ -204,7 +204,7 @@ TEST_F(ASTSerializationTest, Terminals) {
 
   ast = testExpression("false");
   ASSERT_EQ(ASTNode::LitBool, ast->nodeType());
-  ASSERT_EQ(false, dyn_cast<ASTBoolLiteral>(ast)->value());
+  ASSERT_FALSE(dyn_cast<ASTBoolLiteral>(ast)->value());
 
   // ASTIdent
   ast = testExpression("X");
