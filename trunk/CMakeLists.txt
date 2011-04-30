@@ -10,6 +10,7 @@ set(TART_MINOR_REVISION 0)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 set(PROFILE_TARTC 0)
 set(PROFILE_TARTLN 0)
+set(USE_CLANG 0 CACHE BOOL "Whether to use clang to compile C++ files.")
 
 # Macros we'll need
 include(CheckIncludeFile)
@@ -67,12 +68,11 @@ find_program(CLANG clang PATHS ${LLVM_BIN_DIR})
 find_program(PYTHON3 python3)
 
 # Use clang if it's available
-#if (CLANG)
-#  set(CMAKE_CXX_COMPILER ${CLANG})
-#  set(CMAKE_COMPILER_IS_CLANG true)
-#  unset(CMAKE_COMPILER_IS_GNUCXX)
-#  set(CMAKE_EXE_LINKER_FLAGS -lstdc++)
-#endif (CLANG)
+if (USE_CLANG AND CLANG)
+  set(CMAKE_CXX_COMPILER ${CLANG})
+  set(CMAKE_COMPILER_IS_CLANG true)
+  unset(CMAKE_COMPILER_IS_GNUCXX)
+endif (USE_CLANG AND CLANG)
 
 # Find libraries
 find_library(LIB_DL dl)
@@ -166,6 +166,7 @@ if (CMAKE_COMPILER_IS_CLANG)
       -fno-exceptions
       -fPIC
   )
+  set(CMAKE_EXE_LINKER_FLAGS -lstdc++)
 endif (CMAKE_COMPILER_IS_CLANG)
 
 # Extra flags for MSVC (C only)

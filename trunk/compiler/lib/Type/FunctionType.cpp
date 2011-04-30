@@ -77,7 +77,7 @@ void FunctionType::addParam(ParameterDefn * param) {
 }
 
 ParameterDefn * FunctionType::addParam(const char * name, const Type * ty) {
-  ParameterDefn * param = new ParameterDefn(NULL, name, ty, NULL);
+  ParameterDefn * param = new ParameterDefn(NULL, name, ty, 0);
   addParam(param);
   return param;
 }

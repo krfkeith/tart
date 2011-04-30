@@ -683,7 +683,7 @@ template<class Type>
 ParameterDefn PrimitiveToString<Type>::selfParam(
     NULL,
     "self",
-    &Type::instance, NULL);
+    &Type::instance, 0);
 
 template<class Type>
 FunctionType PrimitiveToString<Type>::type(
@@ -747,7 +747,6 @@ public:
 VoidConstructor VoidConstructor::value;
 
 template<> TypeDefn VoidType::typedefn(&Builtins::module, "void", &VoidType::instance);
-template<> ASTBuiltIn VoidType::biDef(&typedefn);
 template<> TypeIdSet VoidType::MORE_GENERAL = TypeIdSet::noneOf();
 template<> TypeIdSet VoidType::INCLUDES = TypeIdSet::noneOf();
 
