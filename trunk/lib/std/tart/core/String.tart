@@ -101,7 +101,7 @@ public final class String : Iterable[char] {
   static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
     let length = Codecs.UTF_8.encodedLength(chars, start, count);
     let self = alloc(length);
-    Codecs.UTF_8.encodeRaw(addressOf(self._data[0]), length, addressOf(chars.data[0]), count);
+    Codecs.UTF_8.encodeRaw(addressOf(self._data[0]), 0, length, addressOf(chars.data[0]), 0, count);
     return self;
   }
 
@@ -183,7 +183,7 @@ public final class String : Iterable[char] {
     let charCount = self.charLength(start, count);
     let result = char[](charCount);
     Codecs.UTF_8.decodeRaw(
-        addressOf(result.data[0]), charCount, addressOf(self._data[start]), count);
+        addressOf(result.data[0]), 0, charCount, addressOf(self._data[start]), 0, count);
     return result;
   }
 

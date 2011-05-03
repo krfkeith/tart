@@ -83,7 +83,7 @@ public:
   /** Given a fully-qualified name to a symbol, load the module containing
       that symbol and return it.
   */
-  Module * getModuleForImportPath(llvm::StringRef importPath);
+  Module * loadModule(llvm::StringRef qualifiedName);
 
   /** Get the module from the module cache using this exact name. */
   Module * getCachedModule(llvm::StringRef moduleName);

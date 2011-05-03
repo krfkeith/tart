@@ -25,14 +25,14 @@ final class UTF8 : Codec {
 
   def name:String { get { return "UTF8"; } }
 
-  /** Construct a new UTF8 codec. */  
+  /** Construct a new UTF8 codec. */
   def construct(errorAction:ErrorAction = REPLACE) {
     self.errorAction = errorAction;
   }
-  
+
   /** Return the length in bytes of the encoding character starting with
       the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
-      prefix byte. */ 
+      prefix byte. */
   static def charLength(byteVal:ubyte) -> int {
     return lengthTable[byteVal];
   }
@@ -41,7 +41,7 @@ final class UTF8 : Codec {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, src.size);
     count = Math.min(count, src.size - start);
-    
+
     var length:int = 0;
     var index = start;
     while count-- > 0 {
@@ -62,7 +62,7 @@ final class UTF8 : Codec {
         } /* Otherwise, SKIP over. */
       }
     }
-    
+
     return length;
   }
 
@@ -91,40 +91,48 @@ final class UTF8 : Codec {
       index += byteCount;
       charCount += 1;
     }
-    
+
     return charCount;
   }
 
-  def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> int {
+  def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> Result {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.size);
     srcIndex = Math.min(srcIndex, src.size);
     count = Math.min(count, src.size - srcIndex);
-
     return encodeRaw(
-      addressOf(dst.data[dstIndex]), dst.size - dstIndex,
-      addressOf(src.data[srcIndex]), count);
+      addressOf(dst.data[0]), dstIndex, dst.size,
+      addressOf(src.data[0]), srcIndex, srcIndex + count);
   }
-  
-  def encodeRaw(dst:Address[ubyte], dstLength:int, src:Address[char], srcLength:int) -> int {
-    var srcIndex:int = 0;
-    var dstIndex:int = 0;
+
+  def encodeRaw(
+      dst:Address[ubyte],
+      dstIndex:int,
+      dstLength:int,
+      src:Address[char],
+      srcIndex:int,
+      srcLength:int) -> Result {
+    var state = CodecState.OK;
     while srcIndex < srcLength and dstIndex < dstLength {
-      let c = src[srcIndex++];
+      let c = src[srcIndex];
       if c <= 0x7f {
         break if dstIndex >= dstLength;
+        ++srcIndex;
         dst[dstIndex++] = ubyte(c);
       } else if c <= 0x7ff {
         break if dstIndex + 2 > dstLength;
+        ++srcIndex;
         dst[dstIndex++] = ubyte(c >> 6) | 0xc0;
         dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else if c <= 0xffff {
         break if dstIndex + 3 > dstLength;
+        ++srcIndex;
         dst[dstIndex++] = ubyte(c >> 12) | 0xe0;
         dst[dstIndex++] = ubyte(c >>  6) & 0x3f | 0x80;
         dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else if c <= 0x10ffff {
         break if dstIndex + 4 > dstLength;
+        ++srcIndex;
         dst[dstIndex++] = ubyte(c >> 18) | 0xf0;
         dst[dstIndex++] = ubyte(c >> 12) & 0x3f | 0x80;
         dst[dstIndex++] = ubyte(c >>  6) & 0x3f | 0x80;
@@ -134,70 +142,75 @@ final class UTF8 : Codec {
           break if dstIndex >= dstLength;
           dst[dstIndex++] = ubyte('?');
         } if errorAction == ErrorAction.ABORT {
-          throw InvalidCharacterError();
+          state = CodecState.INVALID_CHAR;
+          //throw InvalidCharacterError();
         } /* Otherwise, SKIP over. */
+        ++srcIndex;
       }
     }
-    
-    if srcIndex < srcLength {
-      throw IndexError();
-    }
-    
-    return dstIndex;
+
+    return Result(dstIndex, srcIndex, state);
   }
-  
-  def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> int {
+
+  def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> Result {
     Preconditions.checkIndex(
         srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.size);
     srcIndex = Math.min(srcIndex, src.size);
     count = Math.min(count, src.size - srcIndex);
-
     return decodeRaw(
-      addressOf(dst.data[dstIndex]), dst.size - dstIndex,
-      addressOf(src.data[srcIndex]), count);
+        addressOf(dst.data[0]), dstIndex, dst.size,
+        addressOf(src.data[0]), srcIndex, srcIndex + count);
   }
 
-  def decodeRaw(dst:Address[char], dstLength:int, src:Address[ubyte], srcLength:int) -> int {
-    var srcIndex:int = 0;
-    var dstIndex:int = 0;
+  def decodeRaw(
+      dst:Address[char],
+      dstIndex:int,
+      dstLength:int,
+      src:Address[ubyte],
+      srcIndex:int,
+      srcLength:int) -> Result {
+    var state = CodecState.OK;
     while srcIndex < srcLength and dstIndex < dstLength {
       let b = src[srcIndex];
       var charVal:uint32 = 0;
       if b < 0x80 {
+        break if srcIndex >= srcLength;
         srcIndex += 1;
         charVal = b;
       } else if b < 0xc0 {
         // Invalid unicode char
         break;
       } else if b < 0xe0 {
+        break if srcIndex + 2 > srcLength;
         charVal = (uint32(b & 0x3f) << 6)
                 | (src[srcIndex + 1] & 0x7f);
         srcIndex += 2;
       } else if b < 0xf0 {
+        break if srcIndex + 3 > srcLength;
         charVal = (uint32(b & 0x1f) << 12)
                 | (uint32(src[srcIndex + 1] & 0x7f) << 6)
                 | (src[srcIndex + 2] & 0x7f);
         srcIndex += 3;
       } else if b < 0xf5 {
+        break if srcIndex + 4 > srcLength;
         charVal = (uint32(b & 0x0f) << 18)
                 | (uint32(src[srcIndex + 1] & 0x7f) << 12)
                 | (uint32(src[srcIndex + 2] & 0x7f) << 6)
                 | (src[srcIndex + 3] & 0x7f);
         srcIndex += 4;
       } else {
-        // Invalid unicode char, 
+        // Invalid unicode char,
         break;
       }
 
       dst[dstIndex++] = charVal;
     }
 
-    if srcIndex < srcLength {
-      throw IndexError();
-    }
+//    if srcIndex < srcLength {
+//      throw IndexError();
+//    }
 
-    // Return the number of bytes copied.    
-    return dstIndex;
+    return Result(dstIndex, srcIndex, state);
   }
 
 	// Decode a single character.
@@ -214,18 +227,18 @@ final class UTF8 : Codec {
         case 1 {
 	        charVal = b;
         }
-        
+
         case 2 {
 	        charVal = (uint32(b & 0x3f) << 6)
   	              | (src[srcIndex + 1] & 0x7f);
         }
-        
+
         case 3 {
 	        charVal = (uint32(b & 0x1f) << 12)
   	              | (uint32(src[srcIndex + 1] & 0x7f) << 6)
     	            | (src[srcIndex + 2] & 0x7f);
         }
-        
+
         case 4 {
 	        charVal = (uint32(b & 0x0f) << 18)
   	              | (uint32(src[srcIndex + 1] & 0x7f) << 12)
@@ -234,7 +247,7 @@ final class UTF8 : Codec {
 	      }
       }
 
-	    // Return the number of bytes copied.    
+	    // Return the number of bytes copied.
       srcIndex += len;
 	    return charVal, srcIndex;
     }

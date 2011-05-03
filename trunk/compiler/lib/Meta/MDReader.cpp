@@ -14,6 +14,8 @@
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/NamespaceDefn.h"
 
+#include "tart/Expr/Exprs.h"
+
 #include "tart/Meta/Tags.h"
 #include "tart/Meta/VarInt.h"
 #include "tart/Meta/ASTReader.h"
@@ -778,6 +780,12 @@ Expr * MDReader::readExpression(SourceLocation loc, NodeRef node) {
 
 //    case meta::ExprID::CONST_NULL: {
 //    }
+
+    case meta::ExprID::UPCAST: {
+      const Type * ty = readTypeRef(node.strArg(1));
+      Expr * arg = readExpression(loc, node.nodeArg(2));
+      return new CastExpr(Expr::UpCast, loc, ty, arg);
+    }
 
     default:
       diag.recovered();

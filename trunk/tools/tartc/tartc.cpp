@@ -26,8 +26,8 @@ using namespace llvm::sys;
 
 // Global options
 
-static cl::opt<bool>
-Stats("showstats", cl::desc("Print performance metrics and statistics"));
+//static cl::opt<bool>
+//Stats("showstats", cl::desc("Print performance metrics and statistics"));
 
 static cl::list<std::string>
 ModulePaths("i", cl::Prefix, cl::desc("Module search path"));
@@ -36,8 +36,7 @@ static cl::list<std::string>
 InputFilenames(cl::Positional, cl::desc("<input files>"));
 
 static cl::opt<bool>
-StdInc("stdinc", cl::init(true),
-    cl::desc("Include the standard libraries on the module search path"));
+NoStdInc("nostdlib", cl::desc("Don't add the standard libraries to the module import path list"));
 
 int main(int argc, char **argv) {
   PrintStackTraceOnErrorSignal();
@@ -58,11 +57,11 @@ int main(int argc, char **argv) {
   // Add the module search paths.
   for (unsigned i = 0, e = ModulePaths.size(); i != e; ++i) {
     const std::string &modPath = ModulePaths[i];
-    //fprintf(stderr, "Module path: %s\n", modPath.c_str());
     PackageMgr::get().addImportPath(modPath);
   }
 
-  if (StdInc) {
+  // Standard library goes last.
+  if (!NoStdInc) {
     bool exists = false;
     if (fs::exists(TART_INSTALL_DIR_LIB_STD_BC, exists) == errc::success && exists) {
       PackageMgr::get().addImportPath(TART_INSTALL_DIR_LIB_STD_BC);
