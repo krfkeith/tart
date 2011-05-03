@@ -8,11 +8,23 @@ interface Codec {
     ABORT,  ///< Throw an exception.
   }
 
-  struct CodecState {
-    var dstIndex:int32;     ///< Next available position in the destination array.
-    var srcIndex:int32;     ///< Next position to read in the source array.
-    var errorState:int32;   ///< The current error state.
-    var partial:int32;      ///< Used to save the state of a partially-decoded character.
+  enum CodecState {
+    OK,               ///< No errors encountered.
+    MALFORMED_INPUT,  ///< The input byte stream had an invalid sequence of bytes.
+    INVALID_CHAR,     ///< Attempt to encode an invalid character.
+  }
+
+  /** Used to represent the result of an encode or decode operation. */
+  struct Result {
+    var dstIndex:int;           ///< Next available position in the destination array.
+    var srcIndex:int;           ///< Next position to read in the source array.
+    var state:CodecState;       ///< The current error state.
+
+    def construct(srcIndex:int, dstIndex:int, state:CodecState = CodecState.OK) {
+      self.srcIndex = srcIndex;
+      self.dstIndex = dstIndex;
+      self.state = state;
+    }
   }
 
   /** Name of this codec. */
@@ -43,9 +55,10 @@ interface Codec {
         src: The characters to be encoded.
         srcOffset: The starting position within the character array.
         count: The number of characters to encode.
-      Returns: The number of bytes written to 'dst'.
+      Returns: A 'Result' object indicating the number of characters read, and the
+        number bytes written to 'dst'.
     */
-  def encode(dst:ubyte[], dstOffset:int, src:char[], srcOffset:int, count:int) -> int;
+  def encode(dst:ubyte[], dstOffset:int, src:char[], srcOffset:int, count:int) -> Result;
 
   /** Decode the characters in 'src'.
       Parameters:
@@ -54,7 +67,8 @@ interface Codec {
         src: The bytes to be decoded.
         srcOffset: The starting position within the byte array.
         count: The number of bytes to decode.
-      Returns: The number of characters written to 'dst'.
+      Returns: A 'Result' object, indicating the number of bytes read, and the
+        number of characters written to 'dst'.
     */
-  def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> int;
+  def decode(dst:char[], dstOffset:int, src:ubyte[], srcOffset:int, count:int) -> Result;
 }

@@ -109,19 +109,19 @@ void Module::addModuleDependency(Defn * de) {
 }
 
 bool Module::import(llvm::StringRef name, DefnList & defs, bool absPath) {
-  Module * mod = PackageMgr::get().getModuleForImportPath(name);
+  Module * mod = PackageMgr::get().loadModule(name);
   if (mod == NULL && !absPath) {
     // Try our own package
     llvm::SmallString<128> importName(packageName_);
     importName.push_back('.');
     importName += name;
 
-    mod = PackageMgr::get().getModuleForImportPath(importName);
+    mod = PackageMgr::get().loadModule(importName);
     if (mod == NULL && packageName_ != "tart.core") {
       // Try tart.core
       importName = "tart.core.";
       importName += name;
-      mod = PackageMgr::get().getModuleForImportPath(importName);
+      mod = PackageMgr::get().loadModule(importName);
     }
   }
 

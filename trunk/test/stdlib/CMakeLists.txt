@@ -18,6 +18,7 @@ set(BC_LIBS
 
 set(TART_OPTIONS
   -debug-errors
+  -nostdlib
 #  -trace-def=InterfaceTest
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)

@@ -210,7 +210,7 @@ Module * PackageMgr::getCachedModule(StringRef qname) {
   return NULL;
 }
 
-Module * PackageMgr::getModuleForImportPath(StringRef qname) {
+Module * PackageMgr::loadModule(StringRef qname) {
   // First, attempt to search the modules already loaded.
   ModuleMap::iterator it = modules_.find(qname);
   if (it != modules_.end()) {

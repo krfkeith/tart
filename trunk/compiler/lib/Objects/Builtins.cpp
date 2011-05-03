@@ -115,7 +115,7 @@ void Builtins::init() {
 }
 
 Module * Builtins::loadSystemModule(const char * name) {
-  Module * mod = PackageMgr::get().getModuleForImportPath(name);
+  Module * mod = PackageMgr::get().loadModule(name);
   if (mod != NULL) {
     return mod;
   }

@@ -25,7 +25,7 @@ set(MODPATH ${TART_SOURCE_DIR}/lib/std)  # Module search path
 set(TART_OPTIONS
     -g
     -debug-errors
-    -stdinc=false
+    -nostdlib
 )
 
 # Empty list of output files

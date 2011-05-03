@@ -520,6 +520,15 @@ Value * MDWriter::expression(const Expr * in) {
       return NULL;
     }
 
+    case Expr::UpCast: {
+      const CastExpr * cast = static_cast<const CastExpr *>(in);
+      MDNodeBuilder builder(context_);
+      builder.put(tagValue(ExprID::UPCAST));
+      builder.put(serializeType(in->type()));
+      builder.put(expression(cast->arg()));
+      return NULL;
+    }
+
     default:
       diag.error(in) << "Implement expr serialization for: " << exprTypeName(in->exprType());
       return NULL;
