@@ -262,7 +262,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   }
 }
 
-Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, Type * expected) {
+Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, const Type * expected) {
   Expr * expr = analyze(ast, expected);
   if (isErrorResult(expr)) {
     return NULL;

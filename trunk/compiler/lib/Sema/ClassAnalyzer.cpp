@@ -1336,9 +1336,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   selfParam->setFlag(ParameterDefn::Reference, true);
   LValueExpr * selfExpr = LValueExpr::get(SourceLocation(), NULL, selfParam);
 
-  //Block * constructorBody = new Block("ctor_entry");
   SeqExpr * constructorBody = new SeqExpr(SourceLocation(), &VoidType::instance);
-  //constructorBody->exitReturn(SourceLocation(), NULL);
 
   // TODO: Call the super ctor;
   DASSERT_OBJ(superCtor == NULL, target);
@@ -1456,9 +1454,10 @@ Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
     return fieldType->nullInitValue();
   }
 
-  if (fieldType->typeClass() == Type::NArray) {
-    // TODO: If this array is non-zero size, we have a problem I think.
-    // Native arrays must be initialized in the constructor.
+  // If this class has a custom trace method, then we assume that the author
+  // knows what he or she is doing.
+  if (fieldType->typeClass() == Type::NArray && targetType()->traceMethods().empty()) {
+    // If this array is non-zero size, then it has to be initialized in the constructor.
     const NativeArrayType * nat = static_cast<const NativeArrayType *>(fieldType);
     if (nat->size() != 0) {
       diag.error(var) << "Native array types cannot be default initialized";
@@ -1504,6 +1503,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
   funcType->setSelfParam(selfParam);
 
   FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module_, istrings.idConstruct);
+  constructorDef->setParentDefn(target);
   constructorDef->setFunctionType(funcType);
   constructorDef->setLocation(target->location());
   constructorDef->setStorageClass(Storage_Instance);
@@ -1518,7 +1518,6 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
           FunctionDefn::ParameterTypePass,
           FunctionDefn::ReturnTypePass));
 
-  //constructorDef->setBody(constructorBody);
   if (target->isSingular()) {
     constructorDef->addTrait(Defn::Singular);
 

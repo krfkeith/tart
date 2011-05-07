@@ -286,6 +286,20 @@ Idea #1: Make a bare template parameter really mean [T <: __Any].
 
 // ------------------------------------------------------------------------
 
+tart.gc.Finalizer;
+
+abstract class Finalizer {
+  private {
+    var target: Object;
+  }
+  
+  @TraceMethod def trace {}
+  
+  abstract def finalize;
+}
+
+// ------------------------------------------------------------------------
+
 // Thoughts on a different dispatch algorithm.
 
 struct MethodInfoBlock {

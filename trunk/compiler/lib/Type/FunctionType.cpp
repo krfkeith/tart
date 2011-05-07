@@ -338,13 +338,13 @@ ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
 llvm::StringRef FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {
-      invokeName_.append(".invoke_static.");
+      invokeName_ += ".invoke_static.";
     } else {
-      invokeName_.append(".invoke.");
+      invokeName_ += ".invoke.";
     }
     typeLinkageName(invokeName_, paramTypes());
     if (!returnType_->isVoidType()) {
-      invokeName_.append("->");
+      invokeName_ += "->";
       typeLinkageName(invokeName_, returnType_);
     }
   }

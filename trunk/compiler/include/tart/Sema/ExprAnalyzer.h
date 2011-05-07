@@ -57,7 +57,7 @@ public:
   Expr * reduceAttribute(const ASTNode * ast);
 
   /** Similar to reduceExpr, but returns a constant. */
-  Expr * reduceConstantExpr(const ASTNode * ast, Type * expected);
+  Expr * reduceConstantExpr(const ASTNode * ast, const Type * expected);
 
   /** Similar to reduceExpr, but returns a constant. */
   Expr * reduceTemplateArgExpr(const ASTNode * ast, bool doInference);

@@ -12,6 +12,7 @@
 namespace tart {
 
 class UnionType;
+class PHIConstraint;
 
 /// -------------------------------------------------------------------
 /// Function pass which assigns final types to all expressions and
@@ -54,6 +55,7 @@ private:
   Expr * addCastIfNeeded(Expr * in, const Type * toType);
   Expr * handleUnboxCast(CastExpr * in);
   Expr * chooseIntSize(Expr * in);
+  const Type * getCommonPHIType(const PHIConstraint * phi);
 };
 
 } // namespace tart

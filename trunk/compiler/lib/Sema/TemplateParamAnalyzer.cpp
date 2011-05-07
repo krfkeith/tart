@@ -43,13 +43,15 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
         // Add a subclass test - reversed.
         TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
         tsig_->conditions().push_back(condition);
-      } else {
+      } else if (ast->constraint() == ASTTypeVariable::IS_INSTANCE) {
         if (tvar->valueType() == NULL) {
           tvar->setValueType(type);
         } else if (!tvar->valueType()->isEqual(type)) {
           diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
               ast->name() << "'";
         }
+      } else {
+        DFAIL("Invalid constraint");
       }
     }
   }

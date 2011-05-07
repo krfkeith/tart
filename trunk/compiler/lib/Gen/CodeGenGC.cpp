@@ -229,14 +229,14 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   // If there are field offsets, create a trace table entry for the offsets.
   const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
   if (!fieldOffsets.empty()) {
-    std::string fieldOffsetsName(".fieldoffsets.");
+    llvm::SmallString<64> fieldOffsetsName(".fieldoffsets.");
     typeLinkageName(fieldOffsetsName, type);
     llvm::Constant * fieldOffsetsTable = ConstantArray::get(
         ArrayType::get(intPtrType_, fieldOffsets.size()),
         fieldOffsets);
     GlobalVariable * fieldOffsetsVar = new GlobalVariable(*irModule_,
         fieldOffsetsTable->getType(), true, GlobalValue::LinkOnceODRLinkage,
-        fieldOffsetsTable, fieldOffsetsName);
+        fieldOffsetsTable, Twine(fieldOffsetsName));
     llvm::Constant * tableEntryFields[4];
     tableEntryFields[0] = getInt16Val(0);
     tableEntryFields[1] = getInt16Val(fieldOffsets.size());
@@ -264,12 +264,12 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   llvm::Constant * traceTableValue = ConstantArray::get(
       ArrayType::get(traceDescriptorType, traceTable.size()), traceTable);
 
-  std::string varName(".tracetable.");
+  llvm::SmallString<64> varName(".tracetable.");
   typeLinkageName(varName, type);
   return new GlobalVariable(*irModule_,
       traceTableValue->getType(),
       true, GlobalValue::LinkOnceODRLinkage, traceTableValue,
-      varName);
+      Twine(varName));
 }
 
 void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * basePtr,
@@ -409,7 +409,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
     return it->second;
   }
 
-  std::string fName(".utrace.");
+  llvm::SmallString<64> fName(".utrace.");
   typeLinkageName(fName, utype);
 
   std::vector<const llvm::Type *> argTypes;
@@ -417,7 +417,8 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
   argTypes.push_back(Builtins::typeTraceAction.get()->irParameterType());
   llvm::FunctionType * fnType = llvm::FunctionType::get(builder_.getVoidTy(), argTypes, false);
 
-  llvm::Function * fn = Function::Create(fnType, Function::LinkOnceODRLinkage, fName, irModule_);
+  llvm::Function * fn = Function::Create(
+      fnType, Function::LinkOnceODRLinkage, Twine(fName), irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "entry", fn);
   BasicBlock * blkExit = BasicBlock::Create(context_, "exit", fn);
   BasicBlock * blkPtrTrace = NULL;

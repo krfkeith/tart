@@ -24,7 +24,6 @@
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/TypeOrdering.h"
 #include "tart/Type/UnionType.h"
-#include "tart/Type/UnitType.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
@@ -396,7 +395,7 @@ llvm::GlobalVariable * Reflector::getEnumTypePtr(const EnumType * type) {
 }
 
 llvm::GlobalVariable * Reflector::getDerivedTypePtr(const Type * type) {
-  std::string typeSymbol(".type.");
+  llvm::SmallString<64> typeSymbol(".type.");
   typeLinkageName(typeSymbol, type);
   GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
   if (var != NULL) {
@@ -414,11 +413,11 @@ llvm::GlobalVariable * Reflector::getDerivedTypePtr(const Type * type) {
 
   return new GlobalVariable(*irModule_, Builtins::typeDerivedType->irType(), true,
       GlobalValue::LinkOnceODRLinkage,
-      NULL, typeSymbol);
+      NULL, Twine(typeSymbol));
 }
 
 llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) {
-  std::string typeSymbol(".type.");
+  llvm::SmallString<64> typeSymbol(".type.");
   typeLinkageName(typeSymbol, type);
   GlobalVariable * var = irModule_->getGlobalVariable(typeSymbol, true);
   if (var != NULL) {
@@ -438,7 +437,7 @@ llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) 
   typeExports_.append(type);
   return new GlobalVariable(*irModule_, Builtins::typeFunctionType->irType(), true,
       GlobalValue::LinkOnceODRLinkage,
-      NULL, typeSymbol);
+      NULL, Twine(typeSymbol));
 }
 
 void Reflector::emitModule(Module * module) {
@@ -1111,14 +1110,14 @@ llvm::Constant * Reflector::emitFieldList(const IterableScope * scope, llvm::Str
 
 llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
   // Generate the symbolic name of the type list.
-  std::string sym = ".typelist.(";
+  llvm::SmallString<64> sym(".typelist.(");
   for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
     if (it != types.begin()) {
-      sym.append(",");
+      sym += ",";
     }
     typeLinkageName(sym, *it);
   }
-  sym.append(")");
+  sym += ")";
 
   GlobalVariable * var = irModule_->getGlobalVariable(sym, true);
   if (var != NULL) {
@@ -1143,7 +1142,7 @@ llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
   Constant * typeListStruct = sb.build();
 
   var = new GlobalVariable(*irModule_, typeListStruct->getType(), true,
-      GlobalValue::LinkOnceAnyLinkage, typeListStruct, sym);
+      GlobalValue::LinkOnceAnyLinkage, typeListStruct, Twine(sym));
   return var;
 }
 

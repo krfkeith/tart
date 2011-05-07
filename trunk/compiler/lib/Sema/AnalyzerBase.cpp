@@ -573,10 +573,19 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
 }
 
 bool AnalyzerBase::importName(ExprList & out, llvm::StringRef path, bool absPath, SLC & loc) {
+  DefnList defns;
   if (module_ != NULL) {
-    DefnList defns;
     if (module_->import(path, defns, absPath)) {
       return getDefnListAsExprList(loc, defns, NULL, out);
+    }
+  }
+
+  if (currentFunction_ != NULL && currentFunction_->isSynthetic()) {
+    Module * source = currentFunction_->sourceModule();
+    if (source != NULL && source != module_) {
+      if (source->import(path, defns, absPath)) {
+        return getDefnListAsExprList(loc, defns, NULL, out);
+      }
     }
   }
 

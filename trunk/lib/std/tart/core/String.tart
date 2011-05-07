@@ -1,3 +1,4 @@
+import tart.collections.Copyable;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.Address;
 import tart.text.encodings.Codecs;
@@ -43,24 +44,35 @@ public final class String : Iterable[char] {
     return self;
   }
 
-  /** Construct a string from a subrange of a byte array. The byte array is presumed to contain
-      character data encoded as UTF-8.
+  /** Construct a string from a copyable container of bytes. The bytes are presumed to
+      contain character data encoded as UTF-8.
       Parameters:
-        bytes: The byte array.
-        start: The starting index within the byte array.
+        from: The container.
+   */
+  static def create(from:Copyable[ubyte]) -> String {
+    let self = alloc(from.size);
+    from.copyElements(addressOf(self._data[0]), 0, from.size);
+    return self;
+  }
+
+  /** Construct a string from a subrange of a collection of bytes. The bytes are presumed
+      to contain character data encoded as UTF-8.
+      Parameters:
+         from: The input collection.
+        start: The starting index within the input collection.
         count: The number of bytes to use in constructing the string. Will be clamped
             to the end of the string if there are fewer than 'count' bytes following 'start'.
       Throws:
         IndexError - if 'start' is less than zero.
         ArgumentError - if 'count' is less than zero.
    */
-  static def create(bytes:ubyte[], start:int, count:int) -> String {
+  static def create(from:Copyable[ubyte], start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
-    start = Math.min(start, bytes.size);
-    count = Math.min(count, bytes.size - start);
+    start = Math.min(start, from.size);
+    count = Math.min(count, from.size - start);
     let self = alloc(count);
-    bytes.copyElements(addressOf(self._data[0]), start, bytes.size);
+    from.copyElements(addressOf(self._data[0]), start, from.size);
     return self;
   }
 

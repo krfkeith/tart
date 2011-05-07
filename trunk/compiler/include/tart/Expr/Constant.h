@@ -9,7 +9,13 @@
 #include "tart/Expr/Expr.h"
 #endif
 
-#include <llvm/Constants.h>
+#ifndef LLVM_CONSTANTS_H
+#include "llvm/Constants.h"
+#endif
+
+#ifndef LLVM_ADT_FOLDINGSET_H
+#include "llvm/ADT/FoldingSet.h"
+#endif
 
 namespace tart {
 
@@ -262,5 +268,14 @@ public:
 };
 
 } // namespace tart
+
+namespace llvm {
+
+// Definition of folding set traits for constant expressions.
+template<> struct FoldingSetTrait<tart::ConstantExpr *> {
+  static void Profile(const tart::ConstantExpr * expr, FoldingSetNodeID &ID);
+};
+
+}
 
 #endif

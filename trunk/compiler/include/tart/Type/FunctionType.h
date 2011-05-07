@@ -111,7 +111,7 @@ private:
   mutable bool isCreatingType;
   mutable bool isStructReturn_;
   mutable bool isInvocable_;
-  mutable std::string invokeName_;
+  mutable llvm::SmallString<0> invokeName_;
 };
 
 }

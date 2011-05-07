@@ -444,7 +444,7 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
     const Expr * from, const Type * to);
 
 // Given a type, append the linkage name of that type to the output buffer.
-void typeLinkageName(std::string & out, const Type * ty);
+void typeLinkageName(llvm::SmallVectorImpl<char> & out, const Type * ty);
 
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(llvm::raw_ostream & out, const Type * ty);
