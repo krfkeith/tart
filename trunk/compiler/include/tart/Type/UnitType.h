@@ -9,6 +9,10 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef LLVM_ADT_FOLDINGSET_H
+#include "llvm/ADT/FoldingSet.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -40,10 +44,15 @@ public:
     return ty->typeClass() == Unit;
   }
 
+  typedef llvm::FoldingSetNodeWrapper<UnitType *> UniqueTypeNode;
+  typedef llvm::FoldingSet<UniqueTypeNode> UniqueTypes;
+
 private:
+  static UniqueTypes uniqueTypes_;
+
   ConstantExpr * value_;
 
-  /** Construct a new typealias. */
+  /** Construct a new UnitType. */
   UnitType(ConstantExpr * value)
     : Type(Unit)
     , value_(value)
@@ -52,4 +61,15 @@ private:
 
 } // namespace tart
 
-#endif
+namespace llvm {
+
+// Definition of folding set traits for constant expressions.
+template<> struct FoldingSetTrait<tart::UnitType *> {
+  static inline void Profile(const tart::UnitType * ut, FoldingSetNodeID &ID) {
+    ID.Add(ut->value());
+  }
+};
+
+} // namespace llvm
+
+#endif // TART_TYPE_UNITTYPE_H

@@ -264,12 +264,15 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   if (!noCache) {
     Defn * sp = findSpecialization(typeArgs);
     if (sp != NULL) {
+      if (trace) {
+        diag.debug(loc) << "Found " << value_ << " with params " << typeArgs << " in cache.";
+      }
       return sp;
     }
   }
 
   if (trace) {
-    diag.debug() << "Instantiating " << value_ << " with params " << typeArgs;
+    diag.debug(loc) << "Instantiating " << value_ << " with params " << typeArgs;
   }
 
   // Create the template instance
@@ -310,8 +313,12 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     const Type * value = paramValues[i];
 
     Defn * argDefn;
-    if (const UnitType * ntc = dyn_cast<UnitType>(value)) {
-      argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), ntc->value());
+    if (const UnitType * ut = dyn_cast<UnitType>(value)) {
+      Expr * cval = ut->value();
+      if (cval != NULL && var->valueType() != NULL) {
+        cval = var->valueType()->implicitCast(loc, cval);
+      }
+      argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), cval);
       argDefn->setStorageClass(Storage_Static);
     } else {
       argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value));

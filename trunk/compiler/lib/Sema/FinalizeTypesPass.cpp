@@ -798,8 +798,9 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
 Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
   CFGPass::visitIf(in);
   if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
-    if (phi->common() != NULL) {
-      in->setType(phi->common());
+    const Type * singularCommon = getCommonPHIType(phi);
+    if (singularCommon) {
+      in->setType(singularCommon);
     }
   }
 
@@ -880,6 +881,15 @@ Expr * FinalizeTypesPassImpl::chooseIntSize(Expr * in) {
   }
   ptype = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
   return ptype->implicitCast(in->location(), cintVal);
+}
+
+const Type * FinalizeTypesPassImpl::getCommonPHIType(const PHIConstraint * phi) {
+  if (const TypeConstraint * tc = dyn_cast_or_null<TypeConstraint>(phi->common())) {
+    if (tc->singularValue() != NULL) {
+      return tc->singularValue();
+    }
+  }
+  return phi->common();
 }
 
 } // namespace tart

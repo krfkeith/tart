@@ -562,4 +562,10 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   return builder_.CreateLoad(value, name);
 }
 
+#if 0
+void CodeGenerator::compareTypes(llvm::Type * expected, llvm::Type * actual) {
+
+}
+#endif
+
 }

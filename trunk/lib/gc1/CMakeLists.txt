@@ -7,7 +7,7 @@ include(AddTartLibrary)
 #)
 
 set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(TARTC_OPTIONS -g -debug-errors)
+set(TARTC_OPTIONS -debug-errors)
 set(TARTLN_OPTIONS -disable-fp-elim -internalize -O0)
 
 # Module search path

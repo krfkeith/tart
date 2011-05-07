@@ -16,8 +16,8 @@
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/UnitType.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -438,6 +438,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     TypeList params;
     ASTConstNodeList defaults;
 
+    TemplateParamAnalyzer tpa(de);
     for (ASTNodeList::const_iterator it = paramsAst.begin(); it != paramsAst.end(); ++it) {
       const ASTNode * node = *it;
       const ASTNode * paramDefault = NULL;
@@ -449,7 +450,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         paramDefault = op->arg(1);
       }
 
-      Type * param = TemplateParamAnalyzer(de).typeFromAST(node);
+      Type * param = tpa.typeFromAST(node);
       if (param != NULL) {
         params.push_back(param);
         defaults.push_back(paramDefault);
@@ -458,15 +459,33 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
 
     tsig->setTypeParams(TupleType::get(params));
 
+    TypeAnalyzer ta(de->module(), &tsig->paramScope());
+    ExprAnalyzer ea(&ta, ta.currentFunction());
     int argCount = 0;
     for (ASTConstNodeList::const_iterator it = defaults.begin(); it != defaults.end(); ++it) {
       const ASTNode * node = *it;
+      Type * param = params[argCount];
       Type * paramDefault = NULL;
       if (node != NULL) {
         if (tsig->isVariadic()) {
           diag.error(node) << "default parameter values not allowed on variadic templates";
         }
-        paramDefault = TypeAnalyzer(de->module(), &tsig->paramScope()).typeFromAST(node);
+
+        if (TypeVariable * tv = dyn_cast<TypeVariable>(param)) {
+          if (tv->valueType() != NULL) {
+            ConstantExpr * defaultValue = dyn_cast_or_null<ConstantExpr>(
+                ea.reduceConstantExpr(node, tv->valueType()));
+            if (isErrorResult(defaultValue)) {
+              break;
+            }
+
+            paramDefault = UnitType::get(defaultValue);
+          }
+        }
+
+        if (paramDefault == NULL) {
+          paramDefault = ta.typeFromAST(node);
+        }
       }
 
       ++argCount;

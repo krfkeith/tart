@@ -1074,10 +1074,19 @@ ASTNode * Parser::typeExprPrimary() {
     }
 
     ASTTypeVariable::ConstraintType constraint = ASTTypeVariable::IS_INSTANCE;
+    ASTNode * paramDefault = NULL;
     if (match(Token_Colon)) {
       declType = typeExpression();
       if (declType == NULL) {
         expected("type expression after ':'");
+      } else {
+        if (match(Token_Assign)) {
+          paramDefault = expression();
+          if (paramDefault == NULL) {
+            expectedExpression();
+            return false;
+          }
+        }
       }
     } else if (match(Token_IsSubclass)) {
       constraint = ASTTypeVariable::IS_SUBTYPE;
@@ -1096,6 +1105,9 @@ ASTNode * Parser::typeExprPrimary() {
     bool isVariadic = match(Token_Ellipsis);
 
     result = new ASTTypeVariable(tokenLoc, pvarName, declType, constraint, isVariadic);
+    if (paramDefault != NULL) {
+      result = new ASTOper(ASTNode::Assign, result, paramDefault);
+    }
   } else if (match(Token_Optional)) {
     result = typeExprPrimary();
     if (result != NULL) {
@@ -1180,6 +1192,8 @@ ASTNode * Parser::typeSuffix(ASTNode * result) {
       ASTNodeList templateArgs;
       templateArgs.push_back(result);
       result = new ASTSpecialize(tokenLoc | result->location(), &AddressType::biDef, templateArgs);
+    } else if (match(Token_QMark)) {
+      result = new ASTOper(ASTNode::LogicalOr, result, &NullType::biDef);
     } else {
       return result;
     }

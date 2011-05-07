@@ -248,21 +248,21 @@ llvm::StringRef FunctionDefn::linkageName() const {
 
     if (!isExtern()) {
       if (!params().empty()) {
-        lnkName.append("(");
+        lnkName += "(";
         for (ParameterList::const_iterator it = params().begin(); it != params().end(); ++it) {
           if (it != params().begin()) {
-            lnkName.append(",");
+            lnkName += ",";
           }
           typeLinkageName(lnkName, (*it)->type());
           if ((*it)->getFlag(ParameterDefn::Variadic)) {
-            lnkName.append("...");
+            lnkName += "...";
           }
         }
-        lnkName.append(")");
+        lnkName += ")";
       }
 
       if (!type_->returnType()->isVoidType()) {
-        lnkName.append("->");
+        lnkName += "->";
         typeLinkageName(lnkName, type_->returnType());
       }
     }

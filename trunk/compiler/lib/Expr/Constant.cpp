@@ -314,3 +314,32 @@ void ConstantNativeArray::trace() const {
 }
 
 } // namespace tart
+
+namespace llvm {
+
+void FoldingSetTrait<tart::ConstantExpr *>::Profile(
+    const tart::ConstantExpr * expr,
+    FoldingSetNodeID &ID) {
+  ID.AddInteger(expr->exprType());
+  switch (int(expr->exprType())) {
+    case tart::Expr::ConstInt: {
+      const tart::ConstantInteger * cint = static_cast<const tart::ConstantInteger *>(expr);
+      ID.Add(cint->value()->getValue());
+      break;
+    }
+
+    case tart::Expr::ConstNull:
+      break;
+
+    case tart::Expr::ConstString: {
+      const tart::ConstantString * cstr = static_cast<const tart::ConstantString *>(expr);
+      ID.AddString(cstr->value());
+      break;
+    }
+
+    default:
+      tart::diag.fatal(expr) << "Unsupported type for folding set: " << expr->exprType();
+  }
+}
+
+}

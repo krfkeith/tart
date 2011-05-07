@@ -2,17 +2,21 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/Template.h"
+
 #include "tart/Type/Type.h"
 #include "tart/Type/TypeAlias.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
-#include "tart/Defn/FunctionDefn.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/UnionType.h"
+#include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Defn/Template.h"
+
 #include "tart/Sema/BindingEnv.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -120,70 +124,10 @@ FormatStream & operator<<(FormatStream & out, ConversionRank rank) {
   return out;
 }
 
-// Given a type, append the linkage name of that type to the output buffer.
-void typeLinkageName(std::string & out, const Type * ty) {
-  ty = dealias(ty);
-  if (TypeDefn * td = ty->typeDefn()) {
-    out.append(td->linkageName());
-  } else if (const FunctionType * ftype = dyn_cast<FunctionType>(ty)) {
-    out.append("fn");
-    if (ftype->selfParam() != NULL) {
-      out.append(":");
-      typeLinkageName(out, ftype->selfParam()->type());
-    }
-
-    if (!ftype->params().empty()) {
-      out.append("(");
-
-      const ParameterList & params = ftype->params();
-      for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
-        if (it != params.begin()) {
-          out.append(",");
-        }
-
-        typeLinkageName(out, (*it)->type());
-        if ((*it)->isVariadic()) {
-          out.append("...");
-        }
-      }
-      out.append(")");
-    }
-
-    if (!ftype->isVoidType()) {
-      out.append("->");
-      typeLinkageName(out, ftype->returnType());
-    }
-  } else if (const TupleType * ttype = dyn_cast<TupleType>(ty)) {
-    out.append("(");
-    for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it) {
-      if (it != ttype->begin()) {
-        out.append(",");
-      }
-
-      typeLinkageName(out, *it);
-    }
-    out.append(")");
-  } else if (const UnionType * utype = dyn_cast<UnionType>(ty)) {
-    for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
-        ++it) {
-      if (it != utype->members().begin()) {
-        out.append("|");
-      }
-
-      typeLinkageName(out, *it);
-    }
-  } else if (const AddressType * mat = dyn_cast<AddressType>(ty)) {
-    typeLinkageName(out, mat->typeParam(0));
-    out.append("^");
-  } else if (isa<TypeLiteralType>(ty)) {
-    out.append("tart.reflect.Type");
-  } else if (const TypeVariable * tvar = dyn_cast<TypeVariable>(ty)) {
-    //out.append("%");
-    out.append(tvar->name());
-  } else {
-    diag.error() << "Type: " << ty;
-    TFAIL << "Can't compute linkage name of type: " << ty;
-  }
+void typeLinkageName(llvm::SmallVectorImpl<char> & out, const Type * ty) {
+  llvm::raw_svector_ostream strm(out);
+  typeLinkageName(strm, ty);
+  strm.flush();
 }
 
 void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
@@ -254,6 +198,8 @@ void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
     out << ',';
     out << na->size();
     out << ']';
+  } else if (const UnitType * ut = dyn_cast<UnitType>(ty)) {
+    out << ut->value();
   } else {
     diag.error() << "Type: " << ty;
     TFAIL << "Can't compute linkage name of type: " << ty;

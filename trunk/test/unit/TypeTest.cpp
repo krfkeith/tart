@@ -267,10 +267,6 @@ private:
 // -------------------------------------------------------------------
 // Utility functions
 
-// Given a type, append the linkage name of that type to the output buffer.
-void typeLinkageName(std::string & out, const Type * ty);
-void typeLinkageName(std::string & out, TupleType * tv);
-
 /** Given two types, try and find the narrowest type that both
     can be converted to.
   */

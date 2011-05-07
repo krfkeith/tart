@@ -82,21 +82,21 @@ llvm::StringRef Defn::linkageName() const {
     if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray.typeDefn()) {
       // Handle arrays specially.
       typeLinkageName(lnkName, (*tinst_->typeArgs())[0]);
-      lnkName.append("[]");
+      lnkName += "[]";
       return lnkName;
     }
 
     if (parentDefn_ != NULL && parentDefn_->defnType() != Defn::Mod) {
       lnkName = parentDefn_->linkageName();
-      lnkName.append(".");
-      lnkName.append(name_);
+      lnkName += ".";
+      lnkName += name_;
     } else {
-      lnkName.assign(qualifiedName());
+      lnkName = qualifiedName();
     }
 
     // Template instance parameters.
     if (tinst_ != NULL) {
-      lnkName.append("[");
+      lnkName += "[";
       const TupleType * typeArgs = tinst_->typeArgs();
       int index = 0;
       TemplateSignature * tsig = tinst_->templateDefn()->templateSignature();
@@ -112,14 +112,14 @@ llvm::StringRef Defn::linkageName() const {
         }
 
         if (it != typeArgs->begin()) {
-          lnkName.append(",");
+          lnkName += ",";
         }
 
         // Special formatting for variadic template params
         if (variadicArgs != NULL) {
           for (TupleType::const_iterator t = variadicArgs->begin(); t != variadicArgs->end(); ++t) {
             if (t != variadicArgs->begin()) {
-              lnkName.append(",");
+              lnkName += ",";
             }
             typeLinkageName(lnkName, *t);
           }
@@ -128,11 +128,11 @@ llvm::StringRef Defn::linkageName() const {
         }
       }
 
-      lnkName.append("]");
+      lnkName += "]";
     } else if (tsig_ != NULL) {
-      lnkName.append("[");
+      lnkName += "[";
       typeLinkageName(lnkName, tsig_->typeParams());
-      lnkName.append("]");
+      lnkName += "]";
     }
   }
 

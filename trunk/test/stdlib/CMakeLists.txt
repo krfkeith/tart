@@ -6,8 +6,8 @@ file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 source_group(StdLibTests FILES ${TART_SRC})
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH  # Module search path
-  -i ${TART_BINARY_DIR}/lib/std/libstd.bc
-#  -i ${TART_SOURCE_DIR}/lib/std
+#  -i ${TART_BINARY_DIR}/lib/std/libstd.bc
+  -i ${TART_SOURCE_DIR}/lib/std
   -i ${TART_SOURCE_DIR}/lib/testing)
 
 set(BC_LIBS

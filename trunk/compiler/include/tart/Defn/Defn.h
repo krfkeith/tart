@@ -100,7 +100,7 @@ protected:
   Defn * parentDefn_;         // Definition which encloses this one.
   Defn * nextInScope_;        // Pointer to the next defn in parent scope
   llvm::SmallString<0> qname_;// Fully-qualified name.
-  mutable std::string lnkName;// External linkage name
+  mutable llvm::SmallString<0> lnkName;// External linkage name
   TemplateSignature * tsig_;  // Template signature
   TemplateInstance * tinst_;  // Template arguments
   ExprList attrs_;            // List of attributes

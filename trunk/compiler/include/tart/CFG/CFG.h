@@ -5,10 +5,6 @@
 #ifndef TART_CFG_CFG_H
 #define TART_CFG_CFG_H
 
-#ifndef LLVM_ADT_FOLDINGSET_H
-#include "llvm/ADT/FoldingSet.h"
-#endif
-
 #ifndef LLVM_ADT_SMALLVECTOR_H
 #include "llvm/ADT/SmallVector.h"
 #endif

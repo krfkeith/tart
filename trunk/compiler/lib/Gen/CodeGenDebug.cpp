@@ -637,7 +637,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
     memberOffset += memberSize;
   }
 
-  std::string tupleName;
+  llvm::SmallString<64> tupleName;
   typeLinkageName(tupleName, type);
   return diBuilder_.createStructType(
       compileUnit(),
