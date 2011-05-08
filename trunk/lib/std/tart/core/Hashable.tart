@@ -1,0 +1,4 @@
+protocol Hashable {
+  /** Compute the hash value for this object. */
+  def computeHash -> uint64;
+}

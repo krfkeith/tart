@@ -1,0 +1,11 @@
+import tart.annex.Essential;
+
+/** The iterator interface. An iterator has a 'next' method which returns
+    either the next value in the sequence, or 'void' to indicate the
+    end of the sequence.
+*/
+@Essential interface Iterator[%T] {
+  /** Return the next element in the sequence, or 'void' to indicate the end of
+      the sequence. */
+  def next -> T or void;
+}

@@ -1,0 +1,48 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+
+/** Used to decode a compressed stream of reflection data. */
+class StreamDecoder {
+  private static let VARINT_2BYTE_PREFIX = 0xC0;
+  private static let VARINT_3BYTE_PREFIX = 0xE0;
+  private static let VARINT_2BYTE_MASK = ~VARINT_2BYTE_PREFIX;
+  private static let VARINT_3BYTE_MASK = ~VARINT_3BYTE_PREFIX;
+
+  protected var _data:Address[ubyte];
+  protected var _pos:int;
+  
+  def construct(data:Address[ubyte]) {
+    Preconditions.checkArgument(data is not null);
+    self._data = data;
+    self._pos = 0;
+  }
+  
+  final def readByte -> ubyte {
+    return _data[_pos++];
+  }
+
+  final def readVarInt -> int {
+    var value:int = _data[_pos++];
+    if (value < VARINT_2BYTE_PREFIX) {
+      return value;
+    } else if (value < VARINT_3BYTE_PREFIX) {
+      value = (value & ~VARINT_2BYTE_PREFIX) << 8;
+      value |= _data[_pos++];
+      return value;
+    } else {
+      value = (value & ~VARINT_3BYTE_PREFIX) << 16;
+      value |= _data[_pos++] << 8;
+      value |= _data[_pos++];
+      return value;
+    }
+  }
+  
+  final def readString -> String {
+    let len = readVarInt();
+    let s = String(addressOf(_data[_pos]), int32(len));
+    _pos += len;
+    return s;
+  }
+  
+  final def position:int { get { return _pos; } }
+}

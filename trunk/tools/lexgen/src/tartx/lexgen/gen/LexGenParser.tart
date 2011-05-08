@@ -1,0 +1,485 @@
+import tart.collections.Map;
+import tart.collections.HashMap;
+import tart.io.TextReader;
+import tartx.lexgen.shared.LogWriter;
+import tartx.lexgen.gen.LexGenScanner.LToken;
+import tartx.lexgen.gen.LexGenScanner.LState;
+
+class LexGenParser {
+  private {
+    var sourceFile:String;
+    var scanner:LexGenScanner;
+    var log:LogWriter;
+  }
+
+  def construct(sourceFile:String, reader:TextReader, log:LogWriter) {
+    self.sourceFile = sourceFile;
+    self.log = log;
+    self.scanner = LexGenScanner(sourceFile, reader, log);
+    self.scanner.next();
+  }
+
+  def fail(msg:String) {
+    log.fatal(scanner.tokenLoc, msg);
+  }
+
+  def matchIdent -> String? {
+    if scanner.token == LToken.ID {
+      let result = scanner.tokenText;
+      scanner.next();
+      return result;
+    }
+    return null;
+  }
+
+  def matchToken(token:LToken) -> bool {
+    if scanner.token == token {
+      scanner.next();
+      return true;
+    }
+    return false;
+  }
+
+  def matchAndSetState(token:LToken, state:LState) -> bool {
+    if scanner.token == token {
+      scanner.state = state;
+      scanner.next();
+      return true;
+    }
+    return false;
+  }
+
+  def parseCharacterConstant -> char {
+    if scanner.token == LToken.CHAR_CONSTANT {
+      Debug.assertEq(1, scanner.tokenLength);
+      // TODO: Need a better way to do this.
+      let result = scanner.tokenText.charAt(0);
+      scanner.next();
+      return result;
+    }
+    return char(-1);
+  }
+
+  def parseCodeBlock -> CodeBlock? {
+    if matchAndSetState(LToken.OPEN_BRACE, LState.ACTION) {
+      let codeText = StringBuilder();
+      var depth:int = 1;
+      repeat {
+        if scanner.token == LToken.START_BLOCK { depth++; }
+        else if scanner.token == LToken.END_BLOCK { depth--; }
+        else if scanner.token == LToken.ERROR { break; }
+        else if scanner.token != LToken.ACTION_TEXT {
+          fail("Unexpected token: {0}".format(scanner.tokenText));
+          break;
+        }
+
+        break if depth == 0;
+        codeText.append(scanner.tokenText);
+        scanner.next();
+      }
+
+      scanner.state = LState.START;
+      scanner.next();
+      return CodeBlock(codeText.toString());
+    }
+    return null;
+  }
+
+  //def parseArgumentList(g:Grammar) -> List[String] {
+  //
+  //}
+
+  /*
+
+        public IList ParseArgumentList(Recognizer reco) {
+            // Parse the argument list of the production
+            ArrayList paramList = new ArrayList();
+            if (MatchAndSetState(LToken.OpenBracket, LState.Parameter)) {
+                string argText = "";
+                int nestingLevel = 0;
+                for (;;) {
+                    if (mScanner.Token == LToken.ParamText) {
+                        argText += mScanner.TokenText;
+                        mScanner.Next();
+                    } else if (mScanner.Token == LToken.OpenBracket) {
+                        nestingLevel++;
+                        argText += mScanner.TokenText;
+                        mScanner.Next();
+                    } else if (mScanner.Token == LToken.CloseBracket) {
+                        if (nestingLevel == 0) {
+                            argText = argText.Trim();
+                            if (argText.Length > 0) paramList.Add(argText);
+                            mScanner.State = LState.Start;
+                            mScanner.Next();
+                            break;
+                        } else {
+                            argText += mScanner.TokenText;
+                            nestingLevel--;
+                            mScanner.Next();
+                        }
+                    } else if (mScanner.Token == LToken.Comma) {
+                        argText = argText.Trim();
+                        if (argText.Length == 0) {
+                            Fail("Parameter Expected");
+                        }
+                        paramList.Add(argText);
+                        argText = "";
+                        mScanner.Next();
+                    } else {
+                        Fail("Comma or close paren expected");
+                    }
+                }
+                return paramList;
+            }
+            return null;
+        }
+*/
+  def parseClassName -> String? {
+    match matchIdent() as id:String {
+	    let className = StringBuilder(id);
+	    while matchToken(LToken.DOT) {
+	      match matchIdent() as id:String {
+          className.append('.');
+          className.append(id);
+        } else {
+          fail("Identifier expected after '.'");
+          return null;
+        }
+	    }
+	    return className.toString();
+    } else {
+      return null;
+    }
+
+/*    if let id = matchIdent()) != null {
+      while matchToken(LToken.DOT) {
+        var s:String;
+        if (s = MatchIdent()) == null {
+          fail("Identifier expected after '.'");
+        }
+
+        className.append('.');
+        className.append(s);
+      }
+    }
+
+    return className.toString();*/
+  }
+/*
+        private SyntaxNode ParsePrimary(Recognizer reco) {
+            SyntaxNode result = null;
+            string ruleName;
+            int ch;
+            SourceLocation loc = Location;
+            if ((ruleName = MatchIdent()) != null) {
+                string varName = null;
+                // Subrule reference
+                if (Match(LToken.Colon)) {
+                    varName = ruleName;
+                    ruleName = MatchIdent();
+                    if (varName == null)
+                        Fail("Expecting an ident after ':'");
+                }
+                result = reco.CreateNode(NodeType.SubRule, loc, varName, ruleName);
+                if (reco is ParserClass) {
+                    IList args = ParseArgumentList(reco);
+                    if (args != null) {
+                        foreach (string arg in args) {
+                            SyntaxNode parm = reco.CreateNode(NodeType.Param, loc, null, arg);
+                            result.Append(parm);
+                        }
+                    }
+                }
+            } else if (mScanner.Token == LToken.String) {
+                // String Literal
+                result = reco.CreateNode(NodeType.Literal, loc, null, mScanner.TokenText);
+                if (reco is ParserClass) {
+                    ((ParserClass)reco).Literals[ mScanner.TokenText ] = null;
+                }
+                mScanner.Next();
+            } else if (Match(LToken.OpenParen)) {
+                // Subexpression
+                result = ParseExpression(reco);
+                if (!Match(LToken.CloseParen))
+                    Fail("Unbalanced parentheses");
+            } else if (Match(LToken.Dot)) {
+                // Match any (in parser, change this to match any token...)
+                result = reco.CreateNode(NodeType.MatchDot, loc);
+            } else if ((ch = ParseCharConstant()) >= 0) {
+                // Character constant (and possible character range)
+                char lowChar = (char)ch;
+                char highChar = (char)ch;
+                if (Match(LToken.DotDot)) {
+                    if ((ch = ParseCharConstant()) < 0) {
+                        Fail("Character constant expected after range operator ..");
+                    }
+                    highChar = (char)ch;
+                }
+                return new MatchCharacters(lowChar, (char)(highChar + 1), loc);
+            }
+            return result;
+        }
+
+        private SyntaxNode ParseComplement(Recognizer reco) {
+            bool bComplement = Match(LToken.Complement);
+            SyntaxNode result = ParsePrimary(reco);
+            if (bComplement) {
+                if (result == null) {
+                    Fail("Expecting an expression after '~'");
+                }
+                result = reco.CreateNode(NodeType.Complement, Location, result);
+            }
+            return result;
+        }
+
+        private SyntaxNode ParseOptional(Recognizer reco) {
+            SyntaxNode result = ParseComplement(reco);
+            if (result == null) return null;
+
+            if (Match(LToken.Optional)) return reco.CreateNode(NodeType.Optional, Location, result);
+            if (Match(LToken.OneOrMore)) {
+                result = reco.CreateNode(NodeType.OneOrMore, Location, result);
+                if (Match(LToken.Optional)) result.Greedy = false;
+            }
+            if (Match(LToken.ZeroOrMore)) {
+                result = reco.CreateNode(NodeType.ZeroOrMore, Location, result);
+                if (Match(LToken.Optional)) result.Greedy = false;
+            }
+            return result;
+        }
+
+        private SyntaxNode ParseAction(Recognizer reco) {
+            SyntaxNode result = ParseOptional(reco);
+            if (result == null) return null;
+
+            // Parse an action block
+            CodeBlock code;
+            if ((code = ParseCodeBlock()) != null) {
+                SyntaxNode actionElement = reco.CreateNode(NodeType.Action, Location);
+                actionElement.Value = code;
+                result = reco.CreateNode(NodeType.Concat, Location, result, actionElement);
+            }
+
+            return result;
+        }
+
+        private SyntaxNode ParseSequence(Recognizer reco) {
+            SyntaxNode result = ParseAction(reco);
+            if (result == null) return null;
+
+/*            SyntaxNode next;
+            while ((next = ParseAction(reco)) != null)
+                result = reco.CreateNode(NodeType.Concat, Location, result, next); * /
+
+            SyntaxNode next;
+            while ((next = ParseAction(reco)) != null) {
+                if (result.NodeType != NodeType.Concat)
+                    result = reco.CreateNode(NodeType.Concat, Location, result);
+                result.Append(next);
+            }
+            return result;
+        }
+
+        private SyntaxNode ParseAlternative(Recognizer reco) {
+            SyntaxNode result = ParseSequence(reco);
+            if (result == null) return null;
+
+            while (Match(LToken.Alternative)) {
+                SyntaxNode next = ParseSequence(reco);
+                if (result == null) Fail("Expression expected");
+
+                if (result.NodeType == NodeType.Alternative)
+                    result.Append(next);
+                else
+                    result = reco.CreateNode(NodeType.Alternative, Location, result, next);
+            }
+
+            return result;
+        }
+
+        private SyntaxNode ParseExpression(Recognizer reco) {
+            return ParseAlternative(reco);
+        }
+
+        public bool ParseLexRule(ScannerClass sclass) {
+            string ruleName;
+            if ((ruleName = MatchIdent()) != null) {
+                if (Match(LToken.Colon)) {
+                    SyntaxNode expr = ParseExpression(sclass);
+
+                    if (!Match(LToken.Semi)) {
+                        Fail("Missing semicolon");
+                    }
+
+                    Production newRule = new Production(ruleName, Location, expr);
+                    sclass.AddProduction(newRule);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool ParseProduction(ParserClass pclass) {
+            string productionName;
+            if ((productionName = MatchIdent()) != null) {
+                IList paramList = ParseArgumentList(pclass);
+                IList returnList = null;
+                if (Match(LToken.Returns)) {
+                    returnList = ParseArgumentList(pclass);
+                    if (returnList.Count != 1)
+                        Fail("Must have one return argument");
+                }
+                if (Match(LToken.Colon)) {
+                    SyntaxNode expr = ParseExpression(pclass);
+
+                    if (!Match(LToken.Semi)) {
+                        Fail("Missing semicolon");
+                    }
+                    Production newProd = new Production(productionName, Location, expr);
+                    newProd.Params = paramList;
+                    newProd.Returns = returnList;
+                    pclass.AddProduction(newProd);
+                    return true;
+                }
+
+            }
+            return false;
+        }
+
+        public bool ParseState(ScannerClass sclass) {
+            string stateName;
+            if (!Match(LToken.State)) return false;
+            if ((stateName = MatchIdent()) != null) {
+                if (Match(LToken.OpenBrace)) {
+                    sclass.AddState(stateName, Location);
+
+                    for (;;) {
+                        if (Match(LToken.CloseBrace)) return true;
+                        if (mScanner.Token == LToken.Error) return false;
+                        if (mScanner.Token == LToken.EoF)
+                            Fail("Premature end of file while parsing state" + stateName);
+                        if (ParseLexRule(sclass)) {}
+                        else {
+                            Fail("Unexpected token: " + mScanner.Token.ToString());
+                        }
+                    }
+                }
+
+                // Deprecated code
+                if (!Match(LToken.Colon))
+                    Fail(": expected");
+
+                sclass.CurrentState = sclass.CreateNode(NodeType.State, Location, stateName);
+                sclass.States.Add(sclass.CurrentState);
+                return true;
+            } else {
+                Fail("State name expected");
+                return false;
+            }
+        }
+        */
+
+  def parseOptions(/*IOptionListener target*/) -> bool {
+    if not matchToken(LToken.OPTIONS) {
+      return false;
+    }
+    if not matchToken(LToken.OPEN_BRACE) {
+      fail("'{' expected");
+    }
+
+		var options:Map[String, String] = HashMap[String, String]();
+		while not matchToken(LToken.CLOSE_BRACE) {
+      break if scanner.token == LToken.ERROR;
+      if scanner.token == LToken.EOF {
+        fail("Unexpected EoF in option block");
+      }
+
+			var name:String? = matchIdent();
+			if name is not null {
+        if not matchToken(LToken.COLON) {
+          fail("':' expected after option name");
+        }
+
+	      var optionValue:String;
+        if (scanner.token == LToken.ID or scanner.token == LToken.STRING) {
+          optionValue = scanner.tokenText;
+          scanner.next();
+        } else {
+          fail("Option value expected");
+          return false;
+        }
+
+        if not matchToken(LToken.SEMI) {
+          fail("Semicolon expected");
+        }
+
+        //target.SetOption(optionName, optionValue);
+      } else {
+        fail("Expecting close brace or option");
+      }
+    }
+
+    return true;
+  }
+
+  def parseLexerDef -> bool {
+    if matchToken(LToken.LEXER) {
+      let lexerName = parseClassName();
+      if lexerName is null {
+        fail("Lexer class name expected");
+      }
+
+      if not matchToken(LToken.OPEN_BRACE) {
+        fail("Open brace expected after lexer name");
+      }
+
+      let sclass = ScannerGrammar(lexerName);
+    }
+
+    return false;
+
+    /*
+        public bool ParseLexerDef() {
+            if (Match(LToken.Lexer)) {
+                string lexerName = ParseClassName();
+
+                if (lexerName == null)
+                    Fail("Lexer class name expected");
+
+                if (!Match(LToken.OpenBrace))
+                    Fail("Open brace expected after lexer name");
+
+                ScannerGrammar sclass = new ScannerGrammar(lexerName);
+                sclass.initCode = parseCodeBlock();
+                for (;;) {
+                    if (Match(LToken.CloseBrace)) {
+                        mRecognizers.Add(sclass);
+                        return true;
+                    }
+                    if (mScanner.Token == LToken.Error)
+                        Fail("Error while parsing lexer");
+                    if (mScanner.Token == LToken.EoF)
+                        Fail("Unexpected EoF");
+
+                    if (ParseOptions(sclass)) continue;
+                    else if (ParseState(sclass)) continue;
+                    else if (ParseLexRule(sclass)) continue;
+                    else {
+                        Fail("Unexpected token: " + mScanner.Token.ToString());
+                    }
+                }
+            }
+            return false;
+        }
+    */
+  }
+
+  def parse -> bool {
+    repeat {
+      if scanner.token == LToken.ERROR { return false; }
+      if scanner.token == LToken.EOF { return true; }
+      continue if parseLexerDef();
+      fail("Unexpected token: {0}".format(scanner.tokenText));
+    }
+  }
+}

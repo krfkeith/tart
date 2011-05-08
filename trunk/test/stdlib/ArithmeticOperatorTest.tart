@@ -1,0 +1,268 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ArithmeticOperatorTest);
+}
+
+class ArithmeticOperatorTest : Test {
+  def testBasicOperators() {
+    assertEq(2, 1 + 1);
+    assertEq(1, 2 - 1);
+    assertEq(9, 3 * 3);
+    assertEq(1, 3 / 3);
+
+    var a:int32 = 0;
+    a += 3;
+    assertEq(3, a);
+    a -= 3;
+    assertEq(0, a);
+
+    a = 1;
+    a *= 3;
+    assertEq(3, a);
+
+    a = 10;
+    a /= 5;
+    assertEq(2, a);
+
+    a = 10;
+    a %= 3;
+    assertEq(1, a);
+  }
+
+  def testBasicFloatOperators() {
+    assertEq(2.0, 1.0 + 1.0);
+    assertEq(1.0, 2.0 - 1.0);
+    assertEq(9.0, 3.0 * 3.0);
+    assertEq(1.0, 3.0 / 3.0);
+
+    var a:double = 0.0;
+    a += 3.0;
+    assertEq(3.0, a);
+    a -= 3.0;
+    assertEq(0.0, a);
+
+    a = 1.0;
+    a *= 3.0;
+    assertEq(3.0, a);
+
+    a = 10.0;
+    a /= 5.0;
+    assertEq(2.0, a);
+
+    a = 10.0;
+    a %= 3.0;
+    assertEq(1.0, a);
+  }
+
+  def testRelationalOperators() {
+    // Equal
+    assertTrue(1 == 1);
+    assertFalse(1 == 0);
+
+    // Not equal
+    assertTrue(1 != 0);
+    assertFalse(1 != 1);
+
+    // Less
+    assertTrue(0 < 1);
+    assertFalse(1 < 0);
+    assertFalse(0 < 0);
+
+    // Less or equal
+    assertTrue(0 <= 1);
+    assertTrue(1 <= 1);
+    assertFalse(1 <= 0);
+
+    // Greater
+    assertTrue(1 > 0);
+    assertFalse(0 > 1);
+    assertFalse(0 > 0);
+    assertTrue(1 > -128);
+
+    // Greater or equal
+    assertTrue(1 >= 0);
+    assertTrue(1 >= 1);
+    assertFalse(0 >= 1);
+
+    // Unit test for a bug fix - signed integer constants not being sign extended.
+    assertTrue(int32(int8(-1)) < int32(1));
+    assertTrue(int32(int8(-128)) < int32(1));
+  }
+
+  def testRelationalFloatOperators() {
+    // Equal
+    assertTrue(1.0 == 1.0);
+    assertFalse(1.0 == 0.0);
+
+    // Not equal
+    assertTrue(1.0 != 0.0);
+    assertFalse(1.0 != 1.0);
+
+    // Less
+    assertTrue(0.0 < 1.0);
+    assertFalse(1.0 < 0.0);
+    assertFalse(0.0 < 0.0);
+
+    // Less or equal
+    assertTrue(0.0 <= 1.0);
+    assertTrue(1.0 <= 1.0);
+    assertFalse(1.0 <= 0.0);
+
+    // Greater
+    assertTrue(1.0 > 0.0);
+    assertFalse(0.0 > 1.0);
+    assertFalse(0.0 > 0.0);
+    assertTrue(1.0 > -128.0);
+
+    // Greater or equal
+    assertTrue(1.0 >= 0.0);
+    assertTrue(1.0 >= 1.0);
+    assertFalse(0.0 >= 1.0);
+  }
+
+  def testRelationalOperatorsNonConst() {
+    var zero = 0;
+    var one = 1;
+
+    // Equal
+    assertTrue(one == one);
+    assertFalse(one == zero);
+
+    // Not equal
+    assertTrue(one != zero);
+    assertFalse(one != one);
+
+    // Less
+    assertTrue(zero < one);
+    assertFalse(one < zero);
+    assertFalse(zero < zero);
+
+    // Less or equal
+    assertTrue(zero <= one);
+    assertTrue(one <= one);
+    assertFalse(one <= zero);
+
+    // Greater
+    assertTrue(one > zero);
+    assertFalse(zero > one);
+    assertFalse(zero > zero);
+
+    // Greater or equal
+    assertTrue(one >= zero);
+    assertTrue(one >= one);
+    assertFalse(zero >= one);
+  }
+
+  def testRelationalFloatOperatorsNonConst() {
+    var zero = 0.0;
+    var one = 1.0;
+
+    // Equal
+    assertTrue(one == one);
+    assertFalse(one == zero);
+
+    // Not equal
+    assertTrue(one != zero);
+    assertFalse(one != one);
+
+    // Less
+    assertTrue(zero < one);
+    assertFalse(one < zero);
+    assertFalse(zero < zero);
+
+    // Less or equal
+    assertTrue(zero <= one);
+    assertTrue(one <= one);
+    assertFalse(one <= zero);
+
+    // Greater
+    assertTrue(one > zero);
+    assertFalse(zero > one);
+    assertFalse(zero > zero);
+
+    // Greater or equal
+    assertTrue(one >= zero);
+    assertTrue(one >= one);
+    assertFalse(zero >= one);
+  }
+
+  def testRelationalPointerOperators() {
+    var n:NativeArray[int, 1];
+    var zero = Memory.addressOf(n[0]);
+    var one = Memory.addressOf(n[1]);
+
+    // Equal
+    assertTrue(one == one);
+    assertFalse(one == zero);
+
+    // Not equal
+    assertTrue(one != zero);
+    assertFalse(one != one);
+
+    // Less
+    assertTrue(zero < one);
+    assertFalse(one < zero);
+    assertFalse(zero < zero);
+
+    // Less or equal
+    assertTrue(zero <= one);
+    assertTrue(one <= one);
+    assertFalse(one <= zero);
+
+    // Greater
+    assertTrue(one > zero);
+    assertFalse(zero > one);
+    assertFalse(zero > zero);
+
+    // Greater or equal
+    assertTrue(one >= zero);
+    assertTrue(one >= one);
+    assertFalse(zero >= one);
+  }
+
+  def testRelationalAndLogicalOperators() {
+    var zero = 0;
+    var one = 1;
+    var two = 1;
+
+    // Both true
+    assertTrue(one == one and zero == zero);
+    assertTrue(zero < one and one > zero);
+    assertTrue(one == one or zero == zero);
+    assertTrue(zero < one or one > zero);
+
+    // And with one false
+    assertFalse(zero < one and zero > one);
+    assertFalse(one < zero and one > zero);
+
+    // Or with one false
+    assertTrue(zero < one or zero > one);
+    assertTrue(one < zero or one > zero);
+
+    assertTrue(one >= zero and one <= two);
+    assertTrue(one >= 0 and one <= 2);
+  }
+
+  def testNegation {
+    var n3 = -3;
+    assertEq(0, 3 + n3);
+
+    var n4 = -4.0;
+    assertEq(0.0, 4.0 + n4);
+
+    var p3 = 3;
+    n3 = -p3;
+    assertEq(0, 3 + n3);
+
+    var p4 = 4.0;
+    n4 = -p4;
+    assertEq(0.0, 4.0 + n4);
+  }
+
+  def testInference {
+    var i = 5;
+    assertEq(i+1, i+1);
+  }
+}

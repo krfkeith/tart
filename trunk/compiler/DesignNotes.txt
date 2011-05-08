@@ -1,0 +1,327 @@
+// ------------------------------------------------------------------------
+
+Next up:
+
+* Unit tests crashing in OS X Leopard
+* Get DWARF working again.
+* Deduce argument types and return types for anon funcs.
+* statements returning values: do try/catch. Also unsized ints.
+* Implement Attribute.Retention.RUNTIME_ITERABLE.
+* @ReflectOnly (non-propagating reflection.)
+* Simplify type inference (somehow!)
+
+Design TODOS:
+
+* Const-ness "const" and "const? / constable"
+* Need a way to collect all declarations that a given attribute is assigned to.
+* With-statement multiple vars and tuple unpacking.
+
+Hard problems:
+
+  -- Dynamic linking.
+  -- Exception backtrace
+  -- Dynamic reification of types.
+
+More things to do:
+
+  -- Get static ctors working.
+  -- BitTricks tests.
+  -- Static If
+  -- Compile-time configuration options. @TargetProperty.
+  -- Exception backtrace.
+  -- Hashing of integers
+
+Implementation TODOS:
+
+* Add structure compares. (And tuple compares, and so on for all types.)
+* Coalesced templates
+* Finish @Associative.
+* Implicit anonymous class for closure.
+* Bug: uint64 + int64 != float (error in infix add overload selection).
+* Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
+* Fix problems with eclipse update site.
+* Refactoring
+  * Use CVQualifiedType to represent const/volatile.
+  * Some means to cache relabeled specializations?
+  * Finish up override keyword, with failure tests.
+  * Fill out TypeOrderings.h / TypeComparator.h - or delete.
+  * Unit tests for lexical type ordering.
+* I/O library.
+* typecast[type](in);
+  * More tests - reference types, null pointers. (Union types are done)
+* Reflection
+  * Struct Constructors
+  * Properties and fields.
+  * Class members.
+  * Find all properties/functions having some attribute
+* Profiling.
+* Test overloading of augmented assignment operators.
+* Override for property getters and setters. (I think that's done.)
+* Finish array unit tests. (One test remaining)
+* Proxy types.
+* Enum types
+  * Enum operators (relational).
+  * test bitwise operators for flag enums.
+  * .parse or valueOf.
+  * Add a unit test for converting invalid enum values to strings.
+  * Fix coercion of enum values to objects.
+* Tuple types
+  * Test struct members, params.
+  * Member-wise conversions.
+* Constructors
+  * Insure that constructor calls aren't recursive.
+  * Insure that we can't call constructors from non-constructor functions.
+  * Allow overloading of constructors with functions, but don't allow two classes
+    with the same template args.
+  * Classes with create still need a default constructor? (Unless undef'd).
+* Import-as.
+* Strings
+  * Conversion specs.
+  * Define toStringFmt() - custom string formatting.
+  * Other string-related functions
+  * text functions - substr, etc. (Character classes, need unicode stuff)
+  * Unicode character class tests.
+* Let with instance scope.
+  * Insure that it cannot be assigned to in non-constructor.
+* Disjoint types
+  * Equality comparison (with member types, and with other disjoint types.)
+* Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
+* AttributeSite failure tests.
+* Class "extension"
+* Finish writing out and parsing metadata so that we don't have to compile everything
+  multiple times.
+* Statements:
+  * with (what interface for using?)
+  * yield
+  * fork/threading primitives
+* Command-line parsing lib.
+* Ranges
+  * Syntax for open, closed, and half-open intervals.
+  * Literals
+  * As array slice indices
+  * As tuple slice indices
+  * Indefinite ranges (n ..) and (.. n) ?
+* Generic functions.
+  * 'virtual' arguments for multi-methods. (Or 'dispatched')
+* Complex typecast operations should probably go into their own separate functions
+  instead of being inline.
+* Map literals -> Map.of((a, b)) or Map.of(a => b, c => d) where '=>' means 2-tuple.
+* Matrix literals + Matrix class.
+* Anonymous inner classes.
+* Implement BoundMethodExpr as an implementation of Function.
+* Insure typealiases aren't circular.
+* Sphinx domain for Tart?
+* Garbage collection test for uninitialized array elements.
+* Insure last field of base class isn't a flex array.
+* Get default ctor working again (and call super ctor).
+* If an if statement casts a nullable to non-nullable type, then assume non-nullable in then block.
+  (Same for while).
+* Change assignment syntax for tuple unpacking (x:type, y:type).
+* Need a way to create an empty value for all types.
+* Namespace merging.
+
+* Collector classes:
+  * TLAB
+  * LinearAllocator
+  * Eden
+    * Linked-list of TLABs.
+    * Lock for the TLAB list.
+      * Each TLAB is 32k.
+      * Eden size is 2 + 2 * numThreads TLABS.
+      * TLABS do not need to be contiguous
+      * Thread local ptr to TLAB.
+  * SS1 and SS2. These have SSABs. = 50% Eden size.
+  * SSAB.
+  * Problems to solve:
+    Still need to know how to mark objects in different spaces.
+  * Some way to import C++ data structures into Tart - for things like pthreads.
+  
+Doc errors:
+
+* Fix operator overload syntax (infixX notation used now.)
+* Fix description of imports to match current functionality.
+* Array literals
+* Better explanation of unpacking
+* First line of Macro section is misleading.
+
+Error TODOS: (things that should be an error)
+
+* Module with multiple public names at top level.
+* Assignment to a non-lvalue.
+* Template functions cannot be extern.
+* Enforce 'readonly'
+* LValueExpr.isSideEffectFree may not be true for property
+  // Check for hiding similarly-named variable.
+
+// ------------------------------------------------------------------------
+
+Command to create Eclipse project:
+
+cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -D ECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE -D LLVM_CONFIG=$HOME/Projects/llvm-inst/bin/llvm-config ../trunk/
+
+Command to create Makefile project:
+
+cmake -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=$HOME/Projects/llvm-inst/lib ../trunk/
+
+cmake -G"Xcode" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=$HOME/Projects/llvm-inst/include -D LLVM_LIBRARY_DIR=$HOME/Projects/llvm-inst/lib ../trunk/
+
+cmake -G "Visual Studio 10 2010" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C:\Users\Talin\Projects\llvm-inst\include -D LLVM_LIBRARY_DIR=C:\Users\Talin\Projects\llvm-inst\lib ..\tart\trunk
+
+cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
+
+// ------------------------------------------------------------------------
+
+Link-time code generation?
+
+// ------------------------------------------------------------------------
+
+namespace Numbers {
+  protocol PrimitiveNumber<T> {
+    let minVal:T;
+    let maxVal:T;
+  }
+  
+  protocol PrimitiveInt<T> : PrimitiveNumber<T> {}
+  protocol PrimitiveFloat<T> : PrimitiveNumber<T> {}
+  
+  protocol_map PrimitiveInt<byte> {
+    let minVal:byte = -128;
+    let maxVal:byte = 127;
+  }
+
+  protocol_map PrimitiveInt<short> {
+    let minVal:short = 0;
+    let maxVal:short = 0x7fff;
+  }
+  
+  // This 'extend' idea is not bad. The main problem is how to represent it
+  // in the compiler. We don't want to modify the original class, nor do we
+  // want to interfere with the lookup of the original class.
+  //
+  // The rules of 'extend' are as follows:
+  //
+  // 1) Only protocols can be added as base classes.
+  // 2) Only static or final methods can be added as methods.
+  // 3) Only static or final properties can be added as properties.
+  // 4) Only constants can be added as member variables.
+  //
+  // In other words, nothing can be added that alters the runtime representation
+  // of the object.
+  //
+  // In some ways, this is equivalent to saying:
+  //
+  // class byte : byte, PrimitiveInt {
+  //   let minVal:byte = -128;
+  //   let maxVal:byte = 127;
+  // }
+  //
+  
+  extend byte : PrimitiveInt {
+  }
+
+  extend short : PrimitiveInt {
+  }
+}
+
+// ------------------------------------------------------------------------
+
+flags:
+
+  static var OutputFile = StringOption("o",
+      altName="output",
+      varName="output file",
+      help="Path to output file"); 
+
+abstract def foo(virtual k:Object);
+
+override Module.foo(k:String) {
+}
+
+// Chained setter notation
+
+object
+  .(field1 = value)
+  .(field2 = value)
+  .build()
+
+// ------------------------------------------------------------------------
+
+// Redo Type::getHashCode();
+// CountingIterator is really inefficient. Why?
+// Derived types for reflection can be deserialized in random order.
+
+// ------------------------------------------------------------------------
+
+Executable sizes:
+
+-rwxr-xr-x 1 talin talin 1386054 2010-11-07 19:56 test/stdlib/SwitchStmtTest
+-rwxr-xr-x 1 talin talin 1374444 2010-11-07 21:28 test/stdlib/SwitchStmtTest
+-rwxr-xr-x 1 talin talin  772508 2010-11-09 17:01 test/stdlib/SwitchStmtTest
+-rwxr-xr-x 1 talin talin  363892 2010-11-09 17:03 test/stdlib/SwitchStmtTest (strip debug)
+-rwxr-xr-x 1 talin talin  363943 2010-11-11 18:01 test/stdlib/SwitchStmtTest (w/downcast)
+-rwxr-xr-x 1 talin talin  756752 2010-11-09 22:12 test/stdlib/SwitchStmtTest (coalesce)
+-rwxr-xr-x 1 talin talin  362409 2010-11-09 22:13 test/stdlib/SwitchStmtTest (strip debug + coalesce)
+-rwxr-xr-x 1 talin talin  358492 2010-11-12 19:27 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  357291 2010-11-13 10:49 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  356590 2010-11-13 11:28 test/stdlib/SwitchStmtTest (smarter coalesce)
+-rwxr-xr-x 1 talin talin  256897 2011-01-29 18:09 test/stdlib/SwitchStmtTest (new reflector)
+
+(Need new baseline)
+
+// ------------------------------------------------------------------------
+
+Type reification:
+
+Idea #0: We need to find every example of where we actually need to have
+ad-hoc polymorphism. (Protocols?)
+
+  * Hashing of primitive types.
+
+Idea #1: Make a bare template parameter really mean [T <: __Any].
+
+  -- Redo templates so that template parameters really are opaque.
+
+// ------------------------------------------------------------------------
+
+tart.gc.Finalizer;
+
+abstract class Finalizer {
+  private {
+    var target: Object;
+  }
+  
+  @TraceMethod def trace {}
+  
+  abstract def finalize;
+}
+
+// ------------------------------------------------------------------------
+
+// Thoughts on a different dispatch algorithm.
+
+struct MethodInfoBlock {
+  struct Entry {
+    let typeId:uint32;
+    let method:MethodPtr; 
+  }
+  
+  // TODO: Support registration
+
+  let size_:int;
+  let entries_:FlexibleArray[Entry];
+}
+
+let methodTable:HashTable[MethodLookup, MethodPtr];
+
+// No, these two should not be combined.
+struct MethodLookup {
+  // Unique key of the method (name + defining class + static param types.)
+  // This should be a table by itself.
+  let methodId:uint;
+  // List of dynamic argument types.
+  // Hash code precomputed per type.
+  let methodParams:FlexibleArray[TypeInfoBlock^];
+}
+
+ClassRegistry

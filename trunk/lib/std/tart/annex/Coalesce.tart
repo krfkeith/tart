@@ -1,0 +1,11 @@
+/** Attribute on a template which causes the compiler to merge instances of
+    that template if possible. For example, if a template 'Foo' is marked
+    with this attribute, then the generated code for 'Foo[String]' and 'Foo[Object]'
+    will be merged into a single definition.
+*/
+@Attribute(Attribute.Target.TYPE | Attribute.Target.CALLABLE, Attribute.Retention.NONE,
+		Attribute.Propagation.MEMBERS)
+class Coalesce {
+  @Intrinsic def apply(t:tart.reflect.Type);
+  //@Intrinsic def apply(t:tart.reflect.Method);
+}

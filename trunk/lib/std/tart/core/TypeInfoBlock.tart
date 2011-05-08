@@ -1,0 +1,48 @@
+import tart.reflect.CompositeType;
+import tart.core.Memory.Address;
+import tart.reflect.Type;
+import tart.gc.TraceDescriptor;
+
+/** All objects contain a pointer to a TypeInfoBlock, which contains the
+    pointer to the type object and the method table.
+ */
+struct TypeInfoBlock {
+  /** Pointer to the compressed reflection data for this type. */
+  readonly var type:CompositeType;
+
+	/** The table of offsets that specify where in the type are embedded object references. NULL
+			if this type has no embedded object references. */
+  readonly var traceTable:Address[TraceDescriptor];
+
+  /** List of all types (classes and interfaces) that this type can be cast to.
+      A null pointer terminates the list. */
+  readonly var bases:Address[Address[TypeInfoBlock]];
+
+  /** Compiler-generated function to lookup the specified interface method. */
+  readonly var idispatch:static fn(iid:String, methodIndex:int32) -> void^;
+
+  /** Compiler-generated table of class methods. */
+  readonly var methodTable:FlexibleArray[Address[void]];
+
+  /** Method to test whether a reference to an object of the type represented
+      by this TIB can be legally cast to a reference to type 'toType'. Used
+      by the compiler to do 'isa', 'as' and 'catch' tests. */
+  final def hasBase(toType:Address[TypeInfoBlock]) -> bool {
+    if Memory.addressOf(self) is toType {
+			return true;
+    }
+    var i = 0;
+    while let base:Address[TypeInfoBlock] = self.bases[i++] {
+      if base is toType {
+      	return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
+  static def typecastError() {
+    throw TypecastError();
+  }
+}

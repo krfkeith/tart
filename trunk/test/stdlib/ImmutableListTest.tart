@@ -1,0 +1,67 @@
+import tart.collections.ImmutableList;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ImmutableListTest);
+}
+
+class ImmutableListTest : Test {
+  def testConstruct() {
+    let a = ImmutableList[int32].of(1, 2, 3);
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+
+  def testImplicitType() {
+    let a = ImmutableList.of(1, 2, 3);
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+
+	def testOutOfRange() {
+	  let a = ImmutableList[int32].of(1, 2, 3);
+	  try {
+	    let s = a[4];
+	    fail("Out of range access");
+	  } catch :IndexError {
+	  }
+
+	  try {
+	    let s = a[-1];
+	    fail("Out of range access");
+	  } catch :IndexError {
+	  }
+	}
+
+  def testCopyOf() {
+    let m = [1, 2, 3];
+    let a = ImmutableList[int32].copyOf(m);
+    m[0] = 99;
+    m[1] = 99;
+    m[2] = 99;
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+
+  def testUndefMethods {
+    let a = ImmutableList.of(1, 2, 3);
+    try {
+      a.add(4);
+      fail("Expected UnsupportedOperationError");
+    } catch (e:UnsupportedOperationError) {
+    }
+
+    try {
+      a.clear();
+      fail("Expected UnsupportedOperationError");
+    } catch (e:UnsupportedOperationError) {
+    }
+  }
+}

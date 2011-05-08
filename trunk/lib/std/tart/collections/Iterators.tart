@@ -1,0 +1,77 @@
+/** Useful functions on iterators. */
+namespace Iterators {
+  /** Return true if both iterable sequences are the same. */
+  def equal[%T](a0:Iterable[T], a1:Iterable[T]) -> bool {
+    let iter0 = a0.iterate();
+    let iter1 = a1.iterate();
+    repeat {
+      let v0 = iter0.next();
+      let v1 = iter1.next();
+      if v0 isa void and v1 isa void {
+        return true;
+      }
+      match v0 as t0:T {
+        match v1 as t1:T {
+          continue if t0 == t1;
+        }
+      }
+
+      return false;
+    }
+  }
+
+  class Enumerator[%T] : Iterator[(int, T)] {
+    let iter:Iterator[T];
+    var index:int = 0;
+
+    def construct(iter:Iterator[T]) {
+      self.iter = iter;
+    }
+
+    def next -> (int, T) or void {
+      match iter.next() {
+        as value:T {
+          return index++, value;
+        } else {
+          return;
+        }
+      }
+    }
+  }
+
+	/** Given an iterator, return an iterator that returns each item as a tuple containing
+			the original item and its ordinal index. */
+  def enumerate[%T](iter:Iterator[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter);
+  }
+
+	/** Given an iterable, return an iterator that returns each item as a tuple containing
+			the original item and its ordinal index. */
+  def enumerate[%T](iter:Iterable[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter.iterate());
+  }
+
+	/** An iterator that returns the integers 0..N-1, for some N. */
+  class CountingIterator : Iterator[int] {
+    var index:int;
+    let end:int;
+
+    def construct(end:int) {
+      self.index = 0;
+      self.end = end;
+    }
+
+    def construct(start:int, end:int) {
+      self.index = start;
+      self.end = end;
+    }
+
+    def next -> int or void {
+      if index < end {
+        return index++;
+      } else {
+        return;
+      }
+    }
+  }
+}

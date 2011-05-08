@@ -1,0 +1,11 @@
+/** Exception thrown when attempting to decode a sequence of input bytes which is not
+    valid for the encoding. */
+public class MalformedInputError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

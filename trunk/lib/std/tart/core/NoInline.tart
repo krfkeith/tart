@@ -1,0 +1,7 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that the associated function should not be inlined. */
+@Attribute(Attribute.Target.FUNCTION)
+class NoInline {
+  @Intrinsic def apply(t:tart.reflect.Method);
+}

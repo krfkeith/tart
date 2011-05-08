@@ -1,0 +1,33 @@
+/** Exception that signals an i/o error. */
+class IOError : Exception {
+  enum IOResult {
+    SUCCESS = 0,
+    UNSPECIFIED,        // Unspecified error
+    
+    // Posix error codes, abridged
+    ENOENT,             // File or directory does not exist.
+    EEXIST,             // File or directory already exists.
+    EPERM,              // Permission denied for operation.
+    EBUSY,              // Device or resource bust
+    EIO,                // I/O Error
+    ENOSPC,             // No space left on device
+  }
+  
+  private let code:IOResult;
+
+  /** Default constructor. */
+  def construct() {
+    self.code = IOResult.UNSPECIFIED;
+  }
+  
+  /** Default constructor. */
+  def construct(code:IOResult) {
+    self.code = code;
+  }
+  
+  static def checkResult(code:IOResult) {
+    if code != IOResult.SUCCESS {
+      throw IOError(code);
+    }
+  }
+}

@@ -1,0 +1,133 @@
+import tart.collections.ConcurrentMutationError;
+import tart.collections.Deque;
+import tart.collections.ImmutableList;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(DequeTest);
+}
+
+class DequeTest : Test {
+  def testConstruct() {
+    let a = Deque[int32, 16]();
+    assertEq(0, a.size);
+  }
+
+  def testConstructDefaultSize() {
+    let a = Deque[int32]();
+    assertEq(0, a.size);
+  }
+
+  def testPushBackPopBack() {
+    let a = Deque[int32, 2]();
+    a.pushBack(1);
+    a.pushBack(2);
+    a.pushBack(3);
+    assertEq(3, a.size);
+    assertEq(1, a.front);
+    assertEq(3, a.back);
+    assertEq(3, a.popBack());
+    assertEq(2, a.popBack());
+    assertEq(1, a.popBack());
+  }
+
+  def testPushBackPopFront() {
+    let a = Deque[int32, 2]();
+    a.pushBack(1);
+    a.pushBack(2);
+    a.pushBack(3);
+    assertEq(3, a.size);
+    assertEq(1, a.front);
+    assertEq(3, a.back);
+    assertEq(1, a.popFront());
+    assertEq(2, a.popFront());
+    assertEq(3, a.popFront());
+  }
+
+  def testPushFrontPopBack() {
+    let a = Deque[int32, 2]();
+    a.pushFront(1);
+    a.pushFront(2);
+    a.pushFront(3);
+    assertEq(3, a.size);
+    assertEq(3, a.front);
+    assertEq(1, a.back);
+    assertEq(1, a.popBack());
+    assertEq(2, a.popBack());
+    assertEq(3, a.popBack());
+  }
+
+  def testPushFrontPopFront() {
+    let a = Deque[int32, 2]();
+    a.pushFront(1);
+    a.pushFront(2);
+    a.pushFront(3);
+    assertEq(3, a.size);
+    assertEq(3, a.front);
+    assertEq(1, a.back);
+    assertEq(3, a.popFront());
+    assertEq(2, a.popFront());
+    assertEq(1, a.popFront());
+  }
+
+  def testClear() {
+    let a = Deque[int32, 16]();
+    a.pushBack(1);
+    a.clear();
+    assertEq(0, a.size);
+  }
+
+  def testPopEmpty() {
+    let a = Deque[int32, 16]();
+
+    a.pushBack(1);
+    a.clear();
+    try {
+      a.popBack();
+      fail("IndexError expected");
+    } catch e:IndexError {}
+
+    a.pushBack(1);
+    a.popBack();
+    try {
+      a.popBack();
+      fail("IndexError expected");
+    } catch e:IndexError {}
+
+    a.pushBack(1);
+    a.popFront();
+    try {
+      a.popFront();
+      fail("IndexError expected");
+    } catch e:IndexError {}
+  }
+
+  def testIterate() {
+    let a = Deque[int32, 2]();
+    a.pushBack(1);
+    a.pushBack(2);
+    a.pushBack(3);
+
+    let ai = a.iterate();
+    assertTrue(ai.next() isa int32);
+    assertTrue(ai.next() isa int32);
+    assertTrue(ai.next() isa int32);
+    assertTrue(ai.next() isa void);
+  }
+
+  def testConcurrentMutation() {
+    let a = Deque[int32, 2]();
+    a.pushBack(1);
+    a.pushBack(2);
+    a.pushBack(3);
+
+    let ai = a.iterate();
+    ai.next();
+    a.pushBack(4);
+    try {
+      ai.next();
+      fail("ConcurrentMutationError expected");
+    } catch e:ConcurrentMutationError {}
+  }
+}

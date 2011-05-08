@@ -1,0 +1,194 @@
+import tart.annex.Coalesce;
+import tart.core.Math.max;
+import tart.core.Memory.Address;
+
+/** Array-backed list type.
+    InheritDoc: members
+ */
+@Coalesce final class ArrayList[%ElementType] : List[ElementType], Copyable[ElementType] {
+  private {
+    var _data:ElementType[];
+    var _size:int;
+
+    def grow(amount:int) {
+      let nsize = self._size + amount;
+      if _data.size < nsize {
+        let ndata = ElementType[](nsize + nsize / 2 + 16);
+        ElementType[].copyElements(ndata, 0, _data, 0, self._size);
+        self._data = ndata;
+      }
+
+      self._size = nsize;
+    }
+  }
+
+  /** Construct a new empty ArrayList.
+      Parameters:
+          initialCapacity: This optional parameter, if present, indicates
+              how much initial space to reserve.
+   */
+  def construct(; initialCapacity:int = 0) {
+    _data = ElementType[](initialCapacity);
+    _size = 0;
+  }
+
+  /** Construct a new ArrayList from a variable number of input arguments.
+      Parameters:
+          data: The list of values to store in the ArrayList.
+          initialCapacity: This optional parameter, if present, indicates
+              how much initial space to reserve.
+   */
+  def construct(data:ElementType...; initialCapacity:int = 0) {
+    initialCapacity = max(initialCapacity, data.size);
+    self._data = ElementType[](initialCapacity);
+    ElementType[].copyElements(self._data, 0, data, 0, data.size);
+    _size = data.size;
+  }
+
+  def add(e:ElementType) {
+    let index = _size;
+    grow(1);
+    _data[index] = e;
+  }
+
+  def addAll(collection:Collection[ElementType]) {
+    var index = _size;
+    let count = collection.size;
+    Preconditions.checkState(count >= 0);
+    grow(count);
+    match collection as copyable:Copyable[ElementType] {
+      _data.copyFrom(index, copyable, 0, count);
+    } else {
+      for el in collection {
+        _data[index++] = el;
+      }
+    }
+  }
+
+  def insert(index:int, e:ElementType) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index <= _size);
+    grow(1);
+    _data.moveElements(index + 1, index, _size - index - 1);
+    _data[index] = e;
+  }
+
+  def insertAll(index:int, collection:Collection[ElementType]) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index <= _size);
+    let count = collection.size;
+    Preconditions.checkState(count >= 0);
+    grow(count);
+    _data.moveElements(index + count, index, _size - index - count);
+    match collection as copyable:Copyable[ElementType] {
+      _data.copyFrom(index, copyable, 0, count);
+    } else {
+      for el in collection {
+        _data[index++] = el;
+      }
+    }
+  }
+
+  def remove(index:int) {
+    Preconditions.checkIndex(index >= 0);
+    Preconditions.checkIndex(index < _size);
+    _data.moveElements(index, index + 1, _size - index - 1);
+    --_size;
+  }
+
+  def clear() {
+    _size = 0;
+  }
+
+  def [index:int]:ElementType {
+    get {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _size);
+      return _data[index];
+    }
+
+    set {
+      Preconditions.checkIndex(index >= 0);
+      Preconditions.checkIndex(index < _size);
+      _data[index] = value;
+    }
+  }
+
+  def size:int {
+    get { return _size; }
+  }
+
+  def isEmpty:bool {
+    get { return _size == 0; }
+  }
+
+  def contains(e:ElementType) -> bool {
+    for i = 0; i < _size; ++i {
+			if _data[i] == e {
+			  return true;
+			}
+    }
+    return false;
+  }
+
+  /** The amount of space currently reserved. */
+  def capacity:int {
+    get { return _data.size; }
+  }
+
+  def copyElements(dstAddr:Address[ElementType], srcOffset:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
+    count = Math.min(count, _size - srcOffset);
+    if count > 0 {
+      self._data.copyElements(dstAddr, srcOffset, count);
+    }
+  }
+
+  /** Construct a new ArrayList from a collection.
+      Parameters:
+          collection: The collection containing the values to store in the ArrayList.
+          initialCapacity: This optional parameter, if present, indicates
+              how much initial space to reserve.
+   */
+  static def copyOf(collection:Collection[ElementType]; initialCapacity:int = 0) -> ArrayList {
+    let size = collection.size;
+    initialCapacity = max(initialCapacity, size);
+    let result = ArrayList(initialCapacity = initialCapacity);
+    result._size = size;
+    match collection as copyable:Copyable[ElementType] {
+      copyable.copyElements(result._data.data, 0, size);
+    } else {
+      var index = 0;
+      for el in collection {
+        result._data[index++] = el;
+      }
+    }
+    return result;
+  }
+
+  def iterate -> Iterator[ElementType] {
+    return ArrayListIterator(self);
+  }
+
+  /** Iterator class for ArrayList. */
+  @Coalesce private final class ArrayListIterator : Iterator[ElementType], HasLength {
+    private let list:ArrayList;
+    private var index:int;
+
+    def construct(list:ArrayList) {
+      self.list = list;
+      self.index = 0;
+    }
+
+    def next -> ElementType or void {
+      if (self.index < self.list.size) {
+        return self.list._data[self.index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:int { get { return list.size; } }
+  }
+}

@@ -1,0 +1,75 @@
+import tart.collections.List;
+import tart.core.Memory.Address;
+
+/** Reflection type class for functions. This object is shared by all functions that
+    have the same type signature.
+  */
+class FunctionType : Type {
+  typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
+  private {
+    var _returnType:Type;
+    var _selfType:Type?;
+    var _paramTypes:List[Type];
+    var _invoke:CallAdapterFn;
+
+	  /** Helper function to check the number of arguments. */
+	  static def checkArgCount(args:Object[], count:int32) {
+	    if args.size != count {
+	      throw InvocationError("Incorrect number of arguments");
+	    }
+	  }
+  }
+
+  def construct(
+  		returnType:Type,
+  		selfType:Type?,
+  		paramTypes:List[Type],
+    	invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
+    super(TypeKind.FUNCTION);
+    self._returnType = returnType;
+    self._selfType = selfType;
+    self._paramTypes = paramTypes;
+    self._invoke = invoke;
+  }
+
+  /** The return type of the method. */
+  final def returnType:Type { get { return _returnType; } }
+
+  /** The type of object that this a member of, or null if this is a static or
+      global function. */
+  final def selfType:Type { get { return _selfType; } }
+
+  /** The array of parameter types. */
+  final def paramTypes:List[Type] { get { return _paramTypes; } }
+
+	/** The number of parameters for this function type. */
+  final def numParams:int { get { return _paramTypes.size; } }
+
+  /** Trampoline function to invoke a method of this type. */
+  final def invoke(func:Address[void], obj:Object?, args:Object[]) -> Object {
+		if _selfType is null {
+	    return self._invoke(func, null, args);
+		} else {
+	    return self._invoke(func, _selfType.downCast(obj), args);
+		}
+  }
+
+  final override toString -> String {
+    let sb = StringBuilder("fn ");
+    if not paramTypes.isEmpty {
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in paramTypes {
+        typeStrings.add(type.toString());
+      }
+
+      sb.append(String.format("({0})", ",".join(typeStrings)));
+    }
+
+    if returnType is not PrimitiveType.VOID {
+      sb.append(" -> ");
+	    sb.append(returnType.toString());
+    }
+
+    return sb.toString();
+  }
+}

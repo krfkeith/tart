@@ -1,0 +1,22 @@
+/** A wrapper class that wraps a value type, turning it into a reference type. This allows
+    multiple references to the same value. This is used for implementing closure cells,
+    among other things. */
+class MutableRef[%T] : Ref[T] {
+  var _value:T;
+
+	/** Construct a new 'MutableRef'. */
+  def construct(value:T) {
+    self._value = value;
+  }
+
+	/** The mutable value that is wrapped by this 'Ref' */
+  override value:T {
+    get { return _value; }
+    set { _value = value; }
+  }
+
+  /** Return a string representation of the contained value. */
+  override toString() -> String {
+    return String(self._value);
+  }
+}
