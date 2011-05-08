@@ -8,7 +8,7 @@ class FunctionType : Type {
   typealias CallAdapterFn:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object;
   private {
     var _returnType:Type;
-    var _selfType:optional Type;
+    var _selfType:Type?;
     var _paramTypes:List[Type];
     var _invoke:CallAdapterFn;
 
@@ -22,7 +22,7 @@ class FunctionType : Type {
 
   def construct(
   		returnType:Type,
-  		selfType:optional Type,
+  		selfType:Type?,
   		paramTypes:List[Type],
     	invoke:static fn (func:Address[void], obj:Address[void], args:Object[]) -> Object) {
     super(TypeKind.FUNCTION);
@@ -46,14 +46,14 @@ class FunctionType : Type {
   final def numParams:int { get { return _paramTypes.size; } }
 
   /** Trampoline function to invoke a method of this type. */
-  final def invoke(func:Address[void], obj:optional Object, args:Object[]) -> Object {
+  final def invoke(func:Address[void], obj:Object?, args:Object[]) -> Object {
 		if _selfType is null {
 	    return self._invoke(func, null, args);
 		} else {
 	    return self._invoke(func, _selfType.downCast(obj), args);
 		}
   }
-  
+
   final override toString -> String {
     let sb = StringBuilder("fn ");
     if not paramTypes.isEmpty {

@@ -22,45 +22,45 @@ abstract class Node {
     STATE,
     PARAM,
   }
-  
+
   @Flags enum NodeFlags {
     NULLABLE,
     TERMINATING,
     GREEDY
   }
-  
+
   let nodeType:NodeType;
-  
+
   // Linked list pointers
   var childNodes:List[Node] = ArrayList[Node]();
-  //var firstChild:optional Node = null;
-  //var lastChild:optional Node = null;
-  //var nextSibling:optional Node = null;
-  var namedRef:optional Node = null;
+  //var firstChild:Node? = null;
+  //var lastChild:Node? = null;
+  //var nextSibling:Node? = null;
+  var namedRef:Node? = null;
 
-	// Source location  
+	// Source location
   var location:Location;
-  
+
   // Node values
-  var name:optional String;
-  var value:optional Object;
-  
+  var name:String?;
+  var value:Object?;
+
   // Node flags
   var flags:NodeFlags = 0;
   var cycleCheck:bool = false;
-  
+
   // Unique ID of this node
 	var label:int;
-	
+
 	def construct(nodeType:NodeType, location:Location) {
 	  self.nodeType = nodeType;
 	  self.location = location;
 	}
-	
+
 	def append(n:Node) {
 	  childNodes.add(n);
 	}
-	
+
 	def clear() {
 	  childNodes.clear();
 	}

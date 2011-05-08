@@ -43,7 +43,7 @@ class Member {
   final def attributes:List[Object] { get { return _attributes; } }
 
   /** Return the first attribute of type 'attrType'. */
-  final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> T? {
     for attr in _attributes {
       match attr as result:T {
         return result;

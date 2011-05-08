@@ -23,7 +23,7 @@ class LexGenParser {
     log.fatal(scanner.tokenLoc, msg);
   }
 
-  def matchIdent -> optional String {
+  def matchIdent -> String? {
     if scanner.token == LToken.ID {
       let result = scanner.tokenText;
       scanner.next();
@@ -60,7 +60,7 @@ class LexGenParser {
     return char(-1);
   }
 
-  def parseCodeBlock -> optional CodeBlock {
+  def parseCodeBlock -> CodeBlock? {
     if matchAndSetState(LToken.OPEN_BRACE, LState.ACTION) {
       let codeText = StringBuilder();
       var depth:int = 1;
@@ -134,7 +134,7 @@ class LexGenParser {
             return null;
         }
 */
-  def parseClassName -> optional String {
+  def parseClassName -> String? {
     match matchIdent() as id:String {
 	    let className = StringBuilder(id);
 	    while matchToken(LToken.DOT) {
@@ -394,7 +394,7 @@ class LexGenParser {
         fail("Unexpected EoF in option block");
       }
 
-			var name:optional String = matchIdent();
+			var name:String? = matchIdent();
 			if name is not null {
         if not matchToken(LToken.COLON) {
           fail("':' expected after option name");

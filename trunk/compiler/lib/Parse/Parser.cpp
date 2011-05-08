@@ -2602,6 +2602,8 @@ ASTNode * Parser::primaryExpression() {
         }
 
         result = new ASTMemberRef(loc | result->location(), result, ident);
+      } else if (match(Token_QMark)) {
+        result = new ASTOper(ASTNode::LogicalOr, result, &NullType::biDef);
       } else {
         break;
       }

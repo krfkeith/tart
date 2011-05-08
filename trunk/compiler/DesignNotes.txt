@@ -2,14 +2,13 @@
 
 Next up:
 
-* Finish @Associative.
-* Finish config_paths.h.
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
-* statements returning values - try/catch. Also unsized ints.
+* Deduce argument types and return types for anon funcs.
+* statements returning values: do try/catch. Also unsized ints.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
-* Type constraints - eliminated un-needed methods.
+* Simplify type inference (somehow!)
 
 Design TODOS:
 
@@ -36,6 +35,7 @@ Implementation TODOS:
 
 * Add structure compares. (And tuple compares, and so on for all types.)
 * Coalesced templates
+* Finish @Associative.
 * Implicit anonymous class for closure.
 * Bug: uint64 + int64 != float (error in infix add overload selection).
 * Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
@@ -102,6 +102,7 @@ Implementation TODOS:
   * As tuple slice indices
   * Indefinite ranges (n ..) and (.. n) ?
 * Generic functions.
+  * 'virtual' arguments for multi-methods. (Or 'dispatched')
 * Complex typecast operations should probably go into their own separate functions
   instead of being inline.
 * Map literals -> Map.of((a, b)) or Map.of(a => b, c => d) where '=>' means 2-tuple.
@@ -118,7 +119,6 @@ Implementation TODOS:
 * Change assignment syntax for tuple unpacking (x:type, y:type).
 * Need a way to create an empty value for all types.
 * Namespace merging.
-* 'virtual' arguments for multi-methods. (Or 'dispatched')
 
 * Collector classes:
   * TLAB
@@ -142,8 +142,6 @@ Doc errors:
 * Fix description of imports to match current functionality.
 * Array literals
 * Better explanation of unpacking
-* Revise haskell note and next note
-* Operator.add overload example.
 * First line of Macro section is misleading.
 
 Error TODOS: (things that should be an error)

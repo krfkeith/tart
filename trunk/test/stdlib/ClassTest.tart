@@ -10,9 +10,9 @@ public macro mtest(i:int32) -> int32 {
 }
 
 class ClassTest : Test {
-  var t:optional TestClass;
-  var t2:optional TestClass;
-  var t3:optional TestClass;
+  var t:TestClass?;
+  var t2:TestClass?;
+  var t3:TestClass?;
 
   def construct() {}
 

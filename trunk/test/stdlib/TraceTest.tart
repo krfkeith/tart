@@ -286,7 +286,7 @@ class TraceTest : Test {
   }
 
   def testCollectOptionalLocalVar {
-    var u:optional String = newString("Hello");
+    var u:String? = newString("Hello");
     tart.gc.GC.collect();
     assertTrue(u isa String);
     assertEq("Hello", typecast[String](u));
