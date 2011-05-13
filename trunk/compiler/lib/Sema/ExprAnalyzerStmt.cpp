@@ -405,7 +405,7 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
     DefnList defns;
     if (TypeDefn * tdef = testType->typeDefn()) {
       if (tdef->definingScope() != NULL) {
-        tdef->definingScope()->lookupMember("infixEQ", defns, false);
+        tdef->definingScope()->lookupMember("infixEqual", defns, false);
       }
     }
 

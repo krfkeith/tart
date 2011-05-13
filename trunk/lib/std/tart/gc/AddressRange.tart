@@ -44,6 +44,6 @@ struct AddressRange {
   }
 }
 
-def infixEQ(a0:AddressRange, a1:AddressRange) -> bool {
+def infixEqual(a0:AddressRange, a1:AddressRange) -> bool {
   return a0.first is a1.first and a0.last is a1.last;
 }

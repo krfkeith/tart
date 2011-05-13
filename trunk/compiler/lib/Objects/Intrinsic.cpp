@@ -480,11 +480,11 @@ Expr * PointerComparisonIntrinsic<pred>::eval(const SourceLocation & loc, Module
 
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_EQ>
-PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEQ");
+PointerComparisonIntrinsic<CmpInst::ICMP_EQ>::instance("infixEqual");
 
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_NE>
-PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNE");
+PointerComparisonIntrinsic<CmpInst::ICMP_NE>::instance("infixNotEqual");
 
 template<>
 PointerComparisonIntrinsic<CmpInst::ICMP_ULE>

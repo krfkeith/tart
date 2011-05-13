@@ -1,0 +1,19 @@
+/** Utility functions for operating on directories. */
+namespace Directory {
+  // def current:String { get; }
+  // def create(path:String) -> bool;
+  // def directories(pattern:String = "*") -> Iterator[String];
+  // def files(pattern:String = "*") -> Iterator[String];
+  // def entries(pattern:String = "*") -> Iterator[String];
+
+	// Maybe these should go in FileSystem...? or Path?
+	// They all apply to both files and directories.
+  // def remove(path:String, recursive:bool = false) -> bool;
+  // def move(from:String, to:String);
+  // def lastAccessTime(path:String) -> Time;
+  // def lastModificationTime(path:String) -> Time;
+  // def creationTime(path:String) -> Time;
+  // def setLastAccessTime(path:String, time:Time);
+  // def setLastModificationTime(path:String, time:Time);
+  // def setCreationTime(path:String, time:Time);
+}

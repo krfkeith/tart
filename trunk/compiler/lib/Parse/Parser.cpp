@@ -1084,7 +1084,7 @@ ASTNode * Parser::typeExprPrimary() {
           paramDefault = expression();
           if (paramDefault == NULL) {
             expectedExpression();
-            return false;
+            return NULL;
           }
         }
       }

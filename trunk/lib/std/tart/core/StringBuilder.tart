@@ -69,6 +69,20 @@ public final class StringBuilder {
     }
   }
 
+	/** Array element access. */
+  def [index:int]:char {
+    get {
+      // Array already checks index >= 0
+      Preconditions.checkIndex(index < self._size);
+      return self.value[index];
+    }
+    set {
+      // Array already checks index >= 0
+      Preconditions.checkIndex(index < self._size);
+      self.value[index] = value;
+    }
+  }
+
   /** Append a single character to the buffer.
       Parameters:
         c: The character to append.
