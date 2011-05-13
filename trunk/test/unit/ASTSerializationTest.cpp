@@ -281,11 +281,11 @@ TEST_F(ASTSerializationTest, SimpleExpressions) {
 
   ast = testExpression("1==1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
-  EXPECT_AST_EQ("infixEQ(1, 1)", ast);
+  EXPECT_AST_EQ("infixEqual(1, 1)", ast);
 
   ast = testExpression("1!=1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
-  EXPECT_AST_EQ("infixNE(1, 1)", ast);
+  EXPECT_AST_EQ("infixNotEqual(1, 1)", ast);
 
   ast = testExpression("1<1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());

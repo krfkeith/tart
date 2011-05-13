@@ -309,11 +309,11 @@ TEST_F(ParserTest, SimpleExpressions) {
 
   ast = parseExpression("1==1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
-  EXPECT_AST_EQ("infixEQ(1, 1)", ast);
+  EXPECT_AST_EQ("infixEqual(1, 1)", ast);
 
   ast = parseExpression("1!=1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());
-  EXPECT_AST_EQ("infixNE(1, 1)", ast);
+  EXPECT_AST_EQ("infixNotEqual(1, 1)", ast);
 
   ast = parseExpression("1<1");
   ASSERT_EQ(ASTNode::Call, ast->nodeType());

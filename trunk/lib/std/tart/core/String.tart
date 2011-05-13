@@ -498,7 +498,7 @@ public final class String : Iterable[char] {
 }
 
 /** Equality comparison operator for strings. */
-public def infixEQ(s1:String, s2:String) -> bool {
+public def infixEqual(s1:String, s2:String) -> bool {
   return s1.equals(s2);
 }
 

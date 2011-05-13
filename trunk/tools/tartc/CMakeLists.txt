@@ -1,4 +1,4 @@
-# CMake build file for Tart/tools
+# CMake build file for tools/tartc
 
 # Create a command for each source file
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
@@ -9,6 +9,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Extra flags for GCC (C++ only)
 if (CMAKE_COMPILER_IS_GNUCXX)
    if ($PROFILE_TARTC)
      add_definitions(-pg)

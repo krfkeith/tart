@@ -116,6 +116,11 @@ import tart.core.Memory.Address;
 
   def size:int {
     get { return _size; }
+    set {
+      // We can't make the collection larger by setting the size.
+      Preconditions.checkIndex(value >= 0 and value <= size);
+      _size = value;
+    }
   }
 
   def isEmpty:bool {

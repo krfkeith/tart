@@ -21,8 +21,7 @@ namespace {
 
   private:
     void trace() const {
-      for (typename UnitType::UniqueTypes::iterator it = map_.begin();
-          it != map_.end(); ++it) {
+      for (UnitType::UniqueTypes::iterator it = map_.begin(); it != map_.end(); ++it) {
         it->getValue()->mark();
       }
     }
