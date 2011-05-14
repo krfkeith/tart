@@ -19,9 +19,9 @@ final class NameTable {
 
   private var _nameStrmSimple:Address[ubyte];
   private var _nameStrmCompound:Address[ubyte];
-  private var _simpleNames:optional ImmutableList[String];
-  private var _compoundNames:optional CompoundName[];
-  private var _compoundNameStrings:optional (optional String)[];
+  private var _simpleNames:ImmutableList[String]?;
+  private var _compoundNames:CompoundName[]?;
+  private var _compoundNameStrings:String?[]?;
 
   private def decodeStrings -> ImmutableList[String] {
     let decoder = StreamDecoder(_nameStrmSimple);
@@ -50,12 +50,12 @@ final class NameTable {
     // Lazily evaluate the table of compound names.
     return lazyEval(_compoundNames, decodeCompoundNames());
   }
-  
+
   private def getCompoundName(index:int) -> String {
     var names = getCompoundNameTable();
 
     // Lazily construct the table of cached compound name strings.
-    var cnameStrings = lazyEval(_compoundNameStrings, (optional String)[](names.size));
+    var cnameStrings = lazyEval(_compoundNameStrings, String?[](names.size));
 
     // Lazily evaluate each element within the array.
     return lazyEval(cnameStrings[index],
@@ -79,12 +79,12 @@ final class NameTable {
       return strings[index];
     }
   }
-  
+
 	/** Return the fully-qualified name for the given name id. */
   def getQualifiedName(i:int) -> String {
     return getName(i);
   }
-  
+
 	/** Return the scope part of the name associated with a given name id. */
   def getScopeName(i:int) -> String {
     var index = i >> 1;

@@ -160,6 +160,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
+      //dbgContext_ = genLexicalBlock(fdef->location());
       dbgInlineContext_ = DIScope();
       setDebugLocation(fdef->location());
     }

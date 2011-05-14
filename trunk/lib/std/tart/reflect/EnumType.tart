@@ -6,8 +6,8 @@ public final class EnumType : Type {
     var _names:NameTable;
     var _nameIndex:int16;
     let _supertype:Type;
-    var _values:optional Field[];
-    
+    var _values:Field[]?;
+
     undef construct();
   }
 
@@ -22,10 +22,10 @@ public final class EnumType : Type {
 
   /** Pointer to this type's supertype. */
   def supertype:Type { get { return self._supertype; } }
-  
+
   /** Array of enumeration constants. */
   //final def values:Field[] { get { return self._values; } }
-  
+
   override toString -> String {
     return qualifiedName;
   }
@@ -33,7 +33,7 @@ public final class EnumType : Type {
   override getFieldValue(fieldAddr:Address[void]) -> Object {
     return _supertype.getFieldValue(fieldAddr);
   }
-  
+
   override setFieldValue(fieldAddr:Address[void], value:Object) {
     _supertype.setFieldValue(fieldAddr, value);
   }
