@@ -106,7 +106,7 @@ bool SourceString::readLineAt(uint32_t lineIndex, std::string & result) {
 // ArchiveFile
 
 std::istream & ArchiveFile::open() {
-  DFAIL("Invalid operation: ArchiveFile::open");
+  diag.__fail("Invalid operation: ArchiveFile::open", __FILE__, __LINE__);
 }
 
 void ArchiveFile::close() {

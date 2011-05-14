@@ -18,7 +18,8 @@ file(GLOB TART_STDLIB_SRC
     tart/io/*.tart
     tart/reflect/*.tart
     tart/text/*.tart
-    tart/text/encodings/*.tart)
+    tart/text/encodings/*.tart
+    tart/time/*.tart)
 
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
 set(MODPATH ${TART_SOURCE_DIR}/lib/std)  # Module search path

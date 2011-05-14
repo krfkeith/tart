@@ -1,12 +1,12 @@
 struct CharacterRange {
   let begin:char;
   let end:char;
-  
+
   def construct(begin:char, end:char) {
     self.begin = begin;
     self.end = end;
   }
-  
+
   def contains(c:char) -> bool {
     return c >= begin and c < end;
   }
@@ -18,7 +18,7 @@ struct CharacterRange {
   def contains(first:char, last:char) -> bool {
     return first >= begin and last <= end;
   }
-  
+
   def computeHash() -> uint64 {
     return Hashing.hash(begin) + Hashing.hash(end);
   }
@@ -58,6 +58,6 @@ struct CharacterRange {
 }
 
 // TODO: Delete this and insted create a built-in comparator
-public def infixEQ(cr1:CharacterRange, cr2:CharacterRange) -> bool {
+public def infixEqual(cr1:CharacterRange, cr2:CharacterRange) -> bool {
   return cr1.begin == cr2.begin and cr1.end == cr2.end;
 }

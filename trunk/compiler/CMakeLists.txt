@@ -11,13 +11,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   endif ($PROFILE_TARTC)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
-if (CMAKE_COMPILER_IS_CLANG)
-  add_definitions(
-      -fno-rtti
-      -fno-exceptions
-      )
-endif (CMAKE_COMPILER_IS_CLANG)
-
 file(GLOB sources lib/*/*.cpp)
 file(GLOB headers include/*/*.h)
 

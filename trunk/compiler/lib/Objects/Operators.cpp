@@ -330,10 +330,10 @@ public:
 };
 
 template<class T, CmpInst::Predicate pred>
-ComparisonOp<T, pred> OperatorCmp<T, pred>::equal("infixEQ");
+ComparisonOp<T, pred> OperatorCmp<T, pred>::equal("infixEqual");
 
 template<class T, CmpInst::Predicate pred>
-ComparisonOp<T, pred> OperatorCmp<T, pred>::unequal("infixNE");
+ComparisonOp<T, pred> OperatorCmp<T, pred>::unequal("infixNotEqual");
 
 template<class T, CmpInst::Predicate pred>
 ComparisonOp<T, pred> OperatorCmp<T, pred>::less("infixLT");
@@ -522,7 +522,7 @@ template<class T>
 PredeccessorOp<T> PredeccessorOp<T>::value;
 
 static SourceString infixAddrCmpSrc(
-    " @tart.annex.Intrinsic def infixEQ[%T](:__Address[T], :__Address[T]) -> bool;"
+    " @tart.annex.Intrinsic def infixEqual[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixLT[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixLE[%T](:__Address[T], :__Address[T]) -> bool;"
     " @tart.annex.Intrinsic def infixGT[%T](:__Address[T], :__Address[T]) -> bool;"
@@ -531,10 +531,10 @@ static SourceString infixAddrCmpSrc(
 
 // TODO: Implement this
 //    " @tart.annex.Intrinsic"
-//    " def infixEQ[%T](:T, :T) -> bool;"
+//    " def infixEqual[%T](:T, :T) -> bool;"
 
-static SourceString infixNeSrc(
-    " def infixNE[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");
+static SourceString infixNotEqualSrc(
+    " def infixNotEqual[%T](p0:T, p1:T) -> bool { return not (p0 == p1); }");
 
 static SourceString infixLogicalSrc(
     " @tart.annex.Intrinsic def infixLogicalAnd(:bool, :bool) -> bool;"
@@ -784,7 +784,7 @@ void Builtins::initOperators() {
   module.addMember(&OperatorARShiftDecl<UnsizedIntType>::value);
 
   compileBuiltins(infixAddrCmpSrc);
-  compileBuiltins(infixNeSrc);
+  compileBuiltins(infixNotEqualSrc);
   compileBuiltins(infixLogicalSrc);
   compileBuiltins(infixAddSrc);
 }
