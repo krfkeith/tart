@@ -5,10 +5,10 @@ Next up:
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
 * Deduce argument types and return types for anon funcs.
-* statements returning values: do try/catch. Also unsized ints.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
 * Simplify type inference (somehow!)
+* statements returning values: do try/catch. Also unsized ints.
 
 Design TODOS:
 
@@ -88,8 +88,6 @@ Implementation TODOS:
 * Type strengthening - could potentially reduce the number of vcalls and icalls (greatly).
 * AttributeSite failure tests.
 * Class "extension"
-* Finish writing out and parsing metadata so that we don't have to compile everything
-  multiple times.
 * Statements:
   * with (what interface for using?)
   * yield

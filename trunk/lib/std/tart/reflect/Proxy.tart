@@ -14,17 +14,11 @@ namespace Proxy {
 	  def callMethod(obj:Object, method:Method, args:Object[]) -> Object;
   }
 
-	// Create a proxy of type T.
-  //require T <= Object;
-  //require T isa Interface[T];
-  //@Intrinsic def create[%T](typeName:TypeLiteral[T], handler:InvocationHandler) -> T;
   /** Create a proxy object that implements the listed interfaces. */
   @Intrinsic def create[%T <: Object...](handler:InvocationHandler) -> Object;
 
-  //@Intrinsic def proxyClass[%T...](handler:InvocationHandler[T]) -> CompositeType;
-
 	// Internal class used to implement Proxy.
-  private class ProxyImpl[%T] {
+  private class ProxyImpl[%T...] {
     var handler:InvocationHandler;
   }
 }
