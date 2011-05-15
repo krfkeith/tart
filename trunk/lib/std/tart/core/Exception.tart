@@ -8,7 +8,6 @@ public class Exception : Throwable {
 
   // TODO: Add location
   // TODO: Implement stack trace
-  // private var cause:Exception
 
   /** Default constructor. */
   def construct() {
@@ -39,11 +38,4 @@ public class Exception : Throwable {
       return __typeName;
     }
   }
-
-  /** Throw an exception if 'test' is true. */
-  /*public classmacro when(test:bool) {
-    if (test) {
-      throw self();
-    }
-  }*/
 }
