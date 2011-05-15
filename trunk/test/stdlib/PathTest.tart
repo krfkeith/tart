@@ -1,0 +1,120 @@
+import tart.io.Path;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(PathTest);
+}
+
+class PathTest : Test {
+  def testIsAbsolute {
+    assertTrue(Path.isAbsolute("/foo/bar"));
+    assertTrue(Path.isAbsolute("/foo"));
+    assertTrue(Path.isAbsolute("/"));
+    assertFalse(Path.isAbsolute("foo/bar"));
+    assertFalse(Path.isAbsolute("foo"));
+    assertFalse(Path.isAbsolute(""));
+    assertFalse(Path.isAbsolute("."));
+  }
+
+  def testFilename {
+    assertEq("", Path.filename(""));
+    assertEq("foo", Path.filename("foo"));
+    assertEq("foo", Path.filename("/foo"));
+    assertEq("bar", Path.filename("/foo/bar"));
+    assertEq("bar.txt", Path.filename("/foo/bar.txt"));
+    assertEq("bar", Path.filename("/foo.txt/bar"));
+    assertEq("", Path.filename("/foo/"));
+    assertEq("", Path.filename("/"));
+  }
+
+  def testParent {
+    assertEq("", Path.parent(""));
+    assertEq("", Path.parent("foo"));
+    assertEq("/", Path.parent("/foo"));
+    assertEq("/foo", Path.parent("/foo/bar"));
+    assertEq("/foo", Path.parent("/foo/bar.txt"));
+    assertEq("/foo.txt", Path.parent("/foo.txt/bar"));
+    assertEq("/foo", Path.parent("/foo/"));
+    assertEq("/", Path.parent("/"));
+  }
+
+  def testNormalize {
+    assertEq("", Path.normalize(""));
+    assertEq("foo", Path.normalize("foo"));
+    assertEq("/", Path.normalize("/"));
+    assertEq("/foo", Path.normalize("/foo"));
+    assertEq("/bar", Path.normalize("/bar"));
+    assertEq("/foo/bar", Path.normalize("/foo/bar"));
+    assertEq("/", Path.normalize("/./"));
+    assertEq("/", Path.normalize("/."));
+    assertEq("/foo", Path.normalize("/foo/./"));
+    assertEq("/foo", Path.normalize("/foo/."));
+    assertEq("/foo/bar", Path.normalize("/foo/./bar"));
+    assertEq("/foo/bar", Path.normalize("/foo/./bar/"));
+    assertEq("/bar", Path.normalize("/foo/../bar"));
+    assertEq("/bar", Path.normalize("/foo/../bar/"));
+    assertEq("/foo/bar", Path.normalize("/foo/a/../bar"));
+    assertEq("/foo/bar", Path.normalize("/foo/a/../bar/"));
+    assertEq("/bar", Path.normalize("/foo/a/../../bar"));
+    assertEq("/bar", Path.normalize("/foo/a/../../bar/"));
+    assertEq("/bar", Path.normalize("/foo/a/.././../bar"));
+    assertEq("/bar", Path.normalize("/foo/a/.././../bar/"));
+    assertEq("/../bar", Path.normalize("/../bar"));
+    assertEq("/../bar", Path.normalize("/../bar/"));
+    assertEq("../bar", Path.normalize("../bar"));
+    assertEq("../bar", Path.normalize("../bar/"));
+    assertEq("/../../bar", Path.normalize("/../../bar"));
+    assertEq("/../../bar", Path.normalize("/../../bar/"));
+    assertEq("../../bar", Path.normalize("../../bar"));
+    assertEq("../../bar", Path.normalize("../../bar/"));
+  }
+
+  // split
+
+  def testSplit {
+    assertEq("", Path.split("")[0]);
+    assertEq("", Path.split("")[1]);
+    assertEq("", Path.split("foo")[0]);
+    assertEq("foo", Path.split("foo")[1]);
+    assertEq("", Path.split("/foo")[0]);
+    assertEq("foo", Path.split("/foo")[1]);
+    assertEq("/foo", Path.split("/foo/bar")[0]);
+    assertEq("bar", Path.split("/foo/bar")[1]);
+    assertEq("/foo", Path.split("/foo/bar.txt")[0]);
+    assertEq("bar.txt", Path.split("/foo/bar.txt")[1]);
+    assertEq("/foo.txt", Path.split("/foo.txt/bar")[0]);
+    assertEq("bar", Path.split("/foo.txt/bar")[1]);
+    assertEq("/foo", Path.split("/foo/")[0]);
+    assertEq("", Path.split("/foo/")[1]);
+    assertEq("", Path.split("/")[0]);
+    assertEq("", Path.split("/")[1]);
+  }
+
+  def testExtension {
+    assertEq("txt", Path.extension("foo.txt"));
+    assertEq("txt", Path.extension("foo.cpp.txt"));
+    assertEq("", Path.extension("foo"));
+    assertEq("", Path.extension("/bar.txt/foo"));
+    assertEq("", Path.extension(""));
+  }
+
+  def testChangeExtension {
+    assertEq("foo.cpp", Path.changeExtension("foo.h", "cpp"));
+    assertEq("foo.cpp", Path.changeExtension("foo", "cpp"));
+  }
+
+  def testJoin {
+    assertEq("foo/bar", Path.join("foo", "bar"));
+    assertEq("/foo/bar", Path.join("/foo", "bar"));
+    assertEq("/bar", Path.join("foo", "/bar"));
+    assertEq("foo/../bar", Path.join("foo", "../bar"));
+  }
+
+  def testCombine {
+    assertEq("foo/bar", Path.combine("foo", "bar"));
+    assertEq("/foo/bar", Path.combine("/foo", "bar"));
+    assertEq("/bar", Path.combine("foo", "/bar"));
+    assertEq("bar", Path.combine("foo", "../bar"));
+  }
+}

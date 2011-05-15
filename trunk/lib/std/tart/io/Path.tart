@@ -31,6 +31,7 @@ namespace Path {
     /** Find the last separator character in 'path' occuring before position 'pos'.
         Returns -1 if no separator can be found. */
     def findSeparatorRvs(path:String, pos:int = int.maxVal) -> int {
+      pos = Math.min(pos, path.size);
       while pos > 0 {
         let ch = path[--pos];
         if isDirectorySeparator(ch) { return pos; }
@@ -80,40 +81,42 @@ namespace Path {
     }
 
     // Now copy the directory components after the root.
+    var head = root; // Length of path prefix that can't be removed via '..'.
     while pos < end {
       // Find the next dir sep or end of the path.
       var next = findSeparatorFwd(path, pos);
-			if next == pos + 1 and path[pos] == '.' {
+      if next < 0 { next = end; }
+      var isSingleDot = next == pos + 1 and path[pos] == '.';
+      var isDoubleDot = next == pos + 2 and path[pos] == '.' and path[pos + 1] == '.';
+			if isSingleDot {
 			  // It's a current-dir component, so just skip over it.
-			  pos = next + 1;
-			  continue;
-			} else if pos > 0 and next == pos + 2 and path[pos] == '.' and path[pos + 1] == '.' {
-			  // It's a parent-dir component. Delete the previous dir component, unless it's
-			  // a root component, in which case just append the parent dir component normally.
-			  if pos > root {
-			  	// It's a parent-dir indicator
-			  	var prevSep = pos;
-			  	while prevSep > root and not isDirectorySeparator(path[--prevSep]) {}
-			  	result.size = prevSep;
-			  	continue;
-			  }
+			} else if isDoubleDot and result.size > head {
+			  // It's a parent-dir component. Delete the previous dir component, unless there
+			  // is nothing to delete.
+		  	var prevSep = result.size - 1;
+		  	while prevSep > root and not isDirectorySeparator(path[prevSep]) { --prevSep; }
+		  	result.size = prevSep;
+			} else {
+  			// Append a directory separator.
+  			if result.size > root {
+  			  result.add(DIRECTORY_SEPARATOR);
+  			}
+
+  			// And the path component
+  			while pos < next {
+  			  result.add(path[pos++]);
+  			}
+
+  			if isDoubleDot {
+  			  head = pos;
+  			}
 			}
 
-			// Append a directory separator.
-			if pos > root {
-			  result.add(DIRECTORY_SEPARATOR);
-			}
-
-			// And the path component
-			while pos < next {
-			  result.add(path[pos++]);
-			}
-
-			// Skip to the next character past the directory separator.
-			pos = next + 1;
+      // Skip to the next character past the directory separator.
+      pos = next + 1;
     }
 
-    return String.create(result);
+    return String.fromBytes(result);
   }
 
   // def isReadable(path:String) -> bool;
@@ -138,7 +141,7 @@ namespace Path {
     }
   }
 
-	/** Remove the last path component (after the final '/') and return the remainder of the path.
+	/** Returns a string containing all characters in 'path' prior to the last path separator.
 	    If there is no directory separator, then it returns the empty string. If the path consists only
 	    of a single separator, then it returns the path unchanged.
 	  */
@@ -147,18 +150,18 @@ namespace Path {
     if sep == 0 {
       return DIRECTORY_SEPARATOR_STR;
     } else if sep > 0 {
-      return path.substr(sep);
+      return path.substr(0, sep);
     } else {
       return "";
     }
   }
 
-	/** Split the path on the final directory separator, returning the portion before and after the separator
-			as separate strings. If there is no separator, then it returns an empty string for the first
-			part, and the original input string for the second part. */
+	/** Split the path on the final directory separator, returning the portion before and after the
+	    separator as separate strings. If there is no separator, then it returns an empty string for
+	    the first part, and the original input string for the second part. */
   def split(path:String) -> (String, String) {
     let sep = findSeparatorRvs(path);
-    if sep > 0 {
+    if sep >= 0 {
       return path.substr(0, sep), path.substr(sep + 1);
     } else {
       return "", path;
@@ -174,16 +177,12 @@ namespace Path {
 
 	/** Replace the extension of 'path' with the string 'ext'. 'ext' should not have a leading '.' character. */
   def changeExtension(path:String, ext:String) -> String {
-    let sb = StringBuilder();
-    let ext = findExtension(path);
-    if ext < 0 {
-      sb.append(path);
+    let pos = findExtension(path);
+    if pos < 0 {
+      return String.concat(path, ".", ext);
     } else {
-      sb.append(path, 0, ext);
+      return String.concat(path.substr(0, pos), ext);
     }
-    sb.append('.');
-    sb.append(ext);
-    return sb.toString();
   }
 
 	/** Combine 'basepath' and 'newpath' by resolving 'newpath' relative to 'basepath'. If 'newpath'
