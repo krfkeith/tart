@@ -296,51 +296,6 @@ abstract class Finalizer {
 
 // ------------------------------------------------------------------------
 
-Date / Time classes:
-
-class Calendar;
-
-// Alternate names: DateTime, Instant, Moment.
-struct Time {
-  let calender:Calendar; // Times are always defined within the context of some calendar.
-  let value:int64;
-}
-
-def infixAdd(t:Time, ts:TimeSpan) -> Time;
-def infixSubtract(t:Time, ts:TimeSpan) -> Time;
-def infixAdd(t0:TimeSpan, t1:TimeSpan) -> TimeSpan;
-def infixSubtract(t0:TimeSpan, t1:TimeSpan) -> TimeSpan;
-// Also relational operators.
-
-struct TimeSpan {
-  let value:int64;
-
-  def construct(value:int64) { self.value = value; }
-
-  // Conversion accessors
-  def milliseconds:int64 { get; }
-  def fractionalMilliseconds:double { get; }
-  def seconds:int64 { get; }
-  def fractionalSeconds:double { get; }
-  def minutes:int64 { get; }
-  def fractionalMinutes:double { get; }
-  def hours:int64 { get; }
-  def fractionalHours:double { get; }
-  def days:int64 { get; }
-  def fractionalDays:double { get; }
-  def weeks:int64 { get; }
-  def years:int64 { get; }
-  def fractionalYears:double { get; }
-  
-  //static def seconds(value:int) -> TimeSpan;
-  //static def minutes(value:int) -> TimeSpan;
-  //static def hours(value:int) -> TimeSpan;
-  //static def days(value:int) -> TimeSpan;
-  //static def years(value:int) -> TimeSpan;
-}
-
-// ------------------------------------------------------------------------
-
 // Thoughts on a different dispatch algorithm.
 
 struct MethodInfoBlock {
