@@ -236,6 +236,8 @@ abstract def foo(virtual k:Object);
 override Module.foo(k:String) {
 }
 
+// ------------------------------------------------------------------------
+
 // Chained setter notation
 
 object
@@ -248,24 +250,6 @@ object
 // Redo Type::getHashCode();
 // CountingIterator is really inefficient. Why?
 // Derived types for reflection can be deserialized in random order.
-
-// ------------------------------------------------------------------------
-
-Executable sizes:
-
--rwxr-xr-x 1 talin talin 1386054 2010-11-07 19:56 test/stdlib/SwitchStmtTest
--rwxr-xr-x 1 talin talin 1374444 2010-11-07 21:28 test/stdlib/SwitchStmtTest
--rwxr-xr-x 1 talin talin  772508 2010-11-09 17:01 test/stdlib/SwitchStmtTest
--rwxr-xr-x 1 talin talin  363892 2010-11-09 17:03 test/stdlib/SwitchStmtTest (strip debug)
--rwxr-xr-x 1 talin talin  363943 2010-11-11 18:01 test/stdlib/SwitchStmtTest (w/downcast)
--rwxr-xr-x 1 talin talin  756752 2010-11-09 22:12 test/stdlib/SwitchStmtTest (coalesce)
--rwxr-xr-x 1 talin talin  362409 2010-11-09 22:13 test/stdlib/SwitchStmtTest (strip debug + coalesce)
--rwxr-xr-x 1 talin talin  358492 2010-11-12 19:27 test/stdlib/SwitchStmtTest (smarter coalesce)
--rwxr-xr-x 1 talin talin  357291 2010-11-13 10:49 test/stdlib/SwitchStmtTest (smarter coalesce)
--rwxr-xr-x 1 talin talin  356590 2010-11-13 11:28 test/stdlib/SwitchStmtTest (smarter coalesce)
--rwxr-xr-x 1 talin talin  256897 2011-01-29 18:09 test/stdlib/SwitchStmtTest (new reflector)
-
-(Need new baseline)
 
 // ------------------------------------------------------------------------
 
@@ -323,3 +307,28 @@ struct MethodLookup {
 }
 
 ClassRegistry
+
+// ------------------------------------------------------------------------
+
+Thoughts on FFI (Foreign Function Interface):
+
+Annotations:
+  CString - function returns a char * pointer.
+  CWideString - function returns a wchar_t * pointer.
+  CMallocString - function returns a char * pointer which can be free()'d.
+  CMallocWideString - function returns a wchar_t * pointer which can be free()'d.
+  CArray - function requires a C-style array pointer.
+  CPinnedArray - function requires a pinned C-style array pointer.
+
+  Suspension - a scoped object which starts and stops a sync point. (acquire / release)
+
+import tart.ffi.CString;
+import tart.ffi.CMallocString;
+
+// Indicates that the external function returns a zero-terminated string whose
+// storage has been malloc'd, and which can be freed.
+@Extern("getcwd") @CMallocString def getcwd() -> String;
+
+// Indicates that the function returns a string via a buffer which is passed
+// in as an argument. This takes care of any pinning that needs to be done.
+@Extern("getcwd") def getcwd(@CArray buffer:ubyte[]);

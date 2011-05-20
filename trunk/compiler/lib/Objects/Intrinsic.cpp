@@ -262,6 +262,9 @@ ThisPackageIntrinsic ThisPackageIntrinsic::instance;
 
 Expr * ThisPackageIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
+  AnalyzerBase::analyzeType(Builtins::typeModule.get(), Task_PrepEvaluation);
+  AnalyzerBase::analyzeType(Builtins::typePackage.get(), Task_PrepEvaluation);
+
   callingModule->addSymbol(
       AnalyzerBase::getArrayTypeForElement(Builtins::typeModule.get())->typeDefn());
   callingModule->addSymbol(

@@ -12,6 +12,7 @@ import tart.reflect.Reflect;
   static def runAllTests(package:Package) -> int32 {
     var overallStatus:int32 = 0;
     for mod in package.modules {
+      Debug.writeLn("Test Module: ", mod.qualifiedName);
       let testStatus = runAllTests(mod);
       if testStatus != 0 {
         overallStatus = testStatus;
