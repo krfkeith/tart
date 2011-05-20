@@ -4,19 +4,21 @@ import tart.collections.HashMap;
 abstract class OptionBase {
   private {
 //	  static var _argMap = HashMap[String, OptionBase]();
-		var _name:String;
-		var _altName:String;
-		var _varName:String;
-	  var _help:String;
+		let _name:String;
+		let _altName:String;
+		let _varName:String;
+	  let _help:String;
+	  let _group:String;
 	  var _present:bool;
   }
 
-  def construct(name:String, altName:String = "", varName:String = "value", help:String = "") {
+  def construct(name:String, altName:String = "", varName:String = "value", help:String = "", group:String = "") {
     self._name = name;
     self._altName = altName;
     self._varName = varName;
     self._help = help;
     self._present = false;
+    self._group = group;
 
 //    if name in _argMap {
 //      throw NameConflictError("more than one program option named '{0}'".format(name));

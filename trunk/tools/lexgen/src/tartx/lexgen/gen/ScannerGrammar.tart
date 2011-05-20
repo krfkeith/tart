@@ -2,7 +2,7 @@ class ScannerGrammar : Grammar {
   private var vocab:CharacterRange;
   private var stateTypeName:String;
   private var startStateName:String;
-  
+
   def construct(className:String) {
     super(className);
   }
@@ -16,11 +16,11 @@ class ScannerGrammar : Grammar {
       case "TokenType" {
         tokenTypeName = value;
       }
-      
+
       case "TokenPrefix" {
         tokenNamePrefix = value;
       }
-      
+
       case "StateType" {
         stateTypeName = value;
       }
@@ -37,7 +37,7 @@ class ScannerGrammar : Grammar {
         //vocab.end = (char)int.Parse( value ); break;
       }
 
-      else {
+      case * {
         // log unknown option
       }
     }

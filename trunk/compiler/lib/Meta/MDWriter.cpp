@@ -200,7 +200,7 @@ MDNode * MDWriter::variableDefn(const VariableDefn * var) {
   putDefnHeader(builder, var,
       var->defnType() == Defn::Let ? meta::Defn::LET : meta::Defn::VARIABLE);
   builder.put(serializeType(var->type()));
-  if (var->initValue() != NULL) {
+  if (var->initValue() != NULL && var->defnType() == Defn::Let) {
     builder.put(expression(var->initValue()));
   } else {
     builder.put(NULL);
