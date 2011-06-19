@@ -16,9 +16,9 @@
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/PassManagerBuilder.h"
 #include "llvm/Support/PluginLoader.h"
 #include "llvm/Support/PrettyStackTrace.h"
-#include "llvm/Support/StandardPasses.h"
 #include "llvm/Support/SystemUtils.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -175,7 +175,7 @@ static void printAndExit(const std::string &Message, int errcode = 1) {
 
 // A utility function that adds a pass to the pass manager but will also add
 // a verifier pass after if we're supposed to verify.
-static inline void addPass(PassManager & pm, Pass * pass) {
+static inline void addPass(PassManagerBase & pm, Pass * pass) {
   // Add the pass to the pass manager...
   pm.add(pass);
 
@@ -189,20 +189,11 @@ static inline void addPass(PassManager & pm, Pass * pass) {
 /// optimizations, any loaded plugin-optimization modules, and then the
 /// inter-procedural optimizations if applicable.
 void optimize(Module * module, const TargetData * targetData) {
-  // Add an appropriate TargetData instance for this module...
-  if (optOptimizationLevel >= O1) {
-    FunctionPassManager fpm(module);
-    if (targetData) {
-      fpm.add(new TargetData(*targetData));
-      fpm.doInitialization();
-      for (Module::iterator it = module->begin(); it != module->end(); ++it) {
-        fpm.run(*it);
-      }
-    }
-  }
 
   // Instantiate the pass manager to organize the passes.
+  FunctionPassManager fpm(module);
   PassManager passes;
+  bool runFunctionPasses = false;
 
   // If we're verifying, start off with a verification pass.
   if (optVerifyEach) {
@@ -220,26 +211,6 @@ void optimize(Module * module, const TargetData * targetData) {
     passes.add(createInternalizePass(externs)); // Internalize all but exported API symbols.
   }
 
-  if (optOptimizationLevel > O0) {
-    createStandardModulePasses(
-        &passes,
-        int(optOptimizationLevel),
-        true /* OptimizeSize */,
-        true /* UnitAtATime */,
-        true /* UnrollLoops */,
-        true /* SimplifyLibCalls */,
-        true /* HaveExceptions */,
-        NULL /* *InliningPass */);
-  }
-
-  if (optOptimizationLevel > O0) {
-    createStandardLTOPasses(
-        &passes,
-        false,              // Internalize
-        !optDisableInline,  // Run inliner
-        optVerifyEach);
-  }
-
   // If the -s or -S command line options were specified, strip the symbols out
   // of the resulting program to make it smaller.  -s and -S are GNU ld options
   // that we are supporting; they alias -strip-all and -strip-debug.
@@ -247,6 +218,27 @@ void optimize(Module * module, const TargetData * targetData) {
     addPass(passes, createStripSymbolsPass(optStripDebug && !optStrip));
   } else {
     passes.add(createStripDeadDebugInfoPass());
+  }
+
+  if (optOptimizationLevel > O0) {
+    // Add an appropriate TargetData instance for this module...
+    if (targetData) {
+      runFunctionPasses = true;
+      fpm.add(new TargetData(*targetData));
+    }
+
+    PassManagerBuilder Builder;
+    if (!optDisableInline) {
+      Builder.Inliner = createFunctionInliningPass();
+    }
+    Builder.OptLevel = int(optOptimizationLevel);
+    Builder.DisableSimplifyLibCalls = false;
+    Builder.populateFunctionPassManager(fpm);
+    Builder.populateModulePassManager(passes);
+    Builder.populateLTOPassManager(
+        passes,
+        /*Internalize=*/ false,
+        /*RunInliner=*/ !optDisableInline);
   }
 
   // The user's passes may leave cruft around. Clean up after them them but
@@ -272,6 +264,14 @@ void optimize(Module * module, const TargetData * targetData) {
 
   if (optDumpDebug) {
     passes.add(createDbgInfoPrinterPass());
+  }
+
+  if (runFunctionPasses) {
+    fpm.doInitialization();
+    for (Module::iterator it = module->begin(); it != module->end(); ++it) {
+      fpm.run(*it);
+    }
+    fpm.doFinalization();
   }
 
   // Run our queue of passes all at once now, efficiently.

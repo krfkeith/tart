@@ -146,8 +146,13 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   DISubprogram & sp = dbgSubprograms_[fn];
   if ((MDNode *)sp == NULL) {
     DIType diFuncType = genDIFunctionType(fn->functionType());
-    DASSERT_OBJ(fn->hasBody(), fn);
     Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
+    DASSERT_OBJ(fn->hasBody(), fn);
+    DASSERT_OBJ(!fn->isIntrinsic(), fn);
+    DASSERT_OBJ(!fn->isAbstract(), fn);
+    DASSERT_OBJ(!fn->isInterfaceMethod(), fn);
+    bool isDefinition = !fn->isExtern() && fn->module() == module_;
+    isDefinition = true;
     if (fn->storageClass() == Storage_Instance) {
       sp = diBuilder_.createMethod(
           compileUnit(), // genDefnScope(fn),
@@ -157,7 +162,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
           getSourceLineNumber(fn->location()),
           diFuncType,
           fn->isSynthetic() /* isLocalToUnit */,
-          fn->hasBody() /* isDefinition */,
+          isDefinition,
           0, 0, NULL,
           0 /* Flags */,
           fval);
@@ -170,7 +175,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
           getSourceLineNumber(fn->location()),
           diFuncType,
           fn->isSynthetic() /* isLocalToUnit */,
-          fn->hasBody() /* isDefinition */,
+          isDefinition,
           0 /* Flags */,
           fval);
     }

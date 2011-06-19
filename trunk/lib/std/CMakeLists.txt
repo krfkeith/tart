@@ -55,7 +55,8 @@ endforeach(SRC_FILE)
 # Target to drive the conversion
 add_custom_command(
     OUTPUT libstd.bc
-    COMMAND tartln -filetype=bc -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
+    COMMAND ${LLVM_LD} -disable-opt -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
+#    COMMAND tartln -filetype=bc -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
     DEPENDS ${STDLIB_BC_FILES} tartln
     COMMENT "Linking libstd.bc")
     

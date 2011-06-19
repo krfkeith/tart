@@ -126,11 +126,8 @@ void CodeGenerator::generate() {
       diag.recovered();
     }
 
-    if (de->isSingular()) {
-      genXDef(de);
-    } else {
-      diag.debug() << "Not generated: " << de;
-    }
+    DASSERT_OBJ(de->isSingular(), de);
+    genXDef(de);
   }
 
   if (reflector_.enabled() &&

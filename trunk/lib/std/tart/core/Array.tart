@@ -143,9 +143,10 @@ import tart.gc.TraceAction;
       'dstOffset' in array 'dst'.
    */
   static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
-    Preconditions.checkIndex(count >= 0);
-    Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= dst._size);
-    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= src._size);
+    Preconditions.checkIndex(
+    		count >= 0 and
+    		dstOffset >= 0 and dstOffset <= dst._size and
+    		srcOffset >= 0 and srcOffset <= src._size);
     count = min(count, dst._size - dstOffset, src._size - srcOffset);
     if count > 0 {
       Memory.arrayMove(addressOf(dst._data[dstOffset]), addressOf(src._data[srcOffset]), count);
