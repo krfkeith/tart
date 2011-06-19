@@ -1,0 +1,11 @@
+import tart.core.Memory.Address;
+
+/** Interface used to provide efficient copying of elements from one container to another.
+    Generally implemented by containers that store elements contiguously in memory. */
+interface Copyable[%ElementType] {
+  /** Copy the elements of this collection to a destination address. */
+  def copyElements(dstAddr:Address[ElementType], srcOffset:int = 0, count:int = int.maxVal);
+
+  /** Return the number of items in the collection. */
+  def size:int { get; }
+}

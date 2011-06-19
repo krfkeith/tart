@@ -1,0 +1,14 @@
+let i8:byte = 2;
+let i16:int16 = 3;
+let i32:int32 = 5;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  let y:uint = 1 + uint(1);
+  let w:uint64 = uint(1) + uint(1);
+  let x:uint = 1 + uint(1);
+  let z:uint = uint(1) + uint(1);
+  let a:uint = 1 + 1;
+  let f:float = 1.0;
+  return i8 + i16 + i32 - 10;
+}

@@ -1,0 +1,6 @@
+/** Attribute that indicates that the associated function is a
+    built-in compiler intrinsic. */
+@Attribute(Attribute.Target.CALLABLE)
+class Intrinsic {
+  public def construct() {}
+}

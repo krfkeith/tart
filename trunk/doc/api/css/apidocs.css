@@ -1,0 +1,305 @@
+/** Stylesheet for API docs. */
+
+body {
+  background-color: #e7ecb7;
+  font-family: sans-serif, "Trebuchet MS, Arial";
+  margin: 0;
+}
+
+p {
+  margin: 1ex 0;
+}
+  
+.page-header {
+  background-color: #d9eda1;
+  color: #718832;
+  border-bottom: 1px solid #96b63e;
+}
+
+.page-header-title {
+  padding: 8px 12px;
+  font-family: 'Ubuntu', 'Trebuchet MS', sans-serif;
+  font-size: 240%;
+}
+
+.nav-section {
+  padding: 2px 12px;
+  background-color: #ced790;
+  border-top: 1px solid #f2f9d9;
+  border-bottom: 1px solid #657f08;
+}
+
+.nav-item {
+  display: inline;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 90%;
+}
+
+.nav-link {
+  color: #336200;
+}
+
+.nav-item-selected {
+  color: #192300;
+  font-weight: bold;
+}
+
+.content-section {
+  border-top: 2px solid #d2d898;
+  padding: 4px 12px;
+  border-bottom: 1px solid #b0b864;
+}
+
+.page-footer {
+  font-size: 80%;
+  color: #767f22;
+  padding: 1px 12px;
+  border-top: 1px solid white;
+}
+
+.content-header {
+  padding: 4px;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-size: 170%;
+}
+
+.defn-name {
+  font-weight: bold;
+}
+
+.overview-package-list {
+  margin: 6px 4px;
+}
+
+.overview-package-name {
+  color: #6d5100;
+}
+
+.defn-list-header, .member-table-header, .defn-description-header, .member-details-section-header {
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  font-size: 120%;
+  padding: 4px 8px;
+  background-color: #cbd381;
+}
+
+.defn-list-link {
+  font-size: 120%;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  color: #6d5100;
+}
+
+.defn-declarator {
+  color: #919966;
+}
+
+.defn-section-description {
+  margin-left: 6px;
+}
+
+.base-class-section {
+  margin-left: 6px;
+}
+
+.base-class-section-header {
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.base-class {
+  margin-left: 2em;
+  margin-bottom: 6px;
+  font-family: 'Ubuntu', 'Trebuchet MS', sans-serif;
+}
+
+.member-table-box {
+  margin: 12px 6em;
+  box-shadow: 0px 0px 8px #919946;
+  border: 2px solid #919946;
+  border-radius: 3px;
+}
+
+.member-table {
+  border-collapse: collapse;
+  border: 2px solid black;
+  width: 100%;
+  background-color: #e7ecba;
+}
+
+.member-table-col-header {
+  padding: 4px 10px;
+  text-align: left;
+  border-bottom: 1px double black;
+  background-color: #f4f6e5;
+}
+
+.member-declarator {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  line-height: 110%;
+  white-space: nowrap;
+  vertical-align: top;
+  padding: 5px 3px 5px 10px;
+  border-bottom: 1px solid #919946;
+  text-align: right;
+  color: #32311d;
+  font-weight: normal;
+}
+
+.member-table-data {
+  vertical-align: top;
+  padding: 5px 10px 5px 3px;
+  border-bottom: 1px solid #a8b154;
+}
+
+.member-signature {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  line-height: 110%;
+}
+
+.member-summary {
+  color: #6d584a;
+  font-size: 95%;
+  margin-left: 1em;
+  margin-top: 8px;
+}
+
+.row-even {
+  background-color: #eff3d1;
+}
+
+.sig1 {
+  vertical-align: top;
+}
+
+.sig2 {
+  line-height: 110%;
+  vertical-align: top;
+  text-align: left;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+}
+
+.member-table-link {
+  font-weight: bold;
+  color: black;
+}
+
+.member-section {
+  margin: 22px 0;
+  background-color: #eff3d1;
+  border: 1px solid #b7be7f;
+  box-shadow: 0px 0px 8px #d9dfa2;
+}
+
+.member-header {
+  background-color: #f4f6e5;
+  padding: 4px 12px;
+  font-size: 120%;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  border-bottom: 1px solid #a8b154;
+}
+
+.member-description {
+  margin: 6px 3em;
+}
+
+.member-deprecated {
+  margin: 8px 8px 8px 3em;
+  padding: 0 12px;
+  color: #800;
+  background-color: #fdd;
+  border: 3px solid #e77;
+}
+
+.member-deprecated-prologue {
+  font-weight: bold;
+}
+
+.member-features-table {
+  margin-left: 3em;
+}
+
+.member-feature {
+  padding: 2px 12px;
+  border-right: 6px solid #cbd381;
+  text-align: right;
+}
+
+.member-feature-data {
+  padding: 2px 12px;
+}
+
+.type-alpha-list-section {
+  -moz-column-width: 20em;
+  -webkit-column-width: 20em; 
+}
+
+.enum-constants-table {
+  border: 2px solid black;
+  margin-left: 5em;
+  margin-bottom: 12px;
+  margin-top: 12px;
+  border-collapse: collapse;
+}
+
+.enum-constant-name-header {
+  text-align: left;
+  padding: 2px 8px;
+  border-bottom: 1px solid black;
+  background-color: #f4f6e5;
+}
+  
+.enum-constant-value-header {
+  text-align: left;
+  padding: 2px 8px;
+  border-bottom: 1px solid black;
+  background-color: #f4f6e5;
+}
+  
+.enum-constant-name {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid #919946;
+  border-right: 1px solid #919946;
+  background-color: #e0e3ad;
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+}
+  
+.enum-constant-value {
+  text-align: left;
+  padding: 0 8px;
+  border-bottom: 1px solid #919946;
+  background-color: #e7ecba;
+}
+
+.type-alpha-list-link {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  color: #6d5100;
+}
+
+.type-name-link {
+  color: #6d5100;
+}
+
+.class-hierarchy {
+}
+
+.class-hierarchy-link {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  color: #6d5100;
+}
+
+.class-hierarchy-link:visited, .type-name-link:visited, .type-alpha-list-link:visited {
+  color: #7d8130;
+}
+
+.symbol {
+  font-family: 'Ubuntu', 'Trebuchet MS', Arial, sans-serif;
+  font-weight: bold;
+  color: black;
+}
+
+.type-variable-name {
+  font-weight: bold;
+}

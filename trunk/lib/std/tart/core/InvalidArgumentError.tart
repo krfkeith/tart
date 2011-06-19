@@ -1,0 +1,10 @@
+/** Thrown to indicate a function has been passed an illegal argument value. */
+public class InvalidArgumentError : Exception {
+  def construct() {
+    super();
+  }
+
+  def construct(msg:String) {
+    super(msg);
+  }
+}

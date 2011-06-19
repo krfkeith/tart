@@ -1,0 +1,30 @@
+/* ================================================================ *
+    TART - A Sweet Programming Language.
+ * ================================================================ */
+
+#include "tart/Gen/RuntimeTypeInfo.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Defn/Defn.h"
+#include "tart/Defn/TypeDefn.h"
+
+namespace tart {
+
+using namespace llvm;
+
+RuntimeTypeInfo::RuntimeTypeInfo(const CompositeType * ty, Module * m)
+  : type(ty)
+  , linkageType(GlobalValue::ExternalLinkage)
+  , typeDescriptor_(NULL)
+  , typeInfoBlock(NULL)
+  , typeInfoBlockType(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , typeInfoPtr(NULL)
+  , typeAllocator(NULL)
+{
+  external = type->typeDefn()->module() != m;
+  if (type->typeDefn()->isSynthetic()) {
+    external = false;
+    linkageType = GlobalValue::LinkOnceODRLinkage;
+  }
+}
+
+} // namespace tart

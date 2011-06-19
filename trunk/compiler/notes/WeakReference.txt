@@ -1,0 +1,73 @@
+template<class T>
+class WeakReference {
+public:
+  WeakReference() : value_(NULL) {}
+
+  WeakReference(T * value) : value_(value) {
+    if (value_ != NULL) {
+      wrMap.addReference(this);
+    }
+  }
+
+  ~WeakReference() {
+    if (value_ != NULL) {
+      wrMap.removeReference(this);
+    }
+  }
+  
+  const T * value() const { return value_; }
+  T * value() { return value_; }
+
+  void setValue(T * value) {
+    it (value != value_) {
+      if (value_ != NULL) {
+        GC::removeWeakReference(this);
+      }
+
+      value_ = value;
+
+      if (value_ != NULL) {
+        GC::addWeakReference(this);
+      }
+    }
+  }
+  
+  void trace() {}
+
+private:
+  T * value_;
+};
+
+  static void addWeakReference(WeakReference * wr) {
+    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
+    if (it != wrMap_.end()) {
+      it->second().push_back(wr);
+    } else {
+      wrMap.insert(??);
+    }
+  }
+
+  static void removeWealReference(WeakReference * wr) {
+    WeakReferenceMap::iterator it = wrMap_.find(wr.value());
+    if (it != wrMap_.end()) {
+      it->second().remove(wr);
+    }
+  }
+
+  void freeObject(GC * obj) {
+    WeakReferenceMap::iterator it = wrMap_.find(obj);
+    if (it != wrMap_.end()) {
+      for (WeakReferenceMapEntry::iterator wr = it->second().begin(); wr != it->second().end(); ++it) {
+        (*wr)->value_ = NULL;
+      }
+    }
+    
+    wrMap.erase(it);
+  }
+
+
+private:
+  typedef llvm::DenseMap<GC *, llvm::SmallVector<WeakReference *, 1> > WeakReferenceMap;
+  
+  static WeakReferenceMap wrMap;
+

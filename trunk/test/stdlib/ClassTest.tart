@@ -1,0 +1,103 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ClassTest);
+}
+
+public macro mtest(i:int32) -> int32 {
+  return i + i;
+}
+
+class ClassTest : Test {
+  var t:optional TestClass;
+  var t2:optional TestClass;
+  var t3:optional TestClass;
+
+  def construct() {}
+
+  override setUp() {
+	  // Test default constructor with no arguments.
+	  t = TestClass();
+
+	  // Test default constructor with a positional argument.
+	  //t2 = TestClass(1);
+
+	  // Test default constructor with a keyword argument.
+	  //t3 = TestClass(m0=1);
+  }
+
+  def testCallMethod() {
+    // Call a method of the class.
+    var s = t.testMethod();
+    assertEq(11, s);
+
+    var m:int16 = t.test2();
+    assertEq(18, m);
+  }
+
+  def testConstructSubclass() {
+	  // Construct a subclass with an explicit constructor
+	  let u = SubClass();
+
+	  // Call a method of the subclass which is defined in the base class.
+	  let v = u.testMethod();
+
+	  let w:TestClass = u;
+	  let x = w.testMethod();
+	  assertEq(13, x);
+
+	  // Test reference equality
+	  assertFalse(t3 is u);
+
+	  // 'isa' test - failure
+	  assertFalse(t isa SubClass);
+
+	  // 'isa' test - success
+	  assertFalse(not (t isa TestClass));
+
+	  //return mtest(20) - 40;
+  }
+
+	def testCallSuper() {
+	  let u = SubClass();
+	  assertEq(34, u.test4());
+	}
+}
+
+class TestClass {
+  public var m0:int32;
+
+  public def testMethod() -> int32 {
+    return 11;
+  }
+
+  public final def test2() -> int16 {
+    return self.test3() + self.test3();
+  }
+
+  public final def test3() -> int8 {
+    return 9;
+  }
+
+  public def test4() -> int8 {
+    return 33;
+  }
+}
+
+class SubClass : TestClass {
+  private var m2:int32;
+  //private var m1:int32[];
+
+  public override testMethod() -> int32 {
+    return 13;
+  }
+
+  public def construct() {
+    self.m2 = 20;
+  }
+
+  public override test4() -> int8 {
+    return super() + 1;
+  }
+}

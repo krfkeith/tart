@@ -1,0 +1,30 @@
+/** List interface */
+interface List[%ElementType] : Collection[ElementType] {
+
+  /** Append an item to the end of the list. */
+  def add(e:ElementType);
+
+  /** Append all of the items in a collection to the end of the list. */
+  def addAll(collection:Collection[ElementType]);
+
+  /** Insert the element 'e' at the specific position 'position'. */
+  def insert(position:int, e:ElementType);
+
+  /** Insert all of the elements of the collection 'collection' at the specific position 'position'. */
+  def insertAll(position:int, collection:Collection[ElementType]);
+
+  /** Remove the item at the specified index. */
+  def remove(index:int);
+
+  /** Remove all items from the list. */
+  def clear();
+
+  /** Access a list element by index. */
+  def [index:int]:ElementType { get; set; }
+
+  /** Return true if the specified item is in the collection. */
+  def contains(item:ElementType) -> bool;
+
+  /** The number of items in the list. */
+  def size:int { get; }
+}

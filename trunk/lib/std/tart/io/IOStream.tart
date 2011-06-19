@@ -1,0 +1,41 @@
+/** Abstract interface for i/o streams. */
+interface IOStream : ScopedObject {
+  enum SeekFrom {
+    CURRENT,
+    START,
+    END
+  }
+
+  /** Change the current read/write position of the stream. */
+  //@Throws(IOError)
+  def seek(from:SeekFrom, offset:int64) -> int64;
+
+  /** True if we've reached the end of available input. */
+  //@Throws(IOError)
+  def atEnd: bool { get; }
+
+  /** True if the stream supports reading. */
+  def canRead:bool { get; }
+
+  /** True if the stream supports writing. */
+  def canWrite:bool { get; }
+
+  /** True if this stream supports seek operations. */
+  def canSeek:bool { get; }
+
+  /** Returns the current position in the stream. */
+  //@Throws(IOException)
+  def position:int64 { get; }
+
+  /** Return the length of the stream, or -1 if indeterminate. */
+  //@Throws(IOException)
+  def size:int64 { get; }
+
+  /** Flush any pending writes. */
+  //@Throws(IOException)
+  def flush -> void;
+
+  /** Close the stream. */
+  //@Throws(IOException)
+  def close -> void;
+}

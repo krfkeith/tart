@@ -1,0 +1,233 @@
+import tart.annex.Coalesce;
+import tart.core.Math.max;
+import tart.core.Memory.Address;
+import tart.gc.TraceMethod;
+import tart.gc.TraceAction;
+
+/** Double-ended queue container class.
+    InheritDoc: members
+ */
+final class Deque[%ElementType, %BlockSize:int = 256]
+  : Collection[ElementType]
+  , Copyable[ElementType]
+{
+  private class Block {
+    var _next:Block?;
+    var _prev:Block?;
+    var _items:NativeArray[ElementType, BlockSize];
+
+    // Constructor definition prevents the compiler from complaining about
+    // the uninitialized _items array. (This may be a bug.)
+    def construct() {}
+
+    @TraceMethod private def __trace(action:TraceAction) {
+      // Note that we don't trace the _items - the container does that for us.
+      action.trace(_next);
+      action.trace(_prev);
+    }
+  }
+
+  private {
+    var _headBlk:Block?;
+    var _headPos:int = 0;
+    var _tailBlk:Block?;
+    var _tailPos:int = 0;
+    var _size:int = 0;
+    var _mutationIndex:int = 0;
+
+    @TraceMethod private def __trace(action:TraceAction) {
+      action.trace(_headBlk);
+      action.trace(_tailBlk);
+      var blk:Block = _headBlk;
+      while blk {
+        var pos:int = if blk == _headBlk { _headPos } else { 0 };
+        var end:int = if blk == _tailBlk { _tailPos } else { BlockSize };
+        while pos < end {
+          action.trace(blk._items[pos++]);
+        }
+      }
+    }
+  }
+
+  def size:int {
+    get { return _size; }
+  }
+
+  def isEmpty:bool {
+    get { return _size == 0; }
+  }
+
+  /** The first item in the deque. */
+  def front:ElementType {
+    get {
+      Preconditions.checkIndex(_size > 0);
+      return _headBlk._items[_headPos];
+    }
+  }
+
+  /** The last item in the deque. */
+  def back:ElementType {
+    get {
+      Preconditions.checkIndex(_size > 0);
+      return _tailBlk._items[_tailPos - 1];
+    }
+  }
+
+  /** Prepend an item to the front of the deque. */
+  def pushFront(value:ElementType) {
+    ++_mutationIndex;
+    if _headBlk is null or _headPos == 0 {
+      var blk = Block();
+      _headPos = BlockSize - 1;
+      blk._next = _headBlk;
+      blk._prev = null;
+      blk._items[_headPos] = value;
+      if _headBlk is null {
+        _tailBlk = blk;
+        _tailPos = BlockSize;
+      } else {
+        _headBlk._prev = blk;
+      }
+      _headBlk = blk;
+    } else {
+      _headBlk._items[--_headPos] = value;
+    }
+    ++_size;
+  }
+
+  /** Append an item to the back of the deque. */
+  def pushBack(value:ElementType) {
+    ++_mutationIndex;
+    if _tailBlk is null or _tailPos == BlockSize {
+      var blk = Block();
+      _tailPos = 1;
+      blk._prev = _tailBlk;
+      blk._next = null;
+      blk._items[0] = value;
+      if _tailBlk is null {
+        _headBlk = blk;
+        _headPos = 0;
+      } else {
+        _tailBlk._next = blk;
+      }
+      _tailBlk = blk;
+    } else {
+      _tailBlk._items[_tailPos++] = value;
+    }
+    ++_size;
+  }
+
+  /** Remove the item from the front of the deque and return it.
+      Throws: IndexError if the queue is empty. */
+  def popFront -> ElementType {
+    ++_mutationIndex;
+    Preconditions.checkIndex(_size > 0);
+    let result = _headBlk._items[_headPos++];
+    if _headPos == BlockSize {
+      if _headBlk._next is null {
+        _tailBlk = null;
+      } else {
+        _headBlk._next._prev = null;
+      }
+      _headBlk = _headBlk._next;
+      _headPos = 0;
+    }
+    --_size;
+    return result;
+  }
+
+  /** Remove the item from the back of the deque and return it.
+      Throws: IndexError if the queue is empty. */
+  def popBack -> ElementType {
+    ++_mutationIndex;
+    Preconditions.checkIndex(_size > 0);
+    let result = _tailBlk._items[--_tailPos];
+    if _tailPos == 0 {
+      if _tailBlk._prev is null {
+        _headBlk = null;
+      } else {
+        _tailBlk._prev._next = null;
+      }
+      _tailBlk = _tailBlk._prev;
+      _tailPos = BlockSize;
+    }
+    --_size;
+    return result;
+  }
+
+  /** Remove all items from the deque. */
+  def clear() {
+    ++_mutationIndex;
+    _headBlk = _tailBlk = null;
+    _headPos = _tailPos = 0;
+    _size = 0;
+  }
+
+  def copyElements(dstAddr:Address[ElementType], srcOffset:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
+    count = Math.min(count, _size - srcOffset);
+
+    var blk = _headBlk;
+    var pos = _headPos + srcOffset;
+
+    // Skip over srcOffset elements.
+    while pos >= BlockSize {
+      if blk is null { return; }
+      pos -= BlockSize;
+      blk = blk._next;
+    }
+
+    // Do all blocks except for last
+    while count > 0 and blk is not null and blk._next is not null {
+      let remaining = Math.min(count, BlockSize - pos);
+      Memory.arrayCopy(dstAddr, Memory.addressOf(blk._items[pos]), remaining);
+      dstAddr += remaining;
+      count -= remaining;
+      blk = blk._next;
+      pos = 0;
+    }
+
+    // Do last block
+    if count > 0 and blk is not null and pos < _tailPos {
+      Memory.arrayCopy(dstAddr, Memory.addressOf(blk._items[pos]), _tailPos - pos);
+    }
+  }
+
+  def iterate -> Iterator[ElementType] {
+    return DequeIterator(self);
+  }
+
+  /** Iterator class for Deque.
+      InheritDoc: members */
+  @Coalesce private final class DequeIterator : Iterator[ElementType], HasLength {
+    private let deque:Deque;
+    private var blk:Block?;
+    private var pos:int;
+    private var mutationIndex:int;
+
+    def construct(deque:Deque) {
+      self.deque = deque;
+      self.blk = deque._headBlk;
+      self.pos = deque._headPos;
+      self.mutationIndex = deque._mutationIndex;
+    }
+
+    def next -> ElementType or void {
+      if deque._mutationIndex != mutationIndex {
+        throw ConcurrentMutationError();
+      }
+      if blk is null {
+        return;
+      }
+      let result = blk._items[pos++];
+      if pos >= (if blk is deque._tailBlk { deque._tailPos } else { BlockSize }) {
+        blk = blk._next;
+        pos = 0;
+      }
+      return result;
+    }
+
+    def length:int { get { return deque.size; } }
+  }
+}

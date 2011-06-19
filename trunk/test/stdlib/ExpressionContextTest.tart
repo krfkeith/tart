@@ -1,0 +1,161 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(ExpressionContextTest);
+}
+
+class ExpressionContextTest : Test {
+  // Dummy method to insure optimizer doesn't convert sequence block into a single expression node.
+  def dummy {}
+
+  // Basic block
+
+  def testBlockExpression {
+    // Return a known type from a block (bottom-up type inference)
+    let a0 = { int(1) };
+    assertEq(1, a0);
+    let a1 = { dummy(); int(1) };
+    assertEq(1, a1);
+  }
+
+  def testBlockExpressionUntypedInts {
+    // Return an unsized int type from a block
+    let a = { 1 };
+    assertEq(1, a);
+  }
+
+  def testBlockExpressionWithImplicitCast {
+    // Top-down type inference
+    let a0:ubyte = { 1 };
+    assertEq(1, a0);
+    let a1:ubyte = { dummy(); 1 };
+    assertEq(1, a1);
+  }
+
+  def testBlockExpressionWithConversion {
+    // Top-down type conversion
+    let a0:String = { 1 };
+    assertEq("1", a0);
+    let a1:String = { dummy(); 1 };
+    assertEq("1", a1);
+  }
+
+  // Simple if
+
+  def testIfExpression {
+    // Return known types
+    let a0 = if true { int(1) } else { int(0) };
+    assertEq(1, a0);
+    let a1 = if true { dummy(); int(1) } else { dummy(); int(0) };
+    assertEq(1, a1);
+  }
+
+/*  def testIfExpressionUntypedInts {
+    // Choose result size based on multiple values.
+    let a0 = if true { 1 } else { 0 };
+    assertEq(1, a0);
+    let a1 = if true { dummy(); 1 } else { dummy(); 0 };
+    assertEq(1, a1);
+  } */
+
+  def testIfExpressionWithConversion {
+    let a0:String = if true { int(1) } else { int(0) };
+    assertEq("1", a0);
+    let a1:String = if true { dummy(); int(1) } else { dummy(); int(0) };
+    assertEq("1", a1);
+  }
+
+  def testIfExpressionImplicitCast {
+    let a0:ubyte = if true { 1 } else { 0 };
+    assertEq(1, a0);
+    let a1:ubyte = if true { dummy(); 1 } else { dummy(); 0 };
+    assertEq(1, a1);
+  }
+
+  def testIfExpressionWithDifferentTypes {
+    let a0 = if true { int8(1) } else { int16(0) };
+    assertEq(1, a0);
+    let a1 = if true { dummy(); int8(1) } else { dummy(); int16(0) };
+    assertEq(1, a1);
+  }
+
+  def testIfExpressionWithDifferentConversions {
+    let a0:String = if true { "Yeah" } else { int(0) };
+    assertEq("Yeah", a0);
+    let a1:String = if true { dummy(); "Yeah" } else { dummy(); int(0) };
+    assertEq("Yeah", a1);
+  }
+
+  def testIfExpressionWithNonLocalExit {
+    let a1:String = if true { dummy(); "Yeah" } else { return; };
+    assertEq("Yeah", a1);
+  }
+
+  // Chained if
+
+  def testElseIfExpression {
+    let a0 = if true { int(1) } else if false { int(2) } else { int(0) };
+    assertEq(1, a0);
+    let a1:ubyte = if true { dummy(); int(1) }
+                   else if false { dummy(); int(2) }
+                   else { dummy(); int(0) };
+    assertEq(1, a1);
+  }
+
+  def testElseIfExpressionWithImplicitCast {
+    let a0:ubyte = if true { 1 } else if false { 2 } else { 0 };
+    assertEq(1, a0);
+    let a1:ubyte = if true { dummy(); 1 } else if false { dummy(); 2 } else { dummy(); 0 };
+    assertEq(1, a1);
+  }
+
+  def testElseIfExpressioWithDifferentTypes {
+    let a0 = if true { uint8(1) } else if false { uint16(2) } else { uint32(0) };
+    assertEq(1, a0);
+    let a1 = if true { dummy(); uint8(1) }
+             else if false { dummy(); uint16(2) }
+             else { dummy(); uint32(0) };
+    assertEq(1, a1);
+  }
+
+  def testElseIfExpressionWithDifferentConversions {
+    let a0:String = if true { "Yeah" } else if false { "Nope" } else { int(0) };
+    assertEq("Yeah", a0);
+    let a1:String = if true { dummy(); "Yeah" }
+                    else if false { dummy(); "Nope" }
+                    else { dummy(); int(0) };
+    assertEq("Yeah", a1);
+  }
+
+  // Switch
+
+  def testSwitchExpression {
+    let v = 0;
+    let a0:int = switch v {
+      case 0 { dummy(); 1 }
+      case 1 { dummy(); 2 }
+      case * { dummy(); 3 }
+    };
+    assertEq(1, a0);
+    let a1:int = switch 99 {
+      case 0 { dummy(); 1 }
+      case 1 { dummy(); 2 }
+      case * { dummy(); 3 }
+    };
+    assertEq(3, a1);
+  }
+
+  // Match
+
+  def testMatchExpression {
+    let v:Object = "Hi";
+    let a0:int = match v {
+      as s:String     { dummy(); s.size }
+      as e:Exception  { dummy(); 2 }
+      else            { dummy(); 3 }
+    };
+    assertEq(2, a0);
+  }
+}

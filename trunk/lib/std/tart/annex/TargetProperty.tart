@@ -1,0 +1,7 @@
+/** Attribute that indicates that this property is a global variable whose value is determined
+    at link time based on the selection of the target platform.
+*/
+@Attribute(Attribute.Target.VARIABLE)
+class TargetProperty {
+  @Intrinsic def apply(t:tart.reflect.Field);
+}

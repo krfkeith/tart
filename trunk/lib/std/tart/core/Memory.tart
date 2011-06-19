@@ -1,0 +1,183 @@
+import tart.annex.Intrinsic;
+
+/** Memory utility functions. These functions are inherently unsafe and will cause memory
+    corruption if misused. */
+namespace Memory {
+  // Import built-in type definition.
+  import __Address as Address;
+
+  /** A general interface for allocators. */
+  interface Allocator {
+    /** Allocate 'size' bytes of memory and return it. The memory will not be initialized, and
+        may contain random data. If the allocator is one that supports garbage collection,
+        it must fill in any fields that it needs, such as the '__gcstate' field of class Object. */
+    def alloc(size:uint) -> Address[ubyte];
+
+    /** Explicitly free a region of memory previously allocated by 'alloc'. Not supported by
+        all allocator types. */
+    def free(ptr:Address[ubyte]);
+  }
+
+  /** The default allocator instance for all objects. This calls the garbage collector's
+      GC.alloc() function. */
+  class DefaultAllocator : Allocator {
+    static let INSTANCE = DefaultAllocator();
+
+    @Intrinsic private def __alloc(size:uint) -> Address[ubyte];
+
+    /** Allocate 'size' bytes of memory from the garbage collector's primary heap. The
+        memory will not be initialized, and may contain random data. */
+    def alloc(size:uint) -> Address[ubyte] {
+      return __alloc(size);
+    }
+
+    undef free(ptr:Address[ubyte]);
+  }
+
+  /** Represents a sub-range of an array or list or other container that uses
+      contiguous storage of elements. */
+  struct Buffer[%T] {
+    protected {
+      var _container:Object;  // Reference to the container for GC purposes.
+      var _offset:int;        // Offset from the start of '_container' to the first element.
+      var _size:int;          // Number of elements in the sequence.
+
+      def baseAddress:Address[ubyte] { get {
+        let containerAddress:Address[ubyte] = reinterpretPtr(objectAddress(_container));
+        return addressOf(containerAddress[_offset]);
+      } }
+    }
+
+    /** Construct a Buffer object.
+        Parameters:
+          container - the object that contains the sequence of elements.
+          begin - the address of the first element of the sequence.
+          size - the number of elements in the sequence.
+     */
+    def construct(container:Object, begin:Address[T], size:int) {
+      let offset:int = ptrDiff[ubyte](
+          reinterpretPtr(objectAddress(container)),
+          reinterpretPtr(begin));
+      self.construct(container, offset, size);
+    }
+
+    /** Construct a Buffer object.
+        Parameters:
+          container - the object that contains the sequence of elements.
+          offset - the offset from the container address to the first element.
+          size - the number of elements in the sequence.
+     */
+    def construct(container:Object, offset:int, size:int) {
+      Preconditions.checkArgument(offset > 0);
+      Preconditions.checkArgument(size >= 0);
+      self._container = container;
+      self._offset = offset;
+      self._size = size;
+    }
+
+    /** Read-only access to the beginning of the buffer. */
+    def begin:Address[T] { get { return reinterpretPtr(baseAddress); } }
+
+    /** Read-only access to the end of the buffer. */
+    def end:Address[T] { get { return addressOf(begin[_size]); } }
+
+    /** The number of elements in the sequence. */
+    def size:int { get { return _size; } }
+  }
+
+  /** Extension of Buffer to support mutatbility of elements. */
+  struct MutableBuffer[%T] : Buffer[T] {
+    def mutableBegin:Address[T] { get { return begin(); } }
+    def mutableEnd:Address[T] { get { return end(); } }
+  }
+
+  /** The null pointer, converted to an object reference. */
+  @Intrinsic
+  def nullObject[%ElemTy]() -> ElemTy;
+
+  /** Take the address of a variable and return the result as a native
+      pointer. 'Value' can be a complex expression that resolves to an l-value.
+  */
+  @Intrinsic
+  def addressOf[%T](value:T) -> Address[T];
+
+  /** Convert an object reference into a native address. */
+  @Intrinsic
+  def objectAddress(value:Object) -> Address[Object];
+
+  /** Convert a native address into an object reference. */
+  @Intrinsic
+  def objectReference[%T <: Object](value:Address[T]) -> T;
+
+  /** Return the difference between two pointers. Subtracts the pointer
+      values, and then divides by the size of 'T'. Raises an exception if
+      the value is too large to be contained within a signed integer.
+   */
+  @Intrinsic
+  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
+
+  /** Return the integer value of a pointer. Not guaranteed to be convertible back
+      into a pointer (may be truncated.) */
+  @Intrinsic
+  def ptrToInt[%T](addr:Address[T]) -> uint;
+
+  /** An unchecked cast of one pointer type to another. */
+  @Unsafe @Intrinsic
+  def reinterpretPtr[%S, %T](from:Address[S]) -> Address[T];
+
+  /** An unchecked cast of one type to another. Types must be the same size. */
+  @Unsafe @Intrinsic
+  def bitCast[%S, %T](from:S) -> T;
+
+  /** Dereference a pointer value. */
+  @Unsafe @Intrinsic
+  def deref[%T](from:Address[T]) -> T;
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Does not guarantee correct behavior if the source and destination overlap.
+
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dst: The array containing the destination range.
+        src: The array containing the source range.
+        length: The number of elements to copy.
+   */
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:uint);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Does not guarantee correct behavior if the source and destination overlap.
+
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dstBegin: The start of the destination range.
+        dstEnd: The end of the destination range.
+        src: The start of the source range.
+   */
+  @Unsafe @Intrinsic def arrayCopy[%T](dstBegin:Address[T], dstEnd:Address[T], src:Address[T]);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Handles the case of overlapping ranges.
+
+      The behavior is equivalent to the CLib function memmove().
+      Parameters:
+        dst: The array containing the destination range.
+        dstOffset: The starting index of the destination range.
+        src: The array containing the source range.
+        srcOffset: The starting index of the source ranbge.
+        length: The number of elements to copy.
+   */
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:int);
+  @Unsafe @Intrinsic def arrayMove[%T](dst:Address[T], src:Address[T], length:uint);
+
+  /** Copies a range of elements from one native array to another. Does not check array bounds.
+      Handles the case of overlapping ranges.
+
+      The behavior is equivalent to the CLib function memcpy().
+      Parameters:
+        dstBegin: The start of the destination range.
+        dstEnd: The end of the destination range.
+        src: The start of the source range.
+   */
+  @Unsafe @Intrinsic def arrayMove[%T](dstBegin:Address[T], dstEnd:Address[T], src:Address[T]);
+}

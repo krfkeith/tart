@@ -1,0 +1,72 @@
+/** A length of time in uSecs. There are 10,000 uSecs in a millisecond. */
+// Alternate names: TimeSpan
+struct TimeSpan {
+  let uSecs:int64;
+
+  def construct(uSecs:int64) { self.uSecs = uSecs; }
+}
+
+/** Implements addition operator for TimeSpan + int64 */
+def infixAdd(ls:TimeSpan, rs:int64) -> TimeSpan {
+  return TimeSpan(ls.uSecs + rs);
+}
+
+/** Implements addition operator for TimeSpan + TimeSpan */
+def infixAdd(ls:TimeSpan, rs:TimeSpan) -> TimeSpan {
+  return TimeSpan(ls.uSecs + rs.uSecs);
+}
+
+/** Implements subtraction operator for TimeSpan - int64 */
+def infixSubtract(ls:TimeSpan, rs:TimeSpan) -> TimeSpan {
+  return TimeSpan(ls.uSecs - rs.uSecs);
+}
+
+/** Implements subtraction operator for TimeSpan - TimeSpan */
+def infixSubtract(ls:TimeSpan, rs:int64) -> TimeSpan {
+  return TimeSpan(ls.uSecs - rs);
+}
+
+/** Implements multiplication of TimeSpan * a scalar */
+def infixMultiply(ls:TimeSpan, rs:int64) -> TimeSpan {
+  return TimeSpan(ls.uSecs * rs);
+}
+
+/** Implements division of TimeSpan / a scalar */
+def infixDivide(ls:TimeSpan, rs:int64) -> TimeSpan {
+  return TimeSpan(ls.uSecs / rs);
+}
+
+/** Implements modulus of TimeSpan % a scalar */
+def infixDivide(ls:TimeSpan, rs:int64) -> TimeSpan {
+  return TimeSpan(ls.uSecs % rs);
+}
+
+/** Implements equality comparison for TimeSpan */
+def infixEqual(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs == rs.uSecs;
+}
+
+/** Implements inequality comparison for TimeSpan */
+def infixNotEqual(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs != rs.uSecs;
+}
+
+/** Implements less-than comparison for TimeSpan */
+def infixLT(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs < rs.uSecs;
+}
+
+/** Implements less-than-or-equal comparison for TimeSpan */
+def infixLE(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs <= rs.uSecs;
+}
+
+/** Implements greater-than comparison for TimeSpan */
+def infixGT(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs > rs.uSecs;
+}
+
+/** Implements greater-than-or-equal comparison for TimeSpan */
+def infixGE(ls:TimeSpan, rs:TimeSpan) -> bool {
+  return ls.uSecs >= rs.uSecs;
+}
