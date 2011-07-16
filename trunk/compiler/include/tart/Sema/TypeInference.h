@@ -15,6 +15,8 @@
 
 namespace tart {
 
+class SizingOfConstraint;
+
 /// -------------------------------------------------------------------
 /// Represents a point in the expression hierarchy where the AST node
 /// maps to multiple possible items. The type inferencer attempts to

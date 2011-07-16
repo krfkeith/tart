@@ -120,20 +120,3 @@ TEST_F(UnionTest, Coalesce) {
 }
 
 }
-
-#if 0
-  /** Return true if this union contains only reference types. (Including Null). This means
-      that the type can be represented as a single pointer with no discriminator field. */
-  bool hasRefTypesOnly() const;
-
-  /** Create a typecast from this type to the desired type. */
-  Expr * createDynamicCast(Expr * from, const Type * toType) const;
-
-  // Overrides
-
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
-  bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
-  bool includes(const Type * other) const;
-#endif

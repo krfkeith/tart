@@ -112,7 +112,6 @@ public:
   TypeShape typeShape() const {
     return value_ != NULL ? value_->typeShape() : Shape_Unset;
   }
-  bool includes(const Type * other) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   Expr * nullInitValue() const;
@@ -122,7 +121,7 @@ public:
 
   static inline bool classof(const TypeAssignment *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() == Binding;
+    return type->typeClass() == Assignment;
   }
 
   TypeAssignment(const TypeVariable * target, GC * scope);

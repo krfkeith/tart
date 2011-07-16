@@ -4,19 +4,22 @@
 
 #include "tart/AST/Stmt.h"
 
-#include "tart/Expr/Exprs.h"
 #include "tart/Defn/Module.h"
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/PropertyDefn.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/NamespaceDefn.h"
+
+#include "tart/Expr/Closure.h"
+
+#include "tart/Expr/Exprs.h"
 #include "tart/Expr/Constant.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Defn/PropertyDefn.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Defn/Template.h"
-#include "tart/Expr/Closure.h"
-#include "tart/Defn/NamespaceDefn.h"
+#include "tart/Type/TypeConstraint.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"

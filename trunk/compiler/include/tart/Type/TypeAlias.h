@@ -28,7 +28,6 @@ public:
   bool isSingular() const { return value_->isSingular(); }
   bool isEqual(const Type * other) const { return value_->isEqual(other); }
   bool isSubtypeOf(const Type * other) const { return value_->isSubtypeOf(other); }
-  bool includes(const Type * other) const { return value_->includes(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
   TypeShape typeShape() const { return value_->typeShape(); }
   const llvm::Type * irType() const;

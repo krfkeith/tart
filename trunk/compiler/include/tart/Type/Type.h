@@ -140,20 +140,6 @@ public:
   /** Return true if this type is a subtype of 'other'. */
   virtual bool isSubtypeOf(const Type * other) const = 0;
 
-  /** A type is said to "include" another type if it can represent all possible values
-      of that other type. So for example, 'int' includes 'short', since an int can
-      contain all possible shorts. Note that the include relationship encompasses
-      more than subtyping - a union type includes all its members, even though the
-      members are not considered subtypes in the normal fashion. Inclusiveness does not
-      imply assignability, however - it is covariant so that for example
-      List[Object] includes List[String]. The 'includes' test is only used when selecting
-      between alternate bindings of a template parameter - that is, for a type variable
-      that occurs in two places within a template pattern, and given two type values
-      that could be bound to that type variable, we generally want to choose the more
-      inclusive of the two.
-    */
-  virtual bool includes(const Type * other) const { return isEqual(other); }
-
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
 

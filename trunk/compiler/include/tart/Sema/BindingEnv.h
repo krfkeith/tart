@@ -13,10 +13,6 @@
 #include "tart/CFG/CFG.h"
 #endif
 
-#ifndef TART_TYPE_TYPECONSTRAINT_H
-#include "tart/Type/TypeConstraint.h"
-#endif
-
 #ifndef TART_SEMA_INFER_CONSTRAINTSET_H
 #include "tart/Sema/Infer/ConstraintSet.h"
 #endif
@@ -33,6 +29,8 @@ namespace tart {
 
 class TypeVariable;
 class TypeAssignment;
+class AmbiguousParameterType;
+class AmbiguousResultType;
 class AddressType;
 class TypeLiteralType;
 class NativeArrayType;
@@ -123,9 +121,9 @@ private:
       Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, const Type * value,
       Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousParameterType(SourceContext * source, const ParameterOfConstraint * poc,
+  bool unifyWithAmbiguousParameterType(SourceContext * source, const AmbiguousParameterType * poc,
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousResultType(SourceContext * source, const ResultOfConstraint * roc,
+  bool unifyWithAmbiguousResultType(SourceContext * source, const AmbiguousResultType * roc,
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyAddressType(SourceContext * source, const AddressType * left, const Type * right);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * left,

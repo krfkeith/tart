@@ -1,30 +1,29 @@
 // Definition of all CFG type classes
 
-TYPE_CLASS(Primitive)     // A primitive type
-TYPE_CLASS(Class)         // A composite reference type
-TYPE_CLASS(Struct)        // A composite value type
-TYPE_CLASS(Interface)     // An interface type
-TYPE_CLASS(Protocol)      // A protocol
-TYPE_CLASS(Enum)          // An enumeration type
-TYPE_CLASS(Function)      // A function type
-TYPE_CLASS(Tuple)         // A tuple type
-TYPE_CLASS(Union)         // A disjoint type
-TYPE_CLASS(NAddress)      // A machine address
-TYPE_CLASS(NArray)        // A primitive array of values
-TYPE_CLASS(FlexibleArray) // Zero-length array for object epilogue
-TYPE_CLASS(Unit)          // A type which consists of a single constant value
-TYPE_CLASS(CVQual)        // A const/volatile qualified type
-TYPE_CLASS(TypeLiteral)   // A type of a type literal.
+TYPE_CLASS(Primitive)         // A primitive type
+TYPE_CLASS(Class)             // A composite reference type
+TYPE_CLASS(Struct)            // A composite value type
+TYPE_CLASS(Interface)         // An interface type
+TYPE_CLASS(Protocol)          // A protocol
+TYPE_CLASS(Enum)              // An enumeration type
+TYPE_CLASS(Function)          // A function type
+TYPE_CLASS(Tuple)             // A tuple type
+TYPE_CLASS(Union)             // A disjoint type
+TYPE_CLASS(NAddress)          // A machine address
+TYPE_CLASS(NArray)            // A primitive array of values
+TYPE_CLASS(FlexibleArray)     // Zero-length array for object epilogue
+TYPE_CLASS(Unit)              // A type which consists of a single constant value
+TYPE_CLASS(CVQual)            // A const/volatile qualified type
+TYPE_CLASS(TypeLiteral)       // A type of a type literal.
 
 // Non-type placeholders for types.
-TYPE_CLASS(Alias)         // A named alias for a type expression
-TYPE_CLASS(TypeVar)       // A type variable
-TYPE_CLASS(Binding)       // The value of a type variable within an environment.
+TYPE_CLASS(Alias)             // A named alias for a type expression
+TYPE_CLASS(TypeVar)           // A type variable
+TYPE_CLASS(Assignment)        // The value of a type variable within an environment.
 
-// Type constraints.
-TYPE_CLASS(ResultOf)      // Type constraint - result of function
-TYPE_CLASS(ParameterOf)   // Type constraint - param of function
-TYPE_CLASS(TupleOf)       // Type constraint - tuple of constraints
-TYPE_CLASS(TypeParamOf)   // Type constraint - type parameter of another constraint
-TYPE_CLASS(SizingOf)      // Type constraint - sizing of an unsized int type
-TYPE_CLASS(PhiType)       // Type constraint - possible alternate values
+// Types that have not been completely resolved
+TYPE_CLASS(AmbiguousResult)   // Type constraint - result of function
+TYPE_CLASS(AmbiguousParameter)// Type constraint - param of function
+TYPE_CLASS(AmbiguousPhi)      // Type constraint - possible alternate values
+TYPE_CLASS(TupleOf)           // Type constraint - tuple of constraints
+TYPE_CLASS(SizingOf)          // Type constraint - sizing of an unsized int type

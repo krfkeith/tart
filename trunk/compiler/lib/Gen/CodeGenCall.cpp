@@ -178,7 +178,8 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
 
   // Upcast to type 'object' and load the vtable pointer.
   ValueList indices;
-  for (const CompositeType * t = classType; t != NULL && t != Builtins::typeObject; t = t->super()) {
+  for (const CompositeType * t = classType; t != NULL && t != Builtins::typeObject;
+      t = t->super()) {
     indices.push_back(getInt32Val(0));
   }
   indices.push_back(getInt32Val(0));

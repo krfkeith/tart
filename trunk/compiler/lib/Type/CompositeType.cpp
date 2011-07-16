@@ -542,14 +542,6 @@ bool CompositeType::isSubtypeOf(const Type * other) const {
   return false;
 }
 
-bool CompositeType::includes(const Type * other) const {
-  if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
-    return otherCls->isSubclassOf(this);
-  }
-
-  return false;
-}
-
 Expr * CompositeType::nullInitValue() const {
   if (typeClass() == Class || typeClass() == Interface) {
     return ConstantNull::get(SourceLocation(), this);

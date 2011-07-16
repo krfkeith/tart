@@ -1078,7 +1078,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
     return genConstantEmptyArray(arrayType);
   }
 
-  //diag.debug() << "Generating array literal of type " << elementType << ", length " << arrayLength;
+ //diag.debug() << "Generating array literal of type " << elementType << ", length " << arrayLength;
 
   // Arguments to the array-creation function
   ValueList args;
@@ -1291,7 +1291,8 @@ llvm::Constant * CodeGenerator::genConstantNativeArrayPtr(const ConstantNativeAr
 
 llvm::Constant * CodeGenerator::genConstantNativeArray(const ConstantNativeArray * array) {
   ConstantList elementValues;
-  for (ExprList::const_iterator it = array->elements().begin(); it != array->elements().end(); ++it) {
+  for (ExprList::const_iterator it = array->elements().begin(); it != array->elements().end();
+      ++it) {
     Constant * value = genConstExpr(*it);
     if (value == NULL) {
       return NULL;

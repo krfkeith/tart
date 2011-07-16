@@ -31,7 +31,9 @@
 
 namespace tart {
 
+class CallExpr;
 class SpCandidate;
+class FunctionDefn;
 
 /// -------------------------------------------------------------------
 /// A call candidate

@@ -150,12 +150,12 @@ Constraint * Constraint::intersect(Constraint * c0, Constraint * c1) {
   }
 
   if (c0->kind() == EXACT && c0->value()->isSingular() &&
-      c1->value()->typeClass() == Type::Binding && isMoreLenient0) {
+      c1->value()->typeClass() == Type::Assignment && isMoreLenient0) {
     return c0;
   }
 
   if (c1->kind() == EXACT && c1->value()->isSingular() &&
-      c0->value()->typeClass() == Type::Binding && isMoreLenient1) {
+      c0->value()->typeClass() == Type::Assignment && isMoreLenient1) {
     return c1;
   }
 

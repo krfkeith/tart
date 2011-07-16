@@ -53,7 +53,6 @@ public:
   bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   bool isSingular() const { return true; }
-  bool includes(const Type * other) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
 
   static inline bool classof(const EnumType *) { return true; }

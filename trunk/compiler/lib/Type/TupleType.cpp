@@ -271,16 +271,6 @@ bool TupleType::isSubtypeOf(const Type * other) const {
   return isEqual(other);
 }
 
-bool TupleType::includes(const Type * other) const {
-  for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
-    if (!(*it)->includes(other)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 Expr * TupleType::nullInitValue() const {
   ExprList initializers;
   for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {

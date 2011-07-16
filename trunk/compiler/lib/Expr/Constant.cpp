@@ -71,7 +71,8 @@ ConstantInteger * ConstantInteger::getConstantBool(const SourceLocation & loc, b
       : llvm::ConstantInt::getFalse(llvm::getGlobalContext()));
 }
 
-ConstantInteger * ConstantInteger::get(const SourceLocation & loc, const Type * type, int32_t value) {
+ConstantInteger * ConstantInteger::get(
+    const SourceLocation & loc, const Type * type, int32_t value) {
   const llvm::Type * intType = type->irType();
   return new ConstantInteger(loc, type,
       cast<llvm::ConstantInt>(
@@ -182,7 +183,6 @@ TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, const Type * val)
   , value_(val)
 {
   DASSERT(value_ != NULL);
-//  DASSERT_OBJ(value_->typeClass() != Type::Binding, value_);
 }
 
 bool TypeLiteralExpr::isSingular() const {

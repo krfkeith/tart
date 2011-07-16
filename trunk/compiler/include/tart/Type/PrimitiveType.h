@@ -139,7 +139,6 @@ public:
   }
 
   bool isSubtypeOf(const Type * other) const;
-  bool includes(const Type * other) const;
 
   /** Singleton instance. */
   static PrimitiveTypeImpl instance;
@@ -165,21 +164,6 @@ template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtypeOf(const Type
 
   return false;
 }
-
-template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::includes(const Type * other) const {
-  other = derefEnumType(other);
-  if (other == this) {
-    return true;
-  }
-
-  if (other->typeClass() == Type::Primitive) {
-    const PrimitiveType * ptype = static_cast<const PrimitiveType *>(other);
-    return INCLUDES.contains(ptype->typeId());
-  }
-
-  return false;
-}
-
 
 template<TypeId kTypeId>
 ASTBuiltIn PrimitiveTypeImpl<kTypeId>::biDef(&typedefn);

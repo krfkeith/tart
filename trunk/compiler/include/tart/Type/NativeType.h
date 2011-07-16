@@ -42,7 +42,6 @@ public:
   bool isEqual(const Type * other) const;
   bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
-  bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   void trace() const;
   Expr * nullInitValue() const;

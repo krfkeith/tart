@@ -78,13 +78,12 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::TypeVar:
       return visitTypeVariable(static_cast<const TypeVariable *>(in));
 
-    case Type::Binding:
+    case Type::Assignment:
       return visitTypeAssignment(static_cast<const TypeAssignment *>(in));
 
-    case Type::ResultOf:
-    case Type::ParameterOf:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousParameter:
     case Type::TupleOf:
-    case Type::TypeParamOf:
     case Type::SizingOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 

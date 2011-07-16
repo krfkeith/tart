@@ -95,7 +95,6 @@ public:
   bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const;
-  bool includes(const Type * other) const;
   void format(FormatStream & out) const;
   void trace() const;
   Expr * nullInitValue() const;
