@@ -2,22 +2,30 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Expr/Exprs.h"
 #include "tart/Defn/Module.h"
+#include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Expr/Exprs.h"
 #include "tart/Expr/Constant.h"
+
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Defn/TypeDefn.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/AmbiguousParameterType.h"
+#include "tart/Type/AmbiguousResultType.h"
+
 #include "tart/Objects/Builtins.h"
-#include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
+
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
+
+#include "tart/Common/Diagnostics.h"
+#include "tart/Common/InternedString.h"
+
 #include <llvm/DerivedTypes.h>
 
 namespace tart {
@@ -269,7 +277,8 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & ar
         // Regular function call
         call = new CallExpr(Expr::Call, loc, NULL);
         call->setExpectedReturnType(expected);
-        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end();
+            ++it) {
           SpCandidate * sp = *it;
           if (FunctionDefn * func = dyn_cast<FunctionDefn>(sp->def())) {
             addOverload(call, sp->base(), func, args, sp);
@@ -281,7 +290,8 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & ar
         // Constructor call
         call = new CallExpr(Expr::Construct, loc, NULL);
         call->setExpectedReturnType(expected);
-        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+        for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end();
+            ++it) {
           SpCandidate * sp = *it;
           if (TypeDefn * tdef = dyn_cast<TypeDefn>(sp->def())) {
             if (!AnalyzerBase::analyzeType(tdef->typeValue(), Task_PrepConstruction)) {
@@ -539,7 +549,7 @@ const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
     return ty;
   }
 
-  return new ResultOfConstraint(call);
+  return new AmbiguousResultType(call);
 }
 
 const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
@@ -549,7 +559,7 @@ const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
   }
 
   //return PossibleTypes::forParameter(call, index);
-  return new ParameterOfConstraint(call, index);
+  return new AmbiguousParameterType(call, index);
 }
 
 bool ExprAnalyzer::addOverload(CallExpr * call, Expr * callable, const ASTNodeList & args) {

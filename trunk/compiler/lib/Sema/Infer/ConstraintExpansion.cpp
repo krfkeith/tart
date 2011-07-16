@@ -4,7 +4,8 @@
 
 #include "tart/Expr/Exprs.h"
 
-#include "tart/Type/TypeConstraint.h"
+#include "tart/Type/AmbiguousParameterType.h"
+#include "tart/Type/AmbiguousResultType.h"
 
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/Infer/ConstraintExpansion.h"
@@ -22,7 +23,7 @@ bool ConstraintExpansion::expand(Constraint * s) {
 bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
     const ProvisionSet & provisions) {
   switch (ty->typeClass()) {
-    case Type::Binding: {
+    case Type::Assignment: {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
 
       // If the TA is unconditionally set to a value, then don't bother with
@@ -75,33 +76,8 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
       return !preserveOriginal;
     }
 
-    case Type::TypeParamOf: {
-      const TypeParamOfConstraint * tpoc = static_cast<const TypeParamOfConstraint *>(ty);
-      // Expand the base type.
-      ConstraintExpansion expander(exclude_);
-      if (!expander.expand(tpoc->base(), kind, provisions)) {
-        return false;
-      }
-
-      // If the expansion that came back was just 'base' and nothing more, then return 'unchanged'.
-      const ConstraintSet & cs = expander.result();
-      if (cs.size() == 1 && cs.front()->value() == tpoc->base()) {
-        return false;
-      }
-
-      for (ConstraintSet::const_iterator si = cs.begin(), sEnd = cs.end(); si != sEnd; ++si) {
-        Constraint * c = *si;
-        const Type * st = tpoc->forType(c->value());
-        if (st != NULL) {
-          result_.insertAndOptimize(
-              c->location(), st, Constraint::combine(kind, c->kind()), c->provisions());
-        }
-      }
-      return true;
-    }
-
-    case Type::ParameterOf: {
-      const ParameterOfConstraint * poc = static_cast<const ParameterOfConstraint *>(ty);
+    case Type::AmbiguousParameter: {
+      const AmbiguousParameterType * poc = static_cast<const AmbiguousParameterType *>(ty);
       const Candidates & cd = poc->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
@@ -115,8 +91,8 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
       return true;
     }
 
-    case Type::ResultOf: {
-      const ResultOfConstraint * roc = static_cast<const ResultOfConstraint *>(ty);
+    case Type::AmbiguousResult: {
+      const AmbiguousResultType * roc = static_cast<const AmbiguousResultType *>(ty);
       const Candidates & cd = roc->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;

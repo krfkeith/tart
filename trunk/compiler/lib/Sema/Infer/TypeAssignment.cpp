@@ -23,7 +23,7 @@ extern bool unifyVerbose;
 // TypeAssignment
 
 TypeAssignment::TypeAssignment(const TypeVariable * target, GC * scope)
-  : Type(Binding)
+  : Type(Assignment)
   , next_(NULL)
   , scope_(scope)
   , target_(target)
@@ -81,10 +81,6 @@ bool TypeAssignment::isSubtypeOf(const Type * other) const {
     }
     return any;
   }
-}
-
-bool TypeAssignment::includes(const Type * other) const {
-  return compare(&Type::includes, other);
 }
 
 void TypeAssignment::expand(TypeExpansion & out) const {
@@ -162,7 +158,7 @@ const Type * TypeAssignment::findSingularSolution() {
     for (ConstraintSet::const_iterator ci = begin(); ci != ciEnd; ++ci) {
       Constraint * c = *ci;
       if (c->checkProvisions() && c->kind() == Constraint::UPPER_BOUND && !c->accepts(value_) &&
-          c->value()->typeClass() != Type::Binding) {
+          c->value()->typeClass() != Type::Assignment) {
         value_ = NULL;
         return NULL;
       }

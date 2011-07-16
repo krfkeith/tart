@@ -83,7 +83,7 @@ bool TypeVariable::canBindTo(const Type * value) const {
 
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
-  } else if (value->typeClass() == Type::Binding) {
+  } else if (value->typeClass() == Type::Assignment) {
     return true;
   } else if (valueType_ == NULL) {
     return true;

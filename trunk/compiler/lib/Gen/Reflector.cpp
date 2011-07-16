@@ -22,7 +22,6 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Type/TypeOrdering.h"
 #include "tart/Type/UnionType.h"
 
 #include "tart/Objects/Builtins.h"

@@ -15,6 +15,7 @@
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/NativeType.h"
+#include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Sema/FinalizeTypesPassImpl.h"
 #include "tart/Sema/CallCandidate.h"
@@ -821,8 +822,8 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
   CFGPass::visitIf(in);
-  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
-    const Type * singularCommon = getCommonPHIType(phi);
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
+    const Type * singularCommon = getCommonPhiType(phi);
     if (singularCommon) {
       in->setType(singularCommon);
     }
@@ -840,7 +841,7 @@ Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
   CFGPass::visitSwitch(in);
-  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
     if (phi->common() != NULL) {
       in->setType(phi->common());
     }
@@ -861,7 +862,7 @@ Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
   CFGPass::visitMatch(in);
-  if (const PHIConstraint * phi = dyn_cast_or_null<PHIConstraint>(in->type())) {
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
     if (phi->common() != NULL) {
       in->setType(phi->common());
     }
@@ -907,7 +908,7 @@ Expr * FinalizeTypesPassImpl::chooseIntSize(Expr * in) {
   return ptype->implicitCast(in->location(), cintVal);
 }
 
-const Type * FinalizeTypesPassImpl::getCommonPHIType(const PHIConstraint * phi) {
+const Type * FinalizeTypesPassImpl::getCommonPhiType(const AmbiguousPhiType * phi) {
   if (const TypeConstraint * tc = dyn_cast_or_null<TypeConstraint>(phi->common())) {
     if (tc->singularValue() != NULL) {
       return tc->singularValue();

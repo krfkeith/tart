@@ -14,6 +14,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeAlias.h"
+#include "tart/Type/TypeConstraint.h"
 
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"

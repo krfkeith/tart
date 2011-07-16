@@ -18,6 +18,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -117,7 +118,7 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
     if (elseExpr == NULL) {
       diag.error(st) << "If-statement used in expression context must have an else block";
     } else {
-      PHIConstraint * phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+      AmbiguousPhiType * phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
       phiType->add(thenExpr->type());
       phiType->add(elseExpr->type());
       result->setType(phiType);
@@ -431,9 +432,9 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
     diag.error(st) << "Invalid expression type for switch statement: " << testType;
   }
 
-  PHIConstraint * phiType = NULL;
+  AmbiguousPhiType * phiType = NULL;
   if (expected != NULL) {
-    phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
     swe->setType(phiType);
   }
 
@@ -554,9 +555,9 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
 
   MatchExpr * me = new MatchExpr(st->location(), implicitScope, testExpr);
 
-  PHIConstraint * phiType = NULL;
+  AmbiguousPhiType * phiType = NULL;
   if (expected != NULL) {
-    phiType = new PHIConstraint(expected == &AnyType::instance ? NULL : expected);
+    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
     me->setType(phiType);
   }
 

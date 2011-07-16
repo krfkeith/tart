@@ -203,7 +203,6 @@ public:
   bool isSingular() const;
   bool isReferenceType() const;
   TypeShape typeShape() const;
-  bool includes(const Type * other) const;
   Expr * nullInitValue() const;
   bool containsReferenceType() const;
 

@@ -28,15 +28,6 @@ bool EnumType::isSubtypeOf(const Type * other) const {
   return false;
 }
 
-bool EnumType::includes(const Type * other) const {
-  if (this->isEqual(other)) {
-    return true;
-  }
-
-  // TODO: Only if other is an enum type and inherits from this?
-  return false;
-}
-
 ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (fromType == this) {

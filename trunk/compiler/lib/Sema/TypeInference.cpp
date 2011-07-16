@@ -13,6 +13,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TypeConstraint.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/TypeInference.h"
@@ -102,12 +103,10 @@ void CallSite::cullBySpecificity(int searchDepth) {
     bool addNew = true;
     bool trace = AnalyzerBase::isTraceEnabled(call->method());
     for (Candidates::iterator ms = mostSpecific.begin(); ms != mostSpecific.end();) {
-//      if ((*ms)->isCulled()) {
-//        continue;
-//      }
-
-      bool newIsBetter = call->isMoreSpecific(*ms) && call->conversionRank() >= (*ms)->conversionRank();
-      bool oldIsBetter = (*ms)->isMoreSpecific(call) && (*ms)->conversionRank() >= call->conversionRank();
+      bool newIsBetter = call->isMoreSpecific(*ms) &&
+          call->conversionRank() >= (*ms)->conversionRank();
+      bool oldIsBetter = (*ms)->isMoreSpecific(call) &&
+          (*ms)->conversionRank() >= call->conversionRank();
       if (newIsBetter) {
         if (!oldIsBetter) {
           if (ShowInference || trace) {
@@ -323,7 +322,6 @@ void AssignmentSite::update() {
 }
 
 void AssignmentSite::report() {
-
 }
 
 // -------------------------------------------------------------------
@@ -342,64 +340,50 @@ void TupleCtorSite::update() {
 }
 
 void TupleCtorSite::report() {
-
 }
 
 // -------------------------------------------------------------------
 // PHISite
 
 void PHISite::update() {
-  const PHIConstraint * phiType = cast<PHIConstraint>(expr_->type());
+  const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
   TypeExpansion types;
-  ConstTypeList solutions;
+  const Type * solution = NULL;
 
   phiType->expand(types);
   if (phiType->expected() != NULL) {
-    solutions.push_back(phiType->expected());
+    solution = phiType->expected();
   } else {
     // Try to find a common type that encompasses all input types.
-    // TODO: Use coercions of needed.
+    // TODO: Use coercions if needed.
     for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
-      const Type * newType = *it;
-      DASSERT(newType != NULL);
-      bool addNew = true;
-      for (ConstTypeList::iterator s = solutions.begin(); s != solutions.end();) {
-        const Type * oldType = *s;
-        if (oldType->includes(newType)) {
-          addNew = false;
+      const Type * ty = *it;
+      if (solution == NULL) {
+        solution = ty;
+      } else {
+        solution = Type::commonBase(solution, ty);
+        if (solution == NULL) {
           break;
-        } else if (newType->includes(oldType)) {
-          s = solutions.erase(s);
-        } else {
-          ++s;
         }
-      }
-
-      if (addNew) {
-        solutions.push_back(newType);
       }
     }
   }
 
-  if (solutions.size() == 1) {
+  phiType->setCommon(solution);
+  if (solution != NULL) {
     // Compute the lowest conversion ranking of all input types to the solution.
     rank_ = IdenticalTypes;
-    const Type * solution = solutions.front();
 //    if (solution->isUnsignedType()) {
 //      solution = &Int32Type::instance;
 //    }
     for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
       rank_ = std::min(rank_, solution->canConvert(*it, Conversion::Coerce));
     }
-
-    phiType->setCommon(solution);
-  } else {
-    phiType->setCommon(NULL);
   }
 }
 
 void PHISite::report() {
-  const PHIConstraint * phiType = cast<PHIConstraint>(expr_->type());
+  const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
   TypeExpansion types;
   phiType->expand(types);
   diag.info() << "expression: " << expr_;
@@ -486,7 +470,7 @@ Expr * GatherConstraintsPass::visitMatch(MatchExpr * in) {
 }
 
 void GatherConstraintsPass::visitPHI(Expr * in) {
-  if (isa<PHIConstraint>(in->type())) {
+  if (isa<AmbiguousPhiType>(in->type())) {
     constraints_.push_back(new PHISite(in));
   }
 }

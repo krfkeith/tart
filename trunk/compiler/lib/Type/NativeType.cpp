@@ -165,14 +165,6 @@ bool AddressType::isSubtypeOf(const Type * other) const {
   return false;
 }
 
-bool AddressType::includes(const Type * other) const {
-  if (const AddressType * np = dyn_cast<AddressType>(other)) {
-    return elementType_->includes(np->elementType_);
-  }
-
-  return false;
-}
-
 Expr * AddressType::nullInitValue() const {
   return ConstantNull::get(SourceLocation(), this);
 }

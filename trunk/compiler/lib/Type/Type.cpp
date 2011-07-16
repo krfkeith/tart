@@ -15,7 +15,8 @@
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Type/TypeConstraint.h"
+#include "tart/Type/AmbiguousParameterType.h"
+#include "tart/Type/AmbiguousResultType.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -332,7 +333,7 @@ bool Type::isBoxableType() const {
 }
 
 bool Type::isScaffold() const {
-  if (cls == Binding) {
+  if (cls == Assignment) {
     return true;
   }
   Defn * de = typeDefn();
@@ -578,8 +579,8 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
 
   // Special case for ambiguous base types.
   switch (base->typeClass()) {
-    case Type::ParameterOf: {
-      const ParameterOfConstraint * poc = static_cast<const ParameterOfConstraint *>(base);
+    case Type::AmbiguousParameter: {
+      const AmbiguousParameterType * poc = static_cast<const AmbiguousParameterType *>(base);
       const Candidates & cd = poc->candidates();
       bool any = false;
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -594,8 +595,8 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
       break;
     }
 
-    case Type::ResultOf: {
-      const ResultOfConstraint * roc = static_cast<const ResultOfConstraint *>(base);
+    case Type::AmbiguousResult: {
+      const AmbiguousResultType * roc = static_cast<const AmbiguousResultType *>(base);
       const Candidates & cd = roc->candidates();
       bool any = false;
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -610,7 +611,7 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
       break;
     }
 
-    case Type::Binding: {
+    case Type::Assignment: {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(base);
       if (ta->value() != NULL) {
         return isSubtype(ty, ta->value());
@@ -653,8 +654,8 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
       return false;
     }
 
-    case Type::ParameterOf: {
-      const ParameterOfConstraint * poc = static_cast<const ParameterOfConstraint *>(ty);
+    case Type::AmbiguousParameter: {
+      const AmbiguousParameterType * poc = static_cast<const AmbiguousParameterType *>(ty);
       const Candidates & cd = poc->candidates();
       bool any = false;
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -669,8 +670,8 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
       break;
     }
 
-    case Type::ResultOf: {
-      const ResultOfConstraint * roc = static_cast<const ResultOfConstraint *>(ty);
+    case Type::AmbiguousResult: {
+      const AmbiguousResultType * roc = static_cast<const AmbiguousResultType *>(ty);
       const Candidates & cd = roc->candidates();
       bool any = false;
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -685,7 +686,7 @@ bool Type::isSubtype(const Type * ty, const Type * base) {
       break;
     }
 
-    case Type::Binding: {
+    case Type::Assignment: {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
       if (ta->value() != NULL) {
         return isSubtype(ta->value(), base);

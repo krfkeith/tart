@@ -10,7 +10,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Type/TypeOrdering.h"
+#include "tart/Type/LexicalTypeOrdering.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -413,16 +413,6 @@ bool UnionType::isSubtypeOf(const Type * other) const {
   // TODO: Is this meaningful with unions?
   return isEqual(other);
   //DFAIL("Implement");
-}
-
-bool UnionType::includes(const Type * other) const {
-  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if ((*it)->includes(other)) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 Expr * UnionType::nullInitValue() const {

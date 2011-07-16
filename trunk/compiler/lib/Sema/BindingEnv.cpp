@@ -12,6 +12,8 @@
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
+#include "tart/Type/AmbiguousParameterType.h"
+#include "tart/Type/AmbiguousResultType.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -150,25 +152,25 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
 
   // Ambiguous type on the left side.
   switch (left->typeClass()) {
-    case Type::ResultOf:
+    case Type::AmbiguousResult:
       return unifyWithAmbiguousResultType(
-          source, static_cast<const ResultOfConstraint *>(left), right, kind, provisions);
-    case Type::ParameterOf:
+          source, static_cast<const AmbiguousResultType *>(left), right, kind, provisions);
+    case Type::AmbiguousParameter:
       return unifyWithAmbiguousParameterType(
-          source, static_cast<const ParameterOfConstraint *>(left), right, kind, provisions);
+          source, static_cast<const AmbiguousParameterType *>(left), right, kind, provisions);
     default:
       break;
   }
 
   // Ambiguous type on the right.
   switch (right->typeClass()) {
-    case Type::ResultOf:
+    case Type::AmbiguousResult:
       return unifyWithAmbiguousResultType(
-          source, static_cast<const ResultOfConstraint *>(right), left,
+          source, static_cast<const AmbiguousResultType *>(right), left,
           Constraint::reverse(kind), provisions);
-    case Type::ParameterOf:
+    case Type::AmbiguousParameter:
       return unifyWithAmbiguousParameterType(
-          source, static_cast<const ParameterOfConstraint *>(right), left,
+          source, static_cast<const AmbiguousParameterType *>(right), left,
           Constraint::reverse(kind), provisions);
     default:
       break;
@@ -565,7 +567,7 @@ bool BindingEnv::unifyWithTypeVar(
 }
 
 bool BindingEnv::unifyWithAmbiguousParameterType(SourceContext * source,
-    const ParameterOfConstraint * poc, const Type * value, Constraint::Kind kind,
+    const AmbiguousParameterType * poc, const Type * value, Constraint::Kind kind,
     const ProvisionSet & provisions) {
   bool success = false;
   const Candidates & cd = poc->expr()->candidates();
@@ -587,7 +589,7 @@ bool BindingEnv::unifyWithAmbiguousParameterType(SourceContext * source,
 }
 
 bool BindingEnv::unifyWithAmbiguousResultType(SourceContext * source,
-    const ResultOfConstraint * roc, const Type * value, Constraint::Kind kind,
+    const AmbiguousResultType * roc, const Type * value, Constraint::Kind kind,
     const ProvisionSet & provisions) {
   bool success = false;
   const Candidates & cd = roc->expr()->candidates();
