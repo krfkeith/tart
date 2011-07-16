@@ -192,28 +192,6 @@ ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversio
   }
 
   return rank;
-
-#if 0
-
-
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = toType->canConvert(paramType);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
-  }
-
-  return best;
-#endif
 }
 
 ConversionRank TupleOfConstraint::convertImpl(const Conversion & conversion) const {
