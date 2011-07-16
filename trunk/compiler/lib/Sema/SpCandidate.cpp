@@ -135,6 +135,7 @@ ConversionRank SpCandidate::updateConversionRank() {
   for (size_t i = 0; i < args_->size(); ++i) {
     const Type * pattern = (*params_)[i];
     const Type * value = (*args_)[i];
+    AnalyzerBase::analyzeType(value, Task_PrepTypeComparison);
     conversionRank_ = std::min(conversionRank_, pattern->canConvert(value));
   }
 
