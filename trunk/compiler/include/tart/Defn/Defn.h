@@ -39,7 +39,7 @@ class MDNode;
 namespace tart {
 
 class FunctionType;
-class TemplateSignature;
+class Template;
 class TemplateInstance;
 class Intrinsic;
 class PropertyDefn;
@@ -77,6 +77,7 @@ public:
     PartialInstantiation,   // A template instance whose variables are unbound template params.
     RequestStackTrace,      // Set on catch variables that want stack tracing.
     Mergeable,              // Request type weakening (coalesce with more general version.)
+    Scaffold,               // Temporary definition used for type inference
 
     TraitCount,
   };
@@ -86,7 +87,7 @@ public:
 protected:
   friend class OrderedSymbolTable;
   friend class IterableScope;
-  friend class TemplateSignature;
+  friend class Template;
   friend class TemplateInstance;
 
   DefnType defnType_;         // What type of defn this is
@@ -101,7 +102,7 @@ protected:
   Defn * nextInScope_;        // Pointer to the next defn in parent scope
   llvm::SmallString<0> qname_;// Fully-qualified name.
   mutable llvm::SmallString<0> lnkName;// External linkage name
-  TemplateSignature * tsig_;  // Template signature
+  Template * tsig_;  // Template signature
   TemplateInstance * tinst_;  // Template arguments
   ExprList attrs_;            // List of attributes
   Traits traits_;             // Traits of this defn
@@ -170,6 +171,7 @@ public:
   bool isSynthetic() const { return traits_.contains(Synthetic); }
   bool isReflected() const { return traits_.contains(Reflect); }
   bool isUnsafe() const { return traits_.contains(Unsafe); }
+  bool isScaffold() const { return traits_.contains(Scaffold); }
 
   void setSingular(bool t) {
     if (t) {
@@ -225,9 +227,9 @@ public:
   bool hasUnboundTypeParams() const;
 
   /** Return the template signature object. */
-  const TemplateSignature * templateSignature() const { return tsig_; }
-  TemplateSignature * templateSignature() { return tsig_; }
-  void setTemplateSignature(TemplateSignature * tsig) { tsig_ = tsig; }
+  const Template * templateSignature() const { return tsig_; }
+  Template * templateSignature() { return tsig_; }
+  void setTemplateSignature(Template * tsig) { tsig_ = tsig; }
 
   /** Return true if this declaration is a template. */
   bool isTemplateInstance() const { return tinst_ != NULL; }

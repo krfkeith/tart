@@ -42,7 +42,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
     return callExpr(call->location(), cast<TypeDefn>(tdef)->asExpr(), args, expected);
   } else if (callable->nodeType() == ASTNode::GetElement) {
     return callExpr(call->location(), reduceElementRef(
-        static_cast<const ASTOper *>(callable), false), args, expected);
+        static_cast<const ASTOper *>(callable), false, true), args, expected);
   }
 
   diag.fatal(call) << "Not a callable expression " << call;
@@ -284,17 +284,14 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & ar
         for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
           SpCandidate * sp = *it;
           if (TypeDefn * tdef = dyn_cast<TypeDefn>(sp->def())) {
-            //DASSERT(candidates.size() == 1);
             if (!AnalyzerBase::analyzeType(tdef->typeValue(), Task_PrepConstruction)) {
               return &Expr::ErrorVal;
             }
 
-            // TODO: Do we need to pass in spCandidate?
             checkAccess(loc, tdef);
             if (!addOverloadedConstructors(loc, call, tdef, args, sp)) {
               return &Expr::ErrorVal;
             }
-            //return callConstructor(loc, tdef, args);
           } else {
             diag.error(loc) << sp->def() << " is incompatible with " << spFront->def();
           }
@@ -375,7 +372,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
   }
 
   CallExpr * call = new CallExpr(Expr::Construct, loc, tdef->asExpr());
-  call->setExpectedReturnType(type);
+  //call->setExpectedReturnType(type);
 
   if (!addOverloadedConstructors(loc, call, tdef, args, NULL)) {
     return &Expr::ErrorVal;
@@ -394,6 +391,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
   Type * type = tdef->typeValue();
   DefnList methods;
   if (tdef->isTemplate() && tdef->hasUnboundTypeParams()) {
+    analyzeType(type, Task_PrepConstruction);
     if (lookupTemplateMember(methods, tdef, istrings.idConstruct, loc)) {
       Expr * newExpr = new NewExpr(loc, type);
       DASSERT(!methods.empty());
@@ -533,7 +531,7 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
 
 const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
   const Type * ty = call->singularResultType();
-  if (ty != NULL) {
+  if (ty != NULL && ty->isSingular()) {
     if (call->isSingular()) {
       DASSERT_OBJ(ty->isSingular(), call);
     }
@@ -546,10 +544,11 @@ const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
 
 const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
   const Type * ty = call->singularParamType(index);
-  if (ty != NULL) {
+  if (ty != NULL && ty->isSingular()) {
     return ty;
   }
 
+  //return PossibleTypes::forParameter(call, index);
   return new ParameterOfConstraint(call, index);
 }
 

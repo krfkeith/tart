@@ -16,14 +16,14 @@ public class CompositeType : Type {
     var _nameIndex:int16;
     var _size:uint;
     let _typeInfo:Address[TypeInfoBlock];
-    var _supertype:optional CompositeType;
+    var _supertype:CompositeType?;
     var _interfaces:List[Type];
     var _typeParams:List[Type];
     var _attributes:List[Object];
     var _fields:List[Field];
     var _properties:List[Property];
-    var _constructors:optional List[Method];
-    var _methods:optional List[Method];
+    var _constructors:List[Method]?;
+    var _methods:List[Method]?;
     var _memberTypes:List[Type];
     var _noArgCtor:static fn :Object -> Object;
     // Need type adapter functions for structs.
@@ -66,7 +66,7 @@ public class CompositeType : Type {
   final def typeInfo:Address[TypeInfoBlock] { get { return _typeInfo; } }
 
   /** Pointer to this type's supertype, or null. */
-  final def supertype:optional CompositeType { get { return _supertype; } }
+  final def supertype:CompositeType? { get { return _supertype; } }
 
   /** Array of inherited interfaces. */
   final def interfaces:List[Type] { get { return self._interfaces; } }
@@ -119,7 +119,7 @@ public class CompositeType : Type {
   }
 
   /** Return the first method whose name is 'name'. */
-  def findMethod(name:String) -> optional Method {
+  def findMethod(name:String) -> Method? {
     for m in methods {
       if m.name == name {
         return m;
@@ -231,7 +231,7 @@ public class CompositeType : Type {
   }
 
   /** Return the first attribute of type 'attrType'. */
-  final def findAttribute[%T](attrType:TypeLiteral[T]) -> optional T {
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> T? {
     for attr in _attributes {
       match attr as result:T {
         return result;

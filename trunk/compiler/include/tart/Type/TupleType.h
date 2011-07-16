@@ -50,7 +50,7 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const;
   bool includes(const Type * other) const;

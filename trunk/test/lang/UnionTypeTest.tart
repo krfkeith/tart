@@ -174,7 +174,7 @@ class UnionTypeTest : Test {
 	}
 
 	def testOptionalType {
-    var x:optional String;
+    var x:String?;
 
     x = "Hello";
     assertEq(5, x.size);

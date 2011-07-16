@@ -9,6 +9,10 @@
 #include "tart/CFG/CFG.h"
 #endif
 
+#ifndef TART_DEFN_TEMPLATE_H
+#include "tart/Defn/Template.h"
+#endif
+
 #ifndef TART_TYPE_TYPE_H
 #include "tart/Type/Type.h"
 #endif
@@ -23,27 +27,40 @@
 
 namespace tart {
 
+class RelabelTransform;
+
 /// -------------------------------------------------------------------
 /// A candidate for template specialization
 class SpCandidate : public GC {
 public:
-  SpCandidate(Expr *base, Defn * tdef, TupleType * args);
+  SpCandidate(Expr *base, Defn * tdef, const TupleType * args);
 
   /** The definition that has type arguments. */
   Defn * def() const { return def_; }
 
-  /** The type arguments. */
+  /** The input type arguments. */
   const TupleType * args() const { return args_; }
+
+  /** The list of template parameters. */
+  const TupleType * params() const { return params_; }
+  void setParams(const TupleType * params) {
+    params_ = params;
+  }
 
   /** Base expression used, if any. */
   Expr * base() const { return base_; }
 
-  /** The binding environment which maps pattern variables to values. */
-  const BindingEnv & env() const { return env_; }
-  BindingEnv & env() { return env_; }
+  /** Rename all type variables in the type signature, as preparation for unification. */
+  void relabelTypeVars(BindingEnv & env);
+
+  /** Rename all type variables, using an externally-supplied mapping. */
+  void relabelTypeVars(RelabelTransform & rt);
 
   /** Perform unification on the candidate and its arguments. */
-  bool unify(SourceContext * source);
+  bool unify(SourceContext * source, BindingEnv & env);
+
+  /** Convert this specialization candidate to a type. */
+  Type * toType(SourceContext * source, BindingEnv & env);
 
   /** Return true if this specified call candidate has the same type as this one. */
   bool isEqual(const SpCandidate * other) const;
@@ -66,8 +83,8 @@ private:
   Expr * base_;
   const TupleType * args_;
   const TupleType * params_;
+  ConstTypeList typeParamDefaults_;
   TemplateConditionList conditions_;
-  BindingEnv env_;
   ConversionRank conversionRank_;
 };
 

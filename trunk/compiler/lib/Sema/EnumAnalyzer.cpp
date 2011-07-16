@@ -249,11 +249,12 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
       if (target_->mdNode() == NULL && !target_->ast()->attributes().empty()) {
         type->setIsFlags(true);
       }
-    } else if (!resolveAttributes(target_)) {
-      return false;
+    } else if (type->passes().begin(EnumType::AttributePass)) {
+      if (!resolveAttributes(target_)) {
+        return false;
+      }
+      type->passes().finish(EnumType::AttributePass);
     }
-
-    type->passes().finish(EnumType::AttributePass);
   }
 
   if (passesToRun.contains(EnumType::BaseTypePass) &&

@@ -267,7 +267,7 @@ bool TupleType::isSingular() const {
   return true;
 }
 
-bool TupleType::isSubtype(const Type * other) const {
+bool TupleType::isSubtypeOf(const Type * other) const {
   return isEqual(other);
 }
 

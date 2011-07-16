@@ -237,13 +237,12 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
     GlobalVariable * fieldOffsetsVar = new GlobalVariable(*irModule_,
         fieldOffsetsTable->getType(), true, GlobalValue::LinkOnceODRLinkage,
         fieldOffsetsTable, Twine(fieldOffsetsName));
-    llvm::Constant * tableEntryFields[4];
-    tableEntryFields[0] = getInt16Val(0);
-    tableEntryFields[1] = getInt16Val(fieldOffsets.size());
-    tableEntryFields[2] = getInt32Val(0);
-    tableEntryFields[3] = llvm::ConstantExpr::getPointerCast(
-        fieldOffsetsVar, fieldOffsetArrayType);
-    llvm::Constant * tableEntry = ConstantStruct::get(context_, tableEntryFields, 4, false);
+    llvm::Constant * tableEntry = getStructVal(
+        getInt16Val(0),
+        getInt16Val(fieldOffsets.size()),
+        getInt32Val(0),
+        llvm::ConstantExpr::getPointerCast(fieldOffsetsVar, fieldOffsetArrayType),
+        NULL);
     traceTable.insert(traceTable.begin(), tableEntry);
   }
 
@@ -254,12 +253,12 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   // Mark the last entry in the table. This needs to be done by replacing, rather than by
   // patching the entry.
   llvm::ConstantStruct * finalEntry = cast<ConstantStruct>(traceTable.back());
-  llvm::Constant * finalEntryFields[4];
-  finalEntryFields[0] = getInt16Val(1);
-  finalEntryFields[1] = finalEntry->getOperand(1);
-  finalEntryFields[2] = finalEntry->getOperand(2);
-  finalEntryFields[3] = finalEntry->getOperand(3);
-  traceTable[traceTable.size() - 1] = ConstantStruct::get(context_, finalEntryFields, 4, false);
+  traceTable[traceTable.size() - 1] = getStructVal(
+      getInt16Val(1),
+      finalEntry->getOperand(1),
+      finalEntry->getOperand(2),
+      finalEntry->getOperand(3),
+      NULL);
 
   llvm::Constant * traceTableValue = ConstantArray::get(
       ArrayType::get(traceDescriptorType, traceTable.size()), traceTable);
@@ -321,13 +320,12 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, builder_.getInt32Ty());
         const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
 
-        llvm::Constant * descriptorFields[4];
-        descriptorFields[0] = getInt16Val(0);
-        descriptorFields[1] = getInt16Val(0);
-        descriptorFields[2] = fieldOffset;
-        descriptorFields[3] = llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType);
-
-        llvm::Constant * desc = ConstantStruct::get(context_, descriptorFields, 4, false);
+        llvm::Constant * desc = getStructVal(
+            getInt16Val(0),
+            getInt16Val(0),
+            fieldOffset,
+            llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType),
+            NULL);
         traceTable.push_back(desc);
       }
       break;
@@ -392,13 +390,12 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
     Function * traceMethod = genFunctionValue(*it);
     DASSERT(traceMethod != NULL);
 
-    llvm::Constant * descriptorFields[4];
-    descriptorFields[0] = getInt16Val(0);
-    descriptorFields[1] = getInt16Val(0);
-    descriptorFields[2] = getInt32Val(0);
-    descriptorFields[3] = llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType);
-
-    llvm::Constant * desc = ConstantStruct::get(context_, descriptorFields, 4, false);
+    llvm::Constant * desc = getStructVal(
+        getInt16Val(0),
+        getInt16Val(0),
+        getInt32Val(0),
+        llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType),
+        NULL);
     traceTable.push_back(desc);
   }
 }
@@ -578,15 +575,15 @@ void CodeGenerator::emitStaticRoots() {
     NamedMDNode * node = irModule_->getOrInsertNamedMetadata(rootSym.toStringRef(rootSymStr));
     for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
       Constant * traceTable = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
-      Constant * fields[2];
-      fields[0] = llvm::ConstantExpr::getPointerCast(traceTable, bytePtrType);
-      fields[1] = traceTable;
-      llvm::Constant * entry = llvm::ConstantStruct::get(context_, fields, 2, false);
+      llvm::Constant * entry = getStructVal(
+          llvm::ConstantExpr::getPointerCast(traceTable, bytePtrType),
+          traceTable,
+          NULL);
       rootList.push_back(entry);
 
       Value * mdOperands[2];
       mdOperands[0] = it->first;
-      mdOperands[1] = fields[1];
+      mdOperands[1] = traceTable;
       node->addOperand(MDNode::get(context_, mdOperands));
     }
 

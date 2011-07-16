@@ -43,8 +43,10 @@ public:
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;
 
+#if 0
   /** Given a type, return the index of this type (not counting void types). */
   int getNonVoidTypeIndex(const Type * type) const;
+#endif
 
   /** The number of reference types in the union. */
   //size_t numRefTypes() const { return numReferenceTypes_; }
@@ -65,6 +67,9 @@ public:
    */
   bool isSingleOptionalType() const;
 
+  /** Return true if this type is a union of a single reference type with null. */
+  bool isSingleNullableType() const;
+
   /* Return the first member type that is neither null nor void. */
   const Type * getFirstNonVoidType() const;
 
@@ -72,7 +77,7 @@ public:
   Expr * createDynamicCast(Expr * from, const Type * toType) const;
 
   /** Return true if the composite type 'toType' is a subclass of any of the member types. */
-  bool isSubtypeOfAnyMembers(const CompositeType * toType) const;
+  bool isSubtypeOfOfAnyMembers(const CompositeType * toType) const;
 
   /** Return true if the composite type 'toType' is a subclass of all members not counting
       the null type. */
@@ -87,7 +92,7 @@ public:
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const;
   bool includes(const Type * other) const;

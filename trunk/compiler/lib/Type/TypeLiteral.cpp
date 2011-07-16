@@ -47,15 +47,15 @@ void TypeLiteralType::initBuiltin() {
   // Create type parameters
   TypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "T"));
-  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->setTypeParams(TupleType::get(typeParams));
+  Template * tm = Template::get(&typedefn, &Builtins::module);
+  tm->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
   typedefn.setTypeValue(&prototype);
 
-  prototype.literalType_ = tsig->typeParam(0);
+  prototype.literalType_ = tm->typeParam(0);
 }
 
 TypeLiteralType * TypeLiteralType::get(const Type * literalType) {
@@ -124,7 +124,7 @@ bool TypeLiteralType::isEqual(const Type * other) const {
   return false;
 }
 
-bool TypeLiteralType::isSubtype(const Type * other) const {
+bool TypeLiteralType::isSubtypeOf(const Type * other) const {
   return isEqual(other);
 }
 

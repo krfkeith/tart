@@ -455,6 +455,8 @@ public:
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
 
+  llvm::Constant * getStructVal(llvm::Constant * member, ...);
+
   /** Return the debug compile unit for the specified source file. */
   void genDICompileUnit();
   llvm::DIScope compileUnit();
@@ -482,9 +484,10 @@ public:
   llvm::DIType genDIUnionType(const UnionType * type);
   llvm::DIType genDITupleType(const TupleType * type);
   llvm::DIType genDIFunctionType(const FunctionType * type);
-  llvm::DIType genDITypeMember(const VariableDefn * var, uint64_t & offset);
-  llvm::DIType genDITypeMember(const llvm::Type * type, llvm::DIType memberType,
-      llvm::StringRef name, unsigned sourceLine, uint64_t & offset);
+  llvm::DIType genDITypeMember(llvm::DIDescriptor scope, const VariableDefn * var,
+      uint64_t & offset);
+  llvm::DIType genDITypeMember(llvm::DIDescriptor Scope, const llvm::Type * type,
+      llvm::DIType memberType, llvm::StringRef name, unsigned sourceLine, uint64_t & offset);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIParameterType(const Type * type);
 

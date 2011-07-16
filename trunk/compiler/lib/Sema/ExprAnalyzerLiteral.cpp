@@ -29,7 +29,6 @@
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
-#include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 
 #include <llvm/DerivedTypes.h>
@@ -91,29 +90,45 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
   TypeAnalyzer ta(module(), activeScope());
   FunctionType * ftype = ta.typeFromFunctionAST(ast);
 
+  // Check if the expected type is a specialization of the 'tart.core.Function' interface.
+  const CompositeType * expectedFnType = NULL;
+  if (const CompositeType * ct = dyn_cast_or_null<CompositeType>(expected)) {
+    expectedFnType = ct->findBaseSpecializing(Builtins::typeFunction);
+  }
+
   if (ftype != NULL) {
     if (ftype->returnType() == NULL) {
-      // TODO - deduce the return type from the expected type.
-      ftype->setReturnType(&VoidType::instance);
+      if (expectedFnType != NULL) {
+        ftype->setReturnType(expectedFnType->typeParam(0));
+      } else {
+        ftype->setReturnType(&VoidType::instance);
+      }
     }
 
     if (ast->body() != NULL) {
+#if 0
+      // Use a composite type to represent the closure environment.
+      CompositeType * interfaceType = getFunctionInterfaceType(ftype);
+
+      ClosureEnvExpr * ce = new ClosureEnvExpr(
+          ast->location(), activeScope(), &currentFunction_->parameterScope(), ftype, ast);
+      ce->setType(interfaceType);
+      return ce;
+#else
       // Generate a unique name for this closure.
       std::string closureName(llvm::itostr(currentFunction_->closureEnvs().size() + 1));
 
-      // The hidden parameter that points to the closure environment
-      ParameterDefn * envParam = new ParameterDefn(module(), "#env");
+      // Use a composite type to represent the closure environment.
+      CompositeType * interfaceType = getFunctionInterfaceType(ftype);
+      DASSERT(interfaceType->isSingular());
 
+      // The type definition of the environment object.
       TypeDefn * envTypeDef = new TypeDefn(module(), istrings.intern(closureName), NULL);
       envTypeDef->createQualifiedName(currentFunction_);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Synthetic);
       envTypeDef->setStorageClass(Storage_Instance);
       envTypeDef->setDefiningScope(activeScope());
-
-      // Use a composite type to represent the closure environment.
-      CompositeType * interfaceType = getFunctionInterfaceType(ftype);
-      DASSERT(interfaceType->isSingular());
 
       CompositeType * envType = new CompositeType(Type::Class, envTypeDef, activeScope());
       envTypeDef->setTypeValue(envType);
@@ -129,6 +144,8 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
         return &Expr::ErrorVal;
       }
 
+      // The hidden parameter that points to the closure environment
+      ParameterDefn * envParam = new ParameterDefn(module(), "#env");
       LValueExpr * envBaseExpr = LValueExpr::get(ast->location(), NULL, envParam);
       envBaseExpr->setType(envType);
 
@@ -182,6 +199,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       }
       DASSERT(envType->super() != NULL);
       return env;
+#endif
     } else {
       // It's merely a function type declaration
       return new TypeLiteralExpr(ast->location(), ftype);
@@ -253,6 +271,5 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
   tuple->setType(tupleType);
   return tuple;
 }
-
 
 }

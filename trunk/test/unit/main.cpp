@@ -4,7 +4,8 @@
 
 #include "tart/Common/GC.h"
 #include "tart/Objects/Builtins.h"
-#include "gtest/gtest.h"
+
+#include <gmock/gmock.h>
 
 int main(int argc, char **argv) {
   using namespace tart;
@@ -14,7 +15,7 @@ int main(int argc, char **argv) {
   Builtins::init();
 
   // Initialize and run tests.
-  testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleMock(&argc, argv);
   int result = RUN_ALL_TESTS();
 
   // Clean up memory

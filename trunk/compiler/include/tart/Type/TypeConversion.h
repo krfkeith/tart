@@ -83,7 +83,6 @@ struct Conversion {
   bool isChecked() const { return (options & Checked) != 0; }
 };
 
-
 } // namespace tart
 
 #endif

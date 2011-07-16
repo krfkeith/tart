@@ -1,7 +1,7 @@
 class StringOption : OptionBase {
   private {
-    var _value:optional String;
-    var _default:optional String;
+    var _value:String?;
+    var _default:String?;
   }
 
   def construct(name:String,

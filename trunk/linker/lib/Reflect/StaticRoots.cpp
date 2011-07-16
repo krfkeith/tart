@@ -62,7 +62,7 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
               //outs() << "Root: " << gv->getName() << "\n";
               members[0] = llvm::ConstantExpr::getPointerCast(gv, int8PtrTy);
               members[1] = traceTable;
-              rootStruct = ConstantStruct::get(context, &members[0], 2, false);
+              rootStruct = ConstantStruct::getAnon(context, members, false);
               rootStructs.push_back(rootStruct);
             }
           }
@@ -73,7 +73,7 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
 
   members[0] = llvm::ConstantPointerNull::get(cast<PointerType>(int8PtrTy));
   members[1] = llvm::ConstantPointerNull::get(cast<PointerType>(traceDescriptorPtrTy));
-  rootStruct = ConstantStruct::get(context, &members[0], 2, false);
+  rootStruct = ConstantStruct::getAnon(context, members, false);
   rootStructs.push_back(rootStruct);
 
   Constant * rootArray = ConstantArray::get(

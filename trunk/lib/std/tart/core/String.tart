@@ -49,7 +49,7 @@ public final class String : Iterable[char] {
       Parameters:
         from: The container.
    */
-  static def create(from:Copyable[ubyte]) -> String {
+  static def fromBytes(from:Copyable[ubyte]) -> String {
     let self = alloc(from.size);
     from.copyElements(addressOf(self._data[0]), 0, from.size);
     return self;
@@ -66,7 +66,7 @@ public final class String : Iterable[char] {
         IndexError - if 'start' is less than zero.
         ArgumentError - if 'count' is less than zero.
    */
-  static def create(from:Copyable[ubyte], start:int, count:int) -> String {
+  static def fromBytes(from:Copyable[ubyte], start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, from.size);
@@ -298,7 +298,7 @@ public final class String : Iterable[char] {
     let result = alloc(length);
     var index = 0;
     for s in strings {
-      Memory.arrayCopy(addressOf(result._data[index]), addressOf(s._data[0]), s._size);
+      Memory.arrayCopy(addressOf(result._data[index]), s._start, s._size);
       index += s._size;
     }
 

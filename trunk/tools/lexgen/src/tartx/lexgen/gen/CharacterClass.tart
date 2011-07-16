@@ -21,7 +21,7 @@ class CharacterClass : Iterable[CharacterRange] {
     add(a);
   }
 
-  /** Character range constructor. */
+  /** Character (half-open) range constructor. */
   def construct(low:char, high:char) {
     add(low, high);
   }
@@ -56,7 +56,7 @@ class CharacterClass : Iterable[CharacterRange] {
     add(CharacterRange(c, c + 1));
   }
 
-  /** Add a range of characters to this class. */
+  /** Add a (half-open) range of characters to this class. */
   def add(low:char, high:char) {
     add(CharacterRange(low, high));
   }

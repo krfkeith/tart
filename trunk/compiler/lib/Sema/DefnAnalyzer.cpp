@@ -258,8 +258,9 @@ bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
 
 void DefnAnalyzer::applyAttributes(Defn * in) {
   ExprList & attrs = in->attrs();
+  ExprAnalyzer ea(this, NULL);
   for (ExprList::iterator it = attrs.begin(); it != attrs.end(); ++it) {
-    Expr * attrExpr = ExprAnalyzer::inferTypes(subject(), *it, NULL);
+    Expr * attrExpr = ea.inferTypes(subject(), *it, NULL);
     if (isErrorResult(attrExpr)) {
       continue;
     }
@@ -424,17 +425,17 @@ void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * tar
 }
 
 void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
-  TemplateSignature * tsig = de->templateSignature();
-  DASSERT_OBJ(tsig != NULL, de);
+  Template * tm = de->templateSignature();
+  DASSERT_OBJ(tm != NULL, de);
 
-  if (de->mdNode() != NULL && tsig->ast() == NULL) {
+  if (de->mdNode() != NULL && tm->ast() == NULL) {
     // Create definitions from Metadata Node.
     MDReader(de->module(), de).readMembers(de);
   }
 
-  if (tsig->typeParams() == NULL) {
+  if (tm->typeParams() == NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
-    const ASTNodeList & paramsAst = tsig->ast()->params();
+    const ASTNodeList & paramsAst = tm->ast()->params();
     TypeList params;
     ASTConstNodeList defaults;
 
@@ -457,9 +458,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       }
     }
 
-    tsig->setTypeParams(TupleType::get(params));
+    tm->setTypeParams(TupleType::get(params));
 
-    TypeAnalyzer ta(de->module(), &tsig->paramScope());
+    TypeAnalyzer ta(de->module(), &tm->paramScope());
     ExprAnalyzer ea(&ta, ta.currentFunction());
     int argCount = 0;
     for (ASTConstNodeList::const_iterator it = defaults.begin(); it != defaults.end(); ++it) {
@@ -467,7 +468,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       Type * param = params[argCount];
       Type * paramDefault = NULL;
       if (node != NULL) {
-        if (tsig->isVariadic()) {
+        if (tm->isVariadic()) {
           diag.error(node) << "default parameter values not allowed on variadic templates";
         }
 
@@ -491,10 +492,10 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
       ++argCount;
       if (paramDefault == NULL) {
         // If there's no default, then this arg (and all args which precede it) are required.
-        tsig->setNumRequiredArgs(argCount);
+        tm->setNumRequiredArgs(argCount);
       }
 
-      tsig->typeParamDefaults().push_back(paramDefault);
+      tm->typeParamDefaults().push_back(paramDefault);
     }
 
     if (!de->hasUnboundTypeParams()) {

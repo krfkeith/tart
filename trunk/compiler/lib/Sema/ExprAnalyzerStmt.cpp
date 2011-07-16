@@ -912,20 +912,43 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
       return NULL;
     }
 
-    ValueDefn * testValueDefn = cast<ValueDefn>(testDefn);
-    testExpr = LValueExpr::get(test->location(), NULL, testValueDefn);
+    VariableDefn * testVar = cast<VariableDefn>(testDefn);
+    const Type * varType = testVar->type();
+    Expr * initValue = testVar->initValue();
+    DASSERT(initValue != NULL);
+    testVar->setInitValue(NULL);
+
+    Expr * varValue = LValueExpr::get(test->location(), NULL, testVar);
+    Expr * initExpr = new InitVarExpr(test->location(), testVar, initValue);
     implicitScope = testScope;
+
+    if (castToBool) {
+      if (const UnionType * ut = dyn_cast<UnionType>(varType)) {
+        if (ut->isSingleNullableType()) {
+          testVar->setType(ut->getFirstNonVoidType());
+          Expr * cmpExpr = new CompareExpr(
+              test->location(), llvm::CmpInst::ICMP_NE, varValue,
+              ConstantNull::get(test->location(), testVar->type()));
+          return new BinaryExpr(
+              Expr::Prog2, test->location(), &BoolType::instance, initExpr, cmpExpr);
+        }
+      }
+    }
+
+    testExpr = new BinaryExpr(
+            Expr::Prog2, test->location(), varValue->type(), initExpr, varValue);
   } else {
     testExpr = reduceExpr(test, castToBool ? &BoolType::instance : NULL);
     if (isErrorResult(testExpr)) {
       return &Expr::ErrorVal;
     }
 
+    BindingEnv env;
     if (!testExpr->isSingular()) {
-      testExpr = TypeInferencePass::run(module_, testExpr, &BoolType::instance, false);
+      testExpr = TypeInferencePass::run(module_, testExpr, env, &BoolType::instance, false);
     }
 
-    testExpr = FinalizeTypesPass::run(currentFunction_, testExpr);
+    testExpr = FinalizeTypesPass::run(currentFunction_, testExpr, env);
 #if 0
     testExpr = MacroExpansionPass::run(*this, testExpr);
 #endif
@@ -952,6 +975,11 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
   } else if (isa<AddressType>(testExpr->type())) {
     return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
         test->location(), testExpr->type()));
+  } else if (const UnionType * ut = dyn_cast<UnionType>(testExpr->type())) {
+    if (ut->isSingleNullableType()) {
+      return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
+          test->location(), testExpr->type()));
+    }
   }
 
   // Cast to boolean.

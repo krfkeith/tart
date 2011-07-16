@@ -29,7 +29,6 @@ namespace llvm {
 
 namespace tart {
 
-class BindingEnv;
 class TupleType;
 class CompositeType;
 class TypeDefn;
@@ -84,6 +83,10 @@ enum TypeShape {
 /// EnumSet of defn states.
 typedef SmallEnumSet<TypeId, TypeId_Count> TypeIdSet;
 
+// Represents the expansion of a constraint into all of the types that match
+// that constraint.
+typedef llvm::SmallPtrSet<const Type *, 32> TypeExpansion;
+
 /// -------------------------------------------------------------------
 /// Interface for types.
 class Type : public GC, public Formattable {
@@ -115,9 +118,6 @@ public:
   /** Get the LLVM IR type corresponding to this type when returned from a function. */
   virtual const llvm::Type * irReturnType() const { return irParameterType(); }
 
-  /** Get the type of this type. */
-  virtual Type * metaType() const { return NULL; }
-
   /** Get the TypeDefn for this type, if any. */
   virtual TypeDefn * typeDefn() const { return NULL; }
 
@@ -137,8 +137,8 @@ public:
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
 
-  /** Return true if the specified type is more specific than 'other'. */
-  virtual bool isSubtype(const Type * other) const = 0;
+  /** Return true if this type is a subtype of 'other'. */
+  virtual bool isSubtypeOf(const Type * other) const = 0;
 
   /** A type is said to "include" another type if it can represent all possible values
       of that other type. So for example, 'int' includes 'short', since an int can
@@ -156,6 +156,12 @@ public:
 
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
+
+  /** Return all the possible concrete types that this type could be - only meaningful
+      for type constraints. */
+  virtual void expand(TypeExpansion & out) const {
+    out.insert(this);
+  }
 
   /** Return whether this type is passed by value or by reference. */
   virtual bool isReferenceType() const = 0;
@@ -175,6 +181,9 @@ public:
   /** True if this type is an unsigned integer type. */
   bool isUnsignedType() const;
 
+  /** True if this type is a signed integer type. */
+  bool isSignedType() const;
+
   /** True if this type is a floating point type. */
   bool isFPType() const;
 
@@ -189,6 +198,9 @@ public:
 
   /** Return true if this type can be boxed. */
   bool isBoxableType() const;
+
+  /** Return true if this is a throwaway pattern type. */
+  bool isScaffold() const;
 
   /** Return true if this type requires GC tracing. */
   virtual bool containsReferenceType() const { return false; }
@@ -237,10 +249,17 @@ public:
 
   // Static utility functions
 
-  /** Return true if type1 and type2 are type expressions that, when finalized, will
+  /** Return true if lhs and rhs are type expressions that, when finalized, will
       reduce to the same type. For example, List[T] is equivalent to List[S] if
       T is a pattern variable bound to S. */
-  static bool equivalent(const Type * type1, const Type * type2);
+  static bool equivalent(const Type * lhs, const Type * rhs);
+
+  /** Return a type which is the common supertype of type1 and type2, or NULL if there
+      is no such type.  */
+  static const Type * commonBase(const Type * type1, const Type * type2);
+
+  /** Return true if 'ty' is a subtype of 'base'.  */
+  static bool isSubtype(const Type * ty, const Type * base);
 
   // Structure used when using type pointers as a key.
   struct KeyInfo {
@@ -412,7 +431,7 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const { return baseType_->isSingular(); }
   bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return baseType_->isReferenceType(); }
   void format(FormatStream & out) const;
   TypeShape typeShape() const { return baseType_->typeShape(); }

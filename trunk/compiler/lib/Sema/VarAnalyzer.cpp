@@ -143,6 +143,7 @@ bool VarAnalyzer::resolveVarType() {
       DASSERT(ast != NULL);
       if (ast->type() != NULL) {
         TypeAnalyzer ta(module_, activeScope_);
+        ta.setSubject(subject_);
         Type * varType = ta.typeFromAST(ast->type());
         if (varType == NULL) {
           target->passes().finish(VariableDefn::VariableTypePass);
@@ -230,6 +231,7 @@ bool VarAnalyzer::resolveVarType() {
           initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
         }
         target->setInitValue(initExpr);
+        DASSERT_OBJ(!target->type()->isScaffold(), target);
       }
     } else if (target->type() == NULL) {
       diag.error(target) << "Type of '" << target << "' cannot be determined";

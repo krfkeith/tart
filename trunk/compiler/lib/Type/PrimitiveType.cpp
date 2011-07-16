@@ -2,19 +2,26 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/AST/ASTNode.h"
+
+#include "tart/Defn/Module.h"
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/TypeDefn.h"
+
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/EnumType.h"
 #include "tart/Type/StaticType.h"
-#include "tart/Defn/Module.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Defn/TypeDefn.h"
-#include "tart/AST/ASTNode.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/TypeConstraint.h"
+
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
+
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsics.h"
 #include "tart/Objects/TargetSelection.h"
+
 #include "llvm/ADT/APInt.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Instructions.h"
@@ -221,15 +228,21 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
 
 ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
+  Expr * fromValue = cn.fromValue;
 
-  DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->type()->isEqual(fromType));
+  DASSERT(fromValue != NULL);
+  DASSERT(fromValue->type()->isEqual(fromType));
 
   fromType = derefEnumType(fromType);
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
+  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
+    fromValue = soc->intVal();
+    fromType = &UnsizedIntType::instance;
+  }
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
     if (srcId == TypeId_UnsizedInt) {
@@ -293,7 +306,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
     } else {
       DFAIL("ConstantInteger expression with non-integer type");
     }
-  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
+  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(fromValue)) {
     if (!cn.isExplicit()) {
       return Incompatible;
     }
@@ -436,14 +449,20 @@ ConversionRank PrimitiveType::convertToFloat(const Conversion & cn) const {
 ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) const {
 
   const Type * fromType = cn.getFromType();
+  Expr * fromValue = cn.fromValue;
 
-  DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->type()->isEqual(fromType));
+  DASSERT(fromValue != NULL);
+  DASSERT(fromValue->type()->isEqual(fromType));
 
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
+  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
+    fromValue = soc->intVal();
+    fromType = &UnsizedIntType::instance;
+  }
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
 
@@ -486,7 +505,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
     } else {
       DFAIL("ConstantInteger expression with non-integer type");
     }
-  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
+  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(fromValue)) {
     const PrimitiveType * ptype = cast<PrimitiveType>(fromType);
     uint32_t srcBits = ptype->numBits();
 
@@ -563,7 +582,16 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
     return Incompatible;
   } else if (cn.isChecked() && fromType->isReferenceType()) {
     return convertFromObject(cn);
-  } else {
+/*  } else if (const UnionType * ut = dyn_cast<UnionType>(fromType)) {
+    if (ut->hasNullType() && ut->hasRefTypesOnly() && ut->numReferenceTypes() == 1) {
+      if (cn.fromValue && cn.resultValue) {
+        *cn.resultValue = new InstanceOfExpr(
+            cn.fromValue->location(), cn.fromValue, ut->getFirstNonVoidType());
+      }
+      return NonPreferred;
+    }
+    return Incompatible;
+*/  } else {
     return Incompatible;
   }
 }
@@ -572,9 +600,17 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
   using namespace llvm;
 
   const Type * fromType = cn.getFromType();
-  DASSERT(cn.fromValue != NULL);
-  DASSERT(cn.fromValue->type()->isEqual(fromType));
-  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cn.fromValue)) {
+  Expr * fromValue = cn.fromValue;
+
+  DASSERT(fromValue != NULL);
+  DASSERT(fromValue->type()->isEqual(fromType));
+
+  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
+    fromValue = soc->intVal();
+    fromType = &UnsizedIntType::instance;
+  }
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
       fromType = etype->baseType();
     }
@@ -594,7 +630,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
     }
 
     return IntegerToBool;
-  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(cn.fromValue)) {
+  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(fromValue)) {
     (void) cfloat;
     return Incompatible;
   } else {
@@ -1412,6 +1448,9 @@ UnsizedIntType::convertImpl(const Conversion & cn) const {
 template<> Expr * UnsizedIntType::nullInitValue() const {
   return NULL;
 }
+
+// -------------------------------------------------------------------
+// PrimitiveType
 
 PrimitiveType * PrimitiveType::fitIntegerType(size_t nBits, bool isUnsigned) {
   if (isUnsigned) {

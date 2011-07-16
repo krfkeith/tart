@@ -20,27 +20,27 @@ class EnumTest : Test {
     assertEq(TestEnum.Scissors, 2);
     assertEq(TestEnum.minVal, 1);
     assertEq(TestEnum.maxVal, 2);
-    
+
     let a = TestEnum.Rock;
     assertEq(a, 1);
-    
+
     assertEq(FlagTest.Waving, 1);
     assertEq(FlagTest.Fluttering, 2);
     assertEq(FlagTest.GallantlyStreaming, 4);
     assertEq(FlagTest.All, 7);
   }
-  
+
   def testImplicitScoping {
     let b:TestEnum = Rock;
     assertEq(b, 1);
   }
-  
+
   def testContainsOperator {
     let v = FlagTest.Waving;
     assertTrue(FlagTest.Waving in v);
     assertTrue(FlagTest.Fluttering not in v);
   }
-  
+
   def testToString {
     let b:TestEnum = Rock;
     assertEq("Paper", TestEnum.Paper.toString());

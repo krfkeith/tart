@@ -200,7 +200,7 @@ MDNode * MDWriter::variableDefn(const VariableDefn * var) {
   putDefnHeader(builder, var,
       var->defnType() == Defn::Let ? meta::Defn::LET : meta::Defn::VARIABLE);
   builder.put(serializeType(var->type()));
-  if (var->initValue() != NULL) {
+  if (var->initValue() != NULL && var->defnType() == Defn::Let) {
     builder.put(expression(var->initValue()));
   } else {
     builder.put(NULL);
@@ -327,9 +327,9 @@ void MDWriter::putDefnHeader(MDNodeBuilder & builder, const Defn * de, meta::Def
 }
 
 Value * MDWriter::templateSignature(const Defn * de) {
-  const TemplateSignature * tsig = de->templateSignature();
-  const TupleType * typeParams = tsig->typeParams();
-  const TypeList & typeParamDefaults = tsig->typeParamDefaults();
+  const Template * tm = de->templateSignature();
+  const TupleType * typeParams = tm->typeParams();
+  const TypeList & typeParamDefaults = tm->typeParamDefaults();
   size_t numTypeParams = typeParams->size();
   ASTWriter writer;
   for (size_t i = 0; i < numTypeParams; ++i) {

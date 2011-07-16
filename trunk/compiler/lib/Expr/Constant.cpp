@@ -3,18 +3,23 @@
  * ================================================================ */
 
 #include "tart/Expr/Constant.h"
+
 #include "tart/Defn/VariableDefn.h"
 #include "tart/Defn/TypeDefn.h"
+
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/EnumType.h"
 #include "tart/Type/TypeLiteral.h"
+
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
 #include "tart/Objects/TargetSelection.h"
+
 #include "tart/Common/Diagnostics.h"
-#include <llvm/ADT/StringExtras.h>
+
+#include "llvm/ADT/StringExtras.h"
 
 namespace tart {
 
@@ -25,6 +30,10 @@ const PrimitiveType * ConstantInteger::primitiveType() const {
   const Type * ty = type();
   while (const EnumType * etype = dyn_cast<EnumType>(ty)) {
     ty = etype->baseType();
+  }
+
+  if (ty->typeClass() == Type::SizingOf) {
+    return &UnsizedIntType::instance;
   }
 
   return cast<PrimitiveType>(ty);
@@ -173,6 +182,7 @@ TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, const Type * val)
   , value_(val)
 {
   DASSERT(value_ != NULL);
+//  DASSERT_OBJ(value_->typeClass() != Type::Binding, value_);
 }
 
 bool TypeLiteralExpr::isSingular() const {

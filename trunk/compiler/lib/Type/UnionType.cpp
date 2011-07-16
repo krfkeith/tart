@@ -18,6 +18,8 @@
 #include "tart/Objects/SystemDefs.h"
 #include "tart/Objects/TargetSelection.h"
 
+#include "tart/Sema/Infer/TypeAssignment.h"
+
 namespace tart {
 
 namespace {
@@ -53,9 +55,9 @@ UnionType * UnionType::get(const ConstTypeList & members) {
 
     bool addNew = true;
     for (TypeList::iterator m = combined.begin(); m != combined.end();) {
-      if ((*m)->isEqual(type) || type->isSubtype(*m)) {
+      if ((*m)->isEqual(type) || type->isSubtypeOf(*m)) {
         addNew = false;
-      } else if ((*m)->isSubtype(type)) { // TODO: Is isSubtype the right test for this?
+      } else if ((*m)->isSubtypeOf(type)) { // TODO: Is isSubtypeOf the right test for this?
         m = combined.erase(m);
         continue;
       }
@@ -121,6 +123,14 @@ bool UnionType::isSingleOptionalType() const {
     return (hasNullType_ && !hasVoidType_ && numReferenceTypes_ == 1);
   } else if (numReferenceTypes_ == 0) {
     return hasVoidType_ && !hasNullType_ && numValueTypes_ == 1;
+  }
+
+  return false;
+}
+
+bool UnionType::isSingleNullableType() const {
+  if (numValueTypes_ == 0) {
+    return (hasNullType_ && !hasVoidType_ && numReferenceTypes_ == 1);
   }
 
   return false;
@@ -292,7 +302,8 @@ size_t UnionType::estimateTypeSize(const llvm::Type * type) {
 }
 
 ConversionRank UnionType::convertImpl(const Conversion & cn) const {
-  if (isEqual(cn.fromType)) {
+  const Type * fromType = dealias(cn.fromType);
+  if (isEqual(fromType)) {
     if (cn.resultValue != NULL) {
       *cn.resultValue = cn.fromValue;
     }
@@ -398,7 +409,7 @@ bool UnionType::isSingular() const {
   return true;
 }
 
-bool UnionType::isSubtype(const Type * other) const {
+bool UnionType::isSubtypeOf(const Type * other) const {
   // TODO: Is this meaningful with unions?
   return isEqual(other);
   //DFAIL("Implement");
@@ -446,7 +457,13 @@ int UnionType::getTypeIndex(const Type * type) const {
   // Otherwise, calculate the type index.
   int index = 0;
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (type->isEqual(*it)) {
+    const Type * memberType = *it;
+    if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(memberType)) {
+      if (ta->isEqual(type)) {
+        return index;
+      }
+    }
+    if (type->isEqual(memberType)) {
       return index;
     }
 
@@ -456,6 +473,7 @@ int UnionType::getTypeIndex(const Type * type) const {
   return -1;
 }
 
+#if 0
 int UnionType::getNonVoidTypeIndex(const Type * type) const {
   type = dealias(type);
 
@@ -479,6 +497,7 @@ int UnionType::getNonVoidTypeIndex(const Type * type) const {
 
   return -1;
 }
+#endif
 
 Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   const Type * fromType = dealias(from->type());
@@ -498,7 +517,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
       }
 
       // If it's a subtype of any member, then do a checked cast.
-      if (isSubtypeOfAnyMembers(cto)) {
+      if (isSubtypeOfOfAnyMembers(cto)) {
         return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
       }
     }
@@ -519,7 +538,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   return &Expr::ErrorVal;
 }
 
-bool UnionType::isSubtypeOfAnyMembers(const CompositeType * toType) const {
+bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (const CompositeType * ctype = dyn_cast<CompositeType>(*it)) {
       if (toType->isSubclassOf(ctype)) {

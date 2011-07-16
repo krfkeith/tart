@@ -12,9 +12,6 @@
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
 
-#include <ostream>
-#include <iostream>
-
 namespace tart {
 
 // -------------------------------------------------------------------
@@ -220,8 +217,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
 
         case Covariant:
           // funcArgType is narrower than base type
-          // TODO: 'isSubtype' is the wrong test here.
-          //if (!funcArgType->isSubtype(baseArgType)) {
+          // TODO: 'isSubtypeOf' is the wrong test here.
+          //if (!funcArgType->isSubtypeOf(baseArgType)) {
           //  return false;
           //}
           return false;
@@ -229,8 +226,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
 
         case Contravariant:
           // funcArgType is broader than base type
-          // TODO: 'isSubtype' is the wrong test here.
-          //if (!baseArgType->isSubtype(funcArgType)) {
+          // TODO: 'isSubtypeOf' is the wrong test here.
+          //if (!baseArgType->isSubtypeOf(funcArgType)) {
           //  return false;
           //}
           return false;
@@ -287,7 +284,7 @@ void FunctionDefn::format(FormatStream & out) const {
   }
 
   if (out.getShowType()) {
-    const TemplateSignature * ts = templateSignature();
+    const Template * ts = templateSignature();
     if (ts != NULL) {
       ts->format(out);
     }
@@ -304,8 +301,8 @@ void FunctionDefn::format(FormatStream & out) const {
 }
 
 void FunctionDefn::dumpBlocks() {
-  FormatStream stream(std::cout);
 #if 0
+  FormatStream stream(std::cout);
   // Number all blocks.
   int index = 0;
   for (BlockList::iterator bi = blocks_.begin(); bi != blocks_.end(); ++bi) {
@@ -384,8 +381,8 @@ void FunctionDefn::dumpBlocks() {
       }
     }
   }
-#endif
   stream << "\n";
+#endif
 }
 
 } // namespace tart

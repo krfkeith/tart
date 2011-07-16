@@ -33,7 +33,6 @@ import tart.reflect.Reflect;
     for type in mod.types {
       match type as cls:CompositeType {
 	      if cls.isSubclass(Test) {
-	        Debug.writeLn("Test Class: ", cls.qualifiedName);
 			    var testInstance = typecast[Test](cls.create());
     			return testInstance.runTests(cls);
 	      }

@@ -25,6 +25,19 @@ class ClosureEnvExpr : public Expr, public Scope {
 public:
   /** Constructor. */
   ClosureEnvExpr(const SourceLocation & loc, Scope * parentScope, Scope * finalScope,
+      FunctionType * fnType, const ASTFunctionDecl * ast)
+    : Expr(ClosureEnv, loc, fnType)
+    , parentScope_(parentScope)
+    , finalScope_(finalScope)
+    , envType_(NULL)
+    , baseExpr_(NULL)
+    , ast_(ast)
+  {
+  }
+
+#if 1
+  /** Constructor. */
+  ClosureEnvExpr(const SourceLocation & loc, Scope * parentScope, Scope * finalScope,
       CompositeType * envType, Expr * baseExpr)
     : Expr(ClosureEnv, loc, NULL)
     , parentScope_(parentScope)
@@ -33,6 +46,7 @@ public:
     , baseExpr_(baseExpr)
   {
   }
+#endif
 
   // Expr Overrides
 
@@ -72,6 +86,7 @@ private:
   Scope * finalScope_;
   CompositeType * envType_;
   Expr * baseExpr_;
+  const ASTFunctionDecl * ast_;
 };
 
 } // namespace tart

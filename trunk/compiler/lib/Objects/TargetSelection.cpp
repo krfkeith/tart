@@ -89,17 +89,19 @@ bool TargetSelection::selectTarget() {
 
   // Package up features to be passed to target/subtarget
   std::string featuresStr;
-  if (optMCPU.size() || optMAttrs.size()) {
+  if (optMAttrs.size()) {
+    DFAIL("Features disabled due to LLVM link error - investigate.");
+#if 0
     llvm::SubtargetFeatures features;
-    features.setCPU(optMCPU);
     for (unsigned i = 0; i != optMAttrs.size(); ++i) {
       features.AddFeature(optMAttrs[i]);
     }
 
     featuresStr = features.getString();
+#endif
   }
 
-  targetMachine_ = target->createTargetMachine(targetTriple_.getTriple(), featuresStr);
+  targetMachine_ = target->createTargetMachine(targetTriple_.getTriple(), optMCPU, featuresStr);
   assert(targetMachine_ && "Could not allocate target machine!");
   targetData_ = targetMachine_->getTargetData();
   return true;

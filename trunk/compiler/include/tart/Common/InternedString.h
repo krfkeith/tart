@@ -6,7 +6,6 @@
 #define TART_COMMON_INTERNEDSTRING_H
 
 #include "llvm/ADT/StringSet.h"
-#include <string>
 
 namespace tart {
 

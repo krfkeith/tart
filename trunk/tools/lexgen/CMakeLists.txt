@@ -21,7 +21,8 @@ set(TART_MODULE_PATH
 
 # Input files
 file(GLOB LIB_LEXGEN_COMMON_SRC RELATIVE ${SRC_ROOT} ${SRC_ROOT}/tartx/lexgen/shared/*.tart)
-file(GLOB LIB_LEXGEN_GEN_SRC    RELATIVE ${SRC_ROOT} ${SRC_ROOT}/tartx/lexgen/gen/*.tart)
+file(GLOB LIB_LEXGEN_GEN_SRC    RELATIVE ${SRC_ROOT} ${SRC_ROOT}/tartx/lexgen/gen/*.tart
+                                                     ${SRC_ROOT}/tartx/lexgen/gen/ast/*.tart)
 file(GLOB LIB_LEXGEN_APP_SRC    RELATIVE ${SRC_ROOT} ${SRC_ROOT}/tartx/lexgen/app/*.tart)
 file(GLOB LIB_LEXGEN_TEST_SRC   RELATIVE ${SRC_ROOT}
     ${SRC_ROOT}/tartx/lexgenTest/*.tart
@@ -67,7 +68,7 @@ add_dependencies(lexgenTest libstd libtesting libLexGenShared libLexGenGen libLe
 add_custom_target(lexgenTest.run COMMAND ./lexgenTest)
 add_dependencies(lexgenTest.run lexgenTest)
 
-add_tart_executable(lexgen${CMAKE_EXECUTABLE_SUFFIX}
+add_tart_executable(lexgen
   "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/opts/libopts.bc"
   "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"

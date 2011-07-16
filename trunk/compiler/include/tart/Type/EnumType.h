@@ -50,7 +50,7 @@ public:
   // Overrides
 
   const llvm::Type * createIRType() const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   bool isSingular() const { return true; }
   bool includes(const Type * other) const;

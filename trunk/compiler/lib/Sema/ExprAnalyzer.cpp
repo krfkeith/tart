@@ -68,19 +68,16 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
     return static_cast<TypeLiteralExpr *> (expr);
   }
 
+  BindingEnv env;
   if (expr && !expr->isSingular()) {
-    expr = TypeInferencePass::run(subject->module(), expr, expected);
+    expr = TypeInferencePass::run(subject->module(), expr, env, expected);
   }
 
-  expr = FinalizeTypesPass::run(subject, expr, tryCoerciveCasts);
+  expr = FinalizeTypesPass::run(subject, expr, env, tryCoerciveCasts);
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;
   }
-
-//  if (expr->type()->isUnsizedIntType()) {
-//    diag.fatal(expr) << "Unsized int type: " << expr;
-//  }
 
   return expr;
 }
@@ -373,7 +370,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
     DASSERT_OBJ(value->type() != NULL, value);
     if (const CompositeType * valueClass = static_cast<const CompositeType *>(value->type())) {
-      if (valueClass->isSubtype(ctd)) {
+      if (valueClass->isSubtypeOf(ctd)) {
         return ConstantInteger::getConstantBool(ast->location(), true);
       }
     }

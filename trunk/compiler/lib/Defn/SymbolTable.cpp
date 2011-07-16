@@ -10,7 +10,7 @@ namespace tart {
 SymbolTable::Entry * SymbolTable::add(Defn * member) {
   const char * key = member->name();
   assert(key != NULL);
-  Entry & entry = map_.GetOrCreateValue(key, key + strlen(key)).getValue();
+  Entry & entry = map_.GetOrCreateValue(llvm::StringRef(key)).getValue();
   entry.push_back(member);
   return &entry;
 }

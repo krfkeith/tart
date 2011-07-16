@@ -247,6 +247,11 @@ bool isErrorResult(const Type * ty);
 bool any(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);
 bool all(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);
 
+/** Stream operator for expr type names. */
+inline FormatStream & operator<<(FormatStream & out, Expr::ExprType type) {
+  return out << exprTypeName(type);
+}
+
 } // namespace tart
 
 #endif

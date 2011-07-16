@@ -155,7 +155,7 @@ public:
   virtual size_t numTypeParams() const { return 0; }
   virtual const Type * typeParam(int index) const;
   virtual bool isEqual(const Type * other) const;
-  virtual bool isSubtype(const Type * other) const = 0;
+  virtual bool isSubtypeOf(const Type * other) const = 0;
   virtual bool includes(const Type * other) const { return isEqual(other); }
 
   //virtual bool is

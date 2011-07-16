@@ -93,6 +93,9 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::IndirectCall:
       return visitIndirectCall(static_cast<IndirectCallExpr *>(in));
 
+    case Expr::Specialize:
+      return visitSpecialize(static_cast<SpecializeExpr *>(in));
+
     case Expr::New:
       return visitNew(static_cast<NewExpr *>(in));
 
@@ -223,7 +226,6 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::PatternVar:
     case Expr::TypeName:
-    case Expr::Specialize:
       diag.error(in) << "Invalid expression type: " << exprTypeName(in->exprType());
       break;
   }
@@ -299,6 +301,10 @@ Expr * CFGPass::visitIndirectCall(IndirectCallExpr * in) {
   visitExpr(in->function());
   //in->setSelfArg(visitExpr(in->selfArg()));
   visitExprArgs(in);
+  return in;
+}
+
+Expr * CFGPass::visitSpecialize(SpecializeExpr * in) {
   return in;
 }
 

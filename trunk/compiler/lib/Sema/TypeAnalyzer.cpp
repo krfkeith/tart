@@ -63,6 +63,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       diag.error(loc) << "'" << ast << "' is not a type expression";
       for (ExprList::iterator it = typeExprs.begin(); it != typeExprs.end(); ++it) {
         diag.info(*it) << Format_Verbose << *it << " (" << (*it)->exprType() << ")";
+        diag.debug() << "Expr type: " << (*it)->exprType();
       }
 
       return &BadType::instance;

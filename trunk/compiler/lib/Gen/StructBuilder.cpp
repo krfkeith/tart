@@ -23,7 +23,7 @@ StructBuilder & StructBuilder::createObjectHeader(const Type * type) {
   ConstantList objMembers;
   objMembers.push_back(gen_.getTypeInfoBlockPtr(cast<CompositeType>(type)));
   objMembers.push_back(gen_.getIntVal(0));
-  members_.push_back(ConstantStruct::get(gen_.context(), objMembers, false));
+  members_.push_back(ConstantStruct::getAnon(gen_.context(), objMembers, false));
   return *this;
 }
 
@@ -73,18 +73,18 @@ StructBuilder & StructBuilder::addArrayField(
 }
 
 StructBuilder & StructBuilder::combine() {
-  Constant * c = ConstantStruct::get(gen_.context(), members_, false);
+  Constant * c = ConstantStruct::getAnon(gen_.context(), members_, false);
   members_.clear();
   members_.push_back(c);
   return *this;
 }
 
 llvm::Constant * StructBuilder::build() const {
-  return ConstantStruct::get(gen_.context(), members_, false);
+  return ConstantStruct::getAnon(gen_.context(), members_, false);
 }
 
 llvm::Constant * StructBuilder::build(const llvm::Type * expectedType) const {
-  llvm::Constant * result = ConstantStruct::get(gen_.context(), members_, false);
+  llvm::Constant * result = ConstantStruct::getAnon(gen_.context(), members_, false);
   const llvm::Type * actualType = result->getType();
   if (actualType != expectedType) {
     diag.error() << "Expected type does not match actual type:";

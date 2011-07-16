@@ -3,11 +3,14 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
+
 #include "tart/Defn/Module.h"
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/VariableDefn.h"
+#include "tart/Defn/Template.h"
+
+#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TupleType.h"
 
@@ -16,12 +19,14 @@
 
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
+#include "tart/Sema/BindingEnv.h"
+#include "tart/Sema/SpCandidate.h"
 
 namespace tart {
 
 Expr * ExprAnalyzer::reduceValueRef(const ASTNode * ast, bool store) {
   if (ast->nodeType() == ASTNode::GetElement) {
-    return reduceElementRef(static_cast<const ASTOper *>(ast), store);
+    return reduceElementRef(static_cast<const ASTOper *>(ast), store, false);
   } else {
     return reduceSymbolRef(ast, store);
   }
@@ -155,7 +160,7 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
   }
 }
 
-Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
+Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allowOverloads) {
   // TODO: We might want to support more than 1 array index.
   DASSERT_OBJ(ast->count() >= 1, ast);
   if (ast->count() == 1) {
@@ -193,9 +198,60 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
 
       if (isTypeOrFunc) {
         ASTNodeList args;
+        SourceLocation loc(ast->location());
         args.insert(args.begin(), ast->args().begin() + 1, ast->args().end());
-        Expr * specResult = specialize(ast->location(), values, args, true);
+        Expr * specResult = specialize(loc, values, args, true);
         if (specResult != NULL) {
+          // TODO: This collapses the SpE into a single answer based only on the
+          // template arguments. We could instead simply return the SpE and collapse
+          // at the point of use, where we would have access to additional contextual
+          // information.
+          if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(specResult)) {
+            if (allowOverloads) {
+              return spe;
+            }
+            BindingEnv env;
+            SourceContext specSite(loc, NULL, spe);
+            const SpCandidateList & candidates = spe->candidates();
+            SpCandidateList unifiedCandidates;
+            for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end();
+                ++it) {
+              SpCandidate * sp = *it;
+              SourceContext candidateSite(sp->def()->location(), &specSite, sp->def(), Format_Type);
+              sp->relabelTypeVars(env);
+              // If unification fails, just skip over it - it's not an error.
+              if (sp->unify(&candidateSite, env)) {
+                unifiedCandidates.push_back(sp);
+              }
+            }
+
+            if (unifiedCandidates.size() > 1) {
+              diag.error(ast) << "Multiple definitions for '" << base << "':";
+              for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end();
+                  ++it) {
+                SpCandidate * sp = *it;
+                diag.info(sp->def()) << sp->def();
+              }
+              return &Expr::ErrorVal;
+            }
+
+            SpCandidate * spFinal = unifiedCandidates.front();
+            env.updateAssignments(loc, spFinal);
+            TypeVarMap vars;
+            env.toTypeVarMap(vars, spFinal);
+            if (TypeDefn * tdef = dyn_cast<TypeDefn>(spFinal->def())) {
+              Type * type = tdef->templateSignature()->instantiateType(loc, vars);
+              if (type != NULL) {
+                return new TypeLiteralExpr(loc, type);
+              }
+            } else {
+              Defn * defn = spFinal->def()->templateSignature()->instantiate(loc, vars);
+              if (defn != NULL) {
+                return getDefnAsExpr(defn, spFinal->base(), loc);
+              }
+            }
+            return &Expr::ErrorVal;
+          }
           return specResult;
         } else {
           return &Expr::ErrorVal;
@@ -218,7 +274,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store) {
   } else {
     // TODO: We might want to support more than 1 array index.
     DASSERT_OBJ(ast->count() == 2, ast);
-    arrayExpr = reduceExpr(base, NULL);
+    arrayExpr = inferTypes(reduceExpr(base, NULL), NULL);
   }
 
   if (isErrorResult(arrayExpr)) {

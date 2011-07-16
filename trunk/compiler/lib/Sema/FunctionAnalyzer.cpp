@@ -207,8 +207,8 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     if (target->isTemplate()) {
       // Get the template scope and set it as the active scope.
       analyzeTemplateSignature(target);
-      TemplateSignature * tsig = target->templateSignature();
-      setActiveScope(&tsig->paramScope());
+      Template * tm = target->templateSignature();
+      setActiveScope(&tm->paramScope());
     } else if (target->isTemplateMember()) {
       for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
         if (parent->isTemplate()) {

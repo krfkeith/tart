@@ -1,5 +1,5 @@
 /* ================================================================ *
- TART - A Sweet Programming Language.
+   TART - A Sweet Programming Language.
  * ================================================================ */
 
 #ifndef TART_SEMA_EXPRANALYZER_H
@@ -44,7 +44,7 @@ public:
   }
 
   /** Take a reduced expression and do type inferencing. */
-  static Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
+  Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
       bool tryCoerciveCasts = true);
   Expr * inferTypes(Expr * expr, const Type * expectedType);
 
@@ -84,7 +84,7 @@ public:
 
   Expr * reduceValueRef(const ASTNode * ast, bool store);
   Expr * reduceSymbolRef(const ASTNode * ast, bool store);
-  Expr * reduceElementRef(const ASTOper * ast, bool store);
+  Expr * reduceElementRef(const ASTOper * ast, bool store, bool allowOverloads);
   Expr * reduceLValueExpr(LValueExpr * lvalue, bool store);
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);

@@ -56,8 +56,8 @@ void AddressType::initBuiltin() {
   typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
-  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->setTypeParams(TupleType::get(typeParams));
+  Template * tm = Template::get(&typedefn, &Builtins::module);
+  tm->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
@@ -65,7 +65,7 @@ void AddressType::initBuiltin() {
   typedefn.setTypeValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
-  prototype.elementType_ = tsig->typeParam(0);
+  prototype.elementType_ = tm->typeParam(0);
 }
 
 AddressType * AddressType::get(const Type * elemType) {
@@ -157,7 +157,7 @@ bool AddressType::isEqual(const Type * other) const {
   return false;
 }
 
-bool AddressType::isSubtype(const Type * other) const {
+bool AddressType::isSubtypeOf(const Type * other) const {
   if (isEqual(other)) {
     return true;
   }
@@ -208,8 +208,8 @@ void NativeArrayType::initBuiltin() {
   typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &Int32Type::instance));
 
   // Create type parameters
-  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->setTypeParams(TupleType::get(typeParams));
+  Template * tm = Template::get(&typedefn, &Builtins::module);
+  tm->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
@@ -217,7 +217,7 @@ void NativeArrayType::initBuiltin() {
   typedefn.setTypeValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
-  prototype.typeArgs_ = tsig->typeParams();
+  prototype.typeArgs_ = tm->typeParams();
 }
 
 NativeArrayType * NativeArrayType::get(const TupleType * typeArgs) {
@@ -307,7 +307,7 @@ bool NativeArrayType::isSingular() const {
   return typeArgs_->isSingular();
 }
 
-bool NativeArrayType::isSubtype(const Type * other) const {
+bool NativeArrayType::isSubtypeOf(const Type * other) const {
   return isEqual(other);
   //DFAIL("Implement");
 }
@@ -350,8 +350,8 @@ void FlexibleArrayType::initBuiltin() {
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
 
   // Create type parameters
-  TemplateSignature * tsig = TemplateSignature::get(&typedefn, &Builtins::module);
-  tsig->setTypeParams(TupleType::get(typeParams));
+  Template * tm = Template::get(&typedefn, &Builtins::module);
+  tm->setTypeParams(TupleType::get(typeParams));
 
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
@@ -359,7 +359,7 @@ void FlexibleArrayType::initBuiltin() {
   typedefn.setTypeValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
-  prototype.typeArgs_ = tsig->typeParams();
+  prototype.typeArgs_ = tm->typeParams();
 }
 
 FlexibleArrayType * FlexibleArrayType::get(const TupleType * typeArgs) {
@@ -424,7 +424,7 @@ bool FlexibleArrayType::isSingular() const {
   return typeArgs_->isSingular();
 }
 
-bool FlexibleArrayType::isSubtype(const Type * other) const {
+bool FlexibleArrayType::isSubtypeOf(const Type * other) const {
   return isEqual(other);
 }
 

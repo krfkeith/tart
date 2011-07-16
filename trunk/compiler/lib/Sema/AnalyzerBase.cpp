@@ -44,6 +44,25 @@ llvm::cl::opt<std::string> AnalyzerBase::traceDef_("trace-def",
     llvm::cl::value_desc("defn-name"),
     llvm::cl::init("-"));
 
+class RecursionGuard {
+public:
+  RecursionGuard() {
+    ++_recursionLevel;
+    if (_recursionLevel > 1000) {
+      DFAIL("Recursion limit exceeded!");
+    }
+  }
+
+  ~RecursionGuard() {
+    --_recursionLevel;
+  }
+
+private:
+  static uint32_t _recursionLevel;
+};
+
+uint32_t RecursionGuard::_recursionLevel = 0;
+
 AnalyzerBase::AnalyzerBase(Module * mod, Scope * activeScope, Defn * subject,
     FunctionDefn * currentFunction)
   : module_(mod)
@@ -133,6 +152,9 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
     }
 
     if (isRequired) {
+#if 1
+      lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions | LOOKUP_REQUIRED));
+#endif
       diag.error(qual) << "Undefined symbol '" << qual << "'";
       diag.info() << "Scopes searched:";
       dumpScopeHierarchy();
@@ -283,7 +305,8 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, llvm::StringRef 
   } else if (context->type() != NULL) {
     if (!context->isSingular()) {
       // Member lookup requires types be singular.
-      Expr * singularContext = ExprAnalyzer::inferTypes(subject_, context, NULL, false);
+      ExprAnalyzer ea(this, currentFunction_);
+      Expr * singularContext = ea.inferTypes(subject_, context, NULL, false);
       if (singularContext == NULL) {
         diag.error(loc) << "Base expression '" << context << "' is ambiguous.";
         return false;
@@ -470,7 +493,9 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
 }
 
 Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * typeArgs) {
-  // Examine all of the possible candidates for specialization.
+  // Go through the list of matching expressions and see which ones
+  // can accept 'typeArgs' as type arguments. Add those to the set of
+  // specialization candidates.
   SpCandidateSet candidates;
   for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
     if (TypeLiteralExpr * tref = dyn_cast<TypeLiteralExpr>(*it)) {
@@ -507,55 +532,32 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * t
     return NULL;
   }
 
-  if (candidates.size() > 1) {
-    return new SpecializeExpr(loc, candidates, typeArgs);
-  }
-
-  // TODO: Do template overload resolution.
-  // TODO: Use parameter assignments.
-  SpCandidate * sp = *candidates.begin();
-  Defn * defn = sp->def();
-  TemplateSignature * tsig = defn->templateSignature();
-  if (isa<TypeDefn>(defn)) {
-    Type * type = tsig->instantiateType(loc, sp->env());
-    if (type != NULL) {
-      return new TypeLiteralExpr(loc, type);
-    }
-  }
-
-  defn = tsig->instantiate(loc, sp->env());
-  if (defn != NULL) {
-    return getDefnAsExpr(defn, sp->base(), loc);
-  }
-
-  DFAIL("Bad state");
+  SpecializeExpr * result = new SpecializeExpr(loc, candidates, typeArgs);
+  // Set a type so that the analyzer won't complain. The actual type doesn't matter.
+  result->setType(&AnyType::instance);
+  return result;
 }
 
 void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * defn,
     TupleType * args) {
   if (defn->isTemplate()) {
     DefnAnalyzer::analyzeTemplateSignature(defn);
-    const TemplateSignature * tsig = defn->templateSignature();
-    if (tsig->isVariadic()) {
+    const Template * tm = defn->templateSignature();
+    if (tm->isVariadic()) {
       // Attempt to match the type args against the variadic type params.
-      size_t variadicIndex = tsig->typeParams()->size() - 1;
+      size_t variadicIndex = tm->typeParams()->size() - 1;
       if (args->size() >= variadicIndex) {
         ConstTypeList typeArgs(args->begin(), args->begin() + variadicIndex);
         typeArgs.push_back(TupleType::get(args->begin() + variadicIndex, args->end()));
         args = TupleType::get(typeArgs);
-        SpCandidate * spc = new SpCandidate(base, defn, args);
-        SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
-        if (spc->unify(&candidateSite)) {
-          spcs.insert(spc);
+        if (tm->canUnify(args)) {
+          spcs.insert(new SpCandidate(base, defn, args));
         }
       }
-    } else if (args->size() >= tsig->numRequiredArgs() &&
-        args->size() <= tsig->typeParams()->size()) {
-      // Attempt unification of type variables with template args.
-      SpCandidate * spc = new SpCandidate(base, defn, args);
-      SourceContext candidateSite(defn->location(), NULL, defn, Format_Type);
-      if (spc->unify(&candidateSite)) {
-        spcs.insert(spc);
+    } else if (args->size() >= tm->numRequiredArgs() &&
+        args->size() <= tm->typeParams()->size()) {
+      if (tm->canUnify(args)) {
+        spcs.insert(new SpCandidate(base, defn, args));
       }
     }
   } else if (defn->isTemplateInstance()) {
@@ -642,9 +644,25 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
 
 bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
   int numNonTypes = 0;
+  BindingEnv env;
   for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
     if (TypeLiteralExpr * tle = dyn_cast<TypeLiteralExpr>(*it)) {
       out.push_back(const_cast<Type *>(tle->value()));
+    } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(*it)) {
+      SourceContext specSite(loc, NULL, spe);
+      const SpCandidateList & candidates = spe->candidates();
+      for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
+        SpCandidate * sp = *it;
+        if (isa<TypeDefn>(sp->def())) {
+          // If unification fails, just skip over it - it's not an error.
+          Type * type = sp->toType(&specSite, env);
+          if (type != NULL) {
+            out.push_back(type);
+          }
+        } else {
+          numNonTypes++;
+        }
+      }
     } else if (isErrorResult(*it)) {
       out.push_back(&BadType::instance);
     } else {
@@ -827,6 +845,8 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 }
 
 bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
+  RecursionGuard guard;
+
   Type * type = in->typeValue();
   switch (type->typeClass()) {
     case Type::Primitive:
@@ -865,6 +885,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     }
 
     case Type::TypeVar:
+    case Type::TypeLiteral:
       return true;
 
     default:
@@ -875,7 +896,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
 
 CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
   // Look up the array class
-  TemplateSignature * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
+  Template * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
 
   // Do analysis on template if needed.
   if (arrayTemplate->ast() != NULL) {
@@ -890,10 +911,11 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
     return Builtins::typeArray.get();
   }
 
-  BindingEnv arrayEnv;
-  arrayEnv.addSubstitution(arrayTemplate->patternVar(0), elementType);
+  TypeVarMap vars;
+  vars[arrayTemplate->patternVar(0)] = elementType;
   return cast<CompositeType>(cast<TypeDefn>(
-      arrayTemplate->instantiate(SourceLocation(), arrayEnv))->typeValue());
+      arrayTemplate->instantiate(
+          SourceLocation(), vars, Template::expectedTraits(elementType)))->typeValue());
 }
 
 Expr * AnalyzerBase::getEmptyArrayOfElementType(const Type * elementType) {
@@ -911,7 +933,7 @@ ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elem
 
 CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
   // Look up the MutableRef class
-  TemplateSignature * refTemplate = Builtins::typeMutableRef->typeDefn()->templateSignature();
+  Template * refTemplate = Builtins::typeMutableRef->typeDefn()->templateSignature();
 
   // Do analysis on template if needed.
   if (refTemplate->ast() != NULL) {
@@ -921,15 +943,16 @@ CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
 
   DASSERT_OBJ(refTemplate->paramScope().count() == 1, valueType);
 
-  BindingEnv refEnv;
-  refEnv.addSubstitution(refTemplate->patternVar(0), valueType);
+  TypeVarMap vars;
+  vars[refTemplate->patternVar(0)] = valueType;
   return cast<CompositeType>(cast<TypeDefn>(
-      refTemplate->instantiate(SourceLocation(), refEnv))->typeValue());
+      refTemplate->instantiate(
+          SourceLocation(), vars, Template::expectedTraits(valueType)))->typeValue());
 }
 
 CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftype) {
   // Look up the Function interface
-  TemplateSignature * fnTemplate = Builtins::typeFunction->typeDefn()->templateSignature();
+  Template * fnTemplate = Builtins::typeFunction->typeDefn()->templateSignature();
 
   // Do analysis on template if needed.
   if (fnTemplate->ast() != NULL) {
@@ -939,11 +962,12 @@ CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftyp
 
   DASSERT_OBJ(fnTemplate->paramScope().count() == 2, ftype);
 
-  BindingEnv env;
-  env.addSubstitution(fnTemplate->patternVar(0), ftype->returnType());
-  env.addSubstitution(fnTemplate->patternVar(1), ftype->paramTypes());
+  TypeVarMap vars;
+  vars[fnTemplate->patternVar(0)] = ftype->returnType();
+  vars[fnTemplate->patternVar(1)] = ftype->paramTypes();
   return cast<CompositeType>(cast<TypeDefn>(
-      fnTemplate->instantiate(SourceLocation(), env))->typeValue());
+      fnTemplate->instantiate(SourceLocation(), vars,
+          Template::expectedTraits(ftype)))->typeValue());
 }
 
 // Determine if the target is able to be accessed from the current source defn.

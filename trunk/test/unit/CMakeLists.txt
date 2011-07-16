@@ -12,6 +12,7 @@ if (CMAKE_COMPILER_IS_CLANG)
   add_definitions(
       -Woverloaded-virtual
       -fno-rtti
+      -DGTEST_HAS_RTTI=0
       )
 endif (CMAKE_COMPILER_IS_CLANG)
 
@@ -44,6 +45,8 @@ add_executable(unittest
   UnifyTest.cpp
   NameTableTest.cpp
   ASTSerializationTest.cpp
+  ConstraintTest.cpp
+  BindingEnvTest.cpp
   )
 target_link_libraries(unittest
     gtest gmock compiler

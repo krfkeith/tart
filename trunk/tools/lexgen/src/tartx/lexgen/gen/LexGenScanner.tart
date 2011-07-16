@@ -212,7 +212,7 @@ class LexGenScanner : ScannerBase {
               return L3();
             }
 
-            else {
+            case * {
               erase(1);
               take();
               return L3();
@@ -398,7 +398,7 @@ class LexGenScanner : ScannerBase {
         return L1();
       }
 
-      else {
+      case * {
         if (matchDigit()) {
            while (matchDigit()) {}// loop
           return LToken.INTEGER;
@@ -409,8 +409,6 @@ class LexGenScanner : ScannerBase {
         return LToken.ERROR;
       }
     }
-
-    return LToken.ERROR;
   }
 
   def stringState -> LToken {
@@ -470,7 +468,7 @@ class LexGenScanner : ScannerBase {
             continue;
           }
 
-          else {
+          case * {
             erase(1);
             take();
             continue;
@@ -516,7 +514,7 @@ class LexGenScanner : ScannerBase {
         return LToken.END_BLOCK;
       }
 
-      else {
+      case * {
         take();
       }
     }
@@ -545,7 +543,7 @@ class LexGenScanner : ScannerBase {
 	        return LToken.ACTION_TEXT;
         }
 
-        else {
+        case * {
           take();
         }
       }

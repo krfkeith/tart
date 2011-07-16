@@ -23,7 +23,7 @@ class NativeArrayType;
 class FlexibleArrayType;
 class UnitType;
 class TypeVariable;
-class TypeBinding;
+class TypeAssignment;
 class TypeConstraint;
 
 enum ComparisonResult {
@@ -59,7 +59,7 @@ class TypeOrdering {
 
   virtual ComparisonResult compareDissimilar(const Type * t1, const Type * t2);
   virtual ComparisonResult compareWithPattern(const TypeVariable * t1, const Type * t2);
-  virtual ComparisonResult compareWithTypeBinding(const TypeBinding * t1, const Type * t2);
+  virtual ComparisonResult compareWithTypeAssignment(const TypeAssignment * t1, const Type * t2);
   virtual ComparisonResult compareWithConstraint(const TypeConstraint * t1, const Type * t2);
 
   //    case Type::Alias:

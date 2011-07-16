@@ -8,12 +8,12 @@ public namespace Console {
       STDOUT,
       STDERR,
     }
-    
+
     @Extern("get_std_stream") def getStdStream(id:StreamID) -> Address[StdFileStream.FILE];
 
-    var _cin:optional TextReader;
-    var _cout:optional TextWriter;
-    var _cerr:optional TextWriter;
+    var _cin:TextReader?;
+    var _cout:TextWriter?;
+    var _cerr:TextWriter?;
   }
 
   /** Return the input stream for stdin. */

@@ -27,7 +27,7 @@ public:
   TypeDefn * typeDefn() const { return defn_; }
   bool isSingular() const { return value_->isSingular(); }
   bool isEqual(const Type * other) const { return value_->isEqual(other); }
-  bool isSubtype(const Type * other) const { return value_->isSubtype(other); }
+  bool isSubtypeOf(const Type * other) const { return value_->isSubtypeOf(other); }
   bool includes(const Type * other) const { return value_->includes(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
   TypeShape typeShape() const { return value_->typeShape(); }
@@ -35,6 +35,7 @@ public:
   const llvm::Type * irEmbeddedType() const;
   const llvm::Type * irParameterType() const;
   const llvm::Type * irReturnType() const;
+  void expand(TypeExpansion & out) const { value_->expand(out); }
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;

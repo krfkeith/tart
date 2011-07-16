@@ -99,7 +99,7 @@ namespace Memory {
       pointer. 'Value' can be a complex expression that resolves to an l-value.
   */
   @Intrinsic
-  def addressOf[%T](value:T) -> Address[T];
+  def addressOf[%P](value:P) -> Address[P];
 
   /** Convert an object reference into a native address. */
   @Intrinsic
@@ -142,8 +142,8 @@ namespace Memory {
         src: The array containing the source range.
         length: The number of elements to copy.
    */
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:int);
-  @Unsafe @Intrinsic def arrayCopy[%T](dst:Address[T], src:Address[T], length:uint);
+  @Unsafe @Intrinsic def arrayCopy[%Q1](dst:Address[Q1], src:Address[Q1], length:int);
+  @Unsafe @Intrinsic def arrayCopy[%Q2](dst:Address[Q2], src:Address[Q2], length:uint);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.
@@ -154,7 +154,7 @@ namespace Memory {
         dstEnd: The end of the destination range.
         src: The start of the source range.
    */
-  @Unsafe @Intrinsic def arrayCopy[%T](dstBegin:Address[T], dstEnd:Address[T], src:Address[T]);
+  @Unsafe @Intrinsic def arrayCopy[%Q3](dstBegin:Address[Q3], dstEnd:Address[Q3], src:Address[Q3]);
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Handles the case of overlapping ranges.

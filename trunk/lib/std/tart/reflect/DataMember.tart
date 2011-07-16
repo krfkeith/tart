@@ -3,13 +3,13 @@ import tart.collections.List;
 /** Common base class for fields and properties - any member that can be read (and possibly written). */
 abstract class DataMember : Member {
   private {
-    var _selfType:optional Type;
+    var _selfType:Type?;
 
     undef construct();
   }
 
   /** The type that contains this member, or null if this is static or global. */
-  final def selfType:optional Type { get { return _selfType; } }
+  final def selfType:Type? { get { return _selfType; } }
 
 	/** True if this data member is readable. */
   abstract def isReadable:bool { get; }

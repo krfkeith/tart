@@ -25,16 +25,6 @@ enum GCInfoBits {
   // Color?
 };
 
-struct AddressRange {
-  char * first;
-  char * last;
-
-  AddressRange() : first(NULL), last(NULL) {}
-  AddressRange(char * f, char * l) : first(f), last(l) {}
-  AddressRange(const AddressRange & rg) : first(rg.first), last(rg.last) {}
-
-  size_t size() const { return last - first; }
-};
 #endif
 
 struct TraceDescriptor {

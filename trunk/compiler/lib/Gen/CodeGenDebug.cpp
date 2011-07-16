@@ -393,8 +393,10 @@ DIType CodeGenerator::genDIParameterType(const Type * type) {
   return di;
 }
 
-DIType CodeGenerator::genDITypeMember(const VariableDefn * var, uint64_t & offset) {
+DIType CodeGenerator::genDITypeMember(DIDescriptor scope, const VariableDefn * var,
+    uint64_t & offset) {
   return genDITypeMember(
+      scope,
       var->type()->irEmbeddedType(),
       genDIEmbeddedType(var->type()),
       var->name(),
@@ -402,14 +404,15 @@ DIType CodeGenerator::genDITypeMember(const VariableDefn * var, uint64_t & offse
       offset);
 }
 
-DIType CodeGenerator::genDITypeMember(const llvm::Type * type, llvm::DIType memberType,
-    llvm::StringRef name, unsigned sourceLine, uint64_t & offset) {
+DIType CodeGenerator::genDITypeMember(DIDescriptor scope, const llvm::Type * type,
+    llvm::DIType memberType, llvm::StringRef name, unsigned sourceLine, uint64_t & offset) {
   uint64_t memberSize = getSizeOfInBits(type);
   uint64_t memberAlign = getAlignOfInBits(type);
 
   offset = align(offset, memberAlign);
   DASSERT(dbgFile_.Verify());
   DIType result = diBuilder_.createMemberType(
+      scope,
       name,
       dbgFile_,
       sourceLine,
@@ -471,7 +474,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
   for (DefnList::const_iterator it = fields.begin(); it != fields.end(); ++it) {
     if (*it) {
       const VariableDefn * var = cast<VariableDefn>(*it);
-      members.push_back(genDITypeMember(var, memberOffset));
+      members.push_back(genDITypeMember(placeHolder, var, memberOffset));
     }
   }
 
@@ -557,6 +560,7 @@ DIType CodeGenerator::genDIAddressType(const AddressType * type) {
 
 DIType CodeGenerator::genDIUnionType(const UnionType * type) {
   const llvm::Type * irType = type->irType();
+  DIType placeHolder = diBuilder_.createTemporaryType();
   ValueArray unionMembers;
   DASSERT(dbgFile_.Verify());
   DASSERT(!type->irType()->isAbstract());
@@ -570,6 +574,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
       snprintf(name, 16, "t%d", memberIndex);
       DIType memberDbgType = genDIEmbeddedType(memberType);
       unionMembers.push_back(diBuilder_.createMemberType(
+          placeHolder,
           name,
           dbgFile_,
           0, // Source line
@@ -592,11 +597,13 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
       getAlignOfInBits(type->irType()),
       0, // Flags
       diBuilder_.getOrCreateArray(unionMembers));
+  placeHolder.replaceAllUsesWith(unionType);
 
   // If there's a discriminator field
   if (irType->getNumContainedTypes() > 1) {
     const llvm::Type * discType = irType->getContainedType(0);
     ValueArray structMembers;
+    placeHolder = diBuilder_.createTemporaryType();
     DIType discDbgType = diBuilder_.createBasicType(
         "disc",
         getSizeOfInBits(discType),
@@ -604,9 +611,10 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
         dwarf::DW_ATE_unsigned);
 
     uint64_t offset = 0;
-    structMembers.push_back(genDITypeMember(discType, discDbgType, "vindex", 0, offset));
     structMembers.push_back(genDITypeMember(
-        irType->getContainedType(1), unionType, ".value", 0, offset));
+        placeHolder, discType, discDbgType, "vindex", 0, offset));
+    structMembers.push_back(genDITypeMember(
+        placeHolder, irType->getContainedType(1), unionType, ".value", 0, offset));
 
     unionType = diBuilder_.createStructType(
         compileUnit(),
@@ -617,6 +625,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
         getAlignOfInBits(type->irType()),
         0, // Flags
         diBuilder_.getOrCreateArray(structMembers));
+    placeHolder.replaceAllUsesWith(unionType);
   }
 
   DASSERT(unionType.Verify());
@@ -629,6 +638,8 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
   char memberName[16];
   uint64_t memberOffset = 0;
   DASSERT(dbgFile_.Verify());
+  DIType placeHolder = diBuilder_.createTemporaryType();
+  dbgTypeMap_[type] = placeHolder;
   for (TupleType::const_iterator it = type->begin(); it != type->end(); ++it) {
     const Type * memberType = *it;
     uint64_t memberSize = getSizeOfInBits(memberType->irEmbeddedType());
@@ -636,6 +647,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
     memberOffset = align(memberOffset, memberAlign);
     sprintf(memberName, "_%d", index);
     members.push_back(diBuilder_.createMemberType(
+        placeHolder,
         memberName,
         dbgFile_,
         0, // Source line
@@ -646,7 +658,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
 
   llvm::SmallString<64> tupleName;
   typeLinkageName(tupleName, type);
-  return diBuilder_.createStructType(
+  DIType tupleType = diBuilder_.createStructType(
       compileUnit(),
       tupleName,
       dbgFile_,
@@ -655,6 +667,9 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
       getAlignOfInBits(type->irType()),
       0, // Flags
       diBuilder_.getOrCreateArray(members));
+  dbgTypeMap_[type] = tupleType;
+  placeHolder.replaceAllUsesWith(tupleType);
+  return tupleType;
 }
 
 DIType CodeGenerator::genDIFunctionType(const FunctionType * type) {

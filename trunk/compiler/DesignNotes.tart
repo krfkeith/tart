@@ -12,13 +12,13 @@ struct ConversionSpec {
     CENTER,
     SIGN,   // Padding between sign and digits.
   }
-  
+
   enum Sign {
     ALWAYS,
     SPACE_IF_POSITIVE,
     IF_NEGATIVE,
   }
-  
+
   var fill:char = ' ';
   var align:Alignment = Alignment.DEFAULT;
   var sign:Sign = Sign.IF_NEGATIVE;
@@ -29,7 +29,7 @@ struct ConversionSpec {
   var type:char;
 
   def construct() {}
-  
+
   static def parse(in:String) -> ConversionSpec {
     return parse(in, 0, in.length);
   }
@@ -59,10 +59,10 @@ class StringFormatter {
 	    FIELD_INDEX,
 	    FIELD_CONVERSION,
 	  }
-	  
+
 	  var _formatStr:char[];
   }
-  
+
   def format(args:Object[]) -> String {
     var pos:int = 0;
     var result = StringBuilder();
@@ -78,7 +78,7 @@ class StringFormatter {
           } else {
           }
         }
-        
+
         case FIELD_BEGIN {
           if c == '{' {
             result.append('{');
@@ -89,7 +89,7 @@ class StringFormatter {
             throw StringFormatException("Field index expected after '{' at ", pos - 1);
           }
         }
-        
+
         case FIELD_INDEX {
           if c == '}' {
             convertAndAppend(args[fieldIndex], "");
@@ -114,18 +114,18 @@ class StringFormatter {
         }
       }
     }
-    
+
     switch (state_) {
       case FIELD_BEGIN {
         result.append('{');
       }
-      
+
       case FIELD_INDEX
       case CONVERSION_SPEC {
         throw StringFormatException("Unexpected end of string");
       }
     }
-    
+
     return result_.toString();
   }
 
@@ -191,7 +191,7 @@ struct Matrix[%T, %Rows:int, %Cols:int] require T issubtype Number {
       data[row * Cols + col] = value;
     }
   }
-  
+
   def construct() {
     for i = 0; i < Rows * Cols; ++i {
       data[i] = 0;
@@ -215,12 +215,12 @@ public:
     Token_Preformatted,
     Token_Indent,
     Token_Dedent,
-    
+
   };
 
   DocParser(const std::string & docString);
-  
-  
+
+
 };
 
 class DocNode {
@@ -232,7 +232,7 @@ class DocNode {
     Definition,
     Link,
   };
-  
+
   enum DefinitionType {
     Parameter,
     Return,
@@ -280,7 +280,7 @@ class NamespaceDoc : public ProgramElementDoc {
 };
 
 
-depends "tart/core/String.tart"; 
+depends "tart/core/String.tart";
 depends "tart/core/Iterator.tart";
 
 import tart.core.String = 1;
@@ -327,18 +327,18 @@ class Option[bool] : OptionBase[bool] {
   private {
     var name:String;
   }
-  
+
   def value:bool {
     get {}
   }
-  
+
   def isPresent {
     get { return present; }
   }
 }
 
 class Option[%T, %Parser=OptionParsers[T]] {
-  
+
 }
 
   var debug = Option[bool](
@@ -349,10 +349,10 @@ class Option[%T] {
   private {
     var name:String;
     var help:String;
-    var value:optional T;
+    var value:T?;
     var present:bool;
     var parser = OptionParser[T]();
-    
+
     static var options:Map[String, Option];
   }
 
@@ -377,7 +377,7 @@ class Option[%T] {
   def parse(s:String) {
     let v = parser.parse(s);
     present = true;
-    
+
   }
 
   def isPresent { get { return present; } }
@@ -401,7 +401,7 @@ var detail = Option(DetailLevel, DetailLevel.LOW);
 
 // Enum parsing would be a good thing to do.
 
-// 
+//
 
 interface OptionParser[T] {
   def parse(s:String) -> T;
@@ -472,7 +472,7 @@ class Option[%T] : OptionBase {
     _value = value;
     _present = true;
   }
-  
+
   final def parse(s:optionName, s:String) {
     if _present {
       throw OptionParseException("Error parsing option '{0}': value is already set".format(optionName);
@@ -503,15 +503,15 @@ class OptionMap {
       if field.type isa CompositeType {
         var ctype = typecast[CompositeType](field.type);
         if ctype.isSubclass(OptionBase) {
-          readable = 
+          readable =
         }
       }
     }
-    
+
     for prop in type.properties {
     }
   }
-  
+
   def parseOption(obj:Object, name:String, value:String) {
   }
 }
@@ -565,7 +565,7 @@ class TypeAdapterImpl[%T] : TypeAdapter {
     let getterFn:static fn (obj:Address[void]) -> T = reinterpretPtr(getter);
     return getterFn(obj);
   }
-  
+
   def setPropValue(obj:Address[void], setter:Address[void], value:Object) {
     let setterFn:static fn (obj:Address[void], value:T) = reinterpretPtr(setter);
     setterFn(obj, Refs.valueOf(value));
@@ -575,16 +575,16 @@ class TypeAdapterImpl[%T] : TypeAdapter {
 struct TypeAdapter {
   // The get adapter reads the field data and the boxes the return type.
   readonly var getFieldAdapter:static fn(fieldAddr:Address[void], offset:int) -> Object;
-  
+
   // The set adapter unboxes the value, and then writes the field data.
   readonly var setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object);
 
   // The getter adapter calls the getter function and the boxes the return type.
   readonly var getPropAdapter:static fn(obj:Address[void], getter:Address[void]) -> Object;
-  
+
   // The setter adapter unboxes the value, and then calls the setter.
   readonly var setPropAdapter:static fn(obj:Address[void], setter:Address[void], value:Object);
-  
+
   def construct(
   	getFieldAdapter:static fn(obj:Address[void], offset:int) -> Object,
   	setFieldAdapter:static fn(obj:Address[void], offset:int, value:Object),
@@ -622,7 +622,7 @@ final class TypeDecoder : StreamDecoder {
     let _derivedTypeRefs:Address[Address[DerivedTypeDescriptor]];
     let _compositeTypeRefs:Address[Address[TypeInfoBlock]];
   }
-  
+
   def construct(
     	derivedTypeRefs:Address[Address[DerivedTypeDescriptor]],
     	compositeTypeRefs:Address[Address[TypeInfoBlock]],
@@ -691,7 +691,7 @@ class CompositeType : Type {
     var _alloc:static fn -> Object;
     var _noArgCtor:static fn :Object -> Object;
   }
-  
+
   /* private {
     let _descriptor:CompositeTypeDecriptor;
     var _superType:CompositeType?
@@ -734,6 +734,6 @@ class Module {
   	let _names:NameTable;
   	let _nameIndex:int16;
   }
-  
+
   _state[0]._memberTypes;
 }

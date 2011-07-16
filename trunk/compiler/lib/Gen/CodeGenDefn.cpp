@@ -160,12 +160,19 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
     if (debug_) {
       dbgContext_ = genDISubprogram(fdef);
-      dbgContext_ = genLexicalBlock(fdef->location());
+      //dbgContext_ = genLexicalBlock(fdef->location());
       dbgInlineContext_ = DIScope();
       setDebugLocation(fdef->location());
     }
 
     BasicBlock * prologue = BasicBlock::Create(context_, "prologue", f);
+
+    // Create the LLVM Basic Blocks corresponding to each high level BB.
+//    BlockList & blocks = fdef->blocks();
+//    for (BlockList::iterator b = blocks.begin(); b != blocks.end(); ++b) {
+//      Block * blk = *b;
+//      blk->setIRBlock(BasicBlock::Create(context_, blk->label(), f));
+//    }
 
     builder_.SetInsertPoint(prologue);
 

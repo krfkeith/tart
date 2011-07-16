@@ -24,6 +24,8 @@
 
 namespace tart {
 
+extern bool unifyVerbose;
+
 Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoerce) {
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
@@ -134,7 +136,7 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   }
 
   FunctionDefn * coerceFn = Builtins::objectCoerceFn();
-  TemplateSignature * coerceTemplate = coerceFn->templateSignature();
+  Template * coerceTemplate = coerceFn->templateSignature();
 
   DASSERT_OBJ(coerceTemplate->paramScope().count() == 1, type);
   // Do analysis on template if needed.
@@ -143,9 +145,9 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
     da.analyzeTemplateSignature(coerceFn);
   }
 
-  BindingEnv env;
-  env.addSubstitution(coerceTemplate->patternVar(0), type);
-  FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), env));
+  TypeVarMap vars;
+  vars[coerceTemplate->patternVar(0)] = type;
+  FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), vars));
   analyzeFunction(coercer, Task_PrepTypeComparison);
   DASSERT(coercer->isSingular());
   Builtins::module.converters()[conversionKey] = coercer;
@@ -242,12 +244,23 @@ FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
 Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   const SpCandidateList & candidates = spe->candidates();
   ConversionRank bestRank = Incompatible;
+  BindingEnv env;
+
+  // Now, for each parameter attempt unification.
+  SourceContext callSite(spe, NULL, spe);
   for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
     SpCandidate * sp = *it;
-    bestRank = std::max(bestRank, sp->updateConversionRank());
+    SourceContext candidateSite(sp->def()->location(), &callSite, sp->def(), Format_Type);
+    sp->relabelTypeVars(env);
+    if (sp->unify(&candidateSite, env)) {
+      bestRank = std::max(bestRank, sp->updateConversionRank());
+    }
   }
 
+  env.reset();
+
   if (bestRank == Incompatible) {
+    unifyVerbose = true;
     if (!spe->args()->containsBadType()) {
       SpCandidate * front = *candidates.begin();
       diag.error(spe) << "No candidate found for '" << front->def()->name() <<
@@ -255,10 +268,14 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
       diag.info(spe) << "Candidates are:";
       for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
         SpCandidate * sp = *it;
-        sp->updateConversionRank(); // Helps with debugging.
+        SourceContext candidateSite(sp->def()->location(), &callSite, sp->def(), Format_Type);
+        if (sp->unify(&candidateSite, env)) {
+          sp->updateConversionRank(); // Helps with debugging.
+        }
         diag.info(sp->def()) << Format_Type << sp->def() << " [" << sp->conversionRank() << "]";
       }
     }
+    unifyVerbose = false;
     return NULL;
   }
 
@@ -312,8 +329,11 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   }
 
   SpCandidate * spBest = *bestCandidates.begin();
+  TypeVarMap vars;
+  env.updateAssignments(SourceLocation(), spBest);
+  env.toTypeVarMap(vars, spBest);
   if (spBest->def()->hasUnboundTypeParams()) {
-    return spBest->def()->templateSignature()->instantiate(spe->location(), spBest->env());
+    return spBest->def()->templateSignature()->instantiate(spe->location(), vars);
   }
 
   return spBest->def();

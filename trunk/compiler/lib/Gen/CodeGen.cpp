@@ -150,14 +150,10 @@ void CodeGenerator::generate() {
       builder_.CreateRet(NULL);
       builder_.ClearInsertionPoint();
 
-      std::vector<Constant *> ctorMembers;
-      ctorMembers.push_back(getInt32Val(65536));
-      ctorMembers.push_back(moduleInitFunc_);
-
-      Constant * ctorStruct = ConstantStruct::get(context_, ctorMembers, false);
+      Constant * ctorStruct = getStructVal(getInt32Val(65536), moduleInitFunc_, NULL);
       Constant * ctorArray = ConstantArray::get(
             ArrayType::get(ctorStruct->getType(), 1),
-            &ctorStruct, 1);
+            ArrayRef<Constant *>(&ctorStruct, 1));
       Constant * initVar = new GlobalVariable(
           *irModule_, ctorArray->getType(), true,
           GlobalValue::AppendingLinkage,
@@ -557,6 +553,17 @@ llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
   }
 #endif
   return builder_.CreateLoad(value, name);
+}
+
+llvm::Constant * CodeGenerator::getStructVal(llvm::Constant * member, ...) {
+  va_list ap;
+  llvm::SmallVector<llvm::Constant *, 8> members;
+  va_start(ap, member);
+  while (member) {
+    members.push_back(member);
+    member = va_arg(ap, llvm::Constant*);
+  }
+  return llvm::ConstantStruct::getAnon(context_, members, false);
 }
 
 #if 0
