@@ -21,6 +21,7 @@
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeTransform.h"
+#include "tart/Sema/Infer/TypeAssignment.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -29,8 +30,8 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// FinalizeTypesPassImpl
 
-Expr * FinalizeTypesPass::run(Defn * source, Expr * in, bool tryCoerciveCasts) {
-  FinalizeTypesPassImpl instance(source);
+Expr * FinalizeTypesPass::run(Defn * source, Expr * in, BindingEnv & env, bool tryCoerciveCasts) {
+  FinalizeTypesPassImpl instance(source, env);
   instance.tryCoerciveCasts_ = tryCoerciveCasts;
   return instance.runImpl(in);
 }
@@ -41,6 +42,14 @@ Expr * FinalizeTypesPass::runImpl(Expr * in) {
     DASSERT(result->isSingular());
   }
   return result;
+}
+
+Expr * FinalizeTypesPassImpl::visitConstantInteger(ConstantInteger * in) {
+  if (in->type()->typeClass() == Type::SizingOf) {
+    in->setType(&UnsizedIntType::instance);
+  }
+
+  return in;
 }
 
 Expr * FinalizeTypesPassImpl::visitLValue(LValueExpr * in) {
@@ -146,14 +155,20 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     }
 
     // Handle the case where the method is a template, or is contained within a template.
+    DASSERT_OBJ(!method->isScaffold(), method);
     bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
     if (isTemplateMethod) {
-      method = cast_or_null<FunctionDefn>(doPatternSubstitutions(in->location(), method, cd->env()));
+      GC * context = in->singularCandidate();
+      TypeVarMap varValues;
+      env_.toTypeVarMap(varValues, context);
+      method = cast_or_null<FunctionDefn>(
+          doPatternSubstitutions(in->location(), method, varValues));
       if (method == NULL || !AnalyzerBase::analyzeFunction(method, Task_PrepTypeComparison)) {
         return &Expr::ErrorVal;
       }
 
       DASSERT_OBJ(method->isSingular(), method);
+      DASSERT_OBJ(!method->isScaffold(), method);
       cd->setMethod(method);
       cd->setFunctionType(method->functionType());
 
@@ -252,11 +267,11 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
   for (Candidates::iterator it = in->candidates().begin(); it != in->candidates().end(); ++it) {
     CallCandidate * cc = *it;
     cc->updateConversionRank();
-    if (cc->env().empty()) {
+    if (env_.empty()) {
       diag.info(cc->method()) << Format_Type << cc->method() << " [" << cc->conversionRank() << "]";
     } else {
       diag.info(cc->method()) << Format_Type  << cc->method() << " with " <<
-          Format_Dealias << cc->env() <<" [" << cc->conversionRank() << "] ";
+          Format_Dealias << env_ <<" [" << cc->conversionRank() << "] ";
     }
   }
 
@@ -313,8 +328,9 @@ Expr * FinalizeTypesPassImpl::visitCallExpr(CallExpr * in) {
   return result;
 }
 
-bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & outArgs) {
-
+bool FinalizeTypesPassImpl::coerceArgs(
+    CallCandidate * cd, const ExprList & args, ExprList & outArgs)
+{
   const FunctionType * fnType = cd->functionType();
   size_t paramCount = fnType->params().size();
   size_t argCount = args.size();
@@ -376,18 +392,16 @@ bool FinalizeTypesPassImpl::coerceArgs(CallCandidate * cd, const ExprList & args
   return true;
 }
 
-Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env) {
+Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def,
+    const TypeVarMap & varValues)
+{
   // First perform pattern substitutions on the parent definition.
   Defn * parent = def->parentDefn();
   if (parent != NULL && (parent->isTemplate() || parent->isTemplateMember())) {
-    parent = doPatternSubstitutions(loc, parent, env);
+    parent = doPatternSubstitutions(loc, parent, varValues);
     if (parent == NULL) {
       return NULL;
     }
-
-//    if (!AnalyzerBase::analyzeDefn(parent, Task_PrepMemberLookup)) {
-//      return NULL;
-//    }
 
     Defn * newdef = NULL;
     DefnList defns;
@@ -395,6 +409,13 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(parent)) {
       if (!AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup)) {
         return NULL;
+      }
+      // If the original was a constructor, make sure that any implicit constructors
+      // get created before searching.
+      if (const FunctionDefn * fn = dyn_cast<FunctionDefn>(def)) {
+        if (fn->isCtor() && !AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepConstruction)) {
+          return NULL;
+        }
       }
       tdef->typeValue()->memberScope()->lookupMember(def->name(), defns, false);
     } else {
@@ -419,32 +440,35 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def, Bind
   }
 
   if (def->isTemplate()) {
-    TemplateSignature * tsig = def->templateSignature();
+    Template * tm = def->templateSignature();
 
     // Check to make sure that all template params are bound.
-    size_t numVars = tsig->patternVarCount();
+    size_t numVars = tm->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
-      const TypeVariable * var = tsig->patternVar(i);
-      const Type * value = env.get(var);
-      if (value == NULL) {
+      const TypeVariable * var = tm->patternVar(i);
+      TypeVarMap::const_iterator it = varValues.find(var);
+      if (it == varValues.end()) {
         diag.fatal(loc) << "Unable to deduce template parameter '" << var << "' for '" <<
-            Format_Verbose << def << "' in environment " << env;
+            Format_Verbose << def << "' in environment " << env_;
         return NULL;
-      } else if (!value->isSingular()) {
-        value = NormalizeTransform().transform(value);
+      } else {
+        const Type * value = it->second;
         if (!value->isSingular()) {
-          value->isSingular();
-          diag.error(loc) << "Unable to narrow template parameter '" << var << "' for '" <<
-              Format_Verbose << def << "'";
-          diag.info() << "Environment = " << env;
-          diag.info() << Format_Type << "Value = " << value;
-          DFAIL("???");
-          return NULL;
+          value = NormalizeTransform().transform(value);
+          if (!value->isSingular()) {
+            value->isSingular();
+            diag.error(loc) << "Unable to narrow template parameter '" << var << "' for '" <<
+                Format_Verbose << def << "'";
+            diag.info() << "Environment = " << env_;
+            diag.info() << Format_Type << "Value = " << value;
+            DFAIL("???");
+            return NULL;
+          }
         }
       }
     }
 
-    def = tsig->instantiate(loc, env, true);
+    def = tm->instantiate(loc, varValues, Template::Singular | Template::NonScaffold);
     DASSERT_OBJ(def->isSingular(), def);
   }
 
@@ -777,7 +801,7 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
   const Type * type = in->value();
-  if (const TypeBinding * tb = dyn_cast<TypeBinding>(type)) {
+  if (const TypeAssignment * tb = dyn_cast<TypeAssignment>(type)) {
     if (tb->value() != NULL) {
       return new TypeLiteralExpr(in->location(), tb->value());
     }

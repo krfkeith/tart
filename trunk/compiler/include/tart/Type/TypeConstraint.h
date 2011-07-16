@@ -9,19 +9,16 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef LLVM_ADT_SMALLPTRSET_H
 #include "llvm/ADT/SmallPtrSet.h"
+#endif
 
 namespace tart {
 
 // Forward declarations
 class CallExpr;
-class BindingEnv;
 class CallCandidate;
 class TupleCtorExpr;
-
-// Represents the expansion of a constraint into all of the types that match
-// that constraint.
-typedef llvm::SmallPtrSet<const Type *, 32> TypeExpansion;
 
 /// -------------------------------------------------------------------
 /// Abstract base class for type constraints. A type constraint represents
@@ -29,13 +26,11 @@ typedef llvm::SmallPtrSet<const Type *, 32> TypeExpansion;
 class TypeConstraint : public Type {
 public:
 
-  // Unify with the input pattern
-  virtual bool unifyWithPattern(BindingEnv &env, const Type * pattern) const = 0;
   virtual const Type * singularValue() const = 0;
 
-  /** Expand this type constraint into all of the possible types that match
-      the constraint. */
-  virtual void expand(TypeExpansion & out) const = 0;
+  /** Return true if the predicate is true for all active members, and there is at least
+      one active. */
+  //virtual bool all() const = 0;
 
   // Overrides
 
@@ -56,23 +51,20 @@ protected:
 /// some type expression. The set of types may grow or shrink during
 /// type inferencing as a result of partial solutions.
 class TypeSetConstraint : public TypeConstraint {
-protected:
-  TypeSetConstraint(TypeClass tcls) : TypeConstraint(tcls) {}
-
 public:
 
-  // Unify with the input pattern
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-    return false;
-  }
   const Type * singularValue() const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isEqual(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void format(FormatStream & out) const;
+
+protected:
+  TypeSetConstraint(TypeClass tcls) : TypeConstraint(tcls) {}
 };
 
 /// -------------------------------------------------------------------
@@ -82,20 +74,31 @@ class ResultOfConstraint : public TypeSetConstraint {
 public:
   ResultOfConstraint(CallExpr * call)
     : TypeSetConstraint(ResultOf)
-    , callExpr(call)
+    , callExpr_(call)
   {}
+
+  /** The call expression. */
+  CallExpr * expr() const { return callExpr_; }
+
+  /** The list of call candidates. */
+  const Candidates & candidates() const;
+
+  /** The result type for a given candidate. */
+  const Type * candidateResultType(const CallCandidate * cc) const;
 
   // Overrides
 
   void expand(TypeExpansion & out) const;
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
   void trace() const;
   void format(FormatStream & out) const;
 
-private:
-  CallExpr * callExpr;
+  static inline bool classof(const ResultOfConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == ResultOf;
+  }
 
-  const Type * candidateResultType(const CallCandidate * cc) const;
+private:
+  CallExpr * callExpr_;
 };
 
 /// -------------------------------------------------------------------
@@ -104,52 +107,73 @@ private:
 /// will be chosen yet.
 class ParameterOfConstraint : public TypeSetConstraint {
 public:
-  ParameterOfConstraint(CallExpr * call, int index)
+  ParameterOfConstraint(CallExpr * call, unsigned argIndex)
     : TypeSetConstraint(ParameterOf)
-    , callExpr(call)
-    , argIndex(index)
+    , callExpr_(call)
+    , argIndex_(argIndex)
   {}
+
+  /** The call expression. */
+  CallExpr * expr() const { return callExpr_; }
+
+  /** The list of call candidates. */
+  const Candidates & candidates() const;
+
+  /** The argument index. */
+  unsigned argIndex() const { return argIndex_; }
+
+  /** The Nth param type for a given candidate. */
+  const Type * candidateParamType(const CallCandidate * cc) const;
 
   // Overrides
 
   void expand(TypeExpansion & out) const;
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
   void trace() const;
   void format(FormatStream & out) const;
 
-private:
-  CallExpr * callExpr;
-  int argIndex;
-};
+  static inline bool classof(const ParameterOfConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == ParameterOf;
+  }
 
+private:
+  CallExpr * callExpr_;
+  unsigned argIndex_;
+};
 
 /// -------------------------------------------------------------------
 /// A type constraint representing a type parameter to a type which
-/// in turn may be a constraint. This version only handles types
-/// which have a single type parameter - Address, NativeArray, etc.
-class SingleTypeParamOfConstraint : public TypeSetConstraint {
+/// in turn may be a constraint.
+class TypeParamOfConstraint : public TypeSetConstraint {
 public:
-  SingleTypeParamOfConstraint(const TypeConstraint * base, Type::TypeClass cls)
-    : TypeSetConstraint(SingleTypeParamOf)
+  TypeParamOfConstraint(const TypeConstraint * base, Type::TypeClass cls, unsigned paramIndex)
+    : TypeSetConstraint(TypeParamOf)
     , base_(base)
     , cls_(cls)
+    , paramIndex_(paramIndex)
   {}
+
+  /** The type that we want to get a type parameter of. */
+  const TypeConstraint * base() const { return base_; }
+
+  /** Given a type, return the value of the Nth type parameter. */
+  const Type * forType(const Type * ty) const;
 
   // Overrides
 
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
   void expand(TypeExpansion & out) const;
   void trace() const;
   void format(FormatStream & out) const;
 
-  static inline bool classof(const SingleTypeParamOfConstraint *) { return true; }
+  static inline bool classof(const TypeParamOfConstraint *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() == SingleTypeParamOf;
+    return type->typeClass() == TypeParamOf;
   }
 
 private:
   const TypeConstraint * base_;
   Type::TypeClass cls_;
+  unsigned paramIndex_;
 };
 
 /// -------------------------------------------------------------------
@@ -166,13 +190,11 @@ public:
 
   // Overrides
 
-  void expand(TypeExpansion & out) const;
   const Type * singularValue() const;
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;
@@ -185,6 +207,54 @@ public:
 
 private:
   TupleCtorExpr * tuple_;
+};
+
+/// -------------------------------------------------------------------
+/// A type constraint representing the possible integer types which
+/// an unsized integer constant can be converted to. Mainly this is
+/// just a holder for the integer constant so that we can calculate
+/// the conversion rankings knowing how large an integer we'll need.
+
+class SizingOfConstraint : public TypeConstraint {
+public:
+  SizingOfConstraint(ConstantInteger * intVal)
+    : TypeConstraint(SizingOf)
+    , intVal_(intVal)
+    , isNegative_(intVal->isNegative())
+  {}
+
+  /** The integer value. */
+  ConstantInteger * intVal() const { return intVal_; }
+
+  /** Whether the value is negative. */
+  bool isNegative() const { return isNegative_; }
+
+  /** Number of bits required to hold this value. */
+  unsigned signedBitsRequired() const;
+  unsigned unsignedBitsRequired() const;
+
+  // Overrides
+
+  const Type * singularValue() const;
+  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  bool includes(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
+  bool isSingular() const { return false; }
+  bool isEqual(const Type * other) const;
+  bool isIntType() const { return true; }
+  bool isReferenceType() const { return false; }
+  void trace() const;
+  void format(FormatStream & out) const;
+
+  static inline bool classof(const SizingOfConstraint *) { return true; }
+  static inline bool classof(const Type * type) {
+    return type->typeClass() == SizingOf;
+  }
+
+private:
+  ConstantInteger * intVal_;
+  bool isNegative_;
 };
 
 /// -------------------------------------------------------------------
@@ -217,11 +287,10 @@ public:
 
   void expand(TypeExpansion & out) const;
   const Type * singularValue() const;
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool includes(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;
@@ -237,39 +306,6 @@ private:
   const Type * expected_;
   mutable const Type * common_;
 };
-
-#if 0
-/// -------------------------------------------------------------------
-/// A type constraint representing the possible types of an unsized
-/// integer.
-
-class UnsizedIntConstraint : public TypeSetConstraint {
-public:
-  static const int NUM_TYPES = 8;
-
-  UnsizedIntConstraint(ConstantInteger * expr);
-
-  // Overrides
-
-  bool unifyWithPattern(BindingEnv &env, const Type * pattern) const;
-  void expand(TypeExpansion & out) const;
-  void trace() const;
-  void format(FormatStream & out) const;
-  bool isCulled(int index) const { return culled_[index] != 0; }
-  Type ** types() const { return types_; }
-
-  static inline bool classof(const UnsizedIntConstraint *) { return true; }
-  static inline bool classof(const Type * type) {
-    return type->typeClass() == UnsizedInt;
-  }
-
-private:
-  static Type * types_[NUM_TYPES];
-
-  ConstantInteger * expr_;
-  uint16_t culled_[NUM_TYPES];
-};
-#endif
 
 } // namespace tart
 

@@ -30,7 +30,7 @@ public:
 
   bool isSingular() const { return value_->isSingular(); }
   bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const { return isEqual(other); }
+  bool isSubtypeOf(const Type * other) const { return isEqual(other); }
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const { return Shape_None; }
   const llvm::Type * irType() const;

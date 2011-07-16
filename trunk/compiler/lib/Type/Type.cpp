@@ -9,15 +9,18 @@
 #include "tart/Type/TypeAlias.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
+#include "tart/Type/EnumType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
-
-#include "tart/Sema/BindingEnv.h"
+#include "tart/Type/TypeConstraint.h"
 
 #include "tart/Common/Diagnostics.h"
+
+#include "tart/Sema/Infer/TypeAssignment.h"
+#include "tart/Sema/CallCandidate.h"
 
 namespace tart {
 
@@ -280,6 +283,11 @@ bool Type::isUnsignedType() const {
       isUnsignedIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
 }
 
+bool Type::isSignedType() const {
+  return cls == Primitive &&
+      isSignedIntegerTypeId(static_cast<const PrimitiveType *>(this)->typeId());
+}
+
 bool Type::isFPType() const {
   return cls == Primitive &&
       isFloatingTypeId(static_cast<const PrimitiveType *>(this)->typeId());
@@ -321,6 +329,14 @@ bool Type::isBoxableType() const {
     default:
       return false;
   }
+}
+
+bool Type::isScaffold() const {
+  if (cls == Binding) {
+    return true;
+  }
+  Defn * de = typeDefn();
+  return de != NULL && de->hasTrait(Defn::Scaffold);
 }
 
 const Type * Type::typeParam(int index) const {
@@ -391,70 +407,318 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   return result;
 }
 
-bool Type::equivalent(const Type * type1, const Type * type2) {
-  while (const TypeBinding * pval = dyn_cast<TypeBinding>(type1)) {
-    type1 = pval->value();
-    if (type1 == NULL) {
-      return false;
+bool Type::equivalent(const Type * lhs, const Type * rhs) {
+  // Early out
+  if (lhs == rhs) {
+    return true;
+  }
+
+  while (const TypeAssignment * ta = dyn_cast<TypeAssignment>(lhs)) {
+    lhs = ta->value();
+    if (lhs == NULL) {
+      bool atLeastOne = false;
+      for (ConstraintSet::const_iterator ci = ta->begin(); ci != ta->end(); ++ci) {
+        Constraint * cst = * ci;
+        if (!cst->visited() && cst->checkProvisions() && cst->kind() == Constraint::EXACT) {
+          cst->setVisited(true);
+          bool result = equivalent(cst->value(), rhs);
+          cst->setVisited(false);
+          if (!result) {
+            return false;
+          }
+          atLeastOne = true;
+        }
+      }
+      return atLeastOne;
     }
   }
 
-  while (const TypeBinding * pval = dyn_cast<TypeBinding>(type2)) {
-    type2 = pval->value();
-    if (type2 == NULL) {
-      return false;
+  while (const TypeAssignment * ta = dyn_cast<TypeAssignment>(rhs)) {
+    rhs = ta->value();
+    if (rhs == NULL) {
+      bool atLeastOne = false;
+      for (ConstraintSet::const_iterator ci = ta->begin(); ci != ta->end(); ++ci) {
+        Constraint * cst = * ci;
+        if (!cst->visited() && cst->checkProvisions() && cst->kind() == Constraint::EXACT) {
+          cst->setVisited(true);
+          bool result = equivalent(lhs, cst->value());
+          cst->setVisited(false);
+          if (!result) {
+            return false;
+          }
+          atLeastOne = true;
+        }
+      }
+      return atLeastOne;
     }
   }
 
-  if (type1 == type2) {
+  if (lhs == rhs) {
     return true;
   }
 
   // Compare the ASTs to see if they derive from the same original symbol.
-  if (type1->typeDefn() != NULL &&
-      type2->typeDefn() != NULL &&
-      type1->typeDefn()->ast() != NULL &&
-      type1->typeDefn()->ast() == type2->typeDefn()->ast()) {
+  if (lhs->typeDefn() != NULL &&
+      rhs->typeDefn() != NULL &&
+      lhs->typeDefn()->ast() != NULL &&
+      lhs->typeDefn()->ast() == rhs->typeDefn()->ast()) {
 
     // Now test the type parameters to see if they are also equivalent.
-    const TypeDefn * d1 = type1->typeDefn();
-    const TypeDefn * d2 = type2->typeDefn();
-    const ConstTypeList * type1Params = NULL;
-    const ConstTypeList * type2Params = NULL;
+    const TypeDefn * d1 = lhs->typeDefn();
+    const TypeDefn * d2 = rhs->typeDefn();
+    const ConstTypeList * lhsParams = NULL;
+    const ConstTypeList * rhsParams = NULL;
 
     if (d1->isTemplate()) {
-      type1Params = &d1->templateSignature()->typeParams()->members();
+      lhsParams = &d1->templateSignature()->typeParams()->members();
     } else if (d1->isTemplateInstance()) {
-      type1Params = &d1->templateInstance()->typeArgs()->members();
+      lhsParams = &d1->templateInstance()->typeArgs()->members();
     }
 
     if (d2->isTemplate()) {
-      type2Params = &d2->templateSignature()->typeParams()->members();
+      rhsParams = &d2->templateSignature()->typeParams()->members();
     } else if (d2->isTemplateInstance()) {
-      type2Params = &d2->templateInstance()->typeArgs()->members();
+      rhsParams = &d2->templateInstance()->typeArgs()->members();
     }
 
-    if (type1Params == type2Params) {
+    if (lhsParams == rhsParams) {
       return true;
     }
 
-    if (type1Params == NULL ||
-        type2Params == NULL ||
-        type1Params->size() != type2Params->size()) {
+    if (lhsParams == NULL ||
+        rhsParams == NULL ||
+        lhsParams->size() != rhsParams->size()) {
       return false;
     }
 
-    size_t numParams = type1Params->size();
+    size_t numParams = lhsParams->size();
     for (size_t i = 0; i < numParams; ++i) {
-      if (!equivalent((*type1Params)[i], (*type2Params)[i])) {
+      if (!equivalent((*lhsParams)[i], (*rhsParams)[i])) {
         return false;
       }
     }
 
     return true;
+  } else if (lhs->typeClass() == rhs->typeClass()) {
+    if (const TupleType * tt1 = dyn_cast<TupleType>(lhs)) {
+      const TupleType * tt2 = static_cast<const TupleType *>(rhs);
+      if (tt1->size() == tt2->size()) {
+        size_t size = tt1->size();
+        for (size_t i = 0; i < size; ++i) {
+          if (!equivalent(tt1->member(i), tt2->member(i))) {
+            return false;
+          }
+          return true;
+        }
+      }
+    }
   }
 
+  // TODO: Add functions, unions, etc.
+
   return false;
+}
+
+const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
+  if (rhs->isSubtypeOf(lhs)) {
+    return lhs;
+  }
+
+  const Type * result = NULL;
+  if (const CompositeType * ct = dyn_cast<CompositeType>(lhs)) {
+    for (ClassList::const_iterator it = ct->bases().begin(); it != ct->bases().end(); ++it) {
+      result = commonBase(*it, rhs);
+      if (result != NULL) {
+        return result;
+      }
+    }
+  } else if (const EnumType * et = dyn_cast<EnumType>(lhs)) {
+    return commonBase(et->baseType(), rhs);
+  } else if (const PrimitiveType * pt = dyn_cast<PrimitiveType>(lhs)) {
+    switch (pt->typeId()) {
+      case TypeId_SInt8:
+        return commonBase(&Int16Type::instance, rhs);
+
+      case TypeId_SInt16:
+        return commonBase(&Int32Type::instance, rhs);
+
+      case TypeId_SInt32:
+        return commonBase(&Int64Type::instance, rhs);
+
+      case TypeId_UInt8:
+        result = commonBase(&UInt16Type::instance, rhs);
+        return result != NULL ? result : commonBase(&Int16Type::instance, rhs);
+
+      case TypeId_UInt16:
+        result = commonBase(&UInt32Type::instance, rhs);
+        return result != NULL ? result : commonBase(&Int32Type::instance, rhs);
+
+      case TypeId_UInt32:
+        result = commonBase(&UInt64Type::instance, rhs);
+        return result != NULL ? result : commonBase(&Int64Type::instance, rhs);
+
+      case TypeId_Float:
+        return commonBase(&DoubleType::instance, rhs);
+
+      default:
+        break;
+    }
+  } else if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(lhs)) {
+    DFAIL("Implement");
+    (void)soc;
+  }
+
+  return NULL;
+}
+
+bool Type::isSubtype(const Type * ty, const Type * base) {
+  if (ty == base) {
+    return true;
+  }
+
+  // Special case for ambiguous base types.
+  switch (base->typeClass()) {
+    case Type::ParameterOf: {
+      const ParameterOfConstraint * poc = static_cast<const ParameterOfConstraint *>(base);
+      const Candidates & cd = poc->candidates();
+      bool any = false;
+      for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+        if (!(*it)->isCulled()) {
+          if (!isSubtype(ty, poc->candidateParamType(*it))) {
+            return false;
+          }
+        }
+        any = true;
+      }
+      return any;
+      break;
+    }
+
+    case Type::ResultOf: {
+      const ResultOfConstraint * roc = static_cast<const ResultOfConstraint *>(base);
+      const Candidates & cd = roc->candidates();
+      bool any = false;
+      for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+        if (!(*it)->isCulled()) {
+          if (!isSubtype(ty, roc->candidateResultType(*it))) {
+            return false;
+          }
+        }
+        any = true;
+      }
+      return any;
+      break;
+    }
+
+    case Type::Binding: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(base);
+      if (ta->value() != NULL) {
+        return isSubtype(ty, ta->value());
+      } else {
+        bool any = false;
+        for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
+          Constraint * cst = *si;
+          if (cst->visited()) {
+            any = true;
+          } else if (cst->checkProvisions()) {
+            if (cst->kind() == Constraint::UPPER_BOUND) {
+              // There's no way to determine if this is true, so return false.
+              return false;
+            }
+
+            cst->setVisited(true);
+            if (!Type::isSubtype(ty, cst->value())) {
+              cst->setVisited(false);
+              return false;
+            }
+            cst->setVisited(false);
+            any = true;
+          }
+        }
+        return any;
+      }
+    }
+
+    default:
+      break;
+  }
+
+  // Special case for ambiguous types.
+  switch (ty->typeClass()) {
+    case Type::NAddress: {
+      const AddressType * at = static_cast<const AddressType *>(ty);
+      if (const AddressType * atBase = dyn_cast<AddressType>(base)) {
+        return equivalent(at->typeParam(0), atBase->typeParam(0));
+      }
+      return false;
+    }
+
+    case Type::ParameterOf: {
+      const ParameterOfConstraint * poc = static_cast<const ParameterOfConstraint *>(ty);
+      const Candidates & cd = poc->candidates();
+      bool any = false;
+      for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+        if (!(*it)->isCulled()) {
+          if (!isSubtype(poc->candidateParamType(*it), base)) {
+            return false;
+          }
+        }
+        any = true;
+      }
+      return any;
+      break;
+    }
+
+    case Type::ResultOf: {
+      const ResultOfConstraint * roc = static_cast<const ResultOfConstraint *>(ty);
+      const Candidates & cd = roc->candidates();
+      bool any = false;
+      for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+        if (!(*it)->isCulled()) {
+          if (!isSubtype(roc->candidateResultType(*it), base)) {
+            return false;
+          }
+        }
+        any = true;
+      }
+      return any;
+      break;
+    }
+
+    case Type::Binding: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
+      if (ta->value() != NULL) {
+        return isSubtype(ta->value(), base);
+      } else {
+        bool any = false;
+        for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
+          Constraint * cst = *si;
+          if (cst->visited()) {
+            any = true;
+          } else if (cst->checkProvisions()) {
+            if (cst->kind() == Constraint::UPPER_BOUND) {
+              // There's no way to determine if this is true, so return false.
+              return false;
+            }
+
+            cst->setVisited(true);
+            if (!Type::isSubtype(cst->value(), base)) {
+              cst->setVisited(false);
+              return false;
+            }
+            cst->setVisited(false);
+            any = true;
+          }
+        }
+        return any;
+      }
+    }
+
+    default:
+      break;
+  }
+
+  return ty->isSubtypeOf(base);
 }
 
 // -------------------------------------------------------------------
@@ -492,9 +756,9 @@ DeclaredType::DeclaredType(TypeClass cls, TypeDefn * de, Scope * parentScope, Ty
 
   /** Return the number of type parameters of this type. */
 size_t DeclaredType::numTypeParams() const {
-  TemplateSignature * tsig = defn_->templateSignature();
-  if (tsig != NULL) {
-    return tsig->patternVarCount();
+  Template * tm = defn_->templateSignature();
+  if (tm != NULL) {
+    return tm->patternVarCount();
   }
 
   TemplateInstance * tinst = defn_->templateInstance();
@@ -506,9 +770,9 @@ size_t DeclaredType::numTypeParams() const {
 }
 
 const Type * DeclaredType::typeParam(int index) const {
-  TemplateSignature * tsig = defn_->templateSignature();
-  if (tsig != NULL) {
-    return tsig->typeParam(index);
+  Template * tm = defn_->templateSignature();
+  if (tm != NULL) {
+    return tm->typeParam(index);
   }
 
   TemplateInstance * tinst = defn_->templateInstance();
@@ -516,6 +780,7 @@ const Type * DeclaredType::typeParam(int index) const {
     return tinst->typeArg(index);
   }
 
+  diag.debug() << typeClass();
   DFAIL("Illegal State");
 }
 
@@ -560,10 +825,10 @@ Type * dealiasImpl(Type * t) {
     }
   }
 
-  while (const TypeBinding * pval = dyn_cast_or_null<TypeBinding>(t)) {
-    Type * v = pval->value();
+  while (const TypeAssignment * pval = dyn_cast_or_null<TypeAssignment>(t)) {
+    const Type * v = pval->value();
     if (v != NULL) {
-      t = v;
+      t = const_cast<Type *>(v);
     } else {
       break;
     }

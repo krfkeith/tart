@@ -13,6 +13,10 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef TART_DEFN_TEMPLATE_H
+#include "tart/Defn/Template.h"
+#endif
+
 #ifndef TART_SEMA_PARAMETERASSIGNMENTS_H
 #include "tart/Sema/ParameterAssignments.h"
 #endif
@@ -31,13 +35,23 @@ class SpCandidate;
 
 /// -------------------------------------------------------------------
 /// A call candidate
-class CallCandidate : public GC {
+class CallCandidate : public GC, public Formattable {
 public:
+  enum RelativeSpecificity {
+    NOT_MORE_SPECIFIC = 0,
+    EQUAL_SPECIFICITY,
+    MORE_SPECIFIC,
+  };
+
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       const ParameterAssignments & param, SpCandidate * spCandidate = NULL);
 
   CallCandidate(CallExpr * call, Expr * fnExpr, const FunctionType * ftype,
       const ParameterAssignments & params);
+
+  /** Rename all type variables in the type signature, as preparation for
+      unification. */
+  void relabelTypeVars(BindingEnv & env);
 
   /** The call expression that this is a candidate for. */
   CallExpr * callExpr() const { return callExpr_; }
@@ -52,6 +66,9 @@ public:
   /** The method type. */
   const FunctionType * functionType() const { return fnType_; }
   void setFunctionType(FunctionType * fnType) { fnType_ = fnType; }
+
+  /** The provision object for this call candidate. */
+  Provision * primaryProvision() const { return primaryProvision_; }
 
   /** The mapping of input args to formal parameters. */
   const ParameterAssignments & paramAssignments() const {
@@ -76,6 +93,9 @@ public:
   const Type * resultType() const { return resultType_; }
   void setResultType(Type * type) { resultType_ = type; }
 
+  /** The list of relabeled type parameters. */
+  const TupleType * typeParams() const { return typeParams_; }
+
   /** The compatibility rank for the least compatible argument. */
   ConversionRank conversionRank() const { return conversionRank_; }
 
@@ -92,12 +112,7 @@ public:
   bool isSingular() const;
 
   /** Perform unification on the candidate and its arguments. */
-  bool unify(CallExpr * callExpr, FormatStream * errStrm = NULL);
-
-  /** Return the environment containing type bindings created during
-      unification between the template function and the actual params. */
-  const BindingEnv & env() const { return bindingEnv_; }
-  BindingEnv & env() { return bindingEnv_; }
+  bool unify(CallExpr * callExpr, BindingEnv & env, FormatStream * errStrm = NULL);
 
   /** If this candidate has not already been culld, then set it's pruning
       depth to the current depth, otherwise leave it as-is. Returns true
@@ -125,12 +140,24 @@ public:
   /** Return true if the candidate has been culld. */
   bool isCulled() const { return pruningDepth_ != 0; }
 
+  /** Return true if the method is a template or a template member. */
+  bool isTemplate() const { return isTemplate_; }
+
+  /** Print the list of all type params and their bindings to the debug output. */
+  void dumpTypeParams() const;
+
   // Overrides
 
   void trace() const;
+  void format(FormatStream & out) const;
 
 private:
   void combineConversionRanks(ConversionRank newRank);
+
+  /** Return whether lhs is equal, or more specific than, rhs. If neither of those
+      is true, it does not mean that lhs is less specific - it may mean that the
+      two types are incomparable. */
+  static RelativeSpecificity isMoreSpecific(const Type * lhs, const Type * rhs);
 
   CallExpr * callExpr_;
   Expr * base_;
@@ -138,8 +165,8 @@ private:
   ConversionRank conversionRank_;
   int conversionCount_;
   int pruningDepth_;
+  Provision * primaryProvision_;
   ParameterAssignments paramAssignments_;
-  BindingEnv bindingEnv_;
   const FunctionType * fnType_;
   const Type * resultType_;
   ConstTypeList paramTypes_;
@@ -151,7 +178,38 @@ private:
   bool trace_;
 };
 
-FormatStream & operator<<(FormatStream & out, const CallCandidate & cc);
+/// -------------------------------------------------------------------
+/// A provision that a given call candidate has not been culled.
+class CandidateNotCulledProvision : public Provision {
+public:
+  enum { kIID = 0x100 };
+
+  CandidateNotCulledProvision(const CallCandidate * target) : target_(target) {}
+
+  // Overrides
+
+  virtual bool isType(uint32_t ptype) const { return ptype == kIID; }
+  bool check() const { return !target_->isCulled(); }
+  void trace() const { target_->mark(); }
+  void format(FormatStream & out) const {
+    target_->format(out);
+  }
+
+  bool contradicts(const Provision * p) const {
+    if (const CandidateNotCulledProvision * cnc = dyn_cast<CandidateNotCulledProvision>(p)) {
+      return cnc->target_ != target_ && cnc->target_->callExpr() == target_->callExpr();
+    }
+    return false;
+  }
+
+  static inline bool classof(const CandidateNotCulledProvision *) { return true; }
+  static inline bool classof(const Provision * prov) {
+    return prov->isType(CandidateNotCulledProvision::kIID);
+  }
+
+private:
+  const CallCandidate * target_;
+};
 
 } // namespace tart
 

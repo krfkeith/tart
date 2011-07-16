@@ -24,23 +24,23 @@ import tart.core.Memory.Address;
 
   /** Construct a new empty ArrayList.
       Parameters:
-          initialCapacity: This optional parameter, if present, indicates
+          capacity: This optional parameter, if present, indicates
               how much initial space to reserve.
    */
-  def construct(; initialCapacity:int = 0) {
-    _data = ElementType[](initialCapacity);
+  def construct(; capacity:int = 0) {
+    _data = ElementType[](capacity);
     _size = 0;
   }
 
   /** Construct a new ArrayList from a variable number of input arguments.
       Parameters:
           data: The list of values to store in the ArrayList.
-          initialCapacity: This optional parameter, if present, indicates
+          capacity: This optional parameter, if present, indicates
               how much initial space to reserve.
    */
-  def construct(data:ElementType...; initialCapacity:int = 0) {
-    initialCapacity = max(initialCapacity, data.size);
-    self._data = ElementType[](initialCapacity);
+  def construct(data:ElementType...; capacity:int = 0) {
+    capacity = max(capacity, data.size);
+    self._data = ElementType[](capacity);
     ElementType[].copyElements(self._data, 0, data, 0, data.size);
     _size = data.size;
   }
@@ -153,13 +153,13 @@ import tart.core.Memory.Address;
   /** Construct a new ArrayList from a collection.
       Parameters:
           collection: The collection containing the values to store in the ArrayList.
-          initialCapacity: This optional parameter, if present, indicates
+          capacity: This optional parameter, if present, indicates
               how much initial space to reserve.
    */
-  static def copyOf(collection:Collection[ElementType]; initialCapacity:int = 0) -> ArrayList {
+  static def copyOf(collection:Collection[ElementType]; capacity:int = 0) -> ArrayList {
     let size = collection.size;
-    initialCapacity = max(initialCapacity, size);
-    let result = ArrayList(initialCapacity = initialCapacity);
+    capacity = max(capacity, size);
+    let result = ArrayList(capacity = capacity);
     result._size = size;
     match collection as copyable:Copyable[ElementType] {
       copyable.copyElements(result._data.data, 0, size);

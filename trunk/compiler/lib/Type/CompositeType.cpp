@@ -327,6 +327,10 @@ bool CompositeType::isSubclassOf(const CompositeType * base) const {
     }
   }
 
+  if (cls == Interface && base == Builtins::typeObject.get()) {
+    return true;
+  }
+
   return false;
 }
 
@@ -470,11 +474,11 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     // See if this class implements the Function interface.
     const CompositeType * functionInterface = findBaseSpecializing(Builtins::typeFunction);
     if (functionInterface != NULL) {
-      if (!ftype->returnType()->isEqual(functionInterface->typeParam(0))) {
+      if (!equivalent(ftype->returnType(), functionInterface->typeParam(0))) {
         return Incompatible;
       }
 
-      if (!ftype->paramTypes()->isEqual(functionInterface->typeParam(1))) {
+      if (!equivalent(ftype->paramTypes(), functionInterface->typeParam(1))) {
         return Incompatible;
       }
 
@@ -529,7 +533,7 @@ TypeShape CompositeType::typeShape() const {
   return shape_;
 }
 
-bool CompositeType::isSubtype(const Type * other) const {
+bool CompositeType::isSubtypeOf(const Type * other) const {
   if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
     return otherCls == this || isSubclassOf(otherCls) ||
         (otherCls->typeClass() == Type::Protocol && otherCls->isSupportedBy(this));
@@ -659,6 +663,16 @@ void CompositeType::addBaseXRefs(Module * module) {
     for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
       (*it)->addBaseXRefs(module);
     }
+  }
+}
+
+void CompositeType::format(FormatStream & out) const {
+  if (classFlags_ & Closure) {
+    DeclaredType::format(out);
+    out << ".";
+    bases_[1]->format(out);
+  } else {
+    DeclaredType::format(out);
   }
 }
 

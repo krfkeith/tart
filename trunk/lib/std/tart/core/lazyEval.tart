@@ -6,7 +6,7 @@
     initialization expression is not evaluated, and the variable is unchanged.
     In either case, the value of the variable is returned.
  */
-macro lazyEval[%T](lval:optional T, init:T) -> T {
+macro lazyEval[%T](lval:T?, init:T) -> T {
   if lval is null {
     lval = init;
   }

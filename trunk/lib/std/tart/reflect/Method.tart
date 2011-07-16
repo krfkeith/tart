@@ -38,7 +38,7 @@ final class Method : Member {
         obj - The 'self' argument, or null if this is a static method.
         args - The list of arguments to the method.
    */
-  def call(obj:optional Object, args:Object[]) -> Object {
+  def call(obj:Object?, args:Object[]) -> Object {
     // TODO: Need a static function for attempt to call an abstract method.
     return functionType.invoke(_methodPointer, obj, args);
   }
@@ -48,7 +48,7 @@ final class Method : Member {
         obj - The 'self' argument, or null if this is a static method.
         args - The list of arguments to the method.
    */
-  def call(obj:optional Object, args:Object...) -> Object {
+  def call(obj:Object?, args:Object...) -> Object {
     return functionType.invoke(_methodPointer, obj, args);
   }
 

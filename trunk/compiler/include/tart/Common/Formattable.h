@@ -101,12 +101,20 @@ public:
   }
 
   inline FormatStream & operator<<(const Formattable * obj) {
-    obj->format(*this);
+    if (obj != NULL) {
+      obj->format(*this);
+    } else {
+      *this << "<null_ptr>";
+    }
     return *this;
   }
 
   inline FormatStream & operator<<(Formattable * obj) {
-    obj->format(*this);
+    if (obj != NULL) {
+      obj->format(*this);
+    } else {
+      *this << "<null_ptr>";
+    }
     return *this;
   }
 
@@ -132,7 +140,7 @@ class StrFormatStream : public FormatStream {
 public:
   StrFormatStream() : FormatStream(str_) {}
 
-  std::string str() const { return str_.str(); }
+  std::string str() { flush(); return str_.str(); }
 private:
   std::ostringstream str_;
 };

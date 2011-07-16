@@ -197,8 +197,9 @@ public:
   const llvm::Type * irParameterType() const;
   const llvm::Type * irReturnType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
+  void format(FormatStream & out) const;
   void trace() const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   TypeShape typeShape() const;

@@ -32,7 +32,7 @@ Constant * ConstantBuilder::buildStruct(const llvm::Type * type) {
 }
 
 Constant * ConstantBuilder::buildStruct() {
-  return ConstantStruct::get(context_, members_, false);
+  return ConstantStruct::getAnon(context_, members_, false);
 }
 
 const Type * ConstantBuilder::tibType() {

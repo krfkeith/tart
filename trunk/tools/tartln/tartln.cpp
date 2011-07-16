@@ -327,18 +327,22 @@ std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
 
   // Package up features to be passed to target/subtarget
   std::string featuresStr;
-  if (optMCPU.size() || optMAttrs.size()) {
+  if (optMAttrs.size()) {
+    errs() << "tartln: -mattrs is currently broken due to llvm link error.\n";
+    llvm_shutdown();
+    exit(1);
+#if 0
     SubtargetFeatures features;
-    features.setCPU(optMCPU);
     for (unsigned i = 0; i != optMAttrs.size(); ++i) {
       features.AddFeature(optMAttrs[i]);
     }
 
     featuresStr = features.getString();
+#endif
   }
 
   return std::auto_ptr<TargetMachine>(
-      theTarget->createTargetMachine(theTriple.getTriple(), featuresStr));
+      theTarget->createTargetMachine(theTriple.getTriple(), optMCPU, featuresStr));
 }
 
 /// GenerateBitcode - generates a bitcode file from the module provided
@@ -559,7 +563,7 @@ int main(int argc, char **argv, char **envp) {
         } else if (suffix == ".s") {
           optOutputType = AssemblyFile;
         } else if (suffix == ".o" || suffix == ".obj") {
-        	optOutputType = ObjectFile;
+            optOutputType = ObjectFile;
         } else {
           errs() << "tartln: unknown output file type suffix '" <<
           suffix << "'.\n";
@@ -588,7 +592,7 @@ int main(int argc, char **argv, char **envp) {
           #else
             outputFilename.appendSuffix("o");
           #endif
-        	break;
+            break;
 
         case ExecutableFile:
           #if defined(_WIN32) || defined(__CYGWIN__)

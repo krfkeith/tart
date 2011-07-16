@@ -11,7 +11,6 @@
 
 namespace tart {
 
-class BindingEnv;
 class TemplateCondition;
 
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
@@ -30,8 +29,13 @@ public:
   /** The variable name. */
   const char * name() const { return name_; }
 
-  /** Return the type of this variable, which will usually be 'Type' */
+  /** The type of this variable, which will usually be 'Type' */
   const Type * valueType() const { return valueType_; }
+
+  /** The upper bound of this type var - if non-null, any type bound to this type
+      must be equal to upperBound or a subtype of it. */
+  const Type * upperBound() const { return upperBound_; }
+  void setUpperBound(const Type * ty) { upperBound_ = ty; }
 
   /** Set the type of values which can be bound to this variable. */
   void setValueType(Type * type) { valueType_ = type; }
@@ -47,7 +51,7 @@ public:
 
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;
@@ -62,20 +66,31 @@ public:
 private:
   const SourceLocation location_;
   const Type * valueType_;
+  const Type * upperBound_;
   const char * name_;
   bool isVariadic_;
 };
 
 typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
+typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
 
 /// -------------------------------------------------------------------
 /// Defines the parameters of a template. Also used as a record of
 /// specializations of this template.
-class TemplateSignature : public GC {
+class Template : public GC {
 public:
-  static TemplateSignature * get(Defn * v, Scope * parent);
+  enum Traits {
+    Singular = (1<<0),
+    NonScaffold = (1<<1),
+  };
 
-  TemplateSignature(Defn * v, Scope * parentScope);
+  static uint32_t expectedTraits(const Type * ty) {
+    return (ty->isSingular() ? Singular : 0) | (ty->isScaffold() ? 0 : NonScaffold);
+  }
+
+  static Template * get(Defn * v, Scope * parent);
+
+  Template(Defn * v, Scope * parentScope);
 
   const Defn * value() const { return value_; }
 
@@ -118,10 +133,16 @@ public:
   Defn * findSpecialization(const TupleType * tv) const;
 
   /** Return a specialization of this template. */
-  Defn * instantiate(const SourceLocation & loc, const BindingEnv & env, bool singular = false);
+  Defn * instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
+      uint32_t expectedTraits = 0);
 
   /** Special version of instantiate for types. */
-  Type * instantiateType(const SourceLocation & loc, const BindingEnv & env);
+  Type * instantiateType(const SourceLocation & loc, const TypeVarMap & varValues,
+      uint32_t expectedTraits = 0);
+
+  /** Basic unification check - may produce false positives, but is cheap to run. */
+  bool canUnify(const TupleType * args) const;
+  bool canUnify(const Type * param, const Type * value) const;
 
   /** Returns true if this template has a variadic argument. */
   bool isVariadic() const { return isVariadic_; }

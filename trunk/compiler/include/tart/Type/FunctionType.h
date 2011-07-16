@@ -87,7 +87,7 @@ public:
   const llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const;
   Expr * nullInitValue() const;
   bool isSingular() const;

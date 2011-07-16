@@ -11,8 +11,8 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   endif ($PROFILE_TARTC)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
-file(GLOB sources lib/*/*.cpp)
-file(GLOB headers include/*/*.h)
+file(GLOB sources lib/*/*.cpp lib/Sema/*/*.cpp)
+file(GLOB headers include/*/*.h include/Sema/*/*.h)
 
 source_group(AST REGULAR_EXPRESSION lib/AST/*)
 source_group(AST REGULAR_EXPRESSION include/tart/AST/*)

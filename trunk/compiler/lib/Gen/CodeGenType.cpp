@@ -468,7 +468,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       // Create the table of strings.
       Constant * stringArray = llvm::ConstantArray::get(
           llvm::ArrayType::get(Builtins::typeString->irEmbeddedType(), enumConstants.size()),
-          &*enumConstants.begin(), enumConstants.size());
+          enumConstants);
       GlobalVariable * stringTable = new GlobalVariable(*irModule_,
           stringArray->getType(), true, GlobalValue::InternalLinkage, stringArray,
           ".names." + type->typeDefn()->linkageName());

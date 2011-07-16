@@ -77,11 +77,11 @@ class ArrayTest : Test {
   def testArrayOfStrings() {
     let e = ["abc", "def", "zzz"];
     assertEq(3, e.size);
-    assertEq('a', e[0][0]);
+    assertEq(ubyte('a'), e[0][0]);
   }
 
   def testArrayOfMixedTypes() {
-    let f = [int64(1), uint(2), 3];
+    let f = [int64(1), uint32(2), 3];
     assertEq(1, f[0]);
     assertEq(2, f[1]);
     assertEq(3, f[2]);

@@ -87,37 +87,43 @@ public final class StringBuilder {
       Parameters:
         c: The character to append.
     */
-  def append(c:char) {
+  def append(c:char) -> StringBuilder {
     let n = self._size;
     grow(1);
     value[n] = c;
+    return self;
   }
 
   /** Append all or part of a character array to the buffer. */
-  def append(c:char[], start:int = 0, count:int = int.maxVal) {
+  def append(c:char[], start:int = 0, count:int = int.maxVal) -> StringBuilder {
     insert(self._size, c, start, count);
+    return self;
   }
 
   /** Append all or part of a String to the buffer. */
-  def append(s:String, start:int = 0, count:int = int.maxVal) {
+  def append(s:String, start:int = 0, count:int = int.maxVal) -> StringBuilder {
     append(s.toCharArray(), start, count);
+    return self;
   }
 
-  def append(s:Collection[char]) {
+  def append(s:Collection[char]) -> StringBuilder {
     insert(self._size, s);
+    return self;
   }
 
-  def append(s:Iterator[char]) {
+  def append(s:Iterator[char]) -> StringBuilder {
     insert(self._size, s);
+    return self;
   }
 
-  def insert(insertPos:int, c:char) {
+  def insert(insertPos:int, c:char) -> StringBuilder {
     grow(1, insertPos);
     value[insertPos] = c;
+    return self;
   }
 
   /** Insert all or part of a character array to the buffer at position 'insertPos'. */
-  def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int, chars:char[], start:int = 0, count:int = int.maxVal) -> StringBuilder {
     Preconditions.checkIndex(insertPos >= 0 and insertPos <= self._size);
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(start >= 0);
@@ -128,6 +134,7 @@ public final class StringBuilder {
         char[].copyElements(value, insertPos, chars, start, count);
       }
     }
+    return self;
   }
 
   /** Append all or part of a String to the buffer at position 'insertPos'.
@@ -144,7 +151,7 @@ public final class StringBuilder {
         IndexOutOfRangeException: If 'count' or 'start' are less than zero, or if the
           insertPos is outside of the range of the buffer.
    */
-  def insert(insertPos:int, src:String, start:int = 0, count:int = int.maxVal) {
+  def insert(insertPos:int, src:String, start:int = 0, count:int = int.maxVal) -> StringBuilder {
     Preconditions.checkIndex(insertPos >= 0 and insertPos <= self._size);
     let chars = src.toCharArray(start, count);
     if chars.size > 0 {
@@ -152,18 +159,20 @@ public final class StringBuilder {
       grow(count, insertPos);
       char[].copyElements(value, insertPos, chars, 0, chars.size);
     }
+    return self;
   }
 
-  def insert(insertPos:int, s:Collection[char]) {
+  def insert(insertPos:int, s:Collection[char]) -> StringBuilder {
     if s.size > 0 {
       grow(s.size, insertPos);
       for c in s {
         value[insertPos++] = c;
       }
     }
+    return self;
   }
 
-  def insert(insertPos:int, s:Iterator[char]) {
+  def insert(insertPos:int, s:Iterator[char]) -> StringBuilder {
     match s {
       as sequence:HasLength {
         grow(sequence.length, insertPos);
@@ -176,14 +185,16 @@ public final class StringBuilder {
         }
       }
     }
+    return self;
   }
 
   /** Remove the character at position 'n'.
       Parameters:
         n: The index of the character to remove.
    */
-  def remove(n:int) {
+  def remove(n:int) -> StringBuilder {
     remove(n, 1);
+    return self;
   }
 
   /** Remove 'count' characters starting at position 'start'. If there are fewer than 'count'
@@ -196,13 +207,14 @@ public final class StringBuilder {
       Exceptions:
         IndexOutOfRangeException: If 'count' or 'start' are less than zero.
     */
-  def remove(start:int, count:int) {
+  def remove(start:int, count:int) -> StringBuilder {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(start >= 0);
     start = Math.min(start, self._size);
     count = Math.min(count, self._size - start);
     char[].copyElements(value, start, value, start + count, self._size - start - count);
     _size -= count;
+    return self;
   }
 
   /** Remove all characters from the buffer. */

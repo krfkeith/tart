@@ -72,9 +72,9 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
     if (const PrimitiveType * pto = dyn_cast<PrimitiveType>(toType)) {
       (void)pto;
     } else if (toType == Builtins::typeObject) {
-      const TemplateSignature * tsig = Builtins::objectCoerceFn()->templateSignature();
+      const Template * tm = Builtins::objectCoerceFn()->templateSignature();
       const FunctionDefn * coerceFn = dyn_cast_or_null<FunctionDefn>(
-          tsig->findSpecialization(TupleType::get(fromType)));
+          tm->findSpecialization(TupleType::get(fromType)));
       if (coerceFn == NULL) {
         diag.error() << "Missing function Object.coerce[" << fromType << "]";
         DFAIL("Missing Object.coerce fn");
@@ -431,7 +431,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
   DASSERT(val->getType()->getTypeID() == llvm::Type::PointerTyID);
 
   // If it's an interface, then we'll need to simply bit-cast it.
-  if (toType->typeClass() == Type::Interface) {
+  if (fromType->typeClass() == Type::Interface || toType->typeClass() == Type::Interface) {
     return builder_.CreateBitCast(val, toType->irType()->getPointerTo(), "intf_ptr");
   }
 

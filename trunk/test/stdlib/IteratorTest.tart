@@ -27,7 +27,7 @@ class Counter : Iterator[int32] {
 }
 
 class IteratorTest : Test {
-	def testManualIteration() {
+	def testManualIteration {
 	  let ctr = Counter(5);
 	  assertTrue(ctr.next() isa int32);
 	  assertTrue(ctr.next() isa int32);
@@ -37,7 +37,7 @@ class IteratorTest : Test {
 	  assertFalse(ctr.next() isa int32);
 	}
 
-	def testManualIteration2() {
+	def testManualIteration2 {
 	  expect2(1, 2);
 	}
 
@@ -48,7 +48,7 @@ class IteratorTest : Test {
 	  assertFalse(ctr.next() isa int32);
 	}
 
-	def testForeach() {
+	def testForeach {
 	  var sum = 0;
 	  for i in Counter(5) {
 	    sum += 1;
@@ -95,7 +95,7 @@ class IteratorTest : Test {
 	  assertEq(1, sum);
 	}
 
-  def testCountingIterator() {
+  def testCountingIterator {
     let list = ArrayList[int]();
     for i in Iterators.CountingIterator(5) {
       list.add(i);
@@ -103,6 +103,13 @@ class IteratorTest : Test {
     for i in Iterators.CountingIterator(5) {
       assertEq(i+1, list[i]+1);
     }
+  }
+
+  def testMap {
+    let s1:int[] = [1, 2, 3];
+    let s2 = Iterators.map(fn n:int -> int { return n * 2; }, s1.iterate());
+    let s3:int[] = [2, 4, 6];
+    assertTrue(Iterators.equal(s3.iterate(), s2));
   }
 }
 

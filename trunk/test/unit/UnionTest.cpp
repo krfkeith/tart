@@ -134,6 +134,6 @@ TEST_F(UnionTest, Coalesce) {
   ConversionRank convertImpl(const Conversion & conversion) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool includes(const Type * other) const;
 #endif

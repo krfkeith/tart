@@ -24,7 +24,7 @@ public:
   Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
 private:
-  TemplateSignature * tsig_;
+  Template * tsig_;
 };
 
 } // namespace tart

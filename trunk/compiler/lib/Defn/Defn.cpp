@@ -99,7 +99,7 @@ llvm::StringRef Defn::linkageName() const {
       lnkName += "[";
       const TupleType * typeArgs = tinst_->typeArgs();
       int index = 0;
-      TemplateSignature * tsig = tinst_->templateDefn()->templateSignature();
+      Template * tsig = tinst_->templateDefn()->templateSignature();
       for (TupleType::const_iterator it = typeArgs->begin(); it != typeArgs->end(); ++it, ++index) {
         const TupleType * variadicArgs = NULL;
         if (const TypeVariable * tv = dyn_cast<TypeVariable>(tsig->typeParam(index))) {

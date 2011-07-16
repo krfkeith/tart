@@ -11,6 +11,8 @@
 
 namespace tart {
 
+class BindingEnv;
+
 /// -------------------------------------------------------------------
 /// Function pass which assigns final types to all expressions and
 /// inserts implicit casts as needed.
@@ -18,7 +20,7 @@ class FinalizeTypesPass : public CFGPass {
 public:
 
   /** Run this pass on the specified expression. */
-  static Expr * run(Defn * source, Expr * in, bool tryCoerciveCasts = true);
+  static Expr * run(Defn * source, Expr * in, BindingEnv &env, bool tryCoerciveCasts = true);
 
 protected:
   Expr * runImpl(Expr * in);

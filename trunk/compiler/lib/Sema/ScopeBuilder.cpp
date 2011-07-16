@@ -203,14 +203,14 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
   Defn * body = createDefn(scope, m, tp->body(), scDefault);
   Scope * parentScope = scope;
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(body)) {
-    TemplateSignature * tsig = TemplateSignature::get(body, NULL /*parentScope*/);
-    tsig->setAST(tp);
+    Template * tm = Template::get(body, NULL /*parentScope*/);
+    tm->setAST(tp);
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
-      ctype->auxScopes().insert(&tsig->paramScope());
+      ctype->auxScopes().insert(&tm->paramScope());
     }
   } else {
-    TemplateSignature * tsig = TemplateSignature::get(body, parentScope);
-    tsig->setAST(tp);
+    Template * tm = Template::get(body, parentScope);
+    tm->setAST(tp);
   }
   return body;
 }

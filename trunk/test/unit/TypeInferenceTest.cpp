@@ -10,6 +10,7 @@
 #include "tart/Expr/Exprs.h"
 #include "tart/Type/StaticType.h"
 
+#include "MockProvision.h"
 #include "TestHelpers.h"
 
 namespace {
@@ -22,18 +23,11 @@ protected:
   CallExpr * createCall() {
     return new CallExpr(Expr::Call, SourceLocation(), NULL);
   }
-
 };
 
 TEST_F(TypeInferenceTest, CallCandidateSpecificity) {
   CallExpr * call = createCall();
   (void)call;
-  //call->candidates().push_back(new CallCandidate(call, NULL, method, pa));
-
-
-//CallCandidate::CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
-//    const ParameterAssignments & params)
-
 }
 
 }

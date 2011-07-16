@@ -5,11 +5,13 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 file(GLOB TART_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.tart)
 source_group(StdLibTests FILES ${TART_SRC})
 set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR}) # Source file root
-set(MODPATH  # Module search path
-#  -i ${TART_BINARY_DIR}/lib/std/libstd.bc
+
+# Module search path
+set(MODPATH
   -i ${TART_SOURCE_DIR}/lib/std
   -i ${TART_SOURCE_DIR}/lib/testing)
 
+# Input libraries
 set(BC_LIBS
   "${PROJECT_BINARY_DIR}/lib/std/libstd.bc"
   "${PROJECT_BINARY_DIR}/lib/testing/libtesting.bc"
@@ -19,7 +21,6 @@ set(BC_LIBS
 set(TART_OPTIONS
   -debug-errors
   -nostdlib
-#  -trace-def=InterfaceTest
 )
 #set(TART_OPTIONS -debug-errors -show-generated -show-size)
 #set(TARTLN_OPTIONS -O2)

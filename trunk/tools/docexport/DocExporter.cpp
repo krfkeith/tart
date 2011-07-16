@@ -194,7 +194,7 @@ void DocExporter::exportMethod(const FunctionDefn * method) {
       writeTypeExpression("type-arg", *it);
     }
   } else if (method->isTemplate()) {
-    const TemplateSignature * ts = method->templateSignature();
+    const Template * ts = method->templateSignature();
     for (TupleType::const_iterator it = ts->typeParams()->begin();
         it != ts->typeParams()->end(); ++it) {
       writeTypeExpression("type-param", *it);

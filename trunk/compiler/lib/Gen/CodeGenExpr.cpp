@@ -27,7 +27,7 @@
 namespace tart {
 
 FormatStream & operator<<(FormatStream & out, const llvm::Type * type) {
-  out << type->getDescription();
+  type->print(out);
   return out;
 }
 
@@ -1030,17 +1030,16 @@ llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::S
   UndefValue * strSource = UndefValue::get(irType->getPointerTo());
 
   // Object type members
-  std::vector<Constant *> objMembers;
-  objMembers.push_back(getTypeInfoBlockPtr(strType));
-  objMembers.push_back(getIntVal(0));
+  Constant * objStruct = getStructVal(getTypeInfoBlockPtr(strType), getIntVal(0), NULL);
 
   // String type members
-  std::vector<Constant *> members;
-  members.push_back(ConstantStruct::get(context_, objMembers, false));
-  members.push_back(getIntVal(strval.size()));
-  members.push_back(strSource);
-  members.push_back(strDataStart);
-  members.push_back(strVal);
+  Constant * strStruct = getStructVal(
+      objStruct,
+      getIntVal(strval.size()),
+      strSource,
+      strDataStart,
+      strVal,
+      NULL);
 
   // If the name is blank, then the string is internal only.
   // If the name is non-blank, then it's assumed that this name is a globally unique
@@ -1054,7 +1053,6 @@ llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::S
     name = ".string." + symName;
   }
 
-  Constant * strStruct = ConstantStruct::get(context_, members, false);
   Constant * strConstant = llvm::ConstantExpr::getPointerCast(
       new GlobalVariable(*irModule_,
           strStruct->getType(), true, linkage, strStruct, name),
@@ -1277,7 +1275,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
     }
   }
 
-  return ConstantStruct::get(context_, fieldValues, false);
+  return ConstantStruct::getAnon(context_, fieldValues, false);
 }
 
 llvm::Constant * CodeGenerator::genConstantNativeArrayPtr(const ConstantNativeArray * array,

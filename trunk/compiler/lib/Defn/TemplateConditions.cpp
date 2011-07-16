@@ -23,12 +23,12 @@ void TypeComparisonCondition::trace() const {
 // IsSubclassCondition
 
 bool IsSubtypeCondition::eval() const {
-  return first_->isSubtype(second_);
+  return first_->isSubtypeOf(second_);
 }
 
 TemplateCondition * IsSubtypeCondition::transform(TypeTransform & transform) {
-  const Type * first = transform.transform(first_);
-  const Type * second = transform.transform(second_);
+  const Type * first = transform(first_);
+  const Type * second = transform(second_);
 
   if (first == first_ && second == second_) {
     return this;

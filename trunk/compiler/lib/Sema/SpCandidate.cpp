@@ -3,17 +3,24 @@
  * ================================================================ */
 
 #include "tart/Defn/Defn.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Type/TupleType.h"
 #include "tart/Defn/Template.h"
 #include "tart/Defn/TemplateConditions.h"
+
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/TupleType.h"
+
+#include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/SpCandidate.h"
 #include "tart/Sema/TypeTransform.h"
+#include "tart/Sema/Infer/TypeAssignment.h"
+
 #include "tart/Common/Diagnostics.h"
+
+#include <algorithm>
 
 namespace tart {
 
-SpCandidate::SpCandidate(Expr * base, Defn * tdef, TupleType * args)
+SpCandidate::SpCandidate(Expr * base, Defn * tdef, const TupleType * args)
   : def_(tdef)
   , base_(base)
   , args_(args)
@@ -21,49 +28,101 @@ SpCandidate::SpCandidate(Expr * base, Defn * tdef, TupleType * args)
 {
 }
 
-bool SpCandidate::unify(SourceContext * source) {
-  const TemplateSignature * tsig = def_->templateSignature();
-  DASSERT(args_->size() <= tsig->typeParams()->size());
+void SpCandidate::relabelTypeVars(BindingEnv & env) {
+  DASSERT(params_ == NULL);
+  TypeList typeParams;
+  const Template * tm = def_->templateSignature();
+  const TypeList & tmDefaults = def_->templateSignature()->typeParamDefaults();
+
+  if (def_->hasUnboundTypeParams()) {
+    size_t numParams = tm->typeParams()->size();
+    TypeVarMap assignments;
+
+    // For each template parameter, create a TypeAssignment instance.
+    for (size_t i = 0; i < numParams; ++i) {
+      assignments[tm->patternVar(i)] = env.assign(tm->patternVar(i), NULL, this);
+    }
+
+    // Transform the parameters into type assignments.
+    RelabelTransform rt(assignments);
+    params_ = cast<TupleType>(rt(tm->typeParams()));
+    typeParamDefaults_.resize(tmDefaults.size());
+    std::transform(tmDefaults.begin(), tmDefaults.end(), typeParamDefaults_.begin(), rt);
+  } else {
+    typeParamDefaults_.append(tmDefaults.begin(), tmDefaults.end());
+    params_ = tm->typeParams();
+  }
+}
+
+void SpCandidate::relabelTypeVars(RelabelTransform & rt) {
+  DASSERT(params_ == NULL);
+  const Template * tm = def_->templateSignature();
+  params_ = cast<TupleType>(rt(tm->typeParams()));
+  const TypeList & tmDefaults = tm->typeParamDefaults();
+  typeParamDefaults_.resize(tmDefaults.size());
+  std::transform(tmDefaults.begin(), tmDefaults.end(), typeParamDefaults_.begin(), rt);
+}
+
+bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
+  const Template * tm = def_->templateSignature();
+  DASSERT(args_->size() <= tm->typeParams()->size());
   size_t i;
   for (i = 0; i < args_->size(); ++i) {
-    const Type * pattern = tsig->typeParam(i);
+    const Type * pattern = params_->member(i);
     const Type * value = (*args_)[i];
-    if (!env_.unify(source, pattern, value, Invariant)) {
+    // We need to do more than unify here.
+    if (!env.unify(source, pattern, value, Constraint::EXACT)) {
       return false;
     }
   }
 
-  for (; i < tsig->typeParams()->size(); ++i) {
-    const Type * pattern = tsig->typeParam(i);
-    const Type * value = tsig->typeParamDefaults()[i];
-    if (!env_.unify(source, pattern, value, Invariant)) {
+  for (; i < tm->typeParams()->size(); ++i) {
+    const Type * pattern = params_->member(i);
+    const Type * value = typeParamDefaults_[i];
+    if (!env.unify(source, pattern, value, Constraint::EXACT)) {
       return false;
     }
   }
 
+  env.updateAssignments(SourceLocation(), this);
+
+  // Transform the condition list based on the unification result.
   conditions_.clear();
-  for (TemplateConditionList::const_iterator it = tsig->conditions().begin();
-      it != tsig->conditions().end(); ++it) {
-    TemplateCondition * condition = *it;
-    SubstitutionTransform subst(env_);
-    conditions_.push_back(condition->transform(subst));
+  if (!tm->conditions().empty()) {
+    TypeVarMap vars;
+    env.toTypeVarMap(vars, this);
+    SubstitutionTransform subst(vars);
+    for (TemplateConditionList::const_iterator it = tm->conditions().begin();
+        it != tm->conditions().end(); ++it) {
+      TemplateCondition * condition = *it;
+      conditions_.push_back(condition->transform(subst));
+    }
   }
 
   return true;
 }
 
-ConversionRank SpCandidate::updateConversionRank() {
-  const TemplateSignature * tsig = def_->templateSignature();
-  if (params_ == NULL) {
-    TypeList typeParams;
-    if (def_->hasUnboundTypeParams()) {
-      RelabelTransform rt(env_);
-      params_ = cast<TupleType>(rt.transform(tsig->typeParams()));
+Type * SpCandidate::toType(SourceContext * source, BindingEnv & env) {
+  TypeDefn * tdef = cast<TypeDefn>(def_);
+  if (AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup)) {
+    SourceContext candidateSite(tdef->location(), source, tdef, Format_Type);
+    relabelTypeVars(env);
+    if (unify(&candidateSite, env)) {
+      env.updateAssignments(source->location());
+      TypeVarMap vars;
+      env.toTypeVarMap(vars, this);
+      return tdef->templateSignature()->instantiateType(source->location(), vars);
     } else {
-      params_ = tsig->typeParams();
+      unify(&candidateSite, env);
+      DFAIL("Unify failed...");
     }
   }
 
+  return NULL;
+}
+
+ConversionRank SpCandidate::updateConversionRank() {
+  DASSERT(params_ != NULL);
   conversionRank_ = IdenticalTypes;
   for (TemplateConditionList::const_iterator it = conditions_.begin();
       it != conditions_.end(); ++it) {
@@ -83,22 +142,22 @@ ConversionRank SpCandidate::updateConversionRank() {
 }
 
 bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
-  const TemplateSignature * tsig = def_->templateSignature();
-  const TemplateSignature * otsig = other->def_->templateSignature();
+  const Template * tm = def_->templateSignature();
+  const Template * otm = other->def_->templateSignature();
 
-  if (tsig->typeParams()->size() != otsig->typeParams()->size()) {
+  if (tm->typeParams()->size() != otm->typeParams()->size()) {
     return false;
   }
 
   bool same = true;
-  size_t numParams = tsig->typeParams()->size();
+  size_t numParams = tm->typeParams()->size();
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * param = tsig->typeParam(i);
-    const Type * oparam = otsig->typeParam(i);
+    const Type * param = tm->typeParam(i);
+    const Type * oparam = otm->typeParam(i);
 
     if (!param->isEqual(oparam)) {
       same = false;
-      if (!param->isSubtype(oparam)) {
+      if (!param->isSubtypeOf(oparam)) {
         if (oparam->typeClass() != Type::TypeVar) {
           return false;
         }

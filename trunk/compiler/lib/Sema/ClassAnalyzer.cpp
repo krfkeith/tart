@@ -182,6 +182,10 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
       type->passes().finish(CompositeType::ScopeCreationPass);
     }
 
+    if (passesToRun.contains(CompositeType::ConstructorPass) && !analyzeConstructors()) {
+      return false;
+    }
+
     if (target->hasUnboundTypeParams()) {
       return true;
     }
@@ -382,6 +386,12 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     if (!baseType->isSingular() && !isFromTemplate) {
       type->setClassFlag(CompositeType::HasErrors);
       diag.error(target) << "Base type '" << baseDefn << "' is a template, not a type";
+      return false;
+    }
+
+    if (baseType->isScaffold() && !target->isScaffold()) {
+      type->setClassFlag(CompositeType::HasErrors);
+      diag.error(target) << "Base type '" << baseDefn << "' is a scaffold type.";
       return false;
     }
 
@@ -1532,6 +1542,10 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
       diag.fatal(target) << "Default constructor type " << funcType << " is not singular";
       funcType->whyNotSingular();
     }
+  }
+
+  if (target->isTemplate() || target->isTemplateMember()) {
+    constructorDef->addTrait(Defn::TemplateMember);
   }
 
   targetType()->addMember(constructorDef);

@@ -20,15 +20,17 @@ class PHIConstraint;
 class FinalizeTypesPassImpl : public FinalizeTypesPass {
 public:
 
-  FinalizeTypesPassImpl(Defn * subject) : subject_(subject) {}
+  FinalizeTypesPassImpl(Defn * subject, BindingEnv & env) : subject_(subject), env_(env) {}
 
   /** Run this pass on the specified expression. */
   //static Expr * run(Expr * in);
-  static Expr * run(Defn * source, Expr * in);
+  static Expr * run(Defn * source, Expr * in, BindingEnv & env);
 
 private:
   Defn * subject_;
+  BindingEnv & env_;
 
+  Expr * visitConstantInteger(ConstantInteger * in);
   Expr * visitUnionTest(InstanceOfExpr * in, Expr * value, const UnionType * from, const Type * to);
   Expr * visitAssignImpl(AssignmentExpr * in);
   Expr * visitCallExpr(CallExpr * in);
@@ -50,7 +52,7 @@ private:
   //Expr * visitInitVar(InitVarExpr * in);
 
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
-  Defn * doPatternSubstitutions(SLC & loc, Defn * def, BindingEnv & env);
+  Defn * doPatternSubstitutions(SLC & loc, Defn * def, const TypeVarMap & varValues);
 
   Expr * addCastIfNeeded(Expr * in, const Type * toType);
   Expr * handleUnboxCast(CastExpr * in);

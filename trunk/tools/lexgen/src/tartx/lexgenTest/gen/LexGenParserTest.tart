@@ -6,36 +6,83 @@ import tartx.lexgen.gen.LexGenScanner.LState;
 import tartx.lexgenTest.FakeLogWriter;
 
 class LexGenParserTest : Test {
-  def createParser(s:String) -> LexGenParser {
-    return LexGenParser("", StringReader(s), FakeLogWriter());
-  }
-  
   def testEmptyInput {
-    let lg = createParser("");
-    assertTrue(lg.matchToken(LToken.EOF));
-    //assertEq(LexGenScanner
+    let parser = createParser("");
+    assertTrue(parser.matchToken(LToken.EOF));
   }
 
   def testParseCodeBlock {
-    let lg = createParser("{a{b}} xxx");
-    let cb = lg.parseCodeBlock();
+    let parser = createParser("{a{b}} xxx");
+    let cb = parser.parseCodeBlock();
     assertEq("a{b}", cb.toString());
   }
-  
+
   def testParseCodeBlockWithNewlines {
-    let lg = createParser("{a{\n  b}} xxx");
-    let cb = lg.parseCodeBlock();
+    let parser = createParser("{a{\n  b}} xxx");
+    let cb = parser.parseCodeBlock();
     assertEq("a{\n  b}", cb.toString());
   }
-  
+
   def testParseClassName {
-    let lg = createParser("a.b.c xxx");
-    let cn = lg.parseClassName();
+    let parser = createParser("a.b.c xxx");
+    let cn = parser.parseClassName();
     assertEq("a.b.c", cn.toString());
   }
 
   def testParseClassNameError {
-    let lg = createParser("a.b.1 xxx");
-    assertNull(lg.parseClassName());
+    let parser = createParser("a.b.1 xxx");
+    assertNull(parser.parseClassName());
+  }
+
+  def testParsePrimary {
+    // Subrule
+    assertEq("a", parseExpression("a"));
+    assertEq("a:b", parseExpression("a:b"));
+
+    // String literal
+    assertEq("\"aaa\"", parseExpression("\"aaa\""));
+
+    // Char literal
+    assertEq("'a'", parseExpression("'a'"));
+
+    // Char range
+    assertEq("'a'..'b'", parseExpression("'a' .. 'b'"));
+
+    // Wildcard
+    assertEq(".", parseExpression("."));
+  }
+
+  def testParseOperators {
+    // Complement
+    assertEq("~a", parseExpression("~a"));
+
+    // Optional
+    assertEq("a?", parseExpression("a?"));
+
+    // One or more (greedy and non-greedy)
+    assertEq("a+", parseExpression("a+"));
+    assertEq("a+?", parseExpression("a+?"));
+
+    // Zero or more (greedy and non-greedy)
+    assertEq("a*", parseExpression("a*"));
+    assertEq("a*?", parseExpression("a*?"));
+
+    // Sequence
+    assertEq("a b", parseExpression("a b"));
+    assertEq("a b c", parseExpression("a b c"));
+
+    // Alternative
+    assertEq("a | b", parseExpression("a | b"));
+    assertEq("a | b | c", parseExpression("a | b | c"));
+  }
+
+  def parseExpression(str:String) -> String {
+    let node = createParser(str).parseExpression();
+    assertNotNull(node, String.format("Null result from parsing '{0}'", str));
+    return node.toString();
+  }
+
+  def createParser(s:String) -> LexGenParser {
+    return LexGenParser("", StringReader(s), FakeLogWriter());
   }
 }

@@ -92,12 +92,13 @@ int FunctionType::paramNameIndex(const char * name) const {
   return -1;
 }
 
-bool FunctionType::isSubtype(const Type * other) const {
+bool FunctionType::isSubtypeOf(const Type * other) const {
   // TODO: For self param as well.
 
   if (const FunctionType * otherFunc = dyn_cast<FunctionType>(other)) {
-    (void)otherFunc;
-    DFAIL("Implement");
+    return isEqual(otherFunc);
+//    (void)otherFunc;
+//    DFAIL("Implement");
   }
 
   return false;

@@ -328,7 +328,7 @@ int64_t TartGCPrinter::toInt(llvm::Constant * c, TargetMachine & tm) {
   }
 }
 
-llvm::Constant * TartGCPrinter::getGlobalValue(const llvm::Constant * c) {
+const llvm::Constant * TartGCPrinter::getGlobalValue(const llvm::Constant * c) {
   const GlobalVariable * var = dyn_cast<GlobalVariable>(c);
   if (var == NULL) {
     var = cast<GlobalVariable>(c->getOperand(0));

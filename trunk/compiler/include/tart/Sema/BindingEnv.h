@@ -17,223 +17,134 @@
 #include "tart/Type/TypeConstraint.h"
 #endif
 
+#ifndef TART_SEMA_INFER_CONSTRAINTSET_H
+#include "tart/Sema/Infer/ConstraintSet.h"
+#endif
+
+#ifndef LLVM_ADT_DENSEMAP_H
+#include "llvm/ADT/DenseMap.h"
+#endif
+
+#ifndef LLVM_ADT_SMALLPTRSET_H
+#include "llvm/ADT/SmallPtrSet.h"
+#endif
+
 namespace tart {
 
-class TemplateSignature;
-class TemplateCondition;
 class TypeVariable;
+class TypeAssignment;
 class AddressType;
 class TypeLiteralType;
 class NativeArrayType;
 class FlexibleArrayType;
 class UnionType;
 
-typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
-
-// -------------------------------------------------------------------
-// A Substitution is a proposal that two type expressions are equivalent
-// within a given context.
-class Substitution : public GC {
-public:
-  Substitution(const Type * left, const Type * right, Substitution * prev = NULL)
-    : left_(left)
-    , right_(right)
-    , lowerBound_(right)
-    , upperBound_(right)
-    , prev_(prev)
-  {
-  }
-
-  Substitution(const Type * left, const Type * upper, const Type * lower,
-      Substitution * prev = NULL)
-    : left_(left)
-    , right_(lower)
-    , lowerBound_(lower)
-    , upperBound_(upper)
-    , prev_(prev)
-  {
-  }
-
-  /** The left side of the substitution. */
-  const Type * left() const { return left_; }
-  void setLeft(const Type * value) { left_ = value; }
-
-  /** The right side of the substitution. */
-  const Type * right() const { return right_; }
-  void setRight(Type * value) { right_ = value; }
-
-  /** The upper bound of the right side. */
-  const Type * upperBound() const { return upperBound_; }
-  void setUpperBound(Type * value) { upperBound_ = value; }
-
-  /** The lower bound of the right side. */
-  const Type * lowerBound() const { return lowerBound_; }
-  void setLowerBound(Type * value) { lowerBound_ = value; }
-
-  /** Previous substitution in the environment. */
-  Substitution * prev() const { return prev_; }
-
-  // Overrides
-
-  void trace() const;
-
-private:
-  const Type * left_;
-  const Type * right_;
-  const Type * lowerBound_;
-  const Type * upperBound_;
-
-  Substitution * prev_;
-};
-
-/// -------------------------------------------------------------------
-/// A TypeBinding represents a (environment, typevar) pair, which when
-/// dereferenced causes a lookup of that typevar within that environment.
-class TypeBinding : public Type {
-public:
-  TypeBinding(BindingEnv * env, const TypeVariable * var)
-    : Type(Binding)
-    , env_(env)
-    , var_(var)
-  {}
-
-  const BindingEnv * env() const { return env_; }
-  const TypeVariable * var() const { return var_; }
-
-  // The value that is currently bound to var in env. Can return null if there's no value
-  // bound to var.
-  Type * value() const;
-
-  // Overrides
-
-  bool isSingular() const;
-  bool isEqual(const Type * other) const;
-  bool isSubtype(const Type * other) const;
-  bool isReferenceType() const;
-  TypeShape typeShape() const {
-    Type * ty = value();
-    return ty != NULL ? ty->typeShape() : Shape_Unset;
-  }
-  bool includes(const Type * other) const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  Expr * nullInitValue() const;
-  void trace() const;
-  void format(FormatStream & out) const;
-  const llvm::Type * irType() const;
-
-  static inline bool classof(const TypeBinding *) { return true; }
-  static inline bool classof(const Type * type) {
-    return type->typeClass() == Binding;
-  }
-
-private:
-  BindingEnv * env_;
-  const TypeVariable * var_;
-};
+typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
 
 /// -------------------------------------------------------------------
 /// Performs unification between types and produces a set of type
 /// bindings.
 class BindingEnv {
 public:
-  BindingEnv() : substitutions_(NULL) { index_ = nextIndex_++; }
-  BindingEnv(const BindingEnv & env) : substitutions_(env.substitutions()) { index_ = nextIndex_++; }
+  BindingEnv() : assignments_(NULL), stateCount_(0) {}
+  BindingEnv(const BindingEnv & env)
+    : assignments_(env.assignments())
+    , stateCount_(env.stateCount_)
+  {}
 
   /** Return true if there are no variable bindings. */
-  bool empty() const { return substitutions_ == NULL; }
+  bool empty() const { return assignments_ == NULL; }
 
-  /** Reset all bindings. */
+  /** Reset all type assignments. */
   void reset();
 
   /** Perform unification from a pattern type to a value type. */
-  bool unify(SourceContext * source, const Type * pattern, const Type * value, Variance variance);
+  bool unify(SourceContext * source, const Type * left, const Type * right,
+      Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
 
-  /** Get the value for the specified type variable. */
-  Type * get(const TypeVariable * type) const;
+  /** Get the type assignment for the specified type variable. */
+  const TypeAssignment * getAssignment(const TypeVariable * var, const GC * context) const;
 
-  /** Get the value for the specified type binding. */
-  Type * get(const TypeBinding * type) const;
-
-  /** Get the value for the specified type variable. If the binding is to another
-      variable, dereference that as well. */
-  Type * dereference(Type * type) const;
-
-  /** Given a type expression, return the equivalent expression where all
-      type variables have been replaced with the corresponding type
-      bindings for this environment.
-
-      This function attempts to avoid creating new type objects when
-      the input expression contains no type variables.
-   */
-  const Type * subst(const Type * in) const;
-
-  /** Return a list of substitutions for this environment. */
-  Substitution * substitutions() const {
-    return substitutions_;
+  /** Return a list of type assignments in this environment. */
+  TypeAssignment * assignments() const {
+    return assignments_;
   }
 
-  /** Set the list of substitutions for this environment. */
-  void setSubstitutions(Substitution * s) {
-    substitutions_ = s;
+  /** Convert the current type assignments to a type variable map, only using type
+      assignments from the specified context. */
+  void toTypeVarMap(TypeVarMap & map, GC * context);
+
+  /** Assign 'value' to the type variable 'var'. This will create a new type assignment
+      in the environment. */
+  TypeAssignment * assign(const TypeVariable * var, const Type * value, GC * context = NULL);
+
+  /** Return a token that can be used to backtrack to the current state. */
+  unsigned stateCount() const {
+    return stateCount_;
   }
 
-  /** Add a new substitution into this environment. */
-  Substitution * addSubstitution(const Type * left, const Type * right);
-
-  /** Add a new substitution into this environment (upper and lower bounds). */
-  Substitution * addSubstitution(const Type * left, const Type * upper, const Type * lower);
-
-  /** Given the left-hand side of a substitition, return the substitution. */
-  Substitution * getSubstitutionFor(const Type * left) const {
-    for (Substitution * s = substitutions_; s != NULL; s = s->prev()) {
-      if (s->left() == left) {
-        return s;
-      }
-    }
-
-    return NULL;
+  /** Increment the current state counter by 1 and return it. */
+  unsigned nextState() {
+    return ++stateCount_;
   }
+
+  /** Backtrack to a previous state. */
+  void backtrack(unsigned state);
+
+  /** Sort assignments by dependency - put assignments before other assignments that
+      refer to them. */
+  void sortAssignments();
+
+  /** Update all type assignments to their current subsitutions, resolving conflicting
+      constraints if possible. */
+  bool updateAssignments(SourceLocation loc, GC * context = NULL);
+
+  /** Attempt to find a solution that satisfies all current constraints on the type assignments. */
+  bool reconcileConstraints(GC * context);
 
   // Used for displaying in debugger only, return value is ephemeral.
   const char * str() const;
+  void dumpAssignment(TypeAssignment * ta) const;
+  void dumpProvisions(const ProvisionSet & provisions) const;
+  void dump() const;
 
     // Overrides
 
   void trace() const;
 
-  int index_;
 private:
   friend FormatStream & operator<<(FormatStream & out, const BindingEnv & env);
+  friend class TypeAssignment;
 
-  Substitution * substitutions_;
-  static int nextIndex_;
+  TypeAssignment * assignments_;
+  unsigned stateCount_;
 
-  bool unifyPattern(SourceContext * source, const TypeVariable * pattern, const Type * value,
-      Variance variance);
-  bool unifyAddressType(SourceContext * source, const AddressType * pattern, const Type * value);
-  bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * pattern,
-      const Type * value);
-  bool unifyFlexibleArrayType(SourceContext * source, const FlexibleArrayType * pattern,
-      const Type * value);
-  bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * pattern,
-      const Type * value);
-  bool unifyCompositeType(SourceContext * source, const CompositeType * pattern,
-      const CompositeType * value, Variance variance);
-  bool unifyUnionType(SourceContext * source, const UnionType * pattern,
-      const UnionType * value, Variance variance);
-  bool unifyToUnionType(SourceContext * source, const Type * pattern, const UnionType * value,
-      Variance variance);
-  bool unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
-      Variance variance);
-  bool unifyWithBoundValue(
-      SourceContext * source, const Type * prevValue, const Type * newValue, Variance variance);
+  bool unifyImpl(SourceContext * source, const Type * left, const Type * right,
+      Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, const Type * value,
+      Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithAmbiguousParameterType(SourceContext * source, const ParameterOfConstraint * poc,
+      const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithAmbiguousResultType(SourceContext * source, const ResultOfConstraint * roc,
+      const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyAddressType(SourceContext * source, const AddressType * left, const Type * right);
+  bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * left,
+      const Type * right);
+  bool unifyFlexibleArrayType(SourceContext * source, const FlexibleArrayType * left,
+      const Type * right);
+  bool unifyTypeLiteralType(SourceContext * source, const TypeLiteralType * left,
+      const Type * right);
+  bool unifyCompositeType(SourceContext * source, const CompositeType * left,
+      const CompositeType * right);
+  bool unifyUnionType(SourceContext * source, const UnionType * left, const UnionType * right);
+  bool unifyToUnionType(SourceContext * source, const Type * left, const UnionType * right);
+  bool unifyTupleType(SourceContext * source, const TupleType * left, const TupleType * right);
 
-  /** Given two types, return the one that is more general, the higher of the two. Returns NULL
-      if neither type is a specialization of the other. */
-  const Type * selectLessSpecificType(SourceContext * source, const Type * type1,
-      const Type * type2);
+  /** Return true if 'ty' is a type variable, and this environment contains a type assignment
+      for it. */
+  bool isAssigned(const Type * ty) const;
 
-  bool hasVar(const TypeVariable * var) const;
+  void cycleCheck(const Type * var, const Type * value);
 };
 
 FormatStream & operator<<(FormatStream & out, const BindingEnv & env);

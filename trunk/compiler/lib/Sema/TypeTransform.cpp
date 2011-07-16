@@ -15,9 +15,9 @@
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Defn/Template.h"
 
-#include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/TypeTransform.h"
 #include "tart/Sema/AnalyzerBase.h"
+#include "tart/Sema/Infer/TypeAssignment.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -79,12 +79,13 @@ const Type * TypeTransform::visit(const Type * in) {
       return visitTypeVariable(static_cast<const TypeVariable *>(in));
 
     case Type::Binding:
-      return visitTypeBinding(static_cast<const TypeBinding *>(in));
+      return visitTypeAssignment(static_cast<const TypeAssignment *>(in));
 
     case Type::ResultOf:
     case Type::ParameterOf:
     case Type::TupleOf:
-    case Type::SingleTypeParamOf:
+    case Type::TypeParamOf:
+    case Type::SizingOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
     default:
@@ -190,7 +191,7 @@ const Type * TypeTransform::visitTypeVariable(const TypeVariable * in) {
   return in;
 }
 
-const Type * TypeTransform::visitTypeBinding(const TypeBinding * in) {
+const Type * TypeTransform::visitTypeAssignment(const TypeAssignment * in) {
   return in;
 }
 
@@ -207,12 +208,16 @@ const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
 // SubstitutionTransform
 
 const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
-  Type * value = env_.get(in);
-  return value != NULL ? visit(value) : in;
+  TypeVarMap::const_iterator it = vars_.find(in);
+  if (it != vars_.end()) {
+    return it->second;
+  } else {
+    return in;
+  }
 }
 
-const Type * SubstitutionTransform::visitTypeBinding(const TypeBinding * in) {
-  Type * result = in->value();
+const Type * SubstitutionTransform::visitTypeAssignment(const TypeAssignment * in) {
+  const Type * result = in->value();
   return result != NULL ? result : in;
 }
 
@@ -220,7 +225,8 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
   if (in->typeDefn() == NULL) {
     return in;
   } else if (in->typeDefn()->isTemplate()) {
-    Defn * def = in->typeDefn()->templateSignature()->instantiate(SourceLocation(), env_);
+    Defn * def = in->typeDefn()->templateSignature()->instantiate(
+        in->typeDefn()->location(), vars_);
     if (def != NULL) {
       return cast<TypeDefn>(def)->typeValue();
     } else {
@@ -252,20 +258,20 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     if (tinst == NULL) {
       return in;
     }
-    TemplateSignature * tsig = tinst->templateDefn()->templateSignature();
-    BindingEnv partialEnv(env_);
+    Template * tm = tinst->templateDefn()->templateSignature();
+    TypeVarMap varValues(vars_);
     // Add type param mappings.
-    size_t numVars = tsig->patternVarCount();
+    size_t numVars = tm->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
-      TypeVariable * param = tsig->patternVar(i);
+      TypeVariable * param = tm->patternVar(i);
       const Type * value = tinst->typeArg(i);
       const Type * svalue = visit(value);
       if (svalue != NULL) {
-        partialEnv.addSubstitution(param, svalue);
+        varValues[param] = svalue;
       }
     }
 
-    Defn * def = tsig->instantiate(SourceLocation(), partialEnv);
+    Defn * def = tm->instantiate(SourceLocation(), varValues);
     if (def != NULL) {
       //assureNoTypeVariables(cast<TypeDefn>(def)->typeValue());
       return cast<TypeDefn>(def)->typeValue();
@@ -284,6 +290,10 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
     return constraint->singularValue();
   }
 
+  if (in->typeClass() == Type::SizingOf) {
+    return in;
+  }
+
   diag.debug() << "Type constraint: " << in;
   DFAIL("Type constraint not handled");
   return in;
@@ -293,30 +303,17 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
 // RelabelTransform
 
 const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
-  Type * value = env_.get(in);
-  if (value != NULL) {
-    return value;
-  }
-
-  value = vars_.get(in);
-  if (value != NULL) {
-    return value;
-  }
-
-  TypeBinding * val = new TypeBinding(&vars_, in);
-  vars_.addSubstitution(in, val);
-  return val;
+  TypeVarMap::const_iterator it = vars_.find(in);
+  DASSERT_MSG(it != vars_.end(), "Type variable not found!");
+  return it->second;
 }
 
 // -------------------------------------------------------------------
 // NormalizeTransform
 
-const Type * NormalizeTransform::visitTypeBinding(const TypeBinding * in) {
+const Type * NormalizeTransform::visitTypeAssignment(const TypeAssignment * in) {
   const Type * value = in->value();
   return value != NULL ? value : in;
 }
-
-
-
 
 } // namespace tart

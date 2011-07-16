@@ -27,7 +27,7 @@ namespace Asserts {
 		  assertionFailed(locationOf(cond), stringify(cond));
     }
   }
-  
+
   macro assertTrue(cond:bool, msg:String) {
     if not cond {
       assertionFailed(locationOf(cond), msg);
@@ -129,32 +129,32 @@ namespace Asserts {
 		  assertionFailedFmt(locationOf(actual), "expected {0} is not null", stringify(actual));
     }
   }
-  
+
   macro assertNotNull[%T <: Object](actual:T, msg:String) {
     if actual is null {
       assertionFailed(locationOf(actual), msg);
     }
   }
 
-  macro assertNotNull[%T <: Object](actual:optional T) {
+  macro assertNotNull[%T <: Object](actual:T?) {
     if actual is null {
 		  assertionFailedFmt(locationOf(actual), "expected {0} is not null", stringify(actual));
     }
   }
-  
-  macro assertNotNull[%T <: Object](actual:optional T, msg:String) {
+
+  macro assertNotNull[%T <: Object](actual:T?, msg:String) {
     if actual is null {
       assertionFailed(locationOf(actual), msg);
     }
   }
 
-  macro assertNull[%T <: Object](actual:optional T) {
+  macro assertNull[%T <: Object](actual:T?) {
     if actual is not null {
 		  assertionFailed(locationOf(actual), "expected {0} is null", stringify(actual));
     }
   }
-  
-  macro assertNull[%T <: Object](actual:optional T, msg:String) {
+
+  macro assertNull[%T <: Object](actual:T?, msg:String) {
     if actual is not null {
       assertionFailed(locationOf(actual), msg);
     }
@@ -166,6 +166,6 @@ namespace Asserts {
         String.concat("expected: ", expected.toString(), ", actual: ", actual.toString()));
     }
   }
-  
+
   // assertContentsAnyOrder
 }

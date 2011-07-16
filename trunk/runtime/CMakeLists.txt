@@ -1,5 +1,11 @@
 # CMake build file for Tart/runtime
 
+include_directories(include)
+
+file(GLOB sources lib/*.c )
+file(GLOB sources_cpp lib/*.cpp)
+file(GLOB headers include/*.h)
+
 if (CMAKE_COMPILER_IS_GNUCC)
   add_definitions(
       -g
@@ -14,17 +20,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_COMPILER_IS_CLANG)
-  add_definitions(
-#      -Woverloaded-virtual
-      -fno-rtti
-      -fno-exceptions
-      )
+  set_source_files_properties(${sources_cpp} PROPERTIES COMPILE_FLAGS "-fno-rtti -fno-exceptions")
+  remove_definitions(-fno-rtti)
 endif (CMAKE_COMPILER_IS_CLANG)
 
-include_directories(include)
-
-file(GLOB sources lib/*.c lib/*.cpp)
-file(GLOB headers include/*.h)
-add_library(runtime STATIC ${sources} ${headers})
+add_library(runtime STATIC ${sources} ${sources_cpp} ${headers})
 
 install(TARGETS runtime ARCHIVE DESTINATION lib/tart/static)

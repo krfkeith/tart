@@ -3,11 +3,16 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
-#include "tart/Type/PrimitiveType.h"
+
 #include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/TypeConstraint.h"
 #include "tart/Type/TupleType.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "tart/Sema/CallCandidate.h"
 
 namespace tart {
@@ -56,6 +61,9 @@ ConversionRank TypeSetConstraint::convertTo(const Type * toType, const Conversio
 }
 
 ConversionRank TypeSetConstraint::convertImpl(const Conversion & conversion) const {
+  static int recursionCheck = 0;
+  ++recursionCheck;
+  DASSERT(recursionCheck < 50);
   TypeExpansion expansion;
   expand(expansion);
   ConversionRank best = Incompatible;
@@ -70,10 +78,28 @@ ConversionRank TypeSetConstraint::convertImpl(const Conversion & conversion) con
     }
   }
 
+  --recursionCheck;
   return best;
 }
 
-bool TypeSetConstraint::isSubtype(const Type * other) const {
+bool TypeSetConstraint::isEqual(const Type * other) const {
+  // It's equal only if it's a equal to every member
+  TypeExpansion expansion;
+  expand(expansion);
+  if (expansion.empty()) {
+    return false;
+  }
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    if (!ty->isEqual(other)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool TypeSetConstraint::isSubtypeOf(const Type * other) const {
   DFAIL("Check");
   // It's a subtype only if it's a subtype of every member
   TypeExpansion expansion;
@@ -83,7 +109,7 @@ bool TypeSetConstraint::isSubtype(const Type * other) const {
   }
   for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
     const Type * ty = *it;
-    if (!ty->isSubtype(other)) {
+    if (!ty->isSubtypeOf(other)) {
       diag.debug() << this << " is not a subtype of " << other;
       return false;
     }
@@ -112,12 +138,26 @@ bool TypeSetConstraint::isSingular() const {
 }
 
 bool TypeSetConstraint::isReferenceType() const {
-  DFAIL("Illegal State");
+  TypeExpansion expansion;
+  expand(expansion);
+  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    const Type * ty = *it;
+    if (!ty->isReferenceType()) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void TypeSetConstraint::format(FormatStream & out) const {
+  static int recursionCheck = 0;
+  ++recursionCheck;
+  DASSERT(recursionCheck < 50);
+
   TypeExpansion expansion;
   expand(expansion);
+  out << "{";
   for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
     if (it != expansion.begin()) {
       out << "|";
@@ -125,52 +165,30 @@ void TypeSetConstraint::format(FormatStream & out) const {
 
     out << *it;
   }
+  out << "}";
+  --recursionCheck;
 }
 
 // -------------------------------------------------------------------
 // ResultOfConstraint
 
 void ResultOfConstraint::expand(TypeExpansion & out) const {
-  const Candidates & cd = callExpr->candidates();
+  const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    out.insert(candidateResultType(*it));
+    candidateResultType(*it)->expand(out);
   }
 }
 
-bool ResultOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  //DFAIL("Check");
-  Substitution * saveSub = env.substitutions();
-  Candidates & cd = callExpr->candidates();
-  SourceContext callSite(callExpr, NULL, callExpr);
-  bool match = false;
-  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-//    if ((*it)->isCulled()) {
-//      continue;
-//    }
-
-    const Type * resultType = candidateResultType(*it);
-    SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, resultType, Invariant)) {
-      if (match) {
-        env.setSubstitutions(saveSub);
-        return false;
-      } else {
-        match = true;
-      }
-    }
-
-    env.setSubstitutions(saveSub);
-  }
-
-  return match;
+const Candidates & ResultOfConstraint::candidates() const {
+  return callExpr_->candidates();
 }
 
 const Type * ResultOfConstraint::candidateResultType(const CallCandidate * cc) const {
-  if (callExpr->exprType() == Expr::Construct && cc->method()->isCtor()) {
+  if (callExpr_->exprType() == Expr::Construct && cc->method()->isCtor()) {
     return cc->method()->functionType()->selfParam()->type();
   }
 
@@ -179,11 +197,11 @@ const Type * ResultOfConstraint::candidateResultType(const CallCandidate * cc) c
 
 void ResultOfConstraint::trace() const {
   Type::trace();
-  callExpr->mark();
+  callExpr_->mark();
 }
 
 void ResultOfConstraint::format(FormatStream & out) const {
-  const Type * singularType = callExpr->singularResultType();
+  const Type * singularType = callExpr_->singularResultType();
   if (singularType != NULL) {
     out << singularType;
     return;
@@ -198,82 +216,88 @@ void ResultOfConstraint::format(FormatStream & out) const {
 // ParameterOfConstraint
 
 void ParameterOfConstraint::expand(TypeExpansion & out) const {
-  const Candidates & cd = callExpr->candidates();
+  const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    out.insert((*it)->paramType(argIndex));
+    (*it)->paramType(argIndex_)->expand(out);
   }
 }
 
-bool ParameterOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  Candidates & cd = callExpr->candidates();
-  Substitution * saveSub = env.substitutions();
-  SourceContext callSite(callExpr, NULL, callExpr);
-  bool match = false;
-  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-//    if ((*it)->isCulled()) {
-//      continue;
-//    }
+const Candidates & ParameterOfConstraint::candidates() const {
+  return callExpr_->candidates();
+}
 
-    const Type * paramType = (*it)->paramType(argIndex);
-    SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, paramType, Contravariant)) {
-      if (match) {
-        env.setSubstitutions(saveSub);
-        return true;
-        //Substitution * saveSub = env.substitutions();
-      } else {
-        match = true;
-      }
-    }
-
-    env.setSubstitutions(saveSub);
-  }
-
-  return match;
+const Type * ParameterOfConstraint::candidateParamType(const CallCandidate * cc) const {
+  return cc->paramType(argIndex_);
 }
 
 void ParameterOfConstraint::trace() const {
   Type::trace();
-  callExpr->mark();
+  callExpr_->mark();
 }
 
 void ParameterOfConstraint::format(FormatStream & out) const {
-  out << "{Param(" << argIndex << "): ";
+  out << "{" << callExpr_->candidates().front()->method()->name() << ".param[" <<
+      argIndex_ << "]: ";
   TypeSetConstraint::format(out);
   out << "}";
 }
 
 // -------------------------------------------------------------------
-// SingleTypeParamOfConstraint
+// TypeParamOfConstraint
 
-void SingleTypeParamOfConstraint::expand(TypeExpansion & out) const {
+void TypeParamOfConstraint::expand(TypeExpansion & out) const {
   TypeExpansion baseExpansion;
   base_->expand(baseExpansion);
   for (TypeExpansion::const_iterator it = baseExpansion.begin(); it != baseExpansion.end(); ++it) {
     const Type * ty = dealias(*it);
-    if (ty->typeClass() == cls_) {
-      out.insert(ty->typeParam(0));
+    if (ty->typeClass() == cls_ && ty->numTypeParams() > paramIndex_) {
+      ty->typeParam(paramIndex_)->expand(out);
+    } else {
+      out.insert(&BadType::instance);
     }
   }
 }
 
-bool SingleTypeParamOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  DFAIL("Check");
-  diag.debug() << "Can't unify " << pattern << " with " << this;
-  return false;
+const Type * TypeParamOfConstraint::forType(const Type * ty) const {
+  switch (cls_) {
+    case Type::Class:
+    case Type::Interface:
+    case Type::Struct:
+    case Type::Protocol:
+      if (isa<CompositeType>(ty) && ty->numTypeParams() > paramIndex_) {
+        return ty->typeParam(paramIndex_);
+      }
+      break;
+
+    case Type::NAddress:
+    case Type::NArray:
+    case Type::FlexibleArray:
+      if (paramIndex_ == 0 && ty->typeClass() == cls_) {
+        return ty->typeParam(0);
+      }
+      break;
+
+    default:
+      if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(ty)) {
+        return new TypeParamOfConstraint(tc, cls_, paramIndex_);
+      }
+      break;
+  }
+
+  return NULL;
 }
 
-void SingleTypeParamOfConstraint::trace() const {
+void TypeParamOfConstraint::trace() const {
   Type::trace();
   base_->mark();
 }
 
-void SingleTypeParamOfConstraint::format(FormatStream & out) const {
-  out << "{TypeParam(0): ";
+void TypeParamOfConstraint::format(FormatStream & out) const {
+  out << "{TypeParam(" << paramIndex_ << "): ";
   base_->format(out);
   //TypeSetConstraint::format(out);
   out << "}";
@@ -281,10 +305,6 @@ void SingleTypeParamOfConstraint::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // TupleOfConstraint
-
-void TupleOfConstraint::expand(TypeExpansion & out) const {
-  out.insert(this);
-}
 
 ConversionRank TupleOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
   DFAIL("Check");
@@ -364,67 +384,10 @@ ConversionRank TupleOfConstraint::convertImpl(const Conversion & conversion) con
   }
 
   return rank;
-
-#if 0
-  ConversionRank rank = IdenticalTypes;
-  if (TupleType * ttype = dyn_cast<TupleType>(toType)) {
-
-  }
-
-  ConversionRank best = Incompatible;
-  const Candidates & cd = callExpr->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * paramType = (*it)->paramType(argIndex);
-    ConversionRank rank = paramType->convert(conversion);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
-  }
-
-  return best;
-#endif
 }
 
 const Type * TupleOfConstraint::singularValue() const {
   return tuple_->type();
-}
-
-bool TupleOfConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  DFAIL("Implement");
-#if 0
-  Candidates & cd = callExpr->candidates();
-  Substitution * saveSub = env.substitutions();
-  SourceContext callSite(callExpr, NULL, callExpr);
-  bool match = false;
-  for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-    if ((*it)->isCulled()) {
-      continue;
-    }
-
-    const Type * paramType = (*it)->paramType(argIndex);
-    SourceContext candidateSite((*it)->method(), &callSite, (*it)->method(), Format_Type);
-    if (env.unify(&candidateSite, pattern, paramType, Invariant)) {
-      if (match) {
-        env.setSubstitutions(saveSub);
-        return true;
-        //Substitution * saveSub = env.substitutions();
-      } else {
-        match = true;
-      }
-    }
-
-    env.setSubstitutions(saveSub);
-  }
-
-  return match;
-#endif
 }
 
 bool TupleOfConstraint::isSingular() const {
@@ -432,7 +395,7 @@ bool TupleOfConstraint::isSingular() const {
   return tuple_->isSingular();
 }
 
-bool TupleOfConstraint::isSubtype(const Type * other) const {
+bool TupleOfConstraint::isSubtypeOf(const Type * other) const {
   DFAIL("Implement");
 }
 
@@ -487,6 +450,79 @@ void TupleOfConstraint::format(FormatStream & out) const {
 }
 
 // -------------------------------------------------------------------
+// SizingOfConstraint
+
+unsigned SizingOfConstraint::signedBitsRequired() const {
+  const llvm::APInt & intVal = intVal_->value()->getValue();
+  return intVal.getMinSignedBits();
+}
+
+unsigned SizingOfConstraint::unsignedBitsRequired() const {
+  const llvm::APInt & intVal = intVal_->value()->getValue();
+  return isNegative_ ? INT32_MAX : intVal.getActiveBits();
+}
+
+bool SizingOfConstraint::isEqual(const Type * other) const {
+  if (const SizingOfConstraint * soc = dyn_cast_or_null<SizingOfConstraint>(other)) {
+    return isNegative_ == soc->isNegative() && intVal_->isEqual(soc->intVal());
+  } else {
+    return false;
+  }
+}
+
+const Type * SizingOfConstraint::singularValue() const {
+  DFAIL("Implement");
+}
+
+ConversionRank SizingOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
+  return Incompatible;
+//  Conversion c2(const_cast<ConstantInteger *>(intVal_), cn.resultValue, cn.options);
+//  return toType->convert(c2);
+}
+
+ConversionRank SizingOfConstraint::convertImpl(const Conversion & conversion) const {
+  // Can't convert *to* an unsized type.
+  return Incompatible;
+}
+
+bool SizingOfConstraint::includes(const Type * other) const {
+  return intVal_->type()->includes(other);
+}
+
+bool SizingOfConstraint::isSubtypeOf(const Type * other) const {
+  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(other)) {
+    if (soc == other) {
+      return true;
+    }
+    diag.debug() << this;
+    diag.debug() << soc;
+    DFAIL("Implement");
+    (void)soc;
+  } else if (const PrimitiveType * pty = dyn_cast<PrimitiveType>(other)) {
+    if (isNegative() && pty->isUnsignedType()) {
+      return false;
+    }
+
+    if (pty->isUnsignedType()) {
+      return unsignedBitsRequired() <= pty->numBits();
+    } else {
+      return signedBitsRequired() <= pty->numBits();
+    }
+  } else {
+    return false;
+  }
+}
+
+void SizingOfConstraint::trace() const {
+  Type::trace();
+  intVal_->mark();
+}
+
+void SizingOfConstraint::format(FormatStream & out) const {
+  out << intVal_->value()->getValue().toString(10, true);
+}
+
+// -------------------------------------------------------------------
 // PhiTypeConstraint
 
 void PHIConstraint::add(const Type * type) {
@@ -497,21 +533,12 @@ void PHIConstraint::add(const Type * type) {
 void PHIConstraint::expand(TypeExpansion & out) const {
   for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
     const Type * ty = *it;
-    if (const PHIConstraint * pc = dyn_cast<PHIConstraint>(ty)) {
-      pc->expand(out);
-    } else {
-      out.insert(ty);
-    }
+    ty->expand(out);
   }
 }
 
 const Type * PHIConstraint::singularValue() const {
   DFAIL("Implement");
-}
-
-bool PHIConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  DFAIL("Check");
-  return true;
 }
 
 ConversionRank PHIConstraint::convertTo(const Type * toType, const Conversion & cn) const {
@@ -571,10 +598,10 @@ bool PHIConstraint::includes(const Type * other) const {
   return true;
 }
 
-bool PHIConstraint::isSubtype(const Type * other) const {
+bool PHIConstraint::isSubtypeOf(const Type * other) const {
   DFAIL("Check");
   for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
-    if (!(*it)->isSubtype(other)) {
+    if (!(*it)->isSubtypeOf(other)) {
       return false;
     }
   }
@@ -612,53 +639,5 @@ void PHIConstraint::format(FormatStream & out) const {
   }
   out << "}";
 }
-
-#if 0
-// -------------------------------------------------------------------
-// UnsizedIntConstraint
-
-Type * UnsizedIntConstraint::types_[8] = {
-  &Int8Type::instance,
-  &Int16Type::instance,
-  &Int32Type::instance,
-  &Int64Type::instance,
-  &UInt8Type::instance,
-  &UInt16Type::instance,
-  &UInt32Type::instance,
-  &UInt64Type::instance,
-};
-
-UnsizedIntConstraint::UnsizedIntConstraint(ConstantInteger * expr)
-  : TypeSetConstraint(UnsizedInt)
-  , expr_(expr)
-{
-  for (int i = 0; i < NUM_TYPES; ++i) {
-    culled_[i] = 0;
-  }
-}
-
-void UnsizedIntConstraint::expand(TypeExpansion & out) const {
-  for (int i = 0; i < NUM_TYPES; ++i) {
-    if (!culled_[i]) {
-      out.insert(types_[i]);
-    }
-  }
-}
-
-bool UnsizedIntConstraint::unifyWithPattern(BindingEnv &env, const Type * pattern) const {
-  return true;
-}
-
-void UnsizedIntConstraint::trace() const {
-  Type::trace();
-  expr_->mark();
-}
-
-void UnsizedIntConstraint::format(FormatStream & out) const {
-  out << "{UnsizedInt: ";
-  TypeSetConstraint::format(out);
-  out << "}";
-}
-#endif
 
 } // namespace tart

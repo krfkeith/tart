@@ -2,18 +2,22 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/Defn/Template.h"
+
+#include "tart/Expr/Exprs.h"
+
 #include "tart/Type/NativeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Defn/Template.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/TypeTransform.h"
+#include "tart/Sema/Infer/TypeAssignment.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -21,6 +25,8 @@
 #include "tart/Objects/SystemDefs.h"
 
 #include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/ImmutableSet.h"
+#include "llvm/ADT/SetVector.h"
 #include "llvm/Support/CommandLine.h"
 
 static llvm::cl::opt<bool>
@@ -28,120 +34,48 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 
 namespace tart {
 
+typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
+typedef llvm::SmallSetVector<TypeAssignment *, 16> TypeAssignmentSet;
+
+namespace {
+
+/** Special version of dealias that doesn't dereference type assignments. */
+const Type * dereferenceAlias(const Type * type) {
+  if (const TypeAlias * alias = dyn_cast<TypeAlias>(type)) {
+    type = alias->value();
+    DASSERT_OBJ(type != NULL, alias);
+  }
+
+  return type;
+}
+
+void findTypeAssignments(TypeAssignmentSet & result, const Type * ty) {
+  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(ty)) {
+    TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta);
+    if (!result.count(taMutable)) {
+      for (ConstraintSet::const_iterator it = ta->begin(), itEnd = ta->end(); it != itEnd; ++it) {
+        Constraint * cst = *it;
+        if (!cst->visited()) {
+          cst->setVisited(true);
+          findTypeAssignments(result, cst->value());
+          cst->setVisited(false);
+        }
+      }
+      result.insert(taMutable);
+    }
+  } else if (ty->numTypeParams() > 0) {
+    for (size_t i = 0, numTypeParams = ty->numTypeParams(); i < numTypeParams; ++i) {
+      findTypeAssignments(result, ty->typeParam(i));
+    }
+  }
+}
+
+}
+
 extern bool unifyVerbose;
-
-#if 0
-static void assureNoTypeVars(Type * t) {
-  for (size_t i = 0; i < t->numTypeParams(); ++i) {
-    if (isa<TypeVariable>(t->typeParam(i))) {
-      diag.fatal() << "What's a type param doing here?" << t;
-      DFAIL("Unexpected type variable");
-    }
-  }
-
-  if (CompositeType * ctype = dyn_cast<CompositeType>(t)) {
-    for (ClassList::iterator it = ctype->bases().begin(); it != ctype->bases().end(); ++it) {
-      assureNoTypeVars(*it);
-    }
-  }
-}
-#endif
-
-// -------------------------------------------------------------------
-// TypeBinding
-
-void Substitution::trace() const {
-  safeMark(left_);
-  safeMark(right_);
-  safeMark(prev_);
-}
-
-// -------------------------------------------------------------------
-// TypeBinding
-
-bool TypeBinding::isSingular() const {
-  if (const Type * val = value()) {
-    return val->isSingular();
-  }
-
-  return false;
-}
-
-bool TypeBinding::isEqual(const Type * other) const {
-  if (this == other) {
-    return true;
-  }
-  if (Type * val = value()) {
-    return val->isEqual(other);
-  }
-
-  return false;
-}
-
-bool TypeBinding::isReferenceType() const {
-  if (Type * val = value()) {
-    return val->isReferenceType();
-  }
-
-  return false;
-}
-
-bool TypeBinding::isSubtype(const Type * other) const {
-  if (Type * val = value()) {
-    return val->isSubtype(other);
-  }
-
-  return false;
-}
-
-bool TypeBinding::includes(const Type * other) const {
-  return isEqual(other);
-
-  /*if (Type * val = value()) {
-    return val->includes(other);
-  }
-
-  return false;*/
-}
-
-ConversionRank TypeBinding::convertImpl(const Conversion & conversion) const {
-  if (Type * val = value()) {
-    return val->convert(conversion);
-  }
-
-  return Incompatible;
-}
-
-Expr * TypeBinding::nullInitValue() const {
-  DFAIL("IllegalState");
-}
-
-void TypeBinding::trace() const {
-  var_->mark();
-}
-
-void TypeBinding::format(FormatStream & out) const {
-  var_->format(out);
-  out << "." << env_->index_;
-  if (Type * val = value()) {
-    out << "=" << val;
-  }
-}
-
-const llvm::Type * TypeBinding::irType() const {
-  DFAIL("IllegalState");
-}
-
-Type * TypeBinding::value() const {
-  //Type * result = env_->get(this);
-  Type * result = env_->get(var_);
-  return (result == this) ? NULL : result;
-}
 
 // -------------------------------------------------------------------
 // BindingEnv
-
-int BindingEnv::nextIndex_ = 1;
 
 const char * BindingEnv::str() const {
   static std::string temp;
@@ -149,131 +83,176 @@ const char * BindingEnv::str() const {
   FormatStream stream(ss);
   stream.setFormatOptions(Format_Verbose);
   stream << *this;
+  stream.flush();
   temp = ss.str();
   return temp.c_str();
 }
 
 void BindingEnv::reset() {
-  substitutions_ = NULL;
+  backtrack(0);
 }
 
-bool BindingEnv::unify(SourceContext * source, const Type * pattern, const Type * value,
-    Variance variance) {
-  if (pattern == &BadType::instance) {
+bool BindingEnv::unify(SourceContext * source, const Type * left, const Type * right,
+    Constraint::Kind kind, const ProvisionSet & provisions) {
+  if (left == &BadType::instance) {
     return false;
   }
 
-  // Dealias but don't depattern pattern
-  while (pattern->typeClass() == Type::Alias) {
-    if (const TypeAlias * alias = dyn_cast<TypeAlias>(pattern)) {
-      pattern = alias->value();
-      DASSERT_OBJ(pattern != NULL, alias);
-    } else {
-      break;
-    }
-  }
-
-  //pattern = dealias(pattern);
-  value = dealias(value);
+  // Dealias but don't dereference type variables
+  left = dereferenceAlias(left);
+  right = dereferenceAlias(right);
 
   if (DebugUnify || unifyVerbose) {
-    diag.debug(source) << "Unify? " << pattern << " == " << value << " with " << *this;
+    if (diag.getIndentLevel() == 0) {
+      diag.debug() << "## Begin unification of: " << left << " with: " << right;
+      if (stateCount_ > 0) {
+        diag.debug() << "   Current bindings: " << *this;
+      }
+    } else {
+      diag.debug() << "unify " << left << " with " << right;
+    }
     diag.indent();
   }
 
-  bool result = unifyImpl(source, pattern, value, variance);
+  bool result = unifyImpl(source, left, right, kind, provisions);
 
   if (DebugUnify || unifyVerbose) {
     if (!result) {
-      diag.debug(source) << "Unify: " << pattern << " != " << value << " with " << *this;;
-    } else {
-      diag.debug(source) << "Unify: " << pattern << " == " << value << " with " << *this;;
+      diag.debug() << "unification failed!";
     }
 
     diag.unindent();
+    if (diag.getIndentLevel() == 0) {
+      if (result) {
+        diag.debug() << "## End (success): " << *this;
+      } else {
+        diag.debug() << "## End (failure)";
+      }
+    }
   }
 
   return result;
 }
 
-bool BindingEnv::unifyImpl(SourceContext * source, const Type * pattern, const Type * value,
-    Variance variance) {
-  if (pattern == value) {
+bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type * right,
+    Constraint::Kind kind, const ProvisionSet & provisions) {
+  if (left == right) {
     return true;
-  } else if (isErrorResult(pattern)) {
+  } else if (isErrorResult(left)) {
     return false;
-  } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(pattern)) {
-    return unifyPattern(source, pv, value, variance);
-  } else if (const TypeBinding * pval = dyn_cast<TypeBinding>(pattern)) {
-    if (pval->env() == this) {
-      return unifyPattern(source, pval->var(), value, variance);
-    } else if (pval->value() != NULL) {
-      return unifyImpl(source, pval->value(), value, variance);
-    } else {
-      //addSubstitution(pattern, value);
-      //diag.debug(source) << "Unify error: " << pval << " : " << value;
-      //DFAIL("Why is there a pattern val on the lhs?");
-      //return false;
-      return true;
-    }
-  } else if (const AddressType * npp = dyn_cast<AddressType>(pattern)) {
-    return unifyAddressType(source, npp, value);
-  } else if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(pattern)) {
-    return unifyNativeArrayType(source, nap, value);
-  } else if (const FlexibleArrayType * nap = dyn_cast<FlexibleArrayType>(pattern)) {
-    return unifyFlexibleArrayType(source, nap, value);
-  } else if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(pattern)) {
-    return unifyTypeLiteralType(source, npp, value);
-  } else if (const TypeVariable * pv = dyn_cast<TypeVariable>(value)) {
-    diag.debug(source) << "Unify error: " << pattern << " : " << pv;
-    DFAIL("Should not be unifying with a value that is a pattern var.");
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    if (pattern->isSingular()) {
-      // Let conversion pass take care of it.
-      return true;
-    }
-    return tc->unifyWithPattern(*this, pattern);
-  } else if (const TypeBinding * pval = dyn_cast<TypeBinding>(value)) {
-    Type * boundValue = pval->value();
-    if (boundValue != NULL) {
-      return unify(source, pattern, boundValue, variance);
+  }
+
+  // Make sure that if either left or right is a type variable, it is not one that
+  // this environment knows about, otherwise it should have been replaced with
+  // a type assignment.
+  DASSERT_OBJ(!isAssigned(left), left);
+  DASSERT_OBJ(!isAssigned(right), right);
+
+  // Ambiguous type on the left side.
+  switch (left->typeClass()) {
+    case Type::ResultOf:
+      return unifyWithAmbiguousResultType(
+          source, static_cast<const ResultOfConstraint *>(left), right, kind, provisions);
+    case Type::ParameterOf:
+      return unifyWithAmbiguousParameterType(
+          source, static_cast<const ParameterOfConstraint *>(left), right, kind, provisions);
+    default:
+      break;
+  }
+
+  // Ambiguous type on the right.
+  switch (right->typeClass()) {
+    case Type::ResultOf:
+      return unifyWithAmbiguousResultType(
+          source, static_cast<const ResultOfConstraint *>(right), left,
+          Constraint::reverse(kind), provisions);
+    case Type::ParameterOf:
+      return unifyWithAmbiguousParameterType(
+          source, static_cast<const ParameterOfConstraint *>(right), left,
+          Constraint::reverse(kind), provisions);
+    default:
+      break;
+  }
+
+  // Type variable on left side
+  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(left)) {
+    return unifyWithTypeVar(source, ta, right, kind, provisions);
+  }
+
+  // Type variable on right side
+  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(right)) {
+    return unifyWithTypeVar(source, ta, left, Constraint::reverse(kind), provisions);
+  }
+
+  // Address type
+  if (const AddressType * npp = dyn_cast<AddressType>(left)) {
+    return unifyAddressType(source, npp, right);
+  }
+
+  // Native array type
+  if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(left)) {
+    return unifyNativeArrayType(source, nap, right);
+  }
+
+  // Flexible array type
+  if (const FlexibleArrayType * nap = dyn_cast<FlexibleArrayType>(left)) {
+    return unifyFlexibleArrayType(source, nap, right);
+  }
+
+  // Tuple type
+  if (const TupleType * tPattern = dyn_cast<TupleType>(left)) {
+    if (const TupleType * tValue = dyn_cast<TupleType>(right)) {
+      return unifyTupleType(source, tPattern, tValue);
     }
 
-    return true;
-//    diag.error(source) << "Unbound pattern value found in value " << value <<
-//        " for pattern " << pattern;
-//    //addSubstitution(pval, value);
-//    return true;
-  } else if (const CompositeType * ctPattern = dyn_cast<CompositeType>(pattern)) {
-    if (const CompositeType * ctValue = dyn_cast<CompositeType>(value)) {
-      return unifyCompositeType(source, ctPattern, ctValue, variance);
-    } else if (const NativeArrayType * natValue = dyn_cast<NativeArrayType>(value)) {
+    return false;
+  }
+
+  // Type literal type
+  if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(left)) {
+    return unifyTypeLiteralType(source, npp, right);
+  }
+
+  if (const CompositeType * ctPattern = dyn_cast<CompositeType>(left)) {
+    if (const CompositeType * ctValue = dyn_cast<CompositeType>(right)) {
+      return unifyCompositeType(source, ctPattern, ctValue);
+    } else if (const NativeArrayType * natValue = dyn_cast<NativeArrayType>(right)) {
       // Special case for assigning Array to NativeArray in initializers
       if (ctPattern->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
-        return unify(source, ctPattern->typeParam(0), natValue->typeParam(0), Invariant);
+        return unify(source, ctPattern->typeParam(0), natValue->typeParam(0), Constraint::EXACT);
       }
+//    } else if (const FunctionType * fnValue = dyn_cast<FunctionType>(value)) {
+//      const CompositeType * fnPattern =
+//      if (!fnValue->isStatic()) {
+//      }
     }
 
-    if (variance == Covariant) {
-      if (const UnionType * utValue = dyn_cast<UnionType>(value)) {
-        return unifyToUnionType(source, ctPattern, utValue, variance);
-      }
+    if (const UnionType * utValue = dyn_cast<UnionType>(right)) {
+      return unifyToUnionType(source, ctPattern, utValue);
+    }
+
+    // The type on the left may have a coercion method, so assume that unification
+    // succeeds.
+    if (right->isSingular()) {
+      return true;
     }
 
     return false;
-  } else if (const UnionType * uPattern = dyn_cast<UnionType>(pattern)) {
-    if (const UnionType * uValue = dyn_cast<UnionType>(value)) {
-      return unifyUnionType(source, uPattern, uValue, variance);
+  }
+
+  if (const UnionType * uPattern = dyn_cast<UnionType>(left)) {
+    if (const UnionType * uValue = dyn_cast<UnionType>(right)) {
+      return unifyUnionType(source, uPattern, uValue);
     }
 
     return false;
-  } else if (isa<PrimitiveType>(pattern)) {
+  }
+
+  if (isa<PrimitiveType>(left)) {
     // Go ahead and unify - type inference will see if it can convert.
     return true;
   } else {
-    //diag.error() << Format_Dealias << "Implement unification of " << pattern << " and " << value;
     return false;
-    //DFAIL("Implement");
   }
 }
 
@@ -288,13 +267,7 @@ bool BindingEnv::unifyAddressType(
       return false;
     }
 
-    return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    if (const TypeBinding * elemVar = dyn_cast<TypeBinding>(pat->typeParam(0))) {
-      return unify(source, elemVar, new SingleTypeParamOfConstraint(tc, Type::NAddress), Invariant);
-    }
-
-    return tc->unifyWithPattern(*this, pat);
+    return unify(source, pat->typeParam(0), npv->typeParam(0), Constraint::EXACT);
   } else {
     return false;
   }
@@ -315,9 +288,7 @@ bool BindingEnv::unifyNativeArrayType(SourceContext * source, const NativeArrayT
       return false;
     }
 
-    return unify(source, pat->typeParam(0), nav->typeParam(0), Invariant);
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    return tc->unifyWithPattern(*this, pat);
+    return unify(source, pat->typeParam(0), nav->typeParam(0), Constraint::EXACT);
   } else {
     return false;
   }
@@ -334,9 +305,7 @@ bool BindingEnv::unifyFlexibleArrayType(SourceContext * source, const FlexibleAr
       return false;
     }
 
-    return unify(source, pat->typeParam(0), fav->typeParam(0), Invariant);
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    return tc->unifyWithPattern(*this, pat);
+    return unify(source, pat->typeParam(0), fav->typeParam(0), Constraint::EXACT);
   } else {
     return false;
   }
@@ -353,65 +322,62 @@ bool BindingEnv::unifyTypeLiteralType(
       return false;
     }
 
-    return unify(source, pat->typeParam(0), npv->typeParam(0), Invariant);
-  } else if (const TypeConstraint * tc = dyn_cast<TypeConstraint>(value)) {
-    return tc->unifyWithPattern(*this, pat);
+    return unify(source, pat->typeParam(0), npv->typeParam(0), Constraint::EXACT);
   } else {
     return false;
   }
 }
 
 bool BindingEnv::unifyCompositeType(
-    SourceContext * source, const CompositeType * pattern, const CompositeType * value,
-    Variance variance) {
-  if (pattern->isEqual(value)) {
+    SourceContext * source, const CompositeType * left, const CompositeType * right) {
+  if (left->isEqual(right)) {
     return true;
   }
 
-  if (!AnalyzerBase::analyzeType(pattern, Task_PrepTypeComparison)) {
+  if (!AnalyzerBase::analyzeType(left, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (!AnalyzerBase::analyzeType(value, Task_PrepTypeComparison)) {
+  if (!AnalyzerBase::analyzeType(right, Task_PrepTypeComparison)) {
     return false;
   }
 
-  TypeDefn * patternDefn = pattern->typeDefn();
-  TypeDefn * valueDefn = value->typeDefn();
+  TypeDefn * tdLeft = left->typeDefn();
+  TypeDefn * tdRight = right->typeDefn();
 
   // Compare the ASTs to see if they derive from the same original symbol.
-  if (patternDefn->ast() == valueDefn->ast()) {
+  if (tdLeft->ast() == tdRight->ast()) {
     // Now we have to see if we can bind the type variables.
-    const TupleType * patternTypeParams = NULL;
-    const TupleType * valueTypeParams = NULL;
+    const TupleType * typeParamsLeft = NULL;
+    const TupleType * typeParamsRight = NULL;
 
-    if (patternDefn->isTemplate()) {
-      patternTypeParams = patternDefn->templateSignature()->typeParams();
-    } else if (patternDefn->isTemplateInstance()) {
-      patternTypeParams = patternDefn->templateInstance()->typeArgs();
+    if (tdLeft->isTemplate()) {
+      typeParamsLeft = tdLeft->templateSignature()->typeParams();
+    } else if (tdLeft->isTemplateInstance()) {
+      typeParamsLeft = tdLeft->templateInstance()->typeArgs();
     }
 
-    if (valueDefn->isTemplate()) {
-      valueTypeParams = valueDefn->templateSignature()->typeParams();
-    } else if (valueDefn->isTemplateInstance()) {
-      valueTypeParams = valueDefn->templateInstance()->typeArgs();
+    if (tdRight->isTemplate()) {
+      typeParamsRight = tdRight->templateSignature()->typeParams();
+    } else if (tdRight->isTemplateInstance()) {
+      typeParamsRight = tdRight->templateInstance()->typeArgs();
     }
 
-    if (patternTypeParams == valueTypeParams) {
+    if (typeParamsLeft == typeParamsRight) {
       return true;
     }
 
-    if (patternTypeParams == NULL ||
-        valueTypeParams == NULL ||
-        patternTypeParams->size() != valueTypeParams->size()) {
+    if (typeParamsLeft == NULL ||
+        typeParamsRight == NULL ||
+        typeParamsLeft->size() != typeParamsRight->size()) {
       return false;
     }
 
-    size_t numParams = patternTypeParams->size();
-    Substitution * savedState = substitutions();
+    size_t numParams = typeParamsLeft->size();
+    unsigned savedState = stateCount_;
     for (size_t i = 0; i < numParams; ++i) {
-      if (!unify(source, (*patternTypeParams)[i], (*valueTypeParams)[i], Invariant)) {
-        setSubstitutions(savedState);
+      if (!unify(source, (*typeParamsLeft)[i], (*typeParamsRight)[i], Constraint::EXACT)) {
+        backtrack(savedState);
         return false;
       }
     }
@@ -422,411 +388,431 @@ bool BindingEnv::unifyCompositeType(
   // See if we can find a match in the superclasses.
   // This may produce a false positive, which will be caught later.
 
-  Substitution * savedState = substitutions();
-  for (ClassList::const_iterator it = value->bases().begin(); it != value->bases().end(); ++it) {
-    if (unifyCompositeType(source, pattern, *it, Invariant)) {
+  unsigned savedState = stateCount_;
+  for (ClassList::const_iterator it = right->bases().begin(); it != right->bases().end(); ++it) {
+    if (unifyCompositeType(source, left, *it)) {
       return true;
     }
 
-    setSubstitutions(savedState);
+    backtrack(savedState);
   }
 
-  for (ClassList::const_iterator it = pattern->bases().begin(); it != pattern->bases().end(); ++it) {
-    if (unifyCompositeType(source, *it, value, Invariant)) {
+  for (ClassList::const_iterator it = left->bases().begin(); it != left->bases().end(); ++it) {
+    if (unifyCompositeType(source, *it, right)) {
       return true;
     }
 
-    setSubstitutions(savedState);
+    backtrack(savedState);
   }
 
   return false;
 }
 
 bool BindingEnv::unifyUnionType(
-    SourceContext * source, const UnionType * pattern, const UnionType * value,
-    Variance variance) {
-  if (pattern->isEqual(value)) {
+    SourceContext * source, const UnionType * left, const UnionType * right) {
+  if (left->isEqual(right)) {
     return true;
   }
 
-  if (!AnalyzerBase::analyzeType(pattern, Task_PrepTypeComparison)) {
+  if (!AnalyzerBase::analyzeType(left, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (!AnalyzerBase::analyzeType(value, Task_PrepTypeComparison)) {
+  if (!AnalyzerBase::analyzeType(right, Task_PrepTypeComparison)) {
     return false;
   }
 
-  if (pattern->members().size() != value->members().size()) {
+  if (left->members().size() != right->members().size()) {
     return false;
   }
 
-  typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
-  TypeSet patternTypes;
-  for (TupleType::const_iterator it = pattern->members().begin(); it != pattern->members().end();
+  TypeSet membersLeft;
+  for (TupleType::const_iterator it = left->members().begin(); it != left->members().end();
       ++it) {
-    patternTypes.insert(dealias(*it));
+    membersLeft.insert(dereferenceAlias(*it));
   }
 
-  TypeSet valueTypes;
-  for (TupleType::const_iterator it = value->members().begin(); it != value->members().end();
+  TypeSet memberRight;
+  for (TupleType::const_iterator it = right->members().begin(); it != right->members().end();
       ++it) {
-    valueTypes.insert(dealias(*it));
-    patternTypes.erase(dealias(*it));
+    memberRight.insert(dereferenceAlias(*it));
+    membersLeft.erase(dereferenceAlias(*it));
   }
 
-  for (TupleType::const_iterator it = pattern->members().begin(); it != pattern->members().end();
+  for (TupleType::const_iterator it = left->members().begin(); it != left->members().end();
       ++it) {
-    valueTypes.erase(dealias(*it));
+    memberRight.erase(dereferenceAlias(*it));
   }
 
-  if (valueTypes.size() != patternTypes.size()) {
+  if (memberRight.size() != membersLeft.size()) {
     return false;
   }
 
-  if (valueTypes.size() == 0) {
+  if (memberRight.size() == 0) {
     return true;
   }
 
-  if (valueTypes.size() > 1) {
+  if (memberRight.size() > 1) {
     DFAIL("Implement more than one pattern var per union");
   }
 
-  return unify(source, *patternTypes.begin(), *valueTypes.begin(), Invariant);
+  return unify(source, *membersLeft.begin(), *memberRight.begin(), Constraint::EXACT);
 }
 
 bool BindingEnv::unifyToUnionType(
-    SourceContext * source, const Type * pattern, const UnionType * value,
-    Variance variance) {
+    SourceContext * source, const Type * left, const UnionType * right) {
   // If we're assigning to a union type, try each of the union members.
-  Substitution * savedState = substitutions();
-  for (TupleType::const_iterator it = value->members().begin(); it != value->members().end();
+  unsigned savedState = stateCount_;
+  for (TupleType::const_iterator it = right->members().begin(); it != right->members().end();
       ++it) {
-    if (unify(source, pattern, *it, variance)) {
+    if (unify(source, left, *it, Constraint::EXACT)) {
       return true;
     }
 
-    setSubstitutions(savedState);
+    backtrack(savedState);
   }
 
   return false;
 }
 
-bool BindingEnv::unifyPattern(
-    SourceContext * source, const TypeVariable * pattern, const Type * value, Variance variance) {
-
-  if (pattern == value) {
-    // Don't bind a pattern to itself.
+bool BindingEnv::unifyTupleType(
+    SourceContext * source, const TupleType * left, const TupleType * right) {
+  if (left->isEqual(right)) {
     return true;
   }
 
-  /*if (TypeVariable * pvar = dyn_cast<TypeVariable>(value)) {
-    diag.debug() << pattern->templateDefn()->name() << pattern << " <- " << pvar->templateDefn()->name() << pvar << " in " << *this;
-    //DFAIL("Abort");
-  }*/
+  if (!AnalyzerBase::analyzeType(left, Task_PrepTypeComparison)) {
+    return false;
+  }
 
-  // If there is already a value bound to this pattern variable
-  Substitution * s = getSubstitutionFor(pattern);
-  if (s != NULL) {
-    // Early out - already bound to this same value.
-    if (s->right() == value) {
-      return true;
-    }
+  if (!AnalyzerBase::analyzeType(right, Task_PrepTypeComparison)) {
+    return false;
+  }
 
-    // Early out
-    if (s->right() == pattern) {
-      DFAIL("Pattern bound to itself?");
-      return true;
-    }
+  if (left->size() != right->size()) {
+    return false;
+  }
 
-    if (const TypeBinding * pval = dyn_cast<TypeBinding>(s->right())) {
-      // If the value that is already bound is a pattern variable from some other
-      // environment (it should never be from this one), then bind it to
-      // this variable.
-      // TODO: Might want to check if the value is bindable to this var.
-      if (pval->value() == value /*|| pval->var() == pattern && pval->env() == this*/) {
-        return true;
-      }
-
-      addSubstitution(pattern, value);
-      return true;
-    }
-
-    if (isa<TypeBinding>(value)) {
-      // If the value that we're trying to bind is a pattern value, and we already
-      // have a value, then leave the current value as is, assuming that it can
-      // be bound to that pattern variable later.
-      return true;
-    }
-
-    if (!pattern->canBindTo(value)) {
+  size_t size = left->size();
+  for (size_t i = 0; i < size; ++i) {
+    if (!unify(source, left->member(i), right->member(i), Constraint::EXACT)) {
       return false;
     }
+  }
 
-    if (const TypeVariable * svar = dyn_cast<TypeVariable>(s->right())) {
-      //DFAIL("Should not happen");
-      // If 'pattern' is bound to another pattern variable, then go ahead and override
-      // that binding.
-      if (svar != value && svar->canBindTo(value)) {
-        addSubstitution(svar, value);
-        addSubstitution(pattern, value);
-      }
+  return true;
+}
 
-      return true;
-    }
+bool BindingEnv::unifyWithTypeVar(
+    SourceContext * source, const TypeAssignment * ta, const Type * value,
+    Constraint::Kind kind, const ProvisionSet & provisions) {
 
-    //const Type * upperBound = value;
-    //const Type * lowerBound = value;
+  // Dereference the value as well.
+  value = TypeAssignment::deref(value);
 
-    if (value->isUnsizedIntType()) {
-      //upperBound =
-    }
+  // Don't bind a type assignment to itself.
+  if (ta == value) {
+    return true;
+  }
 
-    if (!s->right()->includes(value) && !value->includes(s->right())) {
-      if (unifyWithBoundValue(source, s->right(), value, Invariant)) {
-        return true;
-      }
-
-      // Hack: For now, don't even try to unify a constraint with another constraint.
-      // TODO: Figure out how this really ought to work, but in the mean time
-      // this makes the unit tests compile and run.
-      if (isa<TypeConstraint>(s->right()) && isa<TypeConstraint>(value)) {
-        return true;
-      }
-    }
-
-    const Type * commonType = selectLessSpecificType(source, s->right(), value);
-    /*if (variance == Invariant) {
-      diag.info() << "Invariant " << pattern;
-      diag.info() << "Pattern = " << pattern;
-      diag.info() << "Substitution = " << s->left() << " -> " << s->right();
-      diag.info() << "Value = " << value;
-      diag.info() << "NewValue = " << newValue;
-      diag.printContextStack(source);
-    }*/
-
-    /*switch (variance) {
-      case Invariant:
-        newValue = value;
-        return unify(source, s->right(), value, variance);
-
-      case Covariant:
-        //newValue = Type::selectLesSpecificType(s->right(), value);
-        break;
-
-      case Contravariant:
-        break;
-    }*/
-
-    // Override the old substitution with a new one.
-    if (commonType != NULL) {
-      if (commonType == s->right()) {
-        return true;
-      }
-
-      if (commonType != s->right() && commonType->isSingular()) {
-        if (unifyVerbose) {
-          diag.debug() << "Adding substitution of " << pattern << " <- " << commonType <<
-              " because the new value is " << value <<
-              " and the old value is " << s->right() <<
-              " with variance " << variance;
-        }
-
-        addSubstitution(pattern, commonType);
-      } else {
-        // No need to rebind if same as before.
-        if (unifyVerbose) {
-          diag.debug() << "Skipping rebind of " << pattern << " <- " << commonType <<
-              " because the new value is " << value <<
-              " and the old value is " << s->right() <<
-              " with variance " << variance;
-        }
-      }
-
-      return true;
-    }
-
+  // Check template conditions
+  if (!ta->target()->canBindTo(value)) {
     return false;
-  } else if (pattern->canBindTo(value)) {
-    // Don't bother binding a pattern value to its own variable.
-    if (const TypeBinding * pval = dyn_cast<TypeBinding>(value)) {
-      if (pval->var() == pattern) {
-        return true;
-      }
+  }
+
+  // Calculate the set of all provisions
+  ProvisionSet combinedProvisions(provisions);
+  combinedProvisions.insertIfValid(ta->primaryProvision());
+  if (const TypeAssignment * taValue = dyn_cast<TypeAssignment>(value)) {
+    combinedProvisions.insertIfValid(taValue->primaryProvision());
+  }
+
+  // Early out - already bound to this same value.
+  for (ConstraintSet::const_iterator si = ta->begin(); si != ta->end(); ++si) {
+    Constraint * cst = *si;
+    if (cst->value()->isEqual(value) &&
+        cst->kind() == kind &&
+        cst->provisions().equals(combinedProvisions)) {
+      return true;
     }
 
+    DASSERT_MSG((*si)->value() != ta, "Pattern bound to itself");
+  }
+
+  // Add a new constraint onto the type assignment.
+  if (combinedProvisions.isConsistent()) {
+    TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta);
+    taMutable->constraints().insert(
+        source->location(), value, nextState(), kind, combinedProvisions);
     if (DebugUnify || unifyVerbose) {
-      diag.debug(source->location()) << "Unify: " << pattern << " <- " << value << " in environment " << *this;
+      diag.debug() << "bind " << ta << " " << kind << " " << value;
+      dumpProvisions(combinedProvisions);
     }
 
-    // Add a new substitution of value for pattern
-    addSubstitution(pattern, value);
-    return true;
-  } else {
+    // If the other side is also a type variable, add a reverse constraint to it.
+    if (const TypeAssignment * taValue = dyn_cast<TypeAssignment>(value)) {
+      const_cast<TypeAssignment *>(taValue)->constraints().insert(
+          source->location(), ta, nextState(), Constraint::reverse(kind), combinedProvisions);
+      if (DebugUnify || unifyVerbose) {
+        diag.debug() << "bind " << value << " " << kind << " " << ta;
+        dumpProvisions(combinedProvisions);
+      }
+    }
+    // TODO: This doesn't accommodate the case where there might be type vars buried inside.
+  }
+
+  return true;
+}
+
+bool BindingEnv::unifyWithAmbiguousParameterType(SourceContext * source,
+    const ParameterOfConstraint * poc, const Type * value, Constraint::Kind kind,
+    const ProvisionSet & provisions) {
+  bool success = false;
+  const Candidates & cd = poc->expr()->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    CallCandidate * cc = *it;
+    const Type * paramType = cc->paramType(poc->argIndex());
+    ProvisionSet ccProvisions(provisions);
+    ccProvisions.insertIfValid(cc->primaryProvision());
+    if (ccProvisions.isConsistent()) {
+      unsigned savedState = stateCount_;
+      if (unify(source, paramType, value, kind, ccProvisions)) {
+        success = true;
+      } else {
+        backtrack(savedState);
+      }
+    }
+  }
+  return success;
+}
+
+bool BindingEnv::unifyWithAmbiguousResultType(SourceContext * source,
+    const ResultOfConstraint * roc, const Type * value, Constraint::Kind kind,
+    const ProvisionSet & provisions) {
+  bool success = false;
+  const Candidates & cd = roc->expr()->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    CallCandidate * cc = *it;
+    const Type * resultType = roc->candidateResultType(cc);
+    ProvisionSet ccProvisions(provisions);
+    ccProvisions.insertIfValid(cc->primaryProvision());
+    if (ccProvisions.isConsistent()) {
+      unsigned savedState = stateCount_;
+      if (unify(source, resultType, value, kind, ccProvisions)) {
+        success = true;
+      } else {
+        backtrack(savedState);
+      }
+    }
+  }
+  return success;
+}
+
+TypeAssignment * BindingEnv::assign(const TypeVariable * target, const Type * value, GC * scope) {
+  int sequenceNum = 1;
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next_) {
+    DASSERT(ta->target() != target || ta->scope() != scope);
+    if (ta->target()->name() == target->name()) {
+      DASSERT(ta->scope() != scope);
+      if (sequenceNum == 1) {
+        sequenceNum = ta->sequenceNum_ + 1;
+        break;
+      }
+    }
+  }
+
+  TypeAssignment * result = new TypeAssignment(target, scope);
+  result->next_ = assignments_;
+  DASSERT(result->next_ != result);
+  assignments_ = result;
+  result->sequenceNum_ = sequenceNum;
+
+  if (DebugUnify || unifyVerbose) {
+    diag.debug() << "Assign: " << result << " in " << *this;
+  }
+  return result;
+}
+
+void BindingEnv::backtrack(unsigned state) {
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    while (!ta->constraints_.empty() && ta->constraints_.back()->stateCount() > state) {
+      ta->constraints_.pop_back();
+    }
+  }
+
+  stateCount_ = state;
+
+  if (DebugUnify || unifyVerbose) {
+    diag.debug() << "Backtracking to state: " << *this;
+  }
+}
+
+const TypeAssignment * BindingEnv::getAssignment(const TypeVariable * var, const GC * context) const {
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    if (ta->target() == var && ta->scope() == context) {
+      return ta;
+    }
+  }
+
+  return NULL;
+}
+
+void BindingEnv::sortAssignments() {
+  // Do a post-order graph traversal.
+  TypeAssignmentSet assignmentOrder;
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    findTypeAssignments(assignmentOrder, ta);
+  }
+
+  // Now iterate in reverse order and re-insert
+  assignments_ = NULL;
+  TypeAssignmentSet::const_iterator it = assignmentOrder.end();
+  while (it != assignmentOrder.begin()) {
+    TypeAssignment * ta = *--it;
+    ta->next_ = assignments_;
+    assignments_ = ta;
+  }
+}
+
+bool BindingEnv::updateAssignments(SourceLocation loc, GC * context) {
+  if (!reconcileConstraints(context)) {
+    diag.error(loc) << "Type inference cannot find a solution that satisfies all constraints.";
+    diag.indent();
+    dump();
+    diag.unindent();
+    reconcileConstraints(context); // For debugging - set breakpoint here
     return false;
   }
-}
 
-bool BindingEnv::unifyWithBoundValue(
-    SourceContext * source, const Type * prevValue, const Type * newValue, Variance variance) {
-  if (unifyVerbose) {
-    diag.debug() << "Attempting to reconcile existing substitution: ";
-    diag.debug() << "   " << prevValue;
-    diag.debug() << "with new value: ";
-    diag.debug() << "   " << newValue;
-  }
-
-  if (isa<TypeConstraint>(prevValue)) {
-    // For now, unification of a previous constraint with a new value always succeeds.
-    // This will get further constrained later when we rank conversions.
-    return true;
-  } else {
-    return unify(source, prevValue, newValue, variance);
-  }
-}
-
-Substitution * BindingEnv::addSubstitution(const Type * left, const Type * right) {
-  for (Substitution * s = substitutions_; s != NULL; s = s->prev()) {
-    if (s->left() == left && s->right() == right) {
-      diag.error() << "Redundant substitution: " << s->left() << " -> " << s->right();
-      DFAIL("BadState");
+  // One final thing - transform the TAs values to get rid of references to other TAs.
+  NormalizeTransform nxform;
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    if (ta->value() != NULL &&
+        ta->checkPrimaryProvision() &&
+        (ta->scope() == context || context == NULL)) {
+      ta->setValue(nxform(ta->value()));
     }
   }
 
-  DASSERT(left != right);
-  substitutions_ = new Substitution(left, right, substitutions_);
-  return substitutions_;
+  return true;
 }
 
-Substitution * BindingEnv::addSubstitution(
-    const Type * left, const Type * upper, const Type * lower) {
-  DASSERT(left != upper);
-  DASSERT(left != lower);
-  substitutions_ = new Substitution(left, upper, lower, substitutions_);
-  return substitutions_;
-}
+bool BindingEnv::reconcileConstraints(GC * context) {
+  typedef llvm::SmallVector<TypeAssignment *, 32> TypeAssignmentList;
+  TypeAssignmentList unsolved;
 
-Type * BindingEnv::get(const TypeVariable * type) const {
-  Substitution * s = getSubstitutionFor(type);
-  if (s != NULL) {
-    return const_cast<Type *>(s->right());
+  // Reset all TAs having constraints and collect those that need solving.
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    if (!ta->constraints().empty() &&
+        ta->checkPrimaryProvision() &&
+        (ta->scope() == context || context == NULL)) {
+      ta->setValue(NULL);
+      unsolved.push_back(ta);
+    }
   }
 
-  return NULL;
+  // Sort here?
+
+  // Iteratively attempt to assign a value to every TA.
+  unsigned prevUnsolvedCount = 0;
+  unsigned unsolvedCount = unsigned(-1);
+  do {
+    prevUnsolvedCount = unsolvedCount;
+    unsolvedCount = 0;
+    for (TypeAssignmentList::const_iterator it = unsolved.begin(); it != unsolved.end(); ++it) {
+      TypeAssignment * ta = *it;
+      if (ta->value() == NULL) {
+        ta->setValue(ta->findSingularSolution());
+      }
+      if (ta->value() == NULL) {
+        ++unsolvedCount;
+      }
+    }
+  } while (unsolvedCount > 0 && unsolvedCount != prevUnsolvedCount);
+
+  return unsolvedCount == 0;
 }
 
-Type * BindingEnv::get(const TypeBinding * type) const {
-  Substitution * s = getSubstitutionFor(type);
-  if (s != NULL) {
-    return const_cast<Type *>(s->right());
+void BindingEnv::toTypeVarMap(TypeVarMap & map, GC * context) {
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    if (ta->scope() == context && ta->value() != NULL) {
+      DASSERT_OBJ(ta->value() != NULL, ta);
+      map[ta->target()] = ta->value();
+    }
+  }
+}
+
+bool BindingEnv::isAssigned(const Type * ty) const {
+  if (const TypeVariable * tv = dyn_cast<TypeVariable>(ty)) {
+    for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+      if (ta->target() == tv) {
+        return true;
+      }
+    }
   }
 
-  return NULL;
+  return false;
 }
 
-Type * BindingEnv::dereference(Type * type) const {
-  while (type != NULL) {
-    if (isa<TypeVariable>(type)) {
-      Substitution * s = getSubstitutionFor(type);
-      if (s != NULL) {
-        type = const_cast<Type *>(s->right());
-      } else {
-        return NULL;
-      }
-    } else if (TypeBinding * val = dyn_cast<TypeBinding>(type)) {
-      type = val->value();
-      if (type == NULL) {
-        return val;
-      }
+void BindingEnv::dumpAssignment(TypeAssignment * ta) const {
+  if (ta->constraints().empty()) {
+    if (ta->value() != NULL) {
+      diag.debug() << ta << " [" << ta->value() << "]";
     } else {
-      break;
+      diag.debug() << ta << " == {}";
     }
-  }
-
-  return type;
-}
-
-const Type * BindingEnv::subst(const Type * in) const {
-  if (substitutions_ == NULL || isErrorResult(in)) {
-    return in;
-  }
-
-  return SubstitutionTransform(*this).transform(in);
-}
-
-const Type * BindingEnv::selectLessSpecificType(SourceContext * source, const Type * type1,
-    const Type * type2) {
-  if (type2->includes(type1)) {
-    return type2;
-  } else if (type1->includes(type2)) {
-    return type1;
+  } else if (ta->constraints().size() == 1) {
+    Constraint * s = ta->constraints().front();
+    if (ta->value() != NULL) {
+      diag.debug() << ta << " " << s->kind() << " " << s->value() << " [" << ta->value() << "]";
+    } else {
+      diag.debug() << ta << " " << s->kind() << " " << s->value();
+    }
+    diag.indent();
+    dumpProvisions(s->provisions());
+    diag.unindent();
   } else {
-    const Type * t1 = PrimitiveType::derefEnumType(type1);
-    const Type * t2 = PrimitiveType::derefEnumType(type2);
-    if (t1->typeClass() == Type::Primitive && t2->typeClass() == Type::Primitive) {
-      const PrimitiveType * p1 = static_cast<const PrimitiveType *>(t1);
-      const PrimitiveType * p2 = static_cast<const PrimitiveType *>(t2);
-
-      if (isIntegerTypeId(p1->typeId()) && isIntegerTypeId(p2->typeId())) {
-        bool isSignedResult = isSignedIntegerTypeId(p1->typeId())
-            || isSignedIntegerTypeId(p2->typeId());
-        int type1Bits = p1->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p1->typeId()) ? 1 : 0);
-        int type2Bits = p2->numBits() + (isSignedResult && isUnsignedIntegerTypeId(p2->typeId()) ? 1 : 0);
-        int resultBits = std::max(type1Bits, type2Bits);
-
-        if (isSignedResult) {
-          if (resultBits <= 8) {
-            return &Int8Type::instance;
-          } else if (resultBits <= 16) {
-            return &Int16Type::instance;
-          } else if (resultBits <= 32) {
-            return &Int32Type::instance;
-          } else if (resultBits <= 64) {
-            return &Int64Type::instance;
-          }
-
-          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
-          diag.info() << "p1 = " << p1;
-          diag.info() << "p2 = " << p2;
-          //DFAIL("Integer value too large to be represented as native type.");
-        } else {
-          if (resultBits <= 8) {
-            return &UInt8Type::instance;
-          } else if (resultBits <= 16) {
-            return &UInt16Type::instance;
-          } else if (resultBits <= 32) {
-            return &UInt32Type::instance;
-          } else if (resultBits <= 64) {
-            return &UInt64Type::instance;
-          }
-
-          diag.error(source) << "Integer value requires " << resultBits << " bits, too large.";
-          diag.info() << "p1 = " << p1;
-          diag.info() << "p2 = " << p2;
-          //DFAIL("Integer value too large to be represented as native type.");
-        }
-      }
+    if (ta->value() != NULL) {
+      diag.debug() << ta << " [" << ta->value() << "]:";
+    } else {
+      diag.debug() << ta << ":";
     }
+    diag.indent();
+    for (ConstraintSet::const_iterator si = ta->begin(); si != ta->end(); ++si) {
+      Constraint * s = *si;
+      diag.debug() << "" << s->kind() << " " << s->value();
+      dumpProvisions(s->provisions());
+    }
+    diag.unindent();
+  }
+}
 
-    diag.debug() << "Neither " << type1 << " nor " << type2 << " is more specific than the other.";
-    return NULL;
+void BindingEnv::dumpProvisions(const ProvisionSet & provisions) const {
+  diag.indent();
+  for (ProvisionSet::const_iterator p = provisions.begin(); p != provisions.end(); ++p) {
+    diag.debug() << "provided: " << *p;
+  }
+  diag.unindent();
+}
+
+void BindingEnv::dump() const {
+  for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
+    dumpAssignment(ta);
   }
 }
 
 void BindingEnv::trace() const {
-  GC::safeMark(substitutions_);
+  GC::safeMark(assignments_);
 }
 
 FormatStream & operator<<(FormatStream & out, const BindingEnv & env) {
   out << "{";
-  for (Substitution * s = env.substitutions(); s != NULL; s = s->prev()) {
-    if (s != env.substitutions()) {
+  for (TypeAssignment * ta = env.assignments(); ta != NULL; ta = ta->next()) {
+    if (ta != env.assignments()) {
       out << ", ";
     }
-
-    out << s->left() << ":" << s->right();
+    out << ta;
   }
-
   out << "}";
   return out;
 }

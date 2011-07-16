@@ -36,8 +36,12 @@ public:
   /** Return the current worst-case conversion rank. */
   virtual ConversionRank rank() const = 0;
 
+  /** Replace all type variables in this expression with unique variables, so that we
+      can distinguish between multiple occurances of the same template in an expression. */
+  virtual void relabelVars(BindingEnv & env) = 0;
+
   /** Do unification of the operation with its arguments. */
-  virtual bool unify(int cullingDepth) = 0;
+  virtual bool unify(BindingEnv & env, int cullingDepth) = 0;
 
   /** Generate a printable version of this choice point's expression. */
   virtual const Expr * expr() const = 0;
@@ -54,6 +58,9 @@ public:
   /** Return true if the specified choice has been culled. */
   virtual bool isCulled(int index) const = 0;
 
+  /** Cull a specific numbered choice. */
+  virtual void cull(int choice, int searchDepth) = 0;
+
   /** Cull all choices lower than a given conversion rank. */
   virtual int cullByConversionRank(ConversionRank lowerLimit, int searchDepth) = 0;
 
@@ -66,15 +73,21 @@ public:
   /** Cull all choices except for the best choice. */
   virtual void cullAllExceptBest(int searchDepth) = 0;
 
-  /** Eliminate from consideration any culled candidates. */
-  virtual void removeCulled() = 0;
+  /** Return true if choice 'choice' depends on any provision in 'p'. */
+  virtual bool dependsOn(int choice, const ProvisionSet & pset) const = 0;
 
   /** Save the single best candidate. */
   virtual void saveBest() = 0;
 
   /** Undo all cullings of greater than search depth. */
   virtual void backtrack(int searchDepth) = 0;
+
+  /** Generate a printable version of the input expression. */
+  virtual void formatExpression(FormatStream & out) = 0;
 };
+
+typedef llvm::SmallVector<ChoicePoint *, 16> ChoicePointList;
+typedef llvm::SmallSet<const Expr *, 16> ExprSet;
 
 /// -------------------------------------------------------------------
 /// Represents a site where a function is called. There are two
@@ -100,8 +113,10 @@ public:
   size_t count() const;
   ConversionRank rank() const { return lowestRank_; }
   int remaining() const { return remaining_; }
-  bool unify(int cullingDepth);
+  void relabelVars(BindingEnv & env);
+  bool unify(BindingEnv & env, int cullingDepth);
   bool isCulled(int ch) const;
+  void cull(int choice, int searchDepth);
   int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
   void cullBySpecificity(int searchDepth);
   void cullAllExcept(int choice, int searchDepth);
@@ -109,6 +124,8 @@ public:
   void removeCulled();
   void backtrack(int searchDepth);
   const Expr * expr() const { return callExpr_; }
+  bool dependsOn(int choice, const ProvisionSet & pset) const;
+  void formatExpression(FormatStream & out);
 
   // Eliminate culled candidates
   void finish();
@@ -135,45 +152,6 @@ private:
 
   /** The best candidate for the current solution being tested. */
   CallCandidate * best_;
-};
-
-typedef llvm::SmallVector<ChoicePoint *, 16> ChoicePointList;
-typedef llvm::SmallSet<const Expr *, 16> ExprSet;
-
-/// -------------------------------------------------------------------
-/// A choice point for constant integers.
-class ConstantIntegerSite : public ChoicePoint {
-public:
-  ConstantIntegerSite(ConstantInteger * expr)
-    : expr_(expr)
-    , remaining_(0)
-    , lowestRank_(IdenticalTypes)
-  {}
-
-  // Update conversion rankings
-  void update();
-  size_t count() const;
-  int remaining() const;
-  bool unify(int cullingDepth);
-  ConversionRank rank() const;
-  bool isCulled(int index) const;
-  int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
-  void cullBySpecificity(int searchDepth);
-  void cullAllExcept(int choice, int searchDepth);
-  void cullAllExceptBest(int searchDepth);
-  void removeCulled() {}
-  void finish();
-  void reportErrors(const char * msg);
-  void reportRanks();
-  void saveBest();
-  void backtrack(int searchDepth);
-
-  const Expr * expr() const { return expr_; }
-
-private:
-  ConstantInteger * expr_;
-  int remaining_;
-  ConversionRank lowestRank_;
 };
 
 /// -------------------------------------------------------------------
@@ -221,7 +199,7 @@ protected:
   ConversionRank rank_;
 };
 
-typedef llvm::SmallVector<ConstraintSite *, 16> ConstraintList;
+typedef llvm::SmallVector<ConstraintSite *, 16> ConstraintSiteSet;
 
 /// -------------------------------------------------------------------
 /// A constraint for assignment statements.
@@ -265,14 +243,14 @@ public:
 /// Pass to collect all of the constraints in the expression tree.
 class GatherConstraintsPass : public CFGPass {
 public:
-  GatherConstraintsPass(ChoicePointList & callSites, ConstraintList & cstrSites)
+  GatherConstraintsPass(ChoicePointList & callSites, ConstraintSiteSet & cstrSites)
     : choicePoints_(callSites)
     , constraints_(cstrSites)
   {}
 
 private:
   ChoicePointList & choicePoints_;
-  ConstraintList & constraints_;
+  ConstraintSiteSet & constraints_;
   ExprSet visited_;
 
   Expr * visitCall(CallExpr * in);
@@ -283,7 +261,6 @@ private:
   Expr * visitIf(IfExpr * in);
   Expr * visitSwitch(SwitchExpr * in);
   Expr * visitMatch(MatchExpr * in);
-  //virtual Expr * visitTry(TryExpr * in);
 
   void visitPHI(Expr * in);
 };
@@ -294,7 +271,8 @@ private:
 class TypeInferencePass {
 public:
   /** Run this pass on the specified expression. */
-  static Expr * run(Module * module, Expr * in, const Type * expected, bool strict = true);
+  static Expr * run(Module * module, Expr * in, BindingEnv & env, const Type * expected,
+      bool strict = true);
 
 private:
   enum ReportLabel {
@@ -305,9 +283,10 @@ private:
 
   Module * module_;
   Expr * rootExpr_;
+  BindingEnv & env_;
   const Type * expectedType_;
-  ChoicePointList callSites_;
-  ConstraintList cstrSites_;
+  ChoicePointList choicePoints_;
+  ConstraintSiteSet cstrSites_;
   ConversionRank lowestRank_;
   ConversionRank bestSolutionRank_;
   int bestSolutionCount_;
@@ -317,9 +296,11 @@ private:
   bool overconstrained_;
   bool strict_;
 
-  TypeInferencePass(Module * module, Expr * root, const Type * expected, bool strict = true)
+  TypeInferencePass(Module * module, Expr * root, BindingEnv & env, const Type * expected,
+      bool strict = true)
     : module_(module)
     , rootExpr_(root)
+    , env_(env)
     , expectedType_(expected)
     , searchDepth_(0)
     , strict_(strict)
@@ -327,16 +308,32 @@ private:
 
   Expr * runImpl();
 
-  void reportRanks(ReportLabel label);
-  void update();
-  void checkSolution();
+  /** Re-label all type variables. */
+  void relabelVars();
 
-  bool unifyCalls();
+  /** Run unification algorithm on all expressions containing type variables (which should
+      be relabeled. */
+  bool unify();
+
+  /** Simplify the set of constraints generated during the unification pass. */
+  void simplifyConstraints();
+  void selectConstantIntegerTypes();
+
+  /** Update the type conversion rankings of all constraints and determine whether the
+      current solution is over or under constrained. */
+  void update();
+
+  void reportRanks(ReportLabel label);
+  void checkSolution();
 
   // Various pruning strategies.
 
+  /** Remove from consideration overloads that have unsolvable constraints. */
+  bool cullByContradiction();
+  bool checkContradictoryConstraints();
+
   /** Remove from consideration overloads that have a low conversion rank. */
-  void cullByConversionRank();
+  bool cullByConversionRank();
   void cullByConversionRank(ConversionRank lowerLimit);
   bool cullEachSiteByConversionRank();
 
@@ -350,11 +347,12 @@ private:
   void cullByElimination(ChoicePointList::iterator first, ChoicePointList::iterator last);
   void cullByElimination(CallSite * site);
 
-  /** Cull all candidates for a given site except for ch. */
-  void cullAllButOne(CallSite * site, int choice);
-
   // Undo the last pruning
   void backtrack();
+
+  /** Find a common type which encompasses both type1 and type2. */
+  const Type * selectLessSpecificType(const Type * type1, const Type * type2);
+  const Type * lessSpecificIntType(const SizingOfConstraint * soc, const Type * ty);
 };
 
 } // namespace tart

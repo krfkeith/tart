@@ -37,6 +37,7 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
     if (type != NULL) {
       if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
         // Add a subclass test
+        tvar->setUpperBound(type);
         TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
         tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {

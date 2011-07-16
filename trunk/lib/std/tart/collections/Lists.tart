@@ -1,0 +1,25 @@
+/** Utility functions for operating on lists. */
+namespace Lists {
+  /** Apply 'function' to every element of 'list' and return a List of the results. */
+  def map[%S, %T](function:fn el:S -> T, list:List[S]) -> ArrayList[T] {
+    let size = list.size;
+    let result = ArrayList[T](capacity=size);
+    for i = 0; i < size; ++i {
+      result.add(function(list[i]));
+    }
+    return result;
+  }
+
+  /** Return a list containing every element of 'list' for which 'test' returns true. */
+  def filter[%T](test:fn el:T -> bool, list:List[T]) -> ArrayList[T] {
+    let size = list.size;
+    let result = ArrayList[T]();
+    for i = 0; i < size; ++i {
+      let element = list[i];
+      if test(element) {
+        result.add(element);
+      }
+    }
+    return result;
+  }
+}

@@ -1,0 +1,63 @@
+import tart.time.TimeSpan;
+import tart.time.TimeVal;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(TimeValTest);
+}
+
+class TimeValTest : Test {
+  def testConstruct {
+    let tv = TimeVal(0);
+  }
+
+  def testArithmetic {
+    assertEq(15, (TimeVal(10) + TimeSpan(5)).uSecs);
+    assertEq(7, (TimeVal(10) - TimeSpan(3)).uSecs);
+    assertEq(15, (TimeSpan(10) + TimeSpan(5)).uSecs);
+    assertEq(7, (TimeSpan(10) - TimeSpan(3)).uSecs);
+  }
+
+  def testTimeValComparison {
+    assertTrue(TimeVal(10) == TimeVal(10));
+    assertFalse(TimeVal(10) != TimeVal(10));
+    assertFalse(TimeVal(10) == TimeVal(15));
+    assertTrue(TimeVal(10) != TimeVal(15));
+
+    assertTrue(TimeVal(10) < TimeVal(15));
+    assertFalse(TimeVal(10) < TimeVal(10));
+    assertFalse(TimeVal(15) < TimeVal(10));
+    assertTrue(TimeVal(10) <= TimeVal(15));
+    assertTrue(TimeVal(10) <= TimeVal(10));
+    assertFalse(TimeVal(15) <= TimeVal(10));
+
+    assertFalse(TimeVal(10) > TimeVal(15));
+    assertFalse(TimeVal(10) > TimeVal(10));
+    assertTrue(TimeVal(15) > TimeVal(10));
+    assertFalse(TimeVal(10) >= TimeVal(15));
+    assertTrue(TimeVal(10) >= TimeVal(10));
+    assertTrue(TimeVal(15) >= TimeVal(10));
+  }
+
+  def testTimeSpanComparison {
+    assertTrue(TimeSpan(10) == TimeSpan(10));
+    assertFalse(TimeSpan(10) != TimeSpan(10));
+    assertFalse(TimeSpan(10) == TimeSpan(15));
+    assertTrue(TimeSpan(10) != TimeSpan(15));
+
+    assertTrue(TimeSpan(10) < TimeSpan(15));
+    assertFalse(TimeSpan(10) < TimeSpan(10));
+    assertFalse(TimeSpan(15) < TimeSpan(10));
+    assertTrue(TimeSpan(10) <= TimeSpan(15));
+    assertTrue(TimeSpan(10) <= TimeSpan(10));
+    assertFalse(TimeSpan(15) <= TimeSpan(10));
+
+    assertFalse(TimeSpan(10) > TimeSpan(15));
+    assertFalse(TimeSpan(10) > TimeSpan(10));
+    assertTrue(TimeSpan(15) > TimeSpan(10));
+    assertFalse(TimeSpan(10) >= TimeSpan(15));
+    assertTrue(TimeSpan(10) >= TimeSpan(10));
+    assertTrue(TimeSpan(15) >= TimeSpan(10));
+  }
+}

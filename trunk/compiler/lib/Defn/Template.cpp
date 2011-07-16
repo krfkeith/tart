@@ -16,9 +16,9 @@
 #include "tart/Type/UnitType.h"
 
 #include "tart/Sema/AnalyzerBase.h"
-#include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/ScopeBuilder.h"
 #include "tart/Sema/TypeTransform.h"
+
 #include "tart/Common/Diagnostics.h"
 
 #include "tart/Objects/Builtins.h"
@@ -56,6 +56,7 @@ TypeVariable::TypeVariable(const SourceLocation & location, const char * name,
   : TypeImpl(TypeVar, Shape_Unset)
   , location_(location)
   , valueType_(valueType)
+  , upperBound_(NULL)
   , name_(name)
   , isVariadic_(false)
 {}
@@ -82,6 +83,8 @@ bool TypeVariable::canBindTo(const Type * value) const {
 
     ConstantExpr * expr = nt->value();
     return valueType_->canConvert(expr);
+  } else if (value->typeClass() == Type::Binding) {
+    return true;
   } else if (valueType_ == NULL) {
     return true;
   } else {
@@ -89,7 +92,7 @@ bool TypeVariable::canBindTo(const Type * value) const {
   }
 }
 
-bool TypeVariable::isSubtype(const Type * other) const {
+bool TypeVariable::isSubtypeOf(const Type * other) const {
   return false;
 }
 
@@ -114,17 +117,17 @@ void TypeVariable::format(FormatStream & out) const {
 }
 
 /// -------------------------------------------------------------------
-/// TemplateSignature
+/// Template
 
-TemplateSignature * TemplateSignature::get(Defn * v, Scope * parent) {
+Template * Template::get(Defn * v, Scope * parent) {
   if (v->templateSignature() == NULL) {
-    v->setTemplateSignature(new TemplateSignature(v, parent));
+    v->setTemplateSignature(new Template(v, parent));
   }
 
   return v->templateSignature();
 }
 
-TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
+Template::Template(Defn * v, Scope * parentScope)
   : value_(v)
   , ast_(NULL)
   , typeParams_(NULL)
@@ -137,7 +140,7 @@ TemplateSignature::TemplateSignature(Defn * v, Scope * parentScope)
 
 // TODO: Insure that variadic argument is the last one? Do we care?
 
-void TemplateSignature::setTypeParams(const TupleType * typeParams) {
+void Template::setTypeParams(const TupleType * typeParams) {
   DASSERT(typeParams_ == NULL);
   typeParams_ = typeParams;
   numRequiredArgs_ = typeParams->size();
@@ -170,11 +173,11 @@ void TemplateSignature::setTypeParams(const TupleType * typeParams) {
   }
 }
 
-const Type * TemplateSignature::typeParam(int index) const {
+const Type * Template::typeParam(int index) const {
   return (*typeParams_)[index];
 }
 
-TypeVariable * TemplateSignature::patternVar(const char * name) const {
+TypeVariable * Template::patternVar(const char * name) const {
   Defn * de = paramScope_.lookupSingleMember(name);
   if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(de)) {
     return cast<TypeVariable>(tdef->typeValue());
@@ -183,15 +186,15 @@ TypeVariable * TemplateSignature::patternVar(const char * name) const {
   return NULL;
 }
 
-TypeVariable * TemplateSignature::patternVar(int index) const {
+TypeVariable * Template::patternVar(int index) const {
   return vars_[index];
 }
 
-size_t TemplateSignature::patternVarCount() const {
+size_t Template::patternVarCount() const {
   return vars_.size();
 }
 
-void TemplateSignature::trace() const {
+void Template::trace() const {
   safeMark(ast_);
   safeMark(typeParams_);
   markList(conditions_.begin(), conditions_.end());
@@ -206,7 +209,7 @@ void TemplateSignature::trace() const {
   paramScope_.trace();
 }
 
-void TemplateSignature::format(FormatStream & out) const {
+void Template::format(FormatStream & out) const {
   if (typeParams_) {
     out << "[";
     typeParams_->formatMembers(out);
@@ -214,7 +217,7 @@ void TemplateSignature::format(FormatStream & out) const {
   }
 }
 
-Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
+Defn * Template::findSpecialization(const TupleType * tv) const {
   SpecializationMap::const_iterator it = specializations_.find(tv);
   if (it != specializations_.end()) {
     return it->second;
@@ -223,36 +226,43 @@ Defn * TemplateSignature::findSpecialization(const TupleType * tv) const {
   return NULL;
 }
 
-Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingEnv & env,
-    bool singular) {
+Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
+    uint32_t expectedTraits) {
   bool isPartial = false;
+  bool isScaffold = false;
+  bool isExpectedSingular = (expectedTraits & Singular) != 0;
   bool trace = AnalyzerBase::isTraceEnabled(value_);
+  SubstitutionTransform subst(varValues);
 
   // Check to make sure that the parameters are of the correct type.
   ConstTypeList paramValues;
-  bool noCache = false;
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    const Type * value = env.subst(var);
+    const Type * value = subst(var);
     DASSERT_OBJ(value != NULL, var);
     //DASSERT_OBJ(!value->isNullType(), var);
     if (!var->canBindTo(value)) {
-      diag.fatal(loc) << "Type of expression " << value <<
+      diag.error(loc) << "Type of expression " << value <<
           " incompatible with template parameter " << var << ":" << var->valueType();
       DASSERT(var->canBindTo(value));
     }
 
-    if (isa<TypeBinding>(value)) {
-      noCache = true;
+    // A template made up of throwaway types is also throwaway.
+    if (value->isScaffold()) {
+      isScaffold = true;
     }
 
     // We might need to do some coercion here...
     paramValues.push_back(value);
   }
 
-  const TupleType * typeArgs = cast<TupleType>(env.subst(typeParams_));
+  if (isScaffold && (expectedTraits & NonScaffold)) {
+    diag.fatal(loc) << "Expected non-throwaway template instantiation.";
+  }
+
+  const TupleType * typeArgs = cast<TupleType>(subst(typeParams_));
   if (!typeArgs->isSingular()) {
-    if (singular) {
+    if (isExpectedSingular) {
       diag.fatal(loc) << "Non-singular parameters [" << typeArgs << "]";
     }
 
@@ -261,7 +271,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   // See if we can find an existing specialization that matches the arguments.
   // TODO: Canonicalize and create a key from the args.
-  if (!noCache) {
+  if (!isScaffold) {
     Defn * sp = findSpecialization(typeArgs);
     if (sp != NULL) {
       if (trace) {
@@ -295,13 +305,16 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
   if (isPartial) {
     result->addTrait(Defn::PartialInstantiation);
   }
+  if (isScaffold) {
+    result->addTrait(Defn::Scaffold);
+  }
 
   // Copy over certain attributes
   if (FunctionDefn * fdef = dyn_cast<FunctionDefn>(result)) {
     fdef->setIntrinsic(static_cast<FunctionDefn *>(value_)->intrinsic());
   }
 
-  if (!noCache) {
+  if (!isScaffold) {
     specializations_[typeArgs] = result;
   }
 
@@ -330,7 +343,7 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
     tinst->addMember(argDefn);
   }
 
-  if (singular && !isSingular) {
+  if (isExpectedSingular && !isSingular) {
     diag.fatal(loc) << Format_Verbose << "Expected " << result << " to be singular, why isn't it?";
   }
 
@@ -346,22 +359,14 @@ Defn * TemplateSignature::instantiate(const SourceLocation & loc, const BindingE
 
   result->setSingular(isSingular);
   result->setTemplateInstance(tinst);
-
-  DASSERT(isSingular == result->isSingular());
-
-  if (singular && !result->isSingular()) {
-    diag.fatal(loc) << Format_Verbose << "Expected " << result << " to be singular, why isn't it?";
-    DFAIL("Non-singular");
-  }
-
-  //diag.info(loc) << "Creating template " << result;
   return result;
 }
 
-Type * TemplateSignature::instantiateType(const SourceLocation & loc, const BindingEnv & env) {
-
+Type * Template::instantiateType(
+    const SourceLocation & loc, const TypeVarMap & varValues, uint32_t expectedTraits)
+{
   if (value_->ast() != NULL) {
-    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, varValues, expectedTraits));
     return tdef->typeValue();
   }
 
@@ -372,16 +377,17 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
       proto->typeClass() != Type::NArray &&
       proto->typeClass() != Type::FlexibleArray &&
       proto->typeClass() != Type::TypeLiteral) {
-    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, env));
+    TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, varValues));
     return tdef->typeValue();
   }
 
   // TODO: Can TypeTransform do this?
   // Check to make sure that the parameters are of the correct type.
   TypeList paramValues;
+  SubstitutionTransform subst(varValues);
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    const Type * value = env.subst(var);
+    const Type * value = subst(var);
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
@@ -418,6 +424,29 @@ Type * TemplateSignature::instantiateType(const SourceLocation & loc, const Bind
   }
 
   return NULL;
+}
+
+bool Template::canUnify(const TupleType * args) const {
+  if (args->size() > typeParams_->size()) {
+    return false;
+  }
+  for (size_t i = 0; i < args->size(); ++i) {
+    if (!canUnify(typeParam(i), args->member(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Template::canUnify(const Type * param, const Type * value) const {
+  value = dealias(value);
+  switch (param->typeClass()) {
+    case Type::TypeVar:
+      return true;
+
+    default:
+      return param->isEqual(value);
+  }
 }
 
 /// -------------------------------------------------------------------
@@ -460,9 +489,9 @@ Defn * TemplateInstance::findLessSpecializedInstance() {
     return lessSpecialized_ != value_ ? lessSpecialized_ : NULL;
   }
 
-  TemplateSignature * tsig = templateDefn_->templateSignature();
-  BindingEnv env;
-  DASSERT(patternVarValues_->size() == tsig->patternVarCount());
+  Template * tm = templateDefn_->templateSignature();
+  TypeVarMap varValues;
+  DASSERT(patternVarValues_->size() == tm->patternVarCount());
   bool canMerge = false;
   for (size_t i = 0; i < patternVarValues_->size(); ++i) {
     const Type * type = patternVarValues_->member(i);
@@ -476,11 +505,12 @@ Defn * TemplateInstance::findLessSpecializedInstance() {
       canMerge = true;
     }
 
-    env.addSubstitution(tsig->typeParam(i), type);
+    varValues[tm->patternVar(i)] = type;
   }
 
   if (canMerge) {
-    lessSpecialized_ = tsig->instantiate(value_->location(), env, true);
+    lessSpecialized_ = tm->instantiate(
+        value_->location(), varValues, Template::Singular | Template::NonScaffold);
     return lessSpecialized_;
   } else {
     lessSpecialized_ = value_;
@@ -496,13 +526,13 @@ void TemplateInstance::dumpHierarchy(bool full) const {
 }
 
 void TemplateInstance::format(FormatStream & out) const {
-  TemplateSignature * tsig = templateDefn_->templateSignature();
+  Template * tm = templateDefn_->templateSignature();
   out << "[";
-  if (tsig && tsig->isVariadic()) {
+  if (tm && tm->isVariadic()) {
     int index = 0;
     for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it, ++index) {
       const TupleType * vargs = NULL;
-      if (const TypeVariable * tv = dyn_cast<TypeVariable>(tsig->typeParam(index))) {
+      if (const TypeVariable * tv = dyn_cast<TypeVariable>(tm->typeParam(index))) {
         if (tv->isVariadic()) {
           vargs = cast<TupleType>(*it);
           if (vargs->size() == 0) {

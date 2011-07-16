@@ -138,7 +138,7 @@ public:
         static_cast<const PrimitiveType *>(t)->typeId() == kTypeId;
   }
 
-  bool isSubtype(const Type * other) const;
+  bool isSubtypeOf(const Type * other) const;
   bool includes(const Type * other) const;
 
   /** Singleton instance. */
@@ -149,7 +149,7 @@ public:
   static TypeIdSet INCLUDES;
 };
 
-template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtype(const Type * other) const {
+template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtypeOf(const Type * other) const {
   if (other == this) {
     return true;
   }
