@@ -28,14 +28,6 @@ void AmbiguousParameterType::expand(TypeExpansion & out) const {
   }
 }
 
-const Candidates & AmbiguousParameterType::candidates() const {
-  return callExpr_->candidates();
-}
-
-const Type * AmbiguousParameterType::candidateParamType(const CallCandidate * cc) const {
-  return cc->paramType(argIndex_);
-}
-
 void AmbiguousParameterType::trace() const {
   Type::trace();
   callExpr_->mark();

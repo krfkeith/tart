@@ -64,7 +64,7 @@ void Diagnostics::reset() {
 // -------------------------------------------------------------------
 
 void Diagnostics::write(const SourceLocation & loc, Severity sev,
-    const std::string & msg) {
+    llvm::StringRef msg) {
 
   switch (sev) {
     case Fatal:
@@ -146,9 +146,9 @@ int Diagnostics::setIndentLevel(int level) {
   return result;
 }
 
-void Diagnostics::writeLnIndent(const std::string & str) {
+void Diagnostics::writeLnIndent(llvm::StringRef str) {
   writeIndent(indentLevel);
-  fprintf(stderr, "%s\n", str.c_str());
+  fprintf(stderr, "%s\n", str.data());
 }
 
 void Diagnostics::writeLnIndent(const char * msg, ...) {
@@ -160,15 +160,16 @@ void Diagnostics::writeLnIndent(const char * msg, ...) {
   va_end(ap);
 }
 
-void Diagnostics::assertionFailed(const char * expression, const char * filename, unsigned lineno) {
-  fprintf(stderr, "%s:%d: Assertion failed (%s)\n", filename, lineno, expression);
+void Diagnostics::assertionFailed(
+    llvm::StringRef expression, const char * filename, unsigned lineno) {
+  llvm::errs() << filename << ":" << lineno << ": Assertion failed (" << expression << ")\n";
   debugBreak();
   printStackTrace(2);
   abort();
 }
 
-void Diagnostics::__fail(const char * msg, const char * filename, unsigned lineno) {
-  fprintf(stderr, "%s:%d: Fatal error (%s)\n", filename, lineno, msg);
+void Diagnostics::__fail(llvm::StringRef msg, const char * filename, unsigned lineno) {
+  llvm::errs() << filename << ":" << lineno << ": Fatal error (" << msg << "\n";
   debugBreak();
   printStackTrace(2);
   abort();
@@ -248,100 +249,81 @@ void Diagnostics::printStackTrace(int skipFrames) {
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Fatal>::write(
-    const SourceLocation & loc, const std::string & msg) {
+    const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Fatal, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Error>::write(
-    const SourceLocation & loc, const std::string & msg) {
+    const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Error, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Warning>::write(
-    const SourceLocation & loc, const std::string & msg) {
+    const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Warning, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Info>::write(
-    const SourceLocation & loc, const std::string & msg) {
+    const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Info, msg);
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Debug>::write(
-    const SourceLocation & loc, const std::string & msg) {
+    const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Debug, msg);
 }
 
-void Diagnostics::FailAction::write(const SourceLocation & loc, const std::string & msg) {
+void Diagnostics::FailAction::write(const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Debug, msg);
   debugBreak();
   diag.printStackTrace(2);
   abort();
 }
 
-void Diagnostics::AssertAction::write(const SourceLocation & loc, const std::string & msg) {
+void Diagnostics::AssertAction::write(const SourceLocation & loc, llvm::StringRef msg) {
   diag.write(loc, Debug, msg);
   debugBreak();
 }
 
 void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
-    const std::string & msg) {
+    llvm::StringRef msg) {
   if (loc.file != NULL && !loc.file->filePath().empty()) {
     // The TextMate error parser is fairly strict
     TokenPosition tokLoc = loc.file->tokenPosition(loc);
-    fprintf(stderr, "%s:%d: %s%.*s%s\n",
-        loc.file->filePath().str().c_str(),
-        tokLoc.beginLine,
-        severityNames[(int)sev],
-        std::min(diag.indentLevel, MAX_INDENT) * 2,
-        INDENTATION,
-        msg.c_str());
-    fflush(stderr);
-  } else {
-    fprintf(stderr, "%s%.*s%s\n",
-        severityNames[(int)sev],
-        std::min(diag.indentLevel, MAX_INDENT) * 2,
-        INDENTATION,
-        msg.c_str());
-    fflush(stderr);
+    llvm::errs() << loc.file->filePath() << ":" << tokLoc.beginLine << ": ";
   }
+
+  llvm::errs() << severityNames[(int)sev];
+  llvm::errs().indent(diag.indentLevel * 2);
+  llvm::errs() << msg << "\n";
+  llvm::errs().flush();
 }
 
 void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
-    const std::string & msg) {
-  char buffer[256];
-  size_t len;
+    llvm::StringRef msg) {
+  llvm::raw_svector_ostream strm(str_);
   if (loc.file != NULL && !loc.file->filePath().empty()) {
     // The TextMate error parser is fairly strict
     TokenPosition tokLoc = loc.file->tokenPosition(loc);
-    len = snprintf(buffer, sizeof(buffer), "%s:%d: %s%.*s%s\n",
-        loc.file->filePath().str().c_str(),
-        tokLoc.beginLine,
-        severityNames[(int)sev],
-        std::min(diag.indentLevel, MAX_INDENT) * 2,
-        INDENTATION,
-        msg.c_str());
-  } else {
-    len = snprintf(buffer, sizeof(buffer), "%s%.*s%s\n",
-        severityNames[(int)sev],
-        std::min(diag.indentLevel, MAX_INDENT) * 2,
-        INDENTATION,
-        msg.c_str());
+    strm << loc.file->filePath() << ":" << tokLoc.beginLine << ": ";
   }
 
-  str_.append(buffer, 0, len);
+  strm << severityNames[(int)sev];
+  strm.indent(diag.indentLevel * 2);
+  strm << msg << "\n";
+  strm.flush();
 }
 
 Diagnostics::FailStream::~FailStream() {
   flush();
-  diag.__fail(sstream_.str().c_str(), fname_, lineno_);
+  diag.__fail(str(), fname_, lineno_);
 }
 
 }

@@ -519,10 +519,10 @@ Defn * TemplateInstance::findLessSpecializedInstance() {
 }
 
 void TemplateInstance::dumpHierarchy(bool full) const {
-  std::string out;
-  out.append("[template-instance] ");
+  StrFormatStream out;
+  out << "[template-instance] ";
   paramDefns_.getDebugSummary(out);
-  diag.writeLnIndent(out);
+  diag.writeLnIndent(out.str());
 }
 
 void TemplateInstance::format(FormatStream & out) const {

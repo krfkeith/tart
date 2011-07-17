@@ -2,15 +2,18 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Expr/Exprs.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/TupleType.h"
-#include "tart/Type/FunctionType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/Template.h"
 #include "tart/Defn/Module.h"
+
+#include "tart/Expr/Exprs.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
@@ -317,7 +320,7 @@ bool CompositeType::isSubclassOf(const CompositeType * base) const {
     return true;
   }
 
-  if (Type::equivalent(this, base)) {
+  if (TypeRelation::isEqual(this, base)) {
     return true;
   }
 
@@ -474,11 +477,11 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
     // See if this class implements the Function interface.
     const CompositeType * functionInterface = findBaseSpecializing(Builtins::typeFunction);
     if (functionInterface != NULL) {
-      if (!equivalent(ftype->returnType(), functionInterface->typeParam(0))) {
+      if (!TypeRelation::isEqual(ftype->returnType(), functionInterface->typeParam(0))) {
         return Incompatible;
       }
 
-      if (!equivalent(ftype->paramTypes(), functionInterface->typeParam(1))) {
+      if (!TypeRelation::isEqual(ftype->paramTypes(), functionInterface->typeParam(1))) {
         return Incompatible;
       }
 

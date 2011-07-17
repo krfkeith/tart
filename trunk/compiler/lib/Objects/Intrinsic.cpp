@@ -147,15 +147,14 @@ Value * TraceTableOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * c
 StringifyIntrinsic StringifyIntrinsic::instance;
 
 Value * StringifyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  std::stringstream sstream;
-  FormatStream fs(sstream);
+  StrFormatStream fs;
 
   const Expr * arg = derefMacroParam(call->arg(0));
   fs << arg;
 
   fs.flush();
-  DASSERT_OBJ(!sstream.str().empty(), arg);
-  return cg.genStringLiteral(sstream.str());
+  DASSERT_OBJ(!fs.str().empty(), arg);
+  return cg.genStringLiteral(fs.str());
 }
 
 // -------------------------------------------------------------------

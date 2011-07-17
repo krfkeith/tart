@@ -226,17 +226,17 @@ void Defn::dumpHierarchy(bool full) const {
 
   //diag.info() << kind << " " << qualifiedName();
 
-  std::string out;
-  out.append(kind);
+  llvm::SmallString<256> out;
+  out += kind;
   if (isTemplate()) {
-    out.append(" <>");
+    out += " <>";
   }
-  out.append(" ");
-  out.append(name());
+  out += " ";
+  out += name();
   if (isTemplateInstance()) {
-    out.append("<>");
+    out += "<>";
   }
-  out.append(" ");
+  out += " ";
   //members.getDebugSummary(out);
 
   diag.writeLnIndent(out);

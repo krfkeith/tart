@@ -20,7 +20,7 @@
 namespace tart {
   // Make nodes streamable so they can be printed in test results.
   inline std::ostream & operator<<(std::ostream & out, const ASTNode * node) {
-    FormatStream stream(out);
+    OsFormatStream stream(out);
     node->format(stream);
     return out;
   }
@@ -40,11 +40,10 @@ namespace tart {
   // Compare an AST node with its string representation
   inline bool ASTCmp(const char * expected, const ASTNode * actual) {
     if (actual != NULL) {
-      std::stringstream strm;
-      FormatStream stream(strm);
+      StrFormatStream stream;
       actual->format(stream);
       stream.flush();
-      return strm.str() == expected;
+      return stream.str() == expected;
     }
 
     return false;
@@ -58,7 +57,7 @@ namespace tart {
 
   // Make types streamable so they can be printed in test results.
   inline std::ostream & operator<<(std::ostream & out, const Type * node) {
-    FormatStream stream(out);
+    OsFormatStream stream(out);
     node->format(stream);
     return out;
   }

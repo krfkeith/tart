@@ -13,6 +13,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -369,8 +370,8 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
 
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
     DASSERT_OBJ(value->type() != NULL, value);
-    if (const CompositeType * valueClass = static_cast<const CompositeType *>(value->type())) {
-      if (valueClass->isSubtypeOf(ctd)) {
+    if (const CompositeType * valueClass = dyn_cast<CompositeType>(value->type())) {
+      if (valueClass->isSubclassOf(ctd)) {
         return ConstantInteger::getConstantBool(ast->location(), true);
       }
     }

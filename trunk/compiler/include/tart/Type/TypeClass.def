@@ -22,8 +22,9 @@ TYPE_CLASS(TypeVar)           // A type variable
 TYPE_CLASS(Assignment)        // The value of a type variable within an environment.
 
 // Types that have not been completely resolved
-TYPE_CLASS(AmbiguousResult)   // Type constraint - result of function
-TYPE_CLASS(AmbiguousParameter)// Type constraint - param of function
-TYPE_CLASS(AmbiguousPhi)      // Type constraint - possible alternate values
+TYPE_CLASS(AmbiguousResult)   // Unresolved result type of function
+TYPE_CLASS(AmbiguousParameter)// Unresolved param type of function
+TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
+TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
 TYPE_CLASS(TupleOf)           // Type constraint - tuple of constraints
 TYPE_CLASS(SizingOf)          // Type constraint - sizing of an unsized int type

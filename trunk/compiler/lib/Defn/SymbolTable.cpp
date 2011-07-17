@@ -24,35 +24,28 @@ void SymbolTable::trace() const {
   }
 }
 
-void SymbolTable::getDebugSummary(std::string & out) const {
-  //size_t count = count();
+void SymbolTable::getDebugSummary(FormatStream & out) const {
   size_t count = 0;
-  char buffer[32];
-
-  out.push_back('{');
+  out << "{";
   for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     if (count > 8) {
-      sprintf(buffer, " + %zd more...", map_.size() - count);
-      out.append(buffer);
+      out << " + " << map_.size() - count << " more...";
       break;
     }
 
     if (it != map_.begin()) {
-      out.append(", ");
+      out << ", ";
     }
 
-    out.push_back('\'');
-    out.append(it->second.front()->name());
-    out.push_back('\'');
+    out << "\'" << it->second.front()->name() << "\'";
 
     if (it->second.size() > 1) {
-      sprintf(buffer, "(%zd)", it->second.size());
-      out.append(buffer);
+      out << "(" << it->second.size() << ")";
     }
 
     ++count;
   }
-  out.push_back('}');
+  out << "}";
 }
 
 SymbolTable::Entry * OrderedSymbolTable::add(Defn * member) {

@@ -19,7 +19,7 @@
 #include "tart/Type/NativeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Type/TypeConstraint.h"
+#include "tart/Type/AmbiguousTypeParamType.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
@@ -92,19 +92,46 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
 Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expected) {
   TypeAnalyzer ta(module(), activeScope());
   FunctionType * ftype = ta.typeFromFunctionAST(ast);
-
-  // Check if the expected type is a specialization of the 'tart.core.Function' interface.
-  const CompositeType * expectedFnType = NULL;
-  if (const CompositeType * ct = dyn_cast_or_null<CompositeType>(expected)) {
-    expectedFnType = ct->findBaseSpecializing(Builtins::typeFunction);
-  }
+  size_t paramCount = ftype->params().size();
 
   if (ftype != NULL) {
     if (ftype->returnType() == NULL) {
-      if (expectedFnType != NULL) {
-        ftype->setReturnType(expectedFnType->typeParam(0));
+      if (expected != NULL) {
+        // Check if the expected type is a specialization of the 'tart.core.Function' interface
+        // and return the 0th parameter if so.
+        const Type * returnType = AmbiguousTypeParamType::forType(
+            expected, Builtins::typeFunction, 0);
+        if (returnType == NULL) {
+          diag.error(ast) << "Can't deduce function return type from type " << expected;
+          return &Expr::ErrorVal;
+        }
+        ftype->setReturnType(returnType);
       } else {
         ftype->setReturnType(&VoidType::instance);
+      }
+    }
+
+    // See if ftype has any unspecified param types.
+    for (size_t i = 0; i < paramCount; ++i) {
+      ParameterDefn * param = ftype->param(i);
+      if (param->type() == NULL) {
+        if (expected == NULL) {
+          diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << ".";
+          return &Expr::ErrorVal;
+        } else {
+          // Check if the expected type is a specialization of the 'tart.core.Function' interface
+          // and return the Nth parameter if so.
+          const Type * paramType = AmbiguousTypeParamType::forType(
+              expected, Builtins::typeFunction, i + 1);
+          if (paramType == NULL) {
+            diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << " << from " <<
+                expected << ".";
+            return &Expr::ErrorVal;
+          }
+          param->setType(paramType);
+          DASSERT(!param->isVariadic());
+          param->setInternalType(paramType);
+        }
       }
     }
 
@@ -123,7 +150,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
 
       // Use a composite type to represent the closure environment.
       CompositeType * interfaceType = getFunctionInterfaceType(ftype);
-      DASSERT(interfaceType->isSingular());
+      //DASSERT(interfaceType->isSingular());
 
       // The type definition of the environment object.
       TypeDefn * envTypeDef = new TypeDefn(module(), istrings.intern(closureName), NULL);
@@ -153,9 +180,14 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       envBaseExpr->setType(envType);
 
       ClosureEnvExpr * env = new ClosureEnvExpr(
-          ast->location(), activeScope(), &currentFunction_->parameterScope(), envType, envBaseExpr);
+          ast->location(), activeScope(), &currentFunction_->parameterScope(),
+          envType, envBaseExpr);
       env->setType(envType);
       currentFunction_->closureEnvs().push_back(env);
+
+      if (!interfaceType->isSingular()) {
+        return env;
+      }
 
       envParam->setFlag(ParameterDefn::Reference, true);
       envParam->setInitValue(env);
@@ -189,6 +221,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
 
       // Analyze the function body. Doing this will also cause additional fields
       // to be added to the environment type.
+      // TODO: We can't do this yet!
       if (!analyzeFunction(fn, Task_PrepEvaluation)) {
         return &Expr::ErrorVal;
       }

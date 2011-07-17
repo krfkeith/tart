@@ -9,10 +9,9 @@
 #include "llvm/Support/raw_os_ostream.h"
 #endif
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string>
-#include <sstream>
+#ifndef LLVM_ADT_SMALLSTRING_H
+#include "llvm/ADT/SmallString.h"
+#endif
 
 namespace llvm {
 class Twine;
@@ -54,21 +53,14 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// Stream class that also holds format options.
-class FormatStream : public llvm::raw_os_ostream {
-private:
-  int formatOptions_;
-
+/// Stream interface that also holds format options.
+class FormatStream : public llvm::raw_ostream {
 public:
-  FormatStream(std::ostream &S)
-    : llvm::raw_os_ostream(S)
-    , formatOptions_(Format_Default)
-  {}
-
-  FormatStream(std::ostream *S)
-    : llvm::raw_os_ostream(*S)
-    , formatOptions_(Format_Default)
-  {}
+  FormatStream(llvm::raw_ostream & baseStrm)
+    : formatOptions_(Format_Default)
+    , baseStrm_(baseStrm)
+  {
+  }
 
   /** Current set of format options. */
   int formatOptions() const { return formatOptions_; }
@@ -134,17 +126,45 @@ public:
 
   // Enable format option
   FormatStream & operator<<(FormatOptions f);
+
+  void flush() {
+    llvm::raw_ostream::flush();
+    baseStrm_.flush();
+  }
+
+private:
+  int formatOptions_;
+  llvm::raw_ostream & baseStrm_;
+
+  uint64_t current_pos() const {
+    return baseStrm_.tell();
+  }
+
+  void write_impl(const char * ptr, size_t size) {
+    baseStrm_.write(ptr, size);
+  }
 };
 
 class StrFormatStream : public FormatStream {
 public:
-  StrFormatStream() : FormatStream(str_) {}
+  StrFormatStream() : FormatStream(strm_), strm_(str_) {}
 
-  std::string str() { flush(); return str_.str(); }
+  llvm::StringRef str() { flush(); return str_.str(); }
+
 private:
-  std::ostringstream str_;
+  llvm::SmallString<128> str_;
+  llvm::raw_svector_ostream strm_;
 };
 
-}
+class OsFormatStream : public FormatStream {
+public:
+  OsFormatStream(std::ostream & os) : FormatStream(strm_), strm_(os) {}
+  OsFormatStream(std::ostream * os) : FormatStream(strm_), strm_(*os) {}
 
-#endif
+private:
+  llvm::raw_os_ostream strm_;
+};
+
+} // namespace tart
+
+#endif // TART_COMMON_FORMATTABLE_H

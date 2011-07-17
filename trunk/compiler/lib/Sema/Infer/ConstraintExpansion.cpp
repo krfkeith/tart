@@ -6,6 +6,7 @@
 
 #include "tart/Type/AmbiguousParameterType.h"
 #include "tart/Type/AmbiguousResultType.h"
+#include "tart/Type/AmbiguousTypeParamType.h"
 
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/Infer/ConstraintExpansion.h"
@@ -77,30 +78,56 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
     }
 
     case Type::AmbiguousParameter: {
-      const AmbiguousParameterType * poc = static_cast<const AmbiguousParameterType *>(ty);
-      const Candidates & cd = poc->expr()->candidates();
+      const AmbiguousParameterType * apt = static_cast<const AmbiguousParameterType *>(ty);
+      const Candidates & cd = apt->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
-        const Type * paramType = cc->paramType(poc->argIndex());
+        const Type * paramType = cc->paramType(apt->argIndex());
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(poc->expr()->location(), paramType, kind, ccProvisions);
+          result_.insertAndOptimize(apt->expr()->location(), paramType, kind, ccProvisions);
         }
       }
       return true;
     }
 
     case Type::AmbiguousResult: {
-      const AmbiguousResultType * roc = static_cast<const AmbiguousResultType *>(ty);
-      const Candidates & cd = roc->expr()->candidates();
+      const AmbiguousResultType * art = static_cast<const AmbiguousResultType *>(ty);
+      const Candidates & cd = art->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
-        const Type * resultType = roc->candidateResultType(cc);
+        const Type * resultType = art->candidateResultType(cc);
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(roc->expr()->location(), resultType, kind, ccProvisions);
+          result_.insertAndOptimize(art->expr()->location(), resultType, kind, ccProvisions);
+        }
+      }
+      return true;
+    }
+
+    case Type::AmbiguousTypeParam: {
+      const AmbiguousTypeParamType * tpt = static_cast<const AmbiguousTypeParamType *>(ty);
+      // Expand the base type.
+      ConstraintExpansion expander(exclude_);
+      if (!expander.expand(tpt->base(), kind, provisions)) {
+        return false;
+      }
+
+      // If the expansion that came back was just 'base' and nothing more, then return 'unchanged'.
+      const ConstraintSet & cs = expander.result();
+      if (cs.size() == 1 && cs.front()->value() == tpt->base()) {
+        return false;
+      }
+
+      for (ConstraintSet::const_iterator si = cs.begin(), sEnd = cs.end(); si != sEnd; ++si) {
+        Constraint * cst = *si;
+        const Type * st = AmbiguousTypeParamType::forType(
+            cst->value(), tpt->match(), tpt->paramIndex());
+        if (st != NULL) {
+          result_.insertAndOptimize(
+              cst->location(), st, Constraint::combine(kind, cst->kind()), cst->provisions());
         }
       }
       return true;

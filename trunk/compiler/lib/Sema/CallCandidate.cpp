@@ -303,7 +303,7 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   // TODO: Factor in return type.
 
   /*if (!resultType()->isEqual(other->resultType())) {
-    if (!resultType()->isSubtypeOf(other->resultType())) {
+    if (!resultType()->isSubtype(other->resultType())) {
       return false;
     }
 

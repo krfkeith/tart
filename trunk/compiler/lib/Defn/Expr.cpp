@@ -803,10 +803,10 @@ void ClosureEnvExpr::trace() const {
 }
 
 void ClosureEnvExpr::dumpHierarchy(bool full) const {
-  std::string out;
-  out.append("[closure]");
+  StrFormatStream out;
+  out << "[closure]";
   envType_->members().getDebugSummary(out);
-  diag.writeLnIndent(out);
+  diag.writeLnIndent(out.str());
 }
 
 // -------------------------------------------------------------------

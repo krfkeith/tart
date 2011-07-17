@@ -5,6 +5,7 @@
 #include "tart/Defn/Template.h"
 
 #include "tart/Type/TypeAlias.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/Infer/TypeAssignment.h"
@@ -59,7 +60,7 @@ bool TypeAssignment::isEqual(const Type * other) const {
 
 bool TypeAssignment::isSubtypeOf(const Type * other) const {
   if (value_ != NULL) {
-    return Type::isSubtype(value_, other);
+    return TypeRelation::isSubtype(value_, other);
   } else {
     bool any = false;
     for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
@@ -71,7 +72,7 @@ bool TypeAssignment::isSubtypeOf(const Type * other) const {
         }
 
         cst->setVisited(true);
-        if (!Type::isSubtype(cst->value(), other)) {
+        if (!TypeRelation::isSubtype(cst->value(), other)) {
           cst->setVisited(false);
           return false;
         }
@@ -110,7 +111,7 @@ const Type * TypeAssignment::findSingularSolution() {
         const Type * ty = TypeAssignment::deref(c->value());
         if (value_ == NULL) {
           value_ = ty;
-        } else if (!Type::equivalent(value_, ty)) {
+        } else if (!TypeRelation::isEqual(value_, ty)) {
           value_ = NULL;
           return NULL;
         }
@@ -138,9 +139,9 @@ const Type * TypeAssignment::findSingularSolution() {
         const Type * ty = TypeAssignment::deref(c->value());
         if (value_ == NULL) {
           value_ = ty;
-        } else if (Type::isSubtype(ty, value_)) {
+        } else if (TypeRelation::isSubtype(ty, value_)) {
           continue;
-        } else if (Type::isSubtype(value_, ty)) {
+        } else if (TypeRelation::isSubtype(value_, ty)) {
           value_ = ty;
         } else {
           // Attempt to find a common base of value_ and the lower bound.
@@ -175,9 +176,9 @@ const Type * TypeAssignment::findSingularSolution() {
           const Type * ty = TypeAssignment::deref(c->value());
           if (value_ == NULL) {
             value_ = ty;
-          } else if (Type::isSubtype(ty, value_)) {
+          } else if (TypeRelation::isSubtype(ty, value_)) {
             value_ = ty;
-          } else if (Type::isSubtype(value_, ty)) {
+          } else if (TypeRelation::isSubtype(value_, ty)) {
             continue;
           } else {
             value_ = NULL;
