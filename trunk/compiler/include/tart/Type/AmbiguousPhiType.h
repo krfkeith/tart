@@ -43,7 +43,6 @@ public:
   const Type * singularValue() const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;

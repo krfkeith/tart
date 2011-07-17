@@ -107,7 +107,6 @@ public:
   void expand(TypeExpansion & out) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const;
   TypeShape typeShape() const {
     return value_ != NULL ? value_->typeShape() : Shape_Unset;

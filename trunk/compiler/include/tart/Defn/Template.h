@@ -51,7 +51,6 @@ public:
 
   const llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSubtypeOf(const Type * other) const;
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;

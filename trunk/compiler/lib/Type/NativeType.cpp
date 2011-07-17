@@ -157,14 +157,6 @@ bool AddressType::isEqual(const Type * other) const {
   return false;
 }
 
-bool AddressType::isSubtypeOf(const Type * other) const {
-  if (isEqual(other)) {
-    return true;
-  }
-
-  return false;
-}
-
 Expr * AddressType::nullInitValue() const {
   return ConstantNull::get(SourceLocation(), this);
 }
@@ -299,11 +291,6 @@ bool NativeArrayType::isSingular() const {
   return typeArgs_->isSingular();
 }
 
-bool NativeArrayType::isSubtypeOf(const Type * other) const {
-  return isEqual(other);
-  //DFAIL("Implement");
-}
-
 bool NativeArrayType::isEqual(const Type * other) const {
   if (const NativeArrayType * na = dyn_cast<NativeArrayType>(other)) {
     return typeArgs_ == na->typeArgs_;
@@ -414,10 +401,6 @@ ConversionRank FlexibleArrayType::convertImpl(const Conversion & cn) const {
 
 bool FlexibleArrayType::isSingular() const {
   return typeArgs_->isSingular();
-}
-
-bool FlexibleArrayType::isSubtypeOf(const Type * other) const {
-  return isEqual(other);
 }
 
 bool FlexibleArrayType::isEqual(const Type * other) const {

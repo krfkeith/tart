@@ -174,7 +174,7 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
 
   if (functions_[id] == NULL) {
     char funcName[32];
-    DASSERT(ptype != &UnsizedIntType::instance);
+    DASSERT(!ptype->isUnsizedIntType());
     snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
 
     const llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());

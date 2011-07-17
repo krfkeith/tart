@@ -13,8 +13,11 @@ TYPE_CLASS(NAddress)          // A machine address
 TYPE_CLASS(NArray)            // A primitive array of values
 TYPE_CLASS(FlexibleArray)     // Zero-length array for object epilogue
 TYPE_CLASS(Unit)              // A type which consists of a single constant value
-TYPE_CLASS(CVQual)            // A const/volatile qualified type
 TYPE_CLASS(TypeLiteral)       // A type of a type literal.
+
+// Type modifiers
+TYPE_CLASS(ModVariadic)       // Modifier for variadic types.
+TYPE_CLASS(CVQual)            // A const/volatile qualified type
 
 // Non-type placeholders for types.
 TYPE_CLASS(Alias)             // A named alias for a type expression
@@ -26,5 +29,5 @@ TYPE_CLASS(AmbiguousResult)   // Unresolved result type of function
 TYPE_CLASS(AmbiguousParameter)// Unresolved param type of function
 TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
 TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
-TYPE_CLASS(TupleOf)           // Type constraint - tuple of constraints
 TYPE_CLASS(SizingOf)          // Type constraint - sizing of an unsized int type
+TYPE_CLASS(TupleOf)           // Type constraint - tuple of constraints

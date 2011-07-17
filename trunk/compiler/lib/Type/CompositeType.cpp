@@ -536,15 +536,6 @@ TypeShape CompositeType::typeShape() const {
   return shape_;
 }
 
-bool CompositeType::isSubtypeOf(const Type * other) const {
-  if (const CompositeType * otherCls = dyn_cast<CompositeType>(other)) {
-    return otherCls == this || isSubclassOf(otherCls) ||
-        (otherCls->typeClass() == Type::Protocol && otherCls->isSupportedBy(this));
-  }
-
-  return false;
-}
-
 Expr * CompositeType::nullInitValue() const {
   if (typeClass() == Class || typeClass() == Interface) {
     return ConstantNull::get(SourceLocation(), this);

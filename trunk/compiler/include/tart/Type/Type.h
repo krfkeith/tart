@@ -137,9 +137,6 @@ public:
   /** Return true if two types are identical. */
   virtual bool isEqual(const Type * other) const;
 
-  /** Return true if this type is a subtype of 'other'. */
-  virtual bool isSubtypeOf(const Type * other) const = 0;
-
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
 
@@ -409,7 +406,6 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const { return baseType_->isSingular(); }
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return baseType_->isReferenceType(); }
   void format(FormatStream & out) const;
   TypeShape typeShape() const { return baseType_->typeShape(); }

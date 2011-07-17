@@ -58,32 +58,6 @@ bool TypeAssignment::isEqual(const Type * other) const {
   return compare(&Type::isEqual, other);
 }
 
-bool TypeAssignment::isSubtypeOf(const Type * other) const {
-  if (value_ != NULL) {
-    return TypeRelation::isSubtype(value_, other);
-  } else {
-    bool any = false;
-    for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
-      Constraint * cst = *si;
-      if (!cst->visited() && cst->checkProvisions()) {
-        if (cst->kind() == Constraint::LOWER_BOUND) {
-          // There's no way to determine if this is true, so return false.
-          return false;
-        }
-
-        cst->setVisited(true);
-        if (!TypeRelation::isSubtype(cst->value(), other)) {
-          cst->setVisited(false);
-          return false;
-        }
-        any = true;
-        cst->setVisited(false);
-      }
-    }
-    return any;
-  }
-}
-
 void TypeAssignment::expand(TypeExpansion & out) const {
   if (value_ != NULL) {
     value_->expand(out);

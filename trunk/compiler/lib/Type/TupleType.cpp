@@ -267,10 +267,6 @@ bool TupleType::isSingular() const {
   return true;
 }
 
-bool TupleType::isSubtypeOf(const Type * other) const {
-  return isEqual(other);
-}
-
 Expr * TupleType::nullInitValue() const {
   ExprList initializers;
   for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {

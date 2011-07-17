@@ -177,8 +177,8 @@ bool Constraint::contradicts(const Constraint * cl, const Constraint * cr) {
     return false;
   }
 
-  bool isSubtypeL = tl->isSubtypeOf(tr);
-  bool isSubtypeR = tr->isSubtypeOf(tl);
+  bool isSubtypeL = TypeRelation::isSubtype(tl, tr);
+  bool isSubtypeR = TypeRelation::isSubtype(tr, tl);
 
   if (isSubtypeL && isSubtypeR) {
     return false;

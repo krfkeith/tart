@@ -40,7 +40,6 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;
@@ -98,7 +97,6 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;
@@ -150,7 +148,6 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;

@@ -92,10 +92,6 @@ bool TypeVariable::canBindTo(const Type * value) const {
   }
 }
 
-bool TypeVariable::isSubtypeOf(const Type * other) const {
-  return false;
-}
-
 bool TypeVariable::isReferenceType() const {
   return false;
 }

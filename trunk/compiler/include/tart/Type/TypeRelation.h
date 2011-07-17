@@ -24,7 +24,9 @@ namespace TypeRelation {
 bool isEqual(const Type * lhs, const Type * rhs);
 
 /** Returns true if the type on the left is either the same as,
-    or is a subtype of, the type on the right. */
+    or is a subtype of, the type on the right. Note that in the case of
+    ambiguous types, all possibilities must pass the subclass test
+    in order for the whole to be considered a subtype. */
 bool isSubtype(const Type * lhs, const Type * rhs);
 
 } // namespace TypeRelation
