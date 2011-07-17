@@ -11,6 +11,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/LexicalTypeOrdering.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -55,9 +56,9 @@ UnionType * UnionType::get(const ConstTypeList & members) {
 
     bool addNew = true;
     for (TypeList::iterator m = combined.begin(); m != combined.end();) {
-      if ((*m)->isEqual(type) || type->isSubtypeOf(*m)) {
+      if (TypeRelation::isSubtype(type, *m)) {
         addNew = false;
-      } else if ((*m)->isSubtypeOf(type)) { // TODO: Is isSubtypeOf the right test for this?
+      } else if (TypeRelation::isSubtype(*m, type)) { // TODO: Is isSubtype the right test for this?
         m = combined.erase(m);
         continue;
       }
@@ -407,12 +408,6 @@ bool UnionType::isSingular() const {
   }
 
   return true;
-}
-
-bool UnionType::isSubtypeOf(const Type * other) const {
-  // TODO: Is this meaningful with unions?
-  return isEqual(other);
-  //DFAIL("Implement");
 }
 
 Expr * UnionType::nullInitValue() const {

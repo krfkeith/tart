@@ -22,6 +22,9 @@
 
 #include "tart/Common/Diagnostics.h"
 
+#include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
+
 #include "tart/Sema/Infer/TypeAssignment.h"
 #include "tart/Sema/CallCandidate.h"
 
@@ -144,21 +147,34 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     return true;
   }
 
-  // Special case for ambiguous base types.
+  // Special cases for ambiguous base types.
   switch (base->typeClass()) {
+    case Type::Alias:
+      return isSubtype(ty, static_cast<const TypeAlias *>(base)->value());
+
+    case Type::Protocol:
+      // Special case for protocols - implicit inheritance
+      if (static_cast<const CompositeType *>(base)->isSupportedBy(ty)) {
+        return true;
+      }
+      // Fall through and treat as a regular type
+      break;
+
     case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       TypeExpansion expansion;
       base->expand(expansion);
-      bool any = false;
+      if (expansion.empty()) {
+        return false;
+      }
       for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isSubtype(ty, *it)) {
           return false;
         }
-        any = true;
       }
-      return any;
+      return true;
     }
 
     case Type::Assignment: {
@@ -194,8 +210,72 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
       break;
   }
 
-  // Special case for ambiguous types.
   switch (ty->typeClass()) {
+    case Type::Alias:
+      return isSubtype(static_cast<const TypeAlias *>(ty)->value(), base);
+
+    case Type::Primitive: {
+      const PrimitiveType * pType = static_cast<const PrimitiveType *>(ty);
+      if (const PrimitiveType * pBase = dyn_cast<PrimitiveType>(base)) {
+        return pType->isSubtypeOf(pBase);
+      }
+      return false;
+    }
+
+    case Type::Class:
+    case Type::Struct:
+    case Type::Interface:
+    case Type::Protocol: {
+      const CompositeType * ctType = static_cast<const CompositeType *>(ty);
+      if (const CompositeType * ctBase = dyn_cast<CompositeType>(base)) {
+
+        // Check if both classes derive from the same AST.
+        TypeDefn * tdType = ctType->typeDefn();
+        TypeDefn * tdBase = ctBase->typeDefn();
+        if (tdType != NULL &&
+            tdBase != NULL &&
+            tdType->ast() != NULL &&
+            tdType->ast() == tdBase->ast()) {
+          // Now just need to test if the type params are the same.
+          while (tdType != NULL && tdBase != NULL) {
+            // They should both be instances, or neither.
+            DASSERT(tdType->isTemplateInstance() == tdBase->isTemplateInstance());
+            if (tdType->isTemplateInstance()) {
+              // Compare type parameters for equivalence.
+              return isEqual(
+                  tdType->templateInstance()->typeArgs(),
+                  tdBase->templateInstance()->typeArgs());
+            }
+            // It's possible that both type and base are template instance members. Try
+            // again at the enclosing level.
+            tdType = dyn_cast<TypeDefn>(tdType->parentDefn());
+            tdBase = dyn_cast<TypeDefn>(tdBase->parentDefn());
+          }
+          return false;
+        }
+
+        // Interfaces are always considered to be subclasses of Object.
+        if (ctType->typeClass() == Type::Interface && ctBase == Builtins::typeObject.get()) {
+          return true;
+        }
+
+        // They aren't the same, check all base classes
+        const ClassList & bases = ctType->bases();
+        for (ClassList::const_iterator it = bases.begin(); it != bases.end(); ++it) {
+          if (isSubtype(*it, base)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    case Type::Enum: {
+      // So we already know that ty != base.
+      return false;
+    }
+
     case Type::NAddress: {
       const AddressType * at = static_cast<const AddressType *>(ty);
       if (const AddressType * atBase = dyn_cast<AddressType>(base)) {
@@ -204,19 +284,51 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
       return false;
     }
 
+    case Type::NArray: {
+      const NativeArrayType * na = static_cast<const NativeArrayType *>(ty);
+      if (const NativeArrayType * naBase = dyn_cast<NativeArrayType>(base)) {
+        return isEqual(na->typeParam(0), naBase->typeParam(0)) && na->size() == naBase->size();
+      }
+      return false;
+    }
+
+    case Type::FlexibleArray: {
+      const FlexibleArrayType * fa = static_cast<const FlexibleArrayType *>(ty);
+      if (const FlexibleArrayType * faBase = dyn_cast<FlexibleArrayType>(base)) {
+        return isEqual(fa->typeParam(0), faBase->typeParam(0));
+      }
+      return false;
+    }
+
+    case Type::Function:
+    case Type::Unit:
+    case Type::Tuple:
+    case Type::Union:
+    case Type::TypeLiteral:
+    case Type::TypeVar:
+      // None of these types support a subclass relationship, so equality is the only option.
+      return isEqual(ty, base);
+
     case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       TypeExpansion expansion;
       ty->expand(expansion);
-      bool any = false;
+      if (expansion.empty()) {
+        return false;
+      }
       for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isSubtype(*it, base)) {
           return false;
         }
-        any = true;
       }
-      return any;
+      return true;
+    }
+
+    case Type::SizingOf: {
+      const SizingOfConstraint * soc = static_cast<const SizingOfConstraint *>(ty);
+      return soc->isSubtypeOf(base);
     }
 
     case Type::Assignment: {
@@ -230,7 +342,7 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
           if (cst->visited()) {
             any = true;
           } else if (cst->checkProvisions()) {
-            if (cst->kind() == Constraint::UPPER_BOUND) {
+            if (cst->kind() == Constraint::UPPER_BOUND) { // TODO: Wrong!
               // There's no way to determine if this is true, so return false.
               return false;
             }
@@ -246,13 +358,18 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
         }
         return any;
       }
+      return false;
     }
 
-    default:
+    case Type::ModVariadic:
+    case Type::CVQual:
+    case Type::TupleOf:
+    case Type::KindCount:
+      DFAIL("Type class not supported by isSubtype()");
       break;
   }
 
-  return ty->isSubtypeOf(base);
+  return false;
 }
 
 } // namespace tart

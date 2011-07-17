@@ -5,6 +5,8 @@
 #include "tart/Defn/Template.h"
 #include "tart/Defn/TemplateConditions.h"
 
+#include "tart/Type/TypeRelation.h"
+
 #include "tart/Sema/TypeTransform.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -23,7 +25,7 @@ void TypeComparisonCondition::trace() const {
 // IsSubclassCondition
 
 bool IsSubtypeCondition::eval() const {
-  return first_->isSubtypeOf(second_);
+  return TypeRelation::isSubtype(first_, second_);
 }
 
 TemplateCondition * IsSubtypeCondition::transform(TypeTransform & transform) {

@@ -16,6 +16,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -408,7 +409,7 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
 }
 
 const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
-  if (rhs->isSubtypeOf(lhs)) {
+  if (TypeRelation::isSubtype(rhs, lhs)) {
     return lhs;
   }
 

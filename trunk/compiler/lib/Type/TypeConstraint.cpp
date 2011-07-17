@@ -99,25 +99,6 @@ bool TypeSetConstraint::isEqual(const Type * other) const {
   return true;
 }
 
-bool TypeSetConstraint::isSubtypeOf(const Type * other) const {
-  DFAIL("Check");
-  // It's a subtype only if it's a subtype of every member
-  TypeExpansion expansion;
-  expand(expansion);
-  if (expansion.empty()) {
-    return false;
-  }
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-    const Type * ty = *it;
-    if (!ty->isSubtypeOf(other)) {
-      diag.debug() << this << " is not a subtype of " << other;
-      return false;
-    }
-  }
-
-  return true;
-}
-
 bool TypeSetConstraint::isSingular() const {
   const Type * ty = singularValue();
   return ty != NULL; // && ty->isSingular();
@@ -223,10 +204,6 @@ const Type * TupleOfConstraint::singularValue() const {
 bool TupleOfConstraint::isSingular() const {
   DFAIL("Check");
   return tuple_->isSingular();
-}
-
-bool TupleOfConstraint::isSubtypeOf(const Type * other) const {
-  DFAIL("Implement");
 }
 
 bool TupleOfConstraint::isReferenceType() const {

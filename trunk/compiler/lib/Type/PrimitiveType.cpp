@@ -784,7 +784,6 @@ VoidConstructor VoidConstructor::value;
 
 template<> TypeDefn VoidType::typedefn(&Builtins::module, "void", &VoidType::instance);
 template<> TypeIdSet VoidType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet VoidType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void VoidType::initType() {
   irType_ = llvm::Type::getVoidTy(llvm::getGlobalContext());
@@ -820,7 +819,6 @@ template<> Expr * VoidType::nullInitValue() const {
 
 template<> TypeDefn BoolType::typedefn(&Builtins::module, "bool", &BoolType::instance);
 template<> TypeIdSet BoolType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet BoolType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void BoolType::initType() {
   irType_ = llvm::Type::getInt1Ty(llvm::getGlobalContext());
@@ -856,7 +854,6 @@ template<> Expr * BoolType::nullInitValue() const {
 
 template<> TypeDefn CharType::typedefn(&Builtins::module, "char", &CharType::instance);
 template<> TypeIdSet CharType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet CharType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void CharType::initType() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
@@ -897,7 +894,6 @@ template<> Expr * CharType::nullInitValue() const {
 template<> TypeDefn Int8Type::typedefn(&Builtins::module, "int8", &Int8Type::instance);
 template<> TypeIdSet Int8Type::MORE_GENERAL =
     TypeIdSet::of(TypeId_SInt16, TypeId_SInt32, TypeId_SInt64);
-template<> TypeIdSet Int8Type::INCLUDES = TypeIdSet::noneOf();
 
 template<> void Int8Type::initType() {
   irType_ = llvm::Type::getInt8Ty(llvm::getGlobalContext());
@@ -945,7 +941,6 @@ template<> Expr * Int8Type::nullInitValue() const {
 
 template<> TypeDefn Int16Type::typedefn(&Builtins::module, "int16", &Int16Type::instance);
 template<> TypeIdSet Int16Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt32, TypeId_SInt64);
-template<> TypeIdSet Int16Type::INCLUDES = TypeIdSet::of(TypeId_SInt8, TypeId_UInt8);
 
 template<> void Int16Type::initType() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
@@ -991,9 +986,6 @@ template<> Expr * Int16Type::nullInitValue() const {
 
 template<> TypeDefn Int32Type::typedefn(&Builtins::module, "int32", &Int32Type::instance);
 template<> TypeIdSet Int32Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64);
-template<> TypeIdSet Int32Type::INCLUDES = TypeIdSet::of(
-    TypeId_SInt8, TypeId_SInt16, TypeId_UInt8, TypeId_UInt16
-);
 
 template<> void Int32Type::initType() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
@@ -1039,8 +1031,6 @@ template<> Expr * Int32Type::nullInitValue() const {
 
 template<> TypeDefn Int64Type::typedefn(&Builtins::module, "int64", &Int64Type::instance);
 template<> TypeIdSet Int64Type::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet Int64Type::INCLUDES = TypeIdSet::of(
-    TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
 
 template<> void Int64Type::initType() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
@@ -1088,7 +1078,6 @@ template<> TypeIdSet UInt8Type::MORE_GENERAL =
     TypeIdSet::of(
         TypeId_SInt16, TypeId_SInt32, TypeId_SInt64,
         TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
-template<> TypeIdSet UInt8Type::INCLUDES = TypeIdSet::noneOf();
 
 template<> void UInt8Type::initType() {
   irType_ = llvm::Type::getInt8Ty(llvm::getGlobalContext());
@@ -1135,7 +1124,6 @@ template<> Expr * UInt8Type::nullInitValue() const {
 template<> TypeDefn UInt16Type::typedefn(&Builtins::module, "uint16", &UInt16Type::instance);
 template<> TypeIdSet UInt16Type::MORE_GENERAL = TypeIdSet::of(
     TypeId_SInt32, TypeId_SInt64, TypeId_UInt32, TypeId_UInt64);
-template<> TypeIdSet UInt16Type::INCLUDES = TypeIdSet::of(TypeId_UInt8);
 
 template<> void UInt16Type::initType() {
   irType_ = llvm::Type::getInt16Ty(llvm::getGlobalContext());
@@ -1181,7 +1169,6 @@ template<> Expr * UInt16Type::nullInitValue() const {
 
 template<> TypeDefn UInt32Type::typedefn(&Builtins::module, "uint32", &UInt32Type::instance);
 template<> TypeIdSet UInt32Type::MORE_GENERAL = TypeIdSet::of(TypeId_SInt64, TypeId_UInt64);
-template<> TypeIdSet UInt32Type::INCLUDES = TypeIdSet::of(TypeId_UInt8, TypeId_UInt16);
 
 template<> void UInt32Type::initType() {
   irType_ = llvm::Type::getInt32Ty(llvm::getGlobalContext());
@@ -1227,8 +1214,6 @@ template<> Expr * UInt32Type::nullInitValue() const {
 
 template<> TypeDefn UInt64Type::typedefn(&Builtins::module, "uint64", &UInt64Type::instance);
 template<> TypeIdSet UInt64Type::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet UInt64Type::INCLUDES =
-TypeIdSet::of(TypeId_UInt8, TypeId_UInt16, TypeId_UInt32);
 
 template<> void UInt64Type::initType() {
   irType_ = llvm::Type::getInt64Ty(llvm::getGlobalContext());
@@ -1274,7 +1259,6 @@ template<> Expr * UInt64Type::nullInitValue() const {
 
 template<> TypeDefn FloatType::typedefn(&Builtins::module, "float", &FloatType::instance);
 template<> TypeIdSet FloatType::MORE_GENERAL = TypeIdSet::of(TypeId_Double);
-template<> TypeIdSet FloatType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void FloatType::initType() {
   irType_ = llvm::Type::getFloatTy(llvm::getGlobalContext());
@@ -1312,7 +1296,6 @@ template<> Expr * FloatType::nullInitValue() const {
 
 template<> TypeDefn DoubleType::typedefn(&Builtins::module, "double", &DoubleType::instance);
 template<> TypeIdSet DoubleType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet DoubleType::INCLUDES = TypeIdSet::of(TypeId_Float);
 
 template<> void DoubleType::initType() {
   irType_ = llvm::Type::getDoubleTy(llvm::getGlobalContext());
@@ -1350,7 +1333,6 @@ template<> Expr * DoubleType::nullInitValue() const {
 
 template<> TypeDefn NullType::typedefn(&Builtins::module, "Null", &NullType::instance);
 template<> TypeIdSet NullType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet NullType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void NullType::initType() {
   irType_ = llvm::StructType::get(llvm::getGlobalContext(), false)->getPointerTo();
@@ -1385,7 +1367,6 @@ template<> Expr * NullType::nullInitValue() const {
 
 template<> TypeDefn AnyType::typedefn(&Builtins::module, "__Any", &AnyType::instance);
 template<> TypeIdSet AnyType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet AnyType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void AnyType::initType() {
   irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
@@ -1417,9 +1398,6 @@ template<> Expr * AnyType::nullInitValue() const {
 template<> TypeDefn UnsizedIntType::typedefn(&Builtins::module, "#constant_int",
     &UnsizedIntType::instance);
 template<> TypeIdSet UnsizedIntType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet UnsizedIntType::INCLUDES = TypeIdSet::of(
-    TypeId_SInt8, TypeId_SInt16, TypeId_SInt32, TypeId_SInt64,
-    TypeId_UInt8, TypeId_UInt16, TypeId_UInt32, TypeId_UInt64);
 
 template<> void UnsizedIntType::initType() {
   // irType_ = NULL
@@ -1484,7 +1462,6 @@ PrimitiveType * PrimitiveType::fitIntegerType(size_t nBits, bool isUnsigned) {
 
 template<> TypeDefn BadType::typedefn(&Builtins::module, "<bad>", &BadType::instance);
 template<> TypeIdSet BadType::MORE_GENERAL = TypeIdSet::noneOf();
-template<> TypeIdSet BadType::INCLUDES = TypeIdSet::noneOf();
 
 template<> void BadType::initType() {
   irType_ = llvm::StructType::get(llvm::getGlobalContext(), false);

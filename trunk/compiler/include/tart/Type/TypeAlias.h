@@ -27,7 +27,6 @@ public:
   TypeDefn * typeDefn() const { return defn_; }
   bool isSingular() const { return value_->isSingular(); }
   bool isEqual(const Type * other) const { return value_->isEqual(other); }
-  bool isSubtypeOf(const Type * other) const { return value_->isSubtypeOf(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
   TypeShape typeShape() const { return value_->typeShape(); }
   const llvm::Type * irType() const;

@@ -199,7 +199,6 @@ public:
   ConversionRank convertImpl(const Conversion & conversion) const;
   void format(FormatStream & out) const;
   void trace() const;
-  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   TypeShape typeShape() const;

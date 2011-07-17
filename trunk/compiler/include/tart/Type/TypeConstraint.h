@@ -53,7 +53,6 @@ public:
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void format(FormatStream & out) const;
@@ -79,7 +78,6 @@ public:
   const Type * singularValue() const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;
@@ -118,12 +116,13 @@ public:
   unsigned signedBitsRequired() const;
   unsigned unsignedBitsRequired() const;
 
+  bool isSubtypeOf(const Type * other) const;
+
   // Overrides
 
   const Type * singularValue() const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSubtypeOf(const Type * other) const;
   bool isSingular() const { return false; }
   bool isEqual(const Type * other) const;
   bool isIntType() const { return true; }

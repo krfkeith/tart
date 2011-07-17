@@ -77,11 +77,6 @@ ConversionRank AmbiguousPhiType::convertImpl(const Conversion & conversion) cons
   return worstRank;
 }
 
-bool AmbiguousPhiType::isSubtypeOf(const Type * other) const {
-  DINVALID;
-  return false;
-}
-
 bool AmbiguousPhiType::isSingular() const {
   return common_ != NULL && common_->isSingular();
 }

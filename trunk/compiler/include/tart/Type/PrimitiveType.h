@@ -79,6 +79,9 @@ public:
   /** Return the type of 'uint'. */
   static const Type * uintType();
 
+  /** Return true if this primitive type is a subtype of 'base' */
+  virtual bool isSubtypeOf(const PrimitiveType * base) const = 0;
+
   // Overrides
   const llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
@@ -138,32 +141,16 @@ public:
         static_cast<const PrimitiveType *>(t)->typeId() == kTypeId;
   }
 
-  bool isSubtypeOf(const Type * other) const;
+  bool isSubtypeOf(const PrimitiveType * base) const {
+    return base == this || MORE_GENERAL.contains(base->typeId());
+  }
 
   /** Singleton instance. */
   static PrimitiveTypeImpl instance;
   static TypeDefn typedefn;
   static ASTBuiltIn biDef;
   static TypeIdSet MORE_GENERAL;
-  static TypeIdSet INCLUDES;
 };
-
-template<TypeId kTypeId> bool PrimitiveTypeImpl<kTypeId>::isSubtypeOf(const Type * other) const {
-  if (other == this) {
-    return true;
-  }
-
-  if (other->typeClass() == Type::Primitive) {
-    const PrimitiveType * ptype = static_cast<const PrimitiveType *>(other);
-    return MORE_GENERAL.contains(ptype->typeId());
-  }
-
-  if (other->typeClass() == Type::Protocol && supports(other)) {
-    return true;
-  }
-
-  return false;
-}
 
 template<TypeId kTypeId>
 ASTBuiltIn PrimitiveTypeImpl<kTypeId>::biDef(&typedefn);

@@ -550,10 +550,10 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
 
       // If there's no enum constant matching the value, then treat it as integer.
       builder_.SetInsertPoint(defaultBlk);
+      DASSERT(!baseType->isUnsizedIntType());
       const PrimitiveType * ptype = cast<PrimitiveType>(baseType);
       const FunctionDefn * pToString = cast<FunctionDefn>(ptype->findSymbol("toString")->front());
       char funcName[32];
-      DASSERT(ptype != &UnsizedIntType::instance);
       snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
       const llvm::FunctionType * funcType = cast<llvm::FunctionType>(pToString->type()->irType());
       llvm::Function * pToStringFn = cast<llvm::Function>(

@@ -92,7 +92,6 @@ public:
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
-  bool isSubtypeOf(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const;
   void format(FormatStream & out) const;

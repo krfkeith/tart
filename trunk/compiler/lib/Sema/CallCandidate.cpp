@@ -15,6 +15,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeAlias.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
@@ -412,8 +413,8 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
       }
     } else {
       if (ltv->upperBound() != NULL &&
-          ltv->upperBound()->isSubtypeOf(rhs) &&
-          !ltv->upperBound()->isEqual(rhs)) {
+          TypeRelation::isSubtype(ltv->upperBound(), rhs) &&
+          !TypeRelation::isEqual(ltv->upperBound(), rhs)) {
         // lhs is a type var whose upper bound is more specific than rhs, so lhs counts as
         // more specific.
         return MORE_SPECIFIC;
@@ -425,8 +426,8 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
   } else if (const TypeAssignment * rta = dyn_cast<TypeAssignment>(rhs)) {
     const TypeVariable * rtv = rta->target();
     if (rtv->upperBound() != NULL &&
-        rtv->upperBound()->isSubtypeOf(lhs) &&
-        !rtv->upperBound()->isEqual(lhs)) {
+        TypeRelation::isSubtype(rtv->upperBound(), lhs) &&
+        !TypeRelation::isEqual(rtv->upperBound(), lhs)) {
       // rhs is a type var whose upper bound is more specific than lhs, so lhs counts as
       // less specific.
       return NOT_MORE_SPECIFIC;
@@ -479,11 +480,11 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
       break;
   }
 
-  if (lhs->isEqual(rhs)) {
+  if (TypeRelation::isEqual(lhs, rhs)) {
     // Ensure that equality is symmetrical.
     DASSERT_OBJ(rhs->isEqual(lhs), lhs);
     return EQUAL_SPECIFICITY;
-  } else if (lhs->isSubtypeOf(rhs)) {
+  } else if (TypeRelation::isSubtype(lhs, rhs)) {
     return MORE_SPECIFIC;
   } else {
     return NOT_MORE_SPECIFIC;

@@ -15,19 +15,6 @@ const llvm::Type * EnumType::createIRType() const {
   return baseType_->irType();
 }
 
-bool EnumType::isSubtypeOf(const Type * other) const {
-  if (this == other) {
-    return true;
-  }
-
-  if (other->typeClass() == Type::Protocol && supports(other)) {
-    return true;
-  }
-
-  //return this == other /*|| baseType_->isSubtypeOf(other)*/;
-  return false;
-}
-
 ConversionRank EnumType::convertImpl(const Conversion & cn) const {
   const Type * fromType = cn.getFromType();
   if (fromType == this) {

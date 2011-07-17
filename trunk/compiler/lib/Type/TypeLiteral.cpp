@@ -124,10 +124,6 @@ bool TypeLiteralType::isEqual(const Type * other) const {
   return false;
 }
 
-bool TypeLiteralType::isSubtypeOf(const Type * other) const {
-  return isEqual(other);
-}
-
 void TypeLiteralType::format(FormatStream & out) const {
   out << "TypeLiteral[" << literalType_ << "]";
 }
