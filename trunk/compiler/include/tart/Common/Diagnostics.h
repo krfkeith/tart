@@ -13,11 +13,6 @@
 #include "tart/Common/SourceLocation.h"
 #endif
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string>
-#include <sstream>
-
 #include "llvm/Support/Compiler.h"
 
 namespace tart {
@@ -42,6 +37,14 @@ namespace tart {
 #define DFAIL(msg) diag.__fail(msg, __FILE__, __LINE__)
 
 #define TFAIL diag.failMsg(__FILE__, __LINE__)
+
+#define DINVALID TFAIL << "Unexpected call to unimplemented method " << __FUNCTION__
+
+#if NDEBUG
+  #define DBREAK
+#else
+  #define DBREAK diag.debug() << "Set breakpoint: break " << __FILE__ << ":" << (__LINE__ + 1)
+#endif
 
 /// ---------------------------------------------------------------
 /// Various diagnostic functions.
@@ -71,44 +74,31 @@ public:
 
   /** Base stream class for diagnostic messages. */
   template <class T>
-  class MessageStream : public FormatStream {
+  class MessageStream : public StrFormatStream {
   private:
     const SourceLocation loc;
-    std::stringstream sstream;
 
   public:
 
-    MessageStream()
-      : FormatStream(sstream)
-      , loc(SourceLocation())
-    {}
+    MessageStream() : loc(SourceLocation()) {}
 
-    MessageStream(const SourceLocation & l, int indent = 0)
-      : FormatStream(sstream)
-      , loc(l)
-    {
+    MessageStream(const SourceLocation & l, int indent = 0) : loc(l) {
       writeIndent(*this, indent);
     }
 
-    MessageStream(const Locatable * l, int indent = 0)
-      : FormatStream(sstream)
-      , loc(l ? l->location() : SourceLocation())
-    {
+    MessageStream(const Locatable * l, int indent = 0) : loc(l ? l->location() : SourceLocation()) {
       writeIndent(*this, indent);
     }
 
-    MessageStream(const MessageStream & src)
-      : FormatStream(sstream)
-      , loc(src.loc)
-    {}
+    MessageStream(const MessageStream & src) : loc(src.loc) {}
 
     // The destructor is where all the real action happens.
     // When the entry is destructed, the accumulated messages are
     // written to the diagnostic output.
     ~MessageStream() {
       flush();
-      if (!sstream.str().empty()) {
-        T::write(loc, sstream.str());
+      if (!str().empty()) {
+        T::write(loc, str());
       }
     }
   };
@@ -117,18 +107,18 @@ public:
   template <Severity severity>
   class DiagnosticAction {
   public:
-    static void write(const SourceLocation & loc, const std::string & msg);
+    static void write(const SourceLocation & loc, llvm::StringRef msg);
   };
 
   /** Diagnostic action which prints a message, then prints a stack trace and exits. */
   class FailAction {
   public:
-    static void write(const SourceLocation & loc, const std::string & msg);
+    static void write(const SourceLocation & loc, llvm::StringRef msg);
   };
 
   class AssertAction {
   public:
-    static void write(const SourceLocation & loc, const std::string & msg);
+    static void write(const SourceLocation & loc, llvm::StringRef msg);
   };
 
   typedef MessageStream<DiagnosticAction<Fatal> > FatalErrorStream;
@@ -140,30 +130,27 @@ public:
   typedef MessageStream<AssertAction> AssertStream;
 
   /** Stream class which aborts. */
-  class FailStream : public FormatStream {
+  class FailStream : public StrFormatStream {
   private:
     const char * fname_;
     int lineno_;
-    std::stringstream sstream_;
 
   public:
 
     FailStream(const char * fname, int lineno)
-      : FormatStream(sstream_)
-      , fname_(fname)
+      : fname_(fname)
       , lineno_(lineno)
     {}
 
     FailStream(const FailStream & src)
-      : FormatStream(sstream_)
-      , fname_(src.fname_)
+      : fname_(src.fname_)
       , lineno_(src.lineno_)
     {}
 
     // The destructor is where all the real action happens.
     // When the entry is destructed, the accumulated messages are
     // written to the diagnostic output.
-    ~FailStream();
+    LLVM_ATTRIBUTE_NORETURN ~FailStream();
   };
 
   /** A stream which does nothing. */
@@ -179,25 +166,26 @@ public:
 
   class Writer {
   public:
-    virtual void write(const SourceLocation & loc, Severity sev, const std::string & msg) = 0;
+    virtual void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg) = 0;
     virtual ~Writer() {}
   };
 
   class StdErrWriter : public Writer {
   public:
-    void write(const SourceLocation & loc, Severity sev, const std::string & msg);
+    void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
 
     static StdErrWriter instance;
   };
 
   class StringWriter : public Writer {
   public:
-    void write(const SourceLocation & loc, Severity sev, const std::string & msg);
-    const std::string & str() const { return str_; }
-    std::string & str() { return str_; }
+    void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
+    llvm::StringRef str() const { return str_.str(); }
+
+    void clear() { str_.clear(); }
 
   private:
-    std::string str_;
+    llvm::SmallString<256> str_;
   };
 
   Diagnostics();
@@ -302,7 +290,7 @@ public:
   int setIndentLevel(int level);
 
   /** write an indented line. */
-  void writeLnIndent(const std::string & str);
+  void writeLnIndent(llvm::StringRef str);
 
   /** write an indented line, formatted. */
   void writeLnIndent(const char * msg, ...);
@@ -315,23 +303,23 @@ public:
 
   /** Assertion failure. */
   LLVM_ATTRIBUTE_NORETURN
-      void assertionFailed(const char * expr, const char * fname, unsigned lineno);
+      void assertionFailed(llvm::StringRef expr, const char * fname, unsigned lineno);
 
   /** Assertion failure. */
   template<class T>
   LLVM_ATTRIBUTE_NORETURN void assertionFailed(
-      const char * expr, const char * fname, unsigned lineno, const T & obj) {
+      llvm::StringRef expr, const char * fname, unsigned lineno, const T & obj) {
     StrFormatStream stream;
     stream.setFormatOptions(Format_Verbose);
     stream << expr;
     stream << ", context = ";
     stream << obj;
     stream.flush();
-    assertionFailed(stream.str().c_str(), fname, lineno);
+    assertionFailed(stream.str(), fname, lineno);
   }
 
   /** Fatal compiler error. */
-  LLVM_ATTRIBUTE_NORETURN void __fail(const char * msg, const char * fname, unsigned lineno);
+  LLVM_ATTRIBUTE_NORETURN void __fail(llvm::StringRef msg, const char * fname, unsigned lineno);
 
   /** Break execution. */
   static void debugBreak();
@@ -346,7 +334,7 @@ protected:
   int indentLevel;    // Used for dumping hierarchical stuff
   Severity minSeverity;
 
-  void write(const SourceLocation & loc, Severity sev, const std::string & msg);
+  void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
 };
 
 extern Diagnostics diag;

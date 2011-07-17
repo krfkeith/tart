@@ -5,6 +5,7 @@
 #include "tart/Sema/Infer/Constraint.h"
 
 #include "tart/Type/Type.h"
+#include "tart/Type/TypeRelation.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/EnumType.h"
@@ -48,20 +49,20 @@ bool Constraint::accepts(const Type * ty) const {
       return ty == value_;
 
     case LOWER_BOUND: {
-      if (Type::isSubtype(value_, ty)) {
+      if (TypeRelation::isSubtype(value_, ty)) {
         return true;
       }
 
       if (const EnumType * et = dyn_cast<EnumType>(value_)) {
         // TODO: For some reason putting this code where it belongs - in EnumType - breaks things.
-        return Type::isSubtype(et->baseType(), ty);
+        return TypeRelation::isSubtype(et->baseType(), ty);
       }
 
       return false;
     }
 
     case UPPER_BOUND:
-      return Type::isSubtype(ty, value_);
+      return TypeRelation::isSubtype(ty, value_);
   }
 }
 
@@ -72,12 +73,12 @@ bool Constraint::equals(const Constraint * cst) const {
       cst->provisions_.equals(provisions_);
 }
 
-Constraint * Constraint::intersect(Constraint * c0, Constraint * c1) {
-  const Type * t0 = PrimitiveType::derefEnumType(c0->value());
-  const Type * t1 = PrimitiveType::derefEnumType(c1->value());
+Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
+  const Type * tl = PrimitiveType::derefEnumType(cl->value());
+  const Type * tr = PrimitiveType::derefEnumType(cr->value());
 
-  bool isMoreLenient0 = c1->provisions().implies(c0->provisions());
-  bool isMoreLenient1 = c0->provisions().implies(c1->provisions());
+  bool isMoreLenient0 = cr->provisions().implies(cl->provisions());
+  bool isMoreLenient1 = cl->provisions().implies(cr->provisions());
   bool isEqualProvisions = isMoreLenient0 && isMoreLenient1;
 
   // If the provision are disjoint, then no joining is possible.
@@ -85,113 +86,113 @@ Constraint * Constraint::intersect(Constraint * c0, Constraint * c1) {
     return NULL;
   }
 
-  if (t0 == t1) {
-    if (c0->kind() == c1->kind()) {
-      return isMoreLenient0 ? c0 : c1;
-    } else if (c0->kind() == EXACT && isMoreLenient0) {
-      return c0;
-    } else if (c1->kind() == EXACT && isMoreLenient1) {
-      return c1;
+  if (tl == tr) {
+    if (cl->kind() == cr->kind()) {
+      return isMoreLenient0 ? cl : cr;
+    } else if (cl->kind() == EXACT && isMoreLenient0) {
+      return cl;
+    } else if (cr->kind() == EXACT && isMoreLenient1) {
+      return cr;
     } else if (isEqualProvisions &&
-        ((c0->kind() == LOWER_BOUND && c1->kind() == UPPER_BOUND) ||
-         (c0->kind() == UPPER_BOUND && c1->kind() == LOWER_BOUND))) {
-      return new Constraint(c0->location(), t0, EXACT, c0->provisions());
+        ((cl->kind() == LOWER_BOUND && cr->kind() == UPPER_BOUND) ||
+         (cl->kind() == UPPER_BOUND && cr->kind() == LOWER_BOUND))) {
+      return new Constraint(cl->location(), tl, EXACT, cl->provisions());
     } else {
       return NULL;
     }
   }
 
-  bool isSubtypeOf0 = false;
-  bool isSubtypeOf1 = false;
+  bool isSubtypeL = false;
+  bool isSubtypeR = false;
 
-  if (const CompositeType * ct0 = dyn_cast<CompositeType>(t0)) {
-    if (const CompositeType * ct1 = dyn_cast<CompositeType>(t1)) {
-      isSubtypeOf0 = ct0->isSubclassOf(ct1);
-      isSubtypeOf1 = ct1->isSubclassOf(ct0);
+  if (const CompositeType * ct0 = dyn_cast<CompositeType>(tl)) {
+    if (const CompositeType * ct1 = dyn_cast<CompositeType>(tr)) {
+      isSubtypeL = ct0->isSubclassOf(ct1);
+      isSubtypeR = ct1->isSubclassOf(ct0);
     }
-  } else if (t0->isIntType() && t1->isIntType()) {
-    isSubtypeOf0 = Type::isSubtype(t0, t1);
-    isSubtypeOf1 = Type::isSubtype(t1, t0);
-  } else if (t0->isFPType() && t1->isFPType()) {
-    isSubtypeOf0 = Type::isSubtype(t0, t1);
-    isSubtypeOf1 = Type::isSubtype(t1, t0);
+  } else if (tl->isIntType() && tr->isIntType()) {
+    isSubtypeL = TypeRelation::isSubtype(tl, tr);
+    isSubtypeR = TypeRelation::isSubtype(tr, tl);
+  } else if (tl->isFPType() && tr->isFPType()) {
+    isSubtypeL = TypeRelation::isSubtype(tl, tr);
+    isSubtypeR = TypeRelation::isSubtype(tr, tl);
   }
 
-  if (isSubtypeOf0) { // c0 <= c1
-    DASSERT(!isSubtypeOf1);
-    if ((c0->kind() == UPPER_BOUND || c0->kind() == EXACT) &&
-        c1->kind() == UPPER_BOUND &&
+  if (isSubtypeL) { // c0 <= c1
+    DASSERT(!isSubtypeR);
+    if ((cl->kind() == UPPER_BOUND || cl->kind() == EXACT) &&
+        cr->kind() == UPPER_BOUND &&
         isMoreLenient0) {
       // (T <= c0 < c1) or (T == c0 < c1)
-      return c0;
+      return cl;
     }
 
-    if (c0->kind() == LOWER_BOUND &&
-        (c1->kind() == LOWER_BOUND || c1->kind() == EXACT) &&
+    if (cl->kind() == LOWER_BOUND &&
+        (cr->kind() == LOWER_BOUND || cr->kind() == EXACT) &&
         isMoreLenient1) {
       // (c0 < c1 <= T) or (c0 < c1 == T)
-      return c1;
+      return cr;
     }
 
-  } else if (isSubtypeOf1) {
-    if (c1->kind() == LOWER_BOUND &&
-        (c0->kind() == LOWER_BOUND || c0->kind() == EXACT) &&
+  } else if (isSubtypeR) {
+    if (cr->kind() == LOWER_BOUND &&
+        (cl->kind() == LOWER_BOUND || cl->kind() == EXACT) &&
         isMoreLenient0) {
       // (c1 < c0 <= T) or (c1 < c0 == T)
-      return c0;
+      return cl;
     }
 
-    if ((c1->kind() == UPPER_BOUND || c1->kind() == EXACT) &&
-        c0->kind() == UPPER_BOUND &&
+    if ((cr->kind() == UPPER_BOUND || cr->kind() == EXACT) &&
+        cl->kind() == UPPER_BOUND &&
         isMoreLenient1) {
       // (T <= c1 < c0) or (T == c1 < c0)
-      return c1;
+      return cr;
     }
   }
 
-  if (c0->kind() == EXACT && c0->value()->isSingular() &&
-      c1->value()->typeClass() == Type::Assignment && isMoreLenient0) {
-    return c0;
+  if (cl->kind() == EXACT && cl->value()->isSingular() &&
+      cr->value()->typeClass() == Type::Assignment && isMoreLenient0) {
+    return cl;
   }
 
-  if (c1->kind() == EXACT && c1->value()->isSingular() &&
-      c0->value()->typeClass() == Type::Assignment && isMoreLenient1) {
-    return c1;
+  if (cr->kind() == EXACT && cr->value()->isSingular() &&
+      cl->value()->typeClass() == Type::Assignment && isMoreLenient1) {
+    return cr;
   }
 
   return NULL;
 }
 
-bool Constraint::contradicts(const Constraint * c0, const Constraint * c1) {
-  const Type * t0 = PrimitiveType::derefEnumType(c0->value());
-  const Type * t1 = PrimitiveType::derefEnumType(c1->value());
+bool Constraint::contradicts(const Constraint * cl, const Constraint * cr) {
+  const Type * tl = PrimitiveType::derefEnumType(cl->value());
+  const Type * tr = PrimitiveType::derefEnumType(cr->value());
 
-  if (t0 == t1) {
+  if (tl == tr) {
     return false;
   }
 
   // If the types are not singular then we don't know if there's a contradiction.
   // TODO: Could likely allow some tests.
-  if (!t0->isSingular() || !t1->isSingular()) {
+  if (!tl->isSingular() || !tr->isSingular()) {
     return false;
   }
 
-  bool isSubtypeOf0 = t0->isSubtypeOf(t1);
-  bool isSubtypeOf1 = t1->isSubtypeOf(t0);
+  bool isSubtypeL = tl->isSubtypeOf(tr);
+  bool isSubtypeR = tr->isSubtypeOf(tl);
 
-  if (isSubtypeOf0 && isSubtypeOf1) {
+  if (isSubtypeL && isSubtypeR) {
     return false;
   }
 
-  switch (c0->kind()) {
+  switch (cl->kind()) {
     case EXACT:
-      return c1->kind() == EXACT
-          || (c1->kind() == UPPER_BOUND && !isSubtypeOf0)
-          || (c1->kind() == LOWER_BOUND && !isSubtypeOf1);
+      return cr->kind() == EXACT
+          || (cr->kind() == UPPER_BOUND && !isSubtypeL)
+          || (cr->kind() == LOWER_BOUND && !isSubtypeR);
     case UPPER_BOUND:
-      return !isSubtypeOf1 && c1->kind() != UPPER_BOUND;
+      return !isSubtypeR && cr->kind() != UPPER_BOUND;
     case LOWER_BOUND:
-      return !isSubtypeOf0 && c1->kind() != LOWER_BOUND;
+      return !isSubtypeL && cr->kind() != LOWER_BOUND;
   }
 }
 

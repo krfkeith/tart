@@ -3,13 +3,17 @@
  * ================================================================ */
 
 #include <gtest/gtest.h>
-#include "tart/Type/Type.h"
 #include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/Module.h"
+
+#include "tart/Type/Type.h"
+#include "tart/Type/TypeRelation.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/CompositeType.h"
-#include "tart/Defn/Module.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "FakeSourceFile.h"
 #include "TestHelpers.h"
 
@@ -154,8 +158,6 @@ public:
   virtual const IterableScope * memberScope() const { return NULL; }
   virtual size_t numTypeParams() const { return 0; }
   virtual const Type * typeParam(int index) const;
-  virtual bool isEqual(const Type * other) const;
-  virtual bool isSubtypeOf(const Type * other) const = 0;
 
   //virtual bool is
 
@@ -194,11 +196,6 @@ public:
   virtual Expr * nullInitValue() const { return NULL; }
 
   // Static utility functions
-
-  /** Return true if type1 and type2 are type expressions that, when finalized, will
-      reduce to the same type. For example, List[T] is equivalent to List[S] if
-      T is a pattern variable bound to S. */
-  static bool equivalent(const Type * type1, const Type * type2);
 
   // Structure used when using type as a key.
   struct KeyInfo {

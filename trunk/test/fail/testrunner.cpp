@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
       }
 
       diag.reset();
-      errors.str().clear();
+      errors.clear();
       module.clearDefns();
 
       // Attempt to parse and analyze the declaration.
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
       }
 
       std::string errorMsg;
-      errorMsg.swap(errors.str());
+      errorMsg = errors.str();
       trim(errorMsg);
 
       if (diag.getMessageCount(Diagnostics::Fatal) != 0) {

@@ -2,6 +2,9 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
+#include "tart/Defn/Template.h"
+
+#include "tart/Type/AmbiguousTypeParamType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/FunctionType.h"
@@ -13,7 +16,6 @@
 #include "tart/Type/TypeAlias.h"
 #include "tart/Type/TypeConstraint.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Defn/Template.h"
 
 #include "tart/Sema/TypeTransform.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -83,6 +85,7 @@ const Type * TypeTransform::visit(const Type * in) {
 
     case Type::AmbiguousResult:
     case Type::AmbiguousParameter:
+    case Type::AmbiguousTypeParam:
     case Type::TupleOf:
     case Type::SizingOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
@@ -286,7 +289,15 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
 const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * in) {
   const TypeConstraint * constraint = static_cast<const TypeConstraint *>(in);
   if (constraint->isSingular()) {
-    return constraint->singularValue();
+    return visit(constraint->singularValue());
+  }
+
+  if (const AmbiguousTypeParamType * tpt = dyn_cast<AmbiguousTypeParamType>(in)) {
+    const Type * base = visit(tpt->base());
+    if (base == tpt->base()) {
+      return tpt;
+    }
+    return AmbiguousTypeParamType::forType(base, tpt->match(), tpt->paramIndex());
   }
 
   if (in->typeClass() == Type::SizingOf) {

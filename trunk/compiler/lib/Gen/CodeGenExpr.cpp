@@ -779,15 +779,13 @@ Value * CodeGenerator::genLoadElement(const BinaryExpr * in) {
 
 Value * CodeGenerator::genElementAddr(const BinaryExpr * in) {
   ValueList indices;
-  std::stringstream labelStream;
-  FormatStream fs(labelStream);
-  Value * baseVal = genGEPIndices(in, indices, fs);
+  StrFormatStream labelStream;
+  Value * baseVal = genGEPIndices(in, indices, labelStream);
   if (baseVal == NULL) {
     return NULL;
   }
 
-  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(),
-      labelStream.str().c_str());
+  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(), labelStream.str());
 }
 
 Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & label) {
@@ -1179,11 +1177,9 @@ Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) 
   }
 
   DASSERT(sizeValue->getType() == intPtrType_);
-  std::stringstream labelStream;
-  FormatStream fs(labelStream);
-  fs << objType;
-  Value * alloc = builder_.CreateCall2(getGcAlloc(), gcAllocContext_, sizeValue,
-      labelStream.str().c_str());
+  StrFormatStream labelStream;
+  labelStream << objType;
+  Value * alloc = builder_.CreateCall2(getGcAlloc(), gcAllocContext_, sizeValue, labelStream.str());
   Value * instance = builder_.CreateBitCast(alloc, resultType);
 
   if (const CompositeType * classType = dyn_cast<CompositeType>(objType)) {

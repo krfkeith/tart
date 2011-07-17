@@ -29,14 +29,8 @@ public:
   /** The call expression. */
   CallExpr * expr() const { return callExpr_; }
 
-  /** The list of call candidates. */
-  const Candidates & candidates() const;
-
   /** The argument index. */
   unsigned argIndex() const { return argIndex_; }
-
-  /** The Nth param type for a given candidate. */
-  const Type * candidateParamType(const CallCandidate * cc) const;
 
   // Overrides
 

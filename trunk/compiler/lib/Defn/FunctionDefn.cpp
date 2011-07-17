@@ -217,8 +217,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
 
         case Covariant:
           // funcArgType is narrower than base type
-          // TODO: 'isSubtypeOf' is the wrong test here.
-          //if (!funcArgType->isSubtypeOf(baseArgType)) {
+          // TODO: 'isSubtype' is the wrong test here.
+          //if (!funcArgType->isSubtype(baseArgType)) {
           //  return false;
           //}
           return false;
@@ -226,8 +226,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
 
         case Contravariant:
           // funcArgType is broader than base type
-          // TODO: 'isSubtypeOf' is the wrong test here.
-          //if (!baseArgType->isSubtypeOf(funcArgType)) {
+          // TODO: 'isSubtype' is the wrong test here.
+          //if (!baseArgType->isSubtype(funcArgType)) {
           //  return false;
           //}
           return false;

@@ -9,11 +9,12 @@
 #include "tart/CFG/CFG.h"
 #endif
 
-#include <string>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/ADT/SmallVector.h>
 
 namespace tart {
+
+class FormatStream;
 
 /// -------------------------------------------------------------------
 /// Mapping of names to definitions
@@ -55,7 +56,7 @@ public:
   void trace() const;
 
   /** Debugging helper function. */
-  void getDebugSummary(std::string & out) const;
+  void getDebugSummary(FormatStream & out) const;
 
 private:
 

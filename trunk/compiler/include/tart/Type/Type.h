@@ -235,17 +235,9 @@ public:
 
   // Static utility functions
 
-  /** Return true if lhs and rhs are type expressions that, when finalized, will
-      reduce to the same type. For example, List[T] is equivalent to List[S] if
-      T is a pattern variable bound to S. */
-  static bool equivalent(const Type * lhs, const Type * rhs);
-
   /** Return a type which is the common supertype of type1 and type2, or NULL if there
       is no such type.  */
   static const Type * commonBase(const Type * type1, const Type * type2);
-
-  /** Return true if 'ty' is a subtype of 'base'.  */
-  static bool isSubtype(const Type * ty, const Type * base);
 
   // Structure used when using type pointers as a key.
   struct KeyInfo {

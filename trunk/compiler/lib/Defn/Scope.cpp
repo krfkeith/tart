@@ -73,11 +73,9 @@ void IterableScope::trace() const {
 }
 
 void IterableScope::dumpHierarchy(bool full) const {
-  std::string out;
+  StrFormatStream out;
   if (scopeName_) {
-    out.append("[");
-    out.append(scopeName_);
-    out.append("]");
+    out << "[" << scopeName_<< "]";
   }
 
   members_.getDebugSummary(out);
@@ -88,7 +86,7 @@ void IterableScope::dumpHierarchy(bool full) const {
   }
   diag.unindent();
 
-  diag.writeLnIndent(out);
+  diag.writeLnIndent(out.str());
 }
 
 /// -------------------------------------------------------------------

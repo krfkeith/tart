@@ -8,6 +8,7 @@
 
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/SpCandidate.h"
@@ -158,7 +159,7 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
 
     if (!param->isEqual(oparam)) {
       same = false;
-      if (!param->isSubtypeOf(oparam)) {
+      if (!TypeRelation::isSubtype(param, oparam)) {
         if (oparam->typeClass() != Type::TypeVar) {
           return false;
         }

@@ -78,7 +78,7 @@ ConversionRank AmbiguousPhiType::convertImpl(const Conversion & conversion) cons
 }
 
 bool AmbiguousPhiType::isSubtypeOf(const Type * other) const {
-  DFAIL("AmbiguousPhiType::isSubtypeOf should never be called");
+  DINVALID;
   return false;
 }
 
@@ -87,7 +87,7 @@ bool AmbiguousPhiType::isSingular() const {
 }
 
 bool AmbiguousPhiType::isReferenceType() const {
-  DFAIL("AmbiguousPhiType::isReferenceType should never be called");
+  DINVALID;
   return false;
 }
 

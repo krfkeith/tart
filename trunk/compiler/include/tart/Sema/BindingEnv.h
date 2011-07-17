@@ -31,6 +31,7 @@ class TypeVariable;
 class TypeAssignment;
 class AmbiguousParameterType;
 class AmbiguousResultType;
+class AmbiguousTypeParamType;
 class AddressType;
 class TypeLiteralType;
 class NativeArrayType;
@@ -101,7 +102,7 @@ public:
   bool reconcileConstraints(GC * context);
 
   // Used for displaying in debugger only, return value is ephemeral.
-  const char * str() const;
+  //const char * str() const;
   void dumpAssignment(TypeAssignment * ta) const;
   void dumpProvisions(const ProvisionSet & provisions) const;
   void dump() const;
@@ -125,6 +126,9 @@ private:
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyWithAmbiguousResultType(SourceContext * source, const AmbiguousResultType * roc,
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithAmbiguousTypeParamType(SourceContext * source,
+      const AmbiguousTypeParamType * poc, const Type * value, Constraint::Kind kind,
+      const ProvisionSet & provisions);
   bool unifyAddressType(SourceContext * source, const AddressType * left, const Type * right);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * left,
       const Type * right);
