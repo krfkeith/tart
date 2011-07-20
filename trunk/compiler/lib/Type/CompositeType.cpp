@@ -446,7 +446,7 @@ ConversionRank CompositeType::convertImpl(const Conversion & cn) const {
       }
 
       return IdenticalTypes;
-    } else if (typeClass() != Type::Struct && fromClass->isSubclassOf(this)) {
+    } else if (typeClass() != Type::Struct && TypeRelation::isSubtype(fromClass, this)) {
       if (cn.fromValue && cn.resultValue) {
         *cn.resultValue = CastExpr::upCast(cn.fromValue, this)->at(cn.fromValue->location());
       }

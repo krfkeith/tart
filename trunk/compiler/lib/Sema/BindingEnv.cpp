@@ -12,9 +12,7 @@
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Type/AmbiguousParameterType.h"
-#include "tart/Type/AmbiguousResultType.h"
-#include "tart/Type/AmbiguousTypeParamType.h"
+#include "tart/Type/AmbiguousType.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -156,14 +154,9 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
   // Ambiguous type on the left side.
   switch (left->typeClass()) {
     case Type::AmbiguousResult:
-      return unifyWithAmbiguousResultType(
-          source, static_cast<const AmbiguousResultType *>(left), right, kind, provisions);
     case Type::AmbiguousParameter:
-      return unifyWithAmbiguousParameterType(
-          source, static_cast<const AmbiguousParameterType *>(left), right, kind, provisions);
     case Type::AmbiguousTypeParam:
-      return unifyWithAmbiguousTypeParamType(
-          source, static_cast<const AmbiguousTypeParamType *>(left), right, kind, provisions);
+      return unifyWithAmbiguousType(source, left, right, kind, provisions);
     default:
       break;
   }
@@ -171,17 +164,9 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
   // Ambiguous type on the right.
   switch (right->typeClass()) {
     case Type::AmbiguousResult:
-      return unifyWithAmbiguousResultType(
-          source, static_cast<const AmbiguousResultType *>(right), left,
-          Constraint::reverse(kind), provisions);
     case Type::AmbiguousParameter:
-      return unifyWithAmbiguousParameterType(
-          source, static_cast<const AmbiguousParameterType *>(right), left,
-          Constraint::reverse(kind), provisions);
     case Type::AmbiguousTypeParam:
-      return unifyWithAmbiguousTypeParamType(
-          source, static_cast<const AmbiguousTypeParamType *>(right), left,
-          Constraint::reverse(kind), provisions);
+      return unifyWithAmbiguousType(source, right, left, Constraint::reverse(kind), provisions);
     default:
       break;
   }
@@ -576,72 +561,21 @@ bool BindingEnv::unifyWithTypeVar(
   return true;
 }
 
-bool BindingEnv::unifyWithAmbiguousParameterType(SourceContext * source,
-    const AmbiguousParameterType * poc, const Type * value, Constraint::Kind kind,
-    const ProvisionSet & provisions) {
+bool BindingEnv::unifyWithAmbiguousType(SourceContext * source, const Type * amb,
+    const Type * value, Constraint::Kind kind, const ProvisionSet & provisions) {
+  ProspectList prospects;
+  AmbiguousType::listProspects(prospects, amb, provisions);
   bool success = false;
-  const Candidates & cd = poc->expr()->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    CallCandidate * cc = *it;
-    const Type * paramType = cc->paramType(poc->argIndex());
-    ProvisionSet ccProvisions(provisions);
-    ccProvisions.insertIfValid(cc->primaryProvision());
-    if (ccProvisions.isConsistent()) {
-      unsigned savedState = stateCount_;
-      if (unify(source, paramType, value, kind, ccProvisions)) {
-        success = true;
-      } else {
-        backtrack(savedState);
-      }
+  for (ProspectList::const_iterator it = prospects.begin(), itEnd = prospects.end(); it != itEnd;
+      ++it) {
+    unsigned savedState = stateCount_;
+    if (unify(source, it->type(), value, kind, it->provisions())) {
+      success = true;
+    } else {
+      backtrack(savedState);
     }
   }
   return success;
-}
-
-bool BindingEnv::unifyWithAmbiguousResultType(SourceContext * source,
-    const AmbiguousResultType * roc, const Type * value, Constraint::Kind kind,
-    const ProvisionSet & provisions) {
-  bool success = false;
-  const Candidates & cd = roc->expr()->candidates();
-  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-    CallCandidate * cc = *it;
-    const Type * resultType = roc->candidateResultType(cc);
-    ProvisionSet ccProvisions(provisions);
-    ccProvisions.insertIfValid(cc->primaryProvision());
-    if (ccProvisions.isConsistent()) {
-      unsigned savedState = stateCount_;
-      if (unify(source, resultType, value, kind, ccProvisions)) {
-        success = true;
-      } else {
-        backtrack(savedState);
-      }
-    }
-  }
-  return success;
-}
-
-bool BindingEnv::unifyWithAmbiguousTypeParamType(SourceContext * source,
-    const AmbiguousTypeParamType * tpt, const Type * value, Constraint::Kind kind,
-    const ProvisionSet & provisions) {
-
-//  bool success = false;
-//  const Candidates & cd = poc->expr()->candidates();
-//  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
-//    CallCandidate * cc = *it;
-//    const Type * paramType = cc->paramType(poc->argIndex());
-//    ProvisionSet ccProvisions(provisions);
-//    ccProvisions.insertIfValid(cc->primaryProvision());
-//    if (ccProvisions.isConsistent()) {
-//      unsigned savedState = stateCount_;
-//      if (unify(source, paramType, value, kind, ccProvisions)) {
-//        success = true;
-//      } else {
-//        backtrack(savedState);
-//      }
-//    }
-//  }
-//  return success;
-  return false;
 }
 
 TypeAssignment * BindingEnv::assign(const TypeVariable * target, const Type * value, GC * scope) {

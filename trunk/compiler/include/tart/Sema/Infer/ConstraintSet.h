@@ -49,6 +49,9 @@ public:
   /** Attempt to optimize this set of constraints. */
   void minimize();
 
+  /** Return if all active constraints in this constraint set accept the give type. */
+  bool accepts(const Type * ty) const;
+
 private:
   /** Wrap actual insertion so we can set a breakpoint on insert. */
   void insertImpl(Constraint * cst) {

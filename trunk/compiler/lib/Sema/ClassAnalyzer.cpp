@@ -4,17 +4,20 @@
 
 #include "tart/Expr/Exprs.h"
 #include "tart/Expr/StmtExprs.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/FunctionType.h"
+
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/PropertyDefn.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/TupleType.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/Template.h"
 #include "tart/Defn/Module.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/InternedString.h"
@@ -885,7 +888,7 @@ bool ClassAnalyzer::analyzeMethods() {
             if (dtype == Defn::Property) {
               PropertyDefn * p1 = cast<PropertyDefn>(val);
               PropertyDefn * p2 = cast<PropertyDefn>(prevVal);
-              if (p1->type()->isEqual(p2->type())) {
+              if (TypeRelation::isEqual(p1->type(), p2->type())) {
                 diag.error(p2) << "Definition of property << '" << p2 <<
                     "' conflicts with earlier definition:";
                 diag.info(p1) << p1;

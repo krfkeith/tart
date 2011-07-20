@@ -20,6 +20,13 @@ void AmbiguousPhiType::add(const Type * type) {
   types_.push_back(type);
 }
 
+void AmbiguousPhiType::listProspects(ProspectList & out, const ProvisionSet & add) const {
+  for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
+    const Type * ty = *it;
+    AmbiguousType::listProspects(out, ty, add);
+  }
+}
+
 void AmbiguousPhiType::expand(TypeExpansion & out) const {
   for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
     const Type * ty = *it;
@@ -87,7 +94,7 @@ bool AmbiguousPhiType::isReferenceType() const {
 }
 
 void AmbiguousPhiType::trace() const {
-  TypeConstraint::trace();
+  Type::trace();
   markList(types_.begin(), types_.end());
 }
 

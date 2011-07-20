@@ -11,7 +11,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/UnitType.h"
-#include "tart/Type/TypeConstraint.h"
+//#include "tart/Type/TypeConstraint.h"
 
 #include "tart/Defn/Template.h"
 

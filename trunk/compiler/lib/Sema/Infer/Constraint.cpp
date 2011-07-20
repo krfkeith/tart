@@ -46,7 +46,7 @@ void Constraint::trace() const {
 bool Constraint::accepts(const Type * ty) const {
   switch (kind_) {
     case EXACT:
-      return ty == value_;
+      return TypeRelation::isEqual(ty, value_);
 
     case LOWER_BOUND: {
       if (TypeRelation::isSubtype(value_, ty)) {
@@ -86,6 +86,7 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
     return NULL;
   }
 
+  // Note we don't use isEqual here because it can infinitely recurse.
   if (tl == tr) {
     if (cl->kind() == cr->kind()) {
       return isMoreLenient0 ? cl : cr;
@@ -119,7 +120,10 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
   }
 
   if (isSubtypeL) { // c0 <= c1
-    DASSERT(!isSubtypeR);
+    // TODO: Handle cases of more complex equality.
+    if (isSubtypeR) {
+      return NULL;
+    }
     if ((cl->kind() == UPPER_BOUND || cl->kind() == EXACT) &&
         cr->kind() == UPPER_BOUND &&
         isMoreLenient0) {

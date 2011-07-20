@@ -101,6 +101,25 @@ bool ConstraintSet::equals(ConstraintSet & other) const {
   return size() == other.size() && containsAll(other) && other.containsAll(*this);
 }
 
+bool ConstraintSet::accepts(const Type * ty) const {
+  bool any = false;
+  for (const_iterator ci = begin(), ciEnd = end(); ci != ciEnd; ++ci) {
+    Constraint * cst = *ci;
+    if (cst->visited()) {
+      any = true;
+    } else if (cst->checkProvisions()) {
+      cst->setVisited(true);
+      if (!cst->accepts(ty)) {
+        cst->setVisited(false);
+        return false;
+      }
+      cst->setVisited(false);
+      any = true;
+    }
+  }
+  return any;
+}
+
 void ConstraintSet::minimize() {
   ConstraintSet saved;
   for (const_iterator ci = begin(), ciEnd = end(); ci != ciEnd; ++ci) {

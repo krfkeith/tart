@@ -30,116 +30,257 @@
 
 namespace tart {
 
-bool TypeRelation::isEqual(const Type * lhs, const Type * rhs) {
+static bool isEqualTuple(const TupleType * ltt, const TupleType * rtt) {
+  if (ltt == rtt) {
+    return true;
+  }
+  if (ltt->size() == rtt->size()) {
+    size_t size = ltt->size();
+    for (size_t i = 0; i < size; ++i) {
+      if (!TypeRelation::isEqual(ltt->member(i), rtt->member(i))) {
+        return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool isEqualComposite(const CompositeType * lct, const CompositeType * rct) {
+  // Check if both classes derive from the same AST.
+  TypeDefn * ldef = lct->typeDefn();
+  TypeDefn * rdef = rct->typeDefn();
+  if (ldef != NULL &&
+      rdef != NULL &&
+      ldef->ast() != NULL &&
+      ldef->ast() == rdef->ast()) {
+    // Now just need to test if the type params are the same.
+    while (ldef != NULL && rdef != NULL) {
+      // They should both be instances, or neither.
+      DASSERT(ldef->isTemplateInstance() == rdef->isTemplateInstance());
+      if (ldef->isTemplateInstance()) {
+        // Compare type parameters for equivalence.
+        return isEqualTuple(
+            ldef->templateInstance()->typeArgs(),
+            rdef->templateInstance()->typeArgs());
+      } else if (ldef->isTemplate() && rdef->isTemplate()) {
+        DFAIL("Implement");
+      }
+
+      // It's possible that both sides are template instance members. Try again at the
+      // enclosing level.
+      ldef = dyn_cast<TypeDefn>(ldef->parentDefn());
+      rdef = dyn_cast<TypeDefn>(rdef->parentDefn());
+    }
+  }
+  return false;
+}
+
+static bool isEqualFunction(const FunctionType * lfn, const FunctionType * rfn) {
+  if (lfn->params().size() != rfn->params().size() ||
+      lfn->isStatic() != rfn->isStatic()) {
+    return false;
+  }
+
+  // Note that selfParam types are not compared. I *think* that's right, but
+  // I'm not sure.
+
+  // Also note that we aren't comparing type parameters, just function parameters.
+  // Again, I *think* that's right. Having two functions with identical names & signatures
+  // but having different type params would be ...weird.
+
+  DASSERT(lfn->returnType() != NULL);
+  DASSERT(rfn->returnType() != NULL);
+  if (!TypeRelation::isEqual(lfn->returnType(), rfn->returnType())) {
+    return false;
+  }
+
+  size_t numParams = lfn->params().size();
+  for (size_t i = 0; i < numParams; ++i) {
+    if (!TypeRelation::isEqual(lfn->param(i)->type(), rfn->param(i)->type())) {
+      return false;
+    }
+    if (lfn->param(i)->isVariadic() != rfn->param(i)->isVariadic()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+static bool isEqualUnion(const UnionType * lut, const UnionType * rut) {
+  return isEqualTuple(lut->typeArgs(), rut->typeArgs());
+}
+
+bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
   // Early out
-  if (lhs == rhs) {
+  if (lt == rt) {
     return true;
   }
 
-  while (const TypeAssignment * ta = dyn_cast<TypeAssignment>(lhs)) {
-    lhs = ta->value();
-    if (lhs == NULL) {
-      bool atLeastOne = false;
-      for (ConstraintSet::const_iterator ci = ta->begin(); ci != ta->end(); ++ci) {
-        Constraint * cst = * ci;
-        if (!cst->visited() && cst->checkProvisions() && cst->kind() == Constraint::EXACT) {
-          cst->setVisited(true);
-          bool result = isEqual(cst->value(), rhs);
-          cst->setVisited(false);
-          if (!result) {
-            return false;
-          }
-          atLeastOne = true;
+  switch (rt->typeClass()) {
+    case Type::Alias:
+      return isEqual(lt, static_cast<const TypeAlias *>(rt)->value());
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      TypeExpansion expansion;
+      rt->expand(expansion);
+      if (expansion.empty()) {
+        return false;
+      }
+      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        if (!isEqual(lt, *it)) {
+          return false;
         }
       }
-      return atLeastOne;
-    }
-  }
-
-  while (const TypeAssignment * ta = dyn_cast<TypeAssignment>(rhs)) {
-    rhs = ta->value();
-    if (rhs == NULL) {
-      bool atLeastOne = false;
-      for (ConstraintSet::const_iterator ci = ta->begin(); ci != ta->end(); ++ci) {
-        Constraint * cst = * ci;
-        if (!cst->visited() && cst->checkProvisions() && cst->kind() == Constraint::EXACT) {
-          cst->setVisited(true);
-          bool result = isEqual(lhs, cst->value());
-          cst->setVisited(false);
-          if (!result) {
-            return false;
-          }
-          atLeastOne = true;
-        }
-      }
-      return atLeastOne;
-    }
-  }
-
-  if (lhs == rhs) {
-    return true;
-  }
-
-  // Compare the ASTs to see if they derive from the same original symbol.
-  if (lhs->typeDefn() != NULL &&
-      rhs->typeDefn() != NULL &&
-      lhs->typeDefn()->ast() != NULL &&
-      lhs->typeDefn()->ast() == rhs->typeDefn()->ast()) {
-
-    // Now test the type parameters to see if they are also equivalent.
-    const TypeDefn * d1 = lhs->typeDefn();
-    const TypeDefn * d2 = rhs->typeDefn();
-    const ConstTypeList * lhsParams = NULL;
-    const ConstTypeList * rhsParams = NULL;
-
-    if (d1->isTemplate()) {
-      lhsParams = &d1->templateSignature()->typeParams()->members();
-    } else if (d1->isTemplateInstance()) {
-      lhsParams = &d1->templateInstance()->typeArgs()->members();
-    }
-
-    if (d2->isTemplate()) {
-      rhsParams = &d2->templateSignature()->typeParams()->members();
-    } else if (d2->isTemplateInstance()) {
-      rhsParams = &d2->templateInstance()->typeArgs()->members();
-    }
-
-    if (lhsParams == rhsParams) {
       return true;
     }
 
-    if (lhsParams == NULL ||
-        rhsParams == NULL ||
-        lhsParams->size() != rhsParams->size()) {
+    case Type::Assignment: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(rt);
+      if (ta->value() != NULL) {
+        return isEqual(lt, ta->value());
+      } else {
+        // For now, we presume that if all constraints on the type find lt acceptable,
+        // then it's *possible* that the TA could equal lt.
+        return ta->constraints().accepts(lt);
+      }
+    }
+
+    default:
+      break;
+  }
+
+  switch (lt->typeClass()) {
+    case Type::Alias:
+      return isEqual(static_cast<const TypeAlias *>(lt)->value(), rt);
+
+    case Type::Primitive:
+    case Type::Enum:
+    case Type::TypeVar:
+      // These types are unique by reference
+      return false;
+
+    case Type::Class:
+    case Type::Struct:
+    case Type::Interface:
+    case Type::Protocol: {
+      const CompositeType * lct = static_cast<const CompositeType *>(lt);
+      if (const CompositeType * rct = dyn_cast<CompositeType>(rt)) {
+        return isEqualComposite(lct, rct);
+      }
+
       return false;
     }
 
-    size_t numParams = lhsParams->size();
-    for (size_t i = 0; i < numParams; ++i) {
-      if (!isEqual((*lhsParams)[i], (*rhsParams)[i])) {
+    case Type::NAddress: {
+      const AddressType * lat = static_cast<const AddressType *>(lt);
+      if (const AddressType * rat = dyn_cast<AddressType>(rt)) {
+        return isEqual(lat->typeParam(0), rat->typeParam(0));
+      }
+      return false;
+    }
+
+    case Type::NArray: {
+      const NativeArrayType * lnat = static_cast<const NativeArrayType *>(lt);
+      if (const NativeArrayType * rnat = dyn_cast<NativeArrayType>(rt)) {
+        return isEqual(lnat->typeParam(0), rnat->typeParam(0)) && lnat->size() == rnat->size();
+      }
+      return false;
+    }
+
+    case Type::FlexibleArray: {
+      const FlexibleArrayType * lfat = static_cast<const FlexibleArrayType *>(lt);
+      if (const FlexibleArrayType * rfat = dyn_cast<FlexibleArrayType>(rt)) {
+        return isEqual(lfat->typeParam(0), rfat->typeParam(0));
+      }
+      return false;
+    }
+
+    case Type::Function: {
+      const FunctionType * lfn = static_cast<const FunctionType *>(lt);
+      if (const FunctionType * rfn = dyn_cast<FunctionType>(rt)) {
+        return isEqualFunction(lfn, rfn);
+      }
+      return false;
+    }
+
+    case Type::Unit: {
+      const UnitType * lu = static_cast<const UnitType *>(lt);
+      if (const UnitType * ru = dyn_cast<UnitType>(rt)) {
+        return lu->value()->isEqual(ru->value());
+      }
+      return false;
+    }
+
+    case Type::Tuple: {
+      const TupleType * ltt = static_cast<const TupleType *>(lt);
+      if (const TupleType * rtt = dyn_cast<TupleType>(rt)) {
+        return isEqualTuple(ltt, rtt);
+      }
+      return false;
+    }
+
+    case Type::Union: {
+      const UnionType * lut = static_cast<const UnionType *>(lt);
+      if (const UnionType * rut = dyn_cast<UnionType>(rt)) {
+        return isEqualUnion(lut, rut);
+      }
+      return false;
+    }
+
+    case Type::TypeLiteral: {
+      const TypeLiteralType * ltl = static_cast<const TypeLiteralType *>(lt);
+      if (const TypeLiteralType * rtl = dyn_cast<TypeLiteralType>(rt)) {
+        return isEqual(ltl->literalType(), rtl->literalType());
+      }
+      return false;
+    }
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      TypeExpansion expansion;
+      lt->expand(expansion);
+      if (expansion.empty()) {
         return false;
       }
-    }
-
-    return true;
-  } else if (lhs->typeClass() == rhs->typeClass()) {
-    if (const TupleType * tt1 = dyn_cast<TupleType>(lhs)) {
-      const TupleType * tt2 = static_cast<const TupleType *>(rhs);
-      if (tt1->size() == tt2->size()) {
-        size_t size = tt1->size();
-        for (size_t i = 0; i < size; ++i) {
-          if (!isEqual(tt1->member(i), tt2->member(i))) {
-            return false;
-          }
-          return true;
+      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        if (!isEqual(*it, rt)) {
+          return false;
         }
       }
+      return true;
     }
+
+    case Type::SizingOf: {
+      const SizingOfConstraint * lsoc = static_cast<const SizingOfConstraint *>(lt);
+      if (const SizingOfConstraint * rsoc = dyn_cast_or_null<SizingOfConstraint>(rt)) {
+        return lsoc->isNegative() == rsoc->isNegative() && lsoc->intVal()->isEqual(rsoc->intVal());
+      }
+      return false;
+    }
+
+    case Type::Assignment: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(lt);
+      if (ta->value() != NULL) {
+        return isEqual(ta->value(), rt);
+      } else {
+        return ta->constraints().accepts(rt);
+      }
+    }
+
+    case Type::ModVariadic:
+    case Type::CVQual:
+    case Type::TupleOf:
+    case Type::KindCount:
+      DFAIL("Type class not supported by isEqual()");
+      break;
   }
-
-  // TODO: Add functions, unions, etc.
-
-  return false;
 }
 
 bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
@@ -228,30 +369,8 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     case Type::Protocol: {
       const CompositeType * ctType = static_cast<const CompositeType *>(ty);
       if (const CompositeType * ctBase = dyn_cast<CompositeType>(base)) {
-
-        // Check if both classes derive from the same AST.
-        TypeDefn * tdType = ctType->typeDefn();
-        TypeDefn * tdBase = ctBase->typeDefn();
-        if (tdType != NULL &&
-            tdBase != NULL &&
-            tdType->ast() != NULL &&
-            tdType->ast() == tdBase->ast()) {
-          // Now just need to test if the type params are the same.
-          while (tdType != NULL && tdBase != NULL) {
-            // They should both be instances, or neither.
-            DASSERT(tdType->isTemplateInstance() == tdBase->isTemplateInstance());
-            if (tdType->isTemplateInstance()) {
-              // Compare type parameters for equivalence.
-              return isEqual(
-                  tdType->templateInstance()->typeArgs(),
-                  tdBase->templateInstance()->typeArgs());
-            }
-            // It's possible that both type and base are template instance members. Try
-            // again at the enclosing level.
-            tdType = dyn_cast<TypeDefn>(tdType->parentDefn());
-            tdBase = dyn_cast<TypeDefn>(tdBase->parentDefn());
-          }
-          return false;
+        if (isEqualComposite(ctType, ctBase)) {
+          return true;
         }
 
         // Interfaces are always considered to be subclasses of Object.
@@ -276,30 +395,9 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
       return false;
     }
 
-    case Type::NAddress: {
-      const AddressType * at = static_cast<const AddressType *>(ty);
-      if (const AddressType * atBase = dyn_cast<AddressType>(base)) {
-        return isEqual(at->typeParam(0), atBase->typeParam(0));
-      }
-      return false;
-    }
-
-    case Type::NArray: {
-      const NativeArrayType * na = static_cast<const NativeArrayType *>(ty);
-      if (const NativeArrayType * naBase = dyn_cast<NativeArrayType>(base)) {
-        return isEqual(na->typeParam(0), naBase->typeParam(0)) && na->size() == naBase->size();
-      }
-      return false;
-    }
-
-    case Type::FlexibleArray: {
-      const FlexibleArrayType * fa = static_cast<const FlexibleArrayType *>(ty);
-      if (const FlexibleArrayType * faBase = dyn_cast<FlexibleArrayType>(base)) {
-        return isEqual(fa->typeParam(0), faBase->typeParam(0));
-      }
-      return false;
-    }
-
+    case Type::NAddress:
+    case Type::NArray:
+    case Type::FlexibleArray:
     case Type::Function:
     case Type::Unit:
     case Type::Tuple:

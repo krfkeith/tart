@@ -17,6 +17,18 @@ namespace tart {
 // -------------------------------------------------------------------
 // AmbiguousResultType
 
+void AmbiguousResultType::listProspects(ProspectList & out, const ProvisionSet & add) const {
+  const Candidates & cd = callExpr_->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    CallCandidate * cc = *it;
+    ProvisionSet ccProvisions(add);
+    ccProvisions.insertIfValid(cc->primaryProvision());
+    if (ccProvisions.isConsistent()) {
+      AmbiguousType::listProspects(out, candidateResultType(cc), ccProvisions);
+    }
+  }
+}
+
 void AmbiguousResultType::expand(TypeExpansion & out) const {
   const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
@@ -26,10 +38,6 @@ void AmbiguousResultType::expand(TypeExpansion & out) const {
 
     candidateResultType(*it)->expand(out);
   }
-}
-
-const Candidates & AmbiguousResultType::candidates() const {
-  return callExpr_->candidates();
 }
 
 const Type * AmbiguousResultType::candidateResultType(const CallCandidate * cc) const {

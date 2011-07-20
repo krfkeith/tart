@@ -114,6 +114,13 @@ class IteratorTest : Test {
 
 /*  def testMapWithInference {
     let s1:int[] = [1, 2, 3];
+    let s2:Iterator[int] = Iterators.map(fn n { return n * 2; }, s1.iterate());
+    let s3:int[] = [2, 4, 6];
+    assertTrue(Iterators.equal(s3.iterate(), s2));
+  } */
+
+/*  def testMapWithInference2 {
+    let s1:int[] = [1, 2, 3];
     let s2 = Iterators.map(fn n { return n * 2; }, s1.iterate());
     let s3:int[] = [2, 4, 6];
     assertTrue(Iterators.equal(s3.iterate(), s2));

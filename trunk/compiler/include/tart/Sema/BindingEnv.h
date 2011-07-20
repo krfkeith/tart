@@ -122,13 +122,8 @@ private:
       Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, const Type * value,
       Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousParameterType(SourceContext * source, const AmbiguousParameterType * poc,
+  bool unifyWithAmbiguousType(SourceContext * source, const Type * amb,
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousResultType(SourceContext * source, const AmbiguousResultType * roc,
-      const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousTypeParamType(SourceContext * source,
-      const AmbiguousTypeParamType * poc, const Type * value, Constraint::Kind kind,
-      const ProvisionSet & provisions);
   bool unifyAddressType(SourceContext * source, const AddressType * left, const Type * right);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * left,
       const Type * right);

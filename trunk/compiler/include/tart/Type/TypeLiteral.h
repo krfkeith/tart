@@ -22,6 +22,8 @@ public:
 
   ~TypeLiteralType();
 
+  const Type * literalType() const { return literalType_; }
+
   /** Initialize the built-in template for this type. */
   static void initBuiltin();
 
@@ -54,7 +56,7 @@ private:
   TypeLiteralType(const Type * elemType);
   TypeLiteralType();
 
-  const Type* literalType_;
+  const Type * literalType_;
 };
 
 } // namespace tart
