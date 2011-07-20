@@ -306,14 +306,7 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
     types.push_back(dealias(el->type()));
   }
 
-  const Type * tupleType;
-  if (isSingular) {
-    tupleType = TupleType::get(types);
-  } else {
-    tupleType = new TupleOfConstraint(tuple);
-  }
-
-  tuple->setType(tupleType);
+  tuple->setType(TupleType::get(types));
   return tuple;
 }
 

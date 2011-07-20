@@ -276,7 +276,6 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
 
     case Type::ModVariadic:
     case Type::CVQual:
-    case Type::TupleOf:
     case Type::KindCount:
       DFAIL("Type class not supported by isEqual()");
       break;
@@ -461,7 +460,6 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
 
     case Type::ModVariadic:
     case Type::CVQual:
-    case Type::TupleOf:
     case Type::KindCount:
       DFAIL("Type class not supported by isSubtype()");
       break;

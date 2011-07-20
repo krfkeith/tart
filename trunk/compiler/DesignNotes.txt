@@ -2,12 +2,15 @@
 
 Next up:
 
+* Can we get rid of TupleOfConstraint?
+* Change uses of isEqual method to isEqual binary function.
+* Make type conversions a binary function, not a method
+
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
 * Deduce argument types and return types for anon funcs.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
-* Simplify type inference (somehow!)
 * statements returning values: do try/catch. Also unsized ints.
 
 Design TODOS:
@@ -37,10 +40,11 @@ Implementation TODOS:
 * Coalesced templates
 * Finish @Associative.
 * Implicit anonymous class for closure.
-* Bug: uint64 + int64 != float (error in infix add overload selection).
-* Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
-* Fix problems with eclipse update site.
+* TEST: Bug: uint64 + int64 != float (error in infix add overload selection).
+* TEST: Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
+* TEST: Fix problems with eclipse update site.
 * Refactoring
+  * Use a type to represent variadic params.
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
@@ -94,7 +98,7 @@ Implementation TODOS:
   * fork/threading primitives
 * Command-line parsing lib.
 * Ranges
-  * Syntax for open, closed, and half-open intervals.
+  * Need syntax for open, closed, and half-open intervals.
   * Literals
   * As array slice indices
   * As tuple slice indices
@@ -108,7 +112,7 @@ Implementation TODOS:
 * Anonymous inner classes.
 * Implement BoundMethodExpr as an implementation of Function.
 * Insure typealiases aren't circular.
-* Sphinx domain for Tart?
+* Sphinx domain for Tart? (Need a more recent Sphinx)
 * Garbage collection test for uninitialized array elements.
 * Insure last field of base class isn't a flex array.
 * Get default ctor working again (and call super ctor).

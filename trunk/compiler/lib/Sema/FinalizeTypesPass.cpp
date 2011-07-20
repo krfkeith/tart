@@ -758,23 +758,6 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
-  //const Type * ty = dealias(in->type());
-/*  const TupleType * ttype;
-  if (const TupleOfConstraint * toc = dyn_cast<TupleOfConstraint>(ty)) {
-    ty = toc->singularValue();
-    if (ty == NULL) {
-      DFAIL("Imp");
-    }
-  }
-
-  if ((ttype = dyn_cast<TupleType>(ty))) {
-    if (in->argCount() != ttype->numTypeParams()) {
-      diag.error(in->location()) << "Type of '" << in << "' does not match '" << ttype << "'";
-    }
-  } else {
-    diag.error(in->location()) << "Type of '" << in << "' does not match '" << in->type() << "'";
-  }*/
-
   ExprList & args = in->args();
   ConstTypeList types;
   DASSERT(args.size() > 0);
@@ -794,10 +777,7 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
 
   //return addCastIfNeeded()
   in->setType(TupleType::get(types));
-  //DASSERT(ttype->isSingular());
-
   return in;
-  //return addCastIfNeeded(in, ttype);
 }
 
 Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {

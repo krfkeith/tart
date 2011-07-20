@@ -62,37 +62,6 @@ protected:
 };
 
 /// -------------------------------------------------------------------
-/// A type constraint representing a tuple whose members may themselves
-/// be constraints.
-class TupleOfConstraint : public TypeConstraint {
-public:
-  TupleOfConstraint(TupleCtorExpr * tuple)
-    : TypeConstraint(TupleOf)
-    , tuple_(tuple)
-  {}
-
-  TupleCtorExpr * tuple() const { return tuple_; }
-
-  // Overrides
-
-  const Type * singularValue() const;
-  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  bool isSingular() const;
-  bool isReferenceType() const;
-  void trace() const;
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const TupleOfConstraint *) { return true; }
-  static inline bool classof(const Type * type) {
-    return type->typeClass() == TupleOf;
-  }
-
-private:
-  TupleCtorExpr * tuple_;
-};
-
-/// -------------------------------------------------------------------
 /// A type constraint representing the possible integer types which
 /// an unsized integer constant can be converted to. Mainly this is
 /// just a holder for the integer constant so that we can calculate
