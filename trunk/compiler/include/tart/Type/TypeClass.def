@@ -30,4 +30,3 @@ TYPE_CLASS(AmbiguousParameter)// Unresolved param type of function
 TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
 TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
 TYPE_CLASS(SizingOf)          // Type constraint - sizing of an unsized int type
-TYPE_CLASS(TupleOf)           // Type constraint - tuple of constraints

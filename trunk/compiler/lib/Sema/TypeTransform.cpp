@@ -86,7 +86,6 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::AmbiguousResult:
     case Type::AmbiguousParameter:
     case Type::AmbiguousTypeParam:
-    case Type::TupleOf:
     case Type::SizingOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
