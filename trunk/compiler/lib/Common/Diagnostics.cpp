@@ -294,6 +294,19 @@ void Diagnostics::AssertAction::write(const SourceLocation & loc, llvm::StringRe
 
 void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
     llvm::StringRef msg) {
+  bool colorChanged = false;
+  if (llvm::errs().is_displayed()) {
+    if (sev >= Error) {
+      llvm::errs().changeColor(llvm::raw_ostream::RED, true);
+      colorChanged = true;
+    } else if (sev == Warning) {
+      llvm::errs().changeColor(llvm::raw_ostream::YELLOW, true);
+      colorChanged = true;
+    } else if (sev == Info) {
+      llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
+      colorChanged = true;
+    }
+  }
   if (loc.file != NULL && !loc.file->filePath().empty()) {
     // The TextMate error parser is fairly strict
     TokenPosition tokLoc = loc.file->tokenPosition(loc);
@@ -304,6 +317,9 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
   llvm::errs().indent(diag.indentLevel * 2);
   llvm::errs() << msg << "\n";
   llvm::errs().flush();
+  if (colorChanged) {
+    llvm::errs().resetColor();
+  }
 }
 
 void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,

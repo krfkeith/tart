@@ -5,8 +5,8 @@
 #ifndef TART_TYPE_AMBIGUOUSRESULTTYPE_H
 #define TART_TYPE_AMBIGUOUSRESULTTYPE_H
 
-#ifndef TART_TYPE_TYPECONSTRAINT_H
-#include "tart/Type/TypeConstraint.h"
+#ifndef TART_TYPE_AMBIGUOUSTYPE_H
+#include "tart/Type/AmbiguousType.h"
 #endif
 
 namespace tart {
@@ -27,14 +27,12 @@ public:
   /** The call expression. */
   CallExpr * expr() const { return callExpr_; }
 
-  /** The list of call candidates. */
-  const Candidates & candidates() const;
-
   /** The result type for a given candidate. */
   const Type * candidateResultType(const CallCandidate * cc) const;
 
   // Overrides
 
+  void listProspects(ProspectList & out, const ProvisionSet & add) const;
   void expand(TypeExpansion & out) const;
   void trace() const;
   void format(FormatStream & out) const;

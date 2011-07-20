@@ -62,10 +62,15 @@ struct Conversion {
   int options;
 
   /** Test conversion from type to type. */
-  Conversion(const Type * from);
+  explicit Conversion(const Type * from, int opts = 0)
+    : fromType(from)
+    , fromValue(NULL)
+    , resultValue(NULL)
+    , options(opts)
+  {}
 
   /** Test conversion from expression to type. */
-  Conversion(Expr * from);
+  explicit Conversion(Expr * from, int options = 0);
 
   /** Convert expression. */
   Conversion(Expr * from, Expr ** to, int options = 0);

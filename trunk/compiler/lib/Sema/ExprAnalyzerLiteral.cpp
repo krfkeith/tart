@@ -105,6 +105,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
           diag.error(ast) << "Can't deduce function return type from type " << expected;
           return &Expr::ErrorVal;
         }
+        diag.debug() << expected << " : " << returnType;
         ftype->setReturnType(returnType);
       } else {
         ftype->setReturnType(&VoidType::instance);
@@ -121,13 +122,21 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
         } else {
           // Check if the expected type is a specialization of the 'tart.core.Function' interface
           // and return the Nth parameter if so.
+          const Type * paramListType = AmbiguousTypeParamType::forType(
+              expected, Builtins::typeFunction, 1);
+          if (paramListType == NULL) {
+            diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << " << from " <<
+                expected << ".";
+            return &Expr::ErrorVal;
+          }
           const Type * paramType = AmbiguousTypeParamType::forType(
-              expected, Builtins::typeFunction, i + 1);
+              paramListType, NULL, i);
           if (paramType == NULL) {
             diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << " << from " <<
                 expected << ".";
             return &Expr::ErrorVal;
           }
+          diag.debug() << expected << " : " << paramListType << " : " << paramType;
           param->setType(paramType);
           DASSERT(!param->isVariadic());
           param->setInternalType(paramType);

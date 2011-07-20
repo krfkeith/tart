@@ -19,6 +19,16 @@ namespace tart {
 /// deeply as possible.
 namespace TypeRelation {
 
+enum Options {
+  VERBOSE = (1<<0),                         // Report why we didn't match
+  DISTINGUISH_VARIADIC_PARAMS = (1<<1),     // Functions different based on variadic flag
+  DISTINGUISH_SELF_PARAM = (1<<2),          // Functions different based on self param
+  MATCH_ALL_AMBIG = (1<<3),                 // Ambiguous types must match *all* possibles
+  EXACT_ASSIGNMENT = (1<<4),                // Type assignment matches must be strict
+
+  DEFAULT = MATCH_ALL_AMBIG,
+};
+
 /** Returns true if the type on the left is equal to the type on
     the right. */
 bool isEqual(const Type * lhs, const Type * rhs);

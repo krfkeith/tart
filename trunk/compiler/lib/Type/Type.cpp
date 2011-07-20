@@ -212,18 +212,12 @@ void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
 
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
-Conversion::Conversion(const Type * from)
-  : fromType(from)
-  , fromValue(NULL)
-  , resultValue(NULL)
-  , options(0)
-{}
 
-Conversion::Conversion(Expr * from)
+Conversion::Conversion(Expr * from, int opts)
   : fromType(from->type())
   , fromValue(from)
   , resultValue(NULL)
-  , options(0)
+  , options(opts)
 {}
 
 Conversion::Conversion(Expr * from, Expr ** to, int opts)
@@ -384,11 +378,11 @@ ConversionRank Type::convert(const Conversion & cn) const {
 }
 
 ConversionRank Type::canConvert(const Expr * fromExpr, int options) const {
-  return convert(Conversion(const_cast<Expr *>(fromExpr)).setOption(options));
+  return convert(Conversion(const_cast<Expr *>(fromExpr), options));
 }
 
 ConversionRank Type::canConvert(const Type * fromType, int options) const {
-  return convert(Conversion(fromType).setOption(options));
+  return convert(Conversion(fromType, options));
 }
 
 Expr * Type::implicitCast(const SourceLocation & loc, Expr * from, int options) const {

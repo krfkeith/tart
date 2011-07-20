@@ -482,7 +482,7 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
 
   if (TypeRelation::isEqual(lhs, rhs)) {
     // Ensure that equality is symmetrical.
-    DASSERT_OBJ(rhs->isEqual(lhs), lhs);
+    DASSERT_OBJ(TypeRelation::isEqual(rhs, lhs), lhs);
     return EQUAL_SPECIFICITY;
   } else if (TypeRelation::isSubtype(lhs, rhs)) {
     return MORE_SPECIFIC;

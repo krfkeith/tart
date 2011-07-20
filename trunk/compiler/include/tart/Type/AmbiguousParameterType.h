@@ -5,14 +5,11 @@
 #ifndef TART_TYPE_AMBIGUOUSPARAMETERTYPE_H
 #define TART_TYPE_AMBIGUOUSPARAMETERTYPE_H
 
-#ifndef TART_TYPE_TYPECONSTRAINT_H
-#include "tart/Type/TypeConstraint.h"
+#ifndef TART_TYPE_AMBIGUOUSTYPE_H
+#include "tart/Type/AmbiguousType.h"
 #endif
 
 namespace tart {
-
-// Forward declarations
-class CallCandidate;
 
 /// -------------------------------------------------------------------
 /// A type constraint representing a value that will be passed as an
@@ -34,6 +31,7 @@ public:
 
   // Overrides
 
+  void listProspects(ProspectList & out, const ProvisionSet & add) const;
   void expand(TypeExpansion & out) const;
   void trace() const;
   void format(FormatStream & out) const;

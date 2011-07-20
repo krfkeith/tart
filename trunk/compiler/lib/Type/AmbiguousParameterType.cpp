@@ -17,6 +17,18 @@ namespace tart {
 // -------------------------------------------------------------------
 // AmbiguousParameterType
 
+void AmbiguousParameterType::listProspects(ProspectList & out, const ProvisionSet & add) const {
+  const Candidates & cd = callExpr_->candidates();
+  for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
+    CallCandidate * cc = *it;
+    ProvisionSet ccProvisions(add);
+    ccProvisions.insertIfValid(cc->primaryProvision());
+    if (ccProvisions.isConsistent()) {
+      AmbiguousType::listProspects(out, cc->paramType(argIndex_), ccProvisions);
+    }
+  }
+}
+
 void AmbiguousParameterType::expand(TypeExpansion & out) const {
   const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {

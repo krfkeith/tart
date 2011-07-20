@@ -118,7 +118,8 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
     if (elseExpr == NULL) {
       diag.error(st) << "If-statement used in expression context must have an else block";
     } else {
-      AmbiguousPhiType * phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
+      AmbiguousPhiType * phiType = new AmbiguousPhiType(
+          expected == &AnyType::instance ? NULL : expected);
       phiType->add(thenExpr->type());
       phiType->add(elseExpr->type());
       result->setType(phiType);

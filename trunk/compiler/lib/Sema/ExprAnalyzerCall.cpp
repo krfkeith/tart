@@ -12,7 +12,6 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Type/TypeConstraint.h"
 #include "tart/Type/AmbiguousParameterType.h"
 #include "tart/Type/AmbiguousResultType.h"
 

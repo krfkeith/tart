@@ -206,8 +206,8 @@ bool CallSite::unify(BindingEnv & env, int searchDepth) {
       canUnify = true;
     } else {
       if (ShowInference) {
-        env.backtrack(stateBeforeNext);
         diag.debug() << Format_Type << "Unification failed for " << c->method() << ":";
+        env.backtrack(stateBeforeNext);
         unifyVerbose = true;
         c->unify(callExpr_, env);
         unifyVerbose = false;
@@ -374,9 +374,6 @@ void PHISite::update() {
   if (solution != NULL) {
     // Compute the lowest conversion ranking of all input types to the solution.
     rank_ = IdenticalTypes;
-//    if (solution->isUnsignedType()) {
-//      solution = &Int32Type::instance;
-//    }
     for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
       rank_ = std::min(rank_, solution->canConvert(*it, Conversion::Coerce));
     }

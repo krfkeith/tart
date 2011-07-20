@@ -5,8 +5,8 @@
 #ifndef TART_TYPE_AMBIGUOUSPHITYPE_H
 #define TART_TYPE_AMBIGUOUSPHITYPE_H
 
-#ifndef TART_TYPE_TYPECONSTRAINT_H
-#include "tart/Type/TypeConstraint.h"
+#ifndef TART_TYPE_AMBIGUOUSTYPE_H
+#include "tart/Type/AmbiguousType.h"
 #endif
 
 namespace tart {
@@ -16,10 +16,10 @@ namespace tart {
 /// which could be the result of expression. The goal will be to find
 /// a common type which fits all of them.
 
-class AmbiguousPhiType : public TypeConstraint {
+class AmbiguousPhiType : public AmbiguousType {
 public:
   AmbiguousPhiType(const Type * expected)
-    : TypeConstraint(AmbiguousPhi)
+    : AmbiguousType(AmbiguousPhi)
     , expected_(expected)
     , common_(NULL)
   {}
@@ -39,6 +39,7 @@ public:
 
   // Overrides
 
+  void listProspects(ProspectList & out, const ProvisionSet & add) const;
   void expand(TypeExpansion & out) const;
   const Type * singularValue() const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
