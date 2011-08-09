@@ -713,7 +713,7 @@ void ClosureEnvExpr::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool ClosureEnvExpr::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
+bool ClosureEnvExpr::lookupMember(StringRef name, DefnList & defs, bool inherit) const {
   // If the closure variable has already been seen once, return the previous definition.
   const SymbolTable::Entry * entry = envType_->members().findSymbol(name);
   if (entry != NULL) {

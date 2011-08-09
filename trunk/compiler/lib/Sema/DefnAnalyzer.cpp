@@ -20,7 +20,6 @@
 #include "tart/Type/UnitType.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 #include "tart/Common/PackageMgr.h"
 
 #include "tart/Meta/MDReader.h"
@@ -107,6 +106,7 @@ bool DefnAnalyzer::analyzeModule() {
   }
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepConstruction);
+  analyzeType(Builtins::typeStaticRoot.get(), Task_PrepConstruction);
   analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
   analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
   analyzeFunction(gc_alloc, Task_PrepConstruction);

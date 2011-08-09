@@ -36,7 +36,7 @@ private:
   bool match(TokenType tok);
 
   /** Match an identifier. */
-  const char * matchIdent();
+  StringRef matchIdent();
 
   /** Skip until we find an open brace or bracket */
   void skipToNextOpenDelim();
@@ -144,7 +144,7 @@ public:
   ASTNode * builtInTypeName(TokenType t);
 
   /** Parse function type declaration */
-  ASTFunctionDecl * functionDeclaration(ASTNode::NodeType nt, const char * name,
+  ASTFunctionDecl * functionDeclaration(ASTNode::NodeType nt, StringRef name,
     const DeclModifiers & mods);
 
   /** Parse function return type. */

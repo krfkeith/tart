@@ -32,7 +32,7 @@ public:
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const { return Shape_None; }
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const;
   void trace() const;

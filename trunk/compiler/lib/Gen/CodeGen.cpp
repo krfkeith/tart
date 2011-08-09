@@ -3,10 +3,11 @@
  * ================================================================ */
 
 #include "tart/Gen/CodeGenerator.h"
+#include "tart/Gen/StructBuilder.h"
+#include "tart/Gen/RuntimeTypeInfo.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/SourceFile.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Defn/Module.h"
 #include "tart/Defn/Defn.h"
@@ -85,7 +86,7 @@ CodeGenerator::CodeGenerator(Module * mod)
   // Turn on reflection if (a) it's enabled on the command-line, and (b) there were
   // any reflectable definitions within the module.
   reflector_.setEnabled(mod->isReflectionEnabled());
-  methodPtrType_ = llvm::OpaqueType::get(context_)->getPointerTo();
+  methodPtrType_ = builder_.getInt8PtrTy();
 
   voidValue_ = llvm::UndefValue::get(builder_.getVoidTy());
 }
@@ -105,16 +106,6 @@ void CodeGenerator::generate() {
     DASSERT(dbgFile_.Verify());
   }
 
-  addTypeName(Builtins::typeObject);
-  addTypeName(Builtins::typeTypeInfoBlock);
-  if (reflector_.enabled() && Builtins::typeModule.peek() != NULL) {
-    addTypeName(Builtins::typeModule);
-    addTypeName(Builtins::typeNameTable);
-    addTypeName(Builtins::typeCompositeType);
-    addTypeName(Builtins::typeDerivedType);
-    addTypeName(Builtins::typeEnumType);
-  }
-
   // Write out a list of all modules this one depends on.
   addModuleDependencies();
 
@@ -128,6 +119,12 @@ void CodeGenerator::generate() {
 
     DASSERT_OBJ(de->isSingular(), de);
     genXDef(de);
+  }
+
+  for (RTTypeMap::const_iterator it = compositeTypeMap_.begin(); it != compositeTypeMap_.end(); ++it) {
+    if (it->second->getLinkageType() == GlobalValue::LinkOnceODRLinkage) {
+      createTypeInfoBlock(it->second);
+    }
   }
 
   if (reflector_.enabled() &&
@@ -150,7 +147,10 @@ void CodeGenerator::generate() {
       builder_.CreateRet(NULL);
       builder_.ClearInsertionPoint();
 
-      Constant * ctorStruct = getStructVal(getInt32Val(65536), moduleInitFunc_, NULL);
+      StructBuilder sbInit(*this);
+      sbInit.addField(getInt32Val(65536));
+      sbInit.addField(moduleInitFunc_);
+      Constant * ctorStruct = sbInit.buildAnon();
       Constant * ctorArray = ConstantArray::get(
             ArrayType::get(ctorStruct->getType(), 1),
             ArrayRef<Constant *>(&ctorStruct, 1));
@@ -189,17 +189,17 @@ llvm::ConstantInt * CodeGenerator::getIntVal(int value) {
 
 llvm::ConstantInt * CodeGenerator::getInt16Val(int value) {
   using namespace llvm;
-  return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt16Ty()), value, true);
+  return ConstantInt::get(static_cast<IntegerType *>(builder_.getInt16Ty()), value, true);
 }
 
 llvm::ConstantInt * CodeGenerator::getInt32Val(int value) {
   using namespace llvm;
-  return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt32Ty()), value, true);
+  return ConstantInt::get(static_cast<IntegerType *>(builder_.getInt32Ty()), value, true);
 }
 
 llvm::ConstantInt * CodeGenerator::getInt64Val(int64_t value) {
   using namespace llvm;
-  return ConstantInt::get(static_cast<const IntegerType *>(builder_.getInt64Ty()), value, true);
+  return ConstantInt::get(static_cast<IntegerType *>(builder_.getInt64Ty()), value, true);
 }
 
 void CodeGenerator::verifyModule() {
@@ -212,7 +212,7 @@ void CodeGenerator::verifyModule() {
 void CodeGenerator::outputModule() {
   // File handle for output bitcode
   llvm::sys::Path binPath(outputDir);
-  llvm::StringRef moduleName = module_->linkageName();
+  StringRef moduleName = module_->linkageName();
   size_t pos = 0;
   for (;;) {
     size_t dot = moduleName.find('.', pos);
@@ -270,7 +270,7 @@ void CodeGenerator::genEntryPoint() {
   FunctionDefn * entryPoint = module_->entryPoint();
 
   // Generate the main method
-  std::vector<const llvm::Type *> mainArgs;
+  std::vector<llvm::Type *> mainArgs;
   mainArgs.push_back(builder_.getInt32Ty());
   mainArgs.push_back(builder_.getInt8Ty()->getPointerTo()->getPointerTo());
 
@@ -314,10 +314,10 @@ llvm::Function * CodeGenerator::getUnwindRaiseException() {
   using namespace llvm;
 
   if (unwindRaiseException_ == NULL) {
-    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
-    std::vector<const llvm::Type *> parameterTypes;
+    llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
+    std::vector<llvm::Type *> parameterTypes;
     parameterTypes.push_back(unwindExceptionType->getPointerTo());
-    const llvm::FunctionType * ftype =
+    llvm::FunctionType * ftype =
         llvm::FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
     unwindRaiseException_ = cast<Function>(
         irModule_->getOrInsertFunction("_Unwind_RaiseException", ftype));
@@ -331,10 +331,10 @@ llvm::Function * CodeGenerator::getUnwindResume() {
   using namespace llvm;
 
   if (unwindResume_ == NULL) {
-    const llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
-    std::vector<const llvm::Type *> parameterTypes;
+    llvm::Type * unwindExceptionType = Builtins::typeUnwindException->irType();
+    std::vector<llvm::Type *> parameterTypes;
     parameterTypes.push_back(unwindExceptionType->getPointerTo());
-    const llvm::FunctionType * ftype =
+    llvm::FunctionType * ftype =
         llvm::FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
     unwindResume_ = cast<Function>(
         irModule_->getOrInsertFunction("_Unwind_Resume", ftype));
@@ -350,13 +350,13 @@ llvm::Function * CodeGenerator::getExceptionPersonality() {
   using llvm::FunctionType;
 
   if (exceptionPersonality_ == NULL) {
-    std::vector<const Type *> parameterTypes;
-    parameterTypes.push_back(builder_.getInt32Ty());
-    parameterTypes.push_back(builder_.getInt32Ty());
-    parameterTypes.push_back(builder_.getInt64Ty());
-    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
-    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
-    const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
+    Type * parameterTypes[5];
+    parameterTypes[0] = builder_.getInt32Ty();
+    parameterTypes[1] = builder_.getInt32Ty();
+    parameterTypes[2] = builder_.getInt64Ty();
+    parameterTypes[3] = builder_.getInt8Ty()->getPointerTo();
+    parameterTypes[4] = builder_.getInt8Ty()->getPointerTo();
+    FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
 
     exceptionPersonality_ = cast<Function>(
         irModule_->getOrInsertFunction("__tart_eh_personality", ftype));
@@ -372,13 +372,13 @@ llvm::Function * CodeGenerator::getExceptionTracePersonality() {
   using llvm::FunctionType;
 
   if (exceptionTracePersonality_ == NULL) {
-    std::vector<const Type *> parameterTypes;
-    parameterTypes.push_back(builder_.getInt32Ty());
-    parameterTypes.push_back(builder_.getInt32Ty());
-    parameterTypes.push_back(builder_.getInt64Ty());
-    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
-    parameterTypes.push_back(builder_.getInt8Ty()->getPointerTo());
-    const FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
+    Type * parameterTypes[5];
+    parameterTypes[0] = builder_.getInt32Ty();
+    parameterTypes[1] = builder_.getInt32Ty();
+    parameterTypes[2] = builder_.getInt64Ty();
+    parameterTypes[3] = builder_.getInt8Ty()->getPointerTo();
+    parameterTypes[4] = builder_.getInt8Ty()->getPointerTo();
+    FunctionType * ftype = FunctionType::get(builder_.getInt32Ty(), parameterTypes, false);
 
     exceptionTracePersonality_ = cast<Function>(
         irModule_->getOrInsertFunction("__tart_eh_trace_personality", ftype));
@@ -394,9 +394,9 @@ llvm::Function * CodeGenerator::getGlobalAlloc() {
   using llvm::FunctionType;
 
   if (globalAlloc_ == NULL) {
-    std::vector<const Type *> parameterTypes;
+    std::vector<Type *> parameterTypes;
     parameterTypes.push_back(builder_.getInt64Ty());
-    const FunctionType * ftype = FunctionType::get(
+    FunctionType * ftype = FunctionType::get(
         builder_.getInt8Ty()->getPointerTo(),
         parameterTypes,
         false);
@@ -480,14 +480,6 @@ void CodeGenerator::addModuleDependencies() {
   }
 }
 
-void CodeGenerator::addTypeName(const CompositeType * type) {
-  if (type != NULL && type->typeDefn() != NULL &&
-      type->passes().isFinished(CompositeType::BaseTypesPass) &&
-      type->passes().isFinished(CompositeType::FieldPass)) {
-    irModule_->addTypeName(type->typeDefn()->qualifiedName(), type->irType());
-  }
-}
-
 bool CodeGenerator::hasAddress(const Expr * expr) {
   switch (expr->exprType()) {
     case Expr::LValue: {
@@ -527,49 +519,31 @@ bool CodeGenerator::hasAddress(const Expr * expr) {
   }
 }
 
-void CodeGenerator::ensureLValue(const Expr * expr, const llvm::Type * type) {
+void CodeGenerator::ensureLValue(const Expr * expr, llvm::Type * type) {
 #if !NDEBUG
   if (!isa<llvm::PointerType>(type)) {
     if (expr != NULL) {
       diag.error(expr) << "Not an lvalue: " << expr;
     }
-    type->dump(irModule_);
+    type->dump();
     DFAIL("Expecting an lvalue");
   }
 #endif
 }
 
-llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr,
-    llvm::StringRef name ) {
+llvm::Value * CodeGenerator::loadValue(llvm::Value * value, const Expr * expr, StringRef name ) {
 #if !NDEBUG
-  const llvm::Type * type = value->getType();
+  llvm::Type * type = value->getType();
   if (!isa<llvm::PointerType>(type)) {
     if (expr != NULL) {
       diag.error(expr) << Format_Type << "Not an lvalue: " << expr;
     }
 
-    type->dump(irModule_);
+    type->dump();
     DFAIL("Expecting an lvalue");
   }
 #endif
   return builder_.CreateLoad(value, name);
 }
-
-llvm::Constant * CodeGenerator::getStructVal(llvm::Constant * member, ...) {
-  va_list ap;
-  llvm::SmallVector<llvm::Constant *, 8> members;
-  va_start(ap, member);
-  while (member) {
-    members.push_back(member);
-    member = va_arg(ap, llvm::Constant*);
-  }
-  return llvm::ConstantStruct::getAnon(context_, members, false);
-}
-
-#if 0
-void CodeGenerator::compareTypes(llvm::Type * expected, llvm::Type * actual) {
-
-}
-#endif
 
 }

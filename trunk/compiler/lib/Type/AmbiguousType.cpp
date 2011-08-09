@@ -52,7 +52,7 @@ void AmbiguousType::listProspects(ProspectList & out, const Type * ty, const Pro
   --recursionCheck;
 }
 
-const llvm::Type * AmbiguousType::irType() const {
+llvm::Type * AmbiguousType::irType() const {
   DINVALID;
   return NULL;
 }

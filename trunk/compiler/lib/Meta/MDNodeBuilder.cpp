@@ -16,7 +16,7 @@ MDNode * MDNodeBuilder::build() {
   return MDNode::get(context_, args_);
 }
 
-MDNodeBuilder & MDNodeBuilder::put(llvm::StringRef str) {
+MDNodeBuilder & MDNodeBuilder::put(StringRef str) {
   args_.push_back(MDString::get(context_, str));
   return *this;
 }

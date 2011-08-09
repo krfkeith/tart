@@ -2,7 +2,6 @@
 
 Next up:
 
-* Can we get rid of TupleOfConstraint?
 * Change uses of isEqual method to isEqual binary function.
 * Make type conversions a binary function, not a method
 

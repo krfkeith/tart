@@ -280,6 +280,7 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       DFAIL("Type class not supported by isEqual()");
       break;
   }
+  return false;
 }
 
 bool TypeRelation::isSubtype(const Type * ty, const Type * base) {

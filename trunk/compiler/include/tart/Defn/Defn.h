@@ -92,7 +92,7 @@ protected:
 
   DefnType defnType_;         // What type of defn this is
   SourceLocation loc;         // Location where this was defined.
-  const char * name_;         // Local name (copied from decl)
+  StringRef name_;            // Local name (copied from decl)
   const ASTDecl * ast_;       // The source declaration of this defintion
   const llvm::MDNode * md_;   // Metadata node.
   DeclModifiers modifiers_;   // Modifier flags
@@ -109,7 +109,7 @@ protected:
 
 public:
   /** Constructor that takes a name */
-  Defn(DefnType dtype, Module * module, const char * name);
+  Defn(DefnType dtype, Module * module, StringRef name);
 
   /** Constructor that takes an AST declaration and a parent. */
   Defn(DefnType dtype, Module * module, const ASTDecl * de);
@@ -118,16 +118,16 @@ public:
   DefnType defnType() const { return defnType_; }
 
   /** Get the (short) name of this declaration. */
-  const char * name() const { return name_; }
+  StringRef name() const { return name_; }
 
   /** Get the fully qualified name of the definition. */
-  llvm::StringRef qualifiedName() const;
+  StringRef qualifiedName() const;
 
   /** Set the fully qualified name of the definition. */
-  void setQualifiedName(llvm::StringRef name) { qname_ = name; }
+  void setQualifiedName(StringRef name) { qname_ = name; }
 
   /** Get the linkage name of this definition. */
-  virtual llvm::StringRef linkageName() const;
+  virtual StringRef linkageName() const;
 
   /** Set the linkage name of this definition. */
   void setLinkageName(const std::string & name) { lnkName = name; }
@@ -284,7 +284,7 @@ static const DefnTypeSet METHOD_DEFS = DefnTypeSet::of(
 class ValueDefn : public Defn {
 public:
   /** Constructor that takes a name */
-  ValueDefn(DefnType dtype, Module * m, const char * name)
+  ValueDefn(DefnType dtype, Module * m, StringRef name)
     : Defn(dtype, m, name)
     , definingScope_(NULL)
   {}
@@ -326,7 +326,7 @@ private:
   Scope * definingScope_;
 
 public:
-  ExplicitImportDefn(Module * m, const char * name, const ExprList & defs)
+  ExplicitImportDefn(Module * m, StringRef name, const ExprList & defs)
     : Defn(ExplicitImport, m, name)
     , importValues_(defs)
     , definingScope_(NULL)

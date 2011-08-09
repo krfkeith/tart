@@ -216,8 +216,8 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
 }
 
 void ScopeBuilder::checkVariableHiding(Scope * scope, const Defn * de) {
-  const char * name = de->name();
-  DASSERT(name != NULL);
+  StringRef name = de->name();
+  DASSERT(!name.empty());
   for (Scope * s = scope; s != NULL; s = s->parentScope()) {
     // Local scopes only, please.
     // TODO: Also check parameter scope.

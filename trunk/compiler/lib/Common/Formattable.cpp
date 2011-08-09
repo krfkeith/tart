@@ -46,7 +46,7 @@ FormatStream & FormatStream::operator<<(int value) {
   return *this;
 }
 
-FormatStream & FormatStream::operator<<(llvm::StringRef str) {
+FormatStream & FormatStream::operator<<(StringRef str) {
   llvm::raw_ostream::operator<<(str);
   return *this;
 }

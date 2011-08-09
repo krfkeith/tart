@@ -15,13 +15,13 @@
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/TypeRelation.h"
 
-#include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
 
 #include "tart/Sema/AnalyzerBase.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
+#include "tart/Objects/TargetSelection.h"
 
 #include "llvm/DerivedTypes.h"
 
@@ -71,6 +71,7 @@ CompositeType::CompositeType(Type::TypeClass tcls, TypeDefn * de, Scope * parent
   : DeclaredType(tcls, de, parentScope, Shape_Unset)
   , super_(NULL)
   , classFlags_(0)
+  , recursionCheck_(false)
 {
   if (flags & tart::Final) {
     classFlags_ |= CompositeType::Final;
@@ -99,7 +100,7 @@ int CompositeType::instanceFieldCountRecursive() const {
 }
 
 FunctionDefn * CompositeType::defaultConstructor() const {
-  const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
+  const SymbolTable::Entry * ctors = findSymbol("construct");
   if (ctors == NULL) {
     return NULL;
   }
@@ -123,7 +124,7 @@ FunctionDefn * CompositeType::defaultConstructor() const {
   }
 
   // Try creators
-  ctors = findSymbol(istrings.idCreate);
+  ctors = findSymbol("create");
   if (ctors == NULL) {
     return NULL;
   }
@@ -150,7 +151,7 @@ FunctionDefn * CompositeType::defaultConstructor() const {
 }
 
 FunctionDefn * CompositeType::noArgConstructor() const {
-  const SymbolTable::Entry * ctors = findSymbol(istrings.idConstruct);
+  const SymbolTable::Entry * ctors = findSymbol("construct");
   if (ctors == NULL) {
     return NULL;
   }
@@ -165,7 +166,7 @@ FunctionDefn * CompositeType::noArgConstructor() const {
   }
 
   // Try creators
-  ctors = findSymbol(istrings.idCreate);
+  ctors = findSymbol("create");
   if (ctors == NULL) {
     return NULL;
   }
@@ -182,7 +183,7 @@ FunctionDefn * CompositeType::noArgConstructor() const {
   return NULL;
 }
 
-bool CompositeType::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
+bool CompositeType::lookupMember(StringRef name, DefnList & defs, bool inherit) const {
   if (DeclaredType::lookupMember(name, defs, inherit)) {
     return true;
   }
@@ -215,23 +216,49 @@ void CompositeType::dumpHierarchy(bool full) const {
   }
 }
 
-const llvm::Type * CompositeType::irType() const {
-  return irTypeSafe();
+llvm::Type * CompositeType::irType() const {
+  if (irType_ == NULL) {
+    DASSERT(!defn_->linkageName().empty());
+    irType_ = llvm::StructType::createNamed(llvm::getGlobalContext(), defn_->linkageName());
+  }
+  return irType_;
 }
 
-const llvm::Type * CompositeType::createIRType() const {
+llvm::Type * CompositeType::irTypeComplete() const {
+  createIRTypeFields();
+  return irType();
+}
+
+llvm::Type * CompositeType::createIRType() const {
+  DINVALID;
+  return NULL;
+}
+
+void CompositeType::createIRTypeFields() const {
   using namespace llvm;
+
+  StructType * structType = cast<StructType>(irType());
+  if (!structType->isOpaque()) {
+    return;
+  }
+
+  if (recursionCheck_) {
+    return;
+  }
+
+  recursionCheck_ = true;
 
   DASSERT_OBJ(isSingular(), this);
   DASSERT_OBJ(passes_.isFinished(BaseTypesPass), this);
   DASSERT_OBJ(passes_.isFinished(FieldPass), this);
 
   // Members of the class
-  std::vector<const llvm::Type *> fieldTypes;
+  llvm::SmallVector<llvm::Type *, 32> fieldTypes;
 
   // Handle inheritance
   if (super_ != NULL) {
     // Base class
+    super_->createIRTypeFields();
     fieldTypes.push_back(super_->irType());
   }
 
@@ -244,73 +271,44 @@ const llvm::Type * CompositeType::createIRType() const {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       DASSERT_OBJ(var->passes().isFinished(VariableDefn::VariableTypePass), var);
       const Type * varType = var->type();
-      const llvm::Type * memberType = varType->irEmbeddedType();
-      if (var->isSharedRef()) {
-        memberType = var->sharedRefType()->irEmbeddedType();
-      }
+      llvm::Type * memberType =
+          (var->isSharedRef() ? var->sharedRefType() : varType)->irEmbeddedType();
       fieldTypes.push_back(memberType);
     }
   }
 
-  // This is not the normal legal way to do type refinement in LLVM.
-  // Normally irType_ would have to be a PATypeHolder as well, however we can't use that
-  // because sometimes irType_ will be NULL which PATypeHolder cannot be. However, it is
-  // assumed that no one is keeping a persistent copy of irType_ around in raw pointer form.
-  llvm::Type * finalType = StructType::get(llvm::getGlobalContext(), fieldTypes);
+  recursionCheck_ = false;
 
-  // Determine the shape of the type.
-  switch (typeClass()) {
-    case Type::Class:
-    case Type::Interface:
-      shape_ = Shape_Reference;
-      break;
-
-    case Type::Struct:
-      if (fieldTypes.empty()) {
-        // An empty struct
-        shape_ = Shape_ZeroSize;
-      } else {
-        shape_ = isLargeIRType(finalType) ? Shape_Large_Value : Shape_Small_LValue;
-      }
-      break;
-
-    case Type::Protocol:
-      shape_ = Shape_None;
-      break;
-
-    default:
-      DFAIL("Invalid composite");
-  }
-
-  return finalType;
-
-//  cast<OpaqueType>(irTypeHolder_.get())->refineAbstractTypeTo(finalType);
-//  return irTypeHolder_.get();
+  structType->setBody(fieldTypes);
+  DASSERT_OBJ(structType->isSized(), this);
 }
 
-const llvm::Type * CompositeType::irEmbeddedType() const {
-  const llvm::Type * type = irType();
+llvm::Type * CompositeType::irEmbeddedType() const {
+  llvm::Type * type = irType();
   if (isReferenceType()) {
     return type->getPointerTo();
   } else {
+    createIRTypeFields();
     return type;
   }
 }
 
-const llvm::Type * CompositeType::irParameterType() const {
-  const llvm::Type * type = irType();
+llvm::Type * CompositeType::irParameterType() const {
+  llvm::Type * type = irType();
   if (isReferenceType() || typeShape() == Shape_Large_Value) {
     return type->getPointerTo();
   } else {
+    createIRTypeFields();
     return type;
   }
 }
 
-const llvm::Type * CompositeType::irReturnType() const {
-  const llvm::Type * type = irType();
+llvm::Type * CompositeType::irReturnType() const {
+  llvm::Type * type = irType();
   if (isReferenceType() || typeShape() == Shape_Large_Value) {
     return type->getPointerTo();
   } else {
+    createIRTypeFields();
     return type;
   }
 }
@@ -530,7 +528,34 @@ bool CompositeType::isReferenceType() const {
 
 TypeShape CompositeType::typeShape() const {
   if (shape_ == Shape_Unset) {
-    irType();
+    // Determine the shape of the type.
+    switch (typeClass()) {
+      case Type::Class:
+      case Type::Interface:
+        shape_ = Shape_Reference;
+        break;
+
+      case Type::Struct: {
+        createIRTypeFields();
+        uint64_t size = TargetSelection::instance.targetData()->getTypeSizeInBits(irType_);
+        if (size == 0) {
+          // An empty struct
+          shape_ = Shape_ZeroSize;
+        } else if (size <= 2 * TargetSelection::instance.targetData()->getPointerSizeInBits()) {
+          shape_ = Shape_Small_LValue;
+        } else {
+          shape_ = Shape_Large_Value;
+        }
+        break;
+      }
+
+      case Type::Protocol:
+        shape_ = Shape_None;
+        break;
+
+      default:
+        DFAIL("Invalid composite");
+    }
   }
 
   return shape_;

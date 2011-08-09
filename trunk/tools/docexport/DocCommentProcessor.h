@@ -26,7 +26,7 @@ struct DocTag;
 class DocCommentProcessor {
 public:
   struct Line {
-    llvm::StringRef text;   // The text of the line
+    StringRef text;   // The text of the line
     size_t indent;          // How many columns this line is indented
   };
   typedef llvm::SmallVector<Line, 16> LineList;
@@ -61,7 +61,7 @@ public:
 
 private:
   void splitLines();
-  size_t breakLine(Line & line, llvm::StringRef text, size_t pos, int column);
+  size_t breakLine(Line & line, StringRef text, size_t pos, int column);
   void removeBanners();
   void trimEmptyLines();
   void parseLines(Doc::Node * parent, size_t parentIndent);

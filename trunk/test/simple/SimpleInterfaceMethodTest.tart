@@ -1,0 +1,13 @@
+@EntryPoint
+def main(args:String[]) -> int32 {
+  let a:A = B();
+  return a.test() - 3;
+}
+
+interface A {
+  def test -> int32;
+}
+
+class B : A {
+  def test -> int32 { return 3; }
+}

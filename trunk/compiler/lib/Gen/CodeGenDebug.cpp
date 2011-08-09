@@ -75,7 +75,7 @@ void CodeGenerator::clearDebugLocation() {
 void CodeGenerator::genDICompileUnit() {
   const ProgramSource * source = module_->moduleSource();
   if (source != NULL) {
-    llvm::StringRef srcPath(source->filePath());
+    StringRef srcPath(source->filePath());
     if (!srcPath.empty()) {
       DASSERT(path::is_absolute(srcPath));
       diBuilder_.createCompileUnit(
@@ -101,7 +101,7 @@ DIFile CodeGenerator::genDIFile(const ProgramSource * source) {
     DASSERT(dbgFile_.Verify());
     return dbgFile_;
   }
-  llvm::StringRef srcPath(source->filePath());
+  StringRef srcPath(source->filePath());
   DIFile & file = dbgFiles_[srcPath];
   if ((MDNode *)file == NULL) {
     DASSERT(path::is_absolute(srcPath));
@@ -358,7 +358,7 @@ DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   if (type->isVoidType()) {
     return DIType();
   }
-  const llvm::Type * irType = type->irType();
+  llvm::Type * irType = type->irType();
   DIType di = diBuilder_.createBasicType(
       type->typeDefn()->name(),
       getSizeOfInBits(irType),
@@ -404,8 +404,8 @@ DIType CodeGenerator::genDITypeMember(DIDescriptor scope, const VariableDefn * v
       offset);
 }
 
-DIType CodeGenerator::genDITypeMember(DIDescriptor scope, const llvm::Type * type,
-    llvm::DIType memberType, llvm::StringRef name, unsigned sourceLine, uint64_t & offset) {
+DIType CodeGenerator::genDITypeMember(DIDescriptor scope, llvm::Type * type,
+    llvm::DIType memberType, StringRef name, unsigned sourceLine, uint64_t & offset) {
   uint64_t memberSize = getSizeOfInBits(type);
   uint64_t memberAlign = getAlignOfInBits(type);
 
@@ -457,6 +457,7 @@ DIType CodeGenerator::genDICompositeType(const CompositeType * type) {
   DIType placeHolder = diBuilder_.createTemporaryType();
   dbgTypeMap_[type] = placeHolder;
   TypeDefn * td = type->typeDefn();
+  type->createIRTypeFields();
 
   const DefnList & fields = type->instanceFields();
   const MethodList & methods = type->instanceMethods();
@@ -559,11 +560,10 @@ DIType CodeGenerator::genDIAddressType(const AddressType * type) {
 }
 
 DIType CodeGenerator::genDIUnionType(const UnionType * type) {
-  const llvm::Type * irType = type->irType();
+  llvm::Type * irType = type->irType();
   DIType placeHolder = diBuilder_.createTemporaryType();
   ValueArray unionMembers;
   DASSERT(dbgFile_.Verify());
-  DASSERT(!type->irType()->isAbstract());
 
   // Collect union members
   int memberIndex = 0;
@@ -601,7 +601,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
 
   // If there's a discriminator field
   if (irType->getNumContainedTypes() > 1) {
-    const llvm::Type * discType = irType->getContainedType(0);
+    llvm::Type * discType = irType->getContainedType(0);
     ValueArray structMembers;
     placeHolder = diBuilder_.createTemporaryType();
     DIType discDbgType = diBuilder_.createBasicType(
@@ -706,11 +706,11 @@ unsigned CodeGenerator::getSourceLineNumber(const SourceLocation & loc) {
   return pos.beginLine;
 }
 
-uint64_t CodeGenerator::getSizeOfInBits(const llvm::Type * ty) {
+uint64_t CodeGenerator::getSizeOfInBits(llvm::Type * ty) {
   return TargetSelection::instance.targetData()->getTypeSizeInBits(ty);
 }
 
-uint64_t CodeGenerator::getAlignOfInBits(const llvm::Type * ty) {
+uint64_t CodeGenerator::getAlignOfInBits(llvm::Type * ty) {
   return TargetSelection::instance.targetData()->getABITypeAlignment(ty) * 8;
 }
 

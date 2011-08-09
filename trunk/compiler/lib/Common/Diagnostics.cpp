@@ -64,7 +64,7 @@ void Diagnostics::reset() {
 // -------------------------------------------------------------------
 
 void Diagnostics::write(const SourceLocation & loc, Severity sev,
-    llvm::StringRef msg) {
+    StringRef msg) {
 
   switch (sev) {
     case Fatal:
@@ -146,7 +146,7 @@ int Diagnostics::setIndentLevel(int level) {
   return result;
 }
 
-void Diagnostics::writeLnIndent(llvm::StringRef str) {
+void Diagnostics::writeLnIndent(StringRef str) {
   writeIndent(indentLevel);
   fprintf(stderr, "%s\n", str.data());
 }
@@ -160,16 +160,8 @@ void Diagnostics::writeLnIndent(const char * msg, ...) {
   va_end(ap);
 }
 
-void Diagnostics::assertionFailed(
-    llvm::StringRef expression, const char * filename, unsigned lineno) {
-  llvm::errs() << filename << ":" << lineno << ": Assertion failed (" << expression << ")\n";
-  debugBreak();
-  printStackTrace(2);
-  abort();
-}
-
-void Diagnostics::__fail(llvm::StringRef msg, const char * filename, unsigned lineno) {
-  llvm::errs() << filename << ":" << lineno << ": Fatal error (" << msg << "\n";
+void Diagnostics::__fail(StringRef msg, const char * filename, unsigned lineno) {
+  llvm::errs() << filename << ":" << lineno << ": Fatal error (" << msg << ")\n";
   debugBreak();
   printStackTrace(2);
   abort();
@@ -249,51 +241,51 @@ void Diagnostics::printStackTrace(int skipFrames) {
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Fatal>::write(
-    const SourceLocation & loc, llvm::StringRef msg) {
+    const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Fatal, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Error>::write(
-    const SourceLocation & loc, llvm::StringRef msg) {
+    const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Error, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Warning>::write(
-    const SourceLocation & loc, llvm::StringRef msg) {
+    const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Warning, msg);
   debugBreak();
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Info>::write(
-    const SourceLocation & loc, llvm::StringRef msg) {
+    const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Info, msg);
 }
 
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Debug>::write(
-    const SourceLocation & loc, llvm::StringRef msg) {
+    const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Debug, msg);
 }
 
-void Diagnostics::FailAction::write(const SourceLocation & loc, llvm::StringRef msg) {
+void Diagnostics::FailAction::write(const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Debug, msg);
   debugBreak();
   diag.printStackTrace(2);
   abort();
 }
 
-void Diagnostics::AssertAction::write(const SourceLocation & loc, llvm::StringRef msg) {
+void Diagnostics::AssertAction::write(const SourceLocation & loc, StringRef msg) {
   diag.write(loc, Debug, msg);
   debugBreak();
 }
 
 void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
-    llvm::StringRef msg) {
+    StringRef msg) {
   bool colorChanged = false;
   if (llvm::errs().is_displayed()) {
     if (sev >= Error) {
@@ -323,7 +315,7 @@ void Diagnostics::StdErrWriter::write(const SourceLocation & loc, Severity sev,
 }
 
 void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
-    llvm::StringRef msg) {
+    StringRef msg) {
   llvm::raw_svector_ostream strm(str_);
   if (loc.file != NULL && !loc.file->filePath().empty()) {
     // The TextMate error parser is fairly strict
@@ -340,6 +332,16 @@ void Diagnostics::StringWriter::write(const SourceLocation & loc, Severity sev,
 Diagnostics::FailStream::~FailStream() {
   flush();
   diag.__fail(str(), fname_, lineno_);
+}
+
+Diagnostics::AssertionFailureStream::~AssertionFailureStream() {
+  if (str().empty()) {
+    (*this) << msg_;
+  }
+  llvm::errs() << fname_ << ":" << lineno_ << ": Assertion failed: " << str() << "\n";
+  debugBreak();
+  diag.printStackTrace(2);
+  abort();
 }
 
 }

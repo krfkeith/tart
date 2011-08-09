@@ -59,6 +59,10 @@ import tart.gc.TraceAction;
     match collection as copyable:Copyable[ElementType] {
       copyable.copyElements(addressOf(result._data[0]), 0, size);
     } else {
+      var it = collection.iterate();
+Debug.writeLn("PreNext");
+      var n = it.next();
+Debug.writeIntLn("Size=", size);
       var index = 0;
       for el in collection {
         result._data[index++] = el;

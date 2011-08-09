@@ -15,7 +15,6 @@
 #include "tart/Type/TupleType.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
@@ -421,7 +420,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   }
 
   if (arrayType->memberScope() == NULL ||
-      !arrayType->memberScope()->lookupMember(istrings.idIndex, indexers, true)) {
+      !arrayType->memberScope()->lookupMember("$index", indexers, true)) {
     if (!arrayType->isErrorType()) {
       diag.error(ast) << "Type " << arrayType << " does not support element reference operator";
     }

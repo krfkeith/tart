@@ -10,7 +10,7 @@ namespace tart {
 
 // -------------------------------------------------------------------
 // NamespaceDefn
-NamespaceDefn::NamespaceDefn(Module * m, const char * name)
+NamespaceDefn::NamespaceDefn(Module * m, StringRef name)
   : Defn(Namespace, m, name)
 {
   setStorageClass(Storage_Global);

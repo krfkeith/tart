@@ -35,7 +35,7 @@ public:
   typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes a name */
-  VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value = NULL);
+  VariableDefn(DefnType dtype, Module * m, StringRef name, Expr * value = NULL);
 
   /** Constructor that takes an AST declaration. */
   VariableDefn(DefnType dtype, Module * m, const ASTDecl * de);

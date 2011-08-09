@@ -22,6 +22,8 @@ namespace tart {
 class Formattable;
 class FormatStream;
 
+using llvm::StringRef;
+
 /// -------------------------------------------------------------------
 /// Options for the format() method
 enum FormatOptions {
@@ -57,10 +59,13 @@ public:
 class FormatStream : public llvm::raw_ostream {
 public:
   FormatStream(llvm::raw_ostream & baseStrm)
-    : formatOptions_(Format_Default)
+    : llvm::raw_ostream(true)
+    , formatOptions_(Format_Default)
     , baseStrm_(baseStrm)
   {
   }
+
+  virtual ~FormatStream() {}
 
   /** Current set of format options. */
   int formatOptions() const { return formatOptions_; }
@@ -116,7 +121,7 @@ public:
 
   FormatStream & operator<<(const char * str);
   FormatStream & operator<<(const std::string & str);
-  FormatStream & operator<<(llvm::StringRef str);
+  FormatStream & operator<<(StringRef str);
   FormatStream & operator<<(const llvm::Twine & str);
   FormatStream & operator<<(int value);
   FormatStream & operator<<(void (*func)(FormatStream &)) {
@@ -148,8 +153,9 @@ private:
 class StrFormatStream : public FormatStream {
 public:
   StrFormatStream() : FormatStream(strm_), strm_(str_) {}
+  StrFormatStream(const StrFormatStream & sfs) : FormatStream(strm_), str_(sfs.str_), strm_(str_) {}
 
-  llvm::StringRef str() { flush(); return str_.str(); }
+  StringRef str() { flush(); return str_.str(); }
 
 private:
   llvm::SmallString<128> str_;

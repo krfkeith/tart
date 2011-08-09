@@ -3,8 +3,12 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
+
 #include "tart/Type/TupleType.h"
+
 #include "tart/Common/Diagnostics.h"
+
+#include "tart/Objects/TargetSelection.h"
 
 #include "llvm/DerivedTypes.h"
 
@@ -143,11 +147,11 @@ TupleType::TupleType(TupleType::const_iterator first, TupleType::const_iterator 
   }
 }
 
-const llvm::Type * TupleType::createIRType() const {
+llvm::Type * TupleType::createIRType() const {
   // Members of the class
-  std::vector<const llvm::Type *> fieldTypes;
+  std::vector<llvm::Type *> fieldTypes;
   for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
-    const llvm::Type * fieldType = (*it)->irEmbeddedType();
+    llvm::Type * fieldType = (*it)->irEmbeddedType();
     if (fieldType == NULL) {
       return NULL;
     }
@@ -156,7 +160,9 @@ const llvm::Type * TupleType::createIRType() const {
   }
 
   llvm::Type * result = llvm::StructType::get(llvm::getGlobalContext(), fieldTypes);
-  if (isLargeIRType(result)) {
+  uint64_t size = TargetSelection::instance.targetData()->getTypeSizeInBits(result);
+
+  if (size > 2 * TargetSelection::instance.targetData()->getPointerSizeInBits()) {
     shape_ = Shape_Large_Value;
   } else if (containsReferenceType_) {
     // TODO: Should be small l-value but that's not working for some reason.
@@ -168,8 +174,8 @@ const llvm::Type * TupleType::createIRType() const {
   return result;
 }
 
-const llvm::Type * TupleType::irParameterType() const {
-  const llvm::Type * type = irType();
+llvm::Type * TupleType::irParameterType() const {
+  llvm::Type * type = irType();
   if (shape_ == Shape_Large_Value) {
     return type->getPointerTo();
   } else {

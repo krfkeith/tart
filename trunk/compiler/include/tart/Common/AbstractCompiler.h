@@ -20,7 +20,7 @@ class AbstractCompiler {
 public:
   virtual ~AbstractCompiler() {}
 
-  void processInputFile(llvm::StringRef infile);
+  void processInputFile(StringRef infile);
 
 protected:
   virtual void generate(Module * mod) = 0;

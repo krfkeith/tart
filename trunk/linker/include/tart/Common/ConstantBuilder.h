@@ -3,9 +3,9 @@
 #ifndef TART_LINKER_CONSTANTBUILDER_H
 #define TART_LINKER_CONSTANTBUILDER_H 1
 
-#include <llvm/DerivedTypes.h>
-#include <llvm/Constants.h>
-#include <llvm/Module.h>
+#include "llvm/DerivedTypes.h"
+#include "llvm/Constants.h"
+#include "llvm/Module.h"
 
 typedef std::vector<llvm::Constant *> ConstantList;
 
@@ -23,7 +23,7 @@ public:
     return *this;
   }
 
-  const llvm::Type * type() const { return value_->getType(); }
+  llvm::Type * type() const { return value_->getType(); }
 
   ConstantRef operand(unsigned index) {
     return ConstantRef(cast<llvm::Constant>(value_->getOperand(index)));
@@ -47,6 +47,7 @@ public:
     : module_(module)
     , context_(module.getContext())
     , tibType_(NULL)
+    , objType_(NULL)
   {
   }
 
@@ -62,7 +63,7 @@ public:
   ConstantBuilder & addObjectHeader(llvm::Constant * typeInfo);
 
   /** Build a constant whose type is the same as 'type' */
-  Constant * buildStruct(const llvm::Type * type);
+  Constant * buildStruct(llvm::Type * type);
 
   /** Build a struct constant. */
   Constant * buildStruct();
@@ -71,9 +72,11 @@ private:
   ConstantList members_;
   Module & module_;
   LLVMContext & context_;
-  const Type * tibType_;
+  Type * tibType_;
+  Type * objType_;
 
-  const Type * tibType();
+  Type * tibType();
+  Type * objType();
 };
 
 } // namespace tart

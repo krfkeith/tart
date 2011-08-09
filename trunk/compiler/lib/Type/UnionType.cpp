@@ -148,7 +148,7 @@ const Type * UnionType::getFirstNonVoidType() const {
   return NULL;
 }
 
-const llvm::Type * UnionType::createIRType() const {
+llvm::Type * UnionType::createIRType() const {
 #if LLVM_UNION_SUPPORT
   //shape_ = Shape_Small_RValue;
   shape_ = Shape_Large_Value;
@@ -166,8 +166,8 @@ const llvm::Type * UnionType::createIRType() const {
       }
     }
 
-    const llvm::Type * discriminatorType = getDiscriminatorType();
-    std::vector<const llvm::Type *> unionMembers;
+    llvm::Type * discriminatorType = getDiscriminatorType();
+    std::vector<llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
     if (irTypes_.size() == 1) {
       unionMembers.push_back(irTypes_[0]);
@@ -202,7 +202,7 @@ const llvm::Type * UnionType::createIRType() const {
   for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
     const Type * type = dealias(*it);
 
-    const llvm::Type * irType = type->irEmbeddedType();
+    llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
 
     if (type->typeShape() == Shape_Large_Value) {
@@ -219,16 +219,16 @@ const llvm::Type * UnionType::createIRType() const {
   DASSERT_OBJ(largestType != NULL, this);
 
   if (numValueTypes_ > 0 || hasVoidType_) {
-    const llvm::Type * discriminatorType = getDiscriminatorType();
-    const llvm::Type * largestIRType = largestType->irEmbeddedType();
-    std::vector<const llvm::Type *> unionMembers;
+    llvm::Type * discriminatorType = getDiscriminatorType();
+    llvm::Type * largestIRType = largestType->irEmbeddedType();
+    std::vector<llvm::Type *> unionMembers;
     unionMembers.push_back(discriminatorType);
     unionMembers.push_back(largestIRType);
     return llvm::StructType::get(llvm::getGlobalContext(), unionMembers);
   } else if (hasNullType_ && numReferenceTypes_ == 1) {
     // If it's Null or some reference type, then use the reference type.
     shape_ = Shape_Primitive;
-    const llvm::Type * ty = getFirstNonVoidType()->irEmbeddedType();
+    llvm::Type * ty = getFirstNonVoidType()->irEmbeddedType();
     DASSERT(!ty->isVoidTy());
     return ty;
   } else {
@@ -238,8 +238,8 @@ const llvm::Type * UnionType::createIRType() const {
 #endif
 }
 
-const llvm::Type * UnionType::irParameterType() const {
-  const llvm::Type * type = irType();
+llvm::Type * UnionType::irParameterType() const {
+  llvm::Type * type = irType();
   if (shape_ == Shape_Large_Value) {
     type = type->getPointerTo();
   }
@@ -247,7 +247,7 @@ const llvm::Type * UnionType::irParameterType() const {
   return type;
 }
 
-const llvm::Type * UnionType::getDiscriminatorType() const {
+llvm::Type * UnionType::getDiscriminatorType() const {
   size_t numStates = numValueTypes_;
   if (numReferenceTypes_ > 0 || hasVoidType_ || hasNullType_) {
     numStates += 1;
@@ -264,7 +264,7 @@ const llvm::Type * UnionType::getDiscriminatorType() const {
   }
 }
 
-size_t UnionType::estimateTypeSize(const llvm::Type * type) {
+size_t UnionType::estimateTypeSize(llvm::Type * type) {
   switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
     case llvm::Type::FloatTyID:

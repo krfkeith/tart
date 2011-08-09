@@ -320,7 +320,7 @@ llvm::MDNode * MDWriter::imports(const ASTNodeList & imports) {
 
 void MDWriter::putDefnHeader(MDNodeBuilder & builder, const Defn * de, meta::Defn::Tag tag) {
   builder.put(tagValue(tag));
-  builder.put(de->name() != NULL ? de->name() : "");
+  builder.put(de->name().empty() ? "" : de->name());
   builder.put(location(de));
   builder.put(modifiers(de));
   builder.put(attributeList(de));

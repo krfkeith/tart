@@ -26,7 +26,7 @@
 
 namespace tart {
 
-FormatStream & operator<<(FormatStream & out, const llvm::Type * type) {
+FormatStream & operator<<(FormatStream & out, llvm::Type * type) {
   type->print(out);
   return out;
 }
@@ -56,7 +56,7 @@ using namespace llvm;
 
 namespace {
 /** Return the type that would be generated from a GEP instruction. */
-const llvm::Type * getGEPType(const llvm::Type * type, ValueList::const_iterator first,
+llvm::Type * getGEPType(llvm::Type * type, ValueList::const_iterator first,
     ValueList::const_iterator last) {
   for (ValueList::const_iterator it = first; it != last; ++it) {
     if (isa<llvm::PointerType>(type)) {
@@ -418,8 +418,8 @@ Value * CodeGenerator::doAssignment(const AssignmentExpr * in, Value * lvalue, V
     } else {
       if (rvalue->getType() != lvalue->getType()->getContainedType(0)) {
         diag.error(in) << "Invalid assignment:";
-        rvalue->getType()->dump(irModule_);
-        lvalue->getType()->dump(irModule_);
+        rvalue->getType()->dump();
+        lvalue->getType()->dump();
         exit(-1);
       }
 
@@ -750,7 +750,7 @@ Value * CodeGenerator::genMemberFieldAddr(const LValueExpr * lval) {
   }
 
   ensureLValue(lval, baseVal->getType());
-  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(), fs.str());
+  return builder_.CreateInBoundsGEP(baseVal, indices, fs.str());
 }
 
 Value * CodeGenerator::genLoadElement(const BinaryExpr * in) {
@@ -785,7 +785,7 @@ Value * CodeGenerator::genElementAddr(const BinaryExpr * in) {
     return NULL;
   }
 
-  return builder_.CreateInBoundsGEP(baseVal, indices.begin(), indices.end(), labelStream.str());
+  return builder_.CreateInBoundsGEP(baseVal, indices, labelStream.str());
 }
 
 Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, FormatStream & label) {
@@ -804,6 +804,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
 
       // Handle upcasting of the base to match the field.
       const CompositeType * fieldClass = field->definingClass();
+      fieldClass->createIRTypeFields();
       DASSERT(fieldClass != NULL);
       const CompositeType * baseClass = cast<CompositeType>(lval->base()->type());
       DASSERT(baseClass->isSubclassOf(fieldClass));
@@ -1011,33 +1012,32 @@ Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
   }
 }
 
-llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::StringRef symName) {
+llvm::Constant * CodeGenerator::genStringLiteral(StringRef strval, StringRef symName) {
   StringLiteralMap::iterator it = stringLiteralMap_.find(strval);
   if (it != stringLiteralMap_.end()) {
     return it->second;
   }
 
   const CompositeType * strType = Builtins::typeString.get();
-  const llvm::Type * irType = strType->irType();
+  llvm::Type * irType = strType->irType();
 
   Constant * strVal = ConstantArray::get(context_, strval, false);
-  llvm::Type * charDataType = ArrayType::get(builder_.getInt8Ty(), 0);
+  llvm::Type * charDataType = ArrayType::get(builder_.getInt8Ty(), strval.size());
 
   // Self-referential member values
   UndefValue * strDataStart = UndefValue::get(charDataType->getPointerTo());
   UndefValue * strSource = UndefValue::get(irType->getPointerTo());
 
   // Object type members
-  Constant * objStruct = getStructVal(getTypeInfoBlockPtr(strType), getIntVal(0), NULL);
+  StructBuilder sb(*this);
+  sb.createObjectHeader(Builtins::typeString);
 
   // String type members
-  Constant * strStruct = getStructVal(
-      objStruct,
-      getIntVal(strval.size()),
-      strSource,
-      strDataStart,
-      strVal,
-      NULL);
+  sb.addField(getIntVal(strval.size()));
+  sb.addField(strSource);
+  sb.addField(strDataStart);
+  sb.addField(strVal);
+  Constant * strStruct = sb.buildAnon();
 
   // If the name is blank, then the string is internal only.
   // If the name is non-blank, then it's assumed that this name is a globally unique
@@ -1051,18 +1051,17 @@ llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::S
     name = ".string." + symName;
   }
 
-  Constant * strConstant = llvm::ConstantExpr::getPointerCast(
-      new GlobalVariable(*irModule_,
-          strStruct->getType(), true, linkage, strStruct, name),
-      irType->getPointerTo());
+  GlobalVariable * strVar = new GlobalVariable(
+      *irModule_, strStruct->getType(), true, linkage, strStruct, name);
+  Constant * strConstant = llvm::ConstantExpr::getPointerCast(strVar, irType->getPointerTo());
 
   Constant * indices[2];
   indices[0] = getInt32Val(0);
   indices[1] = getInt32Val(4);
 
-  strDataStart->replaceAllUsesWith(
-      llvm::ConstantExpr::getInBoundsGetElementPtr(strConstant, indices, 2));
   strSource->replaceAllUsesWith(strConstant);
+  strDataStart->replaceAllUsesWith(
+      llvm::ConstantExpr::getInBoundsGetElementPtr(strVar, indices));
 
   stringLiteralMap_[strval] = strConstant;
   return strConstant;
@@ -1070,6 +1069,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(llvm::StringRef strval, llvm::S
 
 Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   const CompositeType * arrayType = cast<CompositeType>(in->type());
+  arrayType->createIRTypeFields();
   size_t arrayLength = in->args().size();
 
   if (arrayLength == 0) {
@@ -1123,7 +1123,7 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
     Value * env = builder_.CreateCall2(
         getGcAlloc(), gcAllocContext_,
         llvm::ConstantExpr::getIntegerCast(
-            llvm::ConstantExpr::getSizeOf(envType->irType()),
+            llvm::ConstantExpr::getSizeOf(envType->irTypeComplete()),
             intPtrType_, false),
         "closure.env.new");
     env = builder_.CreatePointerCast(env, envType->irType()->getPointerTo(), "closure.env");
@@ -1161,7 +1161,7 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
 
 Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) {
 
-  const llvm::Type * resultType = objType->irType();
+  llvm::Type * resultType = objType->irType();
   resultType = resultType->getPointerTo();
 
   if (isa<llvm::PointerType>(sizeValue->getType())) {
@@ -1190,7 +1190,7 @@ Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) 
 }
 
 GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * obj,
-    llvm::StringRef name, bool synthetic) {
+    StringRef name, bool synthetic) {
   if (name != "") {
     GlobalVariable * gv = irModule_->getGlobalVariable(name, true);
     if (gv != NULL) {
@@ -1222,6 +1222,7 @@ Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
   }
 
   const CompositeType * type = cast<CompositeType>(obj->type());
+  type->createIRTypeFields();
   llvm::Constant * structVal = genConstantObjectStruct(obj, type);
 
   constantObjectMap_[obj] = structVal;
@@ -1231,6 +1232,7 @@ Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
 Constant * CodeGenerator::genConstantObjectStruct(
     const ConstantObjectRef * obj, const CompositeType * type) {
   ConstantList fieldValues;
+  bool hasFlexibleArrayField = false;
   if (type == Builtins::typeObject) {
     // Generate the TIB pointer.
     llvm::Constant * tibPtr = getTypeInfoBlockPtr(cast<CompositeType>(obj->type()));
@@ -1267,15 +1269,22 @@ Constant * CodeGenerator::genConstantObjectStruct(
         }
 
         fieldValues.push_back(irValue);
+        if (var->type()->typeClass() == Type::FlexibleArray) {
+          hasFlexibleArrayField = true;
+        }
       }
     }
   }
 
-  return ConstantStruct::getAnon(context_, fieldValues, false);
+  if (hasFlexibleArrayField) {
+    return ConstantStruct::getAnon(fieldValues);
+  }
+
+  return ConstantStruct::get(cast<StructType>(type->irType()), fieldValues);
 }
 
 llvm::Constant * CodeGenerator::genConstantNativeArrayPtr(const ConstantNativeArray * array,
-    llvm::StringRef name) {
+    StringRef name) {
   llvm::Constant * nativeArray = genConstantNativeArray(array);
   GlobalVariable * var = new GlobalVariable(
       *irModule_, nativeArray->getType(), false,
@@ -1327,7 +1336,7 @@ llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
       Value * uvalue = builder_.CreateAlloca(utype->irType());
       builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
       if (value != NULL) {
-        const llvm::Type * fieldType = fromType->irEmbeddedType();
+        llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),
@@ -1363,7 +1372,6 @@ llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arra
   }
   const Type * elementType = arrayType->typeParam(0);
 
-  irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), arrayType);
 
   StructBuilder sb(*this);
@@ -1371,7 +1379,7 @@ llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arra
   sb.addField(getIntVal(0));
   sb.addArrayField(elementType, ConstantList());
 
-  llvm::Constant * arrayStruct = sb.build();
+  llvm::Constant * arrayStruct = sb.build(arrayType->irType());
   GlobalVariable * array = new GlobalVariable(*irModule_,
       arrayStruct->getType(), true, GlobalValue::LinkOnceODRLinkage, arrayStruct,
       arrayName);

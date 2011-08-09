@@ -17,7 +17,9 @@
 #include "tart/AST/ASTNode.h"
 #endif
 
-#include <llvm/Value.h>
+#ifndef LLVM_VALUE_H
+#include "llvm/Value.h"
+#endif
 
 namespace tart {
 

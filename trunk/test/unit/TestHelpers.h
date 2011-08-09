@@ -32,13 +32,13 @@ namespace tart {
   }
 
   // Make node types streamable
-  inline std::ostream & operator<<(std::ostream & out, llvm::StringRef str) {
+  inline std::ostream & operator<<(std::ostream & out, StringRef str) {
     out << str.str();
     return out;
   }
 
   // Compare an AST node with its string representation
-  inline bool ASTCmp(const char * expected, const ASTNode * actual) {
+  inline bool ASTCmp(llvm::StringRef expected, const ASTNode * actual) {
     if (actual != NULL) {
       StrFormatStream stream;
       actual->format(stream);

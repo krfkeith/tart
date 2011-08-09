@@ -20,7 +20,6 @@
 #include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Meta/MDReader.h"
 
@@ -540,7 +539,7 @@ bool ClassAnalyzer::analyzeCoercers() {
     if (tcls == Type::Class || tcls == Type::Struct) {
       // Note: "coerce" methods are *not* inherited.
       DefnList methods;
-      if (type->lookupMember(istrings.idCoerce, methods, false)) {
+      if (type->lookupMember("coerce", methods, false)) {
         for (DefnList::iterator it = methods.begin(); it != methods.end(); ++it) {
           if (FunctionDefn * fn = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
@@ -732,7 +731,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 
       DefnList ctors;
       bool hasConstructors = false;
-      if (type->lookupMember(istrings.idConstruct, ctors, false)) {
+      if (type->lookupMember("construct", ctors, false)) {
         for (DefnList::iterator it = ctors.begin(); it != ctors.end(); ++it) {
           if (FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
@@ -774,7 +773,7 @@ bool ClassAnalyzer::analyzeConstructors() {
 
       // Look for creator functions.
       ctors.clear();
-      if (type->lookupMember(istrings.idCreate, ctors, false)) {
+      if (type->lookupMember("create", ctors, false)) {
         for (DefnList::iterator it = ctors.begin(); it != ctors.end(); ++it) {
           if (FunctionDefn * ctor = dyn_cast<FunctionDefn>(*it)) {
             diag.recovered();
@@ -1239,7 +1238,7 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
   // 'table' is the set of methods inherited from the superclass or interface.
   // 'overrides' is all of the methods defined in *this* class that share the same name.
   // 'canHide' is true if 'overrides' are from a class, false if from an interface.
-  const char * name = overrides.front()->name();
+  StringRef name = overrides.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
     // For every inherited method whose name matches the name of the overrides.
@@ -1280,7 +1279,7 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
 
 void ClassAnalyzer::overridePropertyAccessors(MethodList & table, PropertyDefn * prop,
     const MethodList & accessors, bool isClassTable) {
-  const char * name = accessors.front()->name();
+  StringRef name = accessors.front()->name();
   size_t tableSize = table.size();
   for (size_t i = 0; i < tableSize; ++i) {
     FunctionDefn * m = table[i];
@@ -1342,7 +1341,7 @@ bool ClassAnalyzer::createDefaultConstructor() {
   // List of parameters to the default constructor
   ParameterList requiredParams;
   ParameterList optionalParams;
-  ParameterDefn * selfParam = new ParameterDefn(module_, istrings.idSelf);
+  ParameterDefn * selfParam = new ParameterDefn(module_, "self");
   selfParam->setType(type);
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
@@ -1421,7 +1420,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
   }
 
   // List of parameters to the no-arg constructor
-  ParameterDefn * selfParam = new ParameterDefn(module_, istrings.idSelf);
+  ParameterDefn * selfParam = new ParameterDefn(module_, "self");
   selfParam->setType(type);
   selfParam->setInternalType(type);
   selfParam->addTrait(Defn::Singular);
@@ -1515,7 +1514,7 @@ FunctionDefn * ClassAnalyzer::createConstructorFunc(ParameterDefn * selfParam,
   FunctionType * funcType = new FunctionType(&VoidType::instance, params);
   funcType->setSelfParam(selfParam);
 
-  FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module_, istrings.idConstruct);
+  FunctionDefn * constructorDef = new FunctionDefn(Defn::Function, module_, "construct");
   constructorDef->setParentDefn(target);
   constructorDef->setFunctionType(funcType);
   constructorDef->setLocation(target->location());

@@ -107,26 +107,26 @@ public:
 /// A reference to a name
 class ASTIdent : public ASTNode {
 private:
-  const char * value_;
+  StringRef value_;
 
 public:
   // Constructor needs to be public because we create static versions of this.
-  ASTIdent(const SourceLocation & loc, const char * v)
+  ASTIdent(const SourceLocation & loc, StringRef v)
     : ASTNode(Id, loc)
     , value_(v)
   {}
 
   // Alternate version of the constructor used for qualified names.
-  ASTIdent(NodeType nt, const SourceLocation & loc, const char * v)
+  ASTIdent(NodeType nt, const SourceLocation & loc, StringRef v)
     : ASTNode(nt, loc)
     , value_(v)
   {}
 
-  ASTIdent * get(const SourceLocation & loc, const char * value) {
+  ASTIdent * get(const SourceLocation & loc, StringRef value) {
     return new ASTIdent(loc, value);
   }
 
-  const char * value() const { return value_; }
+  StringRef value() const { return value_; }
 
   void format(FormatStream & out) const;
   static inline bool classof(const ASTIdent *) { return true; }
@@ -170,17 +170,17 @@ public:
 class ASTMemberRef : public ASTNode {
 private:
   ASTNode * qualifier_;
-  const char * memberName_;
+  StringRef memberName_;
 
 public:
   // Constructor needs to be public because we create static versions of this.
-  ASTMemberRef(const SourceLocation & loc, ASTNode * qual, const char * name)
+  ASTMemberRef(const SourceLocation & loc, ASTNode * qual, StringRef name)
     : ASTNode(Member, loc)
     , qualifier_(qual)
     , memberName_(name)
   {}
 
-  ASTMemberRef * get(const SourceLocation & loc, ASTNode * qual, const char * name) {
+  ASTMemberRef * get(const SourceLocation & loc, ASTNode * qual, StringRef name) {
     return new ASTMemberRef(loc, qual, name);
   }
 
@@ -189,7 +189,7 @@ public:
   ASTNode * qualifier() { return qualifier_; }
 
   /** The name of the member. */
-  const char * memberName() const { return memberName_; }
+  StringRef memberName() const { return memberName_; }
 
   // Overrides
 
@@ -370,10 +370,10 @@ public:
 class ASTKeywordArg : public ASTNode {
 private:
   const ASTNode * arg_;
-  const char * keyword_;
+  StringRef keyword_;
 
 public:
-  ASTKeywordArg(const SourceLocation & loc, const ASTNode * a, const char * kw)
+  ASTKeywordArg(const SourceLocation & loc, const ASTNode * a, StringRef kw)
       : ASTNode(Keyword, loc)
       , arg_(a)
       , keyword_(kw) {}
@@ -382,7 +382,7 @@ public:
     return arg_;
   }
 
-  const char * keyword() const {
+  StringRef keyword() const {
     return keyword_;
   }
 
@@ -400,11 +400,11 @@ public:
 /// An import expression
 class ASTImport : public ASTNode {
   const ASTNode * path_;
-  const char * asName_;
+  StringRef asName_;
   bool unpack_;
 
 public:
-  ASTImport(const SourceLocation & loc, const ASTNode * p, const char * as,
+  ASTImport(const SourceLocation & loc, const ASTNode * p, StringRef as,
       bool unpk = false)
       : ASTNode(ASTNode::Import, loc)
       , path_(p)
@@ -413,7 +413,7 @@ public:
   {}
 
   const ASTNode * path() const { return path_; }
-  const char * asName() const { return asName_; }
+  StringRef asName() const { return asName_; }
 
   /** Whether to import the contents of the namespace instead of the namespace as a symbol. */
   bool unpack() const { return unpack_; }

@@ -269,7 +269,7 @@ void TypeAssignment::format(FormatStream & out) const {
   }
 }
 
-const llvm::Type * TypeAssignment::irType() const {
+llvm::Type * TypeAssignment::irType() const {
   DFAIL("IllegalState");
 }
 

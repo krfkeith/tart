@@ -83,7 +83,7 @@ public:
   virtual bool isSubtypeOf(const PrimitiveType * base) const = 0;
 
   // Overrides
-  const llvm::Type * createIRType() const;
+  llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
 
   static inline bool classof(const PrimitiveType *) { return true; }

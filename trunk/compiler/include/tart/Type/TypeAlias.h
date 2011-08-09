@@ -29,10 +29,10 @@ public:
   bool isEqual(const Type * other) const { return value_->isEqual(other); }
   bool isReferenceType() const { return value_->isReferenceType(); }
   TypeShape typeShape() const { return value_->typeShape(); }
-  const llvm::Type * irType() const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
-  const llvm::Type * irReturnType() const;
+  llvm::Type * irType() const;
+  llvm::Type * irEmbeddedType() const;
+  llvm::Type * irParameterType() const;
+  llvm::Type * irReturnType() const;
   void expand(TypeExpansion & out) const { value_->expand(out); }
   ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const { return value_->nullInitValue(); }

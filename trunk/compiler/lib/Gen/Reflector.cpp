@@ -212,7 +212,7 @@ Reflector::~Reflector() {
   // TODO: Delete reflection metadata pointers.
 }
 
-llvm::Constant * Reflector::internSymbol(const llvm::StringRef &Key) {
+llvm::Constant * Reflector::internSymbol(const StringRef &Key) {
   return cg_.genStringLiteral(Key, Key);
 }
 
@@ -224,9 +224,7 @@ GlobalVariable * Reflector::getModulePtr(Module * module) {
     return var;
   }
 
-  irModule_->addTypeName("tart.reflect.Module", Builtins::typeModule->irType());
-  irModule_->addTypeName("tart.reflect.NameTable", Builtins::typeNameTable->irType());
-  return new GlobalVariable(*irModule_, Builtins::typeModule->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeModule->irTypeComplete(), true,
       GlobalValue::ExternalLinkage, NULL, moduleSymbol);
 }
 
@@ -235,7 +233,7 @@ GlobalVariable * Reflector::getNameTablePtr(Module * module) {
 
   if (nameTableVar_ == NULL) {
     Twine nameTableSymbol(".names.", module->linkageName());
-    nameTableVar_ = new GlobalVariable(*irModule_, Builtins::typeNameTable->irType(),
+    nameTableVar_ = new GlobalVariable(*irModule_, Builtins::typeNameTable->irTypeComplete(),
         false, GlobalValue::ExternalLinkage, NULL, nameTableSymbol);
   }
 
@@ -248,7 +246,6 @@ llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
     return var;
   }
 
-  irModule_->addTypeName("tart.reflect.Package", Builtins::typePackage->irType());
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typePackage);
   sb.addField(internSymbol(module->packageName()));
@@ -256,8 +253,8 @@ llvm::GlobalVariable * Reflector::getPackagePtr(Module * module) {
   sb.addField(emitArray("tart.reflect.Package.", reflect::Package::subpackages.get(),
       ConstantList()));
 
-  return new GlobalVariable(*irModule_, Builtins::typePackage->irType(), true,
-      GlobalValue::LinkOnceAnyLinkage, sb.build(), packageSymbol);
+  return new GlobalVariable(*irModule_, Builtins::typePackage->irTypeComplete(), true,
+      GlobalValue::LinkOnceAnyLinkage, sb.build(Builtins::typePackage), packageSymbol);
 }
 
 llvm::GlobalVariable * Reflector::getMethodPtr(const FunctionDefn * fn) {
@@ -275,7 +272,7 @@ llvm::GlobalVariable * Reflector::getMethodPtr(const FunctionDefn * fn) {
   DASSERT_OBJ(module()->exportDefs().count(const_cast<FunctionDefn *>(fn)) > 0, fn);
 
   defnExports_.append(fn);
-  return new GlobalVariable(*irModule_, Builtins::typeMethod->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeMethod->irTypeComplete(), true,
       fn->isSynthetic() ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       NULL, symbol);
 }
@@ -293,7 +290,7 @@ llvm::GlobalVariable * Reflector::getPropertyPtr(const PropertyDefn * prop) {
   getTypePtr(prop->type());
 
   defnExports_.append(prop);
-  return new GlobalVariable(*irModule_, Builtins::typeProperty->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeProperty->irTypeComplete(), true,
       prop->isSynthetic() ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       NULL, symbol);
 }
@@ -311,7 +308,7 @@ llvm::GlobalVariable * Reflector::getFieldPtr(const VariableDefn * field) {
   getTypePtr(field->type());
 
   defnExports_.append(field);
-  return new GlobalVariable(*irModule_, Builtins::typeField->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeField->irTypeComplete(), true,
       field->isSynthetic() ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       NULL, symbol);
 }
@@ -356,7 +353,7 @@ llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type
   }
 
   if (!isExport(type->typeDefn())) {
-    return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), true,
+    return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irTypeComplete(), true,
         GlobalValue::ExternalLinkage, NULL, typeSymbol);
   }
 
@@ -364,7 +361,7 @@ llvm::GlobalVariable * Reflector::getCompositeTypePtr(const CompositeType * type
     diag.fatal() << "Attempting to add a type export during output phase: " << type;
   }
   typeExports_.append(type);
-  return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeCompositeType->irTypeComplete(), true,
       type->typeDefn()->isSynthetic()
           ? GlobalValue::LinkOnceAnyLinkage
           : GlobalValue::ExternalLinkage,
@@ -378,7 +375,7 @@ llvm::GlobalVariable * Reflector::getEnumTypePtr(const EnumType * type) {
   }
 
   if (!isExport(type->typeDefn())) {
-    return new GlobalVariable(*irModule_, Builtins::typeEnumType->irType(), true,
+    return new GlobalVariable(*irModule_, Builtins::typeEnumType->irTypeComplete(), true,
         GlobalValue::ExternalLinkage, NULL, typeSymbol);
   }
 
@@ -386,7 +383,7 @@ llvm::GlobalVariable * Reflector::getEnumTypePtr(const EnumType * type) {
     diag.fatal() << "Attempting to add a type export during output phase: " << type;
   }
   typeExports_.append(type);
-  return new GlobalVariable(*irModule_, Builtins::typeEnumType->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeEnumType->irTypeComplete(), true,
       type->typeDefn()->isSynthetic()
           ? GlobalValue::LinkOnceAnyLinkage
           : GlobalValue::ExternalLinkage,
@@ -410,7 +407,7 @@ llvm::GlobalVariable * Reflector::getDerivedTypePtr(const Type * type) {
     getTypePtr(type->typeParam(i));
   }
 
-  return new GlobalVariable(*irModule_, Builtins::typeDerivedType->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeDerivedType->irTypeComplete(), true,
       GlobalValue::LinkOnceODRLinkage,
       NULL, Twine(typeSymbol));
 }
@@ -434,7 +431,7 @@ llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) 
   }
 
   typeExports_.append(type);
-  return new GlobalVariable(*irModule_, Builtins::typeFunctionType->irType(), true,
+  return new GlobalVariable(*irModule_, Builtins::typeFunctionType->irTypeComplete(), true,
       GlobalValue::LinkOnceODRLinkage,
       NULL, Twine(typeSymbol));
 }
@@ -444,6 +441,9 @@ void Reflector::emitModule(Module * module) {
 
   NameTable & nameTable = cg_.nameTable();
   const DefnSet & reflectedDefs = module->reflectedDefs();
+
+  Builtins::typeModule->createIRTypeFields();
+  Builtins::typeEnumType->createIRTypeFields();
 
   // See if there are any reflected defns.
   bool hasReflectedDefns = false;
@@ -480,7 +480,7 @@ void Reflector::emitModule(Module * module) {
       sb.addPointerField(reflect::Module::memberTypes, emitMemberTypes(module));
       sb.addPointerField(reflect::Module::methods, emitMethodList(module, false, moduleName));
 
-      modulePtr->setInitializer(sb.build());
+      modulePtr->setInitializer(sb.build(Builtins::typeModule));
     }
   } else {
     nameTable.assignIndices();
@@ -555,7 +555,7 @@ void Reflector::emitNameTable(Module * module) {
     sb.addNullField(reflect::NameTable::compoundNames.type());
     sb.addNullField(reflect::NameTable::compoundNameStrings.type());
 
-    nameTablePtr->setInitializer(sb.build(Builtins::typeNameTable->irType()));
+    nameTablePtr->setInitializer(sb.build(Builtins::typeNameTable));
     cg_.addStaticRoot(nameTablePtr, Builtins::typeNameTable);
   }
 }
@@ -729,7 +729,7 @@ void Reflector::emitMethod(const FunctionDefn * fn) {
   // Method._isConstructor
   sb.addIntegerField(reflect::Method::isConstructor, fn->isCtor() ? 1 : 0);
 
-  var->setInitializer(sb.build(Builtins::typeMethod->irType()));
+  var->setInitializer(sb.build(Builtins::typeMethod));
 }
 
 void Reflector::emitProperty(const PropertyDefn * prop) {
@@ -748,12 +748,12 @@ void Reflector::emitField(const VariableDefn * field) {
 
   // DataMember._selfType
   sb.addNullField(reflect::DataMember::selfType.type());
-  sb.combine();
+  sb.combine(Builtins::typeDataMember);
 
   // Field._offset, Field._addr
   if (field->storageClass() == Storage_Instance) {
     const CompositeType * cls = field->definingClass();
-    const StructType * clsType = cast<StructType>(cls->irType());
+    StructType * clsType = cast<StructType>(cls->irTypeComplete());
     sb.addField(
         llvm::ConstantExpr::getIntegerCast(
             llvm::ConstantExpr::getOffsetOf(clsType, field->memberIndex()),
@@ -765,11 +765,11 @@ void Reflector::emitField(const VariableDefn * field) {
     sb.addPointerField(reflect::Field::addr, cg_.genGlobalVar(field));
   }
 
-  var->setInitializer(sb.build(Builtins::typeField->irType()));
+  var->setInitializer(sb.build(Builtins::typeField));
 }
 
 llvm::Constant * Reflector::emitMember(const ValueDefn * member,
-    const CompositeType * memberType, llvm::StringRef name) {
+    const CompositeType * memberType, StringRef name) {
   GlobalVariable * nameTableVar = getNameTablePtr(cg_.module());
 
   // Generate the Member instance
@@ -802,7 +802,7 @@ llvm::Constant * Reflector::emitMember(const ValueDefn * member,
   // Member._attributes
   sb.addPointerField(reflect::Member::attributes, emitAttributeList(member->attrs(), name));
 
-  return sb.build();
+  return sb.build(Builtins::typeMember);
 }
 
 void Reflector::emitType(const Type * type) {
@@ -834,6 +834,7 @@ void Reflector::emitType(const Type * type) {
 
     case Type::NArray:
       DFAIL("Implement");
+      break;
 
     default:
       diag.fatal() << "Attempt to emit type pointer for unsupported type: " << type;
@@ -854,7 +855,7 @@ void Reflector::emitCompositeType(const CompositeType * type) {
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typeCompositeType);
   sb.addIntegerField(reflect::Type::typeKind.type(), typeKind(type->typeClass()));
-  sb.combine();
+  sb.combine(Builtins::typeType);
 
   // CompositeType._names
   sb.addField(nameTableVar);
@@ -865,7 +866,7 @@ void Reflector::emitCompositeType(const CompositeType * type) {
   if (type->isSingular()) {
     sb.addField(
         llvm::ConstantExpr::getIntegerCast(
-            llvm::ConstantExpr::getSizeOf(type->irType()),
+            llvm::ConstantExpr::getSizeOf(type->irTypeComplete()),
             reflect::CompositeType::size.type()->irType(),
             false));
   } else {
@@ -931,7 +932,7 @@ void Reflector::emitCompositeType(const CompositeType * type) {
     sb.addNullField(reflect::CompositeType::noArgCtor.type());
   }
 
-  var->setInitializer(sb.build(Builtins::typeCompositeType->irType()));
+  var->setInitializer(sb.build(Builtins::typeCompositeType));
 }
 
 void Reflector::emitEnumType(const EnumType * type) {
@@ -949,7 +950,7 @@ void Reflector::emitEnumType(const EnumType * type) {
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typeEnumType);
   sb.addIntegerField(reflect::Type::typeKind.type(), ENUM);
-  sb.combine();
+  sb.combine(Builtins::typeType);
 
   // EnumType._names
   sb.addField(nameTableVar);
@@ -960,7 +961,7 @@ void Reflector::emitEnumType(const EnumType * type) {
   sb.addNullField(reflect::EnumType::supertype.type());
   sb.addNullField(reflect::EnumType::values.type());
 
-  var->setInitializer(sb.build(Builtins::typeEnumType->irType()));
+  var->setInitializer(sb.build(Builtins::typeEnumType));
 }
 
 void Reflector::emitDerivedType(const Type * type) {
@@ -973,13 +974,13 @@ void Reflector::emitDerivedType(const Type * type) {
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typeDerivedType);
   sb.addIntegerField(reflect::Type::typeKind.type(), typeKind(type->typeClass()));
-  sb.combine();
+  sb.combine(Builtins::typeType);
 
   ConstTypeList typeParamList;
   type->getTypeParams(typeParamList);
   sb.addPointerField(reflect::DerivedType::typeParams, emitTypeList(typeParamList));
 
-  var->setInitializer(sb.build(Builtins::typeDerivedType->irType()));
+  var->setInitializer(sb.build(Builtins::typeDerivedType));
 }
 
 void Reflector::emitFunctionType(const FunctionType * type) {
@@ -1004,7 +1005,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typeFunctionType);
   sb.addIntegerField(reflect::Type::typeKind.type(), typeKind(type->typeClass()));
-  sb.combine();
+  sb.combine(Builtins::typeType);
 
   // FunctionType._returnType
   sb.addPointerField(reflect::FunctionType::returnType, getTypePtr(type->returnType()));
@@ -1027,7 +1028,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
     sb.addNullField(reflect::FunctionType::invoke.type());
   }
 
-  var->setInitializer(sb.build(Builtins::typeFunctionType->irType()));
+  var->setInitializer(sb.build(Builtins::typeFunctionType));
 }
 
 llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
@@ -1042,8 +1043,8 @@ llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
   return emitTypeList(memberTypes);
 }
 
-llvm::Constant * Reflector::emitAttributeList(const ExprList & attrs, llvm::StringRef name) {
-  const llvm::Type * objType = Builtins::typeObject->irEmbeddedType();
+llvm::Constant * Reflector::emitAttributeList(const ExprList & attrs, StringRef name) {
+  llvm::Type * objType = Builtins::typeObject->irEmbeddedType();
   ConstantList retainedAttrs;
   for (ExprList::const_iterator it = attrs.begin(); it != attrs.end(); ++it) {
     llvm::Constant * retainedAttr = getRetainedAttr(*it, name);
@@ -1058,7 +1059,7 @@ llvm::Constant * Reflector::emitAttributeList(const ExprList & attrs, llvm::Stri
 }
 
 llvm::Constant * Reflector::emitMethodList(const IterableScope * scope, bool ctors,
-    llvm::StringRef name) {
+    StringRef name) {
   ConstantList methods;
 
   for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -1074,7 +1075,7 @@ llvm::Constant * Reflector::emitMethodList(const IterableScope * scope, bool cto
       Builtins::typeMethodList, Builtins::typeMethod);
 }
 
-llvm::Constant * Reflector::emitPropertList(const IterableScope * scope, llvm::StringRef name) {
+llvm::Constant * Reflector::emitPropertList(const IterableScope * scope, StringRef name) {
   ConstantList properties;
 
   for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -1089,7 +1090,7 @@ llvm::Constant * Reflector::emitPropertList(const IterableScope * scope, llvm::S
       Builtins::typePropertyList, Builtins::typeProperty);
 }
 
-llvm::Constant * Reflector::emitFieldList(const IterableScope * scope, llvm::StringRef name) {
+llvm::Constant * Reflector::emitFieldList(const IterableScope * scope, StringRef name) {
   ConstantList fields;
 
   for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
@@ -1123,7 +1124,7 @@ llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
     return var;
   }
 
-  const llvm::Type * typePtrType = Builtins::typeType->irEmbeddedType();
+  llvm::Type * typePtrType = Builtins::typeType->irEmbeddedType();
   ConstantList typePtrList;
   for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
     llvm::Constant * ptr = getTypePtr(*it);
@@ -1138,7 +1139,7 @@ llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
   sb.createObjectHeader(Builtins::typeTypeList);
   sb.addIntegerField(reflect::TypeList::size, typePtrList.size());
   sb.addField(typePtrArray);
-  Constant * typeListStruct = sb.build();
+  Constant * typeListStruct = sb.buildAnon();
 
   var = new GlobalVariable(*irModule_, typeListStruct->getType(), true,
       GlobalValue::LinkOnceAnyLinkage, typeListStruct, Twine(sym));
@@ -1146,7 +1147,7 @@ llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
 }
 
 llvm::Constant * Reflector::emitStaticList(const ConstantList & elements,
-    llvm::StringRef namePrefix, llvm::StringRef nameSuffix,
+    StringRef namePrefix, StringRef nameSuffix,
     const CompositeType * listType, const CompositeType * elementType) {
   // If it's an empty list, then create a shared static singleton empty list.
   std::string name(namePrefix);
@@ -1172,7 +1173,7 @@ llvm::Constant * Reflector::emitStaticList(const ConstantList & elements,
   sb.createObjectHeader(listType);
   sb.addIntegerField(reflect::MethodList::size, elements.size());
   sb.addField(data);
-  Constant * listStruct = sb.build();
+  Constant * listStruct = sb.buildAnon();
 
   return new GlobalVariable(*irModule_, listStruct->getType(), true, linkage, listStruct, name);
 }
@@ -1188,7 +1189,6 @@ llvm::Constant * Reflector::emitArray(
   }
   const CompositeType * arrayType = cast<CompositeType>(varType);
   const Type * elementType = arrayType->typeParam(0);
-  irModule_->addTypeName(arrayType->typeDefn()->linkageName(), arrayType->irType());
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), var);
 
   if (values.empty()) {
@@ -1200,7 +1200,7 @@ llvm::Constant * Reflector::emitArray(
   sb.addField(cg_.getIntVal(values.size()));
   sb.addArrayField(elementType, values);
 
-  llvm::Constant * arrayStruct = sb.build();
+  llvm::Constant * arrayStruct = sb.build(arrayType);
   GlobalVariable * array = new GlobalVariable(*irModule_,
       arrayStruct->getType(), true, GlobalValue::InternalLinkage, arrayStruct,
       ".data." + baseName + var->name());
@@ -1209,13 +1209,13 @@ llvm::Constant * Reflector::emitArray(
 
 Module * Reflector::module() { return cg_.module(); }
 
-llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName) {
+llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, StringRef baseName) {
   const CompositeType * ctype = cast<CompositeType>(attrExpr->type());
   if (ctype->attributeInfo().isRetained()) {
     if (isa<ConstantObjectRef>(attrExpr)) {
       // Construct a unique name for this attribute instance.
       int index = 0;
-      llvm::StringRef attrInstanceName;
+      StringRef attrInstanceName;
       llvm::SmallVector<char, 64> attrInstanceNameBuffer;
       for (;; ++index) {
         llvm::Twine attrInstanceNameBuilder =

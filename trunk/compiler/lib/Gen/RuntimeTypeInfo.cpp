@@ -13,17 +13,14 @@ using namespace llvm;
 
 RuntimeTypeInfo::RuntimeTypeInfo(const CompositeType * ty, Module * m)
   : type(ty)
-  , linkageType(GlobalValue::ExternalLinkage)
-  , typeDescriptor_(NULL)
-  , typeInfoBlock(NULL)
-  , typeInfoBlockType(llvm::OpaqueType::get(llvm::getGlobalContext()))
-  , typeInfoPtr(NULL)
-  , typeAllocator(NULL)
+  , linkageType_(GlobalValue::ExternalLinkage)
+  , typeInfoBlock_(NULL)
+  , typeAllocator_(NULL)
 {
-  external = type->typeDefn()->module() != m;
+  external_ = type->typeDefn()->module() != m;
   if (type->typeDefn()->isSynthetic()) {
-    external = false;
-    linkageType = GlobalValue::LinkOnceODRLinkage;
+    external_ = false;
+    linkageType_ = GlobalValue::LinkOnceODRLinkage;
   }
 }
 

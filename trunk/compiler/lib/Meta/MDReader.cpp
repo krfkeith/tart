@@ -5,7 +5,6 @@
 #include "tart/AST/Stmt.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Defn/Module.h"
 #include "tart/Defn/TypeDefn.h"
@@ -71,7 +70,7 @@ uint32_t NodeRef::intArg(unsigned n) const {
   return 0;
 }
 
-llvm::StringRef NodeRef::strArg(unsigned n) const {
+StringRef NodeRef::strArg(unsigned n) const {
   const llvm::Value * val = arg(n);
   if (const MDString * str = dyn_cast_or_null<MDString>(val)) {
     return str->getString();
@@ -80,13 +79,13 @@ llvm::StringRef NodeRef::strArg(unsigned n) const {
   diag.error() << "Expected metadata operand # " << n << " to be an MDString";
   node_->dump();
   DFAIL("IllegalState");
-  return llvm::StringRef();
+  return StringRef();
 }
 
-llvm::StringRef NodeRef::optStrArg(unsigned n) const {
+StringRef NodeRef::optStrArg(unsigned n) const {
   const llvm::Value * val = arg(n);
   if (val == NULL) {
-    return llvm::StringRef();
+    return StringRef();
   } else if (const MDString * str = dyn_cast_or_null<MDString>(val)) {
     return str->getString();
   }
@@ -94,7 +93,7 @@ llvm::StringRef NodeRef::optStrArg(unsigned n) const {
   diag.error() << "Expected metadata operand # " << n << " to be an MDString";
   node_->dump();
   DFAIL("IllegalState");
-  return llvm::StringRef();
+  return StringRef();
 }
 
 NodeRef NodeRef::nodeArg(unsigned n) const {
@@ -169,7 +168,7 @@ bool MDReader::read(NamedMDNode * md) {
 
 bool MDReader::readModuleImports(NodeRef node) {
   if (node.size() > 0) {
-    ASTReader reader(module_->location(), node.strArg(0));
+    ASTReader reader(module_->location(), module_->moduleStrings(), node.strArg(0));
     if (!reader.readAll(module_->imports())) {
       return false;
     }
@@ -192,9 +191,9 @@ bool MDReader::readImports(Defn * de, ASTNodeList & imports) {
     return true;
   }
 
-  llvm::StringRef str = importsNode.strArg(0);
+  StringRef str = importsNode.strArg(0);
   if (!str.empty()) {
-    ASTReader reader(de->location(), str);
+    ASTReader reader(de->location(), module_->moduleStrings(), str);
     if (!reader.readAll(imports)) {
       return false;
     }
@@ -325,7 +324,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
         case meta::Defn::PROTOCOL: tc = Type::Protocol; break;
       }
 
-      TypeDefn * tdef = new TypeDefn(module_, istrings.intern(name));
+      TypeDefn * tdef = new TypeDefn(module_, module_->internString(name));
       tdef->setLocation(location);
       tdef->setVisibility(visibility);
 
@@ -353,7 +352,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::ENUM: {
-      TypeDefn * tdef = new TypeDefn(module_, istrings.intern(name));
+      TypeDefn * tdef = new TypeDefn(module_, module_->internString(name));
       tdef->setVisibility(visibility);
       tdef->setLocation(location);
 
@@ -370,7 +369,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::TYPEALIAS: {
-      TypeDefn * tdef = new TypeDefn(module_, istrings.intern(name));
+      TypeDefn * tdef = new TypeDefn(module_, module_->internString(name));
       tdef->setLocation(location);
       tdef->setVisibility(visibility);
       tdef->setStorageClass(storage);
@@ -384,7 +383,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::NAMESPACE: {
-      NamespaceDefn * ns = new NamespaceDefn(module_, istrings.intern(name));
+      NamespaceDefn * ns = new NamespaceDefn(module_, module_->internString(name));
       ns->setLocation(location);
       ns->setVisibility(visibility);
       ns->setMDNode(node.node());
@@ -400,8 +399,8 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     case meta::Defn::CONSTRUCTOR:
     case meta::Defn::MACRO: {
       FunctionDefn * fn = new FunctionDefn(
-          tag == meta::Defn::MACRO ? Defn::Macro : Defn::Function,
-          module_, istrings.intern(name));
+          tag == meta::Defn::MACRO ? Defn::Macro : Defn::Function, module_,
+              module_->internString(name));
       fn->setLocation(location);
       fn->setVisibility(visibility);
       fn->setStorageClass(storage);
@@ -445,7 +444,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::PARAM: {
-      ParameterDefn * param = new ParameterDefn(module_, istrings.intern(name));
+      ParameterDefn * param = new ParameterDefn(module_, module_->internString(name));
       param->setLocation(location);
       const Type * type = readTypeRef(node.strArg(FIELD_PARAM_TYPE));
       if (type == NULL) {
@@ -477,7 +476,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::PROPERTY: {
-      PropertyDefn * prop = new PropertyDefn(Defn::Property, module_, istrings.intern(name));
+      PropertyDefn * prop = new PropertyDefn(Defn::Property, module_, module_->internString(name));
       prop->setLocation(location);
       prop->setVisibility(visibility);
       prop->setStorageClass(storage);
@@ -486,7 +485,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     }
 
     case meta::Defn::INDEXER: {
-      IndexerDefn * idx = new IndexerDefn(Defn::Indexer, module_, istrings.intern(name));
+      IndexerDefn * idx = new IndexerDefn(Defn::Indexer, module_, module_->internString(name));
       idx->setLocation(location);
       idx->setVisibility(visibility);
       idx->setStorageClass(storage);
@@ -497,7 +496,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
     case meta::Defn::VARIABLE:
     case meta::Defn::LET: {
       VariableDefn * var = new VariableDefn(tag == meta::Defn::LET ? Defn::Let : Defn::Var,
-          module_, istrings.intern(name));
+          module_, module_->internString(name));
       var->setLocation(location);
       var->setVisibility(visibility);
       var->setStorageClass(storage);
@@ -597,7 +596,7 @@ bool MDReader::readEnumConstants(TypeDefn * tdef) {
       return false;
     }
 
-    VariableDefn * var = new VariableDefn(Defn::Let, module_, istrings.intern(name), value);
+    VariableDefn * var = new VariableDefn(Defn::Let, module_, module_->internString(name), value);
     var->setStorageClass(Storage_Static);
     var->setType(ety);
     var->setLocation(tdef->location());
@@ -656,7 +655,7 @@ const Stmt * MDReader::readFunctionBody(FunctionDefn * fn) {
     return NULL;
   }
   //diag.debug() << Format_QualifiedName << "Reading body for: " << fn;
-  ASTReader reader(fn->location(), astStr);
+  ASTReader reader(fn->location(), module_->moduleStrings(), astStr);
   return cast_or_null<Stmt>(reader.read());
 }
 
@@ -693,9 +692,9 @@ bool MDReader::readAccessorList(PropertyDefn * prop, NodeRef node) {
   return true;
 }
 
-ASTTemplate * MDReader::readTemplate(SourceLocation loc, llvm::StringRef source,
-    llvm::StringRef name) {
-  ASTReader reader(loc, source);
+ASTTemplate * MDReader::readTemplate(SourceLocation loc, StringRef source,
+    StringRef name) {
+  ASTReader reader(loc, module_->moduleStrings(), source);
   ASTNode * ast = reader.read();
   if (ast == NULL) {
     diag.fatal(loc) << "No template AST found for: " << name;
@@ -797,12 +796,12 @@ Expr * MDReader::readExpression(SourceLocation loc, NodeRef node) {
   return NULL;
 }
 
-const Type * MDReader::readTypeRef(llvm::StringRef str) {
+const Type * MDReader::readTypeRef(StringRef str) {
   if (str.empty()) {
     return NULL;
   }
 
-  ASTReader reader(module_->location(), str);
+  ASTReader reader(module_->location(), module_->moduleStrings(), str);
   ASTNode * ast = reader.read();
   TypeAnalyzer ta(module_, module_);
   ta.setSubject(subject_);

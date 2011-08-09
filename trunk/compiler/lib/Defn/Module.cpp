@@ -9,7 +9,6 @@
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/ScopeBuilder.h"
 
-#include "tart/Common/InternedString.h"
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
 
@@ -27,7 +26,7 @@ NoReflect("noreflect", llvm::cl::desc("Don't generate reflection data"));
 
 namespace tart {
 
-Module::Module(llvm::StringRef qual, Scope * builtinScope)
+Module::Module(StringRef qual, Scope * builtinScope)
   : Defn(Mod, this, "<module>")
   , IterableScope(builtinScope)
   , moduleSource_(NULL)
@@ -40,7 +39,7 @@ Module::Module(llvm::StringRef qual, Scope * builtinScope)
   loc.file = NULL;
   setQualifiedName(qual);
   addTrait(Singular);
-  setScopeName(istrings.intern(qual));
+  setScopeName(moduleStrings_.intern(qual));
 
   if (DebugXDefs == qual) {
     flags_ |= Module_Debug;
@@ -51,7 +50,7 @@ Module::Module(llvm::StringRef qual, Scope * builtinScope)
   }
 }
 
-Module::Module(ProgramSource * src, llvm::StringRef qual)
+Module::Module(ProgramSource * src, StringRef qual)
   : Defn(Mod, this, "<module>")
   , IterableScope(NULL)
   , moduleSource_(src)
@@ -62,19 +61,19 @@ Module::Module(ProgramSource * src, llvm::StringRef qual)
   , irModule_(NULL)
 {
   loc.file = src;
-  setQualifiedName(qual);
+  qname_ = qual;
   addTrait(Singular);
-  setScopeName(istrings.intern(qual));
+  setScopeName(qual);
 }
 
-void Module::setQualifiedName(llvm::StringRef qual) {
+void Module::setQualifiedName(StringRef qual) {
   qname_ = qual;
   size_t dot = qual.rfind('.');
   if (dot == qual.npos) {
-    name_ = istrings.intern(qual);
+    name_ = moduleStrings_.intern(qual);
     packageName_.clear();
   } else {
-    name_ = istrings.intern(qual.substr(dot + 1, qual.npos));
+    name_ = moduleStrings_.intern(qual.substr(dot + 1, qual.npos));
     packageName_ = qual.substr(0, dot);
   }
 }
@@ -108,7 +107,7 @@ void Module::addModuleDependency(Defn * de) {
   }
 }
 
-bool Module::import(llvm::StringRef name, DefnList & defs, bool absPath) {
+bool Module::import(StringRef name, DefnList & defs, bool absPath) {
   Module * mod = PackageMgr::get().loadModule(name);
   if (mod == NULL && !absPath) {
     // Try our own package
@@ -139,7 +138,7 @@ bool Module::import(llvm::StringRef name, DefnList & defs, bool absPath) {
 }
 
 bool Module::findPrimaryDefn() {
-  llvm::StringRef primaryName = qname_;
+  StringRef primaryName = qname_;
   size_t dot = primaryName.rfind('.');
   if (dot != primaryName.npos) {
     primaryName = primaryName.substr(dot + 1, primaryName.npos);
@@ -183,7 +182,7 @@ bool Module::processImportStatements() {
   return true;
 }
 
-bool Module::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
+bool Module::lookupMember(StringRef name, DefnList & defs, bool inherit) const {
   if (!imports_.empty() && !passes_.isFinished(ResolveImportsPass)) {
     const_cast<Module *>(this)->processImportStatements();
   }

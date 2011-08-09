@@ -33,15 +33,17 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
 
   if (gcStaticRoots == NULL) {
     errs() << "Can't find GC_static_roots pointer\n";
-    // abort?
-  } else if (gcStaticRootsArray == NULL) {
-    errs() << "Can't find GC_static_roots_array pointer\n";
-    // abort?
+    abort();
   }
 
-  const Type * rootType = gcStaticRootsArray->getType()->getContainedType(0)->getContainedType(0);
-  const Type * int8PtrTy = rootType->getContainedType(0);
-  const Type * traceDescriptorPtrTy = rootType->getContainedType(1);
+  StructType * rootType = module.getTypeByName("tart.gc.StaticRoot");
+  if (rootType == NULL) {
+    errs() << "Can't find type: tart.gc.StaticRoot\n";
+    abort();
+  }
+
+  Type * int8PtrTy = rootType->getContainedType(0);
+  Type * traceDescriptorPtrTy = rootType->getContainedType(1);
 
   std::vector<Constant *> rootStructs;
   Constant * rootStruct;
@@ -57,12 +59,12 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
           Constant * traceTable = cast_or_null<Constant>(m->getOperand(1));
           if (gv != NULL) {
             if (traceTable == NULL) {
-              outs() << "Root: " << gv->getName() << " with NULL table\n";
+              //outs() << "Null Root: " << gv->getName() << "\n";
             } else {
               //outs() << "Root: " << gv->getName() << "\n";
               members[0] = llvm::ConstantExpr::getPointerCast(gv, int8PtrTy);
               members[1] = traceTable;
-              rootStruct = ConstantStruct::getAnon(context, members, false);
+              rootStruct = ConstantStruct::get(rootType, members);
               rootStructs.push_back(rootStruct);
             }
           }
@@ -73,7 +75,7 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
 
   members[0] = llvm::ConstantPointerNull::get(cast<PointerType>(int8PtrTy));
   members[1] = llvm::ConstantPointerNull::get(cast<PointerType>(traceDescriptorPtrTy));
-  rootStruct = ConstantStruct::getAnon(context, members, false);
+  rootStruct = ConstantStruct::get(rootType, members);
   rootStructs.push_back(rootStruct);
 
   Constant * rootArray = ConstantArray::get(
@@ -87,12 +89,11 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
   Constant * indices[2];
   indices[0] = indices[1] = ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
   gcStaticRoots->setInitializer(
-      llvm::ConstantExpr::getInBoundsGetElementPtr(gcStaticRootsArrayInternal, indices, 2));
+      llvm::ConstantExpr::getGetElementPtr(gcStaticRootsArrayInternal, indices, true));
 
-  // And replace the existing array with it.
-  gcStaticRootsArray->replaceAllUsesWith(
-      llvm::ConstantExpr::getBitCast(gcStaticRootsArrayInternal, gcStaticRootsArray->getType()));
-
+  if (gcStaticRootsArray != NULL) {
+    gcStaticRootsArray->eraseFromParent();
+  }
   return true;
 }
 

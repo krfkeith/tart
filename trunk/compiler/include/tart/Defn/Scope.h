@@ -32,6 +32,8 @@ class Defn;
 class Expr;
 class LocalScope;
 
+using llvm::StringRef;
+
 /// -------------------------------------------------------------------
 /// Scope interface
 class Scope {
@@ -46,10 +48,10 @@ public:
   virtual void addMember(Defn * d) = 0;
 
   /** Find a declaration by name */
-  virtual bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit = false) const = 0;
+  virtual bool lookupMember(StringRef ident, DefnList & defs, bool inherit = false) const = 0;
 
   /** Convenience function used to look up a member with no overloads. */
-  Defn * lookupSingleMember(const char * ident, bool inherit = false) const;
+  Defn * lookupSingleMember(StringRef ident, bool inherit = false) const;
 
   /** Return true if this scope allows overloading. Local scopes and parameter scopes do not. */
   virtual bool allowOverloads() { return false; }
@@ -75,16 +77,10 @@ class IterableScope : public Scope {
 public:
   IterableScope()
       : parentScope_(NULL)
-#ifndef NDEBUG
-      , scopeName_(NULL)
-#endif
   {}
 
   IterableScope(Scope * parent)
       : parentScope_(parent)
-#ifndef NDEBUG
-      , scopeName_(NULL)
-#endif
   {}
 
   /** Get the scope which encloses this one. */
@@ -117,7 +113,7 @@ public:
   size_t count() { return members_.count(); }
   void clear() { members_.clear(); }
   void trace() const;
-  void setScopeName(const char * name) {
+  void setScopeName(StringRef name) {
 #ifndef NDEBUG
     scopeName_ = name;
 #endif
@@ -131,7 +127,7 @@ private:
 
 #ifndef NDEBUG
   // For debugging
-  const char * scopeName_;
+  llvm::SmallString<32> scopeName_;
 #endif
 };
 

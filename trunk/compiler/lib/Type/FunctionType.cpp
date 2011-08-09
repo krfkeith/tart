@@ -16,7 +16,7 @@
 
 #include "tart/Objects/Builtins.h"
 
-#include <llvm/DerivedTypes.h>
+#include "llvm/DerivedTypes.h"
 
 namespace tart {
 
@@ -29,7 +29,7 @@ FunctionType::FunctionType(const Type * rtype, ParameterList & plist)
   , returnType_(rtype)
   , selfParam_(NULL)
   , paramTypes_(NULL)
-  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , irType_(NULL)
   , isCreatingType(false)
   , isStructReturn_(false)
   , isInvocable_(false)
@@ -45,7 +45,7 @@ FunctionType::FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pc
   , returnType_(rtype)
   , selfParam_(NULL)
   , paramTypes_(NULL)
-  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , irType_(NULL)
   , isCreatingType(false)
   , isStructReturn_(false)
   , isInvocable_(false)
@@ -62,7 +62,7 @@ FunctionType::FunctionType(
   , returnType_(rtype)
   , selfParam_(selfParam)
   , paramTypes_(NULL)
-  , irType_(llvm::OpaqueType::get(llvm::getGlobalContext()))
+  , irType_(NULL)
   , isCreatingType(false)
   , isStructReturn_(false)
   , isInvocable_(false)
@@ -76,16 +76,16 @@ void FunctionType::addParam(ParameterDefn * param) {
   params_.push_back(param);
 }
 
-ParameterDefn * FunctionType::addParam(const char * name, const Type * ty) {
+ParameterDefn * FunctionType::addParam(StringRef name, const Type * ty) {
   ParameterDefn * param = new ParameterDefn(NULL, name, ty, 0);
   addParam(param);
   return param;
 }
 
-int FunctionType::paramNameIndex(const char * name) const {
+int FunctionType::paramNameIndex(StringRef name) const {
   for (size_t i = 0; i < params_.size(); i++) {
     ParameterDefn * param = params_[i];
-    if (param->name() != NULL && strcmp(param->name(), name) == 0)
+    if (param->name() == name)
       return i;
   }
 
@@ -111,23 +111,22 @@ TupleType * FunctionType::paramTypes() const {
 }
 
 bool FunctionType::isStructReturn() const {
-  DASSERT_MSG(!isa<llvm::OpaqueType>(irType_.get()),
-      "Getting isStructReturn before irType has been settled.");
+  DASSERT(irType_ != NULL) << "Getting isStructReturn before irType has been settled.";
 
   return isStructReturn_;
 }
 
-const llvm::Type * FunctionType::irType() const {
-  if (llvm::OpaqueType * otype = dyn_cast<llvm::OpaqueType>(irType_.get())) {
+llvm::Type * FunctionType::irType() const {
+  if (irType_ == NULL) {
     if (!isCreatingType) {
-      otype->refineAbstractTypeTo(createIRType());
+      irType_ = createIRType();
     }
   }
 
   return irType_;
 }
 
-const llvm::Type * FunctionType::createIRType() const {
+llvm::Type * FunctionType::createIRType() const {
   using namespace llvm;
 
   DASSERT_OBJ(isSingular(), this);
@@ -148,15 +147,15 @@ const llvm::Type * FunctionType::createIRType() const {
   return createIRFunctionType(selfType, params_, returnType_);
 }
 
-const llvm::FunctionType * FunctionType::createIRFunctionType(
+llvm::FunctionType * FunctionType::createIRFunctionType(
     const Type * selfType, const ParameterList & params, const Type * returnType) const {
   using namespace llvm;
 
   // Types of the function parameters.
-  std::vector<const llvm::Type *> parameterTypes;
+  std::vector<llvm::Type *> parameterTypes;
 
   // See if we need to use a struct return.
-  const llvm::Type * rType = returnType->irReturnType();
+  llvm::Type * rType = returnType->irReturnType();
   if (returnType->typeShape() == Shape_Large_Value) {
     parameterTypes.push_back(rType);
     rType = llvm::Type::getVoidTy(llvm::getGlobalContext());
@@ -165,7 +164,7 @@ const llvm::FunctionType * FunctionType::createIRFunctionType(
 
   // Insert the 'self' parameter if it's an instance method
   if (selfType != NULL) {
-    const llvm::Type * argType = selfType->irType();
+    llvm::Type * argType = selfType->irType();
     if (!isa<PrimitiveType>(selfType) && selfType->typeClass() != Type::Enum) {
       argType = argType->getPointerTo();
     }
@@ -192,7 +191,7 @@ void FunctionType::trace() const {
   safeMark(paramTypes_);
 }
 
-const llvm::Type * FunctionType::irEmbeddedType() const {
+llvm::Type * FunctionType::irEmbeddedType() const {
   return irType()->getPointerTo();
 //  if (isStatic()) {
 //  } else {
@@ -200,7 +199,7 @@ const llvm::Type * FunctionType::irEmbeddedType() const {
 //  }
 }
 
-const llvm::Type * FunctionType::irParameterType() const {
+llvm::Type * FunctionType::irParameterType() const {
   if (isStatic()) {
     return irType()->getPointerTo();
   } else {
@@ -324,7 +323,7 @@ ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
   return Incompatible;
 }
 
-llvm::StringRef FunctionType::invokeName() const {
+StringRef FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {
       invokeName_ += ".invoke_static.";

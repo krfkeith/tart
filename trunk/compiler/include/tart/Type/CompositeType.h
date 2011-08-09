@@ -19,6 +19,7 @@
 
 #include "llvm/ADT/SetVector.h"
 #include "llvm/DerivedTypes.h"
+
 #include <list>
 
 namespace tart {
@@ -187,15 +188,19 @@ public:
   /** Add all of the ancestor classes as references to this module. */
   void addBaseXRefs(Module * module);
 
+  /** Fill in the body for the IR StructType. */
+  void createIRTypeFields() const;
+
   // Overrides
 
-  bool lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const;
+  bool lookupMember(StringRef name, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full) const;
-  const llvm::Type * irType() const;
-  const llvm::Type * createIRType() const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
-  const llvm::Type * irReturnType() const;
+  llvm::Type * irType() const;
+  llvm::Type * irTypeComplete() const;
+  llvm::Type * createIRType() const;
+  llvm::Type * irEmbeddedType() const;
+  llvm::Type * irParameterType() const;
+  llvm::Type * irReturnType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   void format(FormatStream & out) const;
   void trace() const;
@@ -207,17 +212,17 @@ public:
 
   static inline bool classof(const CompositeType *) { return true; }
   static inline bool classof(const Type * t) {
-    return t->typeClass() >= Type::Class &&
-           t->typeClass() <= Type::Protocol;
+    return t->typeClass() >= Type::CompositesBegin &&
+           t->typeClass() <= Type::CompositesEnd;
   }
 
 private:
-  //llvm::PATypeHolder irTypeHolder_;
   ClassList bases_;
   CompositeType * super_;
   int classFlags_;
   MethodList coercers_;
   PassMgr passes_;
+  mutable bool recursionCheck_;
 
   // The list of instance methods for this type
   MethodList instanceMethods_;

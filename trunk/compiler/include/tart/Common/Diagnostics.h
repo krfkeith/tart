@@ -20,19 +20,11 @@ namespace tart {
 /// ---------------------------------------------------------------
 /// Assertion macros
 #define DASSERT(expression) \
-  if (!(expression)) { \
-    diag.assertionFailed(#expression, __FILE__, __LINE__); \
-  } else (void)0
-
-#define DASSERT_MSG(expression, msg) \
-  if (!(expression)) { \
-    diag.assertionFailed(msg, __FILE__, __LINE__); \
-  } else (void)0
+    (expression) ? (void)0 : Diagnostics::VoidResult() & \
+        Diagnostics::AssertionFailureStream(#expression, __FILE__, __LINE__)
 
 #define DASSERT_OBJ(expression, ctx) \
-  if (!(expression)) { \
-    diag.assertionFailed(#expression, __FILE__, __LINE__, ctx); \
-  } else (void)0
+    DASSERT(expression) << "(" << #expression << ") , context = " << Format_Verbose << ctx
 
 #define DFAIL(msg) diag.__fail(msg, __FILE__, __LINE__)
 
@@ -90,7 +82,7 @@ public:
       writeIndent(*this, indent);
     }
 
-    MessageStream(const MessageStream & src) : loc(src.loc) {}
+    MessageStream(const MessageStream & src) : StrFormatStream(src), loc(src.loc) {}
 
     // The destructor is where all the real action happens.
     // When the entry is destructed, the accumulated messages are
@@ -107,18 +99,18 @@ public:
   template <Severity severity>
   class DiagnosticAction {
   public:
-    static void write(const SourceLocation & loc, llvm::StringRef msg);
+    static void write(const SourceLocation & loc, StringRef msg);
   };
 
   /** Diagnostic action which prints a message, then prints a stack trace and exits. */
   class FailAction {
   public:
-    static void write(const SourceLocation & loc, llvm::StringRef msg);
+    static void write(const SourceLocation & loc, StringRef msg);
   };
 
   class AssertAction {
   public:
-    static void write(const SourceLocation & loc, llvm::StringRef msg);
+    static void write(const SourceLocation & loc, StringRef msg);
   };
 
   typedef MessageStream<DiagnosticAction<Fatal> > FatalErrorStream;
@@ -143,7 +135,8 @@ public:
     {}
 
     FailStream(const FailStream & src)
-      : fname_(src.fname_)
+      : StrFormatStream(src)
+      , fname_(src.fname_)
       , lineno_(src.lineno_)
     {}
 
@@ -151,6 +144,34 @@ public:
     // When the entry is destructed, the accumulated messages are
     // written to the diagnostic output.
     LLVM_ATTRIBUTE_NORETURN ~FailStream();
+  };
+
+  /** Stream class which aborts. */
+  class AssertionFailureStream : public StrFormatStream {
+  private:
+    StringRef msg_;
+    const char * fname_;
+    int lineno_;
+
+  public:
+
+    AssertionFailureStream(StringRef msg, const char * fname, int lineno)
+      : msg_(msg)
+      , fname_(fname)
+      , lineno_(lineno)
+    {}
+
+    AssertionFailureStream(const AssertionFailureStream & src)
+      : StrFormatStream(src)
+      , msg_(src.msg_)
+      , fname_(src.fname_)
+      , lineno_(src.lineno_)
+    {}
+
+    // The destructor is where all the real action happens.
+    // When the entry is destructed, the accumulated messages are
+    // written to the diagnostic output.
+    LLVM_ATTRIBUTE_NORETURN ~AssertionFailureStream();
   };
 
   /** A stream which does nothing. */
@@ -166,27 +187,34 @@ public:
 
   class Writer {
   public:
-    virtual void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg) = 0;
+    virtual void write(const SourceLocation & loc, Severity sev, StringRef msg) = 0;
     virtual ~Writer() {}
   };
 
   class StdErrWriter : public Writer {
   public:
-    void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
+    void write(const SourceLocation & loc, Severity sev, StringRef msg);
 
     static StdErrWriter instance;
   };
 
+  /** Used for testing to check for expected errors. */
   class StringWriter : public Writer {
   public:
-    void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
-    llvm::StringRef str() const { return str_.str(); }
+    void write(const SourceLocation & loc, Severity sev, StringRef msg);
+    StringRef str() const { return str_.str(); }
 
     void clear() { str_.clear(); }
 
   private:
     llvm::SmallString<256> str_;
   };
+
+  /** Used to transform a stream into a void result. */
+  class VoidResult {};
+
+  /** Transforms a value of stream type into a void result. */
+  friend void operator&(const VoidResult &, const FormatStream &) {}
 
   Diagnostics();
 
@@ -290,7 +318,7 @@ public:
   int setIndentLevel(int level);
 
   /** write an indented line. */
-  void writeLnIndent(llvm::StringRef str);
+  void writeLnIndent(StringRef str);
 
   /** write an indented line, formatted. */
   void writeLnIndent(const char * msg, ...);
@@ -301,25 +329,8 @@ public:
   /** Write an indentation to 'out'. */
   static void writeIndent(FormatStream & out, int level);
 
-  /** Assertion failure. */
-  LLVM_ATTRIBUTE_NORETURN
-      void assertionFailed(llvm::StringRef expr, const char * fname, unsigned lineno);
-
-  /** Assertion failure. */
-  template<class T>
-  LLVM_ATTRIBUTE_NORETURN void assertionFailed(
-      llvm::StringRef expr, const char * fname, unsigned lineno, const T & obj) {
-    StrFormatStream stream;
-    stream.setFormatOptions(Format_Verbose);
-    stream << expr;
-    stream << ", context = ";
-    stream << obj;
-    stream.flush();
-    assertionFailed(stream.str(), fname, lineno);
-  }
-
   /** Fatal compiler error. */
-  LLVM_ATTRIBUTE_NORETURN void __fail(llvm::StringRef msg, const char * fname, unsigned lineno);
+  LLVM_ATTRIBUTE_NORETURN void __fail(StringRef msg, const char * fname, unsigned lineno);
 
   /** Break execution. */
   static void debugBreak();
@@ -334,7 +345,7 @@ protected:
   int indentLevel;    // Used for dumping hierarchical stuff
   Severity minSeverity;
 
-  void write(const SourceLocation & loc, Severity sev, llvm::StringRef msg);
+  void write(const SourceLocation & loc, Severity sev, StringRef msg);
 };
 
 extern Diagnostics diag;

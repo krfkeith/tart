@@ -94,12 +94,12 @@ AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
 
 AddressType::~AddressType() {}
 
-const llvm::Type * AddressType::createIRType() const {
+llvm::Type * AddressType::createIRType() const {
   DASSERT_OBJ(elementType_ != NULL, this);
   if (elementType_->isVoidType()) {
     return llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
   }
-  const llvm::Type * type = elementType_->irEmbeddedType();
+  llvm::Type * type = elementType_->irEmbeddedType();
   return type->getPointerTo();
 }
 
@@ -235,12 +235,11 @@ const Type * NativeArrayType::elementType() const {
   return (*typeArgs_)[0];
 }
 
-const llvm::Type * NativeArrayType::createIRType() const {
-  //DASSERT_OBJ(elementType().isNonVoidType(), this);
+llvm::Type * NativeArrayType::createIRType() const {
   return llvm::ArrayType::get(elementType()->irEmbeddedType(), size());
 }
 
-const llvm::Type * NativeArrayType::irParameterType() const {
+llvm::Type * NativeArrayType::irParameterType() const {
   return irType()->getPointerTo();
 }
 
@@ -369,7 +368,7 @@ const Type * FlexibleArrayType::elementType() const {
   return (*typeArgs_)[0];
 }
 
-const llvm::Type * FlexibleArrayType::createIRType() const {
+llvm::Type * FlexibleArrayType::createIRType() const {
   return llvm::ArrayType::get(elementType()->irEmbeddedType(), 0);
 }
 

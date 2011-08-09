@@ -124,9 +124,9 @@ public:
 /// String constant
 class ConstantString : public ConstantExpr {
 public:
-  ConstantString(SourceLocation l, llvm::StringRef val);
+  ConstantString(SourceLocation l, StringRef val);
 
-  llvm::StringRef value() const { return value_; }
+  StringRef value() const { return value_; }
 
   // Overrides
 

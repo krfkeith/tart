@@ -76,7 +76,7 @@ XmlWriter & XmlWriter::beginProcessingInstruction(StringRef psName) {
 }
 
 XmlWriter & XmlWriter::endProcessingInstruction() {
-  DASSERT_MSG(state_ == PI, "Not in a processing instruction");
+  DASSERT(state_ == PI) << "Not in a processing instruction";
   strm_ << "?>";
   state_ = CHARACTERS;
   return *this;

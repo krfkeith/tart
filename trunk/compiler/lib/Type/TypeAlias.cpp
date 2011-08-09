@@ -17,20 +17,20 @@ TypeAlias::TypeAlias(const Type * val, TypeDefn * defn)
 {
 }
 
-const llvm::Type * TypeAlias::irType() const {
+llvm::Type * TypeAlias::irType() const {
   DASSERT(value_ != NULL);
   return value_->irType();
 }
 
-const llvm::Type * TypeAlias::irEmbeddedType() const {
+llvm::Type * TypeAlias::irEmbeddedType() const {
   return value_->irEmbeddedType();
 }
 
-const llvm::Type * TypeAlias::irParameterType() const {
+llvm::Type * TypeAlias::irParameterType() const {
   return value_->irParameterType();
 }
 
-const llvm::Type * TypeAlias::irReturnType() const {
+llvm::Type * TypeAlias::irReturnType() const {
   return value_->irReturnType();
 }
 

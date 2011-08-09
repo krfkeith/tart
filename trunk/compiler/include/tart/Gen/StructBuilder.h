@@ -5,16 +5,24 @@
 #ifndef TART_GEN_STRUCTBUILDER_H
 #define TART_GEN_STRUCTBUILDER_H
 
-#include <llvm/DerivedTypes.h>
-#include <llvm/Constant.h>
+#ifndef LLVM_ADT_SMALLVECTOR_H
+#include "llvm/ADT/SmallVector.h"
+#endif
+
+#ifndef LLVM_DERIVED_TYPES_H
+#include "llvm/DerivedTypes.h"
+#endif
+
+#ifndef LLVM_CONSTANT_H
+#include "llvm/Constant.h"
+#endif
 
 namespace tart {
 
 class CodeGenerator;
 class Type;
+class CompositeType;
 class VariableDefn;
-
-typedef std::vector<llvm::Constant *> ConstantList;
 
 /// -------------------------------------------------------------------
 /// StructBuilder
@@ -44,24 +52,31 @@ public:
   StructBuilder & addPointerField(VariableDefn * var, llvm::Constant * value);
 
   /** Add a native array field consisting of elements of type 'elementType'. */
-  StructBuilder & addArrayField(const Type * elementType, const ConstantList & values);
+  StructBuilder & addArrayField(const Type * elementType, llvm::ArrayRef<llvm::Constant *> values);
 
   /** Add a native array whose type is derived from the type of 'arrayVar' and whose
       elements consist of 'values. */
-  StructBuilder & addArrayField(const VariableDefn * arrayVar, const ConstantList & values);
+  StructBuilder & addArrayField(
+      const VariableDefn * arrayVar, llvm::ArrayRef<llvm::Constant *> values);
 
   /** Combine all of the members into a single structure field. */
-  StructBuilder & combine();
+  StructBuilder & combine(const Type * type);
 
   /** Build a constant struct from the member fields. */
-  llvm::Constant * build() const;
+  llvm::Constant * buildAnon() const;
 
-  /** Build a constant struct from the member fields, and verify that it is the expected
-      type. */
-  llvm::Constant * build(const llvm::Type * expectedType) const;
+  /** Build a constant struct from the member fields, and verify that it is the expected type. */
+  llvm::Constant * build(llvm::Type * expectedType) const;
+
+  /** Build a constant struct from the member fields, and verify that it is the expected type. */
+  llvm::Constant * build(const CompositeType * expectedType) const;
+
+  /** Given a named type with no body, set the type body to the types of the member fields,
+      and then return a constant struct with that type. */
+  llvm::Constant * buildBody(llvm::StructType * stype) const;
 
 private:
-  ConstantList members_;
+  llvm::SmallVector<llvm::Constant *, 16> members_;
   CodeGenerator & gen_;
 };
 

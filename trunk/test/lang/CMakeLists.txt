@@ -85,6 +85,8 @@ endif (GENERATE_DEBUG_INFO)
 
 set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
 
+add_custom_target(testlibs DEPENDS libstd)
+
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TEST_SRC})
   # Source file name
@@ -120,7 +122,7 @@ foreach(SRC_FILE ${TEST_SRC})
             -o ${OUT_BC_FILE}
             ${BC_FILE} ${BC_LIBS}
         MAIN_DEPENDENCY "${BC_FILE}" 
-        DEPENDS ${BC_LIBS}
+        DEPENDS testlibs ${BC_LIBS}
         COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
     # Optimize object files

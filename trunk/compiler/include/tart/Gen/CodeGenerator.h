@@ -17,7 +17,6 @@
 #include "llvm/Analysis/DebugInfo.h"
 #include "llvm/Analysis/DIBuilder.h"
 #include "llvm/Target/TargetData.h"
-#include <iostream>
 
 // If true, means that structs are passed as first-class values internally within
 // a function; If false, it means they are passed as pointers.
@@ -213,17 +212,17 @@ public:
   bool genLetDefn(VariableDefn * let);
 
   /** Generate IR types. */
-  const llvm::Type * genTypeDefn(TypeDefn * typeDef);
-  const llvm::Type * genPrimitiveType(PrimitiveType * tdef);
-  const llvm::Type * genCompositeType(const CompositeType * tdef);
-  const llvm::Type * genEnumType(EnumType * tdef);
+  llvm::Type * genTypeDefn(TypeDefn * typeDef);
+  llvm::Type * genPrimitiveType(PrimitiveType * tdef);
+  llvm::Type * genCompositeType(const CompositeType * tdef);
+  llvm::Type * genEnumType(EnumType * tdef);
 
     /** Generate the code that allocates storage for locals on the stack. */
   void genLocalStorage(LocalScopeList & lsl);
   void genLocalRoots(LocalScopeList & lsl);
   void genLocalVar(VariableDefn * var, llvm::Value * initialVal);
   void genGCRoot(llvm::Value * lValue, const Type * varType,
-      llvm::StringRef rootName = llvm::StringRef());
+      StringRef rootName = StringRef());
   llvm::Value * addTempRoot(const Type * type, llvm::Value * value, const llvm::Twine & name);
   void initGCRoot(llvm::Value * allocaValue);
   size_t rootStackSize() const { return rootStack_.size(); }
@@ -257,7 +256,7 @@ public:
   /** Generate an expression (an RValue). */
   llvm::Value * genExpr(const Expr * expr);
   llvm::Constant * genConstExpr(const Expr * expr);
-  llvm::Constant * genConstRef(const Expr * in, llvm::StringRef name, bool synthetic);
+  llvm::Constant * genConstRef(const Expr * in, StringRef name, bool synthetic);
   llvm::Value * genInitVar(const InitVarExpr * in);
   llvm::Value * genClearVar(const ClearVarExpr * in);
   llvm::Value * genBinaryOpcode(const BinaryOpcodeExpr * expr);
@@ -348,7 +347,6 @@ public:
 
   /** Generate a reference to the TypeInfoBlock for this type. */
   llvm::Constant * getTypeInfoBlockPtr(const CompositeType * ctype);
-  llvm::Constant * createTypeInfoBlockPtr(RuntimeTypeInfo * rtype);
   bool createTypeInfoBlock(RuntimeTypeInfo * rtype);
   bool createTemplateTypeInfoBlock(const CompositeType * type);
 
@@ -399,7 +397,7 @@ public:
   llvm::Function * getGcAlloc();
 
   /** Generate data structures for a string literal. */
-  llvm::Constant * genStringLiteral(llvm::StringRef strval, llvm::StringRef symName = "");
+  llvm::Constant * genStringLiteral(StringRef strval, StringRef symName = "");
 
   /** Generate an array literal. */
   llvm::Value * genArrayLiteral(const ArrayLiteralExpr * in);
@@ -411,7 +409,7 @@ public:
   llvm::Value * genVarSizeAlloc(const Type * objType, llvm::Value * sizeValue);
 
   /** Generate a constant object. */
-  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, llvm::StringRef name,
+  llvm::GlobalVariable * genConstantObjectPtr(const ConstantObjectRef * obj, StringRef name,
       bool synthetic);
 
   /** Generate the contents of a constant object. */
@@ -426,7 +424,7 @@ public:
 
   /** Generate a pointer to a constant array. */
   llvm::Constant * genConstantNativeArrayPtr(const ConstantNativeArray * array,
-      llvm::StringRef name);
+      StringRef name);
 
   /** Generate a constant union. */
   llvm::Constant * genConstantUnion(const CastExpr * array);
@@ -454,8 +452,6 @@ public:
 
   /** Return a 64-bit constant integer with the specified value. */
   llvm::ConstantInt * getInt64Val(int64_t value);
-
-  llvm::Constant * getStructVal(llvm::Constant * member, ...);
 
   /** Return the debug compile unit for the specified source file. */
   void genDICompileUnit();
@@ -486,8 +482,8 @@ public:
   llvm::DIType genDIFunctionType(const FunctionType * type);
   llvm::DIType genDITypeMember(llvm::DIDescriptor scope, const VariableDefn * var,
       uint64_t & offset);
-  llvm::DIType genDITypeMember(llvm::DIDescriptor Scope, const llvm::Type * type,
-      llvm::DIType memberType, llvm::StringRef name, unsigned sourceLine, uint64_t & offset);
+  llvm::DIType genDITypeMember(llvm::DIDescriptor Scope, llvm::Type * type,
+      llvm::DIType memberType, StringRef name, unsigned sourceLine, uint64_t & offset);
   llvm::DIType genDIEmbeddedType(const Type * type);
   llvm::DIType genDIParameterType(const Type * type);
 
@@ -504,7 +500,7 @@ public:
   llvm::Function * genCallAdapterFn(const FunctionType * fnType);
 
   // Generate the the type of an invoke function.
-  const llvm::FunctionType * getCallAdapterFnType();
+  llvm::FunctionType * getCallAdapterFnType();
 
   /** Generate a reference to the TypeInfoBlock for a proxy type. */
   llvm::Constant * genProxyType(const CompositeType * ctype);
@@ -513,7 +509,7 @@ public:
   llvm::Function * genInterceptFn(const FunctionDefn * fn);
 
   /** Return the void * type for method pointers in a method table. */
-  const llvm::Type * getMethodPointerType() { return methodPtrType_; }
+  llvm::Type * getMethodPointerType() { return methodPtrType_; }
 
   // Module metadata methods
   void genModuleMetadata();
@@ -573,26 +569,23 @@ private:
   llvm::Constant * genReflectionDataArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
 
-  void addTypeName(const CompositeType * type);
-
   /** Generate code to throw a typecast exception at the current point. */
   void throwCondTypecastError(llvm::Value * typeTestResult);
   void throwTypecastError();
 
-  uint64_t getSizeOfInBits(const llvm::Type * ty);
-  uint64_t getAlignOfInBits(const llvm::Type * ty);
+  uint64_t getSizeOfInBits(llvm::Type * ty);
+  uint64_t getAlignOfInBits(llvm::Type * ty);
   uint64_t align(uint64_t offset, uint64_t align);
   unsigned getDefnFlags(const Defn * de);
 
   bool hasAddress(const Expr * expr);
-  void ensureLValue(const Expr * expr, const llvm::Type * irType);
+  void ensureLValue(const Expr * expr, llvm::Type * irType);
   void checkCallingArgs(const llvm::Value * fn,
       ValueList::const_iterator first, ValueList::const_iterator last);
-  llvm::Value * loadValue(llvm::Value * value, const Expr * expr, llvm::StringRef name = "");
+  llvm::Value * loadValue(llvm::Value * value, const Expr * expr, StringRef name = "");
   llvm::Value * genArgExpr(const Expr * arg, bool saveIntermediateStackRoots);
 
-  void markGCRoot(llvm::Value * value, llvm::Constant * metadata,
-      llvm::StringRef rootName = llvm::StringRef());
+  void markGCRoot(llvm::Value * value, llvm::Constant * metadata, StringRef rootName = StringRef());
 
   llvm::Value * doAssignment(const AssignmentExpr * in, llvm::Value * lvalue, llvm::Value * rvalue);
 
@@ -602,16 +595,16 @@ private:
   Module * module_;
   llvm::Module * irModule_;
   llvm::Function * currentFn_;
-  const llvm::FunctionType * invokeFnType_;
+  llvm::FunctionType * invokeFnType_;
   llvm::Value * structRet_;
   const llvm::TargetData * targetData_;
-  const llvm::IntegerType * intPtrType_;
+  llvm::IntegerType * intPtrType_;
   llvm::Value * voidValue_;
 
   llvm::Function * moduleInitFunc_;
   llvm::BasicBlock * moduleInitBlock_;
 
-  const llvm::PointerType * methodPtrType_;
+  llvm::PointerType * methodPtrType_;
 
   Reflector reflector_;
   NameTable nameTable_;
@@ -672,7 +665,7 @@ private:
 
 #endif
 
-FormatStream & operator<<(FormatStream & out, const llvm::Type * type);
+FormatStream & operator<<(FormatStream & out, llvm::Type * type);
 FormatStream & operator<<(FormatStream & out, const llvm::Value * value);
 FormatStream & operator<<(FormatStream & out, const ValueList & values);
 

@@ -1,0 +1,10 @@
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return testIterator("Hello", "World");
+}
+
+def testIterator(s:String...) -> int32 {
+  let it = s.iterate();
+  let n = it.next();
+  return 0;
+}

@@ -13,7 +13,6 @@
 #include "tart/Type/FunctionType.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Sema/EnumAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
@@ -31,7 +30,7 @@ namespace tart {
 class EnumConstructor : public FunctionDefn {
 public:
   EnumConstructor(Module * m, EnumType * type)
-    : FunctionDefn(m, istrings.idCreate, createFunctionType(m, type))
+    : FunctionDefn(m, "create", createFunctionType(m, type))
     , type_(type)
   {
     addTrait(Defn::Synthetic);
@@ -403,7 +402,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   }
 
   EnumType * enumType = cast<EnumType>(target_->typeValue());
-  const llvm::Type * irType = enumType->irType();
+  llvm::Type * irType = enumType->irType();
   bool isFlags = enumType->isFlags();
   bool isSigned = !enumType->baseType()->isUnsignedType();
   VariableDefn * ec = new VariableDefn(Defn::Let, module(), ast);

@@ -25,7 +25,6 @@
 #include "tart/Objects/SystemDefs.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
@@ -34,8 +33,8 @@
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 
-#include <llvm/DerivedTypes.h>
-#include <llvm/ADT/StringExtras.h>
+#include "llvm/DerivedTypes.h"
+#include "llvm/ADT/StringExtras.h"
 
 namespace tart {
 
@@ -162,7 +161,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       //DASSERT(interfaceType->isSingular());
 
       // The type definition of the environment object.
-      TypeDefn * envTypeDef = new TypeDefn(module(), istrings.intern(closureName), NULL);
+      TypeDefn * envTypeDef = new TypeDefn(module(), module_->internString(closureName), NULL);
       envTypeDef->createQualifiedName(currentFunction_);
       envTypeDef->addTrait(Defn::Singular);
       envTypeDef->addTrait(Defn::Synthetic);

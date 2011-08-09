@@ -64,6 +64,7 @@ bool Constraint::accepts(const Type * ty) const {
     case UPPER_BOUND:
       return TypeRelation::isSubtype(ty, value_);
   }
+  return false;
 }
 
 bool Constraint::equals(const Constraint * cst) const {
@@ -198,6 +199,7 @@ bool Constraint::contradicts(const Constraint * cl, const Constraint * cr) {
     case LOWER_BOUND:
       return !isSubtypeL && cr->kind() != LOWER_BOUND;
   }
+  return false;
 }
 
 } // namespace tart

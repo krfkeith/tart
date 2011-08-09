@@ -96,9 +96,9 @@ bool TartGCStrategy::insertRootInitializers(Function & fn, AllocaInst ** roots, 
   // Initialize each root to null.
   for (AllocaInst ** ai = roots, ** E = roots + count; ai != E; ++ai) {
     if (!initedRoots.count(*ai)) {
-      const Type * type = cast<PointerType>((*ai)->getType())->getElementType();
+      Type * type = cast<PointerType>((*ai)->getType())->getElementType();
       StoreInst * storeInst;
-      if (const PointerType * ptype = dyn_cast<PointerType>(type)) {
+      if (PointerType * ptype = dyn_cast<PointerType>(type)) {
         storeInst = new StoreInst(ConstantPointerNull::get(ptype), *ai);
       } else {
         storeInst = new StoreInst(ConstantAggregateZero::get(type), *ai);

@@ -23,9 +23,8 @@
 #include "tart/Sema/SpCandidate.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
-#include <llvm/DerivedTypes.h>
+#include "llvm/DerivedTypes.h"
 
 namespace tart {
 
@@ -142,7 +141,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   // If it's unqualified, then do ADL.
   size_t candidateCount = call->candidates().size();
   if (isUnqualified && !args.empty()) {
-    const char * name = static_cast<const ASTIdent *>(callable)->value();
+    StringRef name = static_cast<const ASTIdent *>(callable)->value();
     lookupByArgType(call, name, args);
     if (call->candidates().size() != candidateCount) {
       // Re-evaluate args in light of new argument types.
@@ -186,7 +185,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   return call;
 }
 
-void ExprAnalyzer::lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args) {
+void ExprAnalyzer::lookupByArgType(CallExpr * call, StringRef name, const ASTNodeList & args) {
   //diag.debug(call) << "ADL: " << name;
   DefnList defns;
   llvm::SmallPtrSet<const Type *, 16> typesSearched;
@@ -401,7 +400,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
   DefnList methods;
   if (tdef->isTemplate() && tdef->hasUnboundTypeParams()) {
     analyzeType(type, Task_PrepConstruction);
-    if (lookupTemplateMember(methods, tdef, istrings.idConstruct, loc)) {
+    if (lookupTemplateMember(methods, tdef, "construct", loc)) {
       Expr * newExpr = new NewExpr(loc, type);
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
@@ -415,7 +414,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
           addOverload(call, newExpr, cons, args, sp);
         }
       }
-    } else if (lookupTemplateMember(methods, tdef, istrings.idCreate, loc)) {
+    } else if (lookupTemplateMember(methods, tdef, "create", loc)) {
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
@@ -433,7 +432,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
       return false;
     }
   } else {
-    if (type->memberScope()->lookupMember(istrings.idConstruct, methods, false)) {
+    if (type->memberScope()->lookupMember("construct", methods, false)) {
       Expr * newExpr = new NewExpr(loc, type);
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
@@ -444,7 +443,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
         DASSERT(cons->storageClass() == Storage_Instance);
         addOverload(call, newExpr, cons, args, sp);
       }
-    } else if (type->memberScope()->lookupMember(istrings.idCreate, methods, false)) {
+    } else if (type->memberScope()->lookupMember("create", methods, false)) {
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
@@ -454,7 +453,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
           addOverload(call, NULL, create, args, sp);
         }
       }
-    } else if (type->memberScope()->lookupMember(istrings.idConstruct, methods, true)) {
+    } else if (type->memberScope()->lookupMember("construct", methods, true)) {
       Expr * newExpr = new NewExpr(loc, type);
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
@@ -619,7 +618,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * fn, const FunctionType * 
 bool ExprAnalyzer::addOverloads(CallExpr * call, Expr * callable, const CompositeType * ctype,
     const ASTNodeList & args) {
   DefnList callMethods;
-  ctype->lookupMember(istrings.idCall, callMethods, true);
+  ctype->lookupMember("$call", callMethods, true);
   bool success = false;
   for (DefnList::const_iterator it = callMethods.begin(); it != callMethods.end(); ++it) {
     FunctionDefn * method = cast<FunctionDefn>(*it);

@@ -17,19 +17,19 @@
 using namespace tart;
 
 TEST(TypeTest, Primitive) {
-  ASSERT_STREQ("void", VoidType::typedefn.name());
-  ASSERT_STREQ("bool", BoolType::typedefn.name());
-  ASSERT_STREQ("char", CharType::typedefn.name());
-  ASSERT_STREQ("int8", Int8Type::typedefn.name());
-  ASSERT_STREQ("int16",Int16Type::typedefn.name());
-  ASSERT_STREQ("int32",  Int32Type::typedefn.name());
-  ASSERT_STREQ("int64", Int64Type::typedefn.name());
-  ASSERT_STREQ("uint8",UInt8Type::typedefn.name());
-  ASSERT_STREQ("uint16",UInt16Type::typedefn.name());
-  ASSERT_STREQ("uint32", UInt32Type::typedefn.name());
-  ASSERT_STREQ("uint64",UInt64Type::typedefn.name());
-  ASSERT_STREQ("float",FloatType::typedefn.name());
-  ASSERT_STREQ("double",DoubleType::typedefn.name());
+  ASSERT_EQ("void", VoidType::typedefn.name());
+  ASSERT_EQ("bool", BoolType::typedefn.name());
+  ASSERT_EQ("char", CharType::typedefn.name());
+  ASSERT_EQ("int8", Int8Type::typedefn.name());
+  ASSERT_EQ("int16",Int16Type::typedefn.name());
+  ASSERT_EQ("int32",  Int32Type::typedefn.name());
+  ASSERT_EQ("int64", Int64Type::typedefn.name());
+  ASSERT_EQ("uint8",UInt8Type::typedefn.name());
+  ASSERT_EQ("uint16",UInt16Type::typedefn.name());
+  ASSERT_EQ("uint32", UInt32Type::typedefn.name());
+  ASSERT_EQ("uint64",UInt64Type::typedefn.name());
+  ASSERT_EQ("float",FloatType::typedefn.name());
+  ASSERT_EQ("double",DoubleType::typedefn.name());
 }
 
 TEST(TypeTest, PrimitiveDef) {

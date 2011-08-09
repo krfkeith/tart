@@ -58,7 +58,7 @@ bool ParameterAssignmentsBuilder::addPositionalArg() {
   return true;
 }
 
-bool ParameterAssignmentsBuilder::addKeywordArg(const char * kw) {
+bool ParameterAssignmentsBuilder::addKeywordArg(StringRef kw) {
   int paramIndex = ftype->paramNameIndex(kw);
 
   // TODO: Return failure codes instead of false, for better

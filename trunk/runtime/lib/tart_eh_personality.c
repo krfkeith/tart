@@ -348,7 +348,7 @@ bool findAction(
       }
     } else {
       // Unsupported, for now.
-      fprintf(stderr, "Unsupported excption action %d\n", (int) actionFilter);
+      fprintf(stderr, "Unsupported exception action %d\n", (int) actionFilter);
       abort();
     }
 

@@ -11,7 +11,7 @@
 
 namespace tart {
 
-typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
+typedef llvm::SmallVector<llvm::Type *, 16> IRTypeList;
 
 /// -------------------------------------------------------------------
 /// Represents a tuple of values which may have different types.
@@ -45,8 +45,8 @@ public:
 
   // Overrides
 
-  const llvm::Type * createIRType() const;
-  const llvm::Type * irParameterType() const;
+  llvm::Type * createIRType() const;
+  llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;

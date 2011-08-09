@@ -138,7 +138,7 @@ public:
       const Type * expected, bool isOptional = false);
 
   /** Handle Argument-dependent lookup (ADL) */
-  void lookupByArgType(CallExpr * call, const char * name, const ASTNodeList & args);
+  void lookupByArgType(CallExpr * call, StringRef name, const ASTNodeList & args);
 
   /** Handle expressions of the form "super(args)" */
   Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, const Type * expected);

@@ -20,7 +20,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeConstraint
 
-const llvm::Type * TypeConstraint::irType() const {
+llvm::Type * TypeConstraint::irType() const {
   DFAIL("TypeConstraint does not have an IRType");
 }
 
@@ -192,6 +192,7 @@ bool SizingOfConstraint::isSubtypeOf(const Type * other) const {
   } else {
     return false;
   }
+  return false;
 }
 
 void SizingOfConstraint::trace() const {

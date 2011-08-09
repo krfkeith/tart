@@ -30,6 +30,7 @@ namespace tart {
 #endif
 
 #define TYPE_CLASS(x) #x,
+#define TYPE_RANGE(x, start, end)
 
 const char * TypeClassNames[] = {
 #include "tart/Type/TypeClass.def"
@@ -457,22 +458,12 @@ const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
 // -------------------------------------------------------------------
 // TypeImpl
 
-const llvm::Type * TypeImpl::irType() const {
-  if (irType_.get() == NULL) {
+llvm::Type * TypeImpl::irType() const {
+  if (irType_ == NULL) {
     irType_ = createIRType();
   }
 
   return irType_;
-}
-
-const llvm::Type * TypeImpl::irTypeSafe() const {
-  if (irType_.get() == NULL) {
-    irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
-    const llvm::Type * ty = createIRType();
-    cast<llvm::OpaqueType>(irType_.get())->refineAbstractTypeTo(ty);
-  }
-
-  return irType_.get();
 }
 
 // -------------------------------------------------------------------
@@ -578,7 +569,8 @@ Type * dealias(Type * t) {
   return dealiasImpl(t);
 }
 
-void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & numBits) {
+#if 0
+void estimateTypeSize(llvm::Type * type, size_t & numPointers, size_t & numBits) {
   switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
     case llvm::Type::FloatTyID:
@@ -622,7 +614,6 @@ void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & nu
       break;
     }
 
-    case llvm::Type::OpaqueTyID:
     case llvm::Type::LabelTyID:
     case llvm::Type::MetadataTyID:
     case llvm::Type::FunctionTyID:
@@ -630,16 +621,6 @@ void estimateTypeSize(const llvm::Type * type, size_t & numPointers, size_t & nu
       break;
   }
 }
-
-bool isLargeIRType(const llvm::Type * type) {
-  if (type->isAbstract() || !type->isFirstClassType()) {
-    return true;
-  }
-
-  size_t numPointers = 0;
-  size_t numBits = 0;
-  estimateTypeSize(type, numPointers, numBits);
-  return (numPointers > 2 || numBits > 64 || (numPointers > 0 && numBits > 32));
-}
+#endif
 
 } // namespace tart

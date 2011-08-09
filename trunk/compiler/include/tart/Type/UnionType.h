@@ -13,7 +13,7 @@ namespace tart {
 
 #define LLVM_UNION_SUPPORT 0
 
-typedef llvm::SmallVector<const llvm::Type *, 16> IRTypeList;
+typedef llvm::SmallVector<llvm::Type *, 16> IRTypeList;
 
 // -------------------------------------------------------------------
 // Disjoint or union type.
@@ -85,9 +85,9 @@ public:
 
   // Overrides
 
-  const llvm::Type * createIRType() const;
-  const llvm::Type * irParameterType() const;
-  const llvm::Type * getDiscriminatorType() const;
+  llvm::Type * createIRType() const;
+  llvm::Type * irParameterType() const;
+  llvm::Type * getDiscriminatorType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
@@ -109,7 +109,7 @@ protected:
   UnionType(TupleType * members);
 
   // Given an IR type, return an estimate of the size of this type.
-  static size_t estimateTypeSize(const llvm::Type * type);
+  static size_t estimateTypeSize(llvm::Type * type);
 
   TupleType * members_;
   size_t numValueTypes_;

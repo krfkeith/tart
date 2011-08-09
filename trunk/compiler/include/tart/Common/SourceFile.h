@@ -16,26 +16,25 @@
 #include "llvm/Support/Path.h"
 #include "llvm/ADT/SmallString.h"
 
-#include <string>
 #include <fstream>
-#include <list>
-#include <vector>
 #include <sstream>
 
 namespace tart {
+
+using llvm::StringRef;
 
 // -------------------------------------------------------------------
 // Abstract interface representing the source of program text.
 class ProgramSource : public GC {
 public:
-  ProgramSource(llvm::StringRef path) : filePath_(path) {
+  ProgramSource(StringRef path) : filePath_(path) {
     lineOffsets_.push_back(0);
   }
 
   virtual ~ProgramSource() {}
 
   /** Return the path of this file. */
-  llvm::StringRef filePath() const { return filePath_; }
+  StringRef filePath() const { return filePath_; }
 
   /** Opens the file and returns an input stream. */
   virtual std::istream & open() = 0;
@@ -84,7 +83,7 @@ private:
   std::ifstream stream;
 
 public:
-  SourceFile(llvm::StringRef path)
+  SourceFile(StringRef path)
     : ProgramSource(path)
   {
   }
@@ -120,7 +119,7 @@ private:
 // A source archive file.
 class ArchiveFile : public ProgramSource {
 public:
-  ArchiveFile(llvm::StringRef path)
+  ArchiveFile(StringRef path)
     : ProgramSource(path)
   {
   }
@@ -136,7 +135,7 @@ public:
 /// For modules imported from an archive.
 class ArchiveEntry : public ProgramSource {
 public:
-  ArchiveEntry(llvm::StringRef path, ProgramSource * container)
+  ArchiveEntry(StringRef path, ProgramSource * container)
     : ProgramSource(path)
     , container_(container)
   {

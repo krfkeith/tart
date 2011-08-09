@@ -105,10 +105,10 @@ private:
 /// A text node
 class TextNode : public Node {
 public:
-  TextNode(llvm::StringRef text) : Node(TEXT), text_(text) {}
+  TextNode(StringRef text) : Node(TEXT), text_(text) {}
 
   /** The text of this node. */
-  llvm::StringRef text() const { return text_; }
+  StringRef text() const { return text_; }
 
   static inline bool classof(const TextNode *) { return true; }
   static inline bool classof(const Node * n) {
@@ -158,13 +158,13 @@ private:
 /// A node which represents information about a named item.
 class DefinitionNode : public Node {
 public:
-  DefinitionNode(NodeType type, llvm::StringRef name)
+  DefinitionNode(NodeType type, StringRef name)
     : Node(type)
     , name_(name)
   {}
 
   /** The name of the param. */
-  llvm::StringRef name() const { return name_; }
+  StringRef name() const { return name_; }
 
   static inline bool classof(const DefinitionNode *) { return true; }
   static inline bool classof(const Node * n) {
@@ -180,17 +180,17 @@ private:
 /// date, etc.
 class PropertyNode : public Node {
 public:
-  PropertyNode(llvm::StringRef propertyName, llvm::StringRef propertyValue)
+  PropertyNode(StringRef propertyName, StringRef propertyValue)
     : Node(PROPERTY)
     , propertyName_(propertyName)
     , propertyValue_(propertyValue)
   {}
 
   /** The name of the property. */
-  llvm::StringRef propertyName() const { return propertyName_; }
+  StringRef propertyName() const { return propertyName_; }
 
   /** The value of the property. */
-  llvm::StringRef propertyValue() const { return propertyValue_; }
+  StringRef propertyValue() const { return propertyValue_; }
 
   static inline bool classof(const PropertyNode *) { return true; }
   static inline bool classof(const Node * n) {

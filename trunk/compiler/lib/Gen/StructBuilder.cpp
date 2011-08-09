@@ -10,6 +10,7 @@
 #include "tart/Type/CompositeType.h"
 
 #include "tart/Objects/Builtins.h"
+#include "tart/Objects/SystemDefs.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -23,7 +24,8 @@ StructBuilder & StructBuilder::createObjectHeader(const Type * type) {
   ConstantList objMembers;
   objMembers.push_back(gen_.getTypeInfoBlockPtr(cast<CompositeType>(type)));
   objMembers.push_back(gen_.getIntVal(0));
-  members_.push_back(ConstantStruct::getAnon(gen_.context(), objMembers, false));
+  StructType * objectStructType = cast<StructType>(Builtins::typeObject->irTypeComplete());
+  members_.push_back(ConstantStruct::get(objectStructType, objMembers));
   return *this;
 }
 
@@ -34,7 +36,7 @@ StructBuilder & StructBuilder::addField(llvm::Constant * value) {
 }
 
 StructBuilder & StructBuilder::addNullField(const Type * type) {
-  const llvm::PointerType * irType = cast<llvm::PointerType>(type->irEmbeddedType());
+  llvm::PointerType * irType = cast<llvm::PointerType>(type->irEmbeddedType());
   return addField(ConstantPointerNull::get(irType));
 }
 
@@ -47,7 +49,7 @@ StructBuilder & StructBuilder::addIntegerField(VariableDefn * var, int32_t value
   return addIntegerField(var->type(), value);
 }
 
-StructBuilder & StructBuilder::addStringField(llvm::StringRef strval) {
+StructBuilder & StructBuilder::addStringField(StringRef strval) {
   return addField(gen_.genStringLiteral(strval));
 }
 
@@ -56,13 +58,13 @@ StructBuilder & StructBuilder::addPointerField(VariableDefn * var, llvm::Constan
 }
 
 StructBuilder & StructBuilder::addArrayField(
-    const Type * elementType, const ConstantList & values) {
-  const ArrayType * arrayType = ArrayType::get(elementType->irEmbeddedType(), values.size());
+    const Type * elementType, llvm::ArrayRef<llvm::Constant *> values) {
+  ArrayType * arrayType = ArrayType::get(elementType->irEmbeddedType(), values.size());
   return addField(ConstantArray::get(arrayType, values));
 }
 
 StructBuilder & StructBuilder::addArrayField(
-    const VariableDefn * arrayVar, const ConstantList & values) {
+    const VariableDefn * arrayVar, llvm::ArrayRef<llvm::Constant *> values) {
   if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type())) {
     addArrayField(arrayType->typeParam(0), values);
   } else {
@@ -72,39 +74,38 @@ StructBuilder & StructBuilder::addArrayField(
   return *this;
 }
 
-StructBuilder & StructBuilder::combine() {
-  Constant * c = ConstantStruct::getAnon(gen_.context(), members_, false);
+StructBuilder & StructBuilder::combine(const Type * type) {
+  Constant * c = ConstantStruct::get(cast<StructType>(type->irType()), members_);
   members_.clear();
   members_.push_back(c);
   return *this;
 }
 
-llvm::Constant * StructBuilder::build() const {
+
+llvm::Constant * StructBuilder::buildAnon() const {
   return ConstantStruct::getAnon(gen_.context(), members_, false);
 }
 
-llvm::Constant * StructBuilder::build(const llvm::Type * expectedType) const {
-  llvm::Constant * result = ConstantStruct::getAnon(gen_.context(), members_, false);
-  const llvm::Type * actualType = result->getType();
-  if (actualType != expectedType) {
-    diag.error() << "Expected type does not match actual type:";
-    expectedType->dump(gen_.irModule());
-    actualType->dump(gen_.irModule());
-    if (expectedType->getNumContainedTypes() != actualType->getNumContainedTypes()) {
-      diag.info() << "Expected has " << expectedType->getNumContainedTypes() <<
-          " fields, but actual has " << actualType->getNumContainedTypes() << " fields.";
-    } else {
-      for (size_t i = 0; i < expectedType->getNumContainedTypes(); ++i) {
-        if (expectedType->getContainedType(i) != actualType->getContainedType(i)) {
-          diag.info() << "Mismatch in struct field " << i;
-          expectedType->getContainedType(i)->dump(gen_.irModule());
-          actualType->getContainedType(i)->dump(gen_.irModule());
-        }
-      }
-    }
-    DFAIL("abort");
-  }
-  return result;
+llvm::Constant * StructBuilder::build(llvm::Type * expectedType) const {
+  StructType * objectStructType = cast<StructType>(expectedType);
+  return ConstantStruct::get(objectStructType, members_);
 }
+
+llvm::Constant * StructBuilder::build(const CompositeType * expectedType) const {
+  return build(expectedType->irTypeComplete());
+}
+
+llvm::Constant * StructBuilder::buildBody(llvm::StructType * stype) const {
+  SmallVector<llvm::Type *, 16> memberTypes;
+  for (SmallVectorImpl<llvm::Constant *>::const_iterator it = members_.begin(),
+      itEnd = members_.end(); it != itEnd; ++it) {
+    memberTypes.push_back((*it)->getType());
+  }
+
+  DASSERT(stype->isOpaque());
+  stype->setBody(memberTypes, false);
+  return ConstantStruct::get(stype, members_);
+}
+
 
 } // namespace tart

@@ -33,6 +33,7 @@ using llvm::cast;
 using llvm::cast_or_null;
 using llvm::isa;
 using llvm::SmallString;
+using llvm::StringRef;
 using llvm::Twine;
 
 // -------------------------------------------------------------------

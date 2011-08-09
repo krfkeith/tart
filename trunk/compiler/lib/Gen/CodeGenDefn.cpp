@@ -332,7 +332,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
 
   // Calculate the type.
   DASSERT(let->type() != NULL);
-  const llvm::Type * irType = let->type()->irEmbeddedType();
+  llvm::Type * irType = let->type()->irEmbeddedType();
   TypeShape shape = let->type()->typeShape();
 
   // Generate the value
@@ -443,7 +443,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
 
   // The reason that this is irType instead of irEmbeddedType is because LLVM always turns
   // the type of a global variable into a pointer anyway.
-  const llvm::Type * irType = varType->irEmbeddedType();
+  llvm::Type * irType = varType->irEmbeddedType();
   gv = new GlobalVariable(*irModule_, irType, false, linkType, NULL, var->linkageName(),
       NULL, var->isThreadLocal());
 

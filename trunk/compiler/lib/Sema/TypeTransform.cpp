@@ -313,7 +313,7 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
 
 const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
   TypeVarMap::const_iterator it = vars_.find(in);
-  DASSERT_MSG(it != vars_.end(), "Type variable not found!");
+  DASSERT(it != vars_.end()) << "Type variable " << in << " not found!";
   return it->second;
 }
 

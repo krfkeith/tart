@@ -78,7 +78,7 @@ public:
 
   /** Given the name of a symbol, return a unique interned string for that name. Identical
       strings will be combined across module boundaries. */
-  llvm::Constant * internSymbol(const llvm::StringRef &Key);
+  llvm::Constant * internSymbol(const StringRef &Key);
 
   /** Generate a pointer to a module's reflection info. */
   llvm::GlobalVariable * getModulePtr(Module * module);
@@ -120,7 +120,7 @@ public:
   void emitProperty(const PropertyDefn * prop);
   void emitField(const VariableDefn * field);
   llvm::Constant * emitMember(const ValueDefn * member, const CompositeType * memberType,
-      llvm::StringRef name);
+      StringRef name);
 
   /** Write out reflection information for a type. */
   void emitType(const Type * type);
@@ -133,24 +133,24 @@ public:
   llvm::Constant * emitMemberTypes(const IterableScope * scope);
 
   /** Write out the array of reflected Attribute objects defined within the given scope. */
-  llvm::Constant * emitAttributeList(const ExprList & attrs, llvm::StringRef name);
+  llvm::Constant * emitAttributeList(const ExprList & attrs, StringRef name);
 
   /** Write out the array of reflected Method objects defined within the given scope.
       If 'ctors' is true, include only constructors, otherwise only include non-constructors. */
-  llvm::Constant * emitMethodList(const IterableScope * scope, bool ctors, llvm::StringRef name);
+  llvm::Constant * emitMethodList(const IterableScope * scope, bool ctors, StringRef name);
 
   /** Write out the array of reflected Property objects within the given scope. */
-  llvm::Constant * emitPropertList(const IterableScope * scope, llvm::StringRef name);
+  llvm::Constant * emitPropertList(const IterableScope * scope, StringRef name);
 
   /** Write out the array of reflected Field objects within the given scope. */
-  llvm::Constant * emitFieldList(const IterableScope * scope, llvm::StringRef name);
+  llvm::Constant * emitFieldList(const IterableScope * scope, StringRef name);
 
   /** Generate a TypeList from the given list of types. */
   llvm::Constant * emitTypeList(const ConstTypeList & types);
 
   /** Generate a StaticList from the given list of constant elements. */
   llvm::Constant * emitStaticList(const ConstantList & elements,
-      llvm::StringRef namePrefix, llvm::StringRef name,
+      StringRef namePrefix, StringRef name,
       const CompositeType * listType, const CompositeType * elementType);
 
   /** Generate an array containing reflection data supplied by the specified array. */
@@ -159,14 +159,14 @@ public:
 
 private:
 
-  NameTable::Name * addQualifiedName(llvm::StringRef name);
-  NameTable::Name * addName(const llvm::StringRef name);
+  NameTable::Name * addQualifiedName(StringRef name);
+  NameTable::Name * addName(const StringRef name);
 
   llvm::GlobalVariable * findGlobal(const llvm::Twine & name);
 
   Module * module();
 
-  llvm::Constant * getRetainedAttr(const Expr * attrExpr, llvm::StringRef baseName);
+  llvm::Constant * getRetainedAttr(const Expr * attrExpr, StringRef baseName);
   bool isExport(const Defn * de);
   int typeKind(Type::TypeClass cls);
 

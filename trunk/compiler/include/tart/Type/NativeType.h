@@ -35,8 +35,8 @@ public:
 
   size_t numTypeParams() const { return 1; }
   virtual const Type * typeParam(int index) const { return elementType_; }
-  const llvm::Type * irType() const { return createIRType(); }
-  const llvm::Type * createIRType() const;
+  llvm::Type * irType() const { return createIRType(); }
+  llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
@@ -91,9 +91,9 @@ public:
   size_t numTypeParams() const { return 2; }
   virtual const Type * typeParam(int index) const;
 
-  const llvm::Type * irType() const { return createIRType(); }
-  const llvm::Type * createIRType() const;
-  const llvm::Type * irParameterType() const;
+  llvm::Type * irType() const { return createIRType(); }
+  llvm::Type * createIRType() const;
+  llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
@@ -143,8 +143,8 @@ public:
   size_t numTypeParams() const { return 1; }
   virtual const Type * typeParam(int index) const;
 
-  const llvm::Type * irType() const { return createIRType(); }
-  const llvm::Type * createIRType() const;
+  llvm::Type * irType() const { return createIRType(); }
+  llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;

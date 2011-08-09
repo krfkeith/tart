@@ -79,10 +79,9 @@ void CodeGenerator::genGCRoot(Value * allocaValue, const Type * varType, StringR
   }
 }
 
-void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, llvm::StringRef rootName) {
+void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, StringRef rootName) {
   if (gcEnabled_) {
-    Function * gcroot = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::gcroot, NULL, 0);
+    Function * gcroot = llvm::Intrinsic::getDeclaration(irModule_, llvm::Intrinsic::gcroot);
 
     if (rootName.empty()) {
       value = builder_.CreatePointerCast(value, builder_.getInt8PtrTy()->getPointerTo());
@@ -102,8 +101,8 @@ void CodeGenerator::markGCRoot(Value * value, llvm::Constant * metadata, llvm::S
 
 void CodeGenerator::initGCRoot(Value * rootValue) {
   AllocaInst * alloca = cast<AllocaInst>(rootValue);
-  const llvm::Type * rootType = alloca->getAllocatedType();
-  if (const PointerType * ptype = dyn_cast<PointerType>(rootType)) {
+  llvm::Type * rootType = alloca->getAllocatedType();
+  if (PointerType * ptype = dyn_cast<PointerType>(rootType)) {
     builder_.CreateStore(ConstantPointerNull::get(ptype), alloca);
   } else {
     builder_.CreateStore(ConstantAggregateZero::get(rootType), alloca);
@@ -123,6 +122,7 @@ void CodeGenerator::pushGCRoot(Value * allocaValue, const Type * varType) {
       if (varType->containsReferenceType()) {
         rootStack_.push_back(allocaValue);
       }
+      break;
 
     default:
       break;
@@ -210,12 +210,14 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
         return NULL;
       }
     }
+
+    ctype->createIRTypeFields();
   } else if (!type->containsReferenceType()) {
     return NULL;
   }
 
-  const llvm::Type * traceTableType = tib_traceTable->type()->irType();
-  const llvm::Type * traceDescriptorType = traceTableType->getContainedType(0);
+  llvm::Type * traceTableType = tib_traceTable->type()->irType();
+  llvm::Type * traceDescriptorType = traceTableType->getContainedType(0);
 
   ConstantList traceTable;
   ConstantList fieldOffsets;
@@ -227,7 +229,7 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   createTraceTableEntries(type, basePtr, traceTable, fieldOffsets, indices);
 
   // If there are field offsets, create a trace table entry for the offsets.
-  const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
+  llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
   if (!fieldOffsets.empty()) {
     llvm::SmallString<64> fieldOffsetsName(".fieldoffsets.");
     typeLinkageName(fieldOffsetsName, type);
@@ -237,13 +239,12 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
     GlobalVariable * fieldOffsetsVar = new GlobalVariable(*irModule_,
         fieldOffsetsTable->getType(), true, GlobalValue::LinkOnceODRLinkage,
         fieldOffsetsTable, Twine(fieldOffsetsName));
-    llvm::Constant * tableEntry = getStructVal(
-        getInt16Val(0),
-        getInt16Val(fieldOffsets.size()),
-        getInt32Val(0),
-        llvm::ConstantExpr::getPointerCast(fieldOffsetsVar, fieldOffsetArrayType),
-        NULL);
-    traceTable.insert(traceTable.begin(), tableEntry);
+    StructBuilder sbEntry(*this);
+    sbEntry.addField(getInt16Val(0));
+    sbEntry.addField(getInt16Val(fieldOffsets.size()));
+    sbEntry.addField(getInt32Val(0));
+    sbEntry.addField(llvm::ConstantExpr::getPointerCast(fieldOffsetsVar, fieldOffsetArrayType));
+    traceTable.insert(traceTable.begin(), sbEntry.build(Builtins::typeTraceDescriptor));
   }
 
   if (traceTable.empty()) {
@@ -253,12 +254,12 @@ llvm::GlobalVariable * CodeGenerator::createTraceTable(const Type * type) {
   // Mark the last entry in the table. This needs to be done by replacing, rather than by
   // patching the entry.
   llvm::ConstantStruct * finalEntry = cast<ConstantStruct>(traceTable.back());
-  traceTable[traceTable.size() - 1] = getStructVal(
-      getInt16Val(1),
-      finalEntry->getOperand(1),
-      finalEntry->getOperand(2),
-      finalEntry->getOperand(3),
-      NULL);
+  StructBuilder sbFinalEntry(*this);
+  sbFinalEntry.addField(getInt16Val(1));
+  sbFinalEntry.addField(finalEntry->getOperand(1));
+  sbFinalEntry.addField(finalEntry->getOperand(2));
+  sbFinalEntry.addField(finalEntry->getOperand(3));
+  traceTable[traceTable.size() - 1] = sbFinalEntry.build(Builtins::typeTraceDescriptor);
 
   llvm::Constant * traceTableValue = ConstantArray::get(
       ArrayType::get(traceDescriptorType, traceTable.size()), traceTable);
@@ -290,7 +291,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
         if (memberType->isReferenceType()) {
           indices.push_back(getInt32Val(memberIndex));
           llvm::Constant * fieldOffset = llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr,
-              &indices[0], indices.size());
+              indices);
           fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
           fieldOffsets.push_back(fieldOffset);
           indices.resize(indicesSize);
@@ -308,7 +309,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
       if (ut->hasRefTypesOnly()) {
         // If it only contains reference types, then it's just a pointer.
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices);
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
         fieldOffsets.push_back(fieldOffset);
         break;
@@ -316,17 +317,16 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
         llvm::Function * traceMethod = getUnionTraceMethod(ut);
         DASSERT(traceMethod != NULL);
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices);
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, builder_.getInt32Ty());
-        const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
+        llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
 
-        llvm::Constant * desc = getStructVal(
-            getInt16Val(0),
-            getInt16Val(0),
-            fieldOffset,
-            llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType),
-            NULL);
-        traceTable.push_back(desc);
+        StructBuilder sbEntry(*this);
+        sbEntry.addField(getInt16Val(0));
+        sbEntry.addField(getInt16Val(0));
+        sbEntry.addField(fieldOffset);
+        sbEntry.addField(llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType));
+        traceTable.push_back(sbEntry.build(Builtins::typeTraceDescriptor));
       }
       break;
     }
@@ -360,7 +360,7 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
         //basePtr->getType()->dump(irModule_);
         indices.push_back(getInt32Val(var->memberIndex()));
         llvm::Constant * fieldOffset =
-            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, &indices[0], indices.size());
+            llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr, indices);
         fieldOffset = llvm::ConstantExpr::getPtrToInt(fieldOffset, intPtrType_);
         fieldOffsets.push_back(fieldOffset);
         indices.resize(indicesSize);
@@ -384,19 +384,18 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
     }
   }
 
-  const llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
+  llvm::PointerType * fieldOffsetArrayType = intPtrType_->getPointerTo();
   for (MethodList::const_iterator it = type->traceMethods().begin();
       it != type->traceMethods().end(); ++it) {
     Function * traceMethod = genFunctionValue(*it);
     DASSERT(traceMethod != NULL);
 
-    llvm::Constant * desc = getStructVal(
-        getInt16Val(0),
-        getInt16Val(0),
-        getInt32Val(0),
-        llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType),
-        NULL);
-    traceTable.push_back(desc);
+    StructBuilder sbEntry(*this);
+    sbEntry.addField(getInt16Val(0));
+    sbEntry.addField(getInt16Val(0));
+    sbEntry.addField(getInt32Val(0));
+    sbEntry.addField(llvm::ConstantExpr::getPointerCast(traceMethod, fieldOffsetArrayType));
+    traceTable.push_back(sbEntry.build(Builtins::typeTraceDescriptor));
   }
 }
 
@@ -409,7 +408,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
   llvm::SmallString<64> fName(".utrace.");
   typeLinkageName(fName, utype);
 
-  std::vector<const llvm::Type *> argTypes;
+  std::vector<llvm::Type *> argTypes;
   argTypes.push_back(builder_.getInt8PtrTy());
   argTypes.push_back(Builtins::typeTraceAction.get()->irParameterType());
   llvm::FunctionType * fnType = llvm::FunctionType::get(builder_.getVoidTy(), argTypes, false);
@@ -432,7 +431,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
       builder_.getInt8PtrTy()->getPointerTo());
   Value * discVal = builder_.CreateLoad(
       builder_.CreateConstInBoundsGEP2_32(unionPtr, 0, 0), false, "disc");
-  const IntegerType * discType = cast<IntegerType>(discVal->getType());
+  IntegerType * discType = cast<IntegerType>(discVal->getType());
   SwitchInst * si = builder_.CreateSwitch(discVal, blkExit, utype->members().size());
   int32_t typeIndex = 0;
   for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
@@ -492,8 +491,8 @@ void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) 
   DASSERT(gv->getName().size() > 0);
 
   // Check if this is an instance or a pointer.
-  const llvm::Type * varType = gv->getType();
-  const llvm::Type * objType = varType->getContainedType(0);
+  llvm::Type * varType = gv->getType();
+  llvm::Type * objType = varType->getContainedType(0);
   bool isPointer = isa<llvm::PointerType>(objType);
 
   // A constant variable can only point to other constants, so there's no need for it
@@ -563,42 +562,37 @@ void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) 
 
 void CodeGenerator::emitStaticRoots() {
   if (!staticRoots_.empty()) {
+
     // GEP indices
     Constant * indices[2];
     indices[0] = indices[1] = getInt32Val(0);
 
-    const PointerType * bytePtrType = builder_.getInt8PtrTy();
-
+    PointerType * bytePtrType = builder_.getInt8PtrTy();
     ConstantList rootList;
     Twine rootSym("roots.", module()->linkageName());
     SmallString<128> rootSymStr;
     NamedMDNode * node = irModule_->getOrInsertNamedMetadata(rootSym.toStringRef(rootSymStr));
     for (StaticRootMap::const_iterator it = staticRoots_.begin(); it != staticRoots_.end(); ++it) {
-      Constant * traceTable = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices, 2);
-      llvm::Constant * entry = getStructVal(
-          llvm::ConstantExpr::getPointerCast(traceTable, bytePtrType),
+      Constant * traceTable = llvm::ConstantExpr::getInBoundsGetElementPtr(it->second, indices);
+      // We need to do this to prevent the dead global pass from deleting the trace tables.
+      llvm::Constant * entry = ConstantStruct::get(
+          cast<StructType>(Builtins::typeStaticRoot->irTypeComplete()),
+          llvm::ConstantPointerNull::get(bytePtrType),
           traceTable,
           NULL);
       rootList.push_back(entry);
-
       Value * mdOperands[2];
       mdOperands[0] = it->first;
       mdOperands[1] = traceTable;
       node->addOperand(MDNode::get(context_, mdOperands));
     }
 
+    // Create the appending linkage list of static roots.
     ArrayType * arrayType = ArrayType::get(rootList.front()->getType(), rootList.size());
     Constant * stackRootArray = ConstantArray::get(arrayType, rootList);
-
-    GlobalVariable * rootsArray = new GlobalVariable(*irModule_, stackRootArray->getType(), true,
-        GlobalValue::AppendingLinkage, stackRootArray, "GC_static_roots_array");
-    GlobalVariable * rootsVar = irModule_->getGlobalVariable("GC_static_roots");
-    if (rootsVar != NULL) {
-      Constant * firstRootPtr = llvm::ConstantExpr::getInBoundsGetElementPtr(
-          rootsArray, indices, 2);
-      rootsVar->setConstant(false);
-      rootsVar->setInitializer(firstRootPtr);
-    }
+    GlobalVariable * rootsArray = new GlobalVariable(*irModule_,
+        stackRootArray->getType(), true, GlobalValue::AppendingLinkage,
+        stackRootArray, "GC_static_roots_array");
   }
 }
 

@@ -72,7 +72,7 @@ void formatNodeList(FormatStream & out, const ASTNodeList & nodes) {
       out << ", ";
     }
 
-    out << *it;
+    (*it)->format(out);
   }
 }
 

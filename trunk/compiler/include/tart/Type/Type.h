@@ -21,7 +21,17 @@
 #include "tart/Type/TypeConversion.h"
 #endif
 
+#ifndef LLVM_ADT_DENSEMAP_H
 #include "llvm/ADT/DenseMap.h"
+#endif
+
+#ifndef LLVM_TYPE_H
+#include "llvm/Type.h"
+#endif
+
+#ifndef LLVM_ADT_STRINGREF_H
+#include "llvm/ADT/StringRef.h"
+#endif
 
 namespace llvm {
   class Type;
@@ -32,6 +42,8 @@ namespace tart {
 class TupleType;
 class CompositeType;
 class TypeDefn;
+
+using llvm::StringRef;
 
 /// -------------------------------------------------------------------
 /// An enumeration of all of the fundamental types known to the compiler.
@@ -94,8 +106,10 @@ public:
 
   enum TypeClass {
     #define TYPE_CLASS(x) x,
+    #define TYPE_RANGE(x, start, end) x ## Begin = start, x ## End = end,
     #include "TypeClass.def"
     #undef TYPE_CLASS
+    #undef TYPE_RANGE
 
     KindCount,
   };
@@ -106,17 +120,21 @@ public:
   virtual TypeClass typeClass() const { return cls; }
 
   /** Get the LLVM IR type corresponding to this type. */
-  virtual const llvm::Type * irType() const = 0;
+  virtual llvm::Type * irType() const = 0;
 
   /** Get the LLVM IR type corresponding to this type when embedded as a member within a
       larger type. */
-  virtual const llvm::Type * irEmbeddedType() const { return irType(); }
+  virtual llvm::Type * irEmbeddedType() const { return irType(); }
 
   /** Get the LLVM IR type corresponding to this type when passed as a parameter. */
-  virtual const llvm::Type * irParameterType() const { return irType(); }
+  virtual llvm::Type * irParameterType() const { return irType(); }
 
   /** Get the LLVM IR type corresponding to this type when returned from a function. */
-  virtual const llvm::Type * irReturnType() const { return irParameterType(); }
+  virtual llvm::Type * irReturnType() const { return irParameterType(); }
+
+  /** Get the LLVM IR type corresponding to this type. If this is a StructType, then make
+      sure that the type body has been filled in. */
+  virtual llvm::Type * irTypeComplete() const { return irType(); }
 
   /** Get the TypeDefn for this type, if any. */
   virtual TypeDefn * typeDefn() const { return NULL; }
@@ -287,20 +305,20 @@ class TypeImpl : public Type {
 public:
 
   // Method to lazily create the IR type.
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
   TypeShape typeShape() const { return shape_; }
 
 protected:
-  mutable llvm::PATypeHolder irType_;
+  mutable llvm::Type * irType_;
   mutable TypeShape shape_;
 
   TypeImpl(TypeClass cls, TypeShape shape)
     : Type(cls)
+    , irType_(NULL)
     , shape_(shape)
   {}
 
-  virtual const llvm::Type * createIRType() const = 0;
-  const llvm::Type * irTypeSafe() const;
+  virtual llvm::Type * createIRType() const = 0;
 };
 
 /// -------------------------------------------------------------------
@@ -401,8 +419,8 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 0; }
-  const llvm::Type * irType() const { return baseType_->irType(); }
-  //const llvm::Type * createIRType() const;
+  llvm::Type * irType() const { return baseType_->irType(); }
+  //llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const { return baseType_->isSingular(); }
   bool isEqual(const Type * other) const;
@@ -465,7 +483,7 @@ public:
   }
 };
 
-bool isLargeIRType(const llvm::Type * type);
+bool isLargeIRType(const Type * type);
 
 } // namespace tart
 

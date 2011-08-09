@@ -23,7 +23,7 @@ protected:
 
 public:
   /** Constructor that takes a name */
-  TypeDefn(Module * m, const char * name, Type * val = NULL)
+  TypeDefn(Module * m, StringRef name, Type * val = NULL)
     : Defn(Typedef, m, name)
     , value(val)
     , expr_(NULL)

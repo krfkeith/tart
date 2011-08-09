@@ -5,8 +5,17 @@
 #ifndef TART_GEN_RUNTIMETYPEINFO_H
 #define TART_GEN_RUNTIMETYPEINFO_H
 
-#include <llvm/Function.h>
-#include <llvm/Constant.h>
+#ifndef LLVM_FUNCTION_H
+#include "llvm/Function.h"
+#endif
+
+#ifndef LLVM_CONSTANT_H
+#include "llvm/Constant.h"
+#endif
+
+#ifndef LLVM_DERIVED_TYPES_H
+#include "llvm/DerivedTypes.h"
+#endif
 
 namespace tart {
 
@@ -18,13 +27,10 @@ class CompositeType;
 class RuntimeTypeInfo {
 private:
   const CompositeType * type;
-  bool external;
-  llvm::GlobalValue::LinkageTypes linkageType;
-  llvm::GlobalVariable * typeDescriptor_;
-  llvm::GlobalVariable * typeInfoBlock;
-  llvm::PATypeHolder typeInfoBlockType;
-  llvm::Constant * typeInfoPtr;
-  llvm::Function * typeAllocator;
+  bool external_;
+  llvm::GlobalValue::LinkageTypes linkageType_;
+  llvm::GlobalVariable * typeInfoBlock_;
+  llvm::Function * typeAllocator_;
 
 public:
   RuntimeTypeInfo(const CompositeType * ty, Module * m);
@@ -35,42 +41,24 @@ public:
   }
 
   /** True if the type is defined external to the module. */
-  bool isExternal() const { return external; }
+  bool isExternal() const { return external_; }
 
   /** Linkage type to use for this type. */
   llvm::GlobalValue::LinkageTypes getLinkageType() const {
-    return linkageType;
-  }
-
-  void setTypeDescriptor(llvm::GlobalVariable * value) {
-    typeDescriptor_ = value;
+    return linkageType_;
   }
 
   /** The TypeInfoBlock for this type. */
   llvm::GlobalVariable * getTypeInfoBlock() const {
-    return typeInfoBlock;
+    return typeInfoBlock_;
   }
 
   void setTypeInfoBlock(llvm::GlobalVariable * value) {
-    typeInfoBlock = value;
-  }
-
-  /** The PATypeHolder for the TypeInfoBlock type. */
-  llvm::PATypeHolder & getTypeInfoBlockType() {
-    return typeInfoBlockType;
-  }
-
-  /** The TypeInfoBlock pointer for this type. */
-  llvm::Constant * getTypeInfoPtr() const {
-    return typeInfoPtr;
-  }
-
-  void setTypeInfoPtr(llvm::Constant * value) {
-    typeInfoPtr = value;
+    typeInfoBlock_ = value;
   }
 
   void setTypeAllocator(llvm::Function * value) {
-    typeAllocator = value;
+    typeAllocator_ = value;
   }
 };
 

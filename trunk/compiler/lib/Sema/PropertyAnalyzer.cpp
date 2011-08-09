@@ -10,7 +10,6 @@
 #include "tart/Defn/Module.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -236,7 +235,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
           }
         } else {
           // Create a value param.
-          ParameterDefn * valueParam = new ParameterDefn(NULL, istrings.idValue);
+          ParameterDefn * valueParam = new ParameterDefn(NULL, "value");
           valueParam->setType(type);
           valueParam->setInternalType(type);
           valueParam->addTrait(Defn::Singular);

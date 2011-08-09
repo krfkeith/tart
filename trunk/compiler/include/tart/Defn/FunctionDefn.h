@@ -27,7 +27,7 @@ public:
   };
 
   /** Constructor that takes a name */
-  ParameterDefn(Module * m, const char * name)
+  ParameterDefn(Module * m, StringRef name)
     : VariableDefn(Parameter, m, name)
     , internalType_(NULL)
     , variance_(Contravariant)
@@ -46,7 +46,7 @@ public:
   }
 
   /** Constructor that takes a name and a type (for static decls.) */
-  ParameterDefn(Module * m, const char * name, const Type * ty, int paramFlags,
+  ParameterDefn(Module * m, StringRef name, const Type * ty, int paramFlags,
       Expr * defaultVal = NULL)
     : VariableDefn(Parameter, m, name, defaultVal)
     , internalType_(ty)
@@ -143,10 +143,10 @@ public:
   FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * ast);
 
   /** Constructor that takes a name */
-  FunctionDefn(DefnType dtype, Module * m, const char * name);
+  FunctionDefn(DefnType dtype, Module * m, StringRef name);
 
   /** Constructor used for static type construction */
-  FunctionDefn(Module * m, const char * name, FunctionType * ty);
+  FunctionDefn(Module * m, StringRef, FunctionType * ty);
 
   /** Function type. */
   FunctionType * functionType() { return type_; }
@@ -248,7 +248,7 @@ public:
 
   // Overrides
 
-  llvm::StringRef linkageName() const;
+  StringRef linkageName() const;
   const Type * type() const;
   void trace() const;
   void format(FormatStream & out) const;

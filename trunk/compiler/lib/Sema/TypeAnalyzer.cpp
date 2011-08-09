@@ -6,7 +6,6 @@
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"

@@ -55,7 +55,7 @@ public:
   ASTWriter & writeDeclMods(const ASTDecl * ast);
 
   /** Return the serialized AST. */
-  llvm::StringRef str();
+  StringRef str();
 
   /** Write all of the AST nodes in the list. */
   void writeNodeList(const ASTNodeList & nodes);
@@ -69,9 +69,9 @@ private:
   void writeAttributes(const Defn * de);
   void writeQName(const Defn * de);
   void writeRelativeName(llvm::SmallVectorImpl<char> & out, const Defn * de);
-  void writeId(llvm::StringRef id);
-  void writeQualId(llvm::StringRef qid);
-  void writeStr(llvm::StringRef str);
+  void writeId(StringRef id);
+  void writeQualId(StringRef qid);
+  void writeStr(StringRef str);
   meta::AST::Tag visibility(Visibility v);
 
   llvm::SmallString<128> str_;

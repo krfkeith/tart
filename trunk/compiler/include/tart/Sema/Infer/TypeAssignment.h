@@ -116,7 +116,7 @@ public:
   Expr * nullInitValue() const;
   void trace() const;
   void format(FormatStream & out) const;
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
 
   static inline bool classof(const TypeAssignment *) { return true; }
   static inline bool classof(const Type * type) {

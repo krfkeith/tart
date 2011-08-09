@@ -32,7 +32,6 @@
 #include "tart/Objects/SystemDefs.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #define IMPLICIT_SELF 1
 

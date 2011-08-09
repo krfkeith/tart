@@ -62,10 +62,10 @@ bool ReflectorPass::runOnModule(Module & module) {
   }
 
   if (!packages_.empty()) {
-    const Type * packageType = requireType("tart.reflect.Package", module);
-    const Type * moduleArrayType = requireType("tart.reflect.Module[]", module);
-    const Type * packageArrayType = requireType("tart.reflect.Package[]", module);
-    const Type * stringType = requireType("tart.core.String", module);
+    Type * packageType = requireType("tart.reflect.Package", module);
+    Type * moduleArrayType = requireType("tart.reflect.Module[]", module);
+    Type * packageArrayType = requireType("tart.reflect.Package[]", module);
+    Type * stringType = requireType("tart.core.String", module);
 
     Constant * emptyModuleArray = requireGlobal("tart.reflect.Module[].emptyArray", module);
     Constant * emptyPackageArray = requireGlobal("tart.reflect.Package[].emptyArray", module);
@@ -95,7 +95,6 @@ bool ReflectorPass::runOnModule(Module & module) {
 
       ConstantBuilder cb(module);
       cb.addObjectHeader(packageTypeInfo);    // Object header
-      //cb.addField(packageHeader_);            // Object header
 
       if (p->global()->hasInitializer()) {
         ConstantRef packageConst = p->global()->getInitializer();
@@ -188,11 +187,11 @@ Constant * ReflectorPass::createArray(
     Module & module,
     const ConstantList & elements,
     Constant * arrayTypeInfo,
-    const Type * arrayType,
+    Type * arrayType,
     const StringRef & name) {
 
-  const Type * elementType = elements.front()->getType();
-  const ArrayType * elementArrayType = ArrayType::get(elementType, elements.size());
+  Type * elementType = elements.front()->getType();
+  ArrayType * elementArrayType = ArrayType::get(elementType, elements.size());
 
   ConstantBuilder builder(module);
   builder.addObjectHeader(arrayTypeInfo);
@@ -208,14 +207,14 @@ Constant * ReflectorPass::createArray(
 Constant * ReflectorPass::createString(
     Module & module,
     Constant * stringTypeInfo,
-    const Type * stringType,
+    Type * stringType,
     const StringRef & stringVal) {
 
   // Types we'll need
   LLVMContext & context = module.getContext();
-  const IntegerType * int32Type = IntegerType::getInt32Ty(context);
-  const IntegerType * charType = IntegerType::getInt8Ty(context);
-  const Type * charDataType = ArrayType::get(charType, 0);
+  IntegerType * int32Type = IntegerType::getInt32Ty(context);
+  IntegerType * charType = IntegerType::getInt8Ty(context);
+  Type * charDataType = ArrayType::get(charType, 0);
 
   // Self-referential member values
   UndefValue * strDataStart = UndefValue::get(charDataType->getPointerTo());
@@ -239,7 +238,7 @@ Constant * ReflectorPass::createString(
   indices[1] = ConstantInt::get(int32Type, 4, false);
 
   strDataStart->replaceAllUsesWith(
-      ConstantExpr::getInBoundsGetElementPtr(strConstant, indices, 2));
+      ConstantExpr::getInBoundsGetElementPtr(strConstant, indices));
   strSource->replaceAllUsesWith(strConstant);
 
   return ConstantExpr::getPointerCast(strConstant, stringType->getPointerTo());
@@ -255,8 +254,8 @@ GlobalVariable * ReflectorPass::requireGlobal(const StringRef & name, Module & m
   return global;
 }
 
-const Type * ReflectorPass::requireType(const StringRef & name, Module & module) {
-  const Type * type = module.getTypeByName(name);
+Type * ReflectorPass::requireType(const StringRef & name, Module & module) {
+  Type * type = module.getTypeByName(name);
   if (type == NULL) {
     errs() << "ReflectorPass: Required type " << name << " not found\n";
     abort();
