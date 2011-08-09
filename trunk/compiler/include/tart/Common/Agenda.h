@@ -5,7 +5,9 @@
 #ifndef TART_COMMON_AGENDA_H
 #define TART_COMMON_AGENDA_H
 
-#include <llvm/ADT/SetVector.h>
+#ifndef LLVM_ADT_SETVECTOR_H
+#include "llvm/ADT/SetVector.h"
+#endif
 
 namespace tart {
 

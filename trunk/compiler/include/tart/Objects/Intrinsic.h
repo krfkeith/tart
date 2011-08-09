@@ -65,7 +65,7 @@ public:
   virtual llvm::Value * generate(CodeGenerator & cg, const FnCallExpr * call) const;
 
   /** Lookup an intrinsic by name. */
-  static Intrinsic * get(const SourceLocation & loc, llvm::StringRef name);
+  static Intrinsic * get(const SourceLocation & loc, StringRef name);
 };
 
 } // namespace tart

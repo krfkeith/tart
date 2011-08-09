@@ -14,37 +14,14 @@ final class PageAllocator {
     var _heapExtent:AddressRange;
   }
 
-  /** Allocate the specified number of pages. */  
-  def alloc(numPages:int) -> AddressRange {
-    let result = allocImpl(PAGE_SIZE, numPages);
-    // TODO: Other processing might be needed here.
-    return AddressRange(result, addressOf(result[numPages * PAGE_SIZE]));
-  }
-
-  /** Free the specified pages. */  
-  def free(pages:AddressRange) {
-  	freeImpl(pages.first, pages.size);
-  }
- 
  	if true {
  	  var index:int;
  	}
-  
+
   //if SystemConfig.LINUX in SystemConfig.os {
   //} else if SystemConfig.WINDOWS in SystemConfig.os {
   //} else if SystemConfig.MACOSX in SystemConfig.os {
   //}
-
-  /** Allocate the specified number of pages. */  
-  @Extern("PageAllocator_allocImpl")
-  private def allocImpl(pageSize:int, numPages:int) -> Address[ubyte];
-  
-  /** Allocate the specified number of pages. */  
-  @Extern("PageAllocator_freeImpl")
-  private def freeImpl(addr:Address[ubyte], size:int);
-  
-  //@Extern("PageAllocator_freeImpl")
-  //private def freeImpl(page:Address[ubyte]);
 
   /** Deallocate the specified address range. The beginning and ending
       address must be aligned on a page boundary. */

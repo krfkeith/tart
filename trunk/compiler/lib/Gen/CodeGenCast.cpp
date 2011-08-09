@@ -239,7 +239,7 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in, bool saveRoots) {
         }
 #endif
 
-        const llvm::Type * fieldType = fromType->irEmbeddedType();
+        llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1, "union_val_ptr"),
@@ -305,21 +305,21 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
       }
 
 #if 0
-      const llvm::Type * fieldType = toType->irEmbeddedType();
-      const llvm::Type * unionTypeForMember = llvm::StructType::get(
+      llvm::Type * fieldType = toType->irEmbeddedType();
+      llvm::Type * unionTypeForMember = llvm::StructType::get(
           context_, utype->getDiscriminatorType(), fieldType, NULL)->getPointerTo();
 
       return builder_.CreateLoad(
           builder_.CreateConstInBoundsGEP2_32(
               builder_.CreateBitCast(value, unionTypeForMember), 0, 1));
 #else
-      const llvm::Type * fieldType = toType->irEmbeddedType();
+      llvm::Type * fieldType = toType->irEmbeddedType();
 
       if (toType->typeShape() == Shape_Large_Value) {
         #if LLVM_UNION_SUPPORT
           DASSERT(value->getType()->getTypeID() == llvm::Type::PointerTyID);
           DASSERT(value->getType()->getContainedType(0)->getTypeID() == llvm::Type::StructTyID);
-          const llvm::Type * rawUnionType =
+          llvm::Type * rawUnionType =
               value->getType()->getContainedType(0)->getContainedType(1);
           if (rawUnionType->getTypeID() == llvm::Type::UnionTyID) {
             DFAIL("Implement");
@@ -337,7 +337,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
       #if LLVM_UNION_SUPPORT
         DASSERT(value->getType()->getTypeID() == llvm::Type::PointerTyID);
         DASSERT(value->getType()->getContainedType(0)->getTypeID() == llvm::Type::StructTyID);
-        const llvm::Type * rawUnionType =
+        llvm::Type * rawUnionType =
             value->getType()->getContainedType(0)->getContainedType(1);
         if (rawUnionType->getTypeID() == llvm::Type::UnionTyID) {
           int index = utype->getNonVoidTypeIndex(toType);
@@ -435,6 +435,8 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
     return builder_.CreateBitCast(val, toType->irType()->getPointerTo(), "intf_ptr");
   }
 
+  fromType->createIRTypeFields();
+
   // List of GetElementPtr indices
   ValueList indices;
 
@@ -448,7 +450,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
     indices.push_back(getInt32Val(0));
   }
 
-  return builder_.CreateInBoundsGEP(val, indices.begin(), indices.end(), "upcast");
+  return builder_.CreateInBoundsGEP(val, indices, "upcast");
 }
 
 Value * CodeGenerator::genTypeTest(Value * val, const Type * fromType, const Type * toType,
@@ -484,7 +486,7 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
   args.push_back(toTypeObj);
   Function * upcastTest = genFunctionValue(Builtins::funcHasBase);
   checkCallingArgs(upcastTest, args.begin(), args.end());
-  Value * result = builder_.CreateCall(upcastTest, args.begin(), args.end(),
+  Value * result = builder_.CreateCall(upcastTest, args,
       Twine("isa.") + toType->typeDefn()->name());
   return result;
 }
@@ -594,8 +596,7 @@ void CodeGenerator::throwTypecastError() {
     ValueList emptyArgs;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     moveToEnd(normalDest);
-    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock(),
-        emptyArgs.begin(), emptyArgs.end(), "");
+    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock(), emptyArgs, "");
     builder_.SetInsertPoint(normalDest);
     builder_.CreateUnreachable();
   } else {

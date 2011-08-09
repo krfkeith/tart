@@ -174,6 +174,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
 
   // Make sure it's a class.
   DASSERT(classType->typeClass() == Type::Class);
+  classType->createIRTypeFields();
   //DASSERT_TYPE_EQ(classType->irParameterType(), selfPtr->getType());
 
   // Upcast to type 'object' and load the vtable pointer.
@@ -189,7 +190,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   Twine tibName = Twine("tib.") + classType->typeDefn()->name();
   Twine tibAddrName = Twine("tibaddr.") + classType->typeDefn()->name();
   Value * tib = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(selfPtr, indices.begin(), indices.end(), tibAddrName), tibName);
+      builder_.CreateInBoundsGEP(selfPtr, indices, tibAddrName), tibName);
 
   indices.clear();
   indices.push_back(getInt32Val(0));
@@ -198,7 +199,7 @@ Value * CodeGenerator::genVTableLookup(const FunctionDefn * method, const Compos
   Twine methodName = Twine("method.") + method->name();
   Twine methodPtrName = Twine("method.ptr.") + method->name();
   Value * fptr = builder_.CreateLoad(
-      builder_.CreateInBoundsGEP(tib, indices.begin(), indices.end()), methodPtrName);
+      builder_.CreateInBoundsGEP(tib, indices), methodPtrName);
   return builder_.CreateBitCast(fptr, method->type()->irType()->getPointerTo(), methodName);
 }
 
@@ -216,6 +217,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
 
   // Make sure it's an interface.
   DASSERT(classType->typeClass() == Type::Interface);
+  classType->createIRTypeFields();
 
   // Get the interface ID (which is just the type pointer).
   //Constant * itype = getTypeInfoBlockPtr(classType);
@@ -286,7 +288,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
     fnVal = genFunctionValue(fn);
   }
 
-  const llvm::Type * fnValType =
+  llvm::Type * fnValType =
       StructType::get(context_, fnVal->getType(), selfArg->getType(), NULL);
 
   Value * result = builder_.CreateAlloca(fnValType);
@@ -300,7 +302,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
 
 Value * CodeGenerator::genNew(const tart::NewExpr* in) {
   if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
-    const llvm::Type * type = ctdef->irType();
+    llvm::Type * type = ctdef->irTypeComplete();
     if (ctdef->typeClass() == Type::Struct) {
       if (ctdef->typeShape() == Shape_ZeroSize) {
         // Don't allocate if it's zero size.
@@ -313,10 +315,10 @@ Value * CodeGenerator::genNew(const tart::NewExpr* in) {
       Value * newObj = builder_.CreateCall2(
           alloc, gcAllocContext_,
           llvm::ConstantExpr::getIntegerCast(
-              llvm::ConstantExpr::getSizeOf(ctdef->irType()),
+              llvm::ConstantExpr::getSizeOf(type),
               intPtrType_, false),
-          Twine(ctdef->typeDefn()->name(), StringRef("_new")));
-      newObj = builder_.CreatePointerCast(newObj, ctdef->irType()->getPointerTo());
+          Twine(ctdef->typeDefn()->name(), "_new"));
+      newObj = builder_.CreatePointerCast(newObj, type->getPointerTo());
       genInitObjVTable(ctdef, newObj);
       return newObj;
     }
@@ -341,14 +343,15 @@ Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
     Function * f = currentFn_;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     moveToEnd(normalDest);
-    Value * result = builder_.CreateInvoke(func, normalDest, getUnwindBlock(), firstArg, lastArg);
+    Value * result = builder_.CreateInvoke(
+        func, normalDest, getUnwindBlock(), makeArrayRef(firstArg, lastArg));
     builder_.SetInsertPoint(normalDest);
     if (!result->getType()->isVoidTy()) {
       result->setName(name);
     }
     return result;
   } else {
-    Value * result = builder_.CreateCall(func, firstArg, lastArg);
+    Value * result = builder_.CreateCall(func, makeArrayRef(firstArg, lastArg));
     if (!result->getType()->isVoidTy()) {
       result->setName(name);
     }
@@ -363,8 +366,8 @@ void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
   size_t argCount = last - first;
   DASSERT(fnType->getNumParams() == argCount);
   for (size_t i = 0; i < argCount; ++i) {
-    const llvm::Type * paramType = fnType->getContainedType(i + 1);
-    const llvm::Type * argType = first[i]->getType();
+    llvm::Type * paramType = fnType->getContainedType(i + 1);
+    llvm::Type * argType = first[i]->getType();
     if (paramType != argType) {
       diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType << "'";
       diag.info() << "but was '" << *argType << "'";

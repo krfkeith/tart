@@ -13,7 +13,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // VariableDefn
 
-VariableDefn::VariableDefn(DefnType dtype, Module * m, const char * name, Expr * value)
+VariableDefn::VariableDefn(DefnType dtype, Module * m, StringRef name, Expr * value)
   : ValueDefn(dtype, m, name)
   , type_(value ? value->type() : NULL)
   , sharedRefType_(NULL)

@@ -3,7 +3,6 @@
  * ================================================================ */
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/AST/ASTNode.h"
 #include "tart/AST/ASTDecl.h"
@@ -70,23 +69,19 @@ ASTNode * ASTReader::read() {
       break;
 
     case meta::AST::ID_DEF: {
-      const char * id = readIdDef();
-      return new ASTIdent(ASTNode::Id, loc_, id);
+      return new ASTIdent(ASTNode::Id, loc_, readIdDef());
     }
 
     case meta::AST::ID_REF: {
-      const char * id = readIdRef();
-      return new ASTIdent(ASTNode::Id, loc_, id);
+      return new ASTIdent(ASTNode::Id, loc_, readIdRef());
     }
 
     case meta::AST::QID_DEF: {
-      const char * id = readIdDef();
-      return new ASTIdent(ASTNode::QName, loc_, id);
+      return new ASTIdent(ASTNode::QName, loc_, readIdDef());
     }
 
     case meta::AST::QID_REF: {
-      const char * id = readIdRef();
-      return new ASTIdent(ASTNode::QName, loc_, id);
+      return new ASTIdent(ASTNode::QName, loc_, readIdRef());
     }
 
     // Constants
@@ -95,7 +90,7 @@ ASTNode * ASTReader::read() {
       return new ASTNode(ASTNode::Null, loc_);
 
     case meta::AST::CONST_INT: {
-      llvm::StringRef str = readStringRef();
+      StringRef str = readString();
       uint32_t bits = llvm::APInt::getBitsNeeded(str, 16) + 1;
       if (bits <= 32) {
         bits = 32;
@@ -116,7 +111,7 @@ ASTNode * ASTReader::read() {
       break;
 
     case meta::AST::CONST_STRING: {
-      StringRef str = readStringRef();
+      StringRef str = readString();
       return new ASTStringLiteral(loc_, str);
     }
 
@@ -144,7 +139,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::MEMBER_REF: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTNode * baseExpr = read();
       ENSURE_VALID(baseExpr);
       return new ASTMemberRef(loc_, baseExpr, name);
@@ -177,7 +172,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::KEYWORD_ARG: {
-      const char * kw = readId();
+      StringRef kw = readId();
       ASTNode * arg = read();
       ENSURE_VALID(arg);
       return new ASTKeywordArg(loc_, arg, kw);
@@ -382,7 +377,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::TYPEVAR: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTTypeVariable::ConstraintType constraint = ASTTypeVariable::IS_INSTANCE;
       ASTNode * constraintValue = NULL;
       bool isVariadic = false;
@@ -426,7 +421,7 @@ ASTNode * ASTReader::read() {
     case meta::AST::PROTOCOL:
     case meta::AST::ENUM:
     {
-      const char * name = readId();
+      StringRef name = readId();
       DeclContent content;
       if (!readDecl(content)) {
         return &ASTNode::INVALID;
@@ -467,7 +462,7 @@ ASTNode * ASTReader::read() {
     case meta::AST::UNDEF:
     case meta::AST::OVERRIDE:
     case meta::AST::MACRO: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTNode * returnType = read();
       if (returnType == &ASTNode::INVALID) {
         return &ASTNode::INVALID;
@@ -503,7 +498,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::PARAM: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTNode * ty = read();
       if (ty == &ASTNode::INVALID) {
         return &ASTNode::INVALID;
@@ -528,7 +523,7 @@ ASTNode * ASTReader::read() {
 
     case meta::AST::PROP:
     case meta::AST::IDX: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTNode * ty = read();
       if (ty == &ASTNode::INVALID) {
         return &ASTNode::INVALID;
@@ -559,10 +554,10 @@ ASTNode * ASTReader::read() {
       for (ASTDeclList::const_iterator it = content.members.begin();
           it != content.members.end(); ++it) {
         ASTFunctionDecl * accessor = cast<ASTFunctionDecl>(*it);
-        if (accessor->name() == istrings.idGet) {
+        if (accessor->name() == "get") {
           DASSERT(result->getter() == NULL);
           result->setGetter(accessor);
-        } else if (accessor->name() == istrings.idSet) {
+        } else if (accessor->name() == "set") {
           DASSERT(result->setter() == NULL);
           result->setSetter(accessor);
         } else {
@@ -575,7 +570,7 @@ ASTNode * ASTReader::read() {
 
     case meta::AST::LET:
     case meta::AST::VAR: {
-      const char * name = readId();
+      StringRef name = readId();
       ASTNode * ty = read();
       if (ty == &ASTNode::INVALID) {
         return &ASTNode::INVALID;
@@ -621,7 +616,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::TEMPLATE: {
-      const char * name = readId();
+      StringRef name = readId();
       DeclContent content;
       if (!readDecl(content)) {
         return &ASTNode::INVALID;
@@ -644,7 +639,7 @@ ASTNode * ASTReader::read() {
     }
 
     case meta::AST::NAMESPACE: {
-      const char * name = readId();
+      StringRef name = readId();
       DeclContent content;
       if (!readDecl(content)) {
         return &ASTNode::INVALID;
@@ -668,8 +663,8 @@ ASTNode * ASTReader::read() {
     case meta::AST::IMPORT_NS: {
       ASTNode * path = read();
       ENSURE_VALID(path);
-      const char * name = readId();
-      DASSERT(name != NULL);
+      StringRef name = readId();
+      DASSERT(!name.empty());
       return new ASTImport(loc_, path, name, tag == meta::AST::IMPORT_NS);
     }
 
@@ -1158,11 +1153,11 @@ uint64_t ASTReader::readVarInt() {
   }
 }
 
-const char * ASTReader::readId() {
+StringRef ASTReader::readId() {
   meta::AST::Tag tag = readTag();
   AutoIndent ai;
   if (tag == meta::AST::ID_DEF) {
-    const char * name = readString();
+    StringRef name = readString();
 #if READER_DEBUG
     diag.debug() << "id: " << tag << " : " << name;
 #endif
@@ -1180,32 +1175,25 @@ const char * ASTReader::readId() {
   }
 }
 
-const char * ASTReader::readIdDef() {
-  const char * name = readString();
+StringRef ASTReader::readIdDef() {
+  StringRef name = readString();
   idTable_.push_back(name);
   return name;
 }
 
-const char * ASTReader::readIdRef() {
+StringRef  ASTReader::readIdRef() {
   uint64_t index = readVarInt();
   return idTable_[index];
 }
 
-const char * ASTReader::readString() {
+StringRef ASTReader::readString() {
   uint64_t size = readVarInt();
-  llvm::StringRef ident(pos_, size);
+  StringRef ident(pos_, size);
   pos_ += size;
   if (size == 0) {
     return "";
   }
-  return istrings.intern(ident);
-}
-
-llvm::StringRef ASTReader::readStringRef() {
-  uint64_t size = readVarInt();
-  llvm::StringRef str(pos_, size);
-  pos_ += size;
-  return str;
+  return stringTable_.intern(ident);
 }
 
 } // namespace tart

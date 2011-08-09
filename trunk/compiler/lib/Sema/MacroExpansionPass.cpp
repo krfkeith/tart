@@ -18,7 +18,6 @@
 
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 namespace tart {
 
@@ -59,7 +58,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     if (in->selfArg() != NULL) {
       // TODO: Do we really want to re-evaluate 'self' each time we access a member var?
-      VariableDefn * binding = new VariableDefn(Defn::MacroArg, NULL, istrings.idSelf);
+      VariableDefn * binding = new VariableDefn(Defn::MacroArg, NULL, "self");
       binding->createQualifiedName(NULL);
       binding->setInitValue(in->selfArg());
       binding->setType(in->selfArg()->type());

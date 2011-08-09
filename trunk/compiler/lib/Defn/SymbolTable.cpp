@@ -8,15 +8,14 @@
 namespace tart {
 
 SymbolTable::Entry * SymbolTable::add(Defn * member) {
-  const char * key = member->name();
-  assert(key != NULL);
-  Entry & entry = map_.GetOrCreateValue(llvm::StringRef(key)).getValue();
+  DASSERT(!member->name().empty());
+  Entry & entry = map_.GetOrCreateValue(member->name()).getValue();
   entry.push_back(member);
   return &entry;
 }
 
 void SymbolTable::trace() const {
-  for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
+  for (NameDefnMap::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     const SymbolTable::Entry & entry = it->second;
     for (SymbolTable::Entry::const_iterator si = entry.begin(); si != entry.end(); ++si) {
       (*si)->markDeferred();
@@ -27,7 +26,7 @@ void SymbolTable::trace() const {
 void SymbolTable::getDebugSummary(FormatStream & out) const {
   size_t count = 0;
   out << "{";
-  for (decl_map_t::const_iterator it = map_.begin(); it != map_.end(); ++it) {
+  for (NameDefnMap::const_iterator it = map_.begin(); it != map_.end(); ++it) {
     if (count > 8) {
       out << " + " << map_.size() - count << " more...";
       break;

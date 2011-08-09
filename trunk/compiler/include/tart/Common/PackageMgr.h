@@ -25,7 +25,7 @@ class Package;
 
 class Importer : public GC {
 public:
-  virtual bool load(llvm::StringRef qualifiedName, Module *& module) = 0;
+  virtual bool load(StringRef qualifiedName, Module *& module) = 0;
   virtual ~Importer() {}
 };
 
@@ -34,11 +34,11 @@ public:
 
 class DirectoryImporter : public Importer {
 public:
-  DirectoryImporter(llvm::StringRef path) : path_(path) {}
+  DirectoryImporter(StringRef path) : path_(path) {}
 
   // Overrides
 
-  bool load(llvm::StringRef qualifiedName, Module *& module);
+  bool load(StringRef qualifiedName, Module *& module);
   void trace() const {}
 
 private:
@@ -50,7 +50,7 @@ private:
 
 class ArchiveImporter : public Importer {
 public:
-  ArchiveImporter(llvm::StringRef path)
+  ArchiveImporter(StringRef path)
     : path_(path)
     , archive_(NULL)
     , archiveSource_(NULL)
@@ -58,7 +58,7 @@ public:
 
   // Overrides
 
-  bool load(llvm::StringRef qualifiedName, Module *& module);
+  bool load(StringRef qualifiedName, Module *& module);
   void trace() const { safeMark(archiveSource_); }
 
 private:
@@ -75,7 +75,7 @@ class PackageMgr : public GCRootBase {
 public:
   /** Add a path to the list of module search paths. The path can either be
       a directory, or a bitcode library file. */
-  void addImportPath(llvm::StringRef path);
+  void addImportPath(StringRef path);
 
   /** Add a built-in module. */
   void addModule(Module * mod);
@@ -83,10 +83,10 @@ public:
   /** Given a fully-qualified name to a symbol, load the module containing
       that symbol and return it.
   */
-  Module * loadModule(llvm::StringRef qualifiedName);
+  Module * loadModule(StringRef qualifiedName);
 
   /** Get the module from the module cache using this exact name. */
-  Module * getCachedModule(llvm::StringRef moduleName);
+  Module * getCachedModule(StringRef moduleName);
 
   /** Return the singleton instance. */
   static PackageMgr & get() { return instance_; }

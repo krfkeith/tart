@@ -9,6 +9,10 @@
 #include "tart/Meta/Tags.h"
 #endif
 
+#ifndef TART_COMMON_STRINGTABLE_H
+#include "tart/Common/StringTable.h"
+#endif
+
 #ifndef LLVM_ADT_SMALLSTRING_H
 #include "llvm/ADT/SmallString.h"
 #endif
@@ -28,15 +32,17 @@ struct DeclContent;
 
 class ASTReader {
 public:
-  ASTReader(SourceLocation loc, const char * buffer, size_t size)
+  ASTReader(SourceLocation loc, StringTable & stringTable, const char * buffer, size_t size)
     : loc_(loc)
+    , stringTable_(stringTable)
     , pos_(buffer)
     , end_(buffer + size)
     , nextIndex_(0)
   {}
 
-  ASTReader(SourceLocation loc, llvm::StringRef str)
+  ASTReader(SourceLocation loc, StringTable & stringTable, StringRef str)
     : loc_(loc)
+    , stringTable_(stringTable)
     , pos_(str.data())
     , end_(str.data() + str.size())
     , nextIndex_(0)
@@ -57,16 +63,17 @@ private:
 
   meta::AST::Tag readTag();
   uint64_t readVarInt();
-  const char * readId();
-  const char * readIdDef();
-  const char * readIdRef();
-  const char * readString();
-  llvm::StringRef readStringRef();
+  StringRef readId();
+  StringRef readIdDef();
+  StringRef readIdRef();
+  StringRef readString();
+  StringRef readStringRef();
 
   SourceLocation loc_;
+  StringTable & stringTable_;
   const char * pos_;
   const char * end_;
-  llvm::SmallVector<const char *, 16> idTable_;
+  llvm::SmallVector<StringRef, 16> idTable_;
   uint32_t nextIndex_;
 };
 

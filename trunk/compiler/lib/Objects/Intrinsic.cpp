@@ -67,7 +67,7 @@ llvm::Value * Intrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) c
   DFAIL("IllegalState");
 }
 
-Intrinsic * Intrinsic::get(const SourceLocation & loc, llvm::StringRef name) {
+Intrinsic * Intrinsic::get(const SourceLocation & loc, StringRef name) {
   static bool init = false;
   if (!init) {
     init = true;
@@ -136,7 +136,7 @@ Value * TraceTableOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * c
   indices[0] = indices[1] = cg.getInt32Val(0);
   llvm::Constant * traceTable = cg.getTraceTable(type);
   if (traceTable != NULL) {
-    return llvm::ConstantExpr::getInBoundsGetElementPtr(traceTable, indices, 2);
+    return llvm::ConstantExpr::getInBoundsGetElementPtr(traceTable, indices);
   } else {
     return NULL;
   }
@@ -173,14 +173,14 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
   TypeId id = ptype->typeId();
 
   if (functions_[id] == NULL) {
-    char funcName[32];
     DASSERT(!ptype->isUnsizedIntType());
-    snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
 
-    const llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
-    functions_[id] = cast<llvm::Function>(cg.irModule()->getOrInsertFunction(funcName, funcType));
-//    functions_[id] = llvm::Function::Create(funcType),
-//        Function::ExternalLinkage, funcName, cg.irModule());
+    llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
+    llvm::SmallString<32> funcName;
+    functions_[id] = cast<llvm::Function>(
+        cg.irModule()->getOrInsertFunction(
+            (ptype->typeDefn()->name() + "_toString").toStringRef(funcName),
+            funcType));
   }
 
   return cg.builder().CreateCall(functions_[id], selfArg /*, formatStringArg*/);
@@ -205,10 +205,12 @@ Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr *
 
   if (functions_[id] == NULL) {
     DASSERT(ptype != &UnsizedIntType::instance);
-    char funcName[48];
-    snprintf(funcName, sizeof funcName, "tart.core.Strings.parse_%s", ptype->typeDefn()->name());
-    const llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
-    functions_[id] = cast<llvm::Function>(cg.irModule()->getOrInsertFunction(funcName, funcType));
+    llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
+    llvm::SmallString<32> funcName;
+    functions_[id] = cast<llvm::Function>(
+        cg.irModule()->getOrInsertFunction(
+            ("tart.core.Strings.parse_" + ptype->typeDefn()->name()).toStringRef(funcName),
+            funcType));
   }
 
   if (call->argCount() == 2) {
@@ -363,7 +365,7 @@ Value * FlexAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   indices[0] = zero;
   indices[1] = cg.getInt32Val(lastMemberIndex);
   indices[2] = count;
-  Value * size = cg.builder().CreateGEP(zeroPtr, &indices[0], &indices[3], "flexSize");
+  Value * size = cg.builder().CreateGEP(zeroPtr, indices, "flexSize");
 
   return cg.genVarSizeAlloc(objType, size);
 }
@@ -374,7 +376,7 @@ NullObjectIntrinsic NullObjectIntrinsic::instance;
 
 Value * NullObjectIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Type * retType = dealias(call->type());
-  const llvm::Type * type = retType->irType();
+  llvm::Type * type = retType->irType();
   return ConstantPointerNull::get(type->getPointerTo());
 }
 
@@ -512,7 +514,7 @@ Value * AddressAddIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * cal
   DASSERT(call->argCount() == 2);
   Value * ptr = cg.genExpr(call->arg(0));
   Value * offset = cg.genExpr(call->arg(1));
-  return cg.builder().CreateGEP(ptr, &offset, (&offset) + 1, "ptr_add");
+  return cg.builder().CreateGEP(ptr, offset, "ptr_add");
 }
 
 // -------------------------------------------------------------------
@@ -606,13 +608,13 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
       llvm::ConstantExpr::getSizeOf(elemType->irEmbeddedType()),
       length->getType());
 
-  const llvm::Type * int8PtrType = cg.builder().getInt8Ty()->getPointerTo();
+  llvm::Type * int8PtrType = cg.builder().getInt8Ty()->getPointerTo();
 
-  const llvm::Type * types[3];
+  llvm::Type * types[3];
   types[0] = int8PtrType;
   types[1] = int8PtrType;
   types[2] = length->getType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types, 3);
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), _id, types);
 
   Value * args[5];
   args[0] = cg.builder().CreatePointerCast(dstPtr, int8PtrType);
@@ -621,7 +623,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   args[3] = cg.getInt32Val(0); // TODO: Better alignment
   args[4] = llvm::ConstantInt::getFalse(cg.context()); // TODO: isVolatile
 
-  return cg.builder().CreateCall(intrinsic, &args[0], &args[5]);
+  return cg.builder().CreateCall(intrinsic, args);
 }
 
 // -------------------------------------------------------------------
@@ -665,9 +667,9 @@ inline Value * MathIntrinsic1i<id>::generate(CodeGenerator & cg, const FnCallExp
     return NULL;
   }
 
-  const llvm::Type * types[1];
+  llvm::Type * types[1];
   types[0] = argType->irType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 1);
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types);
   return cg.builder().CreateCall(intrinsic, argVal);
 }
 
@@ -692,9 +694,9 @@ inline Value * MathIntrinsic1f<id>::generate(CodeGenerator & cg, const FnCallExp
     return NULL;
   }
 
-  const llvm::Type * types[1];
+  llvm::Type * types[1];
   types[0] = argType->irType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 1);
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types);
   return cg.builder().CreateCall(intrinsic, argVal);
 }
 
@@ -732,11 +734,11 @@ inline Value * MathIntrinsic2f<id>::generate(CodeGenerator & cg, const FnCallExp
   Value * arg0Val = cg.genExpr(arg0);
   Value * arg1Val = cg.genExpr(arg1);
 
-  const llvm::Type * types[2];
+  llvm::Type * types[2];
   types[0] = arg0Type->irType();
   types[1] = arg1Type->irType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types, 2);
-  return cg.builder().CreateCall(intrinsic, arg0Val, arg1Val);
+  Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types);
+  return cg.builder().CreateCall2(intrinsic, arg0Val, arg1Val);
 }
 
 template<>
@@ -760,11 +762,11 @@ llvm::Value * AtomicCasIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
   Value * cmpValue = cg.genExpr(cmp);
   Value * valValue = cg.genExpr(val);
 
-  const llvm::Type * types[2];
+  llvm::Type * types[2];
   types[0] = cmpValue->getType();
   types[1] = theValue->getType();
   Function * intrinsic = llvm::Intrinsic::getDeclaration(
-      cg.irModule(), llvm::Intrinsic::atomic_cmp_swap, types, 2);
+      cg.irModule(), llvm::Intrinsic::atomic_cmp_swap, types);
   Value * resultVal = cg.builder().CreateCall3(intrinsic, theValue, cmpValue, valValue, "");
   return cg.builder().CreateICmpEQ(resultVal, cmpValue);
 }

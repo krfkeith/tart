@@ -3,11 +3,16 @@
  * ================================================================ */
 
 #include <gtest/gtest.h>
+
 #include "tart/AST/ASTNode.h"
 #include "tart/AST/Stmt.h"
+
+#include "tart/Defn/Module.h"
+
 #include "tart/Parse/Parser.h"
-#include "tart/Common/InternedString.h"
+
 #include "tart/Common/Diagnostics.h"
+
 #include "FakeSourceFile.h"
 #include "TestHelpers.h"
 
@@ -16,10 +21,12 @@ using namespace tart;
 
 class ParserTest : public testing::Test {
 protected:
-  ParserTest() {}
+  ParserTest() : testModule(NULL, "testModule") {}
 
   virtual void SetUp() {}
   virtual void TearDown() {}
+
+  Module testModule;
 
   template <class T>
   T * parse(T * (Parser::*parseFunc)(), const char * srctext,
@@ -29,7 +36,7 @@ protected:
     }
 
     FakeSourceFile  src(srctext);
-    Parser parser(&src, NULL);
+    Parser parser(&src, &testModule);
     T * result = (parser.*parseFunc)();
     if (!expectedErrors) {
       EXPECT_TRUE(result != NULL) << "[src = " << srctext << "]";
@@ -61,11 +68,29 @@ protected:
   }
 };
 
-TEST_F(ParserTest, InternStrings) {
-  // Test that two iterned strings have the same pointer value.
-  const char * s0 = istrings.intern("foo");
-  const char * s1 = istrings.intern("foo");
-  ASSERT_EQ(s0, s1);
+TEST_F(ParserTest, InternString) {
+  StringRef str = testModule.internString("X");
+  ASSERT_EQ("X", str);
+
+  StringRef str2 = testModule.internString("X");
+  ASSERT_EQ("X", str2);
+  ASSERT_EQ(str.data(), str2.data());
+}
+
+TEST_F(ParserTest, ASTDecl) {
+  ASTDecl * ast = new ASTNamespace(SourceLocation(), "X");
+  ASSERT_EQ(1u, ast->name().size());
+  ASSERT_EQ('X', ast->name()[0]);
+}
+
+TEST_F(ParserTest, ASTIdent) {
+  ASTIdent * ast = new ASTIdent(SourceLocation(), "X");
+  ASSERT_EQ(1u, ast->value().size());
+  ASSERT_EQ('X', ast->value()[0]);
+
+  ast = new ASTIdent(SourceLocation(), testModule.internString("X"));
+  ASSERT_EQ(1u, ast->value().size());
+  ASSERT_EQ('X', ast->value()[0]);
 }
 
 TEST_F(ParserTest, Types) {
@@ -76,7 +101,10 @@ TEST_F(ParserTest, Types) {
 
   ast = parseType("X");
   ASSERT_EQ(ASTNode::Id, ast->nodeType());
-  EXPECT_AST_EQ("X", ast);
+  ASSERT_TRUE(isa<ASTIdent>(ast));
+  ASSERT_EQ(1u, cast<ASTIdent>(ast)->value().size());
+  ASSERT_EQ('X', cast<ASTIdent>(ast)->value()[0]);
+  ASSERT_AST_EQ("X", ast);
   EXPECT_EQ(0u, ast->location().begin);
   EXPECT_EQ(1u, ast->location().end);
 

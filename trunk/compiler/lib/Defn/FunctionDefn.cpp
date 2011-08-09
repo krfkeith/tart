@@ -23,11 +23,7 @@ void ParameterDefn::trace() const {
 }
 
 void ParameterDefn::format(FormatStream & out) const {
-  // Parameters are allowed to be unnamed (for function type declarations.)
-  if (name_ != NULL) {
-    out << name_;
-  }
-
+  out << name_;
   if (out.getShowType() && type() != NULL) {
     out << ":" << type();
   }
@@ -67,7 +63,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const ASTFunctionDecl * a
 }
 
 /** Constructor that takes a name */
-FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
+FunctionDefn::FunctionDefn(DefnType dtype, Module * m, StringRef name)
   : ValueDefn(dtype, m, name)
   , type_(NULL)
   , flags_(0)
@@ -78,7 +74,7 @@ FunctionDefn::FunctionDefn(DefnType dtype, Module * m, const char * name)
 {}
 
 /** Constructor used for static type construction */
-FunctionDefn::FunctionDefn(Module * m, const char * name, FunctionType * ty)
+FunctionDefn::FunctionDefn(Module * m, StringRef name, FunctionType * ty)
   : ValueDefn(Function, m, name)
   , type_(ty)
   , flags_(0)
@@ -239,7 +235,7 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   return true;
 }
 
-llvm::StringRef FunctionDefn::linkageName() const {
+StringRef FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
     Defn::linkageName();
 

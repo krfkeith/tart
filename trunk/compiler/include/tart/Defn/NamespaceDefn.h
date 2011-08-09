@@ -27,7 +27,7 @@ public:
   typedef PassMgr::PassSet PassSet;
 
   /** Constructor that takes a name */
-  NamespaceDefn(Module * m, const char * name);
+  NamespaceDefn(Module * m, StringRef name);
 
   /** Constructor that takes an AST declaration. */
   NamespaceDefn(Module * m, const ASTDecl * de);

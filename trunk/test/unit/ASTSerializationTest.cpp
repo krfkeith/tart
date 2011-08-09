@@ -33,7 +33,7 @@ protected:
     EXPECT_FALSE(parserOutput->isInvalid()) << "[src = " << srctext << "]";
     ASTWriter writer;
     writer.write(parserOutput);
-    ASTReader reader(SourceLocation(), writer.str());
+    ASTReader reader(SourceLocation(), testModule->moduleStrings(), writer.str());
     ASTNode * readerOutput = reader.read();
     return cast_or_null<T>(readerOutput);
   }
@@ -896,7 +896,7 @@ TEST_F(ASTSerializationTest, DeclLocalImports) {
   EXPECT_EQ(1u, ast->imports().size());
   EXPECT_EQ(ASTNode::Import, ast->imports()[0]->nodeType());
   EXPECT_TRUE(cast<ASTImport>(ast->imports()[0])->unpack());
-  EXPECT_STREQ("y", cast<ASTImport>(ast->imports()[0])->asName());
+  EXPECT_EQ("y", cast<ASTImport>(ast->imports()[0])->asName());
   EXPECT_AST_EQ("import x.y", ast->imports()[0]);
 
   ast = testDeclaration("namespace X { import x.y as z; }");
@@ -904,7 +904,7 @@ TEST_F(ASTSerializationTest, DeclLocalImports) {
   EXPECT_EQ(1u, ast->imports().size());
   EXPECT_EQ(ASTNode::Import, ast->imports()[0]->nodeType());
   EXPECT_FALSE(cast<ASTImport>(ast->imports()[0])->unpack());
-  EXPECT_STREQ("z", cast<ASTImport>(ast->imports()[0])->asName());
+  EXPECT_EQ("z", cast<ASTImport>(ast->imports()[0])->asName());
   EXPECT_AST_EQ("import x.y", ast->imports()[0]);
 }
 

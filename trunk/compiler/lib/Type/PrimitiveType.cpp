@@ -16,7 +16,6 @@
 #include "tart/Type/TypeConstraint.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/Intrinsics.h"
@@ -53,7 +52,7 @@ PrimitiveType::PrimitiveType(TypeDefn * de) :
   primitiveTypeList = this;
 }
 
-const llvm::Type * PrimitiveType::createIRType() const {
+llvm::Type * PrimitiveType::createIRType() const {
   diag.fatal() << "Attempt to create IR type for " << this;
   DFAIL("IllegalState");
 }
@@ -1369,7 +1368,7 @@ template<> TypeDefn AnyType::typedefn(&Builtins::module, "__Any", &AnyType::inst
 template<> TypeIdSet AnyType::MORE_GENERAL = TypeIdSet::noneOf();
 
 template<> void AnyType::initType() {
-  irType_ = llvm::OpaqueType::get(llvm::getGlobalContext());
+  irType_ = NULL;
 }
 
 template<> void AnyType::initMembers() {

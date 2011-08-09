@@ -14,11 +14,13 @@
 
 #include "tart/Common/Diagnostics.h"
 
+#include "llvm/ADT/Twine.h"
+
 namespace tart {
 
 // -------------------------------------------------------------------
 // Defn
-Defn::Defn(DefnType dtype, Module * m, const char * nm)
+Defn::Defn(DefnType dtype, Module * m, StringRef nm)
   : defnType_(dtype)
   , loc(SourceLocation())
   , name_(nm)
@@ -52,7 +54,7 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   }
 }
 
-llvm::StringRef Defn::qualifiedName() const {
+StringRef Defn::qualifiedName() const {
   if (qname_.empty()) {
     diag.fatal(this) << "Unqualified name " << name_;
   }
@@ -64,12 +66,13 @@ void Defn::createQualifiedName(Defn * parent) {
   DASSERT_OBJ(qname_.empty(), this);
 
   if (parent != NULL) {
-    const std::string & qualifier =
+    StringRef qualifier =
         (parent->defnType() == Mod)
             ? static_cast<Module *>(parent)->packageName()
             : parent->qualifiedName();
     if (!qualifier.empty()) {
-      qname_ = qualifier + "." + name_;
+
+      (Twine(qualifier) + "." + StringRef(name_)).toVector(qname_);
       return;
     }
   }
@@ -77,7 +80,7 @@ void Defn::createQualifiedName(Defn * parent) {
   qname_ = name_;
 }
 
-llvm::StringRef Defn::linkageName() const {
+StringRef Defn::linkageName() const {
   if (lnkName.empty()) {
     if (tinst_ != NULL && tinst_->templateDefn() == Builtins::typeArray.typeDefn()) {
       // Handle arrays specially.

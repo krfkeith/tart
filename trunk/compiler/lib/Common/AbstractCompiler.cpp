@@ -29,7 +29,7 @@ using llvm::errs;
 static llvm::cl::opt<std::string>
 SourcePath("sourcepath", llvm::cl::desc("Root directory of source package"));
 
-void AbstractCompiler::processInputFile(llvm::StringRef inFile) {
+void AbstractCompiler::processInputFile(StringRef inFile) {
   llvm::SmallString<128> filePath(SourcePath);
   path::append(filePath, inFile);
 
@@ -41,7 +41,7 @@ void AbstractCompiler::processInputFile(llvm::StringRef inFile) {
   // And remove extension from module name.
   std::string moduleName;
   moduleName.reserve(inFile.size());
-  llvm::StringRef::const_iterator it = inFile.begin(), itEnd = inFile.end();
+  StringRef::const_iterator it = inFile.begin(), itEnd = inFile.end();
   if (inFile.rfind(".tart") == inFile.size() - 5) {
     itEnd -= 5;
   }

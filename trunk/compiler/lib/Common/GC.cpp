@@ -15,7 +15,7 @@
   #include <stdlib.h>
 #endif
 
-#include <llvm/ADT/SmallVector.h>
+#include "llvm/ADT/SmallVector.h"
 
 #define GC_DEBUG 0
 

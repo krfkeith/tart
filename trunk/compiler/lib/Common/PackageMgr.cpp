@@ -42,7 +42,7 @@ static cl::opt<bool>
 ShowImports("show-imports", cl::desc("Display imports"));
 
 namespace {
-  llvm::sys::TimeValue filetime(llvm::StringRef path) {
+  llvm::sys::TimeValue filetime(StringRef path) {
     TimeValue result(0, 0);
 #if HAVE_STAT
     struct stat st;

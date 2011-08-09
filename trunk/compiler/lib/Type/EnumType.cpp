@@ -11,7 +11,7 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// EnumType
 
-const llvm::Type * EnumType::createIRType() const {
+llvm::Type * EnumType::createIRType() const {
   return baseType_->irType();
 }
 

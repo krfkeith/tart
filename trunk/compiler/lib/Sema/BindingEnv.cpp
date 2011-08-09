@@ -78,19 +78,6 @@ extern bool unifyVerbose;
 // -------------------------------------------------------------------
 // BindingEnv
 
-#if 0
-const char * BindingEnv::str() const {
-  static std::string temp;
-  std::stringstream ss;
-  FormatStream stream(ss);
-  stream.setFormatOptions(Format_Verbose);
-  stream << *this;
-  stream.flush();
-  temp = ss.str();
-  return temp.c_str();
-}
-#endif
-
 void BindingEnv::reset() {
   backtrack(0);
 }
@@ -533,7 +520,7 @@ bool BindingEnv::unifyWithTypeVar(
       return true;
     }
 
-    DASSERT_MSG((*si)->value() != ta, "Pattern bound to itself");
+    DASSERT((*si)->value() != ta) << "Pattern " << ta << " bound to itself";
   }
 
   // Add a new constraint onto the type assignment.

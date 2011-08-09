@@ -62,7 +62,7 @@ public:
   bool addPositionalArg();
 
   /** Add a keyword argument. */
-  bool addKeywordArg(const char * kw);
+  bool addKeywordArg(StringRef kw);
 
   /** Check that there are no unassigned parameters. */
   bool check();

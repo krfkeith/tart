@@ -92,7 +92,7 @@ ASTWriter & ASTWriter::write(const Type * ty) {
           it != fnType->params().end(); ++it) {
         const ParameterDefn * p = *it;
         write(meta::AST::PARAM);
-        writeId(p->name() ? p->name() : "");
+        writeId(!p->name().empty() ? p->name() : "");
         writeAttributes(p);
         write(p->type());
         if (p->initValue() != NULL) {
@@ -222,7 +222,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
       write(meta::AST::CONST_INT);
       llvm::SmallVector<char, 20> str;
       lit->value().toString(str, 16, false);
-      writeStr(llvm::StringRef(str.data(), str.size()));
+      writeStr(StringRef(str.data(), str.size()));
       break;
     }
 
@@ -334,7 +334,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
     case ASTNode::Param: {
       const ASTParameter * param = static_cast<const ASTParameter *>(ast);
       write(meta::AST::PARAM);
-      writeId(param->name() ? param->name() : "");
+      writeId(!param->name().empty() ? param->name() : "");
       write(param->type());
       if (param->flags() & Param_Variadic) {
         write(meta::AST::VARIADIC);
@@ -422,7 +422,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
 
     case ASTNode::Import: {
       const ASTImport * ai = static_cast<const ASTImport *>(ast);
-      DASSERT(ai->asName() != NULL);
+      DASSERT(!ai->asName().empty());
       write(ai->unpack() ? meta::AST::IMPORT_NS : meta::AST::IMPORT);
       write(ai->path());
       writeId(ai->asName());
@@ -910,7 +910,7 @@ void ASTWriter::writeRelativeName(llvm::SmallVectorImpl<char> & out, const Defn 
   out.append(name.begin(), name.end());
 }
 
-void ASTWriter::writeId(llvm::StringRef id) {
+void ASTWriter::writeId(StringRef id) {
   StringMap<uint32_t>::const_iterator it = idMap_.find(id);
   if (it != idMap_.end()) {
     write(meta::AST::ID_REF);
@@ -922,7 +922,7 @@ void ASTWriter::writeId(llvm::StringRef id) {
   }
 }
 
-void ASTWriter::writeQualId(llvm::StringRef id) {
+void ASTWriter::writeQualId(StringRef id) {
   StringMap<uint32_t>::const_iterator it = idMap_.find(id);
   if (it != idMap_.end()) {
     write(meta::AST::QID_REF);
@@ -935,12 +935,12 @@ void ASTWriter::writeQualId(llvm::StringRef id) {
   }
 }
 
-void ASTWriter::writeStr(llvm::StringRef str) {
+void ASTWriter::writeStr(StringRef str) {
   stream_ << VarInt32(str.size());
   stream_ << str;
 }
 
-llvm::StringRef ASTWriter::str() {
+StringRef ASTWriter::str() {
   return stream_.str();
 }
 

@@ -68,13 +68,12 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
     // For a shared variable, create a shared reference on the heap.
     const Type * cellType = var->sharedRefType();
     DASSERT_OBJ(cellType != NULL, var);
-    const llvm::Type * irType = cellType->irEmbeddedType();
+    llvm::Type * irType = cellType->irEmbeddedType();
 
     Value * cellValue = builder_.CreateCall2(
             getGcAlloc(), gcAllocContext_,
             llvm::ConstantExpr::getIntegerCast(
-                llvm::ConstantExpr::getSizeOf(cellType->irType()),
-                intPtrType_, false),
+                llvm::ConstantExpr::getSizeOf(cellType->irTypeComplete()), intPtrType_, false),
             var->name() + StringRef(".shared.alloc"));
     cellValue = builder_.CreatePointerCast(
         cellValue, irType, var->name() + StringRef(".shared"));
@@ -91,7 +90,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
 //    markGCRoot(cellAlloca, NULL, var->name());
   } else {
     // Allocate space for the variable on the stack
-    const llvm::Type * irType = varType->irEmbeddedType();
+    llvm::Type * irType = varType->irEmbeddedType();
     Value * lValue = builder_.CreateAlloca(irType, 0, var->name());
     var->setIRValue(lValue);
   }
@@ -812,10 +811,10 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
 
     // Call llvm.eh.exception to get the current exception
     Function * ehException = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
+        irModule_, llvm::Intrinsic::eh_exception);
     Value * ehPtr = builder_.CreateCall(ehException, "eh_ptr");
-    const StructType * throwableType = cast<StructType>(Builtins::typeThrowable->irType());
-    //const llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
+    StructType * throwableType = cast<StructType>(Builtins::typeThrowable->irTypeComplete());
+    //llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
 
     // Build the selector list, and detect if there is a 'catch-everything' block.
     // Note that a 'catch-everything' block may catch foreign exceptions, which
@@ -849,7 +848,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
 
     // Get the llvm.eh.selector intrinsic and the personality function.
     Function * ehSelector = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_selector, NULL, 0);
+        irModule_, llvm::Intrinsic::eh_selector);
     Function * personality = isBacktraceRequested ?
         getExceptionTracePersonality() : getExceptionPersonality();
 
@@ -860,7 +859,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
     args.append(selectorVals.begin(), selectorVals.end());
 
     // Call llvm.eh.selector to determine the action.
-    Value * ehAction = builder_.CreateCall(ehSelector, args.begin(), args.end(), "eh_action");
+    Value * ehAction = builder_.CreateCall(ehSelector, args, "eh_action");
 
     // The 'catch everything' block. If there's no actual 'catch everything'
     // statement in the try, then this will be used as the 'resume exception' block.
@@ -873,9 +872,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
     Value * offsetIndices[1];
     offsetIndices[0] = llvm::ConstantExpr::getNeg(unwindInfoOffset);
     Value * throwValue = builder_.CreateGEP(
-        builder_.CreateBitCast(ehPtr, builder_.getInt8PtrTy()),
-        &offsetIndices[0], &offsetIndices[1],
-        "eh_throwable");
+        builder_.CreateBitCast(ehPtr, builder_.getInt8PtrTy()), offsetIndices, "eh_throwable");
     throwValue = builder_.CreateBitCast(throwValue, Builtins::typeThrowable->irEmbeddedType());
 
     if (in->argCount() > 0) {
@@ -1072,8 +1069,8 @@ Value * CodeGenerator::genReturn(const ReturnExpr * in) {
     }
 
     if (returnType->irEmbeddedType() != value->getType()) {
-      returnType->irEmbeddedType()->dump(irModule_);
-      value->getType()->dump(irModule_);
+      returnType->irEmbeddedType()->dump();
+      value->getType()->dump();
       DASSERT(false);
     }
     DASSERT_TYPE_EQ(returnVal, returnType->irEmbeddedType(), value->getType());
@@ -1208,9 +1205,9 @@ llvm::Value * CodeGenerator::genThrow(const ThrowExpr * in) {
   bool isRethrow = (exceptVal == NULL);
   if (isRethrow) {
     // Re-throw the current exception.
-    const llvm::Type * throwableType = Builtins::typeThrowable->irType();
+    llvm::Type * throwableType = Builtins::typeThrowable->irType();
     Function * ehException = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_exception, NULL, 0);
+        irModule_, llvm::Intrinsic::eh_exception);
     ehPtr = builder_.CreateBitCast(
         builder_.CreateCall(ehException, "eh_ptr"),
         throwableType->getContainedType(2)->getPointerTo());
@@ -1221,8 +1218,7 @@ llvm::Value * CodeGenerator::genThrow(const ThrowExpr * in) {
       return NULL;
     }
 
-    const llvm::Type * throwableType = Builtins::typeThrowable->irType();
-    irModule_->addTypeName("tart.core.Throwable", throwableType);
+    llvm::Type * throwableType = Builtins::typeThrowable->irType();
     Value * throwable = builder_.CreateBitCast(exception, throwableType->getPointerTo());
     ehPtr = builder_.CreateStructGEP(throwable, 2);
   }

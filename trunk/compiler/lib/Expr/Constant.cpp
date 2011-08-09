@@ -73,7 +73,7 @@ ConstantInteger * ConstantInteger::getConstantBool(const SourceLocation & loc, b
 
 ConstantInteger * ConstantInteger::get(
     const SourceLocation & loc, const Type * type, int32_t value) {
-  const llvm::Type * intType = type->irType();
+  llvm::Type * intType = type->irType();
   return new ConstantInteger(loc, type,
       cast<llvm::ConstantInt>(
           llvm::ConstantInt::get(intType,
@@ -140,7 +140,7 @@ void ConstantFloat::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // ConstantString
-ConstantString::ConstantString(SourceLocation l, llvm::StringRef val)
+ConstantString::ConstantString(SourceLocation l, StringRef val)
   : ConstantExpr(ConstString, l, Builtins::typeString.peek())
   , value_(val)
 {

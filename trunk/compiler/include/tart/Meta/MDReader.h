@@ -59,11 +59,11 @@ public:
 
   /** Return the nth arg as a StringRef. Aborts if the nth argument
       was null or the wrong type. */
-  llvm::StringRef strArg(unsigned n) const;
+  StringRef strArg(unsigned n) const;
 
   /** Return the nth arg as a StringRef, or an empty string if the
       argument was NULL. */
-  llvm::StringRef optStrArg(unsigned n) const;
+  StringRef optStrArg(unsigned n) const;
 
   /** Return the nth arg as a NodeRef. Aborts if the nth argument was
       null or the wrong type. */
@@ -184,7 +184,7 @@ public:
   bool readTemplateSignature(Defn * de, Scope * parent, const llvm::MDString * args);
 
   /** Read in a template definition. */
-  ASTTemplate * readTemplate(SourceLocation loc, llvm::StringRef source, llvm::StringRef name);
+  ASTTemplate * readTemplate(SourceLocation loc, StringRef source, StringRef name);
 
 private:
   bool readModuleImports(NodeRef node);
@@ -194,9 +194,9 @@ private:
   bool readAccessorList(PropertyDefn * prop, NodeRef node);
   bool readExpressionList(SourceLocation loc, NodeRef exprs, ExprList & out);
   Expr * readExpression(SourceLocation loc, NodeRef node);
-  const Type * readTypeRef(llvm::StringRef str);
-  bool lookupName(llvm::StringRef qname, DefnList & result);
-  Defn * lookupSymbol(llvm::StringRef name);
+  const Type * readTypeRef(StringRef str);
+  bool lookupName(StringRef qname, DefnList & result);
+  Defn * lookupSymbol(StringRef name);
 
   Defn * setSubject(Defn * newSubject) {
     Defn * prev = subject_;

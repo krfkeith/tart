@@ -32,7 +32,7 @@ public:
   PropertyDefn(DefnType dtype, Module * m, const ASTPropertyDecl * ast);
 
   /** Constructor that takes a name */
-  PropertyDefn(DefnType dtype, Module * m, const char * name);
+  PropertyDefn(DefnType dtype, Module * m, StringRef name);
 
   FunctionDefn * getter() const { return getter_; }
   void setGetter(FunctionDefn * f) { getter_ = f; }
@@ -85,7 +85,7 @@ public:
   {}
 
   /** Constructor that takes a name */
-  IndexerDefn(DefnType dtype, Module * m, const char * name)
+  IndexerDefn(DefnType dtype, Module * m, StringRef name)
     : PropertyDefn(dtype, m, name)
   {}
 

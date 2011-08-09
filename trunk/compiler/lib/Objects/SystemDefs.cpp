@@ -37,19 +37,19 @@ CompositeType * SystemClass::get() const {
   return type_;
 }
 
-const llvm::Type * SystemClass::irType() const {
+llvm::Type * SystemClass::irType() const {
   return get()->irType();
 }
 
-const llvm::Type * SystemClass::irEmbeddedType() const {
+llvm::Type * SystemClass::irEmbeddedType() const {
   return get()->irEmbeddedType();
 }
 
-const llvm::Type * SystemClass::irParameterType() const {
+llvm::Type * SystemClass::irParameterType() const {
   return get()->irParameterType();
 }
 
-const llvm::Type * SystemClass::irReturnType() const {
+llvm::Type * SystemClass::irReturnType() const {
   return get()->irReturnType();
 }
 
@@ -69,19 +69,19 @@ EnumType * SystemEnum::get() const {
   return type_;
 }
 
-const llvm::Type * SystemEnum::irType() const {
+llvm::Type * SystemEnum::irType() const {
   return get()->irType();
 }
 
-const llvm::Type * SystemEnum::irEmbeddedType() const {
+llvm::Type * SystemEnum::irEmbeddedType() const {
   return get()->irEmbeddedType();
 }
 
-const llvm::Type * SystemEnum::irParameterType() const {
+llvm::Type * SystemEnum::irParameterType() const {
   return get()->irParameterType();
 }
 
-const llvm::Type * SystemEnum::irReturnType() const {
+llvm::Type * SystemEnum::irReturnType() const {
   return get()->irReturnType();
 }
 

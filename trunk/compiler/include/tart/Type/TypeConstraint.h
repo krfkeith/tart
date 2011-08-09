@@ -30,7 +30,7 @@ public:
 
   // Overrides
 
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
   TypeShape typeShape() const { return Shape_Unset; }
 
   static inline bool classof(const TypeConstraint *) { return true; }

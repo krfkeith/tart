@@ -9,8 +9,13 @@
 #include "tart/CFG/CFG.h"
 #endif
 
+#ifndef LLVM_ADT_STRINGMAP_H
 #include <llvm/ADT/StringMap.h>
+#endif
+
+#ifndef LLVM_ADT_SMALLVECTOR_H
 #include <llvm/ADT/SmallVector.h>
+#endif
 
 namespace tart {
 
@@ -21,9 +26,9 @@ class FormatStream;
 class SymbolTable {
 public:
   typedef llvm::SmallVector<Defn *, 4> Entry;
-  typedef llvm::StringMap<Entry> decl_map_t;
-  typedef decl_map_t::iterator iterator;
-  typedef decl_map_t::const_iterator const_iterator;
+  typedef llvm::StringMap<Entry, llvm::BumpPtrAllocator> NameDefnMap;
+  typedef NameDefnMap::iterator iterator;
+  typedef NameDefnMap::const_iterator const_iterator;
 
   SymbolTable() {}
   virtual ~SymbolTable() {}
@@ -35,8 +40,8 @@ public:
   size_t count() const { return map_.size(); }
 
   /** Find a declaration by name */
-  const Entry * findSymbol(llvm::StringRef key) const {
-    decl_map_t::const_iterator it = map_.find(key);
+  const Entry * findSymbol(StringRef key) const {
+    NameDefnMap::const_iterator it = map_.find(key);
     if (it != map_.end()) {
       return &it->second;
     } else {
@@ -61,7 +66,7 @@ public:
 private:
 
   // Map of declarations by name
-  decl_map_t map_;
+  NameDefnMap map_;
 };
 
 /// -------------------------------------------------------------------

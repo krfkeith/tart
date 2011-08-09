@@ -11,7 +11,6 @@
 #include "tart/Expr/Closure.h"
 
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Sema/FunctionAnalyzer.h"
 #include "tart/Sema/FunctionMergePass.h"
@@ -260,7 +259,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         }
 
         // TODO: Should only add the param as a member if we "own" it.
-        if (param->definingScope() == NULL && param->name() != NULL) {
+        if (param->definingScope() == NULL && !param->name().empty()) {
           target->parameterScope().addMember(param);
         }
       }
@@ -276,7 +275,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
     }
 
     if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
-      ParameterDefn * selfParam = new ParameterDefn(module(), istrings.idSelf);
+      ParameterDefn * selfParam = new ParameterDefn(module(), "self");
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
       analyzeType(selfType->typeValue(), Task_PrepMemberLookup);
@@ -373,7 +372,7 @@ bool FunctionAnalyzer::resolveModifiers() {
       }
 
       // Add the constructor flag if it has the name 'construct'
-      if (target->name() == istrings.idConstruct) {
+      if (target->name() == "construct") {
         target->setFlag(FunctionDefn::Ctor);
       }
 

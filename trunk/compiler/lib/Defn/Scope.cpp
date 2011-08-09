@@ -12,7 +12,7 @@ namespace tart {
 /// Scope
 
 /** Convenience function used by testing code. */
-Defn * Scope::lookupSingleMember(const char * ident, bool inherit) const {
+Defn * Scope::lookupSingleMember(StringRef ident, bool inherit) const {
   DefnList defns;
   if (lookupMember(ident, defns, inherit) && defns.size() == 1) {
     return defns.front();
@@ -46,7 +46,7 @@ void IterableScope::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool IterableScope::lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const {
+bool IterableScope::lookupMember(StringRef name, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = members_.findSymbol(name);
   bool found = false;
   if (entry != NULL) {
@@ -74,7 +74,7 @@ void IterableScope::trace() const {
 
 void IterableScope::dumpHierarchy(bool full) const {
   StrFormatStream out;
-  if (scopeName_) {
+  if (!scopeName_.empty()) {
     out << "[" << scopeName_<< "]";
   }
 

@@ -32,10 +32,10 @@ public:
     return get();
   }
 
-  const llvm::Type * irType() const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
-  const llvm::Type * irReturnType() const;
+  llvm::Type * irType() const;
+  llvm::Type * irEmbeddedType() const;
+  llvm::Type * irParameterType() const;
+  llvm::Type * irReturnType() const;
 
   TypeDefn * typeDefn() const;
 
@@ -64,10 +64,10 @@ public:
     return get();
   }
 
-  const llvm::Type * irType() const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
-  const llvm::Type * irReturnType() const;
+  llvm::Type * irType() const;
+  llvm::Type * irEmbeddedType() const;
+  llvm::Type * irParameterType() const;
+  llvm::Type * irReturnType() const;
 
   TypeDefn * typeDefn() const;
 

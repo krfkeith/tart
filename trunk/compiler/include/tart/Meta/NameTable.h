@@ -74,17 +74,17 @@ public:
 
   class SimpleName : public Name {
   public:
-    SimpleName(const llvm::StringRef value) : value_(value) {}
+    SimpleName(const StringRef value) : value_(value) {}
 
     /** The text of this name. */
-    llvm::StringRef value() const { return value_; }
+    StringRef value() const { return value_; }
 
     // Overrides
 
     void format(FormatStream & out) const;
 
   private:
-    const llvm::StringRef value_;
+    const StringRef value_;
   };
 
   /// -------------------------------------------------------------------
@@ -111,13 +111,13 @@ public:
 
   ~NameTable();
 
-  Name * getName(const llvm::StringRef name) const;
+  Name * getName(const StringRef name) const;
   Name * getName(Name * scope, Name * member) const;
-  Name * getQualifiedName(llvm::StringRef name) const;
+  Name * getQualifiedName(StringRef name) const;
 
-  Name * addName(const llvm::StringRef name);
+  Name * addName(const StringRef name);
   Name * addName(Name * scope, Name * member);
-  Name * addQualifiedName(const llvm::StringRef name);
+  Name * addQualifiedName(const StringRef name);
 
   bool empty() const { return simpleNames_.empty(); }
 

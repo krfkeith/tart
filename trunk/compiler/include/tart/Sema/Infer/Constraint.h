@@ -110,6 +110,7 @@ public:
       case UPPER_BOUND: return LOWER_BOUND;
       case LOWER_BOUND: return UPPER_BOUND;
     }
+    return EXACT;
   }
 
   /** Produce a constraint type that is the intersection of two types. */

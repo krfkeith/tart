@@ -79,18 +79,18 @@ public:
       Module & module,
       const ConstantList & elements,
       Constant * arrayTypeInfo,
-      const Type * arrayType,
+      Type * arrayType,
       const StringRef & name);
 
   Constant * createString(
       Module & module,
       Constant * stringTypeInfo,
-      const Type * stringType,
+      Type * stringType,
       const StringRef & stringVal);
 
   GlobalVariable * requireGlobal(const StringRef & name, Module & module);
 
-  const Type * requireType(const StringRef & name, Module & module);
+  Type * requireType(const StringRef & name, Module & module);
 
 private:
   GlobalVarMap modules_;

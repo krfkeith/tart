@@ -11,6 +11,8 @@
 
 namespace tart {
 
+/// -------------------------------------------------------------------
+/// Manages properties of the target machine architecture.
 class TargetSelection {
 public:
   TargetSelection()

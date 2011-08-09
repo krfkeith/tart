@@ -15,7 +15,7 @@ public:
   static char ID;
 
   StaticRoots() : ModulePass(ID) {}
-  ~StaticRoots();
+  virtual ~StaticRoots();
 
   void getAnalysisUsage(AnalysisUsage & AU) const;
   bool runOnModule(Module & module);

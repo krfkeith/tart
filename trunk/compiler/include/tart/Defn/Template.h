@@ -21,13 +21,13 @@ class TypeVariable : public TypeImpl, public Locatable {
 public:
 
   /** Construct a type pattern variable. */
-  TypeVariable(const SourceLocation & loc, const char * name, const Type * valueType = NULL);
+  TypeVariable(const SourceLocation & loc, StringRef name, const Type * valueType = NULL);
 
   /** Location where this variable was defined. */
   const SourceLocation & location() const { return location_; }
 
   /** The variable name. */
-  const char * name() const { return name_; }
+  StringRef name() const { return name_; }
 
   /** The type of this variable, which will usually be 'Type' */
   const Type * valueType() const { return valueType_; }
@@ -49,7 +49,7 @@ public:
 
   // Overrides
 
-  const llvm::Type * createIRType() const;
+  llvm::Type * createIRType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   void trace() const;
   bool isReferenceType() const;
@@ -66,7 +66,7 @@ private:
   const SourceLocation location_;
   const Type * valueType_;
   const Type * upperBound_;
-  const char * name_;
+  StringRef name_;
   bool isVariadic_;
 };
 
@@ -202,7 +202,7 @@ public:
   bool allowOverloads() { return false; }
   Scope * parentScope() const { return parentScope_; }
   void addMember(Defn * d);
-  bool lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const;
+  bool lookupMember(StringRef ident, DefnList & defs, bool inherit) const;
   void dumpHierarchy(bool full = true) const;
   void trace() const;
   void format(FormatStream & out) const;

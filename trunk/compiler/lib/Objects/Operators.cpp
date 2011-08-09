@@ -374,9 +374,9 @@ public:
             cn->type(),
             cast<ConstantFP>(llvm::ConstantExpr::getFNeg(cn->value())));
     } else {
-      const llvm::Type * argType = arg->type()->irType();
+      llvm::Type * argType = arg->type()->irType();
       if (arg->type()->isIntType()) {
-        const llvm::IntegerType * intType = cast<llvm::IntegerType>(argType);
+        llvm::IntegerType * intType = cast<llvm::IntegerType>(argType);
         ConstantInt * zero = ConstantInt::get(intType, 0, true);
         Expr * constantZero = new ConstantInteger(
             arg->location(),
@@ -460,7 +460,7 @@ public:
     assert(args.size() == 1);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
+    llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
@@ -496,7 +496,7 @@ public:
     assert(args.size() == 1);
     Expr * arg = args[0];
 
-    const llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
+    llvm::IntegerType * intType = cast<llvm::IntegerType>(T::instance.irType());
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);

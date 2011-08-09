@@ -60,7 +60,7 @@ bool UnitType::isEqual(const Type * other) const {
   return false;
 }
 
-const llvm::Type * UnitType::irType() const {
+llvm::Type * UnitType::irType() const {
   DFAIL("IllegalState");
 }
 

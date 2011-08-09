@@ -9,8 +9,13 @@
 #include "tart/Expr/Expr.h"
 #endif
 
-#include <llvm/Instructions.h>
-#include <llvm/ADT/SetVector.h>
+#ifndef LLVM_INSTRUCTIONS_H
+#include "llvm/Instructions.h"
+#endif
+
+#ifndef LLVM_ADT_SETVECTOR_H
+#include "llvm/ADT/SetVector.h"
+#endif
 
 namespace tart {
 

@@ -76,12 +76,12 @@ public:
 
   // Overrides
 
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
   TypeShape typeShape() const { return Shape_Unset; }
 
   static inline bool classof(const AmbiguousType *) { return true; }
   static inline bool classof(const Type * type) {
-    return type->typeClass() >= AmbiguousResult && type->typeClass() <= AmbiguousTypeParam;
+    return type->typeClass() >= AmbiguousTypesBegin && type->typeClass() <= AmbiguousTypesEnd;
   }
 
 protected:

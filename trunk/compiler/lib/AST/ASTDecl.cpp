@@ -185,9 +185,7 @@ void ASTParameter::trace() const {
 }
 
 void ASTParameter::format(FormatStream & out) const {
-  if (name()) {
-    out << name();
-  }
+  out << name();
 
   if (type_) {
     out << ":" << type_;
@@ -234,7 +232,7 @@ void formatParamList(FormatStream & out, const ASTParamList & params) {
       out << ", ";
     }
 
-    out << *it;
+    (*it)->format(out);
   }
 }
 
@@ -244,7 +242,7 @@ void formatTemplateParamList(FormatStream & out, const ASTNodeList & params) {
       out << ", ";
     }
 
-    out << *it;
+    (*it)->format(out);
   }
 }
 

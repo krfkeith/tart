@@ -25,6 +25,9 @@
 #include "tart/Common/PassMgr.h"
 #endif
 
+#ifndef TART_COMMON_STRINGTABLE_H
+#include "tart/Common/StringTable.h"
+#endif
 
 #ifndef LLVM_ADT_SETVECTOR_H
 #include "llvm/ADT/SetVector.h"
@@ -77,10 +80,10 @@ public:
   };
 
   /** Construct a new module at the top level. */
-  Module(llvm::StringRef qual, Scope * builtinScope);
+  Module(StringRef qual, Scope * builtinScope);
 
   /** Construct a builtin module. */
-  Module(ProgramSource * src, llvm::StringRef qual);
+  Module(ProgramSource * src, StringRef qual);
 
   void createMembers();
 
@@ -99,7 +102,7 @@ public:
   ASTDeclList & astMembers() { return decls_; }
 
   /** Get the qualified name of this module's package. */
-  llvm::StringRef packageName() const { return packageName_; }
+  StringRef packageName() const { return packageName_; }
 
   /** The 'main' function for this module. */
   FunctionDefn * entryPoint() const { return entryPoint_; }
@@ -146,7 +149,7 @@ public:
   ConverterMap & converters() { return converters_; }
 
   /** Attempt to import a module by name. Returns the set of primary definitions for that module. */
-  bool import(llvm::StringRef qname, DefnList & defs, bool absPath);
+  bool import(StringRef qname, DefnList & defs, bool absPath);
 
   /** Process all import statements by adding an explicit import reference
       for each import into this module's symbol table. */
@@ -171,6 +174,10 @@ public:
   const PassMgr & passes() const { return passes_; }
   PassMgr & passes() { return passes_; }
 
+  /** The string table for this module. */
+  StringTable & moduleStrings() { return moduleStrings_; }
+  StringRef internString(StringRef str) { return moduleStrings_.intern(str); }
+
   bool isDebug() const { return (flags_ & Module_Debug) != 0; }
   bool isReflectionEnabled() const { return (flags_ & Module_Reflect) != 0; }
 
@@ -180,7 +187,7 @@ public:
 
   Scope * definingScope() const { return IterableScope::parentScope(); }
   void setDefiningScope(Scope * scope) { IterableScope::setParentScope(scope); }
-  bool lookupMember(llvm::StringRef name, DefnList & defs, bool inherit) const;
+  bool lookupMember(StringRef name, DefnList & defs, bool inherit) const;
   void format(FormatStream & out) const;
   void trace() const;
 
@@ -190,11 +197,12 @@ public:
   }
 
 private:
-  void setQualifiedName(llvm::StringRef qual);
+  void setQualifiedName(StringRef qual);
 
   friend class tart::PackageMgr;
 
   ProgramSource * moduleSource_;
+  StringTable moduleStrings_;
   llvm::SmallString<0> packageName_;
   ASTNodeList imports_;
   ModuleSet importModules_;

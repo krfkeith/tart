@@ -23,6 +23,8 @@ class LLVMContext;
 
 namespace tart {
 
+using llvm::StringRef;
+
 typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 
 /// -------------------------------------------------------------------
@@ -39,7 +41,7 @@ public:
   }
 
   /** Add an MDString value to the operands of the MDNode. */
-  MDNodeBuilder & put(llvm::StringRef str);
+  MDNodeBuilder & put(StringRef str);
 
   /** Build the MDNode. */
   llvm::MDNode * build();

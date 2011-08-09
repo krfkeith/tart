@@ -49,7 +49,7 @@ public:
 
   // Overrides
 
-  const llvm::Type * createIRType() const;
+  llvm::Type * createIRType() const;
   bool isReferenceType() const { return false; }
   bool isSingular() const { return true; }
   ConversionRank convertImpl(const Conversion & conversion) const;

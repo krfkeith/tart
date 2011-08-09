@@ -670,7 +670,8 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, const Type * expected) {
       ASTDecl * exceptDecl = cst->exceptDecl();
       VariableDefn * exceptDefn = cast<VariableDefn>(ScopeBuilder::createLocalDefn(catchScope,
           currentFunction_, exceptDecl));
-      if (!analyzeVariable(exceptDefn, Task_PrepCodeGeneration)) {
+      VarAnalyzer va(exceptDefn, activeScope_, module_, subject_, currentFunction_);
+      if (!va.analyze(Task_PrepCodeGeneration)) {
         return &Expr::ErrorVal;
       }
 

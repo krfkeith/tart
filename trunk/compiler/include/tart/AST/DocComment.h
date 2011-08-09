@@ -13,8 +13,8 @@
 #include "tart/Common/Formattable.h"
 #endif
 
-#include <llvm/ADT/SmallVector.h>
-#include <llvm/ADT/SmallString.h>
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/SmallString.h"
 
 namespace tart {
 
@@ -36,7 +36,7 @@ public:
     const SourceLocation & location() const { return location_; }
 
     /** The text of this doc comment entry. */
-    llvm::StringRef text() const { return text_; }
+    StringRef text() const { return text_; }
 
   private:
     SourceLocation location_;

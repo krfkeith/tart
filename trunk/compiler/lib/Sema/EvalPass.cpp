@@ -574,7 +574,7 @@ Expr * EvalPass::evalUnionCtorCast(CastExpr *in) {
       Value * uvalue = builder_.CreateAlloca(utype->irType());
       builder_.CreateStore(indexVal, builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 0));
       if (value != NULL) {
-        const llvm::Type * fieldType = fromType->irEmbeddedType();
+        llvm::Type * fieldType = fromType->irEmbeddedType();
         builder_.CreateStore(value,
             builder_.CreateBitCast(
                 builder_.CreateConstInBoundsGEP2_32(uvalue, 0, 1),

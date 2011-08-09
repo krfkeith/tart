@@ -43,7 +43,7 @@ public:
   /** True if this function type uses 'struct return' calling convention. */
   bool isStructReturn() const;
 
-  const llvm::Type * irType() const;
+  llvm::Type * irType() const;
 
   // Parameter methods
 
@@ -57,14 +57,14 @@ public:
   ParameterDefn * param(int index) { return params_[index]; }
   const Type * paramType(int index) const;
   void addParam(ParameterDefn * param);
-  ParameterDefn * addParam(const char * name, const Type * type);
+  ParameterDefn * addParam(StringRef name, const Type * type);
 
   /** Return the parameter types as a type vector. */
   TupleType * paramTypes() const;
 
   /** Given the name of a parameter, return the index of that parameter,
       or -1 if there is no such parameter. */
-  int paramNameIndex(const char * name) const;
+  int paramNameIndex(StringRef name) const;
 
   // Misc methods
 
@@ -73,18 +73,18 @@ public:
 
   /** Return the name of the 'invoke' trampoline function for this function type.
       This is used when calling methods via reflection. */
-  llvm::StringRef invokeName() const;
+  StringRef invokeName() const;
 
   /** Return true if any of the parameter types in this function are of type BadType. */
   bool hasErrors() const;
 
   // Overrides
 
-  const llvm::Type * createIRType() const;
-  const llvm::FunctionType * createIRFunctionType(
+  llvm::Type * createIRType() const;
+  llvm::FunctionType * createIRFunctionType(
       const Type * selfType, const ParameterList & params, const Type * returnType) const;
-  const llvm::Type * irEmbeddedType() const;
-  const llvm::Type * irParameterType() const;
+  llvm::Type * irEmbeddedType() const;
+  llvm::Type * irParameterType() const;
   ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const;
@@ -106,7 +106,7 @@ private:
   ParameterDefn * selfParam_;
   ParameterList params_;
   mutable TupleType * paramTypes_;
-  mutable llvm::PATypeHolder irType_;
+  mutable llvm::Type * irType_;
   mutable bool isCreatingType;
   mutable bool isStructReturn_;
   mutable bool isInvocable_;

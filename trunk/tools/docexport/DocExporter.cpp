@@ -321,7 +321,7 @@ void DocExporter::writeMembers(const IterableScope * scope) {
   }
 }
 
-void DocExporter::writeTypeExpression(llvm::StringRef tagName, const Type * ty, bool variadic) {
+void DocExporter::writeTypeExpression(StringRef tagName, const Type * ty, bool variadic) {
   xml_.beginElement(tagName);
   if (variadic) {
     xml_.beginElement("variadic", false);
@@ -506,7 +506,7 @@ void DocExporter::writeTypeRef(const Type * ty) {
   }
 }
 
-void DocExporter::writeExpression(llvm::StringRef tagName, const Expr * e) {
+void DocExporter::writeExpression(StringRef tagName, const Expr * e) {
   xml_.beginElement(tagName);
   writeExpression(e);
   xml_.endElement(tagName);
@@ -775,7 +775,7 @@ void DocExporter::writeModifiers(const Defn * de) {
   }
 }
 
-void DocExporter::writeElement(llvm::StringRef elName, llvm::StringRef content) {
+void DocExporter::writeElement(StringRef elName, StringRef content) {
   xml_.beginElement(elName);
   xml_ << content;
   xml_.endElement(elName);

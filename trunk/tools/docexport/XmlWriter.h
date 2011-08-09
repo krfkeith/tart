@@ -35,13 +35,13 @@ public:
   XmlWriter & writeXmlPrologue();
 
   /** Begin a new element. */
-  XmlWriter & beginElement(llvm::StringRef elName, bool newline = true);
+  XmlWriter & beginElement(StringRef elName, bool newline = true);
 
   /** End the current element. */
-  XmlWriter & endElement(llvm::StringRef elName, bool newline = true);
+  XmlWriter & endElement(StringRef elName, bool newline = true);
 
   /** Begin a new processing instruction. */
-  XmlWriter & beginProcessingInstruction(llvm::StringRef psName);
+  XmlWriter & beginProcessingInstruction(StringRef psName);
 
   /** End the current processing instruction. */
   XmlWriter & endProcessingInstruction();
@@ -50,24 +50,24 @@ public:
       that it has not already been closed. This should be done before any character
       data or child elements are written. XML special characters in the attribute
       value will be escaped as entities. */
-  XmlWriter & appendAttribute(llvm::StringRef name, llvm::StringRef value);
+  XmlWriter & appendAttribute(StringRef name, StringRef value);
 
   /** Write a string of character data. XML special characters will be escaped as entities. */
-  XmlWriter & writeCharacterData(llvm::StringRef data);
+  XmlWriter & writeCharacterData(StringRef data);
 
   /** Overload the stream operator to write character data as well. */
-  XmlWriter & operator<<(llvm::StringRef data) {
+  XmlWriter & operator<<(StringRef data) {
     writeCharacterData(data);
     return * this;
   }
 
   /** Write a string of unencoded character data. Consecutive calls will be merged into
       a single CDATA block. */
-  XmlWriter & writeCDATA(llvm::StringRef data);
+  XmlWriter & writeCDATA(StringRef data);
 
   /** Write a comment. For compatibility with the XML standard, a run of dashes will be
       converted into a single dash. No other transformation is performed. */
-  XmlWriter & writeComment(llvm::StringRef data);
+  XmlWriter & writeComment(StringRef data);
 
 private:
   enum State {
@@ -86,7 +86,7 @@ private:
 
   void closeCurrentElement(bool newline = true);
   void writeIndent();
-  void writeEscapedString(llvm::StringRef text);
+  void writeEscapedString(StringRef text);
 };
 
 }

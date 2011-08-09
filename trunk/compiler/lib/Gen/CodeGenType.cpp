@@ -47,7 +47,7 @@ SystemClassMember<VariableDefn> tib_bases(Builtins::typeTypeInfoBlock, "bases");
 SystemClassMember<VariableDefn> tib_traceTable(Builtins::typeTypeInfoBlock, "traceTable");
 SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idispatch");
 
-const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
+llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
   Type * type = tdef->typeValue();
   switch (type->typeClass()) {
@@ -74,24 +74,18 @@ const llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   }
 }
 
-const llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
+llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
   DASSERT_OBJ(type->irType() != NULL, type);
   return type->irType();
 }
 
-const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
+llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
   if (type->isAttribute() && !type->attributeInfo().isRetained() &&
       type != Builtins::typeAttribute.get()) {
     return NULL;
   }
 
-  TypeDefn * tdef = type->typeDefn();
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
-
-  if (irModule_->getTypeName(type->irType()).empty() &&
-      (type->typeClass() == Type::Class || type->typeClass() == Type::Struct)) {
-    irModule_->addTypeName(tdef->linkageName(), type->irType());
-  }
 
   // Don't need to define this twice.
   if (rtype->isExternal() ||
@@ -110,51 +104,33 @@ const llvm::Type * CodeGenerator::genCompositeType(const CompositeType * type) {
 }
 
 Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
-  if (type->typeDefn()->isTemplate()) {
-    return createTypeInfoBlockPtr(getRTTypeInfo(type));
-  } else if (type->typeDefn()->isPartialInstantiation()) {
-    return createTypeInfoBlockPtr(getRTTypeInfo(type));
-  }
-
   if (type->typeDefn()->isSynthetic() &&
       module_->exportDefs().count(type->typeDefn()) == 0) {
     diag.fatal() << "Attempting to use TIB of synthetic type " << type <<
         " but it has not been imported into the module.";
   }
 
-  return createTypeInfoBlockPtr(getRTTypeInfo(type));
-}
-
-Constant * CodeGenerator::createTypeInfoBlockPtr(RuntimeTypeInfo * rtype) {
-  if (rtype->getTypeInfoPtr() == NULL) {
-    // Create the global variable for the type info block.
-    const CompositeType * type = rtype->getType();
-    DASSERT(rtype->getTypeInfoBlock() == NULL);
+  RuntimeTypeInfo * rtype = getRTTypeInfo(type);
+  if (rtype->getTypeInfoBlock() == NULL) {
     rtype->setTypeInfoBlock(
         new GlobalVariable(*irModule_,
-            rtype->getTypeInfoBlockType().get(),
-            true, GlobalValue::ExternalLinkage, NULL,
+            StructType::createNamed(context_, StringRef()),
+            true, rtype->getLinkageType(), NULL,
             type->typeDefn()->linkageName() + ".type.tib"));
-    DASSERT(rtype->getTypeInfoPtr() == NULL);
-    rtype->setTypeInfoPtr(
-        llvm::ConstantExpr::getBitCast(
-            rtype->getTypeInfoBlock(),
-            Builtins::typeTypeInfoBlock.irType()->getPointerTo()));
   }
 
-  return rtype->getTypeInfoPtr();
+  return llvm::ConstantExpr::getPointerCast(
+      rtype->getTypeInfoBlock(), Builtins::typeTypeInfoBlock.irType()->getPointerTo());
 }
 
 bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
   const CompositeType * type = rtype->getType();
-
-  if (rtype->getTypeInfoPtr() == NULL) {
-    createTypeInfoBlockPtr(rtype);
-  } else if (rtype->getTypeInfoBlock()->hasInitializer()) {
+  llvm::GlobalVariable * tib = rtype->getTypeInfoBlock();
+  if (tib != NULL && tib->hasInitializer()) {
     return true;
   }
 
-  const llvm::PointerType * typePointerType = Builtins::typeTypeInfoBlock.irType()->getPointerTo();
+  llvm::PointerType * typePointerType = Builtins::typeTypeInfoBlock.irType()->getPointerTo();
 
   // Generate the base class list.
   ConstantList baseClassList;
@@ -218,14 +194,11 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     builder.addField(genMethodArray(MethodList()));
   }
 
-  // ConstantStruct::get(context_, tibMembers, false);
-  Constant * tibStruct = builder.build();
-
-  // Assign the TIB value to the tib global variable.
-  GlobalVariable * tibPtr = rtype->getTypeInfoBlock();
-  cast<OpaqueType>(rtype->getTypeInfoBlockType().get())->refineAbstractTypeTo(tibStruct->getType());
-  tibPtr->setInitializer(tibStruct);
-  tibPtr->setLinkage(rtype->getLinkageType());
+  getTypeInfoBlockPtr(type);
+  tib = rtype->getTypeInfoBlock();
+  StructType * st = cast<StructType>(tib->getType()->getContainedType(0));
+  Constant * tibStruct = builder.buildBody(st);
+  tib->setInitializer(tibStruct);
   return true;
 }
 
@@ -305,7 +278,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   DASSERT_OBJ(type->typeClass() == Type::Class, type);
 
   // Create the dispatch function declaration
-  std::vector<const llvm::Type *> argTypes;
+  std::vector<llvm::Type *> argTypes;
   argTypes.push_back(Builtins::typeString.irType()->getPointerTo());
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
@@ -317,7 +290,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
       irModule_);
 
   // Generate the interface dispatcher body
-  const std::string & linkageName = type->typeDefn()->linkageName();
+  StringRef linkageName = type->typeDefn()->linkageName();
   BasicBlock * savePoint = builder_.GetInsertBlock();
 
   Function::ArgumentListType::iterator arg = idispatch->getArgumentList().begin();
@@ -354,8 +327,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 
     // Return the specified method
     builder_.SetInsertPoint(ret);
-    Value * method = builder_.CreateLoad(builder_.CreateInBoundsGEP(itable,
-        indices.begin(), indices.end()), "method");
+    Value * method = builder_.CreateLoad(builder_.CreateInBoundsGEP(itable, indices), "method");
     builder_.CreateRet(method);
 
     blk = next;
@@ -378,6 +350,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
 }
 
 void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instance) {
+  DASSERT(type->typeClass() == Type::Class) << "Invalid type for vtable: " << type;
   ValueList indices;
   indices.push_back(getInt32Val(0));
   const CompositeType * base = type;
@@ -388,7 +361,7 @@ void CodeGenerator::genInitObjVTable(const CompositeType * type, Value * instanc
     base = base->super();
   }
 
-  Value * vtablePtrPtr = builder_.CreateInBoundsGEP(instance, indices.begin(), indices.end());
+  Value * vtablePtrPtr = builder_.CreateInBoundsGEP(instance, indices);
   Value * typeInfoPtr = getTypeInfoBlockPtr(type);
   builder_.CreateStore(typeInfoPtr, vtablePtrPtr);
 }
@@ -404,7 +377,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
   return rtype;
 }
 
-const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
+llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
   TypeDefn * enumDef = type->typeDefn();
   GlobalValue::LinkageTypes linkage = GlobalValue::ExternalLinkage;
   if (enumDef->module() != module_) {
@@ -481,7 +454,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       DASSERT(toStringFn->arg_size() == 1);
       llvm::Argument * selfArg = toStringFn->arg_begin();
       selfArg->setName("self");
-      const IntegerType * selfType = cast<IntegerType>(selfArg->getType());
+      IntegerType * selfType = cast<IntegerType>(selfArg->getType());
       unsigned bitWidth = selfType->getBitWidth();
       DASSERT(minValInt.getMinSignedBits() <= bitWidth);
 
@@ -504,8 +477,7 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       args.push_back(getInt32Val(0));
       args.push_back(index);
       builder_.CreateRet(
-          builder_.CreateLoad(
-              builder_.CreateInBoundsGEP(stringTable, args.begin(), args.end()), "stringVal"));
+          builder_.CreateLoad(builder_.CreateInBoundsGEP(stringTable, args), "stringVal"));
       currentFn_ = NULL;
 
       // Verify the function
@@ -553,11 +525,12 @@ const llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
       DASSERT(!baseType->isUnsizedIntType());
       const PrimitiveType * ptype = cast<PrimitiveType>(baseType);
       const FunctionDefn * pToString = cast<FunctionDefn>(ptype->findSymbol("toString")->front());
-      char funcName[32];
-      snprintf(funcName, sizeof funcName, "%s_toString", ptype->typeDefn()->name());
-      const llvm::FunctionType * funcType = cast<llvm::FunctionType>(pToString->type()->irType());
+      llvm::FunctionType * funcType = cast<llvm::FunctionType>(pToString->type()->irType());
+      llvm::SmallString<64> funcName;
       llvm::Function * pToStringFn = cast<llvm::Function>(
-          irModule_->getOrInsertFunction(funcName, funcType));
+          irModule_->getOrInsertFunction(
+              Twine(ptype->typeDefn()->name(), "_toString").toStringRef(funcName),
+              funcType));
       llvm::Value * strVal = builder_.CreateCall(pToStringFn, selfArg);
       builder_.CreateRet(strVal);
 
@@ -624,10 +597,11 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
       break;
   }
 
-  return irModule_->getOrInsertGlobal(typeVarName, Builtins::typePrimitiveType.get()->irType());
+  return irModule_->getOrInsertGlobal(
+      typeVarName, Builtins::typePrimitiveType.get()->irTypeComplete());
 }
 
-const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
+llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
     const Type * invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->typeValue();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
@@ -637,13 +611,13 @@ const llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
 }
 
 llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
-  llvm::StringRef invokeName = fnType->invokeName();
+  StringRef invokeName = fnType->invokeName();
   llvm::Function * invokeFn = irModule_->getFunction(invokeName);
   if (invokeFn != NULL) {
     return invokeFn;
   }
 
-  const llvm::FunctionType * invokeFnType = getCallAdapterFnType();
+  llvm::FunctionType * invokeFnType = getCallAdapterFnType();
   DASSERT((MDNode *)dbgContext_ == NULL);
   invokeFn = Function::Create(invokeFnType, Function::LinkOnceODRLinkage, invokeName, irModule_);
   BasicBlock * blk = BasicBlock::Create(context_, "invoke_entry", invokeFn);
@@ -673,7 +647,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
   }
 
   // Handle self argument if present.
-  const llvm::FunctionType * callType;
+  llvm::FunctionType * callType;
   if (fnType->selfParam() != NULL && !fnType->isStatic()) {
     // Push the 'self' argument.
     callType = fnType->createIRFunctionType(
@@ -693,7 +667,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
     indices[0] = getInt32Val(0);
     indices[1] = getInt32Val(2);
     indices[2] = getInt32Val(i);
-    Value * argAddr = builder_.CreateInBoundsGEP(argsArray, &indices[0], &indices[3]);
+    Value * argAddr = builder_.CreateInBoundsGEP(argsArray, indices);
     Value * argVal = argAddr;
     ensureLValue(NULL, argAddr->getType());
     argVal = builder_.CreateLoad(argAddr);
@@ -708,7 +682,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
 
   fnPtr = builder_.CreatePointerCast(fnPtr, callType->getPointerTo());
   checkCallingArgs(fnPtr, args.begin(), args.end());
-  Value * returnVal = builder_.CreateCall(fnPtr, args.begin(), args.end() /*, "invoke"*/);
+  Value * returnVal = builder_.CreateCall(fnPtr, args /*, "invoke"*/);
 
   if (!fnType->returnType()->isVoidType()) {
     const Type * returnType = fnType->returnType();
@@ -754,8 +728,7 @@ llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
   }
 
   // Null pointer at end
-  const llvm::PointerType * typePointerType =
-      Builtins::typeTypeInfoBlock.irType()->getPointerTo();
+  llvm::PointerType * typePointerType = Builtins::typeTypeInfoBlock.irType()->getPointerTo();
   baseClassList.push_back(ConstantPointerNull::get(typePointerType));
 
   Constant * baseClassArray = ConstantArray::get(
@@ -781,7 +754,7 @@ llvm::Constant * CodeGenerator::genProxyType(const CompositeType * iftype) {
   builder.addField(idispatch);
   builder.addField(genMethodArray(iftype->instanceMethods_));
 
-  Constant * tibStruct = builder.build();
+  Constant * tibStruct = builder.buildAnon();
 
   proxyTib = new GlobalVariable(*irModule_,
       tibStruct->getType(),
@@ -800,7 +773,7 @@ llvm::Function * CodeGenerator::genInterceptFn(const FunctionDefn * fn) {
   }
 
   const FunctionType * fnType = fn->functionType();
-  const llvm::FunctionType * interceptFnType = cast<llvm::FunctionType>(fnType->irType());
+  llvm::FunctionType * interceptFnType = cast<llvm::FunctionType>(fnType->irType());
   DASSERT((MDNode *)dbgContext_ == NULL);
   interceptFn = Function::Create(
       interceptFnType, Function::LinkOnceODRLinkage, interceptName, irModule_);

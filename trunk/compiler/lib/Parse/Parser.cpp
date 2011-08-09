@@ -5,7 +5,6 @@
 #include "tart/Parse/Parser.h"
 #include "tart/Parse/OperatorStack.h"
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 #include "tart/AST/Stmt.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
@@ -92,16 +91,16 @@ inline bool Parser::match(TokenType tok) {
   return false;
 }
 
-const char * Parser::matchIdent() {
+StringRef Parser::matchIdent() {
   if (token == Token_Ident) {
     // Save the token value as a string
-    const char * value = istrings.intern(lexer.tokenValue().c_str());
+    StringRef value = module->internString(lexer.tokenValue());
 
     // Get the next token
     next();
     return value;
   }
-  return NULL;
+  return StringRef();
 }
 
 void Parser::skipToNextOpenDelim() {
@@ -322,8 +321,8 @@ bool Parser::importStmt(ASTNodeList & out) {
   }
 
   // Parse imports
-  const char * importName = matchIdent();
-  if (!importName) {
+  StringRef importName = matchIdent();
+  if (importName.empty()) {
     expectedImportPath();
     return false;
   }
@@ -331,7 +330,7 @@ bool Parser::importStmt(ASTNodeList & out) {
   ASTNode * path = new ASTIdent(tokenLoc, importName);
   while (match(Token_Dot)) {
     importName = matchIdent();
-    if (!importName) {
+    if (importName.empty()) {
       expectedImportPath();
       return false;
     }
@@ -339,14 +338,14 @@ bool Parser::importStmt(ASTNodeList & out) {
     path = new ASTMemberRef(tokenLoc, path, importName);
   }
 
-  const char * asName = importName;
+  StringRef asName = importName;
   if (match(Token_As)) {
     if (unpack) {
       diag.error(loc) << "Import statement cannot have both 'from' and 'as'";
     }
 
     asName = matchIdent();
-    if (asName == NULL) {
+    if (asName.empty()) {
       expectedIdentifier();
     }
   }
@@ -393,9 +392,9 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
   do {
     // One or more variable declarations.
     ASTNode * declType = NULL;
-    const char * declName = matchIdent();
+    StringRef declName = matchIdent();
     loc = tokenLoc;
-    if (declName == NULL) {
+    if (declName.empty()) {
       expectedIdentifier();
       return (ASTDecl *)&ASTNode::INVALID;
     }
@@ -467,8 +466,7 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
       returnType = typeExpression();
     }
 
-    ASTPropertyDecl * indexer = new ASTPropertyDecl(
-        ASTDecl::Idx, loc, istrings.idIndex, returnType, mods);
+    ASTPropertyDecl * indexer = new ASTPropertyDecl(ASTDecl::Idx, loc, "$index", returnType, mods);
     indexer->params().append(params.begin(), params.end());
     if (match(Token_LBrace)) {
       // Parse accessors for indexer
@@ -486,10 +484,10 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     return indexer;
   }
 
-  const char * declName = matchIdent();
-  if (declName == NULL) {
+  StringRef declName = matchIdent();
+  if (declName.empty()) {
     if (token == Token_LParen) {
-      declName = istrings.idCall;
+      declName = "$call";
     } else {
       diag.error(lexer.tokenLocation()) << "Expected method or property name";
       declName = "";
@@ -583,8 +581,8 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
     diag.error(lexer.tokenLocation()) << "Macros are always final";
   }
 
-  const char * declName = matchIdent();
-  if (declName == NULL) {
+  StringRef declName = matchIdent();
+  if (declName.empty()) {
     expectedIdentifier();
     return (ASTDecl *)&ASTNode::INVALID;
   }
@@ -622,9 +620,9 @@ ASTDecl * Parser::declareMacro(const DeclModifiers & mods, TokenType tok) {
 }
 
 ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
-  const char * declName = matchIdent();
+  StringRef declName = matchIdent();
   SourceLocation loc = tokenLoc;
-  if (declName == NULL) {
+  if (declName.empty()) {
     expectedIdentifier();
     skipToNextOpenDelim();
     declName = "#ERROR";
@@ -704,8 +702,8 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
     diag.error(tokenLoc) << "Namespaces cannot be declared final";
   }
 
-  const char * declName = matchIdent();
-  if (declName == NULL) {
+  StringRef declName = matchIdent();
+  if (declName.empty()) {
     expectedIdentifier();
     skipToNextOpenDelim();
     declName = "#ERROR";
@@ -735,9 +733,9 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
 }
 
 ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
-  const char * declName = matchIdent();
+  StringRef declName = matchIdent();
   SourceLocation loc = tokenLoc;
-  if (declName == NULL) {
+  if (declName.empty()) {
     expectedIdentifier();
     skipToNextOpenDelim();
     declName = "#ERROR";
@@ -777,8 +775,8 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
     lexer.takeDocComment(docComment);
 
     // Get the enum constant name.
-    const char * ecName = matchIdent();
-    if (!ecName) {
+    StringRef ecName = matchIdent();
+    if (ecName.empty()) {
       break;
     }
 
@@ -815,8 +813,8 @@ ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
 
 ASTDecl * Parser::declareTypealias(const DeclModifiers & mods) {
   SourceLocation loc = tokenLoc;
-  const char * declName = matchIdent();
-  if (declName == NULL) {
+  StringRef declName = matchIdent();
+  if (declName.empty()) {
     expectedIdentifier();
     skipToNextOpenDelim();
     declName = "#ERROR";
@@ -875,11 +873,11 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
 
     TokenType tok = token;
     if (match(Token_Get) || match(Token_Set)) {
-      const char * accessorName;
+      StringRef accessorName;
       if (tok == Token_Get) {
-        accessorName = istrings.idGet;
+        accessorName = "get";
       } else {
-        accessorName = istrings.idSet;
+        accessorName = "set";
       }
 
       SourceLocation loc = lexer.tokenLocation();
@@ -903,7 +901,7 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
       }
 
       ASTFunctionDecl * fc = new ASTFunctionDecl(ASTNode::Function, loc,
-          istrings.intern(accessorName), params, (ASTNode *)NULL, mods);
+          module->internString(accessorName), params, (ASTNode *)NULL, mods);
       fc->attributes().append(attributes.begin(), attributes.end());
 
 #if 0
@@ -945,8 +943,8 @@ bool Parser::accessorMethodList(ASTPropertyDecl * parent,
 bool Parser::attributeList(ASTNodeList & attributes) {
   // Parse attributes
   while (match(Token_AtSign)) {
-    const char * ident = matchIdent();
-    if (ident == NULL) {
+    StringRef ident = matchIdent();
+    if (ident.empty()) {
       expectedIdentifier();
       return false;
     }
@@ -966,8 +964,8 @@ bool Parser::attributeList(ASTNodeList & attributes) {
         attrExpr = new ASTSpecialize(attrExpr->location(), attrExpr, templateArgs);
       } else if (match(Token_Dot)) {
         // Member dereference
-        const char * ident = matchIdent();
-        if (ident == NULL) {
+        StringRef ident = matchIdent();
+        if (ident.empty()) {
           expectedIdentifier();
         }
 
@@ -1067,8 +1065,8 @@ ASTNode * Parser::typeExprPrimary() {
   } else if (match(Token_Percent)) {
     // Pattern variable.
     ASTNode * declType = NULL;
-    const char * pvarName = matchIdent();
-    if (pvarName == NULL) {
+    StringRef pvarName = matchIdent();
+    if (pvarName.empty()) {
       expectedIdentifier();
       return NULL;
     }
@@ -1143,7 +1141,7 @@ ASTNode * Parser::typeName() {
   ASTNode * result;
   SourceLocation loc = lexer.tokenLocation();
   if (token == Token_Ident) {
-    const char * typeName = matchIdent();
+    StringRef typeName = matchIdent();
     result = new ASTIdent(loc, typeName);
   } else if (token >= Token_BoolType && token <= Token_UIntpType) {
     TokenType t = token;
@@ -1155,8 +1153,8 @@ ASTNode * Parser::typeName() {
 
 
   while (match(Token_Dot)) {
-    const char * typeName = matchIdent();
-    if (typeName == NULL) {
+    StringRef typeName = matchIdent();
+    if (typeName.empty()) {
       expected("type name after '.'");
       return NULL;
     }
@@ -1254,7 +1252,7 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
   }
 }
 
-ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, const char * name,
+ASTFunctionDecl * Parser::functionDeclaration(ASTNode::NodeType nt, StringRef name,
     const DeclModifiers & mods) {
 
   SourceLocation loc = tokenLoc;
@@ -1399,11 +1397,9 @@ bool Parser::formalArgumentList(ASTParamList & params, TokenType endDelim) {
 
     // Check for duplicate argument names.
     ASTParameter * fa = params.back();
-    for (ASTParamList::const_iterator it = params.begin();
-        it != params.end() - 1; ++it) {
+    for (ASTParamList::const_iterator it = params.begin(); it != params.end() - 1; ++it) {
       ASTParameter * pp = *it;
-      if (fa->name() && pp->name() && strcmp(fa->name(),
-          pp->name()) == 0) {
+      if (!fa->name().empty() && fa->name() == pp->name()) {
         diag.error(lexer.tokenLocation()) << "Duplicate argument name '" << fa->name() << "'";
       }
     }
@@ -1417,7 +1413,7 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   // TODO: Check for modifiers
 
   SourceLocation argLoc = lexer.tokenLocation();
-  const char * argName = matchIdent();
+  StringRef argName = matchIdent();
   ASTNode * argType = NULL;
   if (match(Token_Colon)) {
     if (match(Token_Star)) {
@@ -1427,7 +1423,7 @@ bool Parser::formalArgument(ASTParamList & params, int paramFlags) {
   }
 
   // If there's no name, and no argument, then there's no param
-  if (argName == NULL && argType == NULL) {
+  if (argName.empty() && argType == NULL) {
     return false;
   }
 
@@ -1625,9 +1621,9 @@ Stmt * Parser::tryStmt() {
         return NULL;
       }
 
-      const char * exceptName = matchIdent();
-      if (exceptName == NULL) {
-        exceptName = "";
+      StringRef exceptName = matchIdent();
+      if (exceptName.empty()) {
+        exceptName = "$anon";
       }
 
       ASTNode * exceptType = NULL;
@@ -1935,11 +1931,11 @@ Stmt * Parser::matchStmt() {
 }
 
 Stmt * Parser::asStmt() {
-  const char * declName = matchIdent();
+  StringRef declName = matchIdent();
   SourceLocation loc = tokenLoc;
   ASTNode * declType = NULL;
 
-  if (declName == NULL) {
+  if (declName.empty()) {
     expectedIdentifier();
     return NULL;
   }
@@ -2032,11 +2028,11 @@ ASTVarDecl * Parser::localDeclList(ASTNode::NodeType nt) {
 
   ASTDeclList decls;
   do {
-    const char * declName = matchIdent();
+    StringRef declName = matchIdent();
     SourceLocation loc = tokenLoc;
     ASTNode * declType = NULL;
 
-    if (declName == NULL) {
+    if (declName.empty()) {
       expectedIdentifier();
       return static_cast<ASTVarDecl *>(&ASTNode::INVALID);
     }
@@ -2492,7 +2488,7 @@ ASTNode * Parser::primaryExpression() {
       break;
 
     case Token_Ident: {
-      const char * ident = matchIdent();
+      StringRef ident = matchIdent();
       result = new ASTIdent(tokenLoc, ident);
       /*if (match(Token_Colon)) {
 
@@ -2533,7 +2529,7 @@ ASTNode * Parser::primaryExpression() {
 
     case Token_Function: {
       next();
-      ASTFunctionDecl * fn = functionDeclaration(ASTNode::AnonFn, istrings.idCall, DeclModifiers());
+      ASTFunctionDecl * fn = functionDeclaration(ASTNode::AnonFn, "$call", DeclModifiers());
       if (token == Token_LBrace) {
         ASTFunctionDecl * saveFunction = function;
         function = fn;
@@ -2571,7 +2567,7 @@ ASTNode * Parser::primaryExpression() {
       if (token >= Token_BoolType && token <= Token_UIntpType) {
         result = builtInTypeName(token);
         //result = new ASTIdent(lexer.tokenLocation(),
-        //    istrings.intern(lexer.tokenValue().c_str()));
+        //    module->internString(lexer.tokenValue().c_str()));
         next();
       }
 
@@ -2596,8 +2592,8 @@ ASTNode * Parser::primaryExpression() {
         result = indexop;
       } else if (match(Token_Dot)) {
         // Member dereference
-        const char * ident = matchIdent();
-        if (ident == NULL) {
+        StringRef ident = matchIdent();
+        if (ident.empty()) {
           expectedIdentifier();
         }
 
@@ -2647,7 +2643,7 @@ bool Parser::parseArgumentList(ASTNodeList & args) {
         diag.error(arg->location()) << "invalid keyword expression";
         ok = false;
       } else {
-        const char * kwname = ((ASTIdent *)arg)->value();
+        StringRef kwname = ((ASTIdent *)arg)->value();
         arg = new ASTKeywordArg(arg->location() | kwarg->location(), kwarg, kwname);
       }
     }

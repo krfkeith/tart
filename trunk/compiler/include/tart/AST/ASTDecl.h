@@ -90,7 +90,7 @@ struct DeclModifiers {
 class ASTDecl : public ASTNode {
 protected:
 
-  const char * name_;
+  StringRef name_;
   DeclModifiers modifiers_;
   ASTDeclList members_;
   ASTNodeList imports_;
@@ -98,7 +98,7 @@ protected:
   DocComment docComment_;
 
   // Protected constructor, since this type is abstract. */
-  ASTDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
+  ASTDecl(NodeType ntype, const SourceLocation & loc, StringRef nm,
       const DeclModifiers & mods)
       : ASTNode(ntype, loc)
       , name_(nm)
@@ -108,7 +108,7 @@ protected:
 public:
 
   /** The name of this declaration. */
-  const char * name() const { return name_; }
+  StringRef name() const { return name_; }
 
   /** The list of member definitions. */
   const ASTDeclList & members() const { return members_; }
@@ -150,7 +150,7 @@ public:
 class ASTNamespace : public ASTDecl {
 public:
   // Protected constructor, since this type is abstract. */
-  ASTNamespace(const SourceLocation & loc, const char * nm)
+  ASTNamespace(const SourceLocation & loc, StringRef nm)
       : ASTDecl(Namespace, loc, nm, DeclModifiers())
   {}
 
@@ -172,7 +172,7 @@ private:
 
 public:
   // Protected constructor, since this type is abstract. */
-  ASTTypeDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
+  ASTTypeDecl(NodeType ntype, const SourceLocation & loc, StringRef nm,
       const ASTNodeList & baseList, const DeclModifiers & mods)
       : ASTDecl(ntype, loc, nm, mods)
       , bases_(baseList)
@@ -201,7 +201,7 @@ protected:
   ASTNode * value_;
 
 public:
-  ASTVarDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
+  ASTVarDecl(NodeType ntype, const SourceLocation & loc, StringRef nm,
       ASTNode * ptype, ASTNode * val, const DeclModifiers & mods)
     : ASTDecl(ntype, loc, nm, mods)
     , type_(ptype)
@@ -240,7 +240,7 @@ private:
   ASTParamList params_;
 
 public:
-  ASTPropertyDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
+  ASTPropertyDecl(NodeType ntype, const SourceLocation & loc, StringRef nm,
       ASTNode * ptype, const DeclModifiers & mods)
     : ASTDecl(ntype, loc, nm, mods)
     , type_(ptype)
@@ -248,7 +248,7 @@ public:
     , setter_(NULL)
   {}
 
-  ASTPropertyDecl(const SourceLocation & loc, const char * nm, ASTNode * ptype,
+  ASTPropertyDecl(const SourceLocation & loc, StringRef nm, ASTNode * ptype,
       const DeclModifiers & mods)
     : ASTDecl(ASTNode::Prop, loc, nm, mods)
     , type_(ptype)
@@ -294,7 +294,7 @@ private:
   Stmt * body_;
 
 public:
-  ASTFunctionDecl(NodeType ntype, const SourceLocation & loc, const char * nm,
+  ASTFunctionDecl(NodeType ntype, const SourceLocation & loc, StringRef nm,
       const ASTParamList & paramList, ASTNode * rtype, const DeclModifiers & mods)
     : ASTDecl(ntype, loc, nm, mods)
     , params_(paramList)
@@ -332,7 +332,7 @@ private:
   int flags_;
 
 public:
-  ASTParameter(const SourceLocation & loc, const char * name,
+  ASTParameter(const SourceLocation & loc, StringRef name,
       ASTNode * typ, ASTNode * val, int flgs)
     : ASTVarDecl(Param, loc, name, typ, val, DeclModifiers())
     , flags_(flgs)
@@ -360,7 +360,7 @@ public:
     IS_SUPERTYPE,
   };
 
-  ASTTypeVariable(const SourceLocation & loc, const char * name, ASTNode * typ,
+  ASTTypeVariable(const SourceLocation & loc, StringRef name, ASTNode * typ,
       ConstraintType constraint, bool isVariadic)
     : ASTVarDecl(TypeVar, loc, name, typ, NULL, DeclModifiers())
     , constraint_(constraint)

@@ -432,7 +432,7 @@ bool FunctionMergePass::visitComplement(UnaryExpr * from, UnaryExpr * to) {
 bool FunctionMergePass::visitInitVar(InitVarExpr * from, InitVarExpr * to) {
   VariableDefn * fromVar = from->var();
   VariableDefn * toVar = to->var();
-  llvm::StringRef fromName(fromVar->name());
+  StringRef fromName(fromVar->name());
   if (!fromName.equals(toVar->name())) {
     reportDifference("Difference in variable name", fromVar, toVar);
     return false;

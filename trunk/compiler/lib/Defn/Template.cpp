@@ -51,7 +51,7 @@ private:
 // -------------------------------------------------------------------
 // TypeVariable
 
-TypeVariable::TypeVariable(const SourceLocation & location, const char * name,
+TypeVariable::TypeVariable(const SourceLocation & location, StringRef name,
     const Type * valueType)
   : TypeImpl(TypeVar, Shape_Unset)
   , location_(location)
@@ -61,7 +61,7 @@ TypeVariable::TypeVariable(const SourceLocation & location, const char * name,
   , isVariadic_(false)
 {}
 
-const llvm::Type * TypeVariable::createIRType() const {
+llvm::Type * TypeVariable::createIRType() const {
   DFAIL("Invalid");
 }
 
@@ -470,7 +470,7 @@ void TemplateInstance::addMember(Defn * d) {
   d->setDefiningScope(this);
 }
 
-bool TemplateInstance::lookupMember(llvm::StringRef ident, DefnList & defs, bool inherit) const {
+bool TemplateInstance::lookupMember(StringRef ident, DefnList & defs, bool inherit) const {
   const SymbolTable::Entry * entry = paramDefns_.findSymbol(ident);
   if (entry != NULL) {
     defs.append(entry->begin(), entry->end());

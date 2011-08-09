@@ -32,7 +32,6 @@
 
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
-#include "tart/Common/InternedString.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
@@ -74,11 +73,11 @@ AnalyzerBase::AnalyzerBase(Module * mod, Scope * activeScope, Defn * subject,
 }
 
 bool AnalyzerBase::isTraceEnabled(Defn * de) {
-  return de != NULL && de->name() != NULL && traceDef_.getValue() == de->name();
+  return de != NULL && traceDef_.getValue() == de->name();
 }
 
 bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions lookupOptions) {
-  std::string path;
+  llvm::SmallString<0> path;
   lookupNameRecurse(out, ast, path, lookupOptions);
   return !out.empty();
 }
@@ -89,8 +88,8 @@ bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions
 //    but there's a chance it might be a package reference.
 // If we return false and path is empty, then it means that we found nothing,
 //    and there's no hope of finding anything.
-bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::string & path,
-    LookupOptions lookupOptions) {
+bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
+    llvm::SmallString<0> & path, LookupOptions lookupOptions) {
 
   SLC & loc = ast->location();
   bool isAbsPath = (lookupOptions & LOOKUP_ABS_PATH) != 0;
@@ -98,12 +97,12 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   bool doResolve = (lookupOptions & LOOKUP_NO_RESOLVE) == 0;
   if (ast->nodeType() == ASTNode::Id) {
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
-    const char * name = ident->value();
+    StringRef name = ident->value();
     if (!isAbsPath && activeScope_ != NULL && lookupIdent(out, name, loc)) {
       return true;
     }
 
-    path.assign(name);
+    path = name;
     if (importName(out, path, isAbsPath, loc)) {
       return true;
     }
@@ -145,7 +144,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
 
     if (!path.empty()) {
       path.push_back('.');
-      path.append(mref->memberName());
+      path += mref->memberName();
       if (importName(out, path, isAbsPath, loc)) {
         return true;
       }
@@ -183,11 +182,11 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   } else if (ast->nodeType() == ASTNode::QName) {
     // A fully qualified, absolute path.
     const ASTIdent * ident = static_cast<const ASTIdent *>(ast);
-    llvm::StringRef name = ident->value();
+    StringRef name = ident->value();
     size_t colon = name.rfind(':');
     if (colon != name.npos) {
-      llvm::StringRef modName = name.substr(0, colon);
-      llvm::StringRef relName = name.substr(colon + 1, name.npos);
+      StringRef modName = name.substr(0, colon);
+      StringRef relName = name.substr(colon + 1, name.npos);
       if (lookupNameInModule(out, modName, relName, loc)) {
         return true;
       }
@@ -214,7 +213,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast, std::s
   }
 }
 
-bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, SLC & loc) {
+bool AnalyzerBase::lookupIdent(ExprList & out, StringRef name, SLC & loc) {
   // Search the current active scopes.
   for (Scope * sc = activeScope_; sc != NULL; sc = sc->parentScope()) {
     if (findInScope(out, name, sc, sc->baseExpr(), loc, NO_PREFERENCE)) {
@@ -225,7 +224,7 @@ bool AnalyzerBase::lookupIdent(ExprList & out, const char * name, SLC & loc) {
   return false;
 }
 
-bool AnalyzerBase::lookupQName(ExprList & out, llvm::StringRef name, SLC & loc) {
+bool AnalyzerBase::lookupQName(ExprList & out, StringRef name, SLC & loc) {
   if (importName(out, name, true, loc)) {
     return true;
   }
@@ -237,7 +236,7 @@ bool AnalyzerBase::lookupQName(ExprList & out, llvm::StringRef name, SLC & loc) 
   }
 
   ExprList lvals;
-  llvm::StringRef qual = name.substr(0, dot);
+  StringRef qual = name.substr(0, dot);
   if (lookupQName(lvals, qual, loc)) {
     if (lvals.size() > 1) {
       diag.error(loc) << "Multiply defined symbol " << qual;
@@ -253,8 +252,8 @@ bool AnalyzerBase::lookupQName(ExprList & out, llvm::StringRef name, SLC & loc) 
   return false;
 }
 
-bool AnalyzerBase::lookupNameInModule(ExprList & out, llvm::StringRef modName,
-    llvm::StringRef name, SLC & loc) {
+bool AnalyzerBase::lookupNameInModule(ExprList & out, StringRef modName,
+    StringRef name, SLC & loc) {
   DefnList primaries;
   if (module_->import(modName, primaries, true)) {
     DASSERT(!primaries.empty());
@@ -271,7 +270,7 @@ bool AnalyzerBase::lookupNameInModule(ExprList & out, llvm::StringRef modName,
   return false;
 }
 
-bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, llvm::StringRef name, SLC & loc) {
+bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, StringRef name, SLC & loc) {
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
     if (Module * m = dyn_cast<Module>(scopeName->value())) {
       //m->createMembers();
@@ -359,7 +358,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, llvm::StringRef 
   return false;
 }
 
-bool AnalyzerBase::findInScope(ExprList & out, llvm::StringRef name, const Scope * scope,
+bool AnalyzerBase::findInScope(ExprList & out, StringRef name, const Scope * scope,
     Expr * context, SLC & loc, MemberPreference pref) {
   DefnList defns;
   if (scope->lookupMember(name, defns, true)) {
@@ -400,7 +399,7 @@ bool AnalyzerBase::findInScope(ExprList & out, llvm::StringRef name, const Scope
 }
 
 bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef,
-    llvm::StringRef name, SLC & loc) {
+    StringRef name, SLC & loc) {
   DefnList defns;
   if (lookupTemplateMember(defns, typeDef, name, loc)) {
     int numStaticDefns = 0;
@@ -427,7 +426,7 @@ bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef,
   return false;
 }
 
-bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, llvm::StringRef name,
+bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, StringRef name,
     SLC & loc) {
   DASSERT(typeDef->isTemplate());
   AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
@@ -574,7 +573,7 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
   }
 }
 
-bool AnalyzerBase::importName(ExprList & out, llvm::StringRef path, bool absPath, SLC & loc) {
+bool AnalyzerBase::importName(ExprList & out, StringRef path, bool absPath, SLC & loc) {
   DefnList defns;
   if (module_ != NULL) {
     if (module_->import(path, defns, absPath)) {
