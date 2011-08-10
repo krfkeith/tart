@@ -4,6 +4,8 @@ Next up:
 
 * Change uses of isEqual method to isEqual binary function.
 * Make type conversions a binary function, not a method
+* Finish moving TypeInference to Sema/Infer
+* TypeInference can use additional refactoring / simplification I think.
 
 * Unit tests crashing in OS X Leopard
 * Get DWARF working again.
@@ -40,14 +42,15 @@ Implementation TODOS:
 * Finish @Associative.
 * Implicit anonymous class for closure.
 * TEST: Bug: uint64 + int64 != float (error in infix add overload selection).
-* TEST: Add 'typealias' to eclipse plugin. (Also fix bug with trimming whitespace at ends of lines).
 * TEST: Fix problems with eclipse update site.
+* Eclipse plugin:
+  * Make whitespace trimming not affect cursor position.
+  * Show right margin.
 * Refactoring
   * Use a type to represent variadic params.
   * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
-  * Fill out TypeOrderings.h / TypeComparator.h - or delete.
   * Unit tests for lexical type ordering.
 * I/O library.
 * typecast[type](in);
@@ -77,6 +80,7 @@ Implementation TODOS:
   * Allow overloading of constructors with functions, but don't allow two classes
     with the same template args.
   * Classes with create still need a default constructor? (Unless undef'd).
+  * Get default ctor working again (and call super ctor).
 * Import-as.
 * Strings
   * Conversion specs.
@@ -114,7 +118,6 @@ Implementation TODOS:
 * Sphinx domain for Tart? (Need a more recent Sphinx)
 * Garbage collection test for uninitialized array elements.
 * Insure last field of base class isn't a flex array.
-* Get default ctor working again (and call super ctor).
 * If an if statement casts a nullable to non-nullable type, then assume non-nullable in then block.
   (Same for while).
 * Change assignment syntax for tuple unpacking (x:type, y:type).
@@ -170,12 +173,6 @@ cmake -G "Visual Studio 10 2010" -D CMAKE_BUILD_TYPE=Debug -D LLVM_INCLUDE_DIR=C
 
 cmake -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
 cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/home/talin/Projects/llvm-inst ../llvm
-
-// ------------------------------------------------------------------------
-
-DWARF notes:
-
-* Need to create DILexical block in order to get local variables.
 
 // ------------------------------------------------------------------------
 
@@ -342,30 +339,3 @@ import tart.ffi.CMallocString;
 // in as an argument. This takes care of any pinning that needs to be done.
 @Extern("getcwd") def getcwd(@CArray buffer:ubyte[]);
 
-// ------------------------------------------------------------------------
-
-class TypeAnnotationMap {
-public:
-  /** Create a new type annotation map with the specified name. */
-  static TypeAnnotation * create(StringRef name);
-
-  /** Load a type annotation map from a module. */
-  static TypeAnnotation * load(Module * m, StringRef name);
-  
-  /** Serialize this annotation map as a global variable in module 'm'.
-      This will replace any pre-existing variable of the same name. */  
-  void store(Module * m);
-  
-  /** Return the name of this type annotation map. */
-  StringRef name() const;
-  
-  /** Set the value of the annotation for the input type 'ty'. This replaces any
-      pre-existing value associated with 'ty'. */
-  void put(const Type * ty, const Constant * val);
-  
-  /** Get the value of the annotation for type 'ty'. */
-  const Constant * get(const Type * ty) const;
-  
-  /** Remove any value associated with type 'ty'. */
-  void remove(const Type * ty);
-};

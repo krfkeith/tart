@@ -38,6 +38,11 @@ namespace tart {
   #define DBREAK diag.debug() << "Set breakpoint: break " << __FILE__ << ":" << (__LINE__ + 1)
 #endif
 
+// Conditional diagnostics message - creates a stream which is only evaluated if 'condition'
+// is true. Compiles to nothing if condition is a constant false.
+#define DMSG(condition) \
+    (!condition) ? (void)0 : Diagnostics::VoidResult() & Diagnostics::DebugStream()
+
 /// ---------------------------------------------------------------
 /// Various diagnostic functions.
 ///
@@ -146,7 +151,7 @@ public:
     LLVM_ATTRIBUTE_NORETURN ~FailStream();
   };
 
-  /** Stream class which aborts. */
+  /** Stream class which prints "Assertion failed" and aborts. */
   class AssertionFailureStream : public StrFormatStream {
   private:
     StringRef msg_;
