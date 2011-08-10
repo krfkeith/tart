@@ -16,7 +16,6 @@
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Support/PassManagerBuilder.h"
 #include "llvm/Support/PluginLoader.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Support/SystemUtils.h"
@@ -30,6 +29,7 @@
 #include "llvm/Target/TargetRegistry.h"
 #include "llvm/Target/TargetSelect.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Scalar.h"
 
 #include "tart/Reflect/ReflectorPass.h"

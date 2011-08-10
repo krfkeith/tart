@@ -1249,6 +1249,7 @@ ASTNode * Parser::builtInTypeName(TokenType t) {
 
     default:
       DASSERT(false);
+      return NULL;
   }
 }
 

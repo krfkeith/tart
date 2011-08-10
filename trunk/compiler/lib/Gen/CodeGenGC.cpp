@@ -25,7 +25,7 @@
 #include "llvm/Module.h"
 #include "llvm/Intrinsics.h"
 
-#define DEBUG_STATIC_ROOTS 0
+#define TRACE_ROOTS DMSG(0)
 
 namespace tart {
 
@@ -498,9 +498,7 @@ void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) 
   // A constant variable can only point to other constants, so there's no need for it
   // to be a root.
   if (gv->isConstant() && !isPointer) {
-    #if DEBUG_STATIC_ROOTS
-      //diag.debug() << "Ignoring constant root '" << gv->getName() << "': " << type;
-    #endif
+    TRACE_ROOTS << "Ignoring constant root '" << gv->getName() << "': " << type;
     return;
   }
 
@@ -516,42 +514,34 @@ void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) 
         // as a tuple containing an object reference.
         traceTable = getTraceTable(TupleType::get(Builtins::typeObject.get()));
         DASSERT(traceTable != NULL);
-        #if DEBUG_STATIC_ROOTS
-          //diag.debug() << "Adding static object reference root " << gv->getName();
-        #endif
+        TRACE_ROOTS << "Adding static object reference root " << gv->getName();
       } else {
         // A static object instance
         traceTable = getTraceTable(type);
-        #if DEBUG_STATIC_ROOTS
-          /*if (traceTable) {
-            diag.debug() << "Adding static object instance root " << gv->getName();
-          } else {
-            diag.debug() << "Ignoring static object instance root with no traceable members " <<
-                gv->getName();
-          }*/
-        #endif
+        if (traceTable) {
+          TRACE_ROOTS << "Adding static object instance root " << gv->getName();
+        } else {
+          TRACE_ROOTS << "Ignoring static object instance root with no traceable members " <<
+              gv->getName();
+        }
       }
     } else if (ctype->typeClass() == Type::Struct) {
       // A static struct
       traceTable = getTraceTable(type);
-      #if DEBUG_STATIC_ROOTS
-        /*if (traceTable) {
-          diag.debug() << "Adding static struct root " << gv->getName();
-        } else {
-          diag.debug() << "Ignoring struct root with no traceable members " << gv->getName();
-        }*/
-      #endif
+      if (traceTable) {
+        TRACE_ROOTS << "Adding static struct root " << gv->getName();
+      } else {
+        TRACE_ROOTS << "Ignoring struct root with no traceable members " << gv->getName();
+      }
     }
   } else {
     // Some other type that may have traceable fields.
     traceTable = getTraceTable(type);
-    #if DEBUG_STATIC_ROOTS
-      /*if (traceTable) {
-        diag.debug() << "Adding non-composite root " << gv->getName();
-      } else {
-        diag.debug() << "Ignoring non-traceable non-composite root " << gv->getName();
-      }*/
-    #endif
+    if (traceTable) {
+      TRACE_ROOTS << "Adding non-composite root " << gv->getName();
+    } else {
+      TRACE_ROOTS << "Ignoring non-traceable non-composite root " << gv->getName();
+    }
   }
 
   // traceTable will be NULL if there are no reference fields within the data type.
@@ -590,7 +580,7 @@ void CodeGenerator::emitStaticRoots() {
     // Create the appending linkage list of static roots.
     ArrayType * arrayType = ArrayType::get(rootList.front()->getType(), rootList.size());
     Constant * stackRootArray = ConstantArray::get(arrayType, rootList);
-    GlobalVariable * rootsArray = new GlobalVariable(*irModule_,
+    new GlobalVariable(*irModule_,
         stackRootArray->getType(), true, GlobalValue::AppendingLinkage,
         stackRootArray, "GC_static_roots_array");
   }
