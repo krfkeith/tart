@@ -12,6 +12,7 @@
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/UnitType.h"
 
@@ -65,16 +66,6 @@ llvm::Type * TypeVariable::createIRType() const {
   DFAIL("Invalid");
 }
 
-ConversionRank TypeVariable::convertImpl(const Conversion & cn) const {
-  // The only place where this conversion function is called is when attempting to
-  // determine if a custom coercion can be done (without actually doing it.)
-  if (cn.resultValue != NULL) {
-    DFAIL("Shouldn't be attempting to call convert on a Pattern Var (I think).");
-  }
-
-  return NonPreferred;
-}
-
 bool TypeVariable::canBindTo(const Type * value) const {
   if (const UnitType * nt = dyn_cast<UnitType>(value)) {
     if (valueType_ == NULL) {
@@ -82,7 +73,7 @@ bool TypeVariable::canBindTo(const Type * value) const {
     }
 
     ConstantExpr * expr = nt->value();
-    return valueType_->canConvert(expr);
+    return TypeConversion::check(expr, valueType_);
   } else if (value->typeClass() == Type::Assignment) {
     return true;
   } else if (valueType_ == NULL) {

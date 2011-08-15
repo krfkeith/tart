@@ -10,6 +10,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -101,48 +102,6 @@ llvm::Type * AddressType::createIRType() const {
   }
   llvm::Type * type = elementType_->irEmbeddedType();
   return type->getPointerTo();
-}
-
-ConversionRank AddressType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = cn.getFromType();
-  if (isa<AddressType>(fromType)) {
-    const Type * fromElementType = dealias(fromType->typeParam(0));
-    if (fromElementType == NULL) {
-      DFAIL("No element type");
-    }
-
-    // For native pointers, the thing pointed to must be identical for
-    // both types.
-
-    Expr * fromValue = cn.fromValue;
-    ConversionRank rank = Incompatible;
-    if (elementType_->isEqual(fromElementType)) {
-      rank = IdenticalTypes;
-    } else {
-      // Check conversion on element types
-      if (elementType_->canConvert(fromElementType) == IdenticalTypes) {
-        rank = IdenticalTypes;
-      }
-    }
-
-    if (rank != Incompatible && cn.resultValue) {
-      *cn.resultValue = fromValue;
-    }
-
-    return rank;
-  } else if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(fromType)) {
-    if (ptype->typeId() == TypeId_Null) {
-      if (cn.resultValue) {
-        *cn.resultValue = ConstantNull::get(cn.fromValue->location(), this);
-      }
-
-      return ExactConversion;
-    }
-
-    return Incompatible;
-  } else {
-    return Incompatible;
-  }
 }
 
 bool AddressType::isSingular() const {
@@ -243,49 +202,6 @@ llvm::Type * NativeArrayType::irParameterType() const {
   return irType()->getPointerTo();
 }
 
-ConversionRank NativeArrayType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = cn.getFromType();
-  if (const NativeArrayType * naFrom = dyn_cast<NativeArrayType>(fromType)) {
-    const Type * fromElementType = dealias(naFrom->elementType());
-    if (fromElementType == NULL) {
-      DFAIL("No element type");
-    }
-
-    if (size() != naFrom->size() && size() != 0) {
-      return Incompatible;
-    }
-
-    // Check conversion on element types
-    Conversion elementConversion(fromElementType);
-    if (elementType()->convert(elementConversion) == IdenticalTypes) {
-      if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
-      }
-
-      return IdenticalTypes;
-    }
-
-    diag.fatal() << Format_Verbose << "Wants to convert from " << fromType << " to " << this;
-    //DFAIL("Implement");
-    return Incompatible;
-  } else if (const CompositeType * cfrom = dyn_cast<CompositeType>(fromType)) {
-    // Special case for initializing a native type from an array literal.
-    if (cfrom->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
-      Conversion elementConversion(cfrom->typeParam(0));
-      if (elementType()->convert(elementConversion) == IdenticalTypes) {
-        if (cn.resultValue) {
-          *cn.resultValue = cn.fromValue;
-        }
-
-        return IdenticalTypes;
-      }
-    }
-    return Incompatible;
-  } else {
-    return Incompatible;
-  }
-}
-
 bool NativeArrayType::isSingular() const {
   return typeArgs_->isSingular();
 }
@@ -370,32 +286,6 @@ const Type * FlexibleArrayType::elementType() const {
 
 llvm::Type * FlexibleArrayType::createIRType() const {
   return llvm::ArrayType::get(elementType()->irEmbeddedType(), 0);
-}
-
-ConversionRank FlexibleArrayType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = cn.getFromType();
-  if (const FlexibleArrayType * naFrom =
-      dyn_cast<FlexibleArrayType>(fromType)) {
-    const Type * fromElementType = dealias(naFrom->elementType());
-    if (fromElementType == NULL) {
-      DFAIL("No element type");
-    }
-
-    // Check conversion on element types
-    Conversion elementConversion(fromElementType);
-    if (elementType()->convert(elementConversion) == IdenticalTypes) {
-      if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
-      }
-
-      return IdenticalTypes;
-    }
-
-    diag.fatal() << Format_Verbose << "Wants to convert from " << fromType << " to " << this;
-    return Incompatible;
-  } else {
-    return Incompatible;
-  }
 }
 
 bool FlexibleArrayType::isSingular() const {

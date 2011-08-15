@@ -43,10 +43,8 @@ Expr * ExprAnalyzer::reduceNull(const ASTNode * ast) {
 }
 
 Expr * ExprAnalyzer::reduceIntegerLiteral(const ASTIntegerLiteral * ast) {
-  return new ConstantInteger(
-      ast->location(),
-      &UnsizedIntType::instance,
-      llvm::ConstantInt::get(llvm::getGlobalContext(), ast->value()));
+  llvm::ConstantInt * cint = llvm::ConstantInt::get(llvm::getGlobalContext(), ast->value());
+  return new ConstantInteger(ast->location(), UnsizedIntType::get(cint), cint);
 }
 
 Expr * ExprAnalyzer::reduceFloatLiteral(const ASTFloatLiteral * ast) {
@@ -104,7 +102,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
           diag.error(ast) << "Can't deduce function return type from type " << expected;
           return &Expr::ErrorVal;
         }
-        diag.debug() << expected << " : " << returnType;
+        //diag.debug() << expected << " : " << returnType;
         ftype->setReturnType(returnType);
       } else {
         ftype->setReturnType(&VoidType::instance);
@@ -295,6 +293,10 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
     Expr * el = reduceExpr(ast->args()[i], elType);
     if (isErrorResult(el)) {
       return &Expr::ErrorVal;
+    }
+
+    if (elType != NULL && elType->isSingular()) {
+      TypeConversion::convert(el, elType, &el, TypeConversion::COERCE);
     }
 
     if (!el->type()->isSingular()) {

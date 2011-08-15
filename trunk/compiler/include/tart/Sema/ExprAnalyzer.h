@@ -30,6 +30,11 @@ class ReturnStmt;
 class ReturnStmt;
 class DeclStmt;
 
+enum AnalysisOptions {
+  AO_EXPLICIT_CAST = (1<<1),        // Force a cast to the expected type, suppress warnings.
+  AO_IMPLICIT_CAST = (1<<2),        // Do implicit conversion to the expected type.
+};
+
 /// -------------------------------------------------------------------
 /// Expression analyzer
 class ExprAnalyzer : public AnalyzerBase {
@@ -39,13 +44,13 @@ public:
   ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction);
 
   /** Build expression tree from AST and do all type inferencing. */
-  Expr * analyze(const ASTNode * ast, const Type * expected) {
-    return inferTypes(subject(), reduceExpr(ast, expected), expected);
+  Expr * analyze(const ASTNode * ast, const Type * expected, unsigned options = AO_IMPLICIT_CAST) {
+    return inferTypes(subject(), reduceExpr(ast, expected), expected, options);
   }
 
   /** Take a reduced expression and do type inferencing. */
   Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
-      bool tryCoerciveCasts = true);
+      unsigned options = AO_IMPLICIT_CAST);
   Expr * inferTypes(Expr * expr, const Type * expectedType);
 
   /** Build expression tree from AST. */
@@ -64,7 +69,7 @@ public:
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
       Report an error if the cast is not possible. */
-  Expr * doImplicitCast(Expr * in, const Type * toType, bool tryCoerce = true);
+  Expr * doImplicitCast(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * doBoxCast(Expr * in);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 

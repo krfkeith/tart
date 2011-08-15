@@ -204,7 +204,7 @@ Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr *
   TypeId id = ptype->typeId();
 
   if (functions_[id] == NULL) {
-    DASSERT(ptype != &UnsizedIntType::instance);
+    DASSERT(!ptype->isUnsizedIntType());
     llvm::FunctionType * funcType = cast<llvm::FunctionType>(fn->type()->irType());
     llvm::SmallString<32> funcName;
     functions_[id] = cast<llvm::Function>(

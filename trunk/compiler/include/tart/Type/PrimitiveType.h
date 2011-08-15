@@ -82,7 +82,10 @@ public:
   /** Return true if this primitive type is a subtype of 'base' */
   virtual bool isSubtypeOf(const PrimitiveType * base) const = 0;
 
-  // Overrides
+  /** Left over from previous conversion implementation - move to TypeConversion.cpp. */
+  virtual ConversionRank convertImpl(const Conversion & cn) const = 0;
+
+    // Overrides
   llvm::Type * createIRType() const;
   virtual bool isSingular() const { return true; }
 
@@ -176,8 +179,63 @@ typedef PrimitiveTypeImpl<TypeId_Float>   FloatType;
 typedef PrimitiveTypeImpl<TypeId_Double>  DoubleType;
 typedef PrimitiveTypeImpl<TypeId_Null>    NullType;
 typedef PrimitiveTypeImpl<TypeId_Any>     AnyType;
-typedef PrimitiveTypeImpl<TypeId_UnsizedInt> UnsizedIntType;
 typedef PrimitiveTypeImpl<TypeId_Bad>     BadType;
+
+// -------------------------------------------------------------------
+// Special primitive class for unsized integers
+class UnsizedIntType : public PrimitiveType {
+public:
+
+  /** Get an instance of UnsizedIntType for a specific integer value. */
+  static UnsizedIntType * get(llvm::ConstantInt * intVal);
+
+  /** Construct a primitive type */
+  UnsizedIntType(llvm::ConstantInt *  intVal) : PrimitiveType(&typedefn), intVal_(intVal) {}
+
+  /** The integer value. */
+  const llvm::ConstantInt * intVal() const { return intVal_; }
+
+  Expr * nullInitValue() const;
+  bool isReferenceType() const { return false; }
+
+  /** Number of bits required to hold this value. */
+  unsigned signedBitsRequired() const;
+  unsigned unsignedBitsRequired() const;
+
+  /** Whether the value is negative. */
+  bool isNegative() const { return intVal_->isNegative(); }
+
+  /** Choose an integer size for this type. */
+  PrimitiveType * fixIntSize(bool makeUnsigned) const;
+
+  /** Replace all unsized integers in the type expression with appropriately sized ints. */
+  const Type * assignIntSizes(const Type * in) const;
+
+  // Overrides
+
+  void initType();
+  void initMembers() {}
+  TypeId typeId() const { return TypeId_UnsizedInt; }
+  uint32_t numBits() const;
+  ConversionRank convertImpl(const Conversion & conversion) const;
+  void format(FormatStream & out) const;
+  bool isSubtypeOf(const PrimitiveType * base) const;
+
+  // Casting support
+
+  static inline bool classof(const UnsizedIntType *) { return true; }
+  static inline bool classof(const Type * t) {
+    return t->typeClass() == Type::Primitive &&
+        static_cast<const PrimitiveType *>(t)->typeId() == TypeId_UnsizedInt;
+  }
+
+  // Generic unsized int instance.
+  static UnsizedIntType instance;
+
+private:
+  static TypeDefn typedefn;
+  const llvm::ConstantInt * intVal_;
+};
 
 }
 

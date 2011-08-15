@@ -70,7 +70,7 @@ public:
 
   /** The final value of the type, after all constraints have been solved. */
   const Type * value() const { return value_; }
-  void setValue(const Type * value) { value_ = value; }
+  void setValue(const Type * value);
 
   /** The list of constraints. You can think of a constraint as an assertion
       of equivalence. */
@@ -111,8 +111,6 @@ public:
   TypeShape typeShape() const {
     return value_ != NULL ? value_->typeShape() : Shape_Unset;
   }
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   Expr * nullInitValue() const;
   void trace() const;
   void format(FormatStream & out) const;

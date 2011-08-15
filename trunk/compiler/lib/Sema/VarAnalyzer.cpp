@@ -12,6 +12,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
+#include "tart/Sema/TypeTransform.h"
 
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
@@ -183,7 +184,7 @@ bool VarAnalyzer::resolveVarType() {
 
       ExprAnalyzer ea(this, currentFunction_);
       Expr * initExpr = ea.analyze(ast->value(),
-          target->type() != NULL ? target->type() : &AnyType::instance);
+          (target->type() != NULL ? target->type() : &AnyType::instance), AO_IMPLICIT_CAST);
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
         target->passes().finish(VariableDefn::VariableTypePass);
@@ -202,17 +203,9 @@ bool VarAnalyzer::resolveVarType() {
         const Type * initType = initExpr->type();
         DASSERT_OBJ(initType != NULL, target);
 
-        if (initType->isUnsizedIntType()) {
-          // TODO: Only if this is a var, not a let
-          if (!isa<ConstantInteger>(initExpr) && !isa<SeqExpr>(initExpr)) {
-            diag.debug() << initExpr;
-            DASSERT_OBJ(!initType->isUnsizedIntType(), target);
-          } else {
-            initType = PrimitiveType::intType();
-          }
-        }
-
+        // TODO: Only if this is a var, not a let
         if (target->type() == NULL) {
+          initType = IntegerSizingTransform().transform(initType);
           setTargetType(initType);
           analyzeType(initType, Task_PrepTypeComparison);
         }
@@ -226,12 +219,16 @@ bool VarAnalyzer::resolveVarType() {
 
         // TODO: Fold this into inferTypes.
         if (target->storageClass() == Storage_Local) {
-          initExpr = ea.doImplicitCast(initExpr, target->type(), true);
+          initExpr = ea.doImplicitCast(initExpr, target->type(), AO_IMPLICIT_CAST);
         } else {
           initExpr = target->type()->implicitCast(initExpr->location(), initExpr);
         }
-        target->setInitValue(initExpr);
-        DASSERT_OBJ(!target->type()->isScaffold(), target);
+        if (!isErrorResult(initExpr) && !isErrorResult(initExpr->type())) {
+          DASSERT(initExpr->type()->irType() == target->type()->irType()) << "Variable type is " <<
+              target->type() << " but initializer type is " << initExpr->type();
+          DASSERT_OBJ(!target->type()->isScaffold(), target);
+          target->setInitValue(initExpr);
+        }
       }
     } else if (target->type() == NULL) {
       diag.error(target) << "Type of '" << target << "' cannot be determined";

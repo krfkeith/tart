@@ -109,6 +109,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
 
     if (isRequired) {
       diag.error(ast) << "Undefined symbol '" << ast << "'";
+      // TODO: Dump macro context.
       diag.info() << "Scopes searched:";
       dumpScopeHierarchy();
     }
@@ -121,6 +122,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     if (lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions & ~LOOKUP_REQUIRED))) {
       if (lvals.size() > 1) {
         diag.error(ast) << "Multiply defined symbol " << qual;
+        // TODO: Dump macro context.
         diag.info() << "Found in scopes:";
         dumpScopeList(lvals);
         path.clear();
@@ -135,7 +137,8 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       path.clear();
       if (isRequired) {
         diag.error(ast) << "Undefined member '" << mref->memberName() << "'";
-        diag.info() << "Scoped searched:";
+        // TODO: Dump macro & context.
+        diag.info() << "Scopes searched:";
         dumpScopeList(lvals);
       }
 
@@ -332,8 +335,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, StringRef name, 
       if (utype->isSingleOptionalType()) {
         const Type * toType = utype->getFirstNonVoidType();
         Expr * newContext = NULL;
-        Conversion cn(context, &newContext, 0);
-        if (toType->convert(cn) > Incompatible) {
+        if (TypeConversion::convert(context, toType, &newContext) > Incompatible) {
           context = newContext;
           contextType = context->canonicalType();
         }

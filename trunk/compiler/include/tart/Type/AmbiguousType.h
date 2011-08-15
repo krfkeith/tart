@@ -89,13 +89,6 @@ protected:
   void formatImpl(FormatStream & out) const;
 };
 
-/// -------------------------------------------------------------------
-/// An ambiguous type representing a fixed set of possible types.
-class AmbiguousDiscreteType : public AmbiguousType {
-public:
-private:
-};
-
 } // namespace tart
 
 #endif // TART_TYPE_AMBIGUOUSTYPE_H

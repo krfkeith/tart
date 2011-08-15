@@ -16,6 +16,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -340,55 +341,9 @@ const Type * Type::typeParam(int index) const {
   DFAIL("No type params");
 }
 
-ConversionRank Type::convert(const Conversion & cn) const {
-  ConversionRank rank;
-
-  // Ask the constraint if we can convert to this type. Most types don't
-  // know about constraints, but constraints know about most types.
-  rank = cn.fromType->convertTo(this, cn);
-  if (rank != Incompatible) {
-    return rank;
-  }
-
-  rank = convertImpl(cn);
-
-  if (rank == Incompatible && (cn.options & Conversion::Coerce) && !cn.resultValue) {
-    if (const CompositeType * ctype = dyn_cast<CompositeType>(this)) {
-      if (!ctype->passes().isFinished(CompositeType::CoercerPass)) {
-        diag.warn() << "Converter pass for " << ctype << " was not done.";
-      }
-
-      if (!ctype->coercers().empty()) {
-        const MethodList & coercers = ctype->coercers();
-        ConversionRank bestRank = Incompatible;
-        for (MethodList::const_iterator it = coercers.begin(); it != coercers.end(); ++it) {
-          const FunctionType * fnType = (*it)->functionType();
-          rank = std::min(
-              fnType->param(0)->type()->canConvert(cn.fromType),
-              canConvert(fnType->returnType()));
-          bestRank = std::max(bestRank, rank);
-        }
-
-        // Coerced conversions are at best non-preferred.
-        rank = std::min(bestRank, NonPreferred);
-      }
-    }
-  }
-
-  return rank;
-}
-
-ConversionRank Type::canConvert(const Expr * fromExpr, int options) const {
-  return convert(Conversion(const_cast<Expr *>(fromExpr), options));
-}
-
-ConversionRank Type::canConvert(const Type * fromType, int options) const {
-  return convert(Conversion(fromType, options));
-}
-
 Expr * Type::implicitCast(const SourceLocation & loc, Expr * from, int options) const {
   Expr * result = NULL;
-  ConversionRank tc = convert(Conversion(from, &result, options));
+  ConversionRank tc = TypeConversion::convert(from, this, &result, options);
   compatibilityWarning(loc, tc, from, this);
   DASSERT(tc == Incompatible || result != NULL);
   return result;
@@ -396,7 +351,8 @@ Expr * Type::implicitCast(const SourceLocation & loc, Expr * from, int options) 
 
 Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) const {
   Expr * result = NULL;
-  ConversionRank tc = convert(Conversion(from, &result, options | Conversion::Explicit));
+  ConversionRank tc = TypeConversion::convert(
+      from, this, &result, options | TypeConversion::EXPLICIT);
   if (tc == Incompatible) {
     compatibilityWarning(loc, tc, from, this);
   }
@@ -447,9 +403,9 @@ const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
       default:
         break;
     }
-  } else if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(lhs)) {
-    DFAIL("Implement");
-    (void)soc;
+  } else if (const UnsizedIntType * uint = dyn_cast<UnsizedIntType>(lhs)) {
+    DASSERT(false) << "Implement commonBase for " << lhs << " and " << rhs;
+    (void)uint;
   }
 
   return NULL;
@@ -528,8 +484,8 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
     return t0;
   }
 
-  ConversionRank tc0 = t0->canConvert(t1);
-  ConversionRank tc1 = t1->canConvert(t0);
+  ConversionRank tc0 = TypeConversion::check(t1, t0);
+  ConversionRank tc1 = TypeConversion::check(t0, t1);
   if (tc1 > tc0) {
     return t1;
   } else if (tc0 > tc1) {

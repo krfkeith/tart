@@ -134,7 +134,7 @@ private:
   bool unifyCompositeType(SourceContext * source, const CompositeType * left,
       const CompositeType * right);
   bool unifyUnionType(SourceContext * source, const UnionType * left, const UnionType * right);
-  bool unifyToUnionType(SourceContext * source, const Type * left, const UnionType * right);
+  bool unifyUnionMemberType(SourceContext * source, const UnionType * left, const Type * right);
   bool unifyTupleType(SourceContext * source, const TupleType * left, const TupleType * right);
 
   /** Return true if 'ty' is a type variable, and this environment contains a type assignment

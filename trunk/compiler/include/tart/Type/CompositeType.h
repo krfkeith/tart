@@ -201,7 +201,6 @@ public:
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;
   llvm::Type * irReturnType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   void format(FormatStream & out) const;
   void trace() const;
   bool isSingular() const;

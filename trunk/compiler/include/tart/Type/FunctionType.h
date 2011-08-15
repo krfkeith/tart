@@ -85,7 +85,6 @@ public:
       const Type * selfType, const ParameterList & params, const Type * returnType) const;
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const;
   Expr * nullInitValue() const;

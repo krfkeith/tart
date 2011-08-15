@@ -32,10 +32,6 @@ const PrimitiveType * ConstantInteger::primitiveType() const {
     ty = etype->baseType();
   }
 
-  if (ty->typeClass() == Type::SizingOf) {
-    return &UnsizedIntType::instance;
-  }
-
   return cast<PrimitiveType>(ty);
 }
 

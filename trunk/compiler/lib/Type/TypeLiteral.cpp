@@ -88,28 +88,7 @@ TypeLiteralType::~TypeLiteralType() {
 }
 
 llvm::Type * TypeLiteralType::createIRType() const {
-//  DASSERT_OBJ(literalType_ != NULL, this);
-//  llvm::Type * type = literalType_->irEmbeddedType();
-//  return type->getPointerTo();
-  //DFAIL("Implement");
   return Builtins::typeType.irEmbeddedType();
-}
-
-ConversionRank TypeLiteralType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = dealias(cn.getFromType());
-  if (isa<TypeLiteralType>(fromType)) {
-    const Type * fromliteralType = fromType->typeParam(0);
-    DASSERT(fromliteralType != NULL);
-
-    if (literalType_->isEqual(fromliteralType)) {
-      if (cn.resultValue) {
-        *cn.resultValue = cn.fromValue;
-      }
-
-      return IdenticalTypes;
-    }
-  }
-  return Incompatible;
 }
 
 bool TypeLiteralType::isSingular() const {

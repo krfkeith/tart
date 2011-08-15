@@ -30,6 +30,14 @@ inline bool areBothConstFloats(const Expr * a0, const Expr * a1) {
       a1->exprType() == Expr::ConstFloat;
 }
 
+const Type * typeForConstInt(llvm::ConstantInt * cint, const Type * prevType) {
+  if (prevType->isUnsizedIntType()) {
+    return UnsizedIntType::get(cint);
+  } else {
+    return prevType;
+  }
+}
+
 /** A class representing a binary operator on integer types.
     The operator takes two arguments and returns a single value,
     all of which are the same type.
@@ -52,12 +60,12 @@ public:
     if (areBothConstInts(arg0, arg1)) {
       ConstantInteger * c0 = static_cast<ConstantInteger *>(arg0);
       ConstantInteger * c1 = static_cast<ConstantInteger *>(arg1);
-      DASSERT(c0->type() == c1->type());
+      llvm::ConstantInt * cr = cast<ConstantInt>(
+          llvm::ConstantExpr::get(opCode, c0->value(), c1->value()));
       return new ConstantInteger(
             c0->location() | c1->location(),
-            c0->type(),
-            cast<ConstantInt>(
-                llvm::ConstantExpr::get(opCode, c0->value(), c1->value())));
+            typeForConstInt(cr, c0->type()),
+            cr);
     } else {
       return new BinaryOpcodeExpr(opCode, loc, &T::instance, arg0, arg1);
     }
@@ -294,7 +302,6 @@ public:
     if (areBothConstInts(arg0, arg1)) {
       const ConstantInteger * c0 = static_cast<const ConstantInteger *>(arg0);
       const ConstantInteger * c1 = static_cast<const ConstantInteger *>(arg1);
-      DASSERT(c0->type() == c1->type());
       return new ConstantInteger(
             c0->location() | c1->location(),
             &BoolType::instance,
@@ -438,10 +445,11 @@ public:
       value = llvm::ConstantExpr::getSExt(value, IntegerType::get(llvm::getGlobalContext(), bitsRequired));
     }
 
+    llvm::ConstantInt * cint = cast<ConstantInt>(llvm::ConstantExpr::getNeg(value));
     return new ConstantInteger(
           cn->location(),
-          cn->type(),
-          cast<ConstantInt>(llvm::ConstantExpr::getNeg(value)));
+          UnsizedIntType::get(cint),
+          cint);
   }
 
   static NegateOp value;
@@ -464,10 +472,11 @@ public:
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
+      llvm::ConstantInt * cr = cast<ConstantInt>(llvm::ConstantExpr::getAdd(cn->value(), one));
       return new ConstantInteger(
             cn->location(),
-            cn->type(),
-            cast<ConstantInt>(llvm::ConstantExpr::getAdd(cn->value(), one)));
+            typeForConstInt(cr, cn->type()),
+            cr);
     } else {
       Expr * constantOne = new ConstantInteger(
           arg->location(),
@@ -500,10 +509,11 @@ public:
     ConstantInt * one = ConstantInt::get(intType, 1, true);
     if (arg->exprType() == Expr::ConstInt) {
       const ConstantInteger * cn = static_cast<const ConstantInteger *>(arg);
+      llvm::ConstantInt * cr = cast<ConstantInt>(llvm::ConstantExpr::getSub(cn->value(), one));
       return new ConstantInteger(
             cn->location(),
-            cn->type(),
-            cast<ConstantInt>(llvm::ConstantExpr::getSub(cn->value(), one)));
+            typeForConstInt(cr, cn->type()),
+            cr);
     } else {
       Expr * constantOne = new ConstantInteger(
             arg->location(),

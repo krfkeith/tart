@@ -93,7 +93,6 @@ public:
 
   /** Get the return type of this candidate. */
   const Type * resultType() const { return resultType_; }
-  void setResultType(Type * type) { resultType_ = type; }
 
   /** The list of relabeled type parameters. */
   const TupleType * typeParams() const { return typeParams_; }

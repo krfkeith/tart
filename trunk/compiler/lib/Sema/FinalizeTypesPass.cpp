@@ -14,6 +14,7 @@
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/AmbiguousPhiType.h"
 
@@ -31,25 +32,20 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// FinalizeTypesPassImpl
 
-Expr * FinalizeTypesPass::run(Defn * source, Expr * in, BindingEnv & env, bool tryCoerciveCasts) {
+Expr * FinalizeTypesPass::run(Defn * source, Expr * in, BindingEnv & env) {
   FinalizeTypesPassImpl instance(source, env);
-  instance.tryCoerciveCasts_ = tryCoerciveCasts;
   return instance.runImpl(in);
 }
 
 Expr * FinalizeTypesPass::runImpl(Expr * in) {
   Expr * result = visitExpr(in);
   if (!diag.inRecovery()) {
-    DASSERT(result->isSingular());
+    DASSERT(result->isSingular()) << "Result " << result << " is non-singular.";
   }
   return result;
 }
 
 Expr * FinalizeTypesPassImpl::visitConstantInteger(ConstantInteger * in) {
-  if (in->type()->typeClass() == Type::SizingOf) {
-    in->setType(&UnsizedIntType::instance);
-  }
-
   return in;
 }
 
@@ -85,6 +81,7 @@ Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
   // Cast array index to integer type.
   // TODO: Check if it's long first.
   Expr * first = visitExpr(in->first());
+  DASSERT(first->isSingular()) << "Non-singular expression: " << first;
   Expr * second = visitExpr(in->second());
   if (!isErrorResult(first) && !isErrorResult(second)) {
     bool isAlreadyInt = false;
@@ -101,6 +98,7 @@ Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
     DASSERT_OBJ(first->isSingular(), first);
     DASSERT_OBJ(second->isSingular(), second);
     DASSERT_OBJ(in->isSingular(), in);
+
   }
 
   return in;
@@ -349,10 +347,12 @@ bool FinalizeTypesPassImpl::coerceArgs(
     }
 
     Expr * castArgVal = addCastIfNeeded(argVal, paramType);
-    if (castArgVal == NULL) {
-      diag.error(argVal) << "Unable to convert argument of type " << argVal->type() << " to " <<
-          paramType;
+    if (isErrorResult(castArgVal)) {
       return false;
+    }
+
+    if (cd->method() && !cd->method()->isIntrinsic()) {
+      DASSERT(!castArgVal->type()->isUnsizedIntType());
     }
 
     if (param->isVariadic()) {
@@ -612,7 +612,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value,
   for (TupleType::const_iterator it = from->members().begin(); it != from->members().end(); ++it) {
     Type * memberType = const_cast<Type *>(dealias(*it));
     // TODO: Should this use conversion test, or subtype test?
-    ConversionRank rank = to->canConvert(memberType);
+    ConversionRank rank = TypeConversion::check(memberType, to);
     if (rank >= ExactConversion) {
       if (rank > bestRank) {
         bestRank = rank;
@@ -666,15 +666,13 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   DASSERT_OBJ(t2 != NULL, in->second());
 
   if (const UnionType * u1 = dyn_cast<UnionType>(t1)) {
-    Conversion cn(in->second(), &v2);
-    ConversionRank rank = u1->convert(cn);
+    ConversionRank rank = TypeConversion::convert(in->second(), u1, &v2);
     if (rank >= ExactConversion) {
       in->setSecond(v2);
       return in;
     }
   } else if (const UnionType * u2 = dyn_cast<UnionType>(t2)) {
-    Conversion cn(in->first(), &v1);
-    ConversionRank rank = u2->convert(cn);
+    ConversionRank rank = TypeConversion::convert(in->first(), u2, &v1);
     if (rank >= ExactConversion) {
       in->setFirst(v1);
       return in;
@@ -763,19 +761,10 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
   DASSERT(args.size() > 0);
   for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
     Expr * arg = visitExpr(*it);
-    if (arg->type()->isUnsizedIntType()) {
-      arg = chooseIntSize(arg);
-    }
-
-    DASSERT_OBJ(arg->isSingular(), arg);
-    //if (ttype != NULL) {
-    //}
-
     types.push_back(arg->type());
     *it = arg;
   }
 
-  //return addCastIfNeeded()
   in->setType(TupleType::get(types));
   return in;
 }
@@ -787,7 +776,6 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
       return new TypeLiteralExpr(in->location(), tb->value());
     }
 
-    //diag.fatal(in) << "Unbound type var " << in;
     return in;
   }
 
@@ -796,7 +784,6 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
     return in;
   }
 
-  //DASSERT_OBJ(in->isSingular(), in);
   return in;
 }
 
@@ -861,9 +848,9 @@ Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType) {
+Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType, unsigned options) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
-        .doImplicitCast(in, toType, tryCoerciveCasts_);
+        .doImplicitCast(in, toType, options);
 }
 
 Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
@@ -873,19 +860,6 @@ Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
   }
 
   return in;
-}
-
-Expr * FinalizeTypesPassImpl::chooseIntSize(Expr * in) {
-  ConstantInteger * cintVal = cast<ConstantInteger>(in);
-  const PrimitiveType * ptype = cintVal->primitiveType();
-  bool isUnsigned = isUnsignedIntegerTypeId(ptype->typeId());
-  const llvm::APInt & intVal = cintVal->value()->getValue();
-  unsigned bitsRequired = isUnsigned ? intVal.getActiveBits() : intVal.getMinSignedBits();
-  if (bitsRequired < 32) {
-    bitsRequired = 32;
-  }
-  ptype = PrimitiveType::fitIntegerType(bitsRequired, isUnsigned);
-  return ptype->implicitCast(in->location(), cintVal);
 }
 
 const Type * FinalizeTypesPassImpl::getCommonPhiType(const AmbiguousPhiType * phi) {

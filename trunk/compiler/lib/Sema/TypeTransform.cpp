@@ -86,7 +86,6 @@ const Type * TypeTransform::visit(const Type * in) {
     case Type::AmbiguousResult:
     case Type::AmbiguousParameter:
     case Type::AmbiguousTypeParam:
-    case Type::SizingOf:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
 
     default:
@@ -299,10 +298,6 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
     return AmbiguousTypeParamType::forType(base, tpt->match(), tpt->paramIndex());
   }
 
-  if (in->typeClass() == Type::SizingOf) {
-    return in;
-  }
-
   diag.debug() << "Type constraint: " << in;
   DFAIL("Type constraint not handled");
   return in;
@@ -323,6 +318,23 @@ const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
 const Type * NormalizeTransform::visitTypeAssignment(const TypeAssignment * in) {
   const Type * value = in->value();
   return value != NULL ? value : in;
+}
+
+// -------------------------------------------------------------------
+// IntegerSizingTransform
+
+const Type * IntegerSizingTransform::visitPrimitiveType(const PrimitiveType * in) {
+  if (in->isUnsizedIntType()) {
+    const UnsizedIntType * unsized = static_cast<const UnsizedIntType *>(in);
+    unsigned bitsRequired = std::max(
+        static_cast<const PrimitiveType *>(PrimitiveType::intType())->numBits(),
+        unsized->signedBitsRequired());
+    if (bitsRequired <= 64 || unsized->isNegative()) {
+      return PrimitiveType::fitIntegerType(bitsRequired, false);
+    }
+    return PrimitiveType::fitIntegerType(unsized->unsignedBitsRequired(), true);
+  }
+  return in;
 }
 
 } // namespace tart

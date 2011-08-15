@@ -26,7 +26,7 @@ public:
   static TupleType * get(const TypeList & members) {
     return get(members.begin(), members.end());
   }
-  static TupleType * get(const ConstTypeList & members) {
+  static TupleType * get(llvm::ArrayRef<const Type *> members) {
     return get(members.begin(), members.end());
   }
 
@@ -47,7 +47,6 @@ public:
 
   llvm::Type * createIRType() const;
   llvm::Type * irParameterType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const { return false; }

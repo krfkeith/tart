@@ -50,7 +50,6 @@ public:
   // Overrides
 
   llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;

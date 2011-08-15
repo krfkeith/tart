@@ -96,7 +96,7 @@ bool BindingEnv::unify(SourceContext * source, const Type * left, const Type * r
     if (diag.getIndentLevel() == 0) {
       diag.debug(source->location()) << "## Begin unification of: " << left << " with: " << right;
       if (stateCount_ > 0) {
-        diag.debug() << "   Current bindings: " << *this;
+        diag.debug() << "   Current bindings: " << Format_Verbose << *this;
       }
     } else {
       diag.debug() << "unify " << left << " with " << right;
@@ -211,8 +211,8 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
 //      }
     }
 
-    if (const UnionType * utValue = dyn_cast<UnionType>(right)) {
-      return unifyToUnionType(source, ctPattern, utValue);
+    if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+      return unifyUnionMemberType(source, rut, ctPattern);
     }
 
     // The type on the left may have a coercion method, so assume that unification
@@ -224,12 +224,18 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
     return false;
   }
 
-  if (const UnionType * uPattern = dyn_cast<UnionType>(left)) {
-    if (const UnionType * uValue = dyn_cast<UnionType>(right)) {
-      return unifyUnionType(source, uPattern, uValue);
+  if (const UnionType * lut = dyn_cast<UnionType>(left)) {
+    if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+      return unifyUnionType(source, lut, rut);
+    } else if (unifyUnionMemberType(source, lut, right)) {
+      return true;
     }
 
     return false;
+  } else if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+    if (unifyUnionMemberType(source, rut, left)) {
+      return true;
+    }
   }
 
   if (isa<PrimitiveType>(left)) {
@@ -443,13 +449,13 @@ bool BindingEnv::unifyUnionType(
   return unify(source, *membersLeft.begin(), *memberRight.begin(), Constraint::EXACT);
 }
 
-bool BindingEnv::unifyToUnionType(
-    SourceContext * source, const Type * left, const UnionType * right) {
+bool BindingEnv::unifyUnionMemberType(
+    SourceContext * source, const UnionType * left, const Type * right) {
   // If we're assigning to a union type, try each of the union members.
   unsigned savedState = stateCount_;
-  for (TupleType::const_iterator it = right->members().begin(); it != right->members().end();
+  for (TupleType::const_iterator it = left->members().begin(); it != left->members().end();
       ++it) {
-    if (unify(source, left, *it, Constraint::EXACT)) {
+    if (unify(source, right, *it, Constraint::EXACT)) {
       return true;
     }
 

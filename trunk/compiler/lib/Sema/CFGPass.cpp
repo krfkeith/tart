@@ -4,11 +4,15 @@
 
 #include "tart/Sema/CFGPass.h"
 
-#include "tart/Expr/Exprs.h"
-#include "tart/Expr/StmtExprs.h"
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
 #include "tart/Expr/Closure.h"
+
+#include "tart/Type/TupleType.h"
+
 #include "tart/Common/Diagnostics.h"
 
 namespace tart {
@@ -30,6 +34,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::TypeCount:
       DFAIL("Invalid");
+      break;
 
     case Expr::NoOp:
       return in;
@@ -223,6 +228,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
 
     case Expr::With:
       DFAIL("Implement");
+      break;
 
     case Expr::PatternVar:
     case Expr::TypeName:
@@ -384,12 +390,29 @@ Expr * CFGPass::visitArrayLiteral(ArrayLiteralExpr * in) {
 }
 
 Expr * CFGPass::visitTupleCtor(TupleCtorExpr * in) {
-  visitExprArgs(in);
+  bool typeChanged = false;
+  for (ExprList::iterator it = in->begin(); it != in->end(); ++it) {
+    Expr * arg = visitExpr(*it);
+    if (arg->type() != (*it)->type()) {
+      typeChanged = true;
+    }
+    *it = arg;
+  }
+
+  if (typeChanged) {
+    ConstTypeList argTypes;
+    for (ExprList::iterator it = in->begin(); it != in->end(); ++it) {
+      argTypes.push_back((*it)->type());
+    }
+    in->setType(TupleType::get(argTypes));
+  }
+
   return in;
 }
 
 Expr * CFGPass::visitSharedValue(SharedValueExpr * in) {
   in->setArg(visitExpr(in->arg()));
+  in->setType(in->arg()->type());
   return in;
 }
 

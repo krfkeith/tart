@@ -155,7 +155,7 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //    case Expr::DynamicCast:
 //    case Expr::UnboxCast:
 //    case Expr::Truncate:
-//    case Expr::SignExtend:
+    case Expr::SignExtend:
 //    case Expr::ZeroExtend:
 //    case Expr::IntToFloat:
 //    case Expr::BitCast:

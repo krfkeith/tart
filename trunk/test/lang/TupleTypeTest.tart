@@ -42,6 +42,12 @@ class TupleTypeTest : Test {
 	  assertEq(2, a[1]);
 	}
 
+  def testTupleCreateExplicitCoercedType() {
+    var a:(uint8, uint8) = 77, 78;
+    assertEq(77, a[0]);
+    assertEq(78, a[1]);
+  }
+
 	def testTupleAssign() {
 	  var a = 1, 2;
 	  var b = a;
@@ -104,7 +110,7 @@ class TupleTypeTest : Test {
 	def testUnpackedAssign() {
 	  var a = 1, 2.0;
 	  var b, c = a;
-	  var b2:int32, c2:double = a;
+	  var b2:int, c2:double = a;
 	  //var b3:int64, c3 = a;
 
 	  b, c = a;

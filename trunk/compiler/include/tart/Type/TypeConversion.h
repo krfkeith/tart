@@ -88,6 +88,38 @@ struct Conversion {
   bool isChecked() const { return (options & Checked) != 0; }
 };
 
+/// -------------------------------------------------------------------
+/// Type conversion functions.
+namespace TypeConversion {
+  enum Options {
+    COERCE = (1<<0),        // Allow coercive casts
+    DYNAMIC_NULL = (1<<1),  // Allow dynamic casts (null if fail)
+    CHECKED = (1<<2),       // Allow dynamic casts (exception if fail)
+    EXPLICIT = (1<<3),      // Explicit conversion - allow int to float for example
+  };
+
+  /** Do a type conversion, and return both the conversion rank and the converted type. */
+  ConversionRank convert(
+      const Type * srcType, Expr * srcExpr,
+      const Type * dstType, Expr ** dstExpr, int options = 0);
+
+  /** Do a type conversion, and return both the conversion rank and the converted type. */
+  inline ConversionRank convert(
+      Expr * srcExpr, const Type * dstType, Expr ** dstExpr, int options = 0) {
+    return convert(srcExpr->type(), srcExpr, dstType, dstExpr, options);
+  }
+
+  /** Check if a conversion is possible, and return a conversion ranking. */
+  inline ConversionRank check(const Type * srcType, const Type * dstType, int options = 0) {
+    return convert(srcType, NULL, dstType, NULL, options);
+  }
+
+  /** Check if a conversion is possible, and return a conversion ranking. */
+  inline ConversionRank check(Expr * srcExpr, const Type * dstType, int options = 0) {
+    return convert(srcExpr->type(), srcExpr, dstType, NULL, options);
+  }
+};
+
 } // namespace tart
 
 #endif

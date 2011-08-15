@@ -37,7 +37,6 @@ public:
   virtual const Type * typeParam(int index) const { return elementType_; }
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
@@ -94,7 +93,6 @@ public:
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   llvm::Type * irParameterType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
@@ -145,7 +143,6 @@ public:
 
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }

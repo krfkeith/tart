@@ -88,6 +88,16 @@ public:
   const TypeVarMap vars_;
 };
 
+/// -------------------------------------------------------------------
+/// A transform that replaces all unsized integer types with
+/// appropriate sized integer types.
+class IntegerSizingTransform : public TypeTransform {
+public:
+  IntegerSizingTransform() {}
+
+  const Type * visitPrimitiveType(const PrimitiveType * in);
+};
+
 } // namespace tart
 
 #endif // TART_SEMA_TYPETRANSFORM
