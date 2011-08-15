@@ -42,8 +42,6 @@ public:
   void listProspects(ProspectList & out, const ProvisionSet & add) const;
   void expand(TypeExpansion & out) const;
   const Type * singularValue() const;
-  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;

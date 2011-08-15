@@ -203,8 +203,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
     if (srcId == TypeId_UnsizedInt) {
       if (cn.fromValue && cn.resultValue) {
         //return new CastExpr(llvm::Instruction::SExt, expr, this);
-        diag.warn() << "unimplemented conversion from " << fromType << " to " << this;
-        DFAIL("Implement");
+        DASSERT(false) << "unimplemented conversion from " << cn.fromValue << " to " << this;
       }
 
       // The only way we can get here is via overload selection on a built-in
@@ -235,11 +234,6 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
   fromType = derefEnumType(fromType);
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
-
-  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
-    fromValue = soc->intVal();
-    fromType = &UnsizedIntType::instance;
-  }
 
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
@@ -456,11 +450,6 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
 
-  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
-    fromValue = soc->intVal();
-    fromType = &UnsizedIntType::instance;
-  }
-
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
     TypeId srcId = srcType->typeId();
@@ -603,11 +592,6 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
 
   DASSERT(fromValue != NULL);
   DASSERT(fromValue->type()->isEqual(fromType));
-
-  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(fromType)) {
-    fromValue = soc->intVal();
-    fromType = &UnsizedIntType::instance;
-  }
 
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
@@ -1391,41 +1375,6 @@ template<> Expr * AnyType::nullInitValue() const {
   DFAIL("IllegalState");
 }
 
-/// -------------------------------------------------------------------
-/// Primitive type: UnsizedInt
-
-template<> TypeDefn UnsizedIntType::typedefn(&Builtins::module, "#constant_int",
-    &UnsizedIntType::instance);
-template<> TypeIdSet UnsizedIntType::MORE_GENERAL = TypeIdSet::noneOf();
-
-template<> void UnsizedIntType::initType() {
-  // irType_ = NULL
-}
-
-template<> void UnsizedIntType::initMembers() {
-}
-
-template<> uint32_t UnsizedIntType::numBits() const {
-  return 0;
-}
-
-template<> ConversionRank
-UnsizedIntType::convertImpl(const Conversion & cn) const {
-  if (cn.getFromType() != this) {
-    return Incompatible;
-  }
-
-  if (cn.resultValue) {
-    *cn.resultValue = cn.fromValue;
-  }
-
-  return IdenticalTypes;
-}
-
-template<> Expr * UnsizedIntType::nullInitValue() const {
-  return NULL;
-}
-
 // -------------------------------------------------------------------
 // PrimitiveType
 
@@ -1506,6 +1455,71 @@ void PrimitiveType::initPrimitiveTypes(Module * module) {
   for (PrimitiveType * ptype = primitiveTypeList; ptype != NULL; ptype = ptype->nextType()) {
     ptype->initMembers();
   }
+}
+
+/// -------------------------------------------------------------------
+/// Primitive type: UnsizedInt
+
+TypeDefn UnsizedIntType::typedefn(&Builtins::module, "#constant_int", &UnsizedIntType::instance);
+UnsizedIntType UnsizedIntType::instance(NULL);
+
+UnsizedIntType * UnsizedIntType::get(llvm::ConstantInt * intVal) {
+  return new UnsizedIntType(intVal);
+}
+
+void UnsizedIntType::initType() {
+  intVal_ = llvm::ConstantInt::getFalse(llvm::getGlobalContext());
+}
+
+uint32_t UnsizedIntType::numBits() const {
+  return 0;
+}
+
+Expr * UnsizedIntType::nullInitValue() const {
+  return NULL;
+}
+
+unsigned UnsizedIntType::signedBitsRequired() const {
+  return intVal_->getValue().getMinSignedBits();
+}
+
+unsigned UnsizedIntType::unsignedBitsRequired() const {
+  return isNegative() ? INT32_MAX : intVal_->getValue().getActiveBits();
+}
+
+bool UnsizedIntType::isSubtypeOf(const PrimitiveType * other) const {
+  if (other->isUnsizedIntType()) {
+    const UnsizedIntType * uint = static_cast<const UnsizedIntType *>(other);
+    return signedBitsRequired() <= uint->signedBitsRequired();
+  } else if (const PrimitiveType * pty = dyn_cast<PrimitiveType>(other)) {
+    if (isNegative() && pty->isUnsignedType()) {
+      return false;
+    }
+
+    if (pty->isUnsignedType()) {
+      return unsignedBitsRequired() <= pty->numBits();
+    } else {
+      return signedBitsRequired() <= pty->numBits();
+    }
+  }
+  return false;
+}
+
+PrimitiveType * UnsizedIntType::fixIntSize(bool makeUnsigned) const {
+  unsigned bitsRequired = makeUnsigned ?
+      intVal_->getValue().getActiveBits() : intVal_->getValue().getMinSignedBits();
+  if (bitsRequired < 32) {
+    bitsRequired = 32;
+  }
+  return PrimitiveType::fitIntegerType(bitsRequired, makeUnsigned);
+}
+
+ConversionRank UnsizedIntType::convertImpl(const Conversion & cn) const {
+  DFAIL("Deprecated");
+}
+
+void UnsizedIntType::format(FormatStream & out) const {
+  out << "typeof(" << intVal_->getValue().toString(10, true) << ")";
 }
 
 }

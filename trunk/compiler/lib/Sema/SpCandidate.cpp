@@ -8,6 +8,7 @@
 
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/AnalyzerBase.h"
@@ -137,7 +138,7 @@ ConversionRank SpCandidate::updateConversionRank() {
     const Type * pattern = (*params_)[i];
     const Type * value = (*args_)[i];
     AnalyzerBase::analyzeType(value, Task_PrepTypeComparison);
-    conversionRank_ = std::min(conversionRank_, pattern->canConvert(value));
+    conversionRank_ = std::min(conversionRank_, TypeConversion::check(value, pattern));
   }
 
   return conversionRank_;

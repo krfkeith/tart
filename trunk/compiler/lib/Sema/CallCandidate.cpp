@@ -260,13 +260,14 @@ ConversionRank CallCandidate::updateConversionRank() {
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     const Type * paramType = this->paramType(argIndex);
-    combineConversionRanks(paramType->canConvert(argExpr, Conversion::Coerce));
+    combineConversionRanks(TypeConversion::check(argExpr, paramType, TypeConversion::COERCE));
   }
 
   const Type * expectedReturnType = callExpr_->expectedReturnType();
   if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
     AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
-    combineConversionRanks(expectedReturnType->canConvert(resultType_, Conversion::Coerce));
+    combineConversionRanks(
+        TypeConversion::check(resultType_, expectedReturnType, TypeConversion::COERCE));
   }
 
   // If there are explicit specializations, then check those too.

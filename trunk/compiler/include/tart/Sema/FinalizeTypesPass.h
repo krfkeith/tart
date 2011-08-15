@@ -20,12 +20,10 @@ class FinalizeTypesPass : public CFGPass {
 public:
 
   /** Run this pass on the specified expression. */
-  static Expr * run(Defn * source, Expr * in, BindingEnv &env, bool tryCoerciveCasts = true);
+  static Expr * run(Defn * source, Expr * in, BindingEnv &env);
 
 protected:
   Expr * runImpl(Expr * in);
-
-  bool tryCoerciveCasts_;
 };
 
 } // namespace tart

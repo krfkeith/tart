@@ -9,6 +9,7 @@
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/Infer/TypeAssignment.h"
 #include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TypeConversion.h"
 
 #include "MockProvision.h"
 #include "TestHelpers.h"
@@ -54,14 +55,14 @@ TEST_F(BindingEnvTest, TypeAssignment) {
   EXPECT_TRUE(s->checkProvisions());
 
   // Since ta == int, should convert OK
-  EXPECT_EQ(IdenticalTypes, ta->canConvert(&Int32Type::instance));
-  EXPECT_EQ(ExactConversion, ta->canConvert(&Int16Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int32Type::instance, ta));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int16Type::instance, ta));
 
   // Add another constraint
 //  s = ta->add(SourceLocation(), &Int8Type::instance, Constraint::EXACT);
 //  ASSERT_TRUE(s != NULL);
-//  EXPECT_EQ(Truncation, ta->canConvert(&Int32Type::instance));
-//  EXPECT_EQ(ExactConversion, ta->canConvert(&Int8Type::instance));
+//  EXPECT_EQ(Truncation, TypeConversion::check(&Int32Type::instance, ta));
+//  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int8Type::instance, ta));
 }
 
 TEST_F(BindingEnvTest, AssignmentProvisions) {
@@ -79,8 +80,8 @@ TEST_F(BindingEnvTest, AssignmentProvisions) {
       SourceLocation(), &Int32Type::instance, 0, Constraint::EXACT, psTrue);
   EXPECT_CALL(trueProvision, check()).WillRepeatedly(Return(true));
   EXPECT_TRUE(s->checkProvisions());
-  EXPECT_EQ(IdenticalTypes, ta->canConvert(&Int32Type::instance));
-  EXPECT_EQ(ExactConversion, ta->canConvert(&Int16Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int32Type::instance, ta));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int16Type::instance, ta));
 
   s = ta->constraints().insert(
       SourceLocation(), &Int8Type::instance, 0, Constraint::EXACT, psFalse);
@@ -88,8 +89,8 @@ TEST_F(BindingEnvTest, AssignmentProvisions) {
   EXPECT_FALSE(s->checkProvisions());
 
   // Since the second constraint is ignored, results should not change.
-  EXPECT_EQ(IdenticalTypes, ta->canConvert(&Int32Type::instance));
-  EXPECT_EQ(ExactConversion, ta->canConvert(&Int16Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int32Type::instance, ta));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int16Type::instance, ta));
 }
 
 }  // namespace

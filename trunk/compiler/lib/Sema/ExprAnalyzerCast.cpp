@@ -26,7 +26,7 @@ namespace tart {
 
 extern bool unifyVerbose;
 
-Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoerce) {
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, unsigned options) {
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
     return in;
@@ -36,7 +36,7 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoer
   switch (in->exprType()) {
     case Expr::Seq: {
       SeqExpr * seq = static_cast<SeqExpr *>(in);
-      Expr * lastArg = doImplicitCast(seq->args().back(), toType, tryCoerce);
+      Expr * lastArg = doImplicitCast(seq->args().back(), toType, options);
       seq->setType(lastArg->type());
       seq->args().back() = lastArg;
       return in;
@@ -44,28 +44,28 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoer
 
     case Expr::Case: {
       CaseExpr * ce = static_cast<CaseExpr *>(in);
-      ce->setBody(doImplicitCast(ce->body(), toType, tryCoerce));
+      ce->setBody(doImplicitCast(ce->body(), toType, options));
       ce->setType(ce->body()->type());
       return in;
     }
 
     case Expr::MatchAs: {
       MatchAsExpr * me = static_cast<MatchAsExpr *>(in);
-      me->setBody(doImplicitCast(me->body(), toType, tryCoerce));
+      me->setBody(doImplicitCast(me->body(), toType, options));
       me->setType(me->body()->type());
       return in;
     }
 
     case Expr::Catch: {
       CatchExpr * ce = static_cast<CatchExpr *>(in);
-      ce->setBody(doImplicitCast(ce->body(), toType, tryCoerce));
+      ce->setBody(doImplicitCast(ce->body(), toType, options));
       ce->setType(ce->body()->type());
       return in;
     }
 
     case Expr::Try: {
       TryExpr * te = static_cast<TryExpr *>(in);
-      te->setBody(doImplicitCast(te->body(), toType, tryCoerce));
+      te->setBody(doImplicitCast(te->body(), toType, options));
       te->setType(te->body()->type());
       return in;
     }
@@ -84,14 +84,21 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoer
 
   in = LValueExpr::constValue(in);
   if (!AnalyzerBase::analyzeType(toType, Task_PrepTypeComparison)) {
-    return in;
+    return &Expr::ErrorVal;
   }
 
   Expr * castExpr = NULL;
-  ConversionRank rank = toType->convert(Conversion(in, &castExpr));
+  unsigned conversionOpts = 0;
+  if (options & AO_IMPLICIT_CAST) {
+    conversionOpts |= TypeConversion::COERCE;
+  }
+  if (options & AO_EXPLICIT_CAST) {
+    conversionOpts |= TypeConversion::EXPLICIT;
+  }
+  ConversionRank rank = TypeConversion::convert(in, toType, &castExpr, conversionOpts);
   DASSERT(rank == Incompatible || castExpr != NULL);
 
-  if (rank == Incompatible && tryCoerce) {
+  if (rank == Incompatible && (options & (AO_IMPLICIT_CAST | AO_EXPLICIT_CAST))) {
     // Try a coercive cast. Note that we don't do this in 'convert' because it
     // can't handle building the actual call expression.
     castExpr = tryCoerciveCast(in, toType);
@@ -103,7 +110,7 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, bool tryCoer
 
   compatibilityWarning(in->location(), rank, in, toType);
   if (isErrorResult(castExpr)) {
-    return in;
+    return &Expr::ErrorVal;
   }
 
   return castExpr;

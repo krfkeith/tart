@@ -300,7 +300,7 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
       out << ", ";
     }
 
-    if (param->name() != NULL) {
+    if (!param->name().empty()) {
       out << param->name();
     }
 

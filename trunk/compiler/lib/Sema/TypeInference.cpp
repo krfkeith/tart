@@ -12,6 +12,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/AmbiguousPhiType.h"
 
@@ -207,10 +208,6 @@ bool CallSite::unify(BindingEnv & env, int searchDepth) {
     } else {
       if (ShowInference) {
         diag.debug() << Format_Type << "Unification failed for " << c->method() << ":";
-        env.backtrack(stateBeforeNext);
-        unifyVerbose = true;
-        c->unify(callExpr_, env);
-        unifyVerbose = false;
       }
       env.backtrack(stateBeforeNext);
       c->cull(searchDepth);
@@ -218,8 +215,19 @@ bool CallSite::unify(BindingEnv & env, int searchDepth) {
   }
 
   if (!canUnify) {
-    backtrack(stateBeforeAny);
     reportErrors("No methods match calling signature: ");
+    backtrack(stateBeforeAny);
+    DBREAK;
+    if (ShowInference) {
+      unifyVerbose = true;
+      for (Candidates::iterator cc = cclist.begin(); cc != cclist.end(); ++cc) {
+        CallCandidate * c = *cc;
+        unsigned stateBeforeNext = env.stateCount();
+        c->unify(callExpr_, env);
+        env.backtrack(stateBeforeNext);
+      }
+      unifyVerbose = false;
+    }
     return false;
   }
 
@@ -319,10 +327,7 @@ void CallSite::reportErrors(const char * msg) {
 
 void AssignmentSite::update() {
   const AssignmentExpr * assign = static_cast<const AssignmentExpr *>(expr_);
-  rank_ = assign->toExpr()->type()->canConvert(assign->fromExpr());
-}
-
-void AssignmentSite::report() {
+  rank_ = TypeConversion::check(assign->fromExpr(), assign->toExpr()->type());
 }
 
 // -------------------------------------------------------------------
@@ -332,15 +337,11 @@ void AssignmentSite::report() {
 void TupleCtorSite::update() {
   rank_ = IdenticalTypes;
   TupleCtorExpr * tct = static_cast<TupleCtorExpr *>(expr_);
-  if (const TupleType * tt = dyn_cast<TupleType>(tct->type())) {
-    size_t size = tt->size();
-    for (size_t i = 0; i < size; ++i) {
-      rank_ = std::min(rank_, tt->member(i)->canConvert(tct->arg(i)));
-    }
+  const TupleType * tt = dyn_cast<TupleType>(tct->type());
+  size_t size = tt->size();
+  for (size_t i = 0; i < size; ++i) {
+    rank_ = std::min(rank_, TypeConversion::check(tct->arg(i), tt->member(i)));
   }
-}
-
-void TupleCtorSite::report() {
 }
 
 // -------------------------------------------------------------------
@@ -375,7 +376,7 @@ void PHISite::update() {
     // Compute the lowest conversion ranking of all input types to the solution.
     rank_ = IdenticalTypes;
     for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
-      rank_ = std::min(rank_, solution->canConvert(*it, Conversion::Coerce));
+      rank_ = std::min(rank_, TypeConversion::check(*it, solution, TypeConversion::COERCE));
     }
   }
 }
@@ -434,16 +435,9 @@ Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
 }
 
 Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
+  in = cast<TupleCtorExpr>(CFGPass::visitTupleCtor(in));
   if (!in->isSingular() && visited_.insert(in)) {
     constraints_.push_back(new TupleCtorSite(in));
-  }
-
-  return CFGPass::visitTupleCtor(in);
-}
-
-Expr * GatherConstraintsPass::visitConstantInteger(ConstantInteger * in) {
-  if (in->type()->isUnsizedIntType()) {
-    in->setType(new SizingOfConstraint(in));
   }
 
   return in;
@@ -504,7 +498,7 @@ Expr * TypeInferencePass::runImpl() {
       const Expr * e = (*it)->expr();
       if (!e->isSingular()) {
         diag.error(e) << "Can't find an unambiguous solution for '" << e << "'";
-        (*it)->report();
+        //(*it)->report();
         return rootExpr_;
       }
     }
@@ -514,7 +508,7 @@ Expr * TypeInferencePass::runImpl() {
     diag.indent();
     for (ConstraintSiteSet::const_iterator it = cstrSites_.begin(), itEnd = cstrSites_.end();
         it != itEnd; ++it) {
-      (*it)->report();
+      //(*it)->report();
     }
     diag.unindent();
 
@@ -661,7 +655,7 @@ void TypeInferencePass::selectConstantIntegerTypes() {
     bool hasSizedIntTypes = false;
     for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
       const Type * ty = (*si)->value();
-      if (isa<SizingOfConstraint>(ty)) {
+      if (isa<UnsizedIntType>(ty)) {
         hasUnsizedIntTypes = true;
       } else if (ty->isIntType()) {
         hasSizedIntTypes = true;
@@ -672,9 +666,9 @@ void TypeInferencePass::selectConstantIntegerTypes() {
     if (hasUnsizedIntTypes && !hasSizedIntTypes) {
       for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
         Constraint * s = *si;
-        if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(s->value())) {
+        if (const UnsizedIntType * uint = dyn_cast<UnsizedIntType>(s->value())) {
           changed = true;
-          if (soc->signedBitsRequired() <= 32) {
+          if (uint->signedBitsRequired() <= 32) {
             s->setValue(&Int32Type::instance);
           } else {
             s->setValue(&Int64Type::instance);
@@ -697,7 +691,7 @@ void TypeInferencePass::update() {
   env_.reconcileConstraints(NULL);
 
   if (expectedType_ != NULL) {
-    ConversionRank rootRank = expectedType_->canConvert(rootExpr_);
+    ConversionRank rootRank = TypeConversion::check(rootExpr_, expectedType_);
     if (!strict_ && rootRank < NonPreferred) {
       rootRank = NonPreferred;
     }

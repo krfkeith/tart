@@ -48,18 +48,8 @@ bool Constraint::accepts(const Type * ty) const {
     case EXACT:
       return TypeRelation::isEqual(ty, value_);
 
-    case LOWER_BOUND: {
-      if (TypeRelation::isSubtype(value_, ty)) {
-        return true;
-      }
-
-      if (const EnumType * et = dyn_cast<EnumType>(value_)) {
-        // TODO: For some reason putting this code where it belongs - in EnumType - breaks things.
-        return TypeRelation::isSubtype(et->baseType(), ty);
-      }
-
-      return false;
-    }
+    case LOWER_BOUND:
+      return TypeRelation::isSubtype(value_, ty);
 
     case UPPER_BOUND:
       return TypeRelation::isSubtype(ty, value_);
@@ -75,8 +65,8 @@ bool Constraint::equals(const Constraint * cst) const {
 }
 
 Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
-  const Type * tl = PrimitiveType::derefEnumType(cl->value());
-  const Type * tr = PrimitiveType::derefEnumType(cr->value());
+  const Type * tl = cl->value();
+  const Type * tr = cr->value();
 
   bool isMoreLenient0 = cr->provisions().implies(cl->provisions());
   bool isMoreLenient1 = cl->provisions().implies(cr->provisions());
@@ -169,8 +159,8 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
 }
 
 bool Constraint::contradicts(const Constraint * cl, const Constraint * cr) {
-  const Type * tl = PrimitiveType::derefEnumType(cl->value());
-  const Type * tr = PrimitiveType::derefEnumType(cr->value());
+  const Type * tl = cl->value();
+  const Type * tr = cr->value();
 
   if (tl == tr) {
     return false;

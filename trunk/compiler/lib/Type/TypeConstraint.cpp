@@ -37,51 +37,6 @@ const Type * TypeSetConstraint::singularValue() const {
   return NULL;
 }
 
-ConversionRank TypeSetConstraint::convertTo(const Type * toType, const Conversion & cn) const {
-  // Makes no sense to return a value when converting to a constraint.
-  if (cn.resultValue != NULL) {
-    return Incompatible;
-  }
-
-  TypeExpansion expansion;
-  expand(expansion);
-  ConversionRank best = Incompatible;
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-    const Type * ty = *it;
-    ConversionRank rank = toType->canConvert(ty);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
-  }
-
-  return best;
-}
-
-ConversionRank TypeSetConstraint::convertImpl(const Conversion & conversion) const {
-  static int recursionCheck = 0;
-  ++recursionCheck;
-  DASSERT(recursionCheck < 50);
-  TypeExpansion expansion;
-  expand(expansion);
-  ConversionRank best = Incompatible;
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-    const Type * ty = *it;
-    ConversionRank rank = ty->convert(conversion);
-    if (rank > best) {
-      best = rank;
-      if (rank == IdenticalTypes) {
-        break;
-      }
-    }
-  }
-
-  --recursionCheck;
-  return best;
-}
-
 bool TypeSetConstraint::isEqual(const Type * other) const {
   // It's equal only if it's a equal to every member
   TypeExpansion expansion;
@@ -134,74 +89,6 @@ void TypeSetConstraint::format(FormatStream & out) const {
   }
   out << "}";
   --recursionCheck;
-}
-
-// -------------------------------------------------------------------
-// SizingOfConstraint
-
-unsigned SizingOfConstraint::signedBitsRequired() const {
-  const llvm::APInt & intVal = intVal_->value()->getValue();
-  return intVal.getMinSignedBits();
-}
-
-unsigned SizingOfConstraint::unsignedBitsRequired() const {
-  const llvm::APInt & intVal = intVal_->value()->getValue();
-  return isNegative_ ? INT32_MAX : intVal.getActiveBits();
-}
-
-bool SizingOfConstraint::isEqual(const Type * other) const {
-  if (const SizingOfConstraint * soc = dyn_cast_or_null<SizingOfConstraint>(other)) {
-    return isNegative_ == soc->isNegative() && intVal_->isEqual(soc->intVal());
-  } else {
-    return false;
-  }
-}
-
-const Type * SizingOfConstraint::singularValue() const {
-  DFAIL("Implement");
-}
-
-ConversionRank SizingOfConstraint::convertTo(const Type * toType, const Conversion & cn) const {
-  return Incompatible;
-}
-
-ConversionRank SizingOfConstraint::convertImpl(const Conversion & conversion) const {
-  // Can't convert *to* an unsized type.
-  return Incompatible;
-}
-
-bool SizingOfConstraint::isSubtypeOf(const Type * other) const {
-  if (const SizingOfConstraint * soc = dyn_cast<SizingOfConstraint>(other)) {
-    if (soc == other) {
-      return true;
-    }
-    diag.debug() << this;
-    diag.debug() << soc;
-    DFAIL("Implement");
-    (void)soc;
-  } else if (const PrimitiveType * pty = dyn_cast<PrimitiveType>(other)) {
-    if (isNegative() && pty->isUnsignedType()) {
-      return false;
-    }
-
-    if (pty->isUnsignedType()) {
-      return unsignedBitsRequired() <= pty->numBits();
-    } else {
-      return signedBitsRequired() <= pty->numBits();
-    }
-  } else {
-    return false;
-  }
-  return false;
-}
-
-void SizingOfConstraint::trace() const {
-  Type::trace();
-  intVal_->mark();
-}
-
-void SizingOfConstraint::format(FormatStream & out) const {
-  out << intVal_->value()->getValue().toString(10, true);
 }
 
 } // namespace tart

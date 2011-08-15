@@ -11,6 +11,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/LexicalTypeOrdering.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -55,8 +56,13 @@ UnionType * UnionType::get(const ConstTypeList & members) {
     const Type * type = dealias(*it);
 
     bool addNew = true;
+
+    // TODO: Flatten union types.
     for (TypeList::iterator m = combined.begin(); m != combined.end();) {
-      if (TypeRelation::isSubtype(type, *m)) {
+      if (type->typeClass() == Type::Primitive || type->typeClass() == Type::Enum) {
+        // Primitive types and enum types are not combined.
+        addNew = *m != type;
+      } else if (TypeRelation::isSubtype(type, *m)) {
         addNew = false;
       } else if (TypeRelation::isSubtype(*m, type)) { // TODO: Is isSubtype the right test for this?
         m = combined.erase(m);
@@ -302,76 +308,6 @@ size_t UnionType::estimateTypeSize(llvm::Type * type) {
   }
 }
 
-ConversionRank UnionType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = dealias(cn.fromType);
-  if (isEqual(fromType)) {
-    if (cn.resultValue != NULL) {
-      *cn.resultValue = cn.fromValue;
-    }
-
-    return IdenticalTypes;
-  }
-
-  ConversionRank bestRank = Incompatible;
-  const Type * bestType = NULL;
-
-  // Create a temporary cn with no result value.
-  Conversion ccTemp(cn);
-  ccTemp.resultValue = NULL;
-  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    ConversionRank rank = (*it)->convert(ccTemp);
-    if (rank > bestRank) {
-      bestRank = rank;
-      bestType = (*it);
-    }
-  }
-
-  // Since we're converting to a union type, it's not identical.
-  // TODO: Don't know if we really need this.
-  //if (bestRank == IdenticalTypes) {
-  //  bestRank = ExactConversion;
-  //}
-
-  if (bestType != NULL && cn.resultValue != NULL) {
-    // Do the conversion to the best type first.
-    bestRank = bestType->convertImpl(cn);
-
-    // And now add a cast to the union type.
-    if (*cn.resultValue != NULL) {
-      int typeIndex = getTypeIndex(bestType);
-      if (typeIndex < 0) {
-        //diag.error(cn.fromValue) << "Cannot convert type '" << cn.fromType << "' to '" <<
-        //    this << "'";
-        return Incompatible;
-      }
-
-      CastExpr * result = new CastExpr(
-          Expr::UnionCtorCast, cn.fromValue->location(), this, *cn.resultValue);
-      result->setTypeIndex(typeIndex);
-      *cn.resultValue = result;
-    }
-  }
-
-  return bestRank;
-}
-
-ConversionRank UnionType::convertTo(const Type * toType, const Conversion & cn) const {
-  if (isSingleOptionalType() && toType->isReferenceType()) {
-    // Find the single optional type.
-    const Type * memberType = getFirstNonVoidType();
-    DASSERT(memberType != NULL);
-    ConversionRank rank = toType->canConvert(memberType, cn.options);
-    if (rank != Incompatible && cn.resultValue != NULL) {
-      *cn.resultValue = new CastExpr(Expr::CheckedUnionMemberCast, SourceLocation(),
-          toType, cn.fromValue);
-    }
-
-    return rank == IdenticalTypes ? ExactConversion : rank;
-  }
-
-  return Incompatible;
-}
-
 bool UnionType::isEqual(const Type * other) const {
   other = dealias(other);
   if (other == this) {
@@ -512,7 +448,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   // type 'toType'.
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     const Type * memberType = *it;
-    if (toType->canConvert(memberType)) {
+    if (TypeConversion::check(memberType, toType)) {
       // TODO: Add additional cast if toType is not exactly the same type as the member.
       return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
     }

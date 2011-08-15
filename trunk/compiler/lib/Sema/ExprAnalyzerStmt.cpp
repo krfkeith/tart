@@ -18,6 +18,7 @@
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -429,7 +430,11 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
     }
 
     swe->setEqualityTestFn(equalityTest);
-  } else if (!testType->isIntType()) {
+  } else if (testType->isIntType()) {
+    if (testType->isUnsizedIntType()) {
+      testType = static_cast<const UnsizedIntType *>(testType)->fixIntSize(false);
+    }
+  } else {
     diag.error(st) << "Invalid expression type for switch statement: " << testType;
   }
 
@@ -505,8 +510,7 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
 ConstantExpr * ExprAnalyzer::reduceCaseValue(const ASTNode * ast, const Type * testType) {
   Expr * caseVal = reduceExpr(ast, testType);
   Expr * result = NULL;
-  Conversion cn(caseVal, &result);
-  ConversionRank rank = testType->convert(cn);
+  ConversionRank rank = TypeConversion::convert(caseVal, testType, &result);
   if (rank == Incompatible) {
     diag.error(ast) << "Case value type '" << caseVal->type()
         << " is incompatible with switch expression type '" << testType << "'";
@@ -767,9 +771,9 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
     const Type * exprType = resultVal->type();
     if (exprType->isUnsizedIntType() && returnType_ == NULL) {
       DFAIL("Obsolete?");
-      if (Int32Type::instance.canConvert(resultVal) >= ExactConversion) {
+      if (TypeConversion::check(resultVal, &Int32Type::instance) >= ExactConversion) {
         resultVal->setType(&Int32Type::instance);
-      } else if (Int64Type::instance.canConvert(resultVal) >= ExactConversion) {
+      } else if (TypeConversion::check(resultVal, &Int64Type::instance) >= ExactConversion) {
         resultVal->setType(&Int64Type::instance);
       }
     }

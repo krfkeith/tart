@@ -33,7 +33,6 @@ public:
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const { return Shape_None; }
   llvm::Type * irType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const;
   void trace() const;
   void format(FormatStream & out) const;

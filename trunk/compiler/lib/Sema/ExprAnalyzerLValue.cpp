@@ -13,6 +13,7 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeConversion.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -345,7 +346,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
     }
 
     Expr * indexExpr = args[0];
-    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+    if (TypeConversion::check(
+        indexExpr, &Int32Type::instance, TypeConversion::COERCE) == Incompatible) {
       diag.fatal(ast) << "Native array subscript must be integer type, but is " << indexExpr->type();
       return &Expr::ErrorVal;
     }
@@ -369,7 +371,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
     }
 
     Expr * indexExpr = args[0];
-    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+    if (TypeConversion::check(
+        indexExpr, &Int32Type::instance, TypeConversion::COERCE) == Incompatible) {
       diag.fatal(ast) << "Flexible array subscript must be integer type, but is " <<
           indexExpr->type();
       return &Expr::ErrorVal;
@@ -386,9 +389,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       return &Expr::ErrorVal;
     }
 
+    DASSERT(arrayExpr->isSingular()) << "Non-singular tuple expression: " << arrayExpr;
+
     Expr * indexExpr = args[0];
     const Type * indexType = indexExpr->type();
-    if (Int32Type::instance.canConvert(indexExpr, Conversion::Coerce) == Incompatible) {
+    if (TypeConversion::check(
+        indexExpr, &Int32Type::instance, TypeConversion::COERCE) == Incompatible) {
       diag.fatal(args[0]) << "Tuple subscript must be integer type, is " << indexType;
       return &Expr::ErrorVal;
     }

@@ -58,13 +58,12 @@ Expr * ExprAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
 }
 
 Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected,
-    bool tryCoerciveCasts) {
+    unsigned options) {
   if (isErrorResult(expr)) {
     return NULL;
   }
 
-  // If it's a reference to a type, then just return it even if it's non-
-  // singular.
+  // If it's a reference to a type, then just return it even if it's non-singular.
   if (expr->exprType() == Expr::TypeLiteral) {
     return static_cast<TypeLiteralExpr *> (expr);
   }
@@ -74,7 +73,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
     expr = TypeInferencePass::run(subject->module(), expr, env, expected);
   }
 
-  expr = FinalizeTypesPass::run(subject, expr, env, tryCoerciveCasts);
+  expr = FinalizeTypesPass::run(subject, expr, env);
   if (!expr->isSingular()) {
     diag.fatal(expr) << "Non-singular expression: " << expr;
     return NULL;

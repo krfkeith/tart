@@ -40,8 +40,8 @@ static bool isEqualTuple(const TupleType * ltt, const TupleType * rtt) {
       if (!TypeRelation::isEqual(ltt->member(i), rtt->member(i))) {
         return false;
       }
-      return true;
     }
+    return true;
   }
   return false;
 }
@@ -109,7 +109,26 @@ static bool isEqualFunction(const FunctionType * lfn, const FunctionType * rfn) 
 }
 
 static bool isEqualUnion(const UnionType * lut, const UnionType * rut) {
-  return isEqualTuple(lut->typeArgs(), rut->typeArgs());
+  if (isEqualTuple(lut->typeArgs(), rut->typeArgs())) {
+    return true;
+  }
+
+//  // Handle the case where the union members might be in a different order because of type aliases.
+//  // Make sure that all types in 'lut' are in 'rut'.
+//  for (TupleType::const_iterator it = lut->begin(); it != lut->end(); ++it) {
+//    if (rut->getTypeIndex(*it) < 0) {
+//      return false;
+//    }
+//  }
+//
+//  // Make sure that all types in 'rut' are in 'lut'.
+//  for (TupleType::const_iterator it = rut->begin(); it != rut->end(); ++it) {
+//    if (lut->getTypeIndex(*it) < 0) {
+//      return false;
+//    }
+//  }
+
+  return true;
 }
 
 bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
@@ -159,6 +178,14 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       return isEqual(static_cast<const TypeAlias *>(lt)->value(), rt);
 
     case Type::Primitive:
+      if (lt->isUnsizedIntType() && rt->isUnsizedIntType()) {
+        const UnsizedIntType * lint = static_cast<const UnsizedIntType *>(lt);
+        const UnsizedIntType * rint = static_cast<const UnsizedIntType *>(rt);
+        return lint->intVal() == rint->intVal();
+      }
+      // Primitive types are unique by reference, except for unsized.
+      return false;
+
     case Type::Enum:
     case Type::TypeVar:
       // These types are unique by reference
@@ -255,14 +282,6 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
         }
       }
       return true;
-    }
-
-    case Type::SizingOf: {
-      const SizingOfConstraint * lsoc = static_cast<const SizingOfConstraint *>(lt);
-      if (const SizingOfConstraint * rsoc = dyn_cast_or_null<SizingOfConstraint>(rt)) {
-        return lsoc->isNegative() == rsoc->isNegative() && lsoc->intVal()->isEqual(rsoc->intVal());
-      }
-      return false;
     }
 
     case Type::Assignment: {
@@ -391,7 +410,10 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     }
 
     case Type::Enum: {
-      // So we already know that ty != base.
+      const EnumType * eTy = static_cast<const EnumType *>(ty);
+      if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(base)) {
+        return isSubtype(eTy->baseType(), ptype);
+      }
       return false;
     }
 
@@ -422,11 +444,6 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
         }
       }
       return true;
-    }
-
-    case Type::SizingOf: {
-      const SizingOfConstraint * soc = static_cast<const SizingOfConstraint *>(ty);
-      return soc->isSubtypeOf(base);
     }
 
     case Type::Assignment: {

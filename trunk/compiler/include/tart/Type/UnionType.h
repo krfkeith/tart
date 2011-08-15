@@ -5,8 +5,8 @@
 #ifndef TART_TYPE_UNIONTYPE_H
 #define TART_TYPE_UNIONTYPE_H
 
-#ifndef TART_TYPE_TYPE_H
-#include "tart/Type/Type.h"
+#ifndef TART_TYPE_TUPLETYPE_H
+#include "tart/Type/TupleType.h"
 #endif
 
 namespace tart {
@@ -19,11 +19,18 @@ typedef llvm::SmallVector<llvm::Type *, 16> IRTypeList;
 // Disjoint or union type.
 class UnionType : public TypeImpl {
 public:
+  typedef ConstTypeList::iterator iterator;
+  typedef ConstTypeList::const_iterator const_iterator;
+
   /** Return a union of the given element types. */
   static UnionType * get(const ConstTypeList & members);
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }
+
+  const_iterator begin() const { return members_->begin(); }
+  const_iterator end() const { return members_->end(); }
+  size_t size() const { return members_->size(); }
 
   /** Return the type arguments for this union. */
   const TupleType * typeArgs() const { return members_; }
@@ -42,14 +49,6 @@ public:
 
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;
-
-#if 0
-  /** Given a type, return the index of this type (not counting void types). */
-  int getNonVoidTypeIndex(const Type * type) const;
-#endif
-
-  /** The number of reference types in the union. */
-  //size_t numRefTypes() const { return numReferenceTypes_; }
 
   /** Whether the 'void' type is included. */
   size_t hasVoidType() const { return hasVoidType_; }
@@ -88,8 +87,6 @@ public:
   llvm::Type * createIRType() const;
   llvm::Type * irParameterType() const;
   llvm::Type * getDiscriminatorType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
-  ConversionRank convertTo(const Type * toType, const Conversion & cn) const;
   bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const { return false; }

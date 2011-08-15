@@ -9,6 +9,10 @@
 #include "tart/Sema/FinalizeTypesPass.h"
 #endif
 
+#ifndef TART_SEMA_EXPRANALYZER_H
+#include "tart/Sema/ExprAnalyzer.h"
+#endif
+
 namespace tart {
 
 class UnionType;
@@ -20,10 +24,10 @@ class AmbiguousPhiType;
 class FinalizeTypesPassImpl : public FinalizeTypesPass {
 public:
 
-  FinalizeTypesPassImpl(Defn * subject, BindingEnv & env) : subject_(subject), env_(env) {}
+  FinalizeTypesPassImpl(Defn * subject, BindingEnv & env)
+    : subject_(subject), env_(env) {}
 
   /** Run this pass on the specified expression. */
-  //static Expr * run(Expr * in);
   static Expr * run(Defn * source, Expr * in, BindingEnv & env);
 
 private:
@@ -54,9 +58,8 @@ private:
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
   Defn * doPatternSubstitutions(SLC & loc, Defn * def, const TypeVarMap & varValues);
 
-  Expr * addCastIfNeeded(Expr * in, const Type * toType);
+  Expr * addCastIfNeeded(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * handleUnboxCast(CastExpr * in);
-  Expr * chooseIntSize(Expr * in);
   const Type * getCommonPhiType(const AmbiguousPhiType * phi);
 };
 

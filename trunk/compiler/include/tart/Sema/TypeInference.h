@@ -15,8 +15,6 @@
 
 namespace tart {
 
-class SizingOfConstraint;
-
 /// -------------------------------------------------------------------
 /// Represents a point in the expression hierarchy where the AST node
 /// maps to multiple possible items. The type inferencer attempts to
@@ -190,9 +188,6 @@ public:
   // Update conversion rankings
   virtual void update() = 0;
 
-  // Print the constraint
-  virtual void report() = 0;
-
   /** Conversion ranking for this constraint. */
   ConversionRank rank() const { return rank_; }
 
@@ -212,7 +207,6 @@ public:
 
   // Update conversion rankings
   void update();
-  void report();
 };
 
 /// -------------------------------------------------------------------
@@ -224,7 +218,6 @@ public:
 
   // Update conversion rankings
   void update();
-  void report();
 };
 
 /// -------------------------------------------------------------------
@@ -259,7 +252,7 @@ private:
   Expr * visitAssign(AssignmentExpr * in);
   Expr * visitPostAssign(AssignmentExpr * in);
   Expr * visitTupleCtor(TupleCtorExpr * in);
-  Expr * visitConstantInteger(ConstantInteger * in);
+//  Expr * visitConstantInteger(ConstantInteger * in);
   Expr * visitIf(IfExpr * in);
   Expr * visitSwitch(SwitchExpr * in);
   Expr * visitMatch(MatchExpr * in);
@@ -354,7 +347,7 @@ private:
 
   /** Find a common type which encompasses both type1 and type2. */
   const Type * selectLessSpecificType(const Type * type1, const Type * type2);
-  const Type * lessSpecificIntType(const SizingOfConstraint * soc, const Type * ty);
+  const Type * lessSpecificIntType(const UnsizedIntType * uint, const Type * ty);
 };
 
 } // namespace tart

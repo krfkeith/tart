@@ -33,7 +33,6 @@ public:
   virtual const Type * typeParam(int index) const { return literalType_; }
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const;
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }

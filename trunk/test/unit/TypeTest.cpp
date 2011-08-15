@@ -7,6 +7,7 @@
 #include "tart/Defn/Module.h"
 
 #include "tart/Type/Type.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeRelation.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TupleType.h"
@@ -138,12 +139,12 @@ TEST_F(TupleTest, TupleConversion) {
   TupleType * t2 = TupleType::get(&intTypes[0], &intTypes[2]);
   TupleType * t3 = TupleType::get(&shortTypes[0], &shortTypes[2]);
 
-  ASSERT_EQ(IdenticalTypes, t0->canConvert(t1));
-  ASSERT_EQ(IdenticalTypes, t1->canConvert(t0));
-  ASSERT_EQ(ExactConversion, t2->canConvert(t3));
-  ASSERT_EQ(Truncation, t3->canConvert(t2));
-  ASSERT_EQ(Incompatible, t0->canConvert(t3));
-  ASSERT_EQ(Incompatible, t3->canConvert(t0));
+  ASSERT_EQ(IdenticalTypes, TypeConversion::check(t1, t0));
+  ASSERT_EQ(IdenticalTypes, TypeConversion::check(t0, t1));
+  ASSERT_EQ(ExactConversion, TypeConversion::check(t3, t2));
+  ASSERT_EQ(Truncation, TypeConversion::check(t2, t3));
+  ASSERT_EQ(Incompatible, TypeConversion::check(t3, t0));
+  ASSERT_EQ(Incompatible, TypeConversion::check(t0, t3));
 }
 
 
@@ -166,21 +167,9 @@ public:
   bool isVoidType() const;
   bool isUnsizedIntType() const;
 
-  /** Determine if the specified 'fromType' can be converted to this
-      type. Returns the degree of compatibility. */
-  ConversionRank convert(const Conversion & conversion) const;
-
-  /** Type-specific implementation of convert. */
-  virtual ConversionRank convertImpl(const Conversion & conversion) const = 0;
-
   /** Some convenient wrappers around 'convert'. */
   ConversionRank canConvert(Expr * fromExpr, int options = 0) const;
   ConversionRank canConvert(const Type * fromType, int options = 0) const;
-
-  /** Reverse conversion function, used when the source is a constraint. */
-  virtual ConversionRank convertTo(const Type * toType, const Conversion & cn) const {
-    return Incompatible;
-  }
 
   /** Add an implicit cast. If no cast is needed, then simply return 'from'.
       As a side effect, emit appropriate warning messages if the cast wasn't

@@ -312,17 +312,6 @@ void FunctionType::whyNotSingular() const {
   }
 }
 
-ConversionRank FunctionType::convertImpl(const Conversion & cn) const {
-  const Type * fromType = dealias(cn.fromType);
-  if (isEqual(fromType)) {
-    if (cn.resultValue != NULL) {
-      *cn.resultValue = cn.fromValue;
-    }
-    return IdenticalTypes;
-  }
-  return Incompatible;
-}
-
 StringRef FunctionType::invokeName() const {
   if (invokeName_.empty()) {
     if (isStatic_) {

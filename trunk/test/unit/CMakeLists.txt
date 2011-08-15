@@ -36,6 +36,7 @@ add_executable(unittest
   ScopeTest.cpp
   TypeTest.cpp
   PrimitiveTypeTest.cpp
+  TypeConversionTest.cpp
   DefnTest.cpp
   ScopeBuilderTest.cpp
   DeclAnalyzerTest.cpp

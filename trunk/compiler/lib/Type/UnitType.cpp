@@ -64,13 +64,6 @@ llvm::Type * UnitType::irType() const {
   DFAIL("IllegalState");
 }
 
-ConversionRank UnitType::convertImpl(const Conversion & conversion) const {
-  if (isEqual(conversion.fromType)) {
-    return IdenticalTypes;
-  }
-  return Incompatible;
-}
-
 Expr * UnitType::nullInitValue() const {
   DFAIL("IllegalState");
 }

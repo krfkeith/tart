@@ -5,6 +5,7 @@
 #include "tart/Defn/Template.h"
 
 #include "tart/Type/TypeAlias.h"
+#include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/BindingEnv.h"
@@ -32,6 +33,10 @@ TypeAssignment::TypeAssignment(const TypeVariable * target, GC * scope)
   , sequenceNum_(0)
   , value_(NULL)
 {
+}
+
+void TypeAssignment::setValue(const Type * value) {
+  value_ = value;
 }
 
 void TypeAssignment::remove(ConstraintSet::iterator si) {
@@ -164,77 +169,6 @@ const Type * TypeAssignment::findSingularSolution() {
   }
 
   return value_;
-}
-
-ConversionRank TypeAssignment::convertImpl(const Conversion & cn) const {
-  if (value_ != NULL) {
-    return value_->convert(cn);
-  } else {
-    ConversionRank rank = Incompatible;
-    for (ConstraintSet::const_iterator ci = begin(), ciEnd = end(); ci != ciEnd; ++ci) {
-      Constraint * c = *ci;
-      if (!c->visited() && c->checkProvisions()) {
-        c->setVisited(true);
-        switch (c->kind()) {
-          case Constraint::EXACT:
-            rank = std::max(rank, c->value()->convert(cn));
-            break;
-
-          case Constraint::LOWER_BOUND:
-            // Means T == value or is a supertype of value.
-            // Can we convert from 'conversion.fromType' to a supertype of 'value'?
-            // Should in general be the same as converting to 'value'.
-            rank = std::max(rank, c->value()->convert(cn));
-            //DFAIL("Implement");
-            break;
-
-          case Constraint::UPPER_BOUND:
-            // In general, the answer to this case is unknowable.
-            // Means T == value or is a subtype of value.
-            rank = std::max(rank, std::min(NonPreferred, c->value()->convert(cn)));
-            break;
-        }
-        c->setVisited(false);
-      }
-    }
-    return rank;
-  }
-}
-
-ConversionRank TypeAssignment::convertTo(const Type * toType, const Conversion & cn) const {
-  if (value_ != NULL) {
-    return toType->canConvert(value_, cn.options);
-  }
-
-  if (cn.resultValue != NULL) {
-    return Incompatible;
-  }
-
-  ConversionRank rank = Incompatible;
-  for (ConstraintSet::const_iterator ci = begin(), ciEnd = end(); ci != ciEnd; ++ci) {
-    Constraint * c = *ci;
-    if (!c->visited() && c->checkProvisions()) {
-      c->setVisited(true);
-      switch (c->kind()) {
-        case Constraint::EXACT:
-          rank = std::max(rank, toType->canConvert(c->value(), cn.options));
-          break;
-
-        case Constraint::LOWER_BOUND:
-          // In general, the answer to this case is unknowable.
-          // For the moment, we'll say 'yes', but with a lower ranking.
-          rank = std::max(rank, std::min(NonPreferred, toType->canConvert(c->value(), cn.options)));
-          break;
-
-        case Constraint::UPPER_BOUND:
-          rank = std::max(rank, toType->canConvert(c->value(), cn.options));
-          break;
-      }
-      c->setVisited(false);
-    }
-  }
-
-  return rank;
 }
 
 Expr * TypeAssignment::nullInitValue() const {

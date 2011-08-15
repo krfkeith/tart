@@ -8,6 +8,7 @@
 
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TypeRelation.h"
+#include "tart/Type/TypeConversion.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -238,203 +239,241 @@ TEST(TypeTest, SpecificityTests) {
 }
 
 TEST(TypeTest, ConversionTests) {
-  EXPECT_EQ(IdenticalTypes, VoidType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Incompatible, VoidType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&VoidType::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&CharType::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&Int8Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&Int16Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&Int32Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&Int64Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&UInt8Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&UInt16Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&UInt32Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&UInt64Type::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &VoidType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &VoidType::instance));
 
-  EXPECT_EQ(Incompatible, BoolType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(IdenticalTypes, BoolType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(IntegerToBool, BoolType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, BoolType::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Incompatible, BoolType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &BoolType::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&BoolType::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&CharType::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&Int8Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&Int16Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&Int32Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&Int64Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&UInt8Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&UInt16Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&UInt32Type::instance, &BoolType::instance));
+  EXPECT_EQ(IntegerToBool, TypeConversion::check(&UInt64Type::instance, &BoolType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &BoolType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &BoolType::instance));
 
-  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(IdenticalTypes, CharType::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(SignedUnsigned, CharType::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, CharType::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(NonPreferred, CharType::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(NonPreferred, CharType::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, CharType::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, CharType::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(PrecisionLoss, CharType::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &CharType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &CharType::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&CharType::instance, &CharType::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int8Type::instance, &CharType::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int16Type::instance, &CharType::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int32Type::instance, &CharType::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int64Type::instance, &CharType::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &CharType::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt16Type::instance, &CharType::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt32Type::instance, &CharType::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &CharType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &CharType::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&FloatType::instance, &CharType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &CharType::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&DoubleType::instance, &CharType::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, Int8Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(IdenticalTypes, Int8Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(SignedUnsigned, Int8Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, Int8Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(Truncation, Int8Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &Int8Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&BoolType::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&CharType::instance, &Int8Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int8Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int16Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int32Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int64Type::instance, &Int8Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&UInt8Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt16Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt32Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &Int8Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&FloatType::instance, &Int8Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &Int8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&DoubleType::instance, &Int8Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, Int16Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(ExactConversion, Int16Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(IdenticalTypes, Int16Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, Int16Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(SignedUnsigned, Int16Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, Int16Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(Truncation, Int16Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &Int16Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&BoolType::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&CharType::instance, &Int16Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int8Type::instance, &Int16Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int16Type::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int32Type::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int64Type::instance, &Int16Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &Int16Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&UInt16Type::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt32Type::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &Int16Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&FloatType::instance, &Int16Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &Int16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&DoubleType::instance, &Int16Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, Int32Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(SignedUnsigned, Int32Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(ExactConversion, Int32Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(ExactConversion, Int32Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(IdenticalTypes, Int32Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, Int32Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(NonPreferred, Int32Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(SignedUnsigned, Int32Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, Int32Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(Truncation, Int32Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &Int32Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&BoolType::instance, &Int32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&CharType::instance, &Int32Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int8Type::instance, &Int32Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int16Type::instance, &Int32Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int32Type::instance, &Int32Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&Int64Type::instance, &Int32Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &Int32Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt16Type::instance, &Int32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&UInt32Type::instance, &Int32Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &Int32Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &Int32Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&FloatType::instance, &Int32Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &Int32Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&DoubleType::instance, &Int32Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(ExactConversion, Int64Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(ExactConversion, Int64Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(ExactConversion, Int64Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(ExactConversion, Int64Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(IdenticalTypes, Int64Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(NonPreferred, Int64Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(SignedUnsigned, Int64Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, Int64Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(Truncation, Int64Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &Int64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&BoolType::instance, &Int64Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&CharType::instance, &Int64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int8Type::instance, &Int64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int16Type::instance, &Int64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&Int32Type::instance, &Int64Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&Int64Type::instance, &Int64Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &Int64Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt16Type::instance, &Int64Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt32Type::instance, &Int64Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&UInt64Type::instance, &Int64Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &Int64Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&FloatType::instance, &Int64Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &Int64Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&DoubleType::instance, &Int64Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt8Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(IdenticalTypes, UInt8Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, UInt8Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, UInt8Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt8Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &UInt8Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &UInt8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&CharType::instance, &UInt8Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int8Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int16Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int32Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int64Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&UInt8Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt16Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt32Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &UInt8Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &UInt8Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&FloatType::instance, &UInt8Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &UInt8Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&DoubleType::instance, &UInt8Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt16Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(ExactConversion, UInt16Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(IdenticalTypes, UInt16Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, UInt16Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, UInt16Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt16Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &UInt16Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &UInt16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&CharType::instance, &UInt16Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int8Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int16Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int32Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int64Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt8Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&UInt16Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt32Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &UInt16Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &UInt16Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&FloatType::instance, &UInt16Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &UInt16Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&DoubleType::instance, &UInt16Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, UInt32Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt32Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(ExactConversion, UInt32Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(ExactConversion, UInt32Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(IdenticalTypes, UInt32Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(Truncation, UInt32Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, UInt32Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt32Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &UInt32Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &UInt32Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&CharType::instance, &UInt32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int8Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int16Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int32Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int64Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt8Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt16Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&UInt32Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(Truncation, TypeConversion::check(&UInt64Type::instance, &UInt32Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &UInt32Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&FloatType::instance, &UInt32Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &UInt32Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&DoubleType::instance, &UInt32Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, UInt64Type::instance.canConvert(&CharType::instance));
-  EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int8Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int16Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int32Type::instance));
-  EXPECT_EQ(SignedUnsigned, UInt64Type::instance.canConvert(&Int64Type::instance));
-  EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&UInt8Type::instance));
-  EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&UInt16Type::instance));
-  EXPECT_EQ(ExactConversion, UInt64Type::instance.canConvert(&UInt32Type::instance));
-  EXPECT_EQ(IdenticalTypes, UInt64Type::instance.canConvert(&UInt64Type::instance));
-  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&FloatType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Incompatible, UInt64Type::instance.canConvert(&DoubleType::instance));
-  EXPECT_EQ(PrecisionLoss, UInt64Type::instance.canConvert(&DoubleType::instance, Conversion::Explicit));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &UInt64Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &UInt64Type::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&CharType::instance, &UInt64Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int8Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int16Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int32Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(SignedUnsigned, TypeConversion::check(&Int64Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt8Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt16Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&UInt32Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&UInt64Type::instance, &UInt64Type::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&FloatType::instance, &UInt64Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&FloatType::instance, &UInt64Type::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&DoubleType::instance, &UInt64Type::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&DoubleType::instance, &UInt64Type::instance,
+      TypeConversion::EXPLICIT));
 
-  EXPECT_EQ(Incompatible, FloatType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, FloatType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&CharType::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int8Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&Int16Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&Int32Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&Int64Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt8Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, FloatType::instance.canConvert(&UInt16Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&UInt32Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, FloatType::instance.canConvert(&UInt64Type::instance, Conversion::Explicit));
-  EXPECT_EQ(IdenticalTypes, FloatType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(Truncation, FloatType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &FloatType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &FloatType::instance));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&CharType::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&Int8Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&Int16Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&Int32Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&Int64Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt16Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&UInt32Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&UInt64Type::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&FloatType::instance, &FloatType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(Truncation, TypeConversion::check(&DoubleType::instance, &FloatType::instance));
 
-  EXPECT_EQ(Incompatible, DoubleType::instance.canConvert(&VoidType::instance));
-  EXPECT_EQ(Incompatible, DoubleType::instance.canConvert(&BoolType::instance));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&CharType::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int8Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int16Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&Int32Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, DoubleType::instance.canConvert(&Int64Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt8Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt16Type::instance, Conversion::Explicit));
-  EXPECT_EQ(NonPreferred, DoubleType::instance.canConvert(&UInt32Type::instance, Conversion::Explicit));
-  EXPECT_EQ(PrecisionLoss, DoubleType::instance.canConvert(&UInt64Type::instance, Conversion::Explicit));
-  EXPECT_EQ(ExactConversion, DoubleType::instance.canConvert(&FloatType::instance, Conversion::Explicit));
-  EXPECT_EQ(IdenticalTypes, DoubleType::instance.canConvert(&DoubleType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&VoidType::instance, &DoubleType::instance));
+  EXPECT_EQ(Incompatible, TypeConversion::check(&BoolType::instance, &DoubleType::instance));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&CharType::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&Int8Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&Int16Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&Int32Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&Int64Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt8Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt16Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(NonPreferred, TypeConversion::check(&UInt32Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(PrecisionLoss, TypeConversion::check(&UInt64Type::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(ExactConversion, TypeConversion::check(&FloatType::instance, &DoubleType::instance,
+      TypeConversion::EXPLICIT));
+  EXPECT_EQ(IdenticalTypes, TypeConversion::check(&DoubleType::instance, &DoubleType::instance));
 }

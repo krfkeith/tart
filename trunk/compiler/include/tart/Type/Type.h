@@ -213,18 +213,6 @@ public:
       type. Returns the degree of compatibility. */
   ConversionRank convert(const Conversion & conversion) const;
 
-  /** Type-specific implementation of convert. */
-  virtual ConversionRank convertImpl(const Conversion & conversion) const = 0;
-
-  /** Some convenient wrappers around 'convert'. */
-  ConversionRank canConvert(const Expr * fromExpr, int options = 0) const;
-  ConversionRank canConvert(const Type * fromType, int options = 0) const;
-
-  /** Reverse conversion function, used when the source is a constraint. */
-  virtual ConversionRank convertTo(const Type * toType, const Conversion & conversion) const {
-    return Incompatible;
-  }
-
   /** Add an implicit cast. If no cast is needed, then simply return 'from'.
       As a side effect, emit appropriate warning messages if the cast wasn't
       possible or had problems. */
@@ -420,8 +408,6 @@ public:
 
   size_t numTypeParams() const { return 0; }
   llvm::Type * irType() const { return baseType_->irType(); }
-  //llvm::Type * createIRType() const;
-  ConversionRank convertImpl(const Conversion & conversion) const;
   bool isSingular() const { return baseType_->isSingular(); }
   bool isEqual(const Type * other) const;
   bool isReferenceType() const { return baseType_->isReferenceType(); }

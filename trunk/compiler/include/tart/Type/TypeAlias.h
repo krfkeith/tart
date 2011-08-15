@@ -34,7 +34,6 @@ public:
   llvm::Type * irParameterType() const;
   llvm::Type * irReturnType() const;
   void expand(TypeExpansion & out) const { value_->expand(out); }
-  ConversionRank convertImpl(const Conversion & conversion) const;
   Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;
   void format(FormatStream & out) const;
