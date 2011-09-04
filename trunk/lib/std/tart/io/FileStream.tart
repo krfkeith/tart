@@ -1,0 +1,181 @@
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** A stream which provides basic read/write operations on file handle.
+    This class does no buffering, and does not handle character encodings.
+  */
+final class FileStream : IOStream {
+  @Flags enum AccessFlags {
+    READ,
+    WRITE,
+  }
+
+  private {
+    var fileDesc:int;
+
+    @Extern("FileStream_open")
+    static def _open(path:String, access:AccessFlags) -> int;
+
+    @Extern("FileStream_read_byte")
+    static def _readByte(fileDesc:int) -> int32;
+
+    @Extern("FileStream_read_bytes")
+    static def _readBytes(fileDesc:int, buffer:Address[ubyte], count:int64) -> int64;
+
+    @Extern("FileStream_write_byte")
+    static def _writeByte(fileDesc:int, value:ubyte) -> IOError.IOResult;
+
+    @Extern("FileStream_write_bytes")
+    static def _writeBytes(fileDesc:int, buffer:Address[ubyte], count:int64) -> IOError.IOResult;
+
+    @Extern("FileStream_seek")
+    static def _seek(fileDesc:int, from:SeekFrom, offset:int64) -> int64;
+
+    @Extern("FileStream_canRead") static def _canRead(fileDesc:int) -> int32;
+    @Extern("FileStream_canWrite") static def _canWrite(fileDesc:int) -> int32;
+    @Extern("FileStream_canSeek") static def _canSeek(fileDesc:int) -> int32;
+    @Extern("FileStream_isTerminal") static def _isTerminal(fileDesc:int) -> int32;
+
+    @Extern("FileStream_position") static def _position(fileDesc:int) -> int64;
+    @Extern("FileStream_length") static def _length(fileDesc:int) -> int64;
+    @Extern("FileStream_flush") static def _flush(fileDesc:int) -> IOError.IOResult;
+    @Extern("FileStream_close") static def _close(fileDesc:int) -> IOError.IOResult;
+  }
+
+  /** Construct a FileStream from an existing file descriptor. */
+  internal def construct(fileDesc:int) {
+    self.fileDesc = fileDesc;
+  }
+
+  /** Constructs an FileStream for the file at 'path'. */
+  def construct(path:String, access:AccessFlags = AccessFlags.READ) {
+    self.fileDesc = IOError.checkIntResult(_open(path, access));
+  }
+
+  /** Read a single byte from the stream.
+      Returns: The byte read.
+      Throws: IOError - if there was an i/o error.
+   */
+  def read -> int32 {
+    let result = _readByte(fileDesc);
+    if result < -1 { IOError.checkIntResult(result); }
+    return result;
+  }
+
+  /** Read a bytes from the stream into a byte array.
+      Parameters:
+        buffer: The byte array where the bytes are to be placed.
+        start: The starting position in the buffer.
+        count: How many bytes to read.
+      Return: The actual number of bytes read.
+      Throws: IOError - if there was an i/o error.
+   */
+  def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start);
+    if count > 0 {
+      // TODO: Add GC.suspend calls here (using 'with' statement), and pin the buffer.
+      return IOError.checkIntResult(_readBytes(fileDesc, addressOf(buffer.data[start]), count));
+    }
+    return 0;
+  }
+
+  /** Read the entire contents of the fileDesc, starting from the current read position,
+      and return it as a byte array.
+      Returns: A byte array containing the contents of the file.
+      Throws: IOError - if there was an i/o error.
+    */
+  def readAll -> ubyte[] {
+    let length = size - position;
+    let result = ubyte[](length);
+    IOError.checkIntResult(read(result, 0, length));
+    return result;
+  }
+
+  /** Write a single byte to the stream.
+      Parameters:
+        value: The byte to write.
+      Throws: IOError - if there was an i/o error.
+   */
+  def write(value:ubyte) {
+    IOError.checkResult(_writeByte(fileDesc, value));
+  }
+
+  /** Write the contents of a byte array to the stream.
+      Parameter:
+        buffer: The byte array containing the bytes to be written.
+        start: The starting position in the buffer.
+        count: How many bytes should be written.
+      Throws: IOError - if there was an i/o error.
+   */
+  def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkArgument(count >= 0);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start);
+    if count > 0 {
+      IOError.checkIntResult(_writeBytes(fileDesc, addressOf(buffer.data[start]), count));
+    }
+  }
+
+  /** Change the current read/write position of the stream.
+      Parameters:
+        from: The reference point (start, end or current).
+        offset: The offset from the reference point.
+      Returns: the current stream position.
+      Throws: IOError - if there was an i/o error.
+   */
+  def seek(from:SeekFrom, offset:int64) -> int64 {
+    return IOError.checkIntResult(_seek(fileDesc, from, offset));
+  }
+
+  /** True if this stream supports reading.
+      Returns: True if this stream supports read operations.
+      Throws: IOError - if there was an i/o error.
+   */
+  def canRead:bool { get { return IOError.checkBoolResult(_canRead(fileDesc)); } }
+
+  /** True if this stream supports writing.
+      Returns: True if this stream supports write operations.
+      Throws: IOError - if there was an i/o error.
+   */
+  def canWrite:bool { get { return IOError.checkBoolResult(_canWrite(fileDesc)); } }
+
+  /** True if this stream supports seek operations.
+      Returns: True if this stream supports seek operations.
+      Throws: IOError - if there was an i/o error.
+   */
+  def canSeek:bool { get { return IOError.checkBoolResult(_canSeek(fileDesc)); } }
+
+  /** Returns the current position in the stream.
+      Returns: The current read/write position.
+      Throws: IOError - if there was an i/o error.
+   */
+  def position:int64 { get { return _position(fileDesc); } }
+
+  /** Return the length of the stream, or 0 if the length could not be determined.
+      Returns: The length of the stream.
+      Throws: IOError - if there was an i/o error.
+   */
+  def size:int64 { get { return _length(fileDesc); } }
+
+  /** Flush any pending writes.
+      Throws: IOError - if there was an i/o error.
+   */
+  def flush {
+    IOError.checkResult(_flush(fileDesc));
+  }
+
+  /** Close the stream.
+      Throws: IOError - if there was an i/o error.
+   */
+  def close {
+    IOError.checkResult(_close(fileDesc));
+  }
+
+  // ScopedObject
+
+  def exit() { close(); }
+}

@@ -18,6 +18,9 @@ set(BC_LIBS
   "${PROJECT_BINARY_DIR}/lib/gc1/libgc1.bc"
   )
 
+# Test data
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/iotest.txt DESTINATION .)
+
 set(TART_OPTIONS
   -debug-errors
   -nostdlib

@@ -20,10 +20,11 @@ final class PropertyList : List[Property] {
     }
   }
 
-  undef add(e:Property);
-  undef addAll(e:Collection[Property]);
+  undef append(e:Property);
+  undef appendAll(e:Collection[Property]);
   undef insert(position:int, e:Property);
   undef insertAll(position:int, e:Collection[Property]);
+  undef replace(index:int, count:int, src:Collection[Property]);
   undef remove(index:int);
   undef clear;
 

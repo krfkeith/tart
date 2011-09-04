@@ -60,9 +60,7 @@ import tart.gc.TraceAction;
       copyable.copyElements(addressOf(result._data[0]), 0, size);
     } else {
       var it = collection.iterate();
-Debug.writeLn("PreNext");
       var n = it.next();
-Debug.writeIntLn("Size=", size);
       var index = 0;
       for el in collection {
         result._data[index++] = el;
@@ -94,6 +92,21 @@ Debug.writeIntLn("Size=", size);
       Preconditions.checkArgument(index >= 0 and index < _size);
       self._data[index] = value;
     }
+  }
+
+  /** Obtain a reference to a sub-range of this array. This creates an ArraySlice object
+      which refers to the elements of the original array. Modifications to the elements
+      of the slice will affect the parent array, and vice versa.
+      Parameters:
+        start: The starting index of the sub-range. This is clamped to the bounds of
+            the array.
+        end: The ending index of the sub-range. This is clamped to the bounds of the array.
+      Returns: The array slice.
+   */
+  def slice(start:int, end:int) -> ArraySlice {
+    start = Math.clamp(start, 0, _size);
+    end = Math.clamp(end, start, _size);
+    return ArraySlice(self, start, end - start);
   }
 
   /** Return an immutable buffer representation of this array's data. */
@@ -157,24 +170,154 @@ Debug.writeIntLn("Size=", size);
     }
   }
 
+  override toString -> String {
+    let sb = StringBuilder();
+    sb.append("[");
+    for item in self {
+      if sb.size > 1 {
+        sb.append(", ");
+      }
+      sb.append(String(item));
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
   @Coalesce private final class ArrayIterator : Iterator[ElementType], HasLength {
-    private var array:Array;
-    private var index:int;
+    private {
+      var _array:Array;
+      var _index:int;
+      var _end:int;
+    }
 
     def construct(array:Array) {
-      self.array = array;
-      self.index = 0;
+      self._array = array;
+      self._index = 0;
+      self._end = array.size;
+    }
+
+    def construct(array:Array, start:int, end:int) {
+      self._array = array;
+      self._index = start;
+      self._end = end;
     }
 
     def next() -> ElementType or void {
-      if (self.index < self.array._size) {
-        return self.array._data[self.index++];
+      if _index < _end {
+        return _array._data[_index++];
       } else {
         return;
       }
     }
 
-    def length:int { get { return array._size; } }
-    def size:int { get { return array._size; } }
+    def length:int { get { return _end - _index; } }
+    def size:int { get { return _end - _index; } }
+  }
+
+  /** Class used to represent a subrange of an array. */
+  @Coalesce private final class ArraySlice : Collection[ElementType], Copyable[ElementType] {
+    private {
+      var _array:Array;
+      var _offset:int;
+      var _size:int;
+    }
+
+    def construct(array:Array, offset:int, size:int) {
+      self._array = array;
+      self._offset = offset;
+      self._size = size;
+    }
+
+    /** True if the array slice is zero size. */
+    def isEmpty:bool { get { return self._size == 0; } }
+
+    /** The length of the array slice. */
+    def size:int { get { return _size; } }
+
+    @Unsafe def data:Address[ElementType] { get { return addressOf(_array._data[_offset]); } }
+
+    /** Array element access. */
+    def [index:int]:ElementType {
+      get {
+        Preconditions.checkIndex(index >= 0 and index < _size);
+        return self._array._data[index + _offset];
+      }
+      set {
+        Preconditions.checkArgument(index >= 0 and index < _size);
+        self._array._data[index + _offset] = value;
+      }
+    }
+
+    /** Return an immutable buffer representation of this array slice's data. */
+    def asBuffer() -> Memory.Buffer[ElementType] {
+      return Memory.Buffer[ElementType](self, addressOf(self._array._data[_offset]), _size);
+    }
+
+    /** Get a sub-slice of this slice. */
+    def slice(start:int, end:int) -> ArraySlice {
+      start = Math.clamp(start, 0, _size);
+      end = Math.clamp(end, start, _size);
+      return ArraySlice(_array, start + _offset, end - start);
+    }
+
+    /** Copy the elements of this array slice to a destination address. */
+    def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
+      Preconditions.checkIndex(count >= 0);
+      Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
+      count = min(count, _size - srcOffset);
+      if count > 0 {
+        Memory.arrayCopy(dstAddr, addressOf(_array._data[srcOffset + _offset]), count);
+      }
+    }
+
+    /** Move elements around in the array slice. */
+    def moveElements(dstOffset:int, srcOffset:int, count:int) {
+      Preconditions.checkIndex(count >= 0);
+      Preconditions.checkIndex(srcOffset >= 0 and srcOffset + count <= _size);
+      Preconditions.checkIndex(dstOffset >= 0 and dstOffset + count <= _size);
+      if count > 0 {
+        Memory.arrayMove(
+            addressOf(_array._data[dstOffset + _offset]),
+            addressOf(_array._data[srcOffset + _offset]),
+            count);
+      }
+    }
+
+    /** Copy elements from the specified copyable into this array.
+        Parameters:
+          dstOffset - The destination index in this array.
+          src - The source collection to copy from.
+          srcOffset - The offset in the source collection to start copying from.
+          count - the number of elements to copy.
+    */
+    def copyFrom(dstOffset:int, src:Copyable[ElementType], srcOffset:int, count:int) {
+      let srcSize = src.size;
+      Preconditions.checkIndex(count >= 0);
+      Preconditions.checkIndex(dstOffset >= 0 and dstOffset <= _size);
+      Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= srcSize);
+      Preconditions.checkIndex(srcOffset + count <= srcSize);
+      Preconditions.checkIndex(dstOffset + count <= _size);
+      src.copyElements(addressOf(_array._data[dstOffset + _offset]), srcOffset, count);
+    }
+
+    /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
+        'dstOffset' in array 'dst'.
+     */
+    static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
+      Preconditions.checkIndex(
+          count >= 0 and
+          dstOffset >= 0 and dstOffset <= dst._size and
+          srcOffset >= 0 and srcOffset <= src._size);
+      count = min(count, dst._size - dstOffset, src._size - srcOffset);
+      if count > 0 {
+        Memory.arrayMove(addressOf(dst._data[dstOffset]), addressOf(src._data[srcOffset]), count);
+      }
+    }
+
+    /** Iterate over the elements of the array slice. */
+    def iterate -> Iterator[ElementType] {
+      return ArrayIterator(_array, _offset, _offset + _size);
+    }
   }
 }
+

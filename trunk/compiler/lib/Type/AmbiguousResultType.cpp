@@ -41,9 +41,9 @@ void AmbiguousResultType::expand(TypeExpansion & out) const {
 }
 
 const Type * AmbiguousResultType::candidateResultType(const CallCandidate * cc) const {
-  if (callExpr_->exprType() == Expr::Construct && cc->method()->isCtor()) {
-    return cc->method()->functionType()->selfParam()->type();
-  }
+//  if (callExpr_->exprType() == Expr::Construct && cc->method()->isCtor()) {
+//    return cc->method()->functionType()->selfParam()->type();
+//  }
 
   return cc->resultType();
 }

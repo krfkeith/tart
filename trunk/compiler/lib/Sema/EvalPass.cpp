@@ -84,7 +84,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
       ??
 
     case Expr::Call:
-    case Expr::ExactCall:
+    case Expr::SuperCall:
     //case Expr::ICall:
     case Expr::Construct:
       return evalCall(static_cast<CallExpr *>(in));

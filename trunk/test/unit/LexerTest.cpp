@@ -135,6 +135,7 @@ TEST_F(LexerTest, SingleTokens) {
   EXPECT_EQ(Token_Public, LexToken("public"));
   EXPECT_EQ(Token_Private, LexToken("private"));
   EXPECT_EQ(Token_Protected, LexToken("protected"));
+  EXPECT_EQ(Token_Internal, LexToken("internal"));
 
   // Primtypes
   EXPECT_EQ(Token_BoolType, LexToken("bool"));

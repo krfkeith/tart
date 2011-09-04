@@ -147,9 +147,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
     // Substitute all occurrences of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = relabel(resultType_);
-    if (!resultType_->isScaffold()) {
-      AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
-    }
+    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
 
     // Same with function parameter types.
     for (ConstTypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {

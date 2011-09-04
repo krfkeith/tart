@@ -526,7 +526,19 @@ Value * MDWriter::expression(const Expr * in) {
       builder.put(tagValue(ExprID::UPCAST));
       builder.put(serializeType(in->type()));
       builder.put(expression(cast->arg()));
-      return NULL;
+      return builder.build();
+    }
+
+    case Expr::LValue: {
+      const LValueExpr * lval = static_cast<const LValueExpr *>(in);
+      DASSERT(lval->base() == NULL) << "Can't serialize lvalue with base: " << in;
+      const ValueDefn * val = lval->value();
+      DASSERT(val->storageClass() == Storage_Global || val->storageClass() == Storage_Global) <<
+          "Can't serialize non-static variable: " << val;
+      MDNodeBuilder builder(context_);
+      builder.put(tagValue(ExprID::CONST_LVAL));
+      builder.put(val->qualifiedName());
+      return builder.build();
     }
 
     default:

@@ -235,7 +235,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     if (in->exprType() == Expr::Construct && method->isCtor()) {
       callType = Expr::CtorCall;
     } else if (method->storageClass() == Storage_Instance &&
-        !method->isFinal() && !method->isCtor() && in->exprType() != Expr::ExactCall) {
+        !method->isFinal() && !method->isCtor() && in->exprType() != Expr::SuperCall) {
       callType = Expr::VTableCall;
     }
 
@@ -259,7 +259,20 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     }
 
     DASSERT_OBJ(result->isSingular(), result);
+    DASSERT_OBJ(result->type()->isSingular(), result);
     return result;
+  }
+
+  if (in->candidates().empty()) {
+    if (in->exprType() == Expr::SuperCall) {
+      diag.error(in) << "No matching functions found for call to super(" <<
+          bindFormat(formatExprTypeList, in->args()) << ")";
+      return &Expr::ErrorVal;
+    } else if (in->function() != NULL) {
+      diag.error(in) << "No matching functions found for call to " << in->function() << "(" <<
+        bindFormat(formatExprTypeList, in->args()) << ")";
+      return &Expr::ErrorVal;
+    }
   }
 
   diag.error(in) << in << " has " << in->candidates().size() << " candidates";

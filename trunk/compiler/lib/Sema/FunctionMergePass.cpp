@@ -132,7 +132,7 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //      return visitMultiAssign(static_cast<MultiAssignExpr *>(from), static_cast<MultiAssignExpr *>(to));
 //
 //    case Expr::Call:
-//    case Expr::ExactCall:
+//    case Expr::SuperCall:
 //    //case Expr::ICall:
 //    case Expr::Construct:
 //      return visitCall(static_cast<CallExpr *>(from), static_cast<CallExpr *>(to));
@@ -228,6 +228,9 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 
     case Expr::For:
       return visitFor(static_cast<ForExpr *>(from), static_cast<ForExpr *>(to));
+
+    case Expr::ForEach:
+      return visitForEach(static_cast<ForEachExpr *>(from), static_cast<ForEachExpr *>(to));
 
     case Expr::Throw:
       return visitThrow(static_cast<ThrowExpr *>(from), static_cast<ThrowExpr *>(to));
@@ -502,6 +505,14 @@ bool FunctionMergePass::visitFor(ForExpr * from, ForExpr * to) {
       visitExpr(from->test(), to->test()) &&
       visitExpr(from->incr(), to->incr()) &&
       visitExpr(from->body(), to->body());
+}
+
+bool FunctionMergePass::visitForEach(ForEachExpr * from, ForEachExpr * to) {
+  return false;
+//  return visitExpr(from->init(), to->init()) &&
+//      visitExpr(from->test(), to->test()) &&
+//      visitExpr(from->incr(), to->incr()) &&
+//      visitExpr(from->body(), to->body());
 }
 
 bool FunctionMergePass::visitReturn(ReturnExpr * from, ReturnExpr * to) {

@@ -1,7 +1,9 @@
 import tart.collections.Copyable;
 import tart.core.Memory.addressOf;
 import tart.core.Memory.Address;
+import tart.text.encodings.Codec;
 import tart.text.encodings.Codecs;
+import tart.text.encodings.InvalidCharacterError;
 import tart.text.Character;
 
 /** The built-in string class. Strings are immutable. */
@@ -109,11 +111,18 @@ public final class String : Iterable[char] {
       Throws:
         IndexError - if 'start' is less than zero.
         ArgumentError - if 'count' is less than zero.
+        tart.text.encodings.InvalidCharacterError if an unencodable character was encountered.
    */
   static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
-    let length = Codecs.UTF_8.encodedLength(chars, start, count);
-    let self = alloc(length);
-    Codecs.UTF_8.encodeRaw(addressOf(self._data[0]), 0, length, addressOf(chars.data[0]), 0, count);
+    let result = Codecs.UTF_8.encodedLength(chars, start, count);
+    if result.state != Codec.CodecState.OK {
+      throw InvalidCharacterError();
+    }
+    let self = alloc(result.dstCount);
+    start = Math.min(start, chars.size);
+    count = Math.min(count, chars.size - start);
+    Codecs.UTF_8.encodeRaw(
+        addressOf(self._data[0]), result.dstCount, addressOf(chars.data[start]), count);
     return self;
   }
 
@@ -180,7 +189,12 @@ public final class String : Iterable[char] {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, self._size);
     count = Math.min(count, self._size - start);
-    return Codecs.UTF_8.decodedLengthRaw(addressOf(self._data[start]), count);
+    let decodeResult = Codecs.UTF_8.decodedLengthRaw(
+        addressOf(self._data[start]), count, Codec.ErrorAction.HALT);
+    if decodeResult.state != Codec.CodecState.OK {
+      throw InvalidCharacterError();
+    }
+    return decodeResult.dstCount;
   }
 
   /** Convert this string to a character array.
@@ -192,11 +206,46 @@ public final class String : Iterable[char] {
     Preconditions.checkIndex(start >= 0 and count >= 0);
     start = Math.min(start, self._size);
     count = Math.min(count, self._size - start);
-    let charCount = self.charLength(start, count);
-    let result = char[](charCount);
+    let decodeResult = Codecs.UTF_8.decodedLengthRaw(
+        addressOf(self._data[start]), count, Codec.ErrorAction.HALT);
+    if decodeResult.state != Codec.CodecState.OK {
+      throw InvalidCharacterError();
+    }
+    let result = char[](decodeResult.dstCount);
     Codecs.UTF_8.decodeRaw(
-        addressOf(result.data[0]), 0, charCount, addressOf(self._data[start]), 0, count);
+        addressOf(result.data[0]), decodeResult.dstCount,
+        addressOf(self._data[start]), count, Codec.ErrorAction.HALT);
+    if decodeResult.state != Codec.CodecState.OK {
+      throw InvalidCharacterError();
+    }
     return result;
+  }
+
+  /** Copy characters from this string into a character array.
+      Parameters:
+        index - the byte index into this string.
+        dst - the destination character buffer.
+        dstIndex - the starting index in the character buffer.
+        dstLength - the maximum number of characters to copy.
+      Returns: A tuple containing the number of characters actually copied,
+        and the number of bytes read from the string.
+      Throws:
+        IndexError - if 'dstIndex' or 'index' are out of range.
+        InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
+    */
+  def getChars(index:int, dst:char[], dstIndex:int, dstLength:int) -> (int, int) {
+    Preconditions.checkIndex(index >= 0 and dstIndex >= 0 and dstLength >= 0);
+    index = Math.min(index, _size);
+    dstIndex = Math.min(dstIndex, dst.size);
+    dstLength = Math.min(dstLength, dst.size - dstIndex);
+    let decodeResult = Codecs.UTF_8.decodeRaw(
+        addressOf(dst.data[dstIndex]), dstLength,
+        addressOf(_start[index]), _size - index,
+        Codec.ErrorAction.HALT);
+    if decodeResult.state != Codec.CodecState.OK {
+      throw InvalidCharacterError();
+    }
+    return decodeResult.dstCount, decodeResult.srcCount;
   }
 
   /** 'true' if 's' is equal to to this string. */
@@ -261,7 +310,7 @@ public final class String : Iterable[char] {
       Returns: the result of the format operation.
    */
   def format(args:Object[]) -> String {
-    return StringFormatter(self, args).build();
+    return StringFormatter(self, args).toString();
   }
 
   /** Degenerate form of concat which takes a single string.
@@ -401,33 +450,6 @@ public final class String : Iterable[char] {
   /** Given a byte index into the string, return the character at the given index. */
   def charAt(index:int) -> char {
     return Codecs.UTF_8.decodeOne(_start, index, _size)[0];
-  }
-
-  /** Copy characters from this string into a character array.
-      Parameters:
-        index - the byte index into this string.
-        dst - the destination character buffer.
-        start - the starting index in the character buffer.
-        count - the maximum number of characters to copy.
-      Returns: A tuple containing the number of characters actually copied,
-        and the byte index of the last character copied plus one.
-      Throws:
-        IndexError - if 'start' or 'index' are out of range.
-        InvalidCharacterError - if 'index' is not the start of a valid UTF-8 character.
-    */
-  def copyChars(index:int, dst:char[], start:int, count:int) -> (int, int) {
-    var copied:int = 0;
-    Preconditions.checkIndex(index >= 0 and start >= 0 and count >= 0);
-    start = Math.min(start, dst.size);
-    count = Math.min(count, dst.size - start);
-    while index < _size and copied < count {
-      var charVal, nextIndex = Codecs.UTF_8.decodeOne(_start, index, _size);
-      index = nextIndex;
-      dst[start++] = charVal;
-      copied++;
-    }
-
-    return copied, index;
   }
 
   /** Return the value of this string, converted to upper case. */

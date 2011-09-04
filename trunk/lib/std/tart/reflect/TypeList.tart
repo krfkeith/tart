@@ -22,10 +22,11 @@ final class TypeList : List[Type] {
 
   undef construct;
 
-  undef add(e:Type);
-  undef addAll(e:Collection[Type]);
+  undef append(e:Type);
+  undef appendAll(e:Collection[Type]);
   undef insert(position:int, e:Type);
   undef insertAll(position:int, e:Collection[Type]);
+  undef replace(index:int, count:int, src:Collection[Type]);
   undef remove(index:int);
   undef clear;
 

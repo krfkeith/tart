@@ -1,6 +1,5 @@
 /** Represents an object that has a bounded lifetime. Typically used in
 		conjunction with the 'with' statement. */
 interface ScopedObject {
-  def acquire();
-  def release();
+  def exit();
 }

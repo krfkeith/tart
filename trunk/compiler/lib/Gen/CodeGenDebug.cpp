@@ -724,6 +724,8 @@ unsigned CodeGenerator::getDefnFlags(const Defn * de) {
     result |= DIDescriptor::FlagPrivate;
   } else if (de->visibility() == Protected) {
     result |= DIDescriptor::FlagProtected;
+  } else if (de->visibility() == Internal) {
+    result |= DIDescriptor::FlagPrivate;
   }
 
 //  FlagFwdDecl          = 1 << 2,

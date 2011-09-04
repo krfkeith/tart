@@ -17,7 +17,7 @@ class DerivedType : Type {
   final override toString -> String {
     let typeStrings = tart.collections.ArrayList[String]();
     for type in typeParams {
-      typeStrings.add(type.toString());
+      typeStrings.append(type.toString());
     }
 
     switch typeKind {

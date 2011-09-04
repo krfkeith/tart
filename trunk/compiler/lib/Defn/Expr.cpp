@@ -495,10 +495,6 @@ const Type * CallExpr::singularResultType() {
     }
 
     const Type * ty = cc->resultType();
-    if (cc->method() != NULL && exprType() == Expr::Construct && cc->method()->isCtor()) {
-      ty = cc->functionType()->selfParam()->type();
-    }
-
     if (singularType == NULL) {
       singularType = ty;
     } else if (!ty->isEqual(singularType)) {

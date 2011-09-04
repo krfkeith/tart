@@ -1,0 +1,12 @@
+/** Helper class used to implement the 'lines' method of TextReader. */
+class TextLineIterator : Iterator[String] {
+  private let reader:TextReader;
+
+  def construct(reader:TextReader) {
+    self.reader = reader;
+  }
+
+  def next -> String or void {
+    return reader.readLn();
+  }
+}

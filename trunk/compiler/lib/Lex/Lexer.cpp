@@ -91,6 +91,7 @@ namespace {
           if (strcmp(kw, "int16") == 0) return Token_ShortType;
           if (strcmp(kw, "int32") == 0) return Token_IntType;
           if (strcmp(kw, "int64") == 0) return Token_LongType;
+          if (strcmp(kw, "internal") == 0) return Token_Internal;
           break;
 
         case 'g':

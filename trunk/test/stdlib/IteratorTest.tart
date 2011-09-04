@@ -98,7 +98,7 @@ class IteratorTest : Test {
   def testCountingIterator {
     let list = ArrayList[int]();
     for i in Iterators.CountingIterator(5) {
-      list.add(i);
+      list.append(i);
     }
     for i in Iterators.CountingIterator(5) {
       assertEq(i+1, list[i]+1);

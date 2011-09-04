@@ -1,0 +1,133 @@
+import tart.testing.Test;
+import tart.collections.ArrayList;
+import tart.io.MemoryStream;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(MemoryStreamTest);
+}
+
+class MemoryStreamTest : Test {
+  def testEmptyMemoryStream() {
+    let ms = MemoryStream();
+    assertEq(0, ms.size);
+    assertEq(0, ms.position);
+    assertEq(0, ms.data.size);
+    assertTrue(ms.canRead);
+    assertTrue(ms.canWrite);
+    assertTrue(ms.canSeek);
+  }
+
+  def testMemoryStreamFromExistingArrayList() {
+    let alist = ArrayList[ubyte]();
+    alist.append(22);
+    let ms = MemoryStream(alist);
+    assertEq(1, ms.size);
+    assertEq(1, ms.position);
+    assertEq(22, ms.data[0]);
+    assertEq(1, ms.data.size);
+  }
+
+  def testMemoryStreamWriteByte() {
+    let ms = MemoryStream();
+    ms.write(22);
+    ms.write(23);
+    assertEq(2, ms.size);
+    assertEq(2, ms.position);
+    assertEq(2, ms.data.size);
+    assertEq(22, ms.data[0]);
+    assertEq(23, ms.data[1]);
+  }
+
+  def testMemoryStreamWriteArray() {
+    let ms = MemoryStream();
+    ms.write([22, 23, 24]);
+    assertEq(3, ms.size);
+    assertEq(3, ms.position);
+    assertEq(3, ms.data.size);
+    assertEq(22, ms.data[0]);
+    assertEq(23, ms.data[1]);
+    assertEq(24, ms.data[2]);
+  }
+
+  def testMemoryStreamWriteArraySlice() {
+    let ms = MemoryStream();
+    ms.write([21, 22, 23, 24, 25], 1, 3);
+    assertEq(3, ms.size);
+    assertEq(3, ms.position);
+    assertEq(3, ms.data.size);
+    assertEq(22, ms.data[0]);
+    assertEq(23, ms.data[1]);
+    assertEq(24, ms.data[2]);
+  }
+
+  def testMemoryStreamSeek() {
+    let ms = MemoryStream();
+    ms.write([22, 23, 24]);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    assertEq(0, ms.position);
+    ms.seek(MemoryStream.SeekFrom.START, 1);
+    assertEq(1, ms.position);
+    ms.seek(MemoryStream.SeekFrom.CURRENT, 0);
+    assertEq(1, ms.position);
+    ms.seek(MemoryStream.SeekFrom.CURRENT, 1);
+    assertEq(2, ms.position);
+    ms.seek(MemoryStream.SeekFrom.CURRENT, -1);
+    assertEq(1, ms.position);
+    ms.seek(MemoryStream.SeekFrom.END, 0);
+    assertEq(3, ms.position);
+    ms.seek(MemoryStream.SeekFrom.END, -1);
+    assertEq(2, ms.position);
+  }
+
+  def testMemoryStreamReadByte() {
+    let ms = MemoryStream();
+    ms.write(22);
+    ms.write(23);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    var val = ms.read();
+    assertEq(22, val);
+    val = ms.read();
+    assertEq(23, val);
+  }
+
+  def testMemoryStreamReadArray() {
+    let ms = MemoryStream();
+    ms.write([21, 22, 23, 24, 25]);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    var buf = ubyte[](3);
+
+    var actual = ms.read(buf);
+    assertEq(3, actual);
+    assertContentsInOrder(buf, 21, 22, 23);
+
+    actual = ms.read(buf);
+    assertEq(2, actual);
+    assertContentsInOrder(buf, 24, 25, 23);
+  }
+
+  def testMemoryStreamReadAll() {
+    let ms = MemoryStream();
+    ms.write([21, 22, 23, 24, 25]);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    var val = ms.readAll();
+    assertContentsInOrder(val, 21, 22, 23, 24, 25);
+  }
+
+  def testOverwrite() {
+    let ms = MemoryStream();
+    ms.write([21, 22, 23, 24, 25]);
+
+    ms.seek(MemoryStream.SeekFrom.START, 2);
+    ms.write([31, 32, 33, 34, 35]);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    var val = ms.readAll();
+    assertContentsInOrder(val, 21, 22, 31, 32, 33, 34, 35);
+
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    ms.write([51, 52]);
+    ms.seek(MemoryStream.SeekFrom.START, 0);
+    val = ms.readAll();
+    assertContentsInOrder(val, 51, 52, 31, 32, 33, 34, 35);
+  }
+}

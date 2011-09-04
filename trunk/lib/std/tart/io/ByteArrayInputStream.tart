@@ -1,0 +1,66 @@
+/** A stream class that reads sequentially from a byte array.
+    Both reading and random-access seeking are supported.
+*/
+final class ByteArrayInputStream: IOStream {
+  private {
+    let _data:ubyte[];
+    var _pos:int;
+  }
+
+  /** Constructs a new stream. The read position will initially be
+      set to the beginning of the array. The stream will signal an
+      end-of-file condition when the end of the array is reached.
+      Parameters:
+        data: The byte array to read from.
+   */
+  def construct(data:ubyte[]) {
+    Preconditions.checkArgument(data is not null);
+    self._data = data;
+    self._pos = 0;
+  }
+
+  def seek(from:SeekFrom, offset:int64) -> int64 {
+    switch from {
+      case CURRENT { offset += _pos; }
+      case START {}
+      case END { offset += _data.size; }
+    }
+
+    _pos = int(Math.clamp(offset, 0, _data.size));
+    return _pos;
+  }
+
+  def atEnd: bool { get { return _pos >= _data.size; }  }
+  def canRead:bool { get { return true; } }
+  def canWrite:bool { get { return false; } }
+  def canSeek:bool { get { return true; } }
+  def position:int64 { get { return _pos; } }
+  def size:int64 { get { return _data.size; } }
+  def read -> int32 {
+    return if _pos < _data.size { _data[_pos++] } else { EOF };
+  }
+
+  def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start, _data.size - _pos);
+    ubyte[].copyElements(buffer, start, _data, _pos, count);
+    _pos += count;
+    return count;
+  }
+
+  def readAll -> ubyte[] {
+    let length = _data.size - _pos;
+    let result = ubyte[](length);
+    ubyte[].copyElements(result, 0, _data, _pos, length);
+    _pos = _data.size;
+    return result;
+  }
+
+  undef write(value:ubyte);
+  undef write(buffer:ubyte[], start:int = 0, count:int = int.maxVal);
+
+  def flush {}
+  def close {}
+  def exit {}
+}

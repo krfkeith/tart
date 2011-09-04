@@ -1028,6 +1028,14 @@ bool AnalyzerBase::canAccess(Defn * source, Defn * target) {
           }
         }
       }
+
+      if (target->visibility() == Internal) {
+        // TODO: This probably shouldn't simply compare the name. Also handle submodules.
+        if (source->module()->packageName() == target->module()->packageName()) {
+          return true;
+        }
+
+      }
     }
 
     return false;

@@ -1,46 +1,37 @@
 import tart.core.Memory.Address;
+import tart.text.encodings.Codecs;
 
 /** Contains the standard input & output streams. */
 public namespace Console {
   private {
-    enum StreamID {
-      STDIN,
-      STDOUT,
-      STDERR,
-    }
-
-    @Extern("get_std_stream") def getStdStream(id:StreamID) -> Address[StdFileStream.FILE];
+    // POSIX mandates these numbers
+    static let FILEDESC_STDIN:int = 0;
+    static let FILEDESC_STDOUT:int = 1;
+    static let FILEDESC_STDERR:int = 2;
 
     var _cin:TextReader?;
     var _cout:TextWriter?;
     var _cerr:TextWriter?;
   }
 
-  /** Return the input stream for stdin. */
+  /** The input TextReader for stdin. */
   def cin:TextReader {
     get {
-      match _cin {
-        as r:TextReader { return r; }
-        else {
-          let r:TextReader = StdFileStream(getStdStream(StreamID.STDIN), true, false, false);
-          _cin = r;
-          return r;
-        }
-      }
+      return lazyEval(_cin, StreamTextReader(FileStream(FILEDESC_STDIN), Codecs.UTF_8));
     }
   }
 
-  /** Standard output stream. */
+  /** The TextWriter for stdout. */
   def cout:TextWriter {
     get {
-      return lazyEval(_cout, StdFileStream(getStdStream(StreamID.STDOUT), false, true, false));
+      return lazyEval(_cout, StreamTextWriter(FileStream(FILEDESC_STDOUT), Codecs.UTF_8));
     }
   }
 
-  /** Standard error output stream. */
+  /** The TextWriter for stderr. */
   def cerr:TextWriter {
     get {
-      return lazyEval(_cerr, StdFileStream(getStdStream(StreamID.STDERR), false, true, false));
+      return lazyEval(_cerr, StreamTextWriter(FileStream(FILEDESC_STDERR), Codecs.UTF_8));
     }
   }
 }

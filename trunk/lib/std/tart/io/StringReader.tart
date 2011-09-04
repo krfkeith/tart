@@ -1,3 +1,6 @@
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
 /** Class that reads characters from a string.
     InheritDoc: members
  */
@@ -12,14 +15,16 @@ final class StringReader : TextReader {
     self.pos = 0;
   }
 
-  def seek(from:SeekFrom, offset:int64) -> int64 {
+  def decoder:Codec { get { return Codecs.UTF_8; } set {} }
+
+/*  def seek(from:SeekFrom, offset:int64) -> int64 {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
     if from is SeekFrom.CURRENT { offset += pos; }
     else if from is SeekFrom.END { offset += str.size; }
 
     pos = int(Math.min(str.size, offset));
     return pos;
-  }
+  } */
 
   def atEnd: bool { get { return pos >= str.size; } }
   def canRead:bool { get { return true; } }
@@ -29,6 +34,7 @@ final class StringReader : TextReader {
   def size:int64 { get { return str.size; } }
   def flush {}
   def close {}
+  def exit() {}
 
   def readCh -> char {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
@@ -43,12 +49,12 @@ final class StringReader : TextReader {
 
   def read(buffer:char[], start:int, length:int) -> int {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
-    var count, nextPos = str.copyChars(pos, buffer, start, length);
-    pos = nextPos;
-    return count;
+    var dstCount, srcCount = str.getChars(pos, buffer, start, length);
+    pos += srcCount;
+    return dstCount;
   }
 
-  def readLn -> String {
+  def readLn -> String or void {
     Preconditions.checkIndex(pos >= 0 and pos <= str.size);
     return "";
   }
@@ -60,6 +66,8 @@ final class StringReader : TextReader {
     return result;
   }
 
-  def acquire() {}
-  def release() {}
+  def skip(count:int64) {
+  }
+
+  def lines -> Iterator[String] { return TextLineIterator(self); }
 }

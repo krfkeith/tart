@@ -21,14 +21,7 @@ final class UTF8 : Codec {
     4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   ];
 
-  private var errorAction:ErrorAction;
-
   def name:String { get { return "UTF8"; } }
-
-  /** Construct a new UTF8 codec. */
-  def construct(errorAction:ErrorAction = REPLACE) {
-    self.errorAction = errorAction;
-  }
 
   /** Return the length in bytes of the encoding character starting with
       the byte 'byteVal'. Returns 0 if 'byteVal' is not a valid UFT-8
@@ -37,15 +30,18 @@ final class UTF8 : Codec {
     return lengthTable[byteVal];
   }
 
-  def encodedLength(src:char[], start:int, count:int) -> int {
-    Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, src.size);
-    count = Math.min(count, src.size - start);
+  def encodedLength(
+      src:char[], srcIndex:int, srcLength:int, errAction:ErrorAction = HALT) -> Result {
+    Preconditions.checkIndex(srcIndex >= 0 and srcLength >= 0);
+    srcIndex = Math.min(srcIndex, src.size);
+    srcLength = Math.min(srcLength, src.size - srcIndex);
 
     var length:int = 0;
-    var index = start;
-    while count-- > 0 {
-      let c = src[index++];
+    var index = srcIndex;
+    var end = srcIndex + srcLength;
+    var state = CodecState.OK;
+    while index < end {
+      let c = src[index];
       if c <= 0x7f {
         length += 1;
       } else if c <= 0x7ff {
@@ -54,69 +50,76 @@ final class UTF8 : Codec {
         length += 3;
       } else if c <= 0x10ffff {
         length += 4;
-      } else {
-        if errorAction == ErrorAction.REPLACE {
-          length += 1;
-        } if errorAction == ErrorAction.ABORT {
-          throw InvalidCharacterError();
-        } /* Otherwise, SKIP over. */
-      }
+      } else if errAction == ErrorAction.REPLACE {
+        length += 1;
+      } else if errAction == ErrorAction.HALT {
+        state = CodecState.INVALID_CHAR;
+        break;
+      } /* Otherwise, SKIP over. */
+      ++index;
     }
 
-    return length;
+    return Result(length, index - srcIndex, state);
   }
 
   /** Return the number of characters in the byte sequence. */
-  def decodedLength(buffer:ubyte[], start:int, count:int) -> int {
-    Preconditions.checkIndex(start >= 0 and count >= 0);
-    start = Math.min(start, buffer.size);
-    count = Math.min(count, buffer.size - start);
-    return decodedLengthRaw(addressOf(buffer.data[start]), count);
+  def decodedLength(
+      buffer:ubyte[], srcIndex:int, srcLength:int, errAction:ErrorAction = HALT) -> Result {
+    Preconditions.checkIndex(srcIndex >= 0 and srcLength >= 0);
+    srcIndex = Math.min(srcIndex, buffer.size);
+    srcLength = Math.min(srcLength, buffer.size - srcIndex);
+    return decodedLengthRaw(addressOf(buffer.data[srcIndex]), srcLength, errAction);
   }
 
   /** Return the number of characters in the byte sequence. */
-  def decodedLengthRaw(buffer:Address[ubyte], length:int) -> int {
-    var charCount:int = 0;
+  def decodedLengthRaw(buffer:Address[ubyte], srcLength:int, errAction:ErrorAction) -> Result {
+    var dstLength:int = 0;
     var index = 0;
-    while index < length {
+    var state = CodecState.OK;
+    while index < srcLength {
       var byteCount = lengthTable[buffer[index]];
       if byteCount == 0 {
-        if errorAction == ErrorAction.REPLACE {
+        if errAction == ErrorAction.REPLACE {
           byteCount = 1;
-        } if errorAction == ErrorAction.ABORT {
-          throw MalformedInputError();
+        } else if errAction == ErrorAction.HALT {
+          state = CodecState.INVALID_CHAR;
+          break;
         } /* Otherwise, SKIP over. */
       }
 
       index += byteCount;
-      charCount += 1;
+      dstLength += 1;
     }
 
-    return charCount;
+    return Result(dstLength, srcLength, state);
   }
 
-  def encode(dst:ubyte[], dstIndex:int, src:char[], srcIndex:int, count:int) -> Result {
+  def encode(
+      dst:ubyte[], dstIndex:int, dstLength:int,
+      src:char[], srcIndex:int, srcLength:int,
+      errAction:ErrorAction = HALT) -> Result {
     Preconditions.checkIndex(
-        srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.size);
+        srcIndex >= 0 and srcLength >= 0 and
+        dstIndex >= 0 and dstLength >= 0);
     srcIndex = Math.min(srcIndex, src.size);
-    count = Math.min(count, src.size - srcIndex);
+    srcLength = Math.min(srcLength, src.size - srcIndex);
+    dstIndex = Math.min(dstIndex, dst.size);
+    dstLength = Math.min(dstLength, dst.size - dstIndex);
     return encodeRaw(
-      addressOf(dst.data[0]), dstIndex, dst.size,
-      addressOf(src.data[0]), srcIndex, srcIndex + count);
+        addressOf(dst.data[dstIndex]), dstLength,
+        addressOf(src.data[srcIndex]), srcLength);
   }
 
   def encodeRaw(
-      dst:Address[ubyte],
-      dstIndex:int,
-      dstLength:int,
-      src:Address[char],
-      srcIndex:int,
-      srcLength:int) -> Result {
+      dst:Address[ubyte], dstLength:int,
+      src:Address[char], srcLength:int,
+      errAction:ErrorAction = HALT) -> Result {
     var state = CodecState.OK;
+    var srcIndex = 0;
+    var dstIndex = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
       let c = src[srcIndex];
       if c <= 0x7f {
-        break if dstIndex >= dstLength;
         ++srcIndex;
         dst[dstIndex++] = ubyte(c);
       } else if c <= 0x7ff {
@@ -138,12 +141,12 @@ final class UTF8 : Codec {
         dst[dstIndex++] = ubyte(c >>  6) & 0x3f | 0x80;
         dst[dstIndex++] = ubyte(c) & 0x3f | 0x80;
       } else {
-        if errorAction == ErrorAction.REPLACE {
+        if errAction == ErrorAction.REPLACE {
           break if dstIndex >= dstLength;
           dst[dstIndex++] = ubyte('?');
-        } if errorAction == ErrorAction.ABORT {
+        } else if errAction == ErrorAction.HALT {
           state = CodecState.INVALID_CHAR;
-          //throw InvalidCharacterError();
+          break;
         } /* Otherwise, SKIP over. */
         ++srcIndex;
       }
@@ -152,29 +155,34 @@ final class UTF8 : Codec {
     return Result(dstIndex, srcIndex, state);
   }
 
-  def decode(dst:char[], dstIndex:int, src:ubyte[], srcIndex:int, count:int) -> Result {
+  def decode(
+      dst:char[], dstIndex:int, dstLength:int,
+      src:ubyte[], srcIndex:int, srcLength:int,
+      errAction:ErrorAction = HALT) -> Result {
     Preconditions.checkIndex(
-        srcIndex >= 0 and count >= 0 and dstIndex >= 0 and dstIndex <= dst.size);
+        srcIndex >= 0 and srcLength >= 0 and
+        dstIndex >= 0 and dstLength >= 0);
     srcIndex = Math.min(srcIndex, src.size);
-    count = Math.min(count, src.size - srcIndex);
+    srcLength = Math.min(srcLength, src.size - srcIndex);
+    dstIndex = Math.min(dstIndex, dst.size);
+    dstLength = Math.min(dstLength, dst.size - dstIndex);
     return decodeRaw(
-        addressOf(dst.data[0]), dstIndex, dst.size,
-        addressOf(src.data[0]), srcIndex, srcIndex + count);
+        addressOf(dst.data[dstIndex]), dstLength,
+        addressOf(src.data[srcIndex]), srcLength,
+        errAction);
   }
 
   def decodeRaw(
-      dst:Address[char],
-      dstIndex:int,
-      dstLength:int,
-      src:Address[ubyte],
-      srcIndex:int,
-      srcLength:int) -> Result {
+      dst:Address[char], dstLength:int,
+      src:Address[ubyte], srcLength:int,
+      errAction:ErrorAction) -> Result {
     var state = CodecState.OK;
+    var srcIndex = 0;
+    var dstIndex = 0;
     while srcIndex < srcLength and dstIndex < dstLength {
       let b = src[srcIndex];
       var charVal:uint32 = 0;
       if b < 0x80 {
-        break if srcIndex >= srcLength;
         srcIndex += 1;
         charVal = b;
       } else if b < 0xc0 {
@@ -199,16 +207,13 @@ final class UTF8 : Codec {
                 | (src[srcIndex + 3] & 0x7f);
         srcIndex += 4;
       } else {
-        // Invalid unicode char,
+        // Invalid unicode char
+        state = CodecState.MALFORMED_INPUT;
         break;
       }
 
       dst[dstIndex++] = charVal;
     }
-
-//    if srcIndex < srcLength {
-//      throw IndexError();
-//    }
 
     return Result(dstIndex, srcIndex, state);
   }

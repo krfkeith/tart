@@ -1,24 +1,68 @@
-/** A class which can read a sequence of characters. */
-interface TextReader : IOStream {
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** Interface for reading text from an input source. */
+interface TextReader : ScopedObject {
 
   /** Character constant that signals no more characters can be read. */
   static let EOF = char(-1);
 
-  /** Close the reader and release any resources held by the reader instance. */
-  def close;
+  /** The current text codec for this reader. */
+  def decoder:Codec { get; set; }
 
-  /** Read a single character from the stream. Return 'EOF' if no more characters can be read. */  
+  /** Read a single character from the stream. Return 'EOF' if no more characters can be read.
+      Line breaks are not altered by this method - whatever line-break characters
+      are present in the original input stream are returned unchanged.
+      Returns: The next character read from the input.
+      Throws:
+        IOError: If there was an i/o error.
+   */
   def readCh -> char;
 
   /** Read up to 'length' characters into the array 'buffer', starting at position 'start'.
-      returns the actual number of characters read, or 0 if there were no characters remaining. */
+      returns the actual number of characters read, or 0 if there were no characters remaining.
+      Line breaks are not altered by this method - whatever line-break characters
+      are present in the original input stream are written to the output buffer unchanged.
+      Parameters:
+        buffer: The buffer to read characters into.
+        start: The index within the buffer to put the first character.
+        length: The maximum number of characters to read.
+      Returns:
+        The number of characters actually read.
+      Throws:
+        IOError: If there was an i/o error.
+   */
   def read(buffer:char[], start:int, length:int) -> int;
 
   /** Read characters until the next line-end delimiter. The delimiter is not included
-      in the result string. Returns an empty string if there are no more characters to be read. */
-  def readLn -> String;
+      in the result string. Returns an empty string if there are no more characters to be read.
+      Note that a line break may consist of a linefeed, carriage-return, or CR LF pair.
+      Returns: The next line in the stream, or 'void' if we've reached the end.
+      Throws:
+        IOError: If there was an i/o error.
+    */
+  def readLn -> String or void;
 
   /** Read all remaining characters in the stream. Returns an empty string if there are
-      no more characters to be read. */
+      no more characters to be read.
+      Line breaks are not altered by this method - whatever line-break characters
+      are present in the original input stream are returned unchanged.
+      Throws:
+        IOError: If there was an i/o error.
+    */
   def readAll -> String;
+
+  /** Returns an iterator over the lines of the stream. This repeatedly calls readLn()
+      until there are no more lines. */
+  def lines -> Iterator[String];
+
+  /** Skip over 'count' characters.
+    */
+  def skip(count:int64);
+
+  /** True if we've reached the end of available input. */
+  def atEnd: bool { get; }
+
+  /** Close the reader and release any resources held by the reader instance. */
+  def close;
 }

@@ -247,7 +247,7 @@ public class CompositeType : Type {
 	    let sb = StringBuilder(qualifiedName);
       let typeStrings = tart.collections.ArrayList[String]();
       for type in _typeParams {
-        typeStrings.add(type.toString());
+        typeStrings.append(type.toString());
       }
 
       sb.append(String.format("[{0}]", ",".join(typeStrings)));

@@ -85,7 +85,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
       return visitMultiAssign(static_cast<MultiAssignExpr *>(in));
 
     case Expr::Call:
-    case Expr::ExactCall:
+    case Expr::SuperCall:
     //case Expr::ICall:
     case Expr::Construct:
       return visitCall(static_cast<CallExpr *>(in));

@@ -1,0 +1,7 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that a function parameter expects a C-style array. */
+@Attribute(Attribute.Target.CALLABLE | Attribute.Target.PARAMETER)
+class CArray {
+  @Intrinsic def apply(m:tart.reflect.Member);
+}

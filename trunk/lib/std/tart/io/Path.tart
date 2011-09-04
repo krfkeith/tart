@@ -77,7 +77,7 @@ namespace Path {
 
     // The path root, if any, is copied verbatim.
     while pos < root {
-			result.add(path[pos++]);
+			result.append(path[pos++]);
     }
 
     // Now copy the directory components after the root.
@@ -99,12 +99,12 @@ namespace Path {
 			} else {
   			// Append a directory separator.
   			if result.size > root {
-  			  result.add(DIRECTORY_SEPARATOR);
+  			  result.append(DIRECTORY_SEPARATOR);
   			}
 
   			// And the path component
   			while pos < next {
-  			  result.add(path[pos++]);
+  			  result.append(path[pos++]);
   			}
 
   			if isDoubleDot {
