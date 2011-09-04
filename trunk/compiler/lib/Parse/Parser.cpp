@@ -99,6 +99,13 @@ StringRef Parser::matchIdent() {
     // Get the next token
     next();
     return value;
+  } else if (token == Token_Get) {
+    // 'get' and 'set' are allowed as identifiers except in accessor lists.
+    next();
+    return module->internString("get");
+  } else if (token == Token_Set) {
+    next();
+    return module->internString("set");
   }
   return StringRef();
 }
@@ -990,6 +997,9 @@ bool Parser::accessTypeModifiers(DeclModifiers & mods) {
     return true;
   } else if (match(Token_Private)) {
     mods.visibility = Private;
+    return true;
+  } else if (match(Token_Internal)) {
+    mods.visibility = Internal;
     return true;
   }
   return false;

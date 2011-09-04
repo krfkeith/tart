@@ -2,13 +2,15 @@
 
 Next up:
 
+* Start work on readonly / mutable / immutable type constructors and value casts.
+* String should take from Collection, not Copyable.
 * Change uses of isEqual method to isEqual binary function.
-* Make type conversions a binary function, not a method
 * Finish moving TypeInference to Sema/Infer
 * TypeInference can use additional refactoring / simplification I think.
 
-* Unit tests crashing in OS X Leopard
-* Get DWARF working again.
+* Bug in collection of global vars.
+* Get DWARF working again:
+  * local vars - why don't they work.
 * Deduce argument types and return types for anon funcs.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
@@ -16,7 +18,14 @@ Next up:
 
 Design TODOS:
 
-* Const-ness "const" and "const? / constable"
+* Const:
+  * readonly / mutable / immutable
+  * syntax is readonly(int)
+  * transitive? All reachable items? That's kinda kooky but might be useful.
+  * ImmutableList should derive from immutable(List) or readonly(List)?
+  * How do we mark which methods conform to the immutable(self) or readonly(self) contract?
+  * And mutable(self) means something entirely different: Actually the paradigm should be:
+    let mself = mutable(self);
 * Need a way to collect all declarations that a given attribute is assigned to.
 * With-statement multiple vars and tuple unpacking.
 
@@ -37,6 +46,7 @@ More things to do:
 
 Implementation TODOS:
 
+* Labeled break and continue statements.
 * Add structure compares. (And tuple compares, and so on for all types.)
 * Coalesced templates
 * Finish @Associative.
@@ -313,6 +323,105 @@ struct MethodLookup {
 }
 
 ClassRegistry
+
+// ------------------------------------------------------------------------
+
+Notes on object pinning:
+
+class Pin[%T] : ScopedObject {
+  private {
+    let _source:T;
+    let _value:T;
+    
+    static def makePinned(obj:T) -> T {
+      var size = GC.objectSize(obj);
+      // allocate this object on the global heap
+      // Copy all of the object data
+      // set the pinned bit
+      // return the object address
+    }
+  }
+  
+  def construct(sourceObj:T) {
+    self._soureObj = sourceObj;
+    self._pinnedObj = if GC.isPinned(sourceObj) { sourceObj } else { makePinned(sourceObj) };
+  }
+  
+  def sourceObj:T { get { return _sourceObj; }
+  def value:T { get { return _pinnedObj; } }
+  
+  def enterScope() {}
+  def exitScope() {
+    if _sourceObj is not _pinnedObj {
+      // Copy all the object data from _pinnedObj to _sourceObj
+      // Unset the _pinned bit on _pinnedObj
+    }
+  }
+}
+
+Usage:
+
+  with pinnedArray = GC.pin(array) {
+    with GC.suspension() {
+      read(pinnedArray.value, offset, count);
+    }
+  }
+
+  with pinnedArray = GC.pin(array), GC.suspension() {
+  }
+
+class PinnedArray[%T] : ScopedObject {
+}
+
+// ------------------------------------------------------------------------
+
+Ranges:
+
+namespace Range {
+  struct OpenEnumerable[%T] : Iterable[T] {
+  }
+  
+  struct Open {
+  }
+
+  struct Open[int] : Iterable[int] {
+    let begin:int;    ///< Start of the range. (exclusive)
+    let end:int;      ///< End of the range. (exclusive)
+    
+    def contains(value:int) {
+      
+    }
+  }
+  
+  struct Open[double] {
+    let begin:double;  ///< Start of the range. (exclusive)
+    let end:double;    ///< End of the range. (exclusive)
+  }
+  
+  struct Closed[int] : Iterable[int] {
+    let begin:int;    ///< Start of the range. (exclusive)
+    let end:int;      ///< End of the range. (exclusive)
+    
+    def contains(value:int) {
+      return value >= begin and value <= end;
+    }
+    
+    def iterate -> Iterator[int] {
+    }
+  }
+  
+  struct Closed[double] {
+    let begin:double;  ///< Start of the range. (exclusive)
+    let end:double;    ///< End of the range. (exclusive)
+
+    def contains(value:int) {
+      return value >= begin and value <= end;
+    }
+  }
+  
+  struct HalfOpen : Iterable[int] {
+  }
+}
 
 // ------------------------------------------------------------------------
 

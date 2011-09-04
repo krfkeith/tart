@@ -60,6 +60,9 @@ public final class StringBuilder {
     self._size = count;
   }
 
+  /** The character buffer. Note that the buffer may be longer than the actual string data. */
+  def chars:char[] { get { return value; } }
+
   /** The number of characters in the buffer. */
   def size:int {
     get { return self._size; }
@@ -223,7 +226,7 @@ public final class StringBuilder {
   }
 
   /** Return the character buffer as a String. */
-  override toString() -> String {
+  override toString -> String {
     return String(value, 0, self._size);
   }
 }

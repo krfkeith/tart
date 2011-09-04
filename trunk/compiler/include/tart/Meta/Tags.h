@@ -93,6 +93,7 @@ namespace ExprID {
     CONST_INT,
     CONST_STR,
     CONST_OBJ,
+    CONST_LVAL,
     UPCAST,
   };
 }

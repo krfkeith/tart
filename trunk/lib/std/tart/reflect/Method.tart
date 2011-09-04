@@ -57,7 +57,7 @@ final class Method : Member {
     if not functionType.paramTypes.isEmpty or functionType.returnType is PrimitiveType.VOID {
       let typeStrings = tart.collections.ArrayList[String]();
       for type in functionType.paramTypes {
-        typeStrings.add(type.toString());
+        typeStrings.append(type.toString());
       }
 
       sb.append(String.format("({0})", ",".join(typeStrings)));

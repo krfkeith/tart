@@ -777,6 +777,12 @@ Expr * MDReader::readExpression(SourceLocation loc, NodeRef node) {
       }
     }
 
+    case meta::ExprID::CONST_LVAL: {
+      StringRef qname = node.strArg(1);
+      DASSERT(false) << "Implement deserialization of variable reference: " << qname;
+      break;
+    }
+
 //    case meta::ExprID::CONST_NULL: {
 //    }
 

@@ -41,7 +41,7 @@ class ArrayListTest : Test {
 
 	def testAdd() {
 	  let a = ArrayList[int32](1, 2, 3);
-	  a.add(4);
+	  a.append(4);
 	  assertEq(4, a.size);
 	  assertEq(1, a[0]);
 	  assertEq(2, a[1]);
@@ -51,7 +51,7 @@ class ArrayListTest : Test {
 
   def testAddAll() {
     let a = ArrayList[int32](1, 2, 3);
-    a.addAll(Array.of(4, 5, 6));
+    a.appendAll(Array.of(4, 5, 6));
     assertEq(6, a.size);
     assertEq(1, a[0]);
     assertEq(2, a[1]);
@@ -97,5 +97,28 @@ class ArrayListTest : Test {
     assertEq(1, a[0]);
     assertEq(2, a[1]);
     assertEq(3, a[2]);
+  }
+
+  def testOf() {
+    let a = ArrayList.of(1, 2, 3);
+    assertEq(3, a.size);
+    assertEq(1, a[0]);
+    assertEq(2, a[1]);
+    assertEq(3, a[2]);
+  }
+
+  def testReplace() {
+    let a = ArrayList.of(1, 2, 3);
+    a.replace(0, 3, [5, 6, 7]);
+    assertContentsInOrder(a, 5, 6, 7);
+
+    a.replace(1, 3, [8, 9, 10]);
+    assertContentsInOrder(a, 5, 8, 9, 10);
+
+    a.replace(1, 1, [1, 2]);
+    assertContentsInOrder(a, 5, 1, 2, 9, 10);
+
+    a.replace(1, 3, []);
+    assertContentsInOrder(a, 5, 10);
   }
 }

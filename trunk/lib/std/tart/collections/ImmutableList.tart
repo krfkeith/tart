@@ -20,10 +20,11 @@ final class ImmutableList[%ElementType] : List[ElementType], Copyable[ElementTyp
     self.data = data;
   }
 
-  undef add(e:ElementType) ;
-  undef addAll(collection:Collection[ElementType]);
+  undef append(e:ElementType) ;
+  undef appendAll(collection:Collection[ElementType]);
   undef insert(position:int, e:ElementType);
   undef insertAll(position:int, collection:Collection[ElementType]);
+  undef replace(index:int, count:int, src:Collection[ElementType]);
   undef remove(index:int);
   undef clear();
 

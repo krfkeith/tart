@@ -25,7 +25,17 @@ class StringFormatter {
     self.builder = StringBuilder();
   }
 
-  def build() -> String {
+  override toString -> String {
+    buildImpl();
+    return builder.toString();
+  }
+
+  def toBuilder -> StringBuilder {
+    buildImpl();
+    return builder;
+  }
+
+  def buildImpl() {
     let it = formatString.iterate();
     var prevCh:char = 0;
     var state = State.TEXT;
@@ -88,7 +98,5 @@ class StringFormatter {
         break;
       }
     }
-
-    return builder.toString();
   }
 }

@@ -70,9 +70,9 @@ class StringTest : Test {
 
 	def testIterableStringJoin() {
 	  let a = tart.collections.ArrayList[String]();
-	  a.add("One");
-	  a.add("Two");
-	  a.add("Three");
+	  a.append("One");
+	  a.append("Two");
+	  a.append("Three");
 	  let s = ", ".join(a);
 	  assertEq("One, Two, Three", s);
 	}

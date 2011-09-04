@@ -106,6 +106,11 @@ public:
     return *this;
   }
 
+  inline FormatStream & operator<<(const Formattable & obj) {
+    obj.format(*this);
+    return *this;
+  }
+
   inline FormatStream & operator<<(Formattable * obj) {
     if (obj != NULL) {
       obj->format(*this);
@@ -150,6 +155,8 @@ private:
   }
 };
 
+/// -------------------------------------------------------------------
+/// FormatStream that writes to a string.
 class StrFormatStream : public FormatStream {
 public:
   StrFormatStream() : FormatStream(strm_), strm_(str_) {}
@@ -162,6 +169,8 @@ private:
   llvm::raw_svector_ostream strm_;
 };
 
+/// -------------------------------------------------------------------
+/// FormatStream that writes to a std::ostream.
 class OsFormatStream : public FormatStream {
 public:
   OsFormatStream(std::ostream & os) : FormatStream(strm_), strm_(os) {}
@@ -170,6 +179,31 @@ public:
 private:
   llvm::raw_os_ostream strm_;
 };
+
+/// -------------------------------------------------------------------
+/// Helper template that wraps an expression and makes it writeable to a format stream.
+template <class T> class FormatBinder : public Formattable {
+public:
+  FormatBinder(void (*func)(FormatStream &, const T &), const T & value)
+    : func_(func)
+    , value_(value)
+  {}
+
+  void format(FormatStream & out) const {
+    (*func_)(out, value_);
+  }
+
+private:
+  void (*func_)(FormatStream & out, const T & value);
+  const T & value_;
+};
+
+/// -------------------------------------------------------------------
+/// Helper template that wraps an expression and makes it writeable to a format stream.
+template <class T>
+FormatBinder<T> bindFormat(void (*func)(FormatStream &, const T &), const T & value) {
+  return FormatBinder<T>(func, value);
+}
 
 } // namespace tart
 

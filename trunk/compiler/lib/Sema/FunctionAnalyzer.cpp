@@ -446,18 +446,19 @@ bool FunctionAnalyzer::createCFG() {
       if (astBody != NULL) {
         StmtAnalyzer sa(target, astBody);
         success = sa.buildCFG();
-
-        // Make sure that the constructor calls the superclass and initializes all fields.
-        if (target->isCtor() && target->isSingular()) {
-          TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
-          CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
-          if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
-            ConstructorAnalyzer(cls).run(target);
+        if (success) {
+          // Make sure that the constructor calls the superclass and initializes all fields.
+          if (target->isCtor() && target->isSingular()) {
+            TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
+            CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
+            if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
+              ConstructorAnalyzer(cls).run(target);
+            }
           }
-        }
 
-        if (!target->isNested() && !target->closureEnvs().empty()) {
-          visitClosureEnvs(target->closureEnvs());
+          if (!target->isNested() && !target->closureEnvs().empty()) {
+            visitClosureEnvs(target->closureEnvs());
+          }
         }
       }
     }

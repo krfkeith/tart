@@ -59,7 +59,7 @@ class FunctionType : Type {
     if not paramTypes.isEmpty {
       let typeStrings = tart.collections.ArrayList[String]();
       for type in paramTypes {
-        typeStrings.add(type.toString());
+        typeStrings.append(type.toString());
       }
 
       sb.append(String.format("({0})", ",".join(typeStrings)));

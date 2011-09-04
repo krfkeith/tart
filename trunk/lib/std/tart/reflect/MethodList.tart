@@ -28,10 +28,11 @@ final class MethodList : List[Method] {
 		//}
   }
 
-  undef add(e:Method);
-  undef addAll(e:Collection[Method]);
+  undef append(e:Method);
+  undef appendAll(e:Collection[Method]);
   undef insert(position:int, e:Method);
   undef insertAll(position:int, e:Collection[Method]);
+  undef replace(index:int, count:int, src:Collection[Method]);
   undef remove(index:int);
   undef clear;
 

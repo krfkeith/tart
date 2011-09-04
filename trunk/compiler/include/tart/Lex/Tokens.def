@@ -99,6 +99,7 @@ DEFINE_TOKEN(Isa)
 DEFINE_TOKEN(Public)
 DEFINE_TOKEN(Private)
 DEFINE_TOKEN(Protected)
+DEFINE_TOKEN(Internal)
 
 // Modifier Keywords
 DEFINE_TOKEN(Static)

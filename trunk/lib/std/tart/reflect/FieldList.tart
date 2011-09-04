@@ -20,10 +20,11 @@ final class FieldList : List[Field] {
     }
   }
 
-  undef add(e:Field);
-  undef addAll(e:Collection[Field]);
+  undef append(e:Field);
+  undef appendAll(e:Collection[Field]);
   undef insert(position:int, e:Field);
   undef insertAll(position:int, e:Collection[Field]);
+  undef replace(index:int, count:int, src:Collection[Field]);
   undef remove(index:int);
   undef clear;
 

@@ -394,32 +394,6 @@ int UnionType::getTypeIndex(const Type * type) const {
   return -1;
 }
 
-#if 0
-int UnionType::getNonVoidTypeIndex(const Type * type) const {
-  type = dealias(type);
-
-  // If it only has reference types, then use subclass tests instead of
-  // a discriminator field.
-  if (hasRefTypesOnly()) {
-    return 0;
-  }
-
-  // Otherwise, calculate the type index.
-  int index = 0;
-  for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (!type->isVoidType()) {
-      if (type->isEqual(*it)) {
-        return index;
-      }
-
-      ++index;
-    }
-  }
-
-  return -1;
-}
-#endif
-
 Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   const Type * fromType = dealias(from->type());
   if (toType->isEqual(fromType)) {

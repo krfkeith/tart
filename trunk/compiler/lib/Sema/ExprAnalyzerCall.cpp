@@ -352,7 +352,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
   Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
   selfExpr = superClass->implicitCast(loc, selfExpr);
 
-  CallExpr * call = new CallExpr(Expr::ExactCall, loc, NULL);
+  CallExpr * call = new CallExpr(Expr::SuperCall, loc, NULL);
   call->setExpectedReturnType(expected);
   for (DefnList::iterator it = methods.begin(); it != methods.end(); ++it) {
     if (FunctionDefn * func = dyn_cast<FunctionDefn>(*it)) {
@@ -363,6 +363,16 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
   }
 
   if (!reduceArgList(args, call)) {
+    return &Expr::ErrorVal;
+  }
+
+  if (call->candidates().empty()) {
+    diag.error(loc) << "For call to 'super': No superclass method found for arguments (" <<
+              bindFormat(formatExprTypeList, call->args()) << ")";
+    diag.info(loc) << "Candidates are:";
+    for (DefnList::iterator it = methods.begin(); it != methods.end(); ++it) {
+      diag.info(*it) << *it;
+    }
     return &Expr::ErrorVal;
   }
 

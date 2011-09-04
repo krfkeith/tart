@@ -46,10 +46,14 @@ void AmbiguousParameterType::trace() const {
 }
 
 void AmbiguousParameterType::format(FormatStream & out) const {
-  out << "{" << callExpr_->candidates().front()->method()->name() << ".param[" <<
-      argIndex_ << "]: ";
-  TypeSetConstraint::format(out);
-  out << "}";
+  if (callExpr_->candidates().empty()) {
+    out << "{.param[]}";
+  } else {
+    out << "{" << callExpr_->candidates().front()->method()->name() << ".param[" <<
+        argIndex_ << "]: ";
+    TypeSetConstraint::format(out);
+    out << "}";
+  }
 }
 
 } // namespace tart

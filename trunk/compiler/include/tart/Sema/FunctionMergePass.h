@@ -32,6 +32,7 @@ class ArrayLiteralExpr;
 class SeqExpr;
 class IfExpr;
 class ForExpr;
+class ForEachExpr;
 class ReturnExpr;
 class ThrowExpr;
 class LocalProcedureExpr;
@@ -87,6 +88,7 @@ private:
   bool visitSeq(SeqExpr * from, SeqExpr * to);
   bool visitIf(IfExpr * from, IfExpr * to);
   bool visitFor(ForExpr * from, ForExpr * to);
+  bool visitForEach(ForEachExpr * from, ForEachExpr * to);
   bool visitReturn(ReturnExpr * from, ReturnExpr * to);
   bool visitThrow(ThrowExpr * from, ThrowExpr * to);
   bool visitLocalProcedure(LocalProcedureExpr * from, LocalProcedureExpr * to);

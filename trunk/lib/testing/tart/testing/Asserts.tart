@@ -1,5 +1,6 @@
 import tart.core.Debug.stringify;
 import tart.core.Debug.locationOf;
+import tart.collections.Iterators;
 
 namespace Asserts {
   def assertionFailed(loc:String, msg:String) {
@@ -160,10 +161,10 @@ namespace Asserts {
     }
   }
 
-  macro assertContentsInOrder[%T](expected:Iterable[T], actual:T...) {
+  macro assertContentsInOrder[%T](actual:Iterable[T], expected:T...) {
     if not Iterators.equal(expected, actual) {
-      throw assertionFailed(locationOf(actual),
-        String.concat("expected: ", expected.toString(), ", actual: ", actual.toString()));
+      assertionFailed(locationOf(actual),
+        String.format("expected: {0}, actual: {1}", expected, actual));
     }
   }
 
