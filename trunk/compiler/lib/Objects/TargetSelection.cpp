@@ -8,8 +8,9 @@
 
 #include "llvm/Module.h"
 #include "llvm/Target/TargetMachine.h"
-#include "llvm/Target/TargetRegistry.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/Host.h"
 
 static llvm::cl::opt<std::string>
@@ -87,7 +88,7 @@ bool TargetSelection::selectTarget() {
   }
 
   // Package up features to be passed to target/subtarget
-  std::string featuresStr;
+  llvm::SmallString<0> featuresStr;
   if (optMAttrs.size()) {
     DFAIL("Features disabled due to LLVM link error - investigate.");
 #if 0

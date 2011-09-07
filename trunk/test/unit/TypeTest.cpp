@@ -134,8 +134,8 @@ TEST_F(TupleTest, TupleTypeTest2) {
 }*/
 
 TEST_F(TupleTest, TupleConversion) {
-  TupleType * t0 = TupleType::get(&testClassTypes[0], &testClassTypes[2]);
-  TupleType * t1 = TupleType::get(&testClassTypes[0], &testClassTypes[2]);
+  TupleType * t0 = TupleType::get(&testClassTypes[0], &testClassTypes[1]);
+  TupleType * t1 = TupleType::get(&testClassTypes[0], &testClassTypes[1]);
   TupleType * t2 = TupleType::get(&intTypes[0], &intTypes[2]);
   TupleType * t3 = TupleType::get(&shortTypes[0], &shortTypes[2]);
 

@@ -568,6 +568,8 @@ private:
 
   llvm::Constant * genReflectionDataArray(
       const std::string & baseName, const VariableDefn * var, const ConstantList & values);
+  llvm::GlobalVariable * genAppendingArray(
+      llvm::ArrayRef<llvm::Constant*> elements, StringRef name);
 
   /** Generate code to throw a typecast exception at the current point. */
   void throwCondTypecastError(llvm::Value * typeTestResult);

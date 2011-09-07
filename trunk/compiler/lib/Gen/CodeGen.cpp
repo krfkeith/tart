@@ -168,6 +168,10 @@ void CodeGenerator::generate() {
 
   genModuleMetadata();
 
+  if (debug_) {
+    diBuilder_.finalize();
+  }
+
   if (Dump) {
     if (diag.getErrorCount() == 0) {
       fprintf(stderr, "------------------------------------------------\n");

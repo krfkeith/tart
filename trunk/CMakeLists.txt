@@ -65,7 +65,7 @@ find_package(LLVM REQUIRED)
 find_program(LLVM_LLC llc PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_LD llvm-ld PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_OPT opt PATHS ${LLVM_BIN_DIR})
-find_program(CLANG clang PATHS ${LLVM_BIN_DIR})
+find_program(CLANG clang PATHS ${LLVM_BIN_DIR} NO_DEFAULT_PATH)
 find_program(PYTHON3 python3)
 
 # Use clang if it's available
