@@ -41,13 +41,13 @@ set(TEST_BC_FILES)
 
 set(GENERATE_ASM 0)
 set(USE_LLVM_BINARIES 1)
-set(GENERATE_DEBUG_INFO 1)
+set(GENERATE_DEBUG_INFO 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 
 set(GC_PLUGIN "${PROJECT_BINARY_DIR}/linker/libgc${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(REFLECTOR_PLUGIN "${PROJECT_BINARY_DIR}/linker/libreflector${CMAKE_SHARED_LIBRARY_SUFFIX}")
-set(PUBLIC_SYMBOLS "main,String_create,TraceAction_traceDescriptors,GC_static_roots")
+set(PUBLIC_SYMBOLS "main,String_create,TraceAction_traceDescriptors,GC_static_roots,GC_static_roots_array")
 
 if (GENERATE_DEBUG_INFO)
   set(TART_OPTIONS ${TART_OPTIONS} -g)

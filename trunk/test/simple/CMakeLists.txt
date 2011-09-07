@@ -23,7 +23,7 @@ if (LIB_DL)
   set(TEST_LIBS ${TEST_LIBS} dl)
 endif (LIB_DL)
 
-set(GENERATE_DEBUG_INFO 1)
+set(GENERATE_DEBUG_INFO 0)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/test.deps OPTIONAL)
 

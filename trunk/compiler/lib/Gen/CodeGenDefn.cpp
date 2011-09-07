@@ -354,6 +354,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
         value = llvm::ConstantExpr::getPointerCast(cast<Constant>(value), irType->getPointerTo());
         //DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));
       } else {
+        let->type()->irTypeComplete();
         value = new GlobalVariable(
             *irModule_, irType, true, GlobalValue::ExternalLinkage, NULL, let->linkageName());
         DASSERT_TYPE_EQ(let->initValue(), irType, value->getType()->getContainedType(0));

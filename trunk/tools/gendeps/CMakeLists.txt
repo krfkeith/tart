@@ -1,4 +1,4 @@
-# CMake build file for Tart/tools
+# CMake build file for tool/gendeps
 
 # Create a command for each source file
 set(SEARCH_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SYSTEM_LIBRARY_PATH} ${LIB} /usr/local/lib)
@@ -10,7 +10,5 @@ execute_process(
 )
 
 add_executable(gendeps gendeps.cpp)
-target_link_libraries(gendeps
-    ${LLVM_GENDEPS_LIBS}
-    )
+target_link_libraries(gendeps ${LLVM_GENDEPS_LIBS})
 set_target_properties(gendeps PROPERTIES LINK_FLAGS "${LLVM_LD_FLAGS}")

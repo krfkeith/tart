@@ -578,12 +578,16 @@ void CodeGenerator::emitStaticRoots() {
     }
 
     // Create the appending linkage list of static roots.
-    ArrayType * arrayType = ArrayType::get(rootList.front()->getType(), rootList.size());
-    Constant * stackRootArray = ConstantArray::get(arrayType, rootList);
-    new GlobalVariable(*irModule_,
-        stackRootArray->getType(), true, GlobalValue::AppendingLinkage,
-        stackRootArray, "GC_static_roots_array");
+    genAppendingArray(rootList, "GC_static_roots_array");
   }
+}
+
+GlobalVariable * CodeGenerator::genAppendingArray(
+    ArrayRef<llvm::Constant*> elements, StringRef name) {
+  ArrayType * arrayType = ArrayType::get(elements.front()->getType(), elements.size());
+  Constant * arrayData = ConstantArray::get(arrayType, elements);
+  return new GlobalVariable(
+      *irModule_, arrayData->getType(), true, GlobalValue::AppendingLinkage, arrayData, name);
 }
 
 } // namespace tart

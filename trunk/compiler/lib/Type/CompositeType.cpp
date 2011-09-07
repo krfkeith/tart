@@ -219,7 +219,7 @@ void CompositeType::dumpHierarchy(bool full) const {
 llvm::Type * CompositeType::irType() const {
   if (irType_ == NULL) {
     DASSERT(!defn_->linkageName().empty());
-    irType_ = llvm::StructType::createNamed(llvm::getGlobalContext(), defn_->linkageName());
+    irType_ = llvm::StructType::create(llvm::getGlobalContext(), defn_->linkageName());
   }
   return irType_;
 }

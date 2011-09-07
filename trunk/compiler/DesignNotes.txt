@@ -5,8 +5,10 @@ Next up:
 * Start work on readonly / mutable / immutable type constructors and value casts.
 * String should take from Collection, not Copyable.
 * Change uses of isEqual method to isEqual binary function.
-* Finish moving TypeInference to Sema/Infer
-* TypeInference can use additional refactoring / simplification I think.
+* Type inference
+  * Pre-cull candidates that can never be chosen
+  * Finish moving classes to Sema/Infer
+  * can use additional refactoring / simplification I think.
 
 * Bug in collection of global vars.
 * Get DWARF working again:
@@ -378,9 +380,6 @@ class PinnedArray[%T] : ScopedObject {
 Ranges:
 
 namespace Range {
-  struct OpenEnumerable[%T] : Iterable[T] {
-  }
-  
   struct Open {
   }
 

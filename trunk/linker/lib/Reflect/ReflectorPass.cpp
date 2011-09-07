@@ -69,10 +69,10 @@ bool ReflectorPass::runOnModule(Module & module) {
 
     Constant * emptyModuleArray = requireGlobal("tart.reflect.Module[].emptyArray", module);
     Constant * emptyPackageArray = requireGlobal("tart.reflect.Package[].emptyArray", module);
-    Constant * packageTypeInfo = requireGlobal("tart.reflect.Package.type.tib", module);
-    Constant * packageArrayTypeInfo = requireGlobal("tart.reflect.Package[].type.tib", module);
-    Constant * moduleArrayTypeInfo = requireGlobal("tart.reflect.Module[].type.tib", module);
-    Constant * stringTypeInfo = requireGlobal("tart.core.String.type.tib", module);
+    Constant * packageTypeInfo = requireGlobal("tart.reflect.Package.TIB", module);
+    Constant * packageArrayTypeInfo = requireGlobal("tart.reflect.Package[].TIB", module);
+    Constant * moduleArrayTypeInfo = requireGlobal("tart.reflect.Module[].TIB", module);
+    Constant * stringTypeInfo = requireGlobal("tart.core.String.TIB", module);
 
     for (GlobalVarMap::iterator it = modules_.begin(); it != modules_.end(); ++it) {
       GlobalVariable * moduleVar = it->second;

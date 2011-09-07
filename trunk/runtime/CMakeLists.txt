@@ -13,13 +13,12 @@ if (CMAKE_COMPILER_IS_GNUCC)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-  remove_definitions(
-      -Wno-deprecated -Wno-unused
-      )
+  remove_definitions(-Wno-deprecated -Wno-unused)
   set_source_files_properties(lib/GC.cpp PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -fno-rtti")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_COMPILER_IS_CLANG)
+  remove_definitions(-Wno-deprecated -Wno-unused)
   set_source_files_properties(${sources_cpp} PROPERTIES COMPILE_FLAGS "-fno-rtti -fno-exceptions")
   remove_definitions(-fno-rtti)
 endif (CMAKE_COMPILER_IS_CLANG)

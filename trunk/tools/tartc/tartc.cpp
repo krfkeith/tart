@@ -15,8 +15,7 @@
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Support/FileSystem.h"
-
-#include "llvm/Target/TargetSelect.h"
+#include "llvm/Support/TargetSelect.h"
 
 #include "config_paths.h"
 

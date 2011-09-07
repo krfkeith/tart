@@ -155,7 +155,8 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
     isDefinition = true;
     if (fn->storageClass() == Storage_Instance) {
       sp = diBuilder_.createMethod(
-          compileUnit(), // genDefnScope(fn),
+          compileUnit(),
+          //genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
           genDIFile(fn),
@@ -168,7 +169,8 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
           fval);
     } else {
       sp = diBuilder_.createFunction(
-          compileUnit(), // genDefnScope(fn),
+          compileUnit(),
+          //genDefnScope(fn),
           fn->name(),
           fn->linkageName(),
           genDIFile(fn),

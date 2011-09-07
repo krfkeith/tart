@@ -59,9 +59,9 @@ bool StaticRoots::runOnModule(llvm::Module & module) {
           Constant * traceTable = cast_or_null<Constant>(m->getOperand(1));
           if (gv != NULL) {
             if (traceTable == NULL) {
-              //outs() << "Null Root: " << gv->getName() << "\n";
+              outs() << "Null Root: " << gv->getName() << "\n";
             } else {
-              //outs() << "Root: " << gv->getName() << "\n";
+              outs() << "Root: " << gv->getName() << "\n";
               members[0] = llvm::ConstantExpr::getPointerCast(gv, int8PtrTy);
               members[1] = traceTable;
               rootStruct = ConstantStruct::get(rootType, members);

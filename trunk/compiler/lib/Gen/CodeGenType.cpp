@@ -112,11 +112,18 @@ Constant * CodeGenerator::getTypeInfoBlockPtr(const CompositeType * type) {
 
   RuntimeTypeInfo * rtype = getRTTypeInfo(type);
   if (rtype->getTypeInfoBlock() == NULL) {
+    llvm::Type * tibType;
+    if (rtype->isExternal()) {
+      tibType = Builtins::typeTypeInfoBlock.irType();
+    } else {
+      llvm::SmallString<64> tibTypeName(type->typeDefn()->linkageName());
+      tibTypeName += ".TIBType";
+      tibType = StructType::create(context_, tibTypeName);
+    }
     rtype->setTypeInfoBlock(
-        new GlobalVariable(*irModule_,
-            StructType::createNamed(context_, StringRef()),
-            true, rtype->getLinkageType(), NULL,
-            type->typeDefn()->linkageName() + ".type.tib"));
+        new GlobalVariable(
+            *irModule_, tibType, true, rtype->getLinkageType(), NULL,
+            type->typeDefn()->linkageName() + ".TIB"));
   }
 
   return llvm::ConstantExpr::getPointerCast(
@@ -161,7 +168,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
       baseClassList);
   GlobalVariable * baseClassArrayPtr = new GlobalVariable(*irModule_,
     baseClassArray->getType(), true, GlobalValue::LinkOnceAnyLinkage,
-    baseClassArray, type->typeDefn()->linkageName() + ".type.tib.bases");
+    baseClassArray, type->typeDefn()->linkageName() + ".TIB.bases");
 
   // Generate the interface dispatch function
   Function * idispatch = NULL;
@@ -278,7 +285,7 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   DASSERT_OBJ(type->typeClass() == Type::Class, type);
 
   // Create the dispatch function declaration
-  std::vector<llvm::Type *> argTypes;
+  SmallVector<llvm::Type *, 16> argTypes;
   argTypes.push_back(Builtins::typeString.irType()->getPointerTo());
   argTypes.push_back(builder_.getInt32Ty());
   llvm::FunctionType * functype = llvm::FunctionType::get(methodPtrType_, argTypes, false);
