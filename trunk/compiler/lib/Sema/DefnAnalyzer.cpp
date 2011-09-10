@@ -18,6 +18,7 @@
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/UnitType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 #include "tart/Common/PackageMgr.h"
@@ -233,7 +234,7 @@ bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
   for (ExprList::const_iterator it = in->attrs().begin(); it != in->attrs().end(); ++it) {
     Expr * existingAttr = *it;
     const CompositeType * existingAttrType = cast<CompositeType>(existingAttr->type());
-    if (existingAttrType->isEqual(attrType)) {
+    if (TypeRelation::isEqual(existingAttrType, attrType)) {
       return true;
     }
   }
@@ -302,7 +303,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     if (attrExpr->exprType() == Expr::ConstObjRef) {
       const CompositeType * attrClass = cast<CompositeType>(attrType);
       ConstantObjectRef * attrObj = static_cast<ConstantObjectRef *>(attrExpr);
-      DASSERT_OBJ(attrExpr->type()->isEqual(attrClass), attrExpr->type());
+      DASSERT_OBJ(TypeRelation::isEqual(attrExpr->type(), attrClass), attrExpr->type());
 
       // Special case for @Attribute
       if (attrClass == Builtins::typeAttribute) {

@@ -85,14 +85,12 @@ public:
       const Type * selfType, const ParameterList & params, const Type * returnType) const;
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const;
   Expr * nullInitValue() const;
   bool isSingular() const;
   TypeShape typeShape() const;
   void trace() const;
   void format(FormatStream & out) const;
-  unsigned getHashValue() const;
 
   static inline bool classof(const FunctionType *) { return true; }
   static inline bool classof(const Type * type) {

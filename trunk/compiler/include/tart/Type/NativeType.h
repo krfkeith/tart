@@ -38,12 +38,10 @@ public:
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   bool isSingular() const;
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;
   Expr * nullInitValue() const;
-  unsigned getHashValue() const;
 
   static inline bool classof(const AddressType *) { return true; }
   static inline bool classof(const Type * t) {
@@ -94,11 +92,9 @@ public:
   llvm::Type * createIRType() const;
   llvm::Type * irParameterType() const;
   bool isSingular() const;
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;
-  unsigned getHashValue() const;
 
   static inline bool classof(const NativeArrayType *) { return true; }
   static inline bool classof(const Type * t) {
@@ -144,11 +140,9 @@ public:
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   bool isSingular() const;
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   void trace() const;
-  unsigned getHashValue() const;
 
   static inline bool classof(const FlexibleArrayType *) { return true; }
   static inline bool classof(const Type * t) {

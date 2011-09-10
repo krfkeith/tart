@@ -183,14 +183,6 @@ llvm::Type * TupleType::irParameterType() const {
   }
 }
 
-bool TupleType::isEqual(const Type * other) const {
-  if (other == this) {
-    return true;
-  }
-
-  return false;
-}
-
 bool TupleType::isSingular() const {
   for (TupleType::const_iterator it = members_.begin(); it != members_.end(); ++it) {
     if (!(*it)->isSingular()) {

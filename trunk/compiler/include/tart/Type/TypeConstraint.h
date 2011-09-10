@@ -50,7 +50,6 @@ class TypeSetConstraint : public TypeConstraint {
 public:
 
   const Type * singularValue() const;
-  bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const;
   void format(FormatStream & out) const;

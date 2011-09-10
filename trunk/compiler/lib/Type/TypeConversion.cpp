@@ -688,7 +688,11 @@ ConversionRank convert(
     }
 
     case Type::ModVariadic:
-    case Type::CVQual:
+    case Type::ModMutable:
+    case Type::ModImmutable:
+    case Type::ModReadOnly:
+    case Type::ModAdopted:
+    case Type::ModVolatile:
     case Type::KindCount:
       DFAIL("Type class not supported by convert()");
       break;

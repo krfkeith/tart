@@ -15,6 +15,7 @@
 #include "tart/Type/TypeConversion.h"
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/UnitType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/AnalyzerBase.h"
 #include "tart/Sema/ScopeBuilder.h"
@@ -432,7 +433,7 @@ bool Template::canUnify(const Type * param, const Type * value) const {
       return true;
 
     default:
-      return param->isEqual(value);
+      return TypeRelation::isEqual(param, value);
   }
 }
 

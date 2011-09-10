@@ -37,23 +37,6 @@ const Type * TypeSetConstraint::singularValue() const {
   return NULL;
 }
 
-bool TypeSetConstraint::isEqual(const Type * other) const {
-  // It's equal only if it's a equal to every member
-  TypeExpansion expansion;
-  expand(expansion);
-  if (expansion.empty()) {
-    return false;
-  }
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-    const Type * ty = *it;
-    if (!ty->isEqual(other)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 bool TypeSetConstraint::isSingular() const {
   const Type * ty = singularValue();
   return ty != NULL; // && ty->isSingular();

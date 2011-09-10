@@ -2,17 +2,20 @@
    TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Expr/Exprs.h"
-#include "tart/Expr/StmtExprs.h"
 #include "tart/Defn/TypeDefn.h"
-#include "tart/Expr/Constant.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/CompositeType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/Template.h"
+
+#include "tart/Expr/Exprs.h"
+#include "tart/Expr/StmtExprs.h"
+#include "tart/Expr/Constant.h"
+#include "tart/Expr/Closure.h"
+
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Expr/Closure.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Gen/CodeGenerator.h"
 #include "tart/Gen/StructBuilder.h"
@@ -489,7 +492,7 @@ Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
 }
 
 Value * CodeGenerator::genRefEq(const BinaryExpr * in, bool invert) {
-  DASSERT_OBJ(in->first()->type()->isEqual(in->second()->type()), in);
+  DASSERT_OBJ(TypeRelation::isEqual(in->first()->type(), in->second()->type()), in);
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
   if (first != NULL && second != NULL) {

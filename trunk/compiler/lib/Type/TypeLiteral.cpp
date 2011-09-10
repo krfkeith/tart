@@ -95,14 +95,6 @@ bool TypeLiteralType::isSingular() const {
   return literalType_->isSingular();
 }
 
-bool TypeLiteralType::isEqual(const Type * other) const {
-  if (const TypeLiteralType * np = dyn_cast<TypeLiteralType>(other)) {
-    return literalType_->isEqual(np->literalType_);
-  }
-
-  return false;
-}
-
 void TypeLiteralType::format(FormatStream & out) const {
   out << "TypeLiteral[" << literalType_ << "]";
 }

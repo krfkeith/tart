@@ -87,7 +87,6 @@ public:
   llvm::Type * createIRType() const;
   llvm::Type * irParameterType() const;
   llvm::Type * getDiscriminatorType() const;
-  bool isEqual(const Type * other) const;
   bool isSingular() const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const;

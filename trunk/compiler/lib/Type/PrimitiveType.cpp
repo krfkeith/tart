@@ -14,6 +14,7 @@
 #include "tart/Type/StaticType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -229,7 +230,7 @@ ConversionRank PrimitiveType::convertConstantToInteger(const Conversion & cn) co
   Expr * fromValue = cn.fromValue;
 
   DASSERT(fromValue != NULL);
-  DASSERT(fromValue->type()->isEqual(fromType));
+  DASSERT(TypeRelation::isEqual(fromValue->type(), fromType));
 
   fromType = derefEnumType(fromType);
   TypeId dstId = this->typeId();
@@ -445,7 +446,7 @@ ConversionRank PrimitiveType::convertConstantToFloat(const Conversion & cn) cons
   Expr * fromValue = cn.fromValue;
 
   DASSERT(fromValue != NULL);
-  DASSERT(fromValue->type()->isEqual(fromType));
+  DASSERT(TypeRelation::isEqual(fromValue->type(), fromType));
 
   TypeId dstId = this->typeId();
   uint32_t dstBits = this->numBits();
@@ -591,7 +592,7 @@ ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const
   Expr * fromValue = cn.fromValue;
 
   DASSERT(fromValue != NULL);
-  DASSERT(fromValue->type()->isEqual(fromType));
+  DASSERT(TypeRelation::isEqual(fromValue->type(), fromType));
 
   if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
     if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
@@ -782,7 +783,7 @@ template<> uint32_t VoidType::numBits() const {
 
 template<> ConversionRank
 VoidType::convertImpl(const Conversion & cn) const {
-  if (cn.getFromType()->isEqual(this)) {
+  if (TypeRelation::isEqual(cn.getFromType(), this)) {
     if (cn.fromValue && cn.resultValue) {
       *cn.resultValue = cn.fromValue;
     }

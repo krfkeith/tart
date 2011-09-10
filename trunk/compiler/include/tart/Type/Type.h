@@ -152,9 +152,6 @@ public:
   /** Return the list of all type parameters for this type. */
   void getTypeParams(ConstTypeList & out) const;
 
-  /** Return true if two types are identical. */
-  virtual bool isEqual(const Type * other) const;
-
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
 
@@ -226,11 +223,6 @@ public:
       this type cannot be null-initialized. */
   virtual Expr * nullInitValue() const { return NULL; }
 
-  /** Compute a hash value for this type. */
-  virtual unsigned getHashValue() const {
-    return (uintptr_t(this) >> 4) ^ (uintptr_t(this) >> 9);
-  }
-
   // Overrides
 
   void trace() const;
@@ -242,7 +234,7 @@ public:
       is no such type.  */
   static const Type * commonBase(const Type * type1, const Type * type2);
 
-  // Structure used when using type pointers as a key.
+  // Traits used when using type pointers as a key.
   struct KeyInfo {
     static inline const Type * getEmptyKey() { return reinterpret_cast<const Type *>(0); }
     static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
@@ -252,25 +244,6 @@ public:
     }
 
     static bool isEqual(const Type * lhs, const Type * rhs) {
-      return lhs == rhs;
-    }
-
-    static bool isPod() { return true; }
-  };
-
-  // Structure used when using type pointers as a key.
-  struct CanonicalKeyInfo {
-    static inline const Type * getEmptyKey() { return reinterpret_cast<const Type *>(0); }
-    static inline const Type * getTombstoneKey() { return reinterpret_cast<const Type *>(-1); }
-
-    static unsigned getHashValue(const Type * val) {
-      return val != NULL ? val->getHashValue() : 0;
-    }
-
-    static bool isEqual(const Type * lhs, const Type * rhs) {
-      if (lhs != NULL && rhs != NULL && lhs != getTombstoneKey() && rhs != getTombstoneKey()) {
-        return lhs->isEqual(rhs);
-      }
       return lhs == rhs;
     }
 
@@ -390,45 +363,6 @@ private:
   const Type * second_;
 };
 
-/// -------------------------------------------------------------------
-/// A const/volatile qualifier on a type.
-class CVQualifiedType : public Type {
-public:
-  enum Qualifier {
-    CONST = (1<<0),
-    VOLATILE = (1<<1),
-  };
-
-  /** Derive a CVQualified type from a base type. */
-  static CVQualifiedType * get(const Type * baseType, int qualifiers);
-
-  ~CVQualifiedType();
-
-  // Overrides
-
-  size_t numTypeParams() const { return 0; }
-  llvm::Type * irType() const { return baseType_->irType(); }
-  bool isSingular() const { return baseType_->isSingular(); }
-  bool isEqual(const Type * other) const;
-  bool isReferenceType() const { return baseType_->isReferenceType(); }
-  void format(FormatStream & out) const;
-  TypeShape typeShape() const { return baseType_->typeShape(); }
-
-  static inline bool classof(const CVQualifiedType *) { return true; }
-  static inline bool classof(const Type * t) {
-    return t->typeClass() == CVQual;
-  }
-
-private:
-  typedef llvm::DenseMap<const Type *, CVQualifiedType *, Type::KeyInfo> TypeMap;
-  static TypeMap uniqueTypes_;
-
-  CVQualifiedType(const Type * elemType, int qualifiers);
-
-  const Type * baseType_;
-  int qualifiers_;
-};
-
 // -------------------------------------------------------------------
 // Utility functions
 
@@ -460,14 +394,6 @@ Type * dealias(Type * t);
 inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {
   return out << Type::typeClassName(tc);
 }
-
-/** Type equality functor. */
-class TypeEquals {
-public:
-  bool operator()(const Type * t0, const Type * t1) {
-    return t0->isEqual(t1);
-  }
-};
 
 bool isLargeIRType(const Type * type);
 

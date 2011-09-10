@@ -5,10 +5,13 @@
 #include "tart/Common/Diagnostics.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/Template.h"
+
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Defn/Template.h"
+#include "tart/Type/TypeRelation.h"
+
 #include "tart/Objects/Intrinsic.h"
 #include "tart/Objects/Builtins.h"
 
@@ -142,7 +145,7 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
     return false;
   }
 
-  if (!ft0->returnType()->isEqual(ft1->returnType())) {
+  if (!TypeRelation::isEqual(ft0->returnType(), ft1->returnType())) {
     return false;
   }
 
@@ -161,7 +164,7 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
       return false;
     }
 
-    if (!p0->type()->isEqual(p1->type())) {
+    if (!TypeRelation::isEqual(p0->type(), p1->type())) {
       return false;
     }
 
@@ -183,7 +186,7 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   const Type * baseReturn = baseType->returnType();
   const Type * funcReturn = funcType->returnType();
 
-  if (!baseReturn->isEqual(funcReturn)) {
+  if (!TypeRelation::isEqual(baseReturn, funcReturn)) {
     // TODO: Variance test.
     return false;
   }
@@ -205,7 +208,7 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
     const Type * baseArgType = baseArg->type();
     const Type * funcArgType = funcArg->type();
 
-    if (!baseArgType->isEqual(funcArgType)) {
+    if (!TypeRelation::isEqual(baseArgType, funcArgType)) {
       switch (baseArg->variance()) {
         case Invariant:
           // funcArgType must be equal to base type

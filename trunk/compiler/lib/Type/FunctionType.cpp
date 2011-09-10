@@ -207,47 +207,8 @@ llvm::Type * FunctionType::irParameterType() const {
   }
 }
 
-bool FunctionType::isEqual(const Type * other) const {
-  if (const FunctionType * ft = dyn_cast<FunctionType>(other)) {
-    if (ft->params().size() != params_.size()) {
-      return false;
-    }
-
-    // Note that selfParam types are not compared. I *think* that's right, but
-    // I'm not sure.
-
-    if (ft->isStatic() != isStatic()) {
-      return false;
-    }
-
-    DASSERT(ft->returnType() != NULL);
-    if (!ft->returnType()->isEqual(returnType())) {
-      return false;
-    }
-
-    size_t numParams = params_.size();
-    for (size_t i = 0; i < numParams; ++i) {
-      if (!params_[i]->type()->isEqual(ft->params_[i]->type())) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
 bool FunctionType::isReferenceType() const {
   return true;
-}
-
-unsigned FunctionType::getHashValue() const {
-  IncrementalHash hash;
-  hash.add(returnType_->getHashValue());
-  hash.add(paramTypes()->getHashValue());
-  hash.add(isStatic());
-  return hash.end();
 }
 
 Expr * FunctionType::nullInitValue() const {

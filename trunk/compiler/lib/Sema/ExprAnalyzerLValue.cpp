@@ -14,6 +14,7 @@
 #include "tart/Type/NativeType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeConversion.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -479,7 +480,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(getter->returnType()->isEqual(prop->type()), getter);
+  DASSERT_OBJ(TypeRelation::isEqual(getter->returnType(), prop->type()), getter);
   DASSERT_OBJ(!getter->returnType()->isVoidType(), getter);
 
 #if 0

@@ -274,6 +274,15 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
     } else if (match(Token_Readonly)) {
       mods.flags |= ReadOnly;
       modifier = true;
+    } else if (match(Token_Mutable)) {
+      mods.flags |= Mutable;
+      modifier = true;
+    } else if (match(Token_Immutable)) {
+      mods.flags |= Immutable;
+      modifier = true;
+    } else if (match(Token_Adopted)) {
+      mods.flags |= Adopted;
+      modifier = true;
     } else if (match(Token_Abstract)) {
       mods.flags |= Abstract;
       modifier = true;
@@ -1116,13 +1125,13 @@ ASTNode * Parser::typeExprPrimary() {
     if (paramDefault != NULL) {
       result = new ASTOper(ASTNode::Assign, result, paramDefault);
     }
-  } else if (match(Token_Optional)) {
-    result = typeExprPrimary();
-    if (result != NULL) {
-      result = new ASTOper(ASTNode::LogicalOr, result, &NullType::biDef);
-    }
-
-    return result;
+//  } else if (match(Token_Optional)) {
+//    result = typeExprPrimary();
+//    if (result != NULL) {
+//      result = new ASTOper(ASTNode::LogicalOr, result, &NullType::biDef);
+//    }
+//
+//    return result;
   } else if (match(Token_Static)) {
     if (match(Token_Function)) {
       // Function type.
@@ -1134,6 +1143,16 @@ ASTNode * Parser::typeExprPrimary() {
   } else if (match(Token_Function)) {
     // Function type.
     result = functionDeclaration(ASTNode::AnonFn, "", DeclModifiers());
+  } else if (match(Token_Readonly)) {
+    result = modifiedType(ASTNode::TypeModReadOnly);
+  } else if (match(Token_Mutable)) {
+    result = modifiedType(ASTNode::TypeModMutable);
+  } else if (match(Token_Immutable)) {
+    result = modifiedType(ASTNode::TypeModImmutable);
+  } else if (match(Token_Adopted)) {
+    result = modifiedType(ASTNode::TypeModAdopted);
+  } else if (match(Token_Volatile)) {
+    result = modifiedType(ASTNode::TypeModVolatile);
   } else {
     // Identifier or declaration
     result = typeName();
@@ -1145,6 +1164,27 @@ ASTNode * Parser::typeExprPrimary() {
 
   result = typeSuffix(result);
   return result;
+}
+
+ASTNode * Parser::modifiedType(ASTNode::NodeType nt) {
+  SourceLocation loc = lexer.tokenLocation();
+
+  if (!match(Token_LParen)) {
+    expected("'(' after type modifier name");
+    return NULL;
+  }
+
+  ASTNode * base = typeExpression();
+  if (base == NULL) {
+    return NULL;
+  }
+
+  if (!match(Token_RParen)) {
+    expectedCloseParen();
+  }
+
+  loc |= lexer.tokenLocation();
+  return new ASTOper(nt, loc, base);
 }
 
 ASTNode * Parser::typeName() {
@@ -1160,7 +1200,6 @@ ASTNode * Parser::typeName() {
   } else {
     return NULL;
   }
-
 
   while (match(Token_Dot)) {
     StringRef typeName = matchIdent();
@@ -2573,6 +2612,26 @@ ASTNode * Parser::primaryExpression() {
     case Token_Match:
       next();
       return matchStmt();
+
+    case Token_Readonly:
+      next();
+      return modifiedType(ASTNode::TypeModReadOnly);
+
+    case Token_Mutable:
+      next();
+      return modifiedType(ASTNode::TypeModMutable);
+
+    case Token_Immutable:
+      next();
+      return modifiedType(ASTNode::TypeModImmutable);
+
+    case Token_Adopted:
+      next();
+      return modifiedType(ASTNode::TypeModAdopted);
+
+    case Token_Volatile:
+      next();
+      return modifiedType(ASTNode::TypeModVolatile);
 
     default:
       if (token >= Token_BoolType && token <= Token_UIntpType) {

@@ -137,6 +137,9 @@ public:
   /** Parse a type name - this includes compound names and template params. */
   ASTNode * typeName();
 
+  /** Parse a type modifier expression, such as "mutable(type)" */
+  ASTNode * modifiedType(ASTNode::NodeType nt);
+
   /** Parse the optional suffix of a type name. */
   ASTNode * typeSuffix(ASTNode * result);
 

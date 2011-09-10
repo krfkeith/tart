@@ -158,7 +158,7 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
     const Type * param = tm->typeParam(i);
     const Type * oparam = otm->typeParam(i);
 
-    if (!param->isEqual(oparam)) {
+    if (!TypeRelation::isEqual(param, oparam)) {
       same = false;
       if (!TypeRelation::isSubtype(param, oparam)) {
         if (oparam->typeClass() != Type::TypeVar) {

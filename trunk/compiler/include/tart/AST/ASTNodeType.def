@@ -47,6 +47,13 @@ NODE_TYPE(Address)
 NODE_TYPE(FlexArray)
 NODE_TYPE(NativeArray)
 
+// Type modifiers
+NODE_TYPE(TypeModMutable)
+NODE_TYPE(TypeModImmutable)
+NODE_TYPE(TypeModReadOnly)
+NODE_TYPE(TypeModAdopted)
+NODE_TYPE(TypeModVolatile)
+
 // Binary operators
 NODE_TYPE(Assign)
 NODE_TYPE(AssignAdd)

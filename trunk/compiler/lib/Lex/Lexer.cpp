@@ -43,6 +43,7 @@ namespace {
           if (strcmp(kw, "as") == 0) return Token_As;
           if (strcmp(kw, "and") == 0) return Token_LogicalAnd;
           if (strcmp(kw, "abstract") == 0) return Token_Abstract;
+          if (strcmp(kw, "adopted") == 0) return Token_Adopted;
           break;
 
         case 'b':
@@ -55,7 +56,6 @@ namespace {
           if (strcmp(kw, "catch") == 0) return Token_Catch;
           if (strcmp(kw, "char") == 0) return Token_CharType;
           if (strcmp(kw, "continue") == 0) return Token_Continue;
-          if (strcmp(kw, "const") == 0) return Token_Const;
           if (strcmp(kw, "case") == 0) return Token_Case;
           break;
 
@@ -92,6 +92,7 @@ namespace {
           if (strcmp(kw, "int32") == 0) return Token_IntType;
           if (strcmp(kw, "int64") == 0) return Token_LongType;
           if (strcmp(kw, "internal") == 0) return Token_Internal;
+          if (strcmp(kw, "immutable") == 0) return Token_Immutable;
           break;
 
         case 'g':
@@ -106,6 +107,7 @@ namespace {
           if (strcmp(kw, "module") == 0) return Token_Module;
           if (strcmp(kw, "macro") == 0) return Token_Macro;
           if (strcmp(kw, "match") == 0) return Token_Match;
+          if (strcmp(kw, "mutable") == 0) return Token_Mutable;
           break;
 
         case 'n':
@@ -163,6 +165,7 @@ namespace {
         case 'v':
           if (strcmp(kw, "var") == 0) return Token_Var;
           if (strcmp(kw, "void") == 0) return Token_VoidType;
+          if (strcmp(kw, "volatile") == 0) return Token_Volatile;
           break;
 
         case 'w':

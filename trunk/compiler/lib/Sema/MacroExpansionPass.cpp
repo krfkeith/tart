@@ -11,6 +11,7 @@
 
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/AST/Stmt.h"
 
@@ -70,7 +71,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     for (size_t i = 0; i < argCount; ++i) {
       ParameterDefn * param = macro->params()[i];
       Expr * arg = in->arg(i);
-      DASSERT(arg->type()->isEqual(param->internalType()));
+      DASSERT(TypeRelation::isEqual(arg->type(), param->internalType()));
       VariableDefn * binding = new VariableDefn(Defn::MacroArg, NULL, param->name());
       binding->setInitValue(arg);
       binding->setType(param->internalType());

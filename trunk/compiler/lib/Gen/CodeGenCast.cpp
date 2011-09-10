@@ -4,14 +4,17 @@
 
 #include "tart/CFG/CFG.h"
 #include "tart/Expr/Exprs.h"
+
+#include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/Template.h"
+#include "tart/Defn/Module.h"
+
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/PrimitiveType.h"
-#include "tart/Defn/FunctionDefn.h"
 #include "tart/Type/EnumType.h"
-#include "tart/Defn/Template.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
-#include "tart/Defn/Module.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Gen/CodeGenerator.h"
 
@@ -31,7 +34,7 @@ using namespace llvm;
 // TODO: Determine if we need to save any GC roots here.
 Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * toType) {
   // If types are the same, no need for a cast.
-  if (fromType->isEqual(toType)) {
+  if (TypeRelation::isEqual(fromType, toType)) {
     return in;
   }
 
