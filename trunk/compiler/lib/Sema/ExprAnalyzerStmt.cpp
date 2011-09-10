@@ -19,6 +19,7 @@
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeConversion.h"
+#include "tart/Type/TypeRelation.h"
 #include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Common/Diagnostics.h"
@@ -803,7 +804,7 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
     // actually return, it assigns to the macro result and then branches.
     if (macroReturnVal_ != NULL) {
       // Do the assignment and branch to the macro exit.
-      DASSERT(returnType_->isEqual(macroReturnVal_->type()));
+      DASSERT(TypeRelation::isEqual(returnType_, macroReturnVal_->type()));
       return new BinaryExpr(Expr::Prog2, st->location(), &VoidType::instance,
           new AssignmentExpr(st->location(), macroReturnVal_, resultVal),
           new BranchExpr(Expr::LocalReturn, st->location()));

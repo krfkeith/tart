@@ -51,10 +51,13 @@ enum Variance {
 enum DeclFlags {
   Final = (1<<0),         // Can't be overridden
   Abstract = (1<<1),      // Can't be instantiated
-  ReadOnly = (1<<2),      // Can't be written to from non-privileged code
-  Undef = (1<<3),         // Undefined method
-  Override = (1<<4),      // Overridden method
-  Static = (1<<5),        // Was declared static
+  ReadOnly = (1<<2),      // You can't modify it, although someone else can
+  Mutable = (1<<3),       // Can be modified even if object is otherwise readonly
+  Immutable = (1<<4),     // Guaranteed never to change
+  Adopted = (1<<5),       // Inherits mutability from parent object
+  Undef = (1<<6),         // Undefined method
+  Override = (1<<7),      // Overridden method
+  Static = (1<<8),        // Was declared static
 };
 
 /// -------------------------------------------------------------------

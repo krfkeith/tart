@@ -17,6 +17,10 @@
 #include "tart/Type/CompositeType.h"
 #endif
 
+#ifndef TART_TYPE_FUNCTIONTYPE_H
+#include "tart/Type/FunctionType.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------

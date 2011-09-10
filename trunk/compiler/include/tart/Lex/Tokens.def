@@ -106,8 +106,11 @@ DEFINE_TOKEN(Static)
 DEFINE_TOKEN(Final)
 DEFINE_TOKEN(Abstract)
 DEFINE_TOKEN(Readonly)
-DEFINE_TOKEN(Const)
+DEFINE_TOKEN(Mutable)
+DEFINE_TOKEN(Immutable)
+DEFINE_TOKEN(Adopted)
 DEFINE_TOKEN(Optional)
+DEFINE_TOKEN(Volatile)
 
 // Primitive types
 DEFINE_TOKEN(BoolType)

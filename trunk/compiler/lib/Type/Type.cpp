@@ -252,10 +252,6 @@ void Type::getTypeParams(ConstTypeList & out) const {
   }
 }
 
-bool Type::isEqual(const Type * other) const {
-  return this == dealias(other);
-}
-
 /** Return true if this type supports the specified protocol. */
 bool Type::supports(const Type * protocol) const {
   return protocol->typeClass() == Protocol &&
@@ -480,7 +476,7 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
   DASSERT(t0 != NULL);
   DASSERT(t1 != NULL);
 
-  if (t0->isEqual(t1)) {
+  if (TypeRelation::isEqual(t0, t1)) {
     return t0;
   }
 

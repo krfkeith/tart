@@ -23,7 +23,7 @@
 namespace tart {
 
 namespace {
-  /** Code to clear the cached type maps during a collection. */
+  /** Code to trace cached type references. */
   template<class TypeMap>
   class TypeMapRoot : public GCRootBase {
   public:
@@ -108,22 +108,8 @@ bool AddressType::isSingular() const {
   return elementType_->isSingular();
 }
 
-bool AddressType::isEqual(const Type * other) const {
-  if (const AddressType * np = dyn_cast<AddressType>(other)) {
-    return elementType_->isEqual(np->elementType_);
-  }
-
-  return false;
-}
-
 Expr * AddressType::nullInitValue() const {
   return ConstantNull::get(SourceLocation(), this);
-}
-
-unsigned AddressType::getHashValue() const {
-  unsigned result = elementType_->getHashValue();
-  result ^= Type::NAddress;
-  return result;
 }
 
 void AddressType::format(FormatStream & out) const {
@@ -206,20 +192,6 @@ bool NativeArrayType::isSingular() const {
   return typeArgs_->isSingular();
 }
 
-bool NativeArrayType::isEqual(const Type * other) const {
-  if (const NativeArrayType * na = dyn_cast<NativeArrayType>(other)) {
-    return typeArgs_ == na->typeArgs_;
-  }
-
-  return false;
-}
-
-unsigned NativeArrayType::getHashValue() const {
-  unsigned result = elementType()->getHashValue();
-  result ^= Type::NArray;
-  return result;
-}
-
 void NativeArrayType::format(FormatStream & out) const {
   out << "NativeArray[" << elementType() << ", " << size() << "]";
 }
@@ -290,20 +262,6 @@ llvm::Type * FlexibleArrayType::createIRType() const {
 
 bool FlexibleArrayType::isSingular() const {
   return typeArgs_->isSingular();
-}
-
-bool FlexibleArrayType::isEqual(const Type * other) const {
-  if (const FlexibleArrayType * na = dyn_cast<FlexibleArrayType>(other)) {
-    return typeArgs_ == na->typeArgs_;
-  }
-
-  return false;
-}
-
-unsigned FlexibleArrayType::getHashValue() const {
-  unsigned result = elementType()->getHashValue();
-  result ^= Type::FlexibleArray;
-  return result;
 }
 
 void FlexibleArrayType::format(FormatStream & out) const {

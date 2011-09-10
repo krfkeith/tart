@@ -4,6 +4,7 @@
 
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/TypeDefn.h"
@@ -228,7 +229,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
           if (valueParam->type() == NULL) {
             valueParam->setType(type);
             valueParam->setInternalType(type);
-          } else if (!valueParam->type()->isEqual(type)) {
+          } else if (!TypeRelation::isEqual(valueParam->type(), type)) {
             diag.fatal(setter) << "Setter parameter '" << valueParam->name() <<
                 "' must be of type '" << type << "' but is instead type '" <<
                 valueParam->type() << "'";

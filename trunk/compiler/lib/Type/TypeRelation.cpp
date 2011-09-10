@@ -128,7 +128,8 @@ static bool isEqualUnion(const UnionType * lut, const UnionType * rut) {
 //    }
 //  }
 
-  return true;
+  //return true;
+  return false;
 }
 
 bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
@@ -162,11 +163,12 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(rt);
       if (ta->value() != NULL) {
         return isEqual(lt, ta->value());
-      } else {
+      } /* else {
         // For now, we presume that if all constraints on the type find lt acceptable,
         // then it's *possible* that the TA could equal lt.
         return ta->constraints().accepts(lt);
-      }
+      } */
+      return false;
     }
 
     default:
@@ -288,15 +290,20 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(lt);
       if (ta->value() != NULL) {
         return isEqual(ta->value(), rt);
-      } else {
+      } /* else {
         return ta->constraints().accepts(rt);
-      }
+      }*/
+      return false;
     }
 
     case Type::ModVariadic:
-    case Type::CVQual:
+    case Type::ModMutable:
+    case Type::ModImmutable:
+    case Type::ModReadOnly:
+    case Type::ModAdopted:
+    case Type::ModVolatile:
     case Type::KindCount:
-      DFAIL("Type class not supported by isEqual()");
+      DASSERT(false) << "Type class not supported by isEqual(): " << lt->typeClass();
       break;
   }
   return false;
@@ -477,7 +484,11 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     }
 
     case Type::ModVariadic:
-    case Type::CVQual:
+    case Type::ModMutable:
+    case Type::ModImmutable:
+    case Type::ModReadOnly:
+    case Type::ModAdopted:
+    case Type::ModVolatile:
     case Type::KindCount:
       DFAIL("Type class not supported by isSubtype()");
       break;

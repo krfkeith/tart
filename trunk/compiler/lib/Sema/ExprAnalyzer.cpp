@@ -363,7 +363,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   DASSERT_OBJ(value->type() != NULL, value);
   DASSERT_OBJ(value->isSingular(), value);
 
-  if (value->type()->isEqual(type)) {
+  if (TypeRelation::isEqual(value->type(), type)) {
     return ConstantInteger::getConstantBool(ast->location(), true);
   }
 

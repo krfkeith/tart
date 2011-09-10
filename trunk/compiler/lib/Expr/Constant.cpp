@@ -12,6 +12,7 @@
 #include "tart/Type/NativeType.h"
 #include "tart/Type/EnumType.h"
 #include "tart/Type/TypeLiteral.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
@@ -53,7 +54,7 @@ bool ConstantInteger::isNegative() const {
 }
 
 void ConstantInteger::format(FormatStream & out) const {
-  if (type()->isEqual(&BoolType::instance)) {
+  if (type()->isBooleanType()) {
     out << (value_->isZero() ? "false" : "true");
   } else {
     const PrimitiveType * ptype = primitiveType();
@@ -187,7 +188,7 @@ bool TypeLiteralExpr::isSingular() const {
 
 bool TypeLiteralExpr::isEqual(const ConstantExpr * cexpr) const {
   if (const TypeLiteralExpr * ct = dyn_cast<TypeLiteralExpr>(cexpr)) {
-    return value()->isEqual(ct->value());
+    return TypeRelation::isEqual(value(), ct->value());
   }
 
   return false;

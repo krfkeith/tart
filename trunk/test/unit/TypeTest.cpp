@@ -98,8 +98,8 @@ TEST_F(TupleTest, TupleTypeTest) {
   ASSERT_TRUE(t0 != t2);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE((*t0->begin())->isEqual(&Int32Type::instance));
-  ASSERT_TRUE((*t0)[0]->isEqual(&Int32Type::instance));
+  ASSERT_TRUE(TypeRelation::isEqual((*t0->begin()), &Int32Type::instance));
+  ASSERT_TRUE(TypeRelation::isEqual((*t0)[0], &Int32Type::instance));
 
   ASSERT_TRUE(t0->isSingular());
 }
@@ -117,7 +117,7 @@ TEST_F(TupleTest, TupleTypeTest2) {
   ASSERT_TRUE((void *)t0 == (void *)t1);
 
   ASSERT_EQ(1u, t0->size());
-  ASSERT_TRUE(t0->member(0)->isEqual(testClass));
+  ASSERT_TRUE(TypeRelation::isEqual(t0->member(0), testClass));
   ASSERT_TRUE(t0->isSingular());
 }
 
@@ -184,23 +184,6 @@ public:
       this type cannot be null-initialized. */
   virtual Expr * nullInitValue() const { return NULL; }
 
-  // Static utility functions
-
-  // Structure used when using type as a key.
-  struct KeyInfo {
-    static inline Type * getEmptyKey() { return reinterpret_cast<Type *>(0); }
-    static inline Type * getTombstoneKey() { return reinterpret_cast<Type *>(-1); }
-
-    static unsigned getHashValue(const Type * val) {
-      // TODO: Replace with hash of canonical type.
-      return (uintptr_t(val) >> 4) ^ (uintptr_t(val) >> 9);
-    }
-
-    static bool isEqual(const Type * lhs, const Type * rhs) {
-      // TODO: Replace with canonical comparison
-      return lhs == rhs;
-    }
-  };
 };
 
 /// -------------------------------------------------------------------
@@ -221,28 +204,6 @@ public:
     return !(*this == other);
   }
 
-  // Structure used when using type ref as a key.
-  struct KeyInfo {
-    static inline TypePair getEmptyKey() {
-      return TypePair(Type::KeyInfo::getEmptyKey(), Type::KeyInfo::getEmptyKey());
-    }
-
-    static inline TypePair getTombstoneKey() {
-      return TypePair(Type::KeyInfo::getTombstoneKey(), Type::KeyInfo::getTombstoneKey());
-    }
-
-    static unsigned getHashValue(const TypePair & val) {
-      return Type::KeyInfo::getHashValue(val.first_) ^
-          (Type::KeyInfo::getHashValue(val.second_) << 1);
-    }
-
-    static bool isEqual(const TypePair & lhs, const TypePair & rhs) {
-      return Type::KeyInfo::isEqual(lhs.first_, rhs.first_) &&
-          Type::KeyInfo::isEqual(lhs.second_, rhs.second_);
-    }
-
-    static bool isPod() { return true; }
-  };
 
 private:
   const Type * first_;

@@ -29,7 +29,6 @@ public:
   // Overrides
 
   bool isSingular() const { return value_->isSingular(); }
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   TypeShape typeShape() const { return Shape_None; }
   llvm::Type * irType() const;

@@ -4,20 +4,23 @@
 
 #include "config.h"
 
-#include "tart/Expr/Expr.h"
 #include "tart/Defn/TypeDefn.h"
-#include "tart/Expr/Constant.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
-#include "tart/Type/EnumType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/Template.h"
 #include "tart/Defn/Module.h"
+#include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Expr/Expr.h"
+#include "tart/Expr/Constant.h"
+
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/EnumType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Gen/CodeGenerator.h"
 
@@ -451,7 +454,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   // TODO: Throw an exception if it won't fit...
   // TODO: Should use uintptr_t instead of int32.
 
-  DASSERT_OBJ(firstPtr->type()->isEqual(lastPtr->type()), call);
+  DASSERT_OBJ(TypeRelation::isEqual(firstPtr->type(), lastPtr->type()), call);
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
@@ -598,7 +601,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * srcArray = call->arg(1);
   const Expr * count = call->arg(2);
 
-  DASSERT_OBJ(srcArray->type()->isEqual(dstArray->type()), call);
+  DASSERT_OBJ(TypeRelation::isEqual(srcArray->type(), dstArray->type()), call);
   const Type * elemType = srcArray->type()->typeParam(0);
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);

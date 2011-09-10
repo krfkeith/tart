@@ -2,6 +2,8 @@
 
 Next up:
 
+* Fix DWARF.
+* Fix bug in nametable static roots.
 * Start work on readonly / mutable / immutable type constructors and value casts.
 * String should take from Collection, not Copyable.
 * Change uses of isEqual method to isEqual binary function.

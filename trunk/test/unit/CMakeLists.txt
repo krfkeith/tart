@@ -48,6 +48,7 @@ add_executable(unittest
   ASTSerializationTest.cpp
   ConstraintTest.cpp
   BindingEnvTest.cpp
+  InheritanceTest.cpp
   )
 target_link_libraries(unittest
     gtest gmock compiler

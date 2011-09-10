@@ -7,6 +7,8 @@
 
 #include "tart/Sema/TemplateParamAnalyzer.h"
 
+#include "tart/Type/TypeRelation.h"
+
 namespace tart {
 
 Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
@@ -47,7 +49,7 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
       } else if (ast->constraint() == ASTTypeVariable::IS_INSTANCE) {
         if (tvar->valueType() == NULL) {
           tvar->setValueType(type);
-        } else if (!tvar->valueType()->isEqual(type)) {
+        } else if (!TypeRelation::isEqual(tvar->valueType(), type)) {
           diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
               ast->name() << "'";
         }

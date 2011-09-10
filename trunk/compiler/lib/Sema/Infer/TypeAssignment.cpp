@@ -59,10 +59,6 @@ bool TypeAssignment::isReferenceType() const {
   return false;
 }
 
-bool TypeAssignment::isEqual(const Type * other) const {
-  return compare(&Type::isEqual, other);
-}
-
 void TypeAssignment::expand(TypeExpansion & out) const {
   if (value_ != NULL) {
     value_->expand(out);

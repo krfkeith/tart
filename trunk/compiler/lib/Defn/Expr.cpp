@@ -3,14 +3,17 @@
  * ================================================================ */
 
 #include "tart/Expr/Exprs.h"
-#include "tart/Type/Type.h"
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/TypeDefn.h"
+#include "tart/Defn/FunctionDefn.h"
+
+#include "tart/Type/Type.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/FunctionType.h"
-#include "tart/Defn/FunctionDefn.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeRelation.h"
+
 #include "tart/Expr/Closure.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/SpCandidate.h"
@@ -72,7 +75,7 @@ void formatTypeList(FormatStream & out, const TypeList & types) {
 }
 
 bool isErrorResult(const Type * ex) {
-  return ex == NULL || BadType::instance.isEqual(ex);
+  return ex == NULL || &BadType::instance == ex;
 }
 
 bool any(ExprList::const_iterator first, ExprList::const_iterator last,
@@ -478,7 +481,7 @@ const Type * CallExpr::singularParamType(int index) {
     const Type *  ty = (*it)->paramType(index);
     if (singularType == NULL) {
       singularType = ty;
-    } else if (!ty->isEqual(singularType)) {
+    } else if (!TypeRelation::isEqual(ty, singularType)) {
       return NULL;
     }
   }
@@ -497,7 +500,7 @@ const Type * CallExpr::singularResultType() {
     const Type * ty = cc->resultType();
     if (singularType == NULL) {
       singularType = ty;
-    } else if (!ty->isEqual(singularType)) {
+    } else if (!TypeRelation::isEqual(ty, singularType)) {
       return NULL;
     }
   }

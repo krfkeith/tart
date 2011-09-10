@@ -52,14 +52,6 @@ UnitType * UnitType::get(ConstantExpr * value) {
   return result;
 }
 
-bool UnitType::isEqual(const Type * other) const {
-  if (const UnitType * ntc = dyn_cast<UnitType>(other)) {
-    return value_->isEqual(ntc->value());
-  }
-
-  return false;
-}
-
 llvm::Type * UnitType::irType() const {
   DFAIL("IllegalState");
 }

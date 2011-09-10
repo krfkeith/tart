@@ -34,7 +34,6 @@ public:
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   bool isSingular() const;
-  bool isEqual(const Type * other) const;
   bool isReferenceType() const { return false; }
   void format(FormatStream & out) const;
   TypeShape typeShape() const { return Shape_None; }

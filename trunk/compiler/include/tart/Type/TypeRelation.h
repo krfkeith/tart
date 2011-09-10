@@ -39,6 +39,14 @@ bool isEqual(const Type * lhs, const Type * rhs);
     in order for the whole to be considered a subtype. */
 bool isSubtype(const Type * lhs, const Type * rhs);
 
+/** Type equality functor. */
+class Equal {
+public:
+  bool operator()(const Type * t0, const Type * t1) {
+    return isEqual(t0, t1);
+  }
+};
+
 } // namespace TypeRelation
 } // namespace tart
 

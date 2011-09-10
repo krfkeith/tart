@@ -15,6 +15,7 @@
 #include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeConversion.h"
+#include "tart/Type/TypeRelation.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/AmbiguousPhiType.h"
 
@@ -494,7 +495,7 @@ Expr * FinalizeTypesPassImpl::visitCast(CastExpr * in) {
   Expr * arg = visitExpr(in->arg());
 
   // Eliminate redundant cast if not needed.
-  if (in->type()->isEqual(arg->type())) {
+  if (TypeRelation::isEqual(in->type(), arg->type())) {
     return arg;
   }
 
@@ -537,7 +538,7 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
   DASSERT_OBJ(tyFrom->isSingular(), tyFrom);
   DASSERT_OBJ(tyTo->isSingular(), tyTo);
 
-  if (tyFrom->isEqual(tyTo)) {
+  if (TypeRelation::isEqual(tyFrom, tyTo)) {
     return new BinaryExpr(Expr::Prog2, in->location(), &BoolType::instance, value,
         ConstantInteger::getConstantBool(in->location(), true));
   }
@@ -647,7 +648,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value,
 
     // If the member type is exactly equal to the type we are testing for, then that
     // is the simplest case. Otherwise, we'll need to do additional tests on the value.
-    if (memberType->isEqual(to)) {
+    if (TypeRelation::isEqual(memberType, to)) {
       return in;
     }
 
@@ -725,12 +726,12 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   } else if (isa<AddressType>(t1)) {
     const Type * e0 = t1->typeParam(0);
     if (isa<AddressType>(t2)) {
-      if (e0->isEqual(t2->typeParam(0))) {
+      if (TypeRelation::isEqual(e0, t2->typeParam(0))) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       }
     } else if (t2->isReferenceType()) {
-      if (e0->isEqual(t2)) {
+      if (TypeRelation::isEqual(e0, t2)) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       } else if (t2->isNullType()) {

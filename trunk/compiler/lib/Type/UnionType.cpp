@@ -308,34 +308,6 @@ size_t UnionType::estimateTypeSize(llvm::Type * type) {
   }
 }
 
-bool UnionType::isEqual(const Type * other) const {
-  other = dealias(other);
-  if (other == this) {
-    return true;
-  }
-
-  // A union type is the same if it contains the same types (dealiased).
-  if (const UnionType * u = dyn_cast<UnionType>(other)) {
-    // Make sure that all types in u are in this.
-    for (TupleType::const_iterator it = u->typeArgs()->begin(); it != u->typeArgs()->end(); ++it) {
-      if (getTypeIndex(*it) < 0) {
-        return false;
-      }
-    }
-
-    // Make sure that all types in this are in u.
-    for (TupleType::const_iterator it = typeArgs()->begin(); it != typeArgs()->end(); ++it) {
-      if (u->getTypeIndex(*it) < 0) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
 bool UnionType::isSingular() const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (!(*it)->isSingular()) {
@@ -380,11 +352,11 @@ int UnionType::getTypeIndex(const Type * type) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     const Type * memberType = *it;
     if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(memberType)) {
-      if (ta->isEqual(type)) {
+      if (TypeRelation::isEqual(ta, type)) {
         return index;
       }
     }
-    if (type->isEqual(memberType)) {
+    if (TypeRelation::isEqual(type, memberType)) {
       return index;
     }
 
@@ -396,7 +368,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 
 Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   const Type * fromType = dealias(from->type());
-  if (toType->isEqual(fromType)) {
+  if (TypeRelation::isEqual(toType, fromType)) {
     return from;
   }
 

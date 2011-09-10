@@ -7,12 +7,15 @@
 
 #include "tart/Expr/Exprs.h"
 #include "tart/Expr/StmtExprs.h"
+#include "tart/Expr/Closure.h"
+
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/FunctionDefn.h"
-#include "tart/Expr/Closure.h"
+
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TupleType.h"
 #include "tart/Type/UnionType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -107,7 +110,7 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
       return false;
 
     case Expr::ConstEmptyArray:
-      return from->type()->isEqual(to->type());
+      return TypeRelation::isEqual(from->type(), to->type());
 
 //    case Expr::ConstNArray:
 //      return visitConstantNativeArray(static_cast<ConstantNativeArray *>(from), static_cast<ConstantNativeArray *>(to));
@@ -463,7 +466,7 @@ bool FunctionMergePass::visitProg2(BinaryExpr * from, BinaryExpr * to) {
 }
 
 bool FunctionMergePass::visitArrayLiteral(ArrayLiteralExpr * from, ArrayLiteralExpr * to) {
-  if (!from->type()->isEqual(to->type())) {
+  if (!TypeRelation::isEqual(from->type(), to->type())) {
     return false;
   }
 

@@ -13,6 +13,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/TypeLiteral.h"
 #include "tart/Type/AmbiguousType.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -320,7 +321,7 @@ bool BindingEnv::unifyTypeLiteralType(
 
 bool BindingEnv::unifyCompositeType(
     SourceContext * source, const CompositeType * left, const CompositeType * right) {
-  if (left->isEqual(right)) {
+  if (TypeRelation::isEqual(left, right)) {
     return true;
   }
 
@@ -400,7 +401,7 @@ bool BindingEnv::unifyCompositeType(
 
 bool BindingEnv::unifyUnionType(
     SourceContext * source, const UnionType * left, const UnionType * right) {
-  if (left->isEqual(right)) {
+  if (TypeRelation::isEqual(left, right)) {
     return true;
   }
 
@@ -467,7 +468,7 @@ bool BindingEnv::unifyUnionMemberType(
 
 bool BindingEnv::unifyTupleType(
     SourceContext * source, const TupleType * left, const TupleType * right) {
-  if (left->isEqual(right)) {
+  if (TypeRelation::isEqual(left, right)) {
     return true;
   }
 
@@ -520,7 +521,7 @@ bool BindingEnv::unifyWithTypeVar(
   // Early out - already bound to this same value.
   for (ConstraintSet::const_iterator si = ta->begin(); si != ta->end(); ++si) {
     Constraint * cst = *si;
-    if (cst->value()->isEqual(value) &&
+    if (TypeRelation::isEqual(cst->value(), value) &&
         cst->kind() == kind &&
         cst->provisions().equals(combinedProvisions)) {
       return true;
