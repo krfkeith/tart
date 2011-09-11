@@ -28,12 +28,6 @@
 
 namespace tart {
 
-/** The set of traits that should be copied from the template to its
-    instantiation. */
-static const Defn::Traits INSTANTIABLE_TRAITS = Defn::Traits::of(
-  Defn::ReadOnly
-);
-
 // -------------------------------------------------------------------
 // Class to discover all pattern variables in a type parameter list.
 
@@ -287,7 +281,6 @@ Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varV
   tinst->setValue(result);
   result->setQualifiedName(value_->qualifiedName());
   result->addTrait(Defn::Synthetic);
-  result->traits().addAll(value_->traits() & INSTANTIABLE_TRAITS);
   result->setParentDefn(value_->parentDefn());
   result->setDefiningScope(tinst);
   if (isPartial) {

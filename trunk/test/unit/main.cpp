@@ -3,6 +3,7 @@
  * ================================================================ */
 
 #include "tart/Common/GC.h"
+#include "tart/Common/PackageMgr.h"
 #include "tart/Objects/Builtins.h"
 
 #include <gmock/gmock.h>
@@ -13,6 +14,7 @@ int main(int argc, char **argv) {
   // Initialize the garbage collector.
   GC::init();
   Builtins::init();
+  PackageMgr::get().addImportPath("../../lib/std/libstd.bc");
 
   // Initialize and run tests.
   testing::InitGoogleMock(&argc, argv);

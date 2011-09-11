@@ -18,6 +18,7 @@ public:
   enum AnalysisPass {
     AttributePass,
     VariableTypePass,
+    TypeModifierPass,
     InitializerPass,
     CompletionPass,
     PassCount

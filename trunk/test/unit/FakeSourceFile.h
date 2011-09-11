@@ -12,9 +12,6 @@
 /// Fake source file class
 class FakeSourceFile : public tart::SourceString {
 public:
-    FakeSourceFile(const char * src) : tart::SourceString(src)
-    {
-    }
-
-    ProgramSource * get() { return NULL; }
+  FakeSourceFile(const char * src) : tart::SourceString(src) {}
+  ProgramSource * get() { return NULL; }
 };

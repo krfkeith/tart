@@ -49,6 +49,7 @@ add_executable(unittest
   ConstraintTest.cpp
   BindingEnvTest.cpp
   InheritanceTest.cpp
+  TypeModifierTest.cpp
   )
 target_link_libraries(unittest
     gtest gmock compiler

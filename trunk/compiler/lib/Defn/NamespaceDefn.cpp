@@ -33,5 +33,4 @@ void NamespaceDefn::trace() const {
   members.trace();
 }
 
-
 } // namespace tart

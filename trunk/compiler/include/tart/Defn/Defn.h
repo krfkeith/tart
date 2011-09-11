@@ -67,8 +67,6 @@ public:
   };
 
   enum Trait {
-    ReadOnly,               // Can't be written to from non-privileged code
-    Const,                  // Declares a field to be immutable.
     Unsafe,                 // Requires unsafe language extensions
     Singular,               // Has no unbound template params
     Synthetic,              // Generated via template
@@ -172,6 +170,11 @@ public:
   bool isReflected() const { return traits_.contains(Reflect); }
   bool isUnsafe() const { return traits_.contains(Unsafe); }
   bool isScaffold() const { return traits_.contains(Scaffold); }
+  bool isReadOnly() const { return (modifiers_.flags & ReadOnly) != 0; }
+  bool isMutable() const { return (modifiers_.flags & Mutable) != 0; }
+  bool isImmutable() const { return (modifiers_.flags & Immutable) != 0; }
+
+  const DeclModifiers & modifiers() const { return modifiers_; }
 
   void setSingular(bool t) {
     if (t) {
