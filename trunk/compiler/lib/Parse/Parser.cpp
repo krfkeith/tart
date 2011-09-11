@@ -272,16 +272,25 @@ bool Parser::declaration(ASTDeclList & dlist, DeclModifiers mods) {
       mods.flags |= Final;
       modifier = true;
     } else if (match(Token_Readonly)) {
+      if (mods.flags & (Mutable|Immutable)) {
+        diag.error(tokenLoc) << "Conflicting type modifiers";
+      }
       mods.flags |= ReadOnly;
       modifier = true;
     } else if (match(Token_Mutable)) {
+      if (mods.flags & (ReadOnly|Immutable)) {
+        diag.error(tokenLoc) << "Conflicting type modifiers";
+      }
       mods.flags |= Mutable;
       modifier = true;
     } else if (match(Token_Immutable)) {
+      if (mods.flags & (ReadOnly|Mutable)) {
+        diag.error(tokenLoc) << "Conflicting type modifiers";
+      }
       mods.flags |= Immutable;
       modifier = true;
     } else if (match(Token_Adopted)) {
-      mods.flags |= Adopted;
+      diag.error(tokenLoc) << "'adopted' is cannot be used as a declaration modifier";
       modifier = true;
     } else if (match(Token_Abstract)) {
       mods.flags |= Abstract;
@@ -405,6 +414,18 @@ ASTDecl * Parser::declareVariable(const DeclModifiers & mods, TokenType tok) {
     diag.warn(lexer.tokenLocation()) << "Values are always 'final'";
   }
 
+  if (tok == Token_Let) {
+    if (mods.flags & (ReadOnly | Immutable)) {
+      diag.warn(lexer.tokenLocation()) << "'let' declarations are always immutable";
+    } else if (mods.flags & Mutable) {
+      diag.error(lexer.tokenLocation()) << "'let' declarations cannot be declared 'mutable'";
+    }
+  } else {
+    if (mods.flags & (ReadOnly | Immutable)) {
+      diag.error(lexer.tokenLocation()) << "Use 'let' to declare an immutable property";
+    }
+  }
+
   do {
     // One or more variable declarations.
     ASTNode * declType = NULL;
@@ -468,6 +489,11 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
     ASTNode * returnType = NULL;
     ASTParamList params;
 
+    if (mods.flags & (ReadOnly|Immutable|Mutable)) {
+      diag.error(loc) << "type modifiers are not allowed on indexers " <<
+          "(hint: put them on the getter / setter methods)";
+    }
+
     if (!formalArgumentList(params, Token_RBracket)) {
       return (ASTDecl *)&ASTNode::INVALID;
     }
@@ -512,6 +538,11 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
   SourceLocation loc = tokenLoc;
   if (match(Token_Colon)) {
+    if (mods.flags & (ReadOnly|Immutable|Mutable)) {
+      diag.error(loc) << "type modifiers are not allowed on properties " <<
+          "(hint: put them on the getter / setter methods)";
+    }
+
     // It's a property
     ASTNode * declType = typeExpression();
     if (declType == NULL) {
@@ -535,6 +566,10 @@ ASTDecl * Parser::declareDef(const DeclModifiers & mods, TokenType tok) {
 
     return prop;
   } else {
+    if (mods.flags & (Immutable|Mutable)) {
+      diag.error(loc) << "invalid type modifier for method definition";
+    }
+
     // Get template params.
     ASTNodeList templateParams;
     ASTNodeList requirements;
@@ -709,13 +744,15 @@ ASTDecl * Parser::declareType(const DeclModifiers & mods, TokenType tok) {
   return typeDecl;
 }
 
-ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
-{
+ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok) {
   if (mods.flags & Abstract) {
     diag.error(tokenLoc) << "Namespaces cannot be declared abstract";
   }
   if (mods.flags & Final) {
     diag.error(tokenLoc) << "Namespaces cannot be declared final";
+  }
+  if (mods.flags & (ReadOnly|Mutable|Immutable)) {
+    diag.error(tokenLoc) << "Type modifiers not permitted on namespace declaration";
   }
 
   StringRef declName = matchIdent();
@@ -749,6 +786,16 @@ ASTDecl * Parser::declareNamespace(DeclModifiers mods, TokenType tok)
 }
 
 ASTDecl * Parser::declareEnum(const DeclModifiers & mods) {
+  if (mods.flags & Abstract) {
+    diag.error(tokenLoc) << "Enumerations cannot be declared abstract";
+  }
+  if (mods.flags & Final) {
+    diag.error(tokenLoc) << "Enumerations cannot be declared final";
+  }
+  if (mods.flags & (ReadOnly|Mutable|Immutable)) {
+    diag.error(tokenLoc) << "Type modifiers not permitted on enum declaration";
+  }
+
   StringRef declName = matchIdent();
   SourceLocation loc = tokenLoc;
   if (declName.empty()) {

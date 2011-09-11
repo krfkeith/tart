@@ -24,6 +24,7 @@ public:
   bool analyze(AnalysisTask task);
   bool runPasses(VariableDefn::PassSet passesToRun);
   bool resolveVarType();
+  bool analyzeTypeModifiers();
   bool resolveInitializers();
 
   void setTargetType(const Type * type);

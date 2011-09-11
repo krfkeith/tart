@@ -73,6 +73,7 @@ public:
 
   enum AnalysisPass {
     ScopeCreationPass,
+    TypeModifiersPass,
     BaseTypesPass,
     AttributePass,
     NamingConflictPass,

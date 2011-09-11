@@ -17,6 +17,14 @@
 #include <ostream>
 #include <sstream>
 
+namespace llvm {
+  // Make StringRef streamable
+  inline std::ostream & operator<<(std::ostream & out, StringRef str) {
+    out << str.str();
+    return out;
+  }
+}
+
 namespace tart {
   // Make nodes streamable so they can be printed in test results.
   inline std::ostream & operator<<(std::ostream & out, const ASTNode * node) {
@@ -28,12 +36,6 @@ namespace tart {
   // Make node types streamable
   inline std::ostream & operator<<(std::ostream & out, const ASTNode::NodeType nt) {
     out << nodeTypeName(nt);
-    return out;
-  }
-
-  // Make node types streamable
-  inline std::ostream & operator<<(std::ostream & out, StringRef str) {
-    out << str.str();
     return out;
   }
 

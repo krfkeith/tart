@@ -49,9 +49,6 @@ Defn::Defn(DefnType dtype, Module * m, const ASTDecl * de)
   , tsig_(NULL)
   , tinst_(NULL)
 {
-  if (modifiers_.flags & tart::ReadOnly) {
-    addTrait(ReadOnly);
-  }
 }
 
 StringRef Defn::qualifiedName() const {

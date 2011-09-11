@@ -33,12 +33,14 @@ static const VariableDefn::PassSet PASS_SET_RESOLVETYPE = VariableDefn::PassSet:
 static const VariableDefn::PassSet PASS_SET_CONSTRUCT = VariableDefn::PassSet::of(
   VariableDefn::AttributePass,
   VariableDefn::VariableTypePass,
+  VariableDefn::TypeModifierPass,
   VariableDefn::InitializerPass
 );
 
 static const VariableDefn::PassSet PASS_SET_COMPLETE = VariableDefn::PassSet::of(
   VariableDefn::AttributePass,
   VariableDefn::VariableTypePass,
+  VariableDefn::TypeModifierPass,
   VariableDefn::InitializerPass,
   VariableDefn::CompletionPass
 );
@@ -116,6 +118,10 @@ bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
   }
 
   if (passesToRun.contains(VariableDefn::VariableTypePass) && !resolveVarType()) {
+    return false;
+  }
+
+  if (passesToRun.contains(VariableDefn::TypeModifierPass) && !analyzeTypeModifiers()) {
     return false;
   }
 
@@ -259,6 +265,21 @@ void VarAnalyzer::setTargetType(const Type * type) {
       pdef->setInternalType(type);
     }
   }
+}
+
+bool VarAnalyzer::analyzeTypeModifiers() {
+  if (target->passes().begin(VariableDefn::TypeModifierPass)) {
+    if (target->storageClass() != Storage_Instance) {
+      if (target->isMutable()) {
+        diag.error(target) << "Only instance variables can be declared 'mutable'";
+      } else if (target->modifiers().flags & (ReadOnly | Immutable)) {
+        diag.error(target) << "Type modifiers are only allowed on instance variables";
+      }
+    }
+    target->passes().finish(VariableDefn::TypeModifierPass);
+  }
+
+  return true;
 }
 
 bool VarAnalyzer::resolveInitializers() {

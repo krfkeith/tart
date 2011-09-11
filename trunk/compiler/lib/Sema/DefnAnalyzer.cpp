@@ -108,9 +108,11 @@ bool DefnAnalyzer::analyzeModule() {
   analyzeType(Builtins::typeTypeInfoBlock.get(), Task_PrepCodeGeneration);
   analyzeType(Builtins::typeTraceAction.get(), Task_PrepConstruction);
   analyzeType(Builtins::typeStaticRoot.get(), Task_PrepConstruction);
-  analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
-  analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
-  analyzeFunction(gc_alloc, Task_PrepConstruction);
+  if (Builtins::funcTypecastError != NULL) {
+    analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+    analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
+    analyzeFunction(gc_alloc, Task_PrepConstruction);
+  }
   analyzeDefn(reflect::FunctionType::CallAdapterFnType.get(), Task_PrepCodeGeneration);
 
   // Now deal with the xrefs. Synthetic xrefs need to be analyzed all the

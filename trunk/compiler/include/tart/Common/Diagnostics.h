@@ -224,7 +224,11 @@ public:
   Diagnostics();
 
   /** Set the writer. */
-  void setWriter(Writer * writer) { writer_ = writer; }
+  Writer *setWriter(Writer * writer) {
+    Writer * prev = writer;
+    writer_ = writer;
+    return prev;
+  }
 
   /** reset counters for testing */
   void reset();

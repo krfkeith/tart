@@ -163,11 +163,7 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(rt);
       if (ta->value() != NULL) {
         return isEqual(lt, ta->value());
-      } /* else {
-        // For now, we presume that if all constraints on the type find lt acceptable,
-        // then it's *possible* that the TA could equal lt.
-        return ta->constraints().accepts(lt);
-      } */
+      }
       return false;
     }
 
@@ -290,9 +286,7 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(lt);
       if (ta->value() != NULL) {
         return isEqual(ta->value(), rt);
-      } /* else {
-        return ta->constraints().accepts(rt);
-      }*/
+      }
       return false;
     }
 

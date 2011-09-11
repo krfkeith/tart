@@ -42,12 +42,14 @@ static const CompositeType::PassSet PASS_SET_RESOLVE_TYPE = CompositeType::PassS
 
 static const CompositeType::PassSet PASS_SET_LOOKUP = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass
 );
 
 static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
   CompositeType::ImportPass,
@@ -58,6 +60,7 @@ static const CompositeType::PassSet PASS_SET_CONSTRUCTION = CompositeType::PassS
 
 static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
   CompositeType::ImportPass,
@@ -67,6 +70,7 @@ static const CompositeType::PassSet PASS_SET_CONVERSION = CompositeType::PassSet
 
 static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
   CompositeType::ImportPass,
@@ -80,6 +84,7 @@ static const CompositeType::PassSet PASS_SET_EVALUATION = CompositeType::PassSet
 
 static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::ImportPass,
   CompositeType::NamingConflictPass,
@@ -92,6 +97,7 @@ static const CompositeType::PassSet PASS_SET_TYPEGEN = CompositeType::PassSet::o
 
 static const CompositeType::PassSet PASS_SET_CODEGEN = CompositeType::PassSet::of(
   CompositeType::ScopeCreationPass,
+  CompositeType::TypeModifiersPass,
   CompositeType::BaseTypesPass,
   CompositeType::AttributePass,
   CompositeType::ImportPass,
@@ -231,6 +237,10 @@ bool ClassAnalyzer::runPasses(CompositeType::PassSet passesToRun) {
     return false;
   }
 
+  if (passesToRun.contains(CompositeType::TypeModifiersPass) && !analyzeTypeModifiers()) {
+    return false;
+  }
+
   if (passesToRun.contains(CompositeType::BaseTypesPass) && !analyzeBaseClasses()) {
     return false;
   }
@@ -300,6 +310,23 @@ bool ClassAnalyzer::checkNameConflicts() {
   }
 
   return success;
+}
+
+bool ClassAnalyzer::analyzeTypeModifiers() {
+  CompositeType * type = targetType();
+  if (type->passes().begin(CompositeType::TypeModifiersPass)) {
+    if (target->modifiers().flags & Adopted) {
+      diag.error(target) << "'adopted' modifier not allowed for type definitions";
+    } else if (target->modifiers().flags & Mutable) {
+        diag.error(target) << "'mutable' modifier not allowed for type definitions";
+    } else if ((target->modifiers().flags & (ReadOnly|Immutable)) == (ReadOnly|Immutable)) {
+      diag.error(target) << "conflicting type modifiers";
+    }
+
+    type->passes().finish(CompositeType::TypeModifiersPass);
+  }
+
+  return true;
 }
 
 bool ClassAnalyzer::analyzeBaseClasses() {

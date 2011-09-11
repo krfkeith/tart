@@ -24,6 +24,7 @@ public:
   bool analyze(AnalysisTask task);
   bool runPasses(CompositeType::PassSet passesToRun);
 
+  bool analyzeTypeModifiers();
   bool analyzeBaseClasses();
   bool analyzeBaseClassesImpl();
   bool checkNameConflicts();

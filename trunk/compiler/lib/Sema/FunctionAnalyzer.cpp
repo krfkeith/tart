@@ -310,10 +310,16 @@ bool FunctionAnalyzer::resolveModifiers() {
     bool isUndefined = target->isUndefined();
     bool isExtern = target->isExtern();
     bool isInterfaceMethod = false;
+    bool isReadOnly = target->isReadOnly();
 
     if (isIntrinsic && isExtern) {
       diag.error(target) << "Function '" << target->name() <<
           "' cannot be both external and intrinsic.";
+      success = false;
+    }
+
+    if (isReadOnly && target->storageClass() != Storage_Instance) {
+      diag.error(target) << "Only instance methods can be declared 'readonly";
       success = false;
     }
 

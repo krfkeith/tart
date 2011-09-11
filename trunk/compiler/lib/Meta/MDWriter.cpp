@@ -418,7 +418,7 @@ Value * MDWriter::modifiers(const Defn * de) {
     default: break;
   }
 
-  if (de->hasTrait(Defn::ReadOnly)) {
+  if (de->isReadOnly()) {
     mods |= meta::DefnFlag::READONLY;
   }
   if (de->isUnsafe()) {

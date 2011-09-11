@@ -8,21 +8,21 @@ import tart.gc.TraceDescriptor;
  */
 struct TypeInfoBlock {
   /** Pointer to the compressed reflection data for this type. */
-  readonly var type:CompositeType;
+  let type:CompositeType;
 
 	/** The table of offsets that specify where in the type are embedded object references. NULL
 			if this type has no embedded object references. */
-  readonly var traceTable:Address[TraceDescriptor];
+  let traceTable:Address[TraceDescriptor];
 
   /** List of all types (classes and interfaces) that this type can be cast to.
       A null pointer terminates the list. */
-  readonly var bases:Address[Address[TypeInfoBlock]];
+  let bases:Address[Address[TypeInfoBlock]];
 
   /** Compiler-generated function to lookup the specified interface method. */
-  readonly var idispatch:static fn(iid:String, methodIndex:int32) -> void^;
+  let idispatch:static fn(iid:String, methodIndex:int32) -> void^;
 
   /** Compiler-generated table of class methods. */
-  readonly var methodTable:FlexibleArray[Address[void]];
+  let methodTable:FlexibleArray[Address[void]];
 
   /** Method to test whether a reference to an object of the type represented
       by this TIB can be legally cast to a reference to type 'toType'. Used
